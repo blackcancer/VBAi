@@ -48,6 +48,51 @@ namespace CodexVBE
             return entries.Take(200).Select(e => new { e.Path, e.Caption, e.Id, e.Enabled }).ToArray();
         }
 
+        public object OpenObjectBrowser(VbeEditorWindows windows)
+        {
+            if (windows == null) throw new ArgumentNullException(nameof(windows));
+            object before = windows.Windows();
+            bool visibleBefore = HasVisibleObjectBrowser(before);
+            // Office's native Object Browser command is 473. The caption check
+            // also prevents executing an unrelated control with a reused ID.
+            var candidates = EnumerateCommands().Where(e => e.Id == 473 && e.Enabled &&
+                IsObjectBrowserCaption(e.Caption)).ToList();
+            if (candidates.Count == 0)
+                throw new InvalidOperationException("The VBE Object Browser command (Id 473) is absent or disabled.");
+            CommandEntry selected = candidates[0];
+            ((dynamic)selected.Control).Execute();
+            object after = windows.Windows();
+            bool visibleAfter = HasVisibleObjectBrowser(after);
+            return new { Executed = true, Control = selected.Path, ControlId = selected.Id,
+                AlreadyVisible = visibleBefore,
+                Verification = visibleAfter ? "Visible" : "Pending",
+                VerificationPending = !visibleAfter,
+                NextRead = visibleAfter ? null : "Call vbe_windows in a separate request; the VBE may open the browser after Execute returns.",
+                VerificationLimit = "Only the native Object Browser window is observed; its classes and members are not read structurally.",
+                WindowsBefore = before, WindowsAfter = after };
+        }
+
+        private static bool IsObjectBrowserCaption(string caption)
+        {
+            string name = (caption ?? "").Replace("&", "").Trim();
+            return name.IndexOf("Explorateur d'objets", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                name.IndexOf("Explorateur d’objets", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                name.IndexOf("Object Browser", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool HasVisibleObjectBrowser(object windowState)
+        {
+            foreach (dynamic item in ((dynamic)windowState).Windows)
+            {
+                var properties = (IDictionary<string, object>)item.Properties;
+                object type, visible;
+                if (properties.TryGetValue("Type", out type) && Convert.ToInt32(type) == 2 &&
+                    properties.TryGetValue("Visible", out visible) && Convert.ToBoolean(visible))
+                    return true;
+            }
+            return false;
+        }
+
         public object SelectCode(Request request)
         {
             dynamic project = GetProject(request.Project);

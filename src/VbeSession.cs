@@ -38,6 +38,8 @@ namespace CodexVBE
                     return Response.Success(editorWindows.Windows());
                 case "code_panes":
                     return Response.Success(editorWindows.CodePanes());
+                case "open_object_browser":
+                    return Response.Success(debugger.OpenObjectBrowser(editorWindows));
                 case "list_procedures":
                     return Response.Success(codeNavigation.Procedures(request.Project, request.Module));
                 case "find_code":
