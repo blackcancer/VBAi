@@ -76,6 +76,8 @@ Dans le même hôte Excel, la boîte `Outils > Références...` est une fenêtre
 
 Dans un autre `Classeur1` jetable, `add_reference_guid` a ajouté `{420B2830-E718-11CF-893D-00A0C9054228}` avec version demandée `0.0` : VBIDE a sélectionné **Scripting Runtime 1.0** depuis `C:\Windows\System32\scrrun.dll`, faisant passer la liste de quatre à cinq références. `remove_reference` a ciblé ce GUID et sa version exacte avec l'empreinte de liste lue après l'ajout ; la liste est revenue à quatre références et son SHA-256 est redevenu identique à celui du départ. Ce cycle ne valide pas encore `add_reference_file` ni les bibliothèques cassées.
 
+Un essai ultérieur dans Excel PID 40240 a validé `add_reference_file` sur le même `scrrun.dll` : cinq références avant, six après l'ajout, puis cinq après `remove_reference`. Le GUID, le nom `Scripting` et le chemin ont été relus ; l'empreinte finale de la collection est égale à l'empreinte initiale. La cinquième référence initiale est due au formulaire MSForms du classeur de test. Les références cassées restent à explorer.
+
 ## Prochaine exploration
 
 1. Lire les collections `Frame.Controls`, `MultiPage.Pages`, `Page.Controls` et `TabStrip.Tabs` depuis le complément dans Excel ; vérifier ajout, renommage, géométrie et suppression sur un classeur jetable, puis étendre la version récursive.
