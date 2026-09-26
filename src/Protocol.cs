@@ -30,6 +30,8 @@ namespace CodexVBE
         public int Major { get; set; }
         public int Minor { get; set; }
         public string ExpectedReferencesVersion { get; set; }
+        public string ParentPath { get; set; }
+        public string ExpectedTreeVersion { get; set; }
         public string NewName { get; set; }
         public string FontName { get; set; }
         public double FontSize { get; set; }

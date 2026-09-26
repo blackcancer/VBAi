@@ -73,6 +73,8 @@ namespace CodexVBE
                     return Response.Success(forms.Open(request.Project, request.Form));
                 case "add_form_control":
                     return Response.Success(forms.AddControl(request));
+                case "add_nested_form_control":
+                    return Response.Success(forms.AddNestedControl(request));
                 case "set_form_control_geometry":
                     return Response.Success(forms.SetControlGeometry(request));
                 case "rename_form_control":

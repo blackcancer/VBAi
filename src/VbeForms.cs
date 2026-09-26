@@ -648,6 +648,78 @@ namespace CodexVBE
             text.Append(number.ToString("R", CultureInfo.InvariantCulture)).Append('|');
         }
 
+        // Bridge-only probe until hierarchical identity and revision behavior are tested in Excel.
+        public object AddNestedControl(Request request)
+        {
+            ValidateName(request.Control, "Control");
+            ValidateGeometry(request);
+            if (!BuiltInControls.Contains(request.ControlType ?? string.Empty))
+                throw new ArgumentException("ControlType must be a built-in Microsoft Forms ProgID.");
+            if (string.IsNullOrWhiteSpace(request.ExpectedTreeVersion))
+                throw new ArgumentException("ExpectedTreeVersion is required from form_tree.");
+            dynamic form = GetForm(GetDesignProject(request.Project), request.Form);
+            dynamic before = Tree(request.Project, request.Form);
+            if (!string.Equals((string)before.TreeVersion, request.ExpectedTreeVersion,
+                StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The UserForm hierarchy changed since it was read.");
+            dynamic controls = ResolveNestedControls(form.Designer, request.ParentPath);
+            foreach (dynamic existing in controls)
+                if (string.Equals((string)existing.Name, request.Control, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("A control with this name already exists in the container.");
+            dynamic control = controls.Add(request.ControlType, request.Control, true);
+            try
+            {
+                control.Left = request.Left;
+                control.Top = request.Top;
+                control.Width = request.Width;
+                control.Height = request.Height;
+                if (request.Caption != null) control.Caption = request.Caption;
+            }
+            catch
+            {
+                try { controls.Remove(request.Control); } catch { }
+                throw;
+            }
+            dynamic after = Tree(request.Project, request.Form);
+            if (string.Equals((string)after.TreeVersion, request.ExpectedTreeVersion,
+                StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The nested control was not reflected in the UserForm tree.");
+            return after;
+        }
+
+        private static dynamic ResolveNestedControls(dynamic designer, string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException("ParentPath is required.");
+            string[] parts = path.Split('/');
+            if (parts.Length < 2 || parts.Length % 2 != 0 || parts[0] != "Controls" || parts.Length > 12)
+                throw new ArgumentException("ParentPath must start with Controls/<name> and use Controls or Pages segments.");
+            object current = designer;
+            for (int i = 0; i < parts.Length; i += 2)
+            {
+                string collectionName = parts[i];
+                string itemName = parts[i + 1];
+                if ((collectionName != "Controls" && collectionName != "Pages") ||
+                    !Regex.IsMatch(itemName, @"^[A-Za-z_][A-Za-z0-9_]*$"))
+                    throw new ArgumentException("ParentPath contains an invalid collection or name.");
+                PropertyDescriptor descriptor = TypeDescriptor.GetProperties(current).Find(collectionName, true);
+                if (descriptor == null)
+                    throw new InvalidOperationException("The path element has no " + collectionName + " collection.");
+                object collection = descriptor.GetValue(current);
+                object match = null;
+                foreach (dynamic candidate in (dynamic)collection)
+                    if (string.Equals((string)candidate.Name, itemName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (match != null) throw new InvalidOperationException("Ambiguous parent path element: " + itemName);
+                        match = candidate;
+                    }
+                if (match == null) throw new InvalidOperationException("Parent path element not found: " + itemName);
+                current = match;
+            }
+            PropertyDescriptor controls = TypeDescriptor.GetProperties(current).Find("Controls", true);
+            if (controls == null) throw new InvalidOperationException("The selected parent has no Controls collection.");
+            return controls.GetValue(current);
+        }
+
         private static void AppendVersionText(StringBuilder text, string value)
         {
             value = value ?? "";
