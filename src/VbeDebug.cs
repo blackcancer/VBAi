@@ -93,7 +93,13 @@ namespace CodexVBE
                 throw new InvalidOperationException("The requested VBE command was not found.");
             var selected = matches.FirstOrDefault(e => e.Enabled && IsAllowed(request.Action, e.Caption, mode)) ?? throw new InvalidOperationException("The requested VBE command is disabled.");
             dynamic control = selected.Control;
+            object before = State(request.Project);
             control.Execute();
+            object after = null;
+            string afterError = null;
+            try { after = State(request.Project); }
+            catch (Exception ex) { afterError = ex.Message; }
+            string evidence = DebugEffect(request.Action, before, after);
             return new
             {
                 request.Action,
@@ -101,7 +107,40 @@ namespace CodexVBE
                 request.Project,
                 request.Module,
                 Line = request.StartLine, Text = line,
-                ModeBefore = mode, Executed = true };
+                ModeBefore = mode, Executed = true,
+                Verification = evidence == null ? "Unverified" : "Verified",
+                Evidence = evidence,
+                VerificationLimit = request.Action == "toggle_breakpoint"
+                    ? "VBIDE exposes no breakpoint inventory through this command; toggle effect was not verified."
+                    : evidence == null ? "Immediate debug state did not prove an effect; read debug_state and native VBE windows again." : null,
+                StateBefore = before, StateAfter = after, StateAfterError = afterError };
+        }
+
+        private static string DebugEffect(string action, object before, object after)
+        {
+            if (after == null || action == "toggle_breakpoint") return null;
+            dynamic initial = before;
+            dynamic current = after;
+            int oldMode = (int)initial.Mode;
+            int newMode = (int)current.Mode;
+            if (oldMode != newMode)
+                return "Project mode changed from " + oldMode + " to " + newMode + ".";
+            if (action == "step_into" || action == "step_over" || action == "continue")
+            {
+                try
+                {
+                    int oldLine = (int)initial.Selection.StartLine;
+                    int newLine = (int)current.Selection.StartLine;
+                    string oldModule = (string)initial.ActiveModule;
+                    string newModule = (string)current.ActiveModule;
+                    if (oldLine != newLine ||
+                        !string.Equals(oldModule, newModule, StringComparison.OrdinalIgnoreCase))
+                        return "Active code location changed from " + oldModule + ":" + oldLine +
+                            " to " + newModule + ":" + newLine + ".";
+                }
+                catch { /* Selection may be unavailable in a native debug window. */ }
+            }
+            return null;
         }
 
         private static bool IsAllowed(string action, string caption, int mode)
