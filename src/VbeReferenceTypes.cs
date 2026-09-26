@@ -180,8 +180,17 @@ namespace CodexVBE
             {
                 fallbackError = Error(ex);
                 Guid guid = Guid.Parse(reference.Guid);
-                LoadRegTypeLib(ref guid, (ushort)reference.Major, (ushort)reference.Minor, 0,
-                    out library);
+                try
+                {
+                    LoadRegTypeLib(ref guid, (ushort)reference.Major, (ushort)reference.Minor, 0,
+                        out library);
+                }
+                catch (COMException registryError)
+                {
+                    throw new InvalidOperationException("Type library failed from selected file (HRESULT " +
+                        HResultHex(ex) + ") and registry (HRESULT " + HResultHex(registryError) + ").",
+                        registryError);
+                }
                 source = "RegisteredTypeLibrary: LoadRegTypeLib";
             }
             if (library == null) throw new InvalidOperationException("LoadTypeLibEx returned no library.");
@@ -302,8 +311,13 @@ namespace CodexVBE
         private static object Error(Exception error)
         {
             return new { Type = error.GetType().Name,
-                HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"),
+                HResult = HResultHex(error),
                 Message = error.Message };
+        }
+
+        private static string HResultHex(Exception error)
+        {
+            return "0x" + unchecked((uint)error.HResult).ToString("X8");
         }
 
         private sealed class ReferenceSource

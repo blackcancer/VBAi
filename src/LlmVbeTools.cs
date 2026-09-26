@@ -17,7 +17,7 @@ namespace CodexVBE
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
         private readonly List<string> userRequests = new List<string>();
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
-            "status", "read_user_file", "list_projects", "list_modules", "list_references", "read_module",
+            "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module",
             "project_properties", "component_properties", "component_property_value", "vbe_windows", "code_panes", "open_object_browser", "list_procedures", "find_code", "select_procedure", "list_forms",
             "form_state", "form_tree", "form_properties", "form_control_properties", "form_event_catalog",
             "list_form_control_types", "open_form"
@@ -38,6 +38,7 @@ namespace CodexVBE
                 properties[field] = field == "Value" ? (object)new { anyOf = new object[] {
                     new { type = "string" }, new { type = "number" }, new { type = "boolean" } } } :
                     new { type = field == "StartLine" || field == "Count" || field == "ExpectedMode" || field == "ProcKind" || field == "InsertIndex" ||
+                        field == "Offset" || field == "Limit" || field == "TypeIndex" ||
                         field == "Major" || field == "Minor" ? "integer" :
                     field == "Left" || field == "Top" || field == "Width" || field == "Height" || field == "FontSize" ? "number" :
                     field == "FontBold" || field == "WholeWord" || field == "MatchCase" || field == "PatternSearch" ? "boolean" : "string" };
@@ -92,6 +93,11 @@ namespace CodexVBE
                 "Project", "Module", "ExpectedComponentVersion", "Path"),
             Definition("list_references", "List the type-library references actually selected by one VBA project, including identity, version, path and broken status.",
                 new[] { "Project" }, "Project"),
+            Definition("list_reference_types", "Read one page of up to 50 COM types from a reference selected by the VBA project. Use the exact Guid, Major and Minor returned by list_references. Offset is zero-based; Limit defaults to 50. Returns TypeIndex and TypeIdentity for list_type_members, and records whether the type library came from the reference file or registry. VBAProject itself is outside this reference catalog.",
+                new[] { "Project", "Guid", "Major", "Minor" }, "Project", "Guid", "Major", "Minor", "Offset", "Limit"),
+            Definition("list_type_members", "Read one page of up to 50 raw COM functions and variables for a type from list_reference_types. Supply that type's TypeIndex and TypeIdentity with the exact selected reference. A coclass resolves its default non-source interface. COM accessors and hidden members are not filtered like the VBE Object Browser; this is read-only metadata, not a live object property read.",
+                new[] { "Project", "Guid", "Major", "Minor", "TypeIndex", "TypeIdentity" },
+                "Project", "Guid", "Major", "Minor", "TypeIndex", "TypeIdentity", "Offset", "Limit"),
             Definition("add_reference_guid", "Add a project type-library reference by exact GUID and requested major/minor version in design mode; requires the current references revision and VBE edit policy. Major=Minor=0 requests the latest installed version.",
                 new[] { "Project", "ExpectedReferencesVersion", "Guid", "Major", "Minor" },
                 "Project", "ExpectedReferencesVersion", "Guid", "Major", "Minor"),
