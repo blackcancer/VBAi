@@ -15,10 +15,11 @@ namespace CodexVBE
         private readonly VbeForms forms;
         private readonly VbeProjectComponents components;
         private readonly VbeEditorWindows editorWindows;
+        private readonly VbeCodeNavigation codeNavigation;
 
         public VbeSession(object vbe) { this.vbe = vbe; debugger = new VbeDebug(vbe);
             forms = new VbeForms(vbe); components = new VbeProjectComponents(vbe, forms);
-            editorWindows = new VbeEditorWindows(vbe); }
+            editorWindows = new VbeEditorWindows(vbe); codeNavigation = new VbeCodeNavigation(vbe); }
 
         public Response Execute(Request request)
         {
@@ -37,6 +38,12 @@ namespace CodexVBE
                     return Response.Success(editorWindows.Windows());
                 case "code_panes":
                     return Response.Success(editorWindows.CodePanes());
+                case "list_procedures":
+                    return Response.Success(codeNavigation.Procedures(request.Project, request.Module));
+                case "find_code":
+                    return Response.Success(codeNavigation.Find(request));
+                case "select_procedure":
+                    return Response.Success(codeNavigation.SelectProcedure(request, debugger));
                 case "project_properties":
                     return Response.Success(components.ProjectProperties(request.Project));
                 case "component_properties":

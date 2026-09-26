@@ -18,7 +18,7 @@ namespace CodexVBE
         private readonly List<string> userRequests = new List<string>();
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
             "status", "read_user_file", "list_projects", "list_modules", "list_references", "read_module",
-            "project_properties", "component_properties", "component_property_value", "vbe_windows", "code_panes", "list_forms",
+            "project_properties", "component_properties", "component_property_value", "vbe_windows", "code_panes", "list_procedures", "find_code", "select_procedure", "list_forms",
             "form_state", "form_tree", "form_properties", "form_control_properties",
             "list_form_control_types", "open_form"
         };
@@ -37,10 +37,10 @@ namespace CodexVBE
             foreach (string field in fields)
                 properties[field] = field == "Value" ? (object)new { anyOf = new object[] {
                     new { type = "string" }, new { type = "number" }, new { type = "boolean" } } } :
-                    new { type = field == "StartLine" || field == "Count" || field == "ExpectedMode" ||
+                    new { type = field == "StartLine" || field == "Count" || field == "ExpectedMode" || field == "ProcKind" ||
                         field == "Major" || field == "Minor" ? "integer" :
                     field == "Left" || field == "Top" || field == "Width" || field == "Height" || field == "FontSize" ? "number" :
-                    field == "FontBold" ? "boolean" : "string" };
+                    field == "FontBold" || field == "WholeWord" || field == "MatchCase" || field == "PatternSearch" ? "boolean" : "string" };
             return new { type = "function", function = new {
                 name, description,
                 parameters = new { type = "object", properties, required, additionalProperties = false }
@@ -55,6 +55,13 @@ namespace CodexVBE
             Definition("list_modules", "List modules in one VBA project.", new[] { "Project" }, "Project"),
             Definition("vbe_windows", "Read the native VBIDE Windows collection and the active window, including window type, visibility, state and position. Collection indexes are transient; no window is activated.", new string[0]),
             Definition("code_panes", "Read the already open VBIDE CodePanes collection and active code pane, with project/module, view, visible range and selection. Does not create or activate a pane.", new string[0]),
+            Definition("list_procedures", "List Sub, Function and Property Get/Let/Set procedures from CodeModule without opening a code pane; returns exact VBIDE line ranges and module SHA-256.",
+                new[] { "Project", "Module" }, "Project", "Module"),
+            Definition("find_code", "Search code in one module or all modules of a project through CodeModule.Find without opening a pane. Returns up to 200 locations and source SHA-256 values. MatchCase and PatternSearch cannot both be true.",
+                new[] { "Project", "Query" }, "Project", "Module", "Query", "WholeWord", "MatchCase", "PatternSearch"),
+            Definition("select_procedure", "Navigate the VBE to a procedure declaration using an exact project/module/name/ProcKind and a current ExpectedSha256. ProcKind: 0 Sub or Function, 1 Property Let, 2 Property Set, 3 Property Get. Changes only UI selection, not code.",
+                new[] { "Project", "Module", "Procedure", "ProcKind", "ExpectedSha256" },
+                "Project", "Module", "Procedure", "ProcKind", "ExpectedSha256"),
             Definition("project_properties", "Read all exposed VBProject properties, component identities and a project revision.",
                 new[] { "Project" }, "Project"),
             Definition("component_properties", "Read all exposed VBComponent and designer properties, code SHA-256, and a component revision. Works for document, standard, class and form components when VBIDE allows access.",
