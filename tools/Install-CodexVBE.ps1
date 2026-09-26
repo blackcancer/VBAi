@@ -3,7 +3,8 @@ param([switch] $Direct)
 $ErrorActionPreference = 'Stop'
 
 if ($env:CODEX_SHELL -eq '1' -and -not $Direct) {
-    & (Join-Path $PSScriptRoot 'Invoke-CodexVBE-OutsideSandbox.ps1') -Action Install
+    $expectedAssembly = Join-Path (Split-Path -Parent $PSScriptRoot) 'bin\Debug\net48\CodexVBE.dll'
+    & (Join-Path $PSScriptRoot 'Invoke-CodexVBE-OutsideSandbox.ps1') -Action Install -ExpectedAssemblyPath $expectedAssembly
     return
 }
 
