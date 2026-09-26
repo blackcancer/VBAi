@@ -18,7 +18,7 @@ namespace CodexVBE
         private readonly List<string> userRequests = new List<string>();
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
             "status", "read_user_file", "list_projects", "list_modules", "list_references", "read_module",
-            "project_properties", "component_properties", "component_property_value", "list_forms",
+            "project_properties", "component_properties", "component_property_value", "vbe_windows", "code_panes", "list_forms",
             "form_state", "form_tree", "form_properties", "form_control_properties",
             "list_form_control_types", "open_form"
         };
@@ -53,6 +53,8 @@ namespace CodexVBE
                 new[] { "Path" }, "Path"),
             Definition("list_projects", "List open VBA projects and their modes.", new string[0]),
             Definition("list_modules", "List modules in one VBA project.", new[] { "Project" }, "Project"),
+            Definition("vbe_windows", "Read the native VBIDE Windows collection and the active window, including window type, visibility, position and docking state. Collection indexes are transient; no window is activated.", new string[0]),
+            Definition("code_panes", "Read the already open VBIDE CodePanes collection and active code pane, with project/module, view, visible range and selection. Does not create or activate a pane.", new string[0]),
             Definition("project_properties", "Read all exposed VBProject properties, component identities and a project revision.",
                 new[] { "Project" }, "Project"),
             Definition("component_properties", "Read all exposed VBComponent and designer properties, code SHA-256, and a component revision. Works for document, standard, class and form components when VBIDE allows access.",

@@ -14,9 +14,11 @@ namespace CodexVBE
         private readonly VbeDebug debugger;
         private readonly VbeForms forms;
         private readonly VbeProjectComponents components;
+        private readonly VbeEditorWindows editorWindows;
 
         public VbeSession(object vbe) { this.vbe = vbe; debugger = new VbeDebug(vbe);
-            forms = new VbeForms(vbe); components = new VbeProjectComponents(vbe, forms); }
+            forms = new VbeForms(vbe); components = new VbeProjectComponents(vbe, forms);
+            editorWindows = new VbeEditorWindows(vbe); }
 
         public Response Execute(Request request)
         {
@@ -31,6 +33,10 @@ namespace CodexVBE
                     return Response.Success(ListProjects());
                 case "list_modules":
                     return Response.Success(ListModules(request.Project));
+                case "vbe_windows":
+                    return Response.Success(editorWindows.Windows());
+                case "code_panes":
+                    return Response.Success(editorWindows.CodePanes());
                 case "project_properties":
                     return Response.Success(components.ProjectProperties(request.Project));
                 case "component_properties":
