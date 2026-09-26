@@ -31,6 +31,8 @@ Le 26 septembre 2026, dans Excel 64 bits (PID 31488), une sonde chargée dans le
 
 ## Inventaire des propriétés de contrôle
 
+Un nouvel essai Excel visible (PID 40240) a placé les 14 contrôles standard sur `CodexAllControlProperties` et exporté **771 descripteurs** dans [excel-control-properties.csv](excel-control-properties.csv). La sonde reproductible est `tools/probes/Export-ControlProperties.ps1`. Chaque ligne contient le type de contrôle, son ProgID, le nom et le type de la propriété, `ReadOnly`, la valeur lisible et une éventuelle erreur. Les nombres de propriétés par type vont de 36 (SpinButton) à 86 (ComboBox). Les onze erreurs de lecture portent toutes sur `_Font_Reserved` (`0x80020003`). Cet export est un inventaire de lecture sur cet hôte Excel ; `ReadOnly=False` n'établit pas encore qu'une écriture soit acceptée par le VBE. La boîte à outils peut aussi accueillir des contrôles ActiveX supplémentaires, qui devront être découverts et inspectés dynamiquement.
+
 Dans des classeurs Excel jetables, `TypeDescriptor.GetProperties` sur les objets COM du concepteur a retourné les résultats suivants. Les 14 ProgID sont acceptés par `add_form_control` et ont été relus via `form_control_properties` dans le VBE Excel vivant. « Modifiables » signifie seulement que le descripteur ne porte pas `IsReadOnly` ; cela ne prouve pas que toute écriture soit sûre.
 
 | Contrôle `Forms.*.1` | Propriétés | Descripteurs modifiables | `Caption` | `Value` | `Picture` |
@@ -73,6 +75,8 @@ La même branche a permis de modifier et relire `Caption`, `Width`, `Height`, `S
 Dans le même hôte Excel, la boîte `Outils > Références...` est une fenêtre `#32770` avec une `ListBox` native dessinée par le VBE. Les messages de lecture Win32 donnent 651 noms **disponibles**, mais UI Automation n'expose aucun enfant de cette liste et ne donne donc pas l'état coché. La commande `list_references` exécutée dans le complément lit directement `VBProject.References` : le projet `VBAProject` jetable a quatre références sélectionnées (`VBA` 4.2, `Excel` 1.9, `stdole` 2.0, `Office` 2.8), toutes non cassées, avec GUID et chemin absolu. C'est la source à utiliser pour les commandes futures d'ajout, de retrait et de résolution.
 
 Dans un autre `Classeur1` jetable, `add_reference_guid` a ajouté `{420B2830-E718-11CF-893D-00A0C9054228}` avec version demandée `0.0` : VBIDE a sélectionné **Scripting Runtime 1.0** depuis `C:\Windows\System32\scrrun.dll`, faisant passer la liste de quatre à cinq références. `remove_reference` a ciblé ce GUID et sa version exacte avec l'empreinte de liste lue après l'ajout ; la liste est revenue à quatre références et son SHA-256 est redevenu identique à celui du départ. Ce cycle ne valide pas encore `add_reference_file` ni les bibliothèques cassées.
+
+Un essai ultérieur dans Excel PID 40240 a validé `add_reference_file` sur le même `scrrun.dll` : cinq références avant, six après l'ajout, puis cinq après `remove_reference`. Le GUID, le nom `Scripting` et le chemin ont été relus ; l'empreinte finale de la collection est égale à l'empreinte initiale. La cinquième référence initiale est due au formulaire MSForms du classeur de test. Les références cassées restent à explorer.
 
 ## Prochaine exploration
 
