@@ -44,7 +44,7 @@ namespace CodexVBE
                 case "set_component_property":
                     return Response.Success(components.SetComponentProperty(request));
                 case "rename_project":
-                    return Response.Success(components.RenameProject(request));
+                    return Response.Failure("Project rename is disabled: it correlated with an Excel process crash during validation.");
                 case "rename_component":
                     return Response.Success(components.RenameComponent(request));
                 case "remove_component":

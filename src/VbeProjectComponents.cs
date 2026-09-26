@@ -150,10 +150,10 @@ namespace CodexVBE
 
         public object SetProjectProperty(Request request)
         {
+            if (string.Equals(request.Property, "Name", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Project rename is disabled: it correlated with an Excel process crash during validation.");
             dynamic project = GetDesignProject(request.Project);
             AssertProjectVersion(request, project);
-            if (string.Equals(request.Property, "Name", StringComparison.OrdinalIgnoreCase))
-                ValidateIdentifier(request.Value as string);
             SetScalar((object)project, request.Property, request.Value);
             return ProjectProperties((string)project.Name);
         }
@@ -167,21 +167,6 @@ namespace CodexVBE
                 ValidateIdentifier(request.Value as string);
             SetScalar((object)component, request.Property, request.Value);
             return ComponentSnapshot(request.Project, component);
-        }
-
-        public object RenameProject(Request request)
-        {
-            ValidateIdentifier(request.NewName);
-            dynamic project = GetDesignProject(request.Project);
-            AssertProjectVersion(request, project);
-            foreach (dynamic existing in vbe.VBProjects)
-                if (!string.Equals((string)existing.Name, request.Project, StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals((string)existing.Name, request.NewName, StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidOperationException("A project with this name already exists.");
-            project.Name = request.NewName;
-            if (!string.Equals((string)project.Name, request.NewName, StringComparison.Ordinal))
-                throw new InvalidOperationException("The VBE did not retain the requested project name.");
-            return ProjectProperties(request.NewName);
         }
 
         public object RenameComponent(Request request)
