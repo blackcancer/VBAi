@@ -18,7 +18,7 @@ namespace CodexVBE
         private readonly string key;
         private readonly LlmProvider provider;
 
-        public LlmChatClient(LlmProvider provider, LlmSettings settings)
+        public LlmChatClient(LlmProvider provider, LlmSettings settings, string selectedModel)
         {
             if (provider == null || !provider.Available || provider.IsCodex || settings == null)
                 throw new InvalidOperationException("Ce fournisseur n'est pas encore implémenté.");
@@ -28,13 +28,62 @@ namespace CodexVBE
             if (endpoint.Scheme != Uri.UriSchemeHttps &&
                 !(endpoint.Scheme == Uri.UriSchemeHttp && endpoint.IsLoopback))
                 throw new InvalidOperationException("The LLM endpoint must use HTTPS (or HTTP on localhost).");
-            model = settings.ResolveModel(provider);
+            model = selectedModel;
+            if (string.IsNullOrWhiteSpace(model))
+                throw new InvalidOperationException("Sélectionnez un modèle dans la conversation.");
             key = provider.Local ? null : settings.GetOpenAiKey();
             if (string.IsNullOrWhiteSpace(key) && !provider.Local)
                 throw new InvalidOperationException("Configurez la clé OpenAI API dans les paramètres CodexVBE.");
         }
 
         public string DisplayName { get { return model + " @ " + endpoint.Host; } }
+
+        public static async Task<LlmModelOption[]> ListModelsAsync(LlmProvider provider, LlmSettings settings)
+        {
+            if (provider == null || !provider.Available || provider.IsCodex)
+                throw new InvalidOperationException("Catalogue de modèles indisponible pour ce fournisseur.");
+            var chatEndpoint = new Uri(settings.ResolveEndpoint(provider), UriKind.Absolute);
+            if (chatEndpoint.Scheme != Uri.UriSchemeHttps &&
+                !(chatEndpoint.Scheme == Uri.UriSchemeHttp && chatEndpoint.IsLoopback))
+                throw new InvalidOperationException("L'URL doit utiliser HTTPS, ou HTTP sur localhost.");
+            // OpenAI-compatible chat endpoints expose /models next to /chat/completions.
+            Uri catalogue = provider.Local
+                ? new Uri(chatEndpoint.GetLeftPart(UriPartial.Authority) + "/api/tags")
+                : new Uri(chatEndpoint.AbsoluteUri.Replace("/chat/completions", "/models"));
+            using (var client = new HttpClient { Timeout = TimeSpan.FromSeconds(20) })
+            using (var request = new HttpRequestMessage(HttpMethod.Get, catalogue))
+            {
+                if (!provider.Local)
+                {
+                    string key = settings.GetOpenAiKey();
+                    if (string.IsNullOrWhiteSpace(key))
+                        throw new InvalidOperationException("Configurez la clé OpenAI API pour charger les modèles.");
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+                }
+                using (var response = await client.SendAsync(request).ConfigureAwait(false))
+                {
+                    string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    if (!response.IsSuccessStatusCode)
+                        throw new InvalidOperationException("Catalogue HTTP " + (int)response.StatusCode + ": " +
+                            body.Substring(0, Math.Min(body.Length, 300)));
+                    var root = new JavaScriptSerializer().DeserializeObject(body) as IDictionary<string, object>;
+                    object raw;
+                    var data = root != null && root.TryGetValue(provider.Local ? "models" : "data", out raw)
+                        ? raw as object[] : null;
+                    if (data == null) throw new InvalidOperationException("Le fournisseur n'a pas fourni de liste de modèles.");
+                    var models = new List<LlmModelOption>();
+                    foreach (var entry in data)
+                    {
+                        var item = entry as IDictionary<string, object>;
+                        if (item == null) continue;
+                        string field = provider.Local ? "name" : "id";
+                        string id = item.ContainsKey(field) ? Convert.ToString(item[field]) : null;
+                        if (!string.IsNullOrWhiteSpace(id)) models.Add(new LlmModelOption(id, id));
+                    }
+                    return models.ToArray();
+                }
+            }
+        }
 
         public async Task<IDictionary<string, object>> CompleteAsync(IList<object> messages, object[] tools)
         {

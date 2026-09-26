@@ -36,7 +36,32 @@ namespace CodexVBE
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
-        public async Task<string> TurnAsync(string prompt)
+        public async Task<LlmModelOption[]> ListModelsAsync()
+        {
+            if (process == null) await StartAsync();
+            var result = new List<LlmModelOption>();
+            string cursor = null;
+            do
+            {
+                var response = await RequestAsync("model/list", new { limit = 100, cursor, includeHidden = false });
+                var body = GetObject(response, "result");
+                object raw;
+                var data = body != null && body.TryGetValue("data", out raw) ? raw as object[] : null;
+                if (data == null) throw new InvalidOperationException("Codex n'a pas fourni son catalogue de modèles.");
+                foreach (var entry in data)
+                {
+                    var item = entry as IDictionary<string, object>;
+                    string id = GetString(item, "model");
+                    if (!string.IsNullOrWhiteSpace(id))
+                        result.Add(new LlmModelOption(id, GetString(item, "displayName"),
+                            GetString(item, "isDefault") == "True"));
+                }
+                cursor = GetString(body, "nextCursor");
+            } while (!string.IsNullOrWhiteSpace(cursor));
+            return result.ToArray();
+        }
+
+        public async Task<string> TurnAsync(string prompt, string model)
         {
             if (string.IsNullOrWhiteSpace(prompt)) throw new ArgumentException("A prompt is required.");
             if (turnDone != null) throw new InvalidOperationException("A Codex turn is already running.");
@@ -47,6 +72,7 @@ namespace CodexVBE
             {
                 await RequestAsync("turn/start", new {
                     threadId,
+                    model,
                     input = new[] { new { type = "text", text = prompt } }
                 });
                 return await turnDone.Task;
@@ -114,7 +140,6 @@ namespace CodexVBE
                 progress("Codex : ouverture de la conversation VBE");
                 var started = await RequestAsync("thread/start", new {
                     ephemeral = true,
-                    model = string.IsNullOrWhiteSpace(settings.CodexModel) ? null : settings.CodexModel,
                     cwd = Path.GetTempPath(),
                     sandbox = "read-only",
                     approvalPolicy = "never",

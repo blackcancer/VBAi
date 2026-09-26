@@ -60,6 +60,18 @@ namespace CodexVBE
             return value;
         }
 
+        public string GetSelectedModel(LlmProvider provider)
+        {
+            return provider.IsCodex ? CodexModel : provider.Name == "OpenAI API" ? OpenAiModel : OllamaModel;
+        }
+
+        public void SetSelectedModel(LlmProvider provider, string model)
+        {
+            if (provider.IsCodex) CodexModel = model;
+            else if (provider.Name == "OpenAI API") OpenAiModel = model;
+            else if (provider.Name == "Ollama") OllamaModel = model;
+        }
+
         public string ResolveEndpoint(LlmProvider provider)
         {
             string value = provider.Name == "OpenAI API" ? OpenAiEndpoint : OllamaEndpoint;

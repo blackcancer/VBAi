@@ -6,14 +6,14 @@ Cette première tranche ajoute une fenêtre de conversation WinForms au complém
 
 | Choix dans la fenêtre | État | Configuration avant lancement d'Excel ou SOLIDWORKS |
 | --- | --- | --- |
-| Codex (par défaut) | Implémenté via `codex app-server` local et l'authentification ChatGPT déjà gérée par le CLI | CLI Codex connecté à ChatGPT ; modèle optionnel dans la fenêtre Configuration. Aucune clé API requise. |
-| OpenAI API | Implémenté via Chat Completions | Modèle et clé dans la fenêtre Configuration ; variables `OPENAI_API_KEY`, `CODEXVBE_OPENAI_MODEL`, `CODEXVBE_OPENAI_ENDPOINT` utilisées seulement comme valeurs de secours. |
-| Ollama | Implémenté via son endpoint compatible Chat Completions | Modèle et URL dans la fenêtre Configuration ; défaut `http://localhost:11434/v1/chat/completions`. |
+| Codex (par défaut) | Implémenté via `codex app-server` local et l'authentification ChatGPT déjà gérée par le CLI | État ChatGPT et bouton de connexion dans Configuration ; aucune clé API requise. |
+| OpenAI API | Implémenté via Chat Completions | Clé et URL dans Configuration ; `OPENAI_API_KEY` et `CODEXVBE_OPENAI_ENDPOINT` restent des valeurs de secours. |
+| Ollama | Implémenté via son endpoint compatible Chat Completions | URL dans Configuration ; défaut `http://localhost:11434/v1/chat/completions`. |
 | Claude | À venir | L'API et l'authentification Claude ne sont pas implémentées. |
 | GitHub Copilot | À venir | L'authentification et l'API Copilot ne sont pas implémentées. |
 | Gemini | À venir | L'API et l'authentification Gemini ne sont pas implémentées. |
 
-Les URL distantes doivent utiliser HTTPS ; seul HTTP sur une adresse de boucle locale est accepté. Les réglages non secrets sont enregistrés pour l'utilisateur Windows dans `%APPDATA%\CodexVBE\settings.json`. Une éventuelle clé OpenAI API y est stockée uniquement sous forme chiffrée DPAPI `CurrentUser`, jamais dans le dépôt. Codex ne lit, ne copie et ne stocke aucun jeton OAuth : seul le processus `codex app-server` gère la connexion ChatGPT existante. Changer de fournisseur efface l'historique affiché et le contexte transmis au modèle. Un modèle Ollama doit lui-même prendre en charge les appels d'outils pour piloter le VBE.
+Les URL distantes doivent utiliser HTTPS ; seul HTTP sur une adresse de boucle locale est accepté. Les réglages non secrets sont enregistrés pour l'utilisateur Windows dans `%APPDATA%\CodexVBE\settings.json`. Une éventuelle clé OpenAI API y est stockée uniquement sous forme chiffrée DPAPI `CurrentUser`, jamais dans le dépôt. Codex ne lit, ne copie et ne stocke aucun jeton OAuth : seul le processus `codex app-server` gère la connexion ChatGPT existante. La liste des modèles vient du fournisseur actif (`model/list`, `/v1/models` ou `/api/tags`) ; le choix persiste par fournisseur et s'applique au prochain message. Changer de fournisseur efface l'historique affiché et le contexte transmis au modèle. Un modèle Ollama doit lui-même prendre en charge les appels d'outils pour piloter le VBE. Le catalogue OpenAI peut inclure des modèles qui ne prennent pas en charge Chat Completions ou les outils ; l'API signale ce cas lors de l'envoi.
 
 Le client Codex initialise app-server par JSONL sur stdin/stdout, vérifie `account/read` avec `type: chatgpt`, crée un thread éphémère en mode lecture seule, puis transmet les commandes VBE comme `dynamicTools` (API expérimentale). Les appels `item/tool/call` retournent les résultats de `VbeSession` ; les demandes d'édition passent par la même validation visuelle que pour les autres fournisseurs. Un éventuel appel serveur inconnu reçoit une erreur explicite. Le choix de Codex ne passe pas par l'API OpenAI payante.
 
