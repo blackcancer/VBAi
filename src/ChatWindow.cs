@@ -16,6 +16,7 @@ namespace CodexVBE
         private readonly Label status;
         private readonly ComboBox providerPicker;
         private readonly ComboBox modelPicker;
+        private readonly ComboBox effortPicker;
         private readonly Button refreshModels;
         private readonly Button configure;
         private readonly LlmSettings settings;
@@ -29,44 +30,69 @@ namespace CodexVBE
         public ChatWindow(VbeSession session)
         {
             Text = "CodexVBE — Assistant";
-            Width = 620;
-            Height = 720;
-            MinimumSize = new Size(420, 400);
+            Width = 760;
+            Height = 700;
+            MinimumSize = new Size(650, 470);
             StartPosition = FormStartPosition.CenterScreen;
             ShowInTaskbar = true;
             Font = new Font("Segoe UI", 9F);
+            AutoScaleMode = AutoScaleMode.Dpi;
 
             transcript = new TextBox { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical,
-                Dock = DockStyle.Fill, BackColor = Color.White, Font = new Font("Consolas", 9F) };
+                Dock = DockStyle.Fill, BackColor = Color.White, Font = new Font("Segoe UI", 9.5F),
+                BorderStyle = BorderStyle.FixedSingle, Margin = new Padding(4, 3, 4, 8) };
             prompt = new TextBox { Multiline = true, ScrollBars = ScrollBars.Vertical,
-                Dock = DockStyle.Fill, Height = 100 };
-            send = new Button { Text = "Envoyer", Dock = DockStyle.Right, Width = 100 };
-            status = new Label { Text = "Modèle non configuré ou prêt à répondre", Dock = DockStyle.Top,
-                Height = 25, AutoEllipsis = true };
-            providerPicker = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
+                Dock = DockStyle.Fill, Margin = new Padding(4, 3, 4, 4) };
+            send = new Button { Text = "Envoyer", Dock = DockStyle.Fill, Margin = new Padding(5, 4, 0, 4) };
+            status = new Label { Text = "Chargement…", Dock = DockStyle.Fill, AutoEllipsis = true,
+                TextAlign = ContentAlignment.MiddleLeft, Margin = new Padding(4, 0, 0, 0) };
+            providerPicker = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList,
+                Margin = new Padding(4, 8, 10, 4) };
             providerPicker.Items.AddRange(LlmProvider.All);
-            modelPicker = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
-            refreshModels = new Button { Text = "Actualiser", Dock = DockStyle.Right, Width = 90 };
-            configure = new Button { Text = "Configuration…", Dock = DockStyle.Right, Width = 130 };
-            var toolbar = new TableLayoutPanel { Dock = DockStyle.Top, Height = 34, ColumnCount = 2, RowCount = 1 };
-            toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 145));
-            toolbar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            var providerRow = new Panel { Dock = DockStyle.Fill };
-            providerRow.Controls.Add(providerPicker);
-            providerRow.Controls.Add(configure);
-            var modelRow = new Panel { Dock = DockStyle.Bottom, Height = 34 };
-            modelRow.Controls.Add(modelPicker);
-            modelRow.Controls.Add(refreshModels);
-            toolbar.Controls.Add(new Label { Text = "Fournisseur", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft }, 0, 0);
-            toolbar.Controls.Add(providerRow, 1, 0);
-            var composer = new Panel { Dock = DockStyle.Bottom, Height = 110 };
-            composer.Controls.Add(prompt);
-            composer.Controls.Add(send);
-            Controls.Add(transcript);
-            Controls.Add(modelRow);
-            Controls.Add(composer);
-            Controls.Add(status);
-            Controls.Add(toolbar);
+            modelPicker = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList,
+                Margin = new Padding(4, 7, 8, 4) };
+            effortPicker = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList,
+                Margin = new Padding(4, 7, 8, 4), Enabled = false };
+            refreshModels = new Button { Text = "Actualiser", Dock = DockStyle.Fill, Margin = new Padding(3, 4, 3, 4) };
+            configure = new Button { Text = "Configuration…", Dock = DockStyle.Fill, Margin = new Padding(0, 5, 0, 5) };
+
+            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(12),
+                ColumnCount = 1, RowCount = 5 };
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 96));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 46));
+            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 27));
+            var header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1 };
+            header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85));
+            header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 132));
+            header.Controls.Add(new Label { Text = "Fournisseur", Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft }, 0, 0);
+            header.Controls.Add(providerPicker, 1, 0);
+            header.Controls.Add(configure, 2, 0);
+            var actions = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 6, RowCount = 1 };
+            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 52));
+            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 95));
+            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
+            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 87));
+            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 86));
+            actions.Controls.Add(new Label { Text = "Modèle", Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft }, 0, 0);
+            actions.Controls.Add(modelPicker, 1, 0);
+            actions.Controls.Add(new Label { Text = "Raisonnement", Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft }, 2, 0);
+            actions.Controls.Add(effortPicker, 3, 0);
+            actions.Controls.Add(refreshModels, 4, 0);
+            actions.Controls.Add(send, 5, 0);
+            layout.Controls.Add(header, 0, 0);
+            layout.Controls.Add(transcript, 0, 1);
+            layout.Controls.Add(prompt, 0, 2);
+            layout.Controls.Add(actions, 0, 3);
+            layout.Controls.Add(status, 0, 4);
+            Controls.Add(layout);
 
             tools = new LlmVbeTools(session, this);
             try { settings = LlmSettings.Load(); }
@@ -81,9 +107,31 @@ namespace CodexVBE
                 var selectedProvider = providerPicker.SelectedItem as LlmProvider;
                 if (selectedModel == null || selectedProvider == null) return;
                 settings.SetSelectedModel(selectedProvider, selectedModel.Id);
+                UpdateEfforts(selectedProvider, selectedModel);
                 try { settings.Save(); } catch (Exception ex) { LoadLog.Write("Model selection save failed: " + ex.Message); }
             };
+            effortPicker.SelectedIndexChanged += (sender, args) => {
+                var selectedProvider = providerPicker.SelectedItem as LlmProvider;
+                var selectedModel = modelPicker.SelectedItem as LlmModelOption;
+                var selectedEffort = effortPicker.SelectedItem as LlmEffortOption;
+                if (selectedProvider == null || selectedModel == null || selectedEffort == null) return;
+                settings.SetReasoningEffort(selectedProvider, selectedModel.Id, selectedEffort.Id);
+                try { settings.Save(); } catch (Exception ex) { LoadLog.Write("Reasoning effort save failed: " + ex.Message); }
+            };
             send.Click += async (sender, args) => await SendAsync();
+        }
+
+        private void UpdateEfforts(LlmProvider provider, LlmModelOption model)
+        {
+            effortPicker.Items.Clear();
+            effortPicker.Enabled = false;
+            if (!provider.IsCodex || model.Efforts.Length == 0) return;
+            effortPicker.Items.AddRange(model.Efforts);
+            string selected = settings.GetReasoningEffort(provider, model.Id);
+            int index = Array.FindIndex(model.Efforts, item => item.Id == selected);
+            if (index < 0) index = Array.FindIndex(model.Efforts, item => item.Id == model.DefaultEffort);
+            effortPicker.SelectedIndex = index < 0 ? 0 : index;
+            effortPicker.Enabled = !busy;
         }
 
         private void ResetConversation()
@@ -109,6 +157,8 @@ namespace CodexVBE
             var provider = providerPicker.SelectedItem as LlmProvider;
             modelPicker.Items.Clear();
             modelPicker.Enabled = false;
+            effortPicker.Items.Clear();
+            effortPicker.Enabled = false;
             refreshModels.Enabled = false;
             if (provider == null || !provider.Available) { refreshModels.Enabled = true; return; }
             try
@@ -150,12 +200,23 @@ namespace CodexVBE
         public void ShowSettings()
         {
             if (busy) return;
+            string previousProvider = settings.ProviderName;
+            string previousOpenAiEndpoint = settings.OpenAiEndpoint;
+            string previousOllamaEndpoint = settings.OllamaEndpoint;
+            string previousKey = settings.EncryptedOpenAiKey;
             using (var dialog = new LlmSettingsWindow(settings))
             {
                 if (dialog.ShowDialog(this) != DialogResult.OK) return;
                 int selected = Array.FindIndex(LlmProvider.All, item => item.Name == settings.ProviderName);
                 if (selected >= 0 && providerPicker.SelectedIndex != selected) providerPicker.SelectedIndex = selected;
-                else { ResetConversation(); _ = LoadModelsAsync(); }
+                else
+                {
+                    bool connectionChanged = previousProvider != settings.ProviderName ||
+                        previousOpenAiEndpoint != settings.OpenAiEndpoint ||
+                        previousOllamaEndpoint != settings.OllamaEndpoint || previousKey != settings.EncryptedOpenAiKey;
+                    if (connectionChanged) ResetConversation();
+                    _ = LoadModelsAsync();
+                }
             }
         }
 
@@ -176,10 +237,12 @@ namespace CodexVBE
             if (busy || question.Length == 0) return;
             var selectedModel = modelPicker.SelectedItem as LlmModelOption;
             if (selectedModel == null) { SetStatus("Choisissez un modèle disponible avant d'envoyer."); return; }
+            var selectedEffort = effortPicker.SelectedItem as LlmEffortOption;
             busy = true;
             send.Enabled = false;
             providerPicker.Enabled = false;
             modelPicker.Enabled = false;
+            effortPicker.Enabled = false;
             refreshModels.Enabled = false;
             configure.Enabled = false;
             prompt.Clear();
@@ -198,7 +261,8 @@ namespace CodexVBE
                         codex = new CodexAppServerClient(SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext(),
                             tools, SetStatus, settings);
                     SetStatus("Codex — en cours");
-                    Append("Assistant", await codex.TurnAsync(question, selectedModel.Id));
+                    Append("Assistant", await codex.TurnAsync(question, selectedModel.Id,
+                        selectedEffort == null ? null : selectedEffort.Id));
                     SetStatus("Codex — prêt");
                     return;
                 }
@@ -245,7 +309,9 @@ namespace CodexVBE
             {
                 busy = false;
                 if (!IsDisposed) { send.Enabled = true; providerPicker.Enabled = true;
-                    modelPicker.Enabled = modelPicker.Items.Count > 0; refreshModels.Enabled = true; configure.Enabled = true; }
+                    modelPicker.Enabled = modelPicker.Items.Count > 0;
+                    effortPicker.Enabled = effortPicker.Items.Count > 0;
+                    refreshModels.Enabled = true; configure.Enabled = true; }
             }
         }
 

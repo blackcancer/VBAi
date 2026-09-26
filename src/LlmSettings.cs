@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -15,6 +16,7 @@ namespace CodexVBE
         public string OpenAiEndpoint { get; set; }
         public string OllamaEndpoint { get; set; }
         public string EncryptedOpenAiKey { get; set; }
+        public Dictionary<string, string> ReasoningEfforts { get; set; } = new Dictionary<string, string>();
 
         private static string FilePath { get {
             return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -70,6 +72,19 @@ namespace CodexVBE
             if (provider.IsCodex) CodexModel = model;
             else if (provider.Name == "OpenAI API") OpenAiModel = model;
             else if (provider.Name == "Ollama") OllamaModel = model;
+        }
+
+        public string GetReasoningEffort(LlmProvider provider, string model)
+        {
+            string value;
+            return ReasoningEfforts != null && ReasoningEfforts.TryGetValue(provider.Name + ":" + model, out value)
+                ? value : null;
+        }
+
+        public void SetReasoningEffort(LlmProvider provider, string model, string effort)
+        {
+            if (ReasoningEfforts == null) ReasoningEfforts = new Dictionary<string, string>();
+            ReasoningEfforts[provider.Name + ":" + model] = effort;
         }
 
         public string ResolveEndpoint(LlmProvider provider)

@@ -8,7 +8,8 @@ namespace CodexVBE
     {
         private readonly ComboBox provider = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Dock = DockStyle.Fill };
         private readonly Label codexStatus = new Label { Dock = DockStyle.Fill, Text = "Vérification de ChatGPT…", AutoEllipsis = true };
-        private readonly Button codexLogin = new Button { Dock = DockStyle.Left, Text = "Se connecter à ChatGPT", Width = 180 };
+        private readonly Button codexLogin = new Button { Text = "Se connecter à ChatGPT", Width = 185 };
+        private readonly Button codexRefresh = new Button { Text = "Actualiser l'état", Width = 130 };
         private readonly TextBox openAiEndpoint = new TextBox { Dock = DockStyle.Fill };
         private readonly TextBox ollamaEndpoint = new TextBox { Dock = DockStyle.Fill };
         private readonly TextBox openAiKey = new TextBox { Dock = DockStyle.Fill, UseSystemPasswordChar = true };
@@ -20,12 +21,15 @@ namespace CodexVBE
         {
             this.settings = settings;
             Text = "CodexVBE — Configuration LLM";
-            Width = 650;
-            Height = 460;
-            MinimumSize = new Size(560, 420);
+            Width = 640;
+            Height = 270;
+            MinimumSize = new Size(560, 235);
             StartPosition = FormStartPosition.CenterParent;
             ShowInTaskbar = false;
             Font = new Font("Segoe UI", 9F);
+            AutoScaleMode = AutoScaleMode.Dpi;
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
             provider.Items.AddRange(LlmProvider.All);
             int current = Array.FindIndex(LlmProvider.All, item => item.Name == settings.ProviderName);
             provider.SelectedIndex = current < 0 ? 0 : current;
@@ -38,7 +42,10 @@ namespace CodexVBE
             grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             AddRow(grid, 0, "Fournisseur", provider);
             AddRow(grid, 1, "Compte ChatGPT", codexStatus);
-            AddRow(grid, 2, "Authentification", codexLogin);
+            var codexActions = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false, Margin = new Padding(0) };
+            codexActions.Controls.Add(codexLogin);
+            codexActions.Controls.Add(codexRefresh);
+            AddRow(grid, 2, "Authentification", codexActions);
             AddRow(grid, 3, "URL OpenAI (facultatif)", openAiEndpoint);
             AddRow(grid, 4, "URL Ollama (facultatif)", ollamaEndpoint);
             AddRow(grid, 5, "Nouvelle clé OpenAI API", openAiKey);
@@ -48,9 +55,10 @@ namespace CodexVBE
             AddRow(grid, 8, "", new Label { Text = "", Dock = DockStyle.Fill });
             provider.SelectedIndexChanged += (sender, args) => UpdateRows();
             codexLogin.Click += (sender, args) => {
-                try { CodexAccount.StartLogin(); codexStatus.Text = "Connexion ouverte. Revenez et rouvrez cette fenêtre pour actualiser."; }
+                try { CodexAccount.StartLogin(); codexStatus.Text = "Connexion ouverte. Cliquez sur Actualiser après authentification."; }
                 catch (Exception ex) { codexStatus.Text = ex.Message; }
             };
+            codexRefresh.Click += async (sender, args) => await RefreshCodexStatusAsync();
             var buttons = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 48, FlowDirection = FlowDirection.RightToLeft };
             var save = new Button { Text = "Enregistrer", Width = 105 };
             var cancel = new Button { Text = "Annuler", Width = 105, DialogResult = DialogResult.Cancel };
@@ -70,7 +78,7 @@ namespace CodexVBE
             bool codex = selected.IsCodex;
             bool openAi = selected.Name == "OpenAI API";
             bool ollama = selected.Name == "Ollama";
-            int[] heights = { 38, codex ? 38 : 0, codex ? 38 : 0, openAi ? 38 : 0,
+            int[] heights = { 38, codex ? 38 : 0, codex ? 42 : 0, openAi ? 38 : 0,
                 ollama ? 38 : 0, openAi ? 38 : 0, openAi ? 38 : 0, openAi ? 55 : 0, 0 };
             for (int i = 0; i < heights.Length; i++) grid.RowStyles[i].Height = heights[i];
             foreach (Control control in grid.Controls)
@@ -79,6 +87,7 @@ namespace CodexVBE
                 control.Visible = heights[row] > 0;
             }
             if (codex) _ = RefreshCodexStatusAsync();
+            Height = codex ? 260 : openAi ? 360 : ollama ? 260 : 230;
         }
 
         private async System.Threading.Tasks.Task RefreshCodexStatusAsync()

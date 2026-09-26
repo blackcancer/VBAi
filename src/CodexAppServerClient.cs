@@ -53,15 +53,28 @@ namespace CodexVBE
                     var item = entry as IDictionary<string, object>;
                     string id = GetString(item, "model");
                     if (!string.IsNullOrWhiteSpace(id))
+                    {
+                        object rawEfforts;
+                        var efforts = item.TryGetValue("supportedReasoningEfforts", out rawEfforts)
+                            ? rawEfforts as object[] : null;
+                        var options = new List<LlmEffortOption>();
+                        if (efforts != null) foreach (var effortEntry in efforts)
+                        {
+                            var option = effortEntry as IDictionary<string, object>;
+                            string effort = GetString(option, "reasoningEffort");
+                            if (!string.IsNullOrWhiteSpace(effort))
+                                options.Add(new LlmEffortOption(effort, GetString(option, "description")));
+                        }
                         result.Add(new LlmModelOption(id, GetString(item, "displayName"),
-                            GetString(item, "isDefault") == "True"));
+                            GetString(item, "isDefault") == "True", GetString(item, "defaultReasoningEffort"), options.ToArray()));
+                    }
                 }
                 cursor = GetString(body, "nextCursor");
             } while (!string.IsNullOrWhiteSpace(cursor));
             return result.ToArray();
         }
 
-        public async Task<string> TurnAsync(string prompt, string model)
+        public async Task<string> TurnAsync(string prompt, string model, string effort)
         {
             if (string.IsNullOrWhiteSpace(prompt)) throw new ArgumentException("A prompt is required.");
             if (turnDone != null) throw new InvalidOperationException("A Codex turn is already running.");
@@ -73,6 +86,7 @@ namespace CodexVBE
                 await RequestAsync("turn/start", new {
                     threadId,
                     model,
+                    effort,
                     input = new[] { new { type = "text", text = prompt } }
                 });
                 return await turnDone.Task;
