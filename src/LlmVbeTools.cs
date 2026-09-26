@@ -38,6 +38,8 @@ namespace CodexVBE
             Definition("list_forms", "List UserForms in a project.", new[] { "Project" }, "Project"),
             Definition("form_state", "Read a UserForm and all its controls with geometry, caption and font.", new[] { "Project", "Form" }, "Project", "Form"),
             Definition("form_properties", "Read the designer properties of a UserForm.", new[] { "Project", "Form" }, "Project", "Form"),
+            Definition("form_control_properties", "Read all exposed design properties, types and read-only flags of one UserForm control.",
+                new[] { "Project", "Form", "Control" }, "Project", "Form", "Control"),
             Definition("open_form", "Open a UserForm designer window in VBE.", new[] { "Project", "Form" }, "Project", "Form"),
             Definition("create_form", "Create a UserForm in design mode; requires user approval.",
                 new[] { "Project", "Form" }, "Project", "Form"),

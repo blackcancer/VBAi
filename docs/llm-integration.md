@@ -17,7 +17,7 @@ Les URL distantes doivent utiliser HTTPS ; seul HTTP sur une adresse de boucle l
 
 ## Opérations proposées au modèle
 
-Lectures : `list_projects`, `list_modules`, `read_module`, `list_forms`, `form_state`, `form_properties`. `open_form` ouvre le concepteur. Modifications : `replace_lines`, `create_form`, `add_form_control`, `rename_form_control`, `set_form_control_caption`, `set_form_control_font`, `set_form_control_geometry`.
+Lectures : `list_projects`, `list_modules`, `read_module`, `list_forms`, `form_state`, `form_properties`, `form_control_properties`. Cette dernière énumère les propriétés de conception d'un contrôle avec leur type, état lecture seule, valeur lisible et éventuelle erreur COM. `open_form` ouvre le concepteur. Modifications : `replace_lines`, `create_form`, `add_form_control`, `rename_form_control`, `set_form_control_caption`, `set_form_control_font`, `set_form_control_geometry`.
 
 Chaque fonction possède un schéma d'arguments. Le complément rejette les fonctions inconnues, les paramètres inconnus et les paramètres obligatoires manquants. Chaque modification ouvre une boîte de validation montrant l'intégralité des arguments. L'utilisateur doit cliquer **Autoriser** pour exécuter l'opération. `replace_lines` vérifie en plus l'empreinte SHA-256 du module ; les modifications de formulaire vérifient la version du formulaire et le mode conception. Ces vérifications sont faites après validation, juste avant l'appel COM. Les résultats sont relus par `VbeSession` et renvoyés au modèle.
 
