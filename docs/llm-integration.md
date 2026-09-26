@@ -1,19 +1,21 @@
 # Assistant LLM intégré au VBE
 
-Cette première tranche ajoute une fenêtre de conversation WinForms au complément COM. Elle s'ouvre avec le VBE et tente d'être possédée par sa fenêtre principale via `MainWindow.HWnd`. L'assistant appelle directement `VbeSession`, sur le thread UI du VBE, sans serveur MCP, raccourci clavier ni coordonnées de fenêtre.
+Cette première tranche ajoute une fenêtre de conversation WinForms au complément COM. Elle s'ouvre avec le VBE et tente d'être possédée par sa fenêtre principale via `MainWindow.HWnd`. L'assistant appelle directement `VbeSession`, sur le thread UI du VBE, sans serveur MCP, raccourci clavier ni coordonnées de fenêtre. Le menu natif **Affichage > Assistant CodexVBE** permet de rouvrir cette fenêtre ; **Outils > Configuration CodexVBE** ouvre les réglages.
 
 ## Fournisseurs
 
 | Choix dans la fenêtre | État | Configuration avant lancement d'Excel ou SOLIDWORKS |
 | --- | --- | --- |
-| OpenAI API | Implémenté via Chat Completions | `OPENAI_API_KEY`, `CODEXVBE_OPENAI_MODEL`, facultatif `CODEXVBE_OPENAI_ENDPOINT` |
-| Ollama | Implémenté via son endpoint compatible Chat Completions | `CODEXVBE_OLLAMA_MODEL`, facultatif `CODEXVBE_OLLAMA_ENDPOINT` ; défaut `http://localhost:11434/v1/chat/completions` |
-| Codex | À venir | L'authentification Codex n'est pas implémentée. |
+| Codex (par défaut) | Implémenté via `codex app-server` local et l'authentification ChatGPT déjà gérée par le CLI | CLI Codex connecté à ChatGPT ; modèle optionnel dans la fenêtre Configuration. Aucune clé API requise. |
+| OpenAI API | Implémenté via Chat Completions | Modèle et clé dans la fenêtre Configuration ; variables `OPENAI_API_KEY`, `CODEXVBE_OPENAI_MODEL`, `CODEXVBE_OPENAI_ENDPOINT` utilisées seulement comme valeurs de secours. |
+| Ollama | Implémenté via son endpoint compatible Chat Completions | Modèle et URL dans la fenêtre Configuration ; défaut `http://localhost:11434/v1/chat/completions`. |
 | Claude | À venir | L'API et l'authentification Claude ne sont pas implémentées. |
 | GitHub Copilot | À venir | L'authentification et l'API Copilot ne sont pas implémentées. |
 | Gemini | À venir | L'API et l'authentification Gemini ne sont pas implémentées. |
 
-Les URL distantes doivent utiliser HTTPS ; seul HTTP sur une adresse de boucle locale est accepté. Les clés sont lues dans l'environnement du processus hôte, jamais écrites dans le dépôt. Changer de fournisseur efface l'historique affiché et le contexte transmis au modèle. Un modèle Ollama doit lui-même prendre en charge les appels d'outils pour piloter le VBE.
+Les URL distantes doivent utiliser HTTPS ; seul HTTP sur une adresse de boucle locale est accepté. Les réglages non secrets sont enregistrés pour l'utilisateur Windows dans `%APPDATA%\CodexVBE\settings.json`. Une éventuelle clé OpenAI API y est stockée uniquement sous forme chiffrée DPAPI `CurrentUser`, jamais dans le dépôt. Codex ne lit, ne copie et ne stocke aucun jeton OAuth : seul le processus `codex app-server` gère la connexion ChatGPT existante. Changer de fournisseur efface l'historique affiché et le contexte transmis au modèle. Un modèle Ollama doit lui-même prendre en charge les appels d'outils pour piloter le VBE.
+
+Le client Codex initialise app-server par JSONL sur stdin/stdout, vérifie `account/read` avec `type: chatgpt`, crée un thread éphémère en mode lecture seule, puis transmet les commandes VBE comme `dynamicTools` (API expérimentale). Les appels `item/tool/call` retournent les résultats de `VbeSession` ; les demandes d'édition passent par la même validation visuelle que pour les autres fournisseurs. Un éventuel appel serveur inconnu reçoit une erreur explicite. Le choix de Codex ne passe pas par l'API OpenAI payante.
 
 ## Opérations proposées au modèle
 
@@ -25,8 +27,8 @@ Quand l'utilisateur envoie une demande, son texte, les résultats des lectures e
 
 ## Vérification et limites
 
-Le build .NET Framework 4.8 x64 a réussi dans une sortie isolée du worktree. Le parsing des tableaux de réponses JSON a été vérifié avec `JavaScriptSerializer` sous Windows PowerShell 5.1. La nouvelle interface et les appels réseau n'ont pas encore été exécutés dans Excel ou SOLIDWORKS ; la DLL actuellement chargée par Excel reste intacte. L'ouverture de la fenêtre est protégée : un échec de l'UI est journalisé sans couper la passerelle existante.
+Le build .NET Framework 4.8 x64 a réussi dans une sortie isolée du worktree. Le parsing des tableaux de réponses JSON a été vérifié avec `JavaScriptSerializer` sous Windows PowerShell 5.1. Un essai direct du CLI local `codex-cli 0.156.1` a confirmé la connexion ChatGPT et l'appel d'un outil dynamique `vbe_status`, suivi de `turn/completed`. Un smoke test du nouveau client .NET en processus GUI sans console a ensuite confirmé `initialize`, `account/read` et `thread/start` avec outils dynamiques. Le test a découvert puis corrigé un BOM UTF-8 émis par `Process.StandardInput` en .NET Framework. L'interface WinForms initiale a été affichée dans Excel ; les nouveaux menus, réglages et tours Codex restent à tester dans cet hôte. L'ouverture de la fenêtre est protégée : un échec de l'UI est journalisé sans couper la passerelle existante.
 
-Cette fenêtre de conversation est un premier point d'entrée. Elle n'offre pas encore de bouton permanent dans la barre de commandes du VBE, ni de panneau ancré, streaming, annulation ou prise en charge des autres fournisseurs. La couverture des outils VBE reste progressive ; voir `docs/vbe-coverage.md` après intégration des branches.
+Cette fenêtre de conversation n'est pas encore un panneau ancré. Les entrées Affichage/Outils ne sont pas encore validées en conditions réelles ; le streaming, l'annulation et les autres fournisseurs restent à faire. La couverture des outils VBE reste progressive ; voir `docs/vbe-coverage.md`.
 
-Références API : [OpenAI Chat Completions et appels de fonctions](https://platform.openai.com/docs/api-reference/chat), [Ollama OpenAI compatibility](https://github.com/ollama/ollama/blob/main/docs/api/openai-compatibility.mdx).
+Références API : [Codex App Server](https://learn.chatgpt.com/docs/app-server), [OpenAI Chat Completions et appels de fonctions](https://platform.openai.com/docs/api-reference/chat), [Ollama OpenAI compatibility](https://github.com/ollama/ollama/blob/main/docs/api/openai-compatibility.mdx).

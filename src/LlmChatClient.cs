@@ -18,22 +18,20 @@ namespace CodexVBE
         private readonly string key;
         private readonly LlmProvider provider;
 
-        public LlmChatClient(LlmProvider provider)
+        public LlmChatClient(LlmProvider provider, LlmSettings settings)
         {
-            if (provider == null || !provider.Available)
+            if (provider == null || !provider.Available || provider.IsCodex || settings == null)
                 throw new InvalidOperationException("Ce fournisseur n'est pas encore implémenté.");
             this.provider = provider;
-            string endpointVariable = provider.Local ? "CODEXVBE_OLLAMA_ENDPOINT" : "CODEXVBE_OPENAI_ENDPOINT";
-            string raw = Environment.GetEnvironmentVariable(endpointVariable);
-            if (string.IsNullOrWhiteSpace(raw)) raw = provider.Endpoint;
+            string raw = settings.ResolveEndpoint(provider);
             endpoint = new Uri(raw, UriKind.Absolute);
             if (endpoint.Scheme != Uri.UriSchemeHttps &&
                 !(endpoint.Scheme == Uri.UriSchemeHttp && endpoint.IsLoopback))
                 throw new InvalidOperationException("The LLM endpoint must use HTTPS (or HTTP on localhost).");
-            model = provider.ResolveModel();
-            key = provider.KeyVariable == null ? null : Environment.GetEnvironmentVariable(provider.KeyVariable);
+            model = settings.ResolveModel(provider);
+            key = provider.Local ? null : settings.GetOpenAiKey();
             if (string.IsNullOrWhiteSpace(key) && !provider.Local)
-                throw new InvalidOperationException("Configurez " + provider.KeyVariable + " puis redémarrez l'application hôte.");
+                throw new InvalidOperationException("Configurez la clé OpenAI API dans les paramètres CodexVBE.");
         }
 
         public string DisplayName { get { return model + " @ " + endpoint.Host; } }

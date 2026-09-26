@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
@@ -14,7 +15,10 @@ namespace CodexVBE
         private readonly Button send;
         private readonly Label status;
         private readonly ComboBox providerPicker;
+        private readonly Button configure;
+        private readonly LlmSettings settings;
         private readonly LlmVbeTools tools;
+        private CodexAppServerClient codex;
         private readonly List<object> messages = new List<object>();
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
         private bool busy;
@@ -36,33 +40,60 @@ namespace CodexVBE
             send = new Button { Text = "Envoyer", Dock = DockStyle.Right, Width = 100 };
             status = new Label { Text = "Modèle non configuré ou prêt à répondre", Dock = DockStyle.Top,
                 Height = 25, AutoEllipsis = true };
-            providerPicker = new ComboBox { Dock = DockStyle.Top, DropDownStyle = ComboBoxStyle.DropDownList, Height = 28 };
+            providerPicker = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList };
             providerPicker.Items.AddRange(LlmProvider.All);
+            configure = new Button { Text = "Configuration…", Dock = DockStyle.Right, Width = 130 };
+            var toolbar = new Panel { Dock = DockStyle.Top, Height = 32 };
+            toolbar.Controls.Add(providerPicker);
+            toolbar.Controls.Add(configure);
             var composer = new Panel { Dock = DockStyle.Bottom, Height = 110 };
             composer.Controls.Add(prompt);
             composer.Controls.Add(send);
             Controls.Add(transcript);
             Controls.Add(composer);
             Controls.Add(status);
-            Controls.Add(providerPicker);
+            Controls.Add(toolbar);
 
             tools = new LlmVbeTools(session, this);
+            try { settings = LlmSettings.Load(); }
+            catch (Exception ex) { LoadLog.Write("LLM settings load failed: " + ex.Message); settings = new LlmSettings(); }
             providerPicker.SelectedIndexChanged += (sender, args) => ResetConversation();
-            providerPicker.SelectedIndex = 0;
+            int selected = Array.FindIndex(LlmProvider.All, item => item.Name == settings.ProviderName);
+            providerPicker.SelectedIndex = selected < 0 ? 0 : selected;
+            configure.Click += (sender, args) => ShowSettings();
             send.Click += async (sender, args) => await SendAsync();
         }
 
         private void ResetConversation()
         {
+            codex?.Dispose();
+            codex = null;
             messages.Clear();
             messages.Add(new { role = "system", content =
                 "You are a VBE assistant. Use tools to inspect the live VBA project before stating facts about it. " +
                 "Read current code or form state before edits; pass the returned revision to every edit. " +
                 "Do not invent project, module, form or control names. Keep answers concise and in the user's language." });
             transcript.Text = "CodexVBE est connecté au VBE. Écrivez une demande puis cliquez sur Envoyer.\r\n";
-            status.Text = ((LlmProvider)providerPicker.SelectedItem).Available ?
+            status.Text = ((LlmProvider)providerPicker.SelectedItem).IsCodex ?
+                "Codex : utilise la connexion ChatGPT du CLI local." :
+                ((LlmProvider)providerPicker.SelectedItem).Available ?
                 "Configurez le modèle du fournisseur sélectionné, puis envoyez une demande." :
                 "Ce fournisseur n'est pas encore implémenté.";
+            settings.ProviderName = ((LlmProvider)providerPicker.SelectedItem).Name;
+            try { settings.Save(); }
+            catch (Exception saveError) { LoadLog.Write("LLM settings save failed: " + saveError.Message); }
+        }
+
+        public void ShowSettings()
+        {
+            if (busy) return;
+            using (var dialog = new LlmSettingsWindow(settings))
+            {
+                if (dialog.ShowDialog(this) != DialogResult.OK) return;
+                int selected = Array.FindIndex(LlmProvider.All, item => item.Name == settings.ProviderName);
+                if (selected >= 0 && providerPicker.SelectedIndex != selected) providerPicker.SelectedIndex = selected;
+                else ResetConversation();
+            }
         }
 
         private void Append(string speaker, string content)
@@ -77,13 +108,28 @@ namespace CodexVBE
             busy = true;
             send.Enabled = false;
             providerPicker.Enabled = false;
+            configure.Enabled = false;
             prompt.Clear();
             Append("Vous", question);
             int checkpoint = messages.Count;
-            messages.Add(new { role = "user", content = question });
+            var provider = (LlmProvider)providerPicker.SelectedItem;
+            settings.ProviderName = provider.Name;
+            try { settings.Save(); }
+            catch (Exception saveError) { LoadLog.Write("LLM settings save failed: " + saveError.Message); }
+            if (!provider.IsCodex) messages.Add(new { role = "user", content = question });
             try
             {
-                using (var client = new LlmChatClient((LlmProvider)providerPicker.SelectedItem))
+                if (provider.IsCodex)
+                {
+                    if (codex == null)
+                        codex = new CodexAppServerClient(SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext(),
+                            tools, update => status.Text = update, settings);
+                    status.Text = "Codex — en cours";
+                    Append("Assistant", await codex.TurnAsync(question));
+                    status.Text = "Codex — prêt";
+                    return;
+                }
+                using (var client = new LlmChatClient((LlmProvider)providerPicker.SelectedItem, settings))
                 {
                     status.Text = client.DisplayName + " — en cours";
                     for (int turn = 0; turn < 8; turn++)
@@ -116,12 +162,19 @@ namespace CodexVBE
             }
             catch (Exception ex)
             {
+                if (provider.IsCodex) { codex?.Dispose(); codex = null; }
                 // A failed request must not leave an orphaned tool call in the next API request.
                 messages.RemoveRange(checkpoint, messages.Count - checkpoint);
                 Append("Erreur", ex.Message);
                 status.Text = "Erreur — vérifiez la configuration et réessayez";
             }
-            finally { busy = false; send.Enabled = true; providerPicker.Enabled = true; }
+            finally { busy = false; send.Enabled = true; providerPicker.Enabled = true; configure.Enabled = true; }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) { codex?.Dispose(); codex = null; }
+            base.Dispose(disposing);
         }
     }
 }

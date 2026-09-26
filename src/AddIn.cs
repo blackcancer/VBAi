@@ -15,6 +15,7 @@ namespace CodexVBE
         private Control dispatcher;
         private BridgeServer server;
         private ChatWindow chat;
+        private VbeMenu menu;
         private object vbe;
 
         public AddIn()
@@ -35,25 +36,10 @@ namespace CodexVBE
                 server = new BridgeServer(dispatcher, new VbeSession(vbe), process.Id);
                 server.Start();
                 LoadLog.Write("Bridge started: CodexVBE." + process.Id);
-                try
-                {
-                    chat = new ChatWindow(new VbeSession(vbe));
-                    try
-                    {
-                        var vbeWindow = new VbeWindowOwner(new IntPtr(Convert.ToInt64(((dynamic)vbe).MainWindow.HWnd)));
-                        chat.Show(vbeWindow);
-                    }
-                    catch (Exception ownerError)
-                    {
-                        LoadLog.Write("VBE window owner unavailable: " + ownerError.Message);
-                        chat.Show();
-                    }
-                    LoadLog.Write("Assistant window shown.");
-                }
-                catch (Exception uiError)
-                {
-                    LoadLog.Write("Assistant window failed: " + uiError);
-                }
+                try { ShowChat(); }
+                catch (Exception uiError) { LoadLog.Write("Assistant window failed: " + uiError); }
+                try { menu = new VbeMenu(vbe, ShowChat, ShowSettings); }
+                catch (Exception menuError) { LoadLog.Write("VBE menu failed: " + menuError); }
             }
             catch (Exception ex)
             {
@@ -69,6 +55,36 @@ namespace CodexVBE
             public IntPtr Handle { get; private set; }
         }
 
+        private void ShowChat()
+        {
+            if (chat == null || chat.IsDisposed)
+            {
+                chat = new ChatWindow(new VbeSession(vbe));
+                chat.FormClosed += (sender, args) => chat = null;
+            }
+            if (!chat.Visible)
+            {
+                try
+                {
+                    var owner = new VbeWindowOwner(new IntPtr(Convert.ToInt64(((dynamic)vbe).MainWindow.HWnd)));
+                    chat.Show(owner);
+                }
+                catch (Exception ownerError)
+                {
+                    LoadLog.Write("VBE window owner unavailable: " + ownerError.Message);
+                    chat.Show();
+                }
+            }
+            else chat.Activate();
+            LoadLog.Write("Assistant window shown.");
+        }
+
+        private void ShowSettings()
+        {
+            ShowChat();
+            chat.ShowSettings();
+        }
+
         public void OnDisconnection(int removeMode, ref object[] custom)
         {
             LoadLog.Write("OnDisconnection: " + removeMode);
@@ -81,6 +97,8 @@ namespace CodexVBE
 
         private void Dispose()
         {
+            menu?.Dispose();
+            menu = null;
             chat?.Dispose();
             chat = null;
             server?.Dispose();

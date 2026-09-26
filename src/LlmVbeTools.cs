@@ -32,6 +32,7 @@ namespace CodexVBE
         }
 
         public static object[] Definitions { get { return new object[] {
+            Definition("status", "Check that the assistant is connected to the live VBE.", new string[0]),
             Definition("list_projects", "List open VBA projects and their modes.", new string[0]),
             Definition("list_modules", "List modules in one VBA project.", new[] { "Project" }, "Project"),
             Definition("read_module", "Read complete VBA code and its SHA-256 revision.", new[] { "Project", "Module" }, "Project", "Module"),
