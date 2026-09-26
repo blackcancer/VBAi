@@ -53,7 +53,7 @@ namespace CodexVBE
         {
             dynamic form = GetForm(GetProject(projectName), formName);
             int nodeCount = 0;
-            var nodes = ReadChildControls(form.Designer.Controls, "Controls", 0, ref nodeCount);
+            var nodes = ReadChildControls(form.Designer.Controls, form.Designer, "Controls", 0, ref nodeCount);
             var properties = DescribeProperties(form);
             string json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 }
                 .Serialize(new { Form = (string)form.Name, Properties = properties, Controls = nodes });
@@ -65,12 +65,33 @@ namespace CodexVBE
                 NodeCount = nodeCount, Properties = properties, Controls = nodes };
         }
 
-        private static List<object> ReadChildControls(dynamic collection, string path, int depth, ref int nodeCount)
+        private static List<object> ReadChildControls(dynamic collection, object owner, string path, int depth, ref int nodeCount)
         {
             var result = new List<object>();
             foreach (dynamic control in collection)
-                result.Add(ReadTreeNode(control, "Control", path, depth, ref nodeCount));
+                if (SameComIdentity((object)control.Parent, owner))
+                    result.Add(ReadTreeNode(control, "Control", path, depth, ref nodeCount));
             return result;
+        }
+
+        private static bool SameComIdentity(object left, object right)
+        {
+            if (left == null || right == null) return false;
+            if (!Marshal.IsComObject(left) || !Marshal.IsComObject(right))
+                return ReferenceEquals(left, right);
+            IntPtr leftIdentity = IntPtr.Zero;
+            IntPtr rightIdentity = IntPtr.Zero;
+            try
+            {
+                leftIdentity = Marshal.GetIUnknownForObject(left);
+                rightIdentity = Marshal.GetIUnknownForObject(right);
+                return leftIdentity == rightIdentity;
+            }
+            finally
+            {
+                if (leftIdentity != IntPtr.Zero) Marshal.Release(leftIdentity);
+                if (rightIdentity != IntPtr.Zero) Marshal.Release(rightIdentity);
+            }
         }
 
         private static object ReadTreeNode(object item, string kind, string parentPath, int depth, ref int nodeCount)
@@ -89,7 +110,7 @@ namespace CodexVBE
                 {
                     object nested = controls.GetValue(item);
                     if (nested != null)
-                        children.AddRange(ReadChildControls(nested, path + "/Controls", depth + 1, ref nodeCount));
+                        children.AddRange(ReadChildControls(nested, item, path + "/Controls", depth + 1, ref nodeCount));
                 }
                 PropertyDescriptor pages = descriptors.Find("Pages", true);
                 if (pages != null)
@@ -104,7 +125,7 @@ namespace CodexVBE
             {
                 PropertyDescriptor controls = descriptors.Find("Controls", true);
                 if (controls != null)
-                    children.AddRange(ReadChildControls(controls.GetValue(item), path + "/Controls", depth + 1, ref nodeCount));
+                    children.AddRange(ReadChildControls(controls.GetValue(item), item, path + "/Controls", depth + 1, ref nodeCount));
             }
             return new { Path = path, Name = name, Kind = kind,
                 Type = TypeDescriptor.GetClassName(item), Properties = ReadObjectProperties(item), Children = children };
