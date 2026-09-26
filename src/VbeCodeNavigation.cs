@@ -1,15 +1,75 @@
 using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace CodexVBE
 {
     internal sealed class VbeCodeNavigation
     {
         private readonly dynamic vbe;
+        private readonly VbeForms forms;
 
-        public VbeCodeNavigation(object vbe) { this.vbe = vbe; }
+        public VbeCodeNavigation(object vbe, VbeForms forms) { this.vbe = vbe; this.forms = forms; }
+
+        public object CreateEventProcedure(Request request)
+        {
+            if (string.IsNullOrWhiteSpace(request.EventName) ||
+                !Regex.IsMatch(request.EventName, @"^[A-Za-z][A-Za-z0-9_]*$") ||
+                string.IsNullOrWhiteSpace(request.ObjectName) ||
+                !Regex.IsMatch(request.ObjectName, @"^[A-Za-z_][A-Za-z0-9_]*$") ||
+                string.IsNullOrWhiteSpace(request.ExpectedSha256) ||
+                string.IsNullOrWhiteSpace(request.ExpectedTreeVersion))
+                throw new ArgumentException("EventName, ObjectName, ExpectedSha256 and ExpectedTreeVersion are required.");
+            dynamic project = GetProject(request.Project);
+            if ((int)project.Mode != 2)
+                throw new InvalidOperationException("The project must be in design mode.");
+            dynamic component = null;
+            foreach (dynamic candidate in project.VBComponents)
+                if (string.Equals((string)candidate.Name, request.Form, StringComparison.OrdinalIgnoreCase))
+                { component = candidate; break; }
+            if (component == null || (int)component.Type != 3)
+                throw new InvalidOperationException("The target must be an existing UserForm.");
+            dynamic tree = forms.Tree(request.Project, request.Form);
+            if (!string.Equals((string)tree.TreeVersion, request.ExpectedTreeVersion,
+                StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The UserForm hierarchy changed since it was read.");
+            if (!string.Equals(request.ObjectName, "UserForm", StringComparison.OrdinalIgnoreCase) &&
+                CountControls((IEnumerable)tree.Controls, request.ObjectName) != 1)
+                throw new InvalidOperationException("ObjectName must identify exactly one control in form_tree or UserForm.");
+            dynamic module = component.CodeModule;
+            string before = Code(module, (int)module.CountOfLines);
+            if (!string.Equals(Hash(before), request.ExpectedSha256, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The form code changed since it was read.");
+            string procedureName = request.ObjectName + "_" + request.EventName;
+            if (Regex.IsMatch(before, @"(?im)^\s*(?:(?:Private|Public|Friend|Static)\s+)?Sub\s+" +
+                Regex.Escape(procedureName) + @"\b"))
+                throw new InvalidOperationException("The event procedure already exists: " + procedureName);
+            int bodyLine = (int)module.CreateEventProc(request.EventName, request.ObjectName);
+            string after = Code(module, (int)module.CountOfLines);
+            int kind = 0;
+            string actual = (string)module.ProcOfLine[bodyLine, ref kind];
+            if (bodyLine < 1 || string.Equals(after, before, StringComparison.Ordinal) || kind != 0 ||
+                !string.Equals(actual, procedureName, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The created event procedure could not be verified in the code module.");
+            return new { Project = request.Project, Form = request.Form,
+                request.ObjectName, request.EventName, Procedure = actual,
+                BodyLine = bodyLine, Sha256 = Hash(after), Code = after };
+        }
+
+        private static int CountControls(IEnumerable nodes, string name)
+        {
+            int count = 0;
+            foreach (dynamic node in nodes)
+            {
+                if (string.Equals((string)node.Kind, "Control", StringComparison.Ordinal) &&
+                    string.Equals((string)node.Name, name, StringComparison.OrdinalIgnoreCase)) count++;
+                count += CountControls((IEnumerable)node.Children, name);
+            }
+            return count;
+        }
 
         public object Procedures(string projectName, string moduleName)
         {

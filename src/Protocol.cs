@@ -37,6 +37,8 @@ namespace CodexVBE
         public string ExpectedComponentVersion { get; set; }
         public string NewName { get; set; }
         public string Procedure { get; set; }
+        public string EventName { get; set; }
+        public string ObjectName { get; set; }
         public int ProcKind { get; set; }
         public int? InsertIndex { get; set; }
         public bool WholeWord { get; set; }

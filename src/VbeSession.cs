@@ -19,7 +19,7 @@ namespace CodexVBE
 
         public VbeSession(object vbe) { this.vbe = vbe; debugger = new VbeDebug(vbe);
             forms = new VbeForms(vbe); components = new VbeProjectComponents(vbe, forms);
-            editorWindows = new VbeEditorWindows(vbe); codeNavigation = new VbeCodeNavigation(vbe); }
+            editorWindows = new VbeEditorWindows(vbe); codeNavigation = new VbeCodeNavigation(vbe, forms); }
 
         public Response Execute(Request request)
         {
@@ -44,6 +44,8 @@ namespace CodexVBE
                     return Response.Success(codeNavigation.Find(request));
                 case "select_procedure":
                     return Response.Success(codeNavigation.SelectProcedure(request, debugger));
+                case "create_event_procedure":
+                    return Response.Success(codeNavigation.CreateEventProcedure(request));
                 case "project_properties":
                     return Response.Success(components.ProjectProperties(request.Project));
                 case "component_properties":
