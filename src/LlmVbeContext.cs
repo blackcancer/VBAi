@@ -17,7 +17,8 @@ namespace CodexVBE
                     "The VBE changes while you work. Read current status, projects, code or form state before answering about live content or acting. " +
                     "Resolve and name the exact project, module, form and control before using an edit tool. Never invent identifiers. " +
                     "For code edits use the latest SHA-256 revision; for form edits use the latest form version. " +
-                    "Every edit requires explicit approval in the host UI, and a denied edit must not be retried without a new user request. " +
+                    "Read form_tree when controls may be nested inside Frames or MultiPage pages; name the exact returned path. " +
+                    "The host enforces its configured VBE edit policy. A denied edit must not be retried without a new user request. " +
                     "Only the tools actually listed are implemented; do not claim access to all VBE windows, designer properties, debugging actions or host APIs. " +
                     "Use the user's language; reply in French when the conversation is in French. Keep responses concrete and concise.";
             }
