@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Web.Script.Serialization;
 
 namespace CodexVBE
@@ -234,30 +233,24 @@ namespace CodexVBE
             }
 
             string importedName = added[0];
-            object importedState = ReadAfterImport(() => ComponentSnapshot(request.Project,
+            object importedState = TryImmediateRead(() => ComponentSnapshot(request.Project,
                 GetComponent(project, importedName)), out string componentError);
-            object projectState = ReadAfterImport(() => ProjectProperties(request.Project),
+            object projectState = TryImmediateRead(() => ProjectProperties(request.Project),
                 out string projectError);
             bool verified = importedState != null && projectState != null;
-            return new { Applied = true, Verified = verified, ImportedName = importedName,
+            return new { Applied = true, Verified = verified, VerificationPending = !verified,
+                ImportedName = importedName,
                 Imported = importedState, Project = projectState,
                 ImportError = importError?.Message, ComponentReadbackError = componentError,
-                ProjectReadbackError = projectError };
+                ProjectReadbackError = projectError,
+                NextRead = verified ? null : "Call component_properties and project_properties in a separate request before another mutation." };
         }
 
-        private static object ReadAfterImport(Func<object> read, out string error)
+        private static object TryImmediateRead(Func<object> read, out string error)
         {
             error = null;
-            for (int attempt = 0; attempt < 3; attempt++)
-            {
-                try { return read(); }
-                catch (Exception ex)
-                {
-                    error = ex.Message;
-                    if (attempt < 2) Thread.Sleep(150);
-                }
-            }
-            return null;
+            try { return read(); }
+            catch (Exception ex) { error = ex.Message; return null; }
         }
 
         public object ExportComponent(Request request)

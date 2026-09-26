@@ -55,7 +55,6 @@ namespace CodexVBE
             Read(fields, errors, "Top", () => (int)window.Top);
             Read(fields, errors, "Width", () => (int)window.Width);
             Read(fields, errors, "Height", () => (int)window.Height);
-            Read(fields, errors, "Docked", () => (bool)window.Docked);
             return new { Index = index, Properties = fields, Errors = errors };
         }
 
