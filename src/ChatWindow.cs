@@ -98,7 +98,13 @@ namespace CodexVBE
 
         private void Append(string speaker, string content)
         {
+            if (IsDisposed || transcript.IsDisposed) return;
             transcript.AppendText("\r\n" + speaker + " : " + content + "\r\n");
+        }
+
+        private void SetStatus(string text)
+        {
+            if (!IsDisposed && !status.IsDisposed) status.Text = text;
         }
 
         private async Task SendAsync()
@@ -123,15 +129,15 @@ namespace CodexVBE
                 {
                     if (codex == null)
                         codex = new CodexAppServerClient(SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext(),
-                            tools, update => status.Text = update, settings);
-                    status.Text = "Codex — en cours";
+                            tools, SetStatus, settings);
+                    SetStatus("Codex — en cours");
                     Append("Assistant", await codex.TurnAsync(question));
-                    status.Text = "Codex — prêt";
+                    SetStatus("Codex — prêt");
                     return;
                 }
                 using (var client = new LlmChatClient((LlmProvider)providerPicker.SelectedItem, settings))
                 {
-                    status.Text = client.DisplayName + " — en cours";
+                    SetStatus(client.DisplayName + " — en cours");
                     for (int turn = 0; turn < 8; turn++)
                     {
                         var message = await client.CompleteAsync(messages, LlmVbeTools.Definitions);
@@ -142,7 +148,7 @@ namespace CodexVBE
                         {
                             string answer = message.ContainsKey("content") ? Convert.ToString(message["content"]) : "";
                             Append("Assistant", string.IsNullOrWhiteSpace(answer) ? "Aucune réponse textuelle." : answer);
-                            status.Text = client.DisplayName + " — prêt";
+                            SetStatus(client.DisplayName + " — prêt");
                             return;
                         }
                         foreach (object rawCall in calls)
@@ -166,9 +172,13 @@ namespace CodexVBE
                 // A failed request must not leave an orphaned tool call in the next API request.
                 messages.RemoveRange(checkpoint, messages.Count - checkpoint);
                 Append("Erreur", ex.Message);
-                status.Text = "Erreur — vérifiez la configuration et réessayez";
+                SetStatus("Erreur — vérifiez la configuration et réessayez");
             }
-            finally { busy = false; send.Enabled = true; providerPicker.Enabled = true; configure.Enabled = true; }
+            finally
+            {
+                busy = false;
+                if (!IsDisposed) { send.Enabled = true; providerPicker.Enabled = true; configure.Enabled = true; }
+            }
         }
 
         protected override void Dispose(bool disposing)
