@@ -55,6 +55,8 @@ namespace CodexVBE
                     return Response.Success(debugger.InvokeCommand(request));
                 case "list_forms":
                     return Response.Success(forms.List(request.Project));
+                case "list_form_control_types":
+                    return Response.Success(forms.ControlTypes());
                 case "form_state":
                     return Response.Success(forms.State(request.Project, request.Form));
                 case "form_tree":

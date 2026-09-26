@@ -18,7 +18,8 @@ namespace CodexVBE
         private readonly List<string> userRequests = new List<string>();
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
             "status", "read_user_file", "list_projects", "list_modules", "list_references", "read_module", "list_forms",
-            "form_state", "form_tree", "form_properties", "form_control_properties", "open_form"
+            "form_state", "form_tree", "form_properties", "form_control_properties",
+            "list_form_control_types", "open_form"
         };
         public string CurrentProviderName { get; set; }
 
@@ -68,6 +69,7 @@ namespace CodexVBE
             Definition("create_class", "Create a named VBA class module in the selected design-mode project. ExpectedMode must be 2 from list_projects.",
                 new[] { "Project", "Module", "ExpectedMode" }, "Project", "Module", "ExpectedMode"),
             Definition("list_forms", "List UserForms in a project.", new[] { "Project" }, "Project"),
+            Definition("list_form_control_types", "List native MSForms controls and installed x64 CATID_Control candidates. Extra ActiveX hosting is unverified until Controls.Add succeeds.", new string[0]),
             Definition("form_state", "Read a UserForm and all its controls with geometry, caption and font.", new[] { "Project", "Form" }, "Project", "Form"),
             Definition("form_tree", "Read the recursive UserForm hierarchy, including Frame controls, MultiPage pages and TabStrip tabs. FormVersion and TreeVersion are the same recursive revision; use it for ExpectedFormVersion or ExpectedTreeVersion.",
                 new[] { "Project", "Form" }, "Project", "Form"),

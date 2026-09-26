@@ -29,6 +29,8 @@ namespace CodexVBE
 
         public VbeForms(object vbe) { this.vbe = vbe; }
 
+        public object ControlTypes() { return VbeControlCatalog.List(BuiltInControls); }
+
         public object List(string projectName)
         {
             dynamic project = GetProject(projectName);
@@ -525,8 +527,8 @@ namespace CodexVBE
         {
             ValidateName(request.Control, "Control");
             ValidateGeometry(request);
-            if (!BuiltInControls.Contains(request.ControlType ?? string.Empty))
-                throw new ArgumentException("ControlType must be a built-in Microsoft Forms ProgID.");
+            if (!VbeControlCatalog.IsCandidate(request.ControlType ?? string.Empty, BuiltInControls))
+                throw new ArgumentException("ControlType must be a native MSForms or installed x64 CATID_Control ProgID.");
             dynamic form = GetForm(GetDesignProject(request.Project), request.Form);
             AssertVersion(request, form);
             dynamic designer = form.Designer;
@@ -704,8 +706,8 @@ namespace CodexVBE
         {
             ValidateName(request.Control, "Control");
             ValidateGeometry(request);
-            if (!BuiltInControls.Contains(request.ControlType ?? string.Empty))
-                throw new ArgumentException("ControlType must be a built-in Microsoft Forms ProgID.");
+            if (!VbeControlCatalog.IsCandidate(request.ControlType ?? string.Empty, BuiltInControls))
+                throw new ArgumentException("ControlType must be a native MSForms or installed x64 CATID_Control ProgID.");
             if (string.IsNullOrWhiteSpace(request.ExpectedTreeVersion))
                 throw new ArgumentException("ExpectedTreeVersion is required from form_tree.");
             dynamic form = GetForm(GetDesignProject(request.Project), request.Form);
