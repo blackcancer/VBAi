@@ -29,6 +29,10 @@ namespace CodexVBE
         public string Guid { get; set; }
         public int Major { get; set; }
         public int Minor { get; set; }
+        public int Offset { get; set; }
+        public int Limit { get; set; }
+        public int TypeIndex { get; set; }
+        public string TypeIdentity { get; set; }
         public string ExpectedReferencesVersion { get; set; }
         public string ParentPath { get; set; }
         public string ExpectedTreeVersion { get; set; }

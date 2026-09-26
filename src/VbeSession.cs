@@ -16,10 +16,12 @@ namespace CodexVBE
         private readonly VbeProjectComponents components;
         private readonly VbeEditorWindows editorWindows;
         private readonly VbeCodeNavigation codeNavigation;
+        private readonly VbeReferenceTypes referenceTypes;
 
         public VbeSession(object vbe) { this.vbe = vbe; debugger = new VbeDebug(vbe);
             forms = new VbeForms(vbe); components = new VbeProjectComponents(vbe, forms);
-            editorWindows = new VbeEditorWindows(vbe); codeNavigation = new VbeCodeNavigation(vbe, forms); }
+            editorWindows = new VbeEditorWindows(vbe); codeNavigation = new VbeCodeNavigation(vbe, forms);
+            referenceTypes = new VbeReferenceTypes(vbe); }
 
         public Response Execute(Request request)
         {
@@ -72,6 +74,10 @@ namespace CodexVBE
                     return Response.Success(components.ExportComponent(request));
                 case "list_references":
                     return Response.Success(ListReferences(request.Project));
+                case "list_reference_types":
+                    return Response.Success(referenceTypes.ListTypes(request));
+                case "list_type_members":
+                    return Response.Success(referenceTypes.ListMembers(request));
                 case "add_reference_guid":
                     return Response.Success(AddReferenceGuid(request));
                 case "add_reference_file":
