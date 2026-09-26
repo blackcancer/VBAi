@@ -59,6 +59,8 @@ namespace CodexVBE
                     return Response.Success(forms.State(request.Project, request.Form));
                 case "form_tree":
                     return Response.Success(forms.Tree(request.Project, request.Form));
+                case "form_parent_probe":
+                    return Response.Success(forms.ParentProbe(request.Project, request.Form));
                 case "form_properties":
                     return Response.Success(forms.Properties(request.Project, request.Form));
                 case "set_form_property":

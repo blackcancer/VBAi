@@ -65,6 +65,29 @@ namespace CodexVBE
                 NodeCount = nodeCount, Properties = properties, Controls = nodes };
         }
 
+        public object ParentProbe(string projectName, string formName)
+        {
+            dynamic form = GetForm(GetProject(projectName), formName);
+            object designer = form.Designer;
+            var rows = new List<object>();
+            foreach (dynamic control in form.Designer.Controls)
+            {
+                object parent = control.Parent;
+                rows.Add(new { Control = (string)control.Name,
+                    ParentName = SafeComName(parent), ParentType = TypeDescriptor.GetClassName(parent),
+                    DesignerName = SafeComName(designer), DesignerType = TypeDescriptor.GetClassName(designer),
+                    SameDesigner = SameComIdentity(parent, designer),
+                    SameComponent = SameComIdentity(parent, (object)form) });
+            }
+            return new { Project = projectName, Form = formName, Rows = rows };
+        }
+
+        private static string SafeComName(object item)
+        {
+            try { return (string)((dynamic)item).Name; }
+            catch { return null; }
+        }
+
         private static List<object> ReadChildControls(dynamic collection, object owner, string path, int depth, ref int nodeCount)
         {
             var result = new List<object>();
