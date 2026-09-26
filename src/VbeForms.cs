@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Runtime.InteropServices;
 
 namespace CodexVBE
 {
@@ -47,6 +49,29 @@ namespace CodexVBE
                 try { value = property.Value; } catch { }
                 result.Add(new { Name = (string)property.Name,
                     Value = value == null || System.Runtime.InteropServices.Marshal.IsComObject(value) ? null : value.ToString() });
+            }
+            return result;
+        }
+
+        public object ControlProperties(string projectName, string formName, string controlName)
+        {
+            dynamic form = GetForm(GetProject(projectName), formName);
+            object control = GetControl(form.Designer, controlName);
+            var result = new List<object>();
+            foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(control))
+            {
+                object value = null;
+                string error = null;
+                try
+                {
+                    object raw = descriptor.GetValue(control);
+                    if (raw != null && !Marshal.IsComObject(raw))
+                        value = Convert.ToString(raw, CultureInfo.InvariantCulture);
+                }
+                catch (Exception ex) { error = ex.Message; }
+                result.Add(new { Name = descriptor.Name,
+                    Type = descriptor.PropertyType == null ? null : descriptor.PropertyType.FullName,
+                    ReadOnly = descriptor.IsReadOnly, Value = value, Error = error });
             }
             return result;
         }
