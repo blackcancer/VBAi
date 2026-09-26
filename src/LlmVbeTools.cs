@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
@@ -11,6 +14,8 @@ namespace CodexVBE
         private readonly VbeSession session;
         private readonly IWin32Window owner;
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
+        private readonly List<string> userRequests = new List<string>();
+        public string CurrentProviderName { get; set; }
 
         public LlmVbeTools(VbeSession session, IWin32Window owner)
         {
@@ -32,7 +37,9 @@ namespace CodexVBE
         }
 
         public static object[] Definitions { get { return new object[] {
-            Definition("status", "Check that the assistant is connected to the live VBE.", new string[0]),
+            Definition("status", "Read the live host process and currently open VBA projects; call before acting on VBE.", new string[0]),
+            Definition("read_user_file", "Request separate user approval before reading and transmitting up to 64 KiB of a text file at a path explicitly supplied by the user.",
+                new[] { "Path" }, "Path"),
             Definition("list_projects", "List open VBA projects and their modes.", new string[0]),
             Definition("list_modules", "List modules in one VBA project.", new[] { "Project" }, "Project"),
             Definition("read_module", "Read complete VBA code and its SHA-256 revision.", new[] { "Project", "Module" }, "Project", "Module"),
@@ -91,6 +98,8 @@ namespace CodexVBE
                         (type == "number" && !(value is int) && !(value is long) && !(value is double) && !(value is decimal)))
                         throw new ArgumentException(field + " must be a " + type + ".");
                 }
+                if (name == "read_user_file")
+                    return json.Serialize(ReadUserFile((string)values["Path"]));
                 var normalized = new Dictionary<string, object>(values) { ["Command"] = name };
                 var request = json.Deserialize<Request>(json.Serialize(normalized));
                 bool edit = name == "replace_lines" || name == "create_form" || name == "add_form_control" ||
@@ -117,9 +126,60 @@ namespace CodexVBE
                             return json.Serialize(Response.Failure("User rejected the edit."));
                     }
                 }
-                return json.Serialize(session.Execute(request));
+                return json.Serialize(name == "status"
+                    ? Response.Success(LlmVbeContext.LiveSnapshot(session))
+                    : session.Execute(request));
             }
             catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+        }
+
+        public string LiveContextJson()
+        {
+            return json.Serialize(LlmVbeContext.LiveSnapshot(session));
+        }
+
+        public void NoteUserRequest(string request)
+        {
+            if (!string.IsNullOrWhiteSpace(request)) userRequests.Add(request);
+        }
+
+        private Response ReadUserFile(string requestedPath)
+        {
+            if (string.IsNullOrWhiteSpace(requestedPath) ||
+                !Regex.IsMatch(requestedPath, @"^(?:[A-Za-z]:[\\/]|\\\\[^\\/]+[\\/][^\\/]+[\\/])"))
+                return Response.Failure("Le chemin doit être absolu et fourni explicitement par l'utilisateur.");
+            if (!userRequests.Any(request => request.IndexOf(requestedPath, StringComparison.OrdinalIgnoreCase) >= 0))
+                return Response.Failure("L'utilisateur n'a pas fourni ce chemin exact.");
+            string fullPath = Path.GetFullPath(requestedPath);
+            if (!File.Exists(fullPath)) return Response.Failure("Le fichier fourni est introuvable.");
+            const int limit = 65536;
+            string provider = string.IsNullOrWhiteSpace(CurrentProviderName) ? "le fournisseur LLM actif" : CurrentProviderName;
+            var choice = MessageBox.Show(owner,
+                "Autoriser la lecture et la transmission à " + provider + " des 64 premiers Kio au maximum de ce fichier ?\r\n\r\n" + fullPath,
+                "CodexVBE — autoriser la transmission du fichier", MessageBoxButtons.YesNo, MessageBoxIcon.Question,
+                MessageBoxDefaultButton.Button2);
+            if (choice != DialogResult.Yes) return Response.Failure("L'utilisateur a refusé la transmission du fichier.");
+            using (var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                var bytes = new byte[limit + 1];
+                int count = 0;
+                while (count < bytes.Length)
+                {
+                    int read = stream.Read(bytes, count, bytes.Length - count);
+                    if (read == 0) break;
+                    count += read;
+                }
+                int included = Math.Min(count, limit);
+                using (var memory = new MemoryStream(bytes, 0, included))
+                using (var reader = new StreamReader(memory, Encoding.UTF8, true))
+                {
+                    string content = reader.ReadToEnd();
+                    if (content.IndexOf('\0') >= 0)
+                        return Response.Failure("Le fichier semble binaire ; lecture textuelle refusée.");
+                    return Response.Success(new { Path = fullPath, Text = content,
+                        Truncated = count > limit, ByteLength = stream.Length });
+                }
+            }
         }
     }
 }

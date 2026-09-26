@@ -8,17 +8,8 @@ using System.Windows.Forms;
 
 namespace CodexVBE
 {
-    internal sealed class ChatWindow : Form
+    internal sealed partial class ChatWindow : Form
     {
-        private readonly TextBox transcript;
-        private readonly TextBox prompt;
-        private readonly Button send;
-        private readonly Label status;
-        private readonly ComboBox providerPicker;
-        private readonly ComboBox modelPicker;
-        private readonly ComboBox effortPicker;
-        private readonly Button refreshModels;
-        private readonly Button configure;
         private readonly LlmSettings settings;
         private readonly LlmVbeTools tools;
         private CodexAppServerClient codex;
@@ -27,72 +18,15 @@ namespace CodexVBE
         private bool busy;
         private int catalogueVersion;
 
+        public ChatWindow()
+        {
+            InitializeComponent();
+        }
+
         public ChatWindow(VbeSession session)
         {
-            Text = "CodexVBE — Assistant";
-            Width = 760;
-            Height = 700;
-            MinimumSize = new Size(650, 470);
-            StartPosition = FormStartPosition.CenterScreen;
-            ShowInTaskbar = true;
-            Font = new Font("Segoe UI", 9F);
-            AutoScaleMode = AutoScaleMode.Dpi;
-
-            transcript = new TextBox { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical,
-                Dock = DockStyle.Fill, BackColor = Color.White, Font = new Font("Segoe UI", 9.5F),
-                BorderStyle = BorderStyle.FixedSingle, Margin = new Padding(4, 3, 4, 8) };
-            prompt = new TextBox { Multiline = true, ScrollBars = ScrollBars.Vertical,
-                Dock = DockStyle.Fill, Margin = new Padding(4, 3, 4, 4) };
-            send = new Button { Text = "Envoyer", Dock = DockStyle.Fill, Margin = new Padding(5, 4, 0, 4) };
-            status = new Label { Text = "Chargement…", Dock = DockStyle.Fill, AutoEllipsis = true,
-                TextAlign = ContentAlignment.MiddleLeft, Margin = new Padding(4, 0, 0, 0) };
-            providerPicker = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList,
-                Margin = new Padding(4, 8, 10, 4) };
+            InitializeComponent();
             providerPicker.Items.AddRange(LlmProvider.All);
-            modelPicker = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList,
-                Margin = new Padding(4, 7, 8, 4) };
-            effortPicker = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList,
-                Margin = new Padding(4, 7, 8, 4), Enabled = false };
-            refreshModels = new Button { Text = "Actualiser", Dock = DockStyle.Fill, Margin = new Padding(3, 4, 3, 4) };
-            configure = new Button { Text = "Configuration…", Dock = DockStyle.Fill, Margin = new Padding(0, 5, 0, 5) };
-
-            var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(12),
-                ColumnCount = 1, RowCount = 5 };
-            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
-            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 96));
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 46));
-            layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 27));
-            var header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1 };
-            header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85));
-            header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 132));
-            header.Controls.Add(new Label { Text = "Fournisseur", Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft }, 0, 0);
-            header.Controls.Add(providerPicker, 1, 0);
-            header.Controls.Add(configure, 2, 0);
-            var actions = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 6, RowCount = 1 };
-            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 52));
-            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 95));
-            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
-            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 87));
-            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 86));
-            actions.Controls.Add(new Label { Text = "Modèle", Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft }, 0, 0);
-            actions.Controls.Add(modelPicker, 1, 0);
-            actions.Controls.Add(new Label { Text = "Raisonnement", Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft }, 2, 0);
-            actions.Controls.Add(effortPicker, 3, 0);
-            actions.Controls.Add(refreshModels, 4, 0);
-            actions.Controls.Add(send, 5, 0);
-            layout.Controls.Add(header, 0, 0);
-            layout.Controls.Add(transcript, 0, 1);
-            layout.Controls.Add(prompt, 0, 2);
-            layout.Controls.Add(actions, 0, 3);
-            layout.Controls.Add(status, 0, 4);
-            Controls.Add(layout);
 
             tools = new LlmVbeTools(session, this);
             try { settings = LlmSettings.Load(); }
@@ -139,10 +73,7 @@ namespace CodexVBE
             codex?.Dispose();
             codex = null;
             messages.Clear();
-            messages.Add(new { role = "system", content =
-                "You are a VBE assistant. Use tools to inspect the live VBA project before stating facts about it. " +
-                "Read current code or form state before edits; pass the returned revision to every edit. " +
-                "Do not invent project, module, form or control names. Keep answers concise and in the user's language." });
+            messages.Add(new { role = "system", content = LlmVbeContext.DeveloperInstructions });
             transcript.Text = "CodexVBE est connecté au VBE. Écrivez une demande puis cliquez sur Envoyer.\r\n";
             status.Text = ((LlmProvider)providerPicker.SelectedItem).Available ?
                 "Chargement des modèles du fournisseur…" : "Ce fournisseur n'est pas encore implémenté.";
@@ -247,8 +178,10 @@ namespace CodexVBE
             configure.Enabled = false;
             prompt.Clear();
             Append("Vous", question);
+            tools.NoteUserRequest(question);
             int checkpoint = messages.Count;
             var provider = (LlmProvider)providerPicker.SelectedItem;
+            tools.CurrentProviderName = provider.Name;
             settings.ProviderName = provider.Name;
             try { settings.Save(); }
             catch (Exception saveError) { LoadLog.Write("LLM settings save failed: " + saveError.Message); }

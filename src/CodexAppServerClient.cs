@@ -158,9 +158,7 @@ namespace CodexVBE
                     sandbox = "read-only",
                     approvalPolicy = "never",
                     serviceName = "codexvbe",
-                    developerInstructions = "You assist only with the live VBE through the supplied dynamic VBE tools. " +
-                        "Do not use shell, filesystem, web, or other tools. Inspect state before edits and use revision guards. " +
-                        "VBE edits require explicit approval in the host UI. Answer in the user's language.",
+                    developerInstructions = LlmVbeContext.DeveloperInstructions,
                     dynamicTools = definitions
                 });
                 threadId = GetString(GetObject(GetObject(started, "result"), "thread"), "id");

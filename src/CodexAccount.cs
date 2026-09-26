@@ -5,6 +5,13 @@ using System.Threading.Tasks;
 
 namespace CodexVBE
 {
+    internal sealed class CodexAccountStatus
+    {
+        public bool ChatGptConnected { get; private set; }
+        public string Text { get; private set; }
+        public CodexAccountStatus(bool connected, string text) { ChatGptConnected = connected; Text = text; }
+    }
+
     internal static class CodexAccount
     {
         public static string Executable
@@ -19,7 +26,7 @@ namespace CodexVBE
             }
         }
 
-        public static Task<string> ReadStatusAsync()
+        public static Task<CodexAccountStatus> ReadStatusAsync()
         {
             return Task.Run(() => {
                 var info = new ProcessStartInfo(Executable, "login status") {
@@ -31,8 +38,13 @@ namespace CodexVBE
                     string output = process.StandardOutput.ReadToEnd();
                     string error = process.StandardError.ReadToEnd();
                     if (!process.WaitForExit(10000)) { process.Kill(); throw new TimeoutException("Vérification Codex trop longue."); }
-                    if (process.ExitCode != 0) return "ChatGPT non connecté : " + error.Trim();
-                    return output.Trim();
+                    string result = (output + " " + error).Trim();
+                    if (process.ExitCode != 0)
+                        return new CodexAccountStatus(false, "ChatGPT non connecté" +
+                            (result.Length == 0 ? "." : " : " + result));
+                    bool chatGpt = result.IndexOf("ChatGPT", StringComparison.OrdinalIgnoreCase) >= 0;
+                    return new CodexAccountStatus(chatGpt,
+                        chatGpt ? "Connecté à ChatGPT" : "Connexion Codex active, mais pas avec ChatGPT : " + result);
                 }
             });
         }
