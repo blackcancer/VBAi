@@ -106,6 +106,8 @@ Cycle Page/Tab dans Excel PID 46144 : `add_form_page` a inséré PageProbe à l'
 
 Correctif par index testé Excel PID 46976 : TabProbe inséré à l'index 1 dans TabStrip (`Tab1/TabProbe/Tab2`, nœuds 3→4), puis retiré après résolution de l'index (`Tab1/Tab2`, 4→3). PageProbe a suivi le même cycle dans MultiPage (7→6 nœuds après suppression) et la `TreeVersion` finale est revenue exactement à sa valeur initiale dans ce classeur. `set_form_node_property Index=0` sur Page2 a produit l'ordre `Page2/Page1`; la même écriture sur Tab2 a donné `Tab2/Tab1`. Les versions ont changé et les arbres ont été relus. Excel est resté vivant. Ces preuves couvrent l'ajout, le retrait et l'ordre des Pages/Tabs natifs testés, sans établir l'effet sur d'éventuels contrôles ActiveX tiers.
 
+Événements sur UserForm jetable Excel PID 44612 : `create_event_procedure` pour `Click`/`cmdProbe` a ajouté `Private Sub cmdProbe_Click()` ligne 1 avec SHA changé. Un second appel identique a été refusé. `Initialize`/`UserForm` a créé `UserForm_Initialize` ligne 5 ; `list_procedures` a relu les deux noms et lignes. Un événement inexistant a rendu « Gestionnaire d’événements non valide » et un `ObjectName` absent a été refusé avant COM ; le SHA de code est resté identique après ces refus, Excel vivant. Ce résultat prouve ces deux événements natifs, pas tous les événements des 14 contrôles ni ceux d'ActiveX tiers.
+
 ## Prochaine exploration
 
 1. Vérifier les propriétés modifiables restantes des contrôles et conteneurs, ainsi que leur suppression et leur réorganisation, sur des classeurs jetables.
