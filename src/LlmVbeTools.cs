@@ -19,7 +19,7 @@ namespace CodexVBE
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
             "status", "read_user_file", "list_projects", "list_modules", "list_references", "read_module",
             "project_properties", "component_properties", "component_property_value", "vbe_windows", "code_panes", "list_procedures", "find_code", "select_procedure", "list_forms",
-            "form_state", "form_tree", "form_properties", "form_control_properties",
+            "form_state", "form_tree", "form_properties", "form_control_properties", "form_event_catalog",
             "list_form_control_types", "open_form"
         };
         public string CurrentProviderName { get; set; }
@@ -110,6 +110,8 @@ namespace CodexVBE
             Definition("form_state", "Read a UserForm and all its controls with geometry, caption and font.", new[] { "Project", "Form" }, "Project", "Form"),
             Definition("form_tree", "Read the recursive UserForm hierarchy, including Frame controls, MultiPage pages and TabStrip tabs. FormVersion and TreeVersion are the same recursive revision; use it for ExpectedFormVersion or ExpectedTreeVersion.",
                 new[] { "Project", "Form" }, "Project", "Form"),
+            Definition("form_event_catalog", "Read the COM source-interface event names for a UserForm or a control selected by canonical form_tree ControlPath. This is only the COM source catalog: VBA/VBE events such as UserForm.Initialize can be absent. SourceInterfacesComplete does not mean all usable VBE events are listed; CreateEventProc validates a requested event name.",
+                new[] { "Project", "Form" }, "Project", "Form", "ControlPath"),
             Definition("form_properties", "Read the designer properties of a UserForm.", new[] { "Project", "Form" }, "Project", "Form"),
             Definition("set_form_property", "Set a typed UserForm property or one object member path (for example Font.Name) after reading form_properties and form_state; uses ExpectedFormVersion and VBE edit policy. Read-only or unsupported objects return explicit errors.",
                 new[] { "Project", "Form", "ExpectedFormVersion", "Property", "Value" },

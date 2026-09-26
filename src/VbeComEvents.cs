@@ -25,7 +25,9 @@ namespace CodexVBE
             var errors = new List<string>();
             var provider = target as IProvideClassInfo;
             if (provider == null)
-                return new { Discovery = "IProvideClassInfo", Complete = false,
+                return new { Discovery = "IProvideClassInfo", SourceInterfacesComplete = false,
+                    VbeEventCatalogComplete = false,
+                    Scope = "COM source interfaces only; VBE and VBA runtime events may be absent.",
                     Reason = "The COM object does not expose IProvideClassInfo.",
                     Sources = sources, Events = events, Errors = errors };
 
@@ -45,7 +47,8 @@ namespace CodexVBE
             }
             bool complete = errors.Count == 0 && sources.Count > 0;
             return new { Discovery = "IProvideClassInfo/ITypeInfo source interfaces",
-                Complete = complete,
+                SourceInterfacesComplete = complete, VbeEventCatalogComplete = false,
+                Scope = "COM source interfaces only; VBE and VBA runtime events may be absent (for example UserForm.Initialize).",
                 Reason = complete ? null : "No complete COM source event interface was read.",
                 Sources = sources, Events = events, Errors = errors };
         }
