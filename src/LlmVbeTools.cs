@@ -73,10 +73,21 @@ namespace CodexVBE
                 var fields = (Dictionary<string, object>)definition.function.parameters.properties;
                 foreach (string field in required)
                     if (!values.ContainsKey(field) || values[field] == null ||
-                        (field != "Text" && values[field] is string && string.IsNullOrWhiteSpace((string)values[field])))
+                        (field != "Text" && field != "Caption" && values[field] is string &&
+                            string.IsNullOrWhiteSpace((string)values[field])))
                         throw new ArgumentException(field + " is required.");
                 foreach (string field in values.Keys)
+                {
                     if (!fields.ContainsKey(field)) throw new ArgumentException("Unexpected argument: " + field);
+                    string type = (string)((dynamic)fields[field]).type;
+                    object value = values[field];
+                    if (value == null ||
+                        (type == "string" && !(value is string)) ||
+                        (type == "boolean" && !(value is bool)) ||
+                        (type == "integer" && !(value is int) && !(value is long)) ||
+                        (type == "number" && !(value is int) && !(value is long) && !(value is double) && !(value is decimal)))
+                        throw new ArgumentException(field + " must be a " + type + ".");
+                }
                 var normalized = new Dictionary<string, object>(values) { ["Command"] = name };
                 var request = json.Deserialize<Request>(json.Serialize(normalized));
                 bool edit = name == "replace_lines" || name == "create_form" || name == "add_form_control" ||
