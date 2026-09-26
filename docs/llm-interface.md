@@ -17,6 +17,13 @@ Référence d'interaction : GitHub Copilot Chat dans Visual Studio. Son sélecte
 - La liste dépend du fournisseur sélectionné : `model/list` pour Codex app-server ; `GET /v1/models` pour OpenAI API et Claude ; `GET /api/tags` pour Ollama ; `models.list` pour Gemini. Filtrer les modèles qui ne peuvent pas servir au chat ou aux appels d'outils lorsque l'API donne cette capacité. Les identifiants issus d'une liste publique statique ne prouvent pas l'accès du compte.
 - Le choix du modèle persiste pour le fournisseur. Après actualisation, si ce modèle a disparu, le sélecteur revient au modèle par défaut annoncé par le fournisseur ou demande un nouveau choix ; il ne transmet pas silencieusement un identifiant périmé.
 - Changer de modèle pendant qu'une réponse est en cours ne modifie pas cette réponse. Le nouveau modèle sert au tour suivant. Pour Codex, `turn/start.model` permet cette modification sur la conversation courante.
+- Le niveau de raisonnement est choisi à côté du modèle dans la conversation. Pour Codex, les choix viennent de `supportedReasoningEfforts` du modèle sélectionné ; `defaultReasoningEffort` fournit la valeur initiale, et `turn/start.effort` transmet le choix au tour suivant. Masquer ou désactiver ce réglage lorsqu'un fournisseur ou un modèle ne le propose pas.
+
+## Présentation et vérification visuelle
+
+- La fenêtre de conversation garde un en-tête lisible, un historique qui occupe l'espace disponible et une zone de saisie compacte. Le fournisseur, le modèle, l'effort, l'actualisation et la configuration restent chacun identifiables et accessibles à une taille de fenêtre réduite et sous la mise à l'échelle Windows.
+- La configuration ajuste sa hauteur au contenu du fournisseur : trois lignes Codex ne doivent pas laisser le grand vide d'un formulaire prévu pour tous les fournisseurs. Les actions principales restent près des champs. Les éléments masqués ne doivent pas réserver de place.
+- Valider la disposition dans une capture réelle du VBE Excel après compilation ; la réussite du build et l'arbre d'accessibilité ne garantissent pas l'alignement visuel.
 
 ## Accès VBE
 
