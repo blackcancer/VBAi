@@ -120,6 +120,8 @@ namespace CodexVBE
                     return Response.Success(forms.SetNodeProperty(request));
                 case "set_form_node_picture":
                     return Response.Success(forms.SetNodePicture(request));
+                case "remove_form_control":
+                    return Response.Success(forms.RemoveControl(request));
                 case "set_form_control_geometry":
                     return Response.Success(forms.SetControlGeometry(request));
                 case "rename_form_control":
