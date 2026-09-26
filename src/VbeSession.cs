@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace CodexVBE
 {
@@ -29,6 +30,10 @@ namespace CodexVBE
                     return Response.Success(ListModules(request.Project));
                 case "read_module":
                     return Response.Success(ReadModule(request.Project, request.Module));
+                case "create_module":
+                    return Response.Success(CreateComponent(request, 1));
+                case "create_class":
+                    return Response.Success(CreateComponent(request, 2));
                 case "replace_lines":
                     return ReplaceLines(request);
                 case "debug_state":
@@ -45,6 +50,8 @@ namespace CodexVBE
                     return Response.Success(forms.State(request.Project, request.Form));
                 case "form_properties":
                     return Response.Success(forms.Properties(request.Project, request.Form));
+                case "set_form_property":
+                    return Response.Success(forms.SetProperty(request));
                 case "form_control_properties":
                     return Response.Success(forms.ControlProperties(request.Project, request.Form, request.Control));
                 case "create_form":
@@ -94,6 +101,38 @@ namespace CodexVBE
             dynamic module = GetModule(projectName, moduleName);
             string code = GetCode(module);
             return new { Project = projectName, Module = moduleName, Code = code, Sha256 = Hash(code) };
+        }
+
+        private object CreateComponent(Request request, int componentType)
+        {
+            if (string.IsNullOrWhiteSpace(request.Module) ||
+                !Regex.IsMatch(request.Module, @"^[A-Za-z][A-Za-z0-9_]{0,39}$"))
+                throw new ArgumentException("Module must start with a letter and contain at most 40 letters, digits or underscores.");
+            if (request.ExpectedMode != 2)
+                throw new ArgumentException("ExpectedMode must be 2 (design mode), obtained from list_projects.");
+            dynamic project = GetProject(request.Project);
+            if ((int)project.Mode != request.ExpectedMode)
+                throw new InvalidOperationException("The project is no longer in design mode.");
+            foreach (dynamic existing in project.VBComponents)
+                if (string.Equals((string)existing.Name, request.Module, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("A component with this name already exists.");
+
+            dynamic component = project.VBComponents.Add(componentType);
+            try { component.Name = request.Module; }
+            catch
+            {
+                // Only the newly created component is rolled back when its requested name is rejected.
+                try { project.VBComponents.Remove(component); } catch { }
+                throw;
+            }
+            string actualName = (string)component.Name;
+            int actualType = (int)component.Type;
+            if (!string.Equals(actualName, request.Module, StringComparison.Ordinal) || actualType != componentType)
+                throw new InvalidOperationException("The VBE did not create the requested component identity.");
+            dynamic module = component.CodeModule;
+            string code = GetCode(module);
+            return new { Project = request.Project, Module = actualName, Type = actualType,
+                Lines = (int)module.CountOfLines, Code = code, Sha256 = Hash(code) };
         }
 
         private Response ReplaceLines(Request request)

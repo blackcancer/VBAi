@@ -42,15 +42,170 @@ namespace CodexVBE
         public object Properties(string projectName, string formName)
         {
             dynamic form = GetForm(GetProject(projectName), formName);
-            var result = new List<object>();
+            return DescribeProperties(form);
+        }
+
+        public object SetProperty(Request request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Property) || request.Value == null)
+                throw new ArgumentException("Property and a non-null Value are required.");
+            dynamic project = GetDesignProject(request.Project);
+            dynamic form = GetForm(project, request.Form);
+            AssertVersion(request, form);
+            string[] path = request.Property.Split('.');
+            if (path.Length < 1 || path.Length > 2 || path.Any(part => string.IsNullOrWhiteSpace(part)))
+                throw new ArgumentException("Use a form property name or one member path such as Font.Name.");
+            string propertyName = path[0];
+            if (path.Length == 1 && string.Equals(propertyName, "Name", StringComparison.OrdinalIgnoreCase))
+            {
+                string newName = request.Value as string;
+                if (string.IsNullOrWhiteSpace(newName) || !Regex.IsMatch(newName, @"^[A-Za-z][A-Za-z0-9_]{0,39}$"))
+                    throw new ArgumentException("Name must start with a letter and contain at most 40 letters, digits or underscores.");
+                foreach (dynamic component in project.VBComponents)
+                    if (!string.Equals((string)component.Name, (string)form.Name, StringComparison.OrdinalIgnoreCase) &&
+                        string.Equals((string)component.Name, newName, StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidOperationException("A component with this name already exists.");
+                form.Name = newName;
+            }
+            else
+            {
+                dynamic property = null;
+                foreach (dynamic candidate in form.Properties)
+                    if (string.Equals((string)candidate.Name, propertyName, StringComparison.OrdinalIgnoreCase))
+                    { property = candidate; break; }
+                if (property == null) throw new InvalidOperationException("Unknown UserForm property: " + propertyName);
+                if ((int)property.NumIndices != 0)
+                    throw new InvalidOperationException("Indexed properties need an indexed editor; this path cannot be written as a scalar.");
+                if (path.Length == 1)
+                {
+                    PropertyDescriptor descriptor = TypeDescriptor.GetProperties((object)form.Designer).Find(propertyName, true);
+                    if (descriptor != null && descriptor.IsReadOnly)
+                        throw new InvalidOperationException("This UserForm property is read-only: " + propertyName);
+                    object previous = null;
+                    try { previous = property.Value; }
+                    catch (Exception ex) { throw new InvalidOperationException("Cannot read the current value of " + propertyName + ": " + ex.Message); }
+                    if (previous != null && Marshal.IsComObject(previous))
+                        throw new InvalidOperationException("Object property: use a member path such as Font.Name or a dedicated object command.");
+                    Type targetType = previous?.GetType() ?? descriptor?.PropertyType;
+                    if (targetType == null || targetType == typeof(object))
+                        throw new InvalidOperationException("Cannot determine a safe scalar type for " + propertyName);
+                    property.Value = ConvertScalar(request.Value, targetType);
+                }
+                else
+                {
+                    object source = null;
+                    try { source = property.Object; } catch { }
+                    if (source == null)
+                        throw new InvalidOperationException("The object property is absent or cannot expose members: " + propertyName);
+                    PropertyDescriptor member = TypeDescriptor.GetProperties(source).Find(path[1], true);
+                    if (member == null) throw new InvalidOperationException("Unknown object member: " + request.Property);
+                    if (member.IsReadOnly) throw new InvalidOperationException("This object member is read-only: " + request.Property);
+                    object current = member.GetValue(source);
+                    object converted = ConvertScalar(request.Value, current?.GetType() ?? member.PropertyType);
+                    member.SetValue(source, converted);
+                }
+            }
+            string currentName = (string)form.Name;
+            var properties = DescribeProperties(form);
+            return new { Project = request.Project, Form = currentName, Property = request.Property,
+                Properties = properties, State = Snapshot(request.Project, form) };
+        }
+
+        private static object ConvertScalar(object value, Type targetType)
+        {
+            if (targetType == null || targetType == typeof(object) || targetType.IsArray ||
+                (!targetType.IsPrimitive && targetType != typeof(string) && targetType != typeof(decimal) && !targetType.IsEnum))
+                throw new InvalidOperationException("This property is not a supported scalar type.");
+            if (targetType.IsEnum)
+            {
+                if (value is string) return Enum.Parse(targetType, (string)value, true);
+                return Enum.ToObject(targetType, Convert.ToInt32(value, CultureInfo.InvariantCulture));
+            }
+            if (targetType == typeof(bool) && value is string)
+            {
+                bool parsed;
+                if (!bool.TryParse((string)value, out parsed))
+                    throw new ArgumentException("Boolean value must be true or false.");
+                return parsed;
+            }
+            if (targetType == typeof(string))
+            {
+                if (!(value is string)) throw new ArgumentException("This property requires a string.");
+                return value;
+            }
+            if (targetType == typeof(float) || targetType == typeof(double) || targetType == typeof(decimal))
+            {
+                double number = Convert.ToDouble(value, CultureInfo.InvariantCulture);
+                if (double.IsNaN(number) || double.IsInfinity(number))
+                    throw new ArgumentException("Numeric value must be finite.");
+            }
+            return Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
+        }
+
+        private static List<VbePropertyInfo> DescribeProperties(dynamic form)
+        {
+            var result = new List<VbePropertyInfo>();
+            PropertyDescriptorCollection descriptors = TypeDescriptor.GetProperties((object)form.Designer);
             foreach (dynamic property in form.Properties)
             {
-                object value = null;
-                try { value = property.Value; } catch { }
-                result.Add(new { Name = (string)property.Name,
-                    Value = value == null || System.Runtime.InteropServices.Marshal.IsComObject(value) ? null : value.ToString() });
+                string name = (string)property.Name;
+                PropertyDescriptor descriptor = descriptors.Find(name, true);
+                var info = new VbePropertyInfo { Name = name, Type = descriptor?.PropertyType?.FullName,
+                    ReadOnly = descriptor == null ? (bool?)null : descriptor.IsReadOnly };
+                try { info.NumIndices = (int)property.NumIndices; }
+                catch (Exception ex) { info.Error = ex.Message; }
+                object raw = null;
+                try { raw = property.Value; }
+                catch (Exception ex) { info.Error = ex.Message; }
+                if (raw == null)
+                {
+                    try { raw = property.Object; } catch { }
+                }
+                if (raw != null && info.Type == null) info.Type = raw.GetType().FullName;
+                if (info.NumIndices > 0) info.Kind = "indexed";
+                else if (raw != null && Marshal.IsComObject(raw))
+                {
+                    info.Kind = "object";
+                    info.Members = DescribeObjectMembers(raw);
+                }
+                else
+                {
+                    info.Kind = "scalar";
+                    info.Value = NormalizeScalar(raw);
+                }
+                result.Add(info);
             }
             return result;
+        }
+
+        private static List<VbePropertyInfo> DescribeObjectMembers(object source)
+        {
+            var members = new List<VbePropertyInfo>();
+            foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(source))
+            {
+                if (members.Count >= 64) break;
+                var info = new VbePropertyInfo { Name = descriptor.Name, Type = descriptor.PropertyType?.FullName,
+                    ReadOnly = descriptor.IsReadOnly };
+                try
+                {
+                    object value = descriptor.GetValue(source);
+                    info.Kind = value != null && Marshal.IsComObject(value) ? "object" : "scalar";
+                    if (info.Kind == "scalar") info.Value = NormalizeScalar(value);
+                }
+                catch (Exception ex) { info.Error = ex.Message; }
+                members.Add(info);
+            }
+            return members;
+        }
+
+        private static object NormalizeScalar(object value)
+        {
+            if (value == null) return null;
+            if (value is string || value is bool || value is byte || value is sbyte ||
+                value is short || value is ushort || value is int || value is uint ||
+                value is long || value is ulong || value is float || value is double || value is decimal)
+                return value;
+            return Convert.ToString(value, CultureInfo.InvariantCulture);
         }
 
         public object ControlProperties(string projectName, string formName, string controlName)
@@ -78,7 +233,9 @@ namespace CodexVBE
 
         public object Create(Request request)
         {
-            ValidateName(request.Form, "Form");
+            if (string.IsNullOrWhiteSpace(request.Form) ||
+                !Regex.IsMatch(request.Form, @"^[A-Za-z][A-Za-z0-9_]{0,39}$"))
+                throw new ArgumentException("Form must start with a letter and contain at most 40 letters, digits or underscores.");
             dynamic project = GetDesignProject(request.Project);
             foreach (dynamic component in project.VBComponents)
                 if (string.Equals((string)component.Name, request.Form, StringComparison.OrdinalIgnoreCase))
@@ -272,6 +429,18 @@ namespace CodexVBE
             text.Append((string)form.Name).Append('|').Append((string)form.Properties.Item("Caption").Value).Append('|');
             AppendNumber(text, Convert.ToDouble(form.Properties.Item("Width").Value, CultureInfo.InvariantCulture));
             AppendNumber(text, Convert.ToDouble(form.Properties.Item("Height").Value, CultureInfo.InvariantCulture));
+            foreach (var property in DescribeProperties((object)form).OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                AppendVersionText(text, property.Name);
+                AppendVersionText(text, property.Kind);
+                AppendVersionText(text, Convert.ToString(property.Value, CultureInfo.InvariantCulture));
+                if (property.Members != null)
+                    foreach (var member in property.Members.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
+                    {
+                        AppendVersionText(text, member.Name);
+                        AppendVersionText(text, Convert.ToString(member.Value, CultureInfo.InvariantCulture));
+                    }
+            }
             var controls = new List<dynamic>();
             foreach (dynamic control in designer.Controls) controls.Add(control);
             foreach (dynamic control in controls.OrderBy(c => (string)c.Name, StringComparer.OrdinalIgnoreCase))
@@ -300,6 +469,12 @@ namespace CodexVBE
         private static void AppendNumber(StringBuilder text, double number)
         {
             text.Append(number.ToString("R", CultureInfo.InvariantCulture)).Append('|');
+        }
+
+        private static void AppendVersionText(StringBuilder text, string value)
+        {
+            value = value ?? "";
+            text.Append(value.Length).Append(':').Append(value);
         }
     }
 }

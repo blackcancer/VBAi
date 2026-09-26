@@ -13,21 +13,29 @@ namespace CodexVBE
     {
         private readonly VbeSession session;
         private readonly IWin32Window owner;
+        private readonly LlmSettings settings;
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
         private readonly List<string> userRequests = new List<string>();
+        private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
+            "status", "read_user_file", "list_projects", "list_modules", "read_module", "list_forms",
+            "form_state", "form_properties", "form_control_properties", "open_form"
+        };
         public string CurrentProviderName { get; set; }
 
-        public LlmVbeTools(VbeSession session, IWin32Window owner)
+        public LlmVbeTools(VbeSession session, IWin32Window owner, LlmSettings settings)
         {
             this.session = session;
             this.owner = owner;
+            this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
         private static object Definition(string name, string description, string[] required, params string[] fields)
         {
             var properties = new Dictionary<string, object>();
             foreach (string field in fields)
-                properties[field] = new { type = field == "StartLine" || field == "Count" ? "integer" :
+                properties[field] = field == "Value" ? (object)new { anyOf = new object[] {
+                    new { type = "string" }, new { type = "number" }, new { type = "boolean" } } } :
+                    new { type = field == "StartLine" || field == "Count" || field == "ExpectedMode" ? "integer" :
                     field == "Left" || field == "Top" || field == "Width" || field == "Height" || field == "FontSize" ? "number" :
                     field == "FontBold" ? "boolean" : "string" };
             return new { type = "function", function = new {
@@ -43,30 +51,37 @@ namespace CodexVBE
             Definition("list_projects", "List open VBA projects and their modes.", new string[0]),
             Definition("list_modules", "List modules in one VBA project.", new[] { "Project" }, "Project"),
             Definition("read_module", "Read complete VBA code and its SHA-256 revision.", new[] { "Project", "Module" }, "Project", "Module"),
+            Definition("create_module", "Create a named standard VBA module in the selected design-mode project. ExpectedMode must be 2 from list_projects.",
+                new[] { "Project", "Module", "ExpectedMode" }, "Project", "Module", "ExpectedMode"),
+            Definition("create_class", "Create a named VBA class module in the selected design-mode project. ExpectedMode must be 2 from list_projects.",
+                new[] { "Project", "Module", "ExpectedMode" }, "Project", "Module", "ExpectedMode"),
             Definition("list_forms", "List UserForms in a project.", new[] { "Project" }, "Project"),
             Definition("form_state", "Read a UserForm and all its controls with geometry, caption and font.", new[] { "Project", "Form" }, "Project", "Form"),
             Definition("form_properties", "Read the designer properties of a UserForm.", new[] { "Project", "Form" }, "Project", "Form"),
+            Definition("set_form_property", "Set a typed UserForm property or one object member path (for example Font.Name) after reading form_properties and form_state; uses ExpectedFormVersion and VBE edit policy. Read-only or unsupported objects return explicit errors.",
+                new[] { "Project", "Form", "ExpectedFormVersion", "Property", "Value" },
+                "Project", "Form", "ExpectedFormVersion", "Property", "Value"),
             Definition("form_control_properties", "Read all exposed design properties, types and read-only flags of one UserForm control.",
                 new[] { "Project", "Form", "Control" }, "Project", "Form", "Control"),
             Definition("open_form", "Open a UserForm designer window in VBE.", new[] { "Project", "Form" }, "Project", "Form"),
-            Definition("create_form", "Create a UserForm in design mode; requires user approval.",
+            Definition("create_form", "Create a named UserForm in the selected design-mode project, subject to VBE edit policy.",
                 new[] { "Project", "Form" }, "Project", "Form"),
-            Definition("replace_lines", "Replace VBA lines only when ExpectedSha256 matches the current module; requires user approval.",
+            Definition("replace_lines", "Replace VBA lines only when ExpectedSha256 matches the current module; subject to VBE edit policy.",
                 new[] { "Project", "Module", "ExpectedSha256", "StartLine", "Count", "Text" },
                 "Project", "Module", "ExpectedSha256", "StartLine", "Count", "Text"),
-            Definition("add_form_control", "Add a built-in MSForms control in design mode; requires form revision and user approval.",
+            Definition("add_form_control", "Add a built-in MSForms control in design mode; requires form revision and VBE edit policy.",
                 new[] { "Project", "Form", "ExpectedFormVersion", "ControlType", "Control", "Left", "Top", "Width", "Height" },
                 "Project", "Form", "ExpectedFormVersion", "ControlType", "Control", "Left", "Top", "Width", "Height", "Caption"),
-            Definition("rename_form_control", "Rename a UserForm control; requires form revision and user approval.",
+            Definition("rename_form_control", "Rename a UserForm control; requires form revision and VBE edit policy.",
                 new[] { "Project", "Form", "ExpectedFormVersion", "Control", "NewName" },
                 "Project", "Form", "ExpectedFormVersion", "Control", "NewName"),
-            Definition("set_form_control_caption", "Set a UserForm control caption; requires form revision and user approval.",
+            Definition("set_form_control_caption", "Set a UserForm control caption; requires form revision and VBE edit policy.",
                 new[] { "Project", "Form", "ExpectedFormVersion", "Control", "Caption" },
                 "Project", "Form", "ExpectedFormVersion", "Control", "Caption"),
-            Definition("set_form_control_font", "Set a UserForm control font; requires form revision and user approval.",
+            Definition("set_form_control_font", "Set a UserForm control font; requires form revision and VBE edit policy.",
                 new[] { "Project", "Form", "ExpectedFormVersion", "Control", "FontName", "FontSize", "FontBold" },
                 "Project", "Form", "ExpectedFormVersion", "Control", "FontName", "FontSize", "FontBold"),
-            Definition("set_form_control_geometry", "Place and size a UserForm control; requires form revision and user approval.",
+            Definition("set_form_control_geometry", "Place and size a UserForm control; requires form revision and VBE edit policy.",
                 new[] { "Project", "Form", "ExpectedFormVersion", "Control", "Left", "Top", "Width", "Height" },
                 "Project", "Form", "ExpectedFormVersion", "Control", "Left", "Top", "Width", "Height")
         }; } }
@@ -83,14 +98,21 @@ namespace CodexVBE
                 var fields = (Dictionary<string, object>)definition.function.parameters.properties;
                 foreach (string field in required)
                     if (!values.ContainsKey(field) || values[field] == null ||
-                        (field != "Text" && field != "Caption" && values[field] is string &&
+                        (field != "Text" && field != "Caption" && field != "Value" && values[field] is string &&
                             string.IsNullOrWhiteSpace((string)values[field])))
                         throw new ArgumentException(field + " is required.");
                 foreach (string field in values.Keys)
                 {
                     if (!fields.ContainsKey(field)) throw new ArgumentException("Unexpected argument: " + field);
-                    string type = (string)((dynamic)fields[field]).type;
                     object value = values[field];
+                    if (field == "Value")
+                    {
+                        if (!(value is string) && !(value is bool) && !(value is int) &&
+                            !(value is long) && !(value is double) && !(value is decimal))
+                            throw new ArgumentException("Value must be a string, number or boolean.");
+                        continue;
+                    }
+                    string type = (string)((dynamic)fields[field]).type;
                     if (value == null ||
                         (type == "string" && !(value is string)) ||
                         (type == "boolean" && !(value is bool)) ||
@@ -102,9 +124,13 @@ namespace CodexVBE
                     return json.Serialize(ReadUserFile((string)values["Path"]));
                 var normalized = new Dictionary<string, object>(values) { ["Command"] = name };
                 var request = json.Deserialize<Request>(json.Serialize(normalized));
-                bool edit = name == "replace_lines" || name == "create_form" || name == "add_form_control" ||
-                    name.StartsWith("set_form_control_") || name == "rename_form_control";
-                if (edit)
+                // All newly registered tools are treated as edits unless explicitly classified as read-only.
+                bool edit = !ReadOnlyTools.Contains(name);
+                if (edit && settings.VbeEditApproval == "ReadOnly")
+                    return json.Serialize(Response.Failure("Les modifications VBE sont désactivées (mode Lecture seule)."));
+                if (edit && settings.VbeEditApproval != "Automatic" && settings.VbeEditApproval != "AskEachTime")
+                    return json.Serialize(Response.Failure("Politique de modification VBE inconnue ; action refusée."));
+                if (edit && settings.VbeEditApproval == "AskEachTime")
                 {
                     string summary = name + "\r\n\r\n" + json.Serialize(values);
                     using (var approval = new Form { Text = "CodexVBE — valider la modification", Width = 740,

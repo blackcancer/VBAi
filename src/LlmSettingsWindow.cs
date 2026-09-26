@@ -18,6 +18,9 @@ namespace CodexVBE
             this.settings = settings;
             InitializeComponent();
             provider.Items.AddRange(LlmProvider.All);
+            approvalPicker.Items.AddRange(new object[] { "Automatique", "Demander à chaque action", "Lecture seule" });
+            approvalPicker.SelectedIndex = settings.VbeEditApproval == "ReadOnly" ? 2 :
+                settings.VbeEditApproval == "AskEachTime" ? 1 : 0;
             int current = Array.FindIndex(LlmProvider.All, item => item.Name == settings.ProviderName);
             provider.SelectedIndex = current < 0 ? 0 : current;
             openAiEndpoint.Text = settings.OpenAiEndpoint ?? "";
@@ -40,7 +43,7 @@ namespace CodexVBE
             bool openAi = selected.Name == "OpenAI API";
             bool ollama = selected.Name == "Ollama";
             int[] heights = { 38, codex ? 38 : 0, codex ? 42 : 0, openAi ? 38 : 0,
-                ollama ? 38 : 0, openAi ? 38 : 0, openAi ? 38 : 0, openAi ? 55 : 0 };
+                ollama ? 38 : 0, openAi ? 38 : 0, openAi ? 38 : 0, openAi ? 55 : 0, 38 };
             for (int i = 0; i < heights.Length; i++) grid.RowStyles[i].Height = heights[i];
             foreach (Control control in grid.Controls)
             {
@@ -48,7 +51,7 @@ namespace CodexVBE
                 control.Visible = heights[row] > 0;
             }
             if (codex) _ = RefreshCodexStatusAsync();
-            Height = codex ? 260 : openAi ? 360 : ollama ? 260 : 230;
+            Height = codex ? 300 : openAi ? 400 : ollama ? 300 : 270;
         }
 
         private async System.Threading.Tasks.Task RefreshCodexStatusAsync()
@@ -80,6 +83,8 @@ namespace CodexVBE
                 ValidateEndpoint(openAiEndpoint.Text);
                 ValidateEndpoint(ollamaEndpoint.Text);
                 settings.ProviderName = ((LlmProvider)provider.SelectedItem).Name;
+                settings.VbeEditApproval = approvalPicker.SelectedIndex == 2 ? "ReadOnly" :
+                    approvalPicker.SelectedIndex == 1 ? "AskEachTime" : "Automatic";
                 settings.OpenAiEndpoint = openAiEndpoint.Text.Trim();
                 settings.OllamaEndpoint = ollamaEndpoint.Text.Trim();
                 if (clearKey.Checked) settings.EncryptedOpenAiKey = null;

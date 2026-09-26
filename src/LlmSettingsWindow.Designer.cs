@@ -25,6 +25,8 @@ namespace CodexVBE
         private Label ollamaEndpointLabel;
         private Label keyLabel;
         private Label keyNote;
+        private Label approvalLabel;
+        private ComboBox approvalPicker;
 
         private void InitializeComponent()
         {
@@ -48,6 +50,8 @@ namespace CodexVBE
             this.ollamaEndpointLabel = new Label();
             this.keyLabel = new Label();
             this.keyNote = new Label();
+            this.approvalLabel = new Label();
+            this.approvalPicker = new ComboBox();
             this.grid.SuspendLayout();
             this.codexActions.SuspendLayout();
             this.buttons.SuspendLayout();
@@ -55,7 +59,7 @@ namespace CodexVBE
 
             this.grid.Dock = DockStyle.Fill;
             this.grid.ColumnCount = 2;
-            this.grid.RowCount = 8;
+            this.grid.RowCount = 9;
             this.grid.Padding = new Padding(12);
             this.grid.AutoScroll = true;
             this.grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 220F));
@@ -68,6 +72,7 @@ namespace CodexVBE
             this.grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 38F));
             this.grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 38F));
             this.grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 55F));
+            this.grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 38F));
 
             this.providerLabel.Text = "Fournisseur";
             this.accountLabel.Text = "Compte ChatGPT";
@@ -75,6 +80,11 @@ namespace CodexVBE
             this.openAiEndpointLabel.Text = "URL OpenAI (facultatif)";
             this.ollamaEndpointLabel.Text = "URL Ollama (facultatif)";
             this.keyLabel.Text = "Nouvelle clé OpenAI API";
+            this.approvalLabel.Text = "Modifications VBE";
+            this.approvalLabel.Dock = DockStyle.Fill;
+            this.approvalLabel.TextAlign = ContentAlignment.MiddleLeft;
+            this.approvalPicker.Dock = DockStyle.Fill;
+            this.approvalPicker.DropDownStyle = ComboBoxStyle.DropDownList;
             this.providerLabel.Dock = DockStyle.Fill;
             this.providerLabel.TextAlign = ContentAlignment.MiddleLeft;
             this.accountLabel.Dock = DockStyle.Fill;
@@ -125,6 +135,8 @@ namespace CodexVBE
             this.grid.Controls.Add(this.openAiKey, 1, 5);
             this.grid.Controls.Add(this.clearKey, 1, 6);
             this.grid.Controls.Add(this.keyNote, 1, 7);
+            this.grid.Controls.Add(this.approvalLabel, 0, 8);
+            this.grid.Controls.Add(this.approvalPicker, 1, 8);
 
             this.buttons.Dock = DockStyle.Bottom;
             this.buttons.Height = 48;
@@ -139,7 +151,7 @@ namespace CodexVBE
 
             this.AutoScaleMode = AutoScaleMode.Dpi;
             this.Font = new Font("Segoe UI", 9F);
-            this.ClientSize = new Size(624, 330);
+            this.ClientSize = new Size(624, 368);
             this.MinimumSize = new Size(560, 235);
             this.StartPosition = FormStartPosition.CenterParent;
             this.ShowInTaskbar = false;

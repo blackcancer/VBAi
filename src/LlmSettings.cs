@@ -10,6 +10,8 @@ namespace CodexVBE
     internal sealed class LlmSettings
     {
         public string ProviderName { get; set; } = "Codex";
+        // Automatic is the requested default for this prototype; unknown persisted values fail closed in LlmVbeTools.
+        public string VbeEditApproval { get; set; } = "Automatic";
         public string CodexModel { get; set; }
         public string OpenAiModel { get; set; }
         public string OllamaModel { get; set; }
@@ -26,8 +28,12 @@ namespace CodexVBE
         public static LlmSettings Load()
         {
             if (!File.Exists(FilePath)) return new LlmSettings();
-            return new JavaScriptSerializer().Deserialize<LlmSettings>(File.ReadAllText(FilePath, Encoding.UTF8))
-                ?? new LlmSettings();
+            string content = File.ReadAllText(FilePath, Encoding.UTF8);
+            var stored = new JavaScriptSerializer().DeserializeObject(content) as System.Collections.Generic.IDictionary<string, object>;
+            var loaded = new JavaScriptSerializer().Deserialize<LlmSettings>(content) ?? new LlmSettings();
+            // Existing installations previously confirmed every edit. Preserve that behavior until changed in Settings.
+            if (stored == null || !stored.ContainsKey("VbeEditApproval")) loaded.VbeEditApproval = "AskEachTime";
+            return loaded;
         }
 
         public void Save()

@@ -28,9 +28,9 @@ namespace CodexVBE
             InitializeComponent();
             providerPicker.Items.AddRange(LlmProvider.All);
 
-            tools = new LlmVbeTools(session, this);
             try { settings = LlmSettings.Load(); }
             catch (Exception ex) { LoadLog.Write("LLM settings load failed: " + ex.Message); settings = new LlmSettings(); }
+            tools = new LlmVbeTools(session, this, settings);
             providerPicker.SelectedIndexChanged += async (sender, args) => { ResetConversation(); await LoadModelsAsync(); };
             int selected = Array.FindIndex(LlmProvider.All, item => item.Name == settings.ProviderName);
             providerPicker.SelectedIndex = selected < 0 ? 0 : selected;
