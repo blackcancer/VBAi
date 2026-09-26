@@ -18,7 +18,7 @@ namespace CodexVBE
         private readonly List<string> userRequests = new List<string>();
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
             "status", "read_user_file", "list_projects", "list_modules", "list_references", "read_module",
-            "project_properties", "component_properties", "component_property_value", "vbe_windows", "code_panes", "list_procedures", "find_code", "select_procedure", "list_forms",
+            "project_properties", "component_properties", "component_property_value", "vbe_windows", "code_panes", "open_object_browser", "list_procedures", "find_code", "select_procedure", "list_forms",
             "form_state", "form_tree", "form_properties", "form_control_properties", "form_event_catalog",
             "list_form_control_types", "open_form"
         };
@@ -55,6 +55,7 @@ namespace CodexVBE
             Definition("list_modules", "List modules in one VBA project.", new[] { "Project" }, "Project"),
             Definition("vbe_windows", "Read the native VBIDE Windows collection and the active window, including window type, visibility, state and position. Collection indexes are transient; no window is activated.", new string[0]),
             Definition("code_panes", "Read the already open VBIDE CodePanes collection and active code pane, with project/module, view, visible range and selection. Does not create or activate a pane.", new string[0]),
+            Definition("open_object_browser", "Open the native VBE Object Browser through CommandBars Id 473 and read vbe_windows immediately. Opening may be asynchronous: if VerificationPending is true, call vbe_windows again in a separate request and confirm a visible Type 2 window. This command does not read libraries, classes or members.", new string[0]),
             Definition("list_procedures", "List Sub, Function and Property Get/Let/Set procedures from CodeModule without opening a code pane; returns exact VBIDE line ranges and module SHA-256.",
                 new[] { "Project", "Module" }, "Project", "Module"),
             Definition("find_code", "Search literal text in one module or all modules of a project from CodeModule.Lines without opening a pane. Returns up to 200 locations and source SHA-256 values; supports case and whole-word matching.",
