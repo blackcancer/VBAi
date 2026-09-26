@@ -31,6 +31,8 @@ Le 26 septembre 2026, dans Excel 64 bits (PID 31488), une sonde chargée dans le
 
 ## Inventaire des propriétés de contrôle
 
+Un nouvel essai Excel visible (PID 40240) a placé les 14 contrôles standard sur `CodexAllControlProperties` et exporté **771 descripteurs** dans [excel-control-properties.csv](excel-control-properties.csv). La sonde reproductible est `tools/probes/Export-ControlProperties.ps1`. Chaque ligne contient le type de contrôle, son ProgID, le nom et le type de la propriété, `ReadOnly`, la valeur lisible et une éventuelle erreur. Les nombres de propriétés par type vont de 36 (SpinButton) à 86 (ComboBox). Les onze erreurs de lecture portent toutes sur `_Font_Reserved` (`0x80020003`). Cet export est un inventaire de lecture sur cet hôte Excel ; `ReadOnly=False` n'établit pas encore qu'une écriture soit acceptée par le VBE. La boîte à outils peut aussi accueillir des contrôles ActiveX supplémentaires, qui devront être découverts et inspectés dynamiquement.
+
 Dans des classeurs Excel jetables, `TypeDescriptor.GetProperties` sur les objets COM du concepteur a retourné les résultats suivants. Les 14 ProgID sont acceptés par `add_form_control` et ont été relus via `form_control_properties` dans le VBE Excel vivant. « Modifiables » signifie seulement que le descripteur ne porte pas `IsReadOnly` ; cela ne prouve pas que toute écriture soit sûre.
 
 | Contrôle `Forms.*.1` | Propriétés | Descripteurs modifiables | `Caption` | `Value` | `Picture` |
