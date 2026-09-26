@@ -73,7 +73,7 @@ namespace CodexVBE
             Definition("remove_component", "Remove an editable non-document component after checking project and component revisions; VBE edit policy applies. Removal cannot be undone in VBE.",
                 new[] { "Project", "Module", "ExpectedProjectVersion", "ExpectedComponentVersion" },
                 "Project", "Module", "ExpectedProjectVersion", "ExpectedComponentVersion"),
-            Definition("import_component", "Import a VBA component from an absolute file path explicitly supplied by the user, with ExpectedProjectVersion and VBE edit policy. The file stays local.",
+            Definition("import_component", "Import a VBA component from an absolute file path explicitly supplied by the user, with ExpectedProjectVersion and VBE edit policy. The file stays local. Read Applied and Verified separately; if verification is incomplete, inspect list_modules before any retry.",
                 new[] { "Project", "ExpectedProjectVersion", "Path" },
                 "Project", "ExpectedProjectVersion", "Path"),
             Definition("export_component", "Export a VBA component to a new absolute path explicitly supplied by the user, with ExpectedComponentVersion and VBE edit policy. Existing files are not overwritten; a UserForm may also create an FRX companion.",

@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Web.Script.Serialization;
 
 namespace CodexVBE
@@ -202,9 +203,61 @@ namespace CodexVBE
             string path = RequireExistingPath(request.Path);
             dynamic project = GetDesignProject(request.Project);
             AssertProjectVersion(request, project);
-            dynamic component = project.VBComponents.Import(path);
-            return new { Imported = ComponentSnapshot(request.Project, component),
-                Project = ProjectProperties(request.Project) };
+            var before = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (dynamic existing in project.VBComponents) before.Add((string)existing.Name);
+
+            Exception importError = null;
+            try { project.VBComponents.Import(path); }
+            catch (Exception ex) { importError = ex; }
+
+            // A COM error can occur after the component was added. Never call Import
+            // again merely because its result or the immediate readback failed.
+            var added = new List<string>();
+            try
+            {
+                foreach (dynamic existing in project.VBComponents)
+                {
+                    string name = (string)existing.Name;
+                    if (!before.Contains(name)) added.Add(name);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Import outcome is uncertain after COM error. " +
+                    "Read list_modules before retrying; automatic re-import is disabled. " + ex.Message, ex);
+            }
+            if (added.Count != 1)
+            {
+                string cause = importError == null ? "" : " COM error: " + importError.Message;
+                throw new InvalidOperationException("Import outcome is uncertain (new components: " +
+                    added.Count + "). Read list_modules before retrying; automatic re-import is disabled." + cause);
+            }
+
+            string importedName = added[0];
+            object importedState = ReadAfterImport(() => ComponentSnapshot(request.Project,
+                GetComponent(project, importedName)), out string componentError);
+            object projectState = ReadAfterImport(() => ProjectProperties(request.Project),
+                out string projectError);
+            bool verified = importedState != null && projectState != null;
+            return new { Applied = true, Verified = verified, ImportedName = importedName,
+                Imported = importedState, Project = projectState,
+                ImportError = importError?.Message, ComponentReadbackError = componentError,
+                ProjectReadbackError = projectError };
+        }
+
+        private static object ReadAfterImport(Func<object> read, out string error)
+        {
+            error = null;
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                try { return read(); }
+                catch (Exception ex)
+                {
+                    error = ex.Message;
+                    if (attempt < 2) Thread.Sleep(150);
+                }
+            }
+            return null;
         }
 
         public object ExportComponent(Request request)
