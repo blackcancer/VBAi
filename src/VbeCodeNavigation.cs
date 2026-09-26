@@ -43,8 +43,8 @@ namespace CodexVBE
         {
             if (string.IsNullOrEmpty(request.Query) || request.Query.Length > 200)
                 throw new ArgumentException("Query must contain 1 to 200 characters.");
-            if (request.MatchCase && request.PatternSearch)
-                throw new ArgumentException("MatchCase and PatternSearch cannot both be true in VBIDE.Find.");
+            if (request.PatternSearch)
+                throw new InvalidOperationException("Wildcard search is not yet supported by find_code.");
             dynamic project = GetProject(request.Project);
             var results = new List<object>();
             var sourceVersions = new List<object>();
@@ -63,38 +63,47 @@ namespace CodexVBE
                 string sha = Hash(code);
                 sourceVersions.Add(new { Module = name, Sha256 = sha });
                 if (total == 0) continue;
-                int startLine = 1, startColumn = 1;
-                while (startLine <= total && results.Count < 200)
+                string[] lines = code.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+                if (lines.Length == total + 1 && lines[total].Length == 0)
+                    Array.Resize(ref lines, total);
+                if (lines.Length != total)
                 {
-                    int endLine = total, endColumn = -1;
-                    int searchedLine = startLine, searchedColumn = startColumn;
-                    bool found = (bool)module.Find(request.Query, ref startLine, ref startColumn,
-                        ref endLine, ref endColumn, request.WholeWord, request.MatchCase,
-                        request.PatternSearch);
-                    if (!found) break;
-                    if (startLine < searchedLine ||
-                        (startLine == searchedLine && startColumn < searchedColumn) ||
-                        endLine < startLine || endLine > total || endColumn < 1)
-                        throw new InvalidOperationException("VBIDE.Find returned an invalid or backwards range.");
-                    results.Add(new { Module = name, StartLine = startLine,
-                        StartColumn = startColumn, EndLine = endLine, EndColumn = endColumn,
-                        Text = (string)module.Lines[startLine, 1], Sha256 = sha });
-                    int nextLine = endLine, nextColumn = endColumn + 1;
-                    if (nextLine == searchedLine && nextColumn <= searchedColumn)
-                        nextColumn = searchedColumn + 1;
-                    if (nextLine <= total)
-                    {
-                        string lastLine = (string)module.Lines[nextLine, 1];
-                        if (nextColumn > lastLine.Length) { nextLine++; nextColumn = 1; }
-                    }
-                    startLine = nextLine;
-                    startColumn = nextColumn;
+                    lines = new string[total];
+                    for (int line = 1; line <= total; line++)
+                        lines[line - 1] = (string)module.Lines[line, 1];
                 }
-                if (results.Count >= 200) break;
+                for (int line = 0; line < lines.Length && results.Count <= 200; line++)
+                {
+                    string sourceLine = lines[line];
+                    int offset = 0;
+                    while (offset <= sourceLine.Length - request.Query.Length && results.Count <= 200)
+                    {
+                        int match = sourceLine.IndexOf(request.Query, offset,
+                            request.MatchCase ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
+                        if (match < 0) break;
+                        int after = match + request.Query.Length;
+                        bool word = !request.WholeWord ||
+                            ((match == 0 || !IdentifierChar(sourceLine[match - 1])) &&
+                             (after == sourceLine.Length || !IdentifierChar(sourceLine[after])));
+                        if (word)
+                            results.Add(new { Module = name, StartLine = line + 1,
+                                StartColumn = match + 1, EndLine = line + 1, EndColumn = after,
+                                Text = sourceLine, Sha256 = sha });
+                        offset = match + 1;
+                    }
+                }
+                if (results.Count > 200) break;
             }
+            bool truncated = results.Count > 200;
+            if (truncated) results.RemoveAt(200);
             return new { Project = request.Project, Query = request.Query,
                 Matches = results, SourceVersions = sourceVersions,
-                Truncated = results.Count >= 200 };
+                Truncated = truncated };
+        }
+
+        private static bool IdentifierChar(char value)
+        {
+            return char.IsLetterOrDigit(value) || value == '_';
         }
 
         public object SelectProcedure(Request request, VbeDebug debugger)
