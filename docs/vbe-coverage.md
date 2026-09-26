@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Projets et composants | `list_projects`, `list_modules`, `read_module`, `replace_lines` avec empreinte du module ; mode du projet lisible. | Créer, renommer, supprimer, importer/exporter des composants ; références ; chemins et identité de l'hôte ; sauvegarde explicite. |
 | Éditeur de code | Texte vivant et sélection d'une ligne par `CodePane.SetSelection`. | Navigation par procédure/symbole, recherche globale, changements structurés, lecture fiable de l'erreur de compilation. |
-| Formulaires | `list_forms`, `create_form`, `open_form`, `form_state`, `form_properties`. Le concepteur est une fenêtre MDI native `DesignerWindow` avec un `ThunderDFrame` pour le formulaire. | Définir les propriétés du formulaire, inspecter et modifier toutes les propriétés des contrôles, gérer les événements et les conteneurs. |
+| Formulaires | `list_forms`, `create_form`, `open_form`, `form_state`, `form_properties`. Le concepteur est une fenêtre MDI native `DesignerWindow` avec un `ThunderDFrame` pour le formulaire. Le chat Codex a invoqué `create_form` dans Excel. | Modifier les propriétés propres au formulaire, inspecter et modifier toutes les propriétés des contrôles, gérer les événements et les conteneurs. |
 | Contrôles de formulaire | Ajout d'un Label, renommage, Caption, géométrie et police validés par relecture COM dans Excel. `form_control_properties` énumère les propriétés typées des contrôles. Les modifications exigent la version lue du formulaire. | Écriture des propriétés au-delà du sous-ensemble actuel ; suppression, duplication, ordre de tabulation et superposition. |
 | Fenêtre Propriétés | Fenêtre native visible (`wndclass_pbrs`), propriété du formulaire énumérable via VBIDE. | La sélection dans la fenêtre Propriétés peut rester sur `Feuil1` alors que le concepteur du formulaire est actif ; ne pas la prendre comme source de vérité implicite. |
 | Explorateur de projets et d'objets | Fenêtre Projet native visible ; commande native de l'Explorateur d'objets découverte (`Id=473`, activée). | Navigation et lecture structurée de l'Explorateur d'objets non vérifiées. |
@@ -51,6 +51,10 @@ Dans des classeurs Excel jetables, `TypeDescriptor.GetProperties` sur les objets
 | ToggleButton | 57 | 48 | Oui | Oui | Oui |
 
 Les noms et types incluent `Name`, `Left`, `Top`, `Width`, `Height`, `Visible`, `Enabled`, puis des propriétés propres à chaque contrôle. `_Font_Reserved` échoue à la lecture (`0x80020003`) sur Label, TextBox, CommandButton, CheckBox, Frame, ComboBox, OptionButton, ListBox, MultiPage, TabStrip et ToggleButton ; aucune autre erreur de lecture n'a été relevée sur les huit derniers types testés. Le ComboBox a nécessité une garde pour un descripteur dont le type est nul.
+
+### Propriétés propres au UserForm
+
+Dans le classeur Excel jetable suivant, le chat a créé `CodexAgentFormProbe`. `form_properties` a relu 50 propriétés du `VBComponent.Properties`, parmi lesquelles `Name`, `Caption=UserForm1`, `Left=0`, `Top=0`, `Width=240`, `Height=180`, `Enabled=True`, `Tag`, `BackColor`, `ForeColor`, `StartUpPosition=1`, `ShowModal=True` et `Zoom=100`. Certaines sont des objets ou états non scalaires (`Controls`, `Font`, `Selected`, `ActiveControl`) ; la commande de lecture actuelle les rend `null` et ne donne ni type ni caractère modifiable. Aucune commande exposée ne change encore les propriétés du formulaire lui-même. La création du composant n'établit donc pas une capacité de conception complète du UserForm. Une commande de modification doit cibler la propriété, convertir la valeur selon son type, rejeter les objets/états non éditables, puis relire la propriété et le formulaire. La révision actuelle ne couvre que `Caption`, `Width`, `Height` et les contrôles du premier niveau : toute autre propriété écrite nécessite aussi une protection de concurrence adaptée.
 
 ### Conteneurs et contrôles imbriqués
 
