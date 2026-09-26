@@ -35,6 +35,10 @@ Un nouvel essai Excel visible (PID 40240) a placé les 14 contrôles standard su
 
 La catégorie COM x64 `CATID_Control` a révélé trois autres ProgID enregistrés sur ce poste (`WindowsMail.MimeEdit.1`, `TDCCtl.TDCCtl.1`, `MSVidCtl.MSVidCtl.1`). Ils sont seulement des **candidats** : le registre ne prouve ni leur présence effective dans la boîte à outils VBE ni leur compatibilité avec son conteneur. Les 14 `Forms.*` ne figurent pas dans ce relevé de catégorie ; la découverte devra combiner les contrôles Microsoft Forms et les ActiveX installés, puis vérifier leur comportement dans l'hôte.
 
+La commande `list_form_control_types` du complément a ensuite lu le registre fusionné `HKEY_CLASSES_ROOT` dans Excel PID 38320 : **14 contrôles Forms natifs et 12 candidats ActiveX x64**, dont neuf `MSComctlLib.*` absents du premier relevé séparé HKLM/HKCU. Le seul candidat essayé, `MSComctlLib.ListViewCtrl.2`, a été refusé par `Controls.Add` avec « Le sujet n’est pas approuvé pour l’action spécifiée » ; Excel est resté vivant. Les onze autres candidats n'ont pas été essayés. La commande doit donc présenter le catalogue comme liste de candidats, non comme promesse d'hébergement.
+
+Dans le même classeur jetable, `set_form_node_property` a modifié puis relu trois propriétés dont le descripteur est `Com2Variant` : `TextBox.Value` avec une chaîne, `CheckBox.Value` avec un booléen et `ComboBox.ListWidth` de `0 pt` à `72 pt`. Les trois appels ont changé `TreeVersion` et Excel est resté vivant. Ce test couvre ces conversions précises, pas les 30 propriétés `Com2Variant` recensées.
+
 Dans des classeurs Excel jetables, `TypeDescriptor.GetProperties` sur les objets COM du concepteur a retourné les résultats suivants. Les 14 ProgID sont acceptés par `add_form_control` et ont été relus via `form_control_properties` dans le VBE Excel vivant. « Modifiables » signifie seulement que le descripteur ne porte pas `IsReadOnly` ; cela ne prouve pas que toute écriture soit sûre.
 
 | Contrôle `Forms.*.1` | Propriétés | Descripteurs modifiables | `Caption` | `Value` | `Picture` |
