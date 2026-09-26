@@ -52,6 +52,8 @@ namespace CodexVBE
                     return Response.Success(forms.Properties(request.Project, request.Form));
                 case "set_form_property":
                     return Response.Success(forms.SetProperty(request));
+                case "set_form_picture":
+                    return Response.Success(forms.SetPicture(request));
                 case "form_control_properties":
                     return Response.Success(forms.ControlProperties(request.Project, request.Form, request.Control));
                 case "create_form":

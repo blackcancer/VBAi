@@ -107,6 +107,22 @@ namespace CodexVBE
                 Properties = properties, State = Snapshot(request.Project, form) };
         }
 
+        public object SetPicture(Request request)
+        {
+            dynamic form = GetForm(GetDesignProject(request.Project), request.Form);
+            AssertVersion(request, form);
+            object picture = OlePictureLoader.Load(request.Path);
+            dynamic designer = form.Designer;
+            designer.Picture = picture;
+            object installed = designer.Picture;
+            string expected = OlePictureLoader.Fingerprint(picture);
+            string actual = OlePictureLoader.Fingerprint(installed);
+            if (!string.Equals(expected, actual, StringComparison.Ordinal))
+                throw new InvalidOperationException("The UserForm did not retain the requested OLE picture.");
+            return new { Project = request.Project, Form = request.Form,
+                Picture = actual, Properties = DescribeProperties(form), State = Snapshot(request.Project, form) };
+        }
+
         private static object ConvertScalar(object value, Type targetType)
         {
             if (targetType == null || targetType == typeof(object) || targetType.IsArray ||
@@ -184,6 +200,20 @@ namespace CodexVBE
                 PropertyDescriptor descriptor = descriptors.Find(name, true);
                 var info = new VbePropertyInfo { Name = name, Type = descriptor?.PropertyType?.FullName,
                     ReadOnly = descriptor == null ? (bool?)null : descriptor.IsReadOnly };
+                if (string.Equals(name, "Picture", StringComparison.OrdinalIgnoreCase))
+                {
+                    info.Kind = "object";
+                    info.Type = "stdole.IPictureDisp";
+                    try
+                    {
+                        object installed = ((dynamic)designer).Picture;
+                        info.Digest = OlePictureLoader.Fingerprint(installed);
+                        info.Display = installed == null ? "(empty)" : info.Digest;
+                    }
+                    catch (Exception ex) { info.Error = ex.Message; }
+                    result.Add(info);
+                    continue;
+                }
                 try { info.NumIndices = (int)property.NumIndices; }
                 catch (Exception ex) { info.Error = ex.Message; }
                 object raw = null;

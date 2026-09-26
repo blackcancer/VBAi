@@ -25,6 +25,7 @@ namespace CodexVBE
         public string ExpectedFormVersion { get; set; }
         public string Property { get; set; }
         public object Value { get; set; }
+        public string Path { get; set; }
         public string NewName { get; set; }
         public string FontName { get; set; }
         public double FontSize { get; set; }

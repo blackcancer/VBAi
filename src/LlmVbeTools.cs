@@ -61,6 +61,9 @@ namespace CodexVBE
             Definition("set_form_property", "Set a typed UserForm property or one object member path (for example Font.Name) after reading form_properties and form_state; uses ExpectedFormVersion and VBE edit policy. Read-only or unsupported objects return explicit errors.",
                 new[] { "Project", "Form", "ExpectedFormVersion", "Property", "Value" },
                 "Project", "Form", "ExpectedFormVersion", "Property", "Value"),
+            Definition("set_form_picture", "Set a UserForm Picture from an absolute local image path explicitly supplied by the user. The image remains local and is not sent to the LLM. Requires form revision and VBE edit policy.",
+                new[] { "Project", "Form", "ExpectedFormVersion", "Path" },
+                "Project", "Form", "ExpectedFormVersion", "Path"),
             Definition("form_control_properties", "Read all exposed design properties, types and read-only flags of one UserForm control.",
                 new[] { "Project", "Form", "Control" }, "Project", "Form", "Control"),
             Definition("open_form", "Open a UserForm designer window in VBE.", new[] { "Project", "Form" }, "Project", "Form"),
@@ -122,6 +125,8 @@ namespace CodexVBE
                 }
                 if (name == "read_user_file")
                     return json.Serialize(ReadUserFile((string)values["Path"]));
+                if (name == "set_form_picture" && !IsExplicitUserPath((string)values["Path"]))
+                    return json.Serialize(Response.Failure("L'utilisateur doit fournir explicitement le chemin absolu de l'image."));
                 var normalized = new Dictionary<string, object>(values) { ["Command"] = name };
                 var request = json.Deserialize<Request>(json.Serialize(normalized));
                 // All newly registered tools are treated as edits unless explicitly classified as read-only.
@@ -171,10 +176,7 @@ namespace CodexVBE
 
         private Response ReadUserFile(string requestedPath)
         {
-            if (string.IsNullOrWhiteSpace(requestedPath) ||
-                !Regex.IsMatch(requestedPath, @"^(?:[A-Za-z]:[\\/]|\\\\[^\\/]+[\\/][^\\/]+[\\/])"))
-                return Response.Failure("Le chemin doit être absolu et fourni explicitement par l'utilisateur.");
-            if (!userRequests.Any(request => request.IndexOf(requestedPath, StringComparison.OrdinalIgnoreCase) >= 0))
+            if (!IsExplicitUserPath(requestedPath))
                 return Response.Failure("L'utilisateur n'a pas fourni ce chemin exact.");
             string fullPath = Path.GetFullPath(requestedPath);
             if (!File.Exists(fullPath)) return Response.Failure("Le fichier fourni est introuvable.");
@@ -206,6 +208,13 @@ namespace CodexVBE
                         Truncated = count > limit, ByteLength = stream.Length });
                 }
             }
+        }
+
+        private bool IsExplicitUserPath(string requestedPath)
+        {
+            return !string.IsNullOrWhiteSpace(requestedPath) &&
+                Regex.IsMatch(requestedPath, @"^(?:[A-Za-z]:[\\/]|\\\\[^\\/]+[\\/][^\\/]+[\\/])") &&
+                userRequests.Any(request => request.IndexOf(requestedPath, StringComparison.OrdinalIgnoreCase) >= 0);
         }
     }
 }
