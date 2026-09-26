@@ -853,6 +853,80 @@ namespace CodexVBE
             return new { RemovedPath = request.ControlPath, Applied = true, Tree = after };
         }
 
+        public object AddPageOrTab(Request request, string collectionName)
+        {
+            ValidateName(request.NewName, "NewName");
+            if (string.IsNullOrWhiteSpace(request.ParentPath) ||
+                string.IsNullOrWhiteSpace(request.ExpectedTreeVersion))
+                throw new ArgumentException("ParentPath and ExpectedTreeVersion are required.");
+            dynamic form = GetForm(GetDesignProject(request.Project), request.Form);
+            dynamic before = Tree(request.Project, request.Form);
+            if (!string.Equals((string)before.TreeVersion, request.ExpectedTreeVersion,
+                StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The UserForm hierarchy changed since it was read.");
+            if (!TreeContainsPath((IEnumerable)before.Controls, request.ParentPath))
+                throw new InvalidOperationException("ParentPath is not a canonical path in form_tree.");
+            object parent = ResolveTreeItem(form.Designer, request.ParentPath);
+            PropertyDescriptor descriptor = TypeDescriptor.GetProperties(parent).Find(collectionName, true);
+            if (descriptor == null ||
+                !string.Equals(TypeDescriptor.GetClassName(parent),
+                    collectionName == "Pages" ? "MultiPage" : "TabStrip",
+                    StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The selected parent is not a compatible MultiPage or TabStrip.");
+            dynamic collection = descriptor.GetValue(parent);
+            foreach (dynamic item in collection)
+                if (string.Equals((string)item.Name, request.NewName, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("An item with this name already exists in the collection.");
+            int count = (int)collection.Count;
+            if (request.InsertIndex.HasValue &&
+                (request.InsertIndex.Value < 0 || request.InsertIndex.Value > count))
+                throw new ArgumentOutOfRangeException("InsertIndex", "InsertIndex must be between zero and Count.");
+            string caption = request.Caption ?? request.NewName;
+            if (request.InsertIndex.HasValue)
+                collection.Add(request.NewName, caption, request.InsertIndex.Value);
+            else collection.Add(request.NewName, caption);
+            string newPath = request.ParentPath + "/" + collectionName + "/" + request.NewName;
+            dynamic after = Tree(request.Project, request.Form);
+            if (!TreeContainsPath((IEnumerable)after.Controls, newPath) ||
+                string.Equals((string)after.TreeVersion, request.ExpectedTreeVersion,
+                    StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The added Page or Tab was not reflected in the UserForm tree.");
+            return new { AddedPath = newPath, Applied = true, Tree = after };
+        }
+
+        public object RemovePageOrTab(Request request)
+        {
+            if (string.IsNullOrWhiteSpace(request.ControlPath) ||
+                string.IsNullOrWhiteSpace(request.ExpectedTreeVersion))
+                throw new ArgumentException("ControlPath and ExpectedTreeVersion are required.");
+            dynamic form = GetForm(GetDesignProject(request.Project), request.Form);
+            dynamic before = Tree(request.Project, request.Form);
+            if (!string.Equals((string)before.TreeVersion, request.ExpectedTreeVersion,
+                StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The UserForm hierarchy changed since it was read.");
+            if (!TreeContainsPath((IEnumerable)before.Controls, request.ControlPath))
+                throw new InvalidOperationException("ControlPath is not a canonical path in form_tree.");
+            string[] parts = request.ControlPath.Split('/');
+            if (parts.Length < 4 || parts.Length % 2 != 0 ||
+                (parts[parts.Length - 2] != "Pages" && parts[parts.Length - 2] != "Tabs"))
+                throw new ArgumentException("ControlPath must identify a Page or Tab.");
+            string collectionName = parts[parts.Length - 2];
+            string name = parts[parts.Length - 1];
+            string parentPath = string.Join("/", parts.Take(parts.Length - 2));
+            object parent = ResolveTreeItem(form.Designer, parentPath);
+            PropertyDescriptor descriptor = TypeDescriptor.GetProperties(parent).Find(collectionName, true);
+            if (descriptor == null)
+                throw new InvalidOperationException("The selected parent has no " + collectionName + " collection.");
+            dynamic collection = descriptor.GetValue(parent);
+            collection.Remove(name);
+            dynamic after = Tree(request.Project, request.Form);
+            if (TreeContainsPath((IEnumerable)after.Controls, request.ControlPath) ||
+                string.Equals((string)after.TreeVersion, request.ExpectedTreeVersion,
+                    StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The Page or Tab removal was not reflected in the UserForm tree.");
+            return new { RemovedPath = request.ControlPath, Applied = true, Tree = after };
+        }
+
         private static object ConvertDescriptorValue(object value, Type declaredType, object previous)
         {
             bool variant = declaredType != null &&

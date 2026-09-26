@@ -122,6 +122,12 @@ namespace CodexVBE
                     return Response.Success(forms.SetNodePicture(request));
                 case "remove_form_control":
                     return Response.Success(forms.RemoveControl(request));
+                case "add_form_page":
+                    return Response.Success(forms.AddPageOrTab(request, "Pages"));
+                case "add_form_tab":
+                    return Response.Success(forms.AddPageOrTab(request, "Tabs"));
+                case "remove_form_page_tab":
+                    return Response.Success(forms.RemovePageOrTab(request));
                 case "set_form_control_geometry":
                     return Response.Success(forms.SetControlGeometry(request));
                 case "rename_form_control":
