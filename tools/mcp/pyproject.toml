@@ -1,0 +1,9 @@
+[project]
+name = "codexvbe-mcp"
+version = "0.1.0"
+description = "Typed MCP tools for the CodexVBE named-pipe bridge"
+requires-python = ">=3.11"
+dependencies = ["mcp>=2,<3"]
+
+[tool.uv]
+package = false
