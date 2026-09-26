@@ -23,128 +23,95 @@ namespace CodexVBE
 
         private void InitializeComponent()
         {
-            this.rootLayout = new TableLayoutPanel();
-            this.headerLayout = new TableLayoutPanel();
-            this.actionLayout = new TableLayoutPanel();
-            this.providerLabel = new Label();
-            this.modelLabel = new Label();
-            this.effortLabel = new Label();
-            this.transcript = new TextBox();
-            this.prompt = new TextBox();
-            this.send = new Button();
-            this.status = new Label();
-            this.providerPicker = new ComboBox();
-            this.modelPicker = new ComboBox();
-            this.effortPicker = new ComboBox();
-            this.refreshModels = new Button();
-            this.configure = new Button();
-            this.rootLayout.SuspendLayout();
-            this.headerLayout.SuspendLayout();
-            this.actionLayout.SuspendLayout();
-            this.SuspendLayout();
+            SuspendLayout();
+            Font = new Font("Segoe UI", 9F);
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
+            rootLayout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(12), ColumnCount = 1, RowCount = 6 };
+            rootLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            rootLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            rootLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 104F));
+            rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-            this.rootLayout.Dock = DockStyle.Fill;
-            this.rootLayout.Padding = new Padding(12);
-            this.rootLayout.ColumnCount = 1;
-            this.rootLayout.RowCount = 5;
-            this.rootLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            this.rootLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44F));
-            this.rootLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            this.rootLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 96F));
-            this.rootLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 46F));
-            this.rootLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 27F));
+            headerLayout = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 2, RowCount = 2, Margin = new Padding(0, 0, 0, 12) };
+            headerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            headerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            headerLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            headerLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            providerLabel = Caption("Fournisseur");
+            providerPicker = Picker("Fournisseur");
+            configure = ActionButton("Configuration…");
+            headerLayout.Controls.Add(providerLabel, 0, 0);
+            headerLayout.Controls.Add(providerPicker, 0, 1);
+            headerLayout.Controls.Add(configure, 1, 1);
 
-            this.headerLayout.Dock = DockStyle.Fill;
-            this.headerLayout.ColumnCount = 3;
-            this.headerLayout.RowCount = 1;
-            this.headerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85F));
-            this.headerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            this.headerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 132F));
-            this.providerLabel.Text = "Fournisseur";
-            this.providerLabel.Dock = DockStyle.Fill;
-            this.providerLabel.TextAlign = ContentAlignment.MiddleLeft;
-            this.providerPicker.Dock = DockStyle.Fill;
-            this.providerPicker.DropDownStyle = ComboBoxStyle.DropDownList;
-            this.providerPicker.Margin = new Padding(4, 8, 10, 4);
-            this.configure.Text = "Configuration…";
-            this.configure.Dock = DockStyle.Fill;
-            this.configure.Margin = new Padding(0, 5, 0, 5);
-            this.headerLayout.Controls.Add(this.providerLabel, 0, 0);
-            this.headerLayout.Controls.Add(this.providerPicker, 1, 0);
-            this.headerLayout.Controls.Add(this.configure, 2, 0);
+            transcript = new TextBox { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Dock = DockStyle.Fill,
+                BackColor = SystemColors.Window, BorderStyle = BorderStyle.FixedSingle, Margin = new Padding(0, 0, 0, 12),
+                AccessibleName = "Conversation", TabStop = true };
+            actionLayout = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 2, RowCount = 2, Margin = new Padding(0, 0, 0, 8) };
+            actionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 62F));
+            actionLayout.Padding = new Padding(0, 0, 0, 4);
+            actionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 38F));
+            actionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            actionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            modelLabel = Caption("Modèle");
+            effortLabel = Caption("Raisonnement");
+            modelPicker = Picker("Modèle");
+            effortPicker = Picker("Niveau de raisonnement");
+            modelPicker.Margin = new Padding(0, 0, 8, 0);
+            effortPicker.Enabled = false;
+            actionLayout.Controls.Add(modelLabel, 0, 0);
+            actionLayout.Controls.Add(effortLabel, 1, 0);
+            actionLayout.Controls.Add(modelPicker, 0, 1);
+            actionLayout.Controls.Add(effortPicker, 1, 1);
+            prompt = new TextBox { Multiline = true, ScrollBars = ScrollBars.Vertical, Dock = DockStyle.Fill,
+                Margin = new Padding(0, 0, 0, 8), AccessibleName = "Votre demande", AcceptsReturn = true };
+            var footer = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 2, RowCount = 1, Margin = new Padding(0) };
+            footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            footer.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            refreshModels = ActionButton("Actualiser les modèles");
+            refreshModels.Anchor = AnchorStyles.Left;
+            send = ActionButton("Envoyer");
+            send.MinimumSize = new Size(96, 30);
+            footer.Controls.Add(refreshModels, 0, 0);
+            footer.Controls.Add(send, 1, 0);
+            status = new Label { Text = "Chargement…", Dock = DockStyle.Fill, AutoSize = true,
+                MinimumSize = new Size(0, 36), MaximumSize = new Size(0, 56), AutoEllipsis = true,
+                Margin = new Padding(0, 8, 0, 0), AccessibleName = "État de la conversation" };
+            rootLayout.Controls.Add(headerLayout, 0, 0);
+            rootLayout.Controls.Add(transcript, 0, 1);
+            rootLayout.Controls.Add(actionLayout, 0, 2);
+            rootLayout.Controls.Add(prompt, 0, 3);
+            rootLayout.Controls.Add(footer, 0, 4);
+            rootLayout.Controls.Add(status, 0, 5);
+            MinimumSize = new Size(420, 540);
+            ClientSize = new Size(460, 700);
+            StartPosition = FormStartPosition.CenterScreen;
+            ShowInTaskbar = true;
+            Text = "CodexVBE — Assistant";
+            Controls.Add(rootLayout);
+            ResumeLayout(true);
+        }
 
-            this.transcript.Multiline = true;
-            this.transcript.ReadOnly = true;
-            this.transcript.ScrollBars = ScrollBars.Vertical;
-            this.transcript.Dock = DockStyle.Fill;
-            this.transcript.BackColor = Color.White;
-            this.transcript.Font = new Font("Segoe UI", 9.5F);
-            this.transcript.BorderStyle = BorderStyle.FixedSingle;
-            this.transcript.Margin = new Padding(4, 3, 4, 8);
-            this.prompt.Multiline = true;
-            this.prompt.ScrollBars = ScrollBars.Vertical;
-            this.prompt.Dock = DockStyle.Fill;
-            this.prompt.Margin = new Padding(4, 3, 4, 4);
+        private static Label Caption(string text)
+        {
+            return new Label { Text = text, AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 0, 0, 4) };
+        }
 
-            this.actionLayout.Dock = DockStyle.Fill;
-            this.actionLayout.ColumnCount = 6;
-            this.actionLayout.RowCount = 1;
-            this.actionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 52F));
-            this.actionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            this.actionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 95F));
-            this.actionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110F));
-            this.actionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 87F));
-            this.actionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 86F));
-            this.modelLabel.Text = "Modèle";
-            this.modelLabel.Dock = DockStyle.Fill;
-            this.modelLabel.TextAlign = ContentAlignment.MiddleLeft;
-            this.modelPicker.Dock = DockStyle.Fill;
-            this.modelPicker.DropDownStyle = ComboBoxStyle.DropDownList;
-            this.modelPicker.Margin = new Padding(4, 7, 8, 4);
-            this.effortLabel.Text = "Raisonnement";
-            this.effortLabel.Dock = DockStyle.Fill;
-            this.effortLabel.TextAlign = ContentAlignment.MiddleLeft;
-            this.effortPicker.Dock = DockStyle.Fill;
-            this.effortPicker.DropDownStyle = ComboBoxStyle.DropDownList;
-            this.effortPicker.Margin = new Padding(4, 7, 8, 4);
-            this.effortPicker.Enabled = false;
-            this.refreshModels.Text = "Actualiser";
-            this.refreshModels.Dock = DockStyle.Fill;
-            this.refreshModels.Margin = new Padding(3, 4, 3, 4);
-            this.send.Text = "Envoyer";
-            this.send.Dock = DockStyle.Fill;
-            this.send.Margin = new Padding(5, 4, 0, 4);
-            this.actionLayout.Controls.Add(this.modelLabel, 0, 0);
-            this.actionLayout.Controls.Add(this.modelPicker, 1, 0);
-            this.actionLayout.Controls.Add(this.effortLabel, 2, 0);
-            this.actionLayout.Controls.Add(this.effortPicker, 3, 0);
-            this.actionLayout.Controls.Add(this.refreshModels, 4, 0);
-            this.actionLayout.Controls.Add(this.send, 5, 0);
+        private static ComboBox Picker(string name)
+        {
+            return new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList,
+                IntegralHeight = false, DropDownHeight = 300, MinimumSize = new Size(0, 25),
+                Margin = new Padding(0), AccessibleName = name };
+        }
 
-            this.status.Text = "Chargement…";
-            this.status.Dock = DockStyle.Fill;
-            this.status.AutoEllipsis = true;
-            this.status.TextAlign = ContentAlignment.MiddleLeft;
-            this.status.Margin = new Padding(4, 0, 0, 0);
-            this.rootLayout.Controls.Add(this.headerLayout, 0, 0);
-            this.rootLayout.Controls.Add(this.transcript, 0, 1);
-            this.rootLayout.Controls.Add(this.prompt, 0, 2);
-            this.rootLayout.Controls.Add(this.actionLayout, 0, 3);
-            this.rootLayout.Controls.Add(this.status, 0, 4);
-
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.Font = new Font("Segoe UI", 9F);
-            this.MinimumSize = new Size(650, 470);
-            this.ClientSize = new Size(744, 661);
-            this.StartPosition = FormStartPosition.CenterScreen;
-            this.ShowInTaskbar = true;
-            this.Text = "CodexVBE — Assistant";
-            this.Controls.Add(this.rootLayout);
-            this.actionLayout.ResumeLayout(false);
-            this.headerLayout.ResumeLayout(false);
-            this.rootLayout.ResumeLayout(false);
-            this.rootLayout.PerformLayout();
-            this.ResumeLayout(false);
+        private static Button ActionButton(string text)
+        {
+            return new Button { Text = text, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(0, 30), Padding = new Padding(8, 2, 8, 2), Margin = new Padding(8, 0, 0, 0) };
         }
     }
 }

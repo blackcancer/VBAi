@@ -42,16 +42,20 @@ namespace CodexVBE
             bool codex = selected.IsCodex;
             bool openAi = selected.Name == "OpenAI API";
             bool ollama = selected.Name == "Ollama";
-            int[] heights = { 38, codex ? 38 : 0, codex ? 42 : 0, openAi ? 38 : 0,
-                ollama ? 38 : 0, openAi ? 38 : 0, openAi ? 38 : 0, openAi ? 55 : 0, 38 };
-            for (int i = 0; i < heights.Length; i++) grid.RowStyles[i].Height = heights[i];
+            bool[] visible = { true, codex, codex, openAi, ollama, openAi, openAi, openAi, true };
+            grid.SuspendLayout();
+            for (int i = 0; i < visible.Length; i++)
+            {
+                grid.RowStyles[i].SizeType = visible[i] ? SizeType.AutoSize : SizeType.Absolute;
+                grid.RowStyles[i].Height = 0;
+            }
             foreach (Control control in grid.Controls)
             {
                 int row = grid.GetRow(control);
-                control.Visible = heights[row] > 0;
+                control.Visible = visible[row];
             }
+            grid.ResumeLayout(true);
             if (codex) _ = RefreshCodexStatusAsync();
-            Height = codex ? 300 : openAi ? 400 : ollama ? 300 : 270;
         }
 
         private async System.Threading.Tasks.Task RefreshCodexStatusAsync()

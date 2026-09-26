@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows.Forms;
 
 namespace CodexVBE
@@ -57,22 +57,23 @@ namespace CodexVBE
             this.buttons.SuspendLayout();
             this.SuspendLayout();
 
-            this.grid.Dock = DockStyle.Fill;
+            this.grid.Dock = DockStyle.Top;
+            this.grid.AutoSize = true;
             this.grid.ColumnCount = 2;
             this.grid.RowCount = 9;
             this.grid.Padding = new Padding(12);
-            this.grid.AutoScroll = true;
-            this.grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 220F));
+            this.grid.AutoScroll = false;
+            this.grid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             this.grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            this.grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 38F));
-            this.grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 38F));
-            this.grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 38F));
-            this.grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 38F));
-            this.grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 38F));
-            this.grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 38F));
-            this.grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 38F));
-            this.grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 55F));
-            this.grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 38F));
+            this.grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            this.grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            this.grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            this.grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            this.grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            this.grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            this.grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            this.grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            this.grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
             this.providerLabel.Text = "Fournisseur";
             this.accountLabel.Text = "Compte ChatGPT";
@@ -101,14 +102,16 @@ namespace CodexVBE
             this.provider.Dock = DockStyle.Fill;
             this.codexStatus.Text = "Vérification de ChatGPT…";
             this.codexStatus.Dock = DockStyle.Fill;
-            this.codexStatus.AutoEllipsis = true;
+            this.codexStatus.AutoSize = true;
             this.codexStatus.TextAlign = ContentAlignment.MiddleLeft;
             this.codexLogin.Text = "Se connecter à ChatGPT";
             this.codexLogin.Width = 185;
             this.codexRefresh.Text = "Actualiser l'état";
             this.codexRefresh.Width = 130;
             this.codexActions.Dock = DockStyle.Fill;
-            this.codexActions.WrapContents = false;
+            this.codexActions.WrapContents = true;
+            this.codexActions.AutoSize = true;
+            this.codexActions.Padding = new Padding(0, 0, 0, 4);
             this.codexActions.Margin = new Padding(0);
             this.codexActions.Controls.Add(this.codexLogin);
             this.codexActions.Controls.Add(this.codexRefresh);
@@ -139,7 +142,8 @@ namespace CodexVBE
             this.grid.Controls.Add(this.approvalPicker, 1, 8);
 
             this.buttons.Dock = DockStyle.Bottom;
-            this.buttons.Height = 48;
+            this.buttons.AutoSize = true;
+            this.buttons.Padding = new Padding(12);
             this.buttons.FlowDirection = FlowDirection.RightToLeft;
             this.saveButton.Text = "Enregistrer";
             this.saveButton.Width = 105;
@@ -149,18 +153,35 @@ namespace CodexVBE
             this.buttons.Controls.Add(this.saveButton);
             this.buttons.Controls.Add(this.cancelButton);
 
+            this.AutoScaleDimensions = new SizeF(96F, 96F);
             this.AutoScaleMode = AutoScaleMode.Dpi;
             this.Font = new Font("Segoe UI", 9F);
             this.ClientSize = new Size(624, 368);
-            this.MinimumSize = new Size(560, 235);
+            this.MinimumSize = new Size(640, 300);
             this.StartPosition = FormStartPosition.CenterParent;
             this.ShowInTaskbar = false;
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.FormBorderStyle = FormBorderStyle.Sizable;
+            this.AutoScroll = true;
             this.MaximizeBox = false;
             this.Text = "CodexVBE — Configuration LLM";
             this.Controls.Add(this.grid);
             this.Controls.Add(this.buttons);
             this.CancelButton = this.cancelButton;
+            this.AcceptButton = this.saveButton;
+                        foreach (Control control in this.grid.Controls)
+            {
+                control.Margin = new Padding(0, 4, 12, 8);
+                var label = control as Label;
+                if (label != null) label.AutoSize = true;
+                var check = control as CheckBox;
+                if (check != null) check.AutoSize = true;
+            }
+            foreach (Button button in new[] { this.codexLogin, this.codexRefresh, this.saveButton, this.cancelButton })
+            {
+                button.AutoSize = true;
+                button.MinimumSize = new Size(button.Width, 30);
+                button.Padding = new Padding(6, 2, 6, 2);
+            }
             this.buttons.ResumeLayout(false);
             this.codexActions.ResumeLayout(false);
             this.grid.ResumeLayout(false);
