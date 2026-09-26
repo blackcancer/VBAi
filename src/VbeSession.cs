@@ -35,6 +35,8 @@ namespace CodexVBE
                     return Response.Success(components.ProjectProperties(request.Project));
                 case "component_properties":
                     return Response.Success(components.ComponentProperties(request.Project, request.Module));
+                case "component_property_value":
+                    return Response.Success(components.ComponentPropertyValue(request.Project, request.Module, request.Property));
                 case "component_probe":
                     return Response.Success(components.ComponentProbe(request.Project, request.Module, request.Action, request.Query));
                 case "set_project_property":

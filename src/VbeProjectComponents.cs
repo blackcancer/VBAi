@@ -49,6 +49,12 @@ namespace CodexVBE
             return ComponentSnapshot(projectName, component);
         }
 
+        public object ComponentPropertyValue(string projectName, string componentName, string propertyName)
+        {
+            if (string.IsNullOrWhiteSpace(propertyName)) throw new ArgumentException("Property is required.");
+            return ComponentProbe(projectName, componentName, "designer_property_value", propertyName);
+        }
+
         // Bridge-only diagnostic: each stage is deliberately separate so a COM hang is attributable.
         public object ComponentProbe(string projectName, string componentName, string stage, string propertyName)
         {
@@ -80,6 +86,9 @@ namespace CodexVBE
                         Kind = value != null && Marshal.IsComObject(value) ? "object" : "scalar",
                         Value = value != null && Marshal.IsComObject(value) ? null : Scalar(value) };
                 case "designer_property_value":
+                    if ((int)component.Type == 100 &&
+                        string.Equals(propertyName, "MailEnvelope", StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidOperationException("MailEnvelope blocks the Excel document-component COM inspector and is not read automatically.");
                     dynamic selectedProperty = component.Properties.Item(propertyName);
                     object designerValue = selectedProperty.Value;
                     return new { Name = (string)selectedProperty.Name,
@@ -96,9 +105,19 @@ namespace CodexVBE
             int type = (int)component.Type;
             var properties = ReadProperties((object)component);
             var designerProperties = new List<VbePropertyInfo>();
+            var hostProperties = new List<VbePropertyInfo>();
             foreach (dynamic property in component.Properties)
             {
                 var info = new VbePropertyInfo { Name = (string)property.Name };
+                if (type == 100)
+                {
+                    info.Kind = "host property";
+                    info.Display = "Value not read in bulk; use component_property_value for a named property.";
+                    if (string.Equals(info.Name, "MailEnvelope", StringComparison.OrdinalIgnoreCase))
+                        info.Error = "Getter blocks Excel document-component inspection.";
+                    hostProperties.Add(info);
+                    continue;
+                }
                 try
                 {
                     object value = property.Value;
@@ -121,11 +140,12 @@ namespace CodexVBE
             }
             string version = Hash(json.Serialize(new { Name = name, Type = type,
                 Properties = properties, DesignerProperties = designerProperties,
+                HostProperties = hostProperties,
                 CodeSha256 = codeHash, FormVersion = formVersion }));
             return new { Project = projectName, Component = name, Type = type,
                 Version = version, CodeSha256 = codeHash, CodeLines = lineCount,
                 FormVersion = formVersion, Properties = properties,
-                DesignerProperties = designerProperties };
+                DesignerProperties = designerProperties, HostProperties = hostProperties };
         }
 
         public object SetProjectProperty(Request request)

@@ -18,7 +18,7 @@ namespace CodexVBE
         private readonly List<string> userRequests = new List<string>();
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
             "status", "read_user_file", "list_projects", "list_modules", "list_references", "read_module",
-            "project_properties", "component_properties", "list_forms",
+            "project_properties", "component_properties", "component_property_value", "list_forms",
             "form_state", "form_tree", "form_properties", "form_control_properties",
             "list_form_control_types", "open_form"
         };
@@ -57,6 +57,8 @@ namespace CodexVBE
                 new[] { "Project" }, "Project"),
             Definition("component_properties", "Read all exposed VBComponent and designer properties, code SHA-256, and a component revision. Works for document, standard, class and form components when VBIDE allows access.",
                 new[] { "Project", "Module" }, "Project", "Module"),
+            Definition("component_property_value", "Read one named VBComponent host property on demand. Type 100 document properties belong to the host object, not the common VBE editor; Excel MailEnvelope returns an explicit error because its getter blocks COM inspection.",
+                new[] { "Project", "Module", "Property" }, "Project", "Module", "Property"),
             Definition("set_project_property", "Set a writable scalar VBProject property by its live descriptor and ExpectedProjectVersion in design mode; VBE edit policy applies.",
                 new[] { "Project", "ExpectedProjectVersion", "Property", "Value" },
                 "Project", "ExpectedProjectVersion", "Property", "Value"),
