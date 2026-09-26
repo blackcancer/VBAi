@@ -73,24 +73,12 @@ namespace CodexVBE
             if (!userForm && !TreeContainsPath((IEnumerable)tree.Controls, controlPath))
                 throw new InvalidOperationException("ControlPath is not a canonical path in form_tree.");
             object target = userForm ? (object)form.Designer : ResolveTreeItem(form.Designer, controlPath);
-            var events = new List<object>();
-            foreach (EventDescriptor descriptor in TypeDescriptor.GetEvents(target))
-            {
-                if (events.Count >= 256) throw new InvalidOperationException("Event descriptor catalog exceeds 256 entries.");
-                string eventType = null;
-                string typeError = null;
-                try { eventType = descriptor.EventType?.FullName; }
-                catch (Exception ex) { typeError = ex.Message; }
-                events.Add(new { Name = descriptor.Name, DisplayName = descriptor.DisplayName,
-                    DelegateType = eventType, TypeError = typeError });
-            }
+            object catalog = VbeComEvents.Read(target);
             return new { Project = projectName, Form = formName,
                 ControlPath = userForm ? "UserForm" : controlPath,
                 ObjectName = userForm ? "UserForm" : (string)((dynamic)target).Name,
                 Type = TypeDescriptor.GetClassName(target),
-                TreeVersion = (string)tree.TreeVersion, Discovery = "TypeDescriptor.GetEvents",
-                Completeness = "Unverified; descriptors may omit COM source events.",
-                Events = events };
+                TreeVersion = (string)tree.TreeVersion, Catalog = catalog };
         }
 
         private static string TreeVersion(dynamic form, out List<object> nodes,
