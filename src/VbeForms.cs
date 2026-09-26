@@ -61,7 +61,7 @@ namespace CodexVBE
             using (var sha = SHA256.Create())
                 version = BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(json)))
                     .Replace("-", "").ToLowerInvariant();
-            return new { Project = projectName, Form = formName, Version = version,
+            return new { Project = projectName, Form = formName, FormVersion = Version(form), TreeVersion = version,
                 NodeCount = nodeCount, Properties = properties, Controls = nodes };
         }
 

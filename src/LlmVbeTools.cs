@@ -17,7 +17,7 @@ namespace CodexVBE
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
         private readonly List<string> userRequests = new List<string>();
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
-            "status", "read_user_file", "list_projects", "list_modules", "read_module", "list_forms",
+            "status", "read_user_file", "list_projects", "list_modules", "list_references", "read_module", "list_forms",
             "form_state", "form_tree", "form_properties", "form_control_properties", "open_form"
         };
         public string CurrentProviderName { get; set; }
@@ -50,6 +50,8 @@ namespace CodexVBE
                 new[] { "Path" }, "Path"),
             Definition("list_projects", "List open VBA projects and their modes.", new string[0]),
             Definition("list_modules", "List modules in one VBA project.", new[] { "Project" }, "Project"),
+            Definition("list_references", "List the type-library references actually selected by one VBA project, including identity, version, path and broken status.",
+                new[] { "Project" }, "Project"),
             Definition("read_module", "Read complete VBA code and its SHA-256 revision.", new[] { "Project", "Module" }, "Project", "Module"),
             Definition("create_module", "Create a named standard VBA module in the selected design-mode project. ExpectedMode must be 2 from list_projects.",
                 new[] { "Project", "Module", "ExpectedMode" }, "Project", "Module", "ExpectedMode"),
@@ -57,7 +59,7 @@ namespace CodexVBE
                 new[] { "Project", "Module", "ExpectedMode" }, "Project", "Module", "ExpectedMode"),
             Definition("list_forms", "List UserForms in a project.", new[] { "Project" }, "Project"),
             Definition("form_state", "Read a UserForm and all its controls with geometry, caption and font.", new[] { "Project", "Form" }, "Project", "Form"),
-            Definition("form_tree", "Read the recursive UserForm control hierarchy, including Frame controls, MultiPage pages and TabStrip tabs, with stable paths, properties and a tree revision.",
+            Definition("form_tree", "Read the recursive UserForm hierarchy, including Frame controls, MultiPage pages and TabStrip tabs. FormVersion is the ExpectedFormVersion for current form edits; TreeVersion identifies the recursive tree and is not accepted by current edit tools.",
                 new[] { "Project", "Form" }, "Project", "Form"),
             Definition("form_properties", "Read the designer properties of a UserForm.", new[] { "Project", "Form" }, "Project", "Form"),
             Definition("set_form_property", "Set a typed UserForm property or one object member path (for example Font.Name) after reading form_properties and form_state; uses ExpectedFormVersion and VBE edit policy. Read-only or unsupported objects return explicit errors.",

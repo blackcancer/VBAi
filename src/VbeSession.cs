@@ -28,6 +28,8 @@ namespace CodexVBE
                     return Response.Success(ListProjects());
                 case "list_modules":
                     return Response.Success(ListModules(request.Project));
+                case "list_references":
+                    return Response.Success(ListReferences(request.Project));
                 case "read_module":
                     return Response.Success(ReadModule(request.Project, request.Module));
                 case "create_module":
@@ -105,6 +107,27 @@ namespace CodexVBE
             dynamic module = GetModule(projectName, moduleName);
             string code = GetCode(module);
             return new { Project = projectName, Module = moduleName, Code = code, Sha256 = Hash(code) };
+        }
+
+        private object ListReferences(string projectName)
+        {
+            dynamic project = GetProject(projectName);
+            var result = new List<object>();
+            foreach (dynamic reference in project.References)
+            {
+                bool broken = (bool)reference.IsBroken;
+                string name = null;
+                string fullPath = null;
+                if (!broken)
+                {
+                    try { name = (string)reference.Name; } catch { }
+                    try { fullPath = (string)reference.FullPath; } catch { }
+                }
+                result.Add(new { Name = name, Guid = (string)reference.GUID,
+                    Major = (int)reference.Major, Minor = (int)reference.Minor,
+                    IsBroken = broken, FullPath = fullPath });
+            }
+            return new { Project = projectName, References = result };
         }
 
         private object CreateComponent(Request request, int componentType)
