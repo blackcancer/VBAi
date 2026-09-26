@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Projets et composants | `list_projects`, `list_modules`, `read_module`, `replace_lines` avec empreinte du module ; mode du projet lisible. | Créer, renommer, supprimer, importer/exporter des composants ; références ; chemins et identité de l'hôte ; sauvegarde explicite. |
 | Éditeur de code | Texte vivant et sélection d'une ligne par `CodePane.SetSelection`. | Navigation par procédure/symbole, recherche globale, changements structurés, lecture fiable de l'erreur de compilation. |
-| Formulaires | `list_forms`, `create_form`, `open_form`, `form_state`, `form_properties`. Le concepteur est une fenêtre MDI native `DesignerWindow` avec un `ThunderDFrame` pour le formulaire. | Définir les propriétés du formulaire, inspecter et modifier toutes les propriétés des contrôles, gérer les événements et les conteneurs. |
+| Formulaires | `list_forms`, `create_form`, `open_form`, `form_state`, `form_properties`. Le concepteur est une fenêtre MDI native `DesignerWindow` avec un `ThunderDFrame` pour le formulaire. Le chat Codex a invoqué `create_form` dans Excel. | Modifier les propriétés propres au formulaire, inspecter et modifier toutes les propriétés des contrôles, gérer les événements et les conteneurs. |
 | Contrôles de formulaire | Ajout d'un Label, renommage, Caption, géométrie et police validés par relecture COM dans Excel. `form_control_properties` énumère les propriétés typées des contrôles. Les modifications exigent la version lue du formulaire. | Écriture des propriétés au-delà du sous-ensemble actuel ; suppression, duplication, ordre de tabulation et superposition. |
 | Fenêtre Propriétés | Fenêtre native visible (`wndclass_pbrs`), propriété du formulaire énumérable via VBIDE. | La sélection dans la fenêtre Propriétés peut rester sur `Feuil1` alors que le concepteur du formulaire est actif ; ne pas la prendre comme source de vérité implicite. |
 | Explorateur de projets et d'objets | Fenêtre Projet native visible ; commande native de l'Explorateur d'objets découverte (`Id=473`, activée). | Navigation et lecture structurée de l'Explorateur d'objets non vérifiées. |
@@ -31,11 +31,40 @@ Le 26 septembre 2026, dans Excel 64 bits (PID 31488), une sonde chargée dans le
 
 ## Inventaire des propriétés de contrôle
 
-Dans des classeurs Excel jetables, `TypeDescriptor.GetProperties` sur les objets COM du concepteur a retourné 51 propriétés pour `Label`, 79 pour `TextBox`, 49 pour `CommandButton`, 57 pour `CheckBox`, 63 pour `Frame` et 86 pour `ComboBox`. Les noms et types comprennent notamment `Name`, `Left`, `Top`, `Width`, `Height`, `Visible`, `Enabled`, ainsi que `Caption`, `FontName`, `FontSize`, `FontBold`, `TabIndex` ou `BackColor` selon le type. Chaque propriété renvoie son état en lecture seule et une éventuelle erreur de lecture. Sur ces six types, `_Font_Reserved` est la seule propriété dont la lecture a échoué (`0x80020003`) ; les autres valeurs ne prouvent pas encore qu'une écriture soit sûre. Le ComboBox a nécessité une garde pour un descripteur dont le type est nul. Les autres contrôles MSForms restent à tester.
+Dans des classeurs Excel jetables, `TypeDescriptor.GetProperties` sur les objets COM du concepteur a retourné les résultats suivants. Les 14 ProgID sont acceptés par `add_form_control` et ont été relus via `form_control_properties` dans le VBE Excel vivant. « Modifiables » signifie seulement que le descripteur ne porte pas `IsReadOnly` ; cela ne prouve pas que toute écriture soit sûre.
+
+| Contrôle `Forms.*.1` | Propriétés | Descripteurs modifiables | `Caption` | `Value` | `Picture` |
+| --- | ---: | ---: | :---: | :---: | :---: |
+| Label | 51 | Non relevé | Oui | Non relevé | Non relevé |
+| TextBox | 79 | Non relevé | Non relevé | Non relevé | Non relevé |
+| CommandButton | 49 | Non relevé | Oui | Non relevé | Non relevé |
+| CheckBox | 57 | Non relevé | Oui | Non relevé | Non relevé |
+| Frame | 63 | Non relevé | Oui | Non relevé | Non relevé |
+| ComboBox | 86 | Non relevé | Non relevé | Non relevé | Non relevé |
+| OptionButton | 57 | 48 | Oui | Oui | Oui |
+| ListBox | 64 | 54 | Non | Oui | Non |
+| SpinButton | 36 | 29 | Non | Oui | Non |
+| ScrollBar | 38 | 31 | Non | Oui | Non |
+| Image | 38 | 31 | Non | Non | Oui |
+| MultiPage | 45 | 36 | Non | Oui | Non |
+| TabStrip | 51 | 38 | Non | Oui | Non |
+| ToggleButton | 57 | 48 | Oui | Oui | Oui |
+
+Les noms et types incluent `Name`, `Left`, `Top`, `Width`, `Height`, `Visible`, `Enabled`, puis des propriétés propres à chaque contrôle. `_Font_Reserved` échoue à la lecture (`0x80020003`) sur Label, TextBox, CommandButton, CheckBox, Frame, ComboBox, OptionButton, ListBox, MultiPage, TabStrip et ToggleButton ; aucune autre erreur de lecture n'a été relevée sur les huit derniers types testés. Le ComboBox a nécessité une garde pour un descripteur dont le type est nul.
+
+### Propriétés propres au UserForm
+
+Dans le classeur Excel jetable suivant, le chat a créé `CodexAgentFormProbe`. `form_properties` a relu 50 propriétés du `VBComponent.Properties`, parmi lesquelles `Name`, `Caption=UserForm1`, `Left=0`, `Top=0`, `Width=240`, `Height=180`, `Enabled=True`, `Tag`, `BackColor`, `ForeColor`, `StartUpPosition=1`, `ShowModal=True` et `Zoom=100`. Certaines sont des objets ou états non scalaires (`Controls`, `Font`, `Selected`, `ActiveControl`) ; la commande de lecture actuelle les rend `null` et ne donne ni type ni caractère modifiable. Aucune commande exposée ne change encore les propriétés du formulaire lui-même. La création du composant n'établit donc pas une capacité de conception complète du UserForm. Une commande de modification doit cibler la propriété, convertir la valeur selon son type, rejeter les objets/états non éditables, puis relire la propriété et le formulaire. La révision actuelle ne couvre que `Caption`, `Width`, `Height` et les contrôles du premier niveau : toute autre propriété écrite nécessite aussi une protection de concurrence adaptée.
+
+### Conteneurs et contrôles imbriqués
+
+`MultiPage.Pages` et `TabStrip.Tabs` sont exposés comme collections COM par leurs objets du concepteur ; `form_control_properties` les présente actuellement avec une valeur `null`, car il ne sérialise que les scalaires. La [référence Microsoft Forms](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/objects-microsoft-forms) distingue trois collections : `Controls` sur UserForm, Frame ou Page, `Pages` sur MultiPage et `Tabs` sur TabStrip. L'[exemple Microsoft](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/page-object-multipage-control-add-clear-remove-methods-example) montre l'ajout d'un contrôle via `MultiPage1.Pages(0).Controls.Add(...)`. Les index de `Controls` commencent à zéro d'après la [référence de la collection](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/controls-collection-microsoft-forms).
+
+Les commandes actuelles résolvent seulement `form.Designer.Controls` et donc les contrôles du premier niveau. Il faut des chemins typés (`Frame`, `MultiPage/Page`, `TabStrip/Tab`) pour parcourir, créer, modifier et supprimer leurs enfants. `VbeForms.Version` ne hache que les contrôles du premier niveau et quelques propriétés du formulaire ; une édition de page ou d'enfant ne changerait pas cette empreinte. Étendre l'empreinte récursivement avant de proposer des mutations imbriquées avec `ExpectedFormVersion`. Un essai COM externe via `Excel.Application.VBE` a retourné une collection de projets vide dans cette session, alors que le pont exécuté **dans** le complément voit le projet `VBAProject` ; les contrôles imbriqués n'ont donc pas encore été lus ou modifiés en direct.
 
 ## Prochaine exploration
 
-1. Inventorier les propriétés de chaque type de contrôle directement sur l'objet `Designer.Controls`, avec type, capacité de lecture/écriture et état de l'objet, sans supposer que tous offrent `Caption` ou `Font`.
+1. Lire les collections `Frame.Controls`, `MultiPage.Pages`, `Page.Controls` et `TabStrip.Tabs` depuis le complément dans Excel ; vérifier ajout, renommage, géométrie et suppression sur un classeur jetable, puis étendre la version récursive.
 2. Vérifier les références, les procédures, la boîte à outils et les événements via les API VBIDE/MSForms dans Excel.
 3. Tester les fenêtres de débogage restantes et relire l'effet des commandes natives, avant toute promesse de couverture complète.
 4. Rejouer les commandes retenues dans SOLIDWORKS seulement après ouverture de son VBE par l'utilisateur ; ne pas déduire sa compatibilité du seul essai Excel.
