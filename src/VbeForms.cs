@@ -823,7 +823,9 @@ namespace CodexVBE
 
         private static object ConvertDescriptorValue(object value, Type declaredType, object previous)
         {
-            Type type = declaredType == typeof(object) || declaredType == null
+            bool variant = declaredType != null &&
+                declaredType.FullName == "System.Windows.Forms.ComponentModel.Com2Interop.Com2Variant";
+            Type type = declaredType == typeof(object) || declaredType == null || variant
                 ? previous?.GetType() ?? value.GetType() : declaredType;
             if (type == typeof(Color))
             {
