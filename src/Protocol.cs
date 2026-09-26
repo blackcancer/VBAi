@@ -26,6 +26,10 @@ namespace CodexVBE
         public string Property { get; set; }
         public object Value { get; set; }
         public string Path { get; set; }
+        public string Guid { get; set; }
+        public int Major { get; set; }
+        public int Minor { get; set; }
+        public string ExpectedReferencesVersion { get; set; }
         public string NewName { get; set; }
         public string FontName { get; set; }
         public double FontSize { get; set; }

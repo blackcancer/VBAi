@@ -35,7 +35,8 @@ namespace CodexVBE
             foreach (string field in fields)
                 properties[field] = field == "Value" ? (object)new { anyOf = new object[] {
                     new { type = "string" }, new { type = "number" }, new { type = "boolean" } } } :
-                    new { type = field == "StartLine" || field == "Count" || field == "ExpectedMode" ? "integer" :
+                    new { type = field == "StartLine" || field == "Count" || field == "ExpectedMode" ||
+                        field == "Major" || field == "Minor" ? "integer" :
                     field == "Left" || field == "Top" || field == "Width" || field == "Height" || field == "FontSize" ? "number" :
                     field == "FontBold" ? "boolean" : "string" };
             return new { type = "function", function = new {
@@ -52,6 +53,15 @@ namespace CodexVBE
             Definition("list_modules", "List modules in one VBA project.", new[] { "Project" }, "Project"),
             Definition("list_references", "List the type-library references actually selected by one VBA project, including identity, version, path and broken status.",
                 new[] { "Project" }, "Project"),
+            Definition("add_reference_guid", "Add a project type-library reference by exact GUID and requested major/minor version in design mode; requires the current references revision and VBE edit policy. Major=Minor=0 requests the latest installed version.",
+                new[] { "Project", "ExpectedReferencesVersion", "Guid", "Major", "Minor" },
+                "Project", "ExpectedReferencesVersion", "Guid", "Major", "Minor"),
+            Definition("add_reference_file", "Add a project reference from a fully qualified local type-library path explicitly supplied by the user; requires the current references revision and VBE edit policy. The file remains local.",
+                new[] { "Project", "ExpectedReferencesVersion", "Path" },
+                "Project", "ExpectedReferencesVersion", "Path"),
+            Definition("remove_reference", "Remove one exactly identified project reference by GUID and major/minor after checking the current references revision; subject to VBE edit policy.",
+                new[] { "Project", "ExpectedReferencesVersion", "Guid", "Major", "Minor" },
+                "Project", "ExpectedReferencesVersion", "Guid", "Major", "Minor"),
             Definition("read_module", "Read complete VBA code and its SHA-256 revision.", new[] { "Project", "Module" }, "Project", "Module"),
             Definition("create_module", "Create a named standard VBA module in the selected design-mode project. ExpectedMode must be 2 from list_projects.",
                 new[] { "Project", "Module", "ExpectedMode" }, "Project", "Module", "ExpectedMode"),
@@ -129,8 +139,9 @@ namespace CodexVBE
                 }
                 if (name == "read_user_file")
                     return json.Serialize(ReadUserFile((string)values["Path"]));
-                if (name == "set_form_picture" && !IsExplicitUserPath((string)values["Path"]))
-                    return json.Serialize(Response.Failure("L'utilisateur doit fournir explicitement le chemin absolu de l'image."));
+                if ((name == "set_form_picture" || name == "add_reference_file") &&
+                    !IsExplicitUserPath((string)values["Path"]))
+                    return json.Serialize(Response.Failure("L'utilisateur doit fournir explicitement le chemin absolu du fichier."));
                 var normalized = new Dictionary<string, object>(values) { ["Command"] = name };
                 var request = json.Deserialize<Request>(json.Serialize(normalized));
                 // All newly registered tools are treated as edits unless explicitly classified as read-only.

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -30,6 +31,12 @@ namespace CodexVBE
                     return Response.Success(ListModules(request.Project));
                 case "list_references":
                     return Response.Success(ListReferences(request.Project));
+                case "add_reference_guid":
+                    return Response.Success(AddReferenceGuid(request));
+                case "add_reference_file":
+                    return Response.Success(AddReferenceFile(request));
+                case "remove_reference":
+                    return Response.Success(RemoveReference(request));
                 case "read_module":
                     return Response.Success(ReadModule(request.Project, request.Module));
                 case "create_module":
@@ -109,10 +116,26 @@ namespace CodexVBE
             return new { Project = projectName, Module = moduleName, Code = code, Sha256 = Hash(code) };
         }
 
+        private sealed class ReferenceInfo
+        {
+            public string Name { get; set; }
+            public string Guid { get; set; }
+            public int Major { get; set; }
+            public int Minor { get; set; }
+            public bool IsBroken { get; set; }
+            public string FullPath { get; set; }
+        }
+
         private object ListReferences(string projectName)
         {
             dynamic project = GetProject(projectName);
-            var result = new List<object>();
+            var result = ReadReferences(project);
+            return new { Project = projectName, Version = ReferencesVersion(result), References = result };
+        }
+
+        private static List<ReferenceInfo> ReadReferences(dynamic project)
+        {
+            var result = new List<ReferenceInfo>();
             foreach (dynamic reference in project.References)
             {
                 bool broken = (bool)reference.IsBroken;
@@ -123,11 +146,77 @@ namespace CodexVBE
                     try { name = (string)reference.Name; } catch { }
                     try { fullPath = (string)reference.FullPath; } catch { }
                 }
-                result.Add(new { Name = name, Guid = (string)reference.GUID,
+                result.Add(new ReferenceInfo { Name = name, Guid = (string)reference.GUID,
                     Major = (int)reference.Major, Minor = (int)reference.Minor,
                     IsBroken = broken, FullPath = fullPath });
             }
-            return new { Project = projectName, References = result };
+            return result;
+        }
+
+        private static string ReferencesVersion(List<ReferenceInfo> references)
+        {
+            var text = new StringBuilder();
+            foreach (var reference in references)
+            {
+                text.Append(reference.Guid).Append('|').Append(reference.Major).Append('|')
+                    .Append(reference.Minor).Append('|').Append(reference.IsBroken).Append('|')
+                    .Append(reference.Name).Append('|').Append(reference.FullPath).Append('\n');
+            }
+            return Hash(text.ToString());
+        }
+
+        private dynamic CheckedReferenceProject(Request request)
+        {
+            if (string.IsNullOrWhiteSpace(request.ExpectedReferencesVersion))
+                throw new ArgumentException("ExpectedReferencesVersion is required from list_references.");
+            dynamic project = GetProject(request.Project);
+            if ((int)project.Mode != 2)
+                throw new InvalidOperationException("The project must be in design mode.");
+            if (!string.Equals(ReferencesVersion(ReadReferences(project)), request.ExpectedReferencesVersion,
+                StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Project references changed since they were read.");
+            return project;
+        }
+
+        private object AddReferenceGuid(Request request)
+        {
+            System.Guid parsed;
+            if (!System.Guid.TryParse(request.Guid, out parsed) || request.Major < 0 || request.Minor < 0)
+                throw new ArgumentException("Guid, nonnegative Major and Minor are required.");
+            dynamic project = CheckedReferenceProject(request);
+            if (((List<ReferenceInfo>)ReadReferences(project)).Any(item => string.Equals(item.Guid, parsed.ToString("B"),
+                    StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("A reference with this GUID is already selected.");
+            project.References.AddFromGuid(parsed.ToString("B"), request.Major, request.Minor);
+            return ListReferences(request.Project);
+        }
+
+        private object AddReferenceFile(Request request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Path) ||
+                !Regex.IsMatch(request.Path, @"^(?:[A-Za-z]:[\\/]|\\\\[^\\/]+[\\/][^\\/]+[\\/])"))
+                throw new ArgumentException("A fully qualified reference file path is required.");
+            string path = Path.GetFullPath(request.Path);
+            if (!File.Exists(path)) throw new FileNotFoundException("Reference file not found.", path);
+            dynamic project = CheckedReferenceProject(request);
+            project.References.AddFromFile(path);
+            return ListReferences(request.Project);
+        }
+
+        private object RemoveReference(Request request)
+        {
+            System.Guid parsed;
+            if (!System.Guid.TryParse(request.Guid, out parsed) || request.Major < 0 || request.Minor < 0)
+                throw new ArgumentException("Guid, nonnegative Major and Minor are required.");
+            dynamic project = CheckedReferenceProject(request);
+            dynamic target = null;
+            foreach (dynamic reference in project.References)
+                if (string.Equals((string)reference.GUID, parsed.ToString("B"), StringComparison.OrdinalIgnoreCase) &&
+                    (int)reference.Major == request.Major && (int)reference.Minor == request.Minor)
+                { target = reference; break; }
+            if (target == null) throw new InvalidOperationException("The exact reference was not found.");
+            project.References.Remove(target);
+            return ListReferences(request.Project);
         }
 
         private object CreateComponent(Request request, int componentType)
