@@ -35,7 +35,7 @@ namespace CodexVBE
             foreach (dynamic reference in project.References)
                 references.Add(new { Guid = (string)reference.GUID,
                     Major = (int)reference.Major, Minor = (int)reference.Minor,
-                    IsBroken = (bool)reference.IsBroken });
+                    IsBroken = (bool)reference.IsBroken, BuiltIn = (bool)reference.BuiltIn });
             string version = Hash(json.Serialize(new { Mode = (int)project.Mode,
                 Properties = properties, Components = components, References = references }));
             return new { Project = (string)project.Name, Mode = (int)project.Mode,
@@ -47,6 +47,47 @@ namespace CodexVBE
         {
             dynamic component = GetComponent(GetProject(projectName), componentName);
             return ComponentSnapshot(projectName, component);
+        }
+
+        // Bridge-only diagnostic: each stage is deliberately separate so a COM hang is attributable.
+        public object ComponentProbe(string projectName, string componentName, string stage, string propertyName)
+        {
+            dynamic component = GetComponent(GetProject(projectName), componentName);
+            switch (stage)
+            {
+                case "identity":
+                    return new { Name = (string)component.Name, Type = (int)component.Type };
+                case "descriptor_names":
+                    return TypeDescriptor.GetProperties((object)component)
+                        .Cast<PropertyDescriptor>().Select(item => new { item.Name,
+                            Type = item.PropertyType?.FullName, item.IsReadOnly }).ToArray();
+                case "designer_property_names":
+                    var names = new List<string>();
+                    foreach (dynamic property in component.Properties) names.Add((string)property.Name);
+                    return names;
+                case "code_count":
+                    return new { Lines = (int)component.CodeModule.CountOfLines };
+                case "code_sha":
+                    dynamic module = component.CodeModule;
+                    int lines = (int)module.CountOfLines;
+                    return new { Lines = lines,
+                        Sha256 = Hash(lines == 0 ? "" : (string)module.Lines(1, lines)) };
+                case "descriptor_value":
+                    PropertyDescriptor descriptor = TypeDescriptor.GetProperties((object)component).Find(propertyName, true);
+                    if (descriptor == null) throw new ArgumentException("Descriptor not found: " + propertyName);
+                    object value = descriptor.GetValue((object)component);
+                    return new { Name = descriptor.Name, Type = descriptor.PropertyType?.FullName,
+                        Kind = value != null && Marshal.IsComObject(value) ? "object" : "scalar",
+                        Value = value != null && Marshal.IsComObject(value) ? null : Scalar(value) };
+                case "designer_property_value":
+                    dynamic selectedProperty = component.Properties.Item(propertyName);
+                    object designerValue = selectedProperty.Value;
+                    return new { Name = (string)selectedProperty.Name,
+                        Kind = designerValue != null && Marshal.IsComObject(designerValue) ? "object" : "scalar",
+                        Value = designerValue != null && Marshal.IsComObject(designerValue) ? null : Scalar(designerValue) };
+                default:
+                    throw new ArgumentException("Unsupported component probe Action.");
+            }
         }
 
         private object ComponentSnapshot(string projectName, dynamic component)
@@ -270,6 +311,13 @@ namespace CodexVBE
             {
                 var info = new VbePropertyInfo { Name = descriptor.Name,
                     Type = descriptor.PropertyType?.FullName, ReadOnly = descriptor.IsReadOnly };
+                if (!IsSafeScalarType(descriptor.PropertyType))
+                {
+                    info.Kind = "object";
+                    info.Display = "Object getter not invoked; use a dedicated VBIDE inspection command.";
+                    result.Add(info);
+                    continue;
+                }
                 try
                 {
                     object value = descriptor.GetValue(target);
@@ -280,6 +328,12 @@ namespace CodexVBE
                 result.Add(info);
             }
             return result;
+        }
+
+        private static bool IsSafeScalarType(Type type)
+        {
+            return type != null && (type.IsPrimitive || type.IsEnum ||
+                type == typeof(string) || type == typeof(decimal) || type == typeof(DateTime));
         }
 
         private static object Scalar(object value)

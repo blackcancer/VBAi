@@ -35,6 +35,8 @@ namespace CodexVBE
                     return Response.Success(components.ProjectProperties(request.Project));
                 case "component_properties":
                     return Response.Success(components.ComponentProperties(request.Project, request.Module));
+                case "component_probe":
+                    return Response.Success(components.ComponentProbe(request.Project, request.Module, request.Action, request.Query));
                 case "set_project_property":
                     return Response.Success(components.SetProjectProperty(request));
                 case "set_component_property":
@@ -153,6 +155,7 @@ namespace CodexVBE
             public int Major { get; set; }
             public int Minor { get; set; }
             public bool IsBroken { get; set; }
+            public bool BuiltIn { get; set; }
             public string FullPath { get; set; }
         }
 
@@ -178,7 +181,7 @@ namespace CodexVBE
                 }
                 result.Add(new ReferenceInfo { Name = name, Guid = (string)reference.GUID,
                     Major = (int)reference.Major, Minor = (int)reference.Minor,
-                    IsBroken = broken, FullPath = fullPath });
+                    IsBroken = broken, BuiltIn = (bool)reference.BuiltIn, FullPath = fullPath });
             }
             return result;
         }
@@ -190,6 +193,7 @@ namespace CodexVBE
             {
                 text.Append(reference.Guid).Append('|').Append(reference.Major).Append('|')
                     .Append(reference.Minor).Append('|').Append(reference.IsBroken).Append('|')
+                    .Append(reference.BuiltIn).Append('|')
                     .Append(reference.Name).Append('|').Append(reference.FullPath).Append('\n');
             }
             return Hash(text.ToString());
@@ -245,6 +249,8 @@ namespace CodexVBE
                     (int)reference.Major == request.Major && (int)reference.Minor == request.Minor)
                 { target = reference; break; }
             if (target == null) throw new InvalidOperationException("The exact reference was not found.");
+            if ((bool)target.BuiltIn)
+                throw new InvalidOperationException("The VBE marks this reference as built in and non-removable.");
             project.References.Remove(target);
             return ListReferences(request.Project);
         }
