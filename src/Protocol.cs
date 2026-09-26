@@ -45,6 +45,7 @@ namespace CodexVBE
         public string ObjectName { get; set; }
         public int ProcKind { get; set; }
         public int? InsertIndex { get; set; }
+        public int ZPosition { get; set; }
         public bool WholeWord { get; set; }
         public bool MatchCase { get; set; }
         public bool PatternSearch { get; set; }

@@ -132,6 +132,8 @@ namespace CodexVBE
                     return Response.Success(forms.SetNodeProperty(request));
                 case "set_form_node_picture":
                     return Response.Success(forms.SetNodePicture(request));
+                case "z_order_form_control":
+                    return Response.Success(forms.ZOrderControl(request));
                 case "remove_form_control":
                     return Response.Success(forms.RemoveControl(request));
                 case "add_form_page":

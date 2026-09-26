@@ -870,6 +870,35 @@ namespace CodexVBE
             return new { RemovedPath = request.ControlPath, Applied = true, Tree = after };
         }
 
+        public object ZOrderControl(Request request)
+        {
+            if (string.IsNullOrWhiteSpace(request.ControlPath) ||
+                string.IsNullOrWhiteSpace(request.ExpectedTreeVersion))
+                throw new ArgumentException("ControlPath and ExpectedTreeVersion are required.");
+            if (request.ZPosition != 0 && request.ZPosition != 1)
+                throw new ArgumentOutOfRangeException("ZPosition", "Use 0 for front or 1 for back.");
+            dynamic form = GetForm(GetDesignProject(request.Project), request.Form);
+            dynamic before = Tree(request.Project, request.Form);
+            if (!string.Equals((string)before.TreeVersion, request.ExpectedTreeVersion,
+                StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The UserForm hierarchy changed since it was read.");
+            if (!TreeContainsPath((IEnumerable)before.Controls, request.ControlPath))
+                throw new InvalidOperationException("ControlPath is not a canonical path in form_tree.");
+            string[] parts = request.ControlPath.Split('/');
+            if (parts.Length < 2 || parts[parts.Length - 2] != "Controls")
+                throw new ArgumentException("ControlPath must identify a control, not a Page or Tab.");
+            object control = ResolveTreeItem(form.Designer, request.ControlPath);
+            ((dynamic)control).ZOrder(request.ZPosition);
+            dynamic after = Tree(request.Project, request.Form);
+            if (!TreeContainsPath((IEnumerable)after.Controls, request.ControlPath))
+                throw new InvalidOperationException("The control is no longer present after ZOrder.");
+            return new { ControlPath = request.ControlPath, ZPosition = request.ZPosition,
+                Executed = true, Verification = "Unverified",
+                VerificationPending = true,
+                VerificationLimit = "MSForms does not expose z-order through Controls or form_tree; compare the visible overlap in the designer.",
+                TreeBefore = before, TreeAfter = after };
+        }
+
         public object AddPageOrTab(Request request, string collectionName)
         {
             ValidateName(request.NewName, "NewName");
