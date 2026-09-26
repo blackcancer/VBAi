@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -93,16 +96,9 @@ namespace CodexVBE
                 }
                 else
                 {
-                    object source = null;
-                    try { source = property.Object; } catch { }
-                    if (source == null)
-                        throw new InvalidOperationException("The object property is absent or cannot expose members: " + propertyName);
-                    PropertyDescriptor member = TypeDescriptor.GetProperties(source).Find(path[1], true);
-                    if (member == null) throw new InvalidOperationException("Unknown object member: " + request.Property);
-                    if (member.IsReadOnly) throw new InvalidOperationException("This object member is read-only: " + request.Property);
-                    object current = member.GetValue(source);
-                    object converted = ConvertScalar(request.Value, current?.GetType() ?? member.PropertyType);
-                    member.SetValue(source, converted);
+                    if (!string.Equals(propertyName, "Font", StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidOperationException("This object property needs a dedicated editor; scalar member writes are unavailable.");
+                    SetFormFontMember(form.Designer, path[1], request.Value);
                 }
             }
             string currentName = (string)form.Name;
@@ -142,10 +138,46 @@ namespace CodexVBE
             return Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
         }
 
+        private static void SetFormFontMember(dynamic designer, string member, object value)
+        {
+            dynamic font = designer.Font;
+            if (string.Equals(member, "Name", StringComparison.OrdinalIgnoreCase))
+            {
+                string name = value as string;
+                if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Font.Name requires a nonempty string.");
+                font.Name = name;
+                if (!string.Equals((string)font.Name, name, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("The VBE did not retain Font.Name.");
+            }
+            else if (string.Equals(member, "Size", StringComparison.OrdinalIgnoreCase))
+            {
+                double size = Convert.ToDouble(value, CultureInfo.InvariantCulture);
+                if (double.IsNaN(size) || double.IsInfinity(size) || size <= 0 || size > 200)
+                    throw new ArgumentException("Font.Size must be greater than 0 and at most 200.");
+                font.Size = size;
+                if (Math.Abs(Convert.ToDouble(font.Size, CultureInfo.InvariantCulture) - size) > 0.01)
+                    throw new InvalidOperationException("The VBE did not retain Font.Size.");
+            }
+            else
+            {
+                bool enabled = (bool)ConvertScalar(value, typeof(bool));
+                if (string.Equals(member, "Bold", StringComparison.OrdinalIgnoreCase))
+                { font.Bold = enabled; if ((bool)font.Bold != enabled) throw new InvalidOperationException("The VBE did not retain Font.Bold."); }
+                else if (string.Equals(member, "Italic", StringComparison.OrdinalIgnoreCase))
+                { font.Italic = enabled; if ((bool)font.Italic != enabled) throw new InvalidOperationException("The VBE did not retain Font.Italic."); }
+                else if (string.Equals(member, "Underline", StringComparison.OrdinalIgnoreCase))
+                { font.Underline = enabled; if ((bool)font.Underline != enabled) throw new InvalidOperationException("The VBE did not retain Font.Underline."); }
+                else if (string.Equals(member, "Strikethrough", StringComparison.OrdinalIgnoreCase))
+                { font.Strikethrough = enabled; if ((bool)font.Strikethrough != enabled) throw new InvalidOperationException("The VBE did not retain Font.Strikethrough."); }
+                else throw new InvalidOperationException("Unsupported Font member: " + member);
+            }
+        }
+
         private static List<VbePropertyInfo> DescribeProperties(dynamic form)
         {
             var result = new List<VbePropertyInfo>();
-            PropertyDescriptorCollection descriptors = TypeDescriptor.GetProperties((object)form.Designer);
+            object designer = form.Designer;
+            PropertyDescriptorCollection descriptors = TypeDescriptor.GetProperties(designer);
             foreach (dynamic property in form.Properties)
             {
                 string name = (string)property.Name;
@@ -157,21 +189,34 @@ namespace CodexVBE
                 object raw = null;
                 try { raw = property.Value; }
                 catch (Exception ex) { info.Error = ex.Message; }
-                if (raw == null)
+                object managed = null;
+                if (descriptor != null)
                 {
-                    try { raw = property.Object; } catch { }
+                    try { managed = descriptor.GetValue(designer); }
+                    catch (Exception ex) { if (info.Error == null) info.Error = ex.Message; }
                 }
-                if (raw != null && info.Type == null) info.Type = raw.GetType().FullName;
+                object inspected = managed ?? raw;
+                if (inspected != null && info.Type == null) info.Type = inspected.GetType().FullName;
                 if (info.NumIndices > 0) info.Kind = "indexed";
-                else if (raw != null && Marshal.IsComObject(raw))
+                else if (inspected is Image)
                 {
                     info.Kind = "object";
-                    info.Members = DescribeObjectMembers(raw);
+                    info.Display = inspected.GetType().Name;
+                    info.Digest = ImageDigest((Image)inspected);
+                    info.Members = DescribeObjectMembers(inspected);
+                }
+                else if (inspected != null &&
+                    (Marshal.IsComObject(inspected) || inspected is Font || inspected is System.Collections.IEnumerable && !(inspected is string)))
+                {
+                    info.Kind = "object";
+                    info.Display = inspected.GetType().Name;
+                    info.Members = DescribeObjectMembers(inspected);
                 }
                 else
                 {
                     info.Kind = "scalar";
-                    info.Value = NormalizeScalar(raw);
+                    info.Value = NormalizeScalar(raw ?? managed);
+                    if (managed is Color) info.Display = ((Color)managed).Name;
                 }
                 result.Add(info);
             }
@@ -206,6 +251,20 @@ namespace CodexVBE
                 value is long || value is ulong || value is float || value is double || value is decimal)
                 return value;
             return Convert.ToString(value, CultureInfo.InvariantCulture);
+        }
+
+        private static string ImageDigest(Image image)
+        {
+            try
+            {
+                using (var memory = new MemoryStream())
+                using (var sha = SHA256.Create())
+                {
+                    image.Save(memory, ImageFormat.Png);
+                    return BitConverter.ToString(sha.ComputeHash(memory.ToArray())).Replace("-", "").ToLowerInvariant();
+                }
+            }
+            catch { return null; }
         }
 
         public object ControlProperties(string projectName, string formName, string controlName)
@@ -434,6 +493,7 @@ namespace CodexVBE
                 AppendVersionText(text, property.Name);
                 AppendVersionText(text, property.Kind);
                 AppendVersionText(text, Convert.ToString(property.Value, CultureInfo.InvariantCulture));
+                AppendVersionText(text, property.Digest);
                 if (property.Members != null)
                     foreach (var member in property.Members.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
                     {
