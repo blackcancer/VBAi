@@ -37,7 +37,7 @@ namespace CodexVBE
             foreach (string field in fields)
                 properties[field] = field == "Value" ? (object)new { anyOf = new object[] {
                     new { type = "string" }, new { type = "number" }, new { type = "boolean" } } } :
-                    new { type = field == "StartLine" || field == "Count" || field == "ExpectedMode" || field == "ProcKind" ||
+                    new { type = field == "StartLine" || field == "Count" || field == "ExpectedMode" || field == "ProcKind" || field == "InsertIndex" ||
                         field == "Major" || field == "Minor" ? "integer" :
                     field == "Left" || field == "Top" || field == "Width" || field == "Height" || field == "FontSize" ? "number" :
                     field == "FontBold" || field == "WholeWord" || field == "MatchCase" || field == "PatternSearch" ? "boolean" : "string" };
@@ -123,6 +123,15 @@ namespace CodexVBE
                 new[] { "Project", "Form", "ControlPath", "ExpectedTreeVersion", "Property", "Path" },
                 "Project", "Form", "ControlPath", "ExpectedTreeVersion", "Property", "Path"),
             Definition("remove_form_control", "Remove a UserForm control at its canonical form_tree ControlPath, including one inside a Frame or MultiPage Page. Requires ExpectedTreeVersion and VBE edit policy; a Page or Tab itself is not accepted. The control and its descendants are deleted from the designer.",
+                new[] { "Project", "Form", "ControlPath", "ExpectedTreeVersion" },
+                "Project", "Form", "ControlPath", "ExpectedTreeVersion"),
+            Definition("add_form_page", "Add a named Page to a MultiPage at canonical form_tree ParentPath. Optional InsertIndex is zero-based; without it the Page is appended. Requires ExpectedTreeVersion and VBE edit policy; re-reads the tree.",
+                new[] { "Project", "Form", "ParentPath", "NewName", "ExpectedTreeVersion" },
+                "Project", "Form", "ParentPath", "NewName", "Caption", "InsertIndex", "ExpectedTreeVersion"),
+            Definition("add_form_tab", "Add a named Tab to a TabStrip at canonical form_tree ParentPath. Optional InsertIndex is zero-based; without it the Tab is appended. Requires ExpectedTreeVersion and VBE edit policy; re-reads the tree.",
+                new[] { "Project", "Form", "ParentPath", "NewName", "ExpectedTreeVersion" },
+                "Project", "Form", "ParentPath", "NewName", "Caption", "InsertIndex", "ExpectedTreeVersion"),
+            Definition("remove_form_page_tab", "Remove a MultiPage Page or TabStrip Tab by its canonical form_tree ControlPath. A Page's child controls are deleted with it. Requires ExpectedTreeVersion and VBE edit policy; resolves the item's numeric index and re-reads the tree.",
                 new[] { "Project", "Form", "ControlPath", "ExpectedTreeVersion" },
                 "Project", "Form", "ControlPath", "ExpectedTreeVersion"),
             Definition("open_form", "Open a UserForm designer window in VBE.", new[] { "Project", "Form" }, "Project", "Form"),
