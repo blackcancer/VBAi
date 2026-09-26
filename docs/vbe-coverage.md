@@ -102,6 +102,8 @@ Le même module a servi à un cycle réel de débogage : ajout d'un point d'arr�
 
 Sonde de suppression sur UserForm jetable Excel PID 2108 : `remove_form_control` a retiré successivement un Label à la racine (`Controls/lblRoot`, nœuds 1→0), un Label dans Frame (`Controls/fraRoot/Controls/lblNested`, 2→1), puis un Label dans une Page (`Controls/mpgRoot/Pages/Page1/Controls/lblPage`, 5→4). Chaque réponse `Applied=true` a été confirmée par `form_tree`, avec changement d'empreinte ; Excel est resté vivant. Une `ExpectedTreeVersion` périmée et le chemin Page1 lui-même ont été refusés, sans changer l'arbre. Ces preuves autorisent l'exposition de la suppression des contrôles au LLM, mais pas encore celle des Pages/Tabs ou d'ActiveX tiers.
 
+Cycle Page/Tab dans Excel PID 46144 : `add_form_page` a inséré PageProbe à l'index 1 entre Page1 et Page2 (nœuds 3→4), puis `remove_form_page_tab` l'a supprimée (4→3). Les noms et l'ordre initiaux sont revenus, mais `TreeVersion` finale a changé, vraisemblablement à cause d'une autre propriété du concepteur comme la sélection ; l'explication exacte n'est pas établie. `add_form_tab` a inséré TabProbe entre Tab1 et Tab2 (6→7). `remove_form_page_tab` avec le nom de TabProbe a rendu « Argument non valide », sans modifier le compte ni la version ; Excel est resté vivant. La prochaine sonde utilisera l'index numérique résolu depuis le nom, conformément au contrat `Remove` MSForms. Ne pas exposer encore la suppression des Tabs au LLM.
+
 ## Prochaine exploration
 
 1. Vérifier les propriétés modifiables restantes des contrôles et conteneurs, ainsi que leur suppression et leur réorganisation, sur des classeurs jetables.

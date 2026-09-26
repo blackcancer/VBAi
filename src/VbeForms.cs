@@ -918,7 +918,19 @@ namespace CodexVBE
             if (descriptor == null)
                 throw new InvalidOperationException("The selected parent has no " + collectionName + " collection.");
             dynamic collection = descriptor.GetValue(parent);
-            collection.Remove(name);
+            int index = -1;
+            int current = 0;
+            foreach (dynamic item in collection)
+            {
+                if (string.Equals((string)item.Name, name, StringComparison.Ordinal))
+                {
+                    if (index >= 0) throw new InvalidOperationException("Page or Tab name is ambiguous.");
+                    index = current;
+                }
+                current++;
+            }
+            if (index < 0) throw new InvalidOperationException("Page or Tab no longer exists in its collection.");
+            collection.Remove(index);
             dynamic after = Tree(request.Project, request.Form);
             if (TreeContainsPath((IEnumerable)after.Controls, request.ControlPath) ||
                 string.Equals((string)after.TreeVersion, request.ExpectedTreeVersion,
