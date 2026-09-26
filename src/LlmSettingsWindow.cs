@@ -7,6 +7,34 @@ namespace CodexVBE
     internal sealed partial class LlmSettingsWindow : Form
     {
         private readonly LlmSettings settings;
+        private bool fittingContent;
+
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            FitContentHeight();
+        }
+
+        private void FitContentHeight()
+        {
+            if (fittingContent || IsDisposed) return;
+            fittingContent = true;
+            try
+            {
+                // Measure at the current width so wrapped descriptions and authentication
+                // buttons contribute their actual height, including the current DPI/font.
+                int width = ClientSize.Width;
+                int height = grid.GetPreferredSize(new Size(width, 0)).Height +
+                    buttons.GetPreferredSize(new Size(width, 0)).Height;
+                int frameHeight = Height - ClientSize.Height;
+                int available = Screen.FromControl(this).WorkingArea.Height - frameHeight;
+                MinimumSize = new Size(MinimumSize.Width, 0);
+                ClientSize = new Size(width, Math.Min(height, available));
+                MinimumSize = new Size(MinimumSize.Width, Height);
+                PerformLayout();
+            }
+            finally { fittingContent = false; }
+        }
 
         public LlmSettingsWindow()
         {
@@ -55,6 +83,7 @@ namespace CodexVBE
                 control.Visible = visible[row];
             }
             grid.ResumeLayout(true);
+            if (Visible) FitContentHeight();
             if (codex) _ = RefreshCodexStatusAsync();
         }
 
@@ -78,6 +107,7 @@ namespace CodexVBE
                     codexLogin.Enabled = true;
                 }
             }
+            if (!IsDisposed && Visible) FitContentHeight();
         }
 
         private void Save()

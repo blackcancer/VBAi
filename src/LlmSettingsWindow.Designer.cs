@@ -6,6 +6,7 @@ namespace CodexVBE
     internal sealed partial class LlmSettingsWindow
     {
         private TableLayoutPanel grid;
+        private TableLayoutPanel contentLayout;
         private FlowLayoutPanel codexActions;
         private FlowLayoutPanel buttons;
         private ComboBox provider;
@@ -31,6 +32,7 @@ namespace CodexVBE
         private void InitializeComponent()
         {
             this.grid = new TableLayoutPanel();
+            this.contentLayout = new TableLayoutPanel();
             this.codexActions = new FlowLayoutPanel();
             this.buttons = new FlowLayoutPanel();
             this.provider = new ComboBox();
@@ -59,9 +61,10 @@ namespace CodexVBE
 
             this.grid.Dock = DockStyle.Top;
             this.grid.AutoSize = true;
+            this.grid.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             this.grid.ColumnCount = 2;
             this.grid.RowCount = 9;
-            this.grid.Padding = new Padding(12);
+            this.grid.Padding = new Padding(12, 12, 12, 0);
             this.grid.AutoScroll = false;
             this.grid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             this.grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
@@ -109,7 +112,7 @@ namespace CodexVBE
             this.codexRefresh.Text = "Actualiser l'état";
             this.codexRefresh.Width = 130;
             this.codexActions.Dock = DockStyle.Fill;
-            this.codexActions.WrapContents = true;
+            this.codexActions.WrapContents = false;
             this.codexActions.AutoSize = true;
             this.codexActions.Padding = new Padding(0, 0, 0, 4);
             this.codexActions.Margin = new Padding(0);
@@ -141,9 +144,10 @@ namespace CodexVBE
             this.grid.Controls.Add(this.approvalLabel, 0, 8);
             this.grid.Controls.Add(this.approvalPicker, 1, 8);
 
-            this.buttons.Dock = DockStyle.Bottom;
+            this.buttons.Dock = DockStyle.Top;
             this.buttons.AutoSize = true;
-            this.buttons.Padding = new Padding(12);
+            this.buttons.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            this.buttons.Padding = new Padding(12, 4, 12, 12);
             this.buttons.FlowDirection = FlowDirection.RightToLeft;
             this.saveButton.Text = "Enregistrer";
             this.saveButton.Width = 105;
@@ -157,18 +161,29 @@ namespace CodexVBE
             this.AutoScaleMode = AutoScaleMode.Dpi;
             this.Font = new Font("Segoe UI", 9F);
             this.ClientSize = new Size(624, 368);
-            this.MinimumSize = new Size(640, 300);
+            this.MinimumSize = new Size(640, 0);
             this.StartPosition = FormStartPosition.CenterParent;
             this.ShowInTaskbar = false;
             this.FormBorderStyle = FormBorderStyle.Sizable;
             this.AutoScroll = true;
             this.MaximizeBox = false;
             this.Text = "CodexVBE — Configuration LLM";
-            this.Controls.Add(this.grid);
-            this.Controls.Add(this.buttons);
+            this.contentLayout.Dock = DockStyle.Top;
+            this.contentLayout.AutoSize = true;
+            this.contentLayout.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            this.contentLayout.ColumnCount = 1;
+            this.contentLayout.RowCount = 2;
+            this.contentLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            this.contentLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            this.contentLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            this.grid.Margin = new Padding(0);
+            this.buttons.Margin = new Padding(0);
+            this.contentLayout.Controls.Add(this.grid, 0, 0);
+            this.contentLayout.Controls.Add(this.buttons, 0, 1);
+            this.Controls.Add(this.contentLayout);
             this.CancelButton = this.cancelButton;
             this.AcceptButton = this.saveButton;
-                        foreach (Control control in this.grid.Controls)
+            foreach (Control control in this.grid.Controls)
             {
                 control.Margin = new Padding(0, 4, 12, 8);
                 var label = control as Label;
