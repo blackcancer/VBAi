@@ -100,6 +100,8 @@ La navigation structurée a été éprouvée dans une classe jetable de 19 ligne
 
 Le même module a servi à un cycle réel de débogage : ajout d'un point d'arrêt ligne 3 puis exécution vers le mode pause (`Mode=1`, ligne 3) ; Variables locales affichait `needle=""`. Le pas détaillé a avancé ligne 4 avec `needle="needle needle"`. Poursuivre a rétabli `Mode=2` et la fenêtre Exécution contenait la sortie. Après retrait du point d'arrêt, une nouvelle exécution a terminé sans pause, avec une seconde sortie. Ces observations ont été faites par relecture du VBE et de ses fenêtres natives ; le retour actuel de `invoke_debug` ne fournit encore que `Executed=true`, sans intégrer lui-même ces preuves d'effet ni inventaire des points d'arrêt.
 
+Sonde de suppression sur UserForm jetable Excel PID 2108 : `remove_form_control` a retiré successivement un Label à la racine (`Controls/lblRoot`, nœuds 1→0), un Label dans Frame (`Controls/fraRoot/Controls/lblNested`, 2→1), puis un Label dans une Page (`Controls/mpgRoot/Pages/Page1/Controls/lblPage`, 5→4). Chaque réponse `Applied=true` a été confirmée par `form_tree`, avec changement d'empreinte ; Excel est resté vivant. Une `ExpectedTreeVersion` périmée et le chemin Page1 lui-même ont été refusés, sans changer l'arbre. Ces preuves autorisent l'exposition de la suppression des contrôles au LLM, mais pas encore celle des Pages/Tabs ou d'ActiveX tiers.
+
 ## Prochaine exploration
 
 1. Vérifier les propriétés modifiables restantes des contrôles et conteneurs, ainsi que leur suppression et leur réorganisation, sur des classeurs jetables.

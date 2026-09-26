@@ -821,7 +821,6 @@ namespace CodexVBE
                 Tree = Tree(request.Project, request.Form) };
         }
 
-        // Probe in a disposable form before offering design-time deletion to the LLM.
         public object RemoveControl(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||
