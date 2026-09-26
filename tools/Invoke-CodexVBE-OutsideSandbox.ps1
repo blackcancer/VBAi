@@ -5,7 +5,8 @@ param(
     [switch] $TaskHost,
     [switch] $Worker,
     [string] $StatusPath,
-    [string] $ExpectedSid
+    [string] $ExpectedSid,
+    [string] $ExpectedAssemblyPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -20,8 +21,9 @@ $classId = '{8E854243-087F-4D6C-9E0E-8622B0E50883}'
 $typeLibId = '{AF3C2AF7-155F-4DDB-AC8F-D02CD58DEDC9}'
 $progId = 'CodexVBE.AddIn'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$dll = Join-Path $projectRoot 'bin\Debug\net48\CodexVBE.dll'
-$typeLib = Join-Path $projectRoot 'bin\Debug\net48\CodexVBE.tlb'
+$dll = if ($ExpectedAssemblyPath) { [IO.Path]::GetFullPath($ExpectedAssemblyPath) }
+    else { Join-Path $projectRoot 'bin\Debug\net48\CodexVBE.dll' }
+$typeLib = Join-Path (Split-Path -Parent $dll) 'CodexVBE.tlb'
 $expectedCodeBase = 'file:///' + ([IO.Path]::GetFullPath($dll)).Replace([char]92, [char]47)
 
 function Assert-Registration([bool] $shouldExist) {
@@ -71,6 +73,7 @@ if (-not $TaskHost) {
     $status = Join-Path $PSScriptRoot ('.codexvbe-' + [guid]::NewGuid().ToString('N') + '.status')
     $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
     $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" -Action $Action -TaskHost -StatusPath `"$status`" -ExpectedSid $sid"
+    if ($ExpectedAssemblyPath) { $arguments += " -ExpectedAssemblyPath `"$dll`"" }
     try {
         $process = Start-Process -FilePath "$env:WINDIR\System32\WindowsPowerShell\v1.0\powershell.exe" -ArgumentList $arguments -Verb RunAs -WindowStyle Hidden -Wait -PassThru
         if (-not (Test-Path -LiteralPath $status)) { throw "Independent installation did not return a result (task host exit code $($process.ExitCode))." }
@@ -86,6 +89,7 @@ if (-not $TaskHost) {
 $taskName = 'CodexVBE-Install-' + [guid]::NewGuid().ToString('N')
 $account = [Security.Principal.WindowsIdentity]::GetCurrent().Name
 $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" -Action $Action -Worker -StatusPath `"$StatusPath`" -ExpectedSid $ExpectedSid"
+if ($ExpectedAssemblyPath) { $arguments += " -ExpectedAssemblyPath `"$dll`"" }
 $taskAction = New-ScheduledTaskAction -Execute "$env:WINDIR\System32\WindowsPowerShell\v1.0\powershell.exe" -Argument $arguments
 $principal = New-ScheduledTaskPrincipal -UserId $account -LogonType Interactive -RunLevel Highest
 try {

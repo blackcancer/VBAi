@@ -14,7 +14,13 @@
 | Débogage | Mode et sélection lus par VBIDE ; commandes natives inventoriées. Un cycle arrêt/pas détaillé/poursuite a été observé dans un essai Excel précédent. | Inventaire fiable des points d'arrêt, pile d'appels, exceptions et vérification systématique de l'effet après chaque commande. |
 | Fenêtres Exécution et Variables locales | Fenêtres natives visibles (`VbaWindow`) ; lectures par UI Automation validées précédemment dans Excel. | Écriture/évaluation dans Exécution, structure typée des variables, espions et pile d'appels. |
 | Menus et barres d'outils | `list_commands` lit chemins, intitulés, identifiants et état activé. Cette session révèle notamment `Id=222` Propriétés, `Id=1820` Ajouter un espion. | `list_commands` limite les résultats à 200 ; les identifiants/intitulés doivent être relevés dans chaque hôte et langue. Exécution générique avec contrôle d'effet à concevoir. |
-| Fenêtres/options VBE | Arbre HWND du processus accessible en lecture seule, sans focus. | Préférences, disposition, fenêtres ancrées, boîtes modales et boîte à outils à inventorier ; API publique hétérogène. |
+| Fenêtres/options VBE | Arbre HWND du processus accessible en lecture seule, sans focus. Une fenêtre outil native a été créée et liée au bureau VBE dans Excel (voir ci-dessous). | Positionnement à droite, contenu du panneau, persistance de la disposition, boîtes modales et boîte à outils à vérifier. |
+
+## Fenêtre outil ancrable du complément
+
+Le 26 septembre 2026, dans Excel 64 bits (PID 31488), une sonde chargée dans le processus VBE a appelé `Microsoft.Vbe.Interop._Windows.CreateToolWindow` avec l'instance `Microsoft.Vbe.Interop.AddIn` obtenue de `VBE.Addins.Item("CodexVBE.AddIn")`, le ProgID `Shell.Explorer.2`, un titre et un GUID de fenêtre. Le dernier paramètre est un **`ref object`** dans l'interface Microsoft : l'appel dynamique initial avec `out object` échouait à la conversion de l'argument COM. L'appel typé a retourné une fenêtre `Type=15` et un objet document COM. Après `window.Visible = true` puis `VBE.MainWindow.LinkedWindows.Add(window)`, le compteur `MainWindow.LinkedWindows.Count` valait 4. L'arbre Win32 montrait un `GenericPane` visible « CodexVBE Dock Probe » sous la fenêtre principale VBE et un enfant `Shell Embedding`.
+
+`Forms.Frame.1` a retourné `E_FAIL` et `Forms.UserForm.1` `CO_E_CLASSSTRING` dans ce même essai. `Shell.Explorer.2` prouve la création et l'ancrage d'une fenêtre outil, mais seulement avec le document ActiveX navigateur vide : le chat n'y est pas encore hébergé et le côté droit précis n'a pas été validé. La sonde d'essai a été retirée des sources du complément après cette vérification. Pour la réalisation, créer la fenêtre avec l'interface typée, conserver les objets `Window` et `DocObj`, puis vérifier le contenu et la disposition dans Excel et SOLIDWORKS.
 
 ## Session Excel observée
 

@@ -1,7 +1,8 @@
 $ErrorActionPreference = 'Stop'
 
 if ($env:CODEX_SHELL -eq '1') {
-    & (Join-Path $PSScriptRoot 'Invoke-CodexVBE-OutsideSandbox.ps1') -Action Verify
+    $expectedAssembly = Join-Path (Split-Path -Parent $PSScriptRoot) 'bin\Debug\net48\CodexVBE.dll'
+    & (Join-Path $PSScriptRoot 'Invoke-CodexVBE-OutsideSandbox.ps1') -Action Verify -ExpectedAssemblyPath $expectedAssembly
     return
 }
 
