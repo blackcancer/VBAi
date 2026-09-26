@@ -77,6 +77,10 @@ namespace CodexVBE
                     return Response.Success(forms.AddControl(request));
                 case "add_nested_form_control":
                     return Response.Success(forms.AddNestedControl(request));
+                case "set_form_node_property":
+                    return Response.Success(forms.SetNodeProperty(request));
+                case "set_form_node_picture":
+                    return Response.Success(forms.SetNodePicture(request));
                 case "set_form_control_geometry":
                     return Response.Success(forms.SetControlGeometry(request));
                 case "rename_form_control":

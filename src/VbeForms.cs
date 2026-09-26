@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -10,6 +11,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Runtime.InteropServices;
+using System.Reflection;
 using System.Web.Script.Serialization;
 
 namespace CodexVBE
@@ -52,17 +54,27 @@ namespace CodexVBE
         public object Tree(string projectName, string formName)
         {
             dynamic form = GetForm(GetProject(projectName), formName);
-            int nodeCount = 0;
-            var nodes = ReadChildControls(form.Designer.Controls, form.Designer, "Controls", 0, ref nodeCount);
-            var properties = DescribeProperties(form);
+            List<object> nodes;
+            List<VbePropertyInfo> properties;
+            int nodeCount;
+            string version = TreeVersion(form, out nodes, out properties, out nodeCount);
+            return new { Project = projectName, Form = formName, FormVersion = version, TreeVersion = version,
+                NodeCount = nodeCount, Properties = properties, Controls = nodes };
+        }
+
+        private static string TreeVersion(dynamic form, out List<object> nodes,
+            out List<VbePropertyInfo> properties, out int nodeCount)
+        {
+            nodeCount = 0;
+            object designer = form.Designer;
+            nodes = ReadChildControls(((dynamic)designer).Controls, designer, (string)form.Name,
+                "Controls", 0, ref nodeCount);
+            properties = DescribeProperties(form);
             string json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 }
                 .Serialize(new { Form = (string)form.Name, Properties = properties, Controls = nodes });
-            string version;
             using (var sha = SHA256.Create())
-                version = BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(json)))
+                return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(json)))
                     .Replace("-", "").ToLowerInvariant();
-            return new { Project = projectName, Form = formName, FormVersion = Version(form), TreeVersion = version,
-                NodeCount = nodeCount, Properties = properties, Controls = nodes };
         }
 
         public object ParentProbe(string projectName, string formName)
@@ -88,13 +100,42 @@ namespace CodexVBE
             catch { return null; }
         }
 
-        private static List<object> ReadChildControls(dynamic collection, object owner, string path, int depth, ref int nodeCount)
+        private static List<object> ReadChildControls(dynamic collection, object owner, string formName,
+            string path, int depth, ref int nodeCount)
         {
             var result = new List<object>();
             foreach (dynamic control in collection)
-                if (SameComIdentity((object)control.Parent, owner))
-                    result.Add(ReadTreeNode(control, "Control", path, depth, ref nodeCount));
+                if (SameContainer((object)control.Parent, owner, formName))
+                    result.Add(ReadTreeNode(control, "Control", formName, path, depth, ref nodeCount));
             return result;
+        }
+
+        private static bool SameContainer(object actualParent, object expectedOwner, string formName)
+        {
+            if (SameComIdentity(actualParent, expectedOwner)) return true;
+            string actualPath = ContainerIdentity(actualParent, formName);
+            string expectedPath = ContainerIdentity(expectedOwner, formName);
+            return actualPath != null && string.Equals(actualPath, expectedPath, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string ContainerIdentity(object item, string formName)
+        {
+            if (item == null) return null;
+            var path = new List<string>();
+            for (int depth = 0; depth < 16 && item != null; depth++)
+            {
+                string type = TypeDescriptor.GetClassName(item);
+                string name = SafeComName(item);
+                if (string.Equals(type, "UserForm", StringComparison.OrdinalIgnoreCase) &&
+                    string.IsNullOrEmpty(name)) name = formName;
+                if (string.IsNullOrEmpty(type) || string.IsNullOrEmpty(name)) return null;
+                path.Add(type + ":" + name);
+                if (string.Equals(type, "UserForm", StringComparison.OrdinalIgnoreCase))
+                    return string.Join("/", path);
+                try { item = ((dynamic)item).Parent; }
+                catch { return null; }
+            }
+            return null;
         }
 
         private static bool SameComIdentity(object left, object right)
@@ -117,7 +158,8 @@ namespace CodexVBE
             }
         }
 
-        private static object ReadTreeNode(object item, string kind, string parentPath, int depth, ref int nodeCount)
+        private static object ReadTreeNode(object item, string kind, string formName,
+            string parentPath, int depth, ref int nodeCount)
         {
             if (++nodeCount > 512 || depth > 16)
                 throw new InvalidOperationException("The UserForm control hierarchy exceeds the inspection limit.");
@@ -133,22 +175,24 @@ namespace CodexVBE
                 {
                     object nested = controls.GetValue(item);
                     if (nested != null)
-                        children.AddRange(ReadChildControls(nested, item, path + "/Controls", depth + 1, ref nodeCount));
+                        children.AddRange(ReadChildControls(nested, item, formName,
+                            path + "/Controls", depth + 1, ref nodeCount));
                 }
                 PropertyDescriptor pages = descriptors.Find("Pages", true);
                 if (pages != null)
                     foreach (dynamic page in (dynamic)pages.GetValue(item))
-                        children.Add(ReadTreeNode(page, "Page", path + "/Pages", depth + 1, ref nodeCount));
+                        children.Add(ReadTreeNode(page, "Page", formName, path + "/Pages", depth + 1, ref nodeCount));
                 PropertyDescriptor tabs = descriptors.Find("Tabs", true);
                 if (tabs != null)
                     foreach (dynamic tab in (dynamic)tabs.GetValue(item))
-                        children.Add(ReadTreeNode(tab, "Tab", path + "/Tabs", depth + 1, ref nodeCount));
+                        children.Add(ReadTreeNode(tab, "Tab", formName, path + "/Tabs", depth + 1, ref nodeCount));
             }
             else if (kind == "Page")
             {
                 PropertyDescriptor controls = descriptors.Find("Controls", true);
                 if (controls != null)
-                    children.AddRange(ReadChildControls(controls.GetValue(item), item, path + "/Controls", depth + 1, ref nodeCount));
+                    children.AddRange(ReadChildControls(controls.GetValue(item), item, formName,
+                        path + "/Controls", depth + 1, ref nodeCount));
             }
             return new { Path = path, Name = name, Kind = kind,
                 Type = TypeDescriptor.GetClassName(item), Properties = ReadObjectProperties(item), Children = children };
@@ -168,7 +212,11 @@ namespace CodexVBE
                         ? "object" : "scalar";
                     if (info.Kind == "scalar") info.Value = NormalizeScalar(value);
                     else if (value is Image) info.Digest = ImageDigest((Image)value);
-                    else if (value is Font) info.Members = DescribeObjectMembers(value);
+                    else if (value is Font)
+                    {
+                        try { info.Members = DescribeObjectMembers((object)((dynamic)item).Font); }
+                        catch (Exception ex) { info.Error = ex.Message; }
+                    }
                 }
                 catch (Exception ex) { info.Error = ex.Message; }
                 result.Add(info);
@@ -617,6 +665,7 @@ namespace CodexVBE
             var controls = new List<object>();
             foreach (dynamic control in designer.Controls)
             {
+                if (!SameContainer((object)control.Parent, (object)designer, (string)form.Name)) continue;
                 string caption = null;
                 try { caption = (string)control.Caption; } catch { }
                 string fontName = null;
@@ -644,52 +693,10 @@ namespace CodexVBE
 
         private static string Version(dynamic form)
         {
-            dynamic designer = form.Designer;
-            var text = new StringBuilder();
-            text.Append((string)form.Name).Append('|').Append((string)form.Properties.Item("Caption").Value).Append('|');
-            AppendNumber(text, Convert.ToDouble(form.Properties.Item("Width").Value, CultureInfo.InvariantCulture));
-            AppendNumber(text, Convert.ToDouble(form.Properties.Item("Height").Value, CultureInfo.InvariantCulture));
-            foreach (var property in DescribeProperties((object)form).OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
-            {
-                AppendVersionText(text, property.Name);
-                AppendVersionText(text, property.Kind);
-                AppendVersionText(text, Convert.ToString(property.Value, CultureInfo.InvariantCulture));
-                AppendVersionText(text, property.Digest);
-                if (property.Members != null)
-                    foreach (var member in property.Members.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
-                    {
-                        AppendVersionText(text, member.Name);
-                        AppendVersionText(text, Convert.ToString(member.Value, CultureInfo.InvariantCulture));
-                    }
-            }
-            var controls = new List<dynamic>();
-            foreach (dynamic control in designer.Controls) controls.Add(control);
-            foreach (dynamic control in controls.OrderBy(c => (string)c.Name, StringComparer.OrdinalIgnoreCase))
-            {
-                text.Append((string)control.Name).Append('|');
-                AppendNumber(text, (double)control.Left);
-                AppendNumber(text, (double)control.Top);
-                AppendNumber(text, (double)control.Width);
-                AppendNumber(text, (double)control.Height);
-                try { text.Append((string)control.Caption); } catch { }
-                text.Append('|');
-                try
-                {
-                    dynamic font = control.Font;
-                    text.Append((string)font.Name).Append('|');
-                    AppendNumber(text, Convert.ToDouble(font.Size, CultureInfo.InvariantCulture));
-                    text.Append((bool)font.Bold).Append('|');
-                }
-                catch { }
-            }
-            using (var sha = SHA256.Create())
-                return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(text.ToString())))
-                    .Replace("-", "").ToLowerInvariant();
-        }
-
-        private static void AppendNumber(StringBuilder text, double number)
-        {
-            text.Append(number.ToString("R", CultureInfo.InvariantCulture)).Append('|');
+            List<object> nodes;
+            List<VbePropertyInfo> properties;
+            int nodeCount;
+            return TreeVersion(form, out nodes, out properties, out nodeCount);
         }
 
         // Bridge-only probe until hierarchical identity and revision behavior are tested in Excel.
@@ -706,6 +713,8 @@ namespace CodexVBE
             if (!string.Equals((string)before.TreeVersion, request.ExpectedTreeVersion,
                 StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("The UserForm hierarchy changed since it was read.");
+            if (!TreeContainsPath((IEnumerable)before.Controls, request.ParentPath))
+                throw new InvalidOperationException("ParentPath is not a canonical path in form_tree.");
             dynamic controls = ResolveNestedControls(form.Designer, request.ParentPath);
             foreach (dynamic existing in controls)
                 if (string.Equals((string)existing.Name, request.Control, StringComparison.OrdinalIgnoreCase))
@@ -729,6 +738,141 @@ namespace CodexVBE
                 StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("The nested control was not reflected in the UserForm tree.");
             return after;
+        }
+
+        public object SetNodeProperty(Request request)
+        {
+            if (string.IsNullOrWhiteSpace(request.ControlPath) ||
+                string.IsNullOrWhiteSpace(request.Property) || request.Value == null ||
+                string.IsNullOrWhiteSpace(request.ExpectedTreeVersion))
+                throw new ArgumentException("ControlPath, Property, Value and ExpectedTreeVersion are required.");
+            dynamic form = GetForm(GetDesignProject(request.Project), request.Form);
+            dynamic before = Tree(request.Project, request.Form);
+            if (!string.Equals((string)before.TreeVersion, request.ExpectedTreeVersion,
+                StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The UserForm hierarchy changed since it was read.");
+            if (!TreeContainsPath((IEnumerable)before.Controls, request.ControlPath))
+                throw new InvalidOperationException("ControlPath is not a canonical path in form_tree.");
+            object target = ResolveTreeItem(form.Designer, request.ControlPath);
+            string[] propertyPath = request.Property.Split('.');
+            if (propertyPath.Length < 1 || propertyPath.Length > 2 ||
+                propertyPath.Any(part => string.IsNullOrWhiteSpace(part)))
+                throw new ArgumentException("Property must be a property name or one object member path.");
+            PropertyDescriptor root = TypeDescriptor.GetProperties(target).Find(propertyPath[0], true);
+            if (root == null) throw new InvalidOperationException("Property is not exposed: " + propertyPath[0]);
+            if (propertyPath.Length == 1)
+            {
+                if (root.IsReadOnly) throw new InvalidOperationException("Property is read-only: " + root.Name);
+                object oldValue = root.GetValue(target);
+                object converted = ConvertDescriptorValue(request.Value, root.PropertyType, oldValue);
+                root.SetValue(target, converted);
+                object actual = root.GetValue(target);
+                if (!SameDescriptorValue(actual, converted))
+                    throw new InvalidOperationException("The VBE did not retain property " + root.Name + ".");
+            }
+            else
+            {
+                object owner = string.Equals(root.Name, "Font", StringComparison.OrdinalIgnoreCase)
+                    ? (object)((dynamic)target).Font : root.GetValue(target);
+                if (owner == null || !Marshal.IsComObject(owner))
+                    throw new InvalidOperationException("The object property is not exposed as an editable COM object.");
+                PropertyDescriptor member = TypeDescriptor.GetProperties(owner).Find(propertyPath[1], true);
+                if (member == null) throw new InvalidOperationException("Object member is not exposed: " + request.Property);
+                if (member.IsReadOnly) throw new InvalidOperationException("Object member is read-only: " + request.Property);
+                object oldValue = member.GetValue(owner);
+                object converted = ConvertDescriptorValue(request.Value, member.PropertyType, oldValue);
+                member.SetValue(owner, converted);
+                if (!SameDescriptorValue(member.GetValue(owner), converted))
+                    throw new InvalidOperationException("The VBE did not retain object member " + request.Property + ".");
+            }
+            dynamic after = Tree(request.Project, request.Form);
+            return new { ControlPath = request.ControlPath, Property = request.Property, Tree = after };
+        }
+
+        public object SetNodePicture(Request request)
+        {
+            if (string.IsNullOrWhiteSpace(request.ControlPath) ||
+                string.IsNullOrWhiteSpace(request.Property) ||
+                string.IsNullOrWhiteSpace(request.ExpectedTreeVersion))
+                throw new ArgumentException("ControlPath, Property and ExpectedTreeVersion are required.");
+            dynamic form = GetForm(GetDesignProject(request.Project), request.Form);
+            dynamic before = Tree(request.Project, request.Form);
+            if (!string.Equals((string)before.TreeVersion, request.ExpectedTreeVersion,
+                StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The UserForm hierarchy changed since it was read.");
+            if (!TreeContainsPath((IEnumerable)before.Controls, request.ControlPath))
+                throw new InvalidOperationException("ControlPath is not a canonical path in form_tree.");
+            object target = ResolveTreeItem(form.Designer, request.ControlPath);
+            PropertyDescriptor descriptor = TypeDescriptor.GetProperties(target).Find(request.Property, true);
+            if (descriptor == null || descriptor.IsReadOnly ||
+                (descriptor.PropertyType != typeof(Bitmap) && descriptor.PropertyType != typeof(Icon)))
+                throw new InvalidOperationException("The selected node has no writable OLE image property by that name.");
+            object picture = OlePictureLoader.Load(request.Path);
+            target.GetType().InvokeMember(descriptor.Name, BindingFlags.SetProperty,
+                null, target, new[] { picture });
+            object installed = target.GetType().InvokeMember(descriptor.Name, BindingFlags.GetProperty,
+                null, target, null);
+            if (!string.Equals(OlePictureLoader.Fingerprint(installed), OlePictureLoader.Fingerprint(picture),
+                StringComparison.Ordinal))
+                throw new InvalidOperationException("The VBE did not retain the requested OLE image.");
+            return new { ControlPath = request.ControlPath, Property = descriptor.Name,
+                Tree = Tree(request.Project, request.Form) };
+        }
+
+        private static object ConvertDescriptorValue(object value, Type declaredType, object previous)
+        {
+            Type type = declaredType == typeof(object) || declaredType == null
+                ? previous?.GetType() ?? value.GetType() : declaredType;
+            if (type == typeof(Color))
+            {
+                if (value is string && ((string)value).StartsWith("#", StringComparison.Ordinal))
+                    return ColorTranslator.FromHtml((string)value);
+                return ColorTranslator.FromOle(Convert.ToInt32(value, CultureInfo.InvariantCulture));
+            }
+            return ConvertScalar(value, type);
+        }
+
+        private static bool SameDescriptorValue(object actual, object expected)
+        {
+            if (Equals(actual, expected)) return true;
+            if (actual == null || expected == null) return false;
+            if (actual is Color && expected is Color)
+                return ((Color)actual).ToArgb() == ((Color)expected).ToArgb();
+            if (actual is IConvertible && expected is IConvertible)
+                return string.Equals(Convert.ToString(actual, CultureInfo.InvariantCulture),
+                    Convert.ToString(expected, CultureInfo.InvariantCulture), StringComparison.OrdinalIgnoreCase);
+            return false;
+        }
+
+        private static bool TreeContainsPath(IEnumerable nodes, string path)
+        {
+            foreach (dynamic node in nodes)
+            {
+                if (string.Equals((string)node.Path, path, StringComparison.Ordinal)) return true;
+                if (TreeContainsPath((IEnumerable)node.Children, path)) return true;
+            }
+            return false;
+        }
+
+        private static object ResolveTreeItem(object designer, string path)
+        {
+            string[] parts = path.Split('/');
+            if (parts.Length < 2 || parts.Length % 2 != 0 || parts.Length > 16)
+                throw new ArgumentException("Invalid control hierarchy path.");
+            object current = designer;
+            for (int i = 0; i < parts.Length; i += 2)
+            {
+                PropertyDescriptor collection = TypeDescriptor.GetProperties(current).Find(parts[i], true);
+                if (collection == null || (parts[i] != "Controls" && parts[i] != "Pages" && parts[i] != "Tabs"))
+                    throw new InvalidOperationException("Path collection is unavailable: " + parts[i]);
+                object found = null;
+                foreach (dynamic candidate in (dynamic)collection.GetValue(current))
+                    if (string.Equals((string)candidate.Name, parts[i + 1], StringComparison.Ordinal))
+                    { found = candidate; break; }
+                if (found == null) throw new InvalidOperationException("Path item is unavailable: " + parts[i + 1]);
+                current = found;
+            }
+            return current;
         }
 
         private static dynamic ResolveNestedControls(dynamic designer, string path)
@@ -764,10 +908,5 @@ namespace CodexVBE
             return controls.GetValue(current);
         }
 
-        private static void AppendVersionText(StringBuilder text, string value)
-        {
-            value = value ?? "";
-            text.Append(value.Length).Append(':').Append(value);
-        }
     }
 }

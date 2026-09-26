@@ -69,7 +69,7 @@ namespace CodexVBE
                 new[] { "Project", "Module", "ExpectedMode" }, "Project", "Module", "ExpectedMode"),
             Definition("list_forms", "List UserForms in a project.", new[] { "Project" }, "Project"),
             Definition("form_state", "Read a UserForm and all its controls with geometry, caption and font.", new[] { "Project", "Form" }, "Project", "Form"),
-            Definition("form_tree", "Read the recursive UserForm hierarchy, including Frame controls, MultiPage pages and TabStrip tabs. FormVersion is the ExpectedFormVersion for current form edits; TreeVersion identifies the recursive tree and is not accepted by current edit tools.",
+            Definition("form_tree", "Read the recursive UserForm hierarchy, including Frame controls, MultiPage pages and TabStrip tabs. FormVersion and TreeVersion are the same recursive revision; use it for ExpectedFormVersion or ExpectedTreeVersion.",
                 new[] { "Project", "Form" }, "Project", "Form"),
             Definition("form_properties", "Read the designer properties of a UserForm.", new[] { "Project", "Form" }, "Project", "Form"),
             Definition("set_form_property", "Set a typed UserForm property or one object member path (for example Font.Name) after reading form_properties and form_state; uses ExpectedFormVersion and VBE edit policy. Read-only or unsupported objects return explicit errors.",
@@ -80,6 +80,12 @@ namespace CodexVBE
                 "Project", "Form", "ExpectedFormVersion", "Path"),
             Definition("form_control_properties", "Read all exposed design properties, types and read-only flags of one UserForm control.",
                 new[] { "Project", "Form", "Control" }, "Project", "Form", "Control"),
+            Definition("set_form_node_property", "Set any writable scalar designer property, or a writable COM object member path, on a control, Frame, MultiPage Page or TabStrip Tab selected by its canonical form_tree path. Type is taken from the live property descriptor; requires ExpectedTreeVersion and VBE edit policy.",
+                new[] { "Project", "Form", "ControlPath", "ExpectedTreeVersion", "Property", "Value" },
+                "Project", "Form", "ControlPath", "ExpectedTreeVersion", "Property", "Value"),
+            Definition("set_form_node_picture", "Set a writable OLE Picture or MouseIcon property on a form_tree node from a local image path explicitly supplied by the user. Image bytes remain local; requires ExpectedTreeVersion and VBE edit policy.",
+                new[] { "Project", "Form", "ControlPath", "ExpectedTreeVersion", "Property", "Path" },
+                "Project", "Form", "ControlPath", "ExpectedTreeVersion", "Property", "Path"),
             Definition("open_form", "Open a UserForm designer window in VBE.", new[] { "Project", "Form" }, "Project", "Form"),
             Definition("create_form", "Create a named UserForm in the selected design-mode project, subject to VBE edit policy.",
                 new[] { "Project", "Form" }, "Project", "Form"),
@@ -89,6 +95,9 @@ namespace CodexVBE
             Definition("add_form_control", "Add a built-in MSForms control in design mode; requires form revision and VBE edit policy.",
                 new[] { "Project", "Form", "ExpectedFormVersion", "ControlType", "Control", "Left", "Top", "Width", "Height" },
                 "Project", "Form", "ExpectedFormVersion", "ControlType", "Control", "Left", "Top", "Width", "Height", "Caption"),
+            Definition("add_nested_form_control", "Add a built-in MSForms control inside a Frame or MultiPage Page named by a canonical form_tree ParentPath. Requires ExpectedTreeVersion, design mode and VBE edit policy.",
+                new[] { "Project", "Form", "ParentPath", "ExpectedTreeVersion", "ControlType", "Control", "Left", "Top", "Width", "Height" },
+                "Project", "Form", "ParentPath", "ExpectedTreeVersion", "ControlType", "Control", "Left", "Top", "Width", "Height", "Caption"),
             Definition("rename_form_control", "Rename a UserForm control; requires form revision and VBE edit policy.",
                 new[] { "Project", "Form", "ExpectedFormVersion", "Control", "NewName" },
                 "Project", "Form", "ExpectedFormVersion", "Control", "NewName"),
@@ -139,7 +148,8 @@ namespace CodexVBE
                 }
                 if (name == "read_user_file")
                     return json.Serialize(ReadUserFile((string)values["Path"]));
-                if ((name == "set_form_picture" || name == "add_reference_file") &&
+                if ((name == "set_form_picture" || name == "set_form_node_picture" ||
+                    name == "add_reference_file") &&
                     !IsExplicitUserPath((string)values["Path"]))
                     return json.Serialize(Response.Failure("L'utilisateur doit fournir explicitement le chemin absolu du fichier."));
                 var normalized = new Dictionary<string, object>(values) { ["Command"] = name };
