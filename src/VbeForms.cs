@@ -10,6 +10,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Runtime.InteropServices;
+using System.Web.Script.Serialization;
 
 namespace CodexVBE
 {
@@ -46,6 +47,89 @@ namespace CodexVBE
         {
             dynamic form = GetForm(GetProject(projectName), formName);
             return DescribeProperties(form);
+        }
+
+        public object Tree(string projectName, string formName)
+        {
+            dynamic form = GetForm(GetProject(projectName), formName);
+            int nodeCount = 0;
+            var nodes = ReadChildControls(form.Designer.Controls, "Controls", 0, ref nodeCount);
+            var properties = DescribeProperties(form);
+            string json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 }
+                .Serialize(new { Form = (string)form.Name, Properties = properties, Controls = nodes });
+            string version;
+            using (var sha = SHA256.Create())
+                version = BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(json)))
+                    .Replace("-", "").ToLowerInvariant();
+            return new { Project = projectName, Form = formName, Version = version,
+                NodeCount = nodeCount, Properties = properties, Controls = nodes };
+        }
+
+        private static List<object> ReadChildControls(dynamic collection, string path, int depth, ref int nodeCount)
+        {
+            var result = new List<object>();
+            foreach (dynamic control in collection)
+                result.Add(ReadTreeNode(control, "Control", path, depth, ref nodeCount));
+            return result;
+        }
+
+        private static object ReadTreeNode(object item, string kind, string parentPath, int depth, ref int nodeCount)
+        {
+            if (++nodeCount > 512 || depth > 16)
+                throw new InvalidOperationException("The UserForm control hierarchy exceeds the inspection limit.");
+            dynamic current = item;
+            string name = (string)current.Name;
+            string path = parentPath + "/" + name;
+            var children = new List<object>();
+            PropertyDescriptorCollection descriptors = TypeDescriptor.GetProperties(item);
+            if (kind == "Control")
+            {
+                PropertyDescriptor controls = descriptors.Find("Controls", true);
+                if (controls != null)
+                {
+                    object nested = controls.GetValue(item);
+                    if (nested != null)
+                        children.AddRange(ReadChildControls(nested, path + "/Controls", depth + 1, ref nodeCount));
+                }
+                PropertyDescriptor pages = descriptors.Find("Pages", true);
+                if (pages != null)
+                    foreach (dynamic page in (dynamic)pages.GetValue(item))
+                        children.Add(ReadTreeNode(page, "Page", path + "/Pages", depth + 1, ref nodeCount));
+                PropertyDescriptor tabs = descriptors.Find("Tabs", true);
+                if (tabs != null)
+                    foreach (dynamic tab in (dynamic)tabs.GetValue(item))
+                        children.Add(ReadTreeNode(tab, "Tab", path + "/Tabs", depth + 1, ref nodeCount));
+            }
+            else if (kind == "Page")
+            {
+                PropertyDescriptor controls = descriptors.Find("Controls", true);
+                if (controls != null)
+                    children.AddRange(ReadChildControls(controls.GetValue(item), path + "/Controls", depth + 1, ref nodeCount));
+            }
+            return new { Path = path, Name = name, Kind = kind,
+                Type = TypeDescriptor.GetClassName(item), Properties = ReadObjectProperties(item), Children = children };
+        }
+
+        private static List<VbePropertyInfo> ReadObjectProperties(object item)
+        {
+            var result = new List<VbePropertyInfo>();
+            foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(item))
+            {
+                var info = new VbePropertyInfo { Name = descriptor.Name,
+                    Type = descriptor.PropertyType?.FullName, ReadOnly = descriptor.IsReadOnly };
+                try
+                {
+                    object value = descriptor.GetValue(item);
+                    info.Kind = value != null && (Marshal.IsComObject(value) || value is Font || value is Image)
+                        ? "object" : "scalar";
+                    if (info.Kind == "scalar") info.Value = NormalizeScalar(value);
+                    else if (value is Image) info.Digest = ImageDigest((Image)value);
+                    else if (value is Font) info.Members = DescribeObjectMembers(value);
+                }
+                catch (Exception ex) { info.Error = ex.Message; }
+                result.Add(info);
+            }
+            return result;
         }
 
         public object SetProperty(Request request)
@@ -89,7 +173,10 @@ namespace CodexVBE
                     catch (Exception ex) { throw new InvalidOperationException("Cannot read the current value of " + propertyName + ": " + ex.Message); }
                     if (previous != null && Marshal.IsComObject(previous))
                         throw new InvalidOperationException("Object property: use a member path such as Font.Name or a dedicated object command.");
+                    // VBIDE exposes Tag as an untyped null Variant until it is assigned.
                     Type targetType = previous?.GetType() ?? descriptor?.PropertyType;
+                    if (targetType == null && string.Equals(propertyName, "Tag", StringComparison.OrdinalIgnoreCase))
+                        targetType = typeof(string);
                     if (targetType == null || targetType == typeof(object))
                         throw new InvalidOperationException("Cannot determine a safe scalar type for " + propertyName);
                     property.Value = ConvertScalar(request.Value, targetType);

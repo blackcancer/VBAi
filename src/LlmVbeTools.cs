@@ -18,7 +18,7 @@ namespace CodexVBE
         private readonly List<string> userRequests = new List<string>();
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
             "status", "read_user_file", "list_projects", "list_modules", "read_module", "list_forms",
-            "form_state", "form_properties", "form_control_properties", "open_form"
+            "form_state", "form_tree", "form_properties", "form_control_properties", "open_form"
         };
         public string CurrentProviderName { get; set; }
 
@@ -57,6 +57,8 @@ namespace CodexVBE
                 new[] { "Project", "Module", "ExpectedMode" }, "Project", "Module", "ExpectedMode"),
             Definition("list_forms", "List UserForms in a project.", new[] { "Project" }, "Project"),
             Definition("form_state", "Read a UserForm and all its controls with geometry, caption and font.", new[] { "Project", "Form" }, "Project", "Form"),
+            Definition("form_tree", "Read the recursive UserForm control hierarchy, including Frame controls, MultiPage pages and TabStrip tabs, with stable paths, properties and a tree revision.",
+                new[] { "Project", "Form" }, "Project", "Form"),
             Definition("form_properties", "Read the designer properties of a UserForm.", new[] { "Project", "Form" }, "Project", "Form"),
             Definition("set_form_property", "Set a typed UserForm property or one object member path (for example Font.Name) after reading form_properties and form_state; uses ExpectedFormVersion and VBE edit policy. Read-only or unsupported objects return explicit errors.",
                 new[] { "Project", "Form", "ExpectedFormVersion", "Property", "Value" },
