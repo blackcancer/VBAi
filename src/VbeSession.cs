@@ -13,8 +13,10 @@ namespace CodexVBE
         private readonly dynamic vbe;
         private readonly VbeDebug debugger;
         private readonly VbeForms forms;
+        private readonly VbeProjectComponents components;
 
-        public VbeSession(object vbe) { this.vbe = vbe; debugger = new VbeDebug(vbe); forms = new VbeForms(vbe); }
+        public VbeSession(object vbe) { this.vbe = vbe; debugger = new VbeDebug(vbe);
+            forms = new VbeForms(vbe); components = new VbeProjectComponents(vbe, forms); }
 
         public Response Execute(Request request)
         {
@@ -29,6 +31,24 @@ namespace CodexVBE
                     return Response.Success(ListProjects());
                 case "list_modules":
                     return Response.Success(ListModules(request.Project));
+                case "project_properties":
+                    return Response.Success(components.ProjectProperties(request.Project));
+                case "component_properties":
+                    return Response.Success(components.ComponentProperties(request.Project, request.Module));
+                case "set_project_property":
+                    return Response.Success(components.SetProjectProperty(request));
+                case "set_component_property":
+                    return Response.Success(components.SetComponentProperty(request));
+                case "rename_project":
+                    return Response.Success(components.RenameProject(request));
+                case "rename_component":
+                    return Response.Success(components.RenameComponent(request));
+                case "remove_component":
+                    return Response.Success(components.RemoveComponent(request));
+                case "import_component":
+                    return Response.Success(components.ImportComponent(request));
+                case "export_component":
+                    return Response.Success(components.ExportComponent(request));
                 case "list_references":
                     return Response.Success(ListReferences(request.Project));
                 case "add_reference_guid":

@@ -17,7 +17,8 @@ namespace CodexVBE
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
         private readonly List<string> userRequests = new List<string>();
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
-            "status", "read_user_file", "list_projects", "list_modules", "list_references", "read_module", "list_forms",
+            "status", "read_user_file", "list_projects", "list_modules", "list_references", "read_module",
+            "project_properties", "component_properties", "list_forms",
             "form_state", "form_tree", "form_properties", "form_control_properties",
             "list_form_control_types", "open_form"
         };
@@ -52,6 +53,31 @@ namespace CodexVBE
                 new[] { "Path" }, "Path"),
             Definition("list_projects", "List open VBA projects and their modes.", new string[0]),
             Definition("list_modules", "List modules in one VBA project.", new[] { "Project" }, "Project"),
+            Definition("project_properties", "Read all exposed VBProject properties, component identities and a project revision.",
+                new[] { "Project" }, "Project"),
+            Definition("component_properties", "Read all exposed VBComponent and designer properties, code SHA-256, and a component revision. Works for document, standard, class and form components when VBIDE allows access.",
+                new[] { "Project", "Module" }, "Project", "Module"),
+            Definition("set_project_property", "Set a writable scalar VBProject property by its live descriptor and ExpectedProjectVersion in design mode; VBE edit policy applies.",
+                new[] { "Project", "ExpectedProjectVersion", "Property", "Value" },
+                "Project", "ExpectedProjectVersion", "Property", "Value"),
+            Definition("set_component_property", "Set a writable scalar VBComponent property by its live descriptor and ExpectedComponentVersion in design mode; VBE edit policy applies.",
+                new[] { "Project", "Module", "ExpectedComponentVersion", "Property", "Value" },
+                "Project", "Module", "ExpectedComponentVersion", "Property", "Value"),
+            Definition("rename_project", "Rename a design-mode VBA project after checking ExpectedProjectVersion and VBE edit policy.",
+                new[] { "Project", "ExpectedProjectVersion", "NewName" },
+                "Project", "ExpectedProjectVersion", "NewName"),
+            Definition("rename_component", "Rename a VBComponent after checking ExpectedComponentVersion and VBE edit policy.",
+                new[] { "Project", "Module", "ExpectedComponentVersion", "NewName" },
+                "Project", "Module", "ExpectedComponentVersion", "NewName"),
+            Definition("remove_component", "Remove an editable non-document component after checking project and component revisions; VBE edit policy applies. Removal cannot be undone in VBE.",
+                new[] { "Project", "Module", "ExpectedProjectVersion", "ExpectedComponentVersion" },
+                "Project", "Module", "ExpectedProjectVersion", "ExpectedComponentVersion"),
+            Definition("import_component", "Import a VBA component from an absolute file path explicitly supplied by the user, with ExpectedProjectVersion and VBE edit policy. The file stays local.",
+                new[] { "Project", "ExpectedProjectVersion", "Path" },
+                "Project", "ExpectedProjectVersion", "Path"),
+            Definition("export_component", "Export a VBA component to a new absolute path explicitly supplied by the user, with ExpectedComponentVersion and VBE edit policy. Existing files are not overwritten; a UserForm may also create an FRX companion.",
+                new[] { "Project", "Module", "ExpectedComponentVersion", "Path" },
+                "Project", "Module", "ExpectedComponentVersion", "Path"),
             Definition("list_references", "List the type-library references actually selected by one VBA project, including identity, version, path and broken status.",
                 new[] { "Project" }, "Project"),
             Definition("add_reference_guid", "Add a project type-library reference by exact GUID and requested major/minor version in design mode; requires the current references revision and VBE edit policy. Major=Minor=0 requests the latest installed version.",
@@ -151,7 +177,8 @@ namespace CodexVBE
                 if (name == "read_user_file")
                     return json.Serialize(ReadUserFile((string)values["Path"]));
                 if ((name == "set_form_picture" || name == "set_form_node_picture" ||
-                    name == "add_reference_file") &&
+                    name == "add_reference_file" || name == "import_component" ||
+                    name == "export_component") &&
                     !IsExplicitUserPath((string)values["Path"]))
                     return json.Serialize(Response.Failure("L'utilisateur doit fournir explicitement le chemin absolu du fichier."));
                 var normalized = new Dictionary<string, object>(values) { ["Command"] = name };
