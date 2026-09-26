@@ -100,6 +100,7 @@ namespace CodexVBE
             try { after = State(request.Project); }
             catch (Exception ex) { afterError = ex.Message; }
             string evidence = DebugEffect(request.Action, before, after);
+            bool pending = evidence == null && request.Action != "toggle_breakpoint";
             return new
             {
                 request.Action,
@@ -109,10 +110,12 @@ namespace CodexVBE
                 Line = request.StartLine, Text = line,
                 ModeBefore = mode, Executed = true,
                 Verification = evidence == null ? "Unverified" : "Verified",
+                VerificationPending = pending,
                 Evidence = evidence,
+                NextRead = pending ? "Call debug_state in a separate request after the VBE processes the command; inspect native debug windows for the visible effect." : null,
                 VerificationLimit = request.Action == "toggle_breakpoint"
                     ? "VBIDE exposes no breakpoint inventory through this command; toggle effect was not verified."
-                    : evidence == null ? "Immediate debug state did not prove an effect; read debug_state and native VBE windows again." : null,
+                    : pending ? "The VBE may process this command asynchronously; immediate state did not yet prove an effect." : null,
                 StateBefore = before, StateAfter = after, StateAfterError = afterError };
         }
 
