@@ -29,6 +29,7 @@ try {
     if (-not $import.Applied) { throw 'Import response did not confirm that the component was added.' }
     $importedName = $import.ImportedName
     if (-not $importedName) { throw 'Import response did not identify the added component.' }
+    $componentAfter = Invoke-Vbe @{ Command = 'component_properties'; Project = $Project; Module = $importedName }
     $codeAfter = Invoke-Vbe @{ Command = 'read_module'; Project = $Project; Module = $importedName }
     $treeAfter = if ($Kind -eq 'Form') { Invoke-Vbe @{ Command = 'form_tree'; Project = $Project; Form = $importedName } } else { $null }
     [pscustomobject]@{
@@ -37,11 +38,13 @@ try {
         CompanionFrxBytes = if (Test-Path -LiteralPath $frxPath) { (Get-Item -LiteralPath $frxPath).Length } else { 0 }
         Applied = $import.Applied
         Verified = $import.Verified
+        VerificationPending = $import.VerificationPending
         ImportError = $import.ImportError
         ComponentReadbackError = $import.ComponentReadbackError
         ProjectReadbackError = $import.ProjectReadbackError
         ImportedName = $importedName
-        ImportedType = $import.Imported.Type
+        ImportedType = $componentAfter.Type
+        FollowupVerified = ($componentAfter.Type -eq $(if ($Kind -eq 'Form') { 3 } else { 2 }))
         CodeSame = $codeBefore.Code -ceq $codeAfter.Code
         CodeBeforeSha256 = $codeBefore.Sha256
         CodeAfterSha256 = $codeAfter.Sha256
