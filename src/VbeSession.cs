@@ -150,6 +150,8 @@ namespace CodexVBE
                     return Response.Success(forms.DuplicateLabel(request));
                 case "duplicate_form_textbox":
                     return Response.Success(forms.DuplicateTextBox(request));
+                case "duplicate_form_checkbox":
+                    return Response.Success(forms.DuplicateCheckBox(request));
                 case "remove_form_control":
                     return Response.Success(forms.RemoveControl(request));
                 case "add_form_page":
