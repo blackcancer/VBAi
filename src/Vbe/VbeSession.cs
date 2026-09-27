@@ -51,6 +51,8 @@ namespace CodexVBE
                     return Response.Success(codeNavigation.SelectProcedure(request, debugger));
                 case "create_event_procedure":
                     return Response.Success(codeNavigation.CreateEventProcedure(request));
+                case "create_procedure":
+                    return Response.Success(codeNavigation.CreateProcedure(request));
                 case "project_properties":
                     return Response.Success(components.ProjectProperties(request.Project));
                 case "project_persistence_status":

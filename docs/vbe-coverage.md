@@ -174,6 +174,8 @@ Dans Excel PID 34072, `tools/probes/Test-ClearAllBreakpoints.ps1` a posé deux p
 
 Dans Excel visible PID 37620, une macro jetable s'est arrêtée sur la ligne 4. `select_code` a déplacé la sélection à la ligne 2 ; `debug_global show_next_statement` (`Id=1813`) l'a ramenée à la ligne 4, puis `reset` a été exécuté et Excel fermé. La commande vérifie désormais, avant l'invocation native, que le projet actif correspond à la requête et que le composant du volet de code actif est celui de ce projet par identité COM. Cet essai valide le chemin positif ; il ne constitue pas un inventaire indépendant du pointeur d'exécution ni une preuve de tous les cas multi-projets.
 
+Dans Excel visible PID 37424, `create_procedure` a ajouté `ComputeValue` (Function) à `ProcedureProbe` et les propriétés `Value` Get puis Let à `ProcedureClass`. `list_procedures` a relu leurs noms, types et plages ; `compile_project` n'a signalé aucun diagnostic natif. Un doublon a été refusé et un SHA périmé a bloqué une écriture. Le VBE a normalisé la casse de `value` dans la Function après une autre édition, ce qui explique pourquoi le SHA d'un autre module a changé et devait être relu. Après `save_host_document`, fermeture et réouverture du `.xlsm` en PID 35844, les trois procédures et leurs SHA finaux ont été retrouvés. La version finale de la commande a également refusé avant mutation un `Text` contenant deux déclarations de procédure. Ces essais couvrent ces signatures Excel ; ils ne prouvent ni toutes les signatures VBA ni SOLIDWORKS.
+
 ## Prochaine exploration
 
 1. Vérifier les propriétés modifiables restantes des contrôles et conteneurs, ainsi que leur suppression et leur réorganisation, sur des classeurs jetables.

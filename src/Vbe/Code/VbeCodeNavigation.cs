@@ -59,6 +59,76 @@ namespace CodexVBE
                 BodyLine = bodyLine, Sha256 = Hash(after), Code = after };
         }
 
+        public object CreateProcedure(Request request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Procedure) ||
+                !Regex.IsMatch(request.Procedure, @"^[A-Za-z][A-Za-z0-9_]{0,39}$") ||
+                request.ProcKind < 0 || request.ProcKind > 3 ||
+                string.IsNullOrWhiteSpace(request.ExpectedSha256) ||
+                string.IsNullOrWhiteSpace(request.Text))
+                throw new ArgumentException("Procedure, ProcKind (0=Sub/Function, 1=Let, 2=Set, 3=Get), ExpectedSha256 and Text are required.");
+            string text = request.Text.Replace("\r\n", "\n").Replace('\r', '\n').Trim('\n');
+            string[] lines = text.Split('\n');
+            string kind = request.ProcKind == 0 ? @"(?:Sub|Function)" :
+                "Property " + new[] { "", "Let", "Set", "Get" }[request.ProcKind];
+            var declaration = Regex.Match(lines[0], @"^\s*(?:(?:Public|Private|Friend|Static)\s+)*" +
+                kind + @"\s+" + Regex.Escape(request.Procedure) + @"\s*\(", RegexOptions.IgnoreCase);
+            string ending = request.ProcKind == 0 &&
+                Regex.IsMatch(lines[0], @"\bFunction\s+", RegexOptions.IgnoreCase) ? "Function" :
+                request.ProcKind == 0 ? "Sub" : "Property";
+            if (!declaration.Success || !Regex.IsMatch(lines[lines.Length - 1],
+                    @"^\s*End\s+" + ending + @"\s*$", RegexOptions.IgnoreCase))
+                throw new ArgumentException("Text must contain one complete procedure with the requested declaration and End statement.");
+            for (int line = 1; line < lines.Length - 1; line++)
+                if (Regex.IsMatch(lines[line],
+                    @"^\s*(?:(?:Public|Private|Friend|Static)\s+)*(?:Sub|Function|Property\s+(?:Get|Let|Set))\s+[A-Za-z]",
+                    RegexOptions.IgnoreCase))
+                    throw new ArgumentException("Text contains an additional procedure declaration.");
+
+            dynamic project = GetProject(request.Project);
+            if ((int)project.Mode != 2)
+                throw new InvalidOperationException("The project must be in design mode.");
+            dynamic module = GetModule(project, request.Module);
+            int componentType = (int)module.Parent.Type;
+            if (componentType != 1 && componentType != 2)
+                throw new InvalidOperationException("create_procedure targets a standard or class module.");
+            int countBefore = (int)module.CountOfLines;
+            string before = Code(module, countBefore);
+            if (!string.Equals(Hash(before), request.ExpectedSha256, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The module changed since it was read.");
+            int existingBody = 0;
+            try { existingBody = (int)module.ProcBodyLine[request.Procedure, request.ProcKind]; }
+            catch { }
+            if (existingBody > 0)
+                throw new InvalidOperationException("The procedure already exists.");
+            string insertion = (countBefore > 0 ? "\r\n" : "") + text.Replace("\n", "\r\n");
+            try
+            {
+                module.InsertLines(countBefore + 1, insertion);
+                int countAfter = (int)module.CountOfLines;
+                int bodyLine = (int)module.ProcBodyLine[request.Procedure, request.ProcKind];
+                int actualKind = request.ProcKind;
+                string actual = (string)module.ProcOfLine[bodyLine, ref actualKind];
+                if (bodyLine <= countBefore || actualKind != request.ProcKind ||
+                    !string.Equals(actual, request.Procedure, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("VBIDE did not recognize the inserted procedure.");
+                string after = Code(module, countAfter);
+                if (string.Equals(before, after, StringComparison.Ordinal))
+                    throw new InvalidOperationException("VBIDE did not change the code module.");
+                return new { Project = request.Project, Module = request.Module,
+                    Procedure = actual, ProcKind = actualKind, BodyLine = bodyLine,
+                    CountOfLines = countAfter, Sha256 = Hash(after), Code = after,
+                    CompilationVerified = false };
+            }
+            catch
+            {
+                int insertedCount = (int)module.CountOfLines - countBefore;
+                if (insertedCount > 0)
+                    module.DeleteLines(countBefore + 1, insertedCount);
+                throw;
+            }
+        }
+
         private static int CountControls(IEnumerable nodes, string name)
         {
             int count = 0;
