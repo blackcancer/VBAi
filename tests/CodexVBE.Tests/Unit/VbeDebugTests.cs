@@ -2,8 +2,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using CodexVBE;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -210,6 +212,304 @@ namespace CodexVBE.Tests.Unit
             StringAssert.Contains((string)result.VerificationLimit, "no breakpoint inventory");
         }
 
+        [TestMethod]
+        public void WatchDialogsScheduleOnlyTheMatchingNativeCommand()
+        {
+            var f = Create(1);
+            var add = new FakeControl { Caption = "&Add Watch...", Id = 1820 };
+            var edit = new FakeControl { Caption = "Edit Watch...", Id = 940 };
+            var quick = new FakeControl { Caption = "Quick Watch...", Id = 229 };
+            f.Bar.Controls.AddRange(new[] { add, edit, quick });
+            var context = new RecordingContext();
+            var previous = SynchronizationContext.Current;
+            SynchronizationContext.SetSynchronizationContext(context);
+            try
+            {
+                dynamic added = f.Service.QueueAddWatchDialog(new Request {
+                    Project = f.Project.Name, Module = "Module1", Expression = "counter",
+                    WatchType = "break_when_changed", ExpectedMode = 1 });
+                dynamic edited = f.Service.QueueEditWatchDialog(new Request {
+                    Project = f.Project.Name, Expression = "counter", Context = "VBAProject.Module1",
+                    NewExpression = "counter + 1", ExpectedMode = 1 });
+                var location = Location(f);
+                location.Expression = "Debug";
+                location.StartColumn = 1;
+                location.EndColumn = 6;
+                dynamic watched = f.Service.QueueQuickWatchDialog(location);
+                Assert.IsTrue((bool)added.Scheduled);
+                Assert.AreEqual(940, (int)edited.ControlId);
+                Assert.AreEqual(229, (int)watched.ControlId);
+                Assert.AreEqual(3, context.Count);
+                Assert.AreEqual(0, add.ExecuteCount + edit.ExecuteCount + quick.ExecuteCount);
+                context.RunAll();
+                Assert.AreEqual(1, add.ExecuteCount);
+                Assert.AreEqual(1, edit.ExecuteCount);
+                Assert.AreEqual(1, quick.ExecuteCount);
+            }
+            finally { SynchronizationContext.SetSynchronizationContext(previous); }
+        }
+
+        [TestMethod]
+        public void WatchCommandsRejectStaleModeUnavailableControlAndBadType()
+        {
+            var f = Create(1);
+            var add = new Request { Project = f.Project.Name, Module = "Module1",
+                Expression = "counter", ExpectedMode = 1 };
+            add.WatchType = "invalid";
+            Assert.ThrowsException<ArgumentException>(() => f.Service.QueueAddWatchDialog(add));
+            add.WatchType = "expression";
+            add.ExpectedMode = 2;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.QueueAddWatchDialog(add));
+            add.ExpectedMode = 1;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.QueueAddWatchDialog(add));
+
+            var edit = new Request { Project = f.Project.Name, Expression = "counter",
+                Context = "VBAProject.Module1", NewExpression = "counter + 1", ExpectedMode = 2 };
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.QueueEditWatchDialog(edit));
+            edit.ExpectedMode = 1;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.QueueEditWatchDialog(edit));
+
+            var remove = new Request { Project = f.Project.Name, Expression = "counter",
+                Context = "VBAProject.Module1", ExpectedMode = 2 };
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.RemoveSelectedWatch(remove));
+            remove.ExpectedMode = 1;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.RemoveSelectedWatch(remove));
+        }
+
+        [TestMethod]
+        public void DeleteWatchExecutesNativeCommandAndRequiresSeparateVerification()
+        {
+            var f = Create(1);
+            var wrong = new FakeControl { Caption = "Delete Watch", Id = 1083, Enabled = false };
+            var delete = new FakeControl { Caption = "&Supprimer un espion", Id = 1083 };
+            f.Bar.Controls.AddRange(new[] { wrong, delete });
+            dynamic result = f.Service.RemoveSelectedWatch(new Request { Project = f.Project.Name,
+                Expression = "counter", Context = "VBAProject.Module1", ExpectedMode = 1 });
+            Assert.IsTrue((bool)result.Executed);
+            Assert.IsTrue((bool)result.VerificationPending);
+            Assert.AreEqual(0, wrong.ExecuteCount);
+            Assert.AreEqual(1, delete.ExecuteCount);
+        }
+
+        [TestMethod]
+        public void OptionsDialogRequiresNativeControlAndUiContext()
+        {
+            var f = Create();
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.QueueDebugOptionsDialog());
+            var wrong = new FakeControl { Caption = "Options...", Id = 522, Enabled = false };
+            var options = new FakeControl { Caption = "&Options...", Id = 522 };
+            f.Bar.Controls.AddRange(new[] { wrong, options });
+            var previous = SynchronizationContext.Current;
+            SynchronizationContext.SetSynchronizationContext(null);
+            try { Assert.ThrowsException<InvalidOperationException>(() => f.Service.QueueDebugOptionsDialog()); }
+            finally { SynchronizationContext.SetSynchronizationContext(previous); }
+            var context = new RecordingContext();
+            SynchronizationContext.SetSynchronizationContext(context);
+            try
+            {
+                dynamic result = f.Service.QueueDebugOptionsDialog();
+                Assert.IsTrue((bool)result.Scheduled);
+                Assert.AreEqual(0, options.ExecuteCount);
+                context.RunAll();
+                Assert.AreEqual(1, options.ExecuteCount);
+                Assert.AreEqual(0, wrong.ExecuteCount);
+            }
+            finally { SynchronizationContext.SetSynchronizationContext(previous); }
+        }
+
+        [TestMethod]
+        public void CompileRequiresOwnProjectNameAndDesignMode()
+        {
+            var f = Create(2);
+            var compile = new FakeControl { Caption = "&Compile OtherProject", Id = 578 };
+            f.Bar.Controls.Add(compile);
+            var request = new Request { Project = f.Project.Name, ExpectedMode = 2 };
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.CompileProject(request));
+            Assert.AreEqual(0, compile.ExecuteCount);
+            compile.Caption = "&Compiler VBAProject";
+            dynamic result = f.Service.CompileProject(request);
+            Assert.AreEqual(578, (int)result.ControlId);
+            Assert.AreEqual(1, compile.ExecuteCount);
+            request.ExpectedMode = 1;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.CompileProject(request));
+        }
+
+        [TestMethod]
+        public void GlobalBreakAndResetVerifyOnlyObservedModeChanges()
+        {
+            var f = Create(0);
+            var breaker = new FakeControl { Caption = "&Break", Id = 189,
+                OnExecute = () => f.Project.Mode = 1 };
+            var reset = new FakeControl { Caption = "&Reset", Id = 228,
+                OnExecute = () => f.Project.Mode = 2 };
+            f.Bar.Controls.AddRange(new[] { breaker, reset });
+            dynamic broken = f.Service.ExecuteGlobalDebugCommand(new Request {
+                Project = f.Project.Name, Action = "break", ExpectedMode = 0 });
+            Assert.AreEqual("Verified", (string)broken.Verification);
+            Assert.IsFalse((bool)broken.VerificationPending);
+            dynamic resetResult = f.Service.ExecuteGlobalDebugCommand(new Request {
+                Project = f.Project.Name, Action = "reset", ExpectedMode = 1 });
+            Assert.AreEqual("Verified", (string)resetResult.Verification);
+            Assert.IsFalse((bool)resetResult.VerificationPending);
+            Assert.AreEqual(1, breaker.ExecuteCount);
+            Assert.AreEqual(1, reset.ExecuteCount);
+        }
+
+        [TestMethod]
+        public void SignatureDialogRefusesCollisionWithoutSafeDocumentComponent()
+        {
+            var f = Create(2);
+            f.Bar.Controls.Add(new FakeControl { Caption = "Remove Module1", Id = 746 });
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.QueueSignatureDialog(
+                new Request { Project = f.Project.Name, ExpectedMode = 2 }));
+            Assert.AreEqual(0, f.Bar.Controls[0].ExecuteCount);
+        }
+
+        [TestMethod]
+        public void SignatureDialogSchedulesOnlyToolsCommandWhenThereIsNoRemovalCollision()
+        {
+            var f = Create(2);
+            f.Bar.Name = "Tools";
+            var signature = new FakeControl { Caption = "Digital Signature...", Id = 746 };
+            f.Bar.Controls.Add(signature);
+            var context = new RecordingContext();
+            var previous = SynchronizationContext.Current;
+            SynchronizationContext.SetSynchronizationContext(context);
+            try
+            {
+                dynamic result = f.Service.QueueSignatureDialog(new Request {
+                    Project = f.Project.Name, ExpectedMode = 2 });
+                Assert.IsTrue((bool)result.Scheduled);
+                Assert.AreEqual(0, signature.ExecuteCount);
+                context.RunAll();
+                Assert.AreEqual(1, signature.ExecuteCount);
+            }
+            finally { SynchronizationContext.SetSynchronizationContext(previous); }
+        }
+
+        [TestMethod]
+        public void RunSubRequiresParameterlessStandardModuleAndExactSourceHash()
+        {
+            var f = Create(2);
+            f.Project.VBComponents[0].Type = 1;
+            f.Module.Code = "Public Sub TryMe()\r\nEnd Sub";
+            var run = new FakeControl { Caption = "Run Sub", Id = 186 };
+            f.Bar.Controls.Add(run);
+            var request = new Request { Project = f.Project.Name, Module = "Module1",
+                Procedure = "TryMe", ExpectedMode = 2, ExpectedSha256 = Sha(f.Module.Code) };
+            dynamic result = f.Service.RunSub(request);
+            Assert.IsTrue((bool)result.Executed);
+            Assert.AreEqual(1, run.ExecuteCount);
+            Assert.AreEqual(1, request.StartLine);
+
+            request.ExpectedSha256 = Sha("stale source");
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.RunSub(request));
+            request.ExpectedSha256 = Sha(f.Module.Code);
+            f.Module.Code = "Public Sub TryMe(value As Long)\r\nEnd Sub";
+            request.ExpectedSha256 = Sha(f.Module.Code);
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.RunSub(request));
+            Assert.AreEqual(1, run.ExecuteCount);
+        }
+
+        [TestMethod]
+        public void ObjectBrowserRequiresItsNativeControlAndReportsObservedVisibility()
+        {
+            var f = Create();
+            var host = new VbeEditorWindowsTests.FakeVbe();
+            var windows = new VbeEditorWindows(host);
+            Assert.ThrowsException<ArgumentNullException>(() => f.Service.OpenObjectBrowser(null));
+            f.Bar.Controls.Add(new FakeControl { Caption = "Unrelated", Id = 473 });
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.OpenObjectBrowser(windows));
+            var browser = new FakeControl { Caption = "&Object Browser", Id = 473 };
+            f.Bar.Controls.Add(browser);
+            dynamic pending = f.Service.OpenObjectBrowser(windows);
+            Assert.AreEqual("Pending", (string)pending.Verification);
+            Assert.IsTrue((bool)pending.VerificationPending);
+            host.Windows.Add(new VbeEditorWindowsTests.FakeWindow(host) {
+                Caption = "Object Browser", Type = 2, Visible = true });
+            dynamic visible = f.Service.OpenObjectBrowser(windows);
+            Assert.AreEqual("Visible", (string)visible.Verification);
+            Assert.IsTrue((bool)visible.AlreadyVisible);
+            Assert.AreEqual(2, browser.ExecuteCount);
+        }
+
+        [TestMethod]
+        public void StepIntoVerifiesChangedCodeLocationButNotUnchangedLocation()
+        {
+            var f = Create(1);
+            var command = new FakeControl { Caption = "Step Into", Id = 303,
+                OnExecute = () => f.Module.CodePane.SetSelection(2, 1, 2, 1) };
+            f.Bar.Controls.Add(command);
+            var request = Location(f);
+            request.Action = "step_into";
+            request.ControlId = 303;
+            request.ControlCaption = "Step Into";
+            dynamic verified = f.Service.InvokeCommand(request);
+            Assert.AreEqual("Verified", (string)verified.Verification);
+            StringAssert.Contains((string)verified.Evidence, "Module1:1 to Module1:2");
+            command.OnExecute = null;
+            dynamic pending = f.Service.InvokeCommand(request);
+            Assert.AreEqual("Unverified", (string)pending.Verification);
+            Assert.IsTrue((bool)pending.VerificationPending);
+            Assert.AreEqual(2, command.ExecuteCount);
+        }
+
+        [TestMethod]
+        public void DebugCaptionPolicyCoversEverySupportedActionAndMode()
+        {
+            var allowed = typeof(VbeDebug).GetMethod("IsAllowed",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.IsNotNull(allowed);
+            var accepted = new[] {
+                Tuple.Create("toggle_breakpoint", "Point d'arrêt", 2),
+                Tuple.Create("run", "Run Sub", 2),
+                Tuple.Create("continue", "Continue", 1),
+                Tuple.Create("step_into", "Step Into", 1),
+                Tuple.Create("step_over", "Step Over", 1),
+                Tuple.Create("step_out", "Step Out", 1),
+                Tuple.Create("run_to_cursor", "Run To Cursor", 1),
+                Tuple.Create("set_next_statement", "Set Next Statement", 1)
+            };
+            foreach (var entry in accepted)
+            {
+                Assert.AreEqual(true, allowed.Invoke(null, new object[] {
+                    entry.Item1, entry.Item2, entry.Item3 }), entry.Item1);
+                Assert.AreEqual(false, allowed.Invoke(null, new object[] {
+                    entry.Item1, entry.Item2, 0 }), entry.Item1 + " in run mode");
+            }
+            Assert.AreEqual(false, allowed.Invoke(null, new object[] { "unknown", "Run Sub", 2 }));
+            Assert.AreEqual(false, allowed.Invoke(null, new object[] { "run", "Reset", 2 }));
+        }
+
+        [TestMethod]
+        public void SignatureCollisionWithDocumentStillRefusesIfRemovalRemainsEnabled()
+        {
+            var f = Create(2);
+            var document = new FakeComponent { Name = "ThisWorkbook", Type = 100 };
+            document.CodeModule = new FakeModule(document, "");
+            f.Project.VBComponents.Add(document);
+            f.Bar.Controls.Add(new FakeControl { Caption = "Remove Module1", Id = 746 });
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.QueueSignatureDialog(
+                new Request { Project = f.Project.Name, ExpectedMode = 2 }));
+            Assert.AreEqual(1, document.CodeModule.CodePane.ShowCount);
+        }
+
+        private sealed class RecordingContext : SynchronizationContext
+        {
+            private readonly List<Tuple<SendOrPostCallback, object>> callbacks =
+                new List<Tuple<SendOrPostCallback, object>>();
+            public int Count => callbacks.Count;
+            public override void Post(SendOrPostCallback callback, object state)
+            {
+                callbacks.Add(Tuple.Create(callback, state));
+            }
+            public void RunAll()
+            {
+                foreach (var callback in callbacks) callback.Item1(callback.Item2);
+                callbacks.Clear();
+            }
+        }
+
         private sealed class Fixture
         {
             public FakeVbe Vbe;
@@ -238,6 +538,7 @@ namespace CodexVBE.Tests.Unit
         public sealed class FakeComponent
         {
             public string Name { get; set; }
+            public int Type { get; set; }
             public FakeModule CodeModule { get; set; }
         }
 
@@ -246,6 +547,7 @@ namespace CodexVBE.Tests.Unit
             public FakeComponent Parent { get; }
             public FakePane CodePane { get; }
             public FakeLines Lines { get; }
+            public FakeProcedureBody ProcBodyLine { get; } = new FakeProcedureBody();
             public string Code { get; set; }
             public int CountOfLines => Code.Split(new[] { "\r\n" }, StringSplitOptions.None).Length;
 
@@ -270,6 +572,11 @@ namespace CodexVBE.Tests.Unit
                     return string.Join("\r\n", lines.Skip(start - 1).Take(count));
                 }
             }
+        }
+
+        public sealed class FakeProcedureBody
+        {
+            public int this[string procedure, int kind] => 1;
         }
 
         public sealed class FakePane
@@ -313,8 +620,9 @@ namespace CodexVBE.Tests.Unit
             public int Id { get; set; }
             public bool Enabled { get; set; } = true;
             public int ExecuteCount { get; private set; }
+            public Action OnExecute { get; set; }
             public List<FakeControl> Controls { get; } = new List<FakeControl>();
-            public void Execute() { ExecuteCount++; }
+            public void Execute() { ExecuteCount++; OnExecute?.Invoke(); }
         }
     }
 }
