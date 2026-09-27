@@ -13,7 +13,7 @@ Cette matrice suit une capacité précise : créer une copie d'un contrôle exis
 | Image | Non qualifiée | — | Ajout et lecture des propriétés | Image et copie non testées |
 | ListBox | Non qualifiée | — | Ajout et lecture des propriétés | Items et copie non testés |
 | MultiPage | Non qualifiée | — | Pages et enfants ajoutés, lus et supprimés | Copie récursive non testée |
-| OptionButton | Non qualifiée | — | Ajout et lecture des propriétés | Copie non testée |
+| OptionButton | Bridge uniquement, partielle ; essai en attente | Name, Caption, Left, Top, Width, Height | Ajout et lecture des propriétés ; duplication à tester avec `Test-OptionButtonDuplication.ps1` | Value, GroupName, événements et autres propriétés non copiés pour préserver la sélection du groupe |
 | ScrollBar | Non qualifiée | — | Ajout et lecture des propriétés | Copie non testée |
 | SpinButton | Non qualifiée | — | Ajout et lecture des propriétés | Copie non testée |
 | TabStrip | Non qualifiée | — | Tabs ajoutés, lus et supprimés | Copie des Tabs non testée |
