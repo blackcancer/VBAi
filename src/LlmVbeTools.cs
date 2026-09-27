@@ -96,7 +96,7 @@ namespace CodexVBE
             Definition("remove_watch", "Remove one native VBE watch selected by exact Expression and Context from debug_windows. Requires the Watches pane visible and ExpectedMode from debug_state. Confirms disappearance separately through UI accessibility.",
                 new[] { "Project", "ExpectedMode", "Expression", "Context" },
                 "Project", "ExpectedMode", "Expression", "Context"),
-            Definition("debug_global", "Execute reset or show_next_statement in break mode, or clear_all_breakpoints in break/design mode, through native VBE commands. Clear All Breakpoints affects the entire VBE and cannot be verified from a VBIDE inventory; check subsequent execution on a disposable procedure. Requires ExpectedMode from debug_state and VBE edit policy.",
+            Definition("debug_global", "Execute break in run mode, reset or show_next_statement in break mode, or clear_all_breakpoints in break/design mode, through native VBE commands. Break and Clear All Breakpoints affect the entire VBE. Clear All Breakpoints cannot be verified from a VBIDE inventory; check subsequent execution on a disposable procedure. Requires ExpectedMode from debug_state and VBE edit policy.",
                 new[] { "Project", "ExpectedMode", "Action" },
                 "Project", "ExpectedMode", "Action"),
             Definition("open_object_browser", "Open the native VBE Object Browser through CommandBars Id 473 and read vbe_windows immediately. Opening may be asynchronous: if VerificationPending is true, call vbe_windows again in a separate request and confirm a visible Type 2 window. This command does not read libraries, classes or members.", new string[0]),

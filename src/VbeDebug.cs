@@ -215,6 +215,9 @@ namespace CodexVBE
             string[] captions;
             switch (request.Action)
             {
+                case "break":
+                    if (beforeMode != 0) throw new InvalidOperationException("Break requires run mode.");
+                    id = 189; captions = new[] { "Arrêt", "Break" }; break;
                 case "reset":
                     if (beforeMode != 1) throw new InvalidOperationException("Reset requires break mode.");
                     id = 228; captions = new[] { "Réinitialiser", "Reset" }; break;
@@ -227,7 +230,7 @@ namespace CodexVBE
                     if (beforeMode != 1) throw new InvalidOperationException("Show Next Statement requires break mode.");
                     id = 1813; captions = new[] { "Afficher l'instruction suivante", "Afficher l’instruction suivante", "Show Next Statement" };
                     break;
-                default: throw new ArgumentException("Action must be reset, clear_all_breakpoints or show_next_statement.");
+                default: throw new ArgumentException("Action must be break, reset, clear_all_breakpoints or show_next_statement.");
             }
             var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == id && entry.Enabled &&
                 captions.Any(caption => (entry.Caption ?? "").Replace("&", "")
@@ -235,18 +238,21 @@ namespace CodexVBE
             if (command == null) throw new InvalidOperationException("The native VBE debug command is absent or disabled.");
             ((dynamic)command.Control).Execute();
             int afterMode = (int)project.Mode;
+            bool verifiedBreak = request.Action == "break" && afterMode == 1;
             bool verifiedReset = request.Action == "reset" && afterMode == 2;
-            return new { request.Action, request.Project, Scope = request.Action == "clear_all_breakpoints" ? "Entire VBE" : "Active project",
+            return new { request.Action, request.Project, Scope = request.Action == "clear_all_breakpoints" || request.Action == "break" ? "Entire VBE" : "Active project",
                 Executed = true, ControlId = id, Control = command.Path,
                 ModeBefore = beforeMode, ModeAfter = afterMode,
-                Verification = verifiedReset ? "Verified" : "Unverified",
-                VerificationPending = (request.Action == "reset" && !verifiedReset) ||
+                Verification = verifiedBreak || verifiedReset ? "Verified" : "Unverified",
+                VerificationPending = (request.Action == "break" && !verifiedBreak) ||
+                    (request.Action == "reset" && !verifiedReset) ||
                     request.Action == "show_next_statement",
                 VerificationLimit = request.Action == "clear_all_breakpoints"
                     ? "VBIDE has no breakpoint inventory; the command invocation alone does not prove every marker was cleared."
                     : request.Action == "show_next_statement" ? "Selection after navigation is not an independent execution-pointer inventory." :
-                        verifiedReset ? null : "The VBE may apply reset after Execute returns.",
-                NextRead = request.Action == "reset" ? "Call debug_state in a separate request to confirm design mode."
+                        verifiedBreak || verifiedReset ? null : "The VBE may apply the command after Execute returns.",
+                NextRead = request.Action == "break" ? "Call debug_state in a separate request to confirm break mode."
+                    : request.Action == "reset" ? "Call debug_state in a separate request to confirm design mode."
                     : request.Action == "show_next_statement" ? "Call debug_state in a separate request to read the resulting code selection."
                     : "Run a disposable procedure or inspect the native editor to verify breakpoint behavior." };
         }
