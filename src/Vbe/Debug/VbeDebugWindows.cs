@@ -576,8 +576,7 @@ namespace CodexVBE
             }, IntPtr.Zero);
             if (!string.Equals(message, request.Diagnostic, StringComparison.Ordinal))
                 throw new InvalidOperationException("The native diagnostic changed before the button could be activated.");
-            if (!Regex.IsMatch(message, @"^(Erreur d'exécution|Run-time error|Erreur de compilation|Compile error)",
-                RegexOptions.IgnoreCase))
+            if (!IsRecognizedDiagnostic(message))
                 throw new InvalidOperationException("The visible VBE dialog is not a recognized VBA diagnostic.");
             if (matches != 1 || target == IntPtr.Zero)
                 throw new InvalidOperationException("Expected exactly one matching native dialog button.");
@@ -627,6 +626,13 @@ namespace CodexVBE
                 Thread.Sleep(50);
             }
             throw new TimeoutException("The native Compile command did not finish within ten seconds.");
+        }
+
+        internal static bool IsRecognizedDiagnostic(string message)
+        {
+            return message != null && Regex.IsMatch(message,
+                @"^(Erreur d'exécution|Run-time error|Erreur de compilation|Compile error)",
+                RegexOptions.IgnoreCase);
         }
 
         public static object CompleteAddWatch(Request request)
@@ -969,38 +975,46 @@ namespace CodexVBE
                     object pattern;
                     if (element.TryGetCurrentPattern(ValuePattern.Pattern, out pattern))
                         raw = ((ValuePattern)pattern).Current.Value ?? raw;
-                    // MSForms' localized list rows flatten all columns into one accessible string.
-                    Match match = Regex.Match(raw ?? "", @"^Expression\s+(.*?)\s+Valeur\s+(.*?)\s+Type\s+(.*?)\s*$",
-                        RegexOptions.IgnoreCase | RegexOptions.Singleline);
-                    if (!match.Success)
-                        match = Regex.Match(raw ?? "", @"^Expression\s+(.*?)\s+Value\s+(.*?)\s+Type\s+(.*?)\s*$",
-                            RegexOptions.IgnoreCase | RegexOptions.Singleline);
-                    Match watch = Regex.Match(raw ?? "", @"^\s*(.*?)\s+Valeur\s+(.*?)\s+Type\s+(.*?)\s+Contexte\s+(.*?)\s*$",
-                        RegexOptions.IgnoreCase | RegexOptions.Singleline);
-                    if (!watch.Success)
-                        watch = Regex.Match(raw ?? "", @"^\s*(.*?)\s+Value\s+(.*?)\s+Type\s+(.*?)\s+Context\s+(.*?)\s*$",
-                            RegexOptions.IgnoreCase | RegexOptions.Singleline);
-                    if (match.Success && string.IsNullOrWhiteSpace(match.Groups[1].Value) &&
-                        (match.Groups[2].Value.IndexOf("Aucune variable", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                         match.Groups[2].Value.IndexOf("No variables", StringComparison.OrdinalIgnoreCase) >= 0))
-                        continue;
-                    string[] itemPath = ItemPath(element);
-                    items.Add(new { Raw = raw, Expression = match.Success ? match.Groups[1].Value :
-                            watch.Success ? watch.Groups[1].Value : null,
-                        Value = match.Success ? match.Groups[2].Value.Trim() :
-                            watch.Success ? watch.Groups[2].Value.Trim() : null,
-                        Type = match.Success ? match.Groups[3].Value :
-                            watch.Success ? watch.Groups[3].Value : null,
-                        Context = watch.Success ? watch.Groups[4].Value : null,
-                        PathSegments = itemPath,
-                        Depth = Math.Max(0, itemPath.Length - 1),
-                        Parsed = match.Success || watch.Success });
+                    // Skip the native empty-list placeholder before querying its UIA ancestry.
+                    if (ParseDebugRow(raw, null) == null) continue;
+                    object parsed = ParseDebugRow(raw, ItemPath(element));
+                    if (parsed != null) items.Add(parsed);
                 }
                 return new { Available = true, Items = items.ToArray(), Error = (string)null,
                     Coverage = "UIAExposedRowsOnly" };
             }
             catch (Exception ex) { return new { Available = true, Items = new object[0], Error = ex.Message,
                 Coverage = "UIAExposedRowsOnly" }; }
+        }
+
+        internal static object ParseDebugRow(string raw, string[] itemPath)
+        {
+            // MSForms' localized list rows flatten all columns into one accessible string.
+            Match match = Regex.Match(raw ?? "", @"^Expression\s+(.*?)\s+Valeur\s+(.*?)\s+Type\s+(.*?)\s*$",
+                RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            if (!match.Success)
+                match = Regex.Match(raw ?? "", @"^Expression\s+(.*?)\s+Value\s+(.*?)\s+Type\s+(.*?)\s*$",
+                    RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            Match watch = Regex.Match(raw ?? "", @"^\s*(.*?)\s+Valeur\s+(.*?)\s+Type\s+(.*?)\s+Contexte\s+(.*?)\s*$",
+                RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            if (!watch.Success)
+                watch = Regex.Match(raw ?? "", @"^\s*(.*?)\s+Value\s+(.*?)\s+Type\s+(.*?)\s+Context\s+(.*?)\s*$",
+                    RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            if (match.Success && string.IsNullOrWhiteSpace(match.Groups[1].Value) &&
+                (match.Groups[2].Value.IndexOf("Aucune variable", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 match.Groups[2].Value.IndexOf("No variables", StringComparison.OrdinalIgnoreCase) >= 0))
+                return null;
+            itemPath = itemPath ?? new string[0];
+            return new { Raw = raw, Expression = match.Success ? match.Groups[1].Value :
+                    watch.Success ? watch.Groups[1].Value : null,
+                Value = match.Success ? match.Groups[2].Value.Trim() :
+                    watch.Success ? watch.Groups[2].Value.Trim() : null,
+                Type = match.Success ? match.Groups[3].Value :
+                    watch.Success ? watch.Groups[3].Value : null,
+                Context = watch.Success ? watch.Groups[4].Value : null,
+                PathSegments = itemPath,
+                Depth = Math.Max(0, itemPath.Length - 1),
+                Parsed = match.Success || watch.Success };
         }
 
         private static string[] ItemPath(AutomationElement element)
@@ -1010,18 +1024,24 @@ namespace CodexVBE
             for (int depth = 0; depth < 16 && current != null &&
                 current.Current.ControlType == ControlType.ListItem; depth++)
             {
-                Match match = Regex.Match(current.Current.Name ?? "",
-                    @"^Expression\s+(.*?)\s+(?:Valeur|Value)\s+", RegexOptions.IgnoreCase | RegexOptions.Singleline);
-                if (!match.Success)
-                    match = Regex.Match(current.Current.Name ?? "",
-                        @"^\s*(.*?)\s+(?:Valeur|Value)\s+.*?\s+Type\s+.*?\s+(?:Contexte|Context)\s+",
-                        RegexOptions.IgnoreCase | RegexOptions.Singleline);
-                if (!match.Success) break;
-                segments.Add(match.Groups[1].Value);
+                string segment = ParseItemPathSegment(current.Current.Name);
+                if (segment == null) break;
+                segments.Add(segment);
                 current = TreeWalker.RawViewWalker.GetParent(current);
             }
             segments.Reverse();
             return segments.ToArray();
+        }
+
+        internal static string ParseItemPathSegment(string name)
+        {
+            Match match = Regex.Match(name ?? "",
+                @"^Expression\s+(.*?)\s+(?:Valeur|Value)\s+", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            if (!match.Success)
+                match = Regex.Match(name ?? "",
+                    @"^\s*(.*?)\s+(?:Valeur|Value)\s+.*?\s+Type\s+.*?\s+(?:Contexte|Context)\s+",
+                    RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            return match.Success ? match.Groups[1].Value : null;
         }
 
         private static string WatchRootContext(AutomationElement element)
@@ -1031,7 +1051,12 @@ namespace CodexVBE
             while ((parent = TreeWalker.RawViewWalker.GetParent(root)) != null &&
                 parent.Current.ControlType == ControlType.ListItem)
                 root = parent;
-            Match match = Regex.Match(root.Current.Name ?? "",
+            return ParseWatchContext(root.Current.Name);
+        }
+
+        internal static string ParseWatchContext(string name)
+        {
+            Match match = Regex.Match(name ?? "",
                 @"\s+(?:Contexte|Context)\s+(.*?)\s*$", RegexOptions.IgnoreCase | RegexOptions.Singleline);
             return match.Success ? match.Groups[1].Value : null;
         }

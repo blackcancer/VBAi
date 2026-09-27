@@ -71,6 +71,15 @@ namespace CodexVBE.Tests.Integration
                     return Convert.ToString(properties["ProgId"]) == "CodexVBE.AddIn" &&
                         Convert.ToBoolean(properties["Connect"]);
                 }));
+
+                var debugWindows = VbeBridgeClient.Read((int)processId, "debug_windows");
+                Assert.IsNotNull(debugWindows, "The CodexVBE bridge disconnected while reading native debug windows.");
+                Assert.AreEqual(true, debugWindows["Ok"], "The native debug window snapshot failed.");
+                var snapshot = VbeBridgeClient.Object(debugWindows["Data"]);
+                Assert.AreEqual((int)processId, Convert.ToInt32(snapshot["HostProcessId"]));
+                foreach (var pane in new[] { "Locals", "Watches", "Immediate" })
+                    Assert.IsTrue(snapshot.ContainsKey(pane), "The debug snapshot omitted " + pane + ".");
+                StringAssert.Contains(Convert.ToString(snapshot["Limits"]), "Native UI accessibility");
             }
             finally
             {
