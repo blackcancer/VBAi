@@ -150,6 +150,8 @@ Dans Excel PID 40184 en pause, `edit_watch` a ouvert « Modifier un espion » po
 
 Dans Excel PID 14620 en pause, `select_code` a sélectionné exactement `probeValue` (ligne 4, colonnes 5 à 15) après contrôle du SHA-256 ; `debug_state` a relu ces bornes et la commande native « Espion express » (`Id=229`) est devenue activée. Dans Excel PID 12416, `Test-QuickWatch.ps1` a exécuté `quick_watch` sur ce texte et relu les champs natifs du dialogue : expression `probeValue`, valeur `1`, contexte `VBAProject.ThisWorkbook.CodexBreakpointProbe`. Le bouton natif Annuler a fermé la fenêtre ; une requête distincte avec un SHA-256 périmé a été refusée avant l'évaluation, Excel restant réactif. Le chemin pont est prouvé ; le chemin chat suit la même séquence asynchrone mais n'a pas encore été essayé dans une conversation réelle. Une expression passée à Espion express peut appeler du code VBA et avoir des effets de bord.
 
+Dans Excel PID 18212, `Inspect-CodeSelectionAttributes.ps1` a lu par UI Automation le texte `probeValue` sélectionné sur la ligne 4 avant et après `toggle_breakpoint`. Le fournisseur `TextPattern` a rendu `AutomationElement.NotSupported` pour `ForegroundColorAttribute` et `BackgroundColorAttribute` dans les deux états. L'exécution a ensuite atteint ce point d'arrêt en mode pause sur la ligne 4. Ainsi, l'absence de couleur lisible vient du fournisseur d'accessibilité, pas de l'absence de point d'arrêt ; cette voie ne fournit pas l'inventaire recherché.
+
 ## Prochaine exploration
 
 1. Vérifier les propriétés modifiables restantes des contrôles et conteneurs, ainsi que leur suppression et leur réorganisation, sur des classeurs jetables.
