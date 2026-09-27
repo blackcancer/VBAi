@@ -46,6 +46,32 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual(3, (int)modules[1].Lines);
         }
 
+        [TestMethod]
+        public void ReadAndEditModuleRequireTheVersionAndDesignMode()
+        {
+            var project = new FakeProject { Name = "Projet", Mode = 2 };
+            var module = new FakeModule("Option Explicit\r\nSub Essai()\r\nEnd Sub");
+            project.VBComponents.Add(new FakeComponent { Name = "Module1", Type = 1, CodeModule = module });
+            var host = new FakeVbe();
+            host.VBProjects.Add(project);
+            var session = new VbeSession(host);
+            dynamic read = session.Execute(new Request { Command = "read_module", Project = "Projet", Module = "Module1" }).Data;
+            Assert.AreEqual(module.Code, (string)read.Code);
+            Assert.IsFalse(session.Execute(new Request { Command = "replace_lines", Project = "Projet", Module = "Module1" }).Ok);
+            Assert.IsFalse(session.Execute(new Request { Command = "replace_lines", Project = "Projet", Module = "Module1",
+                ExpectedSha256 = "outdated", StartLine = 1, Count = 1, Text = "Option Private Module" }).Ok);
+            project.Mode = 1;
+            Assert.IsFalse(session.Execute(new Request { Command = "replace_lines", Project = "Projet", Module = "Module1",
+                ExpectedSha256 = (string)read.Sha256, StartLine = 1, Count = 1, Text = "Option Private Module" }).Ok);
+            project.Mode = 2;
+            var edit = session.Execute(new Request { Command = "replace_lines", Project = "Projet", Module = "Module1",
+                ExpectedSha256 = (string)read.Sha256, StartLine = 1, Count = 1, Text = "Option Private Module" });
+            Assert.IsTrue(edit.Ok);
+            StringAssert.StartsWith(module.Code, "Option Private Module");
+            Assert.IsFalse(session.Execute(new Request { Command = "replace_lines", Project = "Projet", Module = "Module1",
+                ExpectedSha256 = (string)read.Sha256, StartLine = 1, Count = 1, Text = "Option Explicit" }).Ok);
+        }
+
         public sealed class FakeVbe { public List<FakeProject> VBProjects { get; } = new List<FakeProject>(); }
         public sealed class FakeProject
         {
@@ -60,6 +86,23 @@ namespace CodexVBE.Tests.Unit
             public int Type { get; set; }
             public FakeModule CodeModule { get; set; }
         }
-        public sealed class FakeModule { public int CountOfLines { get; set; } }
+        public sealed class FakeModule
+        {
+            private readonly List<string> lines;
+            public FakeModule() : this(0) { }
+            public FakeModule(int count) { lines = Enumerable.Repeat(string.Empty, count).ToList(); Lines = new FakeLines(this); }
+            public FakeModule(string code) { lines = code.Split(new[] { "\r\n" }, StringSplitOptions.None).ToList(); Lines = new FakeLines(this); }
+            public int CountOfLines { get { return lines.Count; } set { lines.Clear(); lines.AddRange(Enumerable.Repeat(string.Empty, value)); } }
+            public string Code { get { return string.Join("\r\n", lines); } }
+            public FakeLines Lines { get; }
+            public void DeleteLines(int start, int count) { lines.RemoveRange(start - 1, count); }
+            public void InsertLines(int start, string text) { lines.InsertRange(start - 1, text.Split(new[] { "\r\n" }, StringSplitOptions.None)); }
+            public sealed class FakeLines
+            {
+                private readonly FakeModule module;
+                public FakeLines(FakeModule module) { this.module = module; }
+                public string this[int start, int count] { get { return string.Join("\r\n", module.lines.Skip(start - 1).Take(count)); } }
+            }
+        }
     }
 }
