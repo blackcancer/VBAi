@@ -12,6 +12,16 @@ namespace CodexVBE
         // not claim that creating the proposed hierarchy has been verified.
         public object FrameCopyPlan(Request request)
         {
+            return BuildFrameCopyPlan(request, false);
+        }
+
+        public object FrameSimpleCopyPlan(Request request)
+        {
+            return BuildFrameCopyPlan(request, true);
+        }
+
+        private object BuildFrameCopyPlan(Request request, bool allowTextBox)
+        {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||
                 string.IsNullOrWhiteSpace(request.ExpectedTreeVersion))
                 throw new ArgumentException("ControlPath and ExpectedTreeVersion are required.");
@@ -53,8 +63,13 @@ namespace CodexVBE
                 string type = TypeDescriptor.GetClassName((object)child);
                 string proposedName = request.NewName + "_" + childName;
                 string reason = null;
-                if (!string.Equals(type, "Label", StringComparison.OrdinalIgnoreCase))
-                    reason = "Only direct Label children have a tested positive copy profile.";
+                bool label = string.Equals(type, "Label", StringComparison.OrdinalIgnoreCase);
+                bool textBox = allowTextBox &&
+                    string.Equals(type, "TextBox", StringComparison.OrdinalIgnoreCase);
+                if (!label && !textBox)
+                    reason = allowTextBox
+                        ? "Only direct Label or TextBox children have tested positive copy profiles."
+                        : "Only direct Label children have a tested positive copy profile.";
                 else if (proposedName.Length > 40)
                     reason = "Proposed child name exceeds 40 characters.";
                 else if (names.Contains(proposedName))
@@ -66,8 +81,8 @@ namespace CodexVBE
                     ProposedPath = request.ControlPath.Substring(0,
                         request.ControlPath.LastIndexOf('/')) + "/" + request.NewName +
                         "/Controls/" + proposedName,
-                    Profile = string.Equals(type, "Label", StringComparison.OrdinalIgnoreCase)
-                        ? "Label positive profile" : null,
+                    Profile = label ? "Label positive profile" :
+                        textBox ? "TextBox text-value positive profile" : null,
                     Eligible = reason == null, Issue = reason });
             }
             int collectionCount = Convert.ToInt32(original.Controls.Count);
@@ -78,7 +93,9 @@ namespace CodexVBE
                 Children = children, Issues = issues,
                 EligibleForLimitedProbe = issues.Count == 0,
                 MutationVerified = false, ReadOnly = true,
-                Scope = "Frame with direct Label children only; all other properties and descendants are excluded." };
+                Scope = allowTextBox
+                    ? "Frame with direct Label/TextBox children only; all other properties and descendants are excluded."
+                    : "Frame with direct Label children only; all other properties and descendants are excluded." };
         }
     }
 }
