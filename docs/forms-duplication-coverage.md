@@ -6,9 +6,9 @@ Cette matrice suit une capacité précise : créer une copie d'un contrôle exis
 | --- | --- | --- | --- | --- |
 | Label | Bridge uniquement, partielle | Name, Caption, Left, Top, Width, Height, BackColor, Font.Name, Font.Size, Font.Bold | Deux essais sur classeur jetable, PID 3724 et 48020 : 1→2 nœuds, version changée, Excel vivant | Autres propriétés, images et ordre Z non copiés |
 | TextBox | Bridge uniquement, partielle | Name, Left, Top, Width, Height, Value **si texte ou vide** | `Test-TextBoxDuplication.ps1` sur Excel PID 35452 : 1→2 nœuds, version changée, Excel vivant | Autres propriétés, liaisons et ordre Z non copiés |
-| CheckBox | Bridge uniquement, partielle ; essai en attente | Name, Caption, Left, Top, Width, Height, Value **booléen uniquement** | Value=true testé séparément ; duplication à tester avec `Test-CheckBoxDuplication.ps1` | TriState/null, autres propriétés et ordre Z non copiés |
+| CheckBox | Bridge uniquement, partielle | Name, Caption, Left, Top, Width, Height, Value **booléen uniquement** | `Test-CheckBoxDuplication.ps1` sur Excel PID 14672 : 1→2 nœuds, valeur booléenne copiée, Excel vivant | TriState/null, autres propriétés et ordre Z non copiés |
 | ComboBox | Non qualifiée | — | ListWidth testé séparément | Items, liaisons et copie non testés |
-| CommandButton | Non qualifiée | — | Ajout et procédure Click testés | Copie non testée |
+| CommandButton | Bridge uniquement, partielle ; essai en attente | Name, Caption, Left, Top, Width, Height | Ajout et procédure Click testés ; duplication à tester avec `Test-CommandButtonDuplication.ps1` | Événements et autres propriétés non copiés |
 | Frame | Non qualifiée | — | Contrôles enfants ajoutés et lus | Copie récursive non testée |
 | Image | Non qualifiée | — | Ajout et lecture des propriétés | Image et copie non testées |
 | ListBox | Non qualifiée | — | Ajout et lecture des propriétés | Items et copie non testés |
