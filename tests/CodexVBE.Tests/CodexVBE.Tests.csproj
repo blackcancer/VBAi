@@ -17,11 +17,14 @@
     <Compile Include="Unit\StreamTests.cs" />
     <Compile Include="Unit\ProviderProtocolTests.cs" />
     <Compile Include="Unit\HistoryAndCodeTests.cs" />
+    <Compile Include="Unit\WinFormsDesignerTests.cs" />
+    <Compile Include="Unit\VbeSessionContractTests.cs" />
     <Compile Include="Integration\SessionStoreTests.cs" />
     <Compile Include="Integration\ExcelHostTests.cs" />
     <Compile Include="Integration\SolidWorksHostTests.cs" />
     <Compile Include="Integration\VbeBridgeClient.cs" />
     <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>

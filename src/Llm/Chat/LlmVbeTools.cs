@@ -370,21 +370,8 @@ namespace CodexVBE
                 if (edit && settings.VbeEditApproval == "AskEachTime" && name != "replace_lines")
                 {
                     string summary = name + "\r\n\r\n" + json.Serialize(values);
-                    using (var approval = new Form { Text = "CodexVBE — valider la modification", Width = 740,
-                        Height = 530, StartPosition = FormStartPosition.CenterParent, MinimizeBox = false,
-                        MaximizeBox = true, ShowInTaskbar = false })
+                    using (var approval = new VbeApprovalDialog(summary))
                     {
-                        var details = new TextBox { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Both,
-                            WordWrap = false, Dock = DockStyle.Fill, Text = summary };
-                        var actions = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 44,
-                            FlowDirection = FlowDirection.RightToLeft };
-                        var approve = new Button { Text = "Autoriser", DialogResult = DialogResult.Yes, Width = 100 };
-                        var reject = new Button { Text = "Refuser", DialogResult = DialogResult.No, Width = 100 };
-                        actions.Controls.Add(approve);
-                        actions.Controls.Add(reject);
-                        approval.Controls.Add(details);
-                        approval.Controls.Add(actions);
-                        approval.CancelButton = reject;
                         if (approval.ShowDialog(owner) != DialogResult.Yes)
                             return json.Serialize(Response.Failure("User rejected the edit."));
                     }

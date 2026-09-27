@@ -51,7 +51,6 @@ namespace CodexVBE
         {
             InitializeComponent();
             Icon = VbeWindowIcons.Icon("settings");
-            ApplyLayoutTuning();
         }
 
         public LlmSettingsWindow(LlmSettings settings)
@@ -59,7 +58,6 @@ namespace CodexVBE
             this.settings = settings;
             InitializeComponent();
             Icon = VbeWindowIcons.Icon("settings");
-            ApplyLayoutTuning();
             githubAccount.Items.Add("Choix automatique de Git");
             githubAccount.SelectedIndex = 0;
             customName.Text = settings.CustomProviderName ?? "";
@@ -79,26 +77,6 @@ namespace CodexVBE
             codexRefresh.Click += async (sender, args) => await RefreshCodexStatusAsync();
             saveButton.Click += (sender, args) => Save();
             UpdateRows();
-        }
-
-        private void ApplyLayoutTuning()
-        {
-            foreach (Control control in grid.Controls)
-            {
-                control.Margin = new Padding(0, 4, 12, 8);
-                var label = control as Label;
-                if (label != null) label.AutoSize = true;
-                if (label != null && grid.GetColumn(control) == 0)
-                    label.MinimumSize = new Size(156, 0);
-                var check = control as CheckBox;
-                if (check != null) check.AutoSize = true;
-            }
-            foreach (Button button in new[] { codexLogin, codexRefresh, saveButton, cancelButton })
-            {
-                button.AutoSize = true;
-                button.MinimumSize = new Size(button.Width, 30);
-                button.Padding = new Padding(6, 2, 6, 2);
-            }
         }
 
         private void UpdateRows()

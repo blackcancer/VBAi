@@ -63,3 +63,24 @@ try {
     }
     Write-Output 'PASS provider settings DesignSurface and fixed provider controls'
 } finally { $settingsSurface.Dispose() }
+$approvalSurface = [ComponentModel.Design.DesignSurface]::new()
+try {
+    $approvalType = $assembly.GetType('CodexVBE.VbeApprovalDialog', $true)
+    $approvalSurface.BeginLoad($approvalType)
+    Assert ($approvalSurface.IsLoaded -and $approvalSurface.LoadErrors.Count -eq 0) 'Approval dialog designer failed to load.'
+    $approvalHost = $approvalSurface.GetService([ComponentModel.Design.IDesignerHost])
+    foreach ($name in @('details','actions','approve','reject')) {
+        $control = $approvalType.GetField($name, $flags).GetValue($approvalHost.RootComponent)
+        Assert ($control -is [Windows.Forms.Control] -and $control.Parent -ne $null) "Missing approval designer control: $name"
+    }
+    Write-Output 'PASS approval dialog DesignSurface and fixed controls'
+} finally { $approvalSurface.Dispose() }
+$gitSurface = [ComponentModel.Design.DesignSurface]::new()
+try {
+    $gitType = $assembly.GetType('CodexVBE.GitWindow', $true)
+    $gitSurface.BeginLoad($gitType)
+    Assert ($gitSurface.IsLoaded -and $gitSurface.LoadErrors.Count -eq 0) 'Git designer failed to load.'
+    $gitHost = $gitSurface.GetService([ComponentModel.Design.IDesignerHost])
+    Assert ($gitHost.RootComponent -ne $null -and $gitSurface.View -is [Windows.Forms.Control]) 'Git designer has no editable form.'
+    Write-Output 'PASS Git DesignSurface load'
+} finally { $gitSurface.Dispose() }
