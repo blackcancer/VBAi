@@ -159,7 +159,11 @@ namespace CodexVBE
                         throw new InvalidOperationException("Clear All Breakpoints requires break or design mode.");
                     id = 579; captions = new[] { "Effacer tous les points d'arrêt", "Effacer tous les points d’arrêt", "Clear All Breakpoints" };
                     break;
-                default: throw new ArgumentException("Action must be reset or clear_all_breakpoints.");
+                case "show_next_statement":
+                    if (beforeMode != 1) throw new InvalidOperationException("Show Next Statement requires break mode.");
+                    id = 1813; captions = new[] { "Afficher l'instruction suivante", "Afficher l’instruction suivante", "Show Next Statement" };
+                    break;
+                default: throw new ArgumentException("Action must be reset, clear_all_breakpoints or show_next_statement.");
             }
             var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == id && entry.Enabled &&
                 captions.Any(caption => (entry.Caption ?? "").Replace("&", "")
@@ -172,11 +176,14 @@ namespace CodexVBE
                 Executed = true, ControlId = id, Control = command.Path,
                 ModeBefore = beforeMode, ModeAfter = afterMode,
                 Verification = verifiedReset ? "Verified" : "Unverified",
-                VerificationPending = request.Action == "reset" && !verifiedReset,
+                VerificationPending = (request.Action == "reset" && !verifiedReset) ||
+                    request.Action == "show_next_statement",
                 VerificationLimit = request.Action == "clear_all_breakpoints"
                     ? "VBIDE has no breakpoint inventory; the command invocation alone does not prove every marker was cleared."
-                    : verifiedReset ? null : "The VBE may apply reset after Execute returns.",
+                    : request.Action == "show_next_statement" ? "Selection after navigation is not an independent execution-pointer inventory." :
+                        verifiedReset ? null : "The VBE may apply reset after Execute returns.",
                 NextRead = request.Action == "reset" ? "Call debug_state in a separate request to confirm design mode."
+                    : request.Action == "show_next_statement" ? "Call debug_state in a separate request to read the resulting code selection."
                     : "Run a disposable procedure or inspect the native editor to verify breakpoint behavior." };
         }
 
@@ -250,9 +257,9 @@ namespace CodexVBE
                 throw new InvalidOperationException("Project mode changed before the debug command.");
             if (!IsAllowed(request.Action, request.ControlCaption, mode))
                 throw new InvalidOperationException("The control caption is not allowed for the requested debug action.");
-            if (request.Action == "toggle_breakpoint" &&
+            if ((request.Action == "toggle_breakpoint" || request.Action == "set_next_statement") &&
                 (string.IsNullOrWhiteSpace(line) || line.TrimStart().StartsWith("'", StringComparison.Ordinal)))
-                throw new InvalidOperationException("A breakpoint requires an executable line.");
+                throw new InvalidOperationException("The requested debug action requires an executable line.");
 
             dynamic pane = module.CodePane;
             pane.Show();
@@ -357,6 +364,11 @@ namespace CodexVBE
                         (label.IndexOf("Run To Cursor", StringComparison.OrdinalIgnoreCase) >= 0 ||
                          label.IndexOf("Exécuter jusqu'au curseur", StringComparison.OrdinalIgnoreCase) >= 0 ||
                          label.IndexOf("Exécuter jusqu’au curseur", StringComparison.OrdinalIgnoreCase) >= 0);
+                case "set_next_statement":
+                    return mode == 1 &&
+                        (label.IndexOf("Set Next Statement", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         label.IndexOf("Définir l'instruction suivante", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         label.IndexOf("Définir l’instruction suivante", StringComparison.OrdinalIgnoreCase) >= 0);
                 default:
                     return false;
             }
