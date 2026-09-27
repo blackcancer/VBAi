@@ -188,6 +188,8 @@ namespace CodexVBE
                 control.Margin = new Padding(0, 4, 12, 8);
                 var label = control as Label;
                 if (label != null) label.AutoSize = true;
+                if (label != null && this.grid.GetColumn(control) == 0)
+                    label.MinimumSize = new Size(156, 0);
                 var check = control as CheckBox;
                 if (check != null) check.AutoSize = true;
             }
@@ -197,6 +199,24 @@ namespace CodexVBE
                 button.MinimumSize = new Size(button.Width, 30);
                 button.Padding = new Padding(6, 2, 6, 2);
             }
+            this.provider.AccessibleName = "Fournisseur";
+            this.openAiEndpoint.AccessibleName = "URL OpenAI facultative";
+            this.ollamaEndpoint.AccessibleName = "URL Ollama facultative";
+            this.openAiKey.AccessibleName = "Nouvelle clé OpenAI API";
+            this.approvalPicker.AccessibleName = "Autorisation des modifications VBE";
+            this.grid.TabIndex = 0;
+            this.buttons.TabIndex = 1;
+            this.provider.TabIndex = 0;
+            this.codexActions.TabIndex = 1;
+            this.codexLogin.TabIndex = 0;
+            this.codexRefresh.TabIndex = 1;
+            this.openAiEndpoint.TabIndex = 2;
+            this.ollamaEndpoint.TabIndex = 3;
+            this.openAiKey.TabIndex = 4;
+            this.clearKey.TabIndex = 5;
+            this.approvalPicker.TabIndex = 6;
+            this.saveButton.TabIndex = 0;
+            this.cancelButton.TabIndex = 1;
             this.buttons.ResumeLayout(false);
             this.codexActions.ResumeLayout(false);
             this.grid.ResumeLayout(false);
