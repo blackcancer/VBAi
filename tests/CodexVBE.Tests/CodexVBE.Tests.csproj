@@ -21,6 +21,10 @@
     <Compile Include="Unit\VbeSessionContractTests.cs" />
     <Compile Include="Unit\DebugCommandTests.cs" />
     <Compile Include="Unit\ProjectResolverTests.cs" />
+    <Compile Include="Unit\CodeFileEncodingTests.cs" />
+    <Compile Include="Unit\UiLocalizationTests.cs" />
+    <Compile Include="Unit\VbeEditorWindowsTests.cs" />
+    <Compile Include="Unit\VbeFormsContractTests.cs" />
     <Compile Include="Integration\SessionStoreTests.cs" />
     <Compile Include="Integration\ExcelHostTests.cs" />
     <Compile Include="Integration\SolidWorksHostTests.cs" />

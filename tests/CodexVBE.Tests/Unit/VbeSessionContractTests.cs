@@ -95,8 +95,13 @@ namespace CodexVBE.Tests.Unit
             public int CountOfLines { get { return lines.Count; } set { lines.Clear(); lines.AddRange(Enumerable.Repeat(string.Empty, value)); } }
             public string Code { get { return string.Join("\r\n", lines); } }
             public FakeLines Lines { get; }
+            public bool CorruptNonAsciiOnInsert { get; set; }
             public void DeleteLines(int start, int count) { lines.RemoveRange(start - 1, count); }
-            public void InsertLines(int start, string text) { lines.InsertRange(start - 1, text.Split(new[] { "\r\n" }, StringSplitOptions.None)); }
+            public void InsertLines(int start, string text)
+            {
+                if (CorruptNonAsciiOnInsert) text = text.Replace('é', '?');
+                lines.InsertRange(start - 1, text.Split(new[] { "\r\n" }, StringSplitOptions.None));
+            }
             public sealed class FakeLines
             {
                 private readonly FakeModule module;
