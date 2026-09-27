@@ -17,11 +17,13 @@ Cette matrice suit une capacité précise : créer une copie d'un contrôle exis
 | ScrollBar | Non qualifiée | — | Ajout et lecture des propriétés | Copie non testée |
 | SpinButton | Non qualifiée | — | Ajout et lecture des propriétés | Copie non testée |
 | TabStrip | Non qualifiée | — | Tabs ajoutés, lus et supprimés | Copie des Tabs non testée |
-| ToggleButton | Non qualifiée | — | Ajout et lecture des propriétés | Copie non testée |
+| ToggleButton | Bridge uniquement, partielle, source `Value=false` | Name, Caption, Left, Top, Width, Height ; `Value=false` conservé sans appel setter | `Test-ToggleButtonDuplication.ps1` sur Excel PID 36484 : écriture `Value=true` refusée avant mutation, copie 1→2 nœuds relue, fermeture normale sans événement de crash | Écriture `Value` désactivée en attendant le diagnostic des deux crashs avec `Value=true` ; autres propriétés non copiées |
 
 Les contrôles ActiveX installés hors des 14 types natifs sont des candidats à valider dans le VBE hôte. L'essai `MSComctlLib.ListViewCtrl.2` a été refusé par `Controls.Add` dans Excel ; il n'entre dans aucune promesse de copie.
 
 Le premier clonage générique fondé sur `PropertyDescriptor.IsReadOnly` a échoué sur `Label.Cancel`, suivi d'un crash Excel corrélé dans le temps. `ITypeInfo` annonce pourtant `PROPERTYPUT` pour ce membre. La liste positive est donc déterminée par des essais de mutation et de relecture ciblés ; ni le drapeau du descripteur ni la déclaration typelib ne suffisent. Les commandes de copie restent hors des outils LLM tant que chaque type et ses limites ne sont pas validés en hôte.
+
+L'écriture de `ToggleButton.Value=true` a précédé deux crashs Excel à la fermeture du classeur jetable, avec et sans duplication (PID 12456 et 45308). Un ToggleButton laissé à sa valeur par défaut s'est fermé normalement (PID 29584). Le setter générique `set_form_node_property` refuse donc provisoirement `ToggleButton.Value`, et la copie dédiée refuse les sources dont la valeur n'est pas `false`. Cette version a été éprouvée dans Excel PID 36484 : refus sans changement de `TreeVersion`, copie relue, puis fermeture normale sans événement Application Error 1000 associé. Ce garde-fou ne démontre pas à lui seul la cause exacte des crashs.
 
 `frame_copy_plan` prépare en lecture seule une éventuelle copie d'un Frame avec Labels directs. Elle relève les enfants réels via `Parent`, propose des noms et chemins dans le futur conteneur, et signale les collisions, types non pris en charge et noms trop longs. Dans Excel PID 27988, elle a proposé le chemin canonique du Label et signalé le TextBox supplémentaire comme non pris en charge, sans changer `TreeVersion`. `EligibleForLimitedProbe` décrit seulement la forme des données ; `MutationVerified=false` reste explicite.
 

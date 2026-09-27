@@ -783,6 +783,14 @@ namespace CodexVBE
             if (root == null) throw new InvalidOperationException("Property is not exposed: " + propertyPath[0]);
             if (propertyPath.Length == 1)
             {
+                // Two disposable Excel sessions crashed during teardown after
+                // ToggleButton.Value=true was set in the designer. Until the
+                // host interaction is isolated, refuse every Value write for
+                // this type before invoking its COM setter.
+                if (string.Equals(root.Name, "Value", StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(TypeDescriptor.GetClassName(target), "ToggleButton", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException(
+                        "ToggleButton.Value editing is temporarily disabled: Excel crashed during teardown after a design-time Value=true write.");
                 // A real Excel Label exposed Cancel as writable through
                 // PropertyDescriptor, but the COM setter returned member-not-found.
                 // Reject the known bad path before invoking native COM.

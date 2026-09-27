@@ -32,11 +32,18 @@ Invoke-Vbe @{ Command = 'add_form_control'; Project = $Project; Form = $Form;
     ControlType = 'Forms.ToggleButton.1'; Control = 'tglOriginal'; Caption = 'Choix Codex';
     Left = 24; Top = 24; Width = 120; Height = 30;
     ExpectedFormVersion = $initial.FormVersion } | Out-Null
-$withToggleButton = Read-Tree
-Invoke-Vbe @{ Command = 'set_form_node_property'; Project = $Project; Form = $Form;
-    ControlPath = 'Controls/tglOriginal'; Property = 'Value'; Value = $true;
-    ExpectedTreeVersion = $withToggleButton.TreeVersion } | Out-Null
 $before = Read-Tree
+
+$refused = @{ Command = 'set_form_node_property'; Project = $Project; Form = $Form;
+    ControlPath = 'Controls/tglOriginal'; Property = 'Value'; Value = $true;
+    ExpectedTreeVersion = $before.TreeVersion }
+$refusedJson = ConvertTo-Json -InputObject $refused -Compress -Depth 8
+$refusedReply = & (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson $refusedJson | ConvertFrom-Json
+$afterRefusal = Read-Tree
+if ($refusedReply.Ok -or $refusedReply.Error -notmatch 'temporarily disabled' -or
+    $afterRefusal.TreeVersion -ne $before.TreeVersion) {
+    throw 'ToggleButton.Value=true was not refused before mutation.'
+}
 
 $copy = Invoke-Vbe @{ Command = 'duplicate_form_togglebutton'; Project = $Project; Form = $Form;
     ControlPath = 'Controls/tglOriginal'; NewName = 'tglCopy';
@@ -54,6 +61,7 @@ if ($copy.Completeness -ne 'Partial' -or $copy.NewPath -ne 'Controls/tglCopy' -o
     NewPath = $copy.NewPath
     Completeness = $copy.Completeness
     CopiedProperties = ($copy.CopiedProperties -join ', ')
+    ValueWriteRefused = $refusedReply.Error
     BeforeTreeVersion = $before.TreeVersion
     AfterTreeVersion = $after.TreeVersion
     BeforeNodeCount = $before.NodeCount

@@ -8,8 +8,9 @@ namespace CodexVBE
 {
     internal sealed partial class VbeForms
     {
-        // A narrow design-time ToggleButton profile. The only nondefault Value
-        // assignment allowed here (true) was exercised in disposable Excel.
+        // A narrow design-time ToggleButton profile. Setting Value=true was
+        // followed by Excel teardown crashes in disposable workbooks, so this
+        // copy is restricted to the false value already present on the source.
         public object DuplicateToggleButton(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||
@@ -44,9 +45,8 @@ namespace CodexVBE
             dynamic original = source;
             string caption = (string)original.Caption;
             object rawValue = original.Value;
-            if (!(rawValue is bool))
-                throw new InvalidOperationException("This probe only copies a two-state Boolean ToggleButton.Value.");
-            bool value = (bool)rawValue;
+            if (!(rawValue is bool) || (bool)rawValue)
+                throw new InvalidOperationException("Only a ToggleButton with Value=false is eligible; Value=true was followed by Excel teardown crashes.");
             double left = Convert.ToDouble(original.Left, CultureInfo.InvariantCulture);
             double top = Convert.ToDouble(original.Top, CultureInfo.InvariantCulture);
             double width = Convert.ToDouble(original.Width, CultureInfo.InvariantCulture);
@@ -68,7 +68,6 @@ namespace CodexVBE
                 copy.Width = width;
                 copy.Height = height;
                 copy.Caption = caption;
-                if (value) copy.Value = true;
 
                 dynamic after = Tree(request.Project, request.Form);
                 if (!TreeContainsPath((IEnumerable)after.Controls, newPath) ||
@@ -77,7 +76,7 @@ namespace CodexVBE
                     throw new InvalidOperationException("The duplicate was not reflected in form_tree.");
                 dynamic installed = ResolveTreeItem(form.Designer, newPath);
                 if ((string)installed.Caption != caption ||
-                    !(installed.Value is bool) || (bool)installed.Value != value ||
+                    !(installed.Value is bool) || (bool)installed.Value ||
                     Math.Abs(Convert.ToDouble(installed.Left, CultureInfo.InvariantCulture) - left) > 0.01 ||
                     Math.Abs(Convert.ToDouble(installed.Top, CultureInfo.InvariantCulture) - top) > 0.01 ||
                     Math.Abs(Convert.ToDouble(installed.Width, CultureInfo.InvariantCulture) - width) > 0.01 ||
@@ -85,7 +84,7 @@ namespace CodexVBE
                     throw new InvalidOperationException("The duplicate did not retain the supported ToggleButton properties.");
                 return new { SourcePath = request.ControlPath, NewPath = newPath,
                     CopiedProperties = new[] { "Name", "Caption", "Left", "Top", "Width", "Height",
-                        "Value (Boolean only)" }, Completeness = "Partial", Tree = after };
+                        "Value (false default only; no setter call)" }, Completeness = "Partial", Tree = after };
             }
             catch
             {

@@ -156,6 +156,8 @@ namespace CodexVBE
                     return Response.Success(forms.DuplicateTextBox(request));
                 case "duplicate_form_checkbox":
                     return Response.Success(forms.DuplicateCheckBox(request));
+                case "duplicate_form_togglebutton":
+                    return Response.Success(forms.DuplicateToggleButton(request));
                 case "duplicate_form_commandbutton":
                     return Response.Success(forms.DuplicateCommandButton(request));
                 case "duplicate_form_combobox":
