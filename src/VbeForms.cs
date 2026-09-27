@@ -783,6 +783,14 @@ namespace CodexVBE
             if (root == null) throw new InvalidOperationException("Property is not exposed: " + propertyPath[0]);
             if (propertyPath.Length == 1)
             {
+                // A disposable Excel session crashed with heap corruption
+                // shortly after a sequence of these SpinButton setters. The
+                // responsible member has not yet been isolated.
+                if (string.Equals(TypeDescriptor.GetClassName(target), "SpinButton", StringComparison.OrdinalIgnoreCase) &&
+                    new[] { "Min", "Max", "Value", "Delay", "SmallChange" }
+                        .Any(name => string.Equals(root.Name, name, StringComparison.OrdinalIgnoreCase)))
+                    throw new InvalidOperationException(
+                        "SpinButton." + root.Name + " editing is temporarily disabled: Excel crashed after a design-time property write sequence containing this member.");
                 // Two disposable Excel sessions crashed during teardown after
                 // ToggleButton.Value=true was set in the designer. Until the
                 // host interaction is isolated, refuse every Value write for
