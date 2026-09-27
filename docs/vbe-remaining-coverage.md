@@ -1,0 +1,63 @@
+# Couverture VBE restante
+
+Inventaire au 27 septembre 2026 sur la branche `feat/llm-commands`. « Présent » désigne une commande du complément, « prouvé » un essai dans le VBE Excel visible. La présence d'un descripteur COM modifiable ne prouve pas que son écriture est sûre ni durable.
+
+Le périmètre inclut les onze familles de [menus intégrés du VBE](https://learn.microsoft.com/en-us/office/vba/language/reference/menus-commands), les menus contextuels, les fenêtres et l'[objet VBE](https://learn.microsoft.com/en-us/office/vba/language/reference/visual-basic-add-in-model/objects-visual-basic-add-in-model) (projets, composants, code, références, compléments, événements et barres de commandes). Les menus documentés par Microsoft varient selon l'hôte et la version ; ce tableau relève les fonctions, sans assimiler chaque action visuelle à une commande LLM nécessaire.
+
+## Carte de l'éditeur entier
+
+| Surface VBE | Ce que CodexVBE couvre déjà | Manques précis à explorer |
+| --- | --- | --- |
+| [Fichier](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/file-menu) | Import, export et suppression de composants via VBIDE ; création de composants. | Sauvegarde du document hôte et état « modifications en attente », fermeture projet/VBE, impression, variantes `SaveAs` et projets autonomes si l'hôte les propose. Ne pas confondre sauvegarde du code vivant et persistance sur disque. |
+| [Édition](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/edit-menu) | Lecture et remplacement de lignes avec SHA, recherche littérale, sélection/navigation du code ; suppression ciblée de contrôles. | Signets, recherche/remplacement avec portées et options, sélection multiple, indentation/commentaires, presse-papiers, annuler/refaire, complétion et informations de membres. Décider quelles actions d'éditeur doivent être primitives et lesquelles se déduisent des opérations de code. |
+| [Affichage](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/view-menu) | Fenêtres et volets de code inventoriés ; formulaire ouvert ; Exécution, Variables locales, Espions, pile et Explorateur d'objets ouverts/lus partiellement. | Navigation Définition/position précédente, ordre de tabulation, boîte à outils, propriétés/Explorateur de projets comme fenêtres pilotables, barre d'outils et personnalisation, restauration du chat depuis Affichage. |
+| [Insertion](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/insert-menu) | Modules standard, classes, UserForms, contrôles natifs et stubs d'événement ; texte insérable par `replace_lines`. | Création structurée de Sub/Function/Property et de leurs signatures, insertion de fichier dans le code avec provenance, designers et composants additionnels réellement disponibles. |
+| [Format](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/format-menu) | Position/taille individuelles des contrôles, ZOrder avant/arrière prouvé sur deux Labels. | Opérations sur sélection multiple : alignement, espacement, taille commune, centrage, grille, groupes, ajustement au contenu et déplacement d'un rang dans l'ordre Z ; lecture du résultat et persistance. |
+| [Débogage](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/debug-menu) | Points d'arrêt natifs, compilation, espions, pas à pas, jusqu'au curseur, instruction suivante. | Inventaire indépendant des points d'arrêt et du pointeur d'exécution ; détails dans la section Débogueur. |
+| [Exécution](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/run-menu) | Démarrer, poursuivre, interrompre, réinitialiser et exécuter une ligne dans Exécution essayés. | Mode conception par projet, lancement d'un UserForm via commande dédiée, dialogue Macro et variantes de projets autonomes propres à l'hôte. |
+| [Outils](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/tools-menu) | Références sélectionnées lues/ajoutées/retirées ; propriétés de projet partielles ; option d'arrêt sur erreur lue ; configuration LLM de CodexVBE accessible. | Options Éditeur/Format/Ancrage, protection et signature du projet, gestion des macros, contrôles supplémentaires et paramètres du projet non couverts ou risqués. |
+| [Compléments](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/add-ins-menu) | CodexVBE se charge dans Excel et SOLIDWORKS après réparation de l'installation ; son état est exposé par `status`. | Inventaire/état des autres compléments, gestionnaire chargement/déchargement, diagnostic d'installation par hôte et réouverture fiable du panneau. |
+| [Fenêtre](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/window-menu-commands) | `vbe_windows` et `code_panes` relisent fenêtres, visibilité, géométrie et sélection ; sonde d'une fenêtre outil ancrable. | Activer/fermer une fenêtre exacte, fractionner le code, cascade/mosaïque, liaisons et ancrage, panneau de chat réellement hébergé à droite avec état restaurable. |
+| [Aide](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/help-menu) | Aucune commande LLM dédiée. | Déterminer l'utilité d'un accès contextuel à l'aide et à la version VBE, sans faire passer l'ouverture d'une aide pour la lecture de son contenu. |
+| [Menus contextuels](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/shortcut-menu) et barres | `list_commands` inventorie les CommandBars, chemins, identifiants et état activé ; quelques commandes sont exécutées de façon spécialisée. | Cartographier par contexte Projet/Code/Formulaire/Fenêtre, car l'état de ces commandes dépend de la sélection. Qualifier leurs effets avant d'exposer une exécution générique. Aucun raccourci clavier ni clic à coordonnées. |
+
+## Modèle objet transversal
+
+| Objet ou relation | État | Manque |
+| --- | --- | --- |
+| `VBE.VBProjects` et projet actif | Liste et mode, propriétés partielles ; cible par nom unique. | Identité durable entre projets de même nom (actuellement refusés comme ambigus), état de protection, fichier hôte, sauvegarde et cycle de vie par hôte. |
+| `VBComponents`, `CodeModule`, `CodePane` | Composants et code lus/édités ; procédures et sélection. | Méthodes VBIDE non encore exposées selon leur intérêt, vue complète du code fractionné, sélection multi-ligne, options de l'éditeur et édition structurée. |
+| `References`, bibliothèques et Explorateur d'objets | Références sélectionnées et métadonnées COM paginées ; Explorateur ouvert. | Résolution transitive, références cassées, objets/membres de projet dans l'Explorateur, recherche et navigation structurées natives. |
+| `Windows`, `LinkedWindows`, `CommandBars`, `AddIns` | Fenêtres/commandes lues, complément connecté. | Mutation/retour visuel des fenêtres, ancrage/persistance, inventaire d'état des compléments, événements des barres de commandes. |
+| `VBE.Events` | Aucun abonnement aux événements du modèle objet VBE n'a été trouvé dans `src` ; la connexion actuelle passe par `IDTExtensibility2`. | Brancher, si l'hôte les expose, les changements de projet/composants/références et de commandes utiles pour invalider les instantanés et maintenir le contexte du chat. |
+
+## Débogueur
+
+| Surface | État actuel | Travail restant |
+| --- | --- | --- |
+| Points d'arrêt | Basculement natif, arrêt effectif et effacement de deux points dans une macro jetable prouvés. | Lire la liste et les lignes de tous les points d'arrêt de manière indépendante. Sans cette lecture, `toggle_breakpoint` et l'effacement global gardent une vérification limitée. |
+| Instruction suivante | `show_next_statement` et déplacement dans une même procédure essayés ; `set_next_statement` refuse une procédure différente d'après la sélection du volet de code. | Identifier indépendamment le pointeur d'exécution. Une sélection déplacée manuellement n'est pas une preuve de sa position ; vérifier les autres cas d'erreur natifs. |
+| Exécution et pas | Exécuter, poursuivre, interrompre, réinitialiser, pas détaillé, principal, sortant et jusqu'au curseur essayés. | Relire leur effet après le traitement asynchrone du VBE dans d'autres contextes et dans SOLIDWORKS ; la réponse immédiate n'est pas toujours une preuve. |
+| Variables et expressions | Variables locales, Espions, pile, Exécution, espion express et modification de variable via Exécution essayés. | Parcours complet des grands arbres d'objets, types de valeurs particuliers et autres langues/hôtes. Une expression VBA peut avoir des effets de bord. |
+| Compilation et erreurs | Diagnostic de compilation et dialogue d'erreur d'exécution natifs lus dans Excel ; option d'arrêt sur erreur lue. | Détails de diagnostic au-delà du message/texte sélectionné, état d'exception une fois le dialogue fermé, et cas d'erreur particuliers. Une compilation sans dialogue n'a pas de preuve binaire indépendante. |
+
+## Concepteur de formulaires
+
+| Surface | État actuel | Travail restant |
+| --- | --- | --- |
+| Types et propriétés | Les 14 contrôles MSForms natifs ont été créés ; 771 descripteurs et 110 choix d'énumération recensés. Plusieurs propriétés scalaires, `Font` et `Picture` sont relues après écriture. | Qualifier chaque propriété réellement modifiable par type, valeur, persistance après sauvegarde/réouverture et effet dans le formulaire exécuté. Les 621 candidats d'écriture issus des descripteurs ne sont pas 621 écritures prouvées. |
+| Propriétés à risque | Certaines écritures sont bloquées après échec natif ou crash corrélé dans Excel. | Comprendre la cause avec une méthode sûre avant tout nouvel essai ; ne pas lever les gardes sur une simple indication `ReadOnly=False`. |
+| Listes ComboBox/ListBox | Lecture de l'état vivant présente. `AddItem` direct en conception a perdu ses lignes après sauvegarde/réouverture. | Finaliser l'écriture durable via `UserForm_Initialize` pour les listes non liées à une colonne ; couvrir ensuite données liées, plusieurs colonnes et listes imbriquées avec essais distincts. |
+| Arbre et disposition | Frame, Page, Tab, contrôles imbriqués, dimensions, suppression et ordre visuel de deux Labels essayés. | Qualifier les autres combinaisons de conteneurs/contrôles, l'ordre Z au-delà de ce cas, la boîte à outils et les contrôles ActiveX tiers réellement hébergés. |
+| Événements | Catalogue des interfaces source COM et création de stubs par `CreateEventProc` présents. | Couvrir les événements utilisables par VBA que le seul catalogue COM n'annonce pas, et vérifier les signatures/contexte de chaque contrôle dans l'hôte. |
+
+## Autres surfaces de l'éditeur
+
+| Surface | État actuel | Travail restant |
+| --- | --- | --- |
+| Projets et code | Composants, références, lecture/édition SHA, procédures et recherche littérale exposés. | Renommage de projet désactivé après crash corrélé ; recherche avancée et édition structurée de procédures ; cas d'erreur et compatibilité documentaire par hôte. |
+| Explorateur d'objets | Ouverture native et métadonnées des références sélectionnées présentes. | Catalogue structuré des bibliothèques/classes/membres dans le complément, navigation et recherche vérifiées ; l'essai UI Automation exploratoire est externe au complément. |
+| Fenêtres et menus | Inventaire des fenêtres, volets de code et CommandBars présent. | Pilotage borné des commandes non encore spécialisées, état d'ancrage, disposition persistante et hébergement du chat dans un panneau VBE ancré à droite. |
+| Hôtes | Les fonctions ci-dessus ont été principalement essayées dans Excel 64 bits visible. | Rejouer les fonctions retenues dans le VBE SOLIDWORKS ouvert par l'utilisateur ; l'essai Excel ne démontre pas la compatibilité complète de l'autre hôte. |
+
+Les preuves et limites par essai sont détaillées dans [vbe-coverage.md](vbe-coverage.md), [forms-property-coverage.md](forms-property-coverage.md) et [llm-integration.md](llm-integration.md). Cette liste est un suivi de couverture, pas une déclaration que toutes les fonctions VBE ont été inventoriées par une API exhaustive.

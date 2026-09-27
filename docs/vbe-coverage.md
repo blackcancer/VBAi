@@ -2,10 +2,12 @@
 
 État relevé les 26 et 27 septembre 2026 sur le VBE 64 bits d'Excel, dans plusieurs `Classeur1` jetables. Les commandes du complément passent par l'objet VBE du processus hôte. Les sondes de fenêtres utilisent Win32/UI Automation ; aucun raccourci clavier ni clic à coordonnées n'est requis. Les sections chronologiques plus bas conservent les anciens échecs puis leurs correctifs : le tableau suivant résume l'état courant de la branche `feat/llm-commands`.
 
+L'[inventaire des éléments encore à couvrir](vbe-remaining-coverage.md) distingue les commandes présentes des effets prouvés et des surfaces encore absentes.
+
 | Surface | Accès démontré | Lacune avant une commande LLM complète |
 | --- | --- | --- |
 | Projets et composants | Création standard/classe/form, lecture typée, renommage de composant, import/export/suppression standard/classe et UserForm avec vérification différée ; révisions, références sélectionnées et mode lus. | Renommage de projet désactivé après crash corrélé ; sauvegarde explicite, hôtes documentaires et cas d'erreur d'import à approfondir. |
-| Éditeur de code | Lecture/remplacement avec SHA, procédures VBIDE, recherche littérale dans les modules, navigation ciblée par procédure. | Recherche wildcard, modification structurée des procédures, diagnostic fiable de compilation et événements (sonde en cours). |
+| Éditeur de code | Lecture/remplacement avec SHA, procédures VBIDE, recherche littérale dans les modules, navigation ciblée par procédure et diagnostic natif de compilation. | Recherche avancée, modification structurée des procédures et catalogue complet des événements VBA. |
 | Formulaires | Création/ouverture, propriétés typées du UserForm, écriture de scalaires/Font/Picture, arbre récursif Frame/Page/Tab, versions relues. | Vérifier l'écriture de toutes les propriétés exposées et leurs variantes COM ; événements et objets non scalaires restants. |
 | Contrôles de formulaire | Quatorze types Forms ajoutés ; propriétés scalaires/enum/couleur/Variant, Font/Picture, contrôles imbriqués, suppression de Labels, cycles Page/Tab et ordre Index validés. | Matrice d'écriture complète des 771 descripteurs, ActiveX tiers, duplication et superposition ZOrder avec preuve d'effet. |
 | Fenêtre Propriétés | Fenêtre native visible (`wndclass_pbrs`), propriété du formulaire énumérable via VBIDE. | La sélection dans la fenêtre Propriétés peut rester sur `Feuil1` alors que le concepteur du formulaire est actif ; ne pas la prendre comme source de vérité implicite. |
@@ -169,6 +171,8 @@ Dans Excel PID 45004, `tools/probes/Test-StepOver.ps1` a arrêté une procédure
 Dans Excel PID 7952, `list_commands` a parcouru 438 contrôles natifs en pages de 200, 200 et 38 éléments ; l'ancien plafond fixe à 200 aurait masqué 238 entrées. Deux lectures successives de 100 éléments aux offsets 0 et 100 correspondaient exactement, dans l'ordre et par identifiant, à une lecture unique de 200 éléments. Une lecture filtrée par chemin de menu a aussi respecté `Offset=2, Limit=2`, et un offset négatif a été refusé. Cette preuve vaut pour le contexte VBE observé : l'activation, les chemins et éventuellement l'ordre des commandes peuvent évoluer entre deux appels, donc la pagination ne garantit pas un instantané atomique.
 
 Dans Excel PID 34072, `tools/probes/Test-ClearAllBreakpoints.ps1` a posé deux points d'arrêt sur les lignes 3 et 4 d'une procédure jetable. La première exécution s'est arrêtée en mode pause à la ligne 3. Après `reset`, `debug_global` avec `Action=clear_all_breakpoints` a invoqué la commande native `Id=579` en mode conception. Une nouvelle exécution a terminé en `Mode=2` avec `CodexClearProbe:2` dans la fenêtre Exécution, sans arrêt sur les deux lignes traversées. Cette preuve porte sur les deux lignes de cette procédure ; faute d'inventaire VBIDE, la réponse immédiate de la commande reste `Verification=Unverified` et ne peut pas garantir l'état de tous les projets du VBE.
+
+Dans Excel visible PID 37620, une macro jetable s'est arrêtée sur la ligne 4. `select_code` a déplacé la sélection à la ligne 2 ; `debug_global show_next_statement` (`Id=1813`) l'a ramenée à la ligne 4, puis `reset` a été exécuté et Excel fermé. La commande vérifie désormais, avant l'invocation native, que le projet actif correspond à la requête et que le composant du volet de code actif est celui de ce projet par identité COM. Cet essai valide le chemin positif ; il ne constitue pas un inventaire indépendant du pointeur d'exécution ni une preuve de tous les cas multi-projets.
 
 ## Prochaine exploration
 

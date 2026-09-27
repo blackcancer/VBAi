@@ -231,6 +231,19 @@ namespace CodexVBE
                     break;
                 case "show_next_statement":
                     if (beforeMode != 1) throw new InvalidOperationException("Show Next Statement requires break mode.");
+                    dynamic activeProject = vbe.ActiveVBProject;
+                    if (activeProject == null ||
+                        !string.Equals((string)activeProject.Name, request.Project, StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidOperationException("Show Next Statement requires the requested project to be active in the VBE.");
+                    dynamic activePane = vbe.ActiveCodePane;
+                    if (activePane == null)
+                        throw new InvalidOperationException("Show Next Statement requires an active code pane in the requested project.");
+                    dynamic activeComponent = activePane.CodeModule.Parent;
+                    dynamic requestedComponent;
+                    try { requestedComponent = activeProject.VBComponents.Item((string)activeComponent.Name); }
+                    catch (Exception) { throw new InvalidOperationException("The active code pane belongs to another project."); }
+                    if (!SameComObject(activeComponent, requestedComponent))
+                        throw new InvalidOperationException("The active code pane belongs to another project.");
                     id = 1813; captions = new[] { "Afficher l'instruction suivante", "Afficher l’instruction suivante", "Show Next Statement" };
                     break;
                 default: throw new ArgumentException("Action must be break, reset, clear_all_breakpoints or show_next_statement.");
