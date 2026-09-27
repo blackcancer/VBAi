@@ -45,6 +45,7 @@ namespace CodexVBE
 
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(LlmSettingsWindow));
             this.grid = new System.Windows.Forms.TableLayoutPanel();
             this.providerLabel = new System.Windows.Forms.Label();
             this.provider = new System.Windows.Forms.ComboBox();
@@ -181,10 +182,10 @@ namespace CodexVBE
             this.githubRefresh.TabIndex = 12;
             this.githubRefresh.Click += new System.EventHandler(this.GitHubRefresh_Click);
             this.githubNote.Name = "githubNote";
-            this.githubNote.Text = "Les identifiants restent dans Git Credential Manager. La connexion prend effet immédiatement ; Enregistrer conserve le compte choisi pour CodexVBA. L’authentification Copilot se configure séparément.";
+            this.githubNote.Text = "Les identifiants restent dans Git Credential Manager. La connexion prend effet immédiatement ; Enregistrer conserve le compte choisi pour VBAi. L’authentification Copilot se configure séparément.";
             this.githubNote.AutoSize = true;
             this.githubNote.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.githubToolTips.SetToolTip(this.githubLogin, "Ouvre l’authentification GitHub dans votre navigateur. Aucun jeton à copier dans CodexVBA.");
+            this.githubToolTips.SetToolTip(this.githubLogin, "Ouvre l’authentification GitHub dans votre navigateur. Aucun jeton à copier dans VBAi.");
             this.githubToolTips.SetToolTip(this.githubRefresh, "Relit les comptes mémorisés localement ; ne vérifie pas encore les droits sur un dépôt.");
             this.githubToolTips.SetToolTip(this.githubAccount, "Compte utilisé pour les prochains fetch, pull et push des macros. Ne modifie pas la configuration Git globale.");
             //
@@ -453,9 +454,10 @@ namespace CodexVBE
             this.MaximizeBox = false;
             this.MinimumSize = new System.Drawing.Size(640, 39);
             this.Name = "LlmSettingsWindow";
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "CodexVBE — Paramètres";
+            this.Text = "VBAi — Paramètres";
             this.grid.ResumeLayout(false);
             this.grid.PerformLayout();
             this.codexActions.ResumeLayout(false);

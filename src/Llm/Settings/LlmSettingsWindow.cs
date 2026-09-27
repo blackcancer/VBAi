@@ -258,7 +258,7 @@ namespace CodexVBE
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "Configuration CodexVBE", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, ex.Message, "Configuration VBAi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

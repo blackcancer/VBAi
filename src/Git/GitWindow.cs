@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
@@ -53,7 +54,8 @@ namespace CodexVBE
                 string bindingFile = Path.Combine(cache, "binding.json");
                 string temporaryBinding = Path.Combine(cache, "binding.pending");
                 File.WriteAllText(temporaryBinding, new JavaScriptSerializer().Serialize(
-                    new Binding { Remote = url, Branch = selected.Branch }));
+                    // Keep the original cache key stable when Initialize restores another active branch.
+                    new Binding { Remote = url, Branch = branch.Text.Trim() }));
                 if (File.Exists(bindingFile)) File.Replace(temporaryBinding, bindingFile, null);
                 else File.Move(temporaryBinding, bindingFile);
                 await Compare();
@@ -68,62 +70,33 @@ namespace CodexVBE
             displayedLive = live; displayedBaseline = baseline;
             changes.Items.Clear(); changes.Items.AddRange(live.Changes(baseline));
             history.Items.Clear(); history.Items.AddRange(await Task.Run(() => repository.History()));
+            branch.Text = repository.Branch;
+            branchList.Items.Clear(); branchList.Items.AddRange(await Task.Run(() => repository.Branches()));
+            checkpointList.Items.Clear(); checkpointList.Items.AddRange(await Task.Run(() => repository.Checkpoints()));
+            conflictList.Items.Clear();
+            if (repository.PendingMerge != null) conflictList.Items.AddRange(repository.PendingMerge.Conflicts);
             syncStatus.Text = repository.Branch + "   ·   " + await Task.Run(() => repository.SynchronizationStatus());
             status.Text = repository.RecoveryPending ? "Import interrompu : restaurez le VBA avant de poursuivre. La sauvegarde est conservée dans le cache." :
                 baseline == null ? "Première liaison : commit puis push pour publier, ou pull pour importer le dépôt avec sauvegarde préalable." :
                 changes.Items.Count == 0 ? "Le VBA correspond au dernier état synchronisé." : changes.Items.Count + " fichier(s) modifié(s) depuis la dernière synchronisation.";
         }
 
-        private async void Commit_Click(object sender, EventArgs e)
+        private async void Commit_Click(object sender, EventArgs e) { await RunGitAction("commit", text: commitMessage.Text); }
+        private async void Push_Click(object sender, EventArgs e) { await RunGitAction("push"); }
+        private async void Fetch_Click(object sender, EventArgs e) { await RunGitAction("fetch"); }
+        private async Task RunGitAction(string action, string name = null, string text = null, string choice = null, string path = null)
         {
             await Perform(async () => {
-                RequireReady();
-                var live = project.Capture();
-                string message = commitMessage.Text.Trim();
-                if (message.Length == 0) throw new InvalidOperationException("Saisissez un message de commit.");
-                string commit = await Task.Run(() => {
-                    string local = repository.Resolve(repository.Head);
-                    string incoming = repository.Resolve("refs/remotes/origin/selected");
-                    var remoteState = repository.Read(incoming);
-                    if (local == null && remoteState != null && !live.SameAs(remoteState))
-                        throw new InvalidOperationException("Le dépôt contient déjà un autre état VBA. Faites d’abord un pull avec sauvegarde locale.");
-                    string parent = local ?? incoming;
-                    var parentState = repository.Read(parent);
-                    string next = live.SameAs(parentState) ? parent : repository.Commit(live, parent, message);
-                    repository.SetRef(repository.Head, next);
-                    return next;
-                });
-                // The host may have changed while Git I/O was pending. The baseline is the captured state, never a fresh capture.
-                await Task.Run(() => repository.SetRef(MacroGitRepository.Baseline, commit));
+                var operations = new MacroGitOperations(project, repository);
+                object result = await operations.ExecuteAsync(action, name: name, text: text, choice: choice, path: path);
                 await Compare();
-                status.Text = "Commit local créé · " + commit.Substring(0, 8) + ". Utilisez Push pour le publier sur GitHub.";
+                status.Text = action == "commit" ? "Commit local créé. Utilisez Push pour le publier." :
+                    action == "push" ? "Push terminé." : action == "pull" ? "Pull et import terminés. Vérifiez puis enregistrez le document." :
+                    action == "rollback" || action == "checkpoint_restore" ? "VBA restauré. Vérifiez puis enregistrez le document." :
+                    repository.PendingMerge != null ? "Fusion préparée : résolvez les conflits puis cliquez sur Terminer la fusion." : "Opération terminée : " + action;
+                if (repository.PendingMerge != null) tabs.SelectedTab = conflictsTab;
             });
         }
-
-        private async void Push_Click(object sender, EventArgs e)
-        {
-            await Perform(async () => {
-                RequireReady();
-                await Task.Run(() => {
-                    string local = repository.Resolve(repository.Head) ?? throw new InvalidOperationException("Créez d’abord un commit local.");
-                    string incoming = repository.Fetch();
-                    if (incoming != null) repository.RequireFastForward(incoming, local);
-                    repository.Push(local);
-                });
-                await Compare();
-                status.Text = "Push terminé. Les commits locaux sont publiés ; les modifications non commitées restent dans le VBA.";
-            });
-        }
-
-        private async void Fetch_Click(object sender, EventArgs e)
-        {
-            await Perform(async () => {
-                await Task.Run(() => repository.Fetch());
-                await Compare();
-                status.Text = "Fetch terminé. Aucun code VBA n’a été modifié.";
-            });
-        }
-
         private void Changes_SelectedIndexChanged(object sender, EventArgs e)
         {
             diff.Rows.Clear();
@@ -161,83 +134,53 @@ namespace CodexVBE
             if (after != null) diff.Rows[row].Cells[1].Style.BackColor = System.Drawing.Color.Honeydew;
         }
 
-        private async void Pull_Click(object sender, EventArgs e)
+        private async void Pull_Click(object sender, EventArgs e) { await RunGitAction("pull"); }
+        private async void Restore_Click(object sender, EventArgs e) { await RunGitAction("rollback"); }
+        private async void CheckpointCreate_Click(object sender, EventArgs e) { await RunGitAction("checkpoint_create", checkpointName.Text); }
+        private async void CheckpointRestore_Click(object sender, EventArgs e)
+        {
+            var selected = checkpointList.SelectedItem as GitCheckpoint;
+            if (selected != null) await RunGitAction("checkpoint_restore", selected.Id);
+        }
+        private async void BranchCreate_Click(object sender, EventArgs e) { await RunGitAction("branch_create", branchName.Text); }
+        private async void BranchTrack_Click(object sender, EventArgs e) { await RunGitAction("branch_track", branchName.Text); }
+        private async void RemoteBranches_Click(object sender, EventArgs e)
         {
             await Perform(async () => {
-                RequireReady();
-                var live = project.Capture();
-                string incoming = null;
-                var target = await Task.Run(() => {
-                    var baseline = repository.Read(repository.Resolve(MacroGitRepository.Baseline));
-                    if (baseline != null && !live.SameAs(baseline))
-                        throw new InvalidOperationException("Le VBA contient des modifications locales. Commitez-les avant de lancer le pull.");
-                    incoming = repository.Fetch();
-                    if (incoming == null) throw new InvalidOperationException("La branche distante n’existe pas encore.");
-                    repository.RequireFastForward(repository.Resolve(repository.Head), incoming);
-                    return repository.Read(incoming) ?? throw new InvalidOperationException("La branche ne contient pas de dossier vba avec manifeste CodexVBA.");
-                });
-                if (!live.SameAs(project.Capture())) throw new InvalidOperationException("Le VBA a changé pendant le téléchargement. Relancez la comparaison.");
-                if (live.SameAs(target))
-                {
-                    await Task.Run(() => { repository.SetRef(repository.Head, incoming); repository.SetRef(MacroGitRepository.Baseline, incoming); });
-                    await Compare(); status.Text = "Déjà à jour. Aucun import nécessaire."; return;
-                }
-                await Task.Run(() => repository.PrepareRecovery(live));
-                bool mutationStarted = false;
-                try { project.Apply(target, live, () => mutationStarted = true); }
-                finally
-                {
-                    if (mutationStarted)
-                    {
-                        var actual = project.Capture();
-                        await Task.Run(() => repository.RecordImportedState(actual));
-                    }
-                    else await Task.Run(() => repository.CompleteRecovery());
-                }
-                await Task.Run(() => {
-                    repository.SetRef(repository.Head, incoming);
-                    repository.SetRef(MacroGitRepository.Baseline, incoming);
-                    repository.CompleteRecovery();
-                });
-                await Compare();
-                status.Text = "Pull et import terminés. Vérifiez/compilez le VBA, puis enregistrez le document dans son application. Restaurer reste disponible.";
+                string[] names = await Task.Run(() => repository.RemoteBranches());
+                branchName.Items.Clear(); branchName.Items.AddRange(names);
+                status.Text = names.Length + " branche(s) distante(s). Choisissez un nom puis Récupérer distante.";
             });
+            if (!running && branchName.Items.Count > 0) branchName.DroppedDown = true;
         }
-
-        private async void Restore_Click(object sender, EventArgs e)
+        private async void BranchSwitch_Click(object sender, EventArgs e)
+        { if (branchList.SelectedItem != null) await RunGitAction("branch_switch", branchList.SelectedItem.ToString()); }
+        private async void MergeBegin_Click(object sender, EventArgs e)
+        { if (branchList.SelectedItem != null) await RunGitAction("merge_begin", branchList.SelectedItem.ToString()); }
+        private async void MergeOurs_Click(object sender, EventArgs e) { await ResolveMerge("ours"); }
+        private async void MergeTheirs_Click(object sender, EventArgs e) { await ResolveMerge("theirs"); }
+        private async void MergeText_Click(object sender, EventArgs e) { await ResolveMerge("text"); }
+        private async Task ResolveMerge(string choice)
+        { if (conflictList.SelectedItem != null) await RunGitAction("merge_resolve", text: resolutionText.Text, choice: choice, path: conflictList.SelectedItem.ToString()); }
+        private async void MergeComplete_Click(object sender, EventArgs e) { await RunGitAction("merge_complete", text: commitMessage.Text); }
+        private async void MergeAbort_Click(object sender, EventArgs e) { await RunGitAction("merge_abort"); }
+        private async void ConflictList_SelectedIndexChanged(object sender, EventArgs e)
         {
+            conflictDiff.Rows.Clear(); resolutionText.Clear();
+            if (running || repository == null || conflictList.SelectedItem == null) return;
+            string path = conflictList.SelectedItem.ToString();
             await Perform(async () => {
-                var live = project.Capture();
-                string backup = null;
-                var target = await Task.Run(() => {
-                    var after = repository.Read(repository.Resolve(MacroGitRepository.AfterImport));
-                    if (after == null || !live.SameAs(after))
-                        throw new InvalidOperationException("L’état actuel diffère de la relecture après import, ou cette relecture manque. La sauvegarde reste dans le cache ; restauration automatique bloquée pour préserver les modifications suivantes.");
-                    backup = repository.Resolve(MacroGitRepository.Backup);
-                    return repository.Read(backup) ?? throw new InvalidOperationException("Aucune sauvegarde avant import.");
-                });
-                bool wasPending = repository.RecoveryPending;
-                File.WriteAllText(repository.RecoveryFile, backup);
-                bool mutationStarted = false;
-                try { project.Apply(target, live, () => mutationStarted = true); }
-                finally
+                var content = await Task.Run(() => repository.ConflictContent(path));
+                if (conflictList.SelectedItem?.ToString() != path) return;
+                resolutionText.Text = content.Ours.StartsWith("[", StringComparison.Ordinal) ? "" : content.Ours;
+                foreach (var row in CodeChange.BuildRows(content.Ours, content.Theirs).Take(2000))
                 {
-                    if (mutationStarted)
-                    {
-                        var actual = project.Capture();
-                        await Task.Run(() => repository.RecordImportedState(actual));
-                    }
-                    else if (!wasPending) await Task.Run(() => repository.CompleteRecovery());
+                    int index = conflictDiff.Rows.Add(row.Kind == CodeDiffKind.Added ? "" : row.Text, row.Kind == CodeDiffKind.Removed ? "" : row.Text);
+                    if (row.Kind == CodeDiffKind.Added) conflictDiff.Rows[index].Cells[1].Style.BackColor = System.Drawing.Color.Honeydew;
+                    if (row.Kind == CodeDiffKind.Removed) conflictDiff.Rows[index].Cells[0].Style.BackColor = System.Drawing.Color.MistyRose;
                 }
-                await Task.Run(() => repository.CompleteRecovery());
-                await Compare();
-                status.Text = "VBA restauré. Enregistrez le document dans son application. GitHub conserve son historique ; un prochain push publiera la restauration.";
+                status.Text = "Conflit : " + path + ". Choisissez une version ou éditez le contenu complet en dessous.";
             });
-        }
-
-        private void RequireReady()
-        {
-            if (repository.RecoveryPending) throw new InvalidOperationException("Un import a été interrompu. Restaurez le VBA avant une nouvelle synchronisation.");
         }
         private async Task Perform(Func<Task> action)
         {
@@ -253,6 +196,7 @@ namespace CodexVBE
             remote.ReadOnly = branch.ReadOnly = repository != null || running;
             compare.Enabled = commit.Enabled = fetch.Enabled = push.Enabled = pull.Enabled = restore.Enabled = !running && repository != null;
             commitMessage.Enabled = !running;
+            branchesTab.Enabled = checkpointsTab.Enabled = conflictsTab.Enabled = !running && repository != null;
         }
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
