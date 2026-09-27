@@ -1,12 +1,8 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Pipes;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Web.Script.Serialization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CodexVBE.Tests.Integration
@@ -57,19 +53,21 @@ namespace CodexVBE.Tests.Integration
                 ((dynamic)workbook).SaveAs(path, 51);
                 Assert.IsTrue(File.Exists(path));
                 excel.CommandBars.ExecuteMso("VisualBasic");
-                var environment = Bridge((int)processId, "vbe_environment");
+                var environment = VbeBridgeClient.Read((int)processId, "vbe_environment");
                 Assert.IsNotNull(environment, "The native VBE command ran, but this Excel PID has no CodexVBE bridge.");
                 Assert.AreEqual(true, environment["Ok"]);
-                var fields = Obj(Obj(environment["Data"])["Properties"]);
+                var fields = VbeBridgeClient.Object(VbeBridgeClient.Object(environment["Data"])["Properties"]);
                 Assert.IsTrue(Convert.ToInt32(fields["ProjectCount"]) >= 1);
-                var projects = Obj(Bridge((int)processId, "list_projects"));
+                var projects = VbeBridgeClient.Read((int)processId, "list_projects");
+                Assert.IsNotNull(projects, "The CodexVBE bridge disconnected while reading Excel projects.");
                 Assert.AreEqual(true, projects["Ok"]);
                 Assert.IsTrue(((object[])projects["Data"]).Any(p =>
-                    string.Equals(Convert.ToString(Obj(p)["FileName"]), path, StringComparison.OrdinalIgnoreCase)));
-                var addIns = Obj(Bridge((int)processId, "list_addins"));
+                    string.Equals(Convert.ToString(VbeBridgeClient.Object(p)["FileName"]), path, StringComparison.OrdinalIgnoreCase)));
+                var addIns = VbeBridgeClient.Read((int)processId, "list_addins");
+                Assert.IsNotNull(addIns, "The CodexVBE bridge disconnected while reading Excel VBE add-ins.");
                 Assert.AreEqual(true, addIns["Ok"]);
-                Assert.IsTrue(((object[])Obj(addIns["Data"])["AddIns"]).Any(a => {
-                    var properties = Obj(Obj(a)["Properties"]);
+                Assert.IsTrue(((object[])VbeBridgeClient.Object(addIns["Data"])["AddIns"]).Any(a => {
+                    var properties = VbeBridgeClient.Object(VbeBridgeClient.Object(a)["Properties"]);
                     return Convert.ToString(properties["ProgId"]) == "CodexVBE.AddIn" &&
                         Convert.ToBoolean(properties["Connect"]);
                 }));
@@ -98,33 +96,5 @@ namespace CodexVBE.Tests.Integration
             catch (COMException) { }
         }
 
-        private static System.Collections.Generic.IDictionary<string, object> Obj(object value)
-        {
-            return (System.Collections.Generic.IDictionary<string, object>)value;
-        }
-
-        private static System.Collections.Generic.IDictionary<string, object> Bridge(int processId, string command)
-        {
-            var json = new JavaScriptSerializer();
-            for (int attempt = 0; attempt < 20; attempt++)
-            {
-                try
-                {
-                    using (var pipe = new NamedPipeClientStream(".", "CodexVBE." + processId, PipeDirection.InOut))
-                    {
-                        pipe.Connect(250);
-                        using (var writer = new StreamWriter(pipe, new UTF8Encoding(false), 4096, true) { AutoFlush = true })
-                        using (var reader = new StreamReader(pipe, new UTF8Encoding(false), false, 4096, true))
-                        {
-                            writer.WriteLine(json.Serialize(new { Command = command }));
-                            return Obj(json.DeserializeObject(reader.ReadLine()));
-                        }
-                    }
-                }
-                catch (TimeoutException) { Thread.Sleep(250); }
-                catch (IOException) { Thread.Sleep(250); }
-            }
-            return null;
-        }
     }
 }

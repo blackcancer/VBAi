@@ -19,6 +19,8 @@
     <Compile Include="Unit\HistoryAndCodeTests.cs" />
     <Compile Include="Integration\SessionStoreTests.cs" />
     <Compile Include="Integration\ExcelHostTests.cs" />
+    <Compile Include="Integration\SolidWorksHostTests.cs" />
+    <Compile Include="Integration\VbeBridgeClient.cs" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
