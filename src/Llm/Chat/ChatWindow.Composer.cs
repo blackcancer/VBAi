@@ -37,7 +37,8 @@ namespace CodexVBE
                 BorderThickness = new Thickness(0), FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 14, Foreground = Ink("#1E293B"),
                 Padding = new Thickness(12), Background = Brushes.Transparent,
-                Language = XmlLanguage.GetLanguage(UiText.Culture.Name)
+                Language = XmlLanguage.GetLanguage(UiText.Culture.Name),
+                FlowDirection = UiText.Culture.TextInfo.IsRightToLeft ? FlowDirection.RightToLeft : FlowDirection.LeftToRight
             };
             prompt.SpellCheck.IsEnabled = true;
             AutomationProperties.SetName(prompt, UiText.Get("Your request; Enter to send, Shift+Enter for a new line"));
@@ -52,7 +53,7 @@ namespace CodexVBE
             prompt.SelectionChanged += (sender, args) => UpdateReferences();
 
             referenceList = new ListBox { Width = 350, MaxHeight = 240,
-                BorderThickness = new Thickness(0), Background = Brushes.White };
+                BorderThickness = new Thickness(0), Background = Ink("#FFFFFF") };
             ScrollViewer.SetHorizontalScrollBarVisibility(referenceList, ScrollBarVisibility.Disabled);
             var itemLayout = new FrameworkElementFactory(typeof(DockPanel));
             var tokenText = new FrameworkElementFactory(typeof(TextBlock));
@@ -90,7 +91,7 @@ namespace CodexVBE
             referencePopup = new Popup {
                 PlacementTarget = prompt, Placement = PlacementMode.Relative,
                 StaysOpen = false, AllowsTransparency = true,
-                Child = new Border { Background = Brushes.White,
+                Child = new Border { Background = Ink("#FFFFFF"),
                     BorderBrush = new SolidColorBrush(Color.FromRgb(203, 213, 225)),
                     BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8),
                     Padding = new Thickness(4), Child = referenceBody,

@@ -46,11 +46,11 @@ namespace CodexVBE.Tests.Unit
             } };
             var method = typeof(VbeMenu).GetMethod("FindMenu", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.IsNotNull(method);
-            Assert.AreSame(((FakeBar)host.CommandBars[2]).Controls[1], method.Invoke(null, new object[] { host, new[] { "affichage", "view" } }));
-            Assert.AreSame(((FakeBar)host.CommandBars[2]).Controls[2], method.Invoke(null, new object[] { host, new[] { "outils", "tools" } }));
+            Assert.AreSame(((FakeBar)host.CommandBars[2]).Controls[1], method.Invoke(null, new object[] { host, true }));
+            Assert.AreSame(((FakeBar)host.CommandBars[2]).Controls[2], method.Invoke(null, new object[] { host, false }));
             var missing = Assert.ThrowsException<TargetInvocationException>(() =>
-                method.Invoke(null, new object[] { host, new[] { "missing" } }));
-            StringAssert.Contains(missing.InnerException.Message, "VBE menu not found: missing");
+                method.Invoke(null, new object[] { new FakeHost { CommandBars = new object[0] }, false }));
+            StringAssert.Contains(missing.InnerException.Message, "VBE menu not found: Tools");
         }
 
         [TestMethod]
@@ -92,7 +92,7 @@ namespace CodexVBE.Tests.Unit
             } };
             var thrown = Assert.ThrowsException<InvalidOperationException>(() =>
                 new VbeMenu(host, () => { }, () => { }, () => { }));
-            StringAssert.Contains(thrown.Message, "VBE menu not found: outils/tools");
+            StringAssert.Contains(thrown.Message, "VBE menu not found: Tools");
         }
 
         [TestMethod]

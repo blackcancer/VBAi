@@ -1,0 +1,1782 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="&#10;### Attached memory&#10;" xml:space="preserve">
+    <value>
+### Befestigtes Gedächtnis
+</value>
+  </data>
+  <data name="&#10;Location unavailable: " xml:space="preserve">
+    <value>
+Standort nicht verfügbar: </value>
+  </data>
+  <data name="&#10;Project identifier to use in tools: " xml:space="preserve">
+    <value>
+Projektidentifikator zur Verwendung in Tools: </value>
+  </data>
+  <data name=" Bedrock API key (Bearer), not an IAM secret key. URL: https://bedrock-runtime.&lt;region&gt;.amazonaws.com." xml:space="preserve">
+    <value> Bedrock-API-Schlüssel (Bearer), kein IAM-Geheimschlüssel. URL: https://bedrock-runtime.&lt;region&gt;.amazonaws.com.</value>
+  </data>
+  <data name=" Optional key. Enter the full /chat/completions URL and model identifiers." xml:space="preserve">
+    <value> Optionaler Schlüssel: Geben Sie die vollständige /chat/completions URL und Modellkennungen ein.</value>
+  </data>
+  <data name=" URL: https://&lt;resource&gt;.openai.azure.com/openai/v1/chat/completions. Models are your deployment names. In Entra mode: AZURE_OPENAI_ENTRA_TOKEN." xml:space="preserve">
+    <value> URL: https://&lt;resource&gt;.openai.azure.com/openai/v1/chat/completions. Modelle sind Ihre Bereitstellungsnamen. Im Entra-Modus: AZURE_OPENAI_ENTRA_TOKEN.</value>
+  </data>
+  <data name=" account(s) available through Git Credential Manager. Repository access will be checked during synchronization." xml:space="preserve">
+    <value> Konto(s), das/die über Git Credential Manager verfügbar ist/sind; der Zugriff auf das Repository wird während der Synchronisation überprüft.</value>
+  </data>
+  <data name=" change(s) applied. Review the files and undo this turn below." xml:space="preserve">
+    <value> Änderung(en) angewendet. Überprüfen Sie die Dateien und machen Sie diese Runde unten rückgängig.</value>
+  </data>
+  <data name=" characters" xml:space="preserve">
+    <value> Zeichen</value>
+  </data>
+  <data name=" characters. This conversation's history also accompanies the request." xml:space="preserve">
+    <value> Die Geschichte dieses Gesprächs begleitet auch die Anfrage.</value>
+  </data>
+  <data name=" failed. " xml:space="preserve">
+    <value> gescheitert. </value>
+  </data>
+  <data name=" file(s) changed since the last synchronization." xml:space="preserve">
+    <value> Datei(en) hat sich seit der letzten Synchronisation geändert.</value>
+  </data>
+  <data name=" is stale. Remove it and attach the current selection." xml:space="preserve">
+    <value> Ist abgestanden. Entfernen Sie es und fügen Sie die aktuelle Auswahl bei.</value>
+  </data>
+  <data name=" remote branch(es). Choose a name, then Track remote." xml:space="preserve">
+    <value> Remote Branch(es): Wählen Sie einen Namen, dann Track remote.</value>
+  </data>
+  <data name=" · History not saved" xml:space="preserve">
+    <value> · Geschichte nicht gerettet</value>
+  </data>
+  <data name=" · branch" xml:space="preserve">
+    <value> · Zweigniederlassung</value>
+  </data>
+  <data name=" · check the COM control installation." xml:space="preserve">
+    <value> · Überprüfen Sie die COM-Steuerungsinstallation.</value>
+  </data>
+  <data name=" · selection L" xml:space="preserve">
+    <value> · Auswahl L</value>
+  </data>
+  <data name=" — ready" xml:space="preserve">
+    <value> — bereit</value>
+  </data>
+  <data name=" — working" xml:space="preserve">
+    <value> — Arbeiten</value>
+  </data>
+  <data name="+ New" xml:space="preserve">
+    <value>+ Neu</value>
+  </data>
+  <data name=". Analysis only; no edits or macro execution.&#10;" xml:space="preserve">
+    <value>Nur Analyse; keine Bearbeitungen oder Makroausführung.
+</value>
+  </data>
+  <data name=". Choose a version or edit the full content below." xml:space="preserve">
+    <value>Wählen Sie eine Version aus oder bearbeiten Sie den vollständigen Inhalt unten.</value>
+  </data>
+  <data name=". Removing the saved key enables this fallback again." xml:space="preserve">
+    <value>Das Entfernen des gespeicherten Schlüssels ermöglicht diesen Fallback wieder.</value>
+  </data>
+  <data name=". Use Restore." xml:space="preserve">
+    <value>. Verwenden Sie Restore.</value>
+  </data>
+  <data name=".vba files contain only the visible code of the host module." xml:space="preserve">
+    <value>.vba-Dateien enthalten nur den sichtbaren Code des Hostmoduls.</value>
+  </data>
+  <data name=": no edits or macro execution" xml:space="preserve">
+    <value>: keine Bearbeitungen oder Makroausführung</value>
+  </data>
+  <data name="@ Function" xml:space="preserve">
+    <value>@ Function</value>
+  </data>
+  <data name="A checkpoint name of 1 to 160 characters is required." xml:space="preserve">
+    <value>Ein Checkpoint-Name von 1 bis 160 Zeichen ist erforderlich.</value>
+  </data>
+  <data name="A commit message is required." xml:space="preserve">
+    <value>Eine Commit-Nachricht ist erforderlich.</value>
+  </data>
+  <data name="A merge commit message is required." xml:space="preserve">
+    <value>Eine Merge Commit-Nachricht ist erforderlich.</value>
+  </data>
+  <data name="A merge is already in progress." xml:space="preserve">
+    <value>Eine Fusion ist bereits im Gange.</value>
+  </data>
+  <data name="API URL" xml:space="preserve">
+    <value>API URL</value>
+  </data>
+  <data name="API URL for " xml:space="preserve">
+    <value>API URL für </value>
+  </data>
+  <data name="Abort merge" xml:space="preserve">
+    <value>Abbruch-Maßnahme</value>
+  </data>
+  <data name="Account used for subsequent macro fetch, pull and push operations. Does not change global Git configuration." xml:space="preserve">
+    <value>Konto, das für nachfolgende Makro-Abruf-, Pull- und Push-Operationen verwendet wird; die globale Git-Konfiguration wird nicht geändert.</value>
+  </data>
+  <data name="Add #aModule or @aFunction to work on your code." xml:space="preserve">
+    <value>Fügen Sie #aModule oder @aFunction hinzu, um an Ihrem Code zu arbeiten.</value>
+  </data>
+  <data name="Add concise and useful VBA documentation to the code." xml:space="preserve">
+    <value>Fügen Sie dem Code eine prägnante und nützliche VBA-Dokumentation hinzu.</value>
+  </data>
+  <data name="Agent activity" xml:space="preserve">
+    <value>Tätigkeit des Agenten</value>
+  </data>
+  <data name="Agent: edits allowed by the VBE policy" xml:space="preserve">
+    <value>Agent: Bearbeitungen, die durch die VBE-Richtlinie erlaubt sind</value>
+  </data>
+  <data name="Applied" xml:space="preserve">
+    <value>Angewendet</value>
+  </data>
+  <data name="Archive / restore" xml:space="preserve">
+    <value>Archiv/Restauration</value>
+  </data>
+  <data name="Archive the selected conversation or restore it if archived." xml:space="preserve">
+    <value>Archivieren sie die ausgewählte konversation oder stellen sie sie wieder her, wenn sie archiviert sind.</value>
+  </data>
+  <data name="Ask for other actions" xml:space="preserve">
+    <value>Bitten Sie um andere Aktionen</value>
+  </data>
+  <data name="Attach selection" xml:space="preserve">
+    <value>Auswahl anhängen</value>
+  </data>
+  <data name="Attach the code selected in the VBE; attach the current line when nothing is selected." xml:space="preserve">
+    <value>Befestigen Sie den im VBE ausgewählten Code; Befestigen Sie die aktuelle Zeile, wenn nichts ausgewählt ist.</value>
+  </data>
+  <data name="Attach these notes to the next message sent to the selected provider" xml:space="preserve">
+    <value>Fügen Sie diese Notizen an die nächste Nachricht an, die an den ausgewählten Anbieter gesendet wird</value>
+  </data>
+  <data name="Attached document memory" xml:space="preserve">
+    <value>Angefügter Dokumentenspeicher</value>
+  </data>
+  <data name="Attached memory · ×" xml:space="preserve">
+    <value>Befestigter Speicher · ×</value>
+  </data>
+  <data name="Authentication" xml:space="preserve">
+    <value>Authentifizierung</value>
+  </data>
+  <data name="Automatic" xml:space="preserve">
+    <value>Automatisch</value>
+  </data>
+  <data name="Automatic Git selection" xml:space="preserve">
+    <value>Automatische Git-Auswahl</value>
+  </data>
+  <data name="Automatically compile the project after agent edits." xml:space="preserve">
+    <value>Das Projekt nach Änderungen durch den Agenten automatisch kompilieren.</value>
+  </data>
+  <data name="Bedrock Runtime URL" xml:space="preserve">
+    <value>Bedrock Runtime URL</value>
+  </data>
+  <data name="Before import · " xml:space="preserve">
+    <value>Vor der Einfuhr · </value>
+  </data>
+  <data name="Binary resource" xml:space="preserve">
+    <value>Binäre Ressourcen</value>
+  </data>
+  <data name="Binary source or unresolved conflict: " xml:space="preserve">
+    <value>Binäre Quelle oder ungelöster Konflikt: </value>
+  </data>
+  <data name="Block " xml:space="preserve">
+    <value>Block </value>
+  </data>
+  <data name="Branch" xml:space="preserve">
+    <value>Branch</value>
+  </data>
+  <data name="Branch conversation" xml:space="preserve">
+    <value>Zweigstellengespräche</value>
+  </data>
+  <data name="Branch history (context only; read the live code again):&#10;" xml:space="preserve">
+    <value>Branch History (nur Kontext; lesen Sie den Live-Code noch einmal):
+</value>
+  </data>
+  <data name="Branch name to create or track" xml:space="preserve">
+    <value>Verzweigungsname zum Erstellen oder Verfolgen</value>
+  </data>
+  <data name="Branch not linked" xml:space="preserve">
+    <value>Zweigniederlassung nicht verbunden</value>
+  </data>
+  <data name="Branch to synchronize. Pushes are never forced." xml:space="preserve">
+    <value>Verzweigen zum Synchronisieren. Pushes werden nie erzwungen.</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Abbrechen</value>
+  </data>
+  <data name="Change diff" xml:space="preserve">
+    <value>Änderung Diff</value>
+  </data>
+  <data name="Change undone" xml:space="preserve">
+    <value>Änderung rückgängig gemacht</value>
+  </data>
+  <data name="Changes · " xml:space="preserve">
+    <value>Änderungen · </value>
+  </data>
+  <data name="Changes · 0" xml:space="preserve">
+    <value>Änderungen · 0</value>
+  </data>
+  <data name="Chat" xml:space="preserve">
+    <value>Chat</value>
+  </data>
+  <data name="Chat and Plan: no project changes" xml:space="preserve">
+    <value>Chat und Plan: keine Projektänderungen</value>
+  </data>
+  <data name="ChatGPT account" xml:space="preserve">
+    <value>ChatGPT-Konto</value>
+  </data>
+  <data name="Check VBA" xml:space="preserve">
+    <value>VBA prüfen</value>
+  </data>
+  <data name="Checking ChatGPT connection…" xml:space="preserve">
+    <value>ChatGPT-Verbindung prüfen...</value>
+  </data>
+  <data name="Checking ChatGPT…" xml:space="preserve">
+    <value>ChatGPT überprüfen...</value>
+  </data>
+  <data name="Checking GitHub Copilot…" xml:space="preserve">
+    <value>GitHub Copilot überprüfen...</value>
+  </data>
+  <data name="Checkpoint name" xml:space="preserve">
+    <value>Name des Kontrollpunktes</value>
+  </data>
+  <data name="Choose a block to undo while keeping other changes." xml:space="preserve">
+    <value>Wählen Sie einen Block, um ihn rückgängig zu machen, während Sie andere Änderungen beibehalten.</value>
+  </data>
+  <data name="Choose a model offered by the selected provider." xml:space="preserve">
+    <value>Wählen Sie ein Modell aus, das vom ausgewählten Anbieter angeboten wird.</value>
+  </data>
+  <data name="Choose an available model before sending." xml:space="preserve">
+    <value>Wählen Sie vor dem Senden ein verfügbares Modell aus.</value>
+  </data>
+  <data name="Choose ours, theirs or text for a VBA text source." xml:space="preserve">
+    <value>Wählen Sie ours, theirs oder text für a VBA text Quelle.</value>
+  </data>
+  <data name="Choose the AI provider for this conversation." xml:space="preserve">
+    <value>Wählen sie den ki-anbieter für dieses gespräch.</value>
+  </data>
+  <data name="Choose the VBA document associated with this context and its conversations." xml:space="preserve">
+    <value>Wählen Sie das VBA-Dokument aus, das mit diesem Kontext und seinen Gesprächen verbunden ist.</value>
+  </data>
+  <data name="Choose the entire current-branch file for the selected conflict." xml:space="preserve">
+    <value>Wählen Sie die gesamte Current-Branch-Datei für den ausgewählten Konflikt aus.</value>
+  </data>
+  <data name="Choose the entire incoming-branch file for the selected conflict." xml:space="preserve">
+    <value>Wählen Sie die gesamte Incoming-Branch-Datei für den ausgewählten Konflikt aus.</value>
+  </data>
+  <data name="Code changed since the import; automatic restore refused." xml:space="preserve">
+    <value>Code geändert seit dem Import; automatische Wiederherstellung abgelehnt.</value>
+  </data>
+  <data name="Code restored" xml:space="preserve">
+    <value>Wiederhergestellter Code</value>
+  </data>
+  <data name="Codex — ready" xml:space="preserve">
+    <value>Codex — bereit</value>
+  </data>
+  <data name="Codex — working" xml:space="preserve">
+    <value>Codex — Arbeiten</value>
+  </data>
+  <data name="Command · Enter to choose · add your instructions" xml:space="preserve">
+    <value>Befehl · Geben Sie ein, um zu wählen · fügen Sie Ihre Anweisungen hinzu</value>
+  </data>
+  <data name="Commit all" xml:space="preserve">
+    <value>Alles committen</value>
+  </data>
+  <data name="Commit message" xml:space="preserve">
+    <value>Mitteilung über Mittelbindungen</value>
+  </data>
+  <data name="Compare" xml:space="preserve">
+    <value>Vergleichen</value>
+  </data>
+  <data name="Compare live VBA with the last synchronized state without network access." xml:space="preserve">
+    <value>Vergleichen Sie Live-VBA mit dem letzten synchronisierten Zustand ohne Netzwerkzugriff.</value>
+  </data>
+  <data name="Compilation error · see the diagnostic in the chat" xml:space="preserve">
+    <value>Compilation Error · sehen Sie die Diagnose im Chat</value>
+  </data>
+  <data name="Compilation finished: no native diagnostics observed. Macros were not executed." xml:space="preserve">
+    <value>Kompilation beendet: keine native Diagnose beobachtet. Makros wurden nicht ausgeführt.</value>
+  </data>
+  <data name="Compilation not verified" xml:space="preserve">
+    <value>Zusammenstellung nicht verifiziert</value>
+  </data>
+  <data name="Compilation not verified: " xml:space="preserve">
+    <value>Zusammenstellung nicht geprüft: </value>
+  </data>
+  <data name="Compile after changes" xml:space="preserve">
+    <value>Compilieren nach Änderungen</value>
+  </data>
+  <data name="Compile the VBA project and display diagnostics in the chat." xml:space="preserve">
+    <value>Kompilieren Sie das VBA-Projekt und zeigen Sie Diagnosen im Chat an.</value>
+  </data>
+  <data name="Compiling VBA…" xml:space="preserve">
+    <value>Zusammenstellung von VBA...</value>
+  </data>
+  <data name="Complete GitHub sign-in in your browser…" xml:space="preserve">
+    <value>Komplette GitHub-Anmeldung in Ihrem Browser ...</value>
+  </data>
+  <data name="Complete merge" xml:space="preserve">
+    <value>Komplettverschmelzung</value>
+  </data>
+  <data name="Complete or abort the current merge." xml:space="preserve">
+    <value>Vervollständigen oder Abbruch der aktuellen Merge.</value>
+  </data>
+  <data name="Component missing from the manifest." xml:space="preserve">
+    <value>Bestandteil fehlt im Manifest.</value>
+  </data>
+  <data name="Configure providers and the GitHub account" xml:space="preserve">
+    <value>Konfigurieren Sie Anbieter und das GitHub-Konto</value>
+  </data>
+  <data name="Configure the provider, refresh models or change docking mode." xml:space="preserve">
+    <value>Konfigurieren Sie den Anbieter, aktualisieren Sie Modelle oder ändern Sie den Docking-Modus.</value>
+  </data>
+  <data name="Configured models or deployments, one identifier per line" xml:space="preserve">
+    <value>Konfigurierte Modelle oder Bereitstellungen, eine Kennung pro Zeile</value>
+  </data>
+  <data name="Conflict: " xml:space="preserve">
+    <value>Konflikt: </value>
+  </data>
+  <data name="Conflicts" xml:space="preserve">
+    <value>Konflikte</value>
+  </data>
+  <data name="Connect an account to synchronize your VBA sources." xml:space="preserve">
+    <value>Verbinden Sie ein Konto, um Ihre VBA-Quellen zu synchronisieren.</value>
+  </data>
+  <data name="Context exceeds 48,000 characters. Remove some items." xml:space="preserve">
+    <value>Kontext übertrifft 48,000 Zeichen. Entferne einige Elemente.</value>
+  </data>
+  <data name="Context unavailable" xml:space="preserve">
+    <value>Kontext nicht verfügbar</value>
+  </data>
+  <data name="Context: " xml:space="preserve">
+    <value>Kontext: </value>
+  </data>
+  <data name="Conversation exported" xml:space="preserve">
+    <value>Ausgeführtes Gespräch</value>
+  </data>
+  <data name="Conversation title" xml:space="preserve">
+    <value>Bezeichnung des Gesprächs</value>
+  </data>
+  <data name="Conversation: messages, references and dynamic diffs" xml:space="preserve">
+    <value>Konversation: Nachrichten, Referenzen und dynamische Diffs</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Kopieren</value>
+  </data>
+  <data name="Copy code" xml:space="preserve">
+    <value>Kopiercode</value>
+  </data>
+  <data name="Copy the message text to the clipboard." xml:space="preserve">
+    <value>Kopieren Sie den Nachrichtentext in die Zwischenablage.</value>
+  </data>
+  <data name="Copy this code block to the clipboard." xml:space="preserve">
+    <value>Kopieren Sie diesen Codeblock in die Zwischenablage.</value>
+  </data>
+  <data name="Create" xml:space="preserve">
+    <value>Erstellen</value>
+  </data>
+  <data name="Create a commit first." xml:space="preserve">
+    <value>Erstellen Sie zuerst einen Commit.</value>
+  </data>
+  <data name="Create an independent conversation with the history up to this message." xml:space="preserve">
+    <value>Erstellen Sie ein unabhängiges Gespräch mit der Geschichte bis zu dieser Botschaft.</value>
+  </data>
+  <data name="Create checkpoint" xml:space="preserve">
+    <value>Checkpoint erstellen</value>
+  </data>
+  <data name="Create the named branch from the current commit without publishing it." xml:space="preserve">
+    <value>Erstellen Sie den benannten Branch aus dem aktuellen Commit, ohne ihn zu veröffentlichen.</value>
+  </data>
+  <data name="Credentials stay in Git Credential Manager. Sign-in takes effect immediately; Save keeps the chosen account for VBAi. Copilot authentication is configured separately." xml:space="preserve">
+    <value>Anmeldedaten bleiben im Git Credential Manager. Die Anmeldung gilt sofort; Speichern übernimmt das gewählte Konto für VBAi. Die Copilot-Anmeldung wird separat eingerichtet.</value>
+  </data>
+  <data name="Current VBA" xml:space="preserve">
+    <value>Aktueller VBA</value>
+  </data>
+  <data name="Current branch" xml:space="preserve">
+    <value>Aktuelle Zweigstelle</value>
+  </data>
+  <data name="Custom provider name" xml:space="preserve">
+    <value>Name des kundenspezifischen Anbieters</value>
+  </data>
+  <data name="Deployments (one per line)" xml:space="preserve">
+    <value>Einsätze (eine pro Linie)</value>
+  </data>
+  <data name="Diagnose and fix the problem while preserving the expected behavior." xml:space="preserve">
+    <value>Diagnose und beheben Sie das Problem, während Sie das erwartete Verhalten beibehalten.</value>
+  </data>
+  <data name="Discard only the prepared merge. VBA and commits remain intact." xml:space="preserve">
+    <value>Verwerfen Sie nur den vorbereiteten Merger. VBA und Commits bleiben intakt.</value>
+  </data>
+  <data name="Docked / floating window" xml:space="preserve">
+    <value>Angedocktes/schwimmendes Fenster</value>
+  </data>
+  <data name="Docking unavailable: " xml:space="preserve">
+    <value>Docking nicht verfügbar: </value>
+  </data>
+  <data name="Document conversations" xml:space="preserve">
+    <value>Dokumentgespräche</value>
+  </data>
+  <data name="Document memory" xml:space="preserve">
+    <value>Dokumentenspeicher</value>
+  </data>
+  <data name="Document memory saved locally" xml:space="preserve">
+    <value>Lokal gespeicherter Dokumentenspeicher</value>
+  </data>
+  <data name="Document modules do not match. Sheets and host modules must already exist with the same names." xml:space="preserve">
+    <value>Dokumentmodule stimmen nicht überein, Blätter und Hostmodule müssen bereits mit den gleichen Namen vorhanden sein.</value>
+  </data>
+  <data name="Document the code" xml:space="preserve">
+    <value>Dokumentieren Sie den Code</value>
+  </data>
+  <data name="Download and import sources. Refuses unsynchronized local changes and divergent histories." xml:space="preserve">
+    <value>Herunterladen und Importieren von Quellen. Verweigert unsynchronisierte lokale Änderungen und abweichende Historien.</value>
+  </data>
+  <data name="Duplicate component name." xml:space="preserve">
+    <value>Duplicate Component Name.</value>
+  </data>
+  <data name="Empty or invalid code selection." xml:space="preserve">
+    <value>Leere oder ungültige Codeauswahl.</value>
+  </data>
+  <data name="Empty response." xml:space="preserve">
+    <value>Leere Antwort.</value>
+  </data>
+  <data name="Enter a title, then click Rename." xml:space="preserve">
+    <value>Geben Sie einen Titel ein und klicken Sie dann auf Umbenennen.</value>
+  </data>
+  <data name="Enter notes to keep for this document, then save them." xml:space="preserve">
+    <value>Geben Sie Notizen ein, die für dieses Dokument aufbewahrt werden sollen, und speichern Sie sie dann.</value>
+  </data>
+  <data name="Enter the repository's HTTPS GitHub URL without a token or password." xml:space="preserve">
+    <value>Geben Sie die HTTPS GitHub URL des Repositorys ohne Token oder Passwort ein.</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Fehler</value>
+  </data>
+  <data name="Error — you can resume the conversation" xml:space="preserve">
+    <value>Fehler - Sie können das Gespräch fortsetzen</value>
+  </data>
+  <data name="Explain" xml:space="preserve">
+    <value>Erklären</value>
+  </data>
+  <data name="Explain a procedure" xml:space="preserve">
+    <value>Erläutern eines Verfahrens</value>
+  </data>
+  <data name="Explain the code and its dependencies without changing it." xml:space="preserve">
+    <value>Erklären Sie den Code und seine Abhängigkeiten, ohne ihn zu ändern.</value>
+  </data>
+  <data name="Explicit context" xml:space="preserve">
+    <value>Expliziter Kontext</value>
+  </data>
+  <data name="Export Markdown" xml:space="preserve">
+    <value>Ausfuhren Markdown</value>
+  </data>
+  <data name="Export and synchronize the current document's sources with a GitHub repository." xml:space="preserve">
+    <value>Exportieren und Synchronisieren der Quellen des aktuellen Dokuments mit einem GitHub-Repository.</value>
+  </data>
+  <data name="Export sources and create a local commit of all changes. Push publishes them afterwards." xml:space="preserve">
+    <value>Exportieren Sie Quellen und erstellen Sie einen lokalen Commit aller Änderungen. Push veröffentlicht sie anschließend.</value>
+  </data>
+  <data name="Exported identity does not match the manifest: " xml:space="preserve">
+    <value>Exportierte Identität stimmt nicht mit dem Manifest überein: </value>
+  </data>
+  <data name="Fallback: " xml:space="preserve">
+    <value>Fallback: </value>
+  </data>
+  <data name="Fetch the named remote branch without importing its VBA." xml:space="preserve">
+    <value>Fetch den benannten Remote-Zweig ohne Importieren seiner VBA.</value>
+  </data>
+  <data name="File/directory conflict: choose the parent directory first." xml:space="preserve">
+    <value>Datei/Verzeichnis-Konflikt: Wählen Sie zuerst das übergeordnete Verzeichnis aus.</value>
+  </data>
+  <data name="First link: commit then push to publish, or pull to import the repository with a backup first." xml:space="preserve">
+    <value>Erster Link: Commit dann Push zum Veröffentlichen oder Pull zum Importieren des Repositorys mit einem Backup zuerst.</value>
+  </data>
+  <data name="Fix" xml:space="preserve">
+    <value>Korrigieren</value>
+  </data>
+  <data name="Fix an error" xml:space="preserve">
+    <value>Fehler beheben</value>
+  </data>
+  <data name="French" xml:space="preserve">
+    <value>Französisch</value>
+  </data>
+  <data name="Full resolution content for the selected VBA file" xml:space="preserve">
+    <value>Vollauflösung für die ausgewählte VBA-Datei</value>
+  </data>
+  <data name="Git Credential Manager did not finish the operation. Check its installation or sign in to GitHub again." xml:space="preserve">
+    <value>Git Credential Manager hat den Vorgang nicht abgeschlossen. Überprüfen Sie die Installation oder melden Sie sich erneut bei GitHub an.</value>
+  </data>
+  <data name="Git changes" xml:space="preserve">
+    <value>Gitänderungen</value>
+  </data>
+  <data name="Git did not respond within 120 seconds. Check the connection and GitHub authentication." xml:space="preserve">
+    <value>Git antwortete nicht innerhalb von 120 Sekunden. Überprüfen Sie die Verbindung und die GitHub-Authentifizierung.</value>
+  </data>
+  <data name="Git for Windows is required. Install it with Git Credential Manager, then reopen settings." xml:space="preserve">
+    <value>Git für Windows ist erforderlich. Installieren Sie es mit Git Credential Manager und öffnen Sie dann die Einstellungen erneut.</value>
+  </data>
+  <data name="GitHub account" xml:space="preserve">
+    <value>GitHub-Konto</value>
+  </data>
+  <data name="GitHub account for VBA repositories" xml:space="preserve">
+    <value>GitHub-Konto für VBA-Repositories</value>
+  </data>
+  <data name="GitHub repository" xml:space="preserve">
+    <value>GitHub-Repository</value>
+  </data>
+  <data name="GitHub sign-in timed out. Start sign-in again from settings." xml:space="preserve">
+    <value>GitHub-Anmeldezeit abgelaufen. Starten Sie die Anmeldung erneut aus den Einstellungen.</value>
+  </data>
+  <data name="GitHub · VBA sources" xml:space="preserve">
+    <value>GitHub · VBA Quellen</value>
+  </data>
+  <data name="GitHub · repositories" xml:space="preserve">
+    <value>GitHub · Repositories</value>
+  </data>
+  <data name="GitHub · synchronize VBA…" xml:space="preserve">
+    <value>GitHub · VBA synchronisieren...</value>
+  </data>
+  <data name="Go to the latest message and follow new responses." xml:space="preserve">
+    <value>Gehen sie zur neuesten nachricht und folgen sie neuen antworten.</value>
+  </data>
+  <data name="HTTPS URL, for example https://github.com/organization/macros.git. Do not paste a token." xml:space="preserve">
+    <value>HTTPS-URL, z. B. https://github.com/organization/macros.git.</value>
+  </data>
+  <data name="Histories diverge. Reconcile the branch before synchronizing; no forced push is performed." xml:space="preserve">
+    <value>Historien divergieren. Den Zweig vor der Synchronisation versöhnen; es wird kein erzwungener Drücker ausgeführt.</value>
+  </data>
+  <data name="History" xml:space="preserve">
+    <value>Verlauf</value>
+  </data>
+  <data name="History not saved: " xml:space="preserve">
+    <value>Geschichte nicht gespeichert: </value>
+  </data>
+  <data name="History unavailable: " xml:space="preserve">
+    <value>Geschichte nicht verfügbar: </value>
+  </data>
+  <data name="Import interrupted: restore VBA before continuing. The backup is preserved in the cache." xml:space="preserve">
+    <value>Import unterbrochen: VBA wiederherstellen, bevor Sie fortfahren. Das Backup bleibt im Cache erhalten.</value>
+  </data>
+  <data name="Import the remote state with Pull first." xml:space="preserve">
+    <value>Importieren Sie zuerst den Remote-Zustand mit Pull.</value>
+  </data>
+  <data name="Import the selected branch with a checkpoint first. Uncommitted changes are refused." xml:space="preserve">
+    <value>Importieren Sie zuerst den ausgewählten Zweig mit einem Checkpoint; unverbindliche Änderungen werden abgelehnt.</value>
+  </data>
+  <data name="Improve the code" xml:space="preserve">
+    <value>Verbessern Sie den Code</value>
+  </data>
+  <data name="Improve the structure" xml:space="preserve">
+    <value>Verbessere die Struktur</value>
+  </data>
+  <data name="Include archived conversations in the list." xml:space="preserve">
+    <value>Fügen Sie archivierte Gespräche in die Liste ein.</value>
+  </data>
+  <data name="Include saved notes in the next message sent to the provider." xml:space="preserve">
+    <value>Fügen Sie gespeicherte Notizen in die nächste Nachricht ein, die an den Anbieter gesendet wird.</value>
+  </data>
+  <data name="Incoming branch" xml:space="preserve">
+    <value>Ankommende Zweigstelle</value>
+  </data>
+  <data name="Incorrect filename casing." xml:space="preserve">
+    <value>Falsches Filename-Cocket.</value>
+  </data>
+  <data name="Inspect and refresh references, selected code and notes to send." xml:space="preserve">
+    <value>Überprüfen und aktualisieren Sie Referenzen, ausgewählten Code und Notizen zu senden.</value>
+  </data>
+  <data name="Invalid Git merge result." xml:space="preserve">
+    <value>Invalid Git Merge Ergebnis.</value>
+  </data>
+  <data name="Invalid GitHub account." xml:space="preserve">
+    <value>Ungültiges GitHub-Konto.</value>
+  </data>
+  <data name="Keep incoming" xml:space="preserve">
+    <value>Bleiben Sie ankommend</value>
+  </data>
+  <data name="Keep local" xml:space="preserve">
+    <value>Halten Sie lokal</value>
+  </data>
+  <data name="Last commit / import" xml:space="preserve">
+    <value>Letzter Commit / Import</value>
+  </data>
+  <data name="Leave the key blank to keep the current one. Encryption is tied to your Windows account. " xml:space="preserve">
+    <value>Lassen Sie den Schlüssel leer, um den aktuellen beizubehalten. Verschlüsselung ist an Ihr Windows-Konto gebunden. </value>
+  </data>
+  <data name="Leave the key blank to keep the current one. Secrets are encrypted for this Windows account." xml:space="preserve">
+    <value>Lassen Sie den Schlüssel leer, um den aktuellen zu behalten. Geheimnisse sind für dieses Windows-Konto verschlüsselt.</value>
+  </data>
+  <data name="Link an existing GitHub repository to get started." xml:space="preserve">
+    <value>Verknüpfen Sie ein bestehendes GitHub-Repository, um zu starten.</value>
+  </data>
+  <data name="Link repository" xml:space="preserve">
+    <value>Repository verknüpfen</value>
+  </data>
+  <data name="Link this document to GitHub through the interface first. The agent does not choose a repository for you." xml:space="preserve">
+    <value>Verknüpfen Sie dieses Dokument zuerst mit GitHub über die Schnittstelle. Der Agent wählt kein Repository für Sie aus.</value>
+  </data>
+  <data name="List GitHub repository branches in the name selector without importing VBA." xml:space="preserve">
+    <value>Liste GitHub-Repository-Zweige im Namensselektor auf, ohne VBA zu importieren.</value>
+  </data>
+  <data name="Loading provider models…" xml:space="preserve">
+    <value>Loading Provider Modelle...</value>
+  </data>
+  <data name="Local branch · remote state unknown (Fetch)" xml:space="preserve">
+    <value>Lokale Zweigstelle · Remote State unbekanntFetch)</value>
+  </data>
+  <data name="Local changes exist. Commit them, or create a checkpoint and restore a committed state before switching branches or merging." xml:space="preserve">
+    <value>Lokale Änderungen existieren. Begehen Sie sie, oder erstellen Sie einen Checkpoint und stellen Sie einen engagierten Zustand wieder her, bevor Sie Zweige wechseln oder fusionieren.</value>
+  </data>
+  <data name="Local commit created. Use Push to publish it." xml:space="preserve">
+    <value>Lokales Commit erstellt. Verwenden Sie Push, um es zu veröffentlichen.</value>
+  </data>
+  <data name="Local document notes" xml:space="preserve">
+    <value>Lokale Dokumentnotizen</value>
+  </data>
+  <data name="Looking for saved GitHub accounts…" xml:space="preserve">
+    <value>Auf der Suche nach gespeicherten GitHub-Konten...</value>
+  </data>
+  <data name="Memory not saved: " xml:space="preserve">
+    <value>Speicher nicht gespeichert: </value>
+  </data>
+  <data name="Memory requires an available SQLite history store." xml:space="preserve">
+    <value>Speicher erfordert einen verfügbaren SQLite History Store.</value>
+  </data>
+  <data name="Memory · " xml:space="preserve">
+    <value>Speicher · </value>
+  </data>
+  <data name="Merge" xml:space="preserve">
+    <value>Zusammenführen</value>
+  </data>
+  <data name="Merge prepared: resolve conflicts, then click Complete merge." xml:space="preserve">
+    <value>Merge prepared: Lösen Sie Konflikte und klicken Sie dann auf Complete Merge.</value>
+  </data>
+  <data name="Message with spell checking" xml:space="preserve">
+    <value>Nachricht mit Rechtschreibprüfung</value>
+  </data>
+  <data name="Missing VBA reference: fix it before synchronizing." xml:space="preserve">
+    <value>Fehlende VBA-Referenz: Beheben Sie sie vor der Synchronisierung.</value>
+  </data>
+  <data name="Mode for this request: " xml:space="preserve">
+    <value>Modus für diesen Antrag: </value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>Modell</value>
+  </data>
+  <data name="Model list unavailable: " xml:space="preserve">
+    <value>Modellliste nicht verfügbar: </value>
+  </data>
+  <data name="Models (one per line)" xml:space="preserve">
+    <value>Modelle (eins pro Linie)</value>
+  </data>
+  <data name="Models / profiles (one per line)" xml:space="preserve">
+    <value>Modelle / Profile (eins pro Linie)</value>
+  </data>
+  <data name="New OpenAI API key" xml:space="preserve">
+    <value>Neuer OpenAI API-Schlüssel</value>
+  </data>
+  <data name="New conversation" xml:space="preserve">
+    <value>Neue Unterhaltung</value>
+  </data>
+  <data name="New conversation · Ctrl+N" xml:space="preserve">
+    <value>Neues Gespräch · Ctrl+N</value>
+  </data>
+  <data name="New key for " xml:space="preserve">
+    <value>Neuer Schlüssel für </value>
+  </data>
+  <data name="No CodexVBA manifest in this repository." xml:space="preserve">
+    <value>Kein CodexVBA-Manifest in diesem Repository.</value>
+  </data>
+  <data name="No VBE host connected." xml:space="preserve">
+    <value>Kein VBE-Host angeschlossen.</value>
+  </data>
+  <data name="No commit to publish." xml:space="preserve">
+    <value>Keine Verpflichtung zur Veröffentlichung.</value>
+  </data>
+  <data name="No connected project." xml:space="preserve">
+    <value>Kein vernetztes Projekt.</value>
+  </data>
+  <data name="No local commit · use Fetch to inspect the remote repository" xml:space="preserve">
+    <value>Kein lokaler Commit · Verwenden Sie Fetch, um das Remote-Repository zu inspizieren</value>
+  </data>
+  <data name="No local commit." xml:space="preserve">
+    <value>Kein lokaler Commit.</value>
+  </data>
+  <data name="No matching target" xml:space="preserve">
+    <value>Kein Matching-Ziel</value>
+  </data>
+  <data name="No models available for this provider." xml:space="preserve">
+    <value>Für diesen Anbieter sind keine Modelle verfügbar.</value>
+  </data>
+  <data name="No saved GitHub account. Click Sign in." xml:space="preserve">
+    <value>Kein gespeichertes GitHub-Konto. Klicken Sie auf Anmelden.</value>
+  </data>
+  <data name="No text response." xml:space="preserve">
+    <value>Nein text Antwort.</value>
+  </data>
+  <data name="Ollama URL (optional)" xml:space="preserve">
+    <value>Ollama URL (optional)</value>
+  </data>
+  <data name="Open " xml:space="preserve">
+    <value>Offen </value>
+  </data>
+  <data name="Open VBAi — Your AI agent for VBA" xml:space="preserve">
+    <value>Open VBAi - Ihr KI-Agent für VBA</value>
+  </data>
+  <data name="Open a VBA project to start a conversation." xml:space="preserve">
+    <value>Öffnen Sie ein VBA-Projekt, um eine Unterhaltung zu starten.</value>
+  </data>
+  <data name="Open in the VBE" xml:space="preserve">
+    <value>Offen im VBE</value>
+  </data>
+  <data name="Open the modified module in the VBE." xml:space="preserve">
+    <value>Öffnen Sie das modifizierte Modul im VBE.</value>
+  </data>
+  <data name="Open this reference in the VBE." xml:space="preserve">
+    <value>Öffnen Sie diese Referenz im VBE.</value>
+  </data>
+  <data name="OpenAI URL (optional)" xml:space="preserve">
+    <value>OpenAI URL (optional)</value>
+  </data>
+  <data name="Opens GitHub authentication in your browser. No token to copy into VBAi." xml:space="preserve">
+    <value>Öffnen Sie die GitHub-Authentifizierung in Ihrem Browser. Kein Token zum Kopieren in VBAi.</value>
+  </data>
+  <data name="Operation complete: " xml:space="preserve">
+    <value>Betrieb abgeschlossen: </value>
+  </data>
+  <data name="Operation in progress…" xml:space="preserve">
+    <value>Operation in Arbeit...</value>
+  </data>
+  <data name="Optional Ollama URL" xml:space="preserve">
+    <value>Optionale Ollama URL</value>
+  </data>
+  <data name="Optional OpenAI URL" xml:space="preserve">
+    <value>Optionale OpenAI URL</value>
+  </data>
+  <data name="Optional key for this local server. " xml:space="preserve">
+    <value>Optionaler Schlüssel für diesen lokalen Server. </value>
+  </data>
+  <data name="Outgoing context · inspect and refresh" xml:space="preserve">
+    <value>Ausgehender Kontext · inspizieren und aktualisieren</value>
+  </data>
+  <data name="Partially undone" xml:space="preserve">
+    <value>Teilweise Rücknahme</value>
+  </data>
+  <data name="Path not found in conflicts." xml:space="preserve">
+    <value>Pfad nicht in Konflikten gefunden.</value>
+  </data>
+  <data name="Pin / unpin" xml:space="preserve">
+    <value>Pin/unpin</value>
+  </data>
+  <data name="Pin the conversation to the top of the list or unpin it." xml:space="preserve">
+    <value>Pin die konversation an den kopf der liste oder unpin es.</value>
+  </data>
+  <data name="Prepare VBA tests" xml:space="preserve">
+    <value>VBA-Tests vorbereiten</value>
+  </data>
+  <data name="Prepare a concrete plan with the affected modules and checks without changing the project." xml:space="preserve">
+    <value>Bereiten Sie einen konkreten Plan mit den betroffenen Modulen und Prüfungen vor, ohne das Projekt zu ändern.</value>
+  </data>
+  <data name="Prepare a fix" xml:space="preserve">
+    <value>Bereiten Sie einen Fix vor</value>
+  </data>
+  <data name="Prepare a merge from the selected branch into the current branch." xml:space="preserve">
+    <value>Bereiten Sie eine Zusammenführung von dem ausgewählten Zweig in den aktuellen Zweig vor.</value>
+  </data>
+  <data name="Prepare the steps" xml:space="preserve">
+    <value>Vorbereitung der Schritte</value>
+  </data>
+  <data name="Preview limited to 2,000 lines" xml:space="preserve">
+    <value>Preview beschränkt auf 2,000 Linien</value>
+  </data>
+  <data name="Propose and create isolated VBA tests. Do not execute them without an explicit request; distinguish written tests from executed tests." xml:space="preserve">
+    <value>Vorschlagen und erstellen Sie isolierte VBA-Tests. Führen Sie sie nicht ohne ausdrückliche Anforderung aus; unterscheiden Sie schriftliche Tests von ausgeführten Tests.</value>
+  </data>
+  <data name="Provider" xml:space="preserve">
+    <value>Anbieter</value>
+  </data>
+  <data name="Provider name" xml:space="preserve">
+    <value>Name des Anbieters</value>
+  </data>
+  <data name="Publish local commits on the chosen branch. Does not publish uncommitted changes." xml:space="preserve">
+    <value>Veröffentlichen Sie lokale Commits in der ausgewählten Niederlassung und veröffentlichen Sie keine unverbindlichen Änderungen.</value>
+  </data>
+  <data name="Pull and import" xml:space="preserve">
+    <value>Pull und importieren</value>
+  </data>
+  <data name="Pull and import complete. Check and save the document." xml:space="preserve">
+    <value>Pull und importieren komplett. Überprüfen und speichern Sie das Dokument.</value>
+  </data>
+  <data name="Push complete." xml:space="preserve">
+    <value>Push vollständig.</value>
+  </data>
+  <data name="Read-only" xml:space="preserve">
+    <value>Schreibgeschützt</value>
+  </data>
+  <data name="Reads locally saved accounts; does not check repository permissions yet." xml:space="preserve">
+    <value>Lies lokal gespeicherte Konten; prüft die Repository-Berechtigungen noch nicht.</value>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>Bereit</value>
+  </data>
+  <data name="Reasoning" xml:space="preserve">
+    <value>Überlegungen</value>
+  </data>
+  <data name="Reasoning effort" xml:space="preserve">
+    <value>Denkaufwand</value>
+  </data>
+  <data name="Reasoning · summary" xml:space="preserve">
+    <value>Begründung · Zusammenfassung</value>
+  </data>
+  <data name="Refactor" xml:space="preserve">
+    <value>Refaktorieren</value>
+  </data>
+  <data name="Refactor the code without changing its public behavior." xml:space="preserve">
+    <value>Refactoring den Code, ohne sein öffentliches Verhalten zu ändern.</value>
+  </data>
+  <data name="Reference a Sub, Function or Property" xml:space="preserve">
+    <value>Bezugsnummer a Sub, Function oder Property</value>
+  </data>
+  <data name="Reference a project or module" xml:space="preserve">
+    <value>Verweis auf ein Projekt oder Modul</value>
+  </data>
+  <data name="Refresh accounts" xml:space="preserve">
+    <value>Auffrischungskonten</value>
+  </data>
+  <data name="Refresh models" xml:space="preserve">
+    <value>Modelle aktualisieren</value>
+  </data>
+  <data name="Refresh remote commits and counts without changing VBA." xml:space="preserve">
+    <value>Refresh Remote Commits und zählt, ohne VBA zu ändern.</value>
+  </data>
+  <data name="Remote branches" xml:space="preserve">
+    <value>Ferne Zweigstellen</value>
+  </data>
+  <data name="Remove notes from the next message" xml:space="preserve">
+    <value>Notizen aus der nächsten Nachricht entfernen</value>
+  </data>
+  <data name="Remove saved API key" xml:space="preserve">
+    <value>Speicherte API-Schlüssel entfernen</value>
+  </data>
+  <data name="Remove this reference from the context" xml:space="preserve">
+    <value>Diesen Verweis aus dem Kontext entfernen</value>
+  </data>
+  <data name="Remove this selection" xml:space="preserve">
+    <value>Entfernen Sie diese Auswahl</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>Name des Namens</value>
+  </data>
+  <data name="Replace the entire VBA text file with the text edited above." xml:space="preserve">
+    <value>Ersetzen Sie das gesamte VBA text Datei mit dem text oben editiert.</value>
+  </data>
+  <data name="Resolve all conflicts before completing the merge." xml:space="preserve">
+    <value>Lösen Sie alle Konflikte, bevor Sie den Merger abschließen.</value>
+  </data>
+  <data name="Response interrupted. Changes already applied can still be undone in the chat." xml:space="preserve">
+    <value>Antwort unterbrochen. Bereits vorgenommene Änderungen können im Chat noch rückgängig gemacht werden.</value>
+  </data>
+  <data name="Restore VBA" xml:space="preserve">
+    <value>VBA wiederherstellen</value>
+  </data>
+  <data name="Restore selection" xml:space="preserve">
+    <value>Auswahl wiederherstellen</value>
+  </data>
+  <data name="Restore the backup made before the last import if VBA has not changed since. Does not rewrite GitHub." xml:space="preserve">
+    <value>Wiederherstellen des Backups, das vor dem letzten Import erstellt wurde, wenn VBA hat sich seither nicht geändert. GitHub.</value>
+  </data>
+  <data name="Restore the code before this change after checking for conflicts." xml:space="preserve">
+    <value>Stellen Sie den Code vor dieser Änderung nach der Überprüfung auf Konflikte wieder her.</value>
+  </data>
+  <data name="Restore the interrupted import before continuing." xml:space="preserve">
+    <value>Stellen Sie den unterbrochenen Import wieder her, bevor Sie fortfahren.</value>
+  </data>
+  <data name="Restore the selected checkpoint after backing up the current state. Does not rewrite GitHub." xml:space="preserve">
+    <value>Stellen Sie den ausgewählten Checkpoint nach dem Sichern des aktuellen Zustands wieder her, schreibt GitHub nicht um.</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Speichern</value>
+  </data>
+  <data name="Save all current VBA in a private checkpoint without committing to the published branch." xml:space="preserve">
+    <value>Speichern Sie alle aktuellen VBA in einem privaten Checkpoint, ohne sich an den veröffentlichten Branch zu binden.</value>
+  </data>
+  <data name="Save locally" xml:space="preserve">
+    <value>Lokal sparen</value>
+  </data>
+  <data name="Save notes on this computer without sending them to the provider." xml:space="preserve">
+    <value>Speichern Sie Notizen auf diesem Computer, ohne sie an den Anbieter zu senden.</value>
+  </data>
+  <data name="Save the conversation as a Markdown file." xml:space="preserve">
+    <value>Speichern Sie die Konversation als Markdown-Datei.</value>
+  </data>
+  <data name="Save the document before linking it to GitHub." xml:space="preserve">
+    <value>Speichern Sie das Dokument, bevor Sie es mit GitHub verknüpfen.</value>
+  </data>
+  <data name="Save the link for this document on this computer. Does not publish code." xml:space="preserve">
+    <value>Speichert den Link für dieses Dokument auf diesem Computer. Veröffentlicht keinen Code.</value>
+  </data>
+  <data name="Save the macro before opening GitHub." xml:space="preserve">
+    <value>Speichern Sie das Makro, bevor Sie GitHub öffnen.</value>
+  </data>
+  <data name="Save the new title of the selected conversation." xml:space="preserve">
+    <value>Speichern Sie den neuen Titel der ausgewählten Konversation.</value>
+  </data>
+  <data name="Search conversations" xml:space="preserve">
+    <value>Suchgespräche</value>
+  </data>
+  <data name="Search titles, messages or code" xml:space="preserve">
+    <value>Titel, Nachrichten oder Code suchen</value>
+  </data>
+  <data name="Searching the project…" xml:space="preserve">
+    <value>Die Suche nach dem Projekt...</value>
+  </data>
+  <data name="Select a conversation to resume its history and draft." xml:space="preserve">
+    <value>Wählen Sie ein Gespräch, um seine Geschichte und seinen Entwurf wieder aufzunehmen.</value>
+  </data>
+  <data name="Select a saved VBA project to open GitHub." xml:space="preserve">
+    <value>Wählen Sie ein gespeichertes VBA-Projekt aus, um GitHub zu öffnen.</value>
+  </data>
+  <data name="Select code in the VBE." xml:space="preserve">
+    <value>Wählen Sie Code im VBE.</value>
+  </data>
+  <data name="Selection attached to the next message" xml:space="preserve">
+    <value>Auswahl angehängt an die nächste Nachricht</value>
+  </data>
+  <data name="Selection: " xml:space="preserve">
+    <value>Auswahl: </value>
+  </data>
+  <data name="Send the message and its context to the agent." xml:space="preserve">
+    <value>Senden Sie die Nachricht und ihren Kontext an den Agenten.</value>
+  </data>
+  <data name="Send ↑" xml:space="preserve">
+    <value>Senden ↑</value>
+  </data>
+  <data name="Set the model's reasoning effort, when supported." xml:space="preserve">
+    <value>Legen Sie den Argumentationsaufwand des Modells fest, wenn es unterstützt wird.</value>
+  </data>
+  <data name="Settings…" xml:space="preserve">
+    <value>Einstellungen…</value>
+  </data>
+  <data name="Show archived conversations" xml:space="preserve">
+    <value>Archivierte Gespräche anzeigen</value>
+  </data>
+  <data name="Show or hide conversations for the selected document." xml:space="preserve">
+    <value>Zeigen oder verstecken Sie Gespräche für das ausgewählte Dokument.</value>
+  </data>
+  <data name="Show or hide local notes for this document." xml:space="preserve">
+    <value>Zeigen oder verstecken Sie lokale Notizen für dieses Dokument.</value>
+  </data>
+  <data name="Sign in to ChatGPT" xml:space="preserve">
+    <value>Melden Sie sich bei ChatGPT an</value>
+  </data>
+  <data name="Sign in to GitHub" xml:space="preserve">
+    <value>Melden Sie sich bei GitHub an</value>
+  </data>
+  <data name="Sign-in opened. Click Refresh after authenticating." xml:space="preserve">
+    <value>Anmelden geöffnet. Klicken Sie nach der Authentifizierung auf Aktualisieren.</value>
+  </data>
+  <data name="Stop the current response. Changes already applied can still be undone in the chat." xml:space="preserve">
+    <value>Beenden Sie die aktuelle Antwort. Änderungen, die bereits angewendet wurden, können im Chat noch rückgängig gemacht werden.</value>
+  </data>
+  <data name="Stop ■" xml:space="preserve">
+    <value>Stopp ■</value>
+  </data>
+  <data name="Stopped" xml:space="preserve">
+    <value>Angehalten</value>
+  </data>
+  <data name="Stopping…" xml:space="preserve">
+    <value>Stoppen...</value>
+  </data>
+  <data name="Switch" xml:space="preserve">
+    <value>Wechseln</value>
+  </data>
+  <data name="Synchronize the active VBA project and manage its branches and checkpoints" xml:space="preserve">
+    <value>Synchronisieren Sie das aktive VBA-Projekt und verwalten Sie seine Filialen und Checkpoints</value>
+  </data>
+  <data name="The # context exceeds 48,000 characters." xml:space="preserve">
+    <value>Der #Kontext übertrifft 48,000 Zeichen.</value>
+  </data>
+  <data name="The Git/VBA state changed. Read git_status again before making changes." xml:space="preserve">
+    <value>Der Git/VBA-Zustand hat sich geändert. Lesen Sie git_status vor weiteren Änderungen erneut.</value>
+  </data>
+  <data name="The URL must use HTTPS, or HTTP on localhost." xml:space="preserve">
+    <value>Die URL muss HTTPS oder HTTP auf localhost verwenden.</value>
+  </data>
+  <data name="The VBA document has changed. Reopen the chat to choose the current document." xml:space="preserve">
+    <value>Das VBA-Dokument hat sich geändert. Öffnen Sie den Chat erneut, um das aktuelle Dokument auszuwählen.</value>
+  </data>
+  <data name="The VBA project must be unlocked and in design mode." xml:space="preserve">
+    <value>Das VBA-Projekt muss freigeschaltet und im Design-Modus sein.</value>
+  </data>
+  <data name="The VBA repository exceeds 32 MB." xml:space="preserve">
+    <value>Das VBA-Repository überschreitet 32 MB.</value>
+  </data>
+  <data name="The VBE did not preserve the imported sources exactly. Use Restore or check the project." xml:space="preserve">
+    <value>Der VBE bewahrte die importierten Quellen nicht genau. Verwenden Sie Restore oder überprüfen Sie das Projekt.</value>
+  </data>
+  <data name="The branch changed since the merge started." xml:space="preserve">
+    <value>Der Branch hat sich seit Beginn des Mergers geändert.</value>
+  </data>
+  <data name="The linked document changed. Reopen GitHub integration." xml:space="preserve">
+    <value>Das verlinkte Dokument änderte sich. GitHub-Integration wieder öffnen.</value>
+  </data>
+  <data name="The previous response was interrupted. Read the live code again before making further edits." xml:space="preserve">
+    <value>Die vorherige Antwort wurde unterbrochen. Lesen Sie den Live-Code erneut, bevor Sie weitere Änderungen vornehmen.</value>
+  </data>
+  <data name="The project for this conversation is closed or ambiguous." xml:space="preserve">
+    <value>Das projekt für dieses gespräch ist geschlossen oder mehrdeutig.</value>
+  </data>
+  <data name="The response did not complete. Actions may already have been applied; read the live code again before continuing." xml:space="preserve">
+    <value>Die Antwort war noch nicht abgeschlossen, Aktionen wurden möglicherweise bereits durchgeführt; lesen Sie den Live-Code erneut, bevor Sie fortfahren.</value>
+  </data>
+  <data name="The selected account is no longer saved. Sign in again or choose another account." xml:space="preserve">
+    <value>Das ausgewählte Konto wird nicht mehr gespeichert. Melden Sie sich erneut an oder wählen Sie ein anderes Konto aus.</value>
+  </data>
+  <data name="The selection belongs to another document. Choose its conversation." xml:space="preserve">
+    <value>Die Auswahl gehört zu einem anderen Dokument. Wählen Sie seine Konversation.</value>
+  </data>
+  <data name="The target contains no VBA sources." xml:space="preserve">
+    <value>Das Target enthält keine VBA Quellen.</value>
+  </data>
+  <data name="The vba directory contains a link, subdirectory or unsupported file." xml:space="preserve">
+    <value>Das vba-Verzeichnis enthält einen Link, ein Unterverzeichnis oder eine nicht unterstützte Datei.</value>
+  </data>
+  <data name="The window's COM control was not created." xml:space="preserve">
+    <value>Die COM-Steuerung des Fensters wurde nicht erstellt.</value>
+  </data>
+  <data name="This cache is already linked to another repository. Restore the previous URL." xml:space="preserve">
+    <value>Dieser Cache ist bereits mit einem anderen Repository verknüpft.</value>
+  </data>
+  <data name="This file is not listed in conflicts." xml:space="preserve">
+    <value>Diese Datei ist nicht in Konflikten aufgeführt.</value>
+  </data>
+  <data name="This local branch already exists." xml:space="preserve">
+    <value>Diese lokale Niederlassung existiert bereits.</value>
+  </data>
+  <data name="This provider is not implemented yet." xml:space="preserve">
+    <value>Dieser Anbieter ist noch nicht implementiert.</value>
+  </data>
+  <data name="Tool" xml:space="preserve">
+    <value>Werkzeug</value>
+  </data>
+  <data name="Track remote" xml:space="preserve">
+    <value>Gleisferne</value>
+  </data>
+  <data name="Turn" xml:space="preserve">
+    <value>Durchgang</value>
+  </data>
+  <data name="Unable to copy: " xml:space="preserve">
+    <value>Kopieren kann nicht: </value>
+  </data>
+  <data name="Unable to export: " xml:space="preserve">
+    <value>Nicht exportierbar: </value>
+  </data>
+  <data name="Unable to merge: check common ancestors and Git 2.38 or later." xml:space="preserve">
+    <value>Nicht in der Lage zu verschmelzen: Überprüfen Sie gemeinsame Vorfahren und Git 2.38 oder später.</value>
+  </data>
+  <data name="Unable to navigate: " xml:space="preserve">
+    <value>Unfähig zu navigieren: </value>
+  </data>
+  <data name="Unable to start Git." xml:space="preserve">
+    <value>Git kann nicht gestartet werden.</value>
+  </data>
+  <data name="Unable to stop: " xml:space="preserve">
+    <value>Unfähig zum Anhalten: </value>
+  </data>
+  <data name="Unable to undo: " xml:space="preserve">
+    <value>Kann nicht rückgängig gemacht werden: </value>
+  </data>
+  <data name="Understand the code" xml:space="preserve">
+    <value>Verstehen Sie den Code</value>
+  </data>
+  <data name="Undo a block…" xml:space="preserve">
+    <value>Block rückgängig machen…</value>
+  </data>
+  <data name="Undo change" xml:space="preserve">
+    <value>Änderung rückgängig machen</value>
+  </data>
+  <data name="Undo changes from this turn after checking for conflicts." xml:space="preserve">
+    <value>Rückgängige Änderungen von dieser Runde nach der Überprüfung auf Konflikte.</value>
+  </data>
+  <data name="Undo complete. Other changes in the module were preserved." xml:space="preserve">
+    <value>Andere Änderungen im Modul wurden beibehalten.</value>
+  </data>
+  <data name="Undo entire turn" xml:space="preserve">
+    <value>Gesamten Durchgang rückgängig machen</value>
+  </data>
+  <data name="Undo turn" xml:space="preserve">
+    <value>Durchgang rückgängig machen</value>
+  </data>
+  <data name="Unexpected Git Credential Manager response. Check its version." xml:space="preserve">
+    <value>Unerwartete Antwort des Git Credential Manager. Überprüfen Sie die Version.</value>
+  </data>
+  <data name="Unexpected VBE response." xml:space="preserve">
+    <value>Unerwartete Antwort des VBE.</value>
+  </data>
+  <data name="Unexpected identity after import: " xml:space="preserve">
+    <value>Unerwartete Identität nach dem Import: </value>
+  </data>
+  <data name="Unknown command. Use the / suggestions." xml:space="preserve">
+    <value>Unbekannter Befehl. Verwenden Sie die / Vorschläge.</value>
+  </data>
+  <data name="Unknown local branch. Create it or fetch it from the remote repository." xml:space="preserve">
+    <value>Unbekannter lokaler Zweig. Erstellen oder Abrufen aus dem entfernten Repository.</value>
+  </data>
+  <data name="Use a Microsoft Entra token (renew after expiration)" xml:space="preserve">
+    <value>Verwenden Sie ein Microsoft Entra-Token (erneuert nach Ablauf)</value>
+  </data>
+  <data name="Use this text" xml:space="preserve">
+    <value>Verwenden Sie dies text</value>
+  </data>
+  <data name="VBA backup before import" xml:space="preserve">
+    <value>VBA Backup vor dem Import</value>
+  </data>
+  <data name="VBA changed during synchronization. No import performed." xml:space="preserve">
+    <value>VBA änderte sich während der Synchronisation.</value>
+  </data>
+  <data name="VBA changed during the operation." xml:space="preserve">
+    <value>VBA änderte sich während der Operation.</value>
+  </data>
+  <data name="VBA changes become source files in the repository. No folder next to the macro.&#13;&#10;The first pull replaces VBA with a restorable backup.&#13;&#10;Sign in through Git Credential Manager; commit identity is configured in Git." xml:space="preserve">
+    <value>VBA-Änderungen werden als Quelldateien im Repository gespeichert. Kein Ordner neben der Makrodatei.
+Der erste Pull ersetzt VBA nach Erstellung einer wiederherstellbaren Sicherung.
+Anmeldung über Git Credential Manager; die Commit-Identität wird in Git festgelegt.</value>
+  </data>
+  <data name="VBA contains uncommitted local changes." xml:space="preserve">
+    <value>VBA enthält unverbindliche lokale Änderungen.</value>
+  </data>
+  <data name="VBA matches the last synchronized state." xml:space="preserve">
+    <value>VBA entspricht dem letzten synchronisierten Zustand.</value>
+  </data>
+  <data name="VBA project for this conversation: " xml:space="preserve">
+    <value>VBA-Projekt für dieses Gespräch: </value>
+  </data>
+  <data name="VBA project · document history" xml:space="preserve">
+    <value>VBA-Projekt · Dokumentenhistorie</value>
+  </data>
+  <data name="VBA references differ. Align them in Tools &gt; References before importing." xml:space="preserve">
+    <value>VBA-Referenzen unterscheiden sich. Richten Sie sie in Tools &gt; Referenzen aus, bevor Sie importieren.</value>
+  </data>
+  <data name="VBA restored. Check and save the document." xml:space="preserve">
+    <value>VBA wiederhergestellt. Überprüfen und speichern Sie das Dokument.</value>
+  </data>
+  <data name="VBA sources are incomplete, unexpected or too large (32 MB maximum)." xml:space="preserve">
+    <value>VBA-Quellen sind unvollständig, unerwartet oder zu groß (maximal 32 MB).</value>
+  </data>
+  <data name="VBA state after import" xml:space="preserve">
+    <value>VBA-Zustand nach Import</value>
+  </data>
+  <data name="VBA verification complete" xml:space="preserve">
+    <value>VBA-Prüfung vollständig</value>
+  </data>
+  <data name="VBAi assistant" xml:space="preserve">
+    <value>VBAi-Assistentin</value>
+  </data>
+  <data name="VBAi settings" xml:space="preserve">
+    <value>VBAi Einstellungen</value>
+  </data>
+  <data name="VBAi settings…" xml:space="preserve">
+    <value>VBAi-Einstellungen…</value>
+  </data>
+  <data name="VBAi — Settings" xml:space="preserve">
+    <value>VBAi — Einstellungen</value>
+  </data>
+  <data name="VBE edit permissions" xml:space="preserve">
+    <value>VBE-Berechtigungen</value>
+  </data>
+  <data name="VBE edits" xml:space="preserve">
+    <value>VBE editiert</value>
+  </data>
+  <data name="Validate all files, create a merge commit, then import VBA with a backup." xml:space="preserve">
+    <value>Validieren Sie alle Dateien, erstellen Sie einen Merge Commit und importieren Sie dann VBA mit einem Backup.</value>
+  </data>
+  <data name="Verification" xml:space="preserve">
+    <value>Überprüfung</value>
+  </data>
+  <data name="View code changes and their undo actions." xml:space="preserve">
+    <value>Zeigen Sie Codeänderungen und deren Rückgängig-Aktionen an.</value>
+  </data>
+  <data name="Wait for the response to finish before preparing an action." xml:space="preserve">
+    <value>Warten Sie, bis die Antwort abgeschlossen ist, bevor Sie eine Aktion vorbereiten.</value>
+  </data>
+  <data name="Wait for the response to finish or stop the agent before changing settings." xml:space="preserve">
+    <value>Warten Sie, bis die Antwort den Agenten beendet oder gestoppt hat, bevor Sie die Einstellungen ändern.</value>
+  </data>
+  <data name="What would you like to build?" xml:space="preserve">
+    <value>Was würdest du gerne bauen?</value>
+  </data>
+  <data name="Working mode" xml:space="preserve">
+    <value>Arbeitsmodus</value>
+  </data>
+  <data name="You" xml:space="preserve">
+    <value>Sie</value>
+  </data>
+  <data name="Your message…" xml:space="preserve">
+    <value>Deine Botschaft...</value>
+  </data>
+  <data name="Your request; Enter to send, Shift+Enter for a new line" xml:space="preserve">
+    <value>Ihre Anfrage; Geben Sie zum Senden ein, Shift + Enter für eine neue Zeile</value>
+  </data>
+  <data name="[Binary resource or directory: choose local or incoming]" xml:space="preserve">
+    <value>[Binäre Ressource oder Verzeichnis: Wählen Sie lokal oder eingehend]</value>
+  </data>
+  <data name="[Non-UTF-8 content: choose local or incoming]" xml:space="preserve">
+    <value>[Nicht-UTF-8-Inhalte: Wählen Sie lokal oder eingehend]</value>
+  </data>
+  <data name="[Preview unavailable above 64 KiB: choose local or incoming]" xml:space="preserve">
+    <value>[Vorschau nicht verfügbar über 64 KiB: Wählen Sie lokal oder ankommend]</value>
+  </data>
+  <data name="unsaved document" xml:space="preserve">
+    <value>nicht gespeichertes Dokument</value>
+  </data>
+  <data name="vba must be a Git directory." xml:space="preserve">
+    <value>vba muss eine Git Verzeichnis.</value>
+  </data>
+  <data name="↑ ↓ Browse · Enter Insert · Esc Close" xml:space="preserve">
+    <value>↑ ↓ Browse · Enter Insert · Esc Close</value>
+  </data>
+  <data name="↓ Latest message" xml:space="preserve">
+    <value>↓ Letzte Nachricht</value>
+  </data>
+  <data name="Incomplete or filtered Bedrock response: " xml:space="preserve">
+    <value>Unvollständig oder gefiltert Bedrock Antwort: </value>
+  </data>
+  <data name="Response too large." xml:space="preserve">
+    <value>Antwort zu groß.</value>
+  </data>
+  <data name="The provider interrupted the response with an error." xml:space="preserve">
+    <value>Der Anbieter unterbrach die Antwort mit einem Fehler.</value>
+  </data>
+  <data name="Response interrupted, truncated or filtered; no partial tool call was executed." xml:space="preserve">
+    <value>Antwort unterbrochen, abgeschnitten oder gefiltert; es wurde kein Teilwerkzeugaufruf ausgeführt.</value>
+  </data>
+  <data name="Claude reached its response limit. Narrow the scope of your request." xml:space="preserve">
+    <value>Claude hat seine Antwortgrenze erreicht und den Umfang Ihrer Anfrage eingeschränkt.</value>
+  </data>
+  <data name="Codex verification timed out." xml:space="preserve">
+    <value>Die Codex-Verifizierung wurde zeitversetzt.</value>
+  </data>
+  <data name="Not signed in to ChatGPT" xml:space="preserve">
+    <value>Nicht bei ChatGPT angemeldet</value>
+  </data>
+  <data name="Connected to ChatGPT" xml:space="preserve">
+    <value>Verbunden mit ChatGPT</value>
+  </data>
+  <data name="Codex is connected, but not through ChatGPT: " xml:space="preserve">
+    <value>Codex ist verbunden, aber nicht über ChatGPT: </value>
+  </data>
+  <data name="Codex did not provide its model list." xml:space="preserve">
+    <value>Codex hat seine Modellliste nicht zur Verfügung gestellt.</value>
+  </data>
+  <data name="Codex app-server stopped." xml:space="preserve">
+    <value>Codex App-Server gestoppt.</value>
+  </data>
+  <data name="Unable to start codex app-server." xml:space="preserve">
+    <value>Der Codex App-Server kann nicht gestartet werden.</value>
+  </data>
+  <data name="Codex: initializing the local server" xml:space="preserve">
+    <value>Codex: Initialisierung des lokalen Servers</value>
+  </data>
+  <data name="Codex: checking the ChatGPT account" xml:space="preserve">
+    <value>Codex: Überprüfung des ChatGPT-Kontos</value>
+  </data>
+  <data name="Codex must be signed in through ChatGPT. No API key is used here." xml:space="preserve">
+    <value>Der Codex muss über ChatGPT angemeldet werden, hier wird kein API-Schlüssel verwendet.</value>
+  </data>
+  <data name="Codex: opening the VBE conversation" xml:space="preserve">
+    <value>Codex: Eröffnung des VBE-Gesprächs</value>
+  </data>
+  <data name="Codex connected through ChatGPT" xml:space="preserve">
+    <value>Codex verbunden durch ChatGPT</value>
+  </data>
+  <data name="Codex finished without a text response." xml:space="preserve">
+    <value>Codex ohne eine text Antwort.</value>
+  </data>
+  <data name=" · complete" xml:space="preserve">
+    <value> · vollständig</value>
+  </data>
+  <data name=" · failed" xml:space="preserve">
+    <value> · misslungen</value>
+  </data>
+  <data name=" models. Authentication is managed by the GitHub CLI." xml:space="preserve">
+    <value> Die Authentifizierung wird vom GitHub CLI verwaltet.</value>
+  </data>
+  <data name="Unable to start Copilot." xml:space="preserve">
+    <value>Copilot kann nicht gestartet werden.</value>
+  </data>
+  <data name="Install GitHub Copilot CLI and set CODEXVBE_COPILOT_CLI to its executable if needed." xml:space="preserve">
+    <value>Installieren Sie GitHub Copilot CLI und setzen Sie CODEXVBE_COPILOT_CLI bei Bedarf auf die ausführbare Datei.</value>
+  </data>
+  <data name="Incompatible Copilot protocol version (versions 2 and 3 supported)." xml:space="preserve">
+    <value>Inkompatible Copilot-Protokollversion (Versionen 2 und 3 werden unterstützt).</value>
+  </data>
+  <data name="Copilot VBA tools are not connected." xml:space="preserve">
+    <value>Copilot VBA-Tools sind nicht angeschlossen.</value>
+  </data>
+  <data name="Copilot did not finish its response within the time limit." xml:space="preserve">
+    <value>Copilot beendete seine Antwort nicht fristgerecht.</value>
+  </data>
+  <data name="Copilot is not responding to " xml:space="preserve">
+    <value>Copilot reagiert nicht auf </value>
+  </data>
+  <data name=". Check the CLI connection." xml:space="preserve">
+    <value>Überprüfen Sie die CLI-Verbindung.</value>
+  </data>
+  <data name="Copilot stopped." xml:space="preserve">
+    <value>Copilot gestoppt.</value>
+  </data>
+  <data name="Invalid Copilot header." xml:space="preserve">
+    <value>Kopfzeile des ungültigen Copiloten.</value>
+  </data>
+  <data name="Invalid Copilot message size." xml:space="preserve">
+    <value>Größe der ungültigen Copilot-Nachricht.</value>
+  </data>
+  <data name="Copilot refused the request. Check sign-in, subscription and model in the CLI." xml:space="preserve">
+    <value>Copilot lehnte die Anfrage ab. Überprüfen Sie die Anmeldung, das Abonnement und das Modell in der CLI.</value>
+  </data>
+  <data name="The Copilot session failed. Check its status in the CLI." xml:space="preserve">
+    <value>Die Copilot-Sitzung ist fehlgeschlagen. Überprüfen Sie ihren Status in der CLI.</value>
+  </data>
+  <data name="Custom (OpenAI)" xml:space="preserve">
+    <value>Custom (OpenAI)</value>
+  </data>
+  <data name=" (coming soon)" xml:space="preserve">
+    <value> (kommt bald)</value>
+  </data>
+  <data name=" then restart the host application." xml:space="preserve">
+    <value> Dann starten Sie die Host-Anwendung neu.</value>
+  </data>
+  <data name="Select a model in the conversation." xml:space="preserve">
+    <value>Wählen Sie ein Modell in der Konversation.</value>
+  </data>
+  <data name=" in settings." xml:space="preserve">
+    <value> in den Einstellungen.</value>
+  </data>
+  <data name="Configure the API key for " xml:space="preserve">
+    <value>Konfigurieren Sie den API Key für </value>
+  </data>
+  <data name=" in VBAi settings." xml:space="preserve">
+    <value> in VBAi-Einstellungen.</value>
+  </data>
+  <data name="Model list unavailable for this provider." xml:space="preserve">
+    <value>Modellliste für diesen Anbieter nicht verfügbar.</value>
+  </data>
+  <data name="Enter the " xml:space="preserve">
+    <value>Geben Sie die </value>
+  </data>
+  <data name="Azure deployments" xml:space="preserve">
+    <value>Azure Deployments</value>
+  </data>
+  <data name="model identifiers" xml:space="preserve">
+    <value>Modellidentifikatoren</value>
+  </data>
+  <data name=" in provider settings." xml:space="preserve">
+    <value> in den Provider-Einstellungen.</value>
+  </data>
+  <data name=" to load models." xml:space="preserve">
+    <value> Modelle zu laden.</value>
+  </data>
+  <data name="Check credentials, URL and provider limits." xml:space="preserve">
+    <value>Überprüfen Sie Anmeldeinformationen, URL und Provider-Limits.</value>
+  </data>
+  <data name="The provider did not return a model list." xml:space="preserve">
+    <value>Der Anbieter hat keine Modellliste zurückgegeben.</value>
+  </data>
+  <data name="Invalid Claude model list pagination." xml:space="preserve">
+    <value>Invalid Claude Modell Liste Paginierung.</value>
+  </data>
+  <data name="The model list exceeds the pagination limit." xml:space="preserve">
+    <value>Die Modellliste überschreitet die Paginierungsgrenze.</value>
+  </data>
+  <data name=": check the key, model, URL and provider limits." xml:space="preserve">
+    <value>: Überprüfen Sie die Schlüssel-, Modell-, URL- und Provider-Grenzen.</value>
+  </data>
+  <data name="Response truncated or filtered; tool calls were not executed." xml:space="preserve">
+    <value>Antwort gekürzt oder gefiltert; Toolaufrufe wurden nicht ausgeführt.</value>
+  </data>
+  <data name="Select a module or procedure in this project to open its code." xml:space="preserve">
+    <value>Wählen Sie ein Modul oder eine Prozedur in diesem Projekt aus, um den Code zu öffnen.</value>
+  </data>
+  <data name=" changed since selection. Remove the token and select it again with #." xml:space="preserve">
+    <value> Entfernen Sie das Token und wählen Sie es erneut mit # aus.</value>
+  </data>
+  <data name="  (restored)" xml:space="preserve">
+    <value>  (Wiederherstellung)</value>
+  </data>
+  <data name="Invalid replacement range." xml:space="preserve">
+    <value>Ungültiger Ersatzbereich.</value>
+  </data>
+  <data name="No code difference." xml:space="preserve">
+    <value>Keine Codedifferenz.</value>
+  </data>
+  <data name="Configure a model for " xml:space="preserve">
+    <value>Konfigurieren Sie ein Modell für </value>
+  </data>
+  <data name="Diagnose and fix" xml:space="preserve">
+    <value>Diagnose und Fix</value>
+  </data>
+  <data name="Unable to open SQLite history." xml:space="preserve">
+    <value>Es ist nicht möglich, SQLite History zu öffnen.</value>
+  </data>
+  <data name="Configure " xml:space="preserve">
+    <value>Konfigurieren </value>
+  </data>
+  <data name="GitHub: " xml:space="preserve">
+    <value>GitHub: </value>
+  </data>
+  <data name="Git is limited to the document of this conversation." xml:space="preserve">
+    <value>Git beschränkt sich auf das Dokument dieses Gesprächs.</value>
+  </data>
+  <data name="The VBE policy does not allow this Git operation." xml:space="preserve">
+    <value>Die VBE-Politik erlaubt diese Git-Operation nicht.</value>
+  </data>
+  <data name="VBAi — Git operation" xml:space="preserve">
+    <value>VBAi — Betrieb von Git</value>
+  </data>
+  <data name="Git operation declined by the user." xml:space="preserve">
+    <value>Die Git-Operation wurde vom Benutzer abgelehnt.</value>
+  </data>
+  <data name="Mode " xml:space="preserve">
+    <value>Modus </value>
+  </data>
+  <data name=" does not allow this editing or execution tool: " xml:space="preserve">
+    <value> erlaubt dieses Bearbeitungs- oder Ausführungs-Tool nicht: </value>
+  </data>
+  <data name="VBE edits are disabled (Read-only mode)." xml:space="preserve">
+    <value>VBE-Bearbeitungen sind deaktiviert (Read-only-Modus).</value>
+  </data>
+  <data name="Unknown VBE edit policy; action refused." xml:space="preserve">
+    <value>Unbekannte VBE-Bearbeitungspolitik; Aktion abgelehnt.</value>
+  </data>
+  <data name="The module changed since the model read it." xml:space="preserve">
+    <value>Das Modul hat sich geändert, seit das Modell es gelesen hat.</value>
+  </data>
+  <data name="These changes have already been undone." xml:space="preserve">
+    <value>Diese Veränderungen sind bereits rückgängig gemacht worden.</value>
+  </data>
+  <data name="Undo stopped after " xml:space="preserve">
+    <value>Undo stoppte nach </value>
+  </data>
+  <data name="Allow reading and sending to " xml:space="preserve">
+    <value>Lesen und Senden an </value>
+  </data>
+  <data name=" up to the first 64 KiB of this file?&#13;&#10;&#13;&#10;" xml:space="preserve">
+    <value> Bis zu den ersten 64 KiB dieser Datei?
+
+
+
+</value>
+  </data>
+  <data name="The user declined sending the file." xml:space="preserve">
+    <value>Der Benutzer lehnte das Senden der Datei ab.</value>
+  </data>
+  <data name="The file appears to be binary; text reading refused." xml:space="preserve">
+    <value>Die Datei scheint binär zu sein; text Lektüre verweigert.</value>
+  </data>
+  <data name="The user did not provide this exact path." xml:space="preserve">
+    <value>Der Benutzer hat diesen genauen Pfad nicht angegeben.</value>
+  </data>
+  <data name="The provided file could not be found." xml:space="preserve">
+    <value>Die bereitgestellte Datei konnte nicht gefunden werden.</value>
+  </data>
+  <data name="the active LLM provider" xml:space="preserve">
+    <value>der aktive LLM-Anbieter</value>
+  </data>
+  <data name="VBAi — allow sending a file" xml:space="preserve">
+    <value>VBAi - Erlauben Sie das Senden einer Datei</value>
+  </data>
+  <data name="VBAi — approve edit" xml:space="preserve">
+    <value>VBAi — genehmigte Bearbeitung</value>
+  </data>
+  <data name="Allow" xml:space="preserve">
+    <value>Zulassen</value>
+  </data>
+  <data name="Deny" xml:space="preserve">
+    <value>Ablehnen</value>
+  </data>
+  <data name="Refresh status" xml:space="preserve">
+    <value>Status aktualisieren</value>
+  </data>
+  <data name="Project" xml:space="preserve">
+    <value>Projekt</value>
+  </data>
+  <data name="Branches" xml:space="preserve">
+    <value>Branches</value>
+  </data>
+  <data name="Checkpoints" xml:space="preserve">
+    <value>Checkpoints</value>
+  </data>
+  <data name="Plan" xml:space="preserve">
+    <value>Plan</value>
+  </data>
+  <data name="Agent" xml:space="preserve">
+    <value>Agent</value>
+  </data>
+  <data name="Conversation" xml:space="preserve">
+    <value>Unterhaltung</value>
+  </data>
+  <data name="Assistant" xml:space="preserve">
+    <value>Assistent</value>
+  </data>
+  <data name="# Context" xml:space="preserve">
+    <value># Kontext</value>
+  </data>
+  <data name="☰ Chats" xml:space="preserve">
+    <value>☰ Chats</value>
+  </data>
+  <data name="A checkpoint protects this import." xml:space="preserve">
+    <value>Ein Checkpoint schützt diesen Import.</value>
+  </data>
+  <data name="After" xml:space="preserve">
+    <value>nach</value>
+  </data>
+  <data name="Appearance" xml:space="preserve">
+    <value>Aussehen</value>
+  </data>
+  <data name="Before" xml:space="preserve">
+    <value>Vorherig</value>
+  </data>
+  <data name="Check repository permissions or wait for the GitHub rate limit to reset." xml:space="preserve">
+    <value>Überprüfen Sie die Repository-Berechtigungen oder warten Sie, bis das GitHub-Ratenlimit zurückgesetzt wurde.</value>
+  </data>
+  <data name="Check the branch, title and repository name; a pull request may already exist." xml:space="preserve">
+    <value>Überprüfen Sie den Branch, Titel und Repository-Namen; eine Pull-Anforderung kann bereits vorhanden sein.</value>
+  </data>
+  <data name="Check the connection, account and Git state, then retry." xml:space="preserve">
+    <value>Überprüfen Sie die Verbindung, das Konto und den Git-Status und versuchen Sie es dann erneut.</value>
+  </data>
+  <data name="Check the repository name and account access." xml:space="preserve">
+    <value>Überprüfen Sie den Repository-Namen und den Kontozugriff.</value>
+  </data>
+  <data name="Checks" xml:space="preserve">
+    <value>Kontrollen</value>
+  </data>
+  <data name="Code" xml:space="preserve">
+    <value>Code</value>
+  </data>
+  <data name="Comments" xml:space="preserve">
+    <value>Anmerkungen</value>
+  </data>
+  <data name="Commit checked modules and their form resources. Push publishes them afterwards." xml:space="preserve">
+    <value>Überprüfte Module und deren Formularressourcen festlegen. Push veröffentlicht sie anschließend.</value>
+  </data>
+  <data name="Commit not found." xml:space="preserve">
+    <value>Commit nicht gefunden.</value>
+  </data>
+  <data name="Commit selected" xml:space="preserve">
+    <value>Commit selected</value>
+  </data>
+  <data name="Commit status" xml:space="preserve">
+    <value>Status der Mittelbindung</value>
+  </data>
+  <data name="Common ancestor" xml:space="preserve">
+    <value>gemeinsamer Vorfahr</value>
+  </data>
+  <data name="Compare returns to live VBA." xml:space="preserve">
+    <value>Vergleichen Sie die Rückkehr zu Live VBA.</value>
+  </data>
+  <data name="Compare revisions" xml:space="preserve">
+    <value>Revisionen vergleichen</value>
+  </data>
+  <data name="Connecting to GitHub…" xml:space="preserve">
+    <value>Verbindung zu GitHub...</value>
+  </data>
+  <data name="Create pull request" xml:space="preserve">
+    <value>Pull Request erstellen</value>
+  </data>
+  <data name="Create repository" xml:space="preserve">
+    <value>Repository erstellen</value>
+  </data>
+  <data name="Dark" xml:space="preserve">
+    <value>Dunkel</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>Einzelheiten</value>
+  </data>
+  <data name="Draft" xml:space="preserve">
+    <value>Entwurf</value>
+  </data>
+  <data name="Enter a title and a different target branch." xml:space="preserve">
+    <value>Geben Sie einen Titel und einen anderen Zielzweig ein.</value>
+  </data>
+  <data name="Files" xml:space="preserve">
+    <value>Akten</value>
+  </data>
+  <data name="Find" xml:space="preserve">
+    <value>Finde</value>
+  </data>
+  <data name="Fold context" xml:space="preserve">
+    <value>Faltenkontext</value>
+  </data>
+  <data name="Form resources included" xml:space="preserve">
+    <value>Inklusive Formularressourcen</value>
+  </data>
+  <data name="GitHub is unavailable. Try again later." xml:space="preserve">
+    <value>GitHub ist nicht verfügbar. Versuchen Sie es später noch einmal.</value>
+  </data>
+  <data name="Import summary" xml:space="preserve">
+    <value>Einfuhrzusammenfassung</value>
+  </data>
+  <data name="Invalid pull request draft." xml:space="preserve">
+    <value>Ungültiger Pull Request Draft.</value>
+  </data>
+  <data name="Invalid repository name." xml:space="preserve">
+    <value>Name des ungültigen Repository.</value>
+  </data>
+  <data name="Light" xml:space="preserve">
+    <value>Licht</value>
+  </data>
+  <data name="Load earlier messages" xml:space="preserve">
+    <value>Frühere Nachrichten laden</value>
+  </data>
+  <data name="Load prepared draft" xml:space="preserve">
+    <value>Lastvorbereiteter Entwurf</value>
+  </data>
+  <data name="Load pull requests" xml:space="preserve">
+    <value>Lastabzugsanfragen</value>
+  </data>
+  <data name="Load repositories" xml:space="preserve">
+    <value>Ladespeicher</value>
+  </data>
+  <data name="Merged" xml:space="preserve">
+    <value>Zusammenführung</value>
+  </data>
+  <data name="New pull request" xml:space="preserve">
+    <value>Neuer Pull Request</value>
+  </data>
+  <data name="New repository name" xml:space="preserve">
+    <value>Neuer Repository-Name</value>
+  </data>
+  <data name="Next change" xml:space="preserve">
+    <value>Nächste Änderung</value>
+  </data>
+  <data name="No prepared draft for this branch." xml:space="preserve">
+    <value>Kein vorbereiteter entwurf für diese branche.</value>
+  </data>
+  <data name="Only HTTP and HTTPS links can be opened." xml:space="preserve">
+    <value>Es können nur HTTP- und HTTPS-Links geöffnet werden.</value>
+  </data>
+  <data name="Open on GitHub" xml:space="preserve">
+    <value>Öffnen auf GitHub</value>
+  </data>
+  <data name="Operation cancelled." xml:space="preserve">
+    <value>Operation annulliert.</value>
+  </data>
+  <data name="Operation complete." xml:space="preserve">
+    <value>Betrieb abgeschlossen.</value>
+  </data>
+  <data name="Personal account" xml:space="preserve">
+    <value>Persönliches Konto</value>
+  </data>
+  <data name="Preview import" xml:space="preserve">
+    <value>Vorabeinfuhr</value>
+  </data>
+  <data name="Preview only. Pull imports these changes with a checkpoint." xml:space="preserve">
+    <value>Pull importiert diese Änderungen mit einem Checkpoint.</value>
+  </data>
+  <data name="Previous change" xml:space="preserve">
+    <value>Vorherige Änderung</value>
+  </data>
+  <data name="Private" xml:space="preserve">
+    <value>Privat</value>
+  </data>
+  <data name="Pull request description" xml:space="preserve">
+    <value>Beschreibung der Pull-Anfrage</value>
+  </data>
+  <data name="Pull request title" xml:space="preserve">
+    <value>Pull Request Titel</value>
+  </data>
+  <data name="Pull requests" xml:space="preserve">
+    <value>Pull-Anträge</value>
+  </data>
+  <data name="References differ: align them in the VBE before importing." xml:space="preserve">
+    <value>Referenzen unterscheiden sich: Richten Sie sie vor dem Import im VBE aus.</value>
+  </data>
+  <data name="Repositories" xml:space="preserve">
+    <value>Datenspeicher</value>
+  </data>
+  <data name="Repository owner" xml:space="preserve">
+    <value>Inhaber des Datenspeichers</value>
+  </data>
+  <data name="Repository selected. Click Link repository to connect this document." xml:space="preserve">
+    <value>Ausgewähltes Repository. Klicken Sie auf Link-Repository, um dieses Dokument zu verbinden.</value>
+  </data>
+  <data name="Required VBA references" xml:space="preserve">
+    <value>Erforderliche VBA-Referenzen</value>
+  </data>
+  <data name="Restore only the selected module from the reviewed revision, with a checkpoint first." xml:space="preserve">
+    <value>Stellen Sie nur das ausgewählte Modul aus der überprüften Revision wieder her, zuerst mit einem Checkpoint.</value>
+  </data>
+  <data name="Restore selected module" xml:space="preserve">
+    <value>Ausgewähltes Modul wiederherstellen</value>
+  </data>
+  <data name="Reviewing checkpoint" xml:space="preserve">
+    <value>Überprüfung des Checkpoints</value>
+  </data>
+  <data name="Reviewing revision" xml:space="preserve">
+    <value>Überprüfung der Überarbeitung</value>
+  </data>
+  <data name="Search code" xml:space="preserve">
+    <value>Suchcode</value>
+  </data>
+  <data name="Search repositories" xml:space="preserve">
+    <value>Suchrepositorien</value>
+  </data>
+  <data name="Select a commit from history." xml:space="preserve">
+    <value>Wählen Sie einen Commit aus der Geschichte.</value>
+  </data>
+  <data name="Select a revision in History or Checkpoints, then a module to restore." xml:space="preserve">
+    <value>Wählen Sie eine Revision in History oder Checkpoints aus, dann ein Modul zum Wiederherstellen.</value>
+  </data>
+  <data name="Select at least one module or the references." xml:space="preserve">
+    <value>Wählen Sie mindestens ein Modul oder die Referenzen aus.</value>
+  </data>
+  <data name="Select one commit for details, or two commits to compare their VBA sources." xml:space="preserve">
+    <value>Wählen Sie einen Commit für Details oder zwei Commits aus, um ihre VBA-Quellen zu vergleichen.</value>
+  </data>
+  <data name="Show three context lines around each change." xml:space="preserve">
+    <value>Zeigen Sie drei Kontextzeilen um jede Änderung herum.</value>
+  </data>
+  <data name="Sign in to GitHub again in Settings." xml:space="preserve">
+    <value>Melden Sie sich erneut bei GitHub in den Einstellungen an.</value>
+  </data>
+  <data name="Source branch" xml:space="preserve">
+    <value>Quelle Zweigstelle</value>
+  </data>
+  <data name="System" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="Target branch" xml:space="preserve">
+    <value>Zielzweig</value>
+  </data>
+  <data name="This document is already linked. Reopen GitHub to choose another repository." xml:space="preserve">
+    <value>Dieses Dokument ist bereits verlinkt. Öffnen Sie GitHub erneut, um ein anderes Repository auszuwählen.</value>
+  </data>
+  <data name="Unable to reach GitHub. Check your connection, then retry." xml:space="preserve">
+    <value>GitHub kann nicht erreicht werden. Überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.</value>
+  </data>
+  <data name="Unified" xml:space="preserve">
+    <value>Unified</value>
+  </data>
+  <data name="Unknown VBA module." xml:space="preserve">
+    <value>Unbekanntes VBA Modul.</value>
+  </data>
+  <data name="Use repository" xml:space="preserve">
+    <value>Nutzungs-Repository</value>
+  </data>
+  <data name="VBA references" xml:space="preserve">
+    <value>VBA-Referenzen</value>
+  </data>
+  <data name="GitHub sign-in completed. " xml:space="preserve">
+    <value>GitHub-Anmeldung abgeschlossen. </value>
+  </data>
+</root>

@@ -1514,4 +1514,271 @@ Sign in through Git Credential Manager; commit identity is configured in Git.</v
   <data name="Project" xml:space="preserve">
     <value>Project</value>
   </data>
+  <data name="Branches" xml:space="preserve">
+    <value>Branches</value>
+  </data>
+  <data name="Checkpoints" xml:space="preserve">
+    <value>Checkpoints</value>
+  </data>
+  <data name="Plan" xml:space="preserve">
+    <value>Plan</value>
+  </data>
+  <data name="Agent" xml:space="preserve">
+    <value>Agent</value>
+  </data>
+  <data name="Conversation" xml:space="preserve">
+    <value>Conversation</value>
+  </data>
+  <data name="Assistant" xml:space="preserve">
+    <value>Assistant</value>
+  </data>
+  <data name="# Context" xml:space="preserve">
+    <value># Context</value>
+  </data>
+  <data name="☰ Chats" xml:space="preserve">
+    <value>☰ Chats</value>
+  </data>
+  <data name="A checkpoint protects this import." xml:space="preserve">
+    <value>A checkpoint protects this import.</value>
+  </data>
+  <data name="After" xml:space="preserve">
+    <value>After</value>
+  </data>
+  <data name="Appearance" xml:space="preserve">
+    <value>Appearance</value>
+  </data>
+  <data name="Before" xml:space="preserve">
+    <value>Before</value>
+  </data>
+  <data name="Check repository permissions or wait for the GitHub rate limit to reset." xml:space="preserve">
+    <value>Check repository permissions or wait for the GitHub rate limit to reset.</value>
+  </data>
+  <data name="Check the branch, title and repository name; a pull request may already exist." xml:space="preserve">
+    <value>Check the branch, title and repository name; a pull request may already exist.</value>
+  </data>
+  <data name="Check the connection, account and Git state, then retry." xml:space="preserve">
+    <value>Check the connection, account and Git state, then retry.</value>
+  </data>
+  <data name="Check the repository name and account access." xml:space="preserve">
+    <value>Check the repository name and account access.</value>
+  </data>
+  <data name="Checks" xml:space="preserve">
+    <value>Checks</value>
+  </data>
+  <data name="Code" xml:space="preserve">
+    <value>Code</value>
+  </data>
+  <data name="Comments" xml:space="preserve">
+    <value>Comments</value>
+  </data>
+  <data name="Commit checked modules and their form resources. Push publishes them afterwards." xml:space="preserve">
+    <value>Commit checked modules and their form resources. Push publishes them afterwards.</value>
+  </data>
+  <data name="Commit not found." xml:space="preserve">
+    <value>Commit not found.</value>
+  </data>
+  <data name="Commit selected" xml:space="preserve">
+    <value>Commit selected</value>
+  </data>
+  <data name="Commit status" xml:space="preserve">
+    <value>Commit status</value>
+  </data>
+  <data name="Common ancestor" xml:space="preserve">
+    <value>Common ancestor</value>
+  </data>
+  <data name="Compare returns to live VBA." xml:space="preserve">
+    <value>Compare returns to live VBA.</value>
+  </data>
+  <data name="Compare revisions" xml:space="preserve">
+    <value>Compare revisions</value>
+  </data>
+  <data name="Connecting to GitHub…" xml:space="preserve">
+    <value>Connecting to GitHub…</value>
+  </data>
+  <data name="Create pull request" xml:space="preserve">
+    <value>Create pull request</value>
+  </data>
+  <data name="Create repository" xml:space="preserve">
+    <value>Create repository</value>
+  </data>
+  <data name="Dark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>Details</value>
+  </data>
+  <data name="Draft" xml:space="preserve">
+    <value>Draft</value>
+  </data>
+  <data name="Enter a title and a different target branch." xml:space="preserve">
+    <value>Enter a title and a different target branch.</value>
+  </data>
+  <data name="Files" xml:space="preserve">
+    <value>Files</value>
+  </data>
+  <data name="Find" xml:space="preserve">
+    <value>Find</value>
+  </data>
+  <data name="Fold context" xml:space="preserve">
+    <value>Fold context</value>
+  </data>
+  <data name="Form resources included" xml:space="preserve">
+    <value>Form resources included</value>
+  </data>
+  <data name="GitHub is unavailable. Try again later." xml:space="preserve">
+    <value>GitHub is unavailable. Try again later.</value>
+  </data>
+  <data name="Import summary" xml:space="preserve">
+    <value>Import summary</value>
+  </data>
+  <data name="Invalid pull request draft." xml:space="preserve">
+    <value>Invalid pull request draft.</value>
+  </data>
+  <data name="Invalid repository name." xml:space="preserve">
+    <value>Invalid repository name.</value>
+  </data>
+  <data name="Light" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="Load earlier messages" xml:space="preserve">
+    <value>Load earlier messages</value>
+  </data>
+  <data name="Load prepared draft" xml:space="preserve">
+    <value>Load prepared draft</value>
+  </data>
+  <data name="Load pull requests" xml:space="preserve">
+    <value>Load pull requests</value>
+  </data>
+  <data name="Load repositories" xml:space="preserve">
+    <value>Load repositories</value>
+  </data>
+  <data name="Merged" xml:space="preserve">
+    <value>Merged</value>
+  </data>
+  <data name="New pull request" xml:space="preserve">
+    <value>New pull request</value>
+  </data>
+  <data name="New repository name" xml:space="preserve">
+    <value>New repository name</value>
+  </data>
+  <data name="Next change" xml:space="preserve">
+    <value>Next change</value>
+  </data>
+  <data name="No prepared draft for this branch." xml:space="preserve">
+    <value>No prepared draft for this branch.</value>
+  </data>
+  <data name="Only HTTP and HTTPS links can be opened." xml:space="preserve">
+    <value>Only HTTP and HTTPS links can be opened.</value>
+  </data>
+  <data name="Open on GitHub" xml:space="preserve">
+    <value>Open on GitHub</value>
+  </data>
+  <data name="Operation cancelled." xml:space="preserve">
+    <value>Operation cancelled.</value>
+  </data>
+  <data name="Operation complete." xml:space="preserve">
+    <value>Operation complete.</value>
+  </data>
+  <data name="Personal account" xml:space="preserve">
+    <value>Personal account</value>
+  </data>
+  <data name="Preview import" xml:space="preserve">
+    <value>Preview import</value>
+  </data>
+  <data name="Preview only. Pull imports these changes with a checkpoint." xml:space="preserve">
+    <value>Preview only. Pull imports these changes with a checkpoint.</value>
+  </data>
+  <data name="Previous change" xml:space="preserve">
+    <value>Previous change</value>
+  </data>
+  <data name="Private" xml:space="preserve">
+    <value>Private</value>
+  </data>
+  <data name="Pull request description" xml:space="preserve">
+    <value>Pull request description</value>
+  </data>
+  <data name="Pull request title" xml:space="preserve">
+    <value>Pull request title</value>
+  </data>
+  <data name="Pull requests" xml:space="preserve">
+    <value>Pull requests</value>
+  </data>
+  <data name="References differ: align them in the VBE before importing." xml:space="preserve">
+    <value>References differ: align them in the VBE before importing.</value>
+  </data>
+  <data name="Repositories" xml:space="preserve">
+    <value>Repositories</value>
+  </data>
+  <data name="Repository owner" xml:space="preserve">
+    <value>Repository owner</value>
+  </data>
+  <data name="Repository selected. Click Link repository to connect this document." xml:space="preserve">
+    <value>Repository selected. Click Link repository to connect this document.</value>
+  </data>
+  <data name="Required VBA references" xml:space="preserve">
+    <value>Required VBA references</value>
+  </data>
+  <data name="Restore only the selected module from the reviewed revision, with a checkpoint first." xml:space="preserve">
+    <value>Restore only the selected module from the reviewed revision, with a checkpoint first.</value>
+  </data>
+  <data name="Restore selected module" xml:space="preserve">
+    <value>Restore selected module</value>
+  </data>
+  <data name="Reviewing checkpoint" xml:space="preserve">
+    <value>Reviewing checkpoint</value>
+  </data>
+  <data name="Reviewing revision" xml:space="preserve">
+    <value>Reviewing revision</value>
+  </data>
+  <data name="Search code" xml:space="preserve">
+    <value>Search code</value>
+  </data>
+  <data name="Search repositories" xml:space="preserve">
+    <value>Search repositories</value>
+  </data>
+  <data name="Select a commit from history." xml:space="preserve">
+    <value>Select a commit from history.</value>
+  </data>
+  <data name="Select a revision in History or Checkpoints, then a module to restore." xml:space="preserve">
+    <value>Select a revision in History or Checkpoints, then a module to restore.</value>
+  </data>
+  <data name="Select at least one module or the references." xml:space="preserve">
+    <value>Select at least one module or the references.</value>
+  </data>
+  <data name="Select one commit for details, or two commits to compare their VBA sources." xml:space="preserve">
+    <value>Select one commit for details, or two commits to compare their VBA sources.</value>
+  </data>
+  <data name="Show three context lines around each change." xml:space="preserve">
+    <value>Show three context lines around each change.</value>
+  </data>
+  <data name="Sign in to GitHub again in Settings." xml:space="preserve">
+    <value>Sign in to GitHub again in Settings.</value>
+  </data>
+  <data name="Source branch" xml:space="preserve">
+    <value>Source branch</value>
+  </data>
+  <data name="System" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="Target branch" xml:space="preserve">
+    <value>Target branch</value>
+  </data>
+  <data name="This document is already linked. Reopen GitHub to choose another repository." xml:space="preserve">
+    <value>This document is already linked. Reopen GitHub to choose another repository.</value>
+  </data>
+  <data name="Unable to reach GitHub. Check your connection, then retry." xml:space="preserve">
+    <value>Unable to reach GitHub. Check your connection, then retry.</value>
+  </data>
+  <data name="Unified" xml:space="preserve">
+    <value>Unified</value>
+  </data>
+  <data name="Unknown VBA module." xml:space="preserve">
+    <value>Unknown VBA module.</value>
+  </data>
+  <data name="Use repository" xml:space="preserve">
+    <value>Use repository</value>
+  </data>
+  <data name="VBA references" xml:space="preserve">
+    <value>VBA references</value>
+  </data>
 </root>

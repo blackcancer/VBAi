@@ -11,7 +11,7 @@ namespace CodexVBE
     {
         private static SolidColorBrush Ink(string hex)
         {
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString(UiTheme.Map(hex)));
         }
 
         private static Button ChatButton(string text, bool primary = false)
@@ -19,7 +19,7 @@ namespace CodexVBE
             var button = new Button {
                 Content = text, Padding = new Thickness(12, 7, 12, 7),
                 Background = Ink(primary ? "#2563EB" : "#F1F5F9"),
-                Foreground = Ink(primary ? "#FFFFFF" : "#334155"),
+                Foreground = primary ? Brushes.White : Ink("#334155"),
                 BorderBrush = Brushes.Transparent, BorderThickness = new Thickness(0),
                 Cursor = Cursors.Hand, FontSize = 12, FontFamily = new FontFamily("Segoe UI"),
                 MinHeight = 32
@@ -68,7 +68,7 @@ namespace CodexVBE
         private void Options_Click(object sender, EventArgs e) { optionsMenu.Show(options, 0, options.Height); }
         private void Docking_Click(object sender, EventArgs e) { if (!busy) DockRequested?.Invoke(); }
         private void History_Click(object sender, EventArgs e) { historyPanel.Visible = !historyPanel.Visible; if (historyPanel.Visible) historyPanel.BringToFront(); }
-        private void JumpToLatest_Click(object sender, EventArgs e) { followConversation = true; conversationScroll?.ScrollToEnd(); }
+        private void JumpToLatest_Click(object sender, EventArgs e) { followConversation = true; FollowLatest(); }
         private void ShowArchived_CheckedChanged(object sender, EventArgs e) { RefreshHistory(); }
         private void Rename_Click(object sender, EventArgs e) { RenameCurrentChat(); }
         private void Archive_Click(object sender, EventArgs e) { ToggleArchiveCurrentChat(); }

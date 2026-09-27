@@ -196,6 +196,9 @@ namespace CodexVBE
         }
         private Result Run(string[] args, byte[] input = null, bool useRepository = true, bool allowFailure = false)
         {
+            Cancellation.ThrowIfCancellationRequested();
+            Progress?.Invoke(UiText.Get("Operation in progress…") + " · " + UiText.Get(args[0] == "push" ? "Push" :
+                args[0] == "fetch" || args[0] == "ls-remote" ? "Fetch" : args[0] == "log" || args[0] == "rev-list" ? "History" : "Git changes"));
             var all = new List<string> { "-c", "core.hooksPath=" + Path.Combine(directory, "disabled-hooks"), "-c", "commit.gpgSign=false" };
             if (!string.IsNullOrEmpty(account))
                 all.AddRange(new[] { "-c", "credential.helper=", "-c", "credential.helper=manager", "-c", "credential.https://github.com.username=" + account });
@@ -216,8 +219,11 @@ namespace CodexVBE
                 Task<string> error = process.StandardError.ReadToEndAsync();
                 Task write = Task.Run(() => { try { if (input != null) process.StandardInput.BaseStream.Write(input, 0, input.Length); }
                     finally { process.StandardInput.Close(); } });
-                if (!process.WaitForExit(120000)) { try { process.Kill(); } catch { } throw new TimeoutException(UiText.Get("Git did not respond within 120 seconds. Check the connection and GitHub authentication.")); }
-                Task.WaitAll(read, error, write);
+                using (Cancellation.Register(() => { try { if (!process.HasExited) process.Kill(); } catch (InvalidOperationException) { } }))
+                    if (!process.WaitForExit(120000)) { try { process.Kill(); } catch { } throw new TimeoutException(UiText.Get("Git did not respond within 120 seconds. Check the connection and GitHub authentication.")); }
+                try { Task.WaitAll(read, error, write); }
+                catch (Exception) when (Cancellation.IsCancellationRequested) { throw new OperationCanceledException(Cancellation); }
+                Cancellation.ThrowIfCancellationRequested();
                 if (process.ExitCode != 0 && !allowFailure)
                     throw new InvalidOperationException("Git " + args[0] + UiText.Get(" failed. ") + error.Result.Trim());
                 return new Result { Bytes = output.ToArray(), ExitCode = process.ExitCode };

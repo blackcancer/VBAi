@@ -135,7 +135,7 @@ namespace CodexVBE.Tests.Unit
                 Assert.AreEqual(3, Get<ComboBox>(window, "modePicker").Items.Count);
                 Assert.AreEqual(ChatMode.Agent, Get<ComboBox>(window, "modePicker").SelectedItem);
                 Assert.IsNotNull(Get<object>(window, "prompt"));
-                Assert.IsNotNull(Get<object>(window, "conversationScroll"));
+                Assert.IsNotNull(Get<object>(window, "conversationItems"));
                 Assert.IsFalse(Get<Panel>(window, "historyPanel").Visible);
                 Assert.IsFalse(Get<ProgressBar>(window, "activityBar").Visible);
             }
@@ -389,7 +389,7 @@ namespace CodexVBE.Tests.Unit
             {
                 Call(window, "AddTranscriptMessage", "Assistant", "# Heading\n- item\n```vba\nDebug.Print 1\n```");
                 Assert.AreEqual(1, Get<List<ChatEntry>>(window, "transcriptEntries").Count);
-                Assert.AreEqual(1, ((IDictionary)Get<object>(window, "entryViews")).Count);
+                Assert.AreEqual(1, ((ICollection)Get<object>(window, "visibleEntries")).Count);
                 Get<List<ChatAttachment>>(window, "draftAttachments").Add(
                     new ChatAttachment { Label = "Selection", Text = "VBA code" });
                 Call(window, "RefreshContextPreview");

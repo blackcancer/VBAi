@@ -12,12 +12,17 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Markdig" Version="0.37.0" />
     <EmbeddedResource Include="assets\icons\assistant.ico" LogicalName="CodexVBE.Icons.assistant.ico" />
     <EmbeddedResource Include="assets\icons\github.ico" LogicalName="CodexVBE.Icons.github.ico" />
     <EmbeddedResource Include="assets\icons\settings.ico" LogicalName="CodexVBE.Icons.settings.ico" />
     <EmbeddedResource Include="assets\icons\github.png" LogicalName="CodexVBE.Icons.github.png" />
     <EmbeddedResource Include="assets\icons\settings.png" LogicalName="CodexVBE.Icons.settings.png" />
     <Compile Include="src\**\*.cs" />
+    <Compile Update="src\Git\GitHubPane.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="src\Git\GitHubPane.Designer.cs"><DependentUpon>GitHubPane.cs</DependentUpon></Compile>
+    <Compile Update="src\Ui\CodeDiffView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="src\Ui\CodeDiffView.Designer.cs"><DependentUpon>CodeDiffView.cs</DependentUpon></Compile>
     <EmbeddedResource Update="src\Localization\*.resx"><LogicalName>CodexVBE.Localization.%(Filename).resources</LogicalName></EmbeddedResource>
     <Compile Update="src\Git\GitWindow.cs"><SubType>Form</SubType></Compile>
     <Compile Update="src\Git\GitWindow.Designer.cs"><DependentUpon>GitWindow.cs</DependentUpon></Compile>

@@ -36,7 +36,7 @@ namespace CodexVBE
                 // buttons contribute their actual height, including the current DPI/font.
                 int width = ClientSize.Width;
                 int height = grid.GetPreferredSize(new Size(width, 0)).Height +
-                    buttons.GetPreferredSize(new Size(width, 0)).Height;
+                    buttons.GetPreferredSize(new Size(width, 0)).Height + themePanel.GetPreferredSize(new Size(width, 0)).Height;
                 int frameHeight = Height - ClientSize.Height;
                 int available = Screen.FromControl(this).WorkingArea.Height - frameHeight;
                 MinimumSize = new Size(MinimumSize.Width, 0);
@@ -52,6 +52,8 @@ namespace CodexVBE
             InitializeComponent();
             Icon = VbeWindowIcons.Icon("settings");
             UiText.Apply(this, null, githubToolTips);
+            themePicker.SelectedIndex = (int)UiTheme.Choice;
+            themePicker.SelectedIndexChanged += (s, e) => { try { if (themePicker.SelectedIndex >= 0) UiTheme.Select((ThemeChoice)themePicker.SelectedIndex); } catch (Exception ex) { MessageBox.Show(this, ex.Message); } };
         }
 
         public LlmSettingsWindow(LlmSettings settings)
@@ -60,6 +62,8 @@ namespace CodexVBE
             InitializeComponent();
             Icon = VbeWindowIcons.Icon("settings");
             UiText.Apply(this, null, githubToolTips);
+            themePicker.SelectedIndex = (int)UiTheme.Choice;
+            themePicker.SelectedIndexChanged += (s, e) => { try { if (themePicker.SelectedIndex >= 0) UiTheme.Select((ThemeChoice)themePicker.SelectedIndex); } catch (Exception ex) { MessageBox.Show(this, ex.Message); } };
             githubAccount.Items.Add(UiText.Get("Automatic Git selection"));
             githubAccount.SelectedIndex = 0;
             customName.Text = settings.CustomProviderName ?? "";

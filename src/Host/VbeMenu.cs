@@ -20,8 +20,8 @@ namespace CodexVBE
 
         public VbeMenu(object vbe, Action showAssistant, Action showSettings, Action showGitHub, Action<string> editorAction = null)
         {
-            dynamic view = FindMenu(vbe, "affichage", "view");
-            dynamic tools = FindMenu(vbe, "outils", "tools");
+            dynamic view = FindMenu(vbe, true);
+            dynamic tools = FindMenu(vbe, false);
             viewButton = view.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
             settingsButton = tools.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
             ((dynamic)viewButton).Caption = UiText.Get("VBAi assistant");
@@ -116,7 +116,7 @@ namespace CodexVBE
             internal static object ToOle(System.Drawing.Image image) { return GetIPictureDispFromPicture(image); }
         }
 
-        private static dynamic FindMenu(object application, params string[] captions)
+        private static dynamic FindMenu(object application, bool view)
         {
             foreach (dynamic bar in ((dynamic)application).CommandBars)
             {
@@ -127,11 +127,10 @@ namespace CodexVBE
                 {
                     string name;
                     try { name = Normalize((string)item.Caption); } catch { continue; }
-                    foreach (string target in captions)
-                        if (name == target) return item;
+                    if (UiLanguages.IsMenu(name, view)) return item;
                 }
             }
-            throw new InvalidOperationException("VBE menu not found: " + string.Join("/", captions));
+            throw new InvalidOperationException("VBE menu not found: " + (view ? "View" : "Tools"));
         }
 
         private static string Normalize(string caption)

@@ -43,6 +43,9 @@ namespace CodexVBE
         private TextBox customName;
         private CheckBox azureEntra;
 
+        private System.Windows.Forms.FlowLayoutPanel themePanel;
+        private System.Windows.Forms.Label themeLabel;
+        private System.Windows.Forms.ComboBox themePicker;
         private void InitializeComponent()
         {
             this.grid = new System.Windows.Forms.TableLayoutPanel();
@@ -505,6 +508,24 @@ namespace CodexVBE
             this.codexRefresh.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
             this.saveButton.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
             this.cancelButton.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
+            this.themePanel = new System.Windows.Forms.FlowLayoutPanel();
+            this.themeLabel = new System.Windows.Forms.Label();
+            this.themePicker = new System.Windows.Forms.ComboBox();
+            this.themePanel.Name = "themePanel";
+            this.themePanel.AutoSize = true;
+            this.themePanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.themeLabel.Name = "themeLabel";
+            this.themeLabel.Text = "Appearance";
+            this.themeLabel.AutoSize = true;
+            this.themePicker.Name = "themePicker";
+            this.themePicker.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.themePicker.Items.AddRange(new object[] { "System", "Light", "Dark" });
+            this.themePanel.Controls.Add(this.themeLabel);
+            this.themePanel.Controls.Add(this.themePicker);
+            this.contentLayout.RowCount = 3;
+            this.contentLayout.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.contentLayout.SetRow(this.buttons, 2);
+            this.contentLayout.Controls.Add(this.themePanel, 0, 1);
             this.Controls.Add(this.contentLayout);
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.MaximizeBox = false;

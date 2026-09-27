@@ -97,9 +97,9 @@ namespace CodexVBE.Tests.Unit
             var expected = new FakeMenu { Caption = " &Affichage " };
             host.CommandBars.Add(new FakeBar { Type = 1,
                 Controls = new List<FakeMenu> { expected, new FakeMenu { Caption = "&Outils" } } });
-            Assert.AreSame(expected, method.Invoke(null, new object[] { host, new[] { "affichage", "view" } }));
+            Assert.AreSame(expected, method.Invoke(null, new object[] { host, true }));
             var error = Assert.ThrowsException<TargetInvocationException>(() =>
-                method.Invoke(null, new object[] { host, new[] { "missing" } }));
+                method.Invoke(null, new object[] { new FakeMenus(), true }));
             Assert.IsInstanceOfType(error.InnerException, typeof(InvalidOperationException));
             var incomplete = new FakeMenus();
             incomplete.CommandBars.Add(new FakeBar { Type = 1,

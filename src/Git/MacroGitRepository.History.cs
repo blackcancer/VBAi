@@ -24,6 +24,7 @@ namespace CodexVBE
     }
     internal sealed class GitConflictContent
     {
+        public string Base { get; set; }
         public string Path { get; set; }
         public string Ours { get; set; }
         public string Theirs { get; set; }
@@ -114,7 +115,8 @@ namespace CodexVBE
         {
             var plan = PendingMerge; AssertMerge(plan);
             if (!plan.Conflicts.Contains(path)) throw new ArgumentException(UiText.Get("Path not found in conflicts."));
-            return new GitConflictContent { Path = path, Ours = ConflictText(plan.Ours, path), Theirs = ConflictText(plan.Theirs, path) };
+            string common = Text("merge-base", plan.Ours, plan.Theirs);
+            return new GitConflictContent { Path = path, Base = ConflictText(common, path), Ours = ConflictText(plan.Ours, path), Theirs = ConflictText(plan.Theirs, path) };
         }
         private string ConflictText(string tree, string path)
         {

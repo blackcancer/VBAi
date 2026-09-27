@@ -161,6 +161,8 @@ namespace CodexVBE
                     if (!string.IsNullOrEmpty(entry.StreamId)) completedStreams.Add(entry.StreamId);
                     AddEntry(entry);
                 }
+                RefreshTranscriptWindow(Math.Max(0, transcriptEntries.Count - 80));
+                FollowLatest();
                 selectedReferences.Clear();
                 if (session.DraftReferences != null) selectedReferences.AddRange(session.DraftReferences);
                 prompt.Text = session.Draft ?? "";

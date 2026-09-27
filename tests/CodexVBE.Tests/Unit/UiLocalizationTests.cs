@@ -21,9 +21,9 @@ namespace CodexVBE.Tests.Unit
             {
                 Assert.AreEqual("fr-FR", UiText.Detect(Host("&Outils"), CultureInfo.GetCultureInfo("en-US")).Name);
                 Assert.AreEqual("en-US", UiText.Detect(Host("&View"), CultureInfo.GetCultureInfo("fr-CA")).Name);
-                Assert.AreEqual("en-US", UiText.Detect(Host("Ansicht"), CultureInfo.GetCultureInfo("fr-CA")).Name);
+                Assert.AreEqual("de-DE", UiText.Detect(Host("Ansicht"), CultureInfo.GetCultureInfo("fr-CA")).Name);
                 Assert.AreEqual("fr-FR", UiText.Detect(null, CultureInfo.GetCultureInfo("fr-CA")).Name);
-                Assert.AreEqual("en-US", UiText.Supported(CultureInfo.GetCultureInfo("de-DE")).Name);
+                Assert.AreEqual("en-US", UiText.Supported(CultureInfo.GetCultureInfo("fi-FI")).Name);
                 UiText.Initialize(Host("&Outils"));
                 Assert.AreEqual("fr-FR", UiText.Culture.Name);
                 Assert.AreEqual(previous, System.Threading.Thread.CurrentThread.CurrentCulture);
@@ -73,6 +73,68 @@ namespace CodexVBE.Tests.Unit
             return new FakeVbe { CommandBars = new[] { new FakeBar {
                 Type = 1, Controls = new[] { new FakeControl { Caption = caption } }
             } } };
+        }
+
+        [TestMethod]
+        public void AllLanguagesHaveCompleteEmbeddedCataloguesAndRecognizableMenus()
+        {
+            var baseline = new System.Resources.ResourceManager("CodexVBE.Localization.UiStrings", typeof(UiText).Assembly)
+                .GetResourceSet(CultureInfo.InvariantCulture, true, true);
+            try
+            {
+                foreach (var language in UiLanguages.All)
+                {
+                    var host = new FakeVbe { CommandBars = new[] { new FakeBar { Type = 1, Controls = new[] {
+                        new FakeControl { Caption = language.View[0] + "(&V)" },
+                        new FakeControl { Caption = language.Tools[0] + "(&T)" }
+                    } } } };
+                    Assert.AreEqual(language.CultureName, UiText.Detect(host, CultureInfo.GetCultureInfo("en-US")).Name);
+                    Assert.IsTrue(UiLanguages.IsMenu(language.View[0] + "(&V)", true));
+                    Assert.IsTrue(UiLanguages.IsMenu(language.Tools[0] + "(&T)", false));
+                    UiText.Initialize(host);
+                    var catalogue = new System.Resources.ResourceManager("CodexVBE.Localization.UiStrings" + language.ResourceSuffix, typeof(UiText).Assembly)
+                        .GetResourceSet(CultureInfo.InvariantCulture, true, true);
+                    foreach (System.Collections.DictionaryEntry entry in baseline)
+                    {
+                        var value = catalogue.GetString((string)entry.Key);
+                        Assert.IsFalse(string.IsNullOrWhiteSpace(value), language.CultureName + " / " + entry.Key);
+                        Assert.AreEqual(value, UiText.Get((string)entry.Key));
+                    }
+                }
+                Assert.AreEqual("zh-TW", UiText.Supported(CultureInfo.GetCultureInfo("zh-HK")).Name);
+                Assert.AreEqual("zh-TW", UiText.Supported(CultureInfo.GetCultureInfo("zh-Hant")).Name);
+                Assert.AreEqual("zh-CN", UiText.Supported(CultureInfo.GetCultureInfo("zh-SG")).Name);
+                Assert.AreEqual("pt-BR", UiText.Supported(CultureInfo.GetCultureInfo("pt-PT")).Name);
+                Assert.AreEqual("es-ES", UiText.Supported(CultureInfo.GetCultureInfo("es-MX")).Name);
+                Assert.AreEqual("en-US", UiText.Detect(Host("Tools"), CultureInfo.GetCultureInfo("de-DE")).Name);
+            }
+            finally { UiText.Initialize(null); }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void ArabicMirrorsTheFormButPreservesTechnicalFields()
+        {
+            try
+            {
+                UiText.Initialize(Host("عرض"));
+                using (var form = new Form())
+                {
+                    var url = new TextBox { Name = "remote", Text = "https://github.com/org/repo.git" };
+                    var code = new TextBox { Name = "resolutionText", Text = "Sub Test()" };
+                    var message = new TextBox { Name = "commitMessage" };
+                    form.Controls.AddRange(new Control[] { url, code, message });
+                    UiText.Apply(form, null);
+                    Assert.IsTrue(form.RightToLeftLayout);
+                    Assert.AreEqual(RightToLeft.Yes, form.RightToLeft);
+                    Assert.AreEqual(RightToLeft.No, url.RightToLeft);
+                    Assert.AreEqual(RightToLeft.No, code.RightToLeft);
+                    Assert.AreEqual(RightToLeft.Yes, message.RightToLeft);
+                    Assert.AreEqual("https://github.com/org/repo.git", url.Text);
+                    Assert.AreEqual("Sub Test()", code.Text);
+                }
+            }
+            finally { UiText.Initialize(null); }
         }
 
         public sealed class FakeVbe { public FakeBar[] CommandBars { get; set; } }

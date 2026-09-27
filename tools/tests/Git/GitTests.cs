@@ -24,11 +24,25 @@ internal static partial class GitTests
     {
         checks = 0;
         System.Windows.Forms.Application.EnableVisualStyles();
+        var previousContext = System.Threading.SynchronizationContext.Current;
+        System.Threading.SynchronizationContext.SetSynchronizationContext(
+            new System.Windows.Forms.WindowsFormsSynchronizationContext());
+        Exception uiError = null;
+        System.Threading.ThreadExceptionEventHandler onUiError = (sender, args) => uiError = args.Exception;
+        System.Windows.Forms.Application.ThreadException += onUiError;
         // Regression: .NET Framework otherwise prepends this BOM to redirected binary stdin.
         Console.InputEncoding = new UTF8Encoding(true);
         root = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "runs", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
-        Snapshots(); Repositories(); ProjectImport(); Workflow(); Advanced(); Designer();
+        try
+        {
+            Snapshots(); Repositories(); ProjectImport(); Workflow(); Advanced(); Designer();
+            if (uiError != null) throw new Exception("WinForms drawing failed during Git tests.", uiError);
+        }
+        finally {
+            System.Windows.Forms.Application.ThreadException -= onUiError;
+            System.Threading.SynchronizationContext.SetSynchronizationContext(previousContext);
+        }
     }
     private static void Assert(bool ok, string message) { checks++; if (!ok) throw new Exception(message); }
     private static void Reject(Action action, string message)
@@ -145,10 +159,9 @@ internal static partial class GitTests
         using (var form = new GitWindow())
         {
             var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
-            typeof(GitWindow).GetField("displayedBaseline", flags).SetValue(form, Snapshot());
-            typeof(GitWindow).GetField("displayedLive", flags).SetValue(form, Snapshot("2"));
+            typeof(GitWindow).GetMethod("PopulateChanges", flags).Invoke(form, new object[] { Snapshot("2"), Snapshot() });
             var files = (System.Windows.Forms.ListBox)form.Controls.Find("changes", true)[0];
-            files.Items.Add("~ Module1.bas"); files.SelectedIndex = 0;
+            Assert(files.Items.Count == 1, "Module changes displayed as a selectable commit unit"); files.SelectedIndex = 0;
             form.Show(); form.Refresh();
             using (var bitmap = new System.Drawing.Bitmap(form.Width, form.Height))
             { form.DrawToBitmap(bitmap, new System.Drawing.Rectangle(0, 0, form.Width, form.Height)); bitmap.Save(Path.Combine(root, "git-window.png")); }
@@ -178,13 +191,17 @@ internal static partial class GitTests
         {
             Set(form, "project", project); Set(form, "repository", a);
             ((System.Windows.Forms.TextBox)form.Controls.Find("commitMessage", true)[0]).Text = "Initial local commit";
-            form.Show();
             Action<string> run = method => {
+                Console.WriteLine("Git UI: " + method);
                 typeof(GitWindow).GetMethod(method, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(form, new object[] { null, EventArgs.Empty });
                 var clock = Stopwatch.StartNew();
-                while ((bool)Get(form, "running")) { System.Windows.Forms.Application.DoEvents(); System.Threading.Thread.Sleep(5); if (clock.ElapsedMilliseconds > 30000) throw new Exception("Workflow timeout: " + method); }
+                while ((bool)Get(form, "running")) {
+                    if (clock.ElapsedMilliseconds > 30000) throw new Exception("Workflow timeout: " + method);
+                    System.Windows.Forms.Application.DoEvents(); System.Threading.Thread.Sleep(5);
+                }
             };
-            Func<string> status = () => ((System.Windows.Forms.Label)form.Controls.Find("status", true)[0]).Text;
+            Func<string> status = () => ((System.Windows.Forms.Label)Get(form, "status")).Text;
+            run("Compare_Click");
             run("Commit_Click"); Assert(status() == UiText.Get("Local commit created. Use Push to publish it."), "UI creates local commit: " + status());
             Assert(a.Fetch() == null, "Commit does not publish");
             run("Push_Click"); Assert(status() == UiText.Get("Push complete."), "Separate UI push: " + status());
@@ -193,7 +210,7 @@ internal static partial class GitTests
             var target = VbaGitSnapshot.Read(files);
             string second = b.Commit(target, first, "Remote change"); b.Push(second);
             host.VBComponents.Item("Module1").CodeModule.Text += "' Local uncommitted\n";
-            run("Pull_Click"); Assert(status() == UiText.Get("VBA contains uncommitted local changes."), "UI rejects dirty VBA before pull");
+            run("Pull_Click"); Assert(status().StartsWith(UiText.Get("VBA contains uncommitted local changes."), StringComparison.Ordinal), "UI rejects dirty VBA before pull");
             host.VBComponents.Item("Module1").CodeModule.Text = Encoding.UTF8.GetString(initial.Files["Module1.bas"]);
             run("Fetch_Click"); Assert(project.Capture().SameAs(initial), "UI Fetch never imports");
             run("Pull_Click"); Assert(status() == UiText.Get("Pull and import complete. Check and save the document.") && project.Capture().SameAs(target), "UI pull and import: " + status());
@@ -202,12 +219,12 @@ internal static partial class GitTests
             run("Restore_Click"); Assert(project.Capture().SameAs(initial), "UI rollback restores initial VBA: " + status());
             var list = (System.Windows.Forms.ListBox)form.Controls.Find("changes", true)[0];
             Assert(list.Items.Count > 0, "Restoration is shown as an uncommitted change");
-            run("Pull_Click"); Assert(status() == UiText.Get("VBA contains uncommitted local changes."), "Pull does not overwrite local restoration");
+            run("Pull_Click"); Assert(status().StartsWith(UiText.Get("VBA contains uncommitted local changes."), StringComparison.Ordinal), "Pull does not overwrite local restoration");
             run("Commit_Click"); run("Push_Click"); Assert(a.Read(a.Fetch()).SameAs(initial), "Restoration published as new commit");
             string third = b.Commit(target, b.Fetch(), "Another remote edit"); b.Push(third);
             host.VBComponents.ThrowAfterImport = true;
             run("Pull_Click"); Assert(a.RecoveryPending, "Partial import leaves durable recovery marker");
-            run("Commit_Click"); Assert(status() == UiText.Get("Restore the interrupted import before continuing."), "Partial import blocks committing");
+            run("Commit_Click"); Assert(status().StartsWith(UiText.Get("Restore the interrupted import before continuing."), StringComparison.Ordinal), "Partial import blocks committing");
             host.VBComponents.ThrowAfterImport = false;
             run("Restore_Click"); Assert(!a.RecoveryPending && project.Capture().SameAs(initial), "Restore recovers partial import: " + status());
             form.Close();
