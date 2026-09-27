@@ -71,6 +71,80 @@ namespace CodexVBE.Tests.Unit
         }
 
         [TestMethod]
+        public void FindReportsOverlappingMatchesAndTreatsUnicodeAndUnderscoreAsWordCharacters()
+        {
+            var navigation = CreateNavigation("aaaa\r\néalpha alpha_ alpha é alpha", "");
+            dynamic overlapping = navigation.Find(new Request { Project = "Projet", Module = "Module1",
+                Query = "aa", MatchCase = true });
+            Assert.AreEqual(3, (int)overlapping.Matches.Count);
+            Assert.AreEqual(1, (int)overlapping.Matches[0].StartColumn);
+            Assert.AreEqual(2, (int)overlapping.Matches[1].StartColumn);
+            Assert.AreEqual(3, (int)overlapping.Matches[2].StartColumn);
+
+            dynamic words = navigation.Find(new Request { Project = "Projet", Module = "Module1",
+                Query = "alpha", WholeWord = true });
+            Assert.AreEqual(2, (int)words.Matches.Count);
+            Assert.AreEqual(2, (int)words.Matches[0].StartLine);
+            Assert.AreEqual(15, (int)words.Matches[0].StartColumn);
+            Assert.AreEqual(23, (int)words.Matches[1].StartColumn);
+        }
+
+        [TestMethod]
+        public void FindIncludesEmptyModulesInSourceVersionsAndHonorsWildcardCase()
+        {
+            var navigation = CreateNavigation("", "Alpha alpha ALPHA");
+            dynamic empty = navigation.Find(new Request { Project = "Projet", Query = "missing" });
+            Assert.AreEqual(0, (int)empty.Matches.Count);
+            Assert.AreEqual(2, (int)empty.SourceVersions.Count);
+            Assert.IsFalse((bool)empty.Truncated);
+
+            dynamic exact = navigation.Find(new Request { Project = "Projet", Module = "Class1",
+                Query = "A?pha", PatternSearch = true, MatchCase = true });
+            Assert.AreEqual(2, (int)exact.Matches.Count);
+            Assert.AreEqual(1, (int)exact.Matches[0].StartColumn);
+            Assert.AreEqual(13, (int)exact.Matches[1].StartColumn);
+        }
+
+        [TestMethod]
+        public void ProcedureMutationRejectsBreakModeAndWrongComponentWithoutChangingCode()
+        {
+            var host = new VbeProcedureMutationTests.FakeVbe();
+            var project = new VbeProcedureMutationTests.FakeProject { Name = "Projet", Mode = 1 };
+            var component = new VbeProcedureMutationTests.FakeComponent { Name = "Module1", Type = 1 };
+            var module = new VbeProcedureMutationTests.FakeModule(component, "Option Explicit");
+            component.CodeModule = module;
+            project.VBComponents.Add(component);
+            host.VBProjects.Add(project);
+            var navigation = new VbeCodeNavigation(host, new VbeForms(host));
+            var request = new Request { Project = "Projet", Module = "Module1", Procedure = "Run",
+                ProcKind = 0, Text = "Sub Run()\nEnd Sub", ExpectedSha256 = Hash(module.Code) };
+
+            Assert.ThrowsException<InvalidOperationException>(() => navigation.CreateProcedure(request));
+            Assert.ThrowsException<InvalidOperationException>(() => navigation.ReplaceProcedure(request));
+            Assert.ThrowsException<InvalidOperationException>(() => navigation.RemoveProcedure(request));
+            Assert.AreEqual("Option Explicit", module.Code);
+
+            project.Mode = 2;
+            component.Type = 3;
+            Assert.ThrowsException<InvalidOperationException>(() => navigation.CreateProcedure(request));
+            Assert.ThrowsException<InvalidOperationException>(() => navigation.ReplaceProcedure(request));
+            Assert.ThrowsException<InvalidOperationException>(() => navigation.RemoveProcedure(request));
+            Assert.AreEqual("Option Explicit", module.Code);
+        }
+
+        [TestMethod]
+        public void SelectProcedureRejectsStaleHashBeforeLookingUpProcedureOrSelectingCode()
+        {
+            var navigation = CreateNavigation("Option Explicit", "");
+            var request = new Request { Project = "Projet", Module = "Module1", Procedure = "Run",
+                ProcKind = 0, ExpectedSha256 = Hash("stale") };
+            var error = Assert.ThrowsException<InvalidOperationException>(() =>
+                navigation.SelectProcedure(request, null));
+            StringAssert.Contains(error.Message, "module changed since it was read");
+            Assert.AreEqual(0, request.StartLine);
+        }
+
+        [TestMethod]
         public void ProcedureCommandsRejectMalformedOrStaleInputBeforeEditing()
         {
             var navigation = CreateNavigation("Option Explicit", "");

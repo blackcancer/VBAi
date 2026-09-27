@@ -43,6 +43,24 @@ namespace CodexVBE.Tests.Unit
         }
 
         [TestMethod]
+        public void FunctionReplacementAndRemovalUseEndFunctionBoundary()
+        {
+            var fixture = new Fixture("Option Explicit");
+            var request = fixture.Request("Public Function Run() As Long\nRun = 1\nEnd Function");
+            dynamic created = fixture.Navigation.CreateProcedure(request);
+            Assert.AreEqual("Run", (string)created.Procedure);
+            request.ExpectedSha256 = (string)created.Sha256;
+            request.Text = "Public Function Run() As Long\nRun = 2\nEnd Function";
+            dynamic replaced = fixture.Navigation.ReplaceProcedure(request);
+            Assert.IsTrue((bool)replaced.Changed);
+            StringAssert.Contains(fixture.Module.Code, "Run = 2");
+            request.ExpectedSha256 = (string)replaced.Sha256;
+            dynamic removed = fixture.Navigation.RemoveProcedure(request);
+            Assert.AreEqual(3, (int)removed.RemovedLineCount);
+            Assert.IsFalse(fixture.Module.Code.Contains("Function Run"));
+        }
+
+        [TestMethod]
         public void StaleVersionAndDuplicateProcedureNeverChangeCode()
         {
             var fixture = new Fixture("Option Explicit");
