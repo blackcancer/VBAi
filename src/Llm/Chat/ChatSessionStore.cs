@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -15,6 +15,8 @@ namespace CodexVBE
         public CodeChange Change { get; set; }
         public VbeChatReference[] References { get; set; }
         public string AttachedMemory { get; set; }
+        public ChatAttachment[] Attachments { get; set; }
+        public string TurnId { get; set; }
     }
 
     internal sealed class ChatSessionState
@@ -23,15 +25,19 @@ namespace CodexVBE
         public string Scope { get; set; }
         public string Title { get; set; } = "Nouvelle conversation";
         public bool Archived { get; set; }
+        public bool Pinned { get; set; }
+        public ChatMode Mode { get; set; } = ChatMode.Agent;
+        public ChatAttachment[] DraftAttachments { get; set; }
         public string Provider { get; set; } = "Codex";
         public string Model { get; set; }
         public string Effort { get; set; }
         public string CodexThreadId { get; set; }
+        public string ResumeContext { get; set; }
         public string MessagesJson { get; set; }
         public string Draft { get; set; }
         public VbeChatReference[] DraftReferences { get; set; }
         public List<ChatEntry> Entries { get; set; } = new List<ChatEntry>();
-        public override string ToString() { return Title; }
+        public override string ToString() { return (Pinned ? "★ " : "") + Title; }
     }
 
     // Uses the SQLite runtime shipped with Windows. SQL values are always bound parameters.

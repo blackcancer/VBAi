@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -126,6 +126,10 @@ namespace CodexVBE
             {
                 codex?.Dispose(); codex = null;
                 currentSession = session;
+                modePicker.SelectedItem = session.Mode;
+                if (tools != null) tools.Mode = session.Mode;
+                draftAttachments.Clear();
+                if (session.DraftAttachments != null) draftAttachments.AddRange(session.DraftAttachments);
                 attachMemory.IsChecked = false;
                 ClearTranscript(); codeChanges.Clear(); completedStreams.Clear(); streamedFinalText = null;
                 messages.Clear();
@@ -169,7 +173,7 @@ namespace CodexVBE
             loadingSession = true;
             string query = historySearch.Text ?? "";
             sessionList.ItemsSource = scopeSessions.Where(x => (!x.Archived || showArchived.IsChecked == true) &&
-                x.Title.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0).ToArray();
+                ChatHistory.Matches(x, query)).OrderByDescending(x => x.Pinned).ToArray();
             sessionList.SelectedItem = currentSession;
             loadingSession = previous;
         }
@@ -187,6 +191,7 @@ namespace CodexVBE
             currentSession.Entries = transcriptEntries.ToList();
             currentSession.MessagesJson = json.Serialize(messages);
             currentSession.Draft = prompt.Text;
+            currentSession.DraftAttachments = draftAttachments.ToArray();
             currentSession.DraftReferences = CurrentReferences(prompt.Text);
             if (codex != null && !string.IsNullOrEmpty(codex.ThreadId)) currentSession.CodexThreadId = codex.ThreadId;
             try { sessionStore?.Save(currentSession); }
@@ -252,6 +257,7 @@ namespace CodexVBE
         {
             var scope = scopePicker.SelectedItem as MacroScope;
             if (scope == null || scopeSession == null) return;
+            if (tools != null) tools.BoundProject = scope.Project;
             var response = scopeSession.Execute(new Request { Command = "list_projects" });
             if (!response.Ok) throw new InvalidOperationException(response.Error);
             var projects = json.DeserializeObject(json.Serialize(response.Data)) as object[];

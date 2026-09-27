@@ -159,7 +159,7 @@ namespace CodexVBE
             var data = json.DeserializeObject(json.Serialize(response.Data)) as IDictionary<string, object>;
             string code = Field(data, "Code");
             string sha = Field(data, "Sha256");
-            if (item.Name == null) return item.Token + " (SHA-256 " + sha + ")\n" + code;
+            if (item.Name == null) { item.Sha256 = sha; return item.Token + " (SHA-256 " + sha + ")\n" + code; }
             if (!string.Equals(sha, item.Sha256, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException(item.Token + " a changé depuis sa sélection. Supprimez le jeton et sélectionnez-le à nouveau avec #.");
             string[] lines = code.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);

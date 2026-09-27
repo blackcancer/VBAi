@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -104,6 +104,9 @@ namespace CodexVBE
             refreshModels = new MenuItem { Header = "Actualiser les modèles" };
             options.ContextMenu.Items.Add(configure);
             options.ContextMenu.Items.Add(refreshModels);
+            var docking = new MenuItem { Header = "Fenêtre ancrable / flottante" };
+            docking.Click += (s, e) => { if (!busy) DockRequested?.Invoke(); };
+            options.ContextMenu.Items.Add(docking);
             options.Click += (s, e) => { options.ContextMenu.PlacementTarget = options; options.ContextMenu.IsOpen = true; };
             DockPanel.SetDock(options, System.Windows.Controls.Dock.Right);
             heading.Children.Add(options);
@@ -229,6 +232,7 @@ namespace CodexVBE
             references.Children.Add(methods);
             actions.Children.Add(references);
             composer.Children.Add(actions);
+            BuildWorkflowControls(top, historyButtons, composer);
             bottom.Children.Add(new Border { Child = composer, CornerRadius = new CornerRadius(12),
                 BorderBrush = Ink("#CBD5E1"), BorderThickness = new Thickness(1), Background = Brushes.White });
 

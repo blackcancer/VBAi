@@ -95,6 +95,7 @@ try {
     finally { $addin.Dispose() }
 
     & (Join-Path $PSScriptRoot 'Register-CodexVBETypeLib.ps1')
+    & (Join-Path $PSScriptRoot 'Register-ChatToolWindow.ps1')
 
     Write-Output "Registered $progId for the current user."
     Write-Output "Assembly: $assemblyPath"

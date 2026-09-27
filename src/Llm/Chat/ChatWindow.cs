@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Threading;
@@ -36,7 +36,9 @@ namespace CodexVBE
             try { settings = LlmSettings.Load(); }
             catch (Exception ex) { LoadLog.Write("LLM settings load failed: " + ex.Message); settings = new LlmSettings(); }
             tools = new LlmVbeTools(session, this, settings);
+            tools.ValidateScope = EnsureCurrentScope;
             tools.CodeEdited += change => {
+                change.TurnId = activeTurnId;
                 codeChanges.Add(change);
                 changes.IsEnabled = true;
                 changes.Content = "Modifications · " + codeChanges.Count;
@@ -225,6 +227,7 @@ namespace CodexVBE
         private void SetBusy(bool value)
         {
             busy = value;
+            modePicker.IsEnabled = !value;
             send.Content = value ? "Arrêter ■" : "Envoyer ↑";
             send.IsEnabled = true;
             newChat.IsEnabled = scopePicker.IsEnabled = sessionList.IsEnabled =
@@ -256,7 +259,12 @@ namespace CodexVBE
             var selectedModel = modelPicker.SelectedItem as LlmModelOption;
             if (selectedModel == null) { SetStatus("Choisissez un modèle disponible avant d'envoyer."); return; }
             string requestText;
-            try { EnsureCurrentScope(); requestText = ResolveReferences(question); }
+            ChatAttachment[] attachments;
+            try {
+                EnsureCurrentScope(); attachments = PrepareAttachments(question);
+                requestText = ChatCommand.Expand(question);
+                foreach (var attachment in attachments) requestText += "\n\n<context label=\"" + attachment.Label + "\">\n" + attachment.Text + "\n</context>";
+            }
             catch (Exception ex) { SetStatus("Contexte : " + ex.Message); return; }
             var scope = scopePicker.SelectedItem as MacroScope;
             if (scope != null) requestText = "Projet VBA de cette conversation : " + scope.Label + "\n\n" + requestText;
@@ -265,16 +273,22 @@ namespace CodexVBE
                 requestText += "\n\n<memoire-document>\n" + attachedMemory + "\n</memoire-document>";
             var selectedEffort = effortPicker.SelectedItem as LlmEffortOption;
             var attachedReferences = CurrentReferences(question);
+            var pendingDraftAttachments = draftAttachments.ToArray();
             stopRequested = false;
+            activeTurnId = Guid.NewGuid().ToString("N");
+            tools.Mode = currentSession.Mode;
+            requestText = "Mode de cette demande : " + currentSession.Mode + (currentSession.Mode == ChatMode.Agent ? ".\n" : ". Analyse uniquement ; aucune modification ni exécution de macro.\n") + requestText;
+            if (!string.IsNullOrEmpty(currentSession.ResumeContext)) requestText = "Historique de la branche (contexte uniquement ; relire le code vivant) :\n" + currentSession.ResumeContext + "\n\n" + requestText;
             streamedFinalText = null;
             RenameFromQuestion(question);
             SetBusy(true);
             prompt.Clear();
             HideReferences();
             selectedReferences.Clear();
+            draftAttachments.Clear();
             attachMemory.IsChecked = false;
             followConversation = true;
-            AddEntry(new ChatEntry { Speaker = "Vous", Text = question, References = attachedReferences, AttachedMemory = attachedMemory });
+            AddEntry(new ChatEntry { Speaker = "Vous", Text = question, References = attachedReferences, AttachedMemory = attachedMemory, Attachments = attachments, TurnId = activeTurnId });
             tools.NoteUserRequest(question);
             int checkpoint = messages.Count;
             var provider = (LlmProvider)providerPicker.SelectedItem;
@@ -293,6 +307,7 @@ namespace CodexVBE
                     SetStatus("Codex — en cours");
                     CompleteAssistantResponse(await codex.TurnAsync(requestText, selectedModel.Id,
                         selectedEffort == null ? null : selectedEffort.Id));
+                    currentSession.ResumeContext = null;
                     SetStatus("Codex — prêt");
                     return;
                 }
@@ -312,6 +327,7 @@ namespace CodexVBE
                         {
                             string answer = message.ContainsKey("content") ? Convert.ToString(message["content"]) : "";
                             Append("Assistant", string.IsNullOrWhiteSpace(answer) ? "Aucune réponse textuelle." : answer);
+                            currentSession.ResumeContext = null;
                             SetStatus(client.DisplayName + " — prêt");
                             return;
                         }
@@ -346,6 +362,8 @@ namespace CodexVBE
                 if (!stopRequested && prompt.Text.Length == 0)
                 {
                     selectedReferences.AddRange(attachedReferences);
+                    draftAttachments.AddRange(pendingDraftAttachments);
+                    attachMemory.IsChecked = !string.IsNullOrEmpty(attachedMemory);
                     prompt.Text = question;
                     RefreshContextChips();
                 }
@@ -353,7 +371,13 @@ namespace CodexVBE
             finally
             {
                 activeHttpClient = null;
-                if (!IsDisposed) { SetBusy(false); SaveCurrentSession(); }
+                if (!IsDisposed) {
+                    var intervention = codeChanges.FindAll(x => x.TurnId == activeTurnId);
+                    if (intervention.Count > 0) AddEntry(new ChatEntry { Speaker = "Intervention", TurnId = activeTurnId,
+                        Text = intervention.Count + " modification(s) appliquée(s). Retrouvez les fichiers et annulez cette intervention ci-dessous." });
+                    if (verifyAfterEdit.IsChecked == true && codeChanges.Exists(x => x.TurnId == activeTurnId)) await VerifyProjectAsync();
+                    activeTurnId = null; SetBusy(false); SaveCurrentSession();
+                }
             }
         }
 

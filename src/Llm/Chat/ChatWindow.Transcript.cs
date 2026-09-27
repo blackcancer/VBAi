@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -73,6 +73,7 @@ namespace CodexVBE
         private void AddEntry(ChatEntry entry)
         {
             if (conversationItems == null) return;
+            if (entry.TurnId == null) entry.TurnId = activeTurnId;
             if (transcriptEntries.Count == 0) conversationItems.Children.Clear();
             transcriptEntries.Add(entry);
             var view = RenderEntry(entry);
@@ -102,6 +103,10 @@ namespace CodexVBE
             copy.Background = Brushes.Transparent;
             copy.Click += (s, e) => CopyText(entry.Text);
             DockPanel.SetDock(copy, System.Windows.Controls.Dock.Right); heading.Children.Add(copy);
+            if (entry.Speaker == "Vous" || entry.Speaker == "Assistant") {
+                var fork = ChatButton("Créer une branche"); fork.FontSize = 10; fork.Padding = new Thickness(6, 2, 6, 2);
+                fork.Click += (s, e) => ForkChat(entry); DockPanel.SetDock(fork, System.Windows.Controls.Dock.Right); heading.Children.Add(fork);
+            }
             heading.Children.Add(new TextBlock { Text = user ? "VOUS" : entry.Speaker.ToUpperInvariant(),
                 FontSize = 10, FontWeight = FontWeights.SemiBold, Foreground = Ink("#64748B"),
                 VerticalAlignment = VerticalAlignment.Center });
@@ -113,9 +118,23 @@ namespace CodexVBE
                 body.Children.Add(live);
             }
             else RenderMarkdown(body, entry.Text ?? "");
+            if (entry.Speaker == "Intervention")
+            {
+                var targets = codeChanges.Where(x => x.TurnId == entry.TurnId).ToArray();
+                foreach (var target in targets) { var link = ChatButton(target.Label); link.Click += (s, e) => ShowCodeChanges(target); body.Children.Add(link); }
+                if (targets.Length > 0) { var undo = ChatButton("Annuler toute l’intervention"); undo.Click += (s, e) => RollbackIntervention(targets[0], null, true); body.Children.Add(undo); }
+            }
             if (!string.IsNullOrWhiteSpace(entry.AttachedMemory))
                 body.Children.Add(new Expander { Header = "Mémoire du document jointe",
                     Content = SelectableText(entry.AttachedMemory), FontSize = 11, Margin = new Thickness(0, 8, 0, 0) });
+            foreach (var attachment in entry.Attachments ?? new ChatAttachment[0]) {
+                var content = new StackPanel(); content.Children.Add(SelectableText(attachment.Text));
+                if (!string.IsNullOrEmpty(attachment.Module)) { var navigate = ChatButton("Ouvrir dans le VBE"); navigate.Click += (s, e) => NavigateAttachment(attachment); content.Children.Add(navigate); }
+                body.Children.Add(new Expander { Header = attachment.Label + " · " + attachment.Text.Length + " caractères", Content = content, FontSize = 11 });
+            }
+            if (entry.Speaker == "Vérification" && entry.Attachments != null && entry.Attachments.Length > 0) {
+                var fix = ChatButton("Préparer une correction"); fix.Click += (s, e) => { if (busy) return; modePicker.SelectedItem = ChatMode.Agent; prompt.Text = "/corriger " + entry.Text; draftAttachments.AddRange(entry.Attachments); RefreshContextChips(); }; body.Children.Add(fix);
+            }
             if (entry.References != null && entry.References.Length > 0)
             {
                 var refs = new WrapPanel { Margin = new Thickness(0, 9, 0, 0) };
@@ -258,6 +277,16 @@ namespace CodexVBE
             };
             rollbackButtons[change] = restore;
             actions.Children.Add(restore);
+            var blocks = ChatButton("Annuler un bloc…");
+            blocks.Click += (s, e) => {
+                var menu = new ContextMenu();
+                foreach (var hunk in CodeRollback.Hunks(change.Before, change.After).Where(x => !change.RestoredHunks.Contains(x.Index))) {
+                    var item = new MenuItem { Header = "Bloc " + (hunk.Index + 1) + " · L" + (hunk.AfterStart + 1) + " · +" + hunk.After.Length + " −" + hunk.Before.Length, IsEnabled = !busy };
+                    item.Click += (a, b) => RollbackIntervention(change, hunk.Index, false); menu.Items.Add(item);
+                }
+                blocks.ContextMenu = menu; menu.PlacementTarget = blocks; menu.IsOpen = true;
+            }; actions.Children.Add(blocks);
+            if (!string.IsNullOrEmpty(change.TurnId)) { var all = ChatButton("Annuler l’intervention"); all.Click += (s, e) => RollbackIntervention(change, null, true); actions.Children.Add(all); }
             var state = new TextBlock { FontSize = 11, Foreground = Ink("#64748B"),
                 Margin = new Thickness(8, 8, 0, 0) };
             changeStates[change] = state; actions.Children.Add(state); body.Children.Add(actions);
@@ -272,7 +301,7 @@ namespace CodexVBE
             {
                 pair.Value.IsEnabled = !pair.Key.Restored && !busy;
                 pair.Value.Content = pair.Key.Restored ? "Modification annulée" : "Annuler la modification";
-                changeStates[pair.Key].Text = pair.Key.Restored ? "Code restauré" : "Appliquée";
+                changeStates[pair.Key].Text = pair.Key.Restored ? "Code restauré" : pair.Key.RestoredHunks.Count > 0 ? "Partiellement annulée" : "Appliquée";
             }
         }
 

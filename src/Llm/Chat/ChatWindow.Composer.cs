@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -136,6 +136,7 @@ namespace CodexVBE
             if (prompt == null || referencePopup == null) return;
             int caret = prompt.CaretIndex;
             if (caret == acceptedTokenEnd) { HideReferences(); return; }
+            if (TryShowCommands(caret)) return;
             int start = caret;
             while (start > 0 && IsReferenceChar(prompt.Text[start - 1])) start--;
             if (start == 0 || (prompt.Text[start - 1] != '#' && prompt.Text[start - 1] != '@') ||
@@ -165,6 +166,18 @@ namespace CodexVBE
             referencePopup.IsOpen = true;
         }
 
+        private bool TryShowCommands(int caret)
+        {
+            if (!prompt.Text.StartsWith("/") || caret < 1 || prompt.Text.Substring(0, caret).Any(char.IsWhiteSpace)) return false;
+            var matches = ChatCommand.All.Where(x => x.Token.StartsWith(prompt.Text.Substring(0, caret), StringComparison.OrdinalIgnoreCase)).ToArray();
+            referenceList.ItemsSource = matches; referenceList.SelectedIndex = matches.Length > 0 ? 0 : -1;
+            referenceList.Visibility = Visibility.Visible; referenceStatus.Text = "Commande · Entrée pour choisir · ajoutez vos précisions";
+            referencePopup.HorizontalOffset = 0; referencePopup.VerticalOffset = prompt.GetRectFromCharacterIndex(caret).Bottom + 3;
+            referenceList.Width = Math.Max(240, Math.Min(420, prompt.ActualWidth - 14));
+            referenceStatus.MaxWidth = referenceList.Width - 12;
+            referencePopup.IsOpen = true; return true;
+        }
+
         private static bool IsReferenceChar(char value)
         {
             return char.IsLetterOrDigit(value) || value == '_' || value == '.' || value == ':';
@@ -172,6 +185,12 @@ namespace CodexVBE
 
         private void AcceptReference()
         {
+            var command = referenceList.SelectedItem as ChatCommand;
+            if (command != null) {
+                prompt.Select(0, prompt.CaretIndex); prompt.SelectedText = command.Token + " ";
+                if (!busy) modePicker.SelectedItem = command.Mode;
+                HideReferences(); prompt.CaretIndex = command.Token.Length + 1; return;
+            }
             var reference = referenceList.SelectedItem as VbeChatReference;
             if (reference == null || referenceStart < 0) return;
             int caret = prompt.CaretIndex;
@@ -247,6 +266,11 @@ namespace CodexVBE
                 };
                 row.Children.Add(remove);
                 contextChips.Children.Add(new Border { Child = row, Margin = new Thickness(0, 0, 6, 4) });
+            }
+            foreach (var attachment in draftAttachments.ToArray()) {
+                var chip = ChatButton(attachment.Label + " · ×"); chip.ToolTip = "Retirer cette sélection";
+                chip.Click += (s, e) => { draftAttachments.Remove(attachment); RefreshContextChips(); ScheduleSessionSave(); };
+                contextChips.Children.Add(chip);
             }
             contextChips.Visibility = contextChips.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         }
