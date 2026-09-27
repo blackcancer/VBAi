@@ -9,6 +9,35 @@ namespace CodexVBE
 {
     internal sealed partial class VbeForms
     {
+        public object PropertyAccessors(Request request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Property))
+                throw new ArgumentException("Property is required.");
+            dynamic form = GetForm(GetProject(request.Project), request.Form);
+            object target;
+            if (string.IsNullOrWhiteSpace(request.ControlPath) ||
+                string.Equals(request.ControlPath, "UserForm", StringComparison.OrdinalIgnoreCase))
+                target = form.Designer;
+            else
+            {
+                dynamic tree = Tree(request.Project, request.Form);
+                if (!TreeContainsPath((IEnumerable)tree.Controls, request.ControlPath))
+                    throw new InvalidOperationException("ControlPath is not canonical in form_tree.");
+                target = ResolveTreeItem(form.Designer, request.ControlPath);
+            }
+            string[] path = request.Property.Split('.');
+            if (path.Length > 2) throw new ArgumentException("Property has too many segments.");
+            if (path.Length == 2)
+            {
+                if (!string.Equals(path[0], "Font", StringComparison.OrdinalIgnoreCase))
+                    throw new ArgumentException("Only Font members are supported as nested accessor metadata.");
+                target = ((dynamic)target).Font;
+            }
+            return new { Project = request.Project, Form = request.Form,
+                ControlPath = request.ControlPath ?? "UserForm", Property = request.Property,
+                Metadata = VbeComPropertyAccessors.Inspect(target, path[path.Length - 1]) };
+        }
+
         // Deliberately limited to setters already exercised on MSForms Label in Excel.
         // COM PropertyDescriptor.IsReadOnly is not proof of a working setter: Cancel
         // reported writable and its setter failed in the first generic-copy probe.
