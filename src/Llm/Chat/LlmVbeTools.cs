@@ -20,7 +20,7 @@ namespace CodexVBE
         private readonly List<string> userRequests = new List<string>();
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
             "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "compile_project", "open_debug_pane", "list_commands", "select_code",
-            "project_properties", "project_signature_status", "read_project_signature_dialog", "component_properties", "component_property_value", "vbe_windows", "code_panes", "open_object_browser", "list_procedures", "find_code", "select_procedure", "list_forms",
+            "project_properties", "project_signature_status", "read_project_signature_dialog", "list_signing_certificates", "component_properties", "component_property_value", "vbe_windows", "code_panes", "open_object_browser", "list_procedures", "find_code", "select_procedure", "list_forms",
             "form_state", "form_tree", "form_list_items", "form_properties", "form_control_properties", "form_event_catalog",
             "list_form_control_types", "open_form"
         };
@@ -118,8 +118,13 @@ namespace CodexVBE
                 new[] { "Project" }, "Project"),
             Definition("project_signature_status", "Read whether the exact Excel workbook owning this VBE project has a signed VBA project. Returns Available=false when the host is not Excel, the registered Excel instance differs from this VBE, or its project cannot be matched. This does not sign, validate the certificate, or inspect pending edits.",
                 new[] { "Project" }, "Project"),
+            Definition("list_signing_certificates", "List public metadata and thumbprints of CurrentUser/My certificates with a private key and Code Signing EKU. EligibleNow indicates the validity dates only; it does not establish certificate trust. Use an exact thumbprint with sign_project.",
+                new string[0]),
             Definition("read_project_signature_dialog", "Read the labels and buttons of the native VBE Digital Signature dialog for the currently active project, then close it through its accessible Cancel action. Project must exactly match ActiveVBProject and ExpectedMode must be 2. This is a read-only observation of the displayed certificate names; it does not assign, remove or validate a certificate. No shortcuts or coordinate clicks.",
                 new[] { "Project", "ExpectedMode" }, "Project", "ExpectedMode"),
+            Definition("sign_project", "Sign an unsigned, saved VBE project with an explicit code-signing certificate thumbprint from CurrentUser/My. Requires current project version, design mode and VBE edit policy. If the certificate is already associated with the project, the native VBE dialog can reuse it directly. Otherwise Windows Security asks the user to confirm it; the add-in waits up to two minutes, verifies the selected name and confirms the VBE dialog. For Excel, the add-in saves the exact workbook and reports SaveRequired=false on success; other hosts need their native save. Host signature status and a dialog readback are not cryptographic trust validation.",
+                new[] { "Project", "ExpectedProjectVersion", "ExpectedMode", "CertificateThumbprint" },
+                "Project", "ExpectedProjectVersion", "ExpectedMode", "CertificateThumbprint"),
             Definition("component_properties", "Read all exposed VBComponent and designer properties, code SHA-256, and a component revision. Works for document, standard, class and form components when VBIDE allows access.",
                 new[] { "Project", "Module" }, "Project", "Module"),
             Definition("component_property_value", "Read one named VBComponent host property on demand. Type 100 document properties belong to the host object, not the common VBE editor; Excel MailEnvelope returns an explicit error because its getter blocks COM inspection.",
@@ -322,6 +327,51 @@ namespace CodexVBE
 
         public async Task<string> InvokeAsync(string name, string arguments)
         {
+            if (name == "sign_project")
+            {
+                try
+                {
+                    await Task.Run(() => VbeDebugWindows.EnsureNoSignatureDialog());
+                    string scheduled = Invoke(name, arguments);
+                    Response initial = json.Deserialize<Response>(scheduled);
+                    if (initial == null || !initial.Ok) return scheduled;
+                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
+                    var scheduledData = initial.Data as IDictionary<string, object>;
+                    if (scheduledData == null || !scheduledData.ContainsKey("CertificateName"))
+                        throw new InvalidOperationException("The certificate name was not returned by the VBE.");
+                    string certificateName = (string)scheduledData["CertificateName"];
+                    bool unsignedVerified = (bool)scheduledData["UnsignedVerified"];
+                    object signed = await Task.Run(() => VbeDebugWindows.CompleteProjectSignature(
+                        (string)values["Project"], (string)values["CertificateThumbprint"], certificateName,
+                        unsignedVerified));
+                    object persistence = null;
+                    string persistenceError = null;
+                    for (int attempt = 0; attempt < 12; attempt++)
+                    {
+                        try
+                        {
+                            persistence = session.PersistProjectSignature((string)values["Project"]);
+                            persistenceError = null;
+                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            persistenceError = ex.Message;
+                            if (attempt == 11 || ex.ToString().IndexOf("0x800AC472",
+                                StringComparison.OrdinalIgnoreCase) < 0) break;
+                            await Task.Delay(250);
+                        }
+                    }
+                    Response status = session.Execute(new Request { Command = "project_signature_status",
+                        Project = (string)values["Project"] });
+                    return json.Serialize(Response.Success(new { Signature = signed,
+                        Persistence = persistence, PersistenceError = persistenceError,
+                        SaveRequired = persistence == null || !((bool)((dynamic)persistence).Saved),
+                        HostStatus = status.Ok ? status.Data : null,
+                        HostStatusError = status.Ok ? null : status.Error }));
+                }
+                catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+            }
             if (name == "read_project_signature_dialog")
             {
                 try

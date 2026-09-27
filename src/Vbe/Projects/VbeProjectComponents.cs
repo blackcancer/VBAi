@@ -92,6 +92,38 @@ namespace CodexVBE
             }
         }
 
+        public object PersistExcelSignature(string projectName)
+        {
+            if (!string.Equals(Process.GetCurrentProcess().ProcessName, "EXCEL", StringComparison.OrdinalIgnoreCase))
+                return new { Available = false, Saved = false,
+                    Reason = "The host is not Excel; save the host document with its native command." };
+            dynamic project = GetProject(projectName);
+            string projectPath = (string)project.FileName;
+            if (string.IsNullOrWhiteSpace(projectPath) || !Path.IsPathRooted(projectPath))
+                throw new InvalidOperationException("The Excel VBA project has no saved workbook path.");
+            dynamic excel = Marshal.GetActiveObject("Excel.Application");
+            uint excelProcessId;
+            GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(excel.Hwnd)), out excelProcessId);
+            if (excelProcessId != (uint)Process.GetCurrentProcess().Id)
+                throw new InvalidOperationException("The registered Excel instance is not this VBE host.");
+            dynamic match = null;
+            foreach (dynamic workbook in excel.Workbooks)
+            {
+                if (!string.Equals(Path.GetFullPath((string)workbook.FullName),
+                    Path.GetFullPath(projectPath), StringComparison.OrdinalIgnoreCase)) continue;
+                if (match != null) throw new InvalidOperationException("Multiple workbooks match the selected VBA project.");
+                match = workbook;
+            }
+            if (match == null) throw new InvalidOperationException("No workbook matches the selected VBA project.");
+            if ((bool)match.ReadOnly) throw new InvalidOperationException("The signed workbook is read-only and cannot be saved.");
+            if (!(bool)match.VBASigned) throw new InvalidOperationException("Excel does not report a signed VBA project before saving.");
+            match.Save();
+            if (!(bool)match.VBASigned) throw new InvalidOperationException("Excel no longer reports the VBA project as signed after saving.");
+            return new { Available = true, Saved = true, Path = projectPath,
+                Signed = true, Verification = "ExcelWorkbookSaveAndVBASignedReadback",
+                Limit = "A reopening check is needed to prove the signature persisted on disk." };
+        }
+
         public object ComponentPropertyValue(string projectName, string componentName, string propertyName)
         {
             if (string.IsNullOrWhiteSpace(propertyName)) throw new ArgumentException("Property is required.");

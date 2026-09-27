@@ -129,6 +129,44 @@ namespace CodexVBE
                                     if (response.Ok) response = Response.Success(
                                         VbeDebugWindows.ReadSignatureDialog(request.Project));
                                 }
+                                else if (request != null && request.Command == "sign_project")
+                                {
+                                    VbeDebugWindows.EnsureNoSignatureDialog();
+                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));
+                                    if (response.Ok)
+                                    {
+                                        string certificateName = (string)((dynamic)response.Data).CertificateName;
+                                        bool unsignedVerified = (bool)((dynamic)response.Data).UnsignedVerified;
+                                        object signed = VbeDebugWindows.CompleteProjectSignature(request.Project,
+                                            request.CertificateThumbprint, certificateName, unsignedVerified);
+                                        object persistence = null;
+                                        string persistenceError = null;
+                                        for (int attempt = 0; attempt < 12; attempt++)
+                                        {
+                                            try
+                                            {
+                                                persistence = dispatcher.Invoke(new Func<object>(() =>
+                                                    session.PersistProjectSignature(request.Project)));
+                                                persistenceError = null;
+                                                break;
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                persistenceError = ex.Message;
+                                                if (attempt == 11 || ex.ToString().IndexOf("0x800AC472",
+                                                    StringComparison.OrdinalIgnoreCase) < 0) break;
+                                                System.Threading.Thread.Sleep(250);
+                                            }
+                                        }
+                                        Response status = (Response)dispatcher.Invoke(new Func<Response>(() =>
+                                            session.Execute(new Request { Command = "project_signature_status", Project = request.Project })));
+                                        response = Response.Success(new { Signature = signed,
+                                            Persistence = persistence, PersistenceError = persistenceError,
+                                            SaveRequired = persistence == null || !((bool)((dynamic)persistence).Saved),
+                                            HostStatus = status.Ok ? status.Data : null,
+                                            HostStatusError = status.Ok ? null : status.Error });
+                                    }
+                                }
                                 else if (request != null && request.Command == "remove_watch")
                                 {
                                     VbeDebugWindows.SelectWatch(request);

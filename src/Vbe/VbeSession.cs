@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -54,8 +55,12 @@ namespace CodexVBE
                     return Response.Success(components.ProjectProperties(request.Project));
                 case "project_signature_status":
                     return Response.Success(components.SignatureStatus(request.Project));
+                case "list_signing_certificates":
+                    return Response.Success(ListSigningCertificates());
                 case "read_project_signature_dialog":
                     return Response.Success(debugger.QueueSignatureDialog(request));
+                case "sign_project":
+                    return Response.Success(BeginSignProject(request));
                 case "component_properties":
                     return Response.Success(components.ComponentProperties(request.Project, request.Module));
                 case "component_property_value":
@@ -217,6 +222,110 @@ namespace CodexVBE
                 default:
                     return Response.Failure("Unknown command: " + request.Command);
             }
+        }
+
+        private object BeginSignProject(Request request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Project) ||
+                string.IsNullOrWhiteSpace(request.ExpectedProjectVersion) ||
+                string.IsNullOrWhiteSpace(request.CertificateThumbprint))
+                throw new ArgumentException("Project, ExpectedProjectVersion and CertificateThumbprint are required.");
+            dynamic state = components.ProjectProperties(request.Project);
+            if ((int)state.Mode != 2 || request.ExpectedMode != 2)
+                throw new InvalidOperationException("The project must be in design mode (ExpectedMode=2).");
+            if (!string.Equals((string)state.Version, request.ExpectedProjectVersion,
+                StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The project changed since it was read.");
+            dynamic liveProject = GetProject(request.Project);
+            if (!(bool)liveProject.Saved)
+                throw new InvalidOperationException("Save the VBA project before signing it.");
+            dynamic signatureStatus = components.SignatureStatus(request.Project);
+            if ((bool)signatureStatus.Available && (bool)signatureStatus.Signed)
+                throw new InvalidOperationException("The host reports an existing VBA signature; this command only adds the first signature.");
+            bool unsignedVerified = (bool)signatureStatus.Available && !(bool)signatureStatus.Signed;
+            if (string.Equals(System.Diagnostics.Process.GetCurrentProcess().ProcessName, "EXCEL",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                string projectPath = null;
+                try { projectPath = (string)liveProject.FileName; }
+                catch { }
+                if (string.IsNullOrWhiteSpace(projectPath) || !Path.IsPathRooted(projectPath) ||
+                    !File.Exists(projectPath) || !unsignedVerified)
+                    throw new InvalidOperationException("Save the macro-enabled Excel workbook before adding its first VBA signature.");
+                string extension = Path.GetExtension(projectPath);
+                if (!new[] { ".xlsm", ".xlam", ".xlsb", ".xltm", ".xls", ".xla", ".xlt" }
+                    .Contains(extension, StringComparer.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("The saved Excel format does not support a VBA project signature.");
+                bool hasVbaContent = false;
+                foreach (dynamic component in liveProject.VBComponents)
+                    if ((int)component.Type != 100 || (int)component.CodeModule.CountOfLines > 0)
+                    { hasVbaContent = true; break; }
+                if (!hasVbaContent)
+                    throw new InvalidOperationException("The Excel workbook has no VBA content to sign; add code and save it first.");
+            }
+            string thumbprint = request.CertificateThumbprint.Replace(" ", "").ToUpperInvariant();
+            if (!Regex.IsMatch(thumbprint, "^[0-9A-F]{40}$"))
+                throw new ArgumentException("CertificateThumbprint must be a SHA-1 certificate thumbprint.");
+            using (var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
+            {
+                store.Open(OpenFlags.ReadOnly);
+                var matches = store.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, false);
+                if (matches.Count != 1) throw new InvalidOperationException("The selected certificate is absent or ambiguous.");
+                var certificate = matches[0];
+                if (!certificate.HasPrivateKey || DateTime.Now < certificate.NotBefore || DateTime.Now > certificate.NotAfter)
+                    throw new InvalidOperationException("The certificate needs a usable private key and current validity.");
+                bool codeSigning = certificate.Extensions.OfType<X509EnhancedKeyUsageExtension>()
+                    .SelectMany(extension => extension.EnhancedKeyUsages.Cast<System.Security.Cryptography.Oid>())
+                    .Any(oid => oid.Value == "1.3.6.1.5.5.7.3.3");
+                if (!codeSigning) throw new InvalidOperationException("The certificate is not intended for code signing.");
+                string displayName = certificate.GetNameInfo(X509NameType.SimpleName, false);
+                if (string.IsNullOrWhiteSpace(displayName))
+                    throw new InvalidOperationException("The certificate display name is empty.");
+                var matchingThumbprints = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var item in store.Certificates.Cast<X509Certificate2>())
+                    if (string.Equals(item.GetNameInfo(X509NameType.SimpleName, false), displayName,
+                        StringComparison.OrdinalIgnoreCase)) matchingThumbprints.Add(item.Thumbprint);
+                using (var machineStore = new X509Store(StoreName.My, StoreLocation.LocalMachine))
+                {
+                    machineStore.Open(OpenFlags.ReadOnly);
+                    foreach (var item in machineStore.Certificates.Cast<X509Certificate2>())
+                        if (string.Equals(item.GetNameInfo(X509NameType.SimpleName, false), displayName,
+                            StringComparison.OrdinalIgnoreCase)) matchingThumbprints.Add(item.Thumbprint);
+                }
+                if (matchingThumbprints.Count != 1 || !matchingThumbprints.Contains(thumbprint))
+                    throw new InvalidOperationException("The certificate display name is ambiguous across personal certificate stores.");
+                object scheduled = debugger.QueueSignatureDialog(request);
+                return new { Scheduled = true, Project = request.Project,
+                    CertificateThumbprint = thumbprint, CertificateName = displayName,
+                    UnsignedVerified = unsignedVerified,
+                    NativeCommand = scheduled };
+            }
+        }
+
+        private object ListSigningCertificates()
+        {
+            using (var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
+            {
+                store.Open(OpenFlags.ReadOnly);
+                return store.Certificates.Cast<X509Certificate2>()
+                    .Where(certificate => certificate.HasPrivateKey &&
+                        certificate.Extensions.OfType<X509EnhancedKeyUsageExtension>()
+                            .SelectMany(extension => extension.EnhancedKeyUsages.Cast<System.Security.Cryptography.Oid>())
+                            .Any(oid => oid.Value == "1.3.6.1.5.5.7.3.3"))
+                    .Select(certificate => new {
+                        certificate.Thumbprint,
+                        Name = certificate.GetNameInfo(X509NameType.SimpleName, false),
+                        certificate.Subject, certificate.Issuer,
+                        NotBefore = certificate.NotBefore.ToString("o"),
+                        NotAfter = certificate.NotAfter.ToString("o"),
+                        EligibleNow = DateTime.Now >= certificate.NotBefore && DateTime.Now <= certificate.NotAfter
+                    }).ToArray();
+            }
+        }
+
+        internal object PersistProjectSignature(string projectName)
+        {
+            return components.PersistExcelSignature(projectName);
         }
 
         private object ListProjects()

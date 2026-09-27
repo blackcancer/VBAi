@@ -415,9 +415,26 @@ namespace CodexVBE
             dynamic active = vbe.ActiveVBProject;
             if (active == null || !SameComObject((object)active, (object)project))
                 throw new InvalidOperationException("Select the exact project in VBE before opening its signature dialog.");
+            // VBE reuses Id 746 for both Digital Signature and Remove Component.
+            // When a removable component is selected, Execute can dispatch the
+            // Remove action even on the Tools > Signature control. Show a host
+            // document component and refuse the action if the collision remains.
+            if (HasEnabledRemove746())
+            {
+                dynamic document = null;
+                foreach (dynamic component in project.VBComponents)
+                    if ((int)component.Type == 100) { document = component; break; }
+                if (document == null)
+                    throw new InvalidOperationException("VBE Id 746 also targets Remove Component; no safe document component is available.");
+                document.CodeModule.CodePane.Show();
+                if (HasEnabledRemove746())
+                    throw new InvalidOperationException("VBE Id 746 still targets Remove Component; signature was not started.");
+            }
             var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 746 && entry.Enabled &&
-                ((entry.Caption ?? "").Replace("&", "").IndexOf("Signature", StringComparison.OrdinalIgnoreCase) >= 0));
-            if (command == null)
+                (entry.Path.IndexOf("Outils", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 entry.Path.IndexOf("Tools", StringComparison.OrdinalIgnoreCase) >= 0));
+            if (command == null || (command.Caption ?? "").Replace("&", "")
+                .IndexOf("Signature", StringComparison.OrdinalIgnoreCase) < 0)
                 throw new InvalidOperationException("The native VBE Digital Signature command is unavailable.");
             SynchronizationContext context = SynchronizationContext.Current;
             if (context == null) throw new InvalidOperationException("The VBE UI context is unavailable.");
@@ -427,6 +444,13 @@ namespace CodexVBE
             }, null);
             return new { Scheduled = true, Project = request.Project, ControlId = command.Id,
                 Control = command.Path };
+        }
+
+        private bool HasEnabledRemove746()
+        {
+            return EnumerateCommands().Any(entry => entry.Id == 746 && entry.Enabled &&
+                ((entry.Caption ?? "").Replace("&", "").TrimStart().StartsWith("Supprimer ", StringComparison.OrdinalIgnoreCase) ||
+                 (entry.Caption ?? "").Replace("&", "").TrimStart().StartsWith("Remove ", StringComparison.OrdinalIgnoreCase)));
         }
 
         public object RunSub(Request request)

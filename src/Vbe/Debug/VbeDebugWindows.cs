@@ -168,6 +168,119 @@ namespace CodexVBE
                 Limit = "Labels reflect the native dialog; no certificate was selected, assigned, removed or cryptographically validated." };
         }
 
+        // Windows' protected certificate picker does not expose its buttons to
+        // UIA/MSAA. The user confirms the named certificate there; the add-in
+        // checks VBE's readback and completes only its own native VBE dialog.
+        public static object CompleteProjectSignature(string project, string thumbprint, string certificateName,
+            bool unsignedVerified)
+        {
+            IntPtr dialog = IntPtr.Zero;
+            for (int attempt = 0; attempt < 60 && dialog == IntPtr.Zero; attempt++)
+            { Thread.Sleep(50); dialog = FindSignatureDialog(); }
+            if (dialog == IntPtr.Zero)
+                throw new InvalidOperationException("The native VBE Digital Signature dialog did not open.");
+            bool completed = false;
+            try
+            {
+                Accessibility.IAccessible root = SignatureAccessible(dialog);
+                var initial = SignatureLabels(root);
+                string current = CertificateBeforeHeading(initial,
+                    "Signature actuelle du projet VBA", "The VBA project is currently signed as");
+                string signAs = CertificateBeforeHeading(initial, "Signer en tant que", "Sign as");
+                if ((!unsignedVerified && !IsNoCertificate(current)) ||
+                    (!IsNoCertificate(signAs) && !string.Equals(signAs, certificateName, StringComparison.OrdinalIgnoreCase)))
+                    throw new InvalidOperationException("This command adds the first signature only; the project already has a certificate selected.");
+                bool chosen = string.Equals(signAs, certificateName, StringComparison.OrdinalIgnoreCase) ||
+                    (unsignedVerified && IsNoCertificate(signAs) &&
+                     string.Equals(current, certificateName, StringComparison.OrdinalIgnoreCase));
+                bool pickerOpened = !chosen;
+                if (!chosen) InvokeSignatureButton(root, "Choisir...", "Choose...");
+                for (int attempt = 0; !chosen && attempt < 2400; attempt++)
+                {
+                    Thread.Sleep(50);
+                    if (FindSignatureDialog() != dialog)
+                        throw new InvalidOperationException("The native VBE signature dialog closed during certificate selection.");
+                    if (attempt % 4 != 0) continue;
+                    string selected = CertificateBeforeHeading(SignatureLabels(root), "Signer en tant que", "Sign as");
+                    if (string.Equals(selected, certificateName, StringComparison.OrdinalIgnoreCase))
+                    { chosen = true; break; }
+                    if (!IsNoCertificate(selected))
+                        throw new InvalidOperationException("A different certificate was selected; the signature was cancelled.");
+                }
+                if (!chosen)
+                    throw new TimeoutException("The certificate was not confirmed in Windows Security within two minutes.");
+                InvokeSignatureButton(root, "OK");
+                for (int attempt = 0; attempt < 60; attempt++)
+                {
+                    if (FindSignatureDialog() == IntPtr.Zero) { completed = true; break; }
+                    Thread.Sleep(50);
+                }
+                if (!completed) throw new InvalidOperationException("The native VBE signature dialog did not close after OK.");
+                return new { Project = project, CertificateThumbprint = thumbprint,
+                    CertificateName = certificateName, SignatureAssigned = true,
+                    Verification = "NativeVbeCertificateReadbackAndDialogClose",
+                    SelectionSource = pickerOpened ? "WindowsCertificatePicker" : "NativeVbeExistingCertificate",
+                    CertificatePicker = pickerOpened
+                        ? "The Windows certificate picker returned the named certificate; the add-in did not interact with its protected controls."
+                        : "The named certificate was already associated with the project in the native VBE dialog." };
+            }
+            finally
+            {
+                if (!completed && FindSignatureDialog() == dialog)
+                    PostMessage(dialog, 0x0010, IntPtr.Zero, IntPtr.Zero);
+            }
+        }
+
+        private static Accessibility.IAccessible SignatureAccessible(IntPtr dialog)
+        {
+            object accessible;
+            Guid iid = IidAccessible;
+            int hr = AccessibleObjectFromWindow(dialog, ObjidClient, ref iid, out accessible);
+            if (hr != 0 || !(accessible is Accessibility.IAccessible))
+                throw new COMException("The native signature dialog is not accessible through MSAA.", hr);
+            return (Accessibility.IAccessible)accessible;
+        }
+
+        private static List<string> SignatureLabels(Accessibility.IAccessible root)
+        {
+            var labels = new List<string>();
+            for (int index = 1; index <= Math.Min(root.accChildCount, 64); index++)
+            {
+                try
+                {
+                    if (Convert.ToInt32(root.get_accRole(index)) == 41)
+                    {
+                        string name = root.get_accName(index);
+                        if (!string.IsNullOrWhiteSpace(name)) labels.Add(name);
+                    }
+                }
+                catch (COMException) { }
+            }
+            return labels;
+        }
+
+        private static bool IsNoCertificate(string name)
+        {
+            return name != null && (name.Equals("[Aucun certificat]", StringComparison.OrdinalIgnoreCase) ||
+                name.Equals("[No certificate]", StringComparison.OrdinalIgnoreCase) ||
+                name.Equals("[None]", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static void InvokeSignatureButton(Accessibility.IAccessible root, params string[] names)
+        {
+            for (int index = 1; index <= Math.Min(root.accChildCount, 64); index++)
+            {
+                try
+                {
+                    if (Convert.ToInt32(root.get_accRole(index)) == 43 &&
+                        names.Any(name => string.Equals(root.get_accName(index), name, StringComparison.OrdinalIgnoreCase)))
+                    { root.accDoDefaultAction(index); return; }
+                }
+                catch (COMException) { }
+            }
+            throw new InvalidOperationException("The expected accessible signature button is unavailable: " + names[0]);
+        }
+
         private static string CertificateBeforeHeading(IList<string> labels, params string[] headings)
         {
             for (int index = 2; index < labels.Count; index++)
