@@ -63,6 +63,71 @@ namespace CodexVBE
                 throw new InvalidOperationException("A native VBE dialog is already open; compilation was not started.");
         }
 
+        public static object ReadDebugDialog()
+        {
+            IntPtr dialog = FindDialog("Microsoft Visual Basic pour Applications",
+                "Microsoft Visual Basic for Applications");
+            if (dialog == IntPtr.Zero)
+                return new { Available = false, Diagnostic = (string)null,
+                    Buttons = new string[0], Error = (string)null };
+            var messages = new List<string>();
+            var buttons = new List<string>();
+            EnumChildWindows(dialog, (handle, parameter) => {
+                if (!IsWindowVisible(handle)) return true;
+                string title = WindowText(handle);
+                if (string.IsNullOrWhiteSpace(title)) return true;
+                string kind = ClassName(handle);
+                if (kind == "Static") messages.Add(title);
+                else if (kind == "Button") buttons.Add(title);
+                return true;
+            }, IntPtr.Zero);
+            if (messages.Count != 1)
+                return new { Available = true, Diagnostic = (string)null,
+                    Buttons = buttons.ToArray(), Error = "Expected one native diagnostic message; found " + messages.Count + "." };
+            return new { Available = true, Diagnostic = messages[0],
+                Buttons = buttons.ToArray(), Error = (string)null };
+        }
+
+        public static object RespondDebugDialog(Request request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Diagnostic) ||
+                string.IsNullOrWhiteSpace(request.Button))
+                throw new ArgumentException("Diagnostic and Button are required.");
+            IntPtr dialog = FindDialog("Microsoft Visual Basic pour Applications",
+                "Microsoft Visual Basic for Applications");
+            if (dialog == IntPtr.Zero) throw new InvalidOperationException("No native VBE dialog is visible.");
+            IntPtr target = IntPtr.Zero;
+            string message = null;
+            int matches = 0;
+            EnumChildWindows(dialog, (handle, parameter) => {
+                if (!IsWindowVisible(handle)) return true;
+                string kind = ClassName(handle);
+                string title = WindowText(handle);
+                if (kind == "Static" && !string.IsNullOrWhiteSpace(title)) message = title;
+                if (kind == "Button" && string.Equals(title, request.Button, StringComparison.Ordinal))
+                { target = handle; matches++; }
+                return true;
+            }, IntPtr.Zero);
+            if (!string.Equals(message, request.Diagnostic, StringComparison.Ordinal))
+                throw new InvalidOperationException("The native diagnostic changed before the button could be activated.");
+            if (!Regex.IsMatch(message, @"^(Erreur d'exécution|Run-time error|Erreur de compilation|Compile error)",
+                RegexOptions.IgnoreCase))
+                throw new InvalidOperationException("The visible VBE dialog is not a recognized VBA diagnostic.");
+            if (matches != 1 || target == IntPtr.Zero)
+                throw new InvalidOperationException("Expected exactly one matching native dialog button.");
+            if (!PostMessage(target, BmClick, IntPtr.Zero, IntPtr.Zero))
+                throw new InvalidOperationException("The native dialog button could not be activated.");
+            for (int attempt = 0; attempt < 40; attempt++)
+            {
+                Thread.Sleep(50);
+                if (!IsWindowVisible(dialog))
+                    return new { Activated = true, request.Button, Diagnostic = message,
+                        Verification = "DialogClosed", VerificationPending = false };
+            }
+            return new { Activated = true, request.Button, Diagnostic = message,
+                Verification = "Pending", VerificationPending = true };
+        }
+
         public static string AwaitCompileDialog(ManualResetEventSlim completed)
         {
             for (int attempt = 0; attempt < 200; attempt++)

@@ -55,6 +55,10 @@ namespace CodexVBE
                                 var request = json.Deserialize<Request>(line);
                                 if (request != null && request.Command == "debug_windows")
                                     response = Response.Success(VbeDebugWindows.Capture(request.IncludeCallStack));
+                                else if (request != null && request.Command == "debug_dialog")
+                                    response = Response.Success(VbeDebugWindows.ReadDebugDialog());
+                                else if (request != null && request.Command == "respond_debug_dialog")
+                                    response = Response.Success(VbeDebugWindows.RespondDebugDialog(request));
                                 else if (request != null && request.Command == "compile_project")
                                 {
                                     VbeDebugWindows.EnsureNoCompileDialog();
