@@ -136,6 +136,47 @@ namespace CodexVBE
                 VerificationPending = true, NextRead = "Read debug_windows in a separate request to verify the selected watch is absent." };
         }
 
+        public object ExecuteGlobalDebugCommand(Request request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Project))
+                throw new ArgumentException("Project is required.");
+            dynamic project = GetProject(request.Project);
+            int beforeMode = (int)project.Mode;
+            if (beforeMode != request.ExpectedMode)
+                throw new InvalidOperationException("Project mode changed before the native debug command.");
+            int id;
+            string[] captions;
+            switch (request.Action)
+            {
+                case "reset":
+                    if (beforeMode != 1) throw new InvalidOperationException("Reset requires break mode.");
+                    id = 228; captions = new[] { "Réinitialiser", "Reset" }; break;
+                case "clear_all_breakpoints":
+                    if (beforeMode != 1 && beforeMode != 2)
+                        throw new InvalidOperationException("Clear All Breakpoints requires break or design mode.");
+                    id = 579; captions = new[] { "Effacer tous les points d'arrêt", "Effacer tous les points d’arrêt", "Clear All Breakpoints" };
+                    break;
+                default: throw new ArgumentException("Action must be reset or clear_all_breakpoints.");
+            }
+            var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == id && entry.Enabled &&
+                captions.Any(caption => (entry.Caption ?? "").Replace("&", "")
+                    .IndexOf(caption, StringComparison.OrdinalIgnoreCase) >= 0));
+            if (command == null) throw new InvalidOperationException("The native VBE debug command is absent or disabled.");
+            ((dynamic)command.Control).Execute();
+            int afterMode = (int)project.Mode;
+            bool verifiedReset = request.Action == "reset" && afterMode == 2;
+            return new { request.Action, request.Project, Scope = request.Action == "clear_all_breakpoints" ? "Entire VBE" : "Active project",
+                Executed = true, ControlId = id, Control = command.Path,
+                ModeBefore = beforeMode, ModeAfter = afterMode,
+                Verification = verifiedReset ? "Verified" : "Unverified",
+                VerificationPending = request.Action == "reset" && !verifiedReset,
+                VerificationLimit = request.Action == "clear_all_breakpoints"
+                    ? "VBIDE has no breakpoint inventory; the command invocation alone does not prove every marker was cleared."
+                    : verifiedReset ? null : "The VBE may apply reset after Execute returns.",
+                NextRead = request.Action == "reset" ? "Call debug_state in a separate request to confirm design mode."
+                    : "Run a disposable procedure or inspect the native editor to verify breakpoint behavior." };
+        }
+
         private static bool IsObjectBrowserCaption(string caption)
         {
             string name = (caption ?? "").Replace("&", "").Trim();

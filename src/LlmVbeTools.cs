@@ -39,7 +39,7 @@ namespace CodexVBE
                 properties[field] = field == "Value" ? (object)new { anyOf = new object[] {
                     new { type = "string" }, new { type = "number" }, new { type = "boolean" } } } :
                     new { type = field == "StartLine" || field == "Count" || field == "ExpectedMode" || field == "ControlId" || field == "ProcKind" || field == "InsertIndex" ||
-                        field == "Offset" || field == "Limit" || field == "TypeIndex" ||
+                        field == "Offset" || field == "Limit" || field == "TypeIndex" || field == "ZPosition" ||
                         field == "Major" || field == "Minor" ? "integer" :
                     field == "Left" || field == "Top" || field == "Width" || field == "Height" || field == "FontSize" ? "number" :
                     field == "FontBold" || field == "WholeWord" || field == "MatchCase" || field == "PatternSearch" || field == "IncludeCallStack" ? "boolean" : "string" };
@@ -77,6 +77,9 @@ namespace CodexVBE
             Definition("remove_watch", "Remove one native VBE watch selected by exact Expression and Context from debug_windows. Requires the Watches pane visible and ExpectedMode from debug_state. Confirms disappearance separately through UI accessibility.",
                 new[] { "Project", "ExpectedMode", "Expression", "Context" },
                 "Project", "ExpectedMode", "Expression", "Context"),
+            Definition("debug_global", "Execute reset in break mode or clear_all_breakpoints in break/design mode through the native VBE command. Clear All Breakpoints affects the entire VBE and cannot be verified from a VBIDE inventory; check subsequent execution on a disposable procedure. Requires ExpectedMode from debug_state and VBE edit policy.",
+                new[] { "Project", "ExpectedMode", "Action" },
+                "Project", "ExpectedMode", "Action"),
             Definition("open_object_browser", "Open the native VBE Object Browser through CommandBars Id 473 and read vbe_windows immediately. Opening may be asynchronous: if VerificationPending is true, call vbe_windows again in a separate request and confirm a visible Type 2 window. This command does not read libraries, classes or members.", new string[0]),
             Definition("list_procedures", "List Sub, Function and Property Get/Let/Set procedures from CodeModule without opening a code pane; returns exact VBIDE line ranges and module SHA-256.",
                 new[] { "Project", "Module" }, "Project", "Module"),
@@ -155,6 +158,9 @@ namespace CodexVBE
             Definition("set_form_node_picture", "Set a writable OLE Picture or MouseIcon property on a form_tree node from a local image path explicitly supplied by the user. Image bytes remain local; requires ExpectedTreeVersion and VBE edit policy.",
                 new[] { "Project", "Form", "ControlPath", "ExpectedTreeVersion", "Property", "Path" },
                 "Project", "Form", "ControlPath", "ExpectedTreeVersion", "Property", "Path"),
+            Definition("z_order_form_control", "Move a UserForm control to front (ZPosition=0) or back (ZPosition=1) in the native MSForms designer. Requires a canonical form_tree ControlPath, current ExpectedTreeVersion, design mode and VBE edit policy. Tested visually on two overlapping Labels. VBIDE does not expose a z-order readback; the tool reports Executed and Unverified, and TreeVersion may stay unchanged.",
+                new[] { "Project", "Form", "ControlPath", "ExpectedTreeVersion", "ZPosition" },
+                "Project", "Form", "ControlPath", "ExpectedTreeVersion", "ZPosition"),
             Definition("remove_form_control", "Remove a UserForm control at its canonical form_tree ControlPath, including one inside a Frame or MultiPage Page. Requires ExpectedTreeVersion and VBE edit policy; a Page or Tab itself is not accepted. The control and its descendants are deleted from the designer.",
                 new[] { "Project", "Form", "ControlPath", "ExpectedTreeVersion" },
                 "Project", "Form", "ControlPath", "ExpectedTreeVersion"),
