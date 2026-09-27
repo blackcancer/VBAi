@@ -2,7 +2,7 @@
 
 **Your AI agent for VBA**
 
-Interface en français ou en anglais selon la langue du VBE, avec repli sur la langue
+Interface disponible en 13 variantes linguistiques selon la langue du VBE, avec repli sur la langue
 d’affichage Windows puis sur l’anglais. Voir [la localisation](docs/localization.md).
 
 Anciennement CodexVBE. Les noms de solution, d’assembly, les identifiants COM et les répertoires de données restent inchangés pour préserver les installations existantes.

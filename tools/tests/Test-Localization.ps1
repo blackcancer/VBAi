@@ -27,9 +27,9 @@ try {
     $english = [Globalization.CultureInfo]::GetCultureInfo('en-US')
     Assert ((Invoke-Text Detect @((Host-Menu '&Affichage'),$english)).Name -eq 'fr-FR') 'VBE French must override English Windows.'
     Assert ((Invoke-Text Detect @((Host-Menu '&View'),$french)).Name -eq 'en-US') 'VBE English must override French Windows.'
-    Assert ((Invoke-Text Detect @((Host-Menu '&Ansicht'),$french)).Name -eq 'en-US') 'Unsupported IDE language must fall back to English.'
+    Assert ((Invoke-Text Detect @((Host-Menu '&Näytä'),$french)).Name -eq 'en-US') 'Unsupported IDE language must fall back to English.'
     Assert ((Invoke-Text Detect @($null,$french)).Name -eq 'fr-FR') 'Missing IDE must fall back to Windows display language.'
-    Assert ((Invoke-Text Detect @($null,[Globalization.CultureInfo]::GetCultureInfo('de-DE'))).Name -eq 'en-US') 'Unsupported Windows language must fall back to English.'
+    Assert ((Invoke-Text Detect @($null,[Globalization.CultureInfo]::GetCultureInfo('fi-FI'))).Name -eq 'en-US') 'Unsupported Windows language must fall back to English.'
 
     $neutral = [xml](Get-Content src/Localization/UiStrings.resx -Raw -Encoding UTF8)
     $translated = [xml](Get-Content src/Localization/UiStringsFrench.resx -Raw -Encoding UTF8)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.Resources;
@@ -10,12 +11,19 @@ namespace CodexVBE
     internal static class UiText
     {
         private static readonly ResourceManager English = new ResourceManager("CodexVBE.Localization.UiStrings", typeof(UiText).Assembly);
-        private static readonly ResourceManager French = new ResourceManager("CodexVBE.Localization.UiStringsFrench", typeof(UiText).Assembly);
+        private static readonly Dictionary<string, ResourceManager> Catalogues = CreateCatalogues();
+        private static Dictionary<string, ResourceManager> CreateCatalogues()
+        {
+            var result = new Dictionary<string, ResourceManager>();
+            foreach (var language in UiLanguages.All)
+                result[language.CultureName] = new ResourceManager("CodexVBE.Localization.UiStrings" + language.ResourceSuffix, typeof(UiText).Assembly);
+            return result;
+        }
         internal static CultureInfo Culture { get; private set; } = Supported(CultureInfo.CurrentUICulture);
 
         internal static CultureInfo Supported(CultureInfo culture)
         {
-            return CultureInfo.GetCultureInfo(culture?.TwoLetterISOLanguageName == "fr" ? "fr-FR" : "en-US");
+            return CultureInfo.GetCultureInfo(UiLanguages.For(culture).CultureName);
         }
 
         internal static void Initialize(object vbe)
@@ -27,6 +35,7 @@ namespace CodexVBE
         internal static CultureInfo Detect(object vbe, CultureInfo fallback)
         {
             bool hasMenu = false;
+            var captions = new List<string>();
             // Actual VBE captions take precedence over the operating system's display language.
             try
             {
@@ -36,14 +45,12 @@ namespace CodexVBE
                     hasMenu = true;
                     foreach (dynamic control in bar.Controls)
                     {
-                        string caption = ((string)control.Caption ?? "").Replace("&", "").Trim().ToLowerInvariant();
-                        if (caption == "affichage" || caption == "outils") return Supported(CultureInfo.GetCultureInfo("fr"));
-                        if (caption == "view" || caption == "tools") return Supported(CultureInfo.GetCultureInfo("en"));
+                        captions.Add((string)control.Caption);
                     }
                 }
             }
             catch (Exception ex) { LoadLog.Write("VBE UI language unavailable: " + ex.Message); }
-            return Supported(hasMenu ? CultureInfo.GetCultureInfo("en") : fallback);
+            return hasMenu ? UiLanguages.FromMenus(captions, fallback) : Supported(fallback);
         }
 
         internal static string Get(string english)
@@ -51,7 +58,7 @@ namespace CodexVBE
             if (english == null) return null;
             if (english == "DOCUMENT CONVERSATIONS") return Get("Document conversations").ToUpperInvariant();
             if (english == "YOU") return Get("You").ToUpperInvariant();
-            return (Culture.TwoLetterISOLanguageName == "fr" ? French.GetString(english, CultureInfo.InvariantCulture) : null)
+            return Catalogues[Culture.Name].GetString(english, CultureInfo.InvariantCulture)
                 ?? English.GetString(english, CultureInfo.InvariantCulture) ?? english;
         }
 
@@ -60,6 +67,16 @@ namespace CodexVBE
         internal static void Apply(Control control, IContainer components, params ToolTip[] additionalTips)
         {
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
+            var form = control as Form;
+            if (form != null)
+            {
+                form.RightToLeft = Culture.TextInfo.IsRightToLeft ? RightToLeft.Yes : RightToLeft.No;
+                form.RightToLeftLayout = Culture.TextInfo.IsRightToLeft;
+            }
+            // Technical content must never be mirrored, including URLs, tokens, VBA and diffs.
+            if (control is DataGridView || control is ComboBox ||
+                Array.IndexOf(new[] { "remote", "branch", "branchName", "openAiEndpoint", "ollamaEndpoint", "openAiKey", "manualModels", "resolutionText", "contextPreview", "details" }, control.Name) >= 0)
+                control.RightToLeft = RightToLeft.No;
             control.Text = Get(control.Text);
             control.AccessibleName = Get(control.AccessibleName);
             control.AccessibleDescription = Get(control.AccessibleDescription);
@@ -105,6 +122,7 @@ namespace CodexVBE
                 case "Outil": return Get("Tool");
                 case "Erreur": return Get("Error");
                 case "Intervention": return Get("Turn");
+                case "Assistant": return Get("Assistant");
                 default: return token;
             }
         }

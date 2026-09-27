@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="ProviderTests.cs" />
     <Compile Include="../../../src/Localization/UiText.cs" />
+    <Compile Include="../../../src/Localization/UiLanguages.cs" />
     <Compile Include="../../../src/Host/LoadLog.cs" />
     <Compile Include="../../../src/Host/VbeWindowIcons.cs" />
     <EmbeddedResource Include="../../../assets/icons/settings.ico" LogicalName="CodexVBE.Icons.settings.ico" />

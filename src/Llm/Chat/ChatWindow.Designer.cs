@@ -208,7 +208,7 @@ namespace CodexVBE
             this.modules.Name = "modules";
             this.modules.Size = new System.Drawing.Size(98, 30);
             this.modules.TabIndex = 47;
-            this.modules.Text = "# Contexte";
+            this.modules.Text = "# Context";
             this.toolTips.SetToolTip(this.modules, "Reference a project or module");
             this.modules.UseVisualStyleBackColor = false;
             this.modules.Click += new System.EventHandler(this.Modules_Click);

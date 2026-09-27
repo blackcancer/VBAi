@@ -26,7 +26,8 @@ namespace CodexVBE
 
         private void InitializeTranscript()
         {
-            conversationItems = new StackPanel { Margin = new Thickness(20, 6, 20, 12) };
+            conversationItems = new StackPanel { Margin = new Thickness(20, 6, 20, 12),
+                FlowDirection = UiText.Culture.TextInfo.IsRightToLeft ? FlowDirection.RightToLeft : FlowDirection.LeftToRight };
             conversationScroll = new ScrollViewer { Content = conversationItems,
                 Background = Ink("#F8FAFC"), HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
@@ -35,7 +36,7 @@ namespace CodexVBE
                     followConversation = conversationScroll.ScrollableHeight - conversationScroll.VerticalOffset < 32;
                 jumpToLatest.Visible = !followConversation;
             };
-            AutomationProperties.SetName(conversationScroll, "Conversation");
+            AutomationProperties.SetName(conversationScroll, UiText.Get("Conversation"));
             transcriptHost.Child = conversationScroll;
         }
 
@@ -58,6 +59,7 @@ namespace CodexVBE
         private static TextBox SelectableText(string text, bool code = false)
         {
             return new TextBox { Text = text ?? "", IsReadOnly = true, AcceptsReturn = true,
+                FlowDirection = !code && UiText.Culture.TextInfo.IsRightToLeft ? FlowDirection.RightToLeft : FlowDirection.LeftToRight,
                 TextWrapping = code ? TextWrapping.NoWrap : TextWrapping.Wrap,
                 BorderThickness = new Thickness(0), Background = Brushes.Transparent,
                 Foreground = Ink(code ? "#E2E8F0" : "#334155"), FontSize = 13,
@@ -130,7 +132,10 @@ namespace CodexVBE
                 body.Children.Add(new Expander { Header = UiText.Get("Attached document memory"),
                     Content = SelectableText(entry.AttachedMemory), FontSize = 11, Margin = new Thickness(0, 8, 0, 0) });
             foreach (var attachment in entry.Attachments ?? new ChatAttachment[0]) {
-                var content = new StackPanel(); content.Children.Add(SelectableText(attachment.Text));
+                var content = new StackPanel();
+                var attachmentText = SelectableText(attachment.Text);
+                if (!string.IsNullOrEmpty(attachment.Module)) attachmentText.FlowDirection = FlowDirection.LeftToRight;
+                content.Children.Add(attachmentText);
                 if (!string.IsNullOrEmpty(attachment.Module)) { var navigate = ChatButton(UiText.Get("Open in the VBE")); navigate.Click += (s, e) => NavigateAttachment(attachment); content.Children.Add(navigate); }
                 body.Children.Add(new Expander { Header = attachment.Label + " · " + attachment.Text.Length + UiText.Get(" characters"), Content = content, FontSize = 11 });
             }
@@ -248,7 +253,7 @@ namespace CodexVBE
             link.HorizontalAlignment = HorizontalAlignment.Left; link.Background = Brushes.Transparent;
             link.Click += (s, e) => NavigateReference(new VbeChatReference { Project = change.Project, Module = change.Module });
             heading.Children.Add(link); body.Children.Add(heading);
-            var diff = new DataGrid { ItemsSource = change.Rows, AutoGenerateColumns = false, IsReadOnly = true,
+            var diff = new DataGrid { ItemsSource = change.Rows, AutoGenerateColumns = false, IsReadOnly = true, FlowDirection = FlowDirection.LeftToRight,
                 CanUserAddRows = false, CanUserDeleteRows = false, CanUserSortColumns = false,
                 CanUserResizeRows = false, HeadersVisibility = DataGridHeadersVisibility.None,
                 GridLinesVisibility = DataGridGridLinesVisibility.None, BorderThickness = new Thickness(0),

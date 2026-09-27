@@ -14,1525 +14,1523 @@
   </resheader>
   <data name="&#10;### Attached memory&#10;" xml:space="preserve">
     <value>
-### Mémoire jointe
+### 첨부된 기억
 </value>
   </data>
   <data name="&#10;Location unavailable: " xml:space="preserve">
     <value>
-Localisation indisponible : </value>
+위치 사용 불가: </value>
   </data>
   <data name="&#10;Project identifier to use in tools: " xml:space="preserve">
     <value>
-Identifiant Project à utiliser dans les outils : </value>
+도구에서 사용하도록 프로젝트 식별자: </value>
   </data>
   <data name=" Bedrock API key (Bearer), not an IAM secret key. URL: https://bedrock-runtime.&lt;region&gt;.amazonaws.com." xml:space="preserve">
-    <value> Clé API Bedrock (Bearer), pas une clé secrète IAM. URL : https://bedrock-runtime.&lt;région&gt;.amazonaws.com.</value>
+    <value> Bedrock API 키 (Bearer), 아니 IAM 비밀 키. URL: https://bedrock-runtime.&lt;region&gt;.amazonaws.com.</value>
   </data>
   <data name=" Optional key. Enter the full /chat/completions URL and model identifiers." xml:space="preserve">
-    <value> Clé facultative. Renseigner l’URL complète /chat/completions et les identifiants des modèles.</value>
+    <value> 선택적인 열쇠. 가득 차있는 /chat/completions URL 및 모형 식별자를 입력하십시오.</value>
   </data>
   <data name=" URL: https://&lt;resource&gt;.openai.azure.com/openai/v1/chat/completions. Models are your deployment names. In Entra mode: AZURE_OPENAI_ENTRA_TOKEN." xml:space="preserve">
-    <value> URL : https://&lt;ressource&gt;.openai.azure.com/openai/v1/chat/completions. Les modèles sont les noms de vos déploiements. En mode Entra : AZURE_OPENAI_ENTRA_TOKEN.</value>
+    <value> URL: https://&lt;resource&gt;.openai.azure.com/openai/v1/chat/completions. 모델은 배포 이름입니다. Entra 모드에서: AZURE_OPENAI_ENTRA_TOKEN.</value>
   </data>
   <data name=" account(s) available through Git Credential Manager. Repository access will be checked during synchronization." xml:space="preserve">
-    <value> compte(s) disponible(s) via Git Credential Manager. L’accès au dépôt sera vérifié lors de la synchronisation.</value>
+    <value> Git Credential Manager를 통해 계정을 사용할 수 있습니다. 저장소 액세스는 동기화 중에 확인할 수 있습니다.</value>
   </data>
   <data name=" change(s) applied. Review the files and undo this turn below." xml:space="preserve">
-    <value> modification(s) appliquée(s). Retrouvez les fichiers et annulez cette intervention ci-dessous.</value>
+    <value> 변경 (s) 적용. 파일을 검토하고이 아래를 켭니다.</value>
   </data>
   <data name=" characters" xml:space="preserve">
-    <value> caractères</value>
+    <value> 이름 *</value>
   </data>
   <data name=" characters. This conversation's history also accompanies the request." xml:space="preserve">
-    <value> caractères. L’historique de cette conversation accompagne aussi la demande.</value>
+    <value> 문자. 이 대화의 역사는 또한 요청을 accompanies.</value>
   </data>
   <data name=" failed. " xml:space="preserve">
-    <value> a échoué. </value>
+    <value> 실패. </value>
   </data>
   <data name=" file(s) changed since the last synchronization." xml:space="preserve">
-    <value> fichier(s) modifié(s) depuis la dernière synchronisation.</value>
+    <value> file(s)는 마지막 동기화 이후 변경됩니다.</value>
   </data>
   <data name=" is stale. Remove it and attach the current selection." xml:space="preserve">
-    <value> est périmée. Retirez-la puis joignez la sélection actuelle.</value>
+    <value> stale입니다. 제거하고 현재 선택을 첨부합니다.</value>
   </data>
   <data name=" remote branch(es). Choose a name, then Track remote." xml:space="preserve">
-    <value> branche(s) distante(s). Choisissez un nom puis Récupérer distante.</value>
+    <value> 리모트 분지 (es). 이름을, 그 후에 먼 궤도를 선택하십시오.</value>
   </data>
   <data name=" · History not saved" xml:space="preserve">
-    <value> · Historique non enregistré</value>
+    <value> · 저장되지 않는 역사</value>
   </data>
   <data name=" · branch" xml:space="preserve">
-    <value> · branche</value>
+    <value> · 분기</value>
   </data>
   <data name=" · check the COM control installation." xml:space="preserve">
-    <value> · vérifiez l’installation du contrôle COM.</value>
+    <value> · COM 제어 설치를 확인합니다.</value>
   </data>
   <data name=" · selection L" xml:space="preserve">
-    <value> · sélection L</value>
+    <value> · 선택 L</value>
   </data>
   <data name=" — ready" xml:space="preserve">
-    <value> — prêt</value>
+    <value> - 준비</value>
   </data>
   <data name=" — working" xml:space="preserve">
-    <value> — en cours</value>
+    <value> — 작업</value>
   </data>
   <data name="+ New" xml:space="preserve">
-    <value>+ Nouveau</value>
+    <value>+ 새로운</value>
   </data>
   <data name=". Analysis only; no edits or macro execution.&#10;" xml:space="preserve">
-    <value>. Analyse uniquement ; aucune modification ni exécution de macro.
+    <value>. 분석 만; 편집 또는 매크로 실행 없음.
 </value>
   </data>
   <data name=". Choose a version or edit the full content below." xml:space="preserve">
-    <value>. Choisissez une version ou éditez le contenu complet en dessous.</value>
+    <value>. 버전을 선택하거나 아래의 전체 콘텐츠를 편집하십시오.</value>
   </data>
   <data name=". Removing the saved key enables this fallback again." xml:space="preserve">
-    <value>. Supprimer la clé enregistrée réactive ce repli.</value>
+    <value>. 저장된 키를 제거하면이 fallback을 다시 활성화합니다.</value>
   </data>
   <data name=". Use Restore." xml:space="preserve">
-    <value>. Utilisez Restaurer.</value>
+    <value>. 저장소를 사용하십시오.</value>
   </data>
   <data name=".vba files contain only the visible code of the host module." xml:space="preserve">
-    <value>Les fichiers .vba contiennent uniquement le code visible du module hôte.</value>
+    <value>.vba 파일은 호스트 모듈의 눈에 보이는 코드를 포함합니다.</value>
   </data>
   <data name=": no edits or macro execution" xml:space="preserve">
-    <value> : aucune modification ni exécution de macro</value>
+    <value>: 편집 또는 매크로 실행 없음</value>
   </data>
   <data name="@ Function" xml:space="preserve">
-    <value>@ Fonction</value>
+    <value>₢ 킹 Function</value>
   </data>
   <data name="A checkpoint name of 1 to 160 characters is required." xml:space="preserve">
-    <value>Un nom de checkpoint de 1 à 160 caractères est requis.</value>
+    <value>1 ~ 160 문자의 체크 포인트 이름은 필요합니다.</value>
   </data>
   <data name="A commit message is required." xml:space="preserve">
-    <value>Un message de commit est requis.</value>
+    <value>커밋 메시지가 필요합니다.</value>
   </data>
   <data name="A merge commit message is required." xml:space="preserve">
-    <value>Un message de commit de fusion est requis.</value>
+    <value>병합 커밋 메시지가 필요합니다.</value>
   </data>
   <data name="A merge is already in progress." xml:space="preserve">
-    <value>Une fusion est déjà en cours.</value>
+    <value>합병은 이미 진행 중입니다.</value>
   </data>
   <data name="API URL" xml:space="preserve">
-    <value>URL de l’API</value>
+    <value>API URL</value>
   </data>
   <data name="API URL for " xml:space="preserve">
-    <value>URL de l’API </value>
+    <value>API URL에 대한 </value>
   </data>
   <data name="Abort merge" xml:space="preserve">
-    <value>Annuler la fusion</value>
+    <value>Abort 병합</value>
   </data>
   <data name="Account used for subsequent macro fetch, pull and push operations. Does not change global Git configuration." xml:space="preserve">
-    <value>Compte utilisé pour les prochains fetch, pull et push des macros. Ne modifie pas la configuration Git globale.</value>
+    <value>후속 매크로 fetch, Pull 및 Push 작업에 사용되는 계정. 글로벌 Git 구성을 변경하지 않습니다.</value>
   </data>
   <data name="Add #aModule or @aFunction to work on your code." xml:space="preserve">
-    <value>Ajoutez #unModule ou @uneFonction pour travailler sur votre code.</value>
+    <value>#aModule 또는 @aFunction을 추가하여 코드를 작업합니다.</value>
   </data>
   <data name="Add concise and useful VBA documentation to the code." xml:space="preserve">
-    <value>Ajoute une documentation VBA concise et utile au code.</value>
+    <value>concise 및 유용한 VBA 문서를 코드에 추가하십시오.</value>
   </data>
   <data name="Agent activity" xml:space="preserve">
-    <value>Activité de l'agent</value>
+    <value>에이전트 활동</value>
   </data>
   <data name="Agent: edits allowed by the VBE policy" xml:space="preserve">
-    <value>Agent : modifications autorisées par la politique VBE</value>
+    <value>대리인: VBE 정책에 의해 허용되는 편집</value>
   </data>
   <data name="Applied" xml:space="preserve">
-    <value>Appliquée</value>
+    <value>제품정보</value>
   </data>
   <data name="Archive / restore" xml:space="preserve">
-    <value>Archiver / réactiver</value>
+    <value>아카이브 / 복원</value>
   </data>
   <data name="Archive the selected conversation or restore it if archived." xml:space="preserve">
-    <value>Archiver la conversation sélectionnée ou la réactiver si elle est archivée.</value>
+    <value>선택된 대화를 보관하거나 아카이브를 하면 복원합니다.</value>
   </data>
   <data name="Ask for other actions" xml:space="preserve">
-    <value>Demander pour les autres actions</value>
+    <value>다른 행동에 대한 질문</value>
   </data>
   <data name="Attach selection" xml:space="preserve">
-    <value>Joindre la sélection</value>
+    <value>선택 영역 첨부</value>
   </data>
   <data name="Attach the code selected in the VBE; attach the current line when nothing is selected." xml:space="preserve">
-    <value>Joindre le code sélectionné dans le VBE ; sans sélection, joindre la ligne courante.</value>
+    <value>VBE에서 선택한 코드를 첨부합니다. 선택하지 않을 때 현재 줄을 첨부합니다.</value>
   </data>
   <data name="Attach these notes to the next message sent to the selected provider" xml:space="preserve">
-    <value>Joindre ces notes au prochain message envoyé au fournisseur sélectionné</value>
+    <value>선택한 공급자에게 보낸 다음 메시지에 이러한 메모를 첨부하십시오.</value>
   </data>
   <data name="Attached document memory" xml:space="preserve">
-    <value>Mémoire du document jointe</value>
+    <value>첨부된 문서 메모리</value>
   </data>
   <data name="Attached memory · ×" xml:space="preserve">
-    <value>Mémoire jointe · ×</value>
+    <value>첨부된 메모리 · ×</value>
   </data>
   <data name="Authentication" xml:space="preserve">
-    <value>Authentification</value>
+    <value>회사연혁</value>
   </data>
   <data name="Automatic" xml:space="preserve">
-    <value>Automatique</value>
+    <value>자동</value>
   </data>
   <data name="Automatic Git selection" xml:space="preserve">
-    <value>Choix automatique de Git</value>
+    <value>자동 Git 선택</value>
   </data>
   <data name="Automatically compile the project after agent edits." xml:space="preserve">
-    <value>Compiler automatiquement le projet après les modifications de l’agent.</value>
+    <value>에이전트가 변경한 후 프로젝트를 자동으로 컴파일합니다.</value>
   </data>
   <data name="Bedrock Runtime URL" xml:space="preserve">
-    <value>URL Bedrock Runtime</value>
+    <value>Bedrock 런타임 URL</value>
   </data>
   <data name="Before import · " xml:space="preserve">
-    <value>Avant import · </value>
+    <value>수입하기 전에 · </value>
   </data>
   <data name="Binary resource" xml:space="preserve">
-    <value>Ressource binaire</value>
+    <value>Binary 자원</value>
   </data>
   <data name="Binary source or unresolved conflict: " xml:space="preserve">
-    <value>Source binaire ou conflit non résolu : </value>
+    <value>이진 소스 또는 해결되지 않은 충돌: </value>
   </data>
   <data name="Block " xml:space="preserve">
-    <value>Bloc </value>
+    <value>팟캐스트 </value>
   </data>
   <data name="Branch" xml:space="preserve">
-    <value>Branche</value>
+    <value>브랜치</value>
   </data>
   <data name="Branch conversation" xml:space="preserve">
-    <value>Créer une branche</value>
+    <value>지점 대화</value>
   </data>
   <data name="Branch history (context only; read the live code again):&#10;" xml:space="preserve">
-    <value>Historique de la branche (contexte uniquement ; relire le code vivant) :
+    <value>Branch History (컨텍스트만; 라이브 코드를 다시 읽으십시오):
 </value>
   </data>
   <data name="Branch name to create or track" xml:space="preserve">
-    <value>Nom de branche à créer ou récupérer</value>
+    <value>Branch 이름 생성 또는 추적</value>
   </data>
   <data name="Branch not linked" xml:space="preserve">
-    <value>Branche non liée</value>
+    <value>링크되지 않음</value>
   </data>
   <data name="Branch to synchronize. Pushes are never forced." xml:space="preserve">
-    <value>Branche à synchroniser. Les push ne sont jamais forcés.</value>
+    <value>동기화하는 지점. 푸시는 결코 강제하지 않습니다.</value>
   </data>
   <data name="Cancel" xml:space="preserve">
-    <value>Annuler</value>
+    <value>취소</value>
   </data>
   <data name="Change diff" xml:space="preserve">
-    <value>Diff de la modification</value>
+    <value>변화 diff</value>
   </data>
   <data name="Change undone" xml:space="preserve">
-    <value>Modification annulée</value>
+    <value>변화 undone</value>
   </data>
   <data name="Changes · " xml:space="preserve">
-    <value>Modifications · </value>
+    <value>· · </value>
   </data>
   <data name="Changes · 0" xml:space="preserve">
-    <value>Modifications · 0</value>
+    <value>변경 · 0</value>
   </data>
   <data name="Chat" xml:space="preserve">
-    <value>Discussion</value>
+    <value>채팅</value>
   </data>
   <data name="Chat and Plan: no project changes" xml:space="preserve">
-    <value>Discussion et Plan : aucune modification du projet</value>
+    <value>채팅 및 계획 : 프로젝트 변경 없음</value>
   </data>
   <data name="ChatGPT account" xml:space="preserve">
-    <value>Compte ChatGPT</value>
+    <value>ChatGPT 계정</value>
   </data>
   <data name="Check VBA" xml:space="preserve">
-    <value>Vérifier VBA</value>
+    <value>VBA를 확인</value>
   </data>
   <data name="Checking ChatGPT connection…" xml:space="preserve">
-    <value>Vérification de la connexion ChatGPT…</value>
+    <value>ChatGPT 연결 확인...</value>
   </data>
   <data name="Checking ChatGPT…" xml:space="preserve">
-    <value>Vérification de ChatGPT…</value>
+    <value>ChatGPT를 확인 ...</value>
   </data>
   <data name="Checking GitHub Copilot…" xml:space="preserve">
-    <value>Vérification de GitHub Copilot…</value>
+    <value>GitHub Copilot을 확인 ...</value>
   </data>
   <data name="Checkpoint name" xml:space="preserve">
-    <value>Nom du checkpoint</value>
+    <value>Checkpoint 이름</value>
   </data>
   <data name="Choose a block to undo while keeping other changes." xml:space="preserve">
-    <value>Choisir le bloc à annuler en conservant les autres modifications.</value>
+    <value>다른 변경을 유지하면서도 차단을 선택합니다.</value>
   </data>
   <data name="Choose a model offered by the selected provider." xml:space="preserve">
-    <value>Choisir le modèle proposé par le fournisseur sélectionné.</value>
+    <value>선택한 공급자가 제공하는 모델을 선택하십시오.</value>
   </data>
   <data name="Choose an available model before sending." xml:space="preserve">
-    <value>Choisissez un modèle disponible avant d'envoyer.</value>
+    <value>전송하기 전에 유효한 모형을 선택하십시오.</value>
   </data>
   <data name="Choose ours, theirs or text for a VBA text source." xml:space="preserve">
-    <value>Choisissez ours, theirs ou text pour une source VBA textuelle.</value>
+    <value>제품 정보 ours· theirs 또는 text 을 위해 VBA text 이름 *</value>
   </data>
   <data name="Choose the AI provider for this conversation." xml:space="preserve">
-    <value>Choisir le fournisseur d’IA pour la conversation.</value>
+    <value>이 대화를 위한 AI 공급자를 선택하십시오.</value>
   </data>
   <data name="Choose the VBA document associated with this context and its conversations." xml:space="preserve">
-    <value>Choisir le document VBA auquel sont liés le contexte et les conversations.</value>
+    <value>이 컨텍스트와 그 대화와 관련된 VBA 문서를 선택합니다.</value>
   </data>
   <data name="Choose the entire current-branch file for the selected conflict." xml:space="preserve">
-    <value>Choisit le fichier entier de la branche courante pour le conflit sélectionné.</value>
+    <value>선택된 충돌에 대한 전체 전류 브레이크 파일을 선택하십시오.</value>
   </data>
   <data name="Choose the entire incoming-branch file for the selected conflict." xml:space="preserve">
-    <value>Choisit le fichier entier de la branche entrante pour le conflit sélectionné.</value>
+    <value>선택된 분쟁에 대한 전체 들어오는-branch 파일을 선택하십시오.</value>
   </data>
   <data name="Code changed since the import; automatic restore refused." xml:space="preserve">
-    <value>Le code a changé depuis l’import ; restauration automatique refusée.</value>
+    <value>코드는 수입 이후 변경; 자동 복원 거부.</value>
   </data>
   <data name="Code restored" xml:space="preserve">
-    <value>Code restauré</value>
+    <value>비밀번호 복구</value>
   </data>
   <data name="Codex — ready" xml:space="preserve">
-    <value>Codex — prêt</value>
+    <value>Codex — 준비된</value>
   </data>
   <data name="Codex — working" xml:space="preserve">
-    <value>Codex — en cours</value>
+    <value>Codex — 작업</value>
   </data>
   <data name="Command · Enter to choose · add your instructions" xml:space="preserve">
-    <value>Commande · Entrée pour choisir · ajoutez vos précisions</value>
+    <value>명령 · 선택 입력 · 지시 추가</value>
   </data>
   <data name="Commit all" xml:space="preserve">
-    <value>Commit (tout)</value>
+    <value>모두 커밋</value>
   </data>
   <data name="Commit message" xml:space="preserve">
-    <value>Message de commit</value>
+    <value>자주 묻는 질문</value>
   </data>
   <data name="Compare" xml:space="preserve">
-    <value>Comparer</value>
+    <value>비교</value>
   </data>
   <data name="Compare live VBA with the last synchronized state without network access." xml:space="preserve">
-    <value>Compare le VBA vivant au dernier état synchronisé, sans accès réseau.</value>
+    <value>네트워크 액세스없이 마지막 동기화 상태와 라이브 VBA 비교.</value>
   </data>
   <data name="Compilation error · see the diagnostic in the chat" xml:space="preserve">
-    <value>Erreur de compilation · voir le diagnostic dans le chat</value>
+    <value>편집 오류 · 채팅에서 진단을 참조하십시오</value>
   </data>
   <data name="Compilation finished: no native diagnostics observed. Macros were not executed." xml:space="preserve">
-    <value>Compilation terminée : aucun diagnostic natif observé. Les macros n’ont pas été exécutées.</value>
+    <value>컴파일 완료: 관찰된 네이티브 진단 없음. 매크로는 실행되지 않았습니다.</value>
   </data>
   <data name="Compilation not verified" xml:space="preserve">
-    <value>Compilation non vérifiée</value>
+    <value>편집 확인되지 않음</value>
   </data>
   <data name="Compilation not verified: " xml:space="preserve">
-    <value>Compilation non vérifiée : </value>
+    <value>편집 확인되지 않음: </value>
   </data>
   <data name="Compile after changes" xml:space="preserve">
-    <value>Compiler après les modifications</value>
+    <value>변경 후 컴파일</value>
   </data>
   <data name="Compile the VBA project and display diagnostics in the chat." xml:space="preserve">
-    <value>Compiler le projet VBA et afficher les diagnostics dans le chat.</value>
+    <value>VBA 프로젝트를 컴파일하고 채팅에서 진단을 표시합니다.</value>
   </data>
   <data name="Compiling VBA…" xml:space="preserve">
-    <value>Compilation VBA en cours…</value>
+    <value>VBA를 컴파일 ...</value>
   </data>
   <data name="Complete GitHub sign-in in your browser…" xml:space="preserve">
-    <value>Terminez la connexion GitHub dans votre navigateur…</value>
+    <value>브라우저에서 GitHub 로그인을 완료 ...</value>
   </data>
   <data name="Complete merge" xml:space="preserve">
-    <value>Terminer la fusion</value>
+    <value>완전한 병합</value>
   </data>
   <data name="Complete or abort the current merge." xml:space="preserve">
-    <value>Terminez ou annulez la fusion en cours.</value>
+    <value>현재 병합을 완료하거나 구합니다.</value>
   </data>
   <data name="Component missing from the manifest." xml:space="preserve">
-    <value>Composant absent du manifeste.</value>
+    <value>Component가 나타났습니다.</value>
   </data>
   <data name="Configure providers and the GitHub account" xml:space="preserve">
-    <value>Configurer les fournisseurs et le compte GitHub</value>
+    <value>공급자 및 GitHub 계정 구성</value>
   </data>
   <data name="Configure the provider, refresh models or change docking mode." xml:space="preserve">
-    <value>Configurer le fournisseur, actualiser les modèles ou changer le mode d’ancrage.</value>
+    <value>공급자를 구성하고, 모델을 새로 고침하거나 도킹 모드를 변경하십시오.</value>
   </data>
   <data name="Configured models or deployments, one identifier per line" xml:space="preserve">
-    <value>Modèles ou déploiements configurés, un identifiant par ligne</value>
+    <value>구성 모델 또는 배포, 라인 당 하나의 식별자</value>
   </data>
   <data name="Conflict: " xml:space="preserve">
-    <value>Conflit : </value>
+    <value>Conflict: </value>
   </data>
   <data name="Conflicts" xml:space="preserve">
-    <value>Conflits</value>
+    <value>충돌</value>
   </data>
   <data name="Connect an account to synchronize your VBA sources." xml:space="preserve">
-    <value>Connectez un compte pour synchroniser vos sources VBA.</value>
+    <value>VBA 소스를 동기화하는 계정을 연결합니다.</value>
   </data>
   <data name="Context exceeds 48,000 characters. Remove some items." xml:space="preserve">
-    <value>Le contexte dépasse 48 000 caractères. Retirez des éléments.</value>
+    <value>Context는 48,000 문자를 초과합니다. 일부 항목을 제거하십시오.</value>
   </data>
   <data name="Context unavailable" xml:space="preserve">
-    <value>Contexte indisponible</value>
+    <value>Context 사용 가능</value>
   </data>
   <data name="Context: " xml:space="preserve">
-    <value>Contexte : </value>
+    <value>텍스트: </value>
   </data>
   <data name="Conversation exported" xml:space="preserve">
-    <value>Conversation exportée</value>
+    <value>수출의 상징</value>
   </data>
   <data name="Conversation title" xml:space="preserve">
-    <value>Titre de la conversation</value>
+    <value>대화 제목</value>
   </data>
   <data name="Conversation: messages, references and dynamic diffs" xml:space="preserve">
-    <value>Conversation : messages, références et diffs dynamiques</value>
+    <value>대화 : 메시지, 참조 및 동적 디퓨즈</value>
   </data>
   <data name="Copy" xml:space="preserve">
-    <value>Copier</value>
+    <value>복사</value>
   </data>
   <data name="Copy code" xml:space="preserve">
-    <value>Copier le code</value>
+    <value>복사 코드</value>
   </data>
   <data name="Copy the message text to the clipboard." xml:space="preserve">
-    <value>Copier le texte du message dans le presse-papiers.</value>
+    <value>자주 묻는 질문 text 클립보드에.</value>
   </data>
   <data name="Copy this code block to the clipboard." xml:space="preserve">
-    <value>Copier ce bloc de code dans le presse-papiers.</value>
+    <value>클립보드에 이 코드 블록을 복사합니다.</value>
   </data>
   <data name="Create" xml:space="preserve">
-    <value>Créer</value>
+    <value>만들기</value>
   </data>
   <data name="Create a commit first." xml:space="preserve">
-    <value>Créez d’abord un commit.</value>
+    <value>먼저 커밋을 만듭니다.</value>
   </data>
   <data name="Create an independent conversation with the history up to this message." xml:space="preserve">
-    <value>Créer une conversation indépendante avec l’historique jusqu’à ce message.</value>
+    <value>이 메시지에 대한 역사와 독립적 인 대화를 만듭니다.</value>
   </data>
   <data name="Create checkpoint" xml:space="preserve">
-    <value>Créer un checkpoint</value>
+    <value>자주 묻는 질문</value>
   </data>
   <data name="Create the named branch from the current commit without publishing it." xml:space="preserve">
-    <value>Crée la branche saisie depuis le commit courant, sans la publier.</value>
+    <value>게시하지 않고 현재 커밋에서 이름을 딴 지점을 만듭니다.</value>
   </data>
   <data name="Credentials stay in Git Credential Manager. Sign-in takes effect immediately; Save keeps the chosen account for VBAi. Copilot authentication is configured separately." xml:space="preserve">
-    <value>Les identifiants restent dans Git Credential Manager. La connexion prend effet immédiatement ; Enregistrer conserve le compte choisi pour VBAi. L’authentification Copilot se configure séparément.</value>
+    <value>자격 증명은 Git Credential Manager에 저장됩니다. 로그인은 즉시 적용되며 저장을 누르면 VBAi에서 사용할 계정이 저장됩니다. Copilot 인증은 별도로 설정합니다.</value>
   </data>
   <data name="Current VBA" xml:space="preserve">
-    <value>VBA actuel</value>
+    <value>현재 VBA</value>
   </data>
   <data name="Current branch" xml:space="preserve">
-    <value>Branche courante</value>
+    <value>현재 지점</value>
   </data>
   <data name="Custom provider name" xml:space="preserve">
-    <value>Nom du fournisseur personnalisé</value>
+    <value>주문 공급자 이름</value>
   </data>
   <data name="Deployments (one per line)" xml:space="preserve">
-    <value>Déploiements (un par ligne)</value>
+    <value>배포 (라인당 1개)</value>
   </data>
   <data name="Diagnose and fix the problem while preserving the expected behavior." xml:space="preserve">
-    <value>Diagnostique puis corrige le problème en conservant le comportement attendu.</value>
+    <value>진단 및 문제를 해결하는 동안 예상된 행동을 보존.</value>
   </data>
   <data name="Discard only the prepared merge. VBA and commits remain intact." xml:space="preserve">
-    <value>Supprime uniquement la préparation de fusion. Le VBA et les commits restent intacts.</value>
+    <value>준비된 병합만 합니다. VBA 및 커밋은 intact에 남아 있습니다.</value>
   </data>
   <data name="Docked / floating window" xml:space="preserve">
-    <value>Fenêtre ancrable / flottante</value>
+    <value>도킹 / 부동 창</value>
   </data>
   <data name="Docking unavailable: " xml:space="preserve">
-    <value>Ancrage indisponible : </value>
+    <value>사용할 수 없는 도킹: </value>
   </data>
   <data name="Document conversations" xml:space="preserve">
-    <value>Conversations du document</value>
+    <value>문서 대화</value>
   </data>
   <data name="Document memory" xml:space="preserve">
-    <value>Mémoire du document</value>
+    <value>문서 기억</value>
   </data>
   <data name="Document memory saved locally" xml:space="preserve">
-    <value>Mémoire du document enregistrée localement</value>
+    <value>문서 기억 저장된 locally</value>
   </data>
   <data name="Document modules do not match. Sheets and host modules must already exist with the same names." xml:space="preserve">
-    <value>Les modules du document ne correspondent pas. Les feuilles et modules hôtes doivent déjà exister avec les mêmes noms.</value>
+    <value>문서 모듈은 일치하지 않습니다. 시트 및 호스트 모듈은 이미 같은 이름으로 존재해야합니다.</value>
   </data>
   <data name="Document the code" xml:space="preserve">
-    <value>Documenter le code</value>
+    <value>비밀번호</value>
   </data>
   <data name="Download and import sources. Refuses unsynchronized local changes and divergent histories." xml:space="preserve">
-    <value>Télécharge et importe les sources. Refuse les modifications locales non synchronisées et les historiques divergents.</value>
+    <value>다운로드 및 수입 소스. unsynchronized 로컬 변경 및 divergent 역사.</value>
   </data>
   <data name="Duplicate component name." xml:space="preserve">
-    <value>Nom de composant dupliqué.</value>
+    <value>Duplicate 구성 요소 이름.</value>
   </data>
   <data name="Empty or invalid code selection." xml:space="preserve">
-    <value>Sélection de code vide ou invalide.</value>
+    <value>빈 또는 잘못된 코드 선택.</value>
   </data>
   <data name="Empty response." xml:space="preserve">
-    <value>Réponse vide.</value>
+    <value>빈 응답.</value>
   </data>
   <data name="Enter a title, then click Rename." xml:space="preserve">
-    <value>Saisir un titre, puis cliquer sur Renommer.</value>
+    <value>제목을 입력한 다음 이름을 클릭합니다.</value>
   </data>
   <data name="Enter notes to keep for this document, then save them." xml:space="preserve">
-    <value>Saisir les notes à conserver pour ce document, puis les enregistrer.</value>
+    <value>이 문서를 계속하려면 메모를 입력하고 저장하십시오.</value>
   </data>
   <data name="Enter the repository's HTTPS GitHub URL without a token or password." xml:space="preserve">
-    <value>Saisissez l’URL HTTPS GitHub du dépôt, sans jeton ni mot de passe.</value>
+    <value>토큰 또는 암호없이 저장소의 HTTPS GitHub URL을 입력하십시오.</value>
   </data>
   <data name="Error" xml:space="preserve">
-    <value>Erreur</value>
+    <value>계정 정보</value>
   </data>
   <data name="Error — you can resume the conversation" xml:space="preserve">
-    <value>Erreur — vous pouvez reprendre la conversation</value>
+    <value>오류 — 대화를 재개할 수 있습니다.</value>
   </data>
   <data name="Explain" xml:space="preserve">
-    <value>expliquer</value>
+    <value>설명</value>
   </data>
   <data name="Explain a procedure" xml:space="preserve">
-    <value>Expliquer une procédure</value>
+    <value>자주 묻는 질문</value>
   </data>
   <data name="Explain the code and its dependencies without changing it." xml:space="preserve">
-    <value>Explique le code et ses dépendances, sans le modifier.</value>
+    <value>변경하지 않고 코드와 의존성을 설명합니다.</value>
   </data>
   <data name="Explicit context" xml:space="preserve">
-    <value>Contexte explicite</value>
+    <value>Explicit 문맥</value>
   </data>
   <data name="Export Markdown" xml:space="preserve">
-    <value>Exporter Markdown</value>
+    <value>수출 Markdown</value>
   </data>
   <data name="Export and synchronize the current document's sources with a GitHub repository." xml:space="preserve">
-    <value>Exporter et synchroniser les sources du document courant avec un dépôt GitHub.</value>
+    <value>GitHub 저장소로 현재 문서의 소스를 내보내고 동기화합니다.</value>
   </data>
   <data name="Export sources and create a local commit of all changes. Push publishes them afterwards." xml:space="preserve">
-    <value>Exporte les sources et crée un commit local de tous les changements. Push les publie ensuite.</value>
+    <value>수출 소스 및 모든 변경의 로컬 커밋을 만듭니다. Push 그 후를 게시합니다.</value>
   </data>
   <data name="Exported identity does not match the manifest: " xml:space="preserve">
-    <value>L’identité exportée ne correspond pas au manifeste : </value>
+    <value>수출된 정체성은 표명과 일치하지 않습니다. </value>
   </data>
   <data name="Fallback: " xml:space="preserve">
-    <value>À défaut : </value>
+    <value>폴백: </value>
   </data>
   <data name="Fetch the named remote branch without importing its VBA." xml:space="preserve">
-    <value>Récupère la branche distante saisie, sans importer son VBA.</value>
+    <value>지정한 원격 브랜치를 Fetch합니다. VBA는 가져오지 않습니다.</value>
   </data>
   <data name="File/directory conflict: choose the parent directory first." xml:space="preserve">
-    <value>Conflit fichier/dossier : choisissez d’abord le dossier parent.</value>
+    <value>File/directory 분쟁: 부모 디렉토리를 먼저 선택합니다.</value>
   </data>
   <data name="First link: commit then push to publish, or pull to import the repository with a backup first." xml:space="preserve">
-    <value>Première liaison : commit puis push pour publier, ou pull pour importer le dépôt avec sauvegarde préalable.</value>
+    <value>첫 번째 링크 : 게시를 강요하거나 백업과 저장소를 먼저 가져올 수 있습니다.</value>
   </data>
   <data name="Fix" xml:space="preserve">
-    <value>corriger</value>
+    <value>수정</value>
   </data>
   <data name="Fix an error" xml:space="preserve">
-    <value>Corriger une erreur</value>
+    <value>오류 수정</value>
   </data>
   <data name="French" xml:space="preserve">
-    <value>française</value>
+    <value>담당자: Mr. Ms.</value>
   </data>
   <data name="Full resolution content for the selected VBA file" xml:space="preserve">
-    <value>Contenu complet de résolution du fichier VBA sélectionné</value>
+    <value>선택된 VBA 파일에 대한 전체 해상도 내용</value>
   </data>
   <data name="Git Credential Manager did not finish the operation. Check its installation or sign in to GitHub again." xml:space="preserve">
-    <value>Git Credential Manager n’a pas terminé l’opération. Vérifiez son installation ou relancez la connexion GitHub.</value>
+    <value>Git Credential Manager는 작업을 완료하지 않았습니다. GitHub에 설치 또는 서명을 다시 확인하십시오.</value>
   </data>
   <data name="Git changes" xml:space="preserve">
-    <value>Modifications Git</value>
+    <value>Git 변경</value>
   </data>
   <data name="Git did not respond within 120 seconds. Check the connection and GitHub authentication." xml:space="preserve">
-    <value>Git ne répond pas après 120 secondes. Vérifiez la connexion et l’authentification GitHub.</value>
+    <value>Git은 120 초 이내에 응답하지 않았습니다. 연결 및 GitHub 인증 확인.</value>
   </data>
   <data name="Git for Windows is required. Install it with Git Credential Manager, then reopen settings." xml:space="preserve">
-    <value>Git for Windows est requis. Installez-le avec Git Credential Manager, puis rouvrez les paramètres.</value>
+    <value>Git Windows가 필요합니다. Git Credential Manager로 설치 한 다음 설정을 다시 엽니다.</value>
   </data>
   <data name="GitHub account" xml:space="preserve">
-    <value>Compte GitHub</value>
+    <value>GitHub 계정</value>
   </data>
   <data name="GitHub account for VBA repositories" xml:space="preserve">
-    <value>Compte GitHub pour les dépôts VBA</value>
+    <value>VBA 저장소에 대한 GitHub 계정</value>
   </data>
   <data name="GitHub repository" xml:space="preserve">
-    <value>Dépôt GitHub</value>
+    <value>GitHub 저장소</value>
   </data>
   <data name="GitHub sign-in timed out. Start sign-in again from settings." xml:space="preserve">
-    <value>Connexion GitHub expirée. Relancez la connexion depuis les paramètres.</value>
+    <value>GitHub sign-in timed out. 설정에서 다시 로그인 시작.</value>
   </data>
   <data name="GitHub · VBA sources" xml:space="preserve">
-    <value>GitHub · sources VBA</value>
+    <value>GitHub · VBA 소스</value>
   </data>
   <data name="GitHub · repositories" xml:space="preserve">
-    <value>GitHub · dépôts</value>
+    <value>GitHub · 저장소</value>
   </data>
   <data name="GitHub · synchronize VBA…" xml:space="preserve">
-    <value>GitHub · synchroniser le VBA…</value>
+    <value>GitHub · VBA 동기화 ...</value>
   </data>
   <data name="Go to the latest message and follow new responses." xml:space="preserve">
-    <value>Revenir au dernier message et suivre les nouvelles réponses.</value>
+    <value>최신 메시지로 이동하고 새로운 응답을 따르십시오.</value>
   </data>
   <data name="HTTPS URL, for example https://github.com/organization/macros.git. Do not paste a token." xml:space="preserve">
-    <value>URL HTTPS, par exemple https://github.com/organisation/macros.git. Ne collez aucun jeton.</value>
+    <value>HTTPS URL, 예를 들어 https://github.com/organization/macros.git. 토큰을 붙여넣지 마십시오.</value>
   </data>
   <data name="Histories diverge. Reconcile the branch before synchronizing; no forced push is performed." xml:space="preserve">
-    <value>Les historiques divergent. Réconciliez la branche avant de synchroniser ; aucun push forcé n’est effectué.</value>
+    <value>Histories diverge. 동기화하기 전에 지점을 재구성; 강제적인 푸시가 수행되지 않습니다.</value>
   </data>
   <data name="History" xml:space="preserve">
-    <value>Historique</value>
+    <value>기록</value>
   </data>
   <data name="History not saved: " xml:space="preserve">
-    <value>Historique non enregistré : </value>
+    <value>저장되지 않는 역사: </value>
   </data>
   <data name="History unavailable: " xml:space="preserve">
-    <value>Historique indisponible : </value>
+    <value>유효하지 않는 역사: </value>
   </data>
   <data name="Import interrupted: restore VBA before continuing. The backup is preserved in the cache." xml:space="preserve">
-    <value>Import interrompu : restaurez le VBA avant de poursuivre. La sauvegarde est conservée dans le cache.</value>
+    <value>가져 오기 중단 : 계속하기 전에 VBA를 복원합니다. 백업은 캐시에 보존됩니다.</value>
   </data>
   <data name="Import the remote state with Pull first." xml:space="preserve">
-    <value>Importez d’abord l’état distant avec Pull.</value>
+    <value>원격 상태 가져 오기 Pull 첫 번째.</value>
   </data>
   <data name="Import the selected branch with a checkpoint first. Uncommitted changes are refused." xml:space="preserve">
-    <value>Importe la branche sélectionnée avec checkpoint préalable. Les modifications non commitées sont refusées.</value>
+    <value>첫 번째 체크포인트로 선택한 지점을 가져옵니다. 드문 변경은 거절됩니다.</value>
   </data>
   <data name="Improve the code" xml:space="preserve">
-    <value>Améliorer le code</value>
+    <value>코드 개선</value>
   </data>
   <data name="Improve the structure" xml:space="preserve">
-    <value>Améliorer la structure</value>
+    <value>구조 개선</value>
   </data>
   <data name="Include archived conversations in the list." xml:space="preserve">
-    <value>Inclure les conversations archivées dans la liste.</value>
+    <value>목록에서 아카이브 대화를 포함.</value>
   </data>
   <data name="Include saved notes in the next message sent to the provider." xml:space="preserve">
-    <value>Inclure les notes enregistrées dans le prochain message envoyé au fournisseur.</value>
+    <value>공급자에게 보낸 다음 메시지에 저장된 노트를 포함.</value>
   </data>
   <data name="Incoming branch" xml:space="preserve">
-    <value>Branche entrante</value>
+    <value>자주 묻는 질문</value>
   </data>
   <data name="Incorrect filename casing." xml:space="preserve">
-    <value>Casse du nom de fichier incorrecte.</value>
+    <value>잘못된 파일명 케이싱.</value>
   </data>
   <data name="Inspect and refresh references, selected code and notes to send." xml:space="preserve">
-    <value>Inspecter et actualiser les références, le code sélectionné et les notes à transmettre.</value>
+    <value>Inspect 및 새로 고침 참조, 선택한 코드 및 메모 보내기.</value>
   </data>
   <data name="Invalid Git merge result." xml:space="preserve">
-    <value>Résultat de fusion Git invalide.</value>
+    <value>Invalid Git 합병 결과.</value>
   </data>
   <data name="Invalid GitHub account." xml:space="preserve">
-    <value>Compte GitHub invalide.</value>
+    <value>GitHub 계정이 없습니다.</value>
   </data>
   <data name="Keep incoming" xml:space="preserve">
-    <value>Garder entrant</value>
+    <value>관련 기사</value>
   </data>
   <data name="Keep local" xml:space="preserve">
-    <value>Garder local</value>
+    <value>현지 정보</value>
   </data>
   <data name="Last commit / import" xml:space="preserve">
-    <value>Dernier commit / import</value>
+    <value>최근 커밋 / 수입</value>
   </data>
   <data name="Leave the key blank to keep the current one. Encryption is tied to your Windows account. " xml:space="preserve">
-    <value>Clé vide : conserver la clé actuelle. Chiffrement lié au compte Windows. </value>
+    <value>현재를 유지하기 위해 키 공백을 남겨두십시오. 암호화는 Windows 계정에 묶습니다. </value>
   </data>
   <data name="Leave the key blank to keep the current one. Secrets are encrypted for this Windows account." xml:space="preserve">
-    <value>Clé vide : conserver la clé actuelle. Les secrets sont chiffrés pour ce compte Windows.</value>
+    <value>현재를 유지하기 위해 키 공백을 남겨두십시오. 비밀은이 Windows 계정에서 암호화됩니다.</value>
   </data>
   <data name="Link an existing GitHub repository to get started." xml:space="preserve">
-    <value>Liez un dépôt GitHub existant pour commencer.</value>
+    <value>기존 GitHub 저장소를 연결하여 시작하세요.</value>
   </data>
   <data name="Link repository" xml:space="preserve">
-    <value>Lier le dépôt</value>
+    <value>저장소 연결</value>
   </data>
   <data name="Link this document to GitHub through the interface first. The agent does not choose a repository for you." xml:space="preserve">
-    <value>Liez d’abord ce document à GitHub depuis l’interface. L’agent ne choisit pas de dépôt à votre place.</value>
+    <value>먼저 인터페이스를 통해 GitHub에 이 문서를 연결하십시오. 이 에이전트는 당신을 위해 저장소를 선택하지 않습니다.</value>
   </data>
   <data name="List GitHub repository branches in the name selector without importing VBA." xml:space="preserve">
-    <value>Liste les branches du dépôt GitHub dans le sélecteur de nom, sans importer de VBA.</value>
+    <value>VBA를 수입하지 않고 이름 selector에 GitHub 저장소 지점을 나열합니다.</value>
   </data>
   <data name="Loading provider models…" xml:space="preserve">
-    <value>Chargement des modèles du fournisseur…</value>
+    <value>선적 공급자 모형...</value>
   </data>
   <data name="Local branch · remote state unknown (Fetch)" xml:space="preserve">
-    <value>Branche locale · état distant inconnu (Fetch)</value>
+    <value>로컬 지점 · 원격 상태 알 수없는 (Fetch)</value>
   </data>
   <data name="Local changes exist. Commit them, or create a checkpoint and restore a committed state before switching branches or merging." xml:space="preserve">
-    <value>Des modifications locales existent. Commitez-les ou créez un checkpoint puis restaurez un état commité avant de changer de branche/fusionner.</value>
+    <value>로컬 변경이 존재합니다. 체크포인트를 생성하거나 지점을 전환하거나 merging하기 전에 정상적인 상태를 복원합니다.</value>
   </data>
   <data name="Local commit created. Use Push to publish it." xml:space="preserve">
-    <value>Commit local créé. Utilisez Push pour le publier.</value>
+    <value>로컬 커밋 생성. 사용 Push 게시하기.</value>
   </data>
   <data name="Local document notes" xml:space="preserve">
-    <value>Notes locales du document</value>
+    <value>현지 문서 메모</value>
   </data>
   <data name="Looking for saved GitHub accounts…" xml:space="preserve">
-    <value>Recherche des comptes GitHub mémorisés…</value>
+    <value>저장된 GitHub 계정 보기...</value>
   </data>
   <data name="Memory not saved: " xml:space="preserve">
-    <value>Mémoire non enregistrée : </value>
+    <value>저장되지 않는 기억: </value>
   </data>
   <data name="Memory requires an available SQLite history store." xml:space="preserve">
-    <value>La mémoire nécessite un historique SQLite disponible.</value>
+    <value>기억은 유효한 SQLite 역사 상점을 요구합니다.</value>
   </data>
   <data name="Memory · " xml:space="preserve">
-    <value>Mémoire · </value>
+    <value>기억 · </value>
   </data>
   <data name="Merge" xml:space="preserve">
-    <value>Fusionner</value>
+    <value>병합</value>
   </data>
   <data name="Merge prepared: resolve conflicts, then click Complete merge." xml:space="preserve">
-    <value>Fusion préparée : résolvez les conflits puis cliquez sur Terminer la fusion.</value>
+    <value>준비된 합병: 분쟁 해결, 다음 완료 합병을 클릭합니다.</value>
   </data>
   <data name="Message with spell checking" xml:space="preserve">
-    <value>Message avec correction orthographique française</value>
+    <value>spell 검사를 가진 메시지</value>
   </data>
   <data name="Missing VBA reference: fix it before synchronizing." xml:space="preserve">
-    <value>Référence VBA manquante : corrigez-la avant de synchroniser.</value>
+    <value>Missing VBA 참고 : 동기화하기 전에 수정하십시오.</value>
   </data>
   <data name="Mode for this request: " xml:space="preserve">
-    <value>Mode de cette demande : </value>
+    <value>이 요구를 위한 형태: </value>
   </data>
   <data name="Model" xml:space="preserve">
-    <value>Modèle</value>
+    <value>모델</value>
   </data>
   <data name="Model list unavailable: " xml:space="preserve">
-    <value>Catalogue indisponible : </value>
+    <value>모델 목록을 가져올 수 없습니다: </value>
   </data>
   <data name="Models (one per line)" xml:space="preserve">
-    <value>Modèles (un par ligne)</value>
+    <value>모형 (선 당 1개)</value>
   </data>
   <data name="Models / profiles (one per line)" xml:space="preserve">
-    <value>Modèles / profils (un par ligne)</value>
+    <value>모델 / 프로파일 (라인당 1 개)</value>
   </data>
   <data name="New OpenAI API key" xml:space="preserve">
-    <value>Nouvelle clé OpenAI API</value>
+    <value>새로운 OpenAI API 키</value>
   </data>
   <data name="New conversation" xml:space="preserve">
-    <value>Nouvelle conversation</value>
+    <value>새 대화</value>
   </data>
   <data name="New conversation · Ctrl+N" xml:space="preserve">
-    <value>Nouvelle conversation · Ctrl+N</value>
+    <value>새로운 대화 · Ctrl + N</value>
   </data>
   <data name="New key for " xml:space="preserve">
-    <value>Nouvelle clé </value>
+    <value>새로운 키 </value>
   </data>
   <data name="No CodexVBA manifest in this repository." xml:space="preserve">
-    <value>Aucun manifeste CodexVBA dans ce dépôt.</value>
+    <value>CodexVBA가 이 저장소에 나타납니다.</value>
   </data>
   <data name="No VBE host connected." xml:space="preserve">
-    <value>Aucun hôte VBE connecté.</value>
+    <value>VBE 호스트가 연결되지 않습니다.</value>
   </data>
   <data name="No commit to publish." xml:space="preserve">
-    <value>Aucun commit à publier.</value>
+    <value>게시 할 수 없습니다.</value>
   </data>
   <data name="No connected project." xml:space="preserve">
-    <value>Aucun projet connecté.</value>
+    <value>연결되지 않은 프로젝트.</value>
   </data>
   <data name="No local commit · use Fetch to inspect the remote repository" xml:space="preserve">
-    <value>Aucun commit local · utilisez Fetch pour consulter le dépôt distant</value>
+    <value>로컬 커밋 없음 · 원격 저장소를 검사하기 위해 Fetch 사용</value>
   </data>
   <data name="No local commit." xml:space="preserve">
-    <value>Aucun commit local.</value>
+    <value>로컬 커밋이 없습니다.</value>
   </data>
   <data name="No matching target" xml:space="preserve">
-    <value>Aucune cible trouvée</value>
+    <value>일치하는 표적 없음</value>
   </data>
   <data name="No models available for this provider." xml:space="preserve">
-    <value>Aucun modèle disponible pour ce fournisseur.</value>
+    <value>이 공급자를 위해 유효한 모형 없음.</value>
   </data>
   <data name="No saved GitHub account. Click Sign in." xml:space="preserve">
-    <value>Aucun compte GitHub mémorisé. Cliquez sur Se connecter.</value>
+    <value>GitHub 계정이 없습니다. 로그인을 클릭합니다.</value>
   </data>
   <data name="No text response." xml:space="preserve">
-    <value>Aucune réponse textuelle.</value>
+    <value>없음 text 응답.</value>
   </data>
   <data name="Ollama URL (optional)" xml:space="preserve">
-    <value>URL Ollama (facultatif)</value>
+    <value>Ollama URL (선택 사항)</value>
   </data>
   <data name="Open " xml:space="preserve">
-    <value>Ouvrir </value>
+    <value>(주) </value>
   </data>
   <data name="Open VBAi — Your AI agent for VBA" xml:space="preserve">
-    <value>Ouvrir VBAi — Your AI agent for VBA</value>
+    <value>VBAi를 여십시오 — VBA를 위한 당신의 AI 대리인</value>
   </data>
   <data name="Open a VBA project to start a conversation." xml:space="preserve">
-    <value>Ouvrez un projet VBA pour démarrer une conversation.</value>
+    <value>VBA 프로젝트를 열어 대화를 시작하세요.</value>
   </data>
   <data name="Open in the VBE" xml:space="preserve">
-    <value>Ouvrir dans le VBE</value>
+    <value>VBE에서 열기</value>
   </data>
   <data name="Open the modified module in the VBE." xml:space="preserve">
-    <value>Ouvrir le module modifié dans le VBE.</value>
+    <value>VBE에서 수정된 모듈을 엽니다.</value>
   </data>
   <data name="Open this reference in the VBE." xml:space="preserve">
-    <value>Ouvrir cette référence dans le VBE.</value>
+    <value>VBE에 이 참조를 엽니 다.</value>
   </data>
   <data name="OpenAI URL (optional)" xml:space="preserve">
-    <value>URL OpenAI (facultatif)</value>
+    <value>OpenAI URL (선택 사항)</value>
   </data>
   <data name="Opens GitHub authentication in your browser. No token to copy into VBAi." xml:space="preserve">
-    <value>Ouvre l’authentification GitHub dans votre navigateur. Aucun jeton à copier dans VBAi.</value>
+    <value>브라우저에서 GitHub 인증을 엽니 다. VBAi로 복사 할 토큰이 없습니다.</value>
   </data>
   <data name="Operation complete: " xml:space="preserve">
-    <value>Opération terminée : </value>
+    <value>가동 완료: </value>
   </data>
   <data name="Operation in progress…" xml:space="preserve">
-    <value>Opération en cours…</value>
+    <value>진행중인 작업 ...</value>
   </data>
   <data name="Optional Ollama URL" xml:space="preserve">
-    <value>URL Ollama facultative</value>
+    <value>선택적인 Ollama URL</value>
   </data>
   <data name="Optional OpenAI URL" xml:space="preserve">
-    <value>URL OpenAI facultative</value>
+    <value>선택 OpenAI URL</value>
   </data>
   <data name="Optional key for this local server. " xml:space="preserve">
-    <value>Clé facultative pour ce serveur local. </value>
+    <value>이 로컬 서버의 선택 키. </value>
   </data>
   <data name="Outgoing context · inspect and refresh" xml:space="preserve">
-    <value>Contexte envoyé · inspecter et actualiser</value>
+    <value>Outgoing context · 검사 및 새로 고침</value>
   </data>
   <data name="Partially undone" xml:space="preserve">
-    <value>Partiellement annulée</value>
+    <value>부분적으로 undone</value>
   </data>
   <data name="Path not found in conflicts." xml:space="preserve">
-    <value>Chemin absent des conflits.</value>
+    <value>분쟁에서 발견되지 않는 경로.</value>
   </data>
   <data name="Pin / unpin" xml:space="preserve">
-    <value>Épingler / détacher</value>
+    <value>핀 / 핀</value>
   </data>
   <data name="Pin the conversation to the top of the list or unpin it." xml:space="preserve">
-    <value>Épingler la conversation en tête de liste ou retirer son épingle.</value>
+    <value>목록의 상단에 대화를 핀 또는 unpin 그것.</value>
   </data>
   <data name="Prepare VBA tests" xml:space="preserve">
-    <value>Préparer des tests VBA</value>
+    <value>VBA 시험 준비</value>
   </data>
   <data name="Prepare a concrete plan with the affected modules and checks without changing the project." xml:space="preserve">
-    <value>Prépare un plan concret avec les modules concernés et les vérifications, sans modifier le projet.</value>
+    <value>영향을받은 모듈과 구체적인 계획을 준비하고 프로젝트를 변경하지 않고 검사합니다.</value>
   </data>
   <data name="Prepare a fix" xml:space="preserve">
-    <value>Préparer une correction</value>
+    <value>수정을 준비</value>
   </data>
   <data name="Prepare a merge from the selected branch into the current branch." xml:space="preserve">
-    <value>Prépare la fusion de la branche sélectionnée vers la branche courante.</value>
+    <value>선택된 지점에서 현재 지점으로 병합합니다.</value>
   </data>
   <data name="Prepare the steps" xml:space="preserve">
-    <value>Préparer les étapes</value>
+    <value>단계 준비</value>
   </data>
   <data name="Preview limited to 2,000 lines" xml:space="preserve">
-    <value>Aperçu limité à 2 000 lignes</value>
+    <value>2,000개 라인의 미리보기</value>
   </data>
   <data name="Propose and create isolated VBA tests. Do not execute them without an explicit request; distinguish written tests from executed tests." xml:space="preserve">
-    <value>Propose puis crée des tests VBA isolés. Ne les exécute pas sans demande explicite et distingue tests écrits et exécutés.</value>
+    <value>Propose 및 고립 된 VBA 테스트를 작성합니다. 명시된 요청없이 실행하지 마십시오. 실행 된 테스트에서 서면 테스트를 구별합니다.</value>
   </data>
   <data name="Provider" xml:space="preserve">
-    <value>Fournisseur</value>
+    <value>공급자</value>
   </data>
   <data name="Provider name" xml:space="preserve">
-    <value>Nom du fournisseur</value>
+    <value>공급자 이름</value>
   </data>
   <data name="Publish local commits on the chosen branch. Does not publish uncommitted changes." xml:space="preserve">
-    <value>Publie les commits locaux sur la branche choisie. Ne publie pas les modifications non commitées.</value>
+    <value>선택된 지점에서 로컬 커밋을 게시합니다. uncommitted 변경을 게시하지 않습니다.</value>
   </data>
   <data name="Pull and import" xml:space="preserve">
-    <value>Pull et importer</value>
+    <value>Pull 및 가져오기</value>
   </data>
   <data name="Pull and import complete. Check and save the document." xml:space="preserve">
-    <value>Pull et import terminés. Vérifiez puis enregistrez le document.</value>
+    <value>Pull and import complete. 확인 및 문서를 저장합니다.</value>
   </data>
   <data name="Push complete." xml:space="preserve">
-    <value>Push terminé.</value>
+    <value>Push 전체보기</value>
   </data>
   <data name="Read-only" xml:space="preserve">
-    <value>Lecture seule</value>
+    <value>읽기 전용</value>
   </data>
   <data name="Reads locally saved accounts; does not check repository permissions yet." xml:space="preserve">
-    <value>Relit les comptes mémorisés localement ; ne vérifie pas encore les droits sur un dépôt.</value>
+    <value>로컬로 저장된 계정을 읽으십시오. 아직 저장소 권한을 확인하지 마십시오.</value>
   </data>
   <data name="Ready" xml:space="preserve">
-    <value>Prêt</value>
+    <value>준비됨</value>
   </data>
   <data name="Reasoning" xml:space="preserve">
-    <value>Réflexion</value>
+    <value>추론</value>
   </data>
   <data name="Reasoning effort" xml:space="preserve">
-    <value>Raisonnement</value>
+    <value>추론 수준</value>
   </data>
   <data name="Reasoning · summary" xml:space="preserve">
-    <value>Réflexion · résumé</value>
+    <value>Reasoning · 요약</value>
   </data>
   <data name="Refactor" xml:space="preserve">
-    <value>refactoriser</value>
+    <value>리팩터링</value>
   </data>
   <data name="Refactor the code without changing its public behavior." xml:space="preserve">
-    <value>Refactorise le code sans changer son comportement public.</value>
+    <value>공공의 행동을 변경하지 않고 코드를 재구성합니다.</value>
   </data>
   <data name="Reference a Sub, Function or Property" xml:space="preserve">
-    <value>Référencer une Sub, Function ou Property</value>
+    <value>견적 요청 Sub· Function 또는 Property</value>
   </data>
   <data name="Reference a project or module" xml:space="preserve">
-    <value>Référencer un projet ou un module</value>
+    <value>프로젝트 또는 모듈 참조</value>
   </data>
   <data name="Refresh accounts" xml:space="preserve">
-    <value>Actualiser les comptes</value>
+    <value>새로 고침 계정</value>
   </data>
   <data name="Refresh models" xml:space="preserve">
-    <value>Actualiser les modèles</value>
+    <value>모델 새로 고침</value>
   </data>
   <data name="Refresh remote commits and counts without changing VBA." xml:space="preserve">
-    <value>Actualise les commits distants et les compteurs sans modifier le VBA.</value>
+    <value>원격 커밋을 새로 고침하고 VBA를 변경하지 않고 카운트합니다.</value>
   </data>
   <data name="Remote branches" xml:space="preserve">
-    <value>Distantes</value>
+    <value>원격 지점</value>
   </data>
   <data name="Remove notes from the next message" xml:space="preserve">
-    <value>Retirer les notes du prochain message</value>
+    <value>다음 메시지에서 메모를 제거</value>
   </data>
   <data name="Remove saved API key" xml:space="preserve">
-    <value>Supprimer la clé API enregistrée</value>
+    <value>저장된 API 키 제거</value>
   </data>
   <data name="Remove this reference from the context" xml:space="preserve">
-    <value>Retirer cette référence du contexte</value>
+    <value>context에서 이 참조를 제거</value>
   </data>
   <data name="Remove this selection" xml:space="preserve">
-    <value>Retirer cette sélection</value>
+    <value>이 선택을 제거</value>
   </data>
   <data name="Rename" xml:space="preserve">
-    <value>Renommer</value>
+    <value>이름 *</value>
   </data>
   <data name="Replace the entire VBA text file with the text edited above." xml:space="preserve">
-    <value>Remplace le fichier VBA textuel entier par le texte édité ci-dessus.</value>
+    <value>전체를 대체 VBA text 파일 첨부 text 위에 편집 됨.</value>
   </data>
   <data name="Resolve all conflicts before completing the merge." xml:space="preserve">
-    <value>Résolvez tous les conflits avant de terminer la fusion.</value>
+    <value>병합을 완료하기 전에 모든 충돌을 해결합니다.</value>
   </data>
   <data name="Response interrupted. Changes already applied can still be undone in the chat." xml:space="preserve">
-    <value>Réponse interrompue. Les modifications déjà appliquées restent annulables dans le chat.</value>
+    <value>응답 중단. 이미 적용된 변경은 여전히 채팅에서 undone일 수 있습니다.</value>
   </data>
   <data name="Restore VBA" xml:space="preserve">
-    <value>Restaurer VBA</value>
+    <value>VBA 복원</value>
   </data>
   <data name="Restore selection" xml:space="preserve">
-    <value>Restaurer la sélection</value>
+    <value>자주 묻는 질문</value>
   </data>
   <data name="Restore the backup made before the last import if VBA has not changed since. Does not rewrite GitHub." xml:space="preserve">
-    <value>Restaure la sauvegarde avant le dernier import, si le VBA n’a pas été modifié depuis. Ne réécrit pas GitHub.</value>
+    <value>VBA가 변경되지 않은 경우 마지막 가져 오기 전에 백업을 복원합니다. GitHub를 다시 작성하지 않습니다.</value>
   </data>
   <data name="Restore the code before this change after checking for conflicts." xml:space="preserve">
-    <value>Restaurer le code précédant cette modification, après vérification des conflits.</value>
+    <value>충돌 검사 후이 변경 전에 코드를 복원합니다.</value>
   </data>
   <data name="Restore the interrupted import before continuing." xml:space="preserve">
-    <value>Restaurez l’import interrompu avant de poursuivre.</value>
+    <value>계속하기 전에 중단 된 수입을 복원합니다.</value>
   </data>
   <data name="Restore the selected checkpoint after backing up the current state. Does not rewrite GitHub." xml:space="preserve">
-    <value>Restaure le checkpoint choisi après sauvegarde de l’état courant. Ne réécrit pas GitHub.</value>
+    <value>현재 상태를 백업 한 후 선택한 체크포인트를 복원합니다. GitHub를 다시 작성하지 않습니다.</value>
   </data>
   <data name="Save" xml:space="preserve">
-    <value>Enregistrer</value>
+    <value>저장</value>
   </data>
   <data name="Save all current VBA in a private checkpoint without committing to the published branch." xml:space="preserve">
-    <value>Sauvegarde tout le VBA actuel dans un checkpoint privé, sans commit sur la branche publiée.</value>
+    <value>게시된 지점에 커밋하지 않고 개인 체크포인트에서 모든 현재 VBA를 저장합니다.</value>
   </data>
   <data name="Save locally" xml:space="preserve">
-    <value>Enregistrer localement</value>
+    <value>자주 묻는 질문</value>
   </data>
   <data name="Save notes on this computer without sending them to the provider." xml:space="preserve">
-    <value>Enregistrer les notes sur cet ordinateur, sans les envoyer au fournisseur.</value>
+    <value>이 컴퓨터에 메모를 저장하여 공급자에게 보내지 않고.</value>
   </data>
   <data name="Save the conversation as a Markdown file." xml:space="preserve">
-    <value>Enregistrer la conversation dans un fichier Markdown.</value>
+    <value>Markdown 파일로 대화를 저장합니다.</value>
   </data>
   <data name="Save the document before linking it to GitHub." xml:space="preserve">
-    <value>Enregistrez le document avant de le lier à GitHub.</value>
+    <value>GitHub에 연결하기 전에 문서를 저장합니다.</value>
   </data>
   <data name="Save the link for this document on this computer. Does not publish code." xml:space="preserve">
-    <value>Mémorise la liaison pour ce document sur cet ordinateur. Ne publie aucun code.</value>
+    <value>이 컴퓨터에 이 문서에 대한 링크를 저장합니다. 코드를 게시하지 않습니다.</value>
   </data>
   <data name="Save the macro before opening GitHub." xml:space="preserve">
-    <value>Enregistrez la macro avant d’ouvrir GitHub.</value>
+    <value>GitHub 열기 전에 매크로를 저장합니다.</value>
   </data>
   <data name="Save the new title of the selected conversation." xml:space="preserve">
-    <value>Enregistrer le nouveau titre de la conversation sélectionnée.</value>
+    <value>선택한 대화의 새로운 제목을 저장합니다.</value>
   </data>
   <data name="Search conversations" xml:space="preserve">
-    <value>Rechercher dans les conversations</value>
+    <value>검색 대화</value>
   </data>
   <data name="Search titles, messages or code" xml:space="preserve">
-    <value>Rechercher un titre, un message ou du code</value>
+    <value>제목, 메시지 또는 코드 검색</value>
   </data>
   <data name="Searching the project…" xml:space="preserve">
-    <value>Recherche dans le projet…</value>
+    <value>프로젝트 검색...</value>
   </data>
   <data name="Select a conversation to resume its history and draft." xml:space="preserve">
-    <value>Sélectionner une conversation pour reprendre son historique et son brouillon.</value>
+    <value>역사와 초안을 재개하기 위해 대화를 선택합니다.</value>
   </data>
   <data name="Select a saved VBA project to open GitHub." xml:space="preserve">
-    <value>Sélectionnez un projet VBA enregistré pour ouvrir GitHub.</value>
+    <value>저장된 VBA 프로젝트를 선택하여 GitHub를 엽니다.</value>
   </data>
   <data name="Select code in the VBE." xml:space="preserve">
-    <value>Sélectionnez du code dans le VBE.</value>
+    <value>VBE에서 코드를 선택합니다.</value>
   </data>
   <data name="Selection attached to the next message" xml:space="preserve">
-    <value>Sélection jointe au prochain message</value>
+    <value>다음 메시지에 첨부된 선택</value>
   </data>
   <data name="Selection: " xml:space="preserve">
-    <value>Sélection : </value>
+    <value>선택: </value>
   </data>
   <data name="Send the message and its context to the agent." xml:space="preserve">
-    <value>Envoyer le message et son contexte à l’agent.</value>
+    <value>메시지와 그 컨텍스트를 에이전트에 보냅니다.</value>
   </data>
   <data name="Send ↑" xml:space="preserve">
-    <value>Envoyer ↑</value>
+    <value>보내기 ↑</value>
   </data>
   <data name="Set the model's reasoning effort, when supported." xml:space="preserve">
-    <value>Régler l’effort de raisonnement du modèle, lorsqu’il le prend en charge.</value>
+    <value>지원될 때 모형의 이유 노력, 놓으십시오.</value>
   </data>
   <data name="Settings…" xml:space="preserve">
-    <value>Paramètres…</value>
+    <value>설정…</value>
   </data>
   <data name="Show archived conversations" xml:space="preserve">
-    <value>Afficher les conversations archivées</value>
+    <value>아카이브 대화 보기</value>
   </data>
   <data name="Show or hide conversations for the selected document." xml:space="preserve">
-    <value>Afficher ou masquer les conversations du document sélectionné.</value>
+    <value>선택한 문서에 대한 대화를 표시하거나 숨기십시오.</value>
   </data>
   <data name="Show or hide local notes for this document." xml:space="preserve">
-    <value>Afficher ou masquer les notes locales propres au document.</value>
+    <value>이 문서에 대한 로컬 노트를 표시하거나 숨기십시오.</value>
   </data>
   <data name="Sign in to ChatGPT" xml:space="preserve">
-    <value>Se connecter à ChatGPT</value>
+    <value>ChatGPT에 로그인</value>
   </data>
   <data name="Sign in to GitHub" xml:space="preserve">
-    <value>Se connecter à GitHub</value>
+    <value>GitHub에 로그인</value>
   </data>
   <data name="Sign-in opened. Click Refresh after authenticating." xml:space="preserve">
-    <value>Connexion ouverte. Cliquez sur Actualiser après authentification.</value>
+    <value>로그인 오픈. 정정 후 새로 고침을 클릭합니다.</value>
   </data>
   <data name="Stop the current response. Changes already applied can still be undone in the chat." xml:space="preserve">
-    <value>Interrompre la réponse en cours. Les modifications déjà appliquées restent annulables dans le chat.</value>
+    <value>현재 응답을 중지합니다. 이미 적용된 변경은 여전히 채팅에서 undone일 수 있습니다.</value>
   </data>
   <data name="Stop ■" xml:space="preserve">
-    <value>Arrêter ■</value>
+    <value>중지 ■</value>
   </data>
   <data name="Stopped" xml:space="preserve">
-    <value>Arrêté</value>
+    <value>뚱 베어</value>
   </data>
   <data name="Stopping…" xml:space="preserve">
-    <value>Arrêt en cours…</value>
+    <value>멈춤</value>
   </data>
   <data name="Switch" xml:space="preserve">
-    <value>Basculer</value>
+    <value>전환</value>
   </data>
   <data name="Synchronize the active VBA project and manage its branches and checkpoints" xml:space="preserve">
-    <value>Synchroniser le projet VBA actif et gérer ses branches et checkpoints</value>
+    <value>Active VBA 프로젝트를 동기화하고 지점과 체크포인트를 관리합니다.</value>
   </data>
   <data name="The # context exceeds 48,000 characters." xml:space="preserve">
-    <value>Le contexte # dépasse 48 000 caractères.</value>
+    <value># 컨텍스트는 48,000 문자를 초과합니다.</value>
   </data>
   <data name="The Git/VBA state changed. Read git_status again before making changes." xml:space="preserve">
-    <value>L’état Git/VBA a changé. Relisez git_status avant de modifier.</value>
+    <value>Git/VBA 상태가 변경되었습니다. 수정하기 전에 git_status를 다시 확인하세요.</value>
   </data>
   <data name="The URL must use HTTPS, or HTTP on localhost." xml:space="preserve">
-    <value>L'URL doit utiliser HTTPS, ou HTTP sur localhost.</value>
+    <value>URL은 로컬 호스트에서 HTTPS, 또는 HTTP를 사용해야합니다.</value>
   </data>
   <data name="The VBA document has changed. Reopen the chat to choose the current document." xml:space="preserve">
-    <value>Le document VBA a changé. Rouvrez le chat pour choisir le document actuel.</value>
+    <value>VBA 문서가 변경되었습니다. 현재 문서를 선택하기 위해 채팅을 엽니다.</value>
   </data>
   <data name="The VBA project must be unlocked and in design mode." xml:space="preserve">
-    <value>Le projet VBA doit être déverrouillé et en mode conception.</value>
+    <value>VBA 프로젝트는 잠금 해제 및 디자인 모드에서해야합니다.</value>
   </data>
   <data name="The VBA repository exceeds 32 MB." xml:space="preserve">
-    <value>Le dépôt VBA dépasse 32 Mo.</value>
+    <value>VBA 저장소는 32 MB를 초과합니다.</value>
   </data>
   <data name="The VBE did not preserve the imported sources exactly. Use Restore or check the project." xml:space="preserve">
-    <value>Le VBE n’a pas conservé exactement les sources importées. Utilisez Restaurer ou vérifiez le projet.</value>
+    <value>VBE는 수입 된 소스를 정확히 보존하지 않았습니다. Restore를 사용하거나 프로젝트를 확인하십시오.</value>
   </data>
   <data name="The branch changed since the merge started." xml:space="preserve">
-    <value>La branche a changé depuis le début de la fusion.</value>
+    <value>합병이 시작된 이후의 지점이 변경됩니다.</value>
   </data>
   <data name="The linked document changed. Reopen GitHub integration." xml:space="preserve">
-    <value>Le document lié a changé. Rouvrez l’intégration GitHub.</value>
+    <value>연결된 문서가 변경되었습니다. Reopen GitHub 통합.</value>
   </data>
   <data name="The previous response was interrupted. Read the live code again before making further edits." xml:space="preserve">
-    <value>La réponse précédente a été interrompue. Relire le code vivant avant de poursuivre les modifications.</value>
+    <value>이전 응답이 중단되었습니다. 더 편집하기 전에 라이브 코드를 다시 읽으십시오.</value>
   </data>
   <data name="The project for this conversation is closed or ambiguous." xml:space="preserve">
-    <value>Le projet de cette conversation est fermé ou ambigu.</value>
+    <value>이 대화의 프로젝트는 닫히거나 주변입니다.</value>
   </data>
   <data name="The response did not complete. Actions may already have been applied; read the live code again before continuing." xml:space="preserve">
-    <value>La réponse n'a pas abouti. Des actions peuvent déjà avoir été appliquées ; relire le code vivant avant de continuer.</value>
+    <value>응답은 완료되지 않았습니다. 행동은 이미 적용되었습니다. 계속하기 전에 라이브 코드를 다시 읽으십시오.</value>
   </data>
   <data name="The selected account is no longer saved. Sign in again or choose another account." xml:space="preserve">
-    <value>Le compte sélectionné n’est plus mémorisé. Reconnectez-le ou choisissez un autre compte.</value>
+    <value>선택한 계정은 더 이상 저장되지 않습니다. 다시 로그인하거나 다른 계정을 선택하십시오.</value>
   </data>
   <data name="The selection belongs to another document. Choose its conversation." xml:space="preserve">
-    <value>La sélection appartient à un autre document. Choisissez sa conversation.</value>
+    <value>선택은 다른 문서에 속합니다. 대화를 선택하십시오.</value>
   </data>
   <data name="The target contains no VBA sources." xml:space="preserve">
-    <value>La cible ne contient pas de sources VBA.</value>
+    <value>대상은 VBA 소스가 없습니다.</value>
   </data>
   <data name="The vba directory contains a link, subdirectory or unsupported file." xml:space="preserve">
-    <value>Le dossier vba contient un lien, un sous-dossier ou un fichier non pris en charge.</value>
+    <value>vba 디렉토리에는 링크, 하위 디렉토리 또는 지원되지 않은 파일이 포함되어 있습니다.</value>
   </data>
   <data name="The window's COM control was not created." xml:space="preserve">
-    <value>Le contrôle COM de la fenêtre n’a pas été créé.</value>
+    <value>창의 COM 제어가 생성되지 않았습니다.</value>
   </data>
   <data name="This cache is already linked to another repository. Restore the previous URL." xml:space="preserve">
-    <value>Ce cache est déjà lié à un autre dépôt. Rétablissez l’URL précédente.</value>
+    <value>이 캐시는 이미 다른 저장소에 연결됩니다. 이전 URL을 복원합니다.</value>
   </data>
   <data name="This file is not listed in conflicts." xml:space="preserve">
-    <value>Ce fichier ne figure pas dans les conflits.</value>
+    <value>이 파일은 충돌에 나열되지 않습니다.</value>
   </data>
   <data name="This local branch already exists." xml:space="preserve">
-    <value>Cette branche locale existe déjà.</value>
+    <value>이 지역 지점은 이미 존재합니다.</value>
   </data>
   <data name="This provider is not implemented yet." xml:space="preserve">
-    <value>Ce fournisseur n'est pas encore implémenté.</value>
+    <value>이 공급자는 아직 구현되지 않았습니다.</value>
   </data>
   <data name="Tool" xml:space="preserve">
-    <value>Outil</value>
+    <value>도구</value>
   </data>
   <data name="Track remote" xml:space="preserve">
-    <value>Récupérer distante</value>
+    <value>먼 궤도</value>
   </data>
   <data name="Turn" xml:space="preserve">
-    <value>Intervention</value>
+    <value>작업 차례</value>
   </data>
   <data name="Unable to copy: " xml:space="preserve">
-    <value>Copie impossible : </value>
+    <value>복사할 수 없음: </value>
   </data>
   <data name="Unable to export: " xml:space="preserve">
-    <value>Export impossible : </value>
+    <value>수출에 무능한: </value>
   </data>
   <data name="Unable to merge: check common ancestors and Git 2.38 or later." xml:space="preserve">
-    <value>Fusion impossible : vérifiez les ancêtres communs et Git 2.38 ou ultérieur.</value>
+    <value>병합할 수 없음: 일반적인 조상과 Git 2.38 이상을 확인하십시오.</value>
   </data>
   <data name="Unable to navigate: " xml:space="preserve">
-    <value>Navigation impossible : </value>
+    <value>탐색 할 수 없음: </value>
   </data>
   <data name="Unable to start Git." xml:space="preserve">
-    <value>Impossible de démarrer Git.</value>
+    <value>Git를 시작할 수 없습니다.</value>
   </data>
   <data name="Unable to stop: " xml:space="preserve">
-    <value>Arrêt impossible : </value>
+    <value>중지할 수 없음: </value>
   </data>
   <data name="Unable to undo: " xml:space="preserve">
-    <value>Annulation impossible : </value>
+    <value>undo에 사용 가능: </value>
   </data>
   <data name="Understand the code" xml:space="preserve">
-    <value>Comprendre le code</value>
+    <value>코드를 이해</value>
   </data>
   <data name="Undo a block…" xml:space="preserve">
-    <value>Annuler un bloc…</value>
+    <value>블록 변경 취소…</value>
   </data>
   <data name="Undo change" xml:space="preserve">
-    <value>Annuler la modification</value>
+    <value>변경 취소</value>
   </data>
   <data name="Undo changes from this turn after checking for conflicts." xml:space="preserve">
-    <value>Annuler les modifications de cette intervention, après vérification des conflits.</value>
+    <value>분쟁을 검사 한 후이 차례의 변경이 없습니다.</value>
   </data>
   <data name="Undo complete. Other changes in the module were preserved." xml:space="preserve">
-    <value>Annulation effectuée. Les autres modifications du module ont été conservées.</value>
+    <value>Undo가 완료되었습니다. 모듈의 다른 변경은 보존되었습니다.</value>
   </data>
   <data name="Undo entire turn" xml:space="preserve">
-    <value>Annuler toute l’intervention</value>
+    <value>이 차례의 모든 변경 취소</value>
   </data>
   <data name="Undo turn" xml:space="preserve">
-    <value>Annuler l’intervention</value>
+    <value>이 차례의 변경 취소</value>
   </data>
   <data name="Unexpected Git Credential Manager response. Check its version." xml:space="preserve">
-    <value>Réponse inattendue de Git Credential Manager. Vérifiez sa version.</value>
+    <value>Unexpected Git Credential Manager 응답. 버전 확인.</value>
   </data>
   <data name="Unexpected VBE response." xml:space="preserve">
-    <value>Réponse VBE inattendue.</value>
+    <value>팽창된 VBE 응답.</value>
   </data>
   <data name="Unexpected identity after import: " xml:space="preserve">
-    <value>Identité inattendue après import : </value>
+    <value>수입 후 확실한 신원: </value>
   </data>
   <data name="Unknown command. Use the / suggestions." xml:space="preserve">
-    <value>Commande inconnue. Utilisez les suggestions /.</value>
+    <value>알려진 명령. / 제안을 사용합니다.</value>
   </data>
   <data name="Unknown local branch. Create it or fetch it from the remote repository." xml:space="preserve">
-    <value>Branche locale inconnue. Créez-la ou récupérez-la depuis le dépôt distant.</value>
+    <value>알려진 로컬 지점. 그것을 만들거나 원격 저장소에서 fetch.</value>
   </data>
   <data name="Use a Microsoft Entra token (renew after expiration)" xml:space="preserve">
-    <value>Utiliser un jeton Microsoft Entra (à renouveler après expiration)</value>
+    <value>Microsoft Entra 토큰을 사용하여 (초기 후 갱신)</value>
   </data>
   <data name="Use this text" xml:space="preserve">
-    <value>Utiliser ce texte</value>
+    <value>이 공유하기 text</value>
   </data>
   <data name="VBA backup before import" xml:space="preserve">
-    <value>Sauvegarde VBA avant import</value>
+    <value>가져 오기 전에 VBA 백업</value>
   </data>
   <data name="VBA changed during synchronization. No import performed." xml:space="preserve">
-    <value>Le VBA a changé pendant la synchronisation. Aucun import effectué.</value>
+    <value>VBA는 동기화 중 변경됩니다. 가져 오기가 수행되지 않습니다.</value>
   </data>
   <data name="VBA changed during the operation." xml:space="preserve">
-    <value>Le VBA a changé pendant l’opération.</value>
+    <value>VBA가 작동 중 변경됩니다.</value>
   </data>
   <data name="VBA changes become source files in the repository. No folder next to the macro.&#13;&#10;The first pull replaces VBA with a restorable backup.&#13;&#10;Sign in through Git Credential Manager; commit identity is configured in Git." xml:space="preserve">
-    <value>Les modifications du VBA deviennent des fichiers sources dans le dépôt. Aucun dossier à côté de la macro.
-
-Le premier pull remplace le VBA avec une sauvegarde restaurable.
-
-Connexion via Git Credential Manager ; identité de commit configurée dans Git.</value>
+    <value>VBA 변경 사항은 저장소의 소스 파일로 저장됩니다. 매크로 옆에 폴더를 만들지 않습니다.
+첫 Pull은 복원 가능한 백업을 만든 후 VBA를 교체합니다.
+Git Credential Manager로 로그인하며 커밋 작성자 정보는 Git에서 설정합니다.</value>
   </data>
   <data name="VBA contains uncommitted local changes." xml:space="preserve">
-    <value>Le VBA contient des modifications locales non commitées.</value>
+    <value>VBA는 현지 변경이 불가합니다.</value>
   </data>
   <data name="VBA matches the last synchronized state." xml:space="preserve">
-    <value>Le VBA correspond au dernier état synchronisé.</value>
+    <value>VBA는 최근 동기화 된 상태로 일치합니다.</value>
   </data>
   <data name="VBA project for this conversation: " xml:space="preserve">
-    <value>Projet VBA de cette conversation : </value>
+    <value>이 대화를 위한 VBA 프로젝트: </value>
   </data>
   <data name="VBA project · document history" xml:space="preserve">
-    <value>Projet VBA · historique du document</value>
+    <value>VBA 프로젝트 · 문서 역사</value>
   </data>
   <data name="VBA references differ. Align them in Tools &gt; References before importing." xml:space="preserve">
-    <value>Les références VBA diffèrent. Alignez-les dans Outils &gt; Références avant l’import.</value>
+    <value>VBA 참조는 다릅니다. 도구에 정렬 &gt; 수입하기 전에 참조.</value>
   </data>
   <data name="VBA restored. Check and save the document." xml:space="preserve">
-    <value>VBA restauré. Vérifiez puis enregistrez le document.</value>
+    <value>VBA 복원. 확인 및 문서를 저장.</value>
   </data>
   <data name="VBA sources are incomplete, unexpected or too large (32 MB maximum)." xml:space="preserve">
-    <value>Sources VBA incomplètes, inattendues ou trop volumineuses (32 Mo maximum).</value>
+    <value>VBA 소스는 불완전, 예기치 않은 또는 너무 큰 (32 MB 최대)입니다.</value>
   </data>
   <data name="VBA state after import" xml:space="preserve">
-    <value>État VBA après import</value>
+    <value>수입품 후에 VBA 국가</value>
   </data>
   <data name="VBA verification complete" xml:space="preserve">
-    <value>Vérification VBA terminée</value>
+    <value>VBA 인증 완료</value>
   </data>
   <data name="VBAi assistant" xml:space="preserve">
-    <value>Assistant VBAi</value>
+    <value>VBAi 조수</value>
   </data>
   <data name="VBAi settings" xml:space="preserve">
-    <value>Configuration VBAi</value>
+    <value>VBAi 설정</value>
   </data>
   <data name="VBAi settings…" xml:space="preserve">
-    <value>Configuration VBAi…</value>
+    <value>VBAi 설정…</value>
   </data>
   <data name="VBAi — Settings" xml:space="preserve">
-    <value>VBAi — Paramètres</value>
+    <value>VBAi — 설정</value>
   </data>
   <data name="VBE edit permissions" xml:space="preserve">
-    <value>Autorisation des modifications VBE</value>
+    <value>VBE 편집 권한</value>
   </data>
   <data name="VBE edits" xml:space="preserve">
-    <value>Modifications VBE</value>
+    <value>VBE 편집</value>
   </data>
   <data name="Validate all files, create a merge commit, then import VBA with a backup." xml:space="preserve">
-    <value>Valide tous les fichiers, crée un commit de fusion puis importe le VBA avec sauvegarde.</value>
+    <value>모든 파일을 검증하고 병합 커밋을 만들고, VBA를 백업합니다.</value>
   </data>
   <data name="Verification" xml:space="preserve">
-    <value>Vérification</value>
+    <value>검증</value>
   </data>
   <data name="View code changes and their undo actions." xml:space="preserve">
-    <value>Accéder aux modifications de code et à leurs actions d’annulation.</value>
+    <value>코드 변경 및 undo 동작을 볼 수 있습니다.</value>
   </data>
   <data name="Wait for the response to finish before preparing an action." xml:space="preserve">
-    <value>Attendez la fin de la réponse avant de préparer une action.</value>
+    <value>행동을 준비하기 전에 마무리에 대한 응답을 기다립니다.</value>
   </data>
   <data name="Wait for the response to finish or stop the agent before changing settings." xml:space="preserve">
-    <value>Attendez la fin de la réponse ou arrêtez l’agent pour modifier les paramètres.</value>
+    <value>종료 또는 설정 변경 전에 에이전트를 중지에 대한 응답을 기다립니다.</value>
   </data>
   <data name="What would you like to build?" xml:space="preserve">
-    <value>Que souhaitez-vous développer ?</value>
+    <value>당신은 무엇을 짓고 싶습니까?</value>
   </data>
   <data name="Working mode" xml:space="preserve">
-    <value>Mode de travail</value>
+    <value>작동 형태</value>
   </data>
   <data name="You" xml:space="preserve">
-    <value>Vous</value>
+    <value>사용자</value>
   </data>
   <data name="Your message…" xml:space="preserve">
-    <value>Votre message…</value>
+    <value>당신의 메시지 ...</value>
   </data>
   <data name="Your request; Enter to send, Shift+Enter for a new line" xml:space="preserve">
-    <value>Votre demande ; Entrée pour envoyer, Maj+Entrée pour une nouvelle ligne</value>
+    <value>요청; 전송을 입력, Shift+Enter 새로운 라인</value>
   </data>
   <data name="[Binary resource or directory: choose local or incoming]" xml:space="preserve">
-    <value>[Ressource binaire ou dossier : choisir local ou entrant]</value>
+    <value>[Binary resource 또는 디렉토리: 로컬 또는 들어오는 선택]</value>
   </data>
   <data name="[Non-UTF-8 content: choose local or incoming]" xml:space="preserve">
-    <value>[Contenu non UTF-8 : choisir local ou entrant]</value>
+    <value>[Non-UTF-8 내용 : 지역 또는 들어오는 선택]</value>
   </data>
   <data name="[Preview unavailable above 64 KiB: choose local or incoming]" xml:space="preserve">
-    <value>[Aperçu indisponible au-delà de 64 Kio : choisir local ou entrant]</value>
+    <value>[64 KiB 이상 사용 불가 : 로컬 또는 들어오는 선택]</value>
   </data>
   <data name="unsaved document" xml:space="preserve">
-    <value>document non enregistré</value>
+    <value>unsaved 문서</value>
   </data>
   <data name="vba must be a Git directory." xml:space="preserve">
-    <value>vba doit être un dossier Git.</value>
+    <value>vba는 Git 디렉토리가 있어야 합니다.</value>
   </data>
   <data name="↑ ↓ Browse · Enter Insert · Esc Close" xml:space="preserve">
-    <value>↑ ↓ Parcourir · Entrée Insérer · Échap Fermer</value>
+    <value>↑ ↓ 검색 · 삽입 입력 · 조건 닫기</value>
   </data>
   <data name="↓ Latest message" xml:space="preserve">
-    <value>↓ Dernier message</value>
+    <value>↓ 최신 메시지</value>
   </data>
   <data name="Incomplete or filtered Bedrock response: " xml:space="preserve">
-    <value>Réponse Bedrock incomplète ou filtrée : </value>
+    <value>불완전하거나 거르는 Bedrock 응답: </value>
   </data>
   <data name="Response too large." xml:space="preserve">
-    <value>Réponse trop volumineuse.</value>
+    <value>응답 너무 크다.</value>
   </data>
   <data name="The provider interrupted the response with an error." xml:space="preserve">
-    <value>Le fournisseur a interrompu la réponse avec une erreur.</value>
+    <value>공급자는 오류로 응답을 중단했습니다.</value>
   </data>
   <data name="Response interrupted, truncated or filtered; no partial tool call was executed." xml:space="preserve">
-    <value>Réponse interrompue, tronquée ou filtrée ; aucun appel d’outil partiel n’a été exécuté.</value>
+    <value>응답 중단, truncated 또는 필터링; 부분 도구 호출이 실행되지 않았습니다.</value>
   </data>
   <data name="Claude reached its response limit. Narrow the scope of your request." xml:space="preserve">
-    <value>Claude a atteint sa limite de réponse. Réduisez la portée de la demande.</value>
+    <value>Claude는 응답 제한에 도달했습니다. 요청의 범위를 좁은.</value>
   </data>
   <data name="Codex verification timed out." xml:space="preserve">
-    <value>Vérification Codex trop longue.</value>
+    <value>Codex 검증이 종료되었습니다.</value>
   </data>
   <data name="Not signed in to ChatGPT" xml:space="preserve">
-    <value>ChatGPT non connecté</value>
+    <value>ChatGPT에 서명하지 않음</value>
   </data>
   <data name="Connected to ChatGPT" xml:space="preserve">
-    <value>Connecté à ChatGPT</value>
+    <value>ChatGPT에 연결</value>
   </data>
   <data name="Codex is connected, but not through ChatGPT: " xml:space="preserve">
-    <value>Connexion Codex active, mais pas avec ChatGPT : </value>
+    <value>Codex는 연결되지만 ChatGPT를 통해서는 안됩니다: </value>
   </data>
   <data name="Codex did not provide its model list." xml:space="preserve">
-    <value>Codex n'a pas fourni son catalogue de modèles.</value>
+    <value>Codex는 모델 목록을 제공하지 않았습니다.</value>
   </data>
   <data name="Codex app-server stopped." xml:space="preserve">
-    <value>Codex app-server s'est arrêté.</value>
+    <value>Codex 앱 서버가 중지되었습니다.</value>
   </data>
   <data name="Unable to start codex app-server." xml:space="preserve">
-    <value>Impossible de démarrer codex app-server.</value>
+    <value>codex app-server를 시작할 수 없습니다.</value>
   </data>
   <data name="Codex: initializing the local server" xml:space="preserve">
-    <value>Codex : initialisation du serveur local</value>
+    <value>Codex: 로컬 서버 초기화</value>
   </data>
   <data name="Codex: checking the ChatGPT account" xml:space="preserve">
-    <value>Codex : vérification du compte ChatGPT</value>
+    <value>Codex: ChatGPT 계정 확인</value>
   </data>
   <data name="Codex must be signed in through ChatGPT. No API key is used here." xml:space="preserve">
-    <value>Codex doit être connecté avec ChatGPT. Aucune clé API n'est utilisée ici.</value>
+    <value>Codex는 ChatGPT를 통해 서명해야 합니다. API 키는 여기에 사용되지 않습니다.</value>
   </data>
   <data name="Codex: opening the VBE conversation" xml:space="preserve">
-    <value>Codex : ouverture de la conversation VBE</value>
+    <value>Codex: VBE 대화 열기</value>
   </data>
   <data name="Codex connected through ChatGPT" xml:space="preserve">
-    <value>Codex connecté avec ChatGPT</value>
+    <value>ChatGPT를 통한 Codex 연결</value>
   </data>
   <data name="Codex finished without a text response." xml:space="preserve">
-    <value>Codex a terminé sans réponse textuelle.</value>
+    <value>text 응답 없이 완료된 Codex.</value>
   </data>
   <data name=" · complete" xml:space="preserve">
-    <value> · terminé</value>
+    <value> · 전체</value>
   </data>
   <data name=" · failed" xml:space="preserve">
-    <value> · échec</value>
+    <value> · 실패</value>
   </data>
   <data name=" models. Authentication is managed by the GitHub CLI." xml:space="preserve">
-    <value> modèles. Authentification gérée par le CLI GitHub.</value>
+    <value> 모델. 인증은 GitHub CLI에 의해 관리됩니다.</value>
   </data>
   <data name="Unable to start Copilot." xml:space="preserve">
-    <value>Impossible de démarrer Copilot.</value>
+    <value>Copilot을 시작할 수 없습니다.</value>
   </data>
   <data name="Install GitHub Copilot CLI and set CODEXVBE_COPILOT_CLI to its executable if needed." xml:space="preserve">
-    <value>Installez GitHub Copilot CLI et configurez CODEXVBE_COPILOT_CLI vers son exécutable si nécessaire.</value>
+    <value>GitHub Copilot CLI를 설치하고 필요한 경우 CODEXVBE_COPILOT_CLI를 설정하십시오.</value>
   </data>
   <data name="Incompatible Copilot protocol version (versions 2 and 3 supported)." xml:space="preserve">
-    <value>Version du protocole Copilot incompatible (versions 2 et 3 prises en charge).</value>
+    <value>Incompatible Copilot 프로토콜 버전 (버전 2 및 3 지원).</value>
   </data>
   <data name="Copilot VBA tools are not connected." xml:space="preserve">
-    <value>Les outils VBA de Copilot ne sont pas connectés.</value>
+    <value>Copilot VBA 도구는 연결되지 않습니다.</value>
   </data>
   <data name="Copilot did not finish its response within the time limit." xml:space="preserve">
-    <value>Copilot n’a pas terminé sa réponse dans le délai imparti.</value>
+    <value>Copilot은 시간 제한 내에서 응답을 완료하지 않았습니다.</value>
   </data>
   <data name="Copilot is not responding to " xml:space="preserve">
-    <value>Copilot ne répond pas à </value>
+    <value>Copilot은 응답하지 않습니다. </value>
   </data>
   <data name=". Check the CLI connection." xml:space="preserve">
-    <value>. Vérifiez la connexion du CLI.</value>
+    <value>. CLI 연결 확인.</value>
   </data>
   <data name="Copilot stopped." xml:space="preserve">
-    <value>Copilot s’est arrêté.</value>
+    <value>Copilot이 중지되었습니다.</value>
   </data>
   <data name="Invalid Copilot header." xml:space="preserve">
-    <value>En-tête Copilot invalide.</value>
+    <value>잘못된 Copilot 헤더.</value>
   </data>
   <data name="Invalid Copilot message size." xml:space="preserve">
-    <value>Taille du message Copilot invalide.</value>
+    <value>잘못된 Copilot 메시지 크기.</value>
   </data>
   <data name="Copilot refused the request. Check sign-in, subscription and model in the CLI." xml:space="preserve">
-    <value>Copilot a refusé la requête. Vérifiez la connexion, l’abonnement et le modèle dans le CLI.</value>
+    <value>Copilot은 요청을 거부했습니다. CLI에서 Sign-in, 구독 및 모델을 확인하십시오.</value>
   </data>
   <data name="The Copilot session failed. Check its status in the CLI." xml:space="preserve">
-    <value>La session Copilot a échoué. Vérifiez son état dans le CLI.</value>
+    <value>Copilot 세션이 실패했습니다. CLI의 상태를 확인하십시오.</value>
   </data>
   <data name="Custom (OpenAI)" xml:space="preserve">
-    <value>Personnalisé (OpenAI)</value>
+    <value>사용자 정의 (OpenAI)</value>
   </data>
   <data name=" (coming soon)" xml:space="preserve">
-    <value> (à venir)</value>
+    <value> (곧)</value>
   </data>
   <data name=" then restart the host application." xml:space="preserve">
-    <value> puis redémarrez l'application hôte.</value>
+    <value> 그런 다음 호스트 응용 프로그램을 다시 시작합니다.</value>
   </data>
   <data name="Select a model in the conversation." xml:space="preserve">
-    <value>Sélectionnez un modèle dans la conversation.</value>
+    <value>대화에서 모델을 선택하십시오.</value>
   </data>
   <data name=" in settings." xml:space="preserve">
-    <value> dans les paramètres.</value>
+    <value> 설정에서.</value>
   </data>
   <data name="Configure the API key for " xml:space="preserve">
-    <value>Configurez la clé API de </value>
+    <value>API 키 구성 </value>
   </data>
   <data name=" in VBAi settings." xml:space="preserve">
-    <value> dans les paramètres CodexVBE.</value>
+    <value> VBAi 설정에서.</value>
   </data>
   <data name="Model list unavailable for this provider." xml:space="preserve">
-    <value>Catalogue de modèles indisponible pour ce fournisseur.</value>
+    <value>이 공급자를 위해 유효한 모형 명부.</value>
   </data>
   <data name="Enter the " xml:space="preserve">
-    <value>Renseignez les </value>
+    <value>이름 * </value>
   </data>
   <data name="Azure deployments" xml:space="preserve">
-    <value>déploiements Azure</value>
+    <value>Azure 배포</value>
   </data>
   <data name="model identifiers" xml:space="preserve">
-    <value>identifiants de modèles</value>
+    <value>모델 식별자</value>
   </data>
   <data name=" in provider settings." xml:space="preserve">
-    <value> dans les paramètres du fournisseur.</value>
+    <value> 공급자 설정에서.</value>
   </data>
   <data name=" to load models." xml:space="preserve">
-    <value> pour charger les modèles.</value>
+    <value> 적재 모형에.</value>
   </data>
   <data name="Check credentials, URL and provider limits." xml:space="preserve">
-    <value>Vérifiez les identifiants, l’URL et les limites du fournisseur.</value>
+    <value>자격 증명, URL 및 공급자 제한을 확인하십시오.</value>
   </data>
   <data name="The provider did not return a model list." xml:space="preserve">
-    <value>Le fournisseur n'a pas fourni de liste de modèles.</value>
+    <value>공급자는 모델 목록을 반환하지 않았다.</value>
   </data>
   <data name="Invalid Claude model list pagination." xml:space="preserve">
-    <value>Pagination du catalogue Claude invalide.</value>
+    <value>잘못된 Claude 모델 목록 pagination.</value>
   </data>
   <data name="The model list exceeds the pagination limit." xml:space="preserve">
-    <value>Le catalogue dépasse la limite de pagination.</value>
+    <value>모형 명부는 pagination 한계를 초과합니다.</value>
   </data>
   <data name=": check the key, model, URL and provider limits." xml:space="preserve">
-    <value> : vérifiez la clé, le modèle, l’URL et les limites du fournisseur.</value>
+    <value>: 키, 모델, URL 및 공급자 제한을 확인합니다.</value>
   </data>
   <data name="Response truncated or filtered; tool calls were not executed." xml:space="preserve">
-    <value>Réponse tronquée ou filtrée ; les appels d’outils n’ont pas été exécutés.</value>
+    <value>응답 truncated 또는 필터링; 도구 호출은 실행되지 않았습니다.</value>
   </data>
   <data name="Select a module or procedure in this project to open its code." xml:space="preserve">
-    <value>Sélectionnez un module ou une procédure de ce projet pour ouvrir le code.</value>
+    <value>이 프로젝트의 모듈 또는 절차를 선택하여 코드를 열 수 있습니다.</value>
   </data>
   <data name=" changed since selection. Remove the token and select it again with #." xml:space="preserve">
-    <value> a changé depuis sa sélection. Supprimez le jeton et sélectionnez-le à nouveau avec #.</value>
+    <value> 선택 이후 변경. 토큰을 제거하고 #로 다시 선택합니다.</value>
   </data>
   <data name="  (restored)" xml:space="preserve">
-    <value>  (restauré)</value>
+    <value>  (레스토랑)</value>
   </data>
   <data name="Invalid replacement range." xml:space="preserve">
-    <value>La plage de remplacement est invalide.</value>
+    <value>잘못된 교체 범위.</value>
   </data>
   <data name="No code difference." xml:space="preserve">
-    <value>Aucune différence de code.</value>
+    <value>코드 차이는 없습니다.</value>
   </data>
   <data name="Configure a model for " xml:space="preserve">
-    <value>Configurez un modèle pour </value>
+    <value>모델 구성 </value>
   </data>
   <data name="Diagnose and fix" xml:space="preserve">
-    <value>Diagnostiquer et corriger</value>
+    <value>진단 및 수정</value>
   </data>
   <data name="Unable to open SQLite history." xml:space="preserve">
-    <value>Impossible d'ouvrir l'historique SQLite.</value>
+    <value>SQLite 역사를 열 수 없습니다.</value>
   </data>
   <data name="Configure " xml:space="preserve">
-    <value>Configurez </value>
+    <value>제품 설명 </value>
   </data>
   <data name="GitHub: " xml:space="preserve">
-    <value>GitHub : </value>
+    <value>GitHub: </value>
   </data>
   <data name="Git is limited to the document of this conversation." xml:space="preserve">
-    <value>Git est limité au document de cette conversation.</value>
+    <value>Git은 이 대화의 문서에 제한됩니다.</value>
   </data>
   <data name="The VBE policy does not allow this Git operation." xml:space="preserve">
-    <value>La politique VBE interdit cette opération Git.</value>
+    <value>VBE 정책은이 Git 가동을 허용하지 않습니다.</value>
   </data>
   <data name="VBAi — Git operation" xml:space="preserve">
-    <value>VBAi — opération Git</value>
+    <value>VBAi - Git 작업</value>
   </data>
   <data name="Git operation declined by the user." xml:space="preserve">
-    <value>Opération Git refusée par l’utilisateur.</value>
+    <value>Git 가동은 사용자에 의해 감소했습니다.</value>
   </data>
   <data name="Mode " xml:space="preserve">
-    <value>Le mode </value>
+    <value>(주) </value>
   </data>
   <data name=" does not allow this editing or execution tool: " xml:space="preserve">
-    <value> interdit cet outil de modification ou d'exécution : </value>
+    <value> 이 편집 또는 실행 도구를 허용하지 않습니다 : </value>
   </data>
   <data name="VBE edits are disabled (Read-only mode)." xml:space="preserve">
-    <value>Les modifications VBE sont désactivées (mode Lecture seule).</value>
+    <value>VBE 편집은 비활성화 (Read-only mode)입니다.</value>
   </data>
   <data name="Unknown VBE edit policy; action refused." xml:space="preserve">
-    <value>Politique de modification VBE inconnue ; action refusée.</value>
+    <value>알 수없는 VBE 편집 정책; 행동 거부.</value>
   </data>
   <data name="The module changed since the model read it." xml:space="preserve">
-    <value>Le module a changé depuis la lecture du modèle.</value>
+    <value>이 모듈은 모델이 읽기 때문에 변경되었습니다.</value>
   </data>
   <data name="These changes have already been undone." xml:space="preserve">
-    <value>Ces modifications sont déjà annulées.</value>
+    <value>이 변화는 이미 undone이었다.</value>
   </data>
   <data name="Undo stopped after " xml:space="preserve">
-    <value>Annulation arrêtée après </value>
+    <value>실패한 후 </value>
   </data>
   <data name="Allow reading and sending to " xml:space="preserve">
-    <value>Autoriser la lecture et la transmission à </value>
+    <value>읽기 및 전송을 허용 </value>
   </data>
   <data name=" up to the first 64 KiB of this file?&#13;&#10;&#13;&#10;" xml:space="preserve">
-    <value> des 64 premiers Kio au maximum de ce fichier ?
+    <value> 이 파일의 첫 번째 64 KiB까지?
 
 
 
 </value>
   </data>
   <data name="The user declined sending the file." xml:space="preserve">
-    <value>L'utilisateur a refusé la transmission du fichier.</value>
+    <value>사용자는 파일을 전송합니다.</value>
   </data>
   <data name="The file appears to be binary; text reading refused." xml:space="preserve">
-    <value>Le fichier semble binaire ; lecture textuelle refusée.</value>
+    <value>파일이 바이너리가 될 것으로 보인다; text 자주 묻는 질문</value>
   </data>
   <data name="The user did not provide this exact path." xml:space="preserve">
-    <value>L'utilisateur n'a pas fourni ce chemin exact.</value>
+    <value>사용자는이 정확한 경로를 제공하지 않았다.</value>
   </data>
   <data name="The provided file could not be found." xml:space="preserve">
-    <value>Le fichier fourni est introuvable.</value>
+    <value>제공된 파일은 찾을 수 없습니다.</value>
   </data>
   <data name="the active LLM provider" xml:space="preserve">
-    <value>le fournisseur LLM actif</value>
+    <value>활성 LLM 공급자</value>
   </data>
   <data name="VBAi — allow sending a file" xml:space="preserve">
-    <value>VBAi — autoriser la transmission du fichier</value>
+    <value>VBAi - 파일을 보낼 수 있습니다</value>
   </data>
   <data name="VBAi — approve edit" xml:space="preserve">
-    <value>VBAi — valider la modification</value>
+    <value>VBAi - 편집을 승인</value>
   </data>
   <data name="Allow" xml:space="preserve">
-    <value>Autoriser</value>
+    <value>허용</value>
   </data>
   <data name="Deny" xml:space="preserve">
-    <value>Refuser</value>
+    <value>거부</value>
   </data>
   <data name="Refresh status" xml:space="preserve">
-    <value>Actualiser l’état</value>
+    <value>상태 새로 고침</value>
   </data>
   <data name="Project" xml:space="preserve">
-    <value>Projet</value>
+    <value>프로젝트</value>
   </data>
   <data name="Branches" xml:space="preserve">
-    <value>Branches</value>
+    <value>브랜치</value>
   </data>
   <data name="Checkpoints" xml:space="preserve">
-    <value>Checkpoints</value>
+    <value>체크포인트</value>
   </data>
   <data name="Plan" xml:space="preserve">
-    <value>Plan</value>
+    <value>계획</value>
   </data>
   <data name="Agent" xml:space="preserve">
-    <value>Agent</value>
+    <value>에이전트</value>
   </data>
   <data name="Conversation" xml:space="preserve">
-    <value>Conversation</value>
+    <value>대화</value>
   </data>
   <data name="Assistant" xml:space="preserve">
-    <value>Assistant</value>
+    <value>어시스턴트</value>
   </data>
   <data name="# Context" xml:space="preserve">
-    <value># Contexte</value>
+    <value># 컨텍스트</value>
   </data>
   <data name="☰ Chats" xml:space="preserve">
-    <value>☰ Chats</value>
+    <value>☰ 채팅</value>
   </data>
 </root>

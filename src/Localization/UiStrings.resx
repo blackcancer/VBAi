@@ -1511,4 +1511,28 @@ Sign in through Git Credential Manager; commit identity is configured in Git.</v
   <data name="Project" xml:space="preserve">
     <value>Project</value>
   </data>
+  <data name="Branches" xml:space="preserve">
+    <value>Branches</value>
+  </data>
+  <data name="Checkpoints" xml:space="preserve">
+    <value>Checkpoints</value>
+  </data>
+  <data name="Plan" xml:space="preserve">
+    <value>Plan</value>
+  </data>
+  <data name="Agent" xml:space="preserve">
+    <value>Agent</value>
+  </data>
+  <data name="Conversation" xml:space="preserve">
+    <value>Conversation</value>
+  </data>
+  <data name="Assistant" xml:space="preserve">
+    <value>Assistant</value>
+  </data>
+  <data name="# Context" xml:space="preserve">
+    <value># Context</value>
+  </data>
+  <data name="☰ Chats" xml:space="preserve">
+    <value>☰ Chats</value>
+  </data>
 </root>

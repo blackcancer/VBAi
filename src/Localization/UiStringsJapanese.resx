@@ -14,1525 +14,1523 @@
   </resheader>
   <data name="&#10;### Attached memory&#10;" xml:space="preserve">
     <value>
-### Mémoire jointe
+### 想定メモリ
 </value>
   </data>
   <data name="&#10;Location unavailable: " xml:space="preserve">
     <value>
-Localisation indisponible : </value>
+利用できない場所: </value>
   </data>
   <data name="&#10;Project identifier to use in tools: " xml:space="preserve">
     <value>
-Identifiant Project à utiliser dans les outils : </value>
+ツールで使用するプロジェクト識別子: </value>
   </data>
   <data name=" Bedrock API key (Bearer), not an IAM secret key. URL: https://bedrock-runtime.&lt;region&gt;.amazonaws.com." xml:space="preserve">
-    <value> Clé API Bedrock (Bearer), pas une clé secrète IAM. URL : https://bedrock-runtime.&lt;région&gt;.amazonaws.com.</value>
+    <value> Bedrock API キー(キー)Bearer), ない IAM 秘密鍵。 URL: https://bedrock-runtime.&lt;region&gt;.amazonaws.com.</value>
   </data>
   <data name=" Optional key. Enter the full /chat/completions URL and model identifiers." xml:space="preserve">
-    <value> Clé facultative. Renseigner l’URL complète /chat/completions et les identifiants des modèles.</value>
+    <value> オプションのキー。 /chat/completions URL とモデルの識別子を入力します。</value>
   </data>
   <data name=" URL: https://&lt;resource&gt;.openai.azure.com/openai/v1/chat/completions. Models are your deployment names. In Entra mode: AZURE_OPENAI_ENTRA_TOKEN." xml:space="preserve">
-    <value> URL : https://&lt;ressource&gt;.openai.azure.com/openai/v1/chat/completions. Les modèles sont les noms de vos déploiements. En mode Entra : AZURE_OPENAI_ENTRA_TOKEN.</value>
+    <value> URL: https://&lt;resource&gt;.openai.azure.com/openai/v1/chat/completions. モデルはあなたの展開名です。 Entra モードで: AZURE_OPENAI_ENTRA_TOKEN.</value>
   </data>
   <data name=" account(s) available through Git Credential Manager. Repository access will be checked during synchronization." xml:space="preserve">
-    <value> compte(s) disponible(s) via Git Credential Manager. L’accès au dépôt sera vérifié lors de la synchronisation.</value>
+    <value> Git Credential Managerで利用可能なアカウント。同期中にリポジトリアクセスがチェックされます。</value>
   </data>
   <data name=" change(s) applied. Review the files and undo this turn below." xml:space="preserve">
-    <value> modification(s) appliquée(s). Retrouvez les fichiers et annulez cette intervention ci-dessous.</value>
+    <value> change(s) が適用されます。 下のファイルと undo を見直します。</value>
   </data>
   <data name=" characters" xml:space="preserve">
-    <value> caractères</value>
+    <value> キャラクター</value>
   </data>
   <data name=" characters. This conversation's history also accompanies the request." xml:space="preserve">
-    <value> caractères. L’historique de cette conversation accompagne aussi la demande.</value>
+    <value> 文字。この会話の歴史は、リクエストを伴います。</value>
   </data>
   <data name=" failed. " xml:space="preserve">
-    <value> a échoué. </value>
+    <value> 失敗しました。 </value>
   </data>
   <data name=" file(s) changed since the last synchronization." xml:space="preserve">
-    <value> fichier(s) modifié(s) depuis la dernière synchronisation.</value>
+    <value> 最後の同期からファイル(s)が変更されました。</value>
   </data>
   <data name=" is stale. Remove it and attach the current selection." xml:space="preserve">
-    <value> est périmée. Retirez-la puis joignez la sélection actuelle.</value>
+    <value> ストールです。削除し、現在の選択を添付します。</value>
   </data>
   <data name=" remote branch(es). Choose a name, then Track remote." xml:space="preserve">
-    <value> branche(s) distante(s). Choisissez un nom puis Récupérer distante.</value>
+    <value> リモートブランチ(es)。名前を選択し、リモートを追跡します。</value>
   </data>
   <data name=" · History not saved" xml:space="preserve">
-    <value> · Historique non enregistré</value>
+    <value> ・保存されていない歴史</value>
   </data>
   <data name=" · branch" xml:space="preserve">
-    <value> · branche</value>
+    <value> · ブランチ</value>
   </data>
   <data name=" · check the COM control installation." xml:space="preserve">
-    <value> · vérifiez l’installation du contrôle COM.</value>
+    <value> ・COMコントロールのインストールを確認してください。</value>
   </data>
   <data name=" · selection L" xml:space="preserve">
-    <value> · sélection L</value>
+    <value> · 選択 L</value>
   </data>
   <data name=" — ready" xml:space="preserve">
-    <value> — prêt</value>
+    <value> — 準備完了</value>
   </data>
   <data name=" — working" xml:space="preserve">
-    <value> — en cours</value>
+    <value> — 作業</value>
   </data>
   <data name="+ New" xml:space="preserve">
-    <value>+ Nouveau</value>
+    <value>+ 新規</value>
   </data>
   <data name=". Analysis only; no edits or macro execution.&#10;" xml:space="preserve">
-    <value>. Analyse uniquement ; aucune modification ni exécution de macro.
+    <value>. 解析のみ; 編集やマクロの実行は行いません。
 </value>
   </data>
   <data name=". Choose a version or edit the full content below." xml:space="preserve">
-    <value>. Choisissez une version ou éditez le contenu complet en dessous.</value>
+    <value>. 下記のフルコンテンツをバージョンを選択して編集します。</value>
   </data>
   <data name=". Removing the saved key enables this fallback again." xml:space="preserve">
-    <value>. Supprimer la clé enregistrée réactive ce repli.</value>
+    <value>. 保存されたキーを取り戻すと、このフォールバックが再び有効になります。</value>
   </data>
   <data name=". Use Restore." xml:space="preserve">
-    <value>. Utilisez Restaurer.</value>
+    <value>. Restore を使う。</value>
   </data>
   <data name=".vba files contain only the visible code of the host module." xml:space="preserve">
-    <value>Les fichiers .vba contiennent uniquement le code visible du module hôte.</value>
+    <value>.vba ファイルには、ホストモジュールの可視コードのみが含まれています。</value>
   </data>
   <data name=": no edits or macro execution" xml:space="preserve">
-    <value> : aucune modification ni exécution de macro</value>
+    <value>: 編集やマクロの実行は行いません</value>
   </data>
   <data name="@ Function" xml:space="preserve">
-    <value>@ Fonction</value>
+    <value>@ @ @ からのツイート Function</value>
   </data>
   <data name="A checkpoint name of 1 to 160 characters is required." xml:space="preserve">
-    <value>Un nom de checkpoint de 1 à 160 caractères est requis.</value>
+    <value>1～160文字のチェックポイント名が必要です。</value>
   </data>
   <data name="A commit message is required." xml:space="preserve">
-    <value>Un message de commit est requis.</value>
+    <value>コミットメッセージが必要です。</value>
   </data>
   <data name="A merge commit message is required." xml:space="preserve">
-    <value>Un message de commit de fusion est requis.</value>
+    <value>コミットメッセージのマージが必要です。</value>
   </data>
   <data name="A merge is already in progress." xml:space="preserve">
-    <value>Une fusion est déjà en cours.</value>
+    <value>合併は既に進行中です。</value>
   </data>
   <data name="API URL" xml:space="preserve">
-    <value>URL de l’API</value>
+    <value>API の URL</value>
   </data>
   <data name="API URL for " xml:space="preserve">
-    <value>URL de l’API </value>
+    <value>API URL の URL </value>
   </data>
   <data name="Abort merge" xml:space="preserve">
-    <value>Annuler la fusion</value>
+    <value>アソートマージ</value>
   </data>
   <data name="Account used for subsequent macro fetch, pull and push operations. Does not change global Git configuration." xml:space="preserve">
-    <value>Compte utilisé pour les prochains fetch, pull et push des macros. Ne modifie pas la configuration Git globale.</value>
+    <value>その後のマクロフェッチ、プル、プッシュ操作に使用するアカウント。グローバルGitの設定は変更されません。</value>
   </data>
   <data name="Add #aModule or @aFunction to work on your code." xml:space="preserve">
-    <value>Ajoutez #unModule ou @uneFonction pour travailler sur votre code.</value>
+    <value>#aModule または @aFunction を追加して、コードを操作します。</value>
   </data>
   <data name="Add concise and useful VBA documentation to the code." xml:space="preserve">
-    <value>Ajoute une documentation VBA concise et utile au code.</value>
+    <value>簡潔で便利なVBAドキュメントをコードに追加します。</value>
   </data>
   <data name="Agent activity" xml:space="preserve">
-    <value>Activité de l'agent</value>
+    <value>エージェントのアクティビティ</value>
   </data>
   <data name="Agent: edits allowed by the VBE policy" xml:space="preserve">
-    <value>Agent : modifications autorisées par la politique VBE</value>
+    <value>エージェント: VBE ポリシーで許可されている編集</value>
   </data>
   <data name="Applied" xml:space="preserve">
-    <value>Appliquée</value>
+    <value>応用分野</value>
   </data>
   <data name="Archive / restore" xml:space="preserve">
-    <value>Archiver / réactiver</value>
+    <value>アーカイブ/復元</value>
   </data>
   <data name="Archive the selected conversation or restore it if archived." xml:space="preserve">
-    <value>Archiver la conversation sélectionnée ou la réactiver si elle est archivée.</value>
+    <value>選択した会話をアーカイブするか、アーカイブされた場合に復元します。</value>
   </data>
   <data name="Ask for other actions" xml:space="preserve">
-    <value>Demander pour les autres actions</value>
+    <value>他のアクションを尋ねる</value>
   </data>
   <data name="Attach selection" xml:space="preserve">
-    <value>Joindre la sélection</value>
+    <value>選択範囲を添付</value>
   </data>
   <data name="Attach the code selected in the VBE; attach the current line when nothing is selected." xml:space="preserve">
-    <value>Joindre le code sélectionné dans le VBE ; sans sélection, joindre la ligne courante.</value>
+    <value>VBE で選択したコードを添付し、何も選択されていないときに現在の行を添付します。</value>
   </data>
   <data name="Attach these notes to the next message sent to the selected provider" xml:space="preserve">
-    <value>Joindre ces notes au prochain message envoyé au fournisseur sélectionné</value>
+    <value>選択したプロバイダに送信された次のメッセージにこれらのメモを添付</value>
   </data>
   <data name="Attached document memory" xml:space="preserve">
-    <value>Mémoire du document jointe</value>
+    <value>文書メモリを添付</value>
   </data>
   <data name="Attached memory · ×" xml:space="preserve">
-    <value>Mémoire jointe · ×</value>
+    <value>想定メモリ・×</value>
   </data>
   <data name="Authentication" xml:space="preserve">
-    <value>Authentification</value>
+    <value>認証</value>
   </data>
   <data name="Automatic" xml:space="preserve">
-    <value>Automatique</value>
+    <value>自動</value>
   </data>
   <data name="Automatic Git selection" xml:space="preserve">
-    <value>Choix automatique de Git</value>
+    <value>自動Git選択</value>
   </data>
   <data name="Automatically compile the project after agent edits." xml:space="preserve">
-    <value>Compiler automatiquement le projet après les modifications de l’agent.</value>
+    <value>エージェントによる変更後にプロジェクトを自動コンパイルします。</value>
   </data>
   <data name="Bedrock Runtime URL" xml:space="preserve">
-    <value>URL Bedrock Runtime</value>
+    <value>Bedrock ランタイム URL</value>
   </data>
   <data name="Before import · " xml:space="preserve">
-    <value>Avant import · </value>
+    <value>インポート前・ </value>
   </data>
   <data name="Binary resource" xml:space="preserve">
-    <value>Ressource binaire</value>
+    <value>バイナリリソース</value>
   </data>
   <data name="Binary source or unresolved conflict: " xml:space="preserve">
-    <value>Source binaire ou conflit non résolu : </value>
+    <value>バイナリソースまたは未解決の競合: </value>
   </data>
   <data name="Block " xml:space="preserve">
-    <value>Bloc </value>
+    <value>ブロック </value>
   </data>
   <data name="Branch" xml:space="preserve">
-    <value>Branche</value>
+    <value>ブランチ</value>
   </data>
   <data name="Branch conversation" xml:space="preserve">
-    <value>Créer une branche</value>
+    <value>ブランチの会話</value>
   </data>
   <data name="Branch history (context only; read the live code again):&#10;" xml:space="preserve">
-    <value>Historique de la branche (contexte uniquement ; relire le code vivant) :
+    <value>ブランチ履歴(コンテキストのみ; ライブコードをもう一度読む):
 </value>
   </data>
   <data name="Branch name to create or track" xml:space="preserve">
-    <value>Nom de branche à créer ou récupérer</value>
+    <value>ブランチ名を作成または追跡する</value>
   </data>
   <data name="Branch not linked" xml:space="preserve">
-    <value>Branche non liée</value>
+    <value>ブランチがリンクされていない</value>
   </data>
   <data name="Branch to synchronize. Pushes are never forced." xml:space="preserve">
-    <value>Branche à synchroniser. Les push ne sont jamais forcés.</value>
+    <value>ブランチを同期させます。プッシュは強制されません。</value>
   </data>
   <data name="Cancel" xml:space="preserve">
-    <value>Annuler</value>
+    <value>キャンセル</value>
   </data>
   <data name="Change diff" xml:space="preserve">
-    <value>Diff de la modification</value>
+    <value>差分の変更</value>
   </data>
   <data name="Change undone" xml:space="preserve">
-    <value>Modification annulée</value>
+    <value>不要な変更</value>
   </data>
   <data name="Changes · " xml:space="preserve">
-    <value>Modifications · </value>
+    <value>変更・変更 </value>
   </data>
   <data name="Changes · 0" xml:space="preserve">
-    <value>Modifications · 0</value>
+    <value>変更・0</value>
   </data>
   <data name="Chat" xml:space="preserve">
-    <value>Discussion</value>
+    <value>チャット</value>
   </data>
   <data name="Chat and Plan: no project changes" xml:space="preserve">
-    <value>Discussion et Plan : aucune modification du projet</value>
+    <value>チャットとプラン:プロジェクトの変更なし</value>
   </data>
   <data name="ChatGPT account" xml:space="preserve">
-    <value>Compte ChatGPT</value>
+    <value>ChatGPTアカウント</value>
   </data>
   <data name="Check VBA" xml:space="preserve">
-    <value>Vérifier VBA</value>
+    <value>VBAのチェック</value>
   </data>
   <data name="Checking ChatGPT connection…" xml:space="preserve">
-    <value>Vérification de la connexion ChatGPT…</value>
+    <value>ChatGPTの接続を確認する...</value>
   </data>
   <data name="Checking ChatGPT…" xml:space="preserve">
-    <value>Vérification de ChatGPT…</value>
+    <value>ChatGPTのチェック</value>
   </data>
   <data name="Checking GitHub Copilot…" xml:space="preserve">
-    <value>Vérification de GitHub Copilot…</value>
+    <value>GitHub Copilotをチェックする...</value>
   </data>
   <data name="Checkpoint name" xml:space="preserve">
-    <value>Nom du checkpoint</value>
+    <value>チェックポイント名</value>
   </data>
   <data name="Choose a block to undo while keeping other changes." xml:space="preserve">
-    <value>Choisir le bloc à annuler en conservant les autres modifications.</value>
+    <value>他の変更を保ちながら、禁止するブロックを選択します。</value>
   </data>
   <data name="Choose a model offered by the selected provider." xml:space="preserve">
-    <value>Choisir le modèle proposé par le fournisseur sélectionné.</value>
+    <value>選択したプロバイダーが提供するモデルを選択します。</value>
   </data>
   <data name="Choose an available model before sending." xml:space="preserve">
-    <value>Choisissez un modèle disponible avant d'envoyer.</value>
+    <value>送信する前に、利用可能なモデルを選択します。</value>
   </data>
   <data name="Choose ours, theirs or text for a VBA text source." xml:space="preserve">
-    <value>Choisissez ours, theirs ou text pour une source VBA textuelle.</value>
+    <value>選択する ours, , theirs または text は、 VBA text ソース。</value>
   </data>
   <data name="Choose the AI provider for this conversation." xml:space="preserve">
-    <value>Choisir le fournisseur d’IA pour la conversation.</value>
+    <value>この会話のAIプロバイダを選択します。</value>
   </data>
   <data name="Choose the VBA document associated with this context and its conversations." xml:space="preserve">
-    <value>Choisir le document VBA auquel sont liés le contexte et les conversations.</value>
+    <value>この文脈とその会話に関連するVBAドキュメントを選択します。</value>
   </data>
   <data name="Choose the entire current-branch file for the selected conflict." xml:space="preserve">
-    <value>Choisit le fichier entier de la branche courante pour le conflit sélectionné.</value>
+    <value>選択したコンフリクトの現在のブランチファイル全体を選択します。</value>
   </data>
   <data name="Choose the entire incoming-branch file for the selected conflict." xml:space="preserve">
-    <value>Choisit le fichier entier de la branche entrante pour le conflit sélectionné.</value>
+    <value>選択したコンフリクトに対して、incoming-branch ファイル全体を選択します。</value>
   </data>
   <data name="Code changed since the import; automatic restore refused." xml:space="preserve">
-    <value>Le code a changé depuis l’import ; restauration automatique refusée.</value>
+    <value>インポートからコード変更、自動復元拒否。</value>
   </data>
   <data name="Code restored" xml:space="preserve">
-    <value>Code restauré</value>
+    <value>コード 復元</value>
   </data>
   <data name="Codex — ready" xml:space="preserve">
-    <value>Codex — prêt</value>
+    <value>Codex — 準備完了</value>
   </data>
   <data name="Codex — working" xml:space="preserve">
-    <value>Codex — en cours</value>
+    <value>Codex — 作業</value>
   </data>
   <data name="Command · Enter to choose · add your instructions" xml:space="preserve">
-    <value>Commande · Entrée pour choisir · ajoutez vos précisions</value>
+    <value>コマンド・選択・指示を追加するために入力</value>
   </data>
   <data name="Commit all" xml:space="preserve">
-    <value>Commit (tout)</value>
+    <value>すべてコミット</value>
   </data>
   <data name="Commit message" xml:space="preserve">
-    <value>Message de commit</value>
+    <value>メッセージを送信する</value>
   </data>
   <data name="Compare" xml:space="preserve">
-    <value>Comparer</value>
+    <value>比較</value>
   </data>
   <data name="Compare live VBA with the last synchronized state without network access." xml:space="preserve">
-    <value>Compare le VBA vivant au dernier état synchronisé, sans accès réseau.</value>
+    <value>ネットワークアクセスなしで最後の同期状態とライブVBAを比較します。</value>
   </data>
   <data name="Compilation error · see the diagnostic in the chat" xml:space="preserve">
-    <value>Erreur de compilation · voir le diagnostic dans le chat</value>
+    <value>コンパイルエラー・チャットでの診断を見る</value>
   </data>
   <data name="Compilation finished: no native diagnostics observed. Macros were not executed." xml:space="preserve">
-    <value>Compilation terminée : aucun diagnostic natif observé. Les macros n’ont pas été exécutées.</value>
+    <value>コンパイル完了: ネイティブ診断は観察されません。マクロは実行されません。</value>
   </data>
   <data name="Compilation not verified" xml:space="preserve">
-    <value>Compilation non vérifiée</value>
+    <value>編集が確認されない</value>
   </data>
   <data name="Compilation not verified: " xml:space="preserve">
-    <value>Compilation non vérifiée : </value>
+    <value>編集は確認されません: </value>
   </data>
   <data name="Compile after changes" xml:space="preserve">
-    <value>Compiler après les modifications</value>
+    <value>変更後のコンパイル</value>
   </data>
   <data name="Compile the VBA project and display diagnostics in the chat." xml:space="preserve">
-    <value>Compiler le projet VBA et afficher les diagnostics dans le chat.</value>
+    <value>VBA プロジェクトをコンパイルし、チャットで診断を表示します。</value>
   </data>
   <data name="Compiling VBA…" xml:space="preserve">
-    <value>Compilation VBA en cours…</value>
+    <value>VBAのコンパイル...</value>
   </data>
   <data name="Complete GitHub sign-in in your browser…" xml:space="preserve">
-    <value>Terminez la connexion GitHub dans votre navigateur…</value>
+    <value>お使いのブラウザでGitHubのサインインを完了...</value>
   </data>
   <data name="Complete merge" xml:space="preserve">
-    <value>Terminer la fusion</value>
+    <value>完全なマージ</value>
   </data>
   <data name="Complete or abort the current merge." xml:space="preserve">
-    <value>Terminez ou annulez la fusion en cours.</value>
+    <value>現在のマージを完全または中止します。</value>
   </data>
   <data name="Component missing from the manifest." xml:space="preserve">
-    <value>Composant absent du manifeste.</value>
+    <value>マニフェストから欠落しているコンポーネント。</value>
   </data>
   <data name="Configure providers and the GitHub account" xml:space="preserve">
-    <value>Configurer les fournisseurs et le compte GitHub</value>
+    <value>プロバイダーと GitHub アカウントの設定</value>
   </data>
   <data name="Configure the provider, refresh models or change docking mode." xml:space="preserve">
-    <value>Configurer le fournisseur, actualiser les modèles ou changer le mode d’ancrage.</value>
+    <value>プロバイダーの設定、モデルのリフレッシュ、またはドッキングモードの変更</value>
   </data>
   <data name="Configured models or deployments, one identifier per line" xml:space="preserve">
-    <value>Modèles ou déploiements configurés, un identifiant par ligne</value>
+    <value>設定されたモデルやデプロイメント、行ごとの1つの識別子</value>
   </data>
   <data name="Conflict: " xml:space="preserve">
-    <value>Conflit : </value>
+    <value>紛争: </value>
   </data>
   <data name="Conflicts" xml:space="preserve">
-    <value>Conflits</value>
+    <value>競合</value>
   </data>
   <data name="Connect an account to synchronize your VBA sources." xml:space="preserve">
-    <value>Connectez un compte pour synchroniser vos sources VBA.</value>
+    <value>アカウントを接続して、VBA ソースを同期させます。</value>
   </data>
   <data name="Context exceeds 48,000 characters. Remove some items." xml:space="preserve">
-    <value>Le contexte dépasse 48 000 caractères. Retirez des éléments.</value>
+    <value>コンテキストは48,000文字を超えます。 いくつかの項目を削除します。</value>
   </data>
   <data name="Context unavailable" xml:space="preserve">
-    <value>Contexte indisponible</value>
+    <value>コンテキストは利用できません。</value>
   </data>
   <data name="Context: " xml:space="preserve">
-    <value>Contexte : </value>
+    <value>コンテキスト: </value>
   </data>
   <data name="Conversation exported" xml:space="preserve">
-    <value>Conversation exportée</value>
+    <value>輸出される会話</value>
   </data>
   <data name="Conversation title" xml:space="preserve">
-    <value>Titre de la conversation</value>
+    <value>会話タイトル</value>
   </data>
   <data name="Conversation: messages, references and dynamic diffs" xml:space="preserve">
-    <value>Conversation : messages, références et diffs dynamiques</value>
+    <value>会話:メッセージ、参照および動的差分</value>
   </data>
   <data name="Copy" xml:space="preserve">
-    <value>Copier</value>
+    <value>コピー</value>
   </data>
   <data name="Copy code" xml:space="preserve">
-    <value>Copier le code</value>
+    <value>コピーコード</value>
   </data>
   <data name="Copy the message text to the clipboard." xml:space="preserve">
-    <value>Copier le texte du message dans le presse-papiers.</value>
+    <value>メッセージのコピー text クリップボードに。</value>
   </data>
   <data name="Copy this code block to the clipboard." xml:space="preserve">
-    <value>Copier ce bloc de code dans le presse-papiers.</value>
+    <value>このコードブロックをクリップボードにコピーします。</value>
   </data>
   <data name="Create" xml:space="preserve">
-    <value>Créer</value>
+    <value>作成</value>
   </data>
   <data name="Create a commit first." xml:space="preserve">
-    <value>Créez d’abord un commit.</value>
+    <value>最初にコミットを作成します。</value>
   </data>
   <data name="Create an independent conversation with the history up to this message." xml:space="preserve">
-    <value>Créer une conversation indépendante avec l’historique jusqu’à ce message.</value>
+    <value>このメッセージまでの履歴で独立した会話を作成します。</value>
   </data>
   <data name="Create checkpoint" xml:space="preserve">
-    <value>Créer un checkpoint</value>
+    <value>チェックポイントの作成</value>
   </data>
   <data name="Create the named branch from the current commit without publishing it." xml:space="preserve">
-    <value>Crée la branche saisie depuis le commit courant, sans la publier.</value>
+    <value>公開せずに現在のコミットから名前付きブランチを作成します。</value>
   </data>
   <data name="Credentials stay in Git Credential Manager. Sign-in takes effect immediately; Save keeps the chosen account for VBAi. Copilot authentication is configured separately." xml:space="preserve">
-    <value>Les identifiants restent dans Git Credential Manager. La connexion prend effet immédiatement ; Enregistrer conserve le compte choisi pour VBAi. L’authentification Copilot se configure séparément.</value>
+    <value>資格情報は Git Credential Manager に保存されます。サインインはすぐに有効になります。「保存」で VBAi が使用するアカウントを保存します。Copilot の認証は別途設定します。</value>
   </data>
   <data name="Current VBA" xml:space="preserve">
-    <value>VBA actuel</value>
+    <value>現在のVBA</value>
   </data>
   <data name="Current branch" xml:space="preserve">
-    <value>Branche courante</value>
+    <value>現在のブランチ</value>
   </data>
   <data name="Custom provider name" xml:space="preserve">
-    <value>Nom du fournisseur personnalisé</value>
+    <value>カスタムプロバイダー名</value>
   </data>
   <data name="Deployments (one per line)" xml:space="preserve">
-    <value>Déploiements (un par ligne)</value>
+    <value>デプロイメント(1行につき1つ)</value>
   </data>
   <data name="Diagnose and fix the problem while preserving the expected behavior." xml:space="preserve">
-    <value>Diagnostique puis corrige le problème en conservant le comportement attendu.</value>
+    <value>期待される動作を維持しながら、問題を診断し、修正します。</value>
   </data>
   <data name="Discard only the prepared merge. VBA and commits remain intact." xml:space="preserve">
-    <value>Supprime uniquement la préparation de fusion. Le VBA et les commits restent intacts.</value>
+    <value>準備されたマージだけを破棄します。VBAとコミットはそのまま残っています。</value>
   </data>
   <data name="Docked / floating window" xml:space="preserve">
-    <value>Fenêtre ancrable / flottante</value>
+    <value>ドッキング/フローティングウィンドウ</value>
   </data>
   <data name="Docking unavailable: " xml:space="preserve">
-    <value>Ancrage indisponible : </value>
+    <value>未利用可能なドッキング: </value>
   </data>
   <data name="Document conversations" xml:space="preserve">
-    <value>Conversations du document</value>
+    <value>ドキュメントの会話</value>
   </data>
   <data name="Document memory" xml:space="preserve">
-    <value>Mémoire du document</value>
+    <value>ドキュメントメモリ</value>
   </data>
   <data name="Document memory saved locally" xml:space="preserve">
-    <value>Mémoire du document enregistrée localement</value>
+    <value>ローカルに保存されたドキュメントメモリ</value>
   </data>
   <data name="Document modules do not match. Sheets and host modules must already exist with the same names." xml:space="preserve">
-    <value>Les modules du document ne correspondent pas. Les feuilles et modules hôtes doivent déjà exister avec les mêmes noms.</value>
+    <value>ドキュメントモジュールは一致しません。シートとホストモジュールは同じ名前で既に存在しなければなりません。</value>
   </data>
   <data name="Document the code" xml:space="preserve">
-    <value>Documenter le code</value>
+    <value>コードを文書化</value>
   </data>
   <data name="Download and import sources. Refuses unsynchronized local changes and divergent histories." xml:space="preserve">
-    <value>Télécharge et importe les sources. Refuse les modifications locales non synchronisées et les historiques divergents.</value>
+    <value>ソースをダウンロードし、インポートします。非同期のローカル変更と分散履歴を再利用します。</value>
   </data>
   <data name="Duplicate component name." xml:space="preserve">
-    <value>Nom de composant dupliqué.</value>
+    <value>コンポーネント名を重複します。</value>
   </data>
   <data name="Empty or invalid code selection." xml:space="preserve">
-    <value>Sélection de code vide ou invalide.</value>
+    <value>空または無効なコード選択。</value>
   </data>
   <data name="Empty response." xml:space="preserve">
-    <value>Réponse vide.</value>
+    <value>応答を空にします。</value>
   </data>
   <data name="Enter a title, then click Rename." xml:space="preserve">
-    <value>Saisir un titre, puis cliquer sur Renommer.</value>
+    <value>タイトルを入力し、[名前を変更]をクリックします。</value>
   </data>
   <data name="Enter notes to keep for this document, then save them." xml:space="preserve">
-    <value>Saisir les notes à conserver pour ce document, puis les enregistrer.</value>
+    <value>メモを入力して、この文書を保存します。</value>
   </data>
   <data name="Enter the repository's HTTPS GitHub URL without a token or password." xml:space="preserve">
-    <value>Saisissez l’URL HTTPS GitHub du dépôt, sans jeton ni mot de passe.</value>
+    <value>トークンまたはパスワードなしでリポジトリのHTTPS GitHub URLを入力します。</value>
   </data>
   <data name="Error" xml:space="preserve">
-    <value>Erreur</value>
+    <value>エラー</value>
   </data>
   <data name="Error — you can resume the conversation" xml:space="preserve">
-    <value>Erreur — vous pouvez reprendre la conversation</value>
+    <value>エラー — 会話を再開できます</value>
   </data>
   <data name="Explain" xml:space="preserve">
-    <value>expliquer</value>
+    <value>説明</value>
   </data>
   <data name="Explain a procedure" xml:space="preserve">
-    <value>Expliquer une procédure</value>
+    <value>手順の説明</value>
   </data>
   <data name="Explain the code and its dependencies without changing it." xml:space="preserve">
-    <value>Explique le code et ses dépendances, sans le modifier.</value>
+    <value>変更せずにコードとその依存性を記述します。</value>
   </data>
   <data name="Explicit context" xml:space="preserve">
-    <value>Contexte explicite</value>
+    <value>明示的なコンテキスト</value>
   </data>
   <data name="Export Markdown" xml:space="preserve">
-    <value>Exporter Markdown</value>
+    <value>輸出Markdown</value>
   </data>
   <data name="Export and synchronize the current document's sources with a GitHub repository." xml:space="preserve">
-    <value>Exporter et synchroniser les sources du document courant avec un dépôt GitHub.</value>
+    <value>GitHubリポジトリで現在のドキュメントのソースをエクスポートし、同期します。</value>
   </data>
   <data name="Export sources and create a local commit of all changes. Push publishes them afterwards." xml:space="preserve">
-    <value>Exporte les sources et crée un commit local de tous les changements. Push les publie ensuite.</value>
+    <value>ソースをエクスポートし、すべての変更のローカルコミットを作成します。 Push その後にそれらを公開します。.</value>
   </data>
   <data name="Exported identity does not match the manifest: " xml:space="preserve">
-    <value>L’identité exportée ne correspond pas au manifeste : </value>
+    <value>輸出されたアイデンティティはマニフェストに一致しません: </value>
   </data>
   <data name="Fallback: " xml:space="preserve">
-    <value>À défaut : </value>
+    <value>フォールバック: </value>
   </data>
   <data name="Fetch the named remote branch without importing its VBA." xml:space="preserve">
-    <value>Récupère la branche distante saisie, sans importer son VBA.</value>
+    <value>Fetch 名前付きリモートブランチをインポートせずに VBA. .</value>
   </data>
   <data name="File/directory conflict: choose the parent directory first." xml:space="preserve">
-    <value>Conflit fichier/dossier : choisissez d’abord le dossier parent.</value>
+    <value>ファイル/ディレクトリの競合: 最初に親ディレクトリを選択します。</value>
   </data>
   <data name="First link: commit then push to publish, or pull to import the repository with a backup first." xml:space="preserve">
-    <value>Première liaison : commit puis push pour publier, ou pull pour importer le dépôt avec sauvegarde préalable.</value>
+    <value>最初のリンク: コミットすると、公開にプッシュしたり、最初にリポジトリをバックアップにインポートしたりします。</value>
   </data>
   <data name="Fix" xml:space="preserve">
-    <value>corriger</value>
+    <value>修正</value>
   </data>
   <data name="Fix an error" xml:space="preserve">
-    <value>Corriger une erreur</value>
+    <value>エラーを修正</value>
   </data>
   <data name="French" xml:space="preserve">
-    <value>française</value>
+    <value>フレンチ</value>
   </data>
   <data name="Full resolution content for the selected VBA file" xml:space="preserve">
-    <value>Contenu complet de résolution du fichier VBA sélectionné</value>
+    <value>選択したVBAファイルの完全な解像度コンテンツ</value>
   </data>
   <data name="Git Credential Manager did not finish the operation. Check its installation or sign in to GitHub again." xml:space="preserve">
-    <value>Git Credential Manager n’a pas terminé l’opération. Vérifiez son installation ou relancez la connexion GitHub.</value>
+    <value>Git Credential Manager は動作を終了しなかった。インストールまたは GitHub に再度サインインする。</value>
   </data>
   <data name="Git changes" xml:space="preserve">
-    <value>Modifications Git</value>
+    <value>Gitの変更</value>
   </data>
   <data name="Git did not respond within 120 seconds. Check the connection and GitHub authentication." xml:space="preserve">
-    <value>Git ne répond pas après 120 secondes. Vérifiez la connexion et l’authentification GitHub.</value>
+    <value>Git は 120 秒以内に応答しませんでした。接続と GitHub の認証を確認してください。</value>
   </data>
   <data name="Git for Windows is required. Install it with Git Credential Manager, then reopen settings." xml:space="preserve">
-    <value>Git for Windows est requis. Installez-le avec Git Credential Manager, puis rouvrez les paramètres.</value>
+    <value>Windows用のGitが必要です。 Git Credential Managerでインストールしてから、設定を再開します。</value>
   </data>
   <data name="GitHub account" xml:space="preserve">
-    <value>Compte GitHub</value>
+    <value>GitHub アカウント</value>
   </data>
   <data name="GitHub account for VBA repositories" xml:space="preserve">
-    <value>Compte GitHub pour les dépôts VBA</value>
+    <value>VBAリポジトリのGitHubアカウント</value>
   </data>
   <data name="GitHub repository" xml:space="preserve">
-    <value>Dépôt GitHub</value>
+    <value>GitHubリポジトリ</value>
   </data>
   <data name="GitHub sign-in timed out. Start sign-in again from settings." xml:space="preserve">
-    <value>Connexion GitHub expirée. Relancez la connexion depuis les paramètres.</value>
+    <value>GitHub のサインインでタイムアウトします。 設定から再度サインインを開始します。</value>
   </data>
   <data name="GitHub · VBA sources" xml:space="preserve">
-    <value>GitHub · sources VBA</value>
+    <value>GitHub・VBAソース</value>
   </data>
   <data name="GitHub · repositories" xml:space="preserve">
-    <value>GitHub · dépôts</value>
+    <value>GitHub・リポジトリ</value>
   </data>
   <data name="GitHub · synchronize VBA…" xml:space="preserve">
-    <value>GitHub · synchroniser le VBA…</value>
+    <value>GitHub・VBAの同期</value>
   </data>
   <data name="Go to the latest message and follow new responses." xml:space="preserve">
-    <value>Revenir au dernier message et suivre les nouvelles réponses.</value>
+    <value>最新のメッセージに移動し、新しい応答に従ってください。</value>
   </data>
   <data name="HTTPS URL, for example https://github.com/organization/macros.git. Do not paste a token." xml:space="preserve">
-    <value>URL HTTPS, par exemple https://github.com/organisation/macros.git. Ne collez aucun jeton.</value>
+    <value>HTTPS たとえば、URL https://github.com/organization/macros.git. トークンを貼り付けないでください。</value>
   </data>
   <data name="Histories diverge. Reconcile the branch before synchronizing; no forced push is performed." xml:space="preserve">
-    <value>Les historiques divergent. Réconciliez la branche avant de synchroniser ; aucun push forcé n’est effectué.</value>
+    <value>ヒストリーダイバージ. 同期する前にブランチを調整します。; 強制的なプッシュが実行されません。.</value>
   </data>
   <data name="History" xml:space="preserve">
-    <value>Historique</value>
+    <value>履歴</value>
   </data>
   <data name="History not saved: " xml:space="preserve">
-    <value>Historique non enregistré : </value>
+    <value>保存されていない履歴: </value>
   </data>
   <data name="History unavailable: " xml:space="preserve">
-    <value>Historique indisponible : </value>
+    <value>歴史は利用できません: </value>
   </data>
   <data name="Import interrupted: restore VBA before continuing. The backup is preserved in the cache." xml:space="preserve">
-    <value>Import interrompu : restaurez le VBA avant de poursuivre. La sauvegarde est conservée dans le cache.</value>
+    <value>インポートの中断: 続行する前に VBA を復元します。バックアップはキャッシュに保存されます。</value>
   </data>
   <data name="Import the remote state with Pull first." xml:space="preserve">
-    <value>Importez d’abord l’état distant avec Pull.</value>
+    <value>リモート状態をインポートする Pull まずは。</value>
   </data>
   <data name="Import the selected branch with a checkpoint first. Uncommitted changes are refused." xml:space="preserve">
-    <value>Importe la branche sélectionnée avec checkpoint préalable. Les modifications non commitées sont refusées.</value>
+    <value>選択したブランチを最初にチェックポイントでインポートします。 コミットされていない変更は拒否されます。</value>
   </data>
   <data name="Improve the code" xml:space="preserve">
-    <value>Améliorer le code</value>
+    <value>コードの改善</value>
   </data>
   <data name="Improve the structure" xml:space="preserve">
-    <value>Améliorer la structure</value>
+    <value>構造を改善して下さい</value>
   </data>
   <data name="Include archived conversations in the list." xml:space="preserve">
-    <value>Inclure les conversations archivées dans la liste.</value>
+    <value>リストにアーカイブされた会話を含める。</value>
   </data>
   <data name="Include saved notes in the next message sent to the provider." xml:space="preserve">
-    <value>Inclure les notes enregistrées dans le prochain message envoyé au fournisseur.</value>
+    <value>プロバイダに送信された次のメッセージに保存されたメモを含める。</value>
   </data>
   <data name="Incoming branch" xml:space="preserve">
-    <value>Branche entrante</value>
+    <value>おすすめのブランチ</value>
   </data>
   <data name="Incorrect filename casing." xml:space="preserve">
-    <value>Casse du nom de fichier incorrecte.</value>
+    <value>ファイル名が間違っている。</value>
   </data>
   <data name="Inspect and refresh references, selected code and notes to send." xml:space="preserve">
-    <value>Inspecter et actualiser les références, le code sélectionné et les notes à transmettre.</value>
+    <value>参照を点検し、更新して下さい、選択されたコードおよびノートを送って下さい。</value>
   </data>
   <data name="Invalid Git merge result." xml:space="preserve">
-    <value>Résultat de fusion Git invalide.</value>
+    <value>Invalid Git は結果をマージします。</value>
   </data>
   <data name="Invalid GitHub account." xml:space="preserve">
-    <value>Compte GitHub invalide.</value>
+    <value>Invalid GitHub アカウント。</value>
   </data>
   <data name="Keep incoming" xml:space="preserve">
-    <value>Garder entrant</value>
+    <value>着信を続ける</value>
   </data>
   <data name="Keep local" xml:space="preserve">
-    <value>Garder local</value>
+    <value>地域を保全</value>
   </data>
   <data name="Last commit / import" xml:space="preserve">
-    <value>Dernier commit / import</value>
+    <value>最終コミット/インポート</value>
   </data>
   <data name="Leave the key blank to keep the current one. Encryption is tied to your Windows account. " xml:space="preserve">
-    <value>Clé vide : conserver la clé actuelle. Chiffrement lié au compte Windows. </value>
+    <value>現在のものに保つためにキーブランクを残します。 暗号化はあなたのWindowsアカウントに縛られます。 </value>
   </data>
   <data name="Leave the key blank to keep the current one. Secrets are encrypted for this Windows account." xml:space="preserve">
-    <value>Clé vide : conserver la clé actuelle. Les secrets sont chiffrés pour ce compte Windows.</value>
+    <value>現在のものに保つためにキーブランクを残してください。 秘密は、このWindowsアカウントのために暗号化されます。</value>
   </data>
   <data name="Link an existing GitHub repository to get started." xml:space="preserve">
-    <value>Liez un dépôt GitHub existant pour commencer.</value>
+    <value>既存の GitHub リポジトリをリンクして起動します。</value>
   </data>
   <data name="Link repository" xml:space="preserve">
-    <value>Lier le dépôt</value>
+    <value>リポジトリを接続</value>
   </data>
   <data name="Link this document to GitHub through the interface first. The agent does not choose a repository for you." xml:space="preserve">
-    <value>Liez d’abord ce document à GitHub depuis l’interface. L’agent ne choisit pas de dépôt à votre place.</value>
+    <value>このドキュメントを GitHub にインターフェイスを最初にリンクします。 エージェントはリポジトリを選択していません。</value>
   </data>
   <data name="List GitHub repository branches in the name selector without importing VBA." xml:space="preserve">
-    <value>Liste les branches du dépôt GitHub dans le sélecteur de nom, sans importer de VBA.</value>
+    <value>VBA をインポートすることなく、名前セレクターに GitHub リポジトリのブランチをリストします。</value>
   </data>
   <data name="Loading provider models…" xml:space="preserve">
-    <value>Chargement des modèles du fournisseur…</value>
+    <value>プロバイダーモデルをロードする...</value>
   </data>
   <data name="Local branch · remote state unknown (Fetch)" xml:space="preserve">
-    <value>Branche locale · état distant inconnu (Fetch)</value>
+    <value>ローカルブランチ・リモート状態不明 (Fetch)</value>
   </data>
   <data name="Local changes exist. Commit them, or create a checkpoint and restore a committed state before switching branches or merging." xml:space="preserve">
-    <value>Des modifications locales existent. Commitez-les ou créez un checkpoint puis restaurez un état commité avant de changer de branche/fusionner.</value>
+    <value>ローカルの変更は存在します。それらをコミットするか、ブランチやマージを切り替える前にチェックポイントを作成し、コミットされた状態を復元します。</value>
   </data>
   <data name="Local commit created. Use Push to publish it." xml:space="preserve">
-    <value>Commit local créé. Utilisez Push pour le publier.</value>
+    <value>ローカルコミットを作成しました。Push を使用して公開します。</value>
   </data>
   <data name="Local document notes" xml:space="preserve">
-    <value>Notes locales du document</value>
+    <value>ローカル文書のメモ</value>
   </data>
   <data name="Looking for saved GitHub accounts…" xml:space="preserve">
-    <value>Recherche des comptes GitHub mémorisés…</value>
+    <value>GitHubアカウントを保存したい...</value>
   </data>
   <data name="Memory not saved: " xml:space="preserve">
-    <value>Mémoire non enregistrée : </value>
+    <value>保存されない記憶: </value>
   </data>
   <data name="Memory requires an available SQLite history store." xml:space="preserve">
-    <value>La mémoire nécessite un historique SQLite disponible.</value>
+    <value>メモリには、利用可能なSQLite履歴ストアが必要です。</value>
   </data>
   <data name="Memory · " xml:space="preserve">
-    <value>Mémoire · </value>
+    <value>記憶・記憶 </value>
   </data>
   <data name="Merge" xml:space="preserve">
-    <value>Fusionner</value>
+    <value>マージ</value>
   </data>
   <data name="Merge prepared: resolve conflicts, then click Complete merge." xml:space="preserve">
-    <value>Fusion préparée : résolvez les conflits puis cliquez sur Terminer la fusion.</value>
+    <value>準備されたマージ:競合を解決し、コンプリートマージをクリックします。</value>
   </data>
   <data name="Message with spell checking" xml:space="preserve">
-    <value>Message avec correction orthographique française</value>
+    <value>スペルチェックによるメッセージ</value>
   </data>
   <data name="Missing VBA reference: fix it before synchronizing." xml:space="preserve">
-    <value>Référence VBA manquante : corrigez-la avant de synchroniser.</value>
+    <value>VBA の参照を欠くこと: 同期する前にそれを修理して下さい。</value>
   </data>
   <data name="Mode for this request: " xml:space="preserve">
-    <value>Mode de cette demande : </value>
+    <value>この要求のためのモード: </value>
   </data>
   <data name="Model" xml:space="preserve">
-    <value>Modèle</value>
+    <value>モデル</value>
   </data>
   <data name="Model list unavailable: " xml:space="preserve">
-    <value>Catalogue indisponible : </value>
+    <value>モデル一覧を取得できません: </value>
   </data>
   <data name="Models (one per line)" xml:space="preserve">
-    <value>Modèles (un par ligne)</value>
+    <value>モデル(1行につき1つ)</value>
   </data>
   <data name="Models / profiles (one per line)" xml:space="preserve">
-    <value>Modèles / profils (un par ligne)</value>
+    <value>モデル / プロフィール (一行につき)</value>
   </data>
   <data name="New OpenAI API key" xml:space="preserve">
-    <value>Nouvelle clé OpenAI API</value>
+    <value>新しいOpenAI APIキー</value>
   </data>
   <data name="New conversation" xml:space="preserve">
-    <value>Nouvelle conversation</value>
+    <value>新しい会話</value>
   </data>
   <data name="New conversation · Ctrl+N" xml:space="preserve">
-    <value>Nouvelle conversation · Ctrl+N</value>
+    <value>新しい会話・Ctrl+N</value>
   </data>
   <data name="New key for " xml:space="preserve">
-    <value>Nouvelle clé </value>
+    <value>新しいキーのための </value>
   </data>
   <data name="No CodexVBA manifest in this repository." xml:space="preserve">
-    <value>Aucun manifeste CodexVBA dans ce dépôt.</value>
+    <value>このリポジトリにCodexVBAマニフェストはありません。</value>
   </data>
   <data name="No VBE host connected." xml:space="preserve">
-    <value>Aucun hôte VBE connecté.</value>
+    <value>VBEホストが接続されていない。</value>
   </data>
   <data name="No commit to publish." xml:space="preserve">
-    <value>Aucun commit à publier.</value>
+    <value>公開するコミットはありません。</value>
   </data>
   <data name="No connected project." xml:space="preserve">
-    <value>Aucun projet connecté.</value>
+    <value>接続されていないプロジェクト。</value>
   </data>
   <data name="No local commit · use Fetch to inspect the remote repository" xml:space="preserve">
-    <value>Aucun commit local · utilisez Fetch pour consulter le dépôt distant</value>
+    <value>ローカルコミットなし ・ Fetch を使用してリモートリポジトリを調べる</value>
   </data>
   <data name="No local commit." xml:space="preserve">
-    <value>Aucun commit local.</value>
+    <value>ローカルコミットはありません。</value>
   </data>
   <data name="No matching target" xml:space="preserve">
-    <value>Aucune cible trouvée</value>
+    <value>マッチングターゲットなし</value>
   </data>
   <data name="No models available for this provider." xml:space="preserve">
-    <value>Aucun modèle disponible pour ce fournisseur.</value>
+    <value>このプロバイダで利用可能なモデルはありません。</value>
   </data>
   <data name="No saved GitHub account. Click Sign in." xml:space="preserve">
-    <value>Aucun compte GitHub mémorisé. Cliquez sur Se connecter.</value>
+    <value>GitHubアカウントを保存していません。サインインをクリックします。</value>
   </data>
   <data name="No text response." xml:space="preserve">
-    <value>Aucune réponse textuelle.</value>
+    <value>ナンバーなし text 応答。</value>
   </data>
   <data name="Ollama URL (optional)" xml:space="preserve">
-    <value>URL Ollama (facultatif)</value>
+    <value>Ollama URL(オプション)</value>
   </data>
   <data name="Open " xml:space="preserve">
-    <value>Ouvrir </value>
+    <value>開催概要 </value>
   </data>
   <data name="Open VBAi — Your AI agent for VBA" xml:space="preserve">
-    <value>Ouvrir VBAi — Your AI agent for VBA</value>
+    <value>VBAi を開く — VBA の AI エージェント</value>
   </data>
   <data name="Open a VBA project to start a conversation." xml:space="preserve">
-    <value>Ouvrez un projet VBA pour démarrer une conversation.</value>
+    <value>VBA プロジェクトを開いて会話を開始してください。</value>
   </data>
   <data name="Open in the VBE" xml:space="preserve">
-    <value>Ouvrir dans le VBE</value>
+    <value>VBEで開く</value>
   </data>
   <data name="Open the modified module in the VBE." xml:space="preserve">
-    <value>Ouvrir le module modifié dans le VBE.</value>
+    <value>VBE で変更されたモジュールを開きます。</value>
   </data>
   <data name="Open this reference in the VBE." xml:space="preserve">
-    <value>Ouvrir cette référence dans le VBE.</value>
+    <value>VBE でこの参照を開きます。</value>
   </data>
   <data name="OpenAI URL (optional)" xml:space="preserve">
-    <value>URL OpenAI (facultatif)</value>
+    <value>OpenAI URL(オプション)</value>
   </data>
   <data name="Opens GitHub authentication in your browser. No token to copy into VBAi." xml:space="preserve">
-    <value>Ouvre l’authentification GitHub dans votre navigateur. Aucun jeton à copier dans VBAi.</value>
+    <value>ブラウザでGitHub認証を開きます。VBAiにコピーするトークンはありません。</value>
   </data>
   <data name="Operation complete: " xml:space="preserve">
-    <value>Opération terminée : </value>
+    <value>操作は完了します: </value>
   </data>
   <data name="Operation in progress…" xml:space="preserve">
-    <value>Opération en cours…</value>
+    <value>進行中の操作...</value>
   </data>
   <data name="Optional Ollama URL" xml:space="preserve">
-    <value>URL Ollama facultative</value>
+    <value>オプション Ollama ツイート</value>
   </data>
   <data name="Optional OpenAI URL" xml:space="preserve">
-    <value>URL OpenAI facultative</value>
+    <value>オプションのOpenAI URL</value>
   </data>
   <data name="Optional key for this local server. " xml:space="preserve">
-    <value>Clé facultative pour ce serveur local. </value>
+    <value>このローカルサーバーのオプションキー。 </value>
   </data>
   <data name="Outgoing context · inspect and refresh" xml:space="preserve">
-    <value>Contexte envoyé · inspecter et actualiser</value>
+    <value>アウトゴットコンテキスト・検査・リフレッシュ</value>
   </data>
   <data name="Partially undone" xml:space="preserve">
-    <value>Partiellement annulée</value>
+    <value>部分的にウントン</value>
   </data>
   <data name="Path not found in conflicts." xml:space="preserve">
-    <value>Chemin absent des conflits.</value>
+    <value>紛争に見つからないパス。</value>
   </data>
   <data name="Pin / unpin" xml:space="preserve">
-    <value>Épingler / détacher</value>
+    <value>ピン/アンピン</value>
   </data>
   <data name="Pin the conversation to the top of the list or unpin it." xml:space="preserve">
-    <value>Épingler la conversation en tête de liste ou retirer son épingle.</value>
+    <value>リストの上部に会話をピン留めするか、それをピン留めします。</value>
   </data>
   <data name="Prepare VBA tests" xml:space="preserve">
-    <value>Préparer des tests VBA</value>
+    <value>VBAテストの準備</value>
   </data>
   <data name="Prepare a concrete plan with the affected modules and checks without changing the project." xml:space="preserve">
-    <value>Prépare un plan concret avec les modules concernés et les vérifications, sans modifier le projet.</value>
+    <value>影響を受けるモジュールで具体的な計画を準備し、プロジェクトを変更することなくチェックを行います。</value>
   </data>
   <data name="Prepare a fix" xml:space="preserve">
-    <value>Préparer une correction</value>
+    <value>修正の準備</value>
   </data>
   <data name="Prepare a merge from the selected branch into the current branch." xml:space="preserve">
-    <value>Prépare la fusion de la branche sélectionnée vers la branche courante.</value>
+    <value>選択したブランチから現在のブランチにマージする準備をします。</value>
   </data>
   <data name="Prepare the steps" xml:space="preserve">
-    <value>Préparer les étapes</value>
+    <value>手順の準備</value>
   </data>
   <data name="Preview limited to 2,000 lines" xml:space="preserve">
-    <value>Aperçu limité à 2 000 lignes</value>
+    <value>2,000行限定のプレビュー</value>
   </data>
   <data name="Propose and create isolated VBA tests. Do not execute them without an explicit request; distinguish written tests from executed tests." xml:space="preserve">
-    <value>Propose puis crée des tests VBA isolés. Ne les exécute pas sans demande explicite et distingue tests écrits et exécutés.</value>
+    <value>分離したVBAテストを調べて作成します。明示的なリクエストなしでそれらを実行しないでください。実行されたテストから書かれたテストを区別します。</value>
   </data>
   <data name="Provider" xml:space="preserve">
-    <value>Fournisseur</value>
+    <value>プロバイダー</value>
   </data>
   <data name="Provider name" xml:space="preserve">
-    <value>Nom du fournisseur</value>
+    <value>プロバイダー名</value>
   </data>
   <data name="Publish local commits on the chosen branch. Does not publish uncommitted changes." xml:space="preserve">
-    <value>Publie les commits locaux sur la branche choisie. Ne publie pas les modifications non commitées.</value>
+    <value>選択したブランチにローカルコミットを公開します。 コミットされていない変更を公開しません。</value>
   </data>
   <data name="Pull and import" xml:space="preserve">
-    <value>Pull et importer</value>
+    <value>Pull とインポート</value>
   </data>
   <data name="Pull and import complete. Check and save the document." xml:space="preserve">
-    <value>Pull et import terminés. Vérifiez puis enregistrez le document.</value>
+    <value>Pull ドキュメントのチェックと保存。</value>
   </data>
   <data name="Push complete." xml:space="preserve">
-    <value>Push terminé.</value>
+    <value>Push 完了します。</value>
   </data>
   <data name="Read-only" xml:space="preserve">
-    <value>Lecture seule</value>
+    <value>読み取り専用</value>
   </data>
   <data name="Reads locally saved accounts; does not check repository permissions yet." xml:space="preserve">
-    <value>Relit les comptes mémorisés localement ; ne vérifie pas encore les droits sur un dépôt.</value>
+    <value>ローカルに保存されたアカウントを読み込み、リポジトリの権限をまだチェックしません。</value>
   </data>
   <data name="Ready" xml:space="preserve">
-    <value>Prêt</value>
+    <value>準備完了</value>
   </data>
   <data name="Reasoning" xml:space="preserve">
-    <value>Réflexion</value>
+    <value>推論</value>
   </data>
   <data name="Reasoning effort" xml:space="preserve">
-    <value>Raisonnement</value>
+    <value>推論の強度</value>
   </data>
   <data name="Reasoning · summary" xml:space="preserve">
-    <value>Réflexion · résumé</value>
+    <value>理由・要約</value>
   </data>
   <data name="Refactor" xml:space="preserve">
-    <value>refactoriser</value>
+    <value>リファクタリング</value>
   </data>
   <data name="Refactor the code without changing its public behavior." xml:space="preserve">
-    <value>Refactorise le code sans changer son comportement public.</value>
+    <value>パブリックな行動を変えずにコードを再ファクタリングします。</value>
   </data>
   <data name="Reference a Sub, Function or Property" xml:space="preserve">
-    <value>Référencer une Sub, Function ou Property</value>
+    <value>参照 a Sub, , Function または Property</value>
   </data>
   <data name="Reference a project or module" xml:space="preserve">
-    <value>Référencer un projet ou un module</value>
+    <value>プロジェクトやモジュールの参照</value>
   </data>
   <data name="Refresh accounts" xml:space="preserve">
-    <value>Actualiser les comptes</value>
+    <value>口座をリフレッシュ</value>
   </data>
   <data name="Refresh models" xml:space="preserve">
-    <value>Actualiser les modèles</value>
+    <value>モデルを更新</value>
   </data>
   <data name="Refresh remote commits and counts without changing VBA." xml:space="preserve">
-    <value>Actualise les commits distants et les compteurs sans modifier le VBA.</value>
+    <value>VBAを変更することなく、リモートコミットとカウントをリフレッシュします。</value>
   </data>
   <data name="Remote branches" xml:space="preserve">
-    <value>Distantes</value>
+    <value>リモートブランチ</value>
   </data>
   <data name="Remove notes from the next message" xml:space="preserve">
-    <value>Retirer les notes du prochain message</value>
+    <value>次のメッセージからメモを削除</value>
   </data>
   <data name="Remove saved API key" xml:space="preserve">
-    <value>Supprimer la clé API enregistrée</value>
+    <value>保存された API キーを削除します。</value>
   </data>
   <data name="Remove this reference from the context" xml:space="preserve">
-    <value>Retirer cette référence du contexte</value>
+    <value>この参照をコンテキストから削除する</value>
   </data>
   <data name="Remove this selection" xml:space="preserve">
-    <value>Retirer cette sélection</value>
+    <value>この選択を削除</value>
   </data>
   <data name="Rename" xml:space="preserve">
-    <value>Renommer</value>
+    <value>お名前 (必須)</value>
   </data>
   <data name="Replace the entire VBA text file with the text edited above." xml:space="preserve">
-    <value>Remplace le fichier VBA textuel entier par le texte édité ci-dessus.</value>
+    <value>全体の置換 VBA text ファイルとファイル text 上記の編集。</value>
   </data>
   <data name="Resolve all conflicts before completing the merge." xml:space="preserve">
-    <value>Résolvez tous les conflits avant de terminer la fusion.</value>
+    <value>合併を完了する前に、すべての競合を解決します。</value>
   </data>
   <data name="Response interrupted. Changes already applied can still be undone in the chat." xml:space="preserve">
-    <value>Réponse interrompue. Les modifications déjà appliquées restent annulables dans le chat.</value>
+    <value>応答が中断されます。 既に適用された変更は、チャットで元に戻すことができます。</value>
   </data>
   <data name="Restore VBA" xml:space="preserve">
-    <value>Restaurer VBA</value>
+    <value>VBA を復元</value>
   </data>
   <data name="Restore selection" xml:space="preserve">
-    <value>Restaurer la sélection</value>
+    <value>選択を復元する</value>
   </data>
   <data name="Restore the backup made before the last import if VBA has not changed since. Does not rewrite GitHub." xml:space="preserve">
-    <value>Restaure la sauvegarde avant le dernier import, si le VBA n’a pas été modifié depuis. Ne réécrit pas GitHub.</value>
+    <value>VBA が変更されていない場合、最後のインポートの前に作られたバックアップを復元します。 GitHub を書き換えません。</value>
   </data>
   <data name="Restore the code before this change after checking for conflicts." xml:space="preserve">
-    <value>Restaurer le code précédant cette modification, après vérification des conflits.</value>
+    <value>競合をチェックした後、この変更前のコードを復元します。</value>
   </data>
   <data name="Restore the interrupted import before continuing." xml:space="preserve">
-    <value>Restaurez l’import interrompu avant de poursuivre.</value>
+    <value>中断されたインポートを継続する前に復元します。</value>
   </data>
   <data name="Restore the selected checkpoint after backing up the current state. Does not rewrite GitHub." xml:space="preserve">
-    <value>Restaure le checkpoint choisi après sauvegarde de l’état courant. Ne réécrit pas GitHub.</value>
+    <value>現在の状態をバックアップした後に選択したチェックポイントを復元します。 GitHub を書き換えません。</value>
   </data>
   <data name="Save" xml:space="preserve">
-    <value>Enregistrer</value>
+    <value>保存</value>
   </data>
   <data name="Save all current VBA in a private checkpoint without committing to the published branch." xml:space="preserve">
-    <value>Sauvegarde tout le VBA actuel dans un checkpoint privé, sans commit sur la branche publiée.</value>
+    <value>公開ブランチにコミットすることなく、現在のVBAをプライベートチェックポイントに保存します。</value>
   </data>
   <data name="Save locally" xml:space="preserve">
-    <value>Enregistrer localement</value>
+    <value>ローカルで保存</value>
   </data>
   <data name="Save notes on this computer without sending them to the provider." xml:space="preserve">
-    <value>Enregistrer les notes sur cet ordinateur, sans les envoyer au fournisseur.</value>
+    <value>プロバイダーに送信することなく、このコンピュータ上のメモを保存します。</value>
   </data>
   <data name="Save the conversation as a Markdown file." xml:space="preserve">
-    <value>Enregistrer la conversation dans un fichier Markdown.</value>
+    <value>会話をMarkdownファイルとして保存します。</value>
   </data>
   <data name="Save the document before linking it to GitHub." xml:space="preserve">
-    <value>Enregistrez le document avant de le lier à GitHub.</value>
+    <value>GitHubにリンクする前にドキュメントを保存します。</value>
   </data>
   <data name="Save the link for this document on this computer. Does not publish code." xml:space="preserve">
-    <value>Mémorise la liaison pour ce document sur cet ordinateur. Ne publie aucun code.</value>
+    <value>このコンピューターでこのドキュメントのリンクを保存します。コードを公開しません。</value>
   </data>
   <data name="Save the macro before opening GitHub." xml:space="preserve">
-    <value>Enregistrez la macro avant d’ouvrir GitHub.</value>
+    <value>GitHubを開く前にマクロを保存します。</value>
   </data>
   <data name="Save the new title of the selected conversation." xml:space="preserve">
-    <value>Enregistrer le nouveau titre de la conversation sélectionnée.</value>
+    <value>選択した会話の新しいタイトルを保存します。</value>
   </data>
   <data name="Search conversations" xml:space="preserve">
-    <value>Rechercher dans les conversations</value>
+    <value>会話を検索する</value>
   </data>
   <data name="Search titles, messages or code" xml:space="preserve">
-    <value>Rechercher un titre, un message ou du code</value>
+    <value>タイトル、メッセージ、コードを検索</value>
   </data>
   <data name="Searching the project…" xml:space="preserve">
-    <value>Recherche dans le projet…</value>
+    <value>プロジェクトを検索する...</value>
   </data>
   <data name="Select a conversation to resume its history and draft." xml:space="preserve">
-    <value>Sélectionner une conversation pour reprendre son historique et son brouillon.</value>
+    <value>履歴書や草案を再開するための会話を選択します。</value>
   </data>
   <data name="Select a saved VBA project to open GitHub." xml:space="preserve">
-    <value>Sélectionnez un projet VBA enregistré pour ouvrir GitHub.</value>
+    <value>保存したVBAプロジェクトを選択し、GitHubを開きます。</value>
   </data>
   <data name="Select code in the VBE." xml:space="preserve">
-    <value>Sélectionnez du code dans le VBE.</value>
+    <value>VBE のコードを選択します。</value>
   </data>
   <data name="Selection attached to the next message" xml:space="preserve">
-    <value>Sélection jointe au prochain message</value>
+    <value>次のメッセージに添付された選択</value>
   </data>
   <data name="Selection: " xml:space="preserve">
-    <value>Sélection : </value>
+    <value>選択: </value>
   </data>
   <data name="Send the message and its context to the agent." xml:space="preserve">
-    <value>Envoyer le message et son contexte à l’agent.</value>
+    <value>メッセージを送信し、そのコンテキストをエージェントに送信します。</value>
   </data>
   <data name="Send ↑" xml:space="preserve">
-    <value>Envoyer ↑</value>
+    <value>送信 ↑</value>
   </data>
   <data name="Set the model's reasoning effort, when supported." xml:space="preserve">
-    <value>Régler l’effort de raisonnement du modèle, lorsqu’il le prend en charge.</value>
+    <value>モデルの推論の努力を、サポートしたときに設定します。</value>
   </data>
   <data name="Settings…" xml:space="preserve">
-    <value>Paramètres…</value>
+    <value>設定…</value>
   </data>
   <data name="Show archived conversations" xml:space="preserve">
-    <value>Afficher les conversations archivées</value>
+    <value>アーカイブされた会話を表示</value>
   </data>
   <data name="Show or hide conversations for the selected document." xml:space="preserve">
-    <value>Afficher ou masquer les conversations du document sélectionné.</value>
+    <value>選択した文書の会話を表示または非表示にします。</value>
   </data>
   <data name="Show or hide local notes for this document." xml:space="preserve">
-    <value>Afficher ou masquer les notes locales propres au document.</value>
+    <value>このドキュメントのローカルメモを表示または非表示にします。</value>
   </data>
   <data name="Sign in to ChatGPT" xml:space="preserve">
-    <value>Se connecter à ChatGPT</value>
+    <value>ChatGPTへの署名</value>
   </data>
   <data name="Sign in to GitHub" xml:space="preserve">
-    <value>Se connecter à GitHub</value>
+    <value>GitHub にサインイン</value>
   </data>
   <data name="Sign-in opened. Click Refresh after authenticating." xml:space="preserve">
-    <value>Connexion ouverte. Cliquez sur Actualiser après authentification.</value>
+    <value>サインインが開いています。 認証後にリフレッシュ をクリックします。</value>
   </data>
   <data name="Stop the current response. Changes already applied can still be undone in the chat." xml:space="preserve">
-    <value>Interrompre la réponse en cours. Les modifications déjà appliquées restent annulables dans le chat.</value>
+    <value>現在の応答を停止します。 既に適用された変更は、チャットで元に戻すことができます。</value>
   </data>
   <data name="Stop ■" xml:space="preserve">
-    <value>Arrêter ■</value>
+    <value>停止 ■</value>
   </data>
   <data name="Stopped" xml:space="preserve">
-    <value>Arrêté</value>
+    <value>停止</value>
   </data>
   <data name="Stopping…" xml:space="preserve">
-    <value>Arrêt en cours…</value>
+    <value>ストッキング...</value>
   </data>
   <data name="Switch" xml:space="preserve">
-    <value>Basculer</value>
+    <value>切り替え</value>
   </data>
   <data name="Synchronize the active VBA project and manage its branches and checkpoints" xml:space="preserve">
-    <value>Synchroniser le projet VBA actif et gérer ses branches et checkpoints</value>
+    <value>アクティブなVBAプロジェクトを同期し、ブランチとチェックポイントを管理</value>
   </data>
   <data name="The # context exceeds 48,000 characters." xml:space="preserve">
-    <value>Le contexte # dépasse 48 000 caractères.</value>
+    <value># コンテキストは 48,000 文字を超える。</value>
   </data>
   <data name="The Git/VBA state changed. Read git_status again before making changes." xml:space="preserve">
-    <value>L’état Git/VBA a changé. Relisez git_status avant de modifier.</value>
+    <value>Git/VBA の状態が変わりました。変更する前に git_status を再度確認してください。</value>
   </data>
   <data name="The URL must use HTTPS, or HTTP on localhost." xml:space="preserve">
-    <value>L'URL doit utiliser HTTPS, ou HTTP sur localhost.</value>
+    <value>URL は、HTTPS または HTTP を localhost で使用する必要があります。</value>
   </data>
   <data name="The VBA document has changed. Reopen the chat to choose the current document." xml:space="preserve">
-    <value>Le document VBA a changé. Rouvrez le chat pour choisir le document actuel.</value>
+    <value>VBA ドキュメントが変更されました。チャットを再開して、現在のドキュメントを選択します。</value>
   </data>
   <data name="The VBA project must be unlocked and in design mode." xml:space="preserve">
-    <value>Le projet VBA doit être déverrouillé et en mode conception.</value>
+    <value>VBAプロジェクトは、設計モードでロック解除されなければなりません。</value>
   </data>
   <data name="The VBA repository exceeds 32 MB." xml:space="preserve">
-    <value>Le dépôt VBA dépasse 32 Mo.</value>
+    <value>VBAリポジトリは32MBを超える。</value>
   </data>
   <data name="The VBE did not preserve the imported sources exactly. Use Restore or check the project." xml:space="preserve">
-    <value>Le VBE n’a pas conservé exactement les sources importées. Utilisez Restaurer ou vérifiez le projet.</value>
+    <value>VBEは、インポートされたソースを正確に保存しませんでした。 復元またはプロジェクトをチェックしてください。</value>
   </data>
   <data name="The branch changed since the merge started." xml:space="preserve">
-    <value>La branche a changé depuis le début de la fusion.</value>
+    <value>合併が始まってからブランチが変更されました。</value>
   </data>
   <data name="The linked document changed. Reopen GitHub integration." xml:space="preserve">
-    <value>Le document lié a changé. Rouvrez l’intégration GitHub.</value>
+    <value>リンクされたドキュメントが変更されました。GitHubの統合を再開します。</value>
   </data>
   <data name="The previous response was interrupted. Read the live code again before making further edits." xml:space="preserve">
-    <value>La réponse précédente a été interrompue. Relire le code vivant avant de poursuivre les modifications.</value>
+    <value>以前の応答は中断されました。 さらなる編集を行う前に、再びライブコードを読みます。</value>
   </data>
   <data name="The project for this conversation is closed or ambiguous." xml:space="preserve">
-    <value>Le projet de cette conversation est fermé ou ambigu.</value>
+    <value>この会話のためのプロジェクトは、クローズまたはあいまいです。</value>
   </data>
   <data name="The response did not complete. Actions may already have been applied; read the live code again before continuing." xml:space="preserve">
-    <value>La réponse n'a pas abouti. Des actions peuvent déjà avoir été appliquées ; relire le code vivant avant de continuer.</value>
+    <value>応答が完了しなかった. アクションは、既に適用されている可能性があります; 続行する前に、再びライブコードを読みます.</value>
   </data>
   <data name="The selected account is no longer saved. Sign in again or choose another account." xml:space="preserve">
-    <value>Le compte sélectionné n’est plus mémorisé. Reconnectez-le ou choisissez un autre compte.</value>
+    <value>選択したアカウントは保存されません。 もう一度サインインするか、別のアカウントを選択します。</value>
   </data>
   <data name="The selection belongs to another document. Choose its conversation." xml:space="preserve">
-    <value>La sélection appartient à un autre document. Choisissez sa conversation.</value>
+    <value>選択は別の文書に属します。その会話を選択します。</value>
   </data>
   <data name="The target contains no VBA sources." xml:space="preserve">
-    <value>La cible ne contient pas de sources VBA.</value>
+    <value>ターゲットは VBA ソースは含まれていません。</value>
   </data>
   <data name="The vba directory contains a link, subdirectory or unsupported file." xml:space="preserve">
-    <value>Le dossier vba contient un lien, un sous-dossier ou un fichier non pris en charge.</value>
+    <value>vba ディレクトリには、リンク、サブディレクトリ、またはサポートされていないファイルが含まれています。</value>
   </data>
   <data name="The window's COM control was not created." xml:space="preserve">
-    <value>Le contrôle COM de la fenêtre n’a pas été créé.</value>
+    <value>ウィンドウのCOMコントロールは作成されません。</value>
   </data>
   <data name="This cache is already linked to another repository. Restore the previous URL." xml:space="preserve">
-    <value>Ce cache est déjà lié à un autre dépôt. Rétablissez l’URL précédente.</value>
+    <value>このキャッシュは別のリポジトリに既にリンクされています。前のURLを復元します。</value>
   </data>
   <data name="This file is not listed in conflicts." xml:space="preserve">
-    <value>Ce fichier ne figure pas dans les conflits.</value>
+    <value>このファイルは、競合では表示されません。</value>
   </data>
   <data name="This local branch already exists." xml:space="preserve">
-    <value>Cette branche locale existe déjà.</value>
+    <value>このローカルブランチは既に存在しています。</value>
   </data>
   <data name="This provider is not implemented yet." xml:space="preserve">
-    <value>Ce fournisseur n'est pas encore implémenté.</value>
+    <value>このプロバイダはまだ実装されていません。</value>
   </data>
   <data name="Tool" xml:space="preserve">
-    <value>Outil</value>
+    <value>ツール</value>
   </data>
   <data name="Track remote" xml:space="preserve">
-    <value>Récupérer distante</value>
+    <value>リモート・トラック</value>
   </data>
   <data name="Turn" xml:space="preserve">
-    <value>Intervention</value>
+    <value>ターン</value>
   </data>
   <data name="Unable to copy: " xml:space="preserve">
-    <value>Copie impossible : </value>
+    <value>コピー不可: </value>
   </data>
   <data name="Unable to export: " xml:space="preserve">
-    <value>Export impossible : </value>
+    <value>輸出することができません: </value>
   </data>
   <data name="Unable to merge: check common ancestors and Git 2.38 or later." xml:space="preserve">
-    <value>Fusion impossible : vérifiez les ancêtres communs et Git 2.38 ou ultérieur.</value>
+    <value>統合不能:一般的な祖先とGit 2.38以降を確認してください。</value>
   </data>
   <data name="Unable to navigate: " xml:space="preserve">
-    <value>Navigation impossible : </value>
+    <value>ナビゲート不可: </value>
   </data>
   <data name="Unable to start Git." xml:space="preserve">
-    <value>Impossible de démarrer Git.</value>
+    <value>Gitを起動できません。</value>
   </data>
   <data name="Unable to stop: " xml:space="preserve">
-    <value>Arrêt impossible : </value>
+    <value>停止することができません: </value>
   </data>
   <data name="Unable to undo: " xml:space="preserve">
-    <value>Annulation impossible : </value>
+    <value>undo に unable: </value>
   </data>
   <data name="Understand the code" xml:space="preserve">
-    <value>Comprendre le code</value>
+    <value>コードを理解する</value>
   </data>
   <data name="Undo a block…" xml:space="preserve">
-    <value>Annuler un bloc…</value>
+    <value>ブロックを元に戻す…</value>
   </data>
   <data name="Undo change" xml:space="preserve">
-    <value>Annuler la modification</value>
+    <value>変更を元に戻す</value>
   </data>
   <data name="Undo changes from this turn after checking for conflicts." xml:space="preserve">
-    <value>Annuler les modifications de cette intervention, après vérification des conflits.</value>
+    <value>競合をチェックした後、このターンから変更をしないようにします。</value>
   </data>
   <data name="Undo complete. Other changes in the module were preserved." xml:space="preserve">
-    <value>Annulation effectuée. Les autres modifications du module ont été conservées.</value>
+    <value>完了しない。 モジュール内の他の変更は保存されていました。</value>
   </data>
   <data name="Undo entire turn" xml:space="preserve">
-    <value>Annuler toute l’intervention</value>
+    <value>このターンの変更をすべて元に戻す</value>
   </data>
   <data name="Undo turn" xml:space="preserve">
-    <value>Annuler l’intervention</value>
+    <value>ターンの変更を元に戻す</value>
   </data>
   <data name="Unexpected Git Credential Manager response. Check its version." xml:space="preserve">
-    <value>Réponse inattendue de Git Credential Manager. Vérifiez sa version.</value>
+    <value>Git Credential Manager の応答が期待されていない。バージョンを確認してください。</value>
   </data>
   <data name="Unexpected VBE response." xml:space="preserve">
-    <value>Réponse VBE inattendue.</value>
+    <value>予期しないVBE応答。</value>
   </data>
   <data name="Unexpected identity after import: " xml:space="preserve">
-    <value>Identité inattendue après import : </value>
+    <value>輸入後の予期しない身元: </value>
   </data>
   <data name="Unknown command. Use the / suggestions." xml:space="preserve">
-    <value>Commande inconnue. Utilisez les suggestions /.</value>
+    <value>未知のコマンド。 / 提案を使用してください。</value>
   </data>
   <data name="Unknown local branch. Create it or fetch it from the remote repository." xml:space="preserve">
-    <value>Branche locale inconnue. Créez-la ou récupérez-la depuis le dépôt distant.</value>
+    <value>未知のローカルブランチ。それを作成するか、リモートリポジトリから取得します。</value>
   </data>
   <data name="Use a Microsoft Entra token (renew after expiration)" xml:space="preserve">
-    <value>Utiliser un jeton Microsoft Entra (à renouveler après expiration)</value>
+    <value>Microsoft Entraトークンを使用する(有効期限後に更新)</value>
   </data>
   <data name="Use this text" xml:space="preserve">
-    <value>Utiliser ce texte</value>
+    <value>これを使う text</value>
   </data>
   <data name="VBA backup before import" xml:space="preserve">
-    <value>Sauvegarde VBA avant import</value>
+    <value>インポート前のVBAバックアップ</value>
   </data>
   <data name="VBA changed during synchronization. No import performed." xml:space="preserve">
-    <value>Le VBA a changé pendant la synchronisation. Aucun import effectué.</value>
+    <value>同期中にVBAが変更されました。インポートは行いません。</value>
   </data>
   <data name="VBA changed during the operation." xml:space="preserve">
-    <value>Le VBA a changé pendant l’opération.</value>
+    <value>動作中にVBAが変更されました。</value>
   </data>
   <data name="VBA changes become source files in the repository. No folder next to the macro.&#13;&#10;The first pull replaces VBA with a restorable backup.&#13;&#10;Sign in through Git Credential Manager; commit identity is configured in Git." xml:space="preserve">
-    <value>Les modifications du VBA deviennent des fichiers sources dans le dépôt. Aucun dossier à côté de la macro.
-
-Le premier pull remplace le VBA avec une sauvegarde restaurable.
-
-Connexion via Git Credential Manager ; identité de commit configurée dans Git.</value>
+    <value>VBA の変更はリポジトリのソースファイルになります。マクロの隣にフォルダーは作成しません。
+最初の Pull は復元可能なバックアップを作成してから VBA を置き換えます。
+Git Credential Manager でサインインします。コミットの作成者情報は Git で設定します。</value>
   </data>
   <data name="VBA contains uncommitted local changes." xml:space="preserve">
-    <value>Le VBA contient des modifications locales non commitées.</value>
+    <value>VBAには、未記入のローカル変更が含まれています。</value>
   </data>
   <data name="VBA matches the last synchronized state." xml:space="preserve">
-    <value>Le VBA correspond au dernier état synchronisé.</value>
+    <value>VBAは最後の同期状態にマッチします。</value>
   </data>
   <data name="VBA project for this conversation: " xml:space="preserve">
-    <value>Projet VBA de cette conversation : </value>
+    <value>この会話のためのVBAプロジェクト: </value>
   </data>
   <data name="VBA project · document history" xml:space="preserve">
-    <value>Projet VBA · historique du document</value>
+    <value>VBAプロジェクト・ドキュメント履歴</value>
   </data>
   <data name="VBA references differ. Align them in Tools &gt; References before importing." xml:space="preserve">
-    <value>Les références VBA diffèrent. Alignez-les dans Outils &gt; Références avant l’import.</value>
+    <value>VBA の参照は異なります。 インポートする前に、ツール &gt; 参照でそれらをアライメントします。</value>
   </data>
   <data name="VBA restored. Check and save the document." xml:space="preserve">
-    <value>VBA restauré. Vérifiez puis enregistrez le document.</value>
+    <value>VBAは復元しました。 ドキュメントをチェックして保存します。</value>
   </data>
   <data name="VBA sources are incomplete, unexpected or too large (32 MB maximum)." xml:space="preserve">
-    <value>Sources VBA incomplètes, inattendues ou trop volumineuses (32 Mo maximum).</value>
+    <value>VBAソースは、不完全で、予期しない、または大きすぎる(最大32 MB)です。</value>
   </data>
   <data name="VBA state after import" xml:space="preserve">
-    <value>État VBA après import</value>
+    <value>輸入後のVBA状態</value>
   </data>
   <data name="VBA verification complete" xml:space="preserve">
-    <value>Vérification VBA terminée</value>
+    <value>VBA検証完了</value>
   </data>
   <data name="VBAi assistant" xml:space="preserve">
-    <value>Assistant VBAi</value>
+    <value>VBAiアシスタント</value>
   </data>
   <data name="VBAi settings" xml:space="preserve">
-    <value>Configuration VBAi</value>
+    <value>VBAiの設定</value>
   </data>
   <data name="VBAi settings…" xml:space="preserve">
-    <value>Configuration VBAi…</value>
+    <value>VBAi の設定…</value>
   </data>
   <data name="VBAi — Settings" xml:space="preserve">
-    <value>VBAi — Paramètres</value>
+    <value>VBAi — 設定</value>
   </data>
   <data name="VBE edit permissions" xml:space="preserve">
-    <value>Autorisation des modifications VBE</value>
+    <value>VBE編集権限</value>
   </data>
   <data name="VBE edits" xml:space="preserve">
-    <value>Modifications VBE</value>
+    <value>VBE編集</value>
   </data>
   <data name="Validate all files, create a merge commit, then import VBA with a backup." xml:space="preserve">
-    <value>Valide tous les fichiers, crée un commit de fusion puis importe le VBA avec sauvegarde.</value>
+    <value>すべてのファイルを検証し、コミットをマージし、VBAをバックアップにインポートします。</value>
   </data>
   <data name="Verification" xml:space="preserve">
-    <value>Vérification</value>
+    <value>検証</value>
   </data>
   <data name="View code changes and their undo actions." xml:space="preserve">
-    <value>Accéder aux modifications de code et à leurs actions d’annulation.</value>
+    <value>コードの変更と、その undo アクションを表示します。</value>
   </data>
   <data name="Wait for the response to finish before preparing an action." xml:space="preserve">
-    <value>Attendez la fin de la réponse avant de préparer une action.</value>
+    <value>アクションの準備の前に仕上げる応答を待ってください。</value>
   </data>
   <data name="Wait for the response to finish or stop the agent before changing settings." xml:space="preserve">
-    <value>Attendez la fin de la réponse ou arrêtez l’agent pour modifier les paramètres.</value>
+    <value>設定を変更する前に、エージェントを終了または停止する応答を待ちます。</value>
   </data>
   <data name="What would you like to build?" xml:space="preserve">
-    <value>Que souhaitez-vous développer ?</value>
+    <value>ビルドしたいのは?</value>
   </data>
   <data name="Working mode" xml:space="preserve">
-    <value>Mode de travail</value>
+    <value>働くモード</value>
   </data>
   <data name="You" xml:space="preserve">
-    <value>Vous</value>
+    <value>あなた</value>
   </data>
   <data name="Your message…" xml:space="preserve">
-    <value>Votre message…</value>
+    <value>あなたのメッセージ</value>
   </data>
   <data name="Your request; Enter to send, Shift+Enter for a new line" xml:space="preserve">
-    <value>Votre demande ; Entrée pour envoyer, Maj+Entrée pour une nouvelle ligne</value>
+    <value>リクエストを送信するために、Shift+Enterを新規ラインに入力してください。</value>
   </data>
   <data name="[Binary resource or directory: choose local or incoming]" xml:space="preserve">
-    <value>[Ressource binaire ou dossier : choisir local ou entrant]</value>
+    <value>[バイナリリソースまたはディレクトリ:ローカルまたはインカムを選択]</value>
   </data>
   <data name="[Non-UTF-8 content: choose local or incoming]" xml:space="preserve">
-    <value>[Contenu non UTF-8 : choisir local ou entrant]</value>
+    <value>[Non-UTF-8 コンテンツ:ローカルまたはインカムを選択]</value>
   </data>
   <data name="[Preview unavailable above 64 KiB: choose local or incoming]" xml:space="preserve">
-    <value>[Aperçu indisponible au-delà de 64 Kio : choisir local ou entrant]</value>
+    <value>[64 以上の KiB で利用できないプレビュー: ローカルまたはインカムを選択]</value>
   </data>
   <data name="unsaved document" xml:space="preserve">
-    <value>document non enregistré</value>
+    <value>未保存文書</value>
   </data>
   <data name="vba must be a Git directory." xml:space="preserve">
-    <value>vba doit être un dossier Git.</value>
+    <value>vba は Git ディレクトリでなければなりません。</value>
   </data>
   <data name="↑ ↓ Browse · Enter Insert · Esc Close" xml:space="preserve">
-    <value>↑ ↓ Parcourir · Entrée Insérer · Échap Fermer</value>
+    <value>↑ ↓ 閲覧・入力 インサート・Esc 閉じる</value>
   </data>
   <data name="↓ Latest message" xml:space="preserve">
-    <value>↓ Dernier message</value>
+    <value>↓ 最新のメッセージ</value>
   </data>
   <data name="Incomplete or filtered Bedrock response: " xml:space="preserve">
-    <value>Réponse Bedrock incomplète ou filtrée : </value>
+    <value>不完全なかろ過されたBedrockの応答: </value>
   </data>
   <data name="Response too large." xml:space="preserve">
-    <value>Réponse trop volumineuse.</value>
+    <value>応答が大きすぎます。</value>
   </data>
   <data name="The provider interrupted the response with an error." xml:space="preserve">
-    <value>Le fournisseur a interrompu la réponse avec une erreur.</value>
+    <value>プロバイダは、エラーで応答を中断しました。</value>
   </data>
   <data name="Response interrupted, truncated or filtered; no partial tool call was executed." xml:space="preserve">
-    <value>Réponse interrompue, tronquée ou filtrée ; aucun appel d’outil partiel n’a été exécuté.</value>
+    <value>応答の中断、中断またはフィルタリング; 部分的なツールコールが実行されていない。</value>
   </data>
   <data name="Claude reached its response limit. Narrow the scope of your request." xml:space="preserve">
-    <value>Claude a atteint sa limite de réponse. Réduisez la portée de la demande.</value>
+    <value>Claudeは、その応答制限に達しました。リクエストのスコープを絞り込みます。</value>
   </data>
   <data name="Codex verification timed out." xml:space="preserve">
-    <value>Vérification Codex trop longue.</value>
+    <value>Codex 検証はタイムアウトしました。</value>
   </data>
   <data name="Not signed in to ChatGPT" xml:space="preserve">
-    <value>ChatGPT non connecté</value>
+    <value>ChatGPT に署名されていない</value>
   </data>
   <data name="Connected to ChatGPT" xml:space="preserve">
-    <value>Connecté à ChatGPT</value>
+    <value>ChatGPTに接続する</value>
   </data>
   <data name="Codex is connected, but not through ChatGPT: " xml:space="preserve">
-    <value>Connexion Codex active, mais pas avec ChatGPT : </value>
+    <value>Codex は接続されていますが、ChatGPT では接続されていません。 </value>
   </data>
   <data name="Codex did not provide its model list." xml:space="preserve">
-    <value>Codex n'a pas fourni son catalogue de modèles.</value>
+    <value>Codex はモデルリストを提供していませんでした。</value>
   </data>
   <data name="Codex app-server stopped." xml:space="preserve">
-    <value>Codex app-server s'est arrêté.</value>
+    <value>Codex app-server が停止しました。</value>
   </data>
   <data name="Unable to start codex app-server." xml:space="preserve">
-    <value>Impossible de démarrer codex app-server.</value>
+    <value>codex app-server を起動できません。</value>
   </data>
   <data name="Codex: initializing the local server" xml:space="preserve">
-    <value>Codex : initialisation du serveur local</value>
+    <value>Codex: ローカルサーバの初期化</value>
   </data>
   <data name="Codex: checking the ChatGPT account" xml:space="preserve">
-    <value>Codex : vérification du compte ChatGPT</value>
+    <value>Codex: ChatGPT のアカウントを確認する</value>
   </data>
   <data name="Codex must be signed in through ChatGPT. No API key is used here." xml:space="preserve">
-    <value>Codex doit être connecté avec ChatGPT. Aucune clé API n'est utilisée ici.</value>
+    <value>Codex は ChatGPT で署名する必要があります。API キーは使用していません。</value>
   </data>
   <data name="Codex: opening the VBE conversation" xml:space="preserve">
-    <value>Codex : ouverture de la conversation VBE</value>
+    <value>Codex: VBE の会話を開く</value>
   </data>
   <data name="Codex connected through ChatGPT" xml:space="preserve">
-    <value>Codex connecté avec ChatGPT</value>
+    <value>ChatGPTによって接続されるCodex</value>
   </data>
   <data name="Codex finished without a text response." xml:space="preserve">
-    <value>Codex a terminé sans réponse textuelle.</value>
+    <value>Codex 終わり なし text 応答。</value>
   </data>
   <data name=" · complete" xml:space="preserve">
-    <value> · terminé</value>
+    <value> · 完了して下さい</value>
   </data>
   <data name=" · failed" xml:space="preserve">
-    <value> · échec</value>
+    <value> ・失敗</value>
   </data>
   <data name=" models. Authentication is managed by the GitHub CLI." xml:space="preserve">
-    <value> modèles. Authentification gérée par le CLI GitHub.</value>
+    <value> モデル。認証はGitHub CLIによって管理されます。</value>
   </data>
   <data name="Unable to start Copilot." xml:space="preserve">
-    <value>Impossible de démarrer Copilot.</value>
+    <value>Copilotを起動できません。</value>
   </data>
   <data name="Install GitHub Copilot CLI and set CODEXVBE_COPILOT_CLI to its executable if needed." xml:space="preserve">
-    <value>Installez GitHub Copilot CLI et configurez CODEXVBE_COPILOT_CLI vers son exécutable si nécessaire.</value>
+    <value>GitHub Copilot CLI をインストールし、必要に応じて CODEXVBE_COPILOT_CLI を実行可能に設定します。</value>
   </data>
   <data name="Incompatible Copilot protocol version (versions 2 and 3 supported)." xml:space="preserve">
-    <value>Version du protocole Copilot incompatible (versions 2 et 3 prises en charge).</value>
+    <value>互換性のない Copilot プロトコル バージョン (バージョン 2 と 3 をサポート)。</value>
   </data>
   <data name="Copilot VBA tools are not connected." xml:space="preserve">
-    <value>Les outils VBA de Copilot ne sont pas connectés.</value>
+    <value>Copilot VBA ツールは接続されていません。</value>
   </data>
   <data name="Copilot did not finish its response within the time limit." xml:space="preserve">
-    <value>Copilot n’a pas terminé sa réponse dans le délai imparti.</value>
+    <value>Copilot は、時間制限内での応答を終了しなかった。</value>
   </data>
   <data name="Copilot is not responding to " xml:space="preserve">
-    <value>Copilot ne répond pas à </value>
+    <value>Copilotは対応しておりません。 </value>
   </data>
   <data name=". Check the CLI connection." xml:space="preserve">
-    <value>. Vérifiez la connexion du CLI.</value>
+    <value>。CLI接続を確認してください。</value>
   </data>
   <data name="Copilot stopped." xml:space="preserve">
-    <value>Copilot s’est arrêté.</value>
+    <value>Copilot 停止。</value>
   </data>
   <data name="Invalid Copilot header." xml:space="preserve">
-    <value>En-tête Copilot invalide.</value>
+    <value>Invalid Copilot ヘッダー。</value>
   </data>
   <data name="Invalid Copilot message size." xml:space="preserve">
-    <value>Taille du message Copilot invalide.</value>
+    <value>Invalid Copilot メッセージサイズ。</value>
   </data>
   <data name="Copilot refused the request. Check sign-in, subscription and model in the CLI." xml:space="preserve">
-    <value>Copilot a refusé la requête. Vérifiez la connexion, l’abonnement et le modèle dans le CLI.</value>
+    <value>Copilot はリクエストを拒否しました。CLI のサインイン、サブスクリプション、モデルをチェックします。</value>
   </data>
   <data name="The Copilot session failed. Check its status in the CLI." xml:space="preserve">
-    <value>La session Copilot a échoué. Vérifiez son état dans le CLI.</value>
+    <value>Copilot セッションが失敗しました。CLI のステータスを確認してください。</value>
   </data>
   <data name="Custom (OpenAI)" xml:space="preserve">
-    <value>Personnalisé (OpenAI)</value>
+    <value>カスタム(OpenAI)</value>
   </data>
   <data name=" (coming soon)" xml:space="preserve">
-    <value> (à venir)</value>
+    <value> (近日公開)</value>
   </data>
   <data name=" then restart the host application." xml:space="preserve">
-    <value> puis redémarrez l'application hôte.</value>
+    <value> ホストアプリケーションを再起動します。</value>
   </data>
   <data name="Select a model in the conversation." xml:space="preserve">
-    <value>Sélectionnez un modèle dans la conversation.</value>
+    <value>会話でモデルを選択します。</value>
   </data>
   <data name=" in settings." xml:space="preserve">
-    <value> dans les paramètres.</value>
+    <value> 設定で。</value>
   </data>
   <data name="Configure the API key for " xml:space="preserve">
-    <value>Configurez la clé API de </value>
+    <value>API キーの構成 </value>
   </data>
   <data name=" in VBAi settings." xml:space="preserve">
-    <value> dans les paramètres CodexVBE.</value>
+    <value> VBAiの設定で。</value>
   </data>
   <data name="Model list unavailable for this provider." xml:space="preserve">
-    <value>Catalogue de modèles indisponible pour ce fournisseur.</value>
+    <value>このプロバイダで利用できないモデル一覧です。</value>
   </data>
   <data name="Enter the " xml:space="preserve">
-    <value>Renseignez les </value>
+    <value>エントリー </value>
   </data>
   <data name="Azure deployments" xml:space="preserve">
-    <value>déploiements Azure</value>
+    <value>Azure デプロイメント</value>
   </data>
   <data name="model identifiers" xml:space="preserve">
-    <value>identifiants de modèles</value>
+    <value>モデル識別子</value>
   </data>
   <data name=" in provider settings." xml:space="preserve">
-    <value> dans les paramètres du fournisseur.</value>
+    <value> プロバイダーの設定で。</value>
   </data>
   <data name=" to load models." xml:space="preserve">
-    <value> pour charger les modèles.</value>
+    <value> モデルをロードする。</value>
   </data>
   <data name="Check credentials, URL and provider limits." xml:space="preserve">
-    <value>Vérifiez les identifiants, l’URL et les limites du fournisseur.</value>
+    <value>資格情報、URL、プロバイダの制限をチェックします。</value>
   </data>
   <data name="The provider did not return a model list." xml:space="preserve">
-    <value>Le fournisseur n'a pas fourni de liste de modèles.</value>
+    <value>プロバイダーはモデルリストを返さなかった。</value>
   </data>
   <data name="Invalid Claude model list pagination." xml:space="preserve">
-    <value>Pagination du catalogue Claude invalide.</value>
+    <value>Invalid Claudeモデルリストのペジネーション。</value>
   </data>
   <data name="The model list exceeds the pagination limit." xml:space="preserve">
-    <value>Le catalogue dépasse la limite de pagination.</value>
+    <value>モデルリストは、パジネーションの制限を超える。</value>
   </data>
   <data name=": check the key, model, URL and provider limits." xml:space="preserve">
-    <value> : vérifiez la clé, le modèle, l’URL et les limites du fournisseur.</value>
+    <value>: キー、モデル、URL、プロバイダの制限を確認してください。</value>
   </data>
   <data name="Response truncated or filtered; tool calls were not executed." xml:space="preserve">
-    <value>Réponse tronquée ou filtrée ; les appels d’outils n’ont pas été exécutés.</value>
+    <value>応答のtruncatedか、またはろ過される;用具の呼出しは実行されませんでした。</value>
   </data>
   <data name="Select a module or procedure in this project to open its code." xml:space="preserve">
-    <value>Sélectionnez un module ou une procédure de ce projet pour ouvrir le code.</value>
+    <value>このプロジェクトでモジュールまたは手順を選択し、そのコードを開きます。</value>
   </data>
   <data name=" changed since selection. Remove the token and select it again with #." xml:space="preserve">
-    <value> a changé depuis sa sélection. Supprimez le jeton et sélectionnez-le à nouveau avec #.</value>
+    <value> 選択から変更。トークンを削除し、 # で再び選択します。</value>
   </data>
   <data name="  (restored)" xml:space="preserve">
-    <value>  (restauré)</value>
+    <value>  (修復)</value>
   </data>
   <data name="Invalid replacement range." xml:space="preserve">
-    <value>La plage de remplacement est invalide.</value>
+    <value>無効な交換範囲。</value>
   </data>
   <data name="No code difference." xml:space="preserve">
-    <value>Aucune différence de code.</value>
+    <value>コードの違いはありません。</value>
   </data>
   <data name="Configure a model for " xml:space="preserve">
-    <value>Configurez un modèle pour </value>
+    <value>モデルの構成 </value>
   </data>
   <data name="Diagnose and fix" xml:space="preserve">
-    <value>Diagnostiquer et corriger</value>
+    <value>診断および修正</value>
   </data>
   <data name="Unable to open SQLite history." xml:space="preserve">
-    <value>Impossible d'ouvrir l'historique SQLite.</value>
+    <value>SQLite履歴を開くことができません。</value>
   </data>
   <data name="Configure " xml:space="preserve">
-    <value>Configurez </value>
+    <value>設定 </value>
   </data>
   <data name="GitHub: " xml:space="preserve">
-    <value>GitHub : </value>
+    <value>GitHub: </value>
   </data>
   <data name="Git is limited to the document of this conversation." xml:space="preserve">
-    <value>Git est limité au document de cette conversation.</value>
+    <value>Gitは、この会話の文書に限られます。</value>
   </data>
   <data name="The VBE policy does not allow this Git operation." xml:space="preserve">
-    <value>La politique VBE interdit cette opération Git.</value>
+    <value>VBEポリシーは、このGit操作を許可していません。</value>
   </data>
   <data name="VBAi — Git operation" xml:space="preserve">
-    <value>VBAi — opération Git</value>
+    <value>VBAi — — — — Git 業務内容</value>
   </data>
   <data name="Git operation declined by the user." xml:space="preserve">
-    <value>Opération Git refusée par l’utilisateur.</value>
+    <value>Git の操作はユーザによって低下しました。</value>
   </data>
   <data name="Mode " xml:space="preserve">
-    <value>Le mode </value>
+    <value>モード </value>
   </data>
   <data name=" does not allow this editing or execution tool: " xml:space="preserve">
-    <value> interdit cet outil de modification ou d'exécution : </value>
+    <value> この編集または実行ツールを許可しません。 </value>
   </data>
   <data name="VBE edits are disabled (Read-only mode)." xml:space="preserve">
-    <value>Les modifications VBE sont désactivées (mode Lecture seule).</value>
+    <value>VBE の編集は無効です(読み込み専用モード)。</value>
   </data>
   <data name="Unknown VBE edit policy; action refused." xml:space="preserve">
-    <value>Politique de modification VBE inconnue ; action refusée.</value>
+    <value>不明なVBE編集ポリシー; 行為は拒否しました。</value>
   </data>
   <data name="The module changed since the model read it." xml:space="preserve">
-    <value>Le module a changé depuis la lecture du modèle.</value>
+    <value>モデルが読み込まれたので、モジュールが変更されました。</value>
   </data>
   <data name="These changes have already been undone." xml:space="preserve">
-    <value>Ces modifications sont déjà annulées.</value>
+    <value>これらの変更は既に元に戻りました。</value>
   </data>
   <data name="Undo stopped after " xml:space="preserve">
-    <value>Annulation arrêtée après </value>
+    <value>解禁後中止 </value>
   </data>
   <data name="Allow reading and sending to " xml:space="preserve">
-    <value>Autoriser la lecture et la transmission à </value>
+    <value>読書を許可し、送信する </value>
   </data>
   <data name=" up to the first 64 KiB of this file?&#13;&#10;&#13;&#10;" xml:space="preserve">
-    <value> des 64 premiers Kio au maximum de ce fichier ?
+    <value> このファイルの最初の64 KiBまで?
 
 
 
 </value>
   </data>
   <data name="The user declined sending the file." xml:space="preserve">
-    <value>L'utilisateur a refusé la transmission du fichier.</value>
+    <value>ユーザはファイル送信を拒否しました。</value>
   </data>
   <data name="The file appears to be binary; text reading refused." xml:space="preserve">
-    <value>Le fichier semble binaire ; lecture textuelle refusée.</value>
+    <value>ファイルがバイナリになるように見えます。 text 読書は拒否しました。</value>
   </data>
   <data name="The user did not provide this exact path." xml:space="preserve">
-    <value>L'utilisateur n'a pas fourni ce chemin exact.</value>
+    <value>ユーザは、この正確なパスを提供しなかった。</value>
   </data>
   <data name="The provided file could not be found." xml:space="preserve">
-    <value>Le fichier fourni est introuvable.</value>
+    <value>提供されたファイルが見つかりませんでした。</value>
   </data>
   <data name="the active LLM provider" xml:space="preserve">
-    <value>le fournisseur LLM actif</value>
+    <value>アクティブ LLM プロバイダー</value>
   </data>
   <data name="VBAi — allow sending a file" xml:space="preserve">
-    <value>VBAi — autoriser la transmission du fichier</value>
+    <value>VBAi — ファイルの送信を許可する</value>
   </data>
   <data name="VBAi — approve edit" xml:space="preserve">
-    <value>VBAi — valider la modification</value>
+    <value>VBAi — 編集を承認</value>
   </data>
   <data name="Allow" xml:space="preserve">
-    <value>Autoriser</value>
+    <value>許可</value>
   </data>
   <data name="Deny" xml:space="preserve">
-    <value>Refuser</value>
+    <value>拒否</value>
   </data>
   <data name="Refresh status" xml:space="preserve">
-    <value>Actualiser l’état</value>
+    <value>状態を更新</value>
   </data>
   <data name="Project" xml:space="preserve">
-    <value>Projet</value>
+    <value>プロジェクト</value>
   </data>
   <data name="Branches" xml:space="preserve">
-    <value>Branches</value>
+    <value>ブランチ</value>
   </data>
   <data name="Checkpoints" xml:space="preserve">
-    <value>Checkpoints</value>
+    <value>チェックポイント</value>
   </data>
   <data name="Plan" xml:space="preserve">
-    <value>Plan</value>
+    <value>計画</value>
   </data>
   <data name="Agent" xml:space="preserve">
-    <value>Agent</value>
+    <value>エージェント</value>
   </data>
   <data name="Conversation" xml:space="preserve">
-    <value>Conversation</value>
+    <value>会話</value>
   </data>
   <data name="Assistant" xml:space="preserve">
-    <value>Assistant</value>
+    <value>アシスタント</value>
   </data>
   <data name="# Context" xml:space="preserve">
-    <value># Contexte</value>
+    <value># コンテキスト</value>
   </data>
   <data name="☰ Chats" xml:space="preserve">
-    <value>☰ Chats</value>
+    <value>☰ チャット</value>
   </data>
 </root>

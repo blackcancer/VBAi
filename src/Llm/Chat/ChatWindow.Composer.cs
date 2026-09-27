@@ -37,7 +37,8 @@ namespace CodexVBE
                 BorderThickness = new Thickness(0), FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 14, Foreground = Ink("#1E293B"),
                 Padding = new Thickness(12), Background = Brushes.Transparent,
-                Language = XmlLanguage.GetLanguage(UiText.Culture.Name)
+                Language = XmlLanguage.GetLanguage(UiText.Culture.Name),
+                FlowDirection = UiText.Culture.TextInfo.IsRightToLeft ? FlowDirection.RightToLeft : FlowDirection.LeftToRight
             };
             prompt.SpellCheck.IsEnabled = true;
             AutomationProperties.SetName(prompt, UiText.Get("Your request; Enter to send, Shift+Enter for a new line"));
