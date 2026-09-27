@@ -55,6 +55,33 @@ namespace CodexVBE
                                 var request = json.Deserialize<Request>(line);
                                 if (request != null && request.Command == "debug_windows")
                                     response = Response.Success(VbeDebugWindows.Capture(request.IncludeCallStack));
+                                else if (request != null && request.Command == "compile_project")
+                                {
+                                    VbeDebugWindows.EnsureNoCompileDialog();
+                                    Response compileResponse = null;
+                                    var completed = new ManualResetEventSlim(false);
+                                    // Keep the event alive if a timeout occurs while the UI
+                                    // callback is still pending; its finally block will signal it.
+                                    dispatcher.BeginInvoke(new Action(() => {
+                                        try { compileResponse = session.Execute(request); }
+                                        catch (Exception ex) { compileResponse = Response.Failure(ex.Message); }
+                                        finally { completed.Set(); }
+                                    }));
+                                    string diagnostic = VbeDebugWindows.AwaitCompileDialog(completed);
+                                    if (compileResponse == null)
+                                        response = Response.Failure("The native Compile command did not return a result.");
+                                    else if (!compileResponse.Ok)
+                                        response = compileResponse;
+                                    else response = Response.Success(new {
+                                        Project = request.Project,
+                                        Compiled = diagnostic == null,
+                                        Diagnostic = diagnostic,
+                                        Verification = diagnostic == null ? "NoNativeDiagnosticObserved" : "NativeDiagnosticCaptured",
+                                        Command = compileResponse.Data,
+                                        NextRead = diagnostic == null ? null :
+                                            "Read debug_state and the active code pane in a separate request to locate the failed statement."
+                                    });
+                                }
                                 else if (request != null && request.Command == "add_watch")
                                 {
                                     response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));

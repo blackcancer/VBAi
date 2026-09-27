@@ -180,6 +180,25 @@ namespace CodexVBE
                     : "Run a disposable procedure or inspect the native editor to verify breakpoint behavior." };
         }
 
+        public object CompileProject(Request request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Project))
+                throw new ArgumentException("Project is required.");
+            dynamic project = GetProject(request.Project);
+            if ((int)project.Mode != 2 || request.ExpectedMode != 2)
+                throw new InvalidOperationException("Compilation requires the selected project in design mode.");
+            var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 578 && entry.Enabled &&
+                (((entry.Caption ?? "").Replace("&", "").IndexOf("Compiler ", StringComparison.OrdinalIgnoreCase) >= 0) ||
+                 ((entry.Caption ?? "").Replace("&", "").IndexOf("Compile ", StringComparison.OrdinalIgnoreCase) >= 0)));
+            if (command == null)
+                throw new InvalidOperationException("The native Compile command is absent or disabled.");
+            string caption = (command.Caption ?? "").Replace("&", "");
+            if (caption.IndexOf((string)project.Name, StringComparison.OrdinalIgnoreCase) < 0)
+                throw new InvalidOperationException("The native Compile command targets a different project: " + caption);
+            ((dynamic)command.Control).Execute();
+            return new { Executed = true, Project = request.Project, ControlId = command.Id, Control = command.Path };
+        }
+
         private static bool IsObjectBrowserCaption(string caption)
         {
             string name = (caption ?? "").Replace("&", "").Trim();

@@ -54,6 +54,50 @@ namespace CodexVBE
             };
         }
 
+        // The Compile command can open a modal native diagnostic. Its UI-thread
+        // Execute call cannot be awaited with Control.Invoke in that case.
+        public static void EnsureNoCompileDialog()
+        {
+            if (FindDialog("Microsoft Visual Basic pour Applications",
+                "Microsoft Visual Basic for Applications") != IntPtr.Zero)
+                throw new InvalidOperationException("A native VBE dialog is already open; compilation was not started.");
+        }
+
+        public static string AwaitCompileDialog(ManualResetEventSlim completed)
+        {
+            for (int attempt = 0; attempt < 200; attempt++)
+            {
+                IntPtr dialog = FindDialog("Microsoft Visual Basic pour Applications",
+                    "Microsoft Visual Basic for Applications");
+                if (dialog != IntPtr.Zero)
+                {
+                    string diagnostic = AccessibleDialogMessage(dialog);
+                    IntPtr ok = IntPtr.Zero;
+                    EnumChildWindows(dialog, (handle, parameter) => {
+                        if (ClassName(handle) == "Button" &&
+                            string.Equals(WindowText(handle), "OK", StringComparison.OrdinalIgnoreCase))
+                        { ok = handle; return false; }
+                        return true;
+                    }, IntPtr.Zero);
+                    if (ok == IntPtr.Zero || !PostMessage(ok, BmClick, IntPtr.Zero, IntPtr.Zero))
+                        throw new InvalidOperationException("The native compile diagnostic could not be dismissed.");
+                    if (!completed.Wait(3000))
+                        throw new TimeoutException("The Compile command did not return after its diagnostic closed.");
+                    return diagnostic;
+                }
+                if (completed.IsSet)
+                {
+                    // Allow the VBE to surface a delayed diagnostic after Execute.
+                    Thread.Sleep(250);
+                    dialog = FindDialog("Microsoft Visual Basic pour Applications",
+                        "Microsoft Visual Basic for Applications");
+                    if (dialog == IntPtr.Zero) return null;
+                }
+                Thread.Sleep(50);
+            }
+            throw new TimeoutException("The native Compile command did not finish within ten seconds.");
+        }
+
         public static object CompleteAddWatch(Request request)
         {
             IntPtr dialog = IntPtr.Zero;

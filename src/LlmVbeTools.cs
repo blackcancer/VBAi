@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
@@ -18,7 +19,7 @@ namespace CodexVBE
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
         private readonly List<string> userRequests = new List<string>();
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
-            "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "open_debug_pane", "list_commands", "select_code",
+            "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "compile_project", "open_debug_pane", "list_commands", "select_code",
             "project_properties", "component_properties", "component_property_value", "vbe_windows", "code_panes", "open_object_browser", "list_procedures", "find_code", "select_procedure", "list_forms",
             "form_state", "form_tree", "form_properties", "form_control_properties", "form_event_catalog",
             "list_form_control_types", "open_form"
@@ -63,6 +64,8 @@ namespace CodexVBE
                 new[] { "Action" }, "Action"),
             Definition("debug_state", "Read design/run/break mode and the active code location for one project. Mode 1 is break; mode 2 is design.",
                 new[] { "Project" }, "Project"),
+            Definition("compile_project", "Compile the named VBA project using the native VBE command in design mode. Captures and dismisses a native compile error dialog; on failure read debug_state to locate the selected token. A successful response means no native diagnostic was observed. ExpectedMode must be 2.",
+                new[] { "Project", "ExpectedMode" }, "Project", "ExpectedMode"),
             Definition("list_commands", "List VBE CommandBars controls matching an optional caption/path Query. Returns transient Id, caption and enabled state; use these exact values for invoke_debug.",
                 new string[0], "Query"),
             Definition("select_code", "Activate a code pane and select an exact line after checking the current module SHA-256. Does not edit source code.",
@@ -279,6 +282,40 @@ namespace CodexVBE
 
         public async Task<string> InvokeAsync(string name, string arguments)
         {
+            if (name == "compile_project")
+            {
+                try
+                {
+                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
+                    if (values == null || values.Count != 2 || !values.ContainsKey("Project") ||
+                        !values.ContainsKey("ExpectedMode") || !(values["Project"] is string) ||
+                        string.IsNullOrWhiteSpace((string)values["Project"]) ||
+                        !(values["ExpectedMode"] is int) || (int)values["ExpectedMode"] != 2)
+                        throw new ArgumentException("Project and ExpectedMode=2 are required.");
+                    var requestValues = new Dictionary<string, object>(values) { ["Command"] = name };
+                    Request request = json.Deserialize<Request>(json.Serialize(requestValues));
+                    SynchronizationContext context = SynchronizationContext.Current;
+                    if (context == null) throw new InvalidOperationException("The VBE UI context is unavailable.");
+                    VbeDebugWindows.EnsureNoCompileDialog();
+                    Response compileResponse = null;
+                    var completed = new System.Threading.ManualResetEventSlim(false);
+                    context.Post(_ => {
+                        try { compileResponse = session.Execute(request); }
+                        catch (Exception ex) { compileResponse = Response.Failure(ex.Message); }
+                        finally { completed.Set(); }
+                    }, null);
+                    string diagnostic = await Task.Run(() => VbeDebugWindows.AwaitCompileDialog(completed));
+                    if (compileResponse == null) return json.Serialize(Response.Failure("The native Compile command did not return a result."));
+                    if (!compileResponse.Ok) return json.Serialize(compileResponse);
+                    return json.Serialize(Response.Success(new {
+                        Project = request.Project, Compiled = diagnostic == null, Diagnostic = diagnostic,
+                        Verification = diagnostic == null ? "NoNativeDiagnosticObserved" : "NativeDiagnosticCaptured",
+                        Command = compileResponse.Data,
+                        NextRead = diagnostic == null ? null : "Read debug_state to locate the selected token."
+                    }));
+                }
+                catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+            }
             if (name == "remove_watch")
             {
                 try

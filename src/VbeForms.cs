@@ -513,7 +513,9 @@ namespace CodexVBE
                 catch (Exception ex) { error = ex.Message; }
                 result.Add(new { Name = descriptor.Name,
                     Type = descriptor.PropertyType == null ? null : descriptor.PropertyType.FullName,
-                    ReadOnly = descriptor.IsReadOnly, Value = value, Error = error });
+                    ReadOnly = descriptor.IsReadOnly,
+                    SetterStatus = descriptor.IsReadOnly ? "DescriptorReadOnly" : "DescriptorCandidateUnverified",
+                    Value = value, Error = error });
             }
             return result;
         }
