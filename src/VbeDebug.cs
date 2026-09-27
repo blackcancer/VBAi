@@ -122,6 +122,31 @@ namespace CodexVBE
                 NextRead = "Complete the native Add Watch dialog after this command returns." };
         }
 
+        public object QueueEditWatchDialog(Request request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Project) ||
+                string.IsNullOrWhiteSpace(request.Expression) || string.IsNullOrWhiteSpace(request.Context) ||
+                string.IsNullOrWhiteSpace(request.NewExpression) || request.NewExpression.Length > 1024)
+                throw new ArgumentException("Project, Expression, Context and NewExpression (at most 1024 characters) are required.");
+            if (!string.IsNullOrWhiteSpace(request.WatchType) && request.WatchType != "expression" &&
+                request.WatchType != "break_when_true" && request.WatchType != "break_when_changed")
+                throw new ArgumentException("WatchType must be expression, break_when_true or break_when_changed.");
+            dynamic state = State(request.Project);
+            if ((int)state.Mode != request.ExpectedMode)
+                throw new InvalidOperationException("Project mode changed before editing the watch.");
+            var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 940 && entry.Enabled &&
+                ((entry.Caption ?? "").Replace("&", "").IndexOf("Modifier un espion", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 (entry.Caption ?? "").IndexOf("Edit Watch", StringComparison.OrdinalIgnoreCase) >= 0));
+            if (command == null) throw new InvalidOperationException("The native Edit Watch command is unavailable.");
+            SynchronizationContext context = SynchronizationContext.Current;
+            if (context == null) throw new InvalidOperationException("The VBE UI context is unavailable.");
+            context.Post(_ => {
+                try { ((dynamic)command.Control).Execute(); }
+                catch (Exception ex) { LoadLog.Write("Edit Watch dialog failed: " + ex.Message); }
+            }, null);
+            return new { Scheduled = true, ControlId = command.Id, request.Expression, request.Context };
+        }
+
         public object RemoveSelectedWatch(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project) ||

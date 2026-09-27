@@ -146,6 +146,8 @@ Dans Excel PID 49588, la lecture exploratoire de `CommandBarButton.State` pour l
 
 Dans Excel PID 48148, `add_watch` avec `WatchType=break_when_true` sur `probeValue = 2` a d'abord affiché `Faux` à la ligne 4, puis `continue` a arrêté le VBE en mode 1 à la ligne 5 avec `probeValue=2` et l'espion `Vrai`. Après suppression de cet espion, `reset` et une nouvelle exécution jusqu'à la ligne 4, `WatchType=break_when_changed` sur `probeValue` a aussi arrêté à la ligne 5 quand la valeur est passée de 1 à 2. Les deux modes conditionnels ont donc une preuve d'effet sur cette macro, au-delà de la seule sélection du bouton radio natif.
 
+Dans Excel PID 40184 en pause, `edit_watch` a ouvert « Modifier un espion » pour `probeValue` dans `ThisWorkbook.CodexWatchEditProbe`, contrôlé l'expression et le contexte affichés, puis saisi `probeValue + 1` par le champ natif. La réponse a donné `Verification=ReadbackVerified` et `debug_windows` a relu le nouvel espion à `2 (Long)` ; l'ancien était absent. Le type d'arrêt peut être choisi dans le même dialogue, mais sa modification par `edit_watch` n'a pas encore été qualifiée par un cycle d'exécution indépendant.
+
 ## Prochaine exploration
 
 1. Vérifier les propriétés modifiables restantes des contrôles et conteneurs, ainsi que leur suppression et leur réorganisation, sur des classeurs jetables.

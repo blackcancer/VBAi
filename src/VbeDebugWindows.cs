@@ -164,6 +164,9 @@ namespace CodexVBE
             for (int index = 0; index < rows.Count; index++)
             {
                 if (!ItemPath(rows[index]).SequenceEqual(request.PathSegments, StringComparer.Ordinal)) continue;
+                if (request.Pane == "watches" && !string.IsNullOrWhiteSpace(request.Context) &&
+                    !string.Equals(WatchRootContext(rows[index]), request.Context, StringComparison.OrdinalIgnoreCase))
+                    continue;
                 target = rows[index]; matches++;
             }
             if (matches != 1)
@@ -334,6 +337,95 @@ namespace CodexVBE
                 if (!completed)
                 {
                     IntPtr remaining = FindDialog("Ajouter un espion", "Add Watch");
+                    if (remaining != IntPtr.Zero) CloseDialog(remaining);
+                }
+            }
+        }
+
+        public static object CompleteEditWatch(Request request)
+        {
+            IntPtr dialog = IntPtr.Zero;
+            for (int attempt = 0; attempt < 60 && dialog == IntPtr.Zero; attempt++)
+            { Thread.Sleep(50); dialog = FindDialog("Modifier un espion", "Edit Watch"); }
+            if (dialog == IntPtr.Zero) throw new InvalidOperationException("The Edit Watch dialog did not open.");
+            bool completed = false;
+            try
+            {
+                IntPtr edit = GetDlgItem(dialog, 4853);
+                IntPtr project = GetDlgItem(dialog, 4858);
+                IntPtr module = GetDlgItem(dialog, 4857);
+                IntPtr procedure = GetDlgItem(dialog, 4856);
+                IntPtr ok = GetDlgItem(dialog, 1);
+                if (edit == IntPtr.Zero || project == IntPtr.Zero || module == IntPtr.Zero || ok == IntPtr.Zero)
+                    throw new InvalidOperationException("The native Edit Watch controls changed.");
+                string original = WindowText(edit);
+                string shownProject = WindowText(project);
+                string shownModule = WindowText(module);
+                string shownProcedure = procedure == IntPtr.Zero ? null : WindowText(procedure);
+                string shownContext = shownModule + (string.IsNullOrWhiteSpace(shownProcedure) ? "" : "." + shownProcedure);
+                if (!string.Equals(original, request.Expression, StringComparison.Ordinal) ||
+                    !string.Equals(shownProject, request.Project, StringComparison.OrdinalIgnoreCase) ||
+                    !string.Equals(shownContext, request.Context, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("The native Edit Watch selection or context changed.");
+                if (!string.IsNullOrWhiteSpace(request.WatchType))
+                {
+                    int typeId = request.WatchType == "break_when_true" ? 4851 :
+                        request.WatchType == "break_when_changed" ? 4852 : 4850;
+                    IntPtr typeButton = GetDlgItem(dialog, typeId);
+                    if (typeButton == IntPtr.Zero || !PostMessage(typeButton, BmClick, IntPtr.Zero, IntPtr.Zero))
+                        throw new InvalidOperationException("The requested native watch type is unavailable.");
+                    Thread.Sleep(30);
+                    if (SendMessageInt(typeButton, 0x00F0, IntPtr.Zero, IntPtr.Zero).ToInt32() != 1)
+                        throw new InvalidOperationException("The requested native watch type was not selected.");
+                }
+                SendMessageInt(edit, 0x00B1, IntPtr.Zero, new IntPtr(-1)); // EM_SETSEL
+                SendMessageText(edit, 0x00C2, new IntPtr(1), request.NewExpression); // EM_REPLACESEL
+                if (!string.Equals(WindowText(edit), request.NewExpression, StringComparison.Ordinal))
+                    throw new InvalidOperationException("The new watch expression was not reflected by the native edit control.");
+                if (!PostMessage(ok, BmClick, IntPtr.Zero, IntPtr.Zero))
+                    throw new InvalidOperationException("The Edit Watch dialog refused its OK command.");
+                IntPtr error = IntPtr.Zero;
+                for (int attempt = 0; attempt < 40; attempt++)
+                {
+                    Thread.Sleep(50);
+                    if (FindDialog("Modifier un espion", "Edit Watch") == IntPtr.Zero)
+                    { completed = true; break; }
+                    error = FindDialog("Microsoft Visual Basic pour Applications", "Microsoft Visual Basic for Applications");
+                    if (error != IntPtr.Zero) break;
+                }
+                if (error != IntPtr.Zero)
+                {
+                    string detail = AccessibleDialogMessage(error);
+                    CloseDialog(error);
+                    throw new InvalidOperationException("VBE rejected the edited watch: " + detail);
+                }
+                if (!completed) throw new InvalidOperationException("The Edit Watch dialog did not close after OK.");
+                IntPtr root = FindVbeRoot();
+                IntPtr pane = root == IntPtr.Zero ? IntPtr.Zero :
+                    FindPane(ChildWindows(root), "Espions", "Watch", "Watches");
+                if (pane == IntPtr.Zero)
+                    return new { Edited = true, OldExpression = request.Expression, request.NewExpression,
+                        request.Context, Verification = "Pending", VerificationPending = true,
+                        Limit = "The Watches pane is not visible; edit cannot be read back." };
+                bool verified = false;
+                for (int attempt = 0; attempt < 20; attempt++)
+                {
+                    bool newPresent = MatchingWatchRows(pane, request.NewExpression, request.Context).Count == 1;
+                    bool oldAbsent = request.NewExpression == request.Expression ||
+                        MatchingWatchRows(pane, request.Expression, request.Context).Count == 0;
+                    if (newPresent && oldAbsent) { verified = true; break; }
+                    Thread.Sleep(50);
+                }
+                return new { Edited = true, OldExpression = request.Expression, request.NewExpression,
+                    request.Context, Verification = verified ? "ReadbackVerified" : "Pending",
+                    VerificationPending = !verified,
+                    Limit = "Expression readback does not independently prove a changed watch break condition." };
+            }
+            finally
+            {
+                if (!completed)
+                {
+                    IntPtr remaining = FindDialog("Modifier un espion", "Edit Watch");
                     if (remaining != IntPtr.Zero) CloseDialog(remaining);
                 }
             }
@@ -523,12 +615,28 @@ namespace CodexVBE
             {
                 Match match = Regex.Match(current.Current.Name ?? "",
                     @"^Expression\s+(.*?)\s+(?:Valeur|Value)\s+", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                if (!match.Success)
+                    match = Regex.Match(current.Current.Name ?? "",
+                        @"^\s*(.*?)\s+(?:Valeur|Value)\s+.*?\s+Type\s+.*?\s+(?:Contexte|Context)\s+",
+                        RegexOptions.IgnoreCase | RegexOptions.Singleline);
                 if (!match.Success) break;
                 segments.Add(match.Groups[1].Value);
                 current = TreeWalker.RawViewWalker.GetParent(current);
             }
             segments.Reverse();
             return segments.ToArray();
+        }
+
+        private static string WatchRootContext(AutomationElement element)
+        {
+            AutomationElement root = element;
+            AutomationElement parent;
+            while ((parent = TreeWalker.RawViewWalker.GetParent(root)) != null &&
+                parent.Current.ControlType == ControlType.ListItem)
+                root = parent;
+            Match match = Regex.Match(root.Current.Name ?? "",
+                @"\s+(?:Contexte|Context)\s+(.*?)\s*$", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            return match.Success ? match.Groups[1].Value : null;
         }
 
         private static object ReadImmediate(IntPtr handle)

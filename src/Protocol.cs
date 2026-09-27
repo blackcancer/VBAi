@@ -43,6 +43,7 @@ namespace CodexVBE
         public string Procedure { get; set; }
         public string EventName { get; set; }
         public string Expression { get; set; }
+        public string NewExpression { get; set; }
         public string Context { get; set; }
         public string WatchType { get; set; }
         public string Diagnostic { get; set; }

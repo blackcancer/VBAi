@@ -62,8 +62,8 @@ namespace CodexVBE
             Definition("debug_windows", "Read visible native VBE Locals, Watches and Immediate windows via accessibility. Optional IncludeCallStack opens the native Call Stack dialog through the Locals button, reads its frames, then closes it. Missing windows are reported as unavailable, not empty. No shortcuts or coordinate clicks are used.",
                 new string[0], "IncludeCallStack"),
             Definition("debug_dialog", "Read a visible native VBA diagnostic dialog, including its exact message and button labels. Works while the VBE UI thread is modal; does not dismiss the dialog.", new string[0]),
-            Definition("debug_item", "Expand or collapse exactly one row in a visible Locals or Watches pane by its PathSegments from debug_windows. Pane is locals or watches; Action is expand or collapse. Returns observed direct child count, then re-read debug_windows. Uses UI Automation, no shortcuts or coordinates.",
-                new[] { "Pane", "Action", "PathSegments" }, "Pane", "Action", "PathSegments"),
+            Definition("debug_item", "Expand or collapse exactly one row in a visible Locals or Watches pane by its PathSegments from debug_windows. Pane is locals or watches; Action is expand or collapse. Optional Context disambiguates watches with the same expression. Returns observed direct child count, then re-read debug_windows. Uses UI Automation, no shortcuts or coordinates.",
+                new[] { "Pane", "Action", "PathSegments" }, "Pane", "Action", "PathSegments", "Context"),
             Definition("immediate_execute", "Execute one line in the visible VBE Immediate window through native character and Enter messages, without shortcuts or coordinates. Requires Project and current ExpectedMode (1 break or 2 design). Returns exact text before/after; arbitrary side effects require separate verification. Automatic VBE edit policy is required.",
                 new[] { "Project", "ExpectedMode", "Text" }, "Project", "ExpectedMode", "Text"),
             Definition("respond_debug_dialog", "Activate one button on a visible native VBA run-time or compile diagnostic. Supply the exact Diagnostic and Button strings returned by debug_dialog, then read debug_state separately. Requires automatic VBE edit policy; no shortcut or coordinate click is used.",
@@ -85,6 +85,9 @@ namespace CodexVBE
             Definition("add_watch", "Add a native VBE watch in the active break-mode project and module, using the current procedure context. ExpectedMode must be 1. Optional Procedure must match the native dialog context. WatchType is expression (default), break_when_true or break_when_changed. The expression is evaluated by VBE and can call VBA functions. The dialog is completed through native controls without shortcuts or coordinates; then call debug_windows to re-read its value.",
                 new[] { "Project", "Module", "ExpectedMode", "Expression" },
                 "Project", "Module", "ExpectedMode", "Expression", "Procedure", "WatchType"),
+            Definition("edit_watch", "Edit one native VBE watch selected by exact Expression and Context from debug_windows. NewExpression replaces its expression in the same context; optional WatchType changes its break condition. The new expression is read back but a break condition needs runtime verification. Requires automatic VBE edit policy, no shortcuts or coordinates.",
+                new[] { "Project", "ExpectedMode", "Expression", "Context", "NewExpression" },
+                "Project", "ExpectedMode", "Expression", "Context", "NewExpression", "WatchType"),
             Definition("remove_watch", "Remove one native VBE watch selected by exact Expression and Context from debug_windows. Requires the Watches pane visible and ExpectedMode from debug_state. Confirms disappearance separately through UI accessibility.",
                 new[] { "Project", "ExpectedMode", "Expression", "Context" },
                 "Project", "ExpectedMode", "Expression", "Context"),
@@ -290,14 +293,35 @@ namespace CodexVBE
 
         public async Task<string> InvokeAsync(string name, string arguments)
         {
+            if (name == "edit_watch")
+            {
+                try
+                {
+                    if (settings.VbeEditApproval != "Automatic")
+                        return json.Serialize(Response.Failure("Automatic VBE edit policy is required for native watch editing."));
+                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
+                    if (values == null) throw new ArgumentException("Tool arguments must be an object.");
+                    var requestValues = new Dictionary<string, object>(values) { ["Command"] = name };
+                    Request request = json.Deserialize<Request>(json.Serialize(requestValues));
+                    await Task.Run(() => VbeDebugWindows.SelectWatch(request));
+                    string scheduled = Invoke(name, arguments);
+                    Response initial = json.Deserialize<Response>(scheduled);
+                    if (initial == null || !initial.Ok) return scheduled;
+                    return json.Serialize(Response.Success(await Task.Run(() => VbeDebugWindows.CompleteEditWatch(request))));
+                }
+                catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+            }
             if (name == "debug_item")
             {
                 try
                 {
                     var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
-                    if (values == null || values.Count != 3 || !values.ContainsKey("Pane") ||
+                    if (values == null || (values.Count != 3 && values.Count != 4) || !values.ContainsKey("Pane") ||
                         !values.ContainsKey("Action") || !values.ContainsKey("PathSegments"))
                         throw new ArgumentException("Pane, Action and PathSegments are required.");
+                    if (values.Keys.Any(key => key != "Pane" && key != "Action" &&
+                        key != "PathSegments" && key != "Context"))
+                        throw new ArgumentException("Unexpected debug_item argument.");
                     var requestValues = new Dictionary<string, object>(values) { ["Command"] = name };
                     Request request = json.Deserialize<Request>(json.Serialize(requestValues));
                     return json.Serialize(Response.Success(await Task.Run(() => VbeDebugWindows.ChangeDebugItem(request))));
