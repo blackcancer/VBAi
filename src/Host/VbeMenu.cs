@@ -24,12 +24,12 @@ namespace CodexVBE
             dynamic tools = FindMenu(vbe, "outils", "tools");
             viewButton = view.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
             settingsButton = tools.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
-            ((dynamic)viewButton).Caption = "Assistant VBAi";
+            ((dynamic)viewButton).Caption = UiText.Get("VBAi assistant");
             ((dynamic)viewButton).Tag = "CodexVBE.Assistant";
-            ((dynamic)settingsButton).Caption = "Configuration VBAi…";
+            ((dynamic)settingsButton).Caption = UiText.Get("VBAi settings…");
             ((dynamic)settingsButton).Tag = "CodexVBE.Settings";
-            ((dynamic)viewButton).TooltipText = "Ouvrir VBAi — Your AI agent for VBA";
-            ((dynamic)settingsButton).TooltipText = "Configurer les fournisseurs et le compte GitHub";
+            ((dynamic)viewButton).TooltipText = UiText.Get("Open VBAi — Your AI agent for VBA");
+            ((dynamic)settingsButton).TooltipText = UiText.Get("Configure providers and the GitHub account");
             viewHandler = (object control, ref bool cancel) => { cancel = true; showAssistant(); };
             settingsHandler = (object control, ref bool cancel) => { cancel = true; showSettings(); };
             try
@@ -41,7 +41,7 @@ namespace CodexVBE
                 object gitButton = view.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
                 ((dynamic)gitButton).Caption = "GitHub VBAi…";
                 ((dynamic)gitButton).Tag = "CodexVBE.GitHub";
-                ((dynamic)gitButton).TooltipText = "Synchroniser le projet VBA actif et gérer ses branches et checkpoints";
+                ((dynamic)gitButton).TooltipText = UiText.Get("Synchronize the active VBA project and manage its branches and checkpoints");
                 ClickHandler gitHandler = (object control, ref bool cancel) => { cancel = true; showGitHub(); };
                 editorButtons.Add(Tuple.Create(gitButton, gitHandler));
                 ComEventsHelper.Combine(gitButton, ClickInterface, 1, gitHandler);
@@ -64,7 +64,7 @@ namespace CodexVBE
                         {
                             string command = action;
                             object button = bar.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
-                            ((dynamic)button).Caption = "VBAi · " + action.Substring(1);
+                            ((dynamic)button).Caption = "VBAi · " + UiText.Get(action == "/expliquer" ? "Explain" : action == "/corriger" ? "Fix" : "Refactor");
                             ((dynamic)button).Tag = "CodexVBE." + action.Substring(1);
                             ClickHandler handler = (object control, ref bool cancel) => { cancel = true; editorAction(command); };
                             editorButtons.Add(Tuple.Create(button, handler));

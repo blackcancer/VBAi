@@ -62,7 +62,7 @@ namespace CodexVBE
                     ["id"] = Text(block, "id"), ["type"] = "function", ["function"] = new Dictionary<string, object> {
                         ["name"] = Text(block, "name"), ["arguments"] = new JavaScriptSerializer().Serialize(block["input"]) } });
             }
-            if (Text(response, "stop_reason") == "max_tokens") throw new InvalidOperationException("Claude a atteint sa limite de réponse. Réduisez la portée de la demande.");
+            if (Text(response, "stop_reason") == "max_tokens") throw new InvalidOperationException(UiText.Get("Claude reached its response limit. Narrow the scope of your request."));
             var result = new Dictionary<string, object> { ["role"] = "assistant", ["content"] = string.Join("\n", text), ["_claude_content"] = Array(response, "content") };
             if (calls.Count > 0) result["tool_calls"] = calls.ToArray();
             return result;

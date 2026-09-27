@@ -53,7 +53,7 @@ namespace CodexVBE
                 var body = GetObject(response, "result");
                 object raw;
                 var data = body != null && body.TryGetValue("data", out raw) ? raw as object[] : null;
-                if (data == null) throw new InvalidOperationException("Codex n'a pas fourni son catalogue de modèles.");
+                if (data == null) throw new InvalidOperationException(UiText.Get("Codex did not provide its model list."));
                 foreach (var entry in data)
                 {
                     var item = entry as IDictionary<string, object>;
@@ -127,33 +127,33 @@ namespace CodexVBE
                 StandardErrorEncoding = new UTF8Encoding(false)
             };
             process = new Process { StartInfo = info, EnableRaisingEvents = true };
-            process.Exited += (sender, args) => FailPending(new InvalidOperationException("Codex app-server s'est arrêté."));
+            process.Exited += (sender, args) => FailPending(new InvalidOperationException(UiText.Get("Codex app-server stopped.")));
             try
             {
-                if (!ProcessInput.StartWithoutPreamble(process)) throw new InvalidOperationException("Impossible de démarrer codex app-server.");
+                if (!ProcessInput.StartWithoutPreamble(process)) throw new InvalidOperationException(UiText.Get("Unable to start codex app-server."));
                 process.OutputDataReceived += (sender, args) => { if (args.Data != null) OnLine(args.Data); };
                 // Read stderr so the child cannot block on a full pipe. Diagnostics are never treated as protocol data.
                 process.ErrorDataReceived += (sender, args) => { };
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
-                progress("Codex : initialisation du serveur local");
+                progress(UiText.Get("Codex: initializing the local server"));
                 await RequestAsync("initialize", new {
                     clientInfo = new { name = "codexvbe", title = "CodexVBE", version = "0.1.0" },
                     capabilities = new { experimentalApi = true }
                 });
                 Send(new { method = "initialized", @params = new { } });
-                progress("Codex : vérification du compte ChatGPT");
+                progress(UiText.Get("Codex: checking the ChatGPT account"));
                 var account = await RequestAsync("account/read", new { refreshToken = false });
                 var accountInfo = GetObject(GetObject(account, "result"), "account");
                 if (GetString(accountInfo, "type") != "chatgpt")
-                    throw new InvalidOperationException("Codex doit être connecté avec ChatGPT. Aucune clé API n'est utilisée ici.");
+                    throw new InvalidOperationException(UiText.Get("Codex must be signed in through ChatGPT. No API key is used here."));
 
                 var definitions = LlmVbeTools.Definitions.Select(raw => {
                     dynamic function = ((dynamic)raw).function;
                     return (object)new { type = "function", name = (string)function.name,
                         description = (string)function.description, inputSchema = function.parameters };
                 }).ToArray();
-                progress("Codex : ouverture de la conversation VBE");
+                progress(UiText.Get("Codex: opening the VBE conversation"));
                 var started = !string.IsNullOrEmpty(threadId)
                     ? await RequestAsync("thread/resume", new { threadId, approvalPolicy = "untrusted", sandbox = "read-only" })
                     : await RequestAsync("thread/start", new {
@@ -168,7 +168,7 @@ namespace CodexVBE
                 threadId = GetString(GetObject(GetObject(started, "result"), "thread"), "id");
                 if (string.IsNullOrWhiteSpace(threadId)) throw new InvalidOperationException("Codex did not create a thread.");
                 ThreadReady?.Invoke(threadId);
-                progress("Codex connecté avec ChatGPT");
+                progress(UiText.Get("Codex connected through ChatGPT"));
             }
             catch
             {
@@ -264,7 +264,7 @@ namespace CodexVBE
                         var completion = turnDone;
                         string answer = finalText;
                         ui.Post(_ => {
-                            if (status == "completed") completion.TrySetResult(answer ?? "Codex a terminé sans réponse textuelle.");
+                            if (status == "completed") completion.TrySetResult(answer ?? UiText.Get("Codex finished without a text response."));
                             else if (status == "interrupted") completion.TrySetException(new OperationCanceledException());
                             else completion.TrySetException(new InvalidOperationException(
                                 GetString(GetObject(turn, "error"), "message") ?? "Codex turn: " + status));
@@ -296,7 +296,7 @@ namespace CodexVBE
                     string arguments = NewJson().Serialize(parameters["arguments"]);
                     string output = await tools.InvokeAsync(name, arguments);
                     var response = NewJson().Deserialize<Response>(output);
-                    ChatUpdate?.Invoke("tool", activityId, name + (response != null && response.Ok ? " · terminé" : " · échec"), true);
+                    ChatUpdate?.Invoke("tool", activityId, name + (response != null && response.Ok ? UiText.Get(" · complete") : UiText.Get(" · failed")), true);
                     Send(new { id = requestId, result = new {
                         contentItems = new[] { new { type = "inputText", text = output } },
                         success = response != null && response.Ok

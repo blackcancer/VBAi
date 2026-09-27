@@ -38,7 +38,7 @@ namespace CodexVBE
         {
             string stop = ClaudeProtocol.Text(root, "stopReason");
             if (stop != "end_turn" && stop != "tool_use" && stop != "stop_sequence")
-                throw new InvalidOperationException("Réponse Bedrock incomplète ou filtrée : " + stop);
+                throw new InvalidOperationException(UiText.Get("Incomplete or filtered Bedrock response: ") + stop);
             var message = ClaudeProtocol.Object(ClaudeProtocol.Object(root["output"])["message"]);
             var blocks = ClaudeProtocol.Array(message, "content"); var text = new List<string>(); var calls = new List<object>();
             foreach (var raw in blocks) {

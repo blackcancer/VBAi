@@ -22,9 +22,9 @@ namespace CodexVBE
         {
             dynamic project = resolve();
             if (!string.Equals(Path.GetFullPath((string)project.FileName), hostPath, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("Le document lié a changé. Rouvrez l’intégration GitHub.");
+                throw new InvalidOperationException(UiText.Get("The linked document changed. Reopen GitHub integration."));
             if ((int)project.Mode != 2 || (int)project.Protection != 0)
-                throw new InvalidOperationException("Le projet VBA doit être déverrouillé et en mode conception.");
+                throw new InvalidOperationException(UiText.Get("The VBA project must be unlocked and in design mode."));
             return project;
         }
 
@@ -57,7 +57,7 @@ namespace CodexVBE
             var references = new List<string>();
             foreach (dynamic reference in project.References)
             {
-                if ((bool)reference.IsBroken) throw new InvalidOperationException("Référence VBA manquante : corrigez-la avant de synchroniser.");
+                if ((bool)reference.IsBroken) throw new InvalidOperationException(UiText.Get("Missing VBA reference: fix it before synchronizing."));
                 references.Add(((string)reference.GUID).ToUpperInvariant() + ":" + (int)reference.Major + ":" + (int)reference.Minor);
             }
             return new VbaGitSnapshot(new VbaGitManifest {
@@ -68,13 +68,13 @@ namespace CodexVBE
 
         internal void Apply(VbaGitSnapshot target, VbaGitSnapshot expected, Action beforeMutation = null)
         {
-            if (!Capture().SameAs(expected)) throw new InvalidOperationException("Le VBA a changé pendant la synchronisation. Aucun import effectué.");
+            if (!Capture().SameAs(expected)) throw new InvalidOperationException(UiText.Get("VBA changed during synchronization. No import performed."));
             if (target.Manifest.References != expected.Manifest.References)
-                throw new InvalidOperationException("Les références VBA diffèrent. Alignez-les dans Outils > Références avant l’import.");
+                throw new InvalidOperationException(UiText.Get("VBA references differ. Align them in Tools > References before importing."));
             var beforeDocs = expected.Manifest.Components.Where(x => x.Type == 100).Select(x => x.Name);
             var afterDocs = target.Manifest.Components.Where(x => x.Type == 100).Select(x => x.Name);
             if (!beforeDocs.SequenceEqual(afterDocs))
-                throw new InvalidOperationException("Les modules du document ne correspondent pas. Les feuilles et modules hôtes doivent déjà exister avec les mêmes noms.");
+                throw new InvalidOperationException(UiText.Get("Document modules do not match. Sheets and host modules must already exist with the same names."));
 
             using (var scratch = new Scratch())
             {
@@ -111,11 +111,11 @@ namespace CodexVBE
                         // A failing COM call can still have applied. Do not retry or automatically re-import.
                         dynamic imported = project.VBComponents.Import(Path.Combine(scratch.Path, next.FileName));
                         if ((string)imported.Name != next.Name || (int)imported.Type != next.Type)
-                            throw new InvalidOperationException("Identité inattendue après import : " + next.Name + ". Utilisez Restaurer.");
+                            throw new InvalidOperationException(UiText.Get("Unexpected identity after import: ") + next.Name + UiText.Get(". Use Restore."));
                     }
                 }
             }
-            if (!Capture().SameAs(target)) throw new InvalidOperationException("Le VBE n’a pas conservé exactement les sources importées. Utilisez Restaurer ou vérifiez le projet.");
+            if (!Capture().SameAs(target)) throw new InvalidOperationException(UiText.Get("The VBE did not preserve the imported sources exactly. Use Restore or check the project."));
         }
 
         private static string Code(dynamic module)

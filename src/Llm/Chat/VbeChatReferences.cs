@@ -11,11 +11,13 @@ namespace CodexVBE
         public string Module;
         public string Name;
         public string Kind { get; set; }
+        public string DisplayKind { get { return Kind == "Projet" ? UiText.Get("Project") : Kind; } }
         public int ProcKind;
         public int StartLine;
         public int EndLine;
         public string Sha256;
 
+        public string DisplayToken { get { return Token; } }
         public string Token
         {
             get
@@ -28,7 +30,7 @@ namespace CodexVBE
             }
         }
 
-        public string Display { get { return Token + "  —  " + Kind; } }
+        public string Display { get { return Token + "  —  " + DisplayKind; } }
         public override string ToString() { return Display; }
     }
 
@@ -133,7 +135,7 @@ namespace CodexVBE
         public Response Navigate(VbeChatReference item)
         {
             if (item.Module == null)
-                return Response.Failure("Sélectionnez un module ou une procédure de ce projet pour ouvrir le code.");
+                return Response.Failure(UiText.Get("Select a module or procedure in this project to open its code."));
             Response response = session.Execute(new Request { Command = "read_module", Project = item.Project, Module = item.Module });
             if (!response.Ok) return response;
             var data = json.DeserializeObject(json.Serialize(response.Data)) as IDictionary<string, object>;
@@ -161,7 +163,7 @@ namespace CodexVBE
             string sha = Field(data, "Sha256");
             if (item.Name == null) { item.Sha256 = sha; return item.Token + " (SHA-256 " + sha + ")\n" + code; }
             if (!string.Equals(sha, item.Sha256, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException(item.Token + " a changé depuis sa sélection. Supprimez le jeton et sélectionnez-le à nouveau avec #.");
+                throw new InvalidOperationException(item.Token + UiText.Get(" changed since selection. Remove the token and select it again with #."));
             string[] lines = code.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
             int start = Math.Max(1, item.StartLine);
             int end = Math.Min(lines.Length, item.EndLine);

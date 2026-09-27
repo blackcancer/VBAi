@@ -30,13 +30,13 @@ namespace CodexVBE
                     string line = await reader.ReadLineAsync();
                     if (line == null) break;
                     total += line.Length;
-                    if (total > 10 * 1024 * 1024) throw new InvalidDataException("Réponse trop volumineuse.");
+                    if (total > 10 * 1024 * 1024) throw new InvalidDataException(UiText.Get("Response too large."));
                     if (line.StartsWith("data:", StringComparison.Ordinal)) { if (data.Length > 0) data.Append('\n'); data.Append(line.Substring(5).TrimStart(' ')); continue; }
                     if (line.Length != 0 || data.Length == 0) continue;
                     string payload = data.ToString(); data.Clear();
                     if (payload == "[DONE]") { ended = true; break; }
                     var root = Obj(json.DeserializeObject(payload));
-                    if (root.ContainsKey("error") || Text(root, "type") == "error") throw new InvalidOperationException("Le fournisseur a interrompu la réponse avec une erreur.");
+                    if (root.ContainsKey("error") || Text(root, "type") == "error") throw new InvalidOperationException(UiText.Get("The provider interrupted the response with an error."));
                     if (!claude) {
                         var choices = ClaudeProtocol.Array(root, "choices"); if (choices.Length == 0) continue;
                         var choice = Obj(choices[0]);
@@ -71,7 +71,7 @@ namespace CodexVBE
             }
             token.ThrowIfCancellationRequested();
             bool validStop = claude ? stop == "end_turn" || stop == "tool_use" || stop == "stop_sequence" : stop == "stop" || stop == "tool_calls";
-            if (!ended || !validStop) throw new InvalidDataException("Réponse interrompue, tronquée ou filtrée ; aucun appel d’outil partiel n’a été exécuté.");
+            if (!ended || !validStop) throw new InvalidDataException(UiText.Get("Response interrupted, truncated or filtered; no partial tool call was executed."));
             if (claude) {
                 foreach (var pair in inputs) blocks[pair.Key]["input"] = json.DeserializeObject(pair.Value);
                 return ClaudeProtocol.Response(new Dictionary<string, object> { ["content"] = blocks.Values.Cast<object>().ToArray(), ["stop_reason"] = stop });

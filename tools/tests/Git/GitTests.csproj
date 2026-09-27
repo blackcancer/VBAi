@@ -8,6 +8,7 @@
     <Compile Include="GitTests.cs" />
     <Compile Include="AdvancedGitTests.cs" />
     <Compile Include="../../../src/**/*.cs" />
+    <EmbeddedResource Include="../../../src/Localization/*.resx"><LogicalName>CodexVBE.Localization.%(Filename).resources</LogicalName></EmbeddedResource>
     <EmbeddedResource Include="../../../src/Llm/Chat/ChatWindow.resx"><LogicalName>CodexVBE.ChatWindow.resources</LogicalName></EmbeddedResource>
     <EmbeddedResource Include="../../../src/Llm/Settings/LlmSettingsWindow.resx"><LogicalName>CodexVBE.LlmSettingsWindow.resources</LogicalName></EmbeddedResource>
     <EmbeddedResource Include="../../../src/Git/GitWindow.resx"><LogicalName>CodexVBE.GitWindow.resources</LogicalName></EmbeddedResource>

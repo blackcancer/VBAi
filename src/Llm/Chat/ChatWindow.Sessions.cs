@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -40,7 +40,7 @@ namespace CodexVBE
                 sessionStore = new ChatSessionStore(Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CodexVBE", "chat.db"));
             }
-            catch (Exception ex) { storageFailed = true; SetStatus("Historique non enregistré : " + ex.Message); }
+            catch (Exception ex) { storageFailed = true; SetStatus(UiText.Get("History not saved: ") + ex.Message); }
             var projects = PopulateProjectScopes(session);
             scopePicker.SelectedIndexChanged += (s, e) => ChangeScope();
             sessionList.SelectedIndexChanged += (s, e) => {
@@ -73,7 +73,7 @@ namespace CodexVBE
             else
             {
                 send.Enabled = false;
-                SetStatus(projects.Ok ? "Ouvrez un projet VBA pour démarrer une conversation." : projects.Error);
+                SetStatus(projects.Ok ? UiText.Get("Open a VBA project to start a conversation.") : projects.Error);
                 projectRetryTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
                 projectRetryTimer.Tick += (s, e) => {
                     if (IsDisposed) { projectRetryTimer.Stop(); return; }
@@ -105,7 +105,7 @@ namespace CodexVBE
                     Project = saved ? Path.GetFullPath(path) : name,
                     Name = name,
                     Key = saved ? Path.GetFullPath(path).ToUpperInvariant() : "temporary:" + Guid.NewGuid().ToString("N"),
-                    Label = name + " · " + (saved ? Path.GetFileName(path) : "document non enregistré")
+                    Label = name + " · " + (saved ? Path.GetFileName(path) : UiText.Get("unsaved document"))
                 });
             }
             return projects;
@@ -126,7 +126,7 @@ namespace CodexVBE
                 else if (sessionStore != null) scopeSessions.AddRange(sessionStore.List(scope.Key));
                 if (sessionStore != null) projectMemory = sessionStore.ReadMemory(scope.Key);
             }
-            catch (Exception ex) { SetStatus("Historique indisponible : " + ex.Message); }
+            catch (Exception ex) { SetStatus(UiText.Get("History unavailable: ") + ex.Message); }
             memoryEditor.Text = projectMemory;
             attachMemory.Checked = false;
             if (!scopeSessions.Any(item => !item.Archived))
@@ -167,13 +167,13 @@ namespace CodexVBE
                 prompt.CaretIndex = prompt.Text.Length;
                 HideReferences();
                 RefreshContextChips();
-                changes.Text = "Modifications · " + codeChanges.Count;
+                changes.Text = UiText.Get("Changes · ") + codeChanges.Count;
                 changes.Enabled = codeChanges.Count > 0;
                 RefreshCodeChangeCards();
                 int provider = Array.FindIndex(LlmProvider.All, item => item.Name == session.Provider);
                 providerPicker.SelectedIndex = provider < 0 ? 0 : provider;
-                sessionTitle.Text = session.Title;
-                chatTitleEditor.Text = session.Title;
+                sessionTitle.Text = session.DisplayTitle;
+                chatTitleEditor.Text = session.DisplayTitle;
                 historyPanel.Visible = false;
                 RefreshHistory();
                 ShowWelcome();
@@ -216,7 +216,7 @@ namespace CodexVBE
             currentSession.DraftReferences = CurrentReferences(prompt.Text);
             if (codex != null && !string.IsNullOrEmpty(codex.ThreadId)) currentSession.CodexThreadId = codex.ThreadId;
             try { sessionStore?.Save(currentSession); }
-            catch (Exception ex) { storageFailed = true; SetStatus("Historique non enregistré : " + ex.Message); }
+            catch (Exception ex) { storageFailed = true; SetStatus(UiText.Get("History not saved: ") + ex.Message); }
         }
 
         private void NewSession(string provider = null)
@@ -263,15 +263,15 @@ namespace CodexVBE
         {
             var scope = scopePicker.SelectedItem as MacroScope;
             if (scope == null || busy) return;
-            if (sessionStore == null) { SetStatus("La mémoire nécessite un historique SQLite disponible."); return; }
+            if (sessionStore == null) { SetStatus(UiText.Get("Memory requires an available SQLite history store.")); return; }
             try
             {
                 sessionStore.SaveMemory(scope.Key, memoryEditor.Text);
                 projectMemory = memoryEditor.Text;
                 RefreshContextChips();
-                SetStatus("Mémoire du document enregistrée localement");
+                SetStatus(UiText.Get("Document memory saved locally"));
             }
-            catch (Exception ex) { SetStatus("Mémoire non enregistrée : " + ex.Message); }
+            catch (Exception ex) { SetStatus(UiText.Get("Memory not saved: ") + ex.Message); }
         }
 
         private void EnsureCurrentScope()
@@ -286,12 +286,12 @@ namespace CodexVBE
                 .Where(item => scope.Key.StartsWith("temporary:", StringComparison.Ordinal)
                     ? Convert.ToString(item["Name"]) == scope.Project
                     : string.Equals(Convert.ToString(item["FileName"]), scope.Project, StringComparison.OrdinalIgnoreCase)).ToArray();
-            if (matches.Length != 1) throw new InvalidOperationException("Le projet de cette conversation est fermé ou ambigu.");
+            if (matches.Length != 1) throw new InvalidOperationException(UiText.Get("The project for this conversation is closed or ambiguous."));
             if (!scope.Key.StartsWith("temporary:", StringComparison.Ordinal))
             {
                 string path = Convert.ToString(matches[0]["FileName"]);
                 if (string.IsNullOrEmpty(path) || !string.Equals(Path.GetFullPath(path), scope.Key, StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidOperationException("Le document VBA a changé. Rouvrez le chat pour choisir le document actuel.");
+                    throw new InvalidOperationException(UiText.Get("The VBA document has changed. Reopen the chat to choose the current document."));
             }
         }
 
@@ -316,7 +316,7 @@ namespace CodexVBE
             }
             if (pending.Count == 0 || userIndex < 0) return;
             messages.RemoveRange(userIndex + 1, messages.Count - userIndex - 1);
-            messages.Add(new { role = "assistant", content = "La réponse précédente a été interrompue. Relire le code vivant avant de poursuivre les modifications." });
+            messages.Add(new { role = "assistant", content = UiText.Get("The previous response was interrupted. Read the live code again before making further edits.") });
         }
     }
 }

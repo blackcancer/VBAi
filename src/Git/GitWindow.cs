@@ -17,7 +17,7 @@ namespace CodexVBE
         private string account;
         private VbaGitSnapshot displayedLive;
         private VbaGitSnapshot displayedBaseline;
-        public GitWindow() { InitializeComponent(); }
+        public GitWindow() { InitializeComponent(); UiText.Apply(this, components); }
 
         internal GitWindow(VbaGitProject project, string scope, string label, string account = null) : this()
         {
@@ -76,9 +76,9 @@ namespace CodexVBE
             conflictList.Items.Clear();
             if (repository.PendingMerge != null) conflictList.Items.AddRange(repository.PendingMerge.Conflicts);
             syncStatus.Text = repository.Branch + "   ·   " + await Task.Run(() => repository.SynchronizationStatus());
-            status.Text = repository.RecoveryPending ? "Import interrompu : restaurez le VBA avant de poursuivre. La sauvegarde est conservée dans le cache." :
-                baseline == null ? "Première liaison : commit puis push pour publier, ou pull pour importer le dépôt avec sauvegarde préalable." :
-                changes.Items.Count == 0 ? "Le VBA correspond au dernier état synchronisé." : changes.Items.Count + " fichier(s) modifié(s) depuis la dernière synchronisation.";
+            status.Text = repository.RecoveryPending ? UiText.Get("Import interrupted: restore VBA before continuing. The backup is preserved in the cache.") :
+                baseline == null ? UiText.Get("First link: commit then push to publish, or pull to import the repository with a backup first.") :
+                changes.Items.Count == 0 ? UiText.Get("VBA matches the last synchronized state.") : changes.Items.Count + UiText.Get(" file(s) changed since the last synchronization.");
         }
 
         private async void Commit_Click(object sender, EventArgs e) { await RunGitAction("commit", text: commitMessage.Text); }
@@ -90,10 +90,10 @@ namespace CodexVBE
                 var operations = new MacroGitOperations(project, repository);
                 object result = await operations.ExecuteAsync(action, name: name, text: text, choice: choice, path: path);
                 await Compare();
-                status.Text = action == "commit" ? "Commit local créé. Utilisez Push pour le publier." :
-                    action == "push" ? "Push terminé." : action == "pull" ? "Pull et import terminés. Vérifiez puis enregistrez le document." :
-                    action == "rollback" || action == "checkpoint_restore" ? "VBA restauré. Vérifiez puis enregistrez le document." :
-                    repository.PendingMerge != null ? "Fusion préparée : résolvez les conflits puis cliquez sur Terminer la fusion." : "Opération terminée : " + action;
+                status.Text = action == "commit" ? UiText.Get("Local commit created. Use Push to publish it.") :
+                    action == "push" ? UiText.Get("Push complete.") : action == "pull" ? UiText.Get("Pull and import complete. Check and save the document.") :
+                    action == "rollback" || action == "checkpoint_restore" ? UiText.Get("VBA restored. Check and save the document.") :
+                    repository.PendingMerge != null ? UiText.Get("Merge prepared: resolve conflicts, then click Complete merge.") : UiText.Get("Operation complete: ") + action;
                 if (repository.PendingMerge != null) tabs.SelectedTab = conflictsTab;
             });
         }
@@ -102,7 +102,7 @@ namespace CodexVBE
             diff.Rows.Clear();
             if (changes.SelectedItem == null || displayedLive == null) return;
             string name = changes.SelectedItem.ToString().Substring(2);
-            if (name.EndsWith(".frx", StringComparison.Ordinal)) { diff.Rows.Add("Ressource binaire", "Ressource binaire"); return; }
+            if (name.EndsWith(".frx", StringComparison.Ordinal)) { diff.Rows.Add(UiText.Get("Binary resource"), UiText.Get("Binary resource")); return; }
             byte[] old = null, current = null;
             displayedBaseline?.Serialize().TryGetValue(name, out old);
             displayedLive.Serialize().TryGetValue(name, out current);
@@ -123,7 +123,7 @@ namespace CodexVBE
                 if (diff.Rows.Count >= 2000) break;
             }
             while (x < left.Length && y < right.Length && diff.Rows.Count < 2000) AddDiffRow(left[x], right[y], x++, y++, false);
-            if (x < left.Length || y < right.Length) diff.Rows.Add("Aperçu limité à 2 000 lignes", "Aperçu limité à 2 000 lignes");
+            if (x < left.Length || y < right.Length) diff.Rows.Add(UiText.Get("Preview limited to 2,000 lines"), UiText.Get("Preview limited to 2,000 lines"));
         }
 
         private void AddDiffRow(string before, string after, int oldLine, int newLine, bool changed)
@@ -149,7 +149,7 @@ namespace CodexVBE
             await Perform(async () => {
                 string[] names = await Task.Run(() => repository.RemoteBranches());
                 branchName.Items.Clear(); branchName.Items.AddRange(names);
-                status.Text = names.Length + " branche(s) distante(s). Choisissez un nom puis Récupérer distante.";
+                status.Text = names.Length + UiText.Get(" remote branch(es). Choose a name, then Track remote.");
             });
             if (!running && branchName.Items.Count > 0) branchName.DroppedDown = true;
         }
@@ -179,13 +179,13 @@ namespace CodexVBE
                     if (row.Kind == CodeDiffKind.Added) conflictDiff.Rows[index].Cells[1].Style.BackColor = System.Drawing.Color.Honeydew;
                     if (row.Kind == CodeDiffKind.Removed) conflictDiff.Rows[index].Cells[0].Style.BackColor = System.Drawing.Color.MistyRose;
                 }
-                status.Text = "Conflit : " + path + ". Choisissez une version ou éditez le contenu complet en dessous.";
+                status.Text = UiText.Get("Conflict: ") + path + UiText.Get(". Choose a version or edit the full content below.");
             });
         }
         private async Task Perform(Func<Task> action)
         {
             if (running || project == null) return;
-            running = true; UpdateButtons(); status.Text = "Opération en cours…";
+            running = true; UpdateButtons(); status.Text = UiText.Get("Operation in progress…");
             try { await action(); }
             catch (Exception ex) { status.Text = ex.Message; }
             finally { running = false; UpdateButtons(); }

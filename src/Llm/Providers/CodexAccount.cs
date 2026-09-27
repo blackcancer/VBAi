@@ -37,14 +37,14 @@ namespace CodexVBE
                 {
                     string output = process.StandardOutput.ReadToEnd();
                     string error = process.StandardError.ReadToEnd();
-                    if (!process.WaitForExit(10000)) { process.Kill(); throw new TimeoutException("Vérification Codex trop longue."); }
+                    if (!process.WaitForExit(10000)) { process.Kill(); throw new TimeoutException(UiText.Get("Codex verification timed out.")); }
                     string result = (output + " " + error).Trim();
                     if (process.ExitCode != 0)
-                        return new CodexAccountStatus(false, "ChatGPT non connecté" +
+                        return new CodexAccountStatus(false, UiText.Get("Not signed in to ChatGPT") +
                             (result.Length == 0 ? "." : " : " + result));
                     bool chatGpt = result.IndexOf("ChatGPT", StringComparison.OrdinalIgnoreCase) >= 0;
                     return new CodexAccountStatus(chatGpt,
-                        chatGpt ? "Connecté à ChatGPT" : "Connexion Codex active, mais pas avec ChatGPT : " + result);
+                        chatGpt ? UiText.Get("Connected to ChatGPT") : UiText.Get("Codex is connected, but not through ChatGPT: ") + result);
                 }
             });
         }

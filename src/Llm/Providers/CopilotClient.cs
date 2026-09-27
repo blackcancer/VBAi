@@ -40,7 +40,7 @@ namespace CodexVBE
         {
             using (var client = new CopilotClient()) {
                 var models = await client.ListModelsAsync();
-                return "Copilot accessible · " + models.Length + " modèles. Authentification gérée par le CLI GitHub.";
+                return "Copilot accessible · " + models.Length + UiText.Get(" models. Authentication is managed by the GitHub CLI.");
             }
         }
 
@@ -55,15 +55,15 @@ namespace CodexVBE
             };
             process = new Process { StartInfo = info };
             try {
-                if (!ProcessInput.StartWithoutPreamble(process)) throw new InvalidOperationException("Impossible de démarrer Copilot.");
-            } catch (Exception ex) { process.Dispose(); process = null; throw new InvalidOperationException("Installez GitHub Copilot CLI et configurez CODEXVBE_COPILOT_CLI vers son exécutable si nécessaire.", ex); }
+                if (!ProcessInput.StartWithoutPreamble(process)) throw new InvalidOperationException(UiText.Get("Unable to start Copilot."));
+            } catch (Exception ex) { process.Dispose(); process = null; throw new InvalidOperationException(UiText.Get("Install GitHub Copilot CLI and set CODEXVBE_COPILOT_CLI to its executable if needed."), ex); }
             process.ErrorDataReceived += (s, e) => { }; // Drain without logging tokens or prompts.
             process.BeginErrorReadLine();
             _ = Task.Run(ReadLoop);
             var ping = await RequestAsync("ping", new { });
             int version;
             if (!int.TryParse(Text(ping, "protocolVersion"), out version) || version < 2 || version > 3)
-                throw new InvalidOperationException("Version du protocole Copilot incompatible (versions 2 et 3 prises en charge).");
+                throw new InvalidOperationException(UiText.Get("Incompatible Copilot protocol version (versions 2 and 3 supported)."));
         }
 
         public async Task<LlmModelOption[]> ListModelsAsync()
@@ -78,7 +78,7 @@ namespace CodexVBE
         public async Task<IDictionary<string, object>> CompleteAsync(string model, IList<object> history, object[] tools,
             Func<string, string, Task<string>> toolHandler)
         {
-            invoke = toolHandler ?? throw new InvalidOperationException("Les outils VBA de Copilot ne sont pas connectés.");
+            invoke = toolHandler ?? throw new InvalidOperationException(UiText.Get("Copilot VBA tools are not connected."));
             this.history = history;
             await StartAsync();
             var definitions = tools.Select(x => ClaudeProtocol.Object(ClaudeProtocol.Object(x)["function"])).ToArray();
@@ -97,7 +97,7 @@ namespace CodexVBE
             if (Text(created, "sessionId") != sessionId) throw new InvalidOperationException("Session Copilot inattendue.");
             await RequestAsync("session.send", new { sessionId, prompt = Json().Serialize(history) });
             if (await Task.WhenAny(completion.Task, Task.Delay(TimeSpan.FromMinutes(5))) != completion.Task) {
-                Dispose(); throw new TimeoutException("Copilot n’a pas terminé sa réponse dans le délai imparti.");
+                Dispose(); throw new TimeoutException(UiText.Get("Copilot did not finish its response within the time limit."));
             }
             return new Dictionary<string, object> { ["role"] = "assistant", ["content"] = await completion.Task };
         }
@@ -110,7 +110,7 @@ namespace CodexVBE
             try {
                 Send(new { jsonrpc = "2.0", id, method, @params = parameters });
                 if (await Task.WhenAny(source.Task, Task.Delay(TimeSpan.FromSeconds(45))) != source.Task)
-                    throw new TimeoutException("Copilot ne répond pas à " + method + ". Vérifiez la connexion du CLI.");
+                    throw new TimeoutException(UiText.Get("Copilot is not responding to ") + method + UiText.Get(". Check the CLI connection."));
                 return await source.Task;
             } finally { lock (gate) pending.Remove(id); }
         }
@@ -133,13 +133,13 @@ namespace CodexVBE
                 while (!disposed) {
                     var header = new StringBuilder();
                     while (!header.ToString().EndsWith("\r\n\r\n", StringComparison.Ordinal)) {
-                        int next = stream.ReadByte(); if (next < 0) throw new EndOfStreamException("Copilot s’est arrêté.");
-                        header.Append((char)next); if (header.Length > 4096) throw new InvalidDataException("En-tête Copilot invalide.");
+                        int next = stream.ReadByte(); if (next < 0) throw new EndOfStreamException(UiText.Get("Copilot stopped."));
+                        header.Append((char)next); if (header.Length > 4096) throw new InvalidDataException(UiText.Get("Invalid Copilot header."));
                     }
                     int size = 0;
                     foreach (string line in header.ToString().Split(new[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries))
                         if (line.StartsWith("Content-Length:", StringComparison.OrdinalIgnoreCase)) int.TryParse(line.Substring(15).Trim(), out size);
-                    if (size <= 0 || size > 10 * 1024 * 1024) throw new InvalidDataException("Taille du message Copilot invalide.");
+                    if (size <= 0 || size > 10 * 1024 * 1024) throw new InvalidDataException(UiText.Get("Invalid Copilot message size."));
                     var bytes = new byte[size]; int offset = 0;
                     while (offset < size) { int count = stream.Read(bytes, offset, size - offset); if (count == 0) throw new EndOfStreamException(); offset += count; }
                     Dispatch(Json().DeserializeObject(Encoding.UTF8.GetString(bytes)) as IDictionary<string, object>);
@@ -153,7 +153,7 @@ namespace CodexVBE
             if (method == null) {
                 int id; TaskCompletionSource<IDictionary<string, object>> source;
                 if (int.TryParse(Text(message, "id"), out id)) lock (gate) if (pending.TryGetValue(id, out source)) {
-                    if (message.ContainsKey("error")) source.TrySetException(new InvalidOperationException("Copilot a refusé la requête. Vérifiez la connexion, l’abonnement et le modèle dans le CLI."));
+                    if (message.ContainsKey("error")) source.TrySetException(new InvalidOperationException(UiText.Get("Copilot refused the request. Check sign-in, subscription and model in the CLI.")));
                     else source.TrySetResult(Object(message, "result") ?? new Dictionary<string, object>());
                 }
                 return;
@@ -170,7 +170,7 @@ namespace CodexVBE
                     }
                 }
                 else if (type == "session.idle") completion.TrySetResult(answer ?? "");
-                else if (type == "session.error") completion.TrySetException(new InvalidOperationException("La session Copilot a échoué. Vérifiez son état dans le CLI."));
+                else if (type == "session.error") completion.TrySetException(new InvalidOperationException(UiText.Get("The Copilot session failed. Check its status in the CLI.")));
                 else if (type == "external_tool.requested") RunTool(data, null);
                 else if (type == "permission.requested") _ = DenyAsync(data);
                 return;

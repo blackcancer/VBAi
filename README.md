@@ -2,6 +2,9 @@
 
 **Your AI agent for VBA**
 
+Interface en français ou en anglais selon la langue du VBE, avec repli sur la langue
+d’affichage Windows puis sur l’anglais. Voir [la localisation](docs/localization.md).
+
 Anciennement CodexVBE. Les noms de solution, d’assembly, les identifiants COM et les répertoires de données restent inchangés pour préserver les installations existantes.
 
 Complément COM expérimental pour le VBE 64 bits, notamment dans Excel et SOLIDWORKS, ciblant .NET Framework 4.8 x64. Les essais autonomes passent par Excel ; l'utilisateur ouvre lui-même l'IDE de SOLIDWORKS avant les essais dans cet hôte. Le pilotage et la lecture du VBE ne doivent employer aucun raccourci clavier ni dépendre de son focus.

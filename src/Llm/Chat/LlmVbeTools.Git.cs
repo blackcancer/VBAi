@@ -51,12 +51,12 @@ namespace CodexVBE
                     if (!values.ContainsKey(field) || !(values[field] is string) || (field != "Text" && string.IsNullOrWhiteSpace((string)values[field]))) throw new ArgumentException(field + " is required as a string.");
                 string requested = (string)values["Project"];
                 if (string.IsNullOrEmpty(BoundProject) || !string.Equals(requested, BoundProject, StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidOperationException("Git est limité au document de cette conversation.");
+                    throw new InvalidOperationException(UiText.Get("Git is limited to the document of this conversation."));
                 bool edit = !ReadOnlyTools.Contains(name);
-                if (edit && settings.VbeEditApproval != "Automatic" && settings.VbeEditApproval != "AskEachTime") throw new InvalidOperationException("La politique VBE interdit cette opération Git.");
+                if (edit && settings.VbeEditApproval != "Automatic" && settings.VbeEditApproval != "AskEachTime") throw new InvalidOperationException(UiText.Get("The VBE policy does not allow this Git operation."));
                 if (edit && settings.VbeEditApproval == "AskEachTime" && MessageBox.Show(owner, name + "\r\n" + arguments,
-                    "CodexVBE — opération Git", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
-                    throw new InvalidOperationException("Opération Git refusée par l’utilisateur.");
+                    UiText.Get("VBAi — Git operation"), MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                    throw new InvalidOperationException(UiText.Get("Git operation declined by the user."));
                 Func<string, string> value = key => values.ContainsKey(key) ? (string)values[key] : null;
                 using (var operations = GitOperationsFactory != null ? GitOperationsFactory(requested) : OpenGit(requested))
                 {

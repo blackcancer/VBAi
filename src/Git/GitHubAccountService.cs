@@ -29,7 +29,7 @@ namespace CodexVBE
         {
             var lines = (text ?? "").Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).ToArray();
             if (lines.Any(x => !ValidAccount(x)))
-                throw new InvalidOperationException("Réponse inattendue de Git Credential Manager. Vérifiez sa version.");
+                throw new InvalidOperationException(UiText.Get("Unexpected Git Credential Manager response. Check its version."));
             return lines.Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToArray();
         }
         private static Task<string> Execute(string arguments, CancellationToken cancellation)
@@ -42,16 +42,16 @@ namespace CodexVBE
                 using (var process = new Process { StartInfo = start })
                 {
                     try { process.Start(); }
-                    catch (System.ComponentModel.Win32Exception) { throw new InvalidOperationException("Git for Windows est requis. Installez-le avec Git Credential Manager, puis rouvrez les paramètres."); }
+                    catch (System.ComponentModel.Win32Exception) { throw new InvalidOperationException(UiText.Get("Git for Windows is required. Install it with Git Credential Manager, then reopen settings.")); }
                     using (cancellation.Register(() => { try { if (!process.HasExited) process.Kill(); } catch (InvalidOperationException) { } catch (System.ComponentModel.Win32Exception) { } }))
                     {
                         var output = process.StandardOutput.ReadToEndAsync();
                         var error = process.StandardError.ReadToEndAsync();
-                        if (!process.WaitForExit(300000)) { try { process.Kill(); } catch { } throw new TimeoutException("Connexion GitHub expirée. Relancez la connexion depuis les paramètres."); }
+                        if (!process.WaitForExit(300000)) { try { process.Kill(); } catch { } throw new TimeoutException(UiText.Get("GitHub sign-in timed out. Start sign-in again from settings.")); }
                         await Task.WhenAll(output, error);
                         cancellation.ThrowIfCancellationRequested();
                         // Do not expose raw authentication output or diagnostic bodies in the UI.
-                        if (process.ExitCode != 0) throw new InvalidOperationException("Git Credential Manager n’a pas terminé l’opération. Vérifiez son installation ou relancez la connexion GitHub.");
+                        if (process.ExitCode != 0) throw new InvalidOperationException(UiText.Get("Git Credential Manager did not finish the operation. Check its installation or sign in to GitHub again."));
                         return output.Result;
                     }
                 }

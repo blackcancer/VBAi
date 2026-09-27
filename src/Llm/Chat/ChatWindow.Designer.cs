@@ -182,21 +182,21 @@ namespace CodexVBE
             this.headingLayout.SetRowSpan(this.newChat, 2);
             this.newChat.Size = new System.Drawing.Size(100, 30);
             this.newChat.TabIndex = 9;
-            this.newChat.Text = "+ Nouveau";
-            this.toolTips.SetToolTip(this.newChat, "Nouvelle conversation · Ctrl+N");
+            this.newChat.Text = "+ New";
+            this.toolTips.SetToolTip(this.newChat, "New conversation · Ctrl+N");
             this.newChat.UseVisualStyleBackColor = false;
             this.newChat.Click += new System.EventHandler(this.NewChat_Click);
             //
             // historySearch
             //
-            this.historySearch.AccessibleName = "Rechercher dans les conversations";
+            this.historySearch.AccessibleName = "Search conversations";
             this.historySearch.Dock = System.Windows.Forms.DockStyle.Fill;
             this.historySearch.Location = new System.Drawing.Point(4, 28);
             this.historySearch.Margin = new System.Windows.Forms.Padding(4);
             this.historySearch.Name = "historySearch";
             this.historySearch.Size = new System.Drawing.Size(239, 23);
             this.historySearch.TabIndex = 23;
-            this.toolTips.SetToolTip(this.historySearch, "Rechercher un titre, un message ou du code");
+            this.toolTips.SetToolTip(this.historySearch, "Search titles, messages or code");
             //
             // modules
             //
@@ -210,7 +210,7 @@ namespace CodexVBE
             this.modules.Size = new System.Drawing.Size(98, 30);
             this.modules.TabIndex = 47;
             this.modules.Text = "# Contexte";
-            this.toolTips.SetToolTip(this.modules, "Référencer un projet ou un module");
+            this.toolTips.SetToolTip(this.modules, "Reference a project or module");
             this.modules.UseVisualStyleBackColor = false;
             this.modules.Click += new System.EventHandler(this.Modules_Click);
             //
@@ -225,14 +225,14 @@ namespace CodexVBE
             this.methods.Name = "methods";
             this.methods.Size = new System.Drawing.Size(100, 30);
             this.methods.TabIndex = 48;
-            this.methods.Text = "@ Fonction";
-            this.toolTips.SetToolTip(this.methods, "Référencer une Sub, Function ou Property");
+            this.methods.Text = "@ Function";
+            this.toolTips.SetToolTip(this.methods, "Reference a Sub, Function or Property");
             this.methods.UseVisualStyleBackColor = false;
             this.methods.Click += new System.EventHandler(this.Methods_Click);
             //
             // modePicker
             //
-            this.modePicker.AccessibleName = "Mode de travail";
+            this.modePicker.AccessibleName = "Working mode";
             this.modePicker.BackColor = System.Drawing.Color.White;
             this.modePicker.Dock = System.Windows.Forms.DockStyle.Fill;
             this.modePicker.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
@@ -246,7 +246,7 @@ namespace CodexVBE
             this.modePicker.Name = "modePicker";
             this.modePicker.Size = new System.Drawing.Size(92, 28);
             this.modePicker.TabIndex = 15;
-            this.toolTips.SetToolTip(this.modePicker, "Discussion et Plan : aucune modification du projet");
+            this.toolTips.SetToolTip(this.modePicker, "Chat and Plan: no project changes");
             this.modePicker.SelectedIndexChanged += new System.EventHandler(this.ModePicker_SelectedIndexChanged);
             //
             // promptHost
@@ -258,7 +258,7 @@ namespace CodexVBE
             this.promptHost.Name = "promptHost";
             this.promptHost.Size = new System.Drawing.Size(552, 88);
             this.promptHost.TabIndex = 45;
-            this.toolTips.SetToolTip(this.promptHost, "Message avec correction orthographique française");
+            this.toolTips.SetToolTip(this.promptHost, "Message with spell checking");
             this.promptHost.Child = null;
             //
             // optionsMenu
@@ -271,8 +271,8 @@ namespace CodexVBE
             this.optionsMenu.Name = "optionsMenu";
             this.github.Name = "github";
             this.github.Image = ((System.Drawing.Image)(resources.GetObject("github.Image")));
-            this.github.Text = "GitHub · synchroniser le VBA…";
-            this.github.ToolTipText = "Exporter et synchroniser les sources du document courant avec un dépôt GitHub.";
+            this.github.Text = "GitHub · synchronize VBA…";
+            this.github.ToolTipText = "Export and synchronize the current document's sources with a GitHub repository.";
             this.github.Click += new System.EventHandler(this.GitHub_Click);
             this.optionsMenu.Size = new System.Drawing.Size(222, 70);
             //
@@ -281,19 +281,19 @@ namespace CodexVBE
             this.configure.Name = "configure";
             this.configure.Image = ((System.Drawing.Image)(resources.GetObject("configure.Image")));
             this.configure.Size = new System.Drawing.Size(221, 22);
-            this.configure.Text = "Paramètres…";
+            this.configure.Text = "Settings…";
             //
             // refreshModels
             //
             this.refreshModels.Name = "refreshModels";
             this.refreshModels.Size = new System.Drawing.Size(221, 22);
-            this.refreshModels.Text = "Actualiser les modèles";
+            this.refreshModels.Text = "Refresh models";
             //
             // docking
             //
             this.docking.Name = "docking";
             this.docking.Size = new System.Drawing.Size(221, 22);
-            this.docking.Text = "Fenêtre ancrable / flottante";
+            this.docking.Text = "Docked / floating window";
             this.docking.Click += new System.EventHandler(this.Docking_Click);
             //
             // rootLayout
@@ -386,7 +386,7 @@ namespace CodexVBE
             this.options.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(51)))), ((int)(((byte)(65)))), ((int)(((byte)(85)))));
             this.options.Location = new System.Drawing.Point(523, 15);
             this.options.Name = "options";
-            this.toolTips.SetToolTip(this.options, "Configurer le fournisseur, actualiser les modèles ou changer le mode d’ancrage.");
+            this.toolTips.SetToolTip(this.options, "Configure the provider, refresh models or change docking mode.");
             this.headingLayout.SetRowSpan(this.options, 2);
             this.options.Size = new System.Drawing.Size(38, 30);
             this.options.TabIndex = 10;
@@ -419,7 +419,7 @@ namespace CodexVBE
             this.history.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(51)))), ((int)(((byte)(65)))), ((int)(((byte)(85)))));
             this.history.Location = new System.Drawing.Point(3, 3);
             this.history.Name = "history";
-            this.toolTips.SetToolTip(this.history, "Afficher ou masquer les conversations du document sélectionné.");
+            this.toolTips.SetToolTip(this.history, "Show or hide conversations for the selected document.");
             this.history.Size = new System.Drawing.Size(78, 30);
             this.history.TabIndex = 12;
             this.history.Text = "☰ Chats";
@@ -428,7 +428,7 @@ namespace CodexVBE
             //
             // scopePicker
             //
-            this.scopePicker.AccessibleName = "Projet VBA · historique du document";
+            this.scopePicker.AccessibleName = "VBA project · document history";
             this.scopePicker.BackColor = System.Drawing.Color.White;
             this.scopePicker.Dock = System.Windows.Forms.DockStyle.Fill;
             this.scopePicker.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
@@ -440,7 +440,7 @@ namespace CodexVBE
             this.scopePicker.Location = new System.Drawing.Point(90, 6);
             this.scopePicker.Margin = new System.Windows.Forms.Padding(4, 6, 4, 3);
             this.scopePicker.Name = "scopePicker";
-            this.toolTips.SetToolTip(this.scopePicker, "Choisir le document VBA auquel sont liés le contexte et les conversations.");
+            this.toolTips.SetToolTip(this.scopePicker, "Choose the VBA document associated with this context and its conversations.");
             this.scopePicker.Size = new System.Drawing.Size(470, 28);
             this.scopePicker.TabIndex = 13;
             //
@@ -472,10 +472,10 @@ namespace CodexVBE
             this.selection.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(51)))), ((int)(((byte)(65)))), ((int)(((byte)(85)))));
             this.selection.Location = new System.Drawing.Point(103, 3);
             this.selection.Name = "selection";
-            this.toolTips.SetToolTip(this.selection, "Joindre le code sélectionné dans le VBE ; sans sélection, joindre la ligne courante.");
+            this.toolTips.SetToolTip(this.selection, "Attach the code selected in the VBE; attach the current line when nothing is selected.");
             this.selection.Size = new System.Drawing.Size(152, 30);
             this.selection.TabIndex = 16;
-            this.selection.Text = "Joindre la sélection";
+            this.selection.Text = "Attach selection";
             this.selection.UseVisualStyleBackColor = false;
             this.selection.Click += new System.EventHandler(this.Selection_Click);
             //
@@ -488,10 +488,10 @@ namespace CodexVBE
             this.compile.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(51)))), ((int)(((byte)(65)))), ((int)(((byte)(85)))));
             this.compile.Location = new System.Drawing.Point(263, 3);
             this.compile.Name = "compile";
-            this.toolTips.SetToolTip(this.compile, "Compiler le projet VBA et afficher les diagnostics dans le chat.");
+            this.toolTips.SetToolTip(this.compile, "Compile the VBA project and display diagnostics in the chat.");
             this.compile.Size = new System.Drawing.Size(104, 30);
             this.compile.TabIndex = 17;
-            this.compile.Text = "Vérifier VBA";
+            this.compile.Text = "Check VBA";
             this.compile.UseVisualStyleBackColor = false;
             this.compile.Click += new System.EventHandler(this.Compile_Click);
             //
@@ -504,10 +504,10 @@ namespace CodexVBE
             this.verifyAfterEdit.Location = new System.Drawing.Point(22, 147);
             this.verifyAfterEdit.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.verifyAfterEdit.Name = "verifyAfterEdit";
-            this.toolTips.SetToolTip(this.verifyAfterEdit, "Compiler automatiquement le projet après les modifications de l’agent.");
+            this.toolTips.SetToolTip(this.verifyAfterEdit, "Automatically compile the project after agent edits.");
             this.verifyAfterEdit.Size = new System.Drawing.Size(556, 22);
             this.verifyAfterEdit.TabIndex = 18;
-            this.verifyAfterEdit.Text = "Compiler après les modifications";
+            this.verifyAfterEdit.Text = "Compile after changes";
             //
             // conversationPanel
             //
@@ -543,7 +543,7 @@ namespace CodexVBE
             this.transcriptPlaceholder.Name = "transcriptPlaceholder";
             this.transcriptPlaceholder.Size = new System.Drawing.Size(564, 236);
             this.transcriptPlaceholder.TabIndex = 39;
-            this.transcriptPlaceholder.Text = "Conversation : messages, références et diffs dynamiques";
+            this.transcriptPlaceholder.Text = "Conversation: messages, references and dynamic diffs";
             this.transcriptPlaceholder.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             //
             // transcriptHost
@@ -611,12 +611,12 @@ namespace CodexVBE
             this.historyLabel.Name = "historyLabel";
             this.historyLabel.Size = new System.Drawing.Size(239, 24);
             this.historyLabel.TabIndex = 22;
-            this.historyLabel.Text = "CONVERSATIONS DU DOCUMENT";
+            this.historyLabel.Text = "DOCUMENT CONVERSATIONS";
             this.historyLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             //
             // sessionList
             //
-            this.sessionList.AccessibleName = "Conversations du document";
+            this.sessionList.AccessibleName = "Document conversations";
             this.sessionList.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.sessionList.Dock = System.Windows.Forms.DockStyle.Fill;
             this.sessionList.HorizontalScrollbar = true;
@@ -625,7 +625,7 @@ namespace CodexVBE
             this.sessionList.Location = new System.Drawing.Point(4, 60);
             this.sessionList.Margin = new System.Windows.Forms.Padding(4);
             this.sessionList.Name = "sessionList";
-            this.toolTips.SetToolTip(this.sessionList, "Sélectionner une conversation pour reprendre son historique et son brouillon.");
+            this.toolTips.SetToolTip(this.sessionList, "Select a conversation to resume its history and draft.");
             this.sessionList.Size = new System.Drawing.Size(239, 120);
             this.sessionList.TabIndex = 24;
             //
@@ -636,20 +636,20 @@ namespace CodexVBE
             this.showArchived.Location = new System.Drawing.Point(4, 187);
             this.showArchived.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.showArchived.Name = "showArchived";
-            this.toolTips.SetToolTip(this.showArchived, "Inclure les conversations archivées dans la liste.");
+            this.toolTips.SetToolTip(this.showArchived, "Include archived conversations in the list.");
             this.showArchived.Size = new System.Drawing.Size(239, 20);
             this.showArchived.TabIndex = 25;
-            this.showArchived.Text = "Afficher les conversations archivées";
+            this.showArchived.Text = "Show archived conversations";
             this.showArchived.CheckedChanged += new System.EventHandler(this.ShowArchived_CheckedChanged);
             //
             // chatTitleEditor
             //
-            this.chatTitleEditor.AccessibleName = "Titre de la conversation";
+            this.chatTitleEditor.AccessibleName = "Conversation title";
             this.chatTitleEditor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chatTitleEditor.Location = new System.Drawing.Point(4, 214);
             this.chatTitleEditor.Margin = new System.Windows.Forms.Padding(4);
             this.chatTitleEditor.Name = "chatTitleEditor";
-            this.toolTips.SetToolTip(this.chatTitleEditor, "Saisir un titre, puis cliquer sur Renommer.");
+            this.toolTips.SetToolTip(this.chatTitleEditor, "Enter a title, then click Rename.");
             this.chatTitleEditor.Size = new System.Drawing.Size(239, 23);
             this.chatTitleEditor.TabIndex = 26;
             //
@@ -676,10 +676,10 @@ namespace CodexVBE
             this.rename.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(51)))), ((int)(((byte)(65)))), ((int)(((byte)(85)))));
             this.rename.Location = new System.Drawing.Point(3, 3);
             this.rename.Name = "rename";
-            this.toolTips.SetToolTip(this.rename, "Enregistrer le nouveau titre de la conversation sélectionnée.");
+            this.toolTips.SetToolTip(this.rename, "Save the new title of the selected conversation.");
             this.rename.Size = new System.Drawing.Size(90, 30);
             this.rename.TabIndex = 28;
-            this.rename.Text = "Renommer";
+            this.rename.Text = "Rename";
             this.rename.UseVisualStyleBackColor = false;
             this.rename.Click += new System.EventHandler(this.Rename_Click);
             //
@@ -692,10 +692,10 @@ namespace CodexVBE
             this.archive.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(51)))), ((int)(((byte)(65)))), ((int)(((byte)(85)))));
             this.archive.Location = new System.Drawing.Point(3, 39);
             this.archive.Name = "archive";
-            this.toolTips.SetToolTip(this.archive, "Archiver la conversation sélectionnée ou la réactiver si elle est archivée.");
+            this.toolTips.SetToolTip(this.archive, "Archive the selected conversation or restore it if archived.");
             this.archive.Size = new System.Drawing.Size(158, 30);
             this.archive.TabIndex = 29;
-            this.archive.Text = "Archiver / réactiver";
+            this.archive.Text = "Archive / restore";
             this.archive.UseVisualStyleBackColor = false;
             this.archive.Click += new System.EventHandler(this.Archive_Click);
             //
@@ -708,10 +708,10 @@ namespace CodexVBE
             this.pin.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(51)))), ((int)(((byte)(65)))), ((int)(((byte)(85)))));
             this.pin.Location = new System.Drawing.Point(3, 75);
             this.pin.Name = "pin";
-            this.toolTips.SetToolTip(this.pin, "Épingler la conversation en tête de liste ou retirer son épingle.");
+            this.toolTips.SetToolTip(this.pin, "Pin the conversation to the top of the list or unpin it.");
             this.pin.Size = new System.Drawing.Size(126, 30);
             this.pin.TabIndex = 30;
-            this.pin.Text = "Épingler / détacher";
+            this.pin.Text = "Pin / unpin";
             this.pin.UseVisualStyleBackColor = false;
             this.pin.Click += new System.EventHandler(this.Pin_Click);
             //
@@ -724,10 +724,10 @@ namespace CodexVBE
             this.export.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(51)))), ((int)(((byte)(65)))), ((int)(((byte)(85)))));
             this.export.Location = new System.Drawing.Point(3, 111);
             this.export.Name = "export";
-            this.toolTips.SetToolTip(this.export, "Enregistrer la conversation dans un fichier Markdown.");
+            this.toolTips.SetToolTip(this.export, "Save the conversation as a Markdown file.");
             this.export.Size = new System.Drawing.Size(122, 30);
             this.export.TabIndex = 31;
-            this.export.Text = "Exporter Markdown";
+            this.export.Text = "Export Markdown";
             this.export.UseVisualStyleBackColor = false;
             this.export.Click += new System.EventHandler(this.Export_Click);
             //
@@ -740,10 +740,10 @@ namespace CodexVBE
             this.memoryToggle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(51)))), ((int)(((byte)(65)))), ((int)(((byte)(85)))));
             this.memoryToggle.Location = new System.Drawing.Point(3, 389);
             this.memoryToggle.Name = "memoryToggle";
-            this.toolTips.SetToolTip(this.memoryToggle, "Afficher ou masquer les notes locales propres au document.");
+            this.toolTips.SetToolTip(this.memoryToggle, "Show or hide local notes for this document.");
             this.memoryToggle.Size = new System.Drawing.Size(241, 24);
             this.memoryToggle.TabIndex = 32;
-            this.memoryToggle.Text = "Mémoire du document";
+            this.memoryToggle.Text = "Document memory";
             this.memoryToggle.UseVisualStyleBackColor = false;
             this.memoryToggle.Click += new System.EventHandler(this.MemoryToggle_Click);
             //
@@ -757,7 +757,7 @@ namespace CodexVBE
             this.memoryPanel.Size = new System.Drawing.Size(239, 218);
             this.memoryPanel.TabIndex = 33;
             this.memoryPanel.TabStop = false;
-            this.memoryPanel.Text = "Notes locales du document";
+            this.memoryPanel.Text = "Local document notes";
             //
             // memoryLayout
             //
@@ -779,14 +779,14 @@ namespace CodexVBE
             //
             // memoryEditor
             //
-            this.memoryEditor.AccessibleName = "Mémoire du document";
+            this.memoryEditor.AccessibleName = "Document memory";
             this.memoryEditor.Dock = System.Windows.Forms.DockStyle.Fill;
             this.memoryEditor.Location = new System.Drawing.Point(4, 4);
             this.memoryEditor.Margin = new System.Windows.Forms.Padding(4);
             this.memoryEditor.MaxLength = 16000;
             this.memoryEditor.Multiline = true;
             this.memoryEditor.Name = "memoryEditor";
-            this.toolTips.SetToolTip(this.memoryEditor, "Saisir les notes à conserver pour ce document, puis les enregistrer.");
+            this.toolTips.SetToolTip(this.memoryEditor, "Enter notes to keep for this document, then save them.");
             this.memoryEditor.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.memoryEditor.Size = new System.Drawing.Size(225, 87);
             this.memoryEditor.TabIndex = 35;
@@ -800,10 +800,10 @@ namespace CodexVBE
             this.saveMemory.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(51)))), ((int)(((byte)(65)))), ((int)(((byte)(85)))));
             this.saveMemory.Location = new System.Drawing.Point(3, 98);
             this.saveMemory.Name = "saveMemory";
-            this.toolTips.SetToolTip(this.saveMemory, "Enregistrer les notes sur cet ordinateur, sans les envoyer au fournisseur.");
+            this.toolTips.SetToolTip(this.saveMemory, "Save notes on this computer without sending them to the provider.");
             this.saveMemory.Size = new System.Drawing.Size(180, 30);
             this.saveMemory.TabIndex = 36;
-            this.saveMemory.Text = "Enregistrer localement";
+            this.saveMemory.Text = "Save locally";
             this.saveMemory.UseVisualStyleBackColor = false;
             this.saveMemory.Click += new System.EventHandler(this.SaveMemory_Click);
             //
@@ -813,10 +813,10 @@ namespace CodexVBE
             this.attachMemory.Location = new System.Drawing.Point(4, 134);
             this.attachMemory.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.attachMemory.Name = "attachMemory";
-            this.toolTips.SetToolTip(this.attachMemory, "Inclure les notes enregistrées dans le prochain message envoyé au fournisseur.");
+            this.toolTips.SetToolTip(this.attachMemory, "Include saved notes in the next message sent to the provider.");
             this.attachMemory.Size = new System.Drawing.Size(225, 59);
             this.attachMemory.TabIndex = 37;
-            this.attachMemory.Text = "Joindre ces notes au prochain message envoyé au fournisseur sélectionné";
+            this.attachMemory.Text = "Attach these notes to the next message sent to the selected provider";
             this.attachMemory.CheckedChanged += new System.EventHandler(this.AttachMemory_CheckedChanged);
             //
             // composerLayout
@@ -879,7 +879,7 @@ namespace CodexVBE
             this.promptPlaceholder.Name = "promptPlaceholder";
             this.promptPlaceholder.Size = new System.Drawing.Size(552, 88);
             this.promptPlaceholder.TabIndex = 44;
-            this.promptPlaceholder.Text = "Votre message…";
+            this.promptPlaceholder.Text = "Your message…";
             this.promptPlaceholder.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             //
             // composerActions
@@ -910,10 +910,10 @@ namespace CodexVBE
             this.send.ForeColor = System.Drawing.Color.White;
             this.send.Location = new System.Drawing.Point(457, 3);
             this.send.Name = "send";
-            this.toolTips.SetToolTip(this.send, "Envoyer le message et son contexte à l’agent.");
+            this.toolTips.SetToolTip(this.send, "Send the message and its context to the agent.");
             this.send.Size = new System.Drawing.Size(90, 30);
             this.send.TabIndex = 49;
-            this.send.Text = "Envoyer ↑";
+            this.send.Text = "Send ↑";
             this.send.UseVisualStyleBackColor = false;
             //
             // contextToggle
@@ -925,10 +925,10 @@ namespace CodexVBE
             this.contextToggle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(51)))), ((int)(((byte)(65)))), ((int)(((byte)(85)))));
             this.contextToggle.Location = new System.Drawing.Point(9, 133);
             this.contextToggle.Name = "contextToggle";
-            this.toolTips.SetToolTip(this.contextToggle, "Inspecter et actualiser les références, le code sélectionné et les notes à transmettre.");
+            this.toolTips.SetToolTip(this.contextToggle, "Inspect and refresh references, selected code and notes to send.");
             this.contextToggle.Size = new System.Drawing.Size(342, 24);
             this.contextToggle.TabIndex = 50;
-            this.contextToggle.Text = "Contexte envoyé · inspecter et actualiser";
+            this.contextToggle.Text = "Outgoing context · inspect and refresh";
             this.contextToggle.UseVisualStyleBackColor = false;
             this.contextToggle.Click += new System.EventHandler(this.ContextToggle_Click);
             //
@@ -976,7 +976,7 @@ namespace CodexVBE
             //
             // providerPicker
             //
-            this.providerPicker.AccessibleName = "Fournisseur";
+            this.providerPicker.AccessibleName = "Provider";
             this.providerPicker.BackColor = System.Drawing.Color.White;
             this.providerPicker.Dock = System.Windows.Forms.DockStyle.Fill;
             this.providerPicker.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
@@ -988,13 +988,13 @@ namespace CodexVBE
             this.providerPicker.Location = new System.Drawing.Point(4, 6);
             this.providerPicker.Margin = new System.Windows.Forms.Padding(4, 6, 4, 3);
             this.providerPicker.Name = "providerPicker";
-            this.toolTips.SetToolTip(this.providerPicker, "Choisir le fournisseur d’IA pour la conversation.");
+            this.toolTips.SetToolTip(this.providerPicker, "Choose the AI provider for this conversation.");
             this.providerPicker.Size = new System.Drawing.Size(149, 28);
             this.providerPicker.TabIndex = 54;
             //
             // modelPicker
             //
-            this.modelPicker.AccessibleName = "Modèle";
+            this.modelPicker.AccessibleName = "Model";
             this.modelPicker.BackColor = System.Drawing.Color.White;
             this.modelPicker.Dock = System.Windows.Forms.DockStyle.Fill;
             this.modelPicker.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
@@ -1006,13 +1006,13 @@ namespace CodexVBE
             this.modelPicker.Location = new System.Drawing.Point(161, 6);
             this.modelPicker.Margin = new System.Windows.Forms.Padding(4, 6, 4, 3);
             this.modelPicker.Name = "modelPicker";
-            this.toolTips.SetToolTip(this.modelPicker, "Choisir le modèle proposé par le fournisseur sélectionné.");
+            this.toolTips.SetToolTip(this.modelPicker, "Choose a model offered by the selected provider.");
             this.modelPicker.Size = new System.Drawing.Size(240, 28);
             this.modelPicker.TabIndex = 55;
             //
             // effortPicker
             //
-            this.effortPicker.AccessibleName = "Raisonnement";
+            this.effortPicker.AccessibleName = "Reasoning effort";
             this.effortPicker.BackColor = System.Drawing.Color.White;
             this.effortPicker.Dock = System.Windows.Forms.DockStyle.Fill;
             this.effortPicker.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
@@ -1025,7 +1025,7 @@ namespace CodexVBE
             this.effortPicker.Location = new System.Drawing.Point(409, 6);
             this.effortPicker.Margin = new System.Windows.Forms.Padding(4, 6, 4, 3);
             this.effortPicker.Name = "effortPicker";
-            this.toolTips.SetToolTip(this.effortPicker, "Régler l’effort de raisonnement du modèle, lorsqu’il le prend en charge.");
+            this.toolTips.SetToolTip(this.effortPicker, "Set the model's reasoning effort, when supported.");
             this.effortPicker.Size = new System.Drawing.Size(151, 28);
             this.effortPicker.TabIndex = 56;
             //
@@ -1054,10 +1054,10 @@ namespace CodexVBE
             this.jumpToLatest.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(51)))), ((int)(((byte)(65)))), ((int)(((byte)(85)))));
             this.jumpToLatest.Location = new System.Drawing.Point(3, 3);
             this.jumpToLatest.Name = "jumpToLatest";
-            this.toolTips.SetToolTip(this.jumpToLatest, "Revenir au dernier message et suivre les nouvelles réponses.");
+            this.toolTips.SetToolTip(this.jumpToLatest, "Go to the latest message and follow new responses.");
             this.jumpToLatest.Size = new System.Drawing.Size(148, 30);
             this.jumpToLatest.TabIndex = 58;
-            this.jumpToLatest.Text = "↓ Dernier message";
+            this.jumpToLatest.Text = "↓ Latest message";
             this.jumpToLatest.UseVisualStyleBackColor = false;
             this.jumpToLatest.Click += new System.EventHandler(this.JumpToLatest_Click);
             //
@@ -1071,10 +1071,10 @@ namespace CodexVBE
             this.changes.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(51)))), ((int)(((byte)(65)))), ((int)(((byte)(85)))));
             this.changes.Location = new System.Drawing.Point(413, 3);
             this.changes.Name = "changes";
-            this.toolTips.SetToolTip(this.changes, "Accéder aux modifications de code et à leurs actions d’annulation.");
+            this.toolTips.SetToolTip(this.changes, "View code changes and their undo actions.");
             this.changes.Size = new System.Drawing.Size(146, 30);
             this.changes.TabIndex = 59;
-            this.changes.Text = "Modifications · 0";
+            this.changes.Text = "Changes · 0";
             this.changes.UseVisualStyleBackColor = false;
             //
             // statusLayout
@@ -1104,7 +1104,7 @@ namespace CodexVBE
             this.status.Name = "status";
             this.status.Size = new System.Drawing.Size(476, 24);
             this.status.TabIndex = 61;
-            this.status.Text = "Prêt";
+            this.status.Text = "Ready";
             this.status.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             //
             // activityBar
