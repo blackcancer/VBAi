@@ -592,14 +592,65 @@ namespace CodexVBE
             foreach (dynamic existing in designer.Controls)
                 if (string.Equals((string)existing.Name, request.Control, StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException("A control with this name already exists.");
-            dynamic control = designer.Controls.Add(request.ControlType, request.Control, true);
-            control.Left = request.Left;
-            control.Top = request.Top;
-            control.Width = request.Width;
-            control.Height = request.Height;
-            if (request.Caption != null) control.Caption = request.Caption;
-            form.DesignerWindow().Visible = true;
-            return Snapshot(request.Project, form);
+            try
+            {
+                dynamic control = designer.Controls.Add(request.ControlType, request.Control, true);
+                // The control already exists at this point. Reject unsupported
+                // properties before the first setter, then roll the control
+                // back if any setter or final readback still fails.
+                RequireWritableControlProperty((object)control, "Left");
+                RequireWritableControlProperty((object)control, "Top");
+                RequireWritableControlProperty((object)control, "Width");
+                RequireWritableControlProperty((object)control, "Height");
+                if (request.Caption != null)
+                    RequireWritableControlProperty((object)control, "Caption");
+                control.Left = request.Left;
+                control.Top = request.Top;
+                control.Width = request.Width;
+                control.Height = request.Height;
+                if (request.Caption != null) control.Caption = request.Caption;
+                form.DesignerWindow().Visible = true;
+                return Snapshot(request.Project, form);
+            }
+            catch (Exception error)
+            {
+                string rollbackError = null;
+                try
+                {
+                    if (ControlNameExists(designer, request.Control))
+                        designer.Controls.Remove(request.Control);
+                }
+                catch (Exception rollback) { rollbackError = rollback.Message; }
+                bool remains;
+                try { remains = ControlNameExists(designer, request.Control); }
+                catch (Exception inspection)
+                {
+                    remains = true;
+                    rollbackError = rollbackError == null ? inspection.Message : rollbackError + "; " + inspection.Message;
+                }
+                if (remains)
+                    throw new InvalidOperationException("Control creation failed and rollback could not be verified. " +
+                        "Inspect form_tree before retrying. Cause: " + error.Message +
+                        (rollbackError == null ? "" : " Rollback: " + rollbackError), error);
+                throw new InvalidOperationException("Control creation failed; no control with the requested name remains. Cause: " +
+                    error.Message, error);
+            }
+        }
+
+        private static void RequireWritableControlProperty(object control, string name)
+        {
+            PropertyDescriptor descriptor = TypeDescriptor.GetProperties(control).Find(name, true);
+            if (descriptor == null)
+                throw new InvalidOperationException("The selected control type does not expose " + name + ".");
+            if (descriptor.IsReadOnly)
+                throw new InvalidOperationException("The selected control type exposes " + name + " as read-only.");
+        }
+
+        private static bool ControlNameExists(dynamic designer, string name)
+        {
+            foreach (dynamic item in designer.Controls)
+                if (string.Equals((string)item.Name, name, StringComparison.OrdinalIgnoreCase)) return true;
+            return false;
         }
 
         public object SetControlGeometry(Request request)
