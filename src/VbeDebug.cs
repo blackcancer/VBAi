@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 
 namespace CodexVBE
 {
@@ -72,6 +73,69 @@ namespace CodexVBE
                 WindowsBefore = before, WindowsAfter = after };
         }
 
+        public object OpenDebugPane(string paneName, VbeEditorWindows windows)
+        {
+            int id;
+            string[] captions;
+            switch ((paneName ?? "").Trim().ToLowerInvariant())
+            {
+                case "locals": id = 2555; captions = new[] { "Variables locales", "Locals Window" }; break;
+                case "watches": id = 2556; captions = new[] { "Espions", "Watch Window" }; break;
+                case "immediate": id = 2554; captions = new[] { "Exécution", "Immediate Window" }; break;
+                default: throw new ArgumentException("Pane must be locals, watches or immediate.");
+            }
+            var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == id && entry.Enabled &&
+                captions.Any(caption => (entry.Caption ?? "").Replace("&", "")
+                    .IndexOf(caption, StringComparison.OrdinalIgnoreCase) >= 0));
+            if (command == null) throw new InvalidOperationException("The requested VBE debug pane command is absent or disabled.");
+            ((dynamic)command.Control).Execute();
+            return new { Pane = paneName, Executed = true, ControlId = id, Control = command.Path,
+                VerificationPending = true, NextRead = "Call vbe_windows or debug_windows in a separate request to confirm the pane is visible." };
+        }
+
+        public object QueueAddWatchDialog(Request request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Project) ||
+                string.IsNullOrWhiteSpace(request.Module) || string.IsNullOrWhiteSpace(request.Expression))
+                throw new ArgumentException("Project, Module and Expression are required.");
+            if (request.Expression.Length > 1024)
+                throw new ArgumentException("Watch expression exceeds 1024 characters.");
+            dynamic state = State(request.Project);
+            if ((int)state.Mode != 1 || request.ExpectedMode != 1 ||
+                !string.Equals((string)state.SelectedProject, request.Project, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals((string)state.ActiveModule, request.Module, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The requested project/module must be active in break mode before adding a watch.");
+            var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 1820 && entry.Enabled &&
+                ((entry.Caption ?? "").Replace("&", "").IndexOf("espion", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 (entry.Caption ?? "").IndexOf("Add Watch", StringComparison.OrdinalIgnoreCase) >= 0));
+            if (command == null) throw new InvalidOperationException("The native Add Watch command is unavailable.");
+            SynchronizationContext context = SynchronizationContext.Current;
+            if (context == null) throw new InvalidOperationException("The VBE UI context is unavailable.");
+            context.Post(_ => {
+                try { ((dynamic)command.Control).Execute(); }
+                catch (Exception ex) { LoadLog.Write("Add Watch dialog failed: " + ex.Message); }
+            }, null);
+            return new { Scheduled = true, ControlId = command.Id, request.Project, request.Module,
+                NextRead = "Complete the native Add Watch dialog after this command returns." };
+        }
+
+        public object RemoveSelectedWatch(Request request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Project) ||
+                string.IsNullOrWhiteSpace(request.Expression) || string.IsNullOrWhiteSpace(request.Context))
+                throw new ArgumentException("Project, Expression and Context are required.");
+            dynamic state = State(request.Project);
+            if ((int)state.Mode != request.ExpectedMode)
+                throw new InvalidOperationException("Project mode changed before removing the watch.");
+            var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 1083 && entry.Enabled &&
+                ((entry.Caption ?? "").Replace("&", "").IndexOf("Supprimer un espion", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 (entry.Caption ?? "").IndexOf("Delete Watch", StringComparison.OrdinalIgnoreCase) >= 0));
+            if (command == null) throw new InvalidOperationException("The native Delete Watch command is unavailable.");
+            ((dynamic)command.Control).Execute();
+            return new { Executed = true, ControlId = command.Id, request.Expression, request.Context,
+                VerificationPending = true, NextRead = "Read debug_windows in a separate request to verify the selected watch is absent." };
+        }
+
         private static bool IsObjectBrowserCaption(string caption)
         {
             string name = (caption ?? "").Replace("&", "").Trim();
@@ -99,6 +163,7 @@ namespace CodexVBE
             dynamic module = GetModule(project, request.Module);
             string line = ValidateLocation(request, module);
             dynamic pane = module.CodePane;
+            pane.Show();
             pane.SetSelection(request.StartLine, 1, request.StartLine, 1);
             return new
             {
@@ -127,6 +192,7 @@ namespace CodexVBE
                 throw new InvalidOperationException("A breakpoint requires an executable line.");
 
             dynamic pane = module.CodePane;
+            pane.Show();
             pane.SetSelection(request.StartLine, 1, request.StartLine, 1);
             dynamic activePane = vbe.ActiveCodePane;
             if (activePane == null || !SameComObject(pane, activePane))

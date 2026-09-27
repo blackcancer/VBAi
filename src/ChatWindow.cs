@@ -223,7 +223,7 @@ namespace CodexVBE
                             string name = Convert.ToString(function["name"]);
                             string arguments = Convert.ToString(function["arguments"]);
                             Append("Outil", name);
-                            string result = tools.Invoke(name, arguments);
+                            string result = await tools.InvokeAsync(name, arguments);
                             messages.Add(new { role = "tool", tool_call_id = Convert.ToString(call["id"]), content = result });
                         }
                     }

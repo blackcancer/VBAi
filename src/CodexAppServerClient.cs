@@ -245,7 +245,7 @@ namespace CodexVBE
 
         private void HandleToolCall(object requestId, IDictionary<string, object> parameters)
         {
-            ui.Post(state => {
+            ui.Post(async state => {
                 try
                 {
                     if (GetString(parameters, "threadId") != threadId || turnDone == null)
@@ -253,7 +253,7 @@ namespace CodexVBE
                     string name = GetString(parameters, "tool");
                     progress("Codex appelle " + name);
                     string arguments = NewJson().Serialize(parameters["arguments"]);
-                    string output = tools.Invoke(name, arguments);
+                    string output = await tools.InvokeAsync(name, arguments);
                     var response = NewJson().Deserialize<Response>(output);
                     Send(new { id = requestId, result = new {
                         contentItems = new[] { new { type = "inputText", text = output } },

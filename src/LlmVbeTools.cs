@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
@@ -17,7 +18,7 @@ namespace CodexVBE
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
         private readonly List<string> userRequests = new List<string>();
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
-            "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module",
+            "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "open_debug_pane", "list_commands", "select_code",
             "project_properties", "component_properties", "component_property_value", "vbe_windows", "code_panes", "open_object_browser", "list_procedures", "find_code", "select_procedure", "list_forms",
             "form_state", "form_tree", "form_properties", "form_control_properties", "form_event_catalog",
             "list_form_control_types", "open_form"
@@ -37,11 +38,11 @@ namespace CodexVBE
             foreach (string field in fields)
                 properties[field] = field == "Value" ? (object)new { anyOf = new object[] {
                     new { type = "string" }, new { type = "number" }, new { type = "boolean" } } } :
-                    new { type = field == "StartLine" || field == "Count" || field == "ExpectedMode" || field == "ProcKind" || field == "InsertIndex" ||
+                    new { type = field == "StartLine" || field == "Count" || field == "ExpectedMode" || field == "ControlId" || field == "ProcKind" || field == "InsertIndex" ||
                         field == "Offset" || field == "Limit" || field == "TypeIndex" ||
                         field == "Major" || field == "Minor" ? "integer" :
                     field == "Left" || field == "Top" || field == "Width" || field == "Height" || field == "FontSize" ? "number" :
-                    field == "FontBold" || field == "WholeWord" || field == "MatchCase" || field == "PatternSearch" ? "boolean" : "string" };
+                    field == "FontBold" || field == "WholeWord" || field == "MatchCase" || field == "PatternSearch" || field == "IncludeCallStack" ? "boolean" : "string" };
             return new { type = "function", function = new {
                 name, description,
                 parameters = new { type = "object", properties, required, additionalProperties = false }
@@ -56,6 +57,26 @@ namespace CodexVBE
             Definition("list_modules", "List modules in one VBA project.", new[] { "Project" }, "Project"),
             Definition("vbe_windows", "Read the native VBIDE Windows collection and the active window, including window type, visibility, state and position. Collection indexes are transient; no window is activated.", new string[0]),
             Definition("code_panes", "Read the already open VBIDE CodePanes collection and active code pane, with project/module, view, visible range and selection. Does not create or activate a pane.", new string[0]),
+            Definition("debug_windows", "Read visible native VBE Locals, Watches and Immediate windows via accessibility. Optional IncludeCallStack opens the native Call Stack dialog through the Locals button, reads its frames, then closes it. Missing windows are reported as unavailable, not empty. No shortcuts or coordinate clicks are used.",
+                new string[0], "IncludeCallStack"),
+            Definition("open_debug_pane", "Open the native Locals, Watches or Immediate pane. Action is locals, watches or immediate. The effect may be asynchronous; verify with debug_windows in a separate request.",
+                new[] { "Action" }, "Action"),
+            Definition("debug_state", "Read design/run/break mode and the active code location for one project. Mode 1 is break; mode 2 is design.",
+                new[] { "Project" }, "Project"),
+            Definition("list_commands", "List VBE CommandBars controls matching an optional caption/path Query. Returns transient Id, caption and enabled state; use these exact values for invoke_debug.",
+                new string[0], "Query"),
+            Definition("select_code", "Activate a code pane and select an exact line after checking the current module SHA-256. Does not edit source code.",
+                new[] { "Project", "Module", "ExpectedSha256", "StartLine" },
+                "Project", "Module", "ExpectedSha256", "StartLine"),
+            Definition("invoke_debug", "Execute a native VBE debugger command on an exact project/module/line after checking SHA-256, expected mode, command Id and caption. Action is toggle_breakpoint, run, continue, step_into or step_over. VBE may apply the effect after return: read debug_state and debug_windows separately. Breakpoint toggle is not yet independently verifiable.",
+                new[] { "Project", "Module", "ExpectedSha256", "StartLine", "ExpectedMode", "Action", "ControlId", "ControlCaption" },
+                "Project", "Module", "ExpectedSha256", "StartLine", "ExpectedMode", "Action", "ControlId", "ControlCaption"),
+            Definition("add_watch", "Add a native VBE watch expression in the active break-mode project and module, using the current procedure context. ExpectedMode must be 1. Optional Procedure must match the native dialog context. The expression is evaluated by VBE and can call VBA functions. The dialog is completed through native controls without shortcuts or coordinates; then call debug_windows to re-read its value.",
+                new[] { "Project", "Module", "ExpectedMode", "Expression" },
+                "Project", "Module", "ExpectedMode", "Expression", "Procedure"),
+            Definition("remove_watch", "Remove one native VBE watch selected by exact Expression and Context from debug_windows. Requires the Watches pane visible and ExpectedMode from debug_state. Confirms disappearance separately through UI accessibility.",
+                new[] { "Project", "ExpectedMode", "Expression", "Context" },
+                "Project", "ExpectedMode", "Expression", "Context"),
             Definition("open_object_browser", "Open the native VBE Object Browser through CommandBars Id 473 and read vbe_windows immediately. Opening may be asynchronous: if VerificationPending is true, call vbe_windows again in a separate request and confirm a visible Type 2 window. This command does not read libraries, classes or members.", new string[0]),
             Definition("list_procedures", "List Sub, Function and Property Get/Let/Set procedures from CodeModule without opening a code pane; returns exact VBIDE line ranges and module SHA-256.",
                 new[] { "Project", "Module" }, "Project", "Module"),
@@ -246,6 +267,59 @@ namespace CodexVBE
                 return json.Serialize(name == "status"
                     ? Response.Success(LlmVbeContext.LiveSnapshot(session))
                     : session.Execute(request));
+            }
+            catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+        }
+
+        public async Task<string> InvokeAsync(string name, string arguments)
+        {
+            if (name == "remove_watch")
+            {
+                try
+                {
+                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
+                    if (values == null) throw new ArgumentException("Tool arguments must be an object.");
+                    if (settings.VbeEditApproval != "Automatic")
+                        return json.Serialize(Response.Failure("Automatic VBE edit policy is required for native watch removal."));
+                    var requestValues = new Dictionary<string, object>(values) { ["Command"] = name };
+                    Request request = json.Deserialize<Request>(json.Serialize(requestValues));
+                    await Task.Run(() => VbeDebugWindows.SelectWatch(request));
+                    string executed = Invoke(name, arguments);
+                    Response response = json.Deserialize<Response>(executed);
+                    if (response == null || !response.Ok) return executed;
+                    object result = await Task.Run(() => VbeDebugWindows.VerifyWatchRemoved(request));
+                    return json.Serialize(Response.Success(result));
+                }
+                catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+            }
+            if (name == "add_watch")
+            {
+                string scheduled = Invoke(name, arguments);
+                Response initial = json.Deserialize<Response>(scheduled);
+                if (initial == null || !initial.Ok) return scheduled;
+                try
+                {
+                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
+                    var requestValues = new Dictionary<string, object>(values) { ["Command"] = name };
+                    Request request = json.Deserialize<Request>(json.Serialize(requestValues));
+                    object result = await Task.Run(() => VbeDebugWindows.CompleteAddWatch(request));
+                    return json.Serialize(Response.Success(result));
+                }
+                catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+            }
+            if (name != "debug_windows") return Invoke(name, arguments);
+            try
+            {
+                var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
+                if (values == null) throw new ArgumentException("Tool arguments must be an object.");
+                foreach (string field in values.Keys)
+                    if (field != "IncludeCallStack") throw new ArgumentException("Unexpected argument: " + field);
+                object raw;
+                bool stack = values.TryGetValue("IncludeCallStack", out raw) && raw is bool && (bool)raw;
+                if (values.ContainsKey("IncludeCallStack") && !(raw is bool))
+                    throw new ArgumentException("IncludeCallStack must be a boolean.");
+                object result = await Task.Run(() => VbeDebugWindows.Capture(stack));
+                return json.Serialize(Response.Success(result));
             }
             catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
         }

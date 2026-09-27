@@ -53,7 +53,20 @@ namespace CodexVBE
                             try
                             {
                                 var request = json.Deserialize<Request>(line);
-                                response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));
+                                if (request != null && request.Command == "debug_windows")
+                                    response = Response.Success(VbeDebugWindows.Capture(request.IncludeCallStack));
+                                else if (request != null && request.Command == "add_watch")
+                                {
+                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));
+                                    if (response.Ok) response = Response.Success(VbeDebugWindows.CompleteAddWatch(request));
+                                }
+                                else if (request != null && request.Command == "remove_watch")
+                                {
+                                    VbeDebugWindows.SelectWatch(request);
+                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));
+                                    if (response.Ok) response = Response.Success(VbeDebugWindows.VerifyWatchRemoved(request));
+                                }
+                                else response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));
                             }
                             catch (Exception ex)
                             {

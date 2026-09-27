@@ -42,6 +42,8 @@ namespace CodexVBE
         public string NewName { get; set; }
         public string Procedure { get; set; }
         public string EventName { get; set; }
+        public string Expression { get; set; }
+        public string Context { get; set; }
         public string ObjectName { get; set; }
         public int ProcKind { get; set; }
         public int? InsertIndex { get; set; }
@@ -49,6 +51,7 @@ namespace CodexVBE
         public bool WholeWord { get; set; }
         public bool MatchCase { get; set; }
         public bool PatternSearch { get; set; }
+        public bool IncludeCallStack { get; set; }
         public string FontName { get; set; }
         public double FontSize { get; set; }
         public bool FontBold { get; set; }

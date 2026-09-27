@@ -94,6 +94,12 @@ namespace CodexVBE
                     return ReplaceLines(request);
                 case "debug_state":
                     return Response.Success(debugger.State(request.Project));
+                case "open_debug_pane":
+                    return Response.Success(debugger.OpenDebugPane(request.Action, editorWindows));
+                case "add_watch":
+                    return Response.Success(debugger.QueueAddWatchDialog(request));
+                case "remove_watch":
+                    return Response.Success(debugger.RemoveSelectedWatch(request));
                 case "list_commands":
                     return Response.Success(debugger.ListCommands(request.Query));
                 case "select_code":
