@@ -4,6 +4,10 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodexVBE", "CodexVBE.csproj", "{DF707C73-5B37-4507-97A3-0F3AF6A3A777}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodexVBE.Tests", "tests\CodexVBE.Tests\CodexVBE.Tests.csproj", "{AE9DB930-B64F-4213-AC8B-BD198F8BA894}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -14,8 +18,15 @@ Global
 		{DF707C73-5B37-4507-97A3-0F3AF6A3A777}.Debug|x64.Build.0 = Debug|x64
 		{DF707C73-5B37-4507-97A3-0F3AF6A3A777}.Release|x64.ActiveCfg = Release|x64
 		{DF707C73-5B37-4507-97A3-0F3AF6A3A777}.Release|x64.Build.0 = Release|x64
+		{AE9DB930-B64F-4213-AC8B-BD198F8BA894}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AE9DB930-B64F-4213-AC8B-BD198F8BA894}.Debug|x64.Build.0 = Debug|Any CPU
+		{AE9DB930-B64F-4213-AC8B-BD198F8BA894}.Release|x64.ActiveCfg = Release|Any CPU
+		{AE9DB930-B64F-4213-AC8B-BD198F8BA894}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{AE9DB930-B64F-4213-AC8B-BD198F8BA894} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal
