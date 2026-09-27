@@ -181,6 +181,7 @@ namespace CodexVBE
             string previousOpenAiEndpoint = settings.OpenAiEndpoint;
             string previousOllamaEndpoint = settings.OllamaEndpoint;
             string previousKey = settings.EncryptedOpenAiKey;
+            string previousProviders = json.Serialize(new { settings.ProviderEndpoints, settings.EncryptedProviderKeys, settings.AzureUseEntraToken, settings.ManualModelLists });
             using (var dialog = new LlmSettingsWindow(settings))
             {
                 if (dialog.ShowDialog(this) != DialogResult.OK) return;
@@ -190,7 +191,8 @@ namespace CodexVBE
                 {
                     bool connectionChanged = previousProvider != settings.ProviderName ||
                         previousOpenAiEndpoint != settings.OpenAiEndpoint ||
-                        previousOllamaEndpoint != settings.OllamaEndpoint || previousKey != settings.EncryptedOpenAiKey;
+                        previousOllamaEndpoint != settings.OllamaEndpoint || previousKey != settings.EncryptedOpenAiKey ||
+                        previousProviders != json.Serialize(new { settings.ProviderEndpoints, settings.EncryptedProviderKeys, settings.AzureUseEntraToken, settings.ManualModelLists });
                     if (connectionChanged) ResetProviderConnection();
                     _ = LoadModelsAsync();
                 }
@@ -334,6 +336,7 @@ namespace CodexVBE
             tools.CurrentProviderName = provider.Name;
             if (!provider.IsCodex) messages.Add(new { role = "user", content = requestText });
             SaveCurrentSession();
+            string providerStreamId = null;
             try
             {
                 if (provider.IsCodex)
@@ -350,19 +353,34 @@ namespace CodexVBE
                 using (var client = new LlmChatClient((LlmProvider)providerPicker.SelectedItem, settings, selectedModel.Id))
                 {
                     activeHttpClient = client;
+                    client.ToolHandler = async (name, arguments) => {
+                        if (stopRequested) throw new OperationCanceledException();
+                        Append("Outil", name);
+                        return await tools.InvokeAsync(name, arguments);
+                    };
                     SetStatus(client.DisplayName + " — en cours");
                     for (int turn = 0; turn < 8; turn++)
                     {
                         if (stopRequested) throw new OperationCanceledException();
+                        providerStreamId = "http-" + Guid.NewGuid().ToString("N");
+                        string streamId = providerStreamId;
+                        bool receivedText = false;
+                        client.TextDelta = fragment => {
+                            if (stopRequested || IsDisposed) return;
+                            receivedText = true;
+                            ReceiveChatUpdate("final", streamId, fragment, false);
+                        };
                         var message = await client.CompleteAsync(messages, LlmVbeTools.Definitions);
                         if (stopRequested) throw new OperationCanceledException();
+                        if (receivedText) ReceiveChatUpdate("final", streamId, Convert.ToString(message["content"]), true);
+                        providerStreamId = null;
                         messages.Add(message);
                         object rawCalls;
                         var calls = message.TryGetValue("tool_calls", out rawCalls) ? rawCalls as object[] : null;
                         if (calls == null || calls.Length == 0)
                         {
                             string answer = message.ContainsKey("content") ? Convert.ToString(message["content"]) : "";
-                            Append("Assistant", string.IsNullOrWhiteSpace(answer) ? "Aucune réponse textuelle." : answer);
+                            CompleteAssistantResponse(string.IsNullOrWhiteSpace(answer) ? "Aucune réponse textuelle." : answer);
                             currentSession.ResumeContext = null;
                             SetStatus(client.DisplayName + " — prêt");
                             return;
@@ -385,6 +403,7 @@ namespace CodexVBE
             }
             catch (Exception ex)
             {
+                if (providerStreamId != null && liveEntries.ContainsKey(providerStreamId)) ReceiveChatUpdate("tool", providerStreamId, null, true);
                 if (provider.IsCodex && !stopRequested) { codex?.Dispose(); codex = null; }
                 // A failed request must not leave an orphaned tool call in the next API request.
                 messages.RemoveRange(checkpoint, messages.Count - checkpoint);

@@ -76,6 +76,20 @@ namespace CodexVBE
         private void Modules_Click(object sender, EventArgs e) { InsertReferencePrefix('#'); }
         private void Methods_Click(object sender, EventArgs e) { InsertReferencePrefix('@'); }
         private void Export_Click(object sender, EventArgs e) { ExportCurrentChat(); }
+        private void GitHub_Click(object sender, EventArgs e)
+        {
+            if (busy) return;
+            try
+            {
+                EnsureCurrentScope();
+                var scope = scopePicker.SelectedItem as MacroScope;
+                if (scope == null || scope.Key.StartsWith("temporary:", StringComparison.Ordinal))
+                    throw new InvalidOperationException("Enregistrez le document avant de le lier à GitHub.");
+                using (var window = new GitWindow(scopeSession.GitProject(scope.Project, scope.Key), scope.Key, scope.Label, settings.GitHubAccount))
+                    window.ShowDialog(this);
+            }
+            catch (Exception ex) { SetStatus("GitHub : " + ex.Message); }
+        }
         private void Pin_Click(object sender, EventArgs e)
         {
             if (busy || currentSession == null) return;

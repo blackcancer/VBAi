@@ -4,7 +4,7 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing, System.Design, Wind
 Add-Type -ReferencedAssemblies System.dll, System.Design.dll -TypeDefinition @'
 using System.ComponentModel.Design;
 public static class ChatDesignerSelection {
-    public static void Select(object service, object component) { ((ISelectionService)service).SetSelectedComponents(new object[] { component }); }
+    public static void Select(object service, object component) { ((ISelectionService)service).SetSelectedComponents(new object[] { component }, SelectionTypes.Replace); }
     public static object Primary(object service) { return ((ISelectionService)service).PrimarySelection; }
 }
 '@
@@ -51,3 +51,15 @@ try {
     Assert ([ChatDesignerSelection]::Primary($selection) -eq $button) 'Designer cannot select the send button.'
     Write-Output 'PASS WinForms DesignSurface load and control selection (compiled inherited view)'
 } finally { $surface.Dispose() }
+$settingsSurface = [ComponentModel.Design.DesignSurface]::new()
+try {
+    $settingsType = $assembly.GetType('CodexVBE.LlmSettingsWindow', $true)
+    $settingsSurface.BeginLoad($settingsType)
+    Assert ($settingsSurface.IsLoaded -and $settingsSurface.LoadErrors.Count -eq 0) 'Settings designer failed to load.'
+    $settingsHost = $settingsSurface.GetService([ComponentModel.Design.IDesignerHost])
+    foreach ($name in @('manualModels','customName','azureEntra','githubAccount','githubLogin','githubRefresh','githubStatus')) {
+        $control = $settingsType.GetField($name, $flags).GetValue($settingsHost.RootComponent)
+        Assert ($control -is [Windows.Forms.Control] -and $control.Parent -ne $null) "Missing provider designer control: $name"
+    }
+    Write-Output 'PASS provider settings DesignSurface and fixed provider controls'
+} finally { $settingsSurface.Dispose() }

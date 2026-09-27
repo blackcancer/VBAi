@@ -60,9 +60,14 @@ Les tests Workflow couvrent en plus les refus d’outils synchrones/asynchrones 
 
 Validation locale du 27 septembre 2026 : compilation sans erreur ni avertissement ; suites ChatUx et ChatWorkflow passantes. Dans Excel, le chat a affiché le projet VBA, le fournisseur Codex, sept modèles du catalogue, le modèle par défaut et son effort. Les deux fenêtres WinForms s'ouvrent dans le concepteur Visual Studio sans erreur. Avec le ProgID machine enregistré, `VBIDE.Windows.CreateToolWindow` héberge le chat. Le premier ancrage automatique du VBE était en bas ; après déplacement manuel à droite, le VBE a conservé ce côté au redémarrage. Une nouvelle compilation a ouvert automatiquement le chat à droite dans Excel PID 41812 ; le contenu remplit le volet natif. Cette validation ne couvre pas encore SOLIDWORKS ni le premier placement sur une nouvelle installation. Menus contextuels, capture native de sélection et compilation avec localisation d'erreur : **NOT_RUN** dans cet essai.
 
-Les captures modern-*.png composent le formulaire WinForms et ses deux zones WPF avec des données de démonstration sur le deuxième écran lorsqu'il est disponible. Elles ne constituent pas une validation dans Excel ou dans un hôte VBE réel. La reprise distante d'un thread authentifié et l'interruption d'une action COM en cours restent à valider dans l'hôte. Les fournisseurs autres que Codex affichent actuellement leur réponse finale, sans streaming ni résumé de réflexion.
+Les captures modern-*.png composent le formulaire WinForms et ses deux zones WPF avec des données de démonstration sur le deuxième écran lorsqu'il est disponible. Elles ne constituent pas une validation dans Excel ou dans un hôte VBE réel. La reprise distante d'un thread authentifié et l'interruption d'une action COM en cours restent à valider dans l'hôte. Les fournisseurs compatibles et Claude affichent le texte progressivement par SSE ; Copilot utilise ses notifications. Bedrock affiche la réponse complète de Converse. Les résumés de réflexion progressifs restent propres à Codex. Voir providers.md pour les validations et limites.
 
 ## Références de conception
+
+L’entrée **GitHub · synchroniser le VBA…** du menu du chat ouvre les vues Modifications Git et Historique,
+avec comparaison côte à côte et commandes commit/push/fetch/pull séparées. Le dépôt reste dans un cache privé
+sans fichiers adjacents à la macro. Voir [l’intégration GitHub](github-integration.md) pour le format VBA,
+les sauvegardes, la restauration et les limites de validation.
 
 - [Copilot Visual Studio : contexte, références et historique](https://learn.microsoft.com/en-us/visualstudio/ide/copilot-chat-context-references?view=visualstudio) : contexte explicite et navigation entre conversations.
 - [Codex App Server](https://learn.chatgpt.com/docs/app-server) : événements de réponse, résumés de réflexion, reprise et interruption des tours.

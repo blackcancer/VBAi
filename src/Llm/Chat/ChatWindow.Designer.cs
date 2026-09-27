@@ -8,6 +8,7 @@
         private System.Windows.Forms.ToolStripMenuItem configure;
         private System.Windows.Forms.ToolStripMenuItem refreshModels;
         private System.Windows.Forms.ToolStripMenuItem docking;
+        private System.Windows.Forms.ToolStripMenuItem github;
         private System.Windows.Forms.TableLayoutPanel rootLayout;
         private System.Windows.Forms.TableLayoutPanel headingLayout;
         private System.Windows.Forms.Label appTitle;
@@ -90,6 +91,7 @@
             this.modePicker = new CodexVBE.ChatChoiceBox();
             this.promptHost = new System.Windows.Forms.Integration.ElementHost();
             this.optionsMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.github = new System.Windows.Forms.ToolStripMenuItem();
             this.configure = new System.Windows.Forms.ToolStripMenuItem();
             this.refreshModels = new System.Windows.Forms.ToolStripMenuItem();
             this.docking = new System.Windows.Forms.ToolStripMenuItem();
@@ -263,15 +265,20 @@
             this.optionsMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.configure,
             this.refreshModels,
-            this.docking});
+            this.docking,
+            this.github});
             this.optionsMenu.Name = "optionsMenu";
+            this.github.Name = "github";
+            this.github.Text = "GitHub · synchroniser le VBA…";
+            this.github.ToolTipText = "Exporter et synchroniser les sources du document courant avec un dépôt GitHub.";
+            this.github.Click += new System.EventHandler(this.GitHub_Click);
             this.optionsMenu.Size = new System.Drawing.Size(222, 70);
             //
             // configure
             //
             this.configure.Name = "configure";
             this.configure.Size = new System.Drawing.Size(221, 22);
-            this.configure.Text = "Paramètres du fournisseur…";
+            this.configure.Text = "Paramètres…";
             //
             // refreshModels
             //

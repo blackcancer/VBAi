@@ -9,9 +9,20 @@ Cette première tranche ajoute une fenêtre de conversation WinForms au complém
 | Codex (par défaut) | Implémenté via `codex app-server` local et l'authentification ChatGPT déjà gérée par le CLI | État ChatGPT et bouton de connexion dans Configuration ; aucune clé API requise. |
 | OpenAI API | Implémenté via Chat Completions | Clé et URL dans Configuration ; `OPENAI_API_KEY` et `CODEXVBE_OPENAI_ENDPOINT` restent des valeurs de secours. |
 | Ollama | Implémenté via son endpoint compatible Chat Completions | URL dans Configuration ; défaut `http://localhost:11434/v1/chat/completions`. |
-| Claude | À venir | L'API et l'authentification Claude ne sont pas implémentées. |
-| GitHub Copilot | À venir | L'authentification et l'API Copilot ne sont pas implémentées. |
-| Gemini | À venir | L'API et l'authentification Gemini ne sont pas implémentées. |
+| Claude | Adaptateur API Messages natif | Clé Anthropic dans Configuration ou `ANTHROPIC_API_KEY`. |
+| GitHub Copilot | Adaptateur CLI stdio JSON-RPC | GitHub Copilot CLI installé et connecté ; bouton de connexion dans Configuration. |
+| Gemini | Adaptateur API compatible Chat Completions | Clé Google AI Studio dans Configuration ou `GEMINI_API_KEY`. |
+| Mistral | Adaptateur API compatible Chat Completions | Clé dans Configuration ou `MISTRAL_API_KEY`. |
+| DeepSeek | Adaptateur API compatible Chat Completions | Clé dans Configuration ou `DEEPSEEK_API_KEY`. |
+| OpenRouter | Adaptateur API compatible Chat Completions | Clé dans Configuration ou `OPENROUTER_API_KEY`. |
+| LM Studio | Adaptateur serveur local compatible Chat Completions | Serveur démarré ; URL par défaut `http://localhost:1234/v1/chat/completions`. Clé facultative. |
+| Personnalisé (OpenAI) | Adaptateur compatible Chat Completions | Nom, URL complète, modèles manuels et clé facultative. |
+| Azure OpenAI | API v1 | URL de ressource, noms de déploiement et clé API ou jeton Entra. |
+| Grok | Adaptateur xAI Chat Completions | `XAI_API_KEY` ou clé enregistrée. |
+| Groq | Adaptateur Chat Completions | `GROQ_API_KEY` ou clé enregistrée. |
+| Amazon Bedrock | API native Converse | URL Runtime régionale, modèle/profil et clé API Bedrock Bearer. |
+
+Voir [Configuration et validation des fournisseurs](providers.md) pour les endpoints, l’authentification, les essais locaux et les limites de validation des nouveaux adaptateurs.
 
 Les URL distantes doivent utiliser HTTPS ; seul HTTP sur une adresse de boucle locale est accepté. Les réglages non secrets sont enregistrés pour l'utilisateur Windows dans `%APPDATA%\CodexVBE\settings.json`. Une éventuelle clé OpenAI API y est stockée uniquement sous forme chiffrée DPAPI `CurrentUser`, jamais dans le dépôt. Codex ne lit, ne copie et ne stocke aucun jeton OAuth : seul le processus `codex app-server` gère la connexion ChatGPT existante. La liste des modèles vient du fournisseur actif (`model/list`, `/v1/models` ou `/api/tags`) ; le choix persiste par fournisseur et s'applique au prochain message. Codex affiche aussi les niveaux de raisonnement annoncés pour le modèle choisi ; le niveau retenu est transmis comme `effort` au prochain `turn/start` et mémorisé par modèle. Changer de fournisseur efface l'historique affiché et le contexte transmis au modèle. Un modèle Ollama doit lui-même prendre en charge les appels d'outils pour piloter le VBE. Le catalogue OpenAI peut inclure des modèles qui ne prennent pas en charge Chat Completions ou les outils ; l'API signale ce cas lors de l'envoi.
 
