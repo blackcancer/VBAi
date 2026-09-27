@@ -17,7 +17,6 @@ namespace CodexVBE
         }
         private void Rebuild()
         {
-            if (grid == null) return;
             visible = DiffModel.Build(before, after, unified.Checked, collapse.Checked);
             var titles = unified.Checked ? new[] { "−", "+", UiText.Get("Code") }
                 : new[] { "−", UiText.Get("Before"), "+", UiText.Get("After") };
@@ -49,7 +48,7 @@ namespace CodexVBE
         private void OptionsChanged(object sender, EventArgs e) { Rebuild(); }
         private void ValueNeeded(object sender, DataGridViewCellValueEventArgs e)
         {
-            if (e.RowIndex < 0 || e.RowIndex >= visible.Count) return;
+            if (e.RowIndex >= visible.Count) return;
             var row = visible[e.RowIndex];
             e.Value = unified.Checked ? (e.ColumnIndex == 0 ? (object)row.Old : e.ColumnIndex == 1 ? (object)row.New : row.Right ?? row.Left) :
                 e.ColumnIndex == 0 ? (object)row.Old : e.ColumnIndex == 1 ? (object)row.Left : e.ColumnIndex == 2 ? (object)row.New : row.Right;
@@ -112,6 +111,6 @@ namespace CodexVBE
         }
         private void Search_KeyDown(object sender, KeyEventArgs e) { if (e.KeyCode == Keys.Enter) { Find_Click(sender, e); e.SuppressKeyPress = true; } }
         private void ExpandContext(object sender, DataGridViewCellEventArgs e) { if (e.RowIndex >= 0 && e.RowIndex < visible.Count && visible[e.RowIndex].Fold) collapse.Checked = false; }
-        protected override void Dispose(bool disposing) { if (disposing) components?.Dispose(); base.Dispose(disposing); }
+        protected override void Dispose(bool disposing) { if (disposing) components.Dispose(); base.Dispose(disposing); }
     }
 }

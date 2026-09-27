@@ -28,6 +28,7 @@ namespace CodexVBE.Tests.Infrastructure
     }
     internal static class UiInvoke
     {
+        internal static T Field<T>(object target,string name) { return (T)target.GetType().GetField(name,BindingFlags.Instance|BindingFlags.NonPublic).GetValue(target); }
         internal static object Call(Type type, string method, object target, params object[] args)
         {
             return type.GetMethod(method, BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic).Invoke(target,args);

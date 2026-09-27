@@ -16,6 +16,8 @@ namespace CodexVBE
 {
     internal static class ChatMarkdown
     {
+        internal static Action<string> CopyText = Clipboard.SetText;
+        internal static Action<string> OpenLink = SafeLinks.Open;
         private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().UsePipeTables().UseAutoLinks().UseEmphasisExtras().UseTaskLists().Build();
         private static Brush Brush(string hex) { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(UiTheme.Map(hex))); }
         internal static RichTextBox Render(string text, IDictionary<string, VbeChatReference> references, Action<VbeChatReference> navigate, Action<string> error)
@@ -36,7 +38,7 @@ namespace CodexVBE
                     string source = code.Lines.ToString();
                     var panel = new StackPanel();
                     var copy = new Button { Content = UiText.Get("Copy code"), HorizontalAlignment = HorizontalAlignment.Right, Padding = new Thickness(8, 4, 8, 4), ToolTip = UiText.Get("Copy this code block to the clipboard.") };
-                    copy.Click += (s, e) => { try { Clipboard.SetText(source); } catch (Exception ex) { error(ex.Message); } };
+                    copy.Click += (s, e) => { try { CopyText(source); } catch (Exception ex) { error(ex.Message); } };
                     panel.Children.Add(copy);
                     var doc = new FlowDocument { PagePadding = new Thickness(6), FontFamily = new FontFamily("Consolas"), FontSize = 12, FlowDirection = FlowDirection.LeftToRight };
                     var paragraph = new Paragraph { Margin = new Thickness(0) };
@@ -107,12 +109,12 @@ namespace CodexVBE
                 else if (inline is LinkInline link)
                 {
                     var span = new Span(); AddInlines(span.Inlines, link, refs, navigate, error);
-                    if (SafeLinks.Allowed(link.Url)) { var rendered = new Hyperlink(span) { ToolTip = link.Url }; rendered.Click += (s, e) => { try { SafeLinks.Open(link.Url); } catch (Exception ex) { error(ex.Message); } }; target.Add(rendered); }
+                    if (SafeLinks.Allowed(link.Url)) { var rendered = new Hyperlink(span) { ToolTip = link.Url }; rendered.Click += (s, e) => { try { OpenLink(link.Url); } catch (Exception ex) { error(ex.Message); } }; target.Add(rendered); }
                     else target.Add(span);
                 }
                 else if (inline is AutolinkInline auto)
                 {
-                    var autoLink = new Hyperlink(new Run(auto.Url)); autoLink.Click += (s, e) => { try { SafeLinks.Open(auto.Url); } catch (Exception ex) { error(ex.Message); } }; target.Add(autoLink);
+                    var autoLink = new Hyperlink(new Run(auto.Url)); autoLink.Click += (s, e) => { try { OpenLink(auto.Url); } catch (Exception ex) { error(ex.Message); } }; target.Add(autoLink);
                 }
                 else if (inline is TaskList task) target.Add(new Run(task.Checked ? "☑ " : "☐ "));
                 else if (inline is HtmlInline html) target.Add(new Run(html.Tag));
