@@ -16,6 +16,8 @@ namespace CodexVBE
         public string Action { get; set; }
         public int ControlId { get; set; }
         public string ControlCaption { get; set; }
+        public string WindowCaption { get; set; }
+        public int WindowType { get; set; }
         public int ExpectedMode { get; set; }
         public string Form { get; set; }
         public string Control { get; set; }
@@ -29,6 +31,7 @@ namespace CodexVBE
         public string Property { get; set; }
         public object Value { get; set; }
         public string Path { get; set; }
+        public string SourceEncoding { get; set; }
         public string Guid { get; set; }
         public int Major { get; set; }
         public int Minor { get; set; }

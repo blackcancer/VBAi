@@ -21,7 +21,7 @@ namespace CodexVBE
         public event Action<CodeChange> CodeEdited;
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
             "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "compile_project", "open_debug_pane", "list_commands", "select_code",
-            "project_properties", "project_persistence_status", "project_signature_status", "read_project_signature_dialog", "list_signing_certificates", "component_properties", "component_property_value", "vbe_windows", "code_panes", "open_object_browser", "list_procedures", "find_code", "select_procedure", "list_forms",
+            "project_properties", "project_persistence_status", "project_signature_status", "read_project_signature_dialog", "list_signing_certificates", "component_properties", "component_property_value", "vbe_windows", "vbe_environment", "list_addins", "focus_vbe_window", "code_panes", "open_object_browser", "list_procedures", "find_code", "inspect_code_file", "select_procedure", "list_forms",
             "form_state", "form_tree", "form_list_items", "form_properties", "form_control_properties", "form_event_catalog",
             "list_form_control_types", "open_form"
         };
@@ -62,7 +62,7 @@ namespace CodexVBE
                     new { type = "string" }, new { type = "number" }, new { type = "boolean" } } } :
                     field == "PathSegments" ? (object)new { type = "array", items = new { type = "string" }, minItems = 1, maxItems = 16 } :
                     field == "Items" ? (object)new { type = "array", items = new { type = "string", maxLength = 256 }, minItems = 0, maxItems = 64 } :
-                    new { type = field == "StartLine" || field == "StartColumn" || field == "EndColumn" || field == "Count" || field == "ExpectedMode" || field == "ControlId" || field == "ProcKind" || field == "InsertIndex" ||
+                    new { type = field == "StartLine" || field == "StartColumn" || field == "EndColumn" || field == "Count" || field == "ExpectedMode" || field == "ControlId" || field == "WindowType" || field == "ProcKind" || field == "InsertIndex" ||
                         field == "Offset" || field == "Limit" || field == "RowIndex" || field == "TypeIndex" || field == "ZPosition" ||
                         field == "Major" || field == "Minor" ? "integer" :
                     field == "Left" || field == "Top" || field == "Width" || field == "Height" || field == "FontSize" ? "number" :
@@ -125,10 +125,16 @@ namespace CodexVBE
                 new[] { "Project", "ExpectedMode", "Action" },
                 "Project", "ExpectedMode", "Action"),
             Definition("open_object_browser", "Open the native VBE Object Browser through CommandBars Id 473 and read vbe_windows immediately. Opening may be asynchronous: if VerificationPending is true, call vbe_windows again in a separate request and confirm a visible Type 2 window. This command does not read libraries, classes or members.", new string[0]),
+            Definition("vbe_environment", "Read the VBE version, active project and counts of projects, windows, code panes and VBE add-ins. Per-field COM failures are reported in Errors.", new string[0]),
+            Definition("list_addins", "List VBE-registered add-ins with ProgId, Guid, Description and current Connect state. This is the VBE Add-In Manager collection, not the host application's COM add-ins. Per-field COM failures are reported; no add-in is loaded or unloaded.", new string[0]),
+            Definition("focus_vbe_window", "Focus exactly one already-visible VBE window by the exact WindowCaption and WindowType returned by vbe_windows. Refuses absent, hidden or ambiguous windows and reads ActiveWindow after SetFocus. No shortcut or coordinate is used.",
+                new[] { "WindowCaption", "WindowType" }, "WindowCaption", "WindowType"),
+            Definition("close_vbe_window", "Close exactly one visible native VBE window by WindowCaption and WindowType from vbe_windows. A code pane or designer is destroyed as a window, while permanent View windows are hidden; VBA code and components are not deleted. Refuses the CodexVBE tool window and ambiguous targets, then checks vbe_windows. Subject to VBE edit policy; no shortcut or coordinate is used.",
+                new[] { "WindowCaption", "WindowType" }, "WindowCaption", "WindowType"),
             Definition("list_procedures", "List Sub, Function and Property Get/Let/Set procedures from CodeModule without opening a code pane; returns exact VBIDE line ranges and module SHA-256.",
                 new[] { "Project", "Module" }, "Project", "Module"),
-            Definition("find_code", "Search literal text in one module or all modules of a project from CodeModule.Lines without opening a pane. Returns up to 200 locations and source SHA-256 values; supports case and whole-word matching.",
-                new[] { "Project", "Query" }, "Project", "Module", "Query", "WholeWord", "MatchCase"),
+            Definition("find_code", "Search one module or all modules of a project from CodeModule.Lines without opening a pane. Returns up to 200 locations and source SHA-256 values. Optional PatternSearch treats * as any number of characters and ? as one character within each line; MatchCase and WholeWord also apply. A pattern of only asterisks is refused.",
+                new[] { "Project", "Query" }, "Project", "Module", "Query", "WholeWord", "MatchCase", "PatternSearch"),
             Definition("select_procedure", "Navigate the VBE to a procedure declaration using an exact project/module/name/ProcKind and a current ExpectedSha256. ProcKind: 0 Sub or Function, 1 Property Let, 2 Property Set, 3 Property Get. Changes only UI selection, not code.",
                 new[] { "Project", "Module", "Procedure", "ProcKind", "ExpectedSha256" },
                 "Project", "Module", "Procedure", "ProcKind", "ExpectedSha256"),
@@ -144,6 +150,11 @@ namespace CodexVBE
             Definition("remove_procedure", "Remove only one existing Sub, Function or Property Get/Let/Set declaration through its End statement in a standard or class module. Preceding comments and other procedures remain. Requires the current module ExpectedSha256, design mode and VBE edit policy; VBIDE absence and the resulting SHA are read back. Compilation is separate.",
                 new[] { "Project", "Module", "Procedure", "ProcKind", "ExpectedSha256" },
                 "Project", "Module", "Procedure", "ProcKind", "ExpectedSha256"),
+            Definition("inspect_code_file", "Inspect bytes of an absolute local source file explicitly named by the user without transmitting its content. Returns BOM, strict UTF-8 validity, non-ASCII/NUL flags, SHA-256, host ANSI code page and whether SourceEncoding must be explicit. Use before insert_code_file when encoding is uncertain.",
+                new[] { "Path" }, "Path"),
+            Definition("insert_code_file", "Insert up to 256 KiB of local VBA source text at StartLine in a design-mode module. Path must be an absolute path explicitly supplied by the user; the file is read locally and its bytes are not included in tool arguments. BOM or ASCII is auto-detected; a non-ASCII file without BOM requires explicit SourceEncoding from inspection or known provenance. Supported values: utf-8, utf-16le, utf-16be, windows-1252, system-ansi. Non-ASCII characters are checked in VBE after insertion, with rollback on mismatch. Requires current ExpectedSha256 and VBE edit policy. Returns source file SHA-256, encoding, inserted line count and new module SHA-256; compilation is separate.",
+                new[] { "Project", "Module", "Path", "StartLine", "ExpectedSha256" },
+                "Project", "Module", "Path", "StartLine", "ExpectedSha256", "SourceEncoding"),
             Definition("project_properties", "Read all exposed VBProject properties, component identities and a project revision.",
                 new[] { "Project" }, "Project"),
             Definition("project_persistence_status", "Read VBProject.Saved and, for the exact Excel workbook owning the project, Workbook.Saved, path and read-only state. Available=false outside Excel or when the workbook cannot be matched. This does not write to disk.",
@@ -321,8 +332,8 @@ namespace CodexVBE
                 if (name == "read_user_file")
                     return json.Serialize(ReadUserFile((string)values["Path"]));
                 if ((name == "set_form_picture" || name == "set_form_node_picture" ||
-                    name == "add_reference_file" || name == "import_component" ||
-                    name == "export_component") &&
+                    name == "add_reference_file" || name == "insert_code_file" || name == "import_component" ||
+                    name == "inspect_code_file" || name == "export_component") &&
                     !IsExplicitUserPath((string)values["Path"]))
                     return json.Serialize(Response.Failure("L'utilisateur doit fournir explicitement le chemin absolu du fichier."));
                 var normalized = new Dictionary<string, object>(values) { ["Command"] = name };

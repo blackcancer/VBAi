@@ -43,6 +43,89 @@ namespace CodexVBE
             return new { CodePanes = panes, ActiveCodePane = active };
         }
 
+        public object Environment()
+        {
+            var fields = new Dictionary<string, object>();
+            var errors = new Dictionary<string, string>();
+            Read(fields, errors, "Version", () => (string)vbe.Version);
+            Read(fields, errors, "ProjectCount", () => (int)vbe.VBProjects.Count);
+            Read(fields, errors, "WindowCount", () => (int)vbe.Windows.Count);
+            Read(fields, errors, "CodePaneCount", () => (int)vbe.CodePanes.Count);
+            Read(fields, errors, "AddInCount", () => (int)vbe.AddIns.Count);
+            Read(fields, errors, "ActiveProject", () => (string)vbe.ActiveVBProject.Name);
+            return new { Properties = fields, Errors = errors };
+        }
+
+        public object AddIns()
+        {
+            var addIns = new List<object>();
+            int index = 0;
+            foreach (dynamic addIn in vbe.AddIns)
+            {
+                var fields = new Dictionary<string, object>();
+                var errors = new Dictionary<string, string>();
+                Read(fields, errors, "ProgId", () => (string)addIn.ProgId);
+                Read(fields, errors, "Guid", () => (string)addIn.Guid);
+                Read(fields, errors, "Description", () => (string)addIn.Description);
+                Read(fields, errors, "Connect", () => (bool)addIn.Connect);
+                addIns.Add(new { Index = ++index, Properties = fields, Errors = errors });
+            }
+            return new { AddIns = addIns, Count = addIns.Count,
+                Scope = "VBE.AddIns contains VBE-registered add-ins, not the host application's COMAddIns." };
+        }
+
+        public object FocusWindow(string caption, int type)
+        {
+            dynamic target = FindExactWindow(caption, type);
+            if (!(bool)target.Visible)
+                throw new InvalidOperationException("The requested window is hidden; SetFocus requires a visible window.");
+            target.SetFocus();
+            dynamic active = vbe.ActiveWindow;
+            bool verified = active != null &&
+                string.Equals((string)active.Caption, caption, StringComparison.Ordinal) &&
+                (int)active.Type == type;
+            return new { WindowCaption = caption, WindowType = type, SetFocusInvoked = true,
+                Verification = verified ? "ActiveWindowReadback" : "Unverified",
+                ActiveWindow = active == null ? null : WindowSnapshot(active, null) };
+        }
+
+        public object CloseWindow(string caption, int type)
+        {
+            if (string.Equals(caption, "CodexVBE", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The CodexVBE tool window cannot close itself through this command.");
+            dynamic target = FindExactWindow(caption, type);
+            if (!(bool)target.Visible)
+                throw new InvalidOperationException("The requested VBE window is already hidden.");
+            target.Close();
+            int matches = 0;
+            bool visible = false;
+            foreach (dynamic window in vbe.Windows)
+                if (string.Equals((string)window.Caption, caption, StringComparison.Ordinal) &&
+                    (int)window.Type == type)
+                { matches++; visible |= (bool)window.Visible; }
+            return new { WindowCaption = caption, WindowType = type, CloseInvoked = true,
+                Verification = matches == 0 ? "RemovedFromWindows" :
+                    matches == 1 && !visible ? "HiddenInWindows" : "Unverified",
+                RemainingMatches = matches, RemainingVisible = visible };
+        }
+
+        private dynamic FindExactWindow(string caption, int type)
+        {
+            if (string.IsNullOrWhiteSpace(caption) || type < 0)
+                throw new ArgumentException("WindowCaption and WindowType from vbe_windows are required.");
+            dynamic target = null;
+            foreach (dynamic window in vbe.Windows)
+            {
+                if (!string.Equals((string)window.Caption, caption, StringComparison.Ordinal) ||
+                    (int)window.Type != type) continue;
+                if (target != null)
+                    throw new InvalidOperationException("More than one VBE window matches the requested caption and type.");
+                target = window;
+            }
+            if (target == null) throw new InvalidOperationException("The requested VBE window is no longer present.");
+            return target;
+        }
+
         private static object WindowSnapshot(dynamic window, int? index)
         {
             var fields = new Dictionary<string, object>();

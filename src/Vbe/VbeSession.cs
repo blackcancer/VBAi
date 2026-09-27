@@ -39,6 +39,14 @@ namespace CodexVBE
                     return Response.Success(ListModules(request.Project));
                 case "vbe_windows":
                     return Response.Success(editorWindows.Windows());
+                case "vbe_environment":
+                    return Response.Success(editorWindows.Environment());
+                case "list_addins":
+                    return Response.Success(editorWindows.AddIns());
+                case "focus_vbe_window":
+                    return Response.Success(editorWindows.FocusWindow(request.WindowCaption, request.WindowType));
+                case "close_vbe_window":
+                    return Response.Success(editorWindows.CloseWindow(request.WindowCaption, request.WindowType));
                 case "code_panes":
                     return Response.Success(editorWindows.CodePanes());
                 case "open_object_browser":
@@ -57,6 +65,10 @@ namespace CodexVBE
                     return Response.Success(codeNavigation.ReplaceProcedure(request));
                 case "remove_procedure":
                     return Response.Success(codeNavigation.RemoveProcedure(request));
+                case "insert_code_file":
+                    return Response.Success(codeNavigation.InsertCodeFile(request));
+                case "inspect_code_file":
+                    return Response.Success(codeNavigation.InspectCodeFile(request.Path));
                 case "project_properties":
                     return Response.Success(components.ProjectProperties(request.Project));
                 case "project_persistence_status":

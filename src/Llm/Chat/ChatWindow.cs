@@ -307,6 +307,8 @@ namespace CodexVBE
             activeTurnId = Guid.NewGuid().ToString("N");
             tools.Mode = currentSession.Mode;
             requestText = "Mode de cette demande : " + currentSession.Mode + (currentSession.Mode == ChatMode.Agent ? ".\n" : ". Analyse uniquement ; aucune modification ni exécution de macro.\n") + requestText;
+            requestText = "<vbe-encoding-context>\n" + LlmVbeContext.EncodingInstructions +
+                "\n</vbe-encoding-context>\n\n" + requestText;
             if (!string.IsNullOrEmpty(currentSession.ResumeContext)) requestText = "Historique de la branche (contexte uniquement ; relire le code vivant) :\n" + currentSession.ResumeContext + "\n\n" + requestText;
             streamedFinalText = null;
             RenameFromQuestion(question);
@@ -319,6 +321,13 @@ namespace CodexVBE
             followConversation = true;
             AddEntry(new ChatEntry { Speaker = "Vous", Text = question, References = attachedReferences, AttachedMemory = attachedMemory, Attachments = attachments, TurnId = activeTurnId });
             tools.NoteUserRequest(question);
+            // Refresh the provider's system message even when a saved chat resumes on another ANSI code page.
+            var firstMessage = messages.Count == 0 ? null :
+                json.DeserializeObject(json.Serialize(messages[0])) as IDictionary<string, object>;
+            if (firstMessage != null && firstMessage.ContainsKey("role") &&
+                string.Equals(Convert.ToString(firstMessage["role"]), "system", StringComparison.OrdinalIgnoreCase))
+                messages.RemoveAt(0);
+            messages.Insert(0, new { role = "system", content = LlmVbeContext.DeveloperInstructions });
             int checkpoint = messages.Count;
             var provider = (LlmProvider)providerPicker.SelectedItem;
             tools.CurrentProviderName = provider.Name;

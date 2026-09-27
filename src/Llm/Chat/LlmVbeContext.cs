@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Text;
 
 namespace CodexVBE
 {
@@ -17,10 +18,25 @@ namespace CodexVBE
                     "The VBE changes while you work. Read current status, projects, code or form state before answering about live content or acting. " +
                     "Resolve and name the exact project, module, form and control before using an edit tool. Never invent identifiers. " +
                     "For code edits use the latest SHA-256 revision; for form edits use the latest form version. " +
+                    EncodingInstructions + " " +
                     "Read form_tree when controls may be nested inside Frames or MultiPage pages; name the exact returned path. " +
                     "The host enforces its configured VBE edit policy. A denied edit must not be retried without a new user request. " +
                     "Only the tools actually listed are implemented; do not claim access to all VBE windows, designer properties, debugging actions or host APIs. " +
                     "Use the user's language; reply in French when the conversation is in French. Keep responses concrete and concise.";
+            }
+        }
+
+        public static string EncodingInstructions
+        {
+            get
+            {
+                return "Before inserting a user-provided code file, call inspect_code_file on its exact path. " +
+                    "Do not infer its encoding from the file extension or from StrictUtf8Valid alone: non-ASCII bytes without a BOM are ambiguous. " +
+                    "Use SourceEncoding only when the user, a BOM or other reliable provenance establishes it; otherwise ask which encoding the file uses. " +
+                    "ASCII files need no override. UTF-8 and UTF-16 BOMs identify themselves. " +
+                    "The current host system ANSI code page is " + Encoding.Default.CodePage +
+                    "; system-ansi refers to that code page, not to a universal VBA encoding. " +
+                    "After insertion, read_module and verify accented characters; stop if they differ.";
             }
         }
 
@@ -32,6 +48,8 @@ namespace CodexVBE
                 HostProcess = process.ProcessName,
                 HostProcessId = process.Id,
                 VbeConnected = true,
+                HostAnsiCodePage = Encoding.Default.CodePage,
+                CodeFileEncodingPolicy = EncodingInstructions,
                 Projects = projects.Ok ? projects.Data : null,
                 ProjectsError = projects.Ok ? null : projects.Error,
                 AvailableAccess = "Typed VBIDE/MSForms tools declared by CodexVBE; inspect before editing"

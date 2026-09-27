@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections;
+using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -257,6 +258,180 @@ namespace CodexVBE
             }
         }
 
+        public object InsertCodeFile(Request request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.ExpectedSha256) ||
+                request.StartLine < 1 || string.IsNullOrWhiteSpace(request.Path) ||
+                !Regex.IsMatch(request.Path, @"^(?:[A-Za-z]:[\\/]|\\\\[^\\/]+[\\/][^\\/]+[\\/])"))
+                throw new ArgumentException("ExpectedSha256, StartLine and an absolute Path are required.");
+            string path = Path.GetFullPath(request.Path);
+            var file = new FileInfo(path);
+            if (!file.Exists) throw new FileNotFoundException("Code file not found.", path);
+            if (file.Length == 0 || file.Length > 256 * 1024)
+                throw new ArgumentException("The code file must contain 1 to 262144 bytes.");
+            byte[] bytes = File.ReadAllBytes(path);
+            if (bytes.Length == 0 || bytes.Length > 256 * 1024)
+                throw new ArgumentException("The code file changed size while it was read.");
+            string sourceHash;
+            using (var sha = SHA256.Create())
+                sourceHash = BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "").ToLowerInvariant();
+            string encoding;
+            string source = DecodeCodeFile(bytes, request.SourceEncoding, out encoding);
+            if (source.IndexOf('\0') >= 0 || string.IsNullOrWhiteSpace(source))
+                throw new ArgumentException("The selected file is not non-empty VBA source text.");
+            dynamic project = GetProject(request.Project);
+            if ((int)project.Mode != 2)
+                throw new InvalidOperationException("The project must be in design mode.");
+            dynamic module = GetModule(project, request.Module);
+            int beforeCount = (int)module.CountOfLines;
+            string before = Code(module, beforeCount);
+            if (!string.Equals(Hash(before), request.ExpectedSha256, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The module changed since it was read.");
+            if (request.StartLine > beforeCount + 1)
+                throw new ArgumentOutOfRangeException("StartLine", "The insertion line is outside the module.");
+            string normalized = source.Replace("\r\n", "\n").Replace('\r', '\n').Replace("\n", "\r\n");
+            int insertedCount = 0;
+            try
+            {
+                module.InsertLines(request.StartLine, normalized);
+                insertedCount = (int)module.CountOfLines - beforeCount;
+                string after = Code(module, (int)module.CountOfLines);
+                if (insertedCount < 1 || string.Equals(after, before, StringComparison.Ordinal))
+                    throw new InvalidOperationException("VBIDE did not insert the file content.");
+                string insertedText = (string)module.Lines[request.StartLine, insertedCount];
+                if (!string.Equals(NonAsciiCharacters(source), NonAsciiCharacters(insertedText), StringComparison.Ordinal))
+                    throw new InvalidOperationException("VBE changed non-ASCII source characters while inserting the file.");
+                return new { Project = request.Project, Module = request.Module,
+                    Path = path, SourceByteCount = bytes.Length, SourceSha256 = sourceHash,
+                    SourceEncoding = encoding, StartLine = request.StartLine,
+                    InsertedLineCount = insertedCount, Sha256 = Hash(after),
+                    CompilationVerified = false };
+            }
+            catch (Exception error)
+            {
+                if (insertedCount == 0)
+                    insertedCount = Math.Max(0, (int)module.CountOfLines - beforeCount);
+                if (insertedCount > 0)
+                {
+                    try
+                    {
+                        module.DeleteLines(request.StartLine, insertedCount);
+                        if (!string.Equals(Code(module, (int)module.CountOfLines), before, StringComparison.Ordinal))
+                            throw new InvalidOperationException("The original module text differs after rollback.");
+                    }
+                    catch (Exception rollbackError)
+                    {
+                        throw new InvalidOperationException("Code file insertion failed and rollback needs inspection: " + rollbackError.Message, error);
+                    }
+                }
+                throw;
+            }
+        }
+
+        public object InspectCodeFile(string suppliedPath)
+        {
+            if (string.IsNullOrWhiteSpace(suppliedPath) ||
+                !Regex.IsMatch(suppliedPath, @"^(?:[A-Za-z]:[\\/]|\\\\[^\\/]+[\\/][^\\/]+[\\/])"))
+                throw new ArgumentException("An absolute Path explicitly supplied by the user is required.");
+            string path = Path.GetFullPath(suppliedPath);
+            var file = new FileInfo(path);
+            if (!file.Exists) throw new FileNotFoundException("Code file not found.", path);
+            if (file.Length == 0 || file.Length > 256 * 1024)
+                throw new ArgumentException("The code file must contain 1 to 262144 bytes.");
+            byte[] bytes = File.ReadAllBytes(path);
+            if (bytes.Length == 0 || bytes.Length > 256 * 1024)
+                throw new ArgumentException("The code file changed size while it was read.");
+            string bom = bytes.Length >= 4 &&
+                ((bytes[0] == 0xff && bytes[1] == 0xfe && bytes[2] == 0 && bytes[3] == 0) ||
+                 (bytes[0] == 0 && bytes[1] == 0 && bytes[2] == 0xfe && bytes[3] == 0xff)) ? "utf-32" :
+                bytes.Length >= 3 && bytes[0] == 0xef && bytes[1] == 0xbb && bytes[2] == 0xbf ? "utf-8" :
+                bytes.Length >= 2 && bytes[0] == 0xff && bytes[1] == 0xfe ? "utf-16le" :
+                bytes.Length >= 2 && bytes[0] == 0xfe && bytes[1] == 0xff ? "utf-16be" : null;
+            bool containsNonAscii = false;
+            bool containsNul = false;
+            foreach (byte value in bytes)
+            {
+                if (value >= 128) containsNonAscii = true;
+                if (value == 0) containsNul = true;
+            }
+            bool? utf8Valid = null;
+            if (bom == null || bom == "utf-8")
+            {
+                try
+                {
+                    int offset = bom == "utf-8" ? 3 : 0;
+                    new UTF8Encoding(false, true).GetString(bytes, offset, bytes.Length - offset);
+                    utf8Valid = true;
+                }
+                catch (DecoderFallbackException) { utf8Valid = false; }
+            }
+            string sha;
+            using (var hash = SHA256.Create())
+                sha = BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-", "").ToLowerInvariant();
+            return new { Path = path, ByteCount = bytes.Length, Sha256 = sha, Bom = bom,
+                StrictUtf8Valid = utf8Valid, ContainsNonAscii = containsNonAscii,
+                ContainsNulByte = containsNul,
+                ExplicitEncodingRequired = bom == null && (containsNonAscii || containsNul),
+                DefaultEncoding = bom ?? (!containsNonAscii && !containsNul ? "utf-8" : null),
+                SystemAnsiCodePage = Encoding.Default.CodePage,
+                SupportedSourceEncodings = new[] { "utf-8", "utf-16le", "utf-16be", "windows-1252", "system-ansi" },
+                ContentIncluded = false };
+        }
+
+        private static string DecodeCodeFile(byte[] bytes, string requested, out string name)
+        {
+            string selected = string.IsNullOrWhiteSpace(requested) ? null : requested.Trim().ToLowerInvariant();
+            if (selected != null && selected != "utf-8" && selected != "utf-16le" &&
+                selected != "utf-16be" && selected != "windows-1252" && selected != "system-ansi")
+                throw new ArgumentException("SourceEncoding must be utf-8, utf-16le, utf-16be, windows-1252 or system-ansi.");
+            string bom = null;
+            int offset = 0;
+            if (bytes.Length >= 4 && ((bytes[0] == 0xff && bytes[1] == 0xfe && bytes[2] == 0 && bytes[3] == 0) ||
+                (bytes[0] == 0 && bytes[1] == 0 && bytes[2] == 0xfe && bytes[3] == 0xff)))
+                throw new ArgumentException("UTF-32 source files are not supported; convert the file to UTF-8.");
+            if (bytes.Length >= 3 && bytes[0] == 0xef && bytes[1] == 0xbb && bytes[2] == 0xbf)
+            { bom = "utf-8"; offset = 3; }
+            else if (bytes.Length >= 2 && bytes[0] == 0xff && bytes[1] == 0xfe)
+            { bom = "utf-16le"; offset = 2; }
+            else if (bytes.Length >= 2 && bytes[0] == 0xfe && bytes[1] == 0xff)
+            { bom = "utf-16be"; offset = 2; }
+            if (bom != null && selected != null && selected != bom)
+                throw new ArgumentException("SourceEncoding conflicts with the file BOM.");
+            if (bom == null && selected == null)
+                for (int index = 0; index < bytes.Length; index++)
+                    if (bytes[index] >= 128)
+                        throw new ArgumentException("Non-ASCII source without a BOM is ambiguous. Inspect the file and specify SourceEncoding explicitly.");
+            selected = selected ?? bom ?? "utf-8";
+            Encoding decoder = selected == "utf-8" ? (Encoding)new UTF8Encoding(false, true) :
+                selected == "utf-16le" ? new UnicodeEncoding(false, false, true) :
+                selected == "utf-16be" ? new UnicodeEncoding(true, false, true) :
+                Encoding.GetEncoding(selected == "windows-1252" ? 1252 : Encoding.Default.CodePage,
+                    EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
+            string source;
+            try { source = decoder.GetString(bytes, offset, bytes.Length - offset); }
+            catch (DecoderFallbackException error)
+            {
+                throw new ArgumentException("The file is not valid " + selected +
+                    ". Specify a different SourceEncoding only when that is the file's known encoding.", error);
+            }
+            byte[] roundTrip = decoder.GetBytes(source);
+            if (roundTrip.Length != bytes.Length - offset)
+                throw new ArgumentException("The selected encoding cannot reproduce the source bytes exactly.");
+            for (int index = 0; index < roundTrip.Length; index++)
+                if (roundTrip[index] != bytes[index + offset])
+                    throw new ArgumentException("The selected encoding cannot reproduce the source bytes exactly.");
+            name = selected;
+            return source;
+        }
+
+        private static string NonAsciiCharacters(string source)
+        {
+            var result = new StringBuilder();
+            foreach (char character in source)
+                if (character > 127) result.Append(character);
+            return result.ToString();
+        }
+
         private static string ValidateProcedureText(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Procedure) ||
@@ -329,8 +504,16 @@ namespace CodexVBE
         {
             if (string.IsNullOrEmpty(request.Query) || request.Query.Length > 200)
                 throw new ArgumentException("Query must contain 1 to 200 characters.");
+            Regex wildcard = null;
             if (request.PatternSearch)
-                throw new InvalidOperationException("Wildcard search is not yet supported by find_code.");
+            {
+                if (request.Query.Trim('*').Length == 0)
+                    throw new ArgumentException("A wildcard pattern must contain more than asterisks.");
+                string expression = Regex.Escape(request.Query).Replace(@"\*", ".*?").Replace(@"\?", ".");
+                RegexOptions options = RegexOptions.CultureInvariant;
+                if (!request.MatchCase) options |= RegexOptions.IgnoreCase;
+                wildcard = new Regex(expression, options, TimeSpan.FromMilliseconds(200));
+            }
             dynamic project = GetProject(request.Project);
             var results = new List<object>();
             var sourceVersions = new List<object>();
@@ -361,6 +544,22 @@ namespace CodexVBE
                 for (int line = 0; line < lines.Length && results.Count <= 200; line++)
                 {
                     string sourceLine = lines[line];
+                    if (wildcard != null)
+                    {
+                        foreach (Match match in wildcard.Matches(sourceLine))
+                        {
+                            int afterMatch = match.Index + match.Length;
+                            bool wholeMatch = !request.WholeWord ||
+                                ((match.Index == 0 || !IdentifierChar(sourceLine[match.Index - 1])) &&
+                                 (afterMatch == sourceLine.Length || !IdentifierChar(sourceLine[afterMatch])));
+                            if (!wholeMatch) continue;
+                            results.Add(new { Module = name, StartLine = line + 1,
+                                StartColumn = match.Index + 1, EndLine = line + 1,
+                                EndColumn = afterMatch, Text = sourceLine, Sha256 = sha });
+                            if (results.Count > 200) break;
+                        }
+                        continue;
+                    }
                     int offset = 0;
                     while (offset <= sourceLine.Length - request.Query.Length && results.Count <= 200)
                     {
@@ -383,6 +582,7 @@ namespace CodexVBE
             bool truncated = results.Count > 200;
             if (truncated) results.RemoveAt(200);
             return new { Project = request.Project, Query = request.Query,
+                request.PatternSearch, request.WholeWord, request.MatchCase,
                 Matches = results, SourceVersions = sourceVersions,
                 Truncated = truncated };
         }
