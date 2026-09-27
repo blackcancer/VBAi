@@ -140,3 +140,52 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+namespace CodexVBE.Tests.Unit
+{
+    using System;
+    using CodexVBE;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    public sealed partial class VbeFormsTests
+    {
+        [TestMethod]
+        public void ListReaderValidatesRequiredFieldsNegativeRowsAndNonzeroOffset()
+        {
+            var service = new VbeForms(new FakeVbe());
+            MissingFields(r=>service.ListItems(r),"Project","Form","ControlPath");
+            WithList("ListBox",(f,c,r)=>{
+                c.ListCountOverride=-1;
+                Assert.ThrowsException<InvalidOperationException>(()=>f.Service.ListItems(r));
+                c.ListCountOverride=null; r.Offset=1;
+                dynamic result=f.Service.ListItems(r);
+                Assert.AreEqual(1,(int)result.ReturnedRows);
+                Assert.IsNull((string)result.ListVersion);
+                StringAssert.Contains((string)result.ListVersionError,"complete list");
+            });
+        }
+
+        [TestMethod]
+        public void ListReaderPreservesNullAndReportsConversionAndSerializationFailures()
+        {
+            WithList("ComboBox",(f,c,r)=>{
+                c.ListRows[0][0]=null;
+                dynamic nullable=f.Service.ListItems(r);
+                Assert.IsNotNull((string)nullable.ListVersion);
+                foreach(var invocation in new[]{false,true}) {
+                    c.ListRows[0][0]=new CellTextFailure(invocation);
+                    dynamic failed=f.Service.ListItems(r);
+                    Assert.IsNull((string)failed.ListVersion);
+                    StringAssert.Contains((string)failed.ListVersionError,"could not be read");
+                }
+                c.ListRows.Clear(); c.ColumnCount=32;
+                for(int i=0;i<4;i++) {
+                    var cells=new object[32];
+                    for(int j=0;j<32;j++) cells[j]=new string('\0',4096);
+                    c.ListRows.Add(cells);
+                }
+                dynamic oversized=f.Service.ListItems(r);
+                Assert.IsNull((string)oversized.ListVersion);
+                StringAssert.Contains((string)oversized.ListVersionError,"could not be calculated");
+            });
+        }
+    }
+}

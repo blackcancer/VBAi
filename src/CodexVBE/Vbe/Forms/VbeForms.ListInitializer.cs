@@ -184,7 +184,7 @@ namespace CodexVBE
         {
             if (code.Length == 0) return new string[0];
             string[] lines = Regex.Split(code, "\r\n|\n|\r");
-            return lines.Length > 0 && lines[lines.Length - 1].Length == 0
+            return lines[lines.Length - 1].Length == 0
                 ? lines.Take(lines.Length - 1).ToArray() : lines;
         }
 

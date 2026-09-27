@@ -206,6 +206,15 @@ namespace CodexVBE.Tests.Unit
             public int CreateEventCount { get; private set; }
             public int InsertCount { get; private set; }
             public bool FailInsert { get; set; }
+            public bool NoCreate { get; set; }
+            public bool FailRead { get; set; }
+            public int? ProcedureCountOverride { get; set; }
+            public Action<FakeCodeModule> AfterInsert { get; set; }
+            public void Reset(string code)
+            {
+                lines.Clear();
+                if (code.Length > 0) lines.AddRange(code.Split(new[] { "\r\n" }, StringSplitOptions.None));
+            }
             public LineAccessor Lines { get; }
             public ProcedureAccessor ProcBodyLine { get; }
             public ProcedureAccessor ProcStartLine { get; }
@@ -215,7 +224,7 @@ namespace CodexVBE.Tests.Unit
             {
                 if (eventName != "Initialize" || objectName != "UserForm")
                     throw new InvalidOperationException("Unexpected event");
-                CreateEventCount++;
+                CreateEventCount++; if (NoCreate) return 0;
                 lines.Add("Private Sub UserForm_Initialize()");
                 lines.Add("End Sub");
                 return lines.Count - 1;
@@ -226,7 +235,7 @@ namespace CodexVBE.Tests.Unit
                 InsertCount++;
                 if (FailInsert)
                     throw new InvalidOperationException("native insert refused");
-                lines.InsertRange(start - 1, text.Split(new[] { "\r\n" }, StringSplitOptions.None));
+                lines.InsertRange(start - 1, text.Split(new[] { "\r\n" }, StringSplitOptions.None)); AfterInsert?.Invoke(this);
             }
 
             public void DeleteLines(int start, int count)
@@ -248,7 +257,7 @@ namespace CodexVBE.Tests.Unit
                     this.module = module;
                 }
 
-                public string this[int start, int count] => string.Join("\r\n", module.lines.Skip(start - 1).Take(count));
+                public string this[int start, int count] { get { if(module.FailRead) throw new InvalidOperationException("Code read failed"); return string.Join("\r\n", module.lines.Skip(start - 1).Take(count)); } }
             }
 
             public sealed class ProcedureAccessor
@@ -269,7 +278,7 @@ namespace CodexVBE.Tests.Unit
                         if (start < 0)
                             throw new COMException("Procedure missing");
                         if (kind == "count")
-                            return module.lines.Count - start;
+                            return module.ProcedureCountOverride ?? module.lines.Count - start;
                         return start + 1;
                     }
                 }

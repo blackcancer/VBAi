@@ -315,13 +315,27 @@ namespace CodexVBE.Tests.Unit
             {
                 get
                 {
-                    return ListRows.Count;
+                    if (ThrowListCount) throw new InvalidOperationException("ListCount unavailable"); return ListCountOverride ?? ListRows.Count;
                 }
             }
 
             public int ColumnCount { get; set; } = 1;
             public string RowSource { get; set; }
             public bool ThrowOnCell { get; set; }
+            public bool ThrowListCount { get; set; }
+            public int? ListCountOverride { get; set; }
+            public bool ThrowAdd { get; set; }
+            public bool SkipAdd { get; set; }
+            public Action<FakeControl> AfterAdd { get; set; }
+            public Action<FakeControl> AfterRemove { get; set; }
+            public int AddAttempts { get; private set; }
+            public void AddItem(string text)
+            {
+                AddAttempts++;
+                if (ThrowAdd) throw new InvalidOperationException("Native AddItem failed");
+                if (!SkipAdd) ListRows.Add(new object[] { text });
+                AfterAdd?.Invoke(this);
+            }
             internal bool ThrowRemove { get; set; }
             internal bool SkipRemove { get; set; }
             internal int RemoveAttempts { get; private set; }
@@ -344,6 +358,7 @@ namespace CodexVBE.Tests.Unit
                     throw new InvalidOperationException("Native RemoveItem failed");
                 if (!SkipRemove)
                     ListRows.RemoveAt(index);
+                AfterRemove?.Invoke(this);
             }
 
             public bool FailCaption { get; set; }
