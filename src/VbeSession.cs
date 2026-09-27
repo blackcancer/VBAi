@@ -158,6 +158,8 @@ namespace CodexVBE
                     return Response.Success(forms.DuplicateComboBox(request));
                 case "duplicate_empty_form_frame":
                     return Response.Success(forms.DuplicateEmptyFrame(request));
+                case "frame_copy_plan":
+                    return Response.Success(forms.FrameCopyPlan(request));
                 case "remove_form_control":
                     return Response.Success(forms.RemoveControl(request));
                 case "add_form_page":
