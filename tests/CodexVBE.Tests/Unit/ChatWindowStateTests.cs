@@ -574,7 +574,7 @@ namespace CodexVBE.Tests.Unit
                 var picker = Get<ComboBox>(window, "modelPicker");
                 Assert.AreEqual(2, picker.Items.Count);
                 Assert.AreEqual("saved", ((LlmModelOption)picker.SelectedItem).Id);
-                Assert.IsTrue(Get<Button>(window, "refreshModels").Enabled);
+                Assert.IsTrue(Get<ToolStripMenuItem>(window, "refreshModels").Enabled);
                 Set(window, "currentSession", null);
             }
         }
@@ -589,7 +589,7 @@ namespace CodexVBE.Tests.Unit
                     new InvalidOperationException("catalogue failed"));
                 CompleteOnSta((Task)Call(window, "LoadModelsAsync"));
                 Assert.AreEqual(0, Get<ComboBox>(window, "modelPicker").Items.Count);
-                Assert.IsTrue(Get<Button>(window, "refreshModels").Enabled);
+                Assert.IsTrue(Get<ToolStripMenuItem>(window, "refreshModels").Enabled);
                 Assert.IsFalse(Get<ComboBox>(window, "modelPicker").Enabled);
                 Set(window, "currentSession", null);
             }

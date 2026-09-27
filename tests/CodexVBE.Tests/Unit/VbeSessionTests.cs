@@ -313,6 +313,104 @@ namespace CodexVBE.Tests.Unit
             Assert.ThrowsException<ArgumentException>(() => f.Session.Execute(request));
         }
 
+        [TestMethod]
+        public void ProjectDispatchReturnsVersionPersistenceAndSignatureHostLimits()
+        {
+            var f = Create();
+            dynamic properties = f.Session.Execute(new Request {
+                Command = "project_properties", Project = f.Project.Name }).Data;
+            Assert.AreEqual(f.Project.Name, (string)properties.Project);
+            Assert.AreEqual(2, (int)properties.Mode);
+            Assert.IsFalse(string.IsNullOrWhiteSpace((string)properties.Version));
+            Assert.AreEqual(1, (int)properties.Components.Count);
+            f.Project.Mode = 1;
+            dynamic changed = f.Session.Execute(new Request {
+                Command = "project_properties", Project = f.Project.Name }).Data;
+            Assert.AreNotEqual((string)properties.Version, (string)changed.Version);
+            f.Project.Saved = false;
+            dynamic persistence = f.Session.Execute(new Request {
+                Command = "project_persistence_status", Project = f.Project.Name }).Data;
+            Assert.IsFalse((bool)persistence.ProjectSaved);
+            Assert.IsFalse((bool)persistence.HostAvailable);
+            Assert.IsNull((object)persistence.HostPath);
+            dynamic signature = f.Session.Execute(new Request {
+                Command = "project_signature_status", Project = f.Project.Name }).Data;
+            Assert.IsFalse((bool)signature.Available);
+            Assert.IsNull((object)signature.Signed);
+            Assert.AreEqual("Host", (string)signature.Source);
+            dynamic persistSignature = f.Session.PersistProjectSignature(f.Project.Name);
+            Assert.IsFalse((bool)persistSignature.Available);
+            Assert.IsFalse((bool)persistSignature.Saved);
+        }
+
+        [TestMethod]
+        public void ProjectMutationDispatchRejectsUnsupportedHostAndDisabledRename()
+        {
+            var f = Create();
+            var rename = f.Session.Execute(new Request { Command = "rename_project",
+                Project = f.Project.Name, NewName = "Other" });
+            Assert.IsFalse(rename.Ok);
+            StringAssert.Contains(rename.Error, "disabled");
+            Assert.AreEqual("VBAProject", f.Project.Name);
+            Assert.ThrowsException<ArgumentException>(() => f.Session.Execute(new Request {
+                Command = "save_host_document", Project = f.Project.Name }));
+            Assert.ThrowsException<InvalidOperationException>(() => f.Session.Execute(new Request {
+                Command = "save_host_document", Project = f.Project.Name,
+                ExpectedHostPath = @"C:\Temp\Host.xlsm" }));
+            Assert.ThrowsException<ArgumentException>(() => f.Session.Execute(new Request {
+                Command = "save_host_document_as", Project = f.Project.Name }));
+            Assert.ThrowsException<InvalidOperationException>(() => f.Session.Execute(new Request {
+                Command = "save_host_document_as", Project = f.Project.Name,
+                Path = @"C:\Temp\Other.xlsm", ExpectedProjectVersion = "stale" }));
+        }
+
+        [TestMethod]
+        public void SignatureDialogDispatchRejectsMissingModeInactiveAndRunningProject()
+        {
+            var f = Create();
+            Assert.ThrowsException<ArgumentException>(() => f.Session.Execute(new Request {
+                Command = "read_project_signature_dialog", Project = f.Project.Name }));
+            f.Project.Mode = 1;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Session.Execute(new Request {
+                Command = "read_project_signature_dialog", Project = f.Project.Name, ExpectedMode = 2 }));
+            f.Project.Mode = 2;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Session.Execute(new Request {
+                Command = "read_project_signature_dialog", Project = f.Project.Name, ExpectedMode = 2 }));
+        }
+
+        [TestMethod]
+        public void ReferenceMutationRejectsNegativeVersionsMissingIdentityAndChangedInventory()
+        {
+            var f = Create();
+            const string guid = "{A04D9E3D-48C7-4B46-A582-F00DD08E89CA}";
+            string version = (string)((dynamic)f.Session.Execute(new Request {
+                Command = "list_references", Project = f.Project.Name }).Data).Version;
+            foreach (string command in new[] { "add_reference_guid", "remove_reference" })
+            {
+                var invalid = new Request { Command = command, Project = f.Project.Name,
+                    Guid = guid, Major = -1, Minor = 0, ExpectedReferencesVersion = version };
+                Assert.ThrowsException<ArgumentException>(() => f.Session.Execute(invalid));
+                invalid.Major = 0;
+                invalid.Minor = -1;
+                Assert.ThrowsException<ArgumentException>(() => f.Session.Execute(invalid));
+                invalid.Minor = 0;
+                if (command == "add_reference_guid") invalid.ExpectedReferencesVersion = "stale";
+                Assert.ThrowsException<InvalidOperationException>(() => f.Session.Execute(invalid));
+            }
+            var add = new Request { Command = "add_reference_guid", Project = f.Project.Name,
+                Guid = guid.ToLowerInvariant(), Major = 1, Minor = 0,
+                ExpectedReferencesVersion = version.ToUpperInvariant() };
+            Assert.IsTrue(f.Session.Execute(add).Ok);
+            Assert.AreEqual(1, f.Project.References.Items.Count);
+            var remove = new Request { Command = "remove_reference", Project = f.Project.Name,
+                Guid = guid, Major = 1, Minor = 0, ExpectedReferencesVersion = version };
+            Assert.ThrowsException<InvalidOperationException>(() => f.Session.Execute(remove));
+            remove.ExpectedReferencesVersion = (string)((dynamic)f.Session.Execute(new Request {
+                Command = "list_references", Project = f.Project.Name }).Data).Version;
+            Assert.IsTrue(f.Session.Execute(remove).Ok);
+            Assert.AreEqual(0, f.Project.References.Items.Count);
+        }
+
         private sealed class Fixture
         {
             public FakeVbe Vbe;
@@ -323,6 +421,7 @@ namespace CodexVBE.Tests.Unit
         public sealed class FakeVbe
         {
             public List<FakeProject> VBProjects { get; } = new List<FakeProject>();
+            public FakeProject ActiveVBProject { get; set; }
         }
 
         public sealed class FakeProject

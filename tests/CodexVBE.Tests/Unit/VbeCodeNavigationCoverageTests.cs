@@ -100,9 +100,12 @@ namespace CodexVBE.Tests.Unit
 
             dynamic exact = navigation.Find(new Request { Project = "Projet", Module = "Class1",
                 Query = "A?pha", PatternSearch = true, MatchCase = true });
-            Assert.AreEqual(2, (int)exact.Matches.Count);
+            Assert.AreEqual(1, (int)exact.Matches.Count);
             Assert.AreEqual(1, (int)exact.Matches[0].StartColumn);
-            Assert.AreEqual(13, (int)exact.Matches[1].StartColumn);
+            dynamic folded = navigation.Find(new Request { Project = "Projet", Module = "Class1",
+                Query = "A?pha", PatternSearch = true, MatchCase = false });
+            Assert.AreEqual(3, (int)folded.Matches.Count);
+            Assert.AreEqual(13, (int)folded.Matches[2].StartColumn);
         }
 
         [TestMethod]

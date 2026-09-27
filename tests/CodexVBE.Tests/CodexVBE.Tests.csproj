@@ -70,6 +70,20 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\tools\tests\Test-SolidWorksDebug.ps1" Link="Manual\Debug\Test-SolidWorksDebug.ps1" />
+    <None Include="..\..\tools\tests\Test-SolidWorksBreakpoint.ps1" Link="Manual\Debug\Test-SolidWorksBreakpoint.ps1" />
+    <None Include="..\..\tools\tests\Test-VbeOptions.ps1" Link="Manual\Debug\Test-VbeOptions.ps1" />
+    <None Include="..\..\tools\probes\Test-CompileProject.ps1" Link="Manual\Debug\Test-CompileProject.ps1" />
+    <None Include="..\..\tools\probes\Test-RuntimeDialog.ps1" Link="Manual\Debug\Test-RuntimeDialog.ps1" />
+    <None Include="..\..\tools\probes\Test-QuickWatch.ps1" Link="Manual\Debug\Test-QuickWatch.ps1" />
+    <None Include="..\..\tools\probes\Test-EditWatchType.ps1" Link="Manual\Debug\Test-EditWatchType.ps1" />
+    <None Include="..\..\tools\probes\Test-NestedCallStack.ps1" Link="Manual\Debug\Test-NestedCallStack.ps1" />
+    <None Include="..\..\tools\probes\Test-StepOver.ps1" Link="Manual\Debug\Test-StepOver.ps1" />
+    <None Include="..\..\tools\probes\Test-ClearAllBreakpoints.ps1" Link="Manual\Debug\Test-ClearAllBreakpoints.ps1" />
+    <None Include="..\..\tools\probes\Test-ShowNextStatementGuard.ps1" Link="Manual\Debug\Test-ShowNextStatementGuard.ps1" />
+    <None Include="..\..\tools\probes\Inspect-DebugTree.ps1" Link="Manual\Debug\Inspect-DebugTree.ps1" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\CodexVBE.csproj" />
     <ProjectReference Include="..\..\tools\tests\Providers\ProviderTests.csproj" ReferenceOutputAssembly="false" />
     <None Include="..\..\tools\tests\Providers\bin\$(Configuration)\net48\ProviderTests.exe" Link="ProviderTests.exe" CopyToOutputDirectory="PreserveNewest" />

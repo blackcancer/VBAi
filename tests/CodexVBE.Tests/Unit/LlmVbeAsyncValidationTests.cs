@@ -59,7 +59,7 @@ namespace CodexVBE.Tests.Unit
         [TestMethod]
         public async Task AsyncDispatchReturnsReadOnlyStatusFromInMemorySession()
         {
-            var tools = new LlmVbeTools(new VbeSession(new object()), null, new LlmSettings());
+            var tools = new LlmVbeTools(new VbeSession(new VbeSessionTests.FakeVbe()), null, new LlmSettings());
             var response = Json.Deserialize<Response>(await tools.InvokeAsync("status", "{}"));
             Assert.IsTrue(response.Ok);
             Assert.IsNotNull(response.Data);

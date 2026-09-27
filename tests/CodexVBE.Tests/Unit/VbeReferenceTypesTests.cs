@@ -92,6 +92,75 @@ namespace CodexVBE.Tests.Unit
             Assert.ThrowsException<InvalidOperationException>(() => reader.ListTypes(request));
         }
 
+        [TestMethod]
+        public void ReferenceMustBeSelectedWithAnExactValidIdentityAndAbsoluteFile()
+        {
+            if (!File.Exists(StdOlePath)) Assert.Inconclusive("Windows stdole2.tlb is unavailable.");
+            var reference = ReferenceFor(StdOlePath);
+            var project = new FakeProject { Name = "Projet" };
+            project.References.Add(reference);
+            var host = new FakeVbe();
+            host.VBProjects.Add(project);
+            var reader = new VbeReferenceTypes(host);
+            var request = new Request { Project = project.Name, Guid = reference.GUID,
+                Major = reference.Major, Minor = reference.Minor };
+            request.Minor++;
+            Assert.ThrowsException<InvalidOperationException>(() => reader.ListTypes(request));
+            request.Minor--;
+            reference.FullPath = "relative.tlb";
+            Assert.ThrowsException<FileNotFoundException>(() => reader.ListTypes(request));
+            reference.FullPath = StdOlePath;
+            reference.GUID = Guid.NewGuid().ToString("B");
+            Assert.ThrowsException<InvalidOperationException>(() => reader.ListTypes(request));
+            request.Guid = reference.GUID;
+            var error = Assert.ThrowsException<InvalidOperationException>(() => reader.ListTypes(request));
+            StringAssert.Contains(error.Message, "identity differs");
+        }
+
+        [TestMethod]
+        public void TypeAndMemberPagesExposeStableOffsetsAndEmptyFinalPages()
+        {
+            if (!File.Exists(StdOlePath)) Assert.Inconclusive("Windows stdole2.tlb is unavailable.");
+            var reference = ReferenceFor(StdOlePath);
+            var project = new FakeProject { Name = "Projet" };
+            project.References.Add(reference);
+            var host = new FakeVbe();
+            host.VBProjects.Add(project);
+            var reader = new VbeReferenceTypes(host);
+            var request = new Request { Project = project.Name, Guid = reference.GUID,
+                Major = reference.Major, Minor = reference.Minor, Limit = 1 };
+            object first = reader.ListTypes(request);
+            int typeCount = Convert.ToInt32(Prop(first, "TotalTypes"));
+            Assert.IsTrue(typeCount > 1);
+            Assert.AreEqual(1, Prop(first, "Returned"));
+            Assert.AreEqual(true, Prop(first, "HasMore"));
+            request.Offset = typeCount;
+            object empty = reader.ListTypes(request);
+            Assert.AreEqual(0, Prop(empty, "Returned"));
+            Assert.AreEqual(false, Prop(empty, "HasMore"));
+
+            request.Offset = 0;
+            request.Limit = 50;
+            object types = reader.ListTypes(request);
+            object selected = null;
+            foreach (object type in (IEnumerable)Prop(types, "Types"))
+                if ((string)Prop(type, "Kind") != "TKIND_COCLASS" &&
+                    Convert.ToInt32(Prop(type, "FunctionCount")) + Convert.ToInt32(Prop(type, "VariableCount")) > 0)
+                { selected = type; break; }
+            Assert.IsNotNull(selected);
+            request.TypeIndex = Convert.ToInt32(Prop(selected, "TypeIndex"));
+            request.TypeIdentity = (string)Prop(selected, "TypeIdentity");
+            request.Limit = 1;
+            object firstMember = reader.ListMembers(request);
+            int memberCount = Convert.ToInt32(Prop(firstMember, "TotalMembers"));
+            Assert.IsTrue(memberCount > 0);
+            Assert.AreEqual(1, Prop(firstMember, "Returned"));
+            request.Offset = memberCount;
+            object emptyMembers = reader.ListMembers(request);
+            Assert.AreEqual(0, Prop(emptyMembers, "Returned"));
+            Assert.AreEqual(false, Prop(emptyMembers, "HasMore"));
+        }
+
         private static FakeReference ReferenceFor(string path)
         {
             ITypeLib library;
