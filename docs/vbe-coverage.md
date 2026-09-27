@@ -166,6 +166,8 @@ Dans Excel PID 45004, `tools/probes/Test-StepOver.ps1` a arrêté une procédure
 
 Dans Excel PID 7952, `list_commands` a parcouru 438 contrôles natifs en pages de 200, 200 et 38 éléments ; l'ancien plafond fixe à 200 aurait masqué 238 entrées. Deux lectures successives de 100 éléments aux offsets 0 et 100 correspondaient exactement, dans l'ordre et par identifiant, à une lecture unique de 200 éléments. Une lecture filtrée par chemin de menu a aussi respecté `Offset=2, Limit=2`, et un offset négatif a été refusé. Cette preuve vaut pour le contexte VBE observé : l'activation, les chemins et éventuellement l'ordre des commandes peuvent évoluer entre deux appels, donc la pagination ne garantit pas un instantané atomique.
 
+Dans Excel PID 34072, `tools/probes/Test-ClearAllBreakpoints.ps1` a posé deux points d'arrêt sur les lignes 3 et 4 d'une procédure jetable. La première exécution s'est arrêtée en mode pause à la ligne 3. Après `reset`, `debug_global` avec `Action=clear_all_breakpoints` a invoqué la commande native `Id=579` en mode conception. Une nouvelle exécution a terminé en `Mode=2` avec `CodexClearProbe:2` dans la fenêtre Exécution, sans arrêt sur les deux lignes traversées. Cette preuve porte sur les deux lignes de cette procédure ; faute d'inventaire VBIDE, la réponse immédiate de la commande reste `Verification=Unverified` et ne peut pas garantir l'état de tous les projets du VBE.
+
 ## Prochaine exploration
 
 1. Vérifier les propriétés modifiables restantes des contrôles et conteneurs, ainsi que leur suppression et leur réorganisation, sur des classeurs jetables.
