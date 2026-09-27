@@ -105,7 +105,7 @@ namespace CodexVBE
             string value = GetSelectedModel(provider);
             if (string.IsNullOrWhiteSpace(value) && provider.ModelVariable != null) value = Environment.GetEnvironmentVariable(provider.ModelVariable);
             if (string.IsNullOrWhiteSpace(value))
-                throw new InvalidOperationException("Configurez un modèle pour " + provider.Name + " dans les paramètres CodexVBE.");
+                throw new InvalidOperationException("Configurez un modèle pour " + provider.Name + " dans les paramètres VBAi.");
             return value;
         }
 

@@ -1,4 +1,4 @@
-﻿namespace CodexVBE
+namespace CodexVBE
 {
     internal sealed partial class ChatWindow
     {
@@ -82,6 +82,7 @@
 
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ChatWindow));
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
             this.newChat = new CodexVBE.ChatActionButton();
@@ -269,6 +270,7 @@
             this.github});
             this.optionsMenu.Name = "optionsMenu";
             this.github.Name = "github";
+            this.github.Image = ((System.Drawing.Image)(resources.GetObject("github.Image")));
             this.github.Text = "GitHub · synchroniser le VBA…";
             this.github.ToolTipText = "Exporter et synchroniser les sources du document courant avec un dépôt GitHub.";
             this.github.Click += new System.EventHandler(this.GitHub_Click);
@@ -277,6 +279,7 @@
             // configure
             //
             this.configure.Name = "configure";
+            this.configure.Image = ((System.Drawing.Image)(resources.GetObject("configure.Image")));
             this.configure.Size = new System.Drawing.Size(221, 22);
             this.configure.Text = "Paramètres…";
             //
@@ -356,7 +359,7 @@
             this.appTitle.Name = "appTitle";
             this.appTitle.Size = new System.Drawing.Size(404, 33);
             this.appTitle.TabIndex = 7;
-            this.appTitle.Text = "CodexVBE";
+            this.appTitle.Text = "VBAi";
             this.appTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             //
             // sessionTitle
@@ -370,7 +373,7 @@
             this.sessionTitle.Name = "sessionTitle";
             this.sessionTitle.Size = new System.Drawing.Size(404, 27);
             this.sessionTitle.TabIndex = 8;
-            this.sessionTitle.Text = "Votre espace de travail VBA";
+            this.sessionTitle.Text = "Your AI agent for VBA";
             this.sessionTitle.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             //
             // options
@@ -1125,8 +1128,9 @@
             this.KeyPreview = true;
             this.MinimumSize = new System.Drawing.Size(440, 560);
             this.Name = "ChatWindow";
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "CodexVBE — Assistant";
+            this.Text = "VBAi — Your AI agent for VBA";
             this.optionsMenu.ResumeLayout(false);
             this.rootLayout.ResumeLayout(false);
             this.rootLayout.PerformLayout();

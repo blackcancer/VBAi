@@ -360,6 +360,14 @@ namespace CodexVBE
             return new VbaGitProject(() => (object)GetProject(projectName), hostPath);
         }
 
+        internal string GitScope(string projectName)
+        {
+            dynamic project = GetProject(projectName);
+            string path = (string)project.FileName;
+            if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path)) throw new InvalidOperationException("Enregistrez le document avant d’utiliser Git.");
+            return Path.GetFullPath(path);
+        }
+
         internal object PersistProjectSignature(string projectName)
         {
             return components.PersistExcelSignature(projectName);

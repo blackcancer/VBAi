@@ -9,7 +9,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using CodexVBE;
 
-internal static class GitTests
+internal static partial class GitTests
 {
     private static int checks;
     private static string root;
@@ -21,7 +21,7 @@ internal static class GitTests
         Console.InputEncoding = new UTF8Encoding(true);
         root = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "runs", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
-        try { Snapshots(); Repositories(); ProjectImport(); Workflow(); Designer(); Console.WriteLine("PASS " + checks + " Git checks (local Git + simulated VBE). Real hosts: NOT_RUN."); return 0; }
+        try { Snapshots(); Repositories(); ProjectImport(); Workflow(); Advanced(); Designer(); Console.WriteLine("PASS " + checks + " Git checks (local Git + simulated VBE). Real hosts: NOT_RUN."); return 0; }
         catch (Exception ex) { Console.Error.WriteLine(ex); return 1; }
     }
     private static void Assert(bool ok, string message) { checks++; if (!ok) throw new Exception(message); }
@@ -134,6 +134,7 @@ internal static class GitTests
             Assert(form.Controls.Find("tabs", true).Length == 1, "Designer tabs");
             Assert(form.Controls.Find("diff", true).Length == 1, "Designer diff grid");
             Assert(form.Controls.Find("fetch", true).Length == 1 && form.Controls.Find("commit", true).Length == 1, "Separate Git actions");
+            Assert(form.Controls.Find("branchSwitch", true).Length == 1 && form.Controls.Find("checkpointRestore", true).Length == 1 && form.Controls.Find("conflictDiff", true).Length == 1, "Advanced Git controls available in designer");
         }
         using (var form = new GitWindow())
         {
@@ -147,6 +148,14 @@ internal static class GitTests
             { form.DrawToBitmap(bitmap, new System.Drawing.Rectangle(0, 0, form.Width, form.Height)); bitmap.Save(Path.Combine(root, "git-window.png")); }
             var split = (System.Windows.Forms.SplitContainer)form.Controls.Find("changeSplit", true)[0];
             Assert(split.Panel2.Width > 550, "Diff has usable width");
+            var tabs = (System.Windows.Forms.TabControl)form.Controls.Find("tabs", true)[0];
+            foreach (string tab in new[] { "branchesTab", "checkpointsTab", "conflictsTab" })
+            {
+                var page = (System.Windows.Forms.TabPage)form.Controls.Find(tab, true)[0];
+                page.Enabled = true; tabs.SelectedTab = page; form.Refresh();
+                using (var bitmap = new System.Drawing.Bitmap(form.Width, form.Height))
+                { form.DrawToBitmap(bitmap, new System.Drawing.Rectangle(0, 0, form.Width, form.Height)); bitmap.Save(Path.Combine(root, tab + ".png")); }
+            }
             form.Close();
         }
     }
@@ -182,7 +191,8 @@ internal static class GitTests
             host.VBComponents.Item("Module1").CodeModule.Text = Encoding.UTF8.GetString(initial.Files["Module1.bas"]);
             run("Fetch_Click"); Assert(project.Capture().SameAs(initial), "UI Fetch never imports");
             run("Pull_Click"); Assert(status().StartsWith("Pull et import terminés") && project.Capture().SameAs(target), "UI pull and import: " + status());
-            run("Pull_Click"); Assert(status().StartsWith("Déjà à jour"), "No-op pull preserves rollback");
+            string backupBefore = a.Resolve(MacroGitRepository.Backup);
+            run("Pull_Click"); Assert(a.Resolve(MacroGitRepository.Backup) == backupBefore, "No-op pull preserves rollback");
             run("Restore_Click"); Assert(project.Capture().SameAs(initial), "UI rollback restores initial VBA: " + status());
             var list = (System.Windows.Forms.ListBox)form.Controls.Find("changes", true)[0];
             Assert(list.Items.Count > 0, "Restoration is shown as an uncommitted change");

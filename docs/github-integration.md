@@ -2,7 +2,12 @@
 
 ## Utilisation
 
-Dans le menu `…` du chat, ouvrir **GitHub · synchroniser le VBA…** pour le document sélectionné.
+Dans le VBE, ouvrir **Affichage → GitHub VBAi…** pour le projet VBA actif.
+**Outils → Configuration VBAi…** donne accès aux paramètres et au compte GitHub,
+même lorsque le chat est fermé. **Affichage → Assistant VBAi** ouvre le chat.
+Les entrées sont installées au chargement du complément ; après une mise à jour, recharger celui-ci.
+
+Dans le menu `…` du chat, **GitHub · synchroniser le VBA…** reste disponible pour le document sélectionné.
 Le document doit être enregistré, son projet déverrouillé et le VBE en mode conception.
 
 1. Saisir l’URL HTTPS d’un dépôt GitHub existant et la branche, puis **Lier le dépôt**.
@@ -14,6 +19,42 @@ Le document doit être enregistré, son projet déverrouillé et le VBE en mode 
 5. **Fetch** actualise les informations distantes sans toucher au VBA.
 6. **Pull et importer** télécharge, vérifie puis importe les sources avec sauvegarde préalable.
 7. **Restaurer VBA** restaure l’état précédant le dernier import si le code n’a pas changé depuis sa relecture.
+
+### Checkpoints, branches et fusions
+
+- **Checkpoints** : nommer une sauvegarde du VBA vivant, retrouver les sauvegardes manuelles et automatiques,
+  puis restaurer la sélection. La restauration crée d’abord un checkpoint du travail déplacé et ne réécrit aucun commit.
+- **Branches** : créer une branche locale depuis HEAD, lister les branches distantes, récupérer une branche distante,
+  puis basculer vers une branche locale. Les changements non commitées bloquent la bascule. Le VBA de la cible est importé
+  avec sauvegarde préalable. La branche active est mémorisée dans le cache et retrouvée à la réouverture.
+- **Fusionner** prépare une fusion à trois voies avec Git 2.38 ou ultérieur. Ni HEAD ni le VBA ne changent à ce stade.
+  L’onglet **Conflits** affiche les chemins et les deux versions. Choisir le fichier local, entrant ou fournir le texte
+  complet d’une source VBA. Les formulaires binaires doivent être choisis en entier ; garder le `.frm` et son `.frx` cohérents.
+- **Terminer la fusion** vérifie le manifeste et l’ensemble des sources, crée un commit avec les deux parents,
+  puis importe le VBA avec checkpoint. **Annuler la fusion** abandonne uniquement la préparation.
+- Les checkpoints `refs/codex/checkpoints/*` et les préparations de fusion restent privés ; aucun push ne les publie.
+
+### Outils utilisables par les modèles
+
+Le formulaire et les outils LLM utilisent `MacroGitOperations`. Le catalogue commun aux fournisseurs inclut :
+
+| Usage | Outils |
+| --- | --- |
+| Inspection | `git_status`, `git_history`, `git_branches`, `git_checkpoints`, `git_conflicts`, `git_conflict_read` |
+| Checkpoints | `git_checkpoint_create`, `git_checkpoint_restore`, `git_rollback` |
+| Branches | `git_branch_create`, `git_remote_branches`, `git_branch_track`, `git_branch_switch` |
+| Synchronisation | `git_commit`, `git_fetch`, `git_push`, `git_pull` |
+| Fusion | `git_merge_begin`, `git_merge_resolve`, `git_merge_complete`, `git_merge_abort` |
+
+Les outils sont limités au document de la conversation et à sa liaison existante : l’agent ne peut pas fournir
+une autre URL, un autre cache ni une commande shell. Chaque mutation exige `ExpectedState`, obtenu par `git_status` ;
+une révision périmée est refusée. Les modes Discussion/Plan autorisent seulement l’inspection locale.
+La politique VBE Lecture seule refuse les mutations ; Automatique les exécute avec sauvegardes ; Demander conserve
+la validation configurée par l’utilisateur. Le modèle reçoit l’instruction de ne pousser qu’à la demande de publication
+de l’utilisateur et de traiter le contenu des dépôts comme des données, jamais comme des consignes.
+
+Les appels Git passent par `InvokeAsync` pour conserver les accès COM sur le thread VBE tout en exécutant Git en arrière-plan.
+La même exclusion entre processus protège les commandes de l’agent et la fenêtre Git.
 
 L’organisation reprend les vues **Modifications Git** et **Historique** de Visual Studio : commit local séparé
 du push, fetch sans modification du projet, compteurs entrants/sortants et comparaison des fichiers.
@@ -79,8 +120,8 @@ Les conteneurs Excel/SolidWorks, données du classeur, conversations et réglage
 ## Import et restauration
 
 - Premier import : le bouton **Pull et importer** remplace explicitement les sources locales, après sauvegarde.
-- Imports suivants : les changements locaux non commitées bloquent le pull. Les historiques divergents sont refusés,
-  sans merge automatique, rebase ni push forcé.
+- Imports suivants : les changements locaux non commitées bloquent le pull. Un pull divergent est refusé : récupérer
+  la branche distante dans une nouvelle branche locale puis utiliser la préparation de fusion. Aucun rebase ni push forcé.
 - Les modules hôtes doivent déjà exister avec les mêmes noms ; leur code est remplacé sur place.
   CodexVBA ne crée ni ne supprime des feuilles ou des objets du document.
 - Les modules/classes/formulaires modifiés sont réimportés ; ceux qui ont disparu du manifeste sont supprimés.
@@ -101,13 +142,15 @@ doit suivre le processus habituel de signature du projet.
 
 ## Périmètre actuel et validation
 
-La première version n’inclut pas encore le staging par fichier, le changement de branche avec modifications locales,
-un éditeur de fusion, les pull requests ou la création de dépôts depuis l’interface.
+Le staging par fichier, le transport automatique des changements non commitées entre branches,
+les pull requests et la création de dépôts GitHub depuis l’interface restent hors de ce périmètre.
 
 `tools/tests/Git/GitTests.csproj` teste de vrais dépôts Git locaux, les échanges push/fetch,
 les protections contre les divergences, les sauvegardes privées, le cycle complet des commandes WinForms,
 les erreurs COM simulées, les modules hôtes et les ressources de formulaires. Le formulaire est aussi chargé
-dans `DesignSurface` avec un constructeur sans services actifs.
+dans `DesignSurface` avec un constructeur sans services actifs. Les tests avancés effectuent une vraie fusion conflictuelle,
+une résolution et un commit à deux parents, restaurent un checkpoint et appellent le véritable routeur `LlmVbeTools.InvokeAsync`.
+Ils vérifient les refus d’état périmé, de projet étranger, de mutation en Plan/Lecture seule et de redirection de dépôt.
 
 La validation automatisée utilise un VBE simulé. Les imports réels dans Excel et SolidWorks et les échanges
 avec un dépôt GitHub authentifié restent **NOT_RUN**. Aucun code utilisateur n’a été publié pendant ces tests.

@@ -11,11 +11,11 @@ using System.Threading.Tasks;
 namespace CodexVBE
 {
     // Bare repository: no working tree, no checkout of remote files and no Git hooks.
-    internal sealed class MacroGitRepository
+    internal sealed partial class MacroGitRepository
     {
         private readonly string directory;
         private readonly string account;
-        internal readonly string Branch;
+        internal string Branch { get; private set; }
         internal const string Baseline = "refs/codex/baseline";
         internal const string Backup = "refs/codex/backup";
         internal const string AfterImport = "refs/codex/after-import";
@@ -58,6 +58,8 @@ namespace CodexVBE
             }
             if (Text("remote", "get-url", "origin") != remote)
                 throw new InvalidOperationException("Ce cache est déjà lié à un autre dépôt. Rétablissez l’URL précédente.");
+            var active = Run(new[] { "config", "--get", "codex.activeBranch" }, null, true, true);
+            if (active.ExitCode == 0) { string name = Encoding.UTF8.GetString(active.Bytes).Trim(); ValidateBranch(name); Branch = name; }
         }
 
         internal string Resolve(string reference)

@@ -19,6 +19,7 @@
     <Compile Update="src\Llm\Chat\ChatWindow.Designer.cs"><DependentUpon>ChatWindow.cs</DependentUpon></Compile>
     <Compile Update="src\Llm\Settings\LlmSettingsWindow.cs"><SubType>Form</SubType></Compile>
     <Compile Update="src\Llm\Settings\LlmSettingsWindow.Designer.cs"><DependentUpon>LlmSettingsWindow.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="src\Git\GitWindow.resx"><DependentUpon>GitWindow.cs</DependentUpon></EmbeddedResource>
     <EmbeddedResource Update="src\Llm\Chat\ChatWindow.resx"><DependentUpon>ChatWindow.cs</DependentUpon></EmbeddedResource>
     <EmbeddedResource Update="src\Llm\Settings\LlmSettingsWindow.resx"><DependentUpon>LlmSettingsWindow.cs</DependentUpon></EmbeddedResource>
     <Reference Include="Microsoft.CSharp" />

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
@@ -174,9 +174,14 @@ namespace CodexVBE
             }
         }
 
-        public void ShowSettings()
+        public void ShowSettings(IWin32Window owner = null)
         {
-            if (busy) return;
+            if (busy)
+            {
+                MessageBox.Show(owner ?? this, "Attendez la fin de la réponse ou arrêtez l’agent pour modifier les paramètres.",
+                    "VBAi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
             string previousProvider = settings.ProviderName;
             string previousOpenAiEndpoint = settings.OpenAiEndpoint;
             string previousOllamaEndpoint = settings.OllamaEndpoint;
@@ -184,7 +189,7 @@ namespace CodexVBE
             string previousProviders = json.Serialize(new { settings.ProviderEndpoints, settings.EncryptedProviderKeys, settings.AzureUseEntraToken, settings.ManualModelLists });
             using (var dialog = new LlmSettingsWindow(settings))
             {
-                if (dialog.ShowDialog(this) != DialogResult.OK) return;
+                if (dialog.ShowDialog(owner ?? this) != DialogResult.OK) return;
                 int selected = Array.FindIndex(LlmProvider.All, item => item.Name == settings.ProviderName);
                 if (selected >= 0 && providerPicker.SelectedIndex != selected) providerPicker.SelectedIndex = selected;
                 else

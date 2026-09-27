@@ -45,10 +45,10 @@ namespace CodexVBE
                 server = new BridgeServer(dispatcher, new VbeSession(vbe), process.Id);
                 server.Start();
                 LoadLog.Write("Bridge started: CodexVBE." + process.Id);
+                try { menu = new VbeMenu(vbe, ShowChat, ShowSettings, ShowGitHub, command => { ShowChat(); chat.PrepareEditorAction(command); }); }
+                catch (Exception menuError) { LoadLog.Write("VBE menu failed: " + menuError); }
                 try { ShowChat(); ToggleDock(); }
                 catch (Exception uiError) { LoadLog.Write("Assistant window failed: " + uiError); }
-                try { menu = new VbeMenu(vbe, ShowChat, ShowSettings, command => { ShowChat(); chat.PrepareEditorAction(command); }); }
-                catch (Exception menuError) { LoadLog.Write("VBE menu failed: " + menuError); }
             }
             catch (Exception ex)
             {
@@ -100,8 +100,42 @@ namespace CodexVBE
 
         private void ShowSettings()
         {
-            ShowChat();
-            chat.ShowSettings();
+            try
+            {
+                if (chat != null && !chat.IsDisposed) chat.ShowSettings(VbeOwner());
+                else using (var dialog = new LlmSettingsWindow(LlmSettings.Load()))
+                    dialog.ShowDialog(VbeOwner());
+            }
+            catch (Exception ex) { ReportMenuError(ex); }
+        }
+
+        private IWin32Window VbeOwner()
+        {
+            return new VbeWindowOwner(new IntPtr(Convert.ToInt64(((dynamic)vbe).MainWindow.HWnd)));
+        }
+
+        private void ShowGitHub()
+        {
+            try
+            {
+                dynamic project = ((dynamic)vbe).ActiveVBProject;
+                if (project == null) throw new InvalidOperationException("Sélectionnez un projet VBA enregistré pour ouvrir GitHub.");
+                string path = (string)project.FileName;
+                if (string.IsNullOrWhiteSpace(path) || !System.IO.Path.IsPathRooted(path))
+                    throw new InvalidOperationException("Enregistrez la macro avant d’ouvrir GitHub.");
+                var session = new VbeSession(vbe);
+                string scope = session.GitScope(path);
+                using (var dialog = new GitWindow(session.GitProject(path, scope), scope,
+                    (string)project.Name, LlmSettings.Load().GitHubAccount))
+                    dialog.ShowDialog(VbeOwner());
+            }
+            catch (Exception ex) { ReportMenuError(ex); }
+        }
+
+        private void ReportMenuError(Exception ex)
+        {
+            LoadLog.Write("VBE menu action failed: " + ex);
+            MessageBox.Show(ex.Message, "VBAi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
         private void ToggleDock()
@@ -125,7 +159,7 @@ namespace CodexVBE
                     }
                     catch (Exception lookupError) { LoadLog.Write("Tool window AddIn lookup failed: " + lookupError.Message); }
                     nativeChatWindow = ((IVbeWindows)((dynamic)vbe).Windows).CreateToolWindow((IVbeAddIn)addInForWindow, "CodexVBE.ChatToolWindow",
-                        "CodexVBE", "{B5C96ED5-1B16-497C-8441-B3F471F9F92B}", ref document);
+                        "VBAi", "{B5C96ED5-1B16-497C-8441-B3F471F9F92B}", ref document);
                     nativeChatControl = document as ChatToolWindow;
                     if (nativeChatControl == null) throw new InvalidOperationException("Le contrôle COM de la fenêtre n’a pas été créé.");
                 }
