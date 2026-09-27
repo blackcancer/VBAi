@@ -73,6 +73,29 @@ namespace CodexVBE.Tests.Unit
         }
 
         [TestMethod]
+        public void AddInUsesTheVbeMainWindowAsDialogOwner()
+        {
+            var addIn = new AddIn();
+            Set(addIn, "vbe", new FakeOwnerHost { MainWindow = new FakeMainWindow { HWnd = 12345 } });
+            var owner = (IWin32Window)Call(addIn, "VbeOwner");
+            Assert.AreEqual(new IntPtr(12345), owner.Handle);
+            object[] custom = null;
+            addIn.OnDisconnection(0, ref custom);
+            Assert.IsNull(Field<object>(addIn, "vbe"));
+        }
+
+        [TestMethod]
+        public void MenuConstructionReportsMissingHostMenu()
+        {
+            var host = new FakeHost { CommandBars = new object[] {
+                new FakeBar { Type = 1, Controls = new object[] { new FakeControl { Caption = "&View" } } }
+            } };
+            var thrown = Assert.ThrowsException<InvalidOperationException>(() =>
+                new VbeMenu(host, () => { }, () => { }, () => { }));
+            StringAssert.Contains(thrown.Message, "VBE menu not found: outils/tools");
+        }
+
+        [TestMethod]
         [STATestMethod]
         public void SettingsKeepSeparateDraftsWhenSwitchingProviders()
         {
@@ -121,5 +144,7 @@ namespace CodexVBE.Tests.Unit
         public sealed class FakeControl { public string Caption { get; set; } }
         public sealed class InvalidControl { public string Caption { get { throw new InvalidOperationException("no caption"); } } }
         public sealed class FakeNativeWindow { public int CloseCount { get; private set; } public void Close() { CloseCount++; } }
+        public sealed class FakeOwnerHost { public FakeMainWindow MainWindow { get; set; } }
+        public sealed class FakeMainWindow { public long HWnd { get; set; } }
     }
 }

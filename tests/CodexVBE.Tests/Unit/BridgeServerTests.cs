@@ -91,6 +91,40 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        [TestMethod]
+        [STATestMethod]
+        public void ImmediateCommandRejectsInvalidModeMissingProjectAndChangedModeWithoutExecuting()
+        {
+            using (var dispatcher = new Control())
+            {
+                var handle = dispatcher.Handle;
+                var vbe = new FakeVbe();
+                vbe.VBProjects.Add(new FakeProject { Name = "Disposable", FileName = @"C:\Temp\Disposable.xlsm", Mode = 2 });
+                int id = Guid.NewGuid().GetHashCode() & int.MaxValue;
+                using (var server = new BridgeServer(dispatcher, new VbeSession(vbe), id))
+                {
+                    server.Start();
+                    var invalidMode = SendWithMessagePump(id,
+                        "{\"Command\":\"immediate_execute\",\"Project\":\"Disposable\",\"ExpectedMode\":0}");
+                    Assert.AreEqual(false, invalidMode["Ok"]);
+                    StringAssert.Contains((string)invalidMode["Error"], "ExpectedMode (1 or 2)");
+
+                    var missingProject = SendWithMessagePump(id,
+                        "{\"Command\":\"immediate_execute\",\"Project\":\"Absent\",\"ExpectedMode\":1}");
+                    Assert.AreEqual(false, missingProject["Ok"]);
+                    StringAssert.Contains((string)missingProject["Error"], "Project selector is absent or ambiguous");
+
+                    var changedMode = SendWithMessagePump(id,
+                        "{\"Command\":\"immediate_execute\",\"Project\":\"Disposable\",\"ExpectedMode\":1,\"Text\":\"Debug.Print 1\"}");
+                    Assert.AreEqual(false, changedMode["Ok"]);
+                    StringAssert.Contains((string)changedMode["Error"], "Project mode changed");
+
+                    var recovered = SendWithMessagePump(id, "{\"Command\":\"status\"}");
+                    Assert.AreEqual(true, recovered["Ok"]);
+                }
+            }
+        }
+
         private static IDictionary<string, object> SendWithMessagePump(int processId, string request)
         {
             var pending = Task.Run(() => {
