@@ -100,6 +100,9 @@ namespace CodexVBE
                 throw new ArgumentException("Project, Module and Expression are required.");
             if (request.Expression.Length > 1024)
                 throw new ArgumentException("Watch expression exceeds 1024 characters.");
+            if (!string.IsNullOrWhiteSpace(request.WatchType) && request.WatchType != "expression" &&
+                request.WatchType != "break_when_true" && request.WatchType != "break_when_changed")
+                throw new ArgumentException("WatchType must be expression, break_when_true or break_when_changed.");
             dynamic state = State(request.Project);
             if ((int)state.Mode != 1 || request.ExpectedMode != 1 ||
                 !string.Equals((string)state.SelectedProject, request.Project, StringComparison.OrdinalIgnoreCase) ||

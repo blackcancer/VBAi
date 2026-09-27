@@ -78,6 +78,14 @@ namespace CodexVBE
                     (!string.IsNullOrWhiteSpace(request.Procedure) &&
                      !string.Equals(shownProcedure, request.Procedure, StringComparison.OrdinalIgnoreCase)))
                     throw new InvalidOperationException("Add Watch context changed: " + shownProject + "." + shownModule + "." + shownProcedure);
+                int typeId = request.WatchType == "break_when_true" ? 4851 :
+                    request.WatchType == "break_when_changed" ? 4852 : 4850;
+                IntPtr typeButton = GetDlgItem(dialog, typeId);
+                if (typeButton == IntPtr.Zero || !PostMessage(typeButton, BmClick, IntPtr.Zero, IntPtr.Zero))
+                    throw new InvalidOperationException("The native watch type option was unavailable.");
+                Thread.Sleep(30);
+                if (SendMessageInt(typeButton, 0x00F0, IntPtr.Zero, IntPtr.Zero).ToInt32() != 1) // BM_GETCHECK
+                    throw new InvalidOperationException("The native watch type option was not selected.");
                 // EM_REPLACESEL triggers the VBE's edit notifications. WM_SETTEXT
                 // alone changes the visible text but is rejected as an empty expression.
                 SendMessageInt(edit, 0x00B1, IntPtr.Zero, new IntPtr(-1)); // EM_SETSEL
@@ -106,7 +114,9 @@ namespace CodexVBE
                 IntPtr watches = root == IntPtr.Zero ? IntPtr.Zero :
                     FindPane(ChildWindows(root), "Espions", "Watch", "Watches");
                 object watchState = ReadList(watches);
-                return new { Added = true, request.Expression, Context = new {
+                return new { Added = true, request.Expression,
+                    WatchType = string.IsNullOrWhiteSpace(request.WatchType) ? "expression" : request.WatchType,
+                    Context = new {
                     Project = shownProject, Module = shownModule, Procedure = shownProcedure },
                     Watches = watchState,
                     Verification = watches == IntPtr.Zero ? "Pending" : "ReadbackAvailable",

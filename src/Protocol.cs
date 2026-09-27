@@ -44,6 +44,7 @@ namespace CodexVBE
         public string EventName { get; set; }
         public string Expression { get; set; }
         public string Context { get; set; }
+        public string WatchType { get; set; }
         public string ObjectName { get; set; }
         public int ProcKind { get; set; }
         public int? InsertIndex { get; set; }
