@@ -1,4 +1,4 @@
-﻿using System.Drawing;
+using System.Drawing;
 using System.Windows.Forms;
 
 namespace CodexVBE
@@ -31,102 +31,42 @@ namespace CodexVBE
 
         private void InitializeComponent()
         {
-            this.grid = new TableLayoutPanel();
-            this.contentLayout = new TableLayoutPanel();
-            this.codexActions = new FlowLayoutPanel();
-            this.buttons = new FlowLayoutPanel();
-            this.provider = new ComboBox();
-            this.codexStatus = new Label();
-            this.codexLogin = new Button();
-            this.codexRefresh = new Button();
-            this.openAiEndpoint = new TextBox();
-            this.ollamaEndpoint = new TextBox();
-            this.openAiKey = new TextBox();
-            this.clearKey = new CheckBox();
-            this.saveButton = new Button();
-            this.cancelButton = new Button();
-            this.providerLabel = new Label();
-            this.accountLabel = new Label();
-            this.authenticationLabel = new Label();
-            this.openAiEndpointLabel = new Label();
-            this.ollamaEndpointLabel = new Label();
-            this.keyLabel = new Label();
-            this.keyNote = new Label();
-            this.approvalLabel = new Label();
-            this.approvalPicker = new ComboBox();
+            this.grid = new System.Windows.Forms.TableLayoutPanel();
+            this.providerLabel = new System.Windows.Forms.Label();
+            this.provider = new System.Windows.Forms.ComboBox();
+            this.accountLabel = new System.Windows.Forms.Label();
+            this.codexStatus = new System.Windows.Forms.Label();
+            this.authenticationLabel = new System.Windows.Forms.Label();
+            this.codexActions = new System.Windows.Forms.FlowLayoutPanel();
+            this.codexLogin = new System.Windows.Forms.Button();
+            this.codexRefresh = new System.Windows.Forms.Button();
+            this.openAiEndpointLabel = new System.Windows.Forms.Label();
+            this.openAiEndpoint = new System.Windows.Forms.TextBox();
+            this.ollamaEndpointLabel = new System.Windows.Forms.Label();
+            this.ollamaEndpoint = new System.Windows.Forms.TextBox();
+            this.keyLabel = new System.Windows.Forms.Label();
+            this.openAiKey = new System.Windows.Forms.TextBox();
+            this.clearKey = new System.Windows.Forms.CheckBox();
+            this.keyNote = new System.Windows.Forms.Label();
+            this.approvalLabel = new System.Windows.Forms.Label();
+            this.approvalPicker = new System.Windows.Forms.ComboBox();
+            this.contentLayout = new System.Windows.Forms.TableLayoutPanel();
+            this.buttons = new System.Windows.Forms.FlowLayoutPanel();
+            this.saveButton = new System.Windows.Forms.Button();
+            this.cancelButton = new System.Windows.Forms.Button();
             this.grid.SuspendLayout();
             this.codexActions.SuspendLayout();
+            this.contentLayout.SuspendLayout();
             this.buttons.SuspendLayout();
             this.SuspendLayout();
-
-            this.grid.Dock = DockStyle.Top;
+            //
+            // grid
+            //
             this.grid.AutoSize = true;
-            this.grid.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            this.grid.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.grid.ColumnCount = 2;
-            this.grid.RowCount = 9;
-            this.grid.Padding = new Padding(12, 12, 12, 0);
-            this.grid.AutoScroll = false;
-            this.grid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            this.grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            this.grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            this.grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            this.grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            this.grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            this.grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            this.grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            this.grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            this.grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            this.grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-
-            this.providerLabel.Text = "Fournisseur";
-            this.accountLabel.Text = "Compte ChatGPT";
-            this.authenticationLabel.Text = "Authentification";
-            this.openAiEndpointLabel.Text = "URL OpenAI (facultatif)";
-            this.ollamaEndpointLabel.Text = "URL Ollama (facultatif)";
-            this.keyLabel.Text = "Nouvelle clé OpenAI API";
-            this.approvalLabel.Text = "Modifications VBE";
-            this.approvalLabel.Dock = DockStyle.Fill;
-            this.approvalLabel.TextAlign = ContentAlignment.MiddleLeft;
-            this.approvalPicker.Dock = DockStyle.Fill;
-            this.approvalPicker.DropDownStyle = ComboBoxStyle.DropDownList;
-            this.providerLabel.Dock = DockStyle.Fill;
-            this.providerLabel.TextAlign = ContentAlignment.MiddleLeft;
-            this.accountLabel.Dock = DockStyle.Fill;
-            this.accountLabel.TextAlign = ContentAlignment.MiddleLeft;
-            this.authenticationLabel.Dock = DockStyle.Fill;
-            this.authenticationLabel.TextAlign = ContentAlignment.MiddleLeft;
-            this.openAiEndpointLabel.Dock = DockStyle.Fill;
-            this.openAiEndpointLabel.TextAlign = ContentAlignment.MiddleLeft;
-            this.ollamaEndpointLabel.Dock = DockStyle.Fill;
-            this.ollamaEndpointLabel.TextAlign = ContentAlignment.MiddleLeft;
-            this.keyLabel.Dock = DockStyle.Fill;
-            this.keyLabel.TextAlign = ContentAlignment.MiddleLeft;
-            this.provider.DropDownStyle = ComboBoxStyle.DropDownList;
-            this.provider.Dock = DockStyle.Fill;
-            this.codexStatus.Text = "Vérification de ChatGPT…";
-            this.codexStatus.Dock = DockStyle.Fill;
-            this.codexStatus.AutoSize = true;
-            this.codexStatus.TextAlign = ContentAlignment.MiddleLeft;
-            this.codexLogin.Text = "Se connecter à ChatGPT";
-            this.codexLogin.Width = 185;
-            this.codexRefresh.Text = "Actualiser l'état";
-            this.codexRefresh.Width = 130;
-            this.codexActions.Dock = DockStyle.Fill;
-            this.codexActions.WrapContents = false;
-            this.codexActions.AutoSize = true;
-            this.codexActions.Padding = new Padding(0, 0, 0, 4);
-            this.codexActions.Margin = new Padding(0);
-            this.codexActions.Controls.Add(this.codexLogin);
-            this.codexActions.Controls.Add(this.codexRefresh);
-            this.openAiEndpoint.Dock = DockStyle.Fill;
-            this.ollamaEndpoint.Dock = DockStyle.Fill;
-            this.openAiKey.Dock = DockStyle.Fill;
-            this.openAiKey.UseSystemPasswordChar = true;
-            this.clearKey.Text = "Supprimer la clé API enregistrée";
-            this.clearKey.Dock = DockStyle.Fill;
-            this.keyNote.Text = "Clé vide : conserver la clé actuelle. Les secrets sont chiffrés pour ce compte Windows.";
-            this.keyNote.AutoSize = true;
-            this.keyNote.Dock = DockStyle.Fill;
+            this.grid.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+            this.grid.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.grid.Controls.Add(this.providerLabel, 0, 0);
             this.grid.Controls.Add(this.provider, 1, 0);
             this.grid.Controls.Add(this.accountLabel, 0, 1);
@@ -143,85 +83,277 @@ namespace CodexVBE
             this.grid.Controls.Add(this.keyNote, 1, 7);
             this.grid.Controls.Add(this.approvalLabel, 0, 8);
             this.grid.Controls.Add(this.approvalPicker, 1, 8);
-
-            this.buttons.Dock = DockStyle.Top;
-            this.buttons.AutoSize = true;
-            this.buttons.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            this.buttons.Padding = new Padding(12, 4, 12, 12);
-            this.buttons.FlowDirection = FlowDirection.RightToLeft;
-            this.saveButton.Text = "Enregistrer";
-            this.saveButton.Width = 105;
-            this.cancelButton.Text = "Annuler";
-            this.cancelButton.Width = 105;
-            this.cancelButton.DialogResult = DialogResult.Cancel;
-            this.buttons.Controls.Add(this.saveButton);
-            this.buttons.Controls.Add(this.cancelButton);
-
-            this.AutoScaleDimensions = new SizeF(96F, 96F);
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.Font = new Font("Segoe UI", 9F);
-            this.ClientSize = new Size(624, 368);
-            this.MinimumSize = new Size(640, 0);
-            this.StartPosition = FormStartPosition.CenterParent;
-            this.ShowInTaskbar = false;
-            this.FormBorderStyle = FormBorderStyle.Sizable;
-            this.AutoScroll = true;
-            this.MaximizeBox = false;
-            this.Text = "CodexVBE — Configuration LLM";
-            this.contentLayout.Dock = DockStyle.Top;
+            this.grid.Dock = System.Windows.Forms.DockStyle.Top;
+            this.grid.Location = new System.Drawing.Point(0, 0);
+            this.grid.Margin = new System.Windows.Forms.Padding(0);
+            this.grid.Name = "grid";
+            this.grid.Padding = new System.Windows.Forms.Padding(12, 12, 12, 0);
+            this.grid.RowCount = 9;
+            this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.grid.Size = new System.Drawing.Size(624, 256);
+            this.grid.TabIndex = 0;
+            //
+            // providerLabel
+            //
+            this.providerLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.providerLabel.Location = new System.Drawing.Point(15, 12);
+            this.providerLabel.Name = "providerLabel";
+            this.providerLabel.Size = new System.Drawing.Size(100, 29);
+            this.providerLabel.TabIndex = 0;
+            this.providerLabel.Text = "Fournisseur";
+            this.providerLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // provider
+            //
+            this.provider.AccessibleName = "Fournisseur";
+            this.provider.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.provider.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.provider.Location = new System.Drawing.Point(121, 15);
+            this.provider.Name = "provider";
+            this.provider.Size = new System.Drawing.Size(488, 23);
+            this.provider.TabIndex = 0;
+            //
+            // accountLabel
+            //
+            this.accountLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.accountLabel.Location = new System.Drawing.Point(15, 41);
+            this.accountLabel.Name = "accountLabel";
+            this.accountLabel.Size = new System.Drawing.Size(100, 23);
+            this.accountLabel.TabIndex = 1;
+            this.accountLabel.Text = "Compte ChatGPT";
+            this.accountLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // codexStatus
+            //
+            this.codexStatus.AutoSize = true;
+            this.codexStatus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.codexStatus.Location = new System.Drawing.Point(121, 41);
+            this.codexStatus.Name = "codexStatus";
+            this.codexStatus.Size = new System.Drawing.Size(488, 23);
+            this.codexStatus.TabIndex = 2;
+            this.codexStatus.Text = "Vérification de ChatGPT…";
+            this.codexStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // authenticationLabel
+            //
+            this.authenticationLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.authenticationLabel.Location = new System.Drawing.Point(15, 64);
+            this.authenticationLabel.Name = "authenticationLabel";
+            this.authenticationLabel.Size = new System.Drawing.Size(100, 33);
+            this.authenticationLabel.TabIndex = 3;
+            this.authenticationLabel.Text = "Authentification";
+            this.authenticationLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // codexActions
+            //
+            this.codexActions.AutoSize = true;
+            this.codexActions.Controls.Add(this.codexLogin);
+            this.codexActions.Controls.Add(this.codexRefresh);
+            this.codexActions.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.codexActions.Location = new System.Drawing.Point(118, 64);
+            this.codexActions.Margin = new System.Windows.Forms.Padding(0);
+            this.codexActions.Name = "codexActions";
+            this.codexActions.Padding = new System.Windows.Forms.Padding(0, 0, 0, 4);
+            this.codexActions.Size = new System.Drawing.Size(494, 33);
+            this.codexActions.TabIndex = 1;
+            this.codexActions.WrapContents = false;
+            //
+            // codexLogin
+            //
+            this.codexLogin.Location = new System.Drawing.Point(3, 3);
+            this.codexLogin.Name = "codexLogin";
+            this.codexLogin.Size = new System.Drawing.Size(185, 23);
+            this.codexLogin.TabIndex = 0;
+            this.codexLogin.Text = "Se connecter à ChatGPT";
+            //
+            // codexRefresh
+            //
+            this.codexRefresh.Location = new System.Drawing.Point(194, 3);
+            this.codexRefresh.Name = "codexRefresh";
+            this.codexRefresh.Size = new System.Drawing.Size(130, 23);
+            this.codexRefresh.TabIndex = 1;
+            this.codexRefresh.Text = "Actualiser l\'état";
+            //
+            // openAiEndpointLabel
+            //
+            this.openAiEndpointLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.openAiEndpointLabel.Location = new System.Drawing.Point(15, 97);
+            this.openAiEndpointLabel.Name = "openAiEndpointLabel";
+            this.openAiEndpointLabel.Size = new System.Drawing.Size(100, 29);
+            this.openAiEndpointLabel.TabIndex = 4;
+            this.openAiEndpointLabel.Text = "URL OpenAI (facultatif)";
+            this.openAiEndpointLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // openAiEndpoint
+            //
+            this.openAiEndpoint.AccessibleName = "URL OpenAI facultative";
+            this.openAiEndpoint.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.openAiEndpoint.Location = new System.Drawing.Point(121, 100);
+            this.openAiEndpoint.Name = "openAiEndpoint";
+            this.openAiEndpoint.Size = new System.Drawing.Size(488, 23);
+            this.openAiEndpoint.TabIndex = 2;
+            //
+            // ollamaEndpointLabel
+            //
+            this.ollamaEndpointLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.ollamaEndpointLabel.Location = new System.Drawing.Point(15, 126);
+            this.ollamaEndpointLabel.Name = "ollamaEndpointLabel";
+            this.ollamaEndpointLabel.Size = new System.Drawing.Size(100, 29);
+            this.ollamaEndpointLabel.TabIndex = 5;
+            this.ollamaEndpointLabel.Text = "URL Ollama (facultatif)";
+            this.ollamaEndpointLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // ollamaEndpoint
+            //
+            this.ollamaEndpoint.AccessibleName = "URL Ollama facultative";
+            this.ollamaEndpoint.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.ollamaEndpoint.Location = new System.Drawing.Point(121, 129);
+            this.ollamaEndpoint.Name = "ollamaEndpoint";
+            this.ollamaEndpoint.Size = new System.Drawing.Size(488, 23);
+            this.ollamaEndpoint.TabIndex = 3;
+            //
+            // keyLabel
+            //
+            this.keyLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.keyLabel.Location = new System.Drawing.Point(15, 155);
+            this.keyLabel.Name = "keyLabel";
+            this.keyLabel.Size = new System.Drawing.Size(100, 29);
+            this.keyLabel.TabIndex = 6;
+            this.keyLabel.Text = "Nouvelle clé OpenAI API";
+            this.keyLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // openAiKey
+            //
+            this.openAiKey.AccessibleName = "Nouvelle clé OpenAI API";
+            this.openAiKey.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.openAiKey.Location = new System.Drawing.Point(121, 158);
+            this.openAiKey.Name = "openAiKey";
+            this.openAiKey.Size = new System.Drawing.Size(488, 23);
+            this.openAiKey.TabIndex = 4;
+            this.openAiKey.UseSystemPasswordChar = true;
+            //
+            // clearKey
+            //
+            this.clearKey.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.clearKey.Location = new System.Drawing.Point(121, 187);
+            this.clearKey.Name = "clearKey";
+            this.clearKey.Size = new System.Drawing.Size(488, 24);
+            this.clearKey.TabIndex = 5;
+            this.clearKey.Text = "Supprimer la clé API enregistrée";
+            //
+            // keyNote
+            //
+            this.keyNote.AutoSize = true;
+            this.keyNote.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.keyNote.Location = new System.Drawing.Point(121, 214);
+            this.keyNote.Name = "keyNote";
+            this.keyNote.Size = new System.Drawing.Size(488, 15);
+            this.keyNote.TabIndex = 7;
+            this.keyNote.Text = "Clé vide : conserver la clé actuelle. Les secrets sont chiffrés pour ce compte Wi" +
+    "ndows.";
+            //
+            // approvalLabel
+            //
+            this.approvalLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.approvalLabel.Location = new System.Drawing.Point(15, 229);
+            this.approvalLabel.Name = "approvalLabel";
+            this.approvalLabel.Size = new System.Drawing.Size(100, 27);
+            this.approvalLabel.TabIndex = 8;
+            this.approvalLabel.Text = "Modifications VBE";
+            this.approvalLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            //
+            // approvalPicker
+            //
+            this.approvalPicker.AccessibleName = "Autorisation des modifications VBE";
+            this.approvalPicker.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.approvalPicker.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.approvalPicker.Location = new System.Drawing.Point(121, 232);
+            this.approvalPicker.Name = "approvalPicker";
+            this.approvalPicker.Size = new System.Drawing.Size(488, 23);
+            this.approvalPicker.TabIndex = 6;
+            //
+            // contentLayout
+            //
             this.contentLayout.AutoSize = true;
-            this.contentLayout.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            this.contentLayout.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.contentLayout.ColumnCount = 1;
-            this.contentLayout.RowCount = 2;
-            this.contentLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            this.contentLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            this.contentLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            this.grid.Margin = new Padding(0);
-            this.buttons.Margin = new Padding(0);
+            this.contentLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.contentLayout.Controls.Add(this.grid, 0, 0);
             this.contentLayout.Controls.Add(this.buttons, 0, 1);
-            this.Controls.Add(this.contentLayout);
-            this.CancelButton = this.cancelButton;
-            this.AcceptButton = this.saveButton;
-            foreach (Control control in this.grid.Controls)
-            {
-                control.Margin = new Padding(0, 4, 12, 8);
-                var label = control as Label;
-                if (label != null) label.AutoSize = true;
-                if (label != null && this.grid.GetColumn(control) == 0)
-                    label.MinimumSize = new Size(156, 0);
-                var check = control as CheckBox;
-                if (check != null) check.AutoSize = true;
-            }
-            foreach (Button button in new[] { this.codexLogin, this.codexRefresh, this.saveButton, this.cancelButton })
-            {
-                button.AutoSize = true;
-                button.MinimumSize = new Size(button.Width, 30);
-                button.Padding = new Padding(6, 2, 6, 2);
-            }
-            this.provider.AccessibleName = "Fournisseur";
-            this.openAiEndpoint.AccessibleName = "URL OpenAI facultative";
-            this.ollamaEndpoint.AccessibleName = "URL Ollama facultative";
-            this.openAiKey.AccessibleName = "Nouvelle clé OpenAI API";
-            this.approvalPicker.AccessibleName = "Autorisation des modifications VBE";
-            this.grid.TabIndex = 0;
+            this.contentLayout.Dock = System.Windows.Forms.DockStyle.Top;
+            this.contentLayout.Location = new System.Drawing.Point(0, 0);
+            this.contentLayout.Name = "contentLayout";
+            this.contentLayout.RowCount = 2;
+            this.contentLayout.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.contentLayout.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.contentLayout.Size = new System.Drawing.Size(624, 301);
+            this.contentLayout.TabIndex = 0;
+            //
+            // buttons
+            //
+            this.buttons.AutoSize = true;
+            this.buttons.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.buttons.Controls.Add(this.saveButton);
+            this.buttons.Controls.Add(this.cancelButton);
+            this.buttons.Dock = System.Windows.Forms.DockStyle.Top;
+            this.buttons.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
+            this.buttons.Location = new System.Drawing.Point(0, 256);
+            this.buttons.Margin = new System.Windows.Forms.Padding(0);
+            this.buttons.Name = "buttons";
+            this.buttons.Padding = new System.Windows.Forms.Padding(12, 4, 12, 12);
+            this.buttons.Size = new System.Drawing.Size(624, 45);
             this.buttons.TabIndex = 1;
-            this.provider.TabIndex = 0;
-            this.codexActions.TabIndex = 1;
-            this.codexLogin.TabIndex = 0;
-            this.codexRefresh.TabIndex = 1;
-            this.openAiEndpoint.TabIndex = 2;
-            this.ollamaEndpoint.TabIndex = 3;
-            this.openAiKey.TabIndex = 4;
-            this.clearKey.TabIndex = 5;
-            this.approvalPicker.TabIndex = 6;
+            //
+            // saveButton
+            //
+            this.saveButton.Location = new System.Drawing.Point(492, 7);
+            this.saveButton.Name = "saveButton";
+            this.saveButton.Size = new System.Drawing.Size(105, 23);
             this.saveButton.TabIndex = 0;
+            this.saveButton.Text = "Enregistrer";
+            //
+            // cancelButton
+            //
+            this.cancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+            this.cancelButton.Location = new System.Drawing.Point(381, 7);
+            this.cancelButton.Name = "cancelButton";
+            this.cancelButton.Size = new System.Drawing.Size(105, 23);
             this.cancelButton.TabIndex = 1;
-            this.buttons.ResumeLayout(false);
-            this.codexActions.ResumeLayout(false);
+            this.cancelButton.Text = "Annuler";
+            //
+            // LlmSettingsWindow
+            //
+            this.AcceptButton = this.saveButton;
+            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+            this.AutoScroll = true;
+            this.CancelButton = this.cancelButton;
+            this.ClientSize = new System.Drawing.Size(624, 368);
+            this.Controls.Add(this.contentLayout);
+            this.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.MaximizeBox = false;
+            this.MinimumSize = new System.Drawing.Size(640, 39);
+            this.Name = "LlmSettingsWindow";
+            this.ShowInTaskbar = false;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+            this.Text = "CodexVBE — Configuration LLM";
             this.grid.ResumeLayout(false);
             this.grid.PerformLayout();
+            this.codexActions.ResumeLayout(false);
+            this.contentLayout.ResumeLayout(false);
+            this.contentLayout.PerformLayout();
+            this.buttons.ResumeLayout(false);
             this.ResumeLayout(false);
+            this.PerformLayout();
+
         }
     }
 }
