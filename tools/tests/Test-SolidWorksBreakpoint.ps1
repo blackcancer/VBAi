@@ -34,6 +34,7 @@ $breakpointRemovalInvoked = $false
 $breakLine = 5
 $stopped = $false
 $stepped = $false
+$localsProbe = $null
 try {
     $created = Invoke-Vbe @{ Command = 'create_module'; Project = $project; Module = $module; ExpectedMode = 2 }
     $code = "Option Explicit`r`nPublic Sub CodexSwBreakpointSmoke()`r`n    Dim probeValue As Long`r`n    probeValue = 1`r`n    probeValue = probeValue + 1`r`n    Debug.Print probeValue`r`nEnd Sub"
@@ -61,6 +62,13 @@ try {
         Start-Sleep -Milliseconds 100
     }
     if (-not $stopped) { throw "The VBA project did not stop at line $breakLine (mode=$($state.Mode))." }
+    Invoke-Vbe @{ Command = 'open_debug_pane'; Action = 'locals' } | Out-Null
+    for ($attempt = 0; $attempt -lt 10; $attempt++) {
+        $windows = Invoke-Vbe @{ Command = 'debug_windows' }
+        $localsProbe = $windows.Locals
+        if (@($localsProbe.Items).Count -gt 0) { break }
+        Start-Sleep -Milliseconds 100
+    }
     $stepCommand = Get-CommandById 194
     if (-not $stepCommand) { throw 'The native Step Over command is unavailable in break mode.' }
     Invoke-Vbe @{ Command = 'invoke_debug'; Project = $project; Module = $module;
@@ -109,4 +117,6 @@ finally {
 }
 [pscustomobject]@{ HostProcessId = $HostProcessId; BreakpointHit = $stopped;
     StepOverVerified = $stepped; BreakpointRemovalInvoked = $breakpointRemovalInvoked;
+    LocalsAvailable = $localsProbe.Available; LocalsError = $localsProbe.Error;
+    LocalsRows = @($localsProbe.Items).Count; LocalsSnapshot = ($localsProbe | ConvertTo-Json -Compress -Depth 3);
     OriginalModuleShaPreserved = $true; ModuleInventoryRestored = $true } | Format-List
