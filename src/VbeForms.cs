@@ -497,6 +497,9 @@ namespace CodexVBE
             if (string.Equals(targetType, "TextBox", StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(descriptor.Name, "ScrollBars", StringComparison.OrdinalIgnoreCase))
                 return "BlockedAfterHostCrash";
+            if (string.Equals(targetType, "ComboBox", StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(descriptor.Name, "ColumnCount", StringComparison.OrdinalIgnoreCase))
+                return "BlockedAfterHostCrash";
             if (string.Equals(targetType, "SpinButton", StringComparison.OrdinalIgnoreCase) &&
                 new[] { "Min", "Max", "Value", "Delay", "SmallChange" }
                     .Any(name => string.Equals(descriptor.Name, name, StringComparison.OrdinalIgnoreCase)))
@@ -820,6 +823,13 @@ namespace CodexVBE
                 throw new InvalidOperationException("_Font_Reserved is a COM reserved member whose getter is unavailable in the tested VBE.");
             if (propertyPath.Length == 1)
             {
+                // A ComboBox.ColumnCount=2 write followed by three AddItem
+                // calls was followed by Excel heap corruption. The exact
+                // trigger in that sequence has not been isolated.
+                if (string.Equals(TypeDescriptor.GetClassName(target), "ComboBox", StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(root.Name, "ColumnCount", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException(
+                        "ComboBox.ColumnCount editing is temporarily disabled: Excel crashed after a multicolumn design-time write sequence.");
                 // A single TextBox.ScrollBars=Vertical write was followed by
                 // Excel heap corruption after a successful readback.
                 if (string.Equals(TypeDescriptor.GetClassName(target), "TextBox", StringComparison.OrdinalIgnoreCase) &&

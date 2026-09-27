@@ -37,6 +37,9 @@ namespace CodexVBE
             string rowSource = Convert.ToString(list.RowSource, CultureInfo.InvariantCulture);
             if (!string.IsNullOrWhiteSpace(rowSource))
                 throw new InvalidOperationException("AddItem is unavailable while RowSource binds the list.");
+            int columnCount = Convert.ToInt32(list.ColumnCount, CultureInfo.InvariantCulture);
+            if (columnCount != 1)
+                throw new InvalidOperationException("The AddItem probe is restricted to one-column lists after an Excel crash in a multicolumn sequence.");
             int beforeCount = Convert.ToInt32(list.ListCount, CultureInfo.InvariantCulture);
             if (beforeCount < 0 || beforeCount >= 1024)
                 throw new InvalidOperationException("The list item count is outside the bounded design-time probe.");
