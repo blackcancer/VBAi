@@ -13,6 +13,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="src\**\*.cs" />
+    <Compile Update="src\Git\GitWindow.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="src\Git\GitWindow.Designer.cs"><DependentUpon>GitWindow.cs</DependentUpon></Compile>
     <Compile Update="src\Llm\Chat\ChatWindow.cs"><SubType>Form</SubType></Compile>
     <Compile Update="src\Llm\Chat\ChatWindow.Designer.cs"><DependentUpon>ChatWindow.cs</DependentUpon></Compile>
     <Compile Update="src\Llm\Settings\LlmSettingsWindow.cs"><SubType>Form</SubType></Compile>

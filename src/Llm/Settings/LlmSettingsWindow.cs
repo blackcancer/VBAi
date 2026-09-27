@@ -8,6 +8,11 @@ namespace CodexVBE
     {
         private readonly LlmSettings settings;
         private bool fittingContent;
+        private readonly System.Threading.CancellationTokenSource githubCancellation = new System.Threading.CancellationTokenSource();
+        private bool githubBusy;
+        private bool githubLoaded;
+        private bool resourcesDisposed;
+        private GitHubAccountService githubService = new GitHubAccountService();
         private LlmProvider displayedProvider;
         private readonly System.Collections.Generic.Dictionary<string, string> endpointDrafts = new System.Collections.Generic.Dictionary<string, string>();
         private readonly System.Collections.Generic.Dictionary<string, string> keyDrafts = new System.Collections.Generic.Dictionary<string, string>();
@@ -18,6 +23,7 @@ namespace CodexVBE
         {
             base.OnShown(e);
             FitContentHeight();
+            if (settings != null && !githubLoaded) { githubLoaded = true; _ = RefreshGitHubAsync(false); }
         }
 
         private void FitContentHeight()
@@ -52,7 +58,10 @@ namespace CodexVBE
             this.settings = settings;
             InitializeComponent();
             ApplyLayoutTuning();
+            githubAccount.Items.Add("Choix automatique de Git");
+            githubAccount.SelectedIndex = 0;
             customName.Text = settings.CustomProviderName ?? "";
+            if (!string.IsNullOrEmpty(settings.GitHubAccount)) { githubAccount.Items.Add(settings.GitHubAccount); githubAccount.SelectedItem = settings.GitHubAccount; }
             azureEntra.Checked = settings.AzureUseEntraToken;
             provider.Items.AddRange(LlmProvider.All);
             approvalPicker.Items.AddRange(new object[] { "Automatique", "Demander pour les autres actions", "Lecture seule" });
@@ -129,7 +138,7 @@ namespace CodexVBE
             foreach (Control control in grid.Controls)
             {
                 int row = grid.GetRow(control);
-                control.Visible = visible[row];
+                control.Visible = row >= visible.Length || visible[row];
             }
             grid.ResumeLayout(true);
             if (Visible) FitContentHeight();
@@ -143,6 +152,54 @@ namespace CodexVBE
             keyDrafts[displayedProvider.Name] = openAiKey.Text.Trim();
             if (displayedProvider.ManualModels) modelDrafts[displayedProvider.Name] = manualModels.Text.Trim();
             if (clearKey.Checked) clearedKeys.Add(displayedProvider.Name); else clearedKeys.Remove(displayedProvider.Name);
+        }
+
+        private async void GitHubLogin_Click(object sender, EventArgs e) { await RefreshGitHubAsync(true); }
+        private async void GitHubRefresh_Click(object sender, EventArgs e) { await RefreshGitHubAsync(false); }
+
+        private async System.Threading.Tasks.Task RefreshGitHubAsync(bool login)
+        {
+            if (githubBusy || settings == null) return;
+            githubBusy = true;
+            githubLogin.Enabled = githubRefresh.Enabled = githubAccount.Enabled = saveButton.Enabled = false;
+            githubStatus.Text = login ? "Terminez la connexion GitHub dans votre navigateur…" : "Recherche des comptes GitHub mémorisés…";
+            try
+            {
+                var service = githubService;
+                string selected = githubAccount.SelectedIndex > 0 ? Convert.ToString(githubAccount.SelectedItem) : null;
+                if (login) await service.LoginAsync(githubCancellation.Token);
+                string[] accounts = await service.ListAsync(githubCancellation.Token);
+                if (IsDisposed) return;
+                githubAccount.Items.Clear(); githubAccount.Items.Add("Choix automatique de Git");
+                githubAccount.Items.AddRange(accounts);
+                if (selected != null && !githubAccount.Items.Contains(selected)) githubAccount.Items.Add(selected);
+                githubAccount.SelectedItem = selected ?? (login && accounts.Length == 1 ? accounts[0] : "Choix automatique de Git");
+                bool missing = selected != null && Array.IndexOf(accounts, selected) < 0;
+                githubStatus.Text = missing ? "Le compte sélectionné n’est plus mémorisé. Reconnectez-le ou choisissez un autre compte." :
+                    accounts.Length == 0 ? "Aucun compte GitHub mémorisé. Cliquez sur Se connecter." :
+                    accounts.Length + " compte(s) disponible(s) via Git Credential Manager. L’accès au dépôt sera vérifié lors de la synchronisation.";
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex) { if (!IsDisposed) githubStatus.Text = ex.Message; }
+            finally
+            {
+                githubBusy = false;
+                if (!IsDisposed)
+                {
+                    githubLogin.Enabled = githubRefresh.Enabled = githubAccount.Enabled = saveButton.Enabled = true;
+                    if (Visible) FitContentHeight();
+                }
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && !resourcesDisposed)
+            {
+                resourcesDisposed = true;
+                githubCancellation.Cancel(); githubCancellation.Dispose(); githubToolTips?.Dispose();
+            }
+            base.Dispose(disposing);
         }
 
         private async System.Threading.Tasks.Task RefreshCodexStatusAsync()
@@ -182,6 +239,7 @@ namespace CodexVBE
                 CaptureDraft();
                 foreach (var endpoint in endpointDrafts.Values) ValidateEndpoint(endpoint);
                 settings.ProviderName = ((LlmProvider)provider.SelectedItem).Name;
+                settings.GitHubAccount = githubAccount.SelectedIndex > 0 ? Convert.ToString(githubAccount.SelectedItem) : null;
                 settings.CustomProviderName = customName.Text.Trim();
                 settings.AzureUseEntraToken = azureEntra.Checked;
                 if (settings.ManualModelLists == null) settings.ManualModelLists = new System.Collections.Generic.Dictionary<string, string>();

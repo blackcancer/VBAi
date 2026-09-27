@@ -55,7 +55,7 @@ namespace CodexVBE
             };
             process = new Process { StartInfo = info };
             try {
-                if (!process.Start()) throw new InvalidOperationException("Impossible de démarrer Copilot.");
+                if (!ProcessInput.StartWithoutPreamble(process)) throw new InvalidOperationException("Impossible de démarrer Copilot.");
             } catch (Exception ex) { process.Dispose(); process = null; throw new InvalidOperationException("Installez GitHub Copilot CLI et configurez CODEXVBE_COPILOT_CLI vers son exécutable si nécessaire.", ex); }
             process.ErrorDataReceived += (s, e) => { }; // Drain without logging tokens or prompts.
             process.BeginErrorReadLine();

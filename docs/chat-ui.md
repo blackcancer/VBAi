@@ -64,6 +64,11 @@ Les captures modern-*.png composent le formulaire WinForms et ses deux zones WPF
 
 ## Références de conception
 
+L’entrée **GitHub · synchroniser le VBA…** du menu du chat ouvre les vues Modifications Git et Historique,
+avec comparaison côte à côte et commandes commit/push/fetch/pull séparées. Le dépôt reste dans un cache privé
+sans fichiers adjacents à la macro. Voir [l’intégration GitHub](github-integration.md) pour le format VBA,
+les sauvegardes, la restauration et les limites de validation.
+
 - [Copilot Visual Studio : contexte, références et historique](https://learn.microsoft.com/en-us/visualstudio/ide/copilot-chat-context-references?view=visualstudio) : contexte explicite et navigation entre conversations.
 - [Codex App Server](https://learn.chatgpt.com/docs/app-server) : événements de réponse, résumés de réflexion, reprise et interruption des tours.
 - [Claude : artifacts](https://support.claude.com/en/articles/17153992-what-are-artifacts-and-how-do-i-use-them) : surfaces de travail consultables dans la conversation.

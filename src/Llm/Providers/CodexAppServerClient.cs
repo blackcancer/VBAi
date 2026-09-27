@@ -130,22 +130,7 @@ namespace CodexVBE
             process.Exited += (sender, args) => FailPending(new InvalidOperationException("Codex app-server s'est arrêté."));
             try
             {
-                // .NET Framework takes Console.InputEncoding when it creates redirected stdin.
-                // The public setter throws in GUI hosts without a console; the cached field is
-                // scoped to this process-start section and restored immediately afterwards.
-                lock (typeof(CodexAppServerClient))
-                {
-                    var encodingField = typeof(Console).GetField("_inputEncoding", BindingFlags.NonPublic | BindingFlags.Static);
-                    if (encodingField == null)
-                        throw new InvalidOperationException("Unable to configure BOM-free Codex stdin on this .NET Framework runtime.");
-                    object previous = encodingField.GetValue(null);
-                    try
-                    {
-                        encodingField.SetValue(null, new UTF8Encoding(false));
-                        if (!process.Start()) throw new InvalidOperationException("Impossible de démarrer codex app-server.");
-                    }
-                    finally { encodingField.SetValue(null, previous); }
-                }
+                if (!ProcessInput.StartWithoutPreamble(process)) throw new InvalidOperationException("Impossible de démarrer codex app-server.");
                 process.OutputDataReceived += (sender, args) => { if (args.Data != null) OnLine(args.Data); };
                 // Read stderr so the child cannot block on a full pipe. Diagnostics are never treated as protocol data.
                 process.ErrorDataReceived += (sender, args) => { };

@@ -57,7 +57,7 @@ try {
     $settingsSurface.BeginLoad($settingsType)
     Assert ($settingsSurface.IsLoaded -and $settingsSurface.LoadErrors.Count -eq 0) 'Settings designer failed to load.'
     $settingsHost = $settingsSurface.GetService([ComponentModel.Design.IDesignerHost])
-    foreach ($name in @('manualModels','customName','azureEntra')) {
+    foreach ($name in @('manualModels','customName','azureEntra','githubAccount','githubLogin','githubRefresh','githubStatus')) {
         $control = $settingsType.GetField($name, $flags).GetValue($settingsHost.RootComponent)
         Assert ($control -is [Windows.Forms.Control] -and $control.Parent -ne $null) "Missing provider designer control: $name"
     }

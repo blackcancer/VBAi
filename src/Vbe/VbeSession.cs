@@ -331,6 +331,11 @@ namespace CodexVBE
             }
         }
 
+        internal VbaGitProject GitProject(string projectName, string hostPath)
+        {
+            return new VbaGitProject(() => (object)GetProject(projectName), hostPath);
+        }
+
         internal object PersistProjectSignature(string projectName)
         {
             return components.PersistExcelSignature(projectName);

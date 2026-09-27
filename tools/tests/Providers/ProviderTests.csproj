@@ -8,7 +8,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ProviderTests.cs" />
+    <Compile Include="../../../src/Bridge/ProcessInput.cs" />
+    <Compile Include="../../../src/Git/GitHubAccountService.cs" />
     <Compile Include="ExtendedProviderTests.cs" />
+    <Compile Include="GitHubSettingsTests.cs" />
     <Compile Include="../../../src/Llm/Providers/LlmProviders.cs" />
     <Compile Include="../../../src/Llm/Providers/LlmModelOption.cs" />
     <Compile Include="../../../src/Llm/Providers/ClaudeProtocol.cs" />

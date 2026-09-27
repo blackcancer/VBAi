@@ -10,6 +10,7 @@ namespace CodexVBE
     internal sealed class LlmSettings
     {
         public string ProviderName { get; set; } = "Codex";
+        public string GitHubAccount { get; set; }
         // Automatic is the requested default for this prototype; unknown persisted values fail closed in LlmVbeTools.
         public string VbeEditApproval { get; set; } = "Automatic";
         public string CodexModel { get; set; }

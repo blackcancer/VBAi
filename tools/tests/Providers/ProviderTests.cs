@@ -35,7 +35,7 @@ internal static partial class ProviderTests
             if (args.Contains("--headless")) { FakeCopilot(); return 0; }
             if (args.Contains("--live-openrouter")) { LiveOpenRouter().GetAwaiter().GetResult(); return 0; }
             if (args.Contains("--live-openrouter-tools")) { LiveOpenRouterTools().GetAwaiter().GetResult(); return 0; }
-            SettingsUi(); Run().GetAwaiter().GetResult(); Extended().GetAwaiter().GetResult(); return 0;
+            SettingsUi(); GitHubSettingsUi(); Run().GetAwaiter().GetResult(); Extended().GetAwaiter().GetResult(); return 0;
         } catch (Exception ex) { Console.Error.WriteLine(ex); return 1; }
     }
     private static void SettingsUi()
