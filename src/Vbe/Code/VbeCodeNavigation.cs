@@ -61,30 +61,7 @@ namespace CodexVBE
 
         public object CreateProcedure(Request request)
         {
-            if (string.IsNullOrWhiteSpace(request.Procedure) ||
-                !Regex.IsMatch(request.Procedure, @"^[A-Za-z][A-Za-z0-9_]{0,39}$") ||
-                request.ProcKind < 0 || request.ProcKind > 3 ||
-                string.IsNullOrWhiteSpace(request.ExpectedSha256) ||
-                string.IsNullOrWhiteSpace(request.Text))
-                throw new ArgumentException("Procedure, ProcKind (0=Sub/Function, 1=Let, 2=Set, 3=Get), ExpectedSha256 and Text are required.");
-            string text = request.Text.Replace("\r\n", "\n").Replace('\r', '\n').Trim('\n');
-            string[] lines = text.Split('\n');
-            string kind = request.ProcKind == 0 ? @"(?:Sub|Function)" :
-                "Property " + new[] { "", "Let", "Set", "Get" }[request.ProcKind];
-            var declaration = Regex.Match(lines[0], @"^\s*(?:(?:Public|Private|Friend|Static)\s+)*" +
-                kind + @"\s+" + Regex.Escape(request.Procedure) + @"\s*\(", RegexOptions.IgnoreCase);
-            string ending = request.ProcKind == 0 &&
-                Regex.IsMatch(lines[0], @"\bFunction\s+", RegexOptions.IgnoreCase) ? "Function" :
-                request.ProcKind == 0 ? "Sub" : "Property";
-            if (!declaration.Success || !Regex.IsMatch(lines[lines.Length - 1],
-                    @"^\s*End\s+" + ending + @"\s*$", RegexOptions.IgnoreCase))
-                throw new ArgumentException("Text must contain one complete procedure with the requested declaration and End statement.");
-            for (int line = 1; line < lines.Length - 1; line++)
-                if (Regex.IsMatch(lines[line],
-                    @"^\s*(?:(?:Public|Private|Friend|Static)\s+)*(?:Sub|Function|Property\s+(?:Get|Let|Set))\s+[A-Za-z]",
-                    RegexOptions.IgnoreCase))
-                    throw new ArgumentException("Text contains an additional procedure declaration.");
-
+            string text = ValidateProcedureText(request);
             dynamic project = GetProject(request.Project);
             if ((int)project.Mode != 2)
                 throw new InvalidOperationException("The project must be in design mode.");
@@ -127,6 +104,108 @@ namespace CodexVBE
                     module.DeleteLines(countBefore + 1, insertedCount);
                 throw;
             }
+        }
+
+        public object ReplaceProcedure(Request request)
+        {
+            string text = ValidateProcedureText(request);
+            dynamic project = GetProject(request.Project);
+            if ((int)project.Mode != 2)
+                throw new InvalidOperationException("The project must be in design mode.");
+            dynamic module = GetModule(project, request.Module);
+            int componentType = (int)module.Parent.Type;
+            if (componentType != 1 && componentType != 2)
+                throw new InvalidOperationException("replace_procedure targets a standard or class module.");
+            int total = (int)module.CountOfLines;
+            string before = Code(module, total);
+            if (!string.Equals(Hash(before), request.ExpectedSha256, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The module changed since it was read.");
+            int body = (int)module.ProcBodyLine[request.Procedure, request.ProcKind];
+            int start = (int)module.ProcStartLine[request.Procedure, request.ProcKind];
+            int count = (int)module.ProcCountLines[request.Procedure, request.ProcKind];
+            if (body < start || start < 1 || count < 1 || start + count - 1 > total)
+                throw new InvalidOperationException("VBIDE returned an invalid procedure range.");
+            string oldDeclaration = (string)module.Lines[body, 1];
+            string ending = request.ProcKind == 0 && Regex.IsMatch(oldDeclaration,
+                @"\bFunction\s+", RegexOptions.IgnoreCase) ? "Function" :
+                request.ProcKind == 0 ? "Sub" : "Property";
+            int end = 0;
+            for (int line = body; line < start + count; line++)
+                if (Regex.IsMatch((string)module.Lines[line, 1],
+                    @"^\s*End\s+" + ending + @"\s*$", RegexOptions.IgnoreCase)) end = line;
+            if (end < body) throw new InvalidOperationException("The procedure's End statement could not be located safely.");
+            string original = (string)module.Lines[body, end - body + 1];
+            if (string.Equals(original.Replace("\r\n", "\n"), text, StringComparison.Ordinal))
+                return new { Project = request.Project, Module = request.Module,
+                    Procedure = request.Procedure, ProcKind = request.ProcKind,
+                    BodyLine = body, CountOfLines = total, Sha256 = Hash(before),
+                    Changed = false, CompilationVerified = false };
+            int removed = end - body + 1;
+            bool deleted = false;
+            try
+            {
+                module.DeleteLines(body, removed);
+                deleted = true;
+                module.InsertLines(body, text.Replace("\n", "\r\n"));
+                int newBody = (int)module.ProcBodyLine[request.Procedure, request.ProcKind];
+                int actualKind = request.ProcKind;
+                string actual = (string)module.ProcOfLine[newBody, ref actualKind];
+                if (newBody != body || actualKind != request.ProcKind ||
+                    !string.Equals(actual, request.Procedure, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("VBIDE did not recognize the replacement procedure.");
+                string after = Code(module, (int)module.CountOfLines);
+                return new { Project = request.Project, Module = request.Module,
+                    Procedure = actual, ProcKind = actualKind, BodyLine = newBody,
+                    CountOfLines = (int)module.CountOfLines, Sha256 = Hash(after),
+                    Changed = true, CompilationVerified = false };
+            }
+            catch (Exception error)
+            {
+                if (deleted)
+                {
+                    try
+                    {
+                        int inserted = (int)module.CountOfLines - (total - removed);
+                        if (inserted > 0) module.DeleteLines(body, inserted);
+                        module.InsertLines(body, original);
+                        if (!string.Equals(Code(module, (int)module.CountOfLines), before, StringComparison.Ordinal))
+                            throw new InvalidOperationException("The original module text differs after rollback.");
+                    }
+                    catch (Exception rollbackError)
+                    {
+                        throw new InvalidOperationException("Procedure replacement failed and rollback needs inspection: " + rollbackError.Message, error);
+                    }
+                }
+                throw;
+            }
+        }
+
+        private static string ValidateProcedureText(Request request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Procedure) ||
+                !Regex.IsMatch(request.Procedure, @"^[A-Za-z][A-Za-z0-9_]{0,39}$") ||
+                request.ProcKind < 0 || request.ProcKind > 3 ||
+                string.IsNullOrWhiteSpace(request.ExpectedSha256) ||
+                string.IsNullOrWhiteSpace(request.Text))
+                throw new ArgumentException("Procedure, ProcKind (0=Sub/Function, 1=Let, 2=Set, 3=Get), ExpectedSha256 and Text are required.");
+            string text = request.Text.Replace("\r\n", "\n").Replace('\r', '\n').Trim('\n');
+            string[] lines = text.Split('\n');
+            string kind = request.ProcKind == 0 ? @"(?:Sub|Function)" :
+                "Property " + new[] { "", "Let", "Set", "Get" }[request.ProcKind];
+            var declaration = Regex.Match(lines[0], @"^\s*(?:(?:Public|Private|Friend|Static)\s+)*" +
+                kind + @"\s+" + Regex.Escape(request.Procedure) + @"\s*\(", RegexOptions.IgnoreCase);
+            string ending = request.ProcKind == 0 &&
+                Regex.IsMatch(lines[0], @"\bFunction\s+", RegexOptions.IgnoreCase) ? "Function" :
+                request.ProcKind == 0 ? "Sub" : "Property";
+            if (!declaration.Success || !Regex.IsMatch(lines[lines.Length - 1],
+                    @"^\s*End\s+" + ending + @"\s*$", RegexOptions.IgnoreCase))
+                throw new ArgumentException("Text must contain one complete procedure with the requested declaration and End statement.");
+            for (int line = 1; line < lines.Length - 1; line++)
+                if (Regex.IsMatch(lines[line],
+                    @"^\s*(?:(?:Public|Private|Friend|Static)\s+)*(?:Sub|Function|Property\s+(?:Get|Let|Set))\s+[A-Za-z]",
+                    RegexOptions.IgnoreCase))
+                    throw new ArgumentException("Text contains an additional procedure declaration.");
+            return text;
         }
 
         private static int CountControls(IEnumerable nodes, string name)
