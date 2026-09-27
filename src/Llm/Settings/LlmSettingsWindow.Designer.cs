@@ -28,6 +28,11 @@ namespace CodexVBE
         private Label keyNote;
         private Label approvalLabel;
         private ComboBox approvalPicker;
+        private Label manualModelsLabel;
+        private TextBox manualModels;
+        private Label customNameLabel;
+        private TextBox customName;
+        private CheckBox azureEntra;
 
         private void InitializeComponent()
         {
@@ -54,6 +59,11 @@ namespace CodexVBE
             this.buttons = new System.Windows.Forms.FlowLayoutPanel();
             this.saveButton = new System.Windows.Forms.Button();
             this.cancelButton = new System.Windows.Forms.Button();
+            this.manualModelsLabel = new System.Windows.Forms.Label();
+            this.manualModels = new System.Windows.Forms.TextBox();
+            this.customNameLabel = new System.Windows.Forms.Label();
+            this.customName = new System.Windows.Forms.TextBox();
+            this.azureEntra = new System.Windows.Forms.CheckBox();
             this.grid.SuspendLayout();
             this.codexActions.SuspendLayout();
             this.contentLayout.SuspendLayout();
@@ -83,12 +93,20 @@ namespace CodexVBE
             this.grid.Controls.Add(this.keyNote, 1, 7);
             this.grid.Controls.Add(this.approvalLabel, 0, 8);
             this.grid.Controls.Add(this.approvalPicker, 1, 8);
+            this.grid.Controls.Add(this.manualModelsLabel, 0, 9);
+            this.grid.Controls.Add(this.manualModels, 1, 9);
+            this.grid.Controls.Add(this.customNameLabel, 0, 10);
+            this.grid.Controls.Add(this.customName, 1, 10);
+            this.grid.Controls.Add(this.azureEntra, 1, 11);
             this.grid.Dock = System.Windows.Forms.DockStyle.Top;
             this.grid.Location = new System.Drawing.Point(0, 0);
             this.grid.Margin = new System.Windows.Forms.Padding(0);
             this.grid.Name = "grid";
             this.grid.Padding = new System.Windows.Forms.Padding(12, 12, 12, 0);
-            this.grid.RowCount = 9;
+            this.grid.RowCount = 12;
+            this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -104,6 +122,30 @@ namespace CodexVBE
             // providerLabel
             //
             this.providerLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.manualModelsLabel.Name = "manualModelsLabel";
+            this.manualModelsLabel.Text = "Modèles (un par ligne)";
+            this.manualModelsLabel.AutoSize = true;
+            this.manualModelsLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.manualModels.Name = "manualModels";
+            this.manualModels.AccessibleName = "Modèles ou déploiements configurés, un identifiant par ligne";
+            this.manualModels.Multiline = true;
+            this.manualModels.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.manualModels.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.manualModels.Size = new System.Drawing.Size(400, 70);
+            this.manualModels.TabIndex = 7;
+            this.customNameLabel.Name = "customNameLabel";
+            this.customNameLabel.Text = "Nom du fournisseur";
+            this.customNameLabel.AutoSize = true;
+            this.customNameLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.customName.Name = "customName";
+            this.customName.AccessibleName = "Nom du fournisseur personnalisé";
+            this.customName.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.customName.TabIndex = 8;
+            this.azureEntra.Name = "azureEntra";
+            this.azureEntra.Text = "Utiliser un jeton Microsoft Entra (à renouveler après expiration)";
+            this.azureEntra.AutoSize = true;
+            this.azureEntra.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.azureEntra.TabIndex = 9;
             this.providerLabel.Location = new System.Drawing.Point(15, 12);
             this.providerLabel.Name = "providerLabel";
             this.providerLabel.Size = new System.Drawing.Size(100, 29);
