@@ -45,6 +45,10 @@ namespace CodexVBE
                     return Response.Success(editorWindows.AddIns());
                 case "focus_vbe_window":
                     return Response.Success(editorWindows.FocusWindow(request.WindowCaption, request.WindowType));
+                case "show_vbe_window":
+                    return Response.Success(editorWindows.ShowWindow(request.WindowCaption, request.WindowType));
+                case "window_linkage":
+                    return Response.Success(editorWindows.WindowLinkage(request.WindowCaption, request.WindowType));
                 case "close_vbe_window":
                     return Response.Success(editorWindows.CloseWindow(request.WindowCaption, request.WindowType));
                 case "code_panes":
@@ -149,6 +153,8 @@ namespace CodexVBE
                     return Response.Success(debugger.ListCommands(request.Query, request.Offset, request.Limit));
                 case "select_code":
                     return Response.Success(debugger.SelectCode(request));
+                case "select_code_range":
+                    return Response.Success(debugger.SelectCodeRange(request));
                 case "invoke_debug":
                     return Response.Success(debugger.InvokeCommand(request));
                 case "list_forms":

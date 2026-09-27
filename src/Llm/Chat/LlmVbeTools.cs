@@ -20,8 +20,8 @@ namespace CodexVBE
         private readonly List<string> userRequests = new List<string>();
         public event Action<CodeChange> CodeEdited;
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
-            "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "compile_project", "open_debug_pane", "list_commands", "select_code",
-            "project_properties", "project_persistence_status", "project_signature_status", "read_project_signature_dialog", "list_signing_certificates", "component_properties", "component_property_value", "vbe_windows", "vbe_environment", "list_addins", "focus_vbe_window", "code_panes", "open_object_browser", "list_procedures", "find_code", "inspect_code_file", "select_procedure", "list_forms",
+            "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "compile_project", "open_debug_pane", "list_commands", "select_code", "select_code_range",
+            "project_properties", "project_persistence_status", "project_signature_status", "read_project_signature_dialog", "list_signing_certificates", "component_properties", "component_property_value", "vbe_windows", "vbe_environment", "list_addins", "focus_vbe_window", "window_linkage", "code_panes", "open_object_browser", "list_procedures", "find_code", "inspect_code_file", "select_procedure", "list_forms",
             "form_state", "form_tree", "form_list_items", "form_properties", "form_control_properties", "form_event_catalog",
             "list_form_control_types", "open_form"
         };
@@ -62,7 +62,7 @@ namespace CodexVBE
                     new { type = "string" }, new { type = "number" }, new { type = "boolean" } } } :
                     field == "PathSegments" ? (object)new { type = "array", items = new { type = "string" }, minItems = 1, maxItems = 16 } :
                     field == "Items" ? (object)new { type = "array", items = new { type = "string", maxLength = 256 }, minItems = 0, maxItems = 64 } :
-                    new { type = field == "StartLine" || field == "StartColumn" || field == "EndColumn" || field == "Count" || field == "ExpectedMode" || field == "ControlId" || field == "WindowType" || field == "ProcKind" || field == "InsertIndex" ||
+                    new { type = field == "StartLine" || field == "StartColumn" || field == "EndLine" || field == "EndColumn" || field == "Count" || field == "ExpectedMode" || field == "ControlId" || field == "WindowType" || field == "ProcKind" || field == "InsertIndex" ||
                         field == "Offset" || field == "Limit" || field == "RowIndex" || field == "TypeIndex" || field == "ZPosition" ||
                         field == "Major" || field == "Minor" ? "integer" :
                     field == "Left" || field == "Top" || field == "Width" || field == "Height" || field == "FontSize" ? "number" :
@@ -106,6 +106,9 @@ namespace CodexVBE
             Definition("select_code", "Activate a code pane and select an exact line or single-line text range after checking the current module SHA-256. Optional StartColumn and EndColumn are one-based, with an exclusive end; Expression can assert the selected source text. Does not edit source code.",
                 new[] { "Project", "Module", "ExpectedSha256", "StartLine" },
                 "Project", "Module", "ExpectedSha256", "StartLine", "StartColumn", "EndColumn", "Expression"),
+            Definition("select_code_range", "Select an exact multi-line code range in a native CodePane after checking the current module SHA-256. StartLine/EndLine and StartColumn/EndColumn are one-based; the end position is exclusive. Re-reads the native selection. Does not modify code.",
+                new[] { "Project", "Module", "ExpectedSha256", "StartLine", "StartColumn", "EndLine", "EndColumn" },
+                "Project", "Module", "ExpectedSha256", "StartLine", "StartColumn", "EndLine", "EndColumn"),
             Definition("quick_watch", "Evaluate exactly the selected single-line VBA expression in break mode through the native Quick Watch dialog. Requires current module SHA-256, one-based selection columns and exact Expression; optional Procedure asserts context. The expression can call VBA code and have side effects. The dialog value is read and closed without shortcuts or coordinates; Automatic VBE edit policy is required.",
                 new[] { "Project", "Module", "ExpectedSha256", "ExpectedMode", "StartLine", "StartColumn", "EndColumn", "Expression" },
                 "Project", "Module", "ExpectedSha256", "ExpectedMode", "StartLine", "StartColumn", "EndColumn", "Expression", "Procedure"),
@@ -128,6 +131,10 @@ namespace CodexVBE
             Definition("vbe_environment", "Read the VBE version, active project and counts of projects, windows, code panes and VBE add-ins. Per-field COM failures are reported in Errors.", new string[0]),
             Definition("list_addins", "List VBE-registered add-ins with ProgId, Guid, Description and current Connect state. This is the VBE Add-In Manager collection, not the host application's COM add-ins. Per-field COM failures are reported; no add-in is loaded or unloaded.", new string[0]),
             Definition("focus_vbe_window", "Focus exactly one already-visible VBE window by the exact WindowCaption and WindowType returned by vbe_windows. Refuses absent, hidden or ambiguous windows and reads ActiveWindow after SetFocus. No shortcut or coordinate is used.",
+                new[] { "WindowCaption", "WindowType" }, "WindowCaption", "WindowType"),
+            Definition("show_vbe_window", "Show and focus exactly one VBE window already present in vbe_windows, including a hidden permanent View pane. Requires its exact WindowCaption and WindowType, then verifies Visible and ActiveWindow. Does not create a code pane or designer; no shortcut or coordinate is used.",
+                new[] { "WindowCaption", "WindowType" }, "WindowCaption", "WindowType"),
+            Definition("window_linkage", "Inspect whether one exact native VBE window from vbe_windows has a LinkedWindowFrame, and list that frame's LinkedWindows. Unsupported COM getters are reported in Errors; no window is moved or focused.",
                 new[] { "WindowCaption", "WindowType" }, "WindowCaption", "WindowType"),
             Definition("close_vbe_window", "Close exactly one visible native VBE window by WindowCaption and WindowType from vbe_windows. A code pane or designer is destroyed as a window, while permanent View windows are hidden; VBA code and components are not deleted. Refuses the CodexVBE tool window and ambiguous targets, then checks vbe_windows. Subject to VBE edit policy; no shortcut or coordinate is used.",
                 new[] { "WindowCaption", "WindowType" }, "WindowCaption", "WindowType"),

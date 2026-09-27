@@ -89,6 +89,48 @@ namespace CodexVBE
                 ActiveWindow = active == null ? null : WindowSnapshot(active, null) };
         }
 
+        public object ShowWindow(string caption, int type)
+        {
+            dynamic target = FindExactWindow(caption, type);
+            bool wasVisible = (bool)target.Visible;
+            if (!wasVisible) target.Visible = true;
+            bool nowVisible = (bool)target.Visible;
+            if (!nowVisible)
+                throw new InvalidOperationException("The native VBE window did not become visible.");
+            target.SetFocus();
+            dynamic active = vbe.ActiveWindow;
+            bool activeVerified = active != null &&
+                string.Equals((string)active.Caption, caption, StringComparison.Ordinal) &&
+                (int)active.Type == type;
+            return new { WindowCaption = caption, WindowType = type, WasVisible = wasVisible,
+                Visible = nowVisible, FocusVerified = activeVerified,
+                ActiveWindow = active == null ? null : WindowSnapshot(active, null) };
+        }
+
+        public object WindowLinkage(string caption, int type)
+        {
+            dynamic target = FindExactWindow(caption, type);
+            var fields = new Dictionary<string, object>();
+            var errors = new Dictionary<string, string>();
+            Read(fields, errors, "Visible", () => (bool)target.Visible);
+            try
+            {
+                dynamic frame = target.LinkedWindowFrame;
+                fields["IsLinked"] = frame != null;
+                if (frame != null)
+                {
+                    Read(fields, errors, "FrameCaption", () => (string)frame.Caption);
+                    var linked = new List<object>();
+                    foreach (dynamic window in frame.LinkedWindows)
+                        linked.Add(new { Caption = (string)window.Caption, Type = (int)window.Type });
+                    fields["LinkedWindows"] = linked;
+                }
+            }
+            catch (Exception ex) { errors["LinkedWindowFrame"] = ex.Message; }
+            return new { WindowCaption = caption, WindowType = type,
+                Properties = fields, Errors = errors };
+        }
+
         public object CloseWindow(string caption, int type)
         {
             if (string.Equals(caption, "CodexVBE", StringComparison.OrdinalIgnoreCase))

@@ -31,5 +31,26 @@ $remaining = @($readback.Data.Windows | Where-Object {
 if (-not $readback.Ok -or $remaining.Count -ne 0) {
     throw 'The Object Browser is still visible after a separate readback.'
 }
+$reopened = $null
+if ($closed.Data.Verification -eq 'HiddenInWindows') {
+    $reopened = Invoke-VbeRaw @{ Command = 'show_vbe_window'; WindowCaption = $caption; WindowType = 2 }
+    if (-not $reopened.Ok -or -not $reopened.Data.Visible -or
+        -not $reopened.Data.FocusVerified) {
+        throw "Object Browser reopen was not verified: $($reopened.Error)"
+    }
+    $shown = Invoke-VbeRaw @{ Command = 'vbe_windows' }
+    $visibleAgain = @($shown.Data.Windows | Where-Object {
+        $_.Properties.Type -eq 2 -and $_.Properties.Caption -eq $caption -and $_.Properties.Visible
+    })
+    if (-not $shown.Ok -or $visibleAgain.Count -ne 1) {
+        throw 'A separate read did not confirm the Object Browser reopened.'
+    }
+}
+$linkage = Invoke-VbeRaw @{ Command = 'window_linkage'; WindowCaption = $caption; WindowType = 2 }
+if (-not $linkage.Ok -or @($linkage.Data.Properties.PSObject.Properties.Name) -notcontains 'IsLinked') {
+    throw "The Object Browser linkage read failed: $($linkage.Error)"
+}
 [pscustomobject]@{ HostProcessId = $HostProcessId; CloseVerification = $closed.Data.Verification;
-    SubsequentVisibleCount = $remaining.Count; SelfCloseRejected = -not $self.Ok } | Format-List
+    SubsequentVisibleCount = $remaining.Count; Reopened = $reopened -ne $null;
+    LinkageRead = $linkage.Data.Properties.IsLinked -ne $null;
+    SelfCloseRejected = -not $self.Ok } | Format-List

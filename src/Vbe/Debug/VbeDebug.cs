@@ -405,6 +405,34 @@ namespace CodexVBE
                 StateBefore = before, StateAfter = after, StateAfterError = afterError };
         }
 
+        public object SelectCodeRange(Request request)
+        {
+            if (request == null || request.StartColumn < 1 || request.EndColumn < 1 ||
+                request.EndLine < request.StartLine ||
+                (request.EndLine == request.StartLine && request.EndColumn < request.StartColumn))
+                throw new ArgumentException("A forward one-based code range is required.");
+            dynamic project = GetProject(request.Project);
+            dynamic module = GetModule(project, request.Module);
+            string startText = ValidateLocation(request, module);
+            int lineCount = (int)module.CountOfLines;
+            if (request.EndLine > lineCount)
+                throw new ArgumentOutOfRangeException("EndLine", "The range ends outside the code module.");
+            string endText = (string)module.Lines[request.EndLine, 1];
+            if (request.StartColumn > startText.Length + 1 || request.EndColumn > endText.Length + 1)
+                throw new ArgumentOutOfRangeException("The selected columns are outside their code lines.");
+            dynamic pane = module.CodePane;
+            pane.Show();
+            pane.SetSelection(request.StartLine, request.StartColumn, request.EndLine, request.EndColumn);
+            int actualStartLine = 0, actualStartColumn = 0, actualEndLine = 0, actualEndColumn = 0;
+            pane.GetSelection(ref actualStartLine, ref actualStartColumn, ref actualEndLine, ref actualEndColumn);
+            if (actualStartLine != request.StartLine || actualStartColumn != request.StartColumn ||
+                actualEndLine != request.EndLine || actualEndColumn != request.EndColumn)
+                throw new InvalidOperationException("The native code pane did not retain the requested range.");
+            return new { request.Project, request.Module, request.StartLine, request.StartColumn,
+                request.EndLine, request.EndColumn, Sha256 = request.ExpectedSha256,
+                Verified = true, Mode = (int)project.Mode };
+        }
+
         public object QueueSignatureDialog(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project) || request.ExpectedMode != 2)
