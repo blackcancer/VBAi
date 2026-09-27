@@ -610,16 +610,7 @@ namespace CodexVBE
 
         private dynamic GetProject(string name)
         {
-            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Project is required.");
-            dynamic found = null;
-            foreach (dynamic project in vbe.VBProjects)
-                if (string.Equals((string)project.Name, name, StringComparison.OrdinalIgnoreCase))
-                {
-                    if (found != null) throw new InvalidOperationException("Project name is ambiguous.");
-                    found = project;
-                }
-            if (found == null) throw new InvalidOperationException("Project not found: " + name);
-            return found;
+            return VbeProjectResolver.Resolve(vbe, name);
         }
 
         private static dynamic GetModule(dynamic project, string name)

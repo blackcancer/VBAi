@@ -47,18 +47,53 @@ try {
     $inserted = Invoke-Vbe @{ Command = 'insert_code_file'; Project = $project;
         Module = $insertName; Path = $sourcePath; StartLine = ($insertedModule.Lines + 1);
         ExpectedSha256 = $insertedModule.Sha256 }
-    $excel.DisplayAlerts = $false
-    $book.SaveAs($workbookPath, 52)
+    $properties = Invoke-Vbe @{ Command = 'project_properties'; Project = $project }
+    $savedAs = Invoke-Vbe @{ Command = 'save_host_document_as'; Project = $project;
+        ExpectedProjectVersion = $properties.Version; Path = $workbookPath }
+    if (-not $savedAs.SaveAsInvoked -or $savedAs.HostPath -ne $workbookPath -or
+        -not $savedAs.HostSaved -or -not $savedAs.ProjectSaved) {
+        throw 'The first Excel SaveAs was not verified.'
+    }
     $savedRemove = Invoke-Vbe @{ Command = 'read_module'; Project = $project; Module = $removeName }
     $savedInsert = Invoke-Vbe @{ Command = 'read_module'; Project = $project; Module = $insertName }
     if ($savedRemove.Sha256 -ne $removed.Sha256 -or $savedInsert.Sha256 -ne $inserted.Sha256) {
         throw 'Code changed during Excel SaveAs.'
     }
     $book.Close($false)
+    $closedProjectCount = -1
+    for ($attempt = 0; $attempt -lt 50; $attempt++) {
+        $closedProjects = @(Invoke-Vbe @{ Command = 'list_projects' })
+        $closedProjectCount = @($closedProjects | Where-Object {
+            $_.FileName -and [IO.Path]::GetFullPath([string]$_.FileName) -eq $workbookPath
+        }).Count
+        if ($closedProjectCount -eq 0) { break }
+        Start-Sleep -Milliseconds 100
+    }
+    if ($closedProjectCount -ne 0) {
+        throw 'The saved VBA project remained in VBE after its workbook closed.'
+    }
     $book = $excel.Workbooks.Open($workbookPath)
-    $reopenedProjects = @(Invoke-Vbe @{ Command = 'list_projects' })
-    if ($reopenedProjects.Count -ne 1) { throw 'The reopened workbook has an unexpected project count.' }
-    $project = [string]$reopenedProjects[0].Name
+    $extraBooks = @($excel.Workbooks | Where-Object {
+        [string]$_.FullName -ne $workbookPath
+    })
+    foreach ($extra in $extraBooks) {
+        if ($extra.Path) { throw 'An unexpected saved Excel workbook is open in the isolated process.' }
+        $extra.Close($false)
+    }
+    $reopenedProjects = @()
+    $matchingProjects = @()
+    for ($attempt = 0; $attempt -lt 10; $attempt++) {
+        $reopenedProjects = @(Invoke-Vbe @{ Command = 'list_projects' })
+        $matchingProjects = @($reopenedProjects | Where-Object {
+            $_.FileName -and [IO.Path]::GetFullPath([string]$_.FileName) -eq $workbookPath
+        })
+        if ($matchingProjects.Count -eq 1) { break }
+        Start-Sleep -Milliseconds 100
+    }
+    if ($matchingProjects.Count -ne 1) {
+        throw "The reopened workbook has $($matchingProjects.Count) matching VBA projects out of $($reopenedProjects.Count)."
+    }
+    $project = $workbookPath
     $afterRemove = Invoke-Vbe @{ Command = 'read_module'; Project = $project; Module = $removeName }
     $afterInsert = Invoke-Vbe @{ Command = 'read_module'; Project = $project; Module = $insertName }
     $procedures = Invoke-Vbe @{ Command = 'list_procedures'; Project = $project; Module = $removeName }
@@ -69,7 +104,7 @@ try {
         throw 'The code edits did not survive workbook reopen.'
     }
     [pscustomobject]@{ HostProcessId = $HostProcessId; Project = $project;
-        RemovedProcedurePersisted = $true; InsertedFilePersisted = $true;
+        FirstSaveAsVerified = $true; RemovedProcedurePersisted = $true; InsertedFilePersisted = $true;
         RemoveModuleSha256 = $afterRemove.Sha256; InsertModuleSha256 = $afterInsert.Sha256 } | Format-List
 }
 finally {

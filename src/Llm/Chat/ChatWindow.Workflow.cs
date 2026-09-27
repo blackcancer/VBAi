@@ -82,11 +82,15 @@ namespace CodexVBE
                 var properties = pane?["Properties"] as IDictionary<string, object>;
                 if (properties == null || !properties.ContainsKey("Selection")) throw new InvalidOperationException("Sélectionnez du code dans le VBE.");
                 string project = Convert.ToString(properties["Project"]), module = Convert.ToString(properties["Module"]);
-                if ((scopePicker.SelectedItem as MacroScope)?.Project != project) throw new InvalidOperationException("La sélection appartient à un autre document. Choisissez sa conversation.");
+                var scope = scopePicker.SelectedItem as MacroScope;
+                string activeSelector = scope != null && !scope.Key.StartsWith("temporary:", StringComparison.Ordinal)
+                    ? Convert.ToString(properties.ContainsKey("ProjectPath") ? properties["ProjectPath"] : null) : project;
+                if (scope == null || !string.Equals(scope.Project, activeSelector, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("La sélection appartient à un autre document. Choisissez sa conversation.");
                 var selection = (IDictionary<string, object>)properties["Selection"];
                 int start = Convert.ToInt32(selection["StartLine"]), end = Convert.ToInt32(selection["EndLine"]);
                 int startColumn = Convert.ToInt32(selection["StartColumn"]), endColumn = Convert.ToInt32(selection["EndColumn"]);
-                var data = ReadWorkflow("read_module", project, module);
+                var data = ReadWorkflow("read_module", scope.Project, module);
                 var lines = CodeRollback.Lines(Convert.ToString(data["Code"]));
                 if (start < 1 || end < start || end > lines.Length) throw new InvalidOperationException("Sélection de code vide ou invalide.");
                 var selected = lines.Skip(start - 1).Take(end - start + 1).ToArray();
@@ -96,7 +100,7 @@ namespace CodexVBE
                     selected[0] = selected[0].Substring(Math.Min(selected[0].Length, Math.Max(0, startColumn - 1)));
                 }
                 var attachment = new ChatAttachment { Label = project + "." + module + " · sélection L" + start + "–" + end,
-                    Text = string.Join("\n", selected), Project = project, Module = module, StartLine = start, Sha256 = Convert.ToString(data["Sha256"]) };
+                    Text = string.Join("\n", selected), Project = scope.Project, Module = module, StartLine = start, Sha256 = Convert.ToString(data["Sha256"]) };
                 draftAttachments.RemoveAll(x => x.Label == attachment.Label); draftAttachments.Add(attachment);
                 RefreshContextChips(); RefreshContextPreview(); ScheduleSessionSave();
                 SetStatus("Sélection jointe au prochain message");
@@ -133,7 +137,10 @@ namespace CodexVBE
                         var state = ReadWorkflow("debug_state", scope.Project);
                         string module = Convert.ToString(state["ActiveModule"]);
                         var selection = state["Selection"] as IDictionary<string, object>;
-                        if (Convert.ToString(state["SelectedProject"]) == scope.Project && !string.IsNullOrEmpty(module) && selection != null)
+                        string selectedSelector = scope.Key.StartsWith("temporary:", StringComparison.Ordinal)
+                            ? Convert.ToString(state["SelectedProject"]) : Convert.ToString(state["SelectedProjectPath"]);
+                        if (string.Equals(selectedSelector, scope.Project, StringComparison.OrdinalIgnoreCase) &&
+                            !string.IsNullOrEmpty(module) && selection != null)
                         {
                             var source = ReadWorkflow("read_module", scope.Project, module);
                             location = new[] { new ChatAttachment { Label = "Ouvrir " + module + " L" + selection["StartLine"], Text = diagnostic,

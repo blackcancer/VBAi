@@ -77,7 +77,7 @@ namespace CodexVBE
             Definition("status", "Read the live host process and currently open VBA projects; call before acting on VBE.", new string[0]),
             Definition("read_user_file", "Request separate user approval before reading and transmitting up to 64 KiB of a text file at a path explicitly supplied by the user.",
                 new[] { "Path" }, "Path"),
-            Definition("list_projects", "List open VBA projects and their modes.", new string[0]),
+            Definition("list_projects", "List open VBA projects, FileName and modes. Use the absolute FileName as Project selector when several projects have the same Name.", new string[0]),
             Definition("list_modules", "List modules in one VBA project.", new[] { "Project" }, "Project"),
             Definition("vbe_windows", "Read the native VBIDE Windows collection and the active window, including window type, visibility, state and position. Collection indexes are transient; no window is activated.", new string[0]),
             Definition("code_panes", "Read the already open VBIDE CodePanes collection and active code pane, with project/module, view, visible range and selection. Does not create or activate a pane.", new string[0]),
@@ -171,6 +171,9 @@ namespace CodexVBE
             Definition("save_host_document", "Save only the already-named, writable Excel workbook owning the exact design-mode VBE project. Requires the current ExpectedProjectVersion and the ExpectedHostPath returned by project_persistence_status. Returns both VBProject.Saved and Workbook.Saved after Workbook.Save. Unsaved workbooks and other hosts are refused; SaveAs is a separate operation.",
                 new[] { "Project", "ExpectedProjectVersion", "ExpectedHostPath" },
                 "Project", "ExpectedProjectVersion", "ExpectedHostPath"),
+            Definition("save_host_document_as", "Perform the first save of an unsaved Excel VBA project to a new absolute .xlsm Path explicitly supplied by the user. Refuses overwrite and checks ExpectedProjectVersion, design mode, workbook identity and saved paths. Other hosts are unsupported; reopen the file to prove edit persistence. VBE edit policy applies.",
+                new[] { "Project", "ExpectedProjectVersion", "Path" },
+                "Project", "ExpectedProjectVersion", "Path"),
             Definition("project_signature_status", "Read whether the exact Excel workbook owning this VBE project has a signed VBA project. Returns Available=false when the host is not Excel, the registered Excel instance differs from this VBE, or its project cannot be matched. This does not sign, validate the certificate, or inspect pending edits.",
                 new[] { "Project" }, "Project"),
             Definition("list_signing_certificates", "List public metadata and thumbprints of CurrentUser/My certificates with a private key and Code Signing EKU. EligibleNow indicates the validity dates only; it does not establish certificate trust. Use an exact thumbprint with sign_project.",
@@ -342,6 +345,7 @@ namespace CodexVBE
                     return json.Serialize(ReadUserFile((string)values["Path"]));
                 if ((name == "set_form_picture" || name == "set_form_node_picture" ||
                     name == "add_reference_file" || name == "insert_code_file" || name == "import_component" ||
+                    name == "save_host_document_as" ||
                     name == "inspect_code_file" || name == "export_component") &&
                     !IsExplicitUserPath((string)values["Path"]))
                     return json.Serialize(Response.Failure("L'utilisateur doit fournir explicitement le chemin absolu du fichier."));

@@ -26,6 +26,7 @@ namespace CodexVBE
             public string Key;
             public string Label;
             public string Project;
+            public string Name;
             public override string ToString() { return Label; }
         }
 
@@ -58,7 +59,14 @@ namespace CodexVBE
                     object active;
                     if (data != null && data.TryGetValue("SelectedProject", out active))
                         for (int i = 0; i < scopePicker.Items.Count; i++)
-                            if (((MacroScope)scopePicker.Items[i]).Project == Convert.ToString(active)) selected = i;
+                        {
+                            var candidate = (MacroScope)scopePicker.Items[i];
+                            string selectedPath = data.ContainsKey("SelectedProjectPath")
+                                ? Convert.ToString(data["SelectedProjectPath"]) : null;
+                            if (!candidate.Key.StartsWith("temporary:", StringComparison.Ordinal)
+                                ? string.Equals(candidate.Project, selectedPath, StringComparison.OrdinalIgnoreCase)
+                                : candidate.Name == Convert.ToString(active)) selected = i;
+                        }
                 }
                 scopePicker.SelectedIndex = selected;
             }
@@ -94,7 +102,8 @@ namespace CodexVBE
                 string path = Convert.ToString(project["FileName"]);
                 bool saved = !string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path);
                 scopePicker.Items.Add(new MacroScope {
-                    Project = name,
+                    Project = saved ? Path.GetFullPath(path) : name,
+                    Name = name,
                     Key = saved ? Path.GetFullPath(path).ToUpperInvariant() : "temporary:" + Guid.NewGuid().ToString("N"),
                     Label = name + " · " + (saved ? Path.GetFileName(path) : "document non enregistré")
                 });
@@ -274,7 +283,9 @@ namespace CodexVBE
             if (!response.Ok) throw new InvalidOperationException(response.Error);
             var projects = json.DeserializeObject(json.Serialize(response.Data)) as object[];
             var matches = (projects ?? new object[0]).OfType<IDictionary<string, object>>()
-                .Where(item => Convert.ToString(item["Name"]) == scope.Project).ToArray();
+                .Where(item => scope.Key.StartsWith("temporary:", StringComparison.Ordinal)
+                    ? Convert.ToString(item["Name"]) == scope.Project
+                    : string.Equals(Convert.ToString(item["FileName"]), scope.Project, StringComparison.OrdinalIgnoreCase)).ToArray();
             if (matches.Length != 1) throw new InvalidOperationException("Le projet de cette conversation est fermé ou ambigu.");
             if (!scope.Key.StartsWith("temporary:", StringComparison.Ordinal))
             {

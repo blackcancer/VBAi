@@ -296,7 +296,8 @@ namespace CodexVBE
             }
             catch (Exception ex) { SetStatus("Contexte : " + ex.Message); return; }
             var scope = scopePicker.SelectedItem as MacroScope;
-            if (scope != null) requestText = "Projet VBA de cette conversation : " + scope.Label + "\n\n" + requestText;
+            if (scope != null) requestText = "Projet VBA de cette conversation : " + scope.Label +
+                "\nIdentifiant Project à utiliser dans les outils : " + scope.Project + "\n\n" + requestText;
             string attachedMemory = attachMemory.Checked == true ? projectMemory : null;
             if (!string.IsNullOrWhiteSpace(attachedMemory))
                 requestText += "\n\n<memoire-document>\n" + attachedMemory + "\n</memoire-document>";

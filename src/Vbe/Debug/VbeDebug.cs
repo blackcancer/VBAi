@@ -19,6 +19,7 @@ namespace CodexVBE
         {
             dynamic project = GetProject(projectName);
             string selectedProject = null;
+            string selectedProjectPath = null;
             string activeModule = null;
             object selection = null;
             try
@@ -28,6 +29,7 @@ namespace CodexVBE
                 {
                     activeModule = (string)pane.CodeModule.Parent.Name;
                     selectedProject = (string)vbe.ActiveVBProject.Name;
+                    try { selectedProjectPath = (string)vbe.ActiveVBProject.FileName; } catch { }
                     int startLine = 0, startColumn = 0, endLine = 0, endColumn = 0;
                     pane.GetSelection(ref startLine, ref startColumn, ref endLine, ref endColumn);
                     selection = new { StartLine = startLine, StartColumn = startColumn,
@@ -39,7 +41,8 @@ namespace CodexVBE
                 selection = new { Error = ex.Message };
             }
             return new { Project = (string)project.Name, Mode = (int)project.Mode,
-                SelectedProject = selectedProject, ActiveModule = activeModule, Selection = selection };
+                SelectedProject = selectedProject, SelectedProjectPath = selectedProjectPath,
+                ActiveModule = activeModule, Selection = selection };
         }
 
         public object ListCommands(string query, int offset, int limit)
@@ -109,7 +112,8 @@ namespace CodexVBE
                 throw new ArgumentException("WatchType must be expression, break_when_true or break_when_changed.");
             dynamic state = State(request.Project);
             if ((int)state.Mode != 1 || request.ExpectedMode != 1 ||
-                !string.Equals((string)state.SelectedProject, request.Project, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals((string)(System.IO.Path.IsPathRooted(request.Project) ? state.SelectedProjectPath : state.SelectedProject),
+                    request.Project, StringComparison.OrdinalIgnoreCase) ||
                 !string.Equals((string)state.ActiveModule, request.Module, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("The requested project/module must be active in break mode before adding a watch.");
             var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 1820 && entry.Enabled &&
@@ -234,7 +238,7 @@ namespace CodexVBE
                     if (beforeMode != 1) throw new InvalidOperationException("Show Next Statement requires break mode.");
                     dynamic activeProject = vbe.ActiveVBProject;
                     if (activeProject == null ||
-                        !string.Equals((string)activeProject.Name, request.Project, StringComparison.OrdinalIgnoreCase))
+                        !SameComObject((object)activeProject, (object)project))
                         throw new InvalidOperationException("Show Next Statement requires the requested project to be active in the VBE.");
                     dynamic activePane = vbe.ActiveCodePane;
                     if (activePane == null)
@@ -510,6 +514,9 @@ namespace CodexVBE
                 Regex.Escape(request.Procedure) + @"\s*(?:\(\s*\))?\s*(?:'.*)?$";
             if (!Regex.IsMatch(declaration, pattern, RegexOptions.IgnoreCase))
                 throw new InvalidOperationException("Only a parameterless standard-module Sub can be run by name.");
+            dynamic pane = module.CodePane;
+            pane.Show();
+            pane.SetSelection(body, 1, body, 1);
             var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 186 &&
                 entry.Enabled && IsAllowed("run", entry.Caption, 2));
             if (command == null)
@@ -650,13 +657,7 @@ namespace CodexVBE
 
         private dynamic GetProject(string name)
         {
-            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Project is required.");
-            var matches = new List<dynamic>();
-            foreach (dynamic project in vbe.VBProjects)
-                if (string.Equals((string)project.Name, name, StringComparison.OrdinalIgnoreCase))
-                    matches.Add(project);
-            if (matches.Count != 1) throw new InvalidOperationException("Project name is absent or ambiguous: " + name);
-            return matches[0];
+            return VbeProjectResolver.Resolve(vbe, name);
         }
 
         private static dynamic GetModule(dynamic project, string moduleName)

@@ -139,14 +139,7 @@ namespace CodexVBE
                 !Guid.TryParse(request.Guid, out expectedGuid) || request.Major < 0 || request.Minor < 0 ||
                 request.Major > ushort.MaxValue || request.Minor > ushort.MaxValue)
                 throw new ArgumentException("Project, reference Guid, Major and Minor are required.");
-            dynamic project = null;
-            foreach (dynamic candidate in vbe.VBProjects)
-                if (string.Equals((string)candidate.Name, request.Project, StringComparison.OrdinalIgnoreCase))
-                {
-                    if (project != null) throw new InvalidOperationException("Project name is ambiguous.");
-                    project = candidate;
-                }
-            if (project == null) throw new InvalidOperationException("Project not found.");
+            dynamic project = VbeProjectResolver.Resolve(vbe, request.Project);
             ReferenceSource found = null;
             foreach (dynamic reference in project.References)
             {

@@ -151,6 +151,44 @@ namespace CodexVBE
                 Limit = "The host reported Saved=true. Reopen the file to verify that a specific code edit persisted on disk." };
         }
 
+        public object SaveHostDocumentAs(Request request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Path) ||
+                string.IsNullOrWhiteSpace(request.ExpectedProjectVersion))
+                throw new ArgumentException("Path and ExpectedProjectVersion are required.");
+            if (!string.Equals(Process.GetCurrentProcess().ProcessName, "EXCEL", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("This host has no supported SaveAs API in CodexVBE.");
+            string path = RequireAbsolutePath(request.Path);
+            if (!string.Equals(Path.GetExtension(path), ".xlsm", StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("The first Excel SaveAs supports only a macro-enabled .xlsm workbook.");
+            if (File.Exists(path)) throw new IOException("SaveAs destination already exists: " + path);
+            if (!Directory.Exists(Path.GetDirectoryName(path)))
+                throw new DirectoryNotFoundException("The SaveAs destination directory does not exist.");
+            dynamic project = GetDesignProject(request.Project);
+            AssertProjectVersion(request, project);
+            dynamic workbook = MatchExcelWorkbook(project, true);
+            if ((bool)workbook.ReadOnly)
+                throw new InvalidOperationException("The workbook is read-only and cannot be saved.");
+            string oldProjectPath = null;
+            try { oldProjectPath = (string)project.FileName; }
+            catch { } // VBProject.FileName can fail before the first save.
+            if (!string.IsNullOrWhiteSpace((string)workbook.Path) ||
+                !string.IsNullOrWhiteSpace(oldProjectPath))
+                throw new InvalidOperationException("This command is only for the first save of an unsaved Excel VBA project.");
+            workbook.SaveAs(path, 52); // xlOpenXMLWorkbookMacroEnabled
+            string actual = Path.GetFullPath((string)workbook.FullName);
+            string projectPath = Path.GetFullPath((string)project.FileName);
+            if (!string.Equals(actual, path, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(projectPath, path, StringComparison.OrdinalIgnoreCase) ||
+                !File.Exists(path) || !(bool)workbook.Saved || !(bool)project.Saved)
+                throw new InvalidOperationException("Excel SaveAs returned without matching saved workbook and project paths.");
+            return new { Project = request.Project, HostPath = actual, ProjectPath = projectPath,
+                SaveAsInvoked = true, Bytes = new FileInfo(path).Length,
+                HostSaved = true, ProjectSaved = true,
+                Verification = "ExcelWorkbookAndProjectPathReadback",
+                Limit = "Reopen the .xlsm to verify persistence of a specific VBA edit." };
+        }
+
         private dynamic MatchExcelWorkbook(dynamic project, bool allowUnsaved)
         {
             dynamic excel = Marshal.GetActiveObject("Excel.Application");
@@ -459,16 +497,7 @@ namespace CodexVBE
 
         private dynamic GetProject(string name)
         {
-            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Project is required.");
-            dynamic match = null;
-            foreach (dynamic project in vbe.VBProjects)
-                if (string.Equals((string)project.Name, name, StringComparison.OrdinalIgnoreCase))
-                {
-                    if (match != null) throw new InvalidOperationException("Project name is ambiguous.");
-                    match = project;
-                }
-            if (match == null) throw new InvalidOperationException("Project not found: " + name);
-            return match;
+            return VbeProjectResolver.Resolve(vbe, name);
         }
 
         private dynamic GetDesignProject(string name)

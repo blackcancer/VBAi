@@ -79,6 +79,8 @@ namespace CodexVBE
                     return Response.Success(components.PersistenceStatus(request.Project));
                 case "save_host_document":
                     return Response.Success(components.SaveHostDocument(request));
+                case "save_host_document_as":
+                    return Response.Success(components.SaveHostDocumentAs(request));
                 case "project_signature_status":
                     return Response.Success(components.SignatureStatus(request.Project));
                 case "list_signing_certificates":
@@ -553,12 +555,7 @@ namespace CodexVBE
 
         private dynamic GetProject(string name)
         {
-            if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Project is required.");
-            var matches = new List<dynamic>();
-            foreach (dynamic project in vbe.VBProjects)
-                if (string.Equals((string)project.Name, name, StringComparison.OrdinalIgnoreCase)) matches.Add(project);
-            if (matches.Count != 1) throw new InvalidOperationException("Project name is absent or ambiguous: " + name);
-            return matches[0];
+            return VbeProjectResolver.Resolve(vbe, name);
         }
 
         private dynamic GetModule(string projectName, string moduleName)

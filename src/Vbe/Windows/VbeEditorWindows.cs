@@ -189,6 +189,7 @@ namespace CodexVBE
             var errors = new Dictionary<string, string>();
             Read(fields, errors, "Module", () => (string)pane.CodeModule.Parent.Name);
             Read(fields, errors, "Project", () => (string)pane.CodeModule.Parent.Collection.Parent.Name);
+            Read(fields, errors, "ProjectPath", () => (string)pane.CodeModule.Parent.Collection.Parent.FileName);
             Read(fields, errors, "CodePaneView", () => (int)pane.CodePaneView);
             Read(fields, errors, "TopLine", () => (int)pane.TopLine);
             Read(fields, errors, "CountOfVisibleLines", () => (int)pane.CountOfVisibleLines);
