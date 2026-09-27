@@ -34,6 +34,7 @@
     <Compile Include="Unit\VbeDebugTests.cs" />
     <Compile Include="Unit\VbeSessionTests.cs" />
     <Compile Include="Unit\VbeProcedureMutationTests.cs" />
+    <Compile Include="Unit\VbeFormsPartialTests.cs" />
     <Compile Include="Integration\SessionStoreTests.cs" />
     <Compile Include="Integration\ExcelHostTests.cs" />
     <Compile Include="Integration\SolidWorksHostTests.cs" />

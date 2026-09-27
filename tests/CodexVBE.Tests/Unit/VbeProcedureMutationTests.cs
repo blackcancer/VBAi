@@ -80,6 +80,35 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual(before, fixture.Module.Code);
         }
 
+        [TestMethod]
+        public void EventStubUsesCurrentFormTreeAndCurrentCodeVersion()
+        {
+            var fixture = new Fixture("", 3);
+            fixture.Component.Designer.Controls.AddExisting("Button1");
+            dynamic tree = fixture.Forms.Tree("Projet", "Module1");
+            var request = new Request { Project = "Projet", Form = "Module1", ObjectName = "Button1",
+                EventName = "Click", ExpectedTreeVersion = tree.TreeVersion, ExpectedSha256 = Hash("") };
+            dynamic result = fixture.Navigation.CreateEventProcedure(request);
+            Assert.AreEqual("Button1_Click", (string)result.Procedure);
+            StringAssert.Contains(fixture.Module.Code, "Private Sub Button1_Click()");
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Navigation.CreateEventProcedure(request));
+        }
+
+        [TestMethod]
+        public void EventStubRejectsStaleTreeAndUnknownControlBeforeEditingCode()
+        {
+            var fixture = new Fixture("", 3);
+            dynamic tree = fixture.Forms.Tree("Projet", "Module1");
+            var request = new Request { Project = "Projet", Form = "Module1", ObjectName = "Missing",
+                EventName = "Click", ExpectedTreeVersion = tree.TreeVersion, ExpectedSha256 = Hash("") };
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Navigation.CreateEventProcedure(request));
+            Assert.AreEqual("", fixture.Module.Code);
+            request.ObjectName = "UserForm";
+            request.ExpectedTreeVersion = "stale";
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Navigation.CreateEventProcedure(request));
+            Assert.AreEqual("", fixture.Module.Code);
+        }
+
         private static string Hash(string source)
         {
             using (var sha = SHA256.Create())
@@ -91,16 +120,19 @@ namespace CodexVBE.Tests.Unit
         {
             public readonly FakeModule Module;
             public readonly VbeCodeNavigation Navigation;
-            public Fixture(string code)
+            public readonly VbeForms Forms;
+            public readonly FakeComponent Component;
+            public Fixture(string code, int type = 1)
             {
                 var host = new FakeVbe();
                 var project = new FakeProject { Name = "Projet", Mode = 2 };
-                var component = new FakeComponent { Name = "Module1", Type = 1 };
-                Module = new FakeModule(component, code);
-                component.CodeModule = Module;
-                project.VBComponents.Add(component);
+                Component = new FakeComponent { Name = "Module1", Type = type };
+                Module = new FakeModule(Component, code);
+                Component.CodeModule = Module;
+                project.VBComponents.Add(Component);
                 host.VBProjects.Add(project);
-                Navigation = new VbeCodeNavigation(host, new VbeForms(host));
+                Forms = new VbeForms(host);
+                Navigation = new VbeCodeNavigation(host, Forms);
             }
             public Request Request(string text)
             {
@@ -118,9 +150,14 @@ namespace CodexVBE.Tests.Unit
         }
         public sealed class FakeComponent
         {
+            private readonly VbeFormsTests.FakeWindow window = new VbeFormsTests.FakeWindow();
             public string Name { get; set; }
             public int Type { get; set; }
             public FakeModule CodeModule { get; set; }
+            public VbeFormsTests.FakeDesigner Designer { get; } = new VbeFormsTests.FakeDesigner();
+            public VbeFormsTests.FakePropertyCollection Properties => new VbeFormsTests.FakePropertyCollection(Designer);
+            public bool HasOpenDesigner => window.Visible;
+            public VbeFormsTests.FakeWindow DesignerWindow() { return window; }
         }
 
         public sealed class FakeModule
@@ -157,6 +194,14 @@ namespace CodexVBE.Tests.Unit
             }
             public void DeleteLines(int start, int count) { lines.RemoveRange(start - 1, count); }
 
+            public int CreateEventProc(string eventName, string objectName)
+            {
+                string stub = "Private Sub " + objectName + "_" + eventName + "()\r\nEnd Sub";
+                int first = lines.Count + (lines.Count == 0 ? 1 : 2);
+                InsertLines(lines.Count + 1, (lines.Count == 0 ? "" : "\r\n") + stub);
+                return first;
+            }
+
             private Procedure Find(string name, int kind)
             {
                 for (int i = 0; i < lines.Count; i++)
@@ -180,7 +225,7 @@ namespace CodexVBE.Tests.Unit
             {
                 for (int i = 0; i < lines.Count; i++)
                 {
-                    var declaration = Regex.Match(lines[i], @"^\s*(?:Sub|Function)\s+([A-Za-z][A-Za-z0-9_]*)\s*\(", RegexOptions.IgnoreCase);
+                    var declaration = Regex.Match(lines[i], @"^\s*(?:(?:Public|Private|Friend|Static)\s+)*(?:Sub|Function)\s+([A-Za-z][A-Za-z0-9_]*)\s*\(", RegexOptions.IgnoreCase);
                     if (!declaration.Success) continue;
                     var found = Find(declaration.Groups[1].Value, 0);
                     if (found != null && line >= found.Start && line < found.Start + found.Count) return found;
