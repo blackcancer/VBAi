@@ -87,3 +87,87 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+namespace CodexVBE.Tests.Unit
+{
+    public sealed partial class StreamTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public async System.Threading.Tasks.Task OpenAiFramingMergesNullScalarsNestedValuesAndMetadata()
+        {
+            var wire = ": comment\nevent: update\n\ndata: {\"choices\":[{\"delta\":\ndata: {\"role\":\"assistant\",\"type\":\"message\",\"content\":null,\"count\":1,\"nested\":\"before\"}}]}\n\n";
+            wire += System.Text.Encoding.UTF8.GetString(Events(
+                new { choices = new object[0] },
+                new { choices = new[] { new { delta = new { role = "assistant", type = "message", content = "", count = 2, nested = new { value = "first" } } } } },
+                new { choices = new[] { new { delta = new { nested = new { value = "second" }, content = "text" } } } },
+                new { choices = new[] { new { finish_reason = "stop" } } }, "[DONE]").ToArray());
+            using (var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(wire))) {
+                var result = await ChatStreamReader.ReadAsync(stream, false, null, System.Threading.CancellationToken.None);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("assistant", result["role"]);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("message", result["type"]);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(2, result["count"]);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("firstsecond", Obj(result["nested"])["value"]);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("text", result["content"]);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(result.ContainsKey("tool_calls"));
+            }
+        }
+
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public async System.Threading.Tasks.Task StreamStopsRejectInvalidCompletionForBothProtocols()
+        {
+            foreach (var stop in new[] { null, "length", "tool_calls", "stop", "end_turn", "tool_use", "stop_sequence" }) {
+                using (var stream = Events(new { choices = new[] { new { delta = new { content = "ok" }, finish_reason = stop } } }, "[DONE]")) {
+                    if (stop == "stop" || stop == "tool_calls") {
+                        var result = await ChatStreamReader.ReadAsync(stream, false, value => { }, System.Threading.CancellationToken.None);
+                        Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("ok", result["content"]);
+                    } else await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.IO.InvalidDataException>(() => ChatStreamReader.ReadAsync(stream, false, null, System.Threading.CancellationToken.None));
+                }
+                using (var stream = Events(new { type = "message_delta", delta = new { stop_reason = stop } }, new { type = "message_stop" })) {
+                    if (stop == "end_turn" || stop == "tool_use" || stop == "stop_sequence") {
+                        var result = await ChatStreamReader.ReadAsync(stream, true, null, System.Threading.CancellationToken.None);
+                        Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("", result["content"]);
+                    } else await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.IO.InvalidDataException>(() => ChatStreamReader.ReadAsync(stream, true, null, System.Threading.CancellationToken.None));
+                }
+            }
+            using (var stream = Events(new { type = "message_delta", delta = new { stop_reason = "end_turn" } })) {
+                await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.IO.InvalidDataException>(() => ChatStreamReader.ReadAsync(stream, true, null, System.Threading.CancellationToken.None));
+            }
+            using (var stream = Events(new { type = "error", message = "private" })) {
+                var error = await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.InvalidOperationException>(() => ChatStreamReader.ReadAsync(stream, true, null, System.Threading.CancellationToken.None));
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(error.Message.Contains("private"));
+            }
+        }
+
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public async System.Threading.Tasks.Task ClaudeIgnoresUnknownDeltaAndHandlesEmptyTextWithoutProgress()
+        {
+            using (var stream = Events(
+                new { type = "message_start" },
+                new { type = "content_block_start", index = 0, content_block = new { type = "text", text = "" } },
+                new { type = "content_block_delta", index = 0, delta = new { type = "unknown", text = "ignored" } },
+                new { type = "content_block_delta", index = 0, delta = new { type = "text_delta", text = "answer" } },
+                new { type = "message_delta", delta = new { stop_reason = "end_turn" } }, new { type = "message_stop" })) {
+                var result = await ChatStreamReader.ReadAsync(stream, true, null, System.Threading.CancellationToken.None);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("answer", result["content"]);
+            }
+            using (var stream = Events(new { type = "content_block_start", index = 0, content_block = new { type = "text", text = "initial" } },
+                new { type = "message_delta", delta = new { stop_reason = "stop_sequence" } }, new { type = "message_stop" })) {
+                var result = await ChatStreamReader.ReadAsync(stream, true, null, System.Threading.CancellationToken.None);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("initial", result["content"]);
+            }
+        }
+
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public async System.Threading.Tasks.Task OversizeInputAndCancellationDuringProgressAreRejected()
+        {
+            using (var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(new string('x', 10 * 1024 * 1024 + 1) + "\n"))) {
+                await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.IO.InvalidDataException>(() => ChatStreamReader.ReadAsync(stream, false, null, System.Threading.CancellationToken.None));
+            }
+            using (var source = new System.Threading.CancellationTokenSource())
+            using (var stream = Events(new { choices = new[] { new { delta = new { content = "first" } } } }, "[DONE]")) {
+                await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.OperationCanceledException>(() =>
+                    ChatStreamReader.ReadAsync(stream, false, value => source.Cancel(), source.Token));
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(stream.CanRead);
+            }
+        }
+    }
+}

@@ -94,3 +94,61 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+namespace CodexVBE.Tests.Unit
+{
+    public sealed partial class ProviderProtocolTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void ClaudeHelpersHandleNullMissingAndNonArrayValues()
+        {
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsNull(ClaudeProtocol.Object(null));
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsNull(ClaudeProtocol.Object(7));
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsNull(ClaudeProtocol.Text(null, "missing"));
+            var values = new System.Collections.Generic.Dictionary<string, object> { ["null"] = null, ["scalar"] = 7, ["array"] = new object[] { 1 } };
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreSame(values, ClaudeProtocol.Object(values));
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsNull(ClaudeProtocol.Text(values, "missing"));
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("", ClaudeProtocol.Text(values, "null"));
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("7", ClaudeProtocol.Text(values, "scalar"));
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, ClaudeProtocol.Array(null, "missing").Length);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, ClaudeProtocol.Array(values, "missing").Length);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, ClaudeProtocol.Array(values, "scalar").Length);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, ClaudeProtocol.Array(values, "null").Length);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreSame(values["array"], ClaudeProtocol.Array(values, "array"));
+        }
+
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void ClaudeRequestBuildsNativeToolsSkipsEmptyAndSeparatesResultGroups()
+        {
+            var history = new System.Collections.Generic.List<object> {
+                new { role = "user", content = "prompt" },
+                new { role = "assistant", content = "" },
+                new { role = "assistant", tool_calls = new object[] {
+                    new { id = "a", function = new { name = "read", arguments = "{\"line\":3}" } },
+                    new { id = "b", function = new { name = "empty" } } } },
+                new { role = "tool", tool_call_id = "a" },
+                new { role = "tool", tool_call_id = "b", content = "ok" },
+                new { role = "user", content = "again" },
+                new { role = "tool", tool_call_id = "c", content = "next" }
+            };
+            var request = Obj(ClaudeProtocol.Request("model", history, new object[] {
+                new { function = new { name = "read", description = "reads", parameters = new { type = "object" } } }
+            }));
+            var messages = (object[])request["messages"];
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(5, messages.Length);
+            var calls = (object[])Obj(messages[1])["content"];
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(3, Obj(Obj(calls[0])["input"])["line"]);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, Obj(Obj(calls[1])["input"]).Count);
+            var results = (object[])Obj(messages[2])["content"];
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(2, results.Length);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("", Obj(results[0])["content"]);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("next", Obj(((object[])Obj(messages[4])["content"])[0])["content"]);
+            var tool = Obj(((object[])request["tools"])[0]);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("read", tool["name"]);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("object", Obj(tool["input_schema"])["type"]);
+            var response = ClaudeProtocol.Response(Obj(new { content = new object[] { new { type = "thinking" }, new { type = "text", text = "a" }, new { type = "text", text = "b" } } }));
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("a\nb", response["content"]);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(response.ContainsKey("tool_calls"));
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("", ClaudeProtocol.Response(Obj(new { }))["content"]);
+        }
+    }
+}

@@ -71,3 +71,44 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+namespace CodexVBE.Tests.Unit
+{
+    public sealed partial class ProviderProtocolTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void BedrockRequestBuildsToolsSystemAndSeparatedResultGroups()
+        {
+            var request = Obj(BedrockProtocol.Request(new System.Collections.Generic.List<object> {
+                new { role = "system", content = "instructions" },
+                new { role = "user", content = "prompt" },
+                new { role = "assistant", content = "" },
+                new { role = "assistant", tool_calls = new object[] {
+                    new { id = "a", function = new { name = "read", arguments = "{\"line\":3}" } },
+                    new { id = "b", function = new { name = "empty" } } } },
+                new { role = "tool", tool_call_id = "a" },
+                new { role = "tool", tool_call_id = "b", content = "ok" },
+                new { role = "user", content = "again" },
+                new { role = "tool", tool_call_id = "c", content = "next" }
+            }, new object[] { new { function = new { name = "read", description = "reads", parameters = new { type = "object" } } } }));
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("instructions", Obj(((object[])request["system"])[0])["text"]);
+            var messages = (object[])request["messages"];
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(5, messages.Length);
+            var calls = (object[])Obj(messages[1])["content"];
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(3, Obj(Obj(Obj(calls[0])["toolUse"])["input"])["line"]);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, Obj(Obj(Obj(calls[1])["toolUse"])["input"]).Count);
+            var results = (object[])Obj(messages[2])["content"];
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(2, results.Length);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("", Obj(((object[])Obj(Obj(results[0])["toolResult"])["content"])[0])["text"]);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(1, ((object[])Obj(messages[4])["content"]).Length);
+            var spec = Obj(Obj(((object[])Obj(request["toolConfig"])["tools"])[0])["toolSpec"]);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("read", spec["name"]);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("object", Obj(Obj(spec["inputSchema"])["json"])["type"]);
+            foreach (var stop in new[] { "end_turn", "stop_sequence" }) {
+                var response = BedrockProtocol.Response(Obj(new { stopReason = stop, output = new { message = new { content = new object[] { new { ignored = true }, new { text = "one" }, new { text = "two" } } } } }));
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("one\ntwo", response["content"]);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(response.ContainsKey("tool_calls"));
+            }
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.InvalidOperationException>(() => BedrockProtocol.Response(Obj(new {})));
+        }
+    }
+}
