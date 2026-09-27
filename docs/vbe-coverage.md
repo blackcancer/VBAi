@@ -180,6 +180,8 @@ Dans Excel visible PID 37424, `create_procedure` a ajouté `ComputeValue` (Funct
 
 Dans Excel visible PID 34528, `replace_procedure` a changé uniquement le corps de `First` dans un module standard dont `ProcStartLine` englobait le commentaire qui précédait la déclaration. Le commentaire, une ligne vide et `Second` sont restés identiques. Dans la classe `PropertyProbe`, la commande a changé `Property Get Value` sans changer `Property Let Value`. Un SHA périmé et une déclaration portant un autre nom ont été refusés avant écriture. Le projet a été enregistré par `save_host_document`, puis rouvert en PID 30032 : les deux SHA finaux ont été retrouvés, avec les autres procédures et commentaires intacts. `compile_project` n'a observé aucun diagnostic natif. Ce test ne couvre pas encore toutes les signatures VBA ni SOLIDWORKS.
 
+Dans Excel visible PID 34420, `tools/tests/Test-RemoveProcedure.ps1` a créé un module et une classe jetables via le pont du complément. `remove_procedure` a retiré seulement `First` du module et `Property Get Value` de la classe. Les commentaires précédents, `Second` et `Property Let Value` sont restés dans le code et dans `list_procedures`. Un second appel avec l'ancien SHA a été refusé avant mutation. Les SHA finaux ont été relus ; le classeur a été fermé sans sauvegarde. Cet essai ne prouve donc pas encore la persistance après réouverture, ni tous les cas de signatures VBA ou SOLIDWORKS.
+
 ## Prochaine exploration
 
 1. Vérifier les propriétés modifiables restantes des contrôles et conteneurs, ainsi que leur suppression et leur réorganisation, sur des classeurs jetables.

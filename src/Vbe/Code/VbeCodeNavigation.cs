@@ -180,6 +180,83 @@ namespace CodexVBE
             }
         }
 
+        public object RemoveProcedure(Request request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Procedure) ||
+                !Regex.IsMatch(request.Procedure, @"^[A-Za-z][A-Za-z0-9_]{0,39}$") ||
+                request.ProcKind < 0 || request.ProcKind > 3 ||
+                string.IsNullOrWhiteSpace(request.ExpectedSha256))
+                throw new ArgumentException("Procedure, ProcKind (0=Sub/Function, 1=Let, 2=Set, 3=Get) and ExpectedSha256 are required.");
+            dynamic project = GetProject(request.Project);
+            if ((int)project.Mode != 2)
+                throw new InvalidOperationException("The project must be in design mode.");
+            dynamic module = GetModule(project, request.Module);
+            int componentType = (int)module.Parent.Type;
+            if (componentType != 1 && componentType != 2)
+                throw new InvalidOperationException("remove_procedure targets a standard or class module.");
+            int total = (int)module.CountOfLines;
+            string before = Code(module, total);
+            if (!string.Equals(Hash(before), request.ExpectedSha256, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The module changed since it was read.");
+            int body = (int)module.ProcBodyLine[request.Procedure, request.ProcKind];
+            int start = (int)module.ProcStartLine[request.Procedure, request.ProcKind];
+            int count = (int)module.ProcCountLines[request.Procedure, request.ProcKind];
+            if (body < start || start < 1 || count < 1 || start + count - 1 > total)
+                throw new InvalidOperationException("VBIDE returned an invalid procedure range.");
+            int actualKind = request.ProcKind;
+            string actual = (string)module.ProcOfLine[body, ref actualKind];
+            if (actualKind != request.ProcKind ||
+                !string.Equals(actual, request.Procedure, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The procedure identity changed since it was read.");
+            string declaration = (string)module.Lines[body, 1];
+            string ending = request.ProcKind == 0 && Regex.IsMatch(declaration,
+                @"\bFunction\s+", RegexOptions.IgnoreCase) ? "Function" :
+                request.ProcKind == 0 ? "Sub" : "Property";
+            int end = 0;
+            for (int line = body; line < start + count; line++)
+                if (Regex.IsMatch((string)module.Lines[line, 1],
+                    @"^\s*End\s+" + ending + @"\s*$", RegexOptions.IgnoreCase)) end = line;
+            if (end < body)
+                throw new InvalidOperationException("The procedure's End statement could not be located safely.");
+            int removed = end - body + 1;
+            string original = (string)module.Lines[body, removed];
+            bool deleted = false;
+            try
+            {
+                module.DeleteLines(body, removed);
+                deleted = true;
+                int remainingBody = 0;
+                try { remainingBody = (int)module.ProcBodyLine[request.Procedure, request.ProcKind]; }
+                catch { }
+                if (remainingBody > 0)
+                    throw new InvalidOperationException("VBIDE still recognizes the removed procedure.");
+                string after = Code(module, (int)module.CountOfLines);
+                if (string.Equals(before, after, StringComparison.Ordinal))
+                    throw new InvalidOperationException("VBIDE did not change the code module.");
+                return new { Project = request.Project, Module = request.Module,
+                    Procedure = actual, ProcKind = actualKind, RemovedStartLine = body,
+                    RemovedLineCount = removed, CountOfLines = (int)module.CountOfLines,
+                    Sha256 = Hash(after), Code = after, CompilationVerified = false };
+            }
+            catch (Exception error)
+            {
+                if (deleted)
+                {
+                    try
+                    {
+                        module.InsertLines(body, original);
+                        if (!string.Equals(Code(module, (int)module.CountOfLines), before, StringComparison.Ordinal))
+                            throw new InvalidOperationException("The original module text differs after rollback.");
+                    }
+                    catch (Exception rollbackError)
+                    {
+                        throw new InvalidOperationException("Procedure removal failed and rollback needs inspection: " + rollbackError.Message, error);
+                    }
+                }
+                throw;
+            }
+        }
+
         private static string ValidateProcedureText(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Procedure) ||
