@@ -30,6 +30,6 @@ namespace CodexVBE
             [In, MarshalAs(UnmanagedType.BStr)] string progId,
             [In, MarshalAs(UnmanagedType.BStr)] string caption,
             [In, MarshalAs(UnmanagedType.BStr)] string position,
-            [In, Out, MarshalAs(UnmanagedType.Struct)] ref object document);
+            [In, Out, MarshalAs(UnmanagedType.IDispatch)] ref object document);
     }
 }

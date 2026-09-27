@@ -1,9 +1,45 @@
-param([switch]$Unregister)
+param([switch]$Unregister, [switch]$MachineOnly)
 $ErrorActionPreference = 'Stop'
 if (-not [Environment]::Is64BitProcess) { throw 'Use 64-bit PowerShell.' }
 $chatClassId = '{0F4D723B-97D8-42E5-9B31-70646B97C8D2}'
 $chatProgId = 'CodexVBE.ChatToolWindow'
 $chatAssemblyPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'bin\Debug\net48\CodexVBE.dll'
+function Set-MachineProgId {
+    $machine = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine, [Microsoft.Win32.RegistryView]::Registry64)
+    try {
+        $path = "Software\Classes\$chatProgId"
+        $existing = $machine.OpenSubKey("$path\CLSID")
+        $registered = $false
+        if ($existing) {
+            try {
+                if ($existing.GetValue('') -ne $chatClassId) { throw 'Machine chat ProgID belongs to another class.' }
+                $registered = $true
+            }
+            finally { $existing.Dispose() }
+        }
+        if ($Unregister -and -not $registered) { return }
+        if (-not $Unregister -and $registered) { return }
+        try {
+            if ($Unregister) { $machine.DeleteSubKeyTree($path, $false) }
+            else {
+                $key = $machine.CreateSubKey("$path\CLSID")
+                try { $key.SetValue('', $chatClassId, [Microsoft.Win32.RegistryValueKind]::String) }
+                finally { $key.Dispose() }
+            }
+        }
+        catch {
+            if ($_.Exception -isnot [System.UnauthorizedAccessException] -and
+                $_.Exception -isnot [System.Security.SecurityException]) { throw }
+            if ($MachineOnly) { throw }
+            $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $PSCommandPath + '"'), '-MachineOnly')
+            if ($Unregister) { $arguments += '-Unregister' }
+            $process = Start-Process -FilePath "$env:WINDIR\System32\WindowsPowerShell\v1.0\powershell.exe" -ArgumentList $arguments -Verb RunAs -WindowStyle Hidden -Wait -PassThru
+            if ($process.ExitCode -ne 0) { throw "Machine chat ProgID registration failed with exit code $($process.ExitCode)." }
+        }
+    }
+    finally { $machine.Dispose() }
+}
+if ($MachineOnly) { Set-MachineProgId; return }
 $registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::CurrentUser, [Microsoft.Win32.RegistryView]::Registry64)
 try {
     $existing = $registry.OpenSubKey("Software\Classes\$chatProgId\CLSID")
@@ -17,6 +53,7 @@ try {
         finally { $existing.Dispose() }
     }
     if ($Unregister) {
+        Set-MachineProgId
         $registry.DeleteSubKeyTree("Software\Classes\$chatProgId", $false)
         $registry.DeleteSubKeyTree("Software\Classes\CLSID\$chatClassId", $false)
         return
@@ -41,6 +78,7 @@ try {
         try { foreach ($name in $entries[$path].Keys) { $key.SetValue($name, $entries[$path][$name], [Microsoft.Win32.RegistryValueKind]::String) } }
         finally { $key.Dispose() }
     }
+    Set-MachineProgId
     Write-Output 'Registered CodexVBE native chat control for the current user.'
 }
 finally { $registry.Dispose() }

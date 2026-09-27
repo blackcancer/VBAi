@@ -28,7 +28,7 @@ Référence d'interaction : GitHub Copilot Chat dans Visual Studio. Son sélecte
 ## Accès VBE
 
 - `Affichage > Assistant CodexVBE` rouvre l'assistant après fermeture. `Outils > Configuration CodexVBE…` ouvre directement les paramètres du fournisseur. Ces commandes sont ajoutées aux menus natifs du VBE et cherchées par leur intitulé selon la langue de l'hôte.
-- Le panneau latéral ancré est une étape distincte de l'interface flottante actuelle. L'essai Excel a validé `CreateToolWindow` et `LinkedWindows.Add` avec `Shell.Explorer.2`, mais pas encore l'hébergement du chat ni son positionnement à droite.
+- Le chat est hébergé dans une fenêtre outil native du VBE et s'ouvre au démarrage. Excel a validé le panneau à droite, son redimensionnement et la restauration de sa position après redémarrage. Le VBE choisit initialement le bas sur une disposition vierge ; le premier déplacement à droite reste manuel, car `LinkedWindows.Add` ne permet pas de désigner un côté.
 
 ## Niveaux d'approbation des commandes VBE
 

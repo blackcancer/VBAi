@@ -45,7 +45,7 @@ namespace CodexVBE
                 server = new BridgeServer(dispatcher, new VbeSession(vbe), process.Id);
                 server.Start();
                 LoadLog.Write("Bridge started: CodexVBE." + process.Id);
-                try { ShowChat(); }
+                try { ShowChat(); ToggleDock(); }
                 catch (Exception uiError) { LoadLog.Write("Assistant window failed: " + uiError); }
                 try { menu = new VbeMenu(vbe, ShowChat, ShowSettings, command => { ShowChat(); chat.PrepareEditorAction(command); }); }
                 catch (Exception menuError) { LoadLog.Write("VBE menu failed: " + menuError); }
@@ -131,6 +131,8 @@ namespace CodexVBE
                 }
                 ((dynamic)nativeChatWindow).Visible = true;
                 nativeChatControl.Attach(chat); docked = true;
+                try { ((dynamic)vbe).MainWindow.LinkedWindows.Add(nativeChatWindow); }
+                catch (Exception positionError) { LoadLog.Write("Native chat main-frame docking unavailable: " + positionError.Message); }
                 ((dynamic)nativeChatWindow).SetFocus();
             }
             catch (Exception ex)
