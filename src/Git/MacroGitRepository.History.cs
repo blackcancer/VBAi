@@ -35,13 +35,13 @@ namespace CodexVBE
         internal void CreateBranch(string name)
         {
             ValidateBranch(name);
-            string head = Resolve(Head) ?? throw new InvalidOperationException("Créez d’abord un commit.");
+            string head = Resolve(Head) ?? throw new InvalidOperationException(UiText.Get("Create a commit first."));
             Text("update-ref", "refs/heads/" + name, head, new string('0', 40));
         }
         internal string BranchCommit(string name)
         {
             ValidateBranch(name);
-            return Resolve("refs/heads/" + name) ?? throw new InvalidOperationException("Branche locale inconnue. Créez-la ou récupérez-la depuis le dépôt distant.");
+            return Resolve("refs/heads/" + name) ?? throw new InvalidOperationException(UiText.Get("Unknown local branch. Create it or fetch it from the remote repository."));
         }
         internal void SelectBranch(string name)
         {
@@ -59,13 +59,13 @@ namespace CodexVBE
         internal void TrackBranch(string name)
         {
             ValidateBranch(name);
-            if (Resolve("refs/heads/" + name) != null) throw new InvalidOperationException("Cette branche locale existe déjà.");
+            if (Resolve("refs/heads/" + name) != null) throw new InvalidOperationException(UiText.Get("This local branch already exists."));
             Text("fetch", "--no-tags", "origin", "refs/heads/" + name + ":refs/heads/" + name);
         }
         internal GitCheckpoint Checkpoint(VbaGitSnapshot live, string label)
         {
             if (string.IsNullOrWhiteSpace(label) || label.Length > 160 || label.Any(char.IsControl))
-                throw new ArgumentException("Un nom de checkpoint de 1 à 160 caractères est requis.");
+                throw new ArgumentException(UiText.Get("A checkpoint name of 1 to 160 characters is required."));
             string id = DateTime.UtcNow.ToString("yyyyMMddHHmmssfff") + "-" + Guid.NewGuid().ToString("N").Substring(0, 8);
             string commit = Commit(live, null, label);
             SetRef("refs/codex/checkpoints/" + id, commit);
@@ -95,25 +95,25 @@ namespace CodexVBE
         }
         internal GitMergePlan BeginMerge(string branch)
         {
-            if (PendingMerge != null) throw new InvalidOperationException("Une fusion est déjà en cours.");
-            string ours = Resolve(Head) ?? throw new InvalidOperationException("Aucun commit local.");
+            if (PendingMerge != null) throw new InvalidOperationException(UiText.Get("A merge is already in progress."));
+            string ours = Resolve(Head) ?? throw new InvalidOperationException(UiText.Get("No local commit."));
             string theirs = BranchCommit(branch);
             var output = Run(new[] { "merge-tree", "--write-tree", "--name-only", "-z", ours, theirs }, null, true, true);
-            if (output.ExitCode != 0 && output.ExitCode != 1) throw new InvalidOperationException("Fusion impossible : vérifiez les ancêtres communs et Git 2.38 ou ultérieur.");
+            if (output.ExitCode != 0 && output.ExitCode != 1) throw new InvalidOperationException(UiText.Get("Unable to merge: check common ancestors and Git 2.38 or later."));
             var records = Encoding.UTF8.GetString(output.Bytes).Split('\0');
             var plan = new GitMergePlan { Branch = Branch, Ours = ours, Theirs = theirs, Tree = records[0].Trim(),
                 Conflicts = output.ExitCode == 0 ? new string[0] : records.Skip(1).TakeWhile(x => x.Length != 0).ToArray() };
-            if (!System.Text.RegularExpressions.Regex.IsMatch(plan.Tree, "^[0-9a-f]{40}$")) throw new InvalidOperationException("Résultat de fusion Git invalide.");
+            if (!System.Text.RegularExpressions.Regex.IsMatch(plan.Tree, "^[0-9a-f]{40}$")) throw new InvalidOperationException(UiText.Get("Invalid Git merge result."));
             SaveMerge(plan); return plan;
         }
         internal void AssertMerge(GitMergePlan plan)
         {
-            if (plan == null || plan.Branch != Branch || plan.Ours != Resolve(Head)) throw new InvalidOperationException("La branche a changé depuis le début de la fusion.");
+            if (plan == null || plan.Branch != Branch || plan.Ours != Resolve(Head)) throw new InvalidOperationException(UiText.Get("The branch changed since the merge started."));
         }
         internal GitConflictContent ConflictContent(string path)
         {
             var plan = PendingMerge; AssertMerge(plan);
-            if (!plan.Conflicts.Contains(path)) throw new ArgumentException("Chemin absent des conflits.");
+            if (!plan.Conflicts.Contains(path)) throw new ArgumentException(UiText.Get("Path not found in conflicts."));
             return new GitConflictContent { Path = path, Ours = ConflictText(plan.Ours, path), Theirs = ConflictText(plan.Theirs, path) };
         }
         private string ConflictText(string tree, string path)
@@ -121,15 +121,15 @@ namespace CodexVBE
             string entry = TreeAtPath(tree, path);
             if (entry == null) return "";
             var parts = entry.Split(' ', '\t');
-            if (parts[1] != "blob" || path.EndsWith(".frx", StringComparison.OrdinalIgnoreCase)) return "[Ressource binaire ou dossier : choisir local ou entrant]";
-            if (long.Parse(Text("cat-file", "-s", parts[2])) > 65536) return "[Aperçu indisponible au-delà de 64 Kio : choisir local ou entrant]";
+            if (parts[1] != "blob" || path.EndsWith(".frx", StringComparison.OrdinalIgnoreCase)) return UiText.Get("[Binary resource or directory: choose local or incoming]");
+            if (long.Parse(Text("cat-file", "-s", parts[2])) > 65536) return UiText.Get("[Preview unavailable above 64 KiB: choose local or incoming]");
             try { return VbaGitSnapshot.Utf8.GetString(Run(new[] { "cat-file", "blob", parts[2] }).Bytes); }
-            catch (DecoderFallbackException) { return "[Contenu non UTF-8 : choisir local ou entrant]"; }
+            catch (DecoderFallbackException) { return UiText.Get("[Non-UTF-8 content: choose local or incoming]"); }
         }
         internal GitMergePlan ResolveConflict(string path, string choice, string text = null)
         {
             var plan = PendingMerge; AssertMerge(plan);
-            if (!plan.Conflicts.Contains(path)) throw new InvalidOperationException("Ce fichier ne figure pas dans les conflits.");
+            if (!plan.Conflicts.Contains(path)) throw new InvalidOperationException(UiText.Get("This file is not listed in conflicts."));
             string entry;
             if (choice == "ours" || choice == "theirs")
             {
@@ -138,7 +138,7 @@ namespace CodexVBE
             }
             else if (choice == "text" && path.StartsWith("vba/", StringComparison.Ordinal) && !path.EndsWith(".frx", StringComparison.Ordinal) && text != null && text.Length < 1024 * 1024)
                 entry = "100644 blob " + Encoding.UTF8.GetString(Run(new[] { "hash-object", "-w", "--stdin" }, VbaGitSnapshot.Utf8.GetBytes(text)).Bytes).Trim() + "\t" + path.Split('/').Last();
-            else throw new ArgumentException("Choisissez ours, theirs ou text pour une source VBA textuelle.");
+            else throw new ArgumentException(UiText.Get("Choose ours, theirs or text for a VBA text source."));
             plan.Tree = ReplacePath(plan.Tree, path.Split('/'), 0, entry);
             plan.Conflicts = plan.Conflicts.Where(x => x != path).ToArray(); SaveMerge(plan); return plan;
         }
@@ -161,7 +161,7 @@ namespace CodexVBE
             if (index == path.Length - 1) { if (replacement != null) entries.Add(replacement); }
             else
             {
-                if (old != null && !old.StartsWith("040000 tree ", StringComparison.Ordinal)) throw new InvalidOperationException("Conflit fichier/dossier : choisissez d’abord le dossier parent.");
+                if (old != null && !old.StartsWith("040000 tree ", StringComparison.Ordinal)) throw new InvalidOperationException(UiText.Get("File/directory conflict: choose the parent directory first."));
                 string child = ReplacePath(old?.Split(' ', '\t')[2], path, index + 1, replacement);
                 entries.Add("040000 tree " + child + "\t" + path[index]);
             }
@@ -169,9 +169,9 @@ namespace CodexVBE
         }
         internal string MergeCommit(GitMergePlan plan, string message)
         {
-            if (string.IsNullOrWhiteSpace(message)) throw new ArgumentException("Un message de commit de fusion est requis.");
+            if (string.IsNullOrWhiteSpace(message)) throw new ArgumentException(UiText.Get("A merge commit message is required."));
             AssertMerge(plan);
-            if (plan.Conflicts.Length != 0) throw new InvalidOperationException("Résolvez tous les conflits avant de terminer la fusion.");
+            if (plan.Conflicts.Length != 0) throw new InvalidOperationException(UiText.Get("Resolve all conflicts before completing the merge."));
             Read(plan.Tree); // Validate the complete VBA package before creating the merge commit.
             return Encoding.UTF8.GetString(Run(new[] { "commit-tree", plan.Tree, "-p", plan.Ours, "-p", plan.Theirs }, VbaGitSnapshot.Utf8.GetBytes(message + "\n")).Bytes).Trim();
         }

@@ -19,7 +19,7 @@ namespace CodexVBE
         internal static MacroGitOperations Open(VbaGitProject project, string scope, string account)
         {
             string cache = MacroGitRepository.ScopeDirectory(scope);
-            if (!File.Exists(Path.Combine(cache, "binding.json"))) throw new InvalidOperationException("Liez d’abord ce document à GitHub depuis l’interface. L’agent ne choisit pas de dépôt à votre place.");
+            if (!File.Exists(Path.Combine(cache, "binding.json"))) throw new InvalidOperationException(UiText.Get("Link this document to GitHub through the interface first. The agent does not choose a repository for you."));
             var held = new FileStream(Path.Combine(cache, "session.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             try
             {
@@ -65,18 +65,18 @@ namespace CodexVBE
         internal Task<GitConflictContent> ConflictAsync(string path) { return Task.Run(() => Repository.ConflictContent(path)); }
         private void Ready(bool allowMerge = false)
         {
-            if (Repository.RecoveryPending) throw new InvalidOperationException("Restaurez l’import interrompu avant de poursuivre.");
-            if (!allowMerge && Repository.PendingMerge != null) throw new InvalidOperationException("Terminez ou annulez la fusion en cours.");
+            if (Repository.RecoveryPending) throw new InvalidOperationException(UiText.Get("Restore the interrupted import before continuing."));
+            if (!allowMerge && Repository.PendingMerge != null) throw new InvalidOperationException(UiText.Get("Complete or abort the current merge."));
         }
         private void Clean(VbaGitSnapshot live)
         {
             var baseline = Repository.Read(Repository.Resolve(MacroGitRepository.Baseline));
-            if (baseline == null || !live.SameAs(baseline)) throw new InvalidOperationException("Des modifications locales existent. Commitez-les ou créez un checkpoint puis restaurez un état commité avant de changer de branche/fusionner.");
+            if (baseline == null || !live.SameAs(baseline)) throw new InvalidOperationException(UiText.Get("Local changes exist. Commit them, or create a checkpoint and restore a committed state before switching branches or merging."));
         }
         internal async Task<object> ExecuteAsync(string action, string expectedState = null, string name = null, string text = null, string choice = null, string path = null)
         {
             var live = project.Capture();
-            if (expectedState != null && expectedState != await Task.Run(() => Revision(live))) throw new InvalidOperationException("L’état Git/VBA a changé. Relisez git_status avant de modifier.");
+            if (expectedState != null && expectedState != await Task.Run(() => Revision(live))) throw new InvalidOperationException(UiText.Get("The Git/VBA state changed. Read git_status again before making changes."));
             if (action != "rollback") Ready(action.StartsWith("merge_", StringComparison.Ordinal));
             switch (action)
             {
@@ -94,24 +94,24 @@ namespace CodexVBE
                     await Task.Run(() => { Repository.SelectBranch(name); Repository.SetRef(MacroGitRepository.Baseline, branchCommit); }); break;
                 case "commit":
                     string commit = await Task.Run(() => {
-                        if (string.IsNullOrWhiteSpace(text)) throw new ArgumentException("Un message de commit est requis.");
+                        if (string.IsNullOrWhiteSpace(text)) throw new ArgumentException(UiText.Get("A commit message is required."));
                         string parent = Repository.Resolve(Repository.Head) ?? Repository.Resolve("refs/remotes/origin/selected");
                         var previous = Repository.Read(parent);
-                        if (Repository.Resolve(Repository.Head) == null && previous != null && !live.SameAs(previous)) throw new InvalidOperationException("Importez d’abord l’état distant avec Pull.");
+                        if (Repository.Resolve(Repository.Head) == null && previous != null && !live.SameAs(previous)) throw new InvalidOperationException(UiText.Get("Import the remote state with Pull first."));
                         string next = live.SameAs(previous) ? parent : Repository.Commit(live, parent, text);
                         Repository.SetRef(Repository.Head, next); Repository.SetRef(MacroGitRepository.Baseline, next); return next;
                     }); return new { Commit = commit, Published = false };
                 case "fetch": await Task.Run(() => Repository.Fetch()); break;
                 case "push":
                     await Task.Run(() => {
-                        string local = Repository.Resolve(Repository.Head) ?? throw new InvalidOperationException("Aucun commit à publier.");
+                        string local = Repository.Resolve(Repository.Head) ?? throw new InvalidOperationException(UiText.Get("No commit to publish."));
                         string remote = Repository.Fetch(); if (remote != null) Repository.RequireFastForward(remote, local);
                         Repository.Push(local);
                     }); break;
                 case "pull":
                     string incoming = await Task.Run(() => {
                         var previous = Repository.Read(Repository.Resolve(MacroGitRepository.Baseline));
-                        if (previous != null && !live.SameAs(previous)) throw new InvalidOperationException("Le VBA contient des modifications locales non commitées.");
+                        if (previous != null && !live.SameAs(previous)) throw new InvalidOperationException(UiText.Get("VBA contains uncommitted local changes."));
                         string remote = Repository.Fetch() ?? throw new InvalidOperationException("Branche distante absente.");
                         Repository.RequireFastForward(Repository.Resolve(Repository.Head), remote); return remote;
                     });
@@ -127,7 +127,7 @@ namespace CodexVBE
                 case "rollback":
                     var rollback = await Task.Run(() => {
                         var after = Repository.Read(Repository.Resolve(MacroGitRepository.AfterImport));
-                        if (after == null || !live.SameAs(after)) throw new InvalidOperationException("Le code a changé depuis l’import ; restauration automatique refusée.");
+                        if (after == null || !live.SameAs(after)) throw new InvalidOperationException(UiText.Get("Code changed since the import; automatic restore refused."));
                         return Repository.Read(Repository.Resolve(MacroGitRepository.Backup)) ?? throw new InvalidOperationException("Aucune sauvegarde.");
                     });
                     await ImportAsync(rollback, live, true); break;
@@ -137,10 +137,10 @@ namespace CodexVBE
         }
         private async Task ImportAsync(VbaGitSnapshot target, VbaGitSnapshot expected, bool rollback = false)
         {
-            if (target == null) throw new InvalidOperationException("La cible ne contient pas de sources VBA.");
-            if (!project.Capture().SameAs(expected)) throw new InvalidOperationException("Le VBA a changé pendant l’opération.");
+            if (target == null) throw new InvalidOperationException(UiText.Get("The target contains no VBA sources."));
+            if (!project.Capture().SameAs(expected)) throw new InvalidOperationException(UiText.Get("VBA changed during the operation."));
             if (expected.SameAs(target)) { if (rollback) Repository.CompleteRecovery(); return; }
-            if (!rollback) await Task.Run(() => { Repository.Checkpoint(expected, "Avant import · " + DateTime.Now.ToString("s")); Repository.PrepareRecovery(expected); });
+            if (!rollback) await Task.Run(() => { Repository.Checkpoint(expected, UiText.Get("Before import · ") + DateTime.Now.ToString("s")); Repository.PrepareRecovery(expected); });
             else File.WriteAllText(Repository.RecoveryFile, Repository.Resolve(MacroGitRepository.Backup));
             bool started = false;
             try { project.Apply(target, expected, () => started = true); }

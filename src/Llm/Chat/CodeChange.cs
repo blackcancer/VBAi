@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Text;
 
@@ -32,7 +32,7 @@ namespace CodexVBE
         [System.Web.Script.Serialization.ScriptIgnore] public string Diff { get { return FormatDiff(Before, After); } }
         [System.Web.Script.Serialization.ScriptIgnore] public CodeDiffLine[] Rows { get { return BuildRows(Before, After); } }
         [System.Web.Script.Serialization.ScriptIgnore] public string Label { get { return Time.ToString("HH:mm:ss") + "  " + Project + "." + Module +
-            (Restored ? "  (restauré)" : ""); } }
+            (Restored ? UiText.Get("  (restored)") : ""); } }
         public override string ToString() { return Label; }
 
         public CodeChange() { }
@@ -64,7 +64,7 @@ namespace CodexVBE
             string[] lines = Lines(before);
             if (request.StartLine < 1 || request.Count < 0 || request.StartLine > lines.Length + 1 ||
                 request.Count > lines.Length - request.StartLine + 1 || request.Text == null)
-                throw new ArgumentException("La plage de remplacement est invalide.");
+                throw new ArgumentException(UiText.Get("Invalid replacement range."));
             string[] inserted = Lines(request.Text);
             string[] result = lines.Take(request.StartLine - 1).Concat(inserted)
                 .Concat(lines.Skip(request.StartLine - 1 + request.Count)).ToArray();
@@ -100,7 +100,7 @@ namespace CodexVBE
                 for (int i = hunk.AfterStart + hunk.After.Length; i < Math.Min(newLines.Length, hunk.AfterStart + hunk.After.Length + 3); i++)
                     rows.Add(new CodeDiffLine { Kind = CodeDiffKind.Context, OldLine = hunk.BeforeStart + hunk.Before.Length + i - hunk.AfterStart - hunk.After.Length + 1, NewLine = i + 1, Text = newLines[i] });
             }
-            return rows.Count == 0 ? new[] { new CodeDiffLine { Kind = CodeDiffKind.Notice, Text = "Aucune différence de code." } } : rows.ToArray();
+            return rows.Count == 0 ? new[] { new CodeDiffLine { Kind = CodeDiffKind.Notice, Text = UiText.Get("No code difference.") } } : rows.ToArray();
         }
 
         private static string[] Lines(string code)

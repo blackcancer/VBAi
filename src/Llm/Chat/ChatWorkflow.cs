@@ -10,22 +10,28 @@ namespace CodexVBE
     internal sealed class ChatCommand
     {
         public string Token { get; set; }
-        public string Kind { get; set; }
-        public string Instruction { get; set; }
+        public string EnglishToken { get; set; }
+        public string DisplayToken { get { return UiText.Culture.TwoLetterISOLanguageName == "fr" ? Token : EnglishToken; } }
+        private string kind;
+        private string instruction;
+        public string Kind { get { return UiText.Get(kind); } set { kind = value; } }
+        public string DisplayKind { get { return Kind; } }
+        public string Instruction { get { return UiText.Get(instruction); } set { instruction = value; } }
         public ChatMode Mode { get; set; }
         public static readonly ChatCommand[] All = {
-            new ChatCommand { Token = "/expliquer", Kind = "Comprendre le code", Mode = ChatMode.Discussion, Instruction = "Explique le code et ses dépendances, sans le modifier." },
-            new ChatCommand { Token = "/corriger", Kind = "Diagnostiquer et corriger", Mode = ChatMode.Agent, Instruction = "Diagnostique puis corrige le problème en conservant le comportement attendu." },
-            new ChatCommand { Token = "/refactoriser", Kind = "Améliorer la structure", Mode = ChatMode.Agent, Instruction = "Refactorise le code sans changer son comportement public." },
-            new ChatCommand { Token = "/documenter", Kind = "Documenter le code", Mode = ChatMode.Agent, Instruction = "Ajoute une documentation VBA concise et utile au code." },
-            new ChatCommand { Token = "/tests", Kind = "Préparer des tests VBA", Mode = ChatMode.Agent, Instruction = "Propose puis crée des tests VBA isolés. Ne les exécute pas sans demande explicite et distingue tests écrits et exécutés." },
-            new ChatCommand { Token = "/plan", Kind = "Préparer les étapes", Mode = ChatMode.Plan, Instruction = "Prépare un plan concret avec les modules concernés et les vérifications, sans modifier le projet." }
+            new ChatCommand { Token = "/expliquer", EnglishToken = "/explain", Kind = "Understand the code", Mode = ChatMode.Discussion, Instruction = "Explain the code and its dependencies without changing it." },
+            new ChatCommand { Token = "/corriger", EnglishToken = "/fix", Kind = "Diagnose and fix", Mode = ChatMode.Agent, Instruction = "Diagnose and fix the problem while preserving the expected behavior." },
+            new ChatCommand { Token = "/refactoriser", EnglishToken = "/refactor", Kind = "Improve the structure", Mode = ChatMode.Agent, Instruction = "Refactor the code without changing its public behavior." },
+            new ChatCommand { Token = "/documenter", EnglishToken = "/document", Kind = "Document the code", Mode = ChatMode.Agent, Instruction = "Add concise and useful VBA documentation to the code." },
+            new ChatCommand { Token = "/tests", EnglishToken = "/tests", Kind = "Prepare VBA tests", Mode = ChatMode.Agent, Instruction = "Propose and create isolated VBA tests. Do not execute them without an explicit request; distinguish written tests from executed tests." },
+            new ChatCommand { Token = "/plan", EnglishToken = "/plan", Kind = "Prepare the steps", Mode = ChatMode.Plan, Instruction = "Prepare a concrete plan with the affected modules and checks without changing the project." }
         };
         public static string Expand(string text)
         {
-            var command = All.FirstOrDefault(x => text == x.Token || text.StartsWith(x.Token + " ", StringComparison.Ordinal) || text.StartsWith(x.Token + "\n", StringComparison.Ordinal));
-            if (text.StartsWith("/") && command == null) throw new InvalidOperationException("Commande inconnue. Utilisez les suggestions /.");
-            return command == null ? text : command.Instruction + "\n" + text.Substring(command.Token.Length).Trim();
+            string token = text.Split(new[] { ' ', '\r', '\n' }, 2)[0];
+            var command = All.FirstOrDefault(x => token == x.Token || token == x.EnglishToken);
+            if (text.StartsWith("/") && command == null) throw new InvalidOperationException(UiText.Get("Unknown command. Use the / suggestions."));
+            return command == null ? text : command.Instruction + "\n" + text.Substring(token.Length).Trim();
         }
     }
 
@@ -50,14 +56,14 @@ namespace CodexVBE
         }
         public static string Export(ChatSessionState session)
         {
-            var output = new StringBuilder("# " + session.Title + "\n\nDocument : " + session.Scope + "\n");
+            var output = new StringBuilder("# " + session.DisplayTitle + "\n\nDocument: " + session.Scope + "\n");
             foreach (var entry in session.Entries)
             {
-                output.Append("\n## ").Append(entry.Speaker).Append("\n\n").Append(entry.Text).Append('\n');
+                output.Append("\n## ").Append(UiText.Speaker(entry.Speaker)).Append("\n\n").Append(entry.Text).Append('\n');
                 if (entry.Change != null) output.Append(entry.Change.Label).Append("\n\n").Append(Fence(entry.Change.Diff, "diff"));
                 foreach (var attachment in entry.Attachments ?? new ChatAttachment[0])
                     output.Append("\n### ").Append(attachment.Label).Append('\n').Append(Fence(attachment.Text, "text"));
-                if (!string.IsNullOrWhiteSpace(entry.AttachedMemory)) output.Append("\n### Mémoire jointe\n").Append(Fence(entry.AttachedMemory, "text"));
+                if (!string.IsNullOrWhiteSpace(entry.AttachedMemory)) output.Append(UiText.Get("\n### Attached memory\n")).Append(Fence(entry.AttachedMemory, "text"));
             }
             return output.ToString();
         }

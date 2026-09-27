@@ -28,7 +28,7 @@ namespace CodexVBE
             if (!Regex.IsMatch(branch ?? "", @"^[A-Za-z0-9][A-Za-z0-9_./-]{0,127}$") || branch.Contains("..") ||
                 branch.Contains("//") || branch.EndsWith("/") || branch.Split('/').Any(x => x.StartsWith(".") || x.EndsWith(".") || x.EndsWith(".lock")))
                 throw new ArgumentException("Nom de branche Git invalide.");
-            if (!string.IsNullOrEmpty(account) && !GitHubAccountService.ValidAccount(account)) throw new ArgumentException("Compte GitHub invalide.");
+            if (!string.IsNullOrEmpty(account) && !GitHubAccountService.ValidAccount(account)) throw new ArgumentException(UiText.Get("Invalid GitHub account."));
             this.account = account;
             this.directory = Path.GetFullPath(directory); Branch = branch;
         }
@@ -44,7 +44,7 @@ namespace CodexVBE
         {
             remote = (remote ?? "").Trim();
             if (!Regex.IsMatch(remote, @"^https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:\.git)?/?$", RegexOptions.IgnoreCase))
-                throw new ArgumentException("Saisissez l’URL HTTPS GitHub du dépôt, sans jeton ni mot de passe.");
+                throw new ArgumentException(UiText.Get("Enter the repository's HTTPS GitHub URL without a token or password."));
             return remote.TrimEnd('/');
         }
 
@@ -57,7 +57,7 @@ namespace CodexVBE
                 Run(new[] { "remote", "add", "origin", remote });
             }
             if (Text("remote", "get-url", "origin") != remote)
-                throw new InvalidOperationException("Ce cache est déjà lié à un autre dépôt. Rétablissez l’URL précédente.");
+                throw new InvalidOperationException(UiText.Get("This cache is already linked to another repository. Restore the previous URL."));
             var active = Run(new[] { "config", "--get", "codex.activeBranch" }, null, true, true);
             if (active.ExitCode == 0) { string name = Encoding.UTF8.GetString(active.Bytes).Trim(); ValidateBranch(name); Branch = name; }
         }
@@ -92,8 +92,8 @@ namespace CodexVBE
         internal string SynchronizationStatus()
         {
             string head = Resolve(Head), remote = Resolve("refs/remotes/origin/selected");
-            if (head == null) return remote == null ? "Aucun commit local · utilisez Fetch pour consulter le dépôt distant" : "Branche distante disponible · premier pull requis";
-            if (remote == null) return "Branche locale · état distant inconnu (Fetch)";
+            if (head == null) return remote == null ? UiText.Get("No local commit · use Fetch to inspect the remote repository") : "Branche distante disponible · premier pull requis";
+            if (remote == null) return UiText.Get("Local branch · remote state unknown (Fetch)");
             var counts = Text("rev-list", "--left-right", "--count", head + "..." + remote).Split(new[] { '\t', ' ' }, StringSplitOptions.RemoveEmptyEntries);
             return "↑ " + counts[0] + " sortant(s)   ↓ " + counts[1] + " entrant(s) · dernier Fetch";
         }
@@ -102,7 +102,7 @@ namespace CodexVBE
         {
             if (before == null || before == after) return;
             if (after == null || Run(new[] { "merge-base", "--is-ancestor", before, after }, null, true, true).ExitCode != 0)
-                throw new InvalidOperationException("Les historiques divergent. Réconciliez la branche avant de synchroniser ; aucun push forcé n’est effectué.");
+                throw new InvalidOperationException(UiText.Get("Histories diverge. Reconcile the branch before synchronizing; no forced push is performed."));
         }
 
         internal VbaGitSnapshot Read(string commit)
@@ -111,7 +111,7 @@ namespace CodexVBE
             var entries = Tree(commit);
             var folder = entries.FirstOrDefault(x => x.EndsWith("\tvba", StringComparison.Ordinal));
             if (folder == null) return null;
-            if (!folder.StartsWith("040000 tree ", StringComparison.Ordinal)) throw new InvalidOperationException("vba doit être un dossier Git.");
+            if (!folder.StartsWith("040000 tree ", StringComparison.Ordinal)) throw new InvalidOperationException(UiText.Get("vba must be a Git directory."));
             string tree = folder.Split(' ', '\t')[2];
             var files = new Dictionary<string, byte[]>(StringComparer.Ordinal);
             long total = 0;
@@ -121,10 +121,10 @@ namespace CodexVBE
                 var parts = entry.Substring(0, tab).Split(' ');
                 string name = entry.Substring(tab + 1);
                 if (parts[0] != "100644" || parts[1] != "blob" || name.IndexOfAny(new[] { '/', '\\', ':', '\0' }) >= 0)
-                    throw new InvalidOperationException("Le dossier vba contient un lien, un sous-dossier ou un fichier non pris en charge.");
+                    throw new InvalidOperationException(UiText.Get("The vba directory contains a link, subdirectory or unsupported file."));
                 long size = long.Parse(Text("cat-file", "-s", parts[2]), System.Globalization.CultureInfo.InvariantCulture);
                 total += size;
-                if (total > VbaGitSnapshot.MaxBytes || files.Count > 2048) throw new InvalidOperationException("Le dépôt VBA dépasse 32 Mo.");
+                if (total > VbaGitSnapshot.MaxBytes || files.Count > 2048) throw new InvalidOperationException(UiText.Get("The VBA repository exceeds 32 MB."));
                 files.Add(name, Run(new[] { "cat-file", "blob", parts[2] }).Bytes);
             }
             return VbaGitSnapshot.Read(files);
@@ -132,7 +132,7 @@ namespace CodexVBE
 
         internal string Commit(VbaGitSnapshot snapshot, string parent, string message)
         {
-            if (string.IsNullOrWhiteSpace(message)) throw new ArgumentException("Un message de commit est requis.");
+            if (string.IsNullOrWhiteSpace(message)) throw new ArgumentException(UiText.Get("A commit message is required."));
             var blobs = new List<string>();
             foreach (var file in snapshot.Serialize())
             {
@@ -163,7 +163,7 @@ namespace CodexVBE
 
         internal void PrepareRecovery(VbaGitSnapshot snapshot)
         {
-            string backup = Commit(snapshot, Resolve(Backup), "Sauvegarde VBA avant import");
+            string backup = Commit(snapshot, Resolve(Backup), UiText.Get("VBA backup before import"));
             SetRef(Backup, backup);
             string previousAfter = Resolve(AfterImport);
             if (previousAfter != null) Text("update-ref", "-d", AfterImport, previousAfter);
@@ -172,7 +172,7 @@ namespace CodexVBE
 
         internal void RecordImportedState(VbaGitSnapshot state)
         {
-            SetRef(AfterImport, Commit(state, null, "État VBA après import"));
+            SetRef(AfterImport, Commit(state, null, UiText.Get("VBA state after import")));
         }
 
         internal void CompleteRecovery() { if (File.Exists(RecoveryFile)) File.Delete(RecoveryFile); }
@@ -211,15 +211,15 @@ namespace CodexVBE
             using (var process = new Process { StartInfo = start })
             using (var output = new MemoryStream())
             {
-                if (!ProcessInput.StartWithoutPreamble(process)) throw new InvalidOperationException("Impossible de démarrer Git.");
+                if (!ProcessInput.StartWithoutPreamble(process)) throw new InvalidOperationException(UiText.Get("Unable to start Git."));
                 Task read = process.StandardOutput.BaseStream.CopyToAsync(output);
                 Task<string> error = process.StandardError.ReadToEndAsync();
                 Task write = Task.Run(() => { try { if (input != null) process.StandardInput.BaseStream.Write(input, 0, input.Length); }
                     finally { process.StandardInput.Close(); } });
-                if (!process.WaitForExit(120000)) { try { process.Kill(); } catch { } throw new TimeoutException("Git ne répond pas après 120 secondes. Vérifiez la connexion et l’authentification GitHub."); }
+                if (!process.WaitForExit(120000)) { try { process.Kill(); } catch { } throw new TimeoutException(UiText.Get("Git did not respond within 120 seconds. Check the connection and GitHub authentication.")); }
                 Task.WaitAll(read, error, write);
                 if (process.ExitCode != 0 && !allowFailure)
-                    throw new InvalidOperationException("Git " + args[0] + " a échoué. " + error.Result.Trim());
+                    throw new InvalidOperationException("Git " + args[0] + UiText.Get(" failed. ") + error.Result.Trim());
                 return new Result { Bytes = output.ToArray(), ExitCode = process.ExitCode };
             }
         }

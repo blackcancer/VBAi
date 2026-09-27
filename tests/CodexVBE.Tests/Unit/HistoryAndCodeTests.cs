@@ -46,7 +46,7 @@ namespace CodexVBE.Tests.Unit
             });
             var output = ChatHistory.Export(session);
             StringAssert.Contains(output, "# Export");
-            StringAssert.Contains(output, "Document : Book.xlsm");
+            StringAssert.Contains(output, UiText.Get("Document: ") + "Book.xlsm");
             StringAssert.Contains(output, longer + "text\navant\n" + fence + "\naprès\n" + longer);
         }
 

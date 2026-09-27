@@ -7,6 +7,7 @@ namespace CodexVBE
         public VbeApprovalDialog()
         {
             InitializeComponent();
+            UiText.Apply(this, null);
         }
 
         public VbeApprovalDialog(string summary) : this()

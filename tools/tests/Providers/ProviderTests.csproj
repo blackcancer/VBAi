@@ -8,6 +8,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ProviderTests.cs" />
+    <Compile Include="../../../src/Localization/UiText.cs" />
+    <Compile Include="../../../src/Host/LoadLog.cs" />
+    <Compile Include="../../../src/Host/VbeWindowIcons.cs" />
+    <EmbeddedResource Include="../../../assets/icons/settings.ico" LogicalName="CodexVBE.Icons.settings.ico" />
+    <EmbeddedResource Include="../../../src/Localization/*.resx"><LogicalName>CodexVBE.Localization.%(Filename).resources</LogicalName></EmbeddedResource>
+    <EmbeddedResource Include="../../../src/Llm/Settings/LlmSettingsWindow.resx"><LogicalName>CodexVBE.LlmSettingsWindow.resources</LogicalName></EmbeddedResource>
+    <Reference Include="Microsoft.CSharp" />
     <Compile Include="../../../src/Bridge/ProcessInput.cs" />
     <Compile Include="../../../src/Git/GitHubAccountService.cs" />
     <Compile Include="ExtendedProviderTests.cs" />

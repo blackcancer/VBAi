@@ -42,7 +42,7 @@ namespace CodexVBE
             this.approve.Name = "approve";
             this.approve.Size = new System.Drawing.Size(100, 30);
             this.approve.TabIndex = 0;
-            this.approve.Text = "Autoriser";
+            this.approve.Text = "Allow";
             //
             // reject
             //
@@ -50,7 +50,7 @@ namespace CodexVBE
             this.reject.Name = "reject";
             this.reject.Size = new System.Drawing.Size(100, 30);
             this.reject.TabIndex = 1;
-            this.reject.Text = "Refuser";
+            this.reject.Text = "Deny";
             //
             // VbeApprovalDialog
             //
@@ -63,7 +63,7 @@ namespace CodexVBE
             this.Name = "VbeApprovalDialog";
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "CodexVBE — valider la modification";
+            this.Text = "VBAi — approve edit";
             this.actions.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();

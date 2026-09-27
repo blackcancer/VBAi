@@ -36,7 +36,7 @@ namespace CodexVBE
         {
             ValidateScope?.Invoke();
             if (!restoring && Mode != ChatMode.Agent && !ReadOnlyTools.Contains(name))
-                throw new InvalidOperationException("Le mode " + Mode + " interdit cet outil de modification ou d'exécution : " + name);
+                throw new InvalidOperationException(UiText.Get("Mode ") + Mode + UiText.Get(" does not allow this editing or execution tool: ") + name);
         }
 
         private void GuardProject(string name, string arguments)
@@ -356,15 +356,15 @@ namespace CodexVBE
                 // All newly registered tools are treated as edits unless explicitly classified as read-only.
                 bool edit = !ReadOnlyTools.Contains(name);
                 if (edit && settings.VbeEditApproval == "ReadOnly")
-                    return json.Serialize(Response.Failure("Les modifications VBE sont désactivées (mode Lecture seule)."));
+                    return json.Serialize(Response.Failure(UiText.Get("VBE edits are disabled (Read-only mode).")));
                 if (edit && settings.VbeEditApproval != "Automatic" && settings.VbeEditApproval != "AskEachTime")
-                    return json.Serialize(Response.Failure("Politique de modification VBE inconnue ; action refusée."));
+                    return json.Serialize(Response.Failure(UiText.Get("Unknown VBE edit policy; action refused.")));
                 CodeSnapshot beforeCode = null;
                 if (name == "replace_lines")
                 {
                     beforeCode = ReadCode(request.Project, request.Module);
                     if (!string.Equals(beforeCode.Sha256, request.ExpectedSha256, StringComparison.OrdinalIgnoreCase))
-                        return json.Serialize(Response.Failure("Le module a changé depuis la lecture du modèle."));
+                        return json.Serialize(Response.Failure(UiText.Get("The module changed since the model read it.")));
                     CodeChange.PreviewRows(beforeCode.Code, request);
                 }
                 if (edit && settings.VbeEditApproval == "AskEachTime" && name != "replace_lines")
@@ -424,7 +424,7 @@ namespace CodexVBE
             {
                 ValidateScope?.Invoke();
                 var pending = changes.Where(x => x != null && !x.Restored).Reverse().ToArray();
-                if (pending.Length == 0) return Response.Failure("Ces modifications sont déjà annulées.");
+                if (pending.Length == 0) return Response.Failure(UiText.Get("These changes have already been undone."));
                 var snapshots = new Dictionary<string, CodeSnapshot>();
                 var planned = new Dictionary<string, string>();
                 foreach (var change in pending)
@@ -442,7 +442,7 @@ namespace CodexVBE
                     var arguments = new { Project = change.Project, Module = change.Module, ExpectedSha256 = snapshot.Sha256,
                         StartLine = 1, Count = CodeRollback.Lines(snapshot.Code).Length, Text = planned[group.Key] };
                     var result = json.Deserialize<Response>(Invoke("replace_lines", json.Serialize(arguments)));
-                    if (result == null || !result.Ok) return Response.Failure("Annulation arrêtée après " + applied + " module(s). " + result?.Error);
+                    if (result == null || !result.Ok) return Response.Failure(UiText.Get("Undo stopped after ") + applied + " module(s). " + result?.Error);
                     foreach (var item in group)
                     {
                         foreach (var block in CodeRollback.Hunks(item.Before, item.After).Where(x => !hunk.HasValue || x.Index == hunk.Value))
@@ -728,16 +728,16 @@ namespace CodexVBE
         private Response ReadUserFile(string requestedPath)
         {
             if (!IsExplicitUserPath(requestedPath))
-                return Response.Failure("L'utilisateur n'a pas fourni ce chemin exact.");
+                return Response.Failure(UiText.Get("The user did not provide this exact path."));
             string fullPath = Path.GetFullPath(requestedPath);
-            if (!File.Exists(fullPath)) return Response.Failure("Le fichier fourni est introuvable.");
+            if (!File.Exists(fullPath)) return Response.Failure(UiText.Get("The provided file could not be found."));
             const int limit = 65536;
-            string provider = string.IsNullOrWhiteSpace(CurrentProviderName) ? "le fournisseur LLM actif" : CurrentProviderName;
+            string provider = string.IsNullOrWhiteSpace(CurrentProviderName) ? UiText.Get("the active LLM provider") : CurrentProviderName;
             var choice = MessageBox.Show(owner,
-                "Autoriser la lecture et la transmission à " + provider + " des 64 premiers Kio au maximum de ce fichier ?\r\n\r\n" + fullPath,
-                "CodexVBE — autoriser la transmission du fichier", MessageBoxButtons.YesNo, MessageBoxIcon.Question,
+                UiText.Get("Allow reading and sending to ") + provider + UiText.Get(" up to the first 64 KiB of this file?\r\n\r\n") + fullPath,
+                UiText.Get("VBAi — allow sending a file"), MessageBoxButtons.YesNo, MessageBoxIcon.Question,
                 MessageBoxDefaultButton.Button2);
-            if (choice != DialogResult.Yes) return Response.Failure("L'utilisateur a refusé la transmission du fichier.");
+            if (choice != DialogResult.Yes) return Response.Failure(UiText.Get("The user declined sending the file."));
             using (var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 var bytes = new byte[limit + 1];
@@ -754,7 +754,7 @@ namespace CodexVBE
                 {
                     string content = reader.ReadToEnd();
                     if (content.IndexOf('\0') >= 0)
-                        return Response.Failure("Le fichier semble binaire ; lecture textuelle refusée.");
+                        return Response.Failure(UiText.Get("The file appears to be binary; text reading refused."));
                     return Response.Success(new { Path = fullPath, Text = content,
                         Truncated = count > limit, ByteLength = stream.Length });
                 }

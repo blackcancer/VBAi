@@ -29,6 +29,7 @@ namespace CodexVBE
             Icon = VbeWindowIcons.Icon("assistant");
             github.Image = VbeWindowIcons.Image("github");
             configure.Image = VbeWindowIcons.Image("settings");
+            UiText.Apply(this, components);
         }
 
         public ChatWindow(VbeSession session) : this()
@@ -46,7 +47,7 @@ namespace CodexVBE
                 change.TurnId = activeTurnId;
                 codeChanges.Add(change);
                 changes.Enabled = true;
-                changes.Text = "Modifications · " + codeChanges.Count;
+                changes.Text = UiText.Get("Changes · ") + codeChanges.Count;
                 AddCodeChangeCard(change);
                 RefreshCodeChangeCards();
             };
@@ -119,7 +120,7 @@ namespace CodexVBE
             codex?.Dispose();
             codex = null;
             status.Text = ((LlmProvider)providerPicker.SelectedItem).Available ?
-                "Chargement des modèles du fournisseur…" : "Ce fournisseur n'est pas encore implémenté.";
+                UiText.Get("Loading provider models…") : UiText.Get("This provider is not implemented yet.");
             settings.ProviderName = ((LlmProvider)providerPicker.SelectedItem).Name;
             try { settings.Save(); }
             catch (Exception saveError) { LoadLog.Write("LLM settings save failed: " + saveError.Message); }
@@ -158,12 +159,12 @@ namespace CodexVBE
                     try { modelPicker.SelectedIndex = selected; }
                     finally { restoringSelection = false; }
                 }
-                SetStatus(models.Length == 0 ? "Aucun modèle disponible pour ce fournisseur." : provider.Name + " — prêt");
+                SetStatus(models.Length == 0 ? UiText.Get("No models available for this provider.") : provider.Name + UiText.Get(" — ready"));
             }
             catch (Exception ex)
             {
                 if (!IsDisposed && version == catalogueVersion)
-                    SetStatus("Catalogue indisponible : " + ex.Message);
+                    SetStatus(UiText.Get("Model list unavailable: ") + ex.Message);
                 LoadLog.Write("Chat model catalogue failed: " + provider.Name + " " + ex);
                 if (provider.IsCodex && version == catalogueVersion) { codex?.Dispose(); codex = null; }
             }
@@ -181,7 +182,7 @@ namespace CodexVBE
         {
             if (busy)
             {
-                MessageBox.Show(owner ?? this, "Attendez la fin de la réponse ou arrêtez l’agent pour modifier les paramètres.",
+                MessageBox.Show(owner ?? this, UiText.Get("Wait for the response to finish or stop the agent before changing settings."),
                     "VBAi", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -243,7 +244,7 @@ namespace CodexVBE
         {
             if (IsDisposed) return;
             if (InvokeRequired) { BeginInvoke(new Action(() => SetStatus(text))); return; }
-            status.Text = storageFailed ? text + " · Historique non enregistré" : text;
+            status.Text = storageFailed ? text + UiText.Get(" · History not saved") : text;
             toolTips.SetToolTip(status, status.Text);
         }
 
@@ -266,8 +267,8 @@ namespace CodexVBE
         {
             busy = value;
             modePicker.Enabled = !value;
-            send.Text = value ? "Arrêter ■" : "Envoyer ↑";
-            toolTips.SetToolTip(send, value ? "Interrompre la réponse en cours. Les modifications déjà appliquées restent annulables dans le chat." : "Envoyer le message et son contexte à l’agent.");
+            send.Text = value ? UiText.Get("Stop ■") : UiText.Get("Send ↑");
+            toolTips.SetToolTip(send, value ? UiText.Get("Stop the current response. Changes already applied can still be undone in the chat.") : UiText.Get("Send the message and its context to the agent."));
             send.Enabled = true;
             newChat.Enabled = scopePicker.Enabled = sessionList.Enabled =
                 providerPicker.Enabled = refreshModels.Enabled = configure.Enabled = !value;
@@ -282,13 +283,13 @@ namespace CodexVBE
             if (!busy || stopRequested) return;
             stopRequested = true;
             send.Enabled = false;
-            SetStatus("Arrêt en cours…");
+            SetStatus(UiText.Get("Stopping…"));
             try
             {
                 if (codex != null) await codex.InterruptAsync();
                 else activeHttpClient?.Dispose();
             }
-            catch (Exception ex) { SetStatus("Arrêt impossible : " + ex.Message); stopRequested = false; send.Enabled = true; }
+            catch (Exception ex) { SetStatus(UiText.Get("Unable to stop: ") + ex.Message); stopRequested = false; send.Enabled = true; }
         }
 
         private async Task SendAsync()
@@ -296,7 +297,7 @@ namespace CodexVBE
             string question = prompt.Text.Trim();
             if (busy || question.Length == 0) return;
             var selectedModel = modelPicker.SelectedItem as LlmModelOption;
-            if (selectedModel == null) { SetStatus("Choisissez un modèle disponible avant d'envoyer."); return; }
+            if (selectedModel == null) { SetStatus(UiText.Get("Choose an available model before sending.")); return; }
             string requestText;
             ChatAttachment[] attachments;
             try {
@@ -304,10 +305,10 @@ namespace CodexVBE
                 requestText = ChatCommand.Expand(question);
                 foreach (var attachment in attachments) requestText += "\n\n<context label=\"" + attachment.Label + "\">\n" + attachment.Text + "\n</context>";
             }
-            catch (Exception ex) { SetStatus("Contexte : " + ex.Message); return; }
+            catch (Exception ex) { SetStatus(UiText.Get("Context: ") + ex.Message); return; }
             var scope = scopePicker.SelectedItem as MacroScope;
-            if (scope != null) requestText = "Projet VBA de cette conversation : " + scope.Label +
-                "\nIdentifiant Project à utiliser dans les outils : " + scope.Project + "\n\n" + requestText;
+            if (scope != null) requestText = UiText.Get("VBA project for this conversation: ") + scope.Label +
+                UiText.Get("\nProject identifier to use in tools: ") + scope.Project + "\n\n" + requestText;
             string attachedMemory = attachMemory.Checked == true ? projectMemory : null;
             if (!string.IsNullOrWhiteSpace(attachedMemory))
                 requestText += "\n\n<memoire-document>\n" + attachedMemory + "\n</memoire-document>";
@@ -317,10 +318,10 @@ namespace CodexVBE
             stopRequested = false;
             activeTurnId = Guid.NewGuid().ToString("N");
             tools.Mode = currentSession.Mode;
-            requestText = "Mode de cette demande : " + currentSession.Mode + (currentSession.Mode == ChatMode.Agent ? ".\n" : ". Analyse uniquement ; aucune modification ni exécution de macro.\n") + requestText;
+            requestText = UiText.Get("Mode for this request: ") + currentSession.Mode + (currentSession.Mode == ChatMode.Agent ? ".\n" : UiText.Get(". Analysis only; no edits or macro execution.\n")) + requestText;
             requestText = "<vbe-encoding-context>\n" + LlmVbeContext.EncodingInstructions +
                 "\n</vbe-encoding-context>\n\n" + requestText;
-            if (!string.IsNullOrEmpty(currentSession.ResumeContext)) requestText = "Historique de la branche (contexte uniquement ; relire le code vivant) :\n" + currentSession.ResumeContext + "\n\n" + requestText;
+            if (!string.IsNullOrEmpty(currentSession.ResumeContext)) requestText = UiText.Get("Branch history (context only; read the live code again):\n") + currentSession.ResumeContext + "\n\n" + requestText;
             streamedFinalText = null;
             RenameFromQuestion(question);
             SetBusy(true);
@@ -351,11 +352,11 @@ namespace CodexVBE
                 {
                     if (codex == null)
                         codex = CreateCodexClient();
-                    SetStatus("Codex — en cours");
+                    SetStatus(UiText.Get("Codex — working"));
                     CompleteAssistantResponse(await codex.TurnAsync(requestText, selectedModel.Id,
                         selectedEffort == null ? null : selectedEffort.Id));
                     currentSession.ResumeContext = null;
-                    SetStatus("Codex — prêt");
+                    SetStatus(UiText.Get("Codex — ready"));
                     return;
                 }
                 using (var client = new LlmChatClient((LlmProvider)providerPicker.SelectedItem, settings, selectedModel.Id))
@@ -366,7 +367,7 @@ namespace CodexVBE
                         Append("Outil", name);
                         return await tools.InvokeAsync(name, arguments);
                     };
-                    SetStatus(client.DisplayName + " — en cours");
+                    SetStatus(client.DisplayName + UiText.Get(" — working"));
                     for (int turn = 0; turn < 8; turn++)
                     {
                         if (stopRequested) throw new OperationCanceledException();
@@ -388,9 +389,9 @@ namespace CodexVBE
                         if (calls == null || calls.Length == 0)
                         {
                             string answer = message.ContainsKey("content") ? Convert.ToString(message["content"]) : "";
-                            CompleteAssistantResponse(string.IsNullOrWhiteSpace(answer) ? "Aucune réponse textuelle." : answer);
+                            CompleteAssistantResponse(string.IsNullOrWhiteSpace(answer) ? UiText.Get("No text response.") : answer);
                             currentSession.ResumeContext = null;
-                            SetStatus(client.DisplayName + " — prêt");
+                            SetStatus(client.DisplayName + UiText.Get(" — ready"));
                             return;
                         }
                         foreach (object rawCall in calls)
@@ -418,10 +419,10 @@ namespace CodexVBE
                 if (!provider.IsCodex)
                 {
                     messages.Add(new { role = "user", content = requestText });
-                    messages.Add(new { role = "assistant", content = "La réponse n'a pas abouti. Des actions peuvent déjà avoir été appliquées ; relire le code vivant avant de continuer." });
+                    messages.Add(new { role = "assistant", content = UiText.Get("The response did not complete. Actions may already have been applied; read the live code again before continuing.") });
                 }
-                Append(stopRequested ? "Assistant" : "Erreur", stopRequested ? "Réponse interrompue. Les modifications déjà appliquées restent annulables dans le chat." : ex.Message);
-                SetStatus(stopRequested ? "Arrêté" : "Erreur — vous pouvez reprendre la conversation");
+                Append(stopRequested ? "Assistant" : "Erreur", stopRequested ? UiText.Get("Response interrupted. Changes already applied can still be undone in the chat.") : ex.Message);
+                SetStatus(stopRequested ? UiText.Get("Stopped") : UiText.Get("Error — you can resume the conversation"));
                 if (!stopRequested && prompt.Text.Length == 0)
                 {
                     selectedReferences.AddRange(attachedReferences);
@@ -437,7 +438,7 @@ namespace CodexVBE
                 if (!IsDisposed) {
                     var intervention = codeChanges.FindAll(x => x.TurnId == activeTurnId);
                     if (intervention.Count > 0) AddEntry(new ChatEntry { Speaker = "Intervention", TurnId = activeTurnId,
-                        Text = intervention.Count + " modification(s) appliquée(s). Retrouvez les fichiers et annulez cette intervention ci-dessous." });
+                        Text = intervention.Count + UiText.Get(" change(s) applied. Review the files and undo this turn below.") });
                     if (verifyAfterEdit.Checked == true && codeChanges.Exists(x => x.TurnId == activeTurnId)) await VerifyProjectAsync();
                     activeTurnId = null; SetBusy(false); SaveCurrentSession();
                 }

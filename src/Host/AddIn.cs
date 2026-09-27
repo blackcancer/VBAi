@@ -35,6 +35,7 @@ namespace CodexVBE
                 var process = Process.GetCurrentProcess();
                 LoadLog.Write("OnConnection: " + process.ProcessName + " PID=" + process.Id);
                 vbe = application;
+                UiText.Initialize(vbe);
                 addIn = addInInstance;
                 LoadLog.Write("AddInInst: " + (addIn == null ? "null" : addIn.GetType().FullName)
                     + ", COM=" + (addIn != null && Marshal.IsComObject(addIn)));
@@ -119,10 +120,10 @@ namespace CodexVBE
             try
             {
                 dynamic project = ((dynamic)vbe).ActiveVBProject;
-                if (project == null) throw new InvalidOperationException("Sélectionnez un projet VBA enregistré pour ouvrir GitHub.");
+                if (project == null) throw new InvalidOperationException(UiText.Get("Select a saved VBA project to open GitHub."));
                 string path = (string)project.FileName;
                 if (string.IsNullOrWhiteSpace(path) || !System.IO.Path.IsPathRooted(path))
-                    throw new InvalidOperationException("Enregistrez la macro avant d’ouvrir GitHub.");
+                    throw new InvalidOperationException(UiText.Get("Save the macro before opening GitHub."));
                 var session = new VbeSession(vbe);
                 string scope = session.GitScope(path);
                 using (var dialog = new GitWindow(session.GitProject(path, scope), scope,
@@ -161,7 +162,7 @@ namespace CodexVBE
                     nativeChatWindow = ((IVbeWindows)((dynamic)vbe).Windows).CreateToolWindow((IVbeAddIn)addInForWindow, "CodexVBE.ChatToolWindow",
                         "VBAi", "{B5C96ED5-1B16-497C-8441-B3F471F9F92B}", ref document);
                     nativeChatControl = document as ChatToolWindow;
-                    if (nativeChatControl == null) throw new InvalidOperationException("Le contrôle COM de la fenêtre n’a pas été créé.");
+                    if (nativeChatControl == null) throw new InvalidOperationException(UiText.Get("The window's COM control was not created."));
                 }
                 ((dynamic)nativeChatWindow).Visible = true;
                 nativeChatControl.Attach(chat); docked = true;

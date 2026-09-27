@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -59,6 +59,8 @@ namespace CodexVBE
             transcriptPlaceholder.Visible = false;
             promptPlaceholder.Visible = false;
             foreach (var mode in Enum.GetValues(typeof(ChatMode))) modePicker.Items.Add(mode);
+            modePicker.FormattingEnabled = true;
+            modePicker.Format += (sender, args) => { if (args.ListItem is ChatMode) args.Value = UiText.Get(args.ListItem.ToString() == "Discussion" ? "Chat" : args.ListItem.ToString()); };
             modePicker.SelectedItem = ChatMode.Agent;
         }
 
@@ -84,11 +86,11 @@ namespace CodexVBE
                 EnsureCurrentScope();
                 var scope = scopePicker.SelectedItem as MacroScope;
                 if (scope == null || scope.Key.StartsWith("temporary:", StringComparison.Ordinal))
-                    throw new InvalidOperationException("Enregistrez le document avant de le lier à GitHub.");
+                    throw new InvalidOperationException(UiText.Get("Save the document before linking it to GitHub."));
                 using (var window = new GitWindow(scopeSession.GitProject(scope.Project, scope.Key), scope.Key, scope.Label, settings.GitHubAccount))
                     window.ShowDialog(this);
             }
-            catch (Exception ex) { SetStatus("GitHub : " + ex.Message); }
+            catch (Exception ex) { SetStatus(UiText.Get("GitHub: ") + ex.Message); }
         }
         private void Pin_Click(object sender, EventArgs e)
         {
@@ -111,7 +113,7 @@ namespace CodexVBE
             currentSession.Mode = (ChatMode)modePicker.SelectedItem;
             if (tools != null) tools.Mode = currentSession.Mode;
             ScheduleSessionSave();
-            SetStatus(currentSession.Mode == ChatMode.Agent ? "Agent : modifications autorisées par la politique VBE" : currentSession.Mode + " : aucune modification ni exécution de macro");
+            SetStatus(currentSession.Mode == ChatMode.Agent ? UiText.Get("Agent: edits allowed by the VBE policy") : UiText.Get(currentSession.Mode == ChatMode.Discussion ? "Chat" : "Plan") + UiText.Get(": no edits or macro execution"));
         }
         private async void Compile_Click(object sender, EventArgs e)
         {

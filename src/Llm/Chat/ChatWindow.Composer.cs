@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -37,10 +37,10 @@ namespace CodexVBE
                 BorderThickness = new Thickness(0), FontFamily = new FontFamily("Segoe UI"),
                 FontSize = 14, Foreground = Ink("#1E293B"),
                 Padding = new Thickness(12), Background = Brushes.Transparent,
-                Language = XmlLanguage.GetLanguage("fr-FR")
+                Language = XmlLanguage.GetLanguage(UiText.Culture.Name)
             };
             prompt.SpellCheck.IsEnabled = true;
-            AutomationProperties.SetName(prompt, "Votre demande ; Entrée pour envoyer, Maj+Entrée pour une nouvelle ligne");
+            AutomationProperties.SetName(prompt, UiText.Get("Your request; Enter to send, Shift+Enter for a new line"));
             promptHost.Child = prompt;
             prompt.PreviewKeyDown += PromptKeyDown;
             prompt.TextChanged += (sender, args) => {
@@ -56,12 +56,12 @@ namespace CodexVBE
             ScrollViewer.SetHorizontalScrollBarVisibility(referenceList, ScrollBarVisibility.Disabled);
             var itemLayout = new FrameworkElementFactory(typeof(DockPanel));
             var tokenText = new FrameworkElementFactory(typeof(TextBlock));
-            tokenText.SetBinding(TextBlock.TextProperty, new Binding("Token"));
+            tokenText.SetBinding(TextBlock.TextProperty, new Binding("DisplayToken"));
             tokenText.SetValue(TextBlock.FontFamilyProperty, new FontFamily("Segoe UI Semibold"));
             tokenText.SetValue(TextBlock.FontSizeProperty, 12.0);
             tokenText.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis);
             var kindText = new FrameworkElementFactory(typeof(TextBlock));
-            kindText.SetBinding(TextBlock.TextProperty, new Binding("Kind"));
+            kindText.SetBinding(TextBlock.TextProperty, new Binding("DisplayKind"));
             kindText.SetValue(TextBlock.MarginProperty, new Thickness(12, 0, 0, 0));
             kindText.SetValue(TextBlock.ForegroundProperty,
                 new SolidColorBrush(Color.FromRgb(100, 116, 139)));
@@ -73,7 +73,7 @@ namespace CodexVBE
             itemStyle.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(10, 7, 10, 7)));
             itemStyle.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(0)));
             itemStyle.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch));
-            itemStyle.Setters.Add(new Setter(FrameworkElement.ToolTipProperty, new Binding("Token")));
+            itemStyle.Setters.Add(new Setter(FrameworkElement.ToolTipProperty, new Binding("DisplayToken")));
             var selectedStyle = new Trigger { Property = ListBoxItem.IsSelectedProperty, Value = true };
             selectedStyle.Setters.Add(new Setter(Control.BackgroundProperty,
                 new SolidColorBrush(Color.FromRgb(229, 240, 255))));
@@ -160,18 +160,18 @@ namespace CodexVBE
             referencePopup.HorizontalOffset = Math.Max(0, Math.Min(rectangle.Left, prompt.ActualWidth - referenceList.Width - 10));
             referencePopup.VerticalOffset = rectangle.Bottom + 3;
             referenceList.Visibility = matches.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
-            referenceStatus.Text = referenceIndex.IsLoading ? "Recherche dans le projet…" :
+            referenceStatus.Text = referenceIndex.IsLoading ? UiText.Get("Searching the project…") :
                 !string.IsNullOrWhiteSpace(referenceIndex.Error) ? referenceIndex.Error :
-                matches.Length == 0 ? "Aucune cible trouvée" : "↑ ↓ Parcourir · Entrée Insérer · Échap Fermer";
+                matches.Length == 0 ? UiText.Get("No matching target") : UiText.Get("↑ ↓ Browse · Enter Insert · Esc Close");
             referencePopup.IsOpen = true;
         }
 
         private bool TryShowCommands(int caret)
         {
             if (!prompt.Text.StartsWith("/") || caret < 1 || prompt.Text.Substring(0, caret).Any(char.IsWhiteSpace)) return false;
-            var matches = ChatCommand.All.Where(x => x.Token.StartsWith(prompt.Text.Substring(0, caret), StringComparison.OrdinalIgnoreCase)).ToArray();
+            var matches = ChatCommand.All.Where(x => x.Token.StartsWith(prompt.Text.Substring(0, caret), StringComparison.OrdinalIgnoreCase) || x.EnglishToken.StartsWith(prompt.Text.Substring(0, caret), StringComparison.OrdinalIgnoreCase)).ToArray();
             referenceList.ItemsSource = matches; referenceList.SelectedIndex = matches.Length > 0 ? 0 : -1;
-            referenceList.Visibility = Visibility.Visible; referenceStatus.Text = "Commande · Entrée pour choisir · ajoutez vos précisions";
+            referenceList.Visibility = Visibility.Visible; referenceStatus.Text = UiText.Get("Command · Enter to choose · add your instructions");
             referencePopup.HorizontalOffset = 0; referencePopup.VerticalOffset = prompt.GetRectFromCharacterIndex(caret).Bottom + 3;
             referenceList.Width = Math.Max(240, Math.Min(420, prompt.ActualWidth - 14));
             referenceStatus.MaxWidth = referenceList.Width - 12;
@@ -187,9 +187,9 @@ namespace CodexVBE
         {
             var command = referenceList.SelectedItem as ChatCommand;
             if (command != null) {
-                prompt.Select(0, prompt.CaretIndex); prompt.SelectedText = command.Token + " ";
+                prompt.Select(0, prompt.CaretIndex); prompt.SelectedText = command.DisplayToken + " ";
                 if (!busy) modePicker.SelectedItem = command.Mode;
-                HideReferences(); prompt.CaretIndex = command.Token.Length + 1; return;
+                HideReferences(); prompt.CaretIndex = command.DisplayToken.Length + 1; return;
             }
             var reference = referenceList.SelectedItem as VbeChatReference;
             if (reference == null || referenceStart < 0) return;
@@ -221,10 +221,10 @@ namespace CodexVBE
             var context = new StringBuilder(question).Append("\n\n<references-vbe>\n");
             foreach (var item in selected)
             {
-                if (context.Length > 48000) throw new InvalidOperationException("Le contexte # dépasse 48 000 caractères.");
+                if (context.Length > 48000) throw new InvalidOperationException(UiText.Get("The # context exceeds 48,000 characters."));
                 context.Append(referenceIndex.Resolve(item)).Append("\n---\n");
             }
-            if (context.Length > 48000) throw new InvalidOperationException("Le contexte # dépasse 48 000 caractères.");
+            if (context.Length > 48000) throw new InvalidOperationException(UiText.Get("The # context exceeds 48,000 characters."));
             return context.Append("</references-vbe>").ToString();
         }
 
@@ -251,8 +251,8 @@ namespace CodexVBE
                 while (contextChips.Controls.Count > 0) contextChips.Controls[0].Dispose();
                 if (attachMemory.Checked && !string.IsNullOrWhiteSpace(projectMemory))
                 {
-                    var memory = ContextButton("Mémoire jointe · ×");
-                    toolTips.SetToolTip(memory, "Retirer les notes du prochain message");
+                    var memory = ContextButton(UiText.Get("Attached memory · ×"));
+                    toolTips.SetToolTip(memory, UiText.Get("Remove notes from the next message"));
                     memory.Click += (s, e) => attachMemory.Checked = false;
                     contextChips.Controls.Add(memory);
                 }
@@ -260,17 +260,17 @@ namespace CodexVBE
                 {
                     var row = new Forms.FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Forms.Padding(0) };
                     var link = ContextButton(item.Token);
-                    toolTips.SetToolTip(link, "Ouvrir dans le VBE");
+                    toolTips.SetToolTip(link, UiText.Get("Open in the VBE"));
                     link.Click += (s, e) => NavigateReference(item); row.Controls.Add(link);
                     var remove = ContextButton("×");
-                    toolTips.SetToolTip(remove, "Retirer cette référence du contexte");
+                    toolTips.SetToolTip(remove, UiText.Get("Remove this reference from the context"));
                     remove.Click += (s, e) => { selectedReferences.RemoveAll(value => value.Token == item.Token); RefreshContextChips(); ScheduleSessionSave(); };
                     row.Controls.Add(remove); contextChips.Controls.Add(row);
                 }
                 foreach (var attachment in draftAttachments.ToArray())
                 {
                     var chip = ContextButton(attachment.Label + " · ×");
-                    toolTips.SetToolTip(chip, "Retirer cette sélection");
+                    toolTips.SetToolTip(chip, UiText.Get("Remove this selection"));
                     chip.Click += (s, e) => { draftAttachments.Remove(attachment); RefreshContextChips(); ScheduleSessionSave(); };
                     contextChips.Controls.Add(chip);
                 }
@@ -293,7 +293,7 @@ namespace CodexVBE
                 Response result = referenceIndex.Navigate(reference);
                 if (!result.Ok) SetStatus(result.Error);
             }
-            catch (Exception ex) { SetStatus("Navigation impossible : " + ex.Message); }
+            catch (Exception ex) { SetStatus(UiText.Get("Unable to navigate: ") + ex.Message); }
         }
 
         private static bool ContainsToken(string text, string token)

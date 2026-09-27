@@ -48,7 +48,7 @@ namespace CodexVBE
 
         internal static VbaGitSnapshot Read(IDictionary<string, byte[]> files)
         {
-            if (!files.ContainsKey("manifest.json")) throw new InvalidOperationException("Aucun manifeste CodexVBA dans ce dépôt.");
+            if (!files.ContainsKey("manifest.json")) throw new InvalidOperationException(UiText.Get("No CodexVBA manifest in this repository."));
             var manifest = new JavaScriptSerializer().Deserialize<VbaGitManifest>(Utf8.GetString(files["manifest.json"]));
             var content = new Dictionary<string, byte[]>(files);
             content.Remove("manifest.json");
@@ -92,25 +92,25 @@ namespace CodexVBE
             var expected = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var component in Manifest.Components)
             {
-                if (component == null) throw new InvalidOperationException("Composant absent du manifeste.");
+                if (component == null) throw new InvalidOperationException(UiText.Get("Component missing from the manifest."));
                 ValidateName(component.Name);
-                if (!expected.Add(component.FileName)) throw new InvalidOperationException("Nom de composant dupliqué.");
+                if (!expected.Add(component.FileName)) throw new InvalidOperationException(UiText.Get("Duplicate component name."));
                 if (component.HasResources && (component.Type != 3 || !expected.Add(component.Name + ".frx")))
                     throw new InvalidOperationException("Ressources de formulaire invalides.");
             }
             if (Files.Count != expected.Count || Files.Any(x => !expected.Contains(x.Key) || x.Value == null) ||
                 Files.Sum(x => (long)x.Value.Length) > MaxBytes)
-                throw new InvalidOperationException("Sources VBA incomplètes, inattendues ou trop volumineuses (32 Mo maximum).");
+                throw new InvalidOperationException(UiText.Get("VBA sources are incomplete, unexpected or too large (32 MB maximum)."));
             foreach (var component in Manifest.Components)
             {
-                if (!Files.ContainsKey(component.FileName)) throw new InvalidOperationException("Casse du nom de fichier incorrecte.");
+                if (!Files.ContainsKey(component.FileName)) throw new InvalidOperationException(UiText.Get("Incorrect filename casing."));
                 string text = Utf8.GetString(Files[component.FileName]);
                 if (text.IndexOf('\0') >= 0 || text.Contains("<<<<<<< ") || text.Contains(">>>>>>> "))
-                    throw new InvalidOperationException("Source binaire ou conflit non résolu : " + component.FileName);
+                    throw new InvalidOperationException(UiText.Get("Binary source or unresolved conflict: ") + component.FileName);
                 if (component.Type != 100 && !Regex.IsMatch(text, "^Attribute VB_Name = \"" + Regex.Escape(component.Name) + "\"\\r?$", RegexOptions.Multiline))
-                    throw new InvalidOperationException("L’identité exportée ne correspond pas au manifeste : " + component.Name);
+                    throw new InvalidOperationException(UiText.Get("Exported identity does not match the manifest: ") + component.Name);
                 if (component.Type == 100 && Regex.IsMatch(text, @"^\s*Attribute\s", RegexOptions.Multiline | RegexOptions.IgnoreCase))
-                    throw new InvalidOperationException("Les fichiers .vba contiennent uniquement le code visible du module hôte.");
+                    throw new InvalidOperationException(UiText.Get(".vba files contain only the visible code of the host module."));
                 if (component.Type == 3)
                 {
                     // A form must never address a companion file outside its snapshot.

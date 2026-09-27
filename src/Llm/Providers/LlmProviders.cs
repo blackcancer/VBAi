@@ -46,13 +46,13 @@ namespace CodexVBE
             new LlmProvider("Amazon Bedrock", true, false, null, "CODEXVBE_BEDROCK_MODEL", "AWS_BEARER_TOKEN_BEDROCK")
         };
 
-        public override string ToString() { return (IsCustom && !string.IsNullOrWhiteSpace(CustomDisplayName) ? CustomDisplayName + " (OpenAI compatible)" : Name) + (Available ? "" : " (à venir)"); }
+        public override string ToString() { return (IsCustom ? (!string.IsNullOrWhiteSpace(CustomDisplayName) ? CustomDisplayName + " (OpenAI compatible)" : UiText.Get("Custom (OpenAI)")) : Name) + (Available ? "" : UiText.Get(" (coming soon)")); }
 
         public string ResolveModel()
         {
             string model = Environment.GetEnvironmentVariable(ModelVariable);
             if (string.IsNullOrWhiteSpace(model))
-                throw new InvalidOperationException("Configurez " + ModelVariable + " puis redémarrez l'application hôte.");
+                throw new InvalidOperationException(UiText.Get("Configure ") + ModelVariable + UiText.Get(" then restart the host application."));
             return model;
         }
     }

@@ -31,14 +31,14 @@ namespace CodexVBE
         internal LlmChatClient(LlmProvider provider, LlmSettings settings, string selectedModel, HttpMessageHandler handler)
         {
             if (provider == null || !provider.Available || provider.IsCodex || settings == null)
-                throw new InvalidOperationException("Ce fournisseur n'est pas encore implémenté.");
+                throw new InvalidOperationException(UiText.Get("This provider is not implemented yet."));
             this.provider = provider;
             azureEntra = settings.AzureUseEntraToken;
             model = selectedModel;
-            if (string.IsNullOrWhiteSpace(model)) throw new InvalidOperationException("Sélectionnez un modèle dans la conversation.");
+            if (string.IsNullOrWhiteSpace(model)) throw new InvalidOperationException(UiText.Get("Select a model in the conversation."));
             if (provider.IsCopilot) { copilot = new CopilotClient(); return; }
             string raw = settings.ResolveEndpoint(provider);
-            if (string.IsNullOrWhiteSpace(raw)) throw new InvalidOperationException("Configurez l’URL de " + provider.Name + " dans les paramètres.");
+            if (string.IsNullOrWhiteSpace(raw)) throw new InvalidOperationException("Configurez l’URL de " + provider.Name + UiText.Get(" in settings."));
             if (provider.IsBedrock) raw = raw.TrimEnd('/') + "/model/" + Uri.EscapeDataString(model) + "/converse";
             endpoint = new Uri(raw, UriKind.Absolute);
             if (endpoint.Scheme != Uri.UriSchemeHttps &&
@@ -46,7 +46,7 @@ namespace CodexVBE
                 throw new InvalidOperationException("The LLM endpoint must use HTTPS (or HTTP on localhost).");
             key = settings.GetKey(provider);
             if (string.IsNullOrWhiteSpace(key) && provider.RequiresKey)
-                throw new InvalidOperationException("Configurez la clé API de " + provider.Name + " dans les paramètres CodexVBE.");
+                throw new InvalidOperationException(UiText.Get("Configure the API key for ") + provider.Name + UiText.Get(" in VBAi settings."));
             http = handler == null ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) : new HttpClient(handler);
             http.Timeout = TimeSpan.FromSeconds(120);
         }
@@ -59,11 +59,11 @@ namespace CodexVBE
         internal static async Task<LlmModelOption[]> ListModelsAsync(LlmProvider provider, LlmSettings settings, HttpMessageHandler handler)
         {
             if (provider == null || !provider.Available || provider.IsCodex)
-                throw new InvalidOperationException("Catalogue de modèles indisponible pour ce fournisseur.");
+                throw new InvalidOperationException(UiText.Get("Model list unavailable for this provider."));
             if (provider.IsCopilot) { using (var client = new CopilotClient()) return await client.ListModelsAsync(); }
             if (provider.ManualModels) {
                 var ids = (settings.GetManualModels(provider) ?? "").Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).Where(x => x.Length > 0).Distinct(StringComparer.Ordinal).ToArray();
-                if (ids.Length == 0) throw new InvalidOperationException("Renseignez les " + (provider.IsAzure ? "déploiements Azure" : "identifiants de modèles") + " dans les paramètres du fournisseur.");
+                if (ids.Length == 0) throw new InvalidOperationException(UiText.Get("Enter the ") + (provider.IsAzure ? UiText.Get("Azure deployments") : UiText.Get("model identifiers")) + UiText.Get(" in provider settings."));
                 return ids.Select(id => new LlmModelOption(id, id)).ToArray();
             }
             var chatEndpoint = new Uri(settings.ResolveEndpoint(provider), UriKind.Absolute);
@@ -82,19 +82,19 @@ namespace CodexVBE
                 using (var request = new HttpRequestMessage(HttpMethod.Get, catalogue)) {
                 string key = settings.GetKey(provider);
                 if (string.IsNullOrWhiteSpace(key) && provider.RequiresKey)
-                    throw new InvalidOperationException("Configurez la clé API de " + provider.Name + " pour charger les modèles.");
+                    throw new InvalidOperationException(UiText.Get("Configure the API key for ") + provider.Name + UiText.Get(" to load models."));
                 Authenticate(request, provider, key, settings.AzureUseEntraToken);
                 using (var response = await client.SendAsync(request).ConfigureAwait(false))
                 {
                     string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                     if (!response.IsSuccessStatusCode)
                         throw new InvalidOperationException("Catalogue HTTP " + (int)response.StatusCode + ": " +
-                            "Vérifiez les identifiants, l’URL et les limites du fournisseur.");
+                            UiText.Get("Check credentials, URL and provider limits."));
                     var root = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 }.DeserializeObject(body) as IDictionary<string, object>;
                     object raw;
                     var data = root != null && root.TryGetValue(provider.IsOllama ? "models" : "data", out raw)
                         ? raw as object[] : null;
-                    if (data == null) throw new InvalidOperationException("Le fournisseur n'a pas fourni de liste de modèles.");
+                    if (data == null) throw new InvalidOperationException(UiText.Get("The provider did not return a model list."));
                     foreach (var entry in data)
                     {
                         var item = entry as IDictionary<string, object>;
@@ -105,13 +105,13 @@ namespace CodexVBE
                     }
                     if (!provider.IsClaude || !root.ContainsKey("has_more") || !Equals(root["has_more"], true)) return models.ToArray();
                     string cursor = ClaudeProtocol.Text(root, "last_id");
-                    if (string.IsNullOrWhiteSpace(cursor) || !cursors.Add(cursor)) throw new InvalidOperationException("Pagination du catalogue Claude invalide.");
+                    if (string.IsNullOrWhiteSpace(cursor) || !cursors.Add(cursor)) throw new InvalidOperationException(UiText.Get("Invalid Claude model list pagination."));
                     var next = new UriBuilder(catalogue); next.Query = "after_id=" + Uri.EscapeDataString(cursor);
                     catalogue = next.Uri;
                 }
                 }
             }
-            throw new InvalidOperationException("Le catalogue dépasse la limite de pagination.");
+            throw new InvalidOperationException(UiText.Get("The model list exceeds the pagination limit."));
         }
 
         public async Task<IDictionary<string, object>> CompleteAsync(IList<object> messages, object[] tools)
@@ -137,7 +137,7 @@ namespace CodexVBE
                 using (var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(true))
                 {
                     if (!response.IsSuccessStatusCode)
-                        throw new InvalidOperationException(provider.Name + " HTTP " + (int)response.StatusCode + " : vérifiez la clé, le modèle, l’URL et les limites du fournisseur.");
+                        throw new InvalidOperationException(provider.Name + " HTTP " + (int)response.StatusCode + UiText.Get(": check the key, model, URL and provider limits."));
                     if (streaming && response.Content.Headers.ContentType?.MediaType == "text/event-stream")
                         return await ChatStreamReader.ReadAsync(await response.Content.ReadAsStreamAsync(), provider.IsClaude, TextDelta, timeout.Token);
                     string body;
@@ -154,7 +154,7 @@ namespace CodexVBE
                         throw new InvalidOperationException("The LLM returned no choice.");
                     var choice = array[0] as IDictionary<string, object>;
                     string finish = ClaudeProtocol.Text(choice, "finish_reason");
-                    if (finish == "length" || finish == "content_filter") throw new InvalidOperationException("Réponse tronquée ou filtrée ; les appels d’outils n’ont pas été exécutés.");
+                    if (finish == "length" || finish == "content_filter") throw new InvalidOperationException(UiText.Get("Response truncated or filtered; tool calls were not executed."));
                     if (choice == null || !choice.ContainsKey("message"))
                         throw new InvalidOperationException("The LLM response has no message.");
                     var message = choice["message"] as IDictionary<string, object>;

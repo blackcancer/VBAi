@@ -148,18 +148,18 @@ namespace CodexVBE
             this.grid.TabIndex = 0;
             // GitHub account (independent from the AI provider)
             this.githubLabel.Name = "githubLabel";
-            this.githubLabel.Text = "GitHub · dépôts";
+            this.githubLabel.Text = "GitHub · repositories";
             this.githubLabel.AutoSize = true;
             this.githubLabel.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.githubStatus.Name = "githubStatus";
-            this.githubStatus.Text = "Connectez un compte pour synchroniser vos sources VBA.";
+            this.githubStatus.Text = "Connect an account to synchronize your VBA sources.";
             this.githubStatus.AutoSize = true;
             this.githubStatus.Dock = System.Windows.Forms.DockStyle.Fill;
             this.githubAccountLabel.Name = "githubAccountLabel";
-            this.githubAccountLabel.Text = "Compte GitHub";
+            this.githubAccountLabel.Text = "GitHub account";
             this.githubAccountLabel.AutoSize = true;
             this.githubAccount.Name = "githubAccount";
-            this.githubAccount.AccessibleName = "Compte GitHub pour les dépôts VBA";
+            this.githubAccount.AccessibleName = "GitHub account for VBA repositories";
             this.githubAccount.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.githubAccount.Dock = System.Windows.Forms.DockStyle.Fill;
             this.githubAccount.TabIndex = 10;
@@ -169,49 +169,49 @@ namespace CodexVBE
             this.githubActions.Controls.Add(this.githubLogin);
             this.githubActions.Controls.Add(this.githubRefresh);
             this.githubLogin.Name = "githubLogin";
-            this.githubLogin.Text = "Se connecter à GitHub";
+            this.githubLogin.Text = "Sign in to GitHub";
             this.githubLogin.AutoSize = true;
             this.githubLogin.MinimumSize = new System.Drawing.Size(150, 30);
             this.githubLogin.TabIndex = 11;
             this.githubLogin.Click += new System.EventHandler(this.GitHubLogin_Click);
             this.githubRefresh.Name = "githubRefresh";
-            this.githubRefresh.Text = "Actualiser les comptes";
+            this.githubRefresh.Text = "Refresh accounts";
             this.githubRefresh.AutoSize = true;
             this.githubRefresh.MinimumSize = new System.Drawing.Size(140, 30);
             this.githubRefresh.TabIndex = 12;
             this.githubRefresh.Click += new System.EventHandler(this.GitHubRefresh_Click);
             this.githubNote.Name = "githubNote";
-            this.githubNote.Text = "Les identifiants restent dans Git Credential Manager. La connexion prend effet immédiatement ; Enregistrer conserve le compte choisi pour VBAi. L’authentification Copilot se configure séparément.";
+            this.githubNote.Text = "Credentials stay in Git Credential Manager. Sign-in takes effect immediately; Save keeps the chosen account for VBAi. Copilot authentication is configured separately.";
             this.githubNote.AutoSize = true;
             this.githubNote.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.githubToolTips.SetToolTip(this.githubLogin, "Ouvre l’authentification GitHub dans votre navigateur. Aucun jeton à copier dans VBAi.");
-            this.githubToolTips.SetToolTip(this.githubRefresh, "Relit les comptes mémorisés localement ; ne vérifie pas encore les droits sur un dépôt.");
-            this.githubToolTips.SetToolTip(this.githubAccount, "Compte utilisé pour les prochains fetch, pull et push des macros. Ne modifie pas la configuration Git globale.");
+            this.githubToolTips.SetToolTip(this.githubLogin, "Opens GitHub authentication in your browser. No token to copy into VBAi.");
+            this.githubToolTips.SetToolTip(this.githubRefresh, "Reads locally saved accounts; does not check repository permissions yet.");
+            this.githubToolTips.SetToolTip(this.githubAccount, "Account used for subsequent macro fetch, pull and push operations. Does not change global Git configuration.");
             //
             // providerLabel
             //
             this.providerLabel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.manualModelsLabel.Name = "manualModelsLabel";
-            this.manualModelsLabel.Text = "Modèles (un par ligne)";
+            this.manualModelsLabel.Text = "Models (one per line)";
             this.manualModelsLabel.AutoSize = true;
             this.manualModelsLabel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.manualModels.Name = "manualModels";
-            this.manualModels.AccessibleName = "Modèles ou déploiements configurés, un identifiant par ligne";
+            this.manualModels.AccessibleName = "Configured models or deployments, one identifier per line";
             this.manualModels.Multiline = true;
             this.manualModels.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.manualModels.Dock = System.Windows.Forms.DockStyle.Fill;
             this.manualModels.Size = new System.Drawing.Size(400, 70);
             this.manualModels.TabIndex = 7;
             this.customNameLabel.Name = "customNameLabel";
-            this.customNameLabel.Text = "Nom du fournisseur";
+            this.customNameLabel.Text = "Provider name";
             this.customNameLabel.AutoSize = true;
             this.customNameLabel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.customName.Name = "customName";
-            this.customName.AccessibleName = "Nom du fournisseur personnalisé";
+            this.customName.AccessibleName = "Custom provider name";
             this.customName.Dock = System.Windows.Forms.DockStyle.Fill;
             this.customName.TabIndex = 8;
             this.azureEntra.Name = "azureEntra";
-            this.azureEntra.Text = "Utiliser un jeton Microsoft Entra (à renouveler après expiration)";
+            this.azureEntra.Text = "Use a Microsoft Entra token (renew after expiration)";
             this.azureEntra.AutoSize = true;
             this.azureEntra.Dock = System.Windows.Forms.DockStyle.Fill;
             this.azureEntra.TabIndex = 9;
@@ -219,12 +219,12 @@ namespace CodexVBE
             this.providerLabel.Name = "providerLabel";
             this.providerLabel.Size = new System.Drawing.Size(100, 29);
             this.providerLabel.TabIndex = 0;
-            this.providerLabel.Text = "Fournisseur";
+            this.providerLabel.Text = "Provider";
             this.providerLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             //
             // provider
             //
-            this.provider.AccessibleName = "Fournisseur";
+            this.provider.AccessibleName = "Provider";
             this.provider.Dock = System.Windows.Forms.DockStyle.Fill;
             this.provider.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.provider.Location = new System.Drawing.Point(121, 15);
@@ -239,7 +239,7 @@ namespace CodexVBE
             this.accountLabel.Name = "accountLabel";
             this.accountLabel.Size = new System.Drawing.Size(100, 23);
             this.accountLabel.TabIndex = 1;
-            this.accountLabel.Text = "Compte ChatGPT";
+            this.accountLabel.Text = "ChatGPT account";
             this.accountLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             //
             // codexStatus
@@ -250,7 +250,7 @@ namespace CodexVBE
             this.codexStatus.Name = "codexStatus";
             this.codexStatus.Size = new System.Drawing.Size(488, 23);
             this.codexStatus.TabIndex = 2;
-            this.codexStatus.Text = "Vérification de ChatGPT…";
+            this.codexStatus.Text = "Checking ChatGPT…";
             this.codexStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             //
             // authenticationLabel
@@ -260,7 +260,7 @@ namespace CodexVBE
             this.authenticationLabel.Name = "authenticationLabel";
             this.authenticationLabel.Size = new System.Drawing.Size(100, 33);
             this.authenticationLabel.TabIndex = 3;
-            this.authenticationLabel.Text = "Authentification";
+            this.authenticationLabel.Text = "Authentication";
             this.authenticationLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             //
             // codexActions
@@ -283,7 +283,7 @@ namespace CodexVBE
             this.codexLogin.Name = "codexLogin";
             this.codexLogin.Size = new System.Drawing.Size(185, 23);
             this.codexLogin.TabIndex = 0;
-            this.codexLogin.Text = "Se connecter à ChatGPT";
+            this.codexLogin.Text = "Sign in to ChatGPT";
             //
             // codexRefresh
             //
@@ -291,7 +291,7 @@ namespace CodexVBE
             this.codexRefresh.Name = "codexRefresh";
             this.codexRefresh.Size = new System.Drawing.Size(130, 23);
             this.codexRefresh.TabIndex = 1;
-            this.codexRefresh.Text = "Actualiser l\'état";
+            this.codexRefresh.Text = "Refresh status";
             //
             // openAiEndpointLabel
             //
@@ -300,12 +300,12 @@ namespace CodexVBE
             this.openAiEndpointLabel.Name = "openAiEndpointLabel";
             this.openAiEndpointLabel.Size = new System.Drawing.Size(100, 29);
             this.openAiEndpointLabel.TabIndex = 4;
-            this.openAiEndpointLabel.Text = "URL OpenAI (facultatif)";
+            this.openAiEndpointLabel.Text = "OpenAI URL (optional)";
             this.openAiEndpointLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             //
             // openAiEndpoint
             //
-            this.openAiEndpoint.AccessibleName = "URL OpenAI facultative";
+            this.openAiEndpoint.AccessibleName = "Optional OpenAI URL";
             this.openAiEndpoint.Dock = System.Windows.Forms.DockStyle.Fill;
             this.openAiEndpoint.Location = new System.Drawing.Point(121, 100);
             this.openAiEndpoint.Name = "openAiEndpoint";
@@ -319,12 +319,12 @@ namespace CodexVBE
             this.ollamaEndpointLabel.Name = "ollamaEndpointLabel";
             this.ollamaEndpointLabel.Size = new System.Drawing.Size(100, 29);
             this.ollamaEndpointLabel.TabIndex = 5;
-            this.ollamaEndpointLabel.Text = "URL Ollama (facultatif)";
+            this.ollamaEndpointLabel.Text = "Ollama URL (optional)";
             this.ollamaEndpointLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             //
             // ollamaEndpoint
             //
-            this.ollamaEndpoint.AccessibleName = "URL Ollama facultative";
+            this.ollamaEndpoint.AccessibleName = "Optional Ollama URL";
             this.ollamaEndpoint.Dock = System.Windows.Forms.DockStyle.Fill;
             this.ollamaEndpoint.Location = new System.Drawing.Point(121, 129);
             this.ollamaEndpoint.Name = "ollamaEndpoint";
@@ -338,12 +338,12 @@ namespace CodexVBE
             this.keyLabel.Name = "keyLabel";
             this.keyLabel.Size = new System.Drawing.Size(100, 29);
             this.keyLabel.TabIndex = 6;
-            this.keyLabel.Text = "Nouvelle clé OpenAI API";
+            this.keyLabel.Text = "New OpenAI API key";
             this.keyLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             //
             // openAiKey
             //
-            this.openAiKey.AccessibleName = "Nouvelle clé OpenAI API";
+            this.openAiKey.AccessibleName = "New OpenAI API key";
             this.openAiKey.Dock = System.Windows.Forms.DockStyle.Fill;
             this.openAiKey.Location = new System.Drawing.Point(121, 158);
             this.openAiKey.Name = "openAiKey";
@@ -358,7 +358,7 @@ namespace CodexVBE
             this.clearKey.Name = "clearKey";
             this.clearKey.Size = new System.Drawing.Size(488, 24);
             this.clearKey.TabIndex = 5;
-            this.clearKey.Text = "Supprimer la clé API enregistrée";
+            this.clearKey.Text = "Remove saved API key";
             //
             // keyNote
             //
@@ -368,8 +368,7 @@ namespace CodexVBE
             this.keyNote.Name = "keyNote";
             this.keyNote.Size = new System.Drawing.Size(488, 15);
             this.keyNote.TabIndex = 7;
-            this.keyNote.Text = "Clé vide : conserver la clé actuelle. Les secrets sont chiffrés pour ce compte Wi" +
-    "ndows.";
+            this.keyNote.Text = "Leave the key blank to keep the current one. Secrets are encrypted for this Windows account.";
             //
             // approvalLabel
             //
@@ -378,12 +377,12 @@ namespace CodexVBE
             this.approvalLabel.Name = "approvalLabel";
             this.approvalLabel.Size = new System.Drawing.Size(100, 27);
             this.approvalLabel.TabIndex = 8;
-            this.approvalLabel.Text = "Modifications VBE";
+            this.approvalLabel.Text = "VBE edits";
             this.approvalLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             //
             // approvalPicker
             //
-            this.approvalPicker.AccessibleName = "Autorisation des modifications VBE";
+            this.approvalPicker.AccessibleName = "VBE edit permissions";
             this.approvalPicker.Dock = System.Windows.Forms.DockStyle.Fill;
             this.approvalPicker.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.approvalPicker.Location = new System.Drawing.Point(121, 232);
@@ -429,7 +428,7 @@ namespace CodexVBE
             this.saveButton.Name = "saveButton";
             this.saveButton.Size = new System.Drawing.Size(105, 23);
             this.saveButton.TabIndex = 0;
-            this.saveButton.Text = "Enregistrer";
+            this.saveButton.Text = "Save";
             //
             // cancelButton
             //
@@ -438,7 +437,7 @@ namespace CodexVBE
             this.cancelButton.Name = "cancelButton";
             this.cancelButton.Size = new System.Drawing.Size(105, 23);
             this.cancelButton.TabIndex = 1;
-            this.cancelButton.Text = "Annuler";
+            this.cancelButton.Text = "Cancel";
             //
             // LlmSettingsWindow
             //
@@ -513,7 +512,7 @@ namespace CodexVBE
             this.Name = "LlmSettingsWindow";
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "VBAi — Paramètres";
+            this.Text = "VBAi — Settings";
             this.grid.ResumeLayout(false);
             this.grid.PerformLayout();
             this.codexActions.ResumeLayout(false);

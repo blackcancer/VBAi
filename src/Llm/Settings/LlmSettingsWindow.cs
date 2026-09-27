@@ -51,6 +51,7 @@ namespace CodexVBE
         {
             InitializeComponent();
             Icon = VbeWindowIcons.Icon("settings");
+            UiText.Apply(this, null, githubToolTips);
         }
 
         public LlmSettingsWindow(LlmSettings settings)
@@ -58,20 +59,21 @@ namespace CodexVBE
             this.settings = settings;
             InitializeComponent();
             Icon = VbeWindowIcons.Icon("settings");
-            githubAccount.Items.Add("Choix automatique de Git");
+            UiText.Apply(this, null, githubToolTips);
+            githubAccount.Items.Add(UiText.Get("Automatic Git selection"));
             githubAccount.SelectedIndex = 0;
             customName.Text = settings.CustomProviderName ?? "";
             if (!string.IsNullOrEmpty(settings.GitHubAccount)) { githubAccount.Items.Add(settings.GitHubAccount); githubAccount.SelectedItem = settings.GitHubAccount; }
             azureEntra.Checked = settings.AzureUseEntraToken;
             provider.Items.AddRange(LlmProvider.All);
-            approvalPicker.Items.AddRange(new object[] { "Automatique", "Demander pour les autres actions", "Lecture seule" });
+            approvalPicker.Items.AddRange(new object[] { UiText.Get("Automatic"), UiText.Get("Ask for other actions"), UiText.Get("Read-only") });
             approvalPicker.SelectedIndex = settings.VbeEditApproval == "ReadOnly" ? 2 :
                 settings.VbeEditApproval == "AskEachTime" ? 1 : 0;
             int current = Array.FindIndex(LlmProvider.All, item => item.Name == settings.ProviderName);
             provider.SelectedIndex = current < 0 ? 0 : current;
             provider.SelectedIndexChanged += (sender, args) => UpdateRows();
             codexLogin.Click += (sender, args) => {
-                try { if (((LlmProvider)provider.SelectedItem).IsCopilot) CopilotClient.StartLogin(); else CodexAccount.StartLogin(); codexStatus.Text = "Connexion ouverte. Cliquez sur Actualiser après authentification."; }
+                try { if (((LlmProvider)provider.SelectedItem).IsCopilot) CopilotClient.StartLogin(); else CodexAccount.StartLogin(); codexStatus.Text = UiText.Get("Sign-in opened. Click Refresh after authenticating."); }
                 catch (Exception ex) { codexStatus.Text = ex.Message; }
             };
             codexRefresh.Click += async (sender, args) => await RefreshCodexStatusAsync();
@@ -94,20 +96,20 @@ namespace CodexVBE
             bool codex = selected.IsCodex;
             bool cli = codex || selected.IsCopilot;
             bool[] visible = { true, cli, cli, !cli && !selected.Local, !cli && selected.Local, !cli, !cli, !cli, true, selected.ManualModels, selected.IsCustom, selected.IsAzure };
-            openAiEndpointLabel.Text = ollamaEndpointLabel.Text = "URL de l’API";
-            if (selected.IsBedrock) openAiEndpointLabel.Text = "URL Bedrock Runtime";
-            manualModelsLabel.Text = selected.IsAzure ? "Déploiements (un par ligne)" : selected.IsBedrock ? "Modèles / profils (un par ligne)" : "Modèles (un par ligne)";
-            openAiEndpoint.AccessibleName = ollamaEndpoint.AccessibleName = "URL de l’API " + selected.Name;
-            keyLabel.Text = "Nouvelle clé " + selected.Name;
+            openAiEndpointLabel.Text = ollamaEndpointLabel.Text = UiText.Get("API URL");
+            if (selected.IsBedrock) openAiEndpointLabel.Text = UiText.Get("Bedrock Runtime URL");
+            manualModelsLabel.Text = selected.IsAzure ? UiText.Get("Deployments (one per line)") : selected.IsBedrock ? UiText.Get("Models / profiles (one per line)") : UiText.Get("Models (one per line)");
+            openAiEndpoint.AccessibleName = ollamaEndpoint.AccessibleName = UiText.Get("API URL for ") + selected.Name;
+            keyLabel.Text = UiText.Get("New key for ") + selected.Name;
             openAiKey.AccessibleName = keyLabel.Text;
-            keyNote.Text = "Clé vide : conserver la clé actuelle. Chiffrement lié au compte Windows. " +
-                (selected.Local ? "Clé facultative pour ce serveur local. " : "") +
-                (selected.KeyVariable == null ? "" : "À défaut : " + selected.KeyVariable + ". Supprimer la clé enregistrée réactive ce repli.");
-            if (selected.IsCustom) keyNote.Text += " Clé facultative. Renseigner l’URL complète /chat/completions et les identifiants des modèles.";
-            if (selected.IsAzure) keyNote.Text += " URL : https://<ressource>.openai.azure.com/openai/v1/chat/completions. Les modèles sont les noms de vos déploiements. En mode Entra : AZURE_OPENAI_ENTRA_TOKEN.";
-            if (selected.IsBedrock) keyNote.Text += " Clé API Bedrock (Bearer), pas une clé secrète IAM. URL : https://bedrock-runtime.<région>.amazonaws.com.";
-            accountLabel.Text = selected.IsCopilot ? "Compte GitHub" : "Compte ChatGPT";
-            codexLogin.Text = selected.IsCopilot ? "Se connecter à GitHub" : "Se connecter à ChatGPT";
+            keyNote.Text = UiText.Get("Leave the key blank to keep the current one. Encryption is tied to your Windows account. ") +
+                (selected.Local ? UiText.Get("Optional key for this local server. ") : "") +
+                (selected.KeyVariable == null ? "" : UiText.Get("Fallback: ") + selected.KeyVariable + UiText.Get(". Removing the saved key enables this fallback again."));
+            if (selected.IsCustom) keyNote.Text += UiText.Get(" Optional key. Enter the full /chat/completions URL and model identifiers.");
+            if (selected.IsAzure) keyNote.Text += UiText.Get(" URL: https://<resource>.openai.azure.com/openai/v1/chat/completions. Models are your deployment names. In Entra mode: AZURE_OPENAI_ENTRA_TOKEN.");
+            if (selected.IsBedrock) keyNote.Text += UiText.Get(" Bedrock API key (Bearer), not an IAM secret key. URL: https://bedrock-runtime.<region>.amazonaws.com.");
+            accountLabel.Text = selected.IsCopilot ? UiText.Get("GitHub account") : UiText.Get("ChatGPT account");
+            codexLogin.Text = selected.IsCopilot ? UiText.Get("Sign in to GitHub") : UiText.Get("Sign in to ChatGPT");
             codexLogin.Enabled = true;
             grid.SuspendLayout();
             for (int i = 0; i < visible.Length; i++)
@@ -142,7 +144,7 @@ namespace CodexVBE
             if (githubBusy || settings == null) return;
             githubBusy = true;
             githubLogin.Enabled = githubRefresh.Enabled = githubAccount.Enabled = saveButton.Enabled = false;
-            githubStatus.Text = login ? "Terminez la connexion GitHub dans votre navigateur…" : "Recherche des comptes GitHub mémorisés…";
+            githubStatus.Text = login ? UiText.Get("Complete GitHub sign-in in your browser…") : UiText.Get("Looking for saved GitHub accounts…");
             try
             {
                 var service = githubService;
@@ -150,14 +152,14 @@ namespace CodexVBE
                 if (login) await service.LoginAsync(githubCancellation.Token);
                 string[] accounts = await service.ListAsync(githubCancellation.Token);
                 if (IsDisposed) return;
-                githubAccount.Items.Clear(); githubAccount.Items.Add("Choix automatique de Git");
+                githubAccount.Items.Clear(); githubAccount.Items.Add(UiText.Get("Automatic Git selection"));
                 githubAccount.Items.AddRange(accounts);
                 if (selected != null && !githubAccount.Items.Contains(selected)) githubAccount.Items.Add(selected);
-                githubAccount.SelectedItem = selected ?? (login && accounts.Length == 1 ? accounts[0] : "Choix automatique de Git");
+                githubAccount.SelectedItem = selected ?? (login && accounts.Length == 1 ? accounts[0] : UiText.Get("Automatic Git selection"));
                 bool missing = selected != null && Array.IndexOf(accounts, selected) < 0;
-                githubStatus.Text = missing ? "Le compte sélectionné n’est plus mémorisé. Reconnectez-le ou choisissez un autre compte." :
-                    accounts.Length == 0 ? "Aucun compte GitHub mémorisé. Cliquez sur Se connecter." :
-                    accounts.Length + " compte(s) disponible(s) via Git Credential Manager. L’accès au dépôt sera vérifié lors de la synchronisation.";
+                githubStatus.Text = missing ? UiText.Get("The selected account is no longer saved. Sign in again or choose another account.") :
+                    accounts.Length == 0 ? UiText.Get("No saved GitHub account. Click Sign in.") :
+                    accounts.Length + UiText.Get(" account(s) available through Git Credential Manager. Repository access will be checked during synchronization.");
             }
             catch (OperationCanceledException) { }
             catch (Exception ex) { if (!IsDisposed) githubStatus.Text = ex.Message; }
@@ -185,13 +187,13 @@ namespace CodexVBE
         private async System.Threading.Tasks.Task RefreshCodexStatusAsync()
         {
             if (((LlmProvider)provider.SelectedItem).IsCopilot) {
-                codexStatus.Text = "Vérification de GitHub Copilot…";
+                codexStatus.Text = UiText.Get("Checking GitHub Copilot…");
                 try { string status = await CopilotClient.ReadStatusAsync(); if (!IsDisposed && ((LlmProvider)provider.SelectedItem).IsCopilot) codexStatus.Text = status; }
                 catch (Exception ex) { if (!IsDisposed && ((LlmProvider)provider.SelectedItem).IsCopilot) codexStatus.Text = ex.Message; }
                 if (!IsDisposed && Visible) FitContentHeight();
                 return;
             }
-            codexStatus.Text = "Vérification de la connexion ChatGPT…";
+            codexStatus.Text = UiText.Get("Checking ChatGPT connection…");
             try
             {
                 var result = await CodexAccount.ReadStatusAsync();
@@ -238,7 +240,7 @@ namespace CodexVBE
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, "Configuration VBAi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(this, ex.Message, UiText.Get("VBAi settings"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -248,7 +250,7 @@ namespace CodexVBE
             Uri endpoint;
             if (!Uri.TryCreate(raw, UriKind.Absolute, out endpoint) ||
                 (endpoint.Scheme != Uri.UriSchemeHttps && !(endpoint.Scheme == Uri.UriSchemeHttp && endpoint.IsLoopback)))
-                throw new ArgumentException("L'URL doit utiliser HTTPS, ou HTTP sur localhost.");
+                throw new ArgumentException(UiText.Get("The URL must use HTTPS, or HTTP on localhost."));
         }
     }
 }

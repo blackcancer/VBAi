@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -37,7 +37,9 @@ namespace CodexVBE
         public string Draft { get; set; }
         public VbeChatReference[] DraftReferences { get; set; }
         public List<ChatEntry> Entries { get; set; } = new List<ChatEntry>();
-        public override string ToString() { return (Pinned ? "★ " : "") + Title; }
+        [ScriptIgnore]
+        public string DisplayTitle { get { return Title == "Nouvelle conversation" ? UiText.Get("New conversation") : Title; } }
+        public override string ToString() { return (Pinned ? "★ " : "") + DisplayTitle; }
     }
 
     // Uses the SQLite runtime shipped with Windows. SQL values are always bound parameters.
@@ -49,7 +51,7 @@ namespace CodexVBE
         {
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path)));
             int result = Native.sqlite3_open_v2(Utf8(path), out database, 6, IntPtr.Zero);
-            if (result != 0) { Dispose(); throw new IOException("Impossible d'ouvrir l'historique SQLite."); }
+            if (result != 0) { Dispose(); throw new IOException(UiText.Get("Unable to open SQLite history.")); }
             try
             {
                 Native.sqlite3_busy_timeout(database, 1500);
