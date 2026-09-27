@@ -15,11 +15,26 @@ namespace CodexVBE
         private readonly ClickHandler settingsHandler;
         private readonly List<Tuple<object, ClickHandler>> editorButtons = new List<Tuple<object, ClickHandler>>();
         private readonly List<System.Drawing.Bitmap> menuImages = new List<System.Drawing.Bitmap>();
+        private readonly Action<object, Guid, int, Delegate> subscribe;
+        private readonly Action<object, Guid, int, Delegate> unsubscribe;
+        private readonly Action<object, Type> applyIcon;
+        private bool disposed;
 
         private delegate void ClickHandler(object control, ref bool cancelDefault);
 
         public VbeMenu(object vbe, Action showAssistant, Action showSettings, Action showGitHub, Action<string> editorAction = null)
+            : this(vbe, showAssistant, showSettings, showGitHub, editorAction, null, null, null)
         {
+        }
+
+        internal VbeMenu(object vbe, Action showAssistant, Action showSettings, Action showGitHub,
+            Action<string> editorAction, Action<object, Guid, int, Delegate> subscribe,
+            Action<object, Guid, int, Delegate> unsubscribe, Action<object, Type> applyIcon)
+        {
+            this.subscribe = subscribe ?? new Action<object, Guid, int, Delegate>(ComEventsHelper.Combine);
+            this.unsubscribe = unsubscribe ?? ((button, iid, dispid, handler) =>
+                ComEventsHelper.Remove(button, iid, dispid, handler));
+            this.applyIcon = applyIcon ?? SetIcon;
             dynamic view = FindMenu(vbe, true);
             dynamic tools = FindMenu(vbe, false);
             viewButton = view.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
@@ -34,18 +49,18 @@ namespace CodexVBE
             settingsHandler = (object control, ref bool cancel) => { cancel = true; showSettings(); };
             try
             {
-                ComEventsHelper.Combine(viewButton, ClickInterface, 1, viewHandler);
-                ComEventsHelper.Combine(settingsButton, ClickInterface, 1, settingsHandler);
-                SetIcon(viewButton, typeof(ChatWindow));
-                SetIcon(settingsButton, typeof(LlmSettingsWindow));
+                this.subscribe(viewButton, ClickInterface, 1, viewHandler);
+                this.subscribe(settingsButton, ClickInterface, 1, settingsHandler);
+                this.applyIcon(viewButton, typeof(ChatWindow));
+                this.applyIcon(settingsButton, typeof(LlmSettingsWindow));
                 object gitButton = view.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
                 ((dynamic)gitButton).Caption = "GitHub VBAi…";
                 ((dynamic)gitButton).Tag = "CodexVBE.GitHub";
                 ((dynamic)gitButton).TooltipText = UiText.Get("Synchronize the active VBA project and manage its branches and checkpoints");
                 ClickHandler gitHandler = (object control, ref bool cancel) => { cancel = true; showGitHub(); };
                 editorButtons.Add(Tuple.Create(gitButton, gitHandler));
-                ComEventsHelper.Combine(gitButton, ClickInterface, 1, gitHandler);
-                SetIcon(gitButton, typeof(GitWindow));
+                this.subscribe(gitButton, ClickInterface, 1, gitHandler);
+                this.applyIcon(gitButton, typeof(GitWindow));
             }
             catch
             {
@@ -68,8 +83,8 @@ namespace CodexVBE
                             ((dynamic)button).Tag = "CodexVBE." + action.Substring(1);
                             ClickHandler handler = (object control, ref bool cancel) => { cancel = true; editorAction(command); };
                             editorButtons.Add(Tuple.Create(button, handler));
-                            ComEventsHelper.Combine(button, ClickInterface, 1, handler);
-                            SetIcon(button, typeof(ChatWindow));
+                            this.subscribe(button, ClickInterface, 1, handler);
+                            this.applyIcon(button, typeof(ChatWindow));
                         }
                     }
                 }
@@ -140,20 +155,22 @@ namespace CodexVBE
 
         public void Dispose()
         {
+            if (disposed) return;
+            disposed = true;
             foreach (var item in editorButtons)
             {
-                try { ComEventsHelper.Remove(item.Item1, ClickInterface, 1, item.Item2); } catch { }
+                try { unsubscribe(item.Item1, ClickInterface, 1, item.Item2); } catch { }
                 try { ((dynamic)item.Item1).Delete(); } catch { }
             }
             editorButtons.Clear();
             if (viewButton != null)
             {
-                try { if (viewHandler != null) ComEventsHelper.Remove(viewButton, ClickInterface, 1, viewHandler); } catch { }
+                try { if (viewHandler != null) unsubscribe(viewButton, ClickInterface, 1, viewHandler); } catch { }
                 try { ((dynamic)viewButton).Delete(); } catch { }
             }
             if (settingsButton != null)
             {
-                try { if (settingsHandler != null) ComEventsHelper.Remove(settingsButton, ClickInterface, 1, settingsHandler); } catch { }
+                try { if (settingsHandler != null) unsubscribe(settingsButton, ClickInterface, 1, settingsHandler); } catch { }
                 try { ((dynamic)settingsButton).Delete(); } catch { }
             }
             foreach (var image in menuImages) image.Dispose();

@@ -85,6 +85,21 @@ namespace CodexVBE.Tests.Unit
         }
 
         [TestMethod]
+        public void AddInShutdownContinuesWhenTheNativeWindowRejectsClose()
+        {
+            var addIn = new AddIn();
+            var dispatcher = new Control();
+            Set(addIn, "dispatcher", dispatcher);
+            Set(addIn, "nativeChatWindow", new RejectingNativeWindow());
+            Set(addIn, "addIn", new object());
+            object[] custom = null;
+            addIn.OnBeginShutdown(ref custom);
+            Assert.IsTrue(dispatcher.IsDisposed);
+            Assert.IsNull(Field<object>(addIn, "nativeChatWindow"));
+            Assert.IsNull(Field<object>(addIn, "addIn"));
+        }
+
+        [TestMethod]
         public void MenuConstructionReportsMissingHostMenu()
         {
             var host = new FakeHost { CommandBars = new object[] {
@@ -146,5 +161,6 @@ namespace CodexVBE.Tests.Unit
         public sealed class FakeNativeWindow { public int CloseCount { get; private set; } public void Close() { CloseCount++; } }
         public sealed class FakeOwnerHost { public FakeMainWindow MainWindow { get; set; } }
         public sealed class FakeMainWindow { public long HWnd { get; set; } }
+        public sealed class RejectingNativeWindow { public void Close() { throw new InvalidOperationException("VBE closed first"); } }
     }
 }

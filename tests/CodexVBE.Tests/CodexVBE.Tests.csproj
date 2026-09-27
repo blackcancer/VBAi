@@ -57,6 +57,7 @@
     <Compile Include="Unit\VbeFormsValueDuplicationTests.cs" />
     <Compile Include="Unit\HostSettingsWindowTests.cs" />
     <Compile Include="Unit\HostSettingsCoverageTests.cs" />
+    <Compile Include="Unit\VbeMenuLifecycleTests.cs" />
     <Compile Include="Integration\SessionStoreTests.cs" />
     <Compile Include="Integration\ExcelHostTests.cs" />
     <Compile Include="Integration\ExcelVbeFixture.cs" />
