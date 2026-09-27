@@ -160,6 +160,8 @@ namespace CodexVBE
                     return Response.Success(forms.DuplicateEmptyFrame(request));
                 case "frame_copy_plan":
                     return Response.Success(forms.FrameCopyPlan(request));
+                case "duplicate_form_frame_labels":
+                    return Response.Success(forms.DuplicateFrameWithLabels(request));
                 case "remove_form_control":
                     return Response.Success(forms.RemoveControl(request));
                 case "add_form_page":
