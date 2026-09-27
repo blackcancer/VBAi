@@ -223,7 +223,8 @@ namespace CodexVBE
             foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(item))
             {
                 var info = new VbePropertyInfo { Name = descriptor.Name,
-                    Type = descriptor.PropertyType?.FullName, ReadOnly = descriptor.IsReadOnly };
+                    Type = descriptor.PropertyType?.FullName, ReadOnly = descriptor.IsReadOnly,
+                    AllowedValues = EnumChoices(descriptor.PropertyType) };
                 try
                 {
                     object value = descriptor.GetValue(item);
@@ -397,7 +398,8 @@ namespace CodexVBE
                 string name = (string)property.Name;
                 PropertyDescriptor descriptor = descriptors.Find(name, true);
                 var info = new VbePropertyInfo { Name = name, Type = descriptor?.PropertyType?.FullName,
-                    ReadOnly = descriptor == null ? (bool?)null : descriptor.IsReadOnly };
+                    ReadOnly = descriptor == null ? (bool?)null : descriptor.IsReadOnly,
+                    AllowedValues = EnumChoices(descriptor?.PropertyType) };
                 if (string.Equals(name, "Picture", StringComparison.OrdinalIgnoreCase))
                 {
                     info.Kind = "object";
@@ -458,7 +460,7 @@ namespace CodexVBE
             {
                 if (members.Count >= 64) break;
                 var info = new VbePropertyInfo { Name = descriptor.Name, Type = descriptor.PropertyType?.FullName,
-                    ReadOnly = descriptor.IsReadOnly };
+                    ReadOnly = descriptor.IsReadOnly, AllowedValues = EnumChoices(descriptor.PropertyType) };
                 try
                 {
                     object value = descriptor.GetValue(source);
@@ -469,6 +471,13 @@ namespace CodexVBE
                 members.Add(info);
             }
             return members;
+        }
+
+        private static string[] EnumChoices(Type type)
+        {
+            if (type == null || !type.IsEnum) return null;
+            try { return Enum.GetNames(type); }
+            catch { return null; }
         }
 
         private static object NormalizeScalar(object value)
@@ -515,6 +524,7 @@ namespace CodexVBE
                     Type = descriptor.PropertyType == null ? null : descriptor.PropertyType.FullName,
                     ReadOnly = descriptor.IsReadOnly,
                     SetterStatus = descriptor.IsReadOnly ? "DescriptorReadOnly" : "DescriptorCandidateUnverified",
+                    AllowedValues = EnumChoices(descriptor.PropertyType),
                     Value = value, Error = error });
             }
             return result;

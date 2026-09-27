@@ -8,6 +8,9 @@ namespace CodexVBE
         public string Type { get; set; }
         public string Kind { get; set; }
         public bool? ReadOnly { get; set; }
+        // Names from the live enum type, independent of its generated COM type name.
+        // This is a read-only catalog, not proof that the native setter works.
+        public string[] AllowedValues { get; set; }
         // COM descriptors can advertise a setter that fails at invocation
         // (observed for Label.Cancel). This is metadata, not runtime proof.
         public string SetterStatus
