@@ -16,7 +16,7 @@ using System.Web.Script.Serialization;
 
 namespace CodexVBE
 {
-    internal sealed class VbeForms
+    internal sealed partial class VbeForms
     {
         private readonly dynamic vbe;
         private static readonly HashSet<string> BuiltInControls = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
