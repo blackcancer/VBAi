@@ -40,6 +40,7 @@ namespace CodexVBE
                 properties[field] = field == "Value" ? (object)new { anyOf = new object[] {
                     new { type = "string" }, new { type = "number" }, new { type = "boolean" } } } :
                     field == "PathSegments" ? (object)new { type = "array", items = new { type = "string" }, minItems = 1, maxItems = 16 } :
+                    field == "Items" ? (object)new { type = "array", items = new { type = "string", maxLength = 256 }, minItems = 0, maxItems = 64 } :
                     new { type = field == "StartLine" || field == "StartColumn" || field == "EndColumn" || field == "Count" || field == "ExpectedMode" || field == "ControlId" || field == "ProcKind" || field == "InsertIndex" ||
                         field == "Offset" || field == "Limit" || field == "RowIndex" || field == "TypeIndex" || field == "ZPosition" ||
                         field == "Major" || field == "Minor" ? "integer" :
@@ -162,6 +163,9 @@ namespace CodexVBE
                 new[] { "Project", "Form" }, "Project", "Form"),
             Definition("form_list_items", "Read a bounded page of live indexed items from a design-time MSForms ComboBox or ListBox selected by canonical form_tree ControlPath. Offset is a zero-based row index; Limit defaults to 20 and is capped so at most 128 cells are read. Returns item values and per-cell errors. The list contents are not saved with the UserForm in the tested Excel VBE; this is a live-state read, not a persistence guarantee.",
                 new[] { "Project", "Form", "ControlPath" }, "Project", "Form", "ControlPath", "Offset", "Limit"),
+            Definition("set_form_list_initializer", "Generate or replace only the marked list block in UserForm_Initialize for a top-level, unbound, one-column native ComboBox or ListBox. Items is an array of at most 64 single-line strings of at most 256 characters each; an empty array clears the list at runtime. Requires current form_tree TreeVersion and read_module SHA-256, design mode and VBE edit policy. Existing user code is preserved; edited managed blocks are refused. VBA code persists with the workbook, but this command does not populate the designer's live List. Verify the returned code with read_module; runtime execution remains a separate check.",
+                new[] { "Project", "Form", "ControlPath", "Items", "ExpectedTreeVersion", "ExpectedSha256" },
+                "Project", "Form", "ControlPath", "Items", "ExpectedTreeVersion", "ExpectedSha256"),
             Definition("form_event_catalog", "Read the COM source-interface event names for a UserForm or a control selected by canonical form_tree ControlPath. This is only the COM source catalog: VBA/VBE events such as UserForm.Initialize can be absent. SourceInterfacesComplete does not mean all usable VBE events are listed; CreateEventProc validates a requested event name.",
                 new[] { "Project", "Form" }, "Project", "Form", "ControlPath"),
             Definition("form_properties", "Read the designer properties of a UserForm.", new[] { "Project", "Form" }, "Project", "Form"),
@@ -244,6 +248,14 @@ namespace CodexVBE
                         if (!(value is string) && !(value is bool) && !(value is int) &&
                             !(value is long) && !(value is double) && !(value is decimal))
                             throw new ArgumentException("Value must be a string, number or boolean.");
+                        continue;
+                    }
+                    if (field == "Items")
+                    {
+                        var items = value as object[];
+                        if (items == null || items.Length > 64 || items.Any(item => !(item is string) ||
+                            ((string)item).Length > 256 || ((string)item).Any(char.IsControl)))
+                            throw new ArgumentException("Items must contain at most 64 single-line strings of at most 256 characters.");
                         continue;
                     }
                     string type = (string)((dynamic)fields[field]).type;

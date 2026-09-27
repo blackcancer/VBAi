@@ -126,6 +126,8 @@ namespace CodexVBE
                     return Response.Success(forms.Tree(request.Project, request.Form));
                 case "form_list_items":
                     return Response.Success(forms.ListItems(request));
+                case "set_form_list_initializer":
+                    return Response.Success(forms.SetListInitializer(request));
                 case "probe_append_form_list_item":
                     return Response.Success(forms.AppendListItem(request));
                 case "add_form_list_item":

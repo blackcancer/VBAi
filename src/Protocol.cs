@@ -11,6 +11,7 @@ namespace CodexVBE
         public int Count { get; set; }
         public string ExpectedSha256 { get; set; }
         public string Text { get; set; }
+        public string[] Items { get; set; }
         public string Query { get; set; }
         public string Action { get; set; }
         public int ControlId { get; set; }
