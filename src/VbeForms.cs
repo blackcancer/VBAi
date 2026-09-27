@@ -567,10 +567,40 @@ namespace CodexVBE
             foreach (dynamic component in project.VBComponents)
                 if (string.Equals((string)component.Name, request.Form, StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException("A component with this name already exists.");
-            dynamic form = project.VBComponents.Add(3); // vbext_ct_MSForm
-            form.Name = request.Form;
-            form.DesignerWindow().Visible = true;
-            return Snapshot(request.Project, form);
+            int countBefore = (int)project.VBComponents.Count;
+            dynamic form = null;
+            try
+            {
+                form = project.VBComponents.Add(3); // vbext_ct_MSForm
+                form.Name = request.Form;
+                form.DesignerWindow().Visible = true;
+                return Snapshot(request.Project, form);
+            }
+            catch (Exception error)
+            {
+                string rollbackError = null;
+                try { if (form != null) project.VBComponents.Remove(form); }
+                catch (Exception rollback) { rollbackError = rollback.Message; }
+                bool remains;
+                try
+                {
+                    remains = (int)project.VBComponents.Count != countBefore;
+                    foreach (dynamic component in project.VBComponents)
+                        if (string.Equals((string)component.Name, request.Form, StringComparison.OrdinalIgnoreCase))
+                            remains = true;
+                }
+                catch (Exception inspection)
+                {
+                    remains = true;
+                    rollbackError = rollbackError == null ? inspection.Message : rollbackError + "; " + inspection.Message;
+                }
+                if (remains)
+                    throw new InvalidOperationException("UserForm creation failed and rollback could not be verified. " +
+                        "Inspect list_modules and list_forms before retrying. Cause: " + error.Message +
+                        (rollbackError == null ? "" : " Rollback: " + rollbackError), error);
+                throw new InvalidOperationException("UserForm creation failed; the component is absent after rollback. Cause: " +
+                    error.Message, error);
+            }
         }
 
         public object Open(string projectName, string formName)
@@ -1085,16 +1115,57 @@ namespace CodexVBE
                 (request.InsertIndex.Value < 0 || request.InsertIndex.Value > count))
                 throw new ArgumentOutOfRangeException("InsertIndex", "InsertIndex must be between zero and Count.");
             string caption = request.Caption ?? request.NewName;
-            if (request.InsertIndex.HasValue)
-                collection.Add(request.NewName, caption, request.InsertIndex.Value);
-            else collection.Add(request.NewName, caption);
             string newPath = request.ParentPath + "/" + collectionName + "/" + request.NewName;
-            dynamic after = Tree(request.Project, request.Form);
-            if (!TreeContainsPath((IEnumerable)after.Controls, newPath) ||
-                string.Equals((string)after.TreeVersion, request.ExpectedTreeVersion,
-                    StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("The added Page or Tab was not reflected in the UserForm tree.");
-            return new { AddedPath = newPath, Applied = true, Tree = after };
+            try
+            {
+                if (request.InsertIndex.HasValue)
+                    collection.Add(request.NewName, caption, request.InsertIndex.Value);
+                else collection.Add(request.NewName, caption);
+                dynamic after = Tree(request.Project, request.Form);
+                if (!TreeContainsPath((IEnumerable)after.Controls, newPath) ||
+                    string.Equals((string)after.TreeVersion, request.ExpectedTreeVersion,
+                        StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("The added Page or Tab was not reflected in the UserForm tree.");
+                return new { AddedPath = newPath, Applied = true, Tree = after };
+            }
+            catch (Exception error)
+            {
+                string rollbackError = null;
+                try
+                {
+                    int index = FindCollectionIndexByName(collection, request.NewName);
+                    if (index >= 0) collection.Remove(index);
+                }
+                catch (Exception rollback) { rollbackError = rollback.Message; }
+                bool remains;
+                try
+                {
+                    remains = FindCollectionIndexByName(collection, request.NewName) >= 0 ||
+                        (int)collection.Count != count;
+                }
+                catch (Exception inspection)
+                {
+                    remains = true;
+                    rollbackError = rollbackError == null ? inspection.Message : rollbackError + "; " + inspection.Message;
+                }
+                if (remains)
+                    throw new InvalidOperationException("Page or Tab creation failed and rollback could not be verified. " +
+                        "Inspect form_tree before retrying. Cause: " + error.Message +
+                        (rollbackError == null ? "" : " Rollback: " + rollbackError), error);
+                throw new InvalidOperationException("Page or Tab creation failed; the item is absent after rollback. Cause: " +
+                    error.Message, error);
+            }
+        }
+
+        private static int FindCollectionIndexByName(dynamic collection, string name)
+        {
+            int index = 0;
+            foreach (dynamic item in collection)
+            {
+                if (string.Equals((string)item.Name, name, StringComparison.Ordinal)) return index;
+                index++;
+            }
+            return -1;
         }
 
         public object RemovePageOrTab(Request request)
