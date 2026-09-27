@@ -20,7 +20,7 @@ namespace CodexVBE
         private readonly List<string> userRequests = new List<string>();
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
             "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "compile_project", "open_debug_pane", "list_commands", "select_code",
-            "project_properties", "component_properties", "component_property_value", "vbe_windows", "code_panes", "open_object_browser", "list_procedures", "find_code", "select_procedure", "list_forms",
+            "project_properties", "project_signature_status", "component_properties", "component_property_value", "vbe_windows", "code_panes", "open_object_browser", "list_procedures", "find_code", "select_procedure", "list_forms",
             "form_state", "form_tree", "form_list_items", "form_properties", "form_control_properties", "form_event_catalog",
             "list_form_control_types", "open_form"
         };
@@ -77,6 +77,9 @@ namespace CodexVBE
                 new string[0]),
             Definition("compile_project", "Compile the named VBA project using the native VBE command in design mode. Captures and dismisses a native compile error dialog; on failure read debug_state to locate the selected token. A successful response means no native diagnostic was observed. ExpectedMode must be 2.",
                 new[] { "Project", "ExpectedMode" }, "Project", "ExpectedMode"),
+            Definition("run_sub", "Run one parameterless Sub in a standard module by exact project, module and procedure name through the native VBE Run command. Requires the current module SHA-256 and ExpectedMode=2. Selects its declaration in the code pane; read debug_state separately for asynchronous effects. VBE edit policy applies.",
+                new[] { "Project", "Module", "Procedure", "ExpectedSha256", "ExpectedMode" },
+                "Project", "Module", "Procedure", "ExpectedSha256", "ExpectedMode"),
             Definition("list_commands", "List one page of VBE CommandBars controls matching an optional caption/path Query. Offset is zero-based and Limit defaults to 200 (maximum 200); request following pages until a page is short or empty. Returns transient Id, caption and enabled state; use these exact values for invoke_debug. The menu may change between requests.",
                 new string[0], "Query", "Offset", "Limit"),
             Definition("select_code", "Activate a code pane and select an exact line or single-line text range after checking the current module SHA-256. Optional StartColumn and EndColumn are one-based, with an exclusive end; Expression can assert the selected source text. Does not edit source code.",
@@ -113,6 +116,8 @@ namespace CodexVBE
                 "Project", "Form", "ObjectName", "EventName", "ExpectedSha256", "ExpectedTreeVersion"),
             Definition("project_properties", "Read all exposed VBProject properties, component identities and a project revision.",
                 new[] { "Project" }, "Project"),
+            Definition("project_signature_status", "Read whether the exact Excel workbook owning this VBE project has a signed VBA project. Returns Available=false when the host is not Excel, the registered Excel instance differs from this VBE, or its project cannot be matched. This does not sign, validate the certificate, or inspect pending edits.",
+                new[] { "Project" }, "Project"),
             Definition("component_properties", "Read all exposed VBComponent and designer properties, code SHA-256, and a component revision. Works for document, standard, class and form components when VBIDE allows access.",
                 new[] { "Project", "Module" }, "Project", "Module"),
             Definition("component_property_value", "Read one named VBComponent host property on demand. Type 100 document properties belong to the host object, not the common VBE editor; Excel MailEnvelope returns an explicit error because its getter blocks COM inspection.",
@@ -123,6 +128,9 @@ namespace CodexVBE
             Definition("set_component_property", "Set a writable scalar VBComponent property by its live descriptor and ExpectedComponentVersion in design mode; VBE edit policy applies.",
                 new[] { "Project", "Module", "ExpectedComponentVersion", "Property", "Value" },
                 "Project", "Module", "ExpectedComponentVersion", "Property", "Value"),
+            Definition("set_class_instancing", "Set a VBA class module's Instancing property to 1 (Private) or 2 (PublicNotCreatable). Requires the current component revision, design mode and VBE edit policy; read back the resulting class properties. Excel and other hosts may restrict this setting.",
+                new[] { "Project", "Module", "ExpectedComponentVersion", "Value" },
+                "Project", "Module", "ExpectedComponentVersion", "Value"),
             Definition("rename_component", "Rename a VBComponent after checking ExpectedComponentVersion and VBE edit policy.",
                 new[] { "Project", "Module", "ExpectedComponentVersion", "NewName" },
                 "Project", "Module", "ExpectedComponentVersion", "NewName"),

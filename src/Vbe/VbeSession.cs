@@ -52,6 +52,8 @@ namespace CodexVBE
                     return Response.Success(codeNavigation.CreateEventProcedure(request));
                 case "project_properties":
                     return Response.Success(components.ProjectProperties(request.Project));
+                case "project_signature_status":
+                    return Response.Success(components.SignatureStatus(request.Project));
                 case "component_properties":
                     return Response.Success(components.ComponentProperties(request.Project, request.Module));
                 case "component_property_value":
@@ -62,6 +64,8 @@ namespace CodexVBE
                     return Response.Success(components.SetProjectProperty(request));
                 case "set_component_property":
                     return Response.Success(components.SetComponentProperty(request));
+                case "set_class_instancing":
+                    return Response.Success(components.SetClassInstancing(request));
                 case "rename_project":
                     return Response.Failure("Project rename is disabled: it correlated with an Excel process crash during validation.");
                 case "rename_component":
@@ -94,6 +98,8 @@ namespace CodexVBE
                     return ReplaceLines(request);
                 case "debug_state":
                     return Response.Success(debugger.State(request.Project));
+                case "run_sub":
+                    return Response.Success(debugger.RunSub(request));
                 case "compile_project":
                     return Response.Success(debugger.CompileProject(request));
                 case "open_debug_pane":

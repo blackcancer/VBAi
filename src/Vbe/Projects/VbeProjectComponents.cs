@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -14,6 +15,9 @@ namespace CodexVBE
 {
     internal sealed class VbeProjectComponents
     {
+        [DllImport("user32.dll")]
+        private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
+
         private readonly dynamic vbe;
         private readonly VbeForms forms;
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
@@ -47,6 +51,45 @@ namespace CodexVBE
         {
             dynamic component = GetComponent(GetProject(projectName), componentName);
             return ComponentSnapshot(projectName, component);
+        }
+
+        public object SignatureStatus(string projectName)
+        {
+            dynamic project = GetProject(projectName);
+            if (!string.Equals(Process.GetCurrentProcess().ProcessName, "EXCEL", StringComparison.OrdinalIgnoreCase))
+                return new { Project = projectName, Available = false, Signed = (bool?)null,
+                    Source = "Host", Reason = "This host does not expose Excel.Workbook.VBASigned." };
+            try
+            {
+                dynamic excel = Marshal.GetActiveObject("Excel.Application");
+                uint excelProcessId;
+                GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(excel.Hwnd)), out excelProcessId);
+                if (excelProcessId != (uint)Process.GetCurrentProcess().Id)
+                    return new { Project = projectName, Available = false, Signed = (bool?)null,
+                        Source = "Excel.Workbook.VBASigned", Reason = "The registered Excel instance is not this VBE host." };
+                string projectPath = null;
+                try { projectPath = (string)project.FileName; }
+                catch { /* An unsaved workbook may have no project path. */ }
+                bool singleUnsavedProject = string.IsNullOrWhiteSpace(projectPath) &&
+                    (int)excel.Workbooks.Count == 1 && (int)vbe.VBProjects.Count == 1;
+                foreach (dynamic workbook in excel.Workbooks)
+                {
+                    bool matches = singleUnsavedProject ||
+                        (!string.IsNullOrWhiteSpace(projectPath) &&
+                         string.Equals(Path.GetFullPath((string)workbook.FullName),
+                             Path.GetFullPath(projectPath), StringComparison.OrdinalIgnoreCase));
+                    if (!matches) continue;
+                    return new { Project = projectName, Available = true, Signed = (bool?)((bool)workbook.VBASigned),
+                        Source = "Excel.Workbook.VBASigned", Reason = (string)null };
+                }
+                return new { Project = projectName, Available = false, Signed = (bool?)null,
+                    Source = "Excel.Workbook.VBASigned", Reason = "No workbook matches the selected VBE project." };
+            }
+            catch (Exception ex)
+            {
+                return new { Project = projectName, Available = false, Signed = (bool?)null,
+                    Source = "Excel.Workbook.VBASigned", Reason = ex.Message };
+            }
         }
 
         public object ComponentPropertyValue(string projectName, string componentName, string propertyName)
@@ -167,6 +210,31 @@ namespace CodexVBE
                 ValidateIdentifier(request.Value as string);
             SetScalar((object)component, request.Property, request.Value);
             return ComponentSnapshot(request.Project, component);
+        }
+
+        public object SetClassInstancing(Request request)
+        {
+            if (!(request.Value is int) && !(request.Value is long) && !(request.Value is double) &&
+                !(request.Value is decimal))
+                throw new ArgumentException("Value must be the number 1 (Private) or 2 (PublicNotCreatable).");
+            int requested;
+            try { requested = Convert.ToInt32(request.Value, CultureInfo.InvariantCulture); }
+            catch (Exception ex) { throw new ArgumentException("Value must be 1 or 2.", ex); }
+            if ((requested != 1 && requested != 2) ||
+                Convert.ToDecimal(request.Value, CultureInfo.InvariantCulture) != requested)
+                throw new ArgumentException("Value must be 1 (Private) or 2 (PublicNotCreatable).");
+            dynamic project = GetDesignProject(request.Project);
+            dynamic component = GetComponent(project, request.Module);
+            if ((int)component.Type != 2) throw new InvalidOperationException("The component must be a class module.");
+            AssertComponentVersion(request, component);
+            dynamic property = component.Properties.Item("Instancing");
+            int before = Convert.ToInt32(property.Value, CultureInfo.InvariantCulture);
+            if (before != requested) property.Value = requested;
+            int actual = Convert.ToInt32(property.Value, CultureInfo.InvariantCulture);
+            if (actual != requested) throw new InvalidOperationException("The VBE did not retain class Instancing.");
+            return new { Project = request.Project, Class = request.Module, Before = before,
+                Instancing = actual, Meaning = actual == 1 ? "Private" : "PublicNotCreatable",
+                Component = ComponentSnapshot(request.Project, component) };
         }
 
         public object RenameComponent(Request request)

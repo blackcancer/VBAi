@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 namespace CodexVBE
@@ -402,6 +403,46 @@ namespace CodexVBE
                     ? "VBIDE exposes no breakpoint inventory through this command; toggle effect was not verified."
                     : pending ? "The VBE may process this command asynchronously; immediate state did not yet prove an effect." : null,
                 StateBefore = before, StateAfter = after, StateAfterError = afterError };
+        }
+
+        public object RunSub(Request request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Procedure) ||
+                !Regex.IsMatch(request.Procedure, @"^[A-Za-z][A-Za-z0-9_]{0,39}$"))
+                throw new ArgumentException("An exact VBA Sub name is required.");
+            if (request.ExpectedMode != 2)
+                throw new ArgumentException("ExpectedMode must be 2 (design mode).");
+            dynamic project = GetProject(request.Project);
+            if ((int)project.Mode != 2)
+                throw new InvalidOperationException("The selected project is no longer in design mode.");
+            dynamic component = null;
+            foreach (dynamic item in project.VBComponents)
+                if (string.Equals((string)item.Name, request.Module, StringComparison.OrdinalIgnoreCase))
+                { component = item; break; }
+            if (component == null || (int)component.Type != 1)
+                throw new InvalidOperationException("Run Sub requires a standard module in the selected project.");
+            dynamic module = component.CodeModule;
+            if (string.IsNullOrWhiteSpace(request.ExpectedSha256))
+                throw new ArgumentException("ExpectedSha256 from read_module is required.");
+            int count = (int)module.CountOfLines;
+            string code = count == 0 ? string.Empty : (string)module.Lines[1, count];
+            if (!string.Equals(Hash(code), request.ExpectedSha256, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The module changed since it was read.");
+            int body = (int)module.ProcBodyLine[request.Procedure, 0];
+            string declaration = (string)module.Lines[body, 1];
+            string pattern = @"^\s*(?:(?:Public|Private|Friend|Static)\s+)*Sub\s+" +
+                Regex.Escape(request.Procedure) + @"\s*(?:\(\s*\))?\s*(?:'.*)?$";
+            if (!Regex.IsMatch(declaration, pattern, RegexOptions.IgnoreCase))
+                throw new InvalidOperationException("Only a parameterless standard-module Sub can be run by name.");
+            var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 186 &&
+                entry.Enabled && IsAllowed("run", entry.Caption, 2));
+            if (command == null)
+                throw new InvalidOperationException("The native Run Sub command is absent or disabled.");
+            request.StartLine = body;
+            request.Action = "run";
+            request.ControlId = command.Id;
+            request.ControlCaption = command.Caption;
+            return InvokeCommand(request);
         }
 
         private void ValidateSetNextStatementProcedure(Request request, dynamic module)
