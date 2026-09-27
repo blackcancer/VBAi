@@ -36,7 +36,8 @@ function Call($object, [string]$name, [object[]]$arguments) {
     for ($i = 0; $i -lt $arguments.Length; $i++) {
         if ($null -ne $arguments[$i]) { $arguments[$i] = $arguments[$i].PSObject.BaseObject }
     }
-    $object.GetType().GetMethod($name, $flags).Invoke($object, $arguments)
+    try { $object.GetType().GetMethod($name, $flags).Invoke($object, $arguments) }
+    catch { throw ("$name failed: " + $_.Exception.ToString()) }
 }
 function Assert($condition, [string]$message) { if (-not $condition) { throw $message } }
 
@@ -88,6 +89,7 @@ $storeType = $assembly.GetType('CodexVBE.ChatSessionStore')
 $store = [Activator]::CreateInstance($storeType, $flags, $null, @([string]$dbPath), $null)
 $window = New-Internal ChatWindow
 try {
+    Call $window InitializeShell @()
     Call $window InitializeComposer @($session)
     Call $window InitializeTranscript @()
     Set-Field $window settings (New-Internal LlmSettings)
@@ -131,7 +133,7 @@ try {
     Call $window RenameCurrentChat @()
     Call $store SaveMemory @($a.Scope, 'Convention locale A')
     Assert ((Call $store ReadMemory @($b.Scope)) -eq '') 'Project memory leaked across macros.'
-    Assert ((Field $window attachMemory).IsChecked -eq $false) 'Memory transmission must be opt-in.'
+    Assert ((Field $window attachMemory).Checked -eq $false) 'Memory transmission must be opt-in.'
     Call $window ActivateSession @($b, $true)
     Assert ((Field $window transcriptEntries).Count -eq 0) 'Conversation leaked between macro documents.'
     Assert ((Field $window prompt).Text -eq '') 'Draft leaked between macro documents.'

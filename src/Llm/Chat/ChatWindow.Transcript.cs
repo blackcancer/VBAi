@@ -33,7 +33,7 @@ namespace CodexVBE
             conversationScroll.ScrollChanged += (s, e) => {
                 if (Math.Abs(e.ExtentHeightChange) < 0.1 && Math.Abs(e.ViewportHeightChange) < 0.1 && Math.Abs(e.VerticalChange) > 0.1)
                     followConversation = conversationScroll.ScrollableHeight - conversationScroll.VerticalOffset < 32;
-                jumpToLatest.Visibility = followConversation ? Visibility.Collapsed : Visibility.Visible;
+                jumpToLatest.Visible = !followConversation;
             };
             AutomationProperties.SetName(conversationScroll, "Conversation");
             transcriptHost.Child = conversationScroll;
@@ -99,12 +99,14 @@ namespace CodexVBE
             var body = new StackPanel();
             var heading = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
             var copy = ChatButton("Copier");
+            copy.ToolTip = "Copier le texte du message dans le presse-papiers.";
             copy.FontSize = 10; copy.MinHeight = 20; copy.Padding = new Thickness(6, 2, 6, 2);
             copy.Background = Brushes.Transparent;
             copy.Click += (s, e) => CopyText(entry.Text);
             DockPanel.SetDock(copy, System.Windows.Controls.Dock.Right); heading.Children.Add(copy);
             if (entry.Speaker == "Vous" || entry.Speaker == "Assistant") {
                 var fork = ChatButton("Créer une branche"); fork.FontSize = 10; fork.Padding = new Thickness(6, 2, 6, 2);
+                fork.ToolTip = "Créer une conversation indépendante avec l’historique jusqu’à ce message.";
                 fork.Click += (s, e) => ForkChat(entry); DockPanel.SetDock(fork, System.Windows.Controls.Dock.Right); heading.Children.Add(fork);
             }
             heading.Children.Add(new TextBlock { Text = user ? "VOUS" : entry.Speaker.ToUpperInvariant(),
@@ -122,7 +124,7 @@ namespace CodexVBE
             {
                 var targets = codeChanges.Where(x => x.TurnId == entry.TurnId).ToArray();
                 foreach (var target in targets) { var link = ChatButton(target.Label); link.Click += (s, e) => ShowCodeChanges(target); body.Children.Add(link); }
-                if (targets.Length > 0) { var undo = ChatButton("Annuler toute l’intervention"); undo.Click += (s, e) => RollbackIntervention(targets[0], null, true); body.Children.Add(undo); }
+                if (targets.Length > 0) { var undo = ChatButton("Annuler toute l’intervention"); undo.ToolTip = "Annuler les modifications de cette intervention, après vérification des conflits."; undo.Click += (s, e) => RollbackIntervention(targets[0], null, true); body.Children.Add(undo); }
             }
             if (!string.IsNullOrWhiteSpace(entry.AttachedMemory))
                 body.Children.Add(new Expander { Header = "Mémoire du document jointe",
@@ -141,6 +143,7 @@ namespace CodexVBE
                 foreach (var reference in entry.References)
                 {
                     var link = ChatButton(reference.Token);
+                    link.ToolTip = "Ouvrir cette référence dans le VBE.";
                     link.FontSize = 11; link.Margin = new Thickness(0, 0, 5, 4);
                     link.Padding = new Thickness(6, 3, 6, 3);
                     link.Click += (s, e) => NavigateReference(reference);
@@ -177,6 +180,7 @@ namespace CodexVBE
                     var code = new StackPanel();
                     var header = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
                     var copy = ChatButton("Copier le code");
+                    copy.ToolTip = "Copier ce bloc de code dans le presse-papiers.";
                     copy.MinHeight = 22; copy.FontSize = 10; copy.Padding = new Thickness(6, 2, 6, 2);
                     copy.Click += (s, e) => CopyText(source);
                     DockPanel.SetDock(copy, System.Windows.Controls.Dock.Right); header.Children.Add(copy);
@@ -240,6 +244,7 @@ namespace CodexVBE
                 FontSize = 12, VerticalAlignment = VerticalAlignment.Center };
             DockPanel.SetDock(count, System.Windows.Controls.Dock.Right); heading.Children.Add(count);
             var link = ChatButton("#" + change.Project + "." + change.Module);
+            link.ToolTip = "Ouvrir le module modifié dans le VBE.";
             link.HorizontalAlignment = HorizontalAlignment.Left; link.Background = Brushes.Transparent;
             link.Click += (s, e) => NavigateReference(new VbeChatReference { Project = change.Project, Module = change.Module });
             heading.Children.Add(link); body.Children.Add(heading);
@@ -267,6 +272,7 @@ namespace CodexVBE
                 IsExpanded = true, Margin = new Thickness(0, 6, 0, 8), FontSize = 12, Foreground = Ink("#475569") });
             var actions = new WrapPanel();
             var restore = ChatButton(change.Restored ? "Modification annulée" : "Annuler la modification");
+            restore.ToolTip = "Restaurer le code précédant cette modification, après vérification des conflits.";
             restore.Click += (s, e) => {
                 if (busy || tools == null) return;
                 try { EnsureCurrentScope(); }
@@ -278,6 +284,7 @@ namespace CodexVBE
             rollbackButtons[change] = restore;
             actions.Children.Add(restore);
             var blocks = ChatButton("Annuler un bloc…");
+            blocks.ToolTip = "Choisir le bloc à annuler en conservant les autres modifications.";
             blocks.Click += (s, e) => {
                 var menu = new ContextMenu();
                 foreach (var hunk in CodeRollback.Hunks(change.Before, change.After).Where(x => !change.RestoredHunks.Contains(x.Index))) {
@@ -286,7 +293,7 @@ namespace CodexVBE
                 }
                 blocks.ContextMenu = menu; menu.PlacementTarget = blocks; menu.IsOpen = true;
             }; actions.Children.Add(blocks);
-            if (!string.IsNullOrEmpty(change.TurnId)) { var all = ChatButton("Annuler l’intervention"); all.Click += (s, e) => RollbackIntervention(change, null, true); actions.Children.Add(all); }
+            if (!string.IsNullOrEmpty(change.TurnId)) { var all = ChatButton("Annuler l’intervention"); all.ToolTip = "Annuler les modifications de cette intervention, après vérification des conflits."; all.Click += (s, e) => RollbackIntervention(change, null, true); actions.Children.Add(all); }
             var state = new TextBlock { FontSize = 11, Foreground = Ink("#64748B"),
                 Margin = new Thickness(8, 8, 0, 0) };
             changeStates[change] = state; actions.Children.Add(state); body.Children.Add(actions);

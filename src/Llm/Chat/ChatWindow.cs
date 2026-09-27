@@ -26,13 +26,10 @@ namespace CodexVBE
         public ChatWindow()
         {
             InitializeComponent();
-            if (LicenseManager.UsageMode != LicenseUsageMode.Designtime)
-                InitializeShell();
         }
 
-        public ChatWindow(VbeSession session)
+        public ChatWindow(VbeSession session) : this()
         {
-            InitializeComponent();
             InitializeShell();
             InitializeComposer(session);
             InitializeTranscript();
@@ -45,13 +42,13 @@ namespace CodexVBE
             tools.CodeEdited += change => {
                 change.TurnId = activeTurnId;
                 codeChanges.Add(change);
-                changes.IsEnabled = true;
-                changes.Content = "Modifications · " + codeChanges.Count;
+                changes.Enabled = true;
+                changes.Text = "Modifications · " + codeChanges.Count;
                 AddCodeChangeCard(change);
                 RefreshCodeChangeCards();
             };
             changes.Click += (sender, args) => ShowCodeChanges();
-            providerPicker.SelectionChanged += (sender, args) => {
+            providerPicker.SelectedIndexChanged += (sender, args) => {
                 if (loadingSession || busy) return;
                 var provider = providerPicker.SelectedItem as LlmProvider;
                 if (provider == null) return;
@@ -66,7 +63,7 @@ namespace CodexVBE
             };
             configure.Click += (sender, args) => ShowSettings();
             refreshModels.Click += async (sender, args) => await LoadModelsAsync();
-            modelPicker.SelectionChanged += (sender, args) => {
+            modelPicker.SelectedIndexChanged += (sender, args) => {
                 var selectedModel = modelPicker.SelectedItem as LlmModelOption;
                 var selectedProvider = providerPicker.SelectedItem as LlmProvider;
                 if (selectedModel == null || selectedProvider == null) return;
@@ -81,7 +78,7 @@ namespace CodexVBE
                 if (!restoringSelection)
                     try { settings.Save(); } catch (Exception ex) { LoadLog.Write("Model selection save failed: " + ex.Message); }
             };
-            effortPicker.SelectionChanged += (sender, args) => {
+            effortPicker.SelectedIndexChanged += (sender, args) => {
                 var selectedProvider = providerPicker.SelectedItem as LlmProvider;
                 var selectedModel = modelPicker.SelectedItem as LlmModelOption;
                 var selectedEffort = effortPicker.SelectedItem as LlmEffortOption;
@@ -104,14 +101,14 @@ namespace CodexVBE
         private void UpdateEfforts(LlmProvider provider, LlmModelOption model)
         {
             effortPicker.Items.Clear();
-            effortPicker.IsEnabled = false;
+            effortPicker.Enabled = false;
             if (!provider.IsCodex || model.Efforts.Length == 0) return;
             foreach (var item in model.Efforts) effortPicker.Items.Add(item);
             string selected = currentSession?.Effort ?? settings.GetReasoningEffort(provider, model.Id);
             int index = Array.FindIndex(model.Efforts, item => item.Id == selected);
             if (index < 0) index = Array.FindIndex(model.Efforts, item => item.Id == model.DefaultEffort);
             effortPicker.SelectedIndex = index < 0 ? 0 : index;
-            effortPicker.IsEnabled = !busy;
+            effortPicker.Enabled = !busy;
         }
 
         private void ResetProviderConnection()
@@ -130,11 +127,11 @@ namespace CodexVBE
             int version = ++catalogueVersion;
             var provider = providerPicker.SelectedItem as LlmProvider;
             modelPicker.Items.Clear();
-            modelPicker.IsEnabled = false;
+            modelPicker.Enabled = false;
             effortPicker.Items.Clear();
-            effortPicker.IsEnabled = false;
-            refreshModels.IsEnabled = false;
-            if (provider == null || !provider.Available) { refreshModels.IsEnabled = true; return; }
+            effortPicker.Enabled = false;
+            refreshModels.Enabled = false;
+            if (provider == null || !provider.Available) { refreshModels.Enabled = true; return; }
             try
             {
                 LlmModelOption[] models;
@@ -171,8 +168,8 @@ namespace CodexVBE
             {
                 if (!IsDisposed && version == catalogueVersion)
                 {
-                    modelPicker.IsEnabled = modelPicker.Items.Count > 0;
-                    refreshModels.IsEnabled = true;
+                    modelPicker.Enabled = modelPicker.Items.Count > 0;
+                    refreshModels.Enabled = true;
                 }
             }
         }
@@ -210,17 +207,17 @@ namespace CodexVBE
         {
             if (selected == null)
             {
-                var menu = new System.Windows.Controls.ContextMenu();
+                var menu = new ContextMenuStrip();
                 for (int i = codeChanges.Count - 1; i >= 0; i--)
                 {
                     var change = codeChanges[i];
-                    var item = new System.Windows.Controls.MenuItem { Header = change.Label };
+                    var item = new ToolStripMenuItem(change.Label);
                     item.Click += (sender, args) => ShowCodeChanges(change);
                     menu.Items.Add(item);
                 }
-                changes.ContextMenu = menu;
-                menu.PlacementTarget = changes;
-                menu.IsOpen = true;
+                changes.ContextMenuStrip?.Dispose();
+                changes.ContextMenuStrip = menu;
+                menu.Show(changes, 0, changes.Height);
                 return;
             }
             foreach (var pair in entryViews)
@@ -235,9 +232,9 @@ namespace CodexVBE
         private void SetStatus(string text)
         {
             if (IsDisposed) return;
-            if (!status.Dispatcher.CheckAccess()) { status.Dispatcher.BeginInvoke(new Action(() => SetStatus(text))); return; }
+            if (InvokeRequired) { BeginInvoke(new Action(() => SetStatus(text))); return; }
             status.Text = storageFailed ? text + " · Historique non enregistré" : text;
-            status.ToolTip = status.Text;
+            toolTips.SetToolTip(status, status.Text);
         }
 
         private CodexAppServerClient CreateCodexClient()
@@ -258,14 +255,15 @@ namespace CodexVBE
         private void SetBusy(bool value)
         {
             busy = value;
-            modePicker.IsEnabled = !value;
-            send.Content = value ? "Arrêter ■" : "Envoyer ↑";
-            send.IsEnabled = true;
-            newChat.IsEnabled = scopePicker.IsEnabled = sessionList.IsEnabled =
-                providerPicker.IsEnabled = refreshModels.IsEnabled = configure.IsEnabled = !value;
-            modelPicker.IsEnabled = !value && modelPicker.Items.Count > 0;
-            effortPicker.IsEnabled = !value && effortPicker.Items.Count > 0;
-            activityBar.Visibility = value ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+            modePicker.Enabled = !value;
+            send.Text = value ? "Arrêter ■" : "Envoyer ↑";
+            toolTips.SetToolTip(send, value ? "Interrompre la réponse en cours. Les modifications déjà appliquées restent annulables dans le chat." : "Envoyer le message et son contexte à l’agent.");
+            send.Enabled = true;
+            newChat.Enabled = scopePicker.Enabled = sessionList.Enabled =
+                providerPicker.Enabled = refreshModels.Enabled = configure.Enabled = !value;
+            modelPicker.Enabled = !value && modelPicker.Items.Count > 0;
+            effortPicker.Enabled = !value && effortPicker.Items.Count > 0;
+            activityBar.Visible = value;
             RefreshCodeChangeCards();
         }
 
@@ -273,14 +271,14 @@ namespace CodexVBE
         {
             if (!busy || stopRequested) return;
             stopRequested = true;
-            send.IsEnabled = false;
+            send.Enabled = false;
             SetStatus("Arrêt en cours…");
             try
             {
                 if (codex != null) await codex.InterruptAsync();
                 else activeHttpClient?.Dispose();
             }
-            catch (Exception ex) { SetStatus("Arrêt impossible : " + ex.Message); stopRequested = false; send.IsEnabled = true; }
+            catch (Exception ex) { SetStatus("Arrêt impossible : " + ex.Message); stopRequested = false; send.Enabled = true; }
         }
 
         private async Task SendAsync()
@@ -299,7 +297,7 @@ namespace CodexVBE
             catch (Exception ex) { SetStatus("Contexte : " + ex.Message); return; }
             var scope = scopePicker.SelectedItem as MacroScope;
             if (scope != null) requestText = "Projet VBA de cette conversation : " + scope.Label + "\n\n" + requestText;
-            string attachedMemory = attachMemory.IsChecked == true ? projectMemory : null;
+            string attachedMemory = attachMemory.Checked == true ? projectMemory : null;
             if (!string.IsNullOrWhiteSpace(attachedMemory))
                 requestText += "\n\n<memoire-document>\n" + attachedMemory + "\n</memoire-document>";
             var selectedEffort = effortPicker.SelectedItem as LlmEffortOption;
@@ -317,7 +315,7 @@ namespace CodexVBE
             HideReferences();
             selectedReferences.Clear();
             draftAttachments.Clear();
-            attachMemory.IsChecked = false;
+            attachMemory.Checked = false;
             followConversation = true;
             AddEntry(new ChatEntry { Speaker = "Vous", Text = question, References = attachedReferences, AttachedMemory = attachedMemory, Attachments = attachments, TurnId = activeTurnId });
             tools.NoteUserRequest(question);
@@ -391,7 +389,7 @@ namespace CodexVBE
                 {
                     selectedReferences.AddRange(attachedReferences);
                     draftAttachments.AddRange(pendingDraftAttachments);
-                    attachMemory.IsChecked = !string.IsNullOrEmpty(attachedMemory);
+                    attachMemory.Checked = !string.IsNullOrEmpty(attachedMemory);
                     prompt.Text = question;
                     RefreshContextChips();
                 }
@@ -403,19 +401,19 @@ namespace CodexVBE
                     var intervention = codeChanges.FindAll(x => x.TurnId == activeTurnId);
                     if (intervention.Count > 0) AddEntry(new ChatEntry { Speaker = "Intervention", TurnId = activeTurnId,
                         Text = intervention.Count + " modification(s) appliquée(s). Retrouvez les fichiers et annulez cette intervention ci-dessous." });
-                    if (verifyAfterEdit.IsChecked == true && codeChanges.Exists(x => x.TurnId == activeTurnId)) await VerifyProjectAsync();
+                    if (verifyAfterEdit.Checked == true && codeChanges.Exists(x => x.TurnId == activeTurnId)) await VerifyProjectAsync();
                     activeTurnId = null; SetBusy(false); SaveCurrentSession();
                 }
             }
         }
 
-        protected override void Dispose(bool disposing)
+        private void DisposeRuntime()
         {
-            if (disposing) {
-                SaveCurrentSession(); saveTimer?.Stop(); sessionStore?.Dispose(); sessionStore = null;
-                activeHttpClient?.Dispose(); codex?.Dispose(); codex = null; DisposeComposer();
-            }
-            base.Dispose(disposing);
+            SaveCurrentSession(); saveTimer?.Stop(); projectRetryTimer?.Stop();
+            sessionStore?.Dispose(); sessionStore = null;
+            activeHttpClient?.Dispose(); codex?.Dispose(); codex = null;
+            changes?.ContextMenuStrip?.Dispose();
+            DisposeComposer();
         }
     }
 }

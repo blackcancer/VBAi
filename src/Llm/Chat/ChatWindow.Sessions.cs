@@ -19,15 +19,6 @@ namespace CodexVBE
         private readonly Dictionary<string, List<ChatSessionState>> cachedScopes = new Dictionary<string, List<ChatSessionState>>();
         private DispatcherTimer saveTimer;
         private DispatcherTimer projectRetryTimer;
-        private ComboBox scopePicker;
-        private ListBox sessionList;
-        private TextBox historySearch;
-        private Border historyPanel;
-        private TextBlock sessionTitle;
-        private TextBox chatTitleEditor;
-        private CheckBox showArchived;
-        private TextBox memoryEditor;
-        private CheckBox attachMemory;
         private string projectMemory = "";
 
         private sealed class MacroScope
@@ -50,8 +41,8 @@ namespace CodexVBE
             }
             catch (Exception ex) { storageFailed = true; SetStatus("Historique non enregistré : " + ex.Message); }
             var projects = PopulateProjectScopes(session);
-            scopePicker.SelectionChanged += (s, e) => ChangeScope();
-            sessionList.SelectionChanged += (s, e) => {
+            scopePicker.SelectedIndexChanged += (s, e) => ChangeScope();
+            sessionList.SelectedIndexChanged += (s, e) => {
                 var selected = sessionList.SelectedItem as ChatSessionState;
                 if (!loadingSession && selected != null && selected != currentSession && !busy) ActivateSession(selected);
             };
@@ -73,7 +64,7 @@ namespace CodexVBE
             }
             else
             {
-                send.IsEnabled = false;
+                send.Enabled = false;
                 SetStatus(projects.Ok ? "Ouvrez un projet VBA pour démarrer une conversation." : projects.Error);
                 projectRetryTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
                 projectRetryTimer.Tick += (s, e) => {
@@ -82,7 +73,7 @@ namespace CodexVBE
                     catch (Exception ex) { LoadLog.Write("Chat project discovery retry failed: " + ex.Message); return; }
                     if (scopePicker.Items.Count == 0) return;
                     projectRetryTimer.Stop();
-                    send.IsEnabled = true;
+                    send.Enabled = true;
                     scopePicker.SelectedIndex = 0;
                 };
                 projectRetryTimer.Start();
@@ -128,7 +119,7 @@ namespace CodexVBE
             }
             catch (Exception ex) { SetStatus("Historique indisponible : " + ex.Message); }
             memoryEditor.Text = projectMemory;
-            attachMemory.IsChecked = false;
+            attachMemory.Checked = false;
             if (!scopeSessions.Any(item => !item.Archived))
                 scopeSessions.Add(new ChatSessionState { Scope = scope.Key, Provider = settings.ProviderName });
             ActivateSession(scopeSessions.First(item => !item.Archived), false);
@@ -147,7 +138,7 @@ namespace CodexVBE
                 if (tools != null) tools.Mode = session.Mode;
                 draftAttachments.Clear();
                 if (session.DraftAttachments != null) draftAttachments.AddRange(session.DraftAttachments);
-                attachMemory.IsChecked = false;
+                attachMemory.Checked = false;
                 ClearTranscript(); codeChanges.Clear(); completedStreams.Clear(); streamedFinalText = null;
                 messages.Clear();
                 var saved = string.IsNullOrEmpty(session.MessagesJson) ? null :
@@ -167,14 +158,14 @@ namespace CodexVBE
                 prompt.CaretIndex = prompt.Text.Length;
                 HideReferences();
                 RefreshContextChips();
-                changes.Content = "Modifications · " + codeChanges.Count;
-                changes.IsEnabled = codeChanges.Count > 0;
+                changes.Text = "Modifications · " + codeChanges.Count;
+                changes.Enabled = codeChanges.Count > 0;
                 RefreshCodeChangeCards();
                 int provider = Array.FindIndex(LlmProvider.All, item => item.Name == session.Provider);
                 providerPicker.SelectedIndex = provider < 0 ? 0 : provider;
                 sessionTitle.Text = session.Title;
                 chatTitleEditor.Text = session.Title;
-                historyPanel.Visibility = Visibility.Collapsed;
+                historyPanel.Visible = false;
                 RefreshHistory();
                 ShowWelcome();
             }
@@ -187,11 +178,16 @@ namespace CodexVBE
             if (sessionList == null) return;
             bool previous = loadingSession;
             loadingSession = true;
-            string query = historySearch.Text ?? "";
-            sessionList.ItemsSource = scopeSessions.Where(x => (!x.Archived || showArchived.IsChecked == true) &&
-                ChatHistory.Matches(x, query)).OrderByDescending(x => x.Pinned).ToArray();
-            sessionList.SelectedItem = currentSession;
-            loadingSession = previous;
+            sessionList.BeginUpdate();
+            try
+            {
+                string query = historySearch.Text ?? "";
+                sessionList.Items.Clear();
+                sessionList.Items.AddRange(scopeSessions.Where(x => (!x.Archived || showArchived.Checked) &&
+                    ChatHistory.Matches(x, query)).OrderByDescending(x => x.Pinned).ToArray());
+                sessionList.SelectedItem = currentSession;
+            }
+            finally { sessionList.EndUpdate(); loadingSession = previous; }
         }
 
         private void ScheduleSessionSave()
