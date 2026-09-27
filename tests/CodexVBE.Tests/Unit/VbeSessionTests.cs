@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -178,6 +179,119 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual(1, f.Project.VBComponents.RemoveCount);
         }
 
+        [TestMethod]
+        public void ReferenceSnapshotKeepsBrokenIdentityAndChangesVersionWithInventory()
+        {
+            var f = Create();
+            var broken = new FakeReference { GUID = "{AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA}",
+                Major = 1, Minor = 0, IsBroken = true, ThrowMetadata = true };
+            f.Project.References.Items.Add(broken);
+            var before = f.Session.Execute(new Request { Command = "list_references", Project = f.Project.Name });
+            Assert.IsTrue(before.Ok);
+            dynamic snapshot = before.Data;
+            var entries = ((IEnumerable)snapshot.References).Cast<object>().ToArray();
+            Assert.AreEqual(1, entries.Length);
+            Assert.IsTrue((bool)entries[0].GetType().GetProperty("IsBroken").GetValue(entries[0]));
+            Assert.IsNull(entries[0].GetType().GetProperty("Name").GetValue(entries[0]));
+            string version = (string)snapshot.Version;
+            f.Project.References.Items.Add(new FakeReference {
+                GUID = "{BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB}", Name = "Library",
+                FullPath = @"C:\Temp\Library.dll", Major = 2, Minor = 1 });
+            var after = f.Session.Execute(new Request { Command = "list_references", Project = f.Project.Name });
+            Assert.AreNotEqual(version, (string)((dynamic)after.Data).Version);
+            f.Project.References.Items.Add(new FakeReference {
+                GUID = "{CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC}",
+                Major = 3, Minor = 0, ThrowMetadata = true });
+            dynamic inaccessible = f.Session.Execute(new Request {
+                Command = "list_references", Project = f.Project.Name }).Data;
+            var inaccessibleEntries = ((IEnumerable)inaccessible.References).Cast<object>().ToArray();
+            Assert.IsNull(inaccessibleEntries[2].GetType().GetProperty("Name").GetValue(inaccessibleEntries[2]));
+            Assert.IsNull(inaccessibleEntries[2].GetType().GetProperty("FullPath").GetValue(inaccessibleEntries[2]));
+        }
+
+        [TestMethod]
+        public void AddReferenceGuidRequiresFreshVersionAndRejectsDuplicateIdentity()
+        {
+            var f = Create();
+            const string guid = "{A04D9E3D-48C7-4B46-A582-F00DD08E89CA}";
+            var request = new Request { Command = "add_reference_guid", Project = f.Project.Name,
+                Guid = guid, Major = 1, Minor = 0 };
+            Assert.ThrowsException<ArgumentException>(() => f.Session.Execute(request));
+            request.ExpectedReferencesVersion = (string)((dynamic)f.Session.Execute(new Request {
+                Command = "list_references", Project = f.Project.Name }).Data).Version;
+            request.Guid = "invalid";
+            Assert.ThrowsException<ArgumentException>(() => f.Session.Execute(request));
+            request.Guid = guid;
+            request.ExpectedReferencesVersion = Sha("stale");
+            Assert.ThrowsException<InvalidOperationException>(() => f.Session.Execute(request));
+            request.ExpectedReferencesVersion = (string)((dynamic)f.Session.Execute(new Request {
+                Command = "list_references", Project = f.Project.Name }).Data).Version;
+            f.Project.Mode = 1;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Session.Execute(request));
+            f.Project.Mode = 2;
+            var added = f.Session.Execute(request);
+            Assert.IsTrue(added.Ok);
+            Assert.AreEqual(1, f.Project.References.Items.Count);
+            request.ExpectedReferencesVersion = (string)((dynamic)added.Data).Version;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Session.Execute(request));
+            Assert.AreEqual(1, f.Project.References.Items.Count);
+        }
+
+        [TestMethod]
+        public void RemoveReferenceRequiresExactVersionAndRefusesBuiltInReference()
+        {
+            var f = Create();
+            const string guid = "{D9C22780-B36A-4F27-8B07-29FC38744610}";
+            var builtIn = new FakeReference { GUID = guid, Major = 1, Minor = 2,
+                Name = "BuiltIn", BuiltIn = true };
+            f.Project.References.Items.Add(builtIn);
+            var request = new Request { Command = "remove_reference", Project = f.Project.Name,
+                Guid = guid, Major = 1, Minor = 2,
+                ExpectedReferencesVersion = (string)((dynamic)f.Session.Execute(new Request {
+                    Command = "list_references", Project = f.Project.Name }).Data).Version };
+            Assert.ThrowsException<InvalidOperationException>(() => f.Session.Execute(request));
+            request.Minor = 3;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Session.Execute(request));
+            request.Minor = 2;
+            builtIn.BuiltIn = false;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Session.Execute(request));
+            request.ExpectedReferencesVersion = (string)((dynamic)f.Session.Execute(new Request {
+                Command = "list_references", Project = f.Project.Name }).Data).Version;
+            Assert.IsTrue(f.Session.Execute(request).Ok);
+            Assert.AreEqual(0, f.Project.References.Items.Count);
+        }
+
+        [TestMethod]
+        public void AddReferenceFileRequiresExistingAbsolutePathAndFreshVersion()
+        {
+            var f = Create();
+            var request = new Request { Command = "add_reference_file", Project = f.Project.Name,
+                Path = "relative.dll" };
+            Assert.ThrowsException<ArgumentException>(() => f.Session.Execute(request));
+            request.Path = @"C:\DefinitelyMissing\CodexVBE-test.tlb";
+            Assert.ThrowsException<FileNotFoundException>(() => f.Session.Execute(request));
+            string path = Path.GetTempFileName();
+            try
+            {
+                request.Path = path;
+                request.ExpectedReferencesVersion = (string)((dynamic)f.Session.Execute(new Request {
+                    Command = "list_references", Project = f.Project.Name }).Data).Version;
+                var result = f.Session.Execute(request);
+                Assert.IsTrue(result.Ok);
+                Assert.AreEqual(Path.GetFullPath(path), f.Project.References.Items[0].FullPath);
+            }
+            finally { File.Delete(path); }
+        }
+
+        [TestMethod]
+        public void GitScopeRequiresSavedAbsoluteHostPath()
+        {
+            var f = Create();
+            Assert.AreEqual(Path.GetFullPath(f.Project.FileName), f.Session.GitScope(f.Project.Name));
+            f.Project.FileName = string.Empty;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Session.GitScope(f.Project.Name));
+        }
+
         private sealed class Fixture
         {
             public FakeVbe Vbe;
@@ -202,6 +316,47 @@ namespace CodexVBE.Tests.Unit
                 set { fileName = value; }
             }
             public FakeComponents VBComponents { get; } = new FakeComponents();
+            public FakeReferences References { get; } = new FakeReferences();
+        }
+
+        public sealed class FakeReferences : IEnumerable<FakeReference>
+        {
+            public List<FakeReference> Items { get; } = new List<FakeReference>();
+            public void AddFromGuid(string guid, int major, int minor)
+            {
+                Items.Add(new FakeReference { GUID = guid, Major = major, Minor = minor,
+                    Name = "AddedByGuid" });
+            }
+            public void AddFromFile(string path)
+            {
+                Items.Add(new FakeReference { GUID = "{FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF}",
+                    Major = 1, Minor = 0, Name = "AddedByFile", FullPath = path });
+            }
+            public void Remove(FakeReference reference) { Items.Remove(reference); }
+            public IEnumerator<FakeReference> GetEnumerator() { return Items.GetEnumerator(); }
+            IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
+        }
+
+        public sealed class FakeReference
+        {
+            private string name;
+            private string fullPath;
+            public string GUID { get; set; }
+            public int Major { get; set; }
+            public int Minor { get; set; }
+            public bool IsBroken { get; set; }
+            public bool BuiltIn { get; set; }
+            public bool ThrowMetadata { get; set; }
+            public string Name
+            {
+                get { if (ThrowMetadata) throw new InvalidOperationException("Unavailable"); return name; }
+                set { name = value; }
+            }
+            public string FullPath
+            {
+                get { if (ThrowMetadata) throw new InvalidOperationException("Unavailable"); return fullPath; }
+                set { fullPath = value; }
+            }
         }
 
         public sealed class FakeComponents : IEnumerable<FakeComponent>
