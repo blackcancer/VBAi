@@ -17,7 +17,7 @@ namespace CodexVBE
         private string account;
         private VbaGitSnapshot displayedLive;
         private VbaGitSnapshot displayedBaseline;
-        public GitWindow() { InitializeComponent(); }
+        public GitWindow() { InitializeComponent(); Icon = VbeWindowIcons.Icon("github"); }
 
         internal GitWindow(VbaGitProject project, string scope, string label, string account = null) : this()
         {

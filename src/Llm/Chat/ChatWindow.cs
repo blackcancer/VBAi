@@ -26,6 +26,9 @@ namespace CodexVBE
         public ChatWindow()
         {
             InitializeComponent();
+            Icon = VbeWindowIcons.Icon("assistant");
+            github.Image = VbeWindowIcons.Image("github");
+            configure.Image = VbeWindowIcons.Image("settings");
         }
 
         public ChatWindow(VbeSession session) : this()

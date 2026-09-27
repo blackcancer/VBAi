@@ -82,7 +82,6 @@ namespace CodexVBE
 
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ChatWindow));
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
             this.newChat = new CodexVBE.ChatActionButton();
@@ -270,7 +269,6 @@ namespace CodexVBE
             this.github});
             this.optionsMenu.Name = "optionsMenu";
             this.github.Name = "github";
-            this.github.Image = ((System.Drawing.Image)(resources.GetObject("github.Image")));
             this.github.Text = "GitHub · synchroniser le VBA…";
             this.github.ToolTipText = "Exporter et synchroniser les sources du document courant avec un dépôt GitHub.";
             this.github.Click += new System.EventHandler(this.GitHub_Click);
@@ -279,7 +277,6 @@ namespace CodexVBE
             // configure
             //
             this.configure.Name = "configure";
-            this.configure.Image = ((System.Drawing.Image)(resources.GetObject("configure.Image")));
             this.configure.Size = new System.Drawing.Size(221, 22);
             this.configure.Text = "Paramètres…";
             //
@@ -1128,7 +1125,6 @@ namespace CodexVBE
             this.KeyPreview = true;
             this.MinimumSize = new System.Drawing.Size(440, 560);
             this.Name = "ChatWindow";
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "VBAi — Your AI agent for VBA";
             this.optionsMenu.ResumeLayout(false);

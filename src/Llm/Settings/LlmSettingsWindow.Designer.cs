@@ -45,7 +45,6 @@ namespace CodexVBE
 
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(LlmSettingsWindow));
             this.grid = new System.Windows.Forms.TableLayoutPanel();
             this.providerLabel = new System.Windows.Forms.Label();
             this.provider = new System.Windows.Forms.ComboBox();
@@ -454,7 +453,6 @@ namespace CodexVBE
             this.MaximizeBox = false;
             this.MinimumSize = new System.Drawing.Size(640, 39);
             this.Name = "LlmSettingsWindow";
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "VBAi — Paramètres";

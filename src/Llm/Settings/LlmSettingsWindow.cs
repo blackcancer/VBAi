@@ -50,6 +50,7 @@ namespace CodexVBE
         public LlmSettingsWindow()
         {
             InitializeComponent();
+            Icon = VbeWindowIcons.Icon("settings");
             ApplyLayoutTuning();
         }
 
@@ -57,6 +58,7 @@ namespace CodexVBE
         {
             this.settings = settings;
             InitializeComponent();
+            Icon = VbeWindowIcons.Icon("settings");
             ApplyLayoutTuning();
             githubAccount.Items.Add("Choix automatique de Git");
             githubAccount.SelectedIndex = 0;

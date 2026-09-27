@@ -62,7 +62,6 @@ namespace CodexVBE
 
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(GitWindow));
             this.components = new System.ComponentModel.Container();
             this.layout = new System.Windows.Forms.TableLayoutPanel();
             this.documentLabel = new System.Windows.Forms.Label();
@@ -449,7 +448,6 @@ namespace CodexVBE
             this.MinimumSize = new System.Drawing.Size(900, 700);
             this.Controls.Add(this.layout);
             this.Name = "GitWindow";
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Text = "GitHub · VBAi";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.ShowInTaskbar = false;
