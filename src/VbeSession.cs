@@ -156,6 +156,8 @@ namespace CodexVBE
                     return Response.Success(forms.DuplicateCommandButton(request));
                 case "duplicate_form_combobox":
                     return Response.Success(forms.DuplicateComboBox(request));
+                case "duplicate_empty_form_frame":
+                    return Response.Success(forms.DuplicateEmptyFrame(request));
                 case "remove_form_control":
                     return Response.Success(forms.RemoveControl(request));
                 case "add_form_page":

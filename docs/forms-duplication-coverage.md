@@ -7,9 +7,9 @@ Cette matrice suit une capacité précise : créer une copie d'un contrôle exis
 | Label | Bridge uniquement, partielle | Name, Caption, Left, Top, Width, Height, BackColor, Font.Name, Font.Size, Font.Bold | Deux essais sur classeur jetable, PID 3724 et 48020 : 1→2 nœuds, version changée, Excel vivant | Autres propriétés, images et ordre Z non copiés |
 | TextBox | Bridge uniquement, partielle | Name, Left, Top, Width, Height, Value **si texte ou vide** | `Test-TextBoxDuplication.ps1` sur Excel PID 35452 : 1→2 nœuds, version changée, Excel vivant | Autres propriétés, liaisons et ordre Z non copiés |
 | CheckBox | Bridge uniquement, partielle | Name, Caption, Left, Top, Width, Height, Value **booléen uniquement** | `Test-CheckBoxDuplication.ps1` sur Excel PID 14672 : 1→2 nœuds, valeur booléenne copiée, Excel vivant | TriState/null, autres propriétés et ordre Z non copiés |
-| ComboBox | Bridge uniquement, partielle ; essai en attente | Name, Left, Top, Width, Height, ListWidth **textuel uniquement** | ListWidth=`72 pt` testé séparément ; duplication à tester avec `Test-ComboBoxDuplication.ps1` | Items, liaisons, sélection et autres propriétés non copiés |
+| ComboBox | Bridge uniquement, partielle | Name, Left, Top, Width, Height, ListWidth **textuel uniquement** | `Test-ComboBoxDuplication.ps1` sur Excel PID 44860 : 1→2 nœuds, ListWidth copiée, Excel vivant | Items, liaisons, sélection et autres propriétés non copiés |
 | CommandButton | Bridge uniquement, partielle | Name, Caption, Left, Top, Width, Height | `Test-CommandButtonDuplication.ps1` sur Excel PID 37444 : 1→2 nœuds, six propriétés copiées, Excel vivant | Événements et autres propriétés non copiés |
-| Frame | Non qualifiée | — | Contrôles enfants ajoutés et lus | Copie récursive non testée |
+| Frame | Bridge uniquement, partielle ; essai en attente | Name, Caption, Left, Top, Width, Height **si Frame vide** | Contrôles enfants ajoutés et lus ; copie vide et refus d'un Frame avec enfant à tester via `Test-FrameDuplication.ps1` | Copie récursive et autres propriétés non testées |
 | Image | Non qualifiée | — | Ajout et lecture des propriétés | Image et copie non testées |
 | ListBox | Non qualifiée | — | Ajout et lecture des propriétés | Items et copie non testés |
 | MultiPage | Non qualifiée | — | Pages et enfants ajoutés, lus et supprimés | Copie récursive non testée |
