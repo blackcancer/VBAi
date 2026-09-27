@@ -285,7 +285,11 @@ namespace CodexVBE.Tests.Unit
             public void Show() { ShowCount++; }
             public void SetSelection(int startLine, int startColumn, int endLine, int endColumn)
             {
-                if (!RetainSelection) return;
+                if (!RetainSelection)
+                {
+                    StartLine = 1; StartColumn = 1; EndLine = 1; EndColumn = 1;
+                    return;
+                }
                 StartLine = startLine; StartColumn = startColumn;
                 EndLine = endLine; EndColumn = endColumn;
             }
