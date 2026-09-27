@@ -648,7 +648,12 @@ namespace CodexVBE
 
         private static bool ControlNameExists(dynamic designer, string name)
         {
-            foreach (dynamic item in designer.Controls)
+            return ControlNameExistsInCollection(designer.Controls, name);
+        }
+
+        private static bool ControlNameExistsInCollection(dynamic controls, string name)
+        {
+            foreach (dynamic item in controls)
                 if (string.Equals((string)item.Name, name, StringComparison.OrdinalIgnoreCase)) return true;
             return false;
         }
@@ -809,7 +814,7 @@ namespace CodexVBE
             return TreeVersion(form, out nodes, out properties, out nodeCount);
         }
 
-        // Bridge-only probe until hierarchical identity and revision behavior are tested in Excel.
+        // Create inside a verified canonical container and confirm rollback if any post-add step fails.
         public object AddNestedControl(Request request)
         {
             ValidateName(request.Control, "Control");
@@ -829,25 +834,49 @@ namespace CodexVBE
             foreach (dynamic existing in controls)
                 if (string.Equals((string)existing.Name, request.Control, StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException("A control with this name already exists in the container.");
-            dynamic control = controls.Add(request.ControlType, request.Control, true);
             try
             {
+                dynamic control = controls.Add(request.ControlType, request.Control, true);
+                RequireWritableControlProperty((object)control, "Left");
+                RequireWritableControlProperty((object)control, "Top");
+                RequireWritableControlProperty((object)control, "Width");
+                RequireWritableControlProperty((object)control, "Height");
+                if (request.Caption != null)
+                    RequireWritableControlProperty((object)control, "Caption");
                 control.Left = request.Left;
                 control.Top = request.Top;
                 control.Width = request.Width;
                 control.Height = request.Height;
                 if (request.Caption != null) control.Caption = request.Caption;
+                dynamic after = Tree(request.Project, request.Form);
+                if (string.Equals((string)after.TreeVersion, request.ExpectedTreeVersion,
+                    StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("The nested control was not reflected in the UserForm tree.");
+                return after;
             }
-            catch
+            catch (Exception error)
             {
-                try { controls.Remove(request.Control); } catch { }
-                throw;
+                string rollbackError = null;
+                try
+                {
+                    if (ControlNameExistsInCollection(controls, request.Control))
+                        controls.Remove(request.Control);
+                }
+                catch (Exception rollback) { rollbackError = rollback.Message; }
+                bool remains;
+                try { remains = ControlNameExistsInCollection(controls, request.Control); }
+                catch (Exception inspection)
+                {
+                    remains = true;
+                    rollbackError = rollbackError == null ? inspection.Message : rollbackError + "; " + inspection.Message;
+                }
+                if (remains)
+                    throw new InvalidOperationException("Nested control creation failed and rollback could not be verified. " +
+                        "Inspect form_tree before retrying. Cause: " + error.Message +
+                        (rollbackError == null ? "" : " Rollback: " + rollbackError), error);
+                throw new InvalidOperationException("Nested control creation failed; no control with the requested name remains. Cause: " +
+                    error.Message, error);
             }
-            dynamic after = Tree(request.Project, request.Form);
-            if (string.Equals((string)after.TreeVersion, request.ExpectedTreeVersion,
-                StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("The nested control was not reflected in the UserForm tree.");
-            return after;
         }
 
         public object SetNodeProperty(Request request)
