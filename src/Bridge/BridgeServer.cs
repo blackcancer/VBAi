@@ -116,11 +116,13 @@ namespace CodexVBE
                                     response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));
                                     if (response.Ok) response = Response.Success(VbeDebugWindows.CompleteQuickWatch(request));
                                 }
-                                else if (request != null && request.Command == "read_debug_options")
+                                else if (request != null &&
+                                    (request.Command == "read_debug_options" || request.Command == "read_vbe_options"))
                                 {
                                     VbeDebugWindows.EnsureNoDebugOptionsDialog();
                                     response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));
-                                    if (response.Ok) response = Response.Success(VbeDebugWindows.ReadDebugOptions());
+                                    if (response.Ok) response = Response.Success(request.Command == "read_vbe_options"
+                                        ? VbeDebugWindows.ReadVbeOptions() : VbeDebugWindows.ReadDebugOptions());
                                 }
                                 else if (request != null && request.Command == "read_project_signature_dialog")
                                 {

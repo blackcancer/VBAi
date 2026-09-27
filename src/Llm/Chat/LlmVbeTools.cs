@@ -20,7 +20,7 @@ namespace CodexVBE
         private readonly List<string> userRequests = new List<string>();
         public event Action<CodeChange> CodeEdited;
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
-            "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "compile_project", "open_debug_pane", "list_commands", "select_code", "select_code_range",
+            "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "read_vbe_options", "compile_project", "open_debug_pane", "list_commands", "select_code", "select_code_range",
             "project_properties", "project_persistence_status", "project_signature_status", "read_project_signature_dialog", "list_signing_certificates", "component_properties", "component_property_value", "vbe_windows", "vbe_environment", "list_addins", "focus_vbe_window", "window_linkage", "code_panes", "open_object_browser", "list_procedures", "find_code", "inspect_code_file", "select_procedure", "list_forms",
             "form_state", "form_tree", "form_list_items", "form_properties", "form_control_properties", "form_event_catalog",
             "list_form_control_types", "open_form"
@@ -95,6 +95,8 @@ namespace CodexVBE
             Definition("debug_state", "Read design/run/break mode and the active code location for one project. Mode 1 is break; mode 2 is design.",
                 new[] { "Project" }, "Project"),
             Definition("read_debug_options", "Read the VBE-wide error trapping setting from Tools > Options > General through the native dialog, then close with Cancel. No preference is changed. Returns the exact selected radio label and available choices; no shortcuts or coordinates.",
+                new string[0]),
+            Definition("read_vbe_options", "Read visible controls and values on every tab of the native VBE Tools > Options dialog, then close with Cancel. Returns native labels and read errors; no preference is changed, no shortcut or coordinates are used. This is a UI observation, not proof of persistence or of unavailable controls.",
                 new string[0]),
             Definition("compile_project", "Compile the named VBA project using the native VBE command in design mode. Captures and dismisses a native compile error dialog; on failure read debug_state to locate the selected token. A successful response means no native diagnostic was observed. ExpectedMode must be 2.",
                 new[] { "Project", "ExpectedMode" }, "Project", "ExpectedMode"),
@@ -525,7 +527,7 @@ namespace CodexVBE
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             }
-            if (name == "read_debug_options")
+            if (name == "read_debug_options" || name == "read_vbe_options")
             {
                 try
                 {
@@ -533,7 +535,8 @@ namespace CodexVBE
                     string scheduled = Invoke(name, arguments);
                     Response initial = json.Deserialize<Response>(scheduled);
                     if (initial == null || !initial.Ok) return scheduled;
-                    return json.Serialize(Response.Success(await Task.Run(() => VbeDebugWindows.ReadDebugOptions())));
+                    return json.Serialize(Response.Success(await Task.Run(() => name == "read_vbe_options"
+                        ? VbeDebugWindows.ReadVbeOptions() : VbeDebugWindows.ReadDebugOptions())));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             }

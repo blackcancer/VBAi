@@ -370,6 +370,97 @@ namespace CodexVBE
                 Limit = "This is the currently displayed VBE-wide preference, not a diagnosis of an active runtime error." };
         }
 
+        public static object ReadVbeOptions()
+        {
+            IntPtr dialog = IntPtr.Zero;
+            for (int attempt = 0; attempt < 60 && dialog == IntPtr.Zero; attempt++)
+            { Thread.Sleep(50); dialog = FindDialog("Options"); }
+            if (dialog == IntPtr.Zero)
+                throw new InvalidOperationException("The native VBE Options dialog did not open.");
+            var tabs = new List<object>();
+            try
+            {
+                AutomationElement root = AutomationElement.FromHandle(dialog);
+                AutomationElementCollection tabItems = root.FindAll(TreeScope.Descendants,
+                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem));
+                if (tabItems.Count < 1 || tabItems.Count > 8)
+                    throw new InvalidOperationException("Unexpected native VBE Options tab count: " + tabItems.Count + ".");
+                for (int tabIndex = 0; tabIndex < tabItems.Count; tabIndex++)
+                {
+                    AutomationElement tab = tabItems[tabIndex];
+                    string tabName = tab.Current.Name;
+                    if (string.IsNullOrWhiteSpace(tabName) ||
+                        !tab.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object tabPattern))
+                        throw new InvalidOperationException("A native VBE Options tab is unreadable.");
+                    ((SelectionItemPattern)tabPattern).Select();
+                    Thread.Sleep(75);
+                    var controls = new List<object>();
+                    AutomationElementCollection descendants = root.FindAll(TreeScope.Descendants,
+                        new OrCondition(
+                            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.CheckBox),
+                            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.RadioButton),
+                            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit),
+                            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ComboBox),
+                            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.List),
+                            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem),
+                            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Slider),
+                            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text)));
+                    if (descendants.Count > 2000)
+                        throw new InvalidOperationException("The Options dialog has too many controls to inspect safely: " +
+                            descendants.Count + ".");
+                    for (int index = 0; index < descendants.Count; index++)
+                    {
+                        AutomationElement element = descendants[index];
+                        try
+                        {
+                            if (element.Current.IsOffscreen || !element.Current.IsEnabled) continue;
+                            ControlType kind = element.Current.ControlType;
+                            if (kind != ControlType.CheckBox && kind != ControlType.RadioButton &&
+                                kind != ControlType.Edit && kind != ControlType.ComboBox &&
+                                kind != ControlType.List && kind != ControlType.ListItem &&
+                                kind != ControlType.Slider && kind != ControlType.Text) continue;
+                            string name = element.Current.Name;
+                            if (string.IsNullOrWhiteSpace(name) && kind == ControlType.Text) continue;
+                            object value = null;
+                            string error = null;
+                            try
+                            {
+                                if (kind == ControlType.CheckBox &&
+                                    element.TryGetCurrentPattern(TogglePattern.Pattern, out object toggle))
+                                    value = ((TogglePattern)toggle).Current.ToggleState.ToString();
+                                else if ((kind == ControlType.RadioButton || kind == ControlType.ListItem) &&
+                                    element.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object selection))
+                                    value = ((SelectionItemPattern)selection).Current.IsSelected;
+                                else if ((kind == ControlType.Edit || kind == ControlType.ComboBox) &&
+                                    !element.Current.IsPassword &&
+                                    element.TryGetCurrentPattern(ValuePattern.Pattern, out object input))
+                                    value = ((ValuePattern)input).Current.Value;
+                                else if (kind == ControlType.Slider &&
+                                    element.TryGetCurrentPattern(RangeValuePattern.Pattern, out object slider))
+                                    value = ((RangeValuePattern)slider).Current.Value;
+                            }
+                            catch (Exception ex) { error = ex.Message; }
+                            controls.Add(new { Name = name, Type = kind.ProgrammaticName,
+                                Value = value, Error = error });
+                        }
+                        catch (ElementNotAvailableException) { }
+                    }
+                    tabs.Add(new { Tab = tabName, Controls = controls, Count = controls.Count });
+                }
+            }
+            finally { CloseDialog(dialog); }
+            bool closed = false;
+            for (int attempt = 0; attempt < 20; attempt++)
+            {
+                if (FindDialog("Options") == IntPtr.Zero) { closed = true; break; }
+                Thread.Sleep(50);
+            }
+            if (!closed) throw new InvalidOperationException("The add-in read VBE Options but could not close its dialog.");
+            return new { Scope = "VBE", Tabs = tabs, Count = tabs.Count,
+                DialogClosed = true, Verification = "NativeOptionsReadback",
+                Limit = "Only visible native controls were observed; no settings were changed." };
+        }
+
         public static object ExecuteImmediate(string command)
         {
             if (string.IsNullOrWhiteSpace(command) || command.Length > 2048 ||

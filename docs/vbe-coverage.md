@@ -194,6 +194,8 @@ Dans Excel visible PID 44448, `tools/tests/Test-SelectCodeRange.ps1` a sélectio
 
 Dans Excel visible PID 15300, l'Explorateur d'objets permanent a été masqué par `close_vbe_window`, puis `show_vbe_window` l'a réaffiché et `vbe_windows` a confirmé sa visibilité dans un appel séparé. `window_linkage` a identifié sur l'Explorateur de projets un `LinkedWindowFrame` contenant quatre fenêtres : Projet, Propriétés, Exécution et Variables locales. Aucune modification d'ancrage n'a été tentée. [Microsoft documente `Window.Visible` et `LinkedWindows` dans les collections VBIDE](https://learn.microsoft.com/fr-fr/office/vba/language/reference/visual-basic-add-in-model/collections-visual-basic-add-in-model).
 
+Dans Excel visible PID 9764, `read_vbe_options` a lu les quatre onglets du dialogue natif Outils > Options : Éditeur (11 contrôles), Format de l'éditeur (23), Général (15) et Ancrage (6). `tools/tests/Test-VbeOptions.ps1` a répété la lecture, comparé 26 cases et radios identiques, et constaté la fermeture du dialogue dans les deux appels. Les listes de couleurs Premier plan/Arrière-plan/Indicateur n'ont pas livré leur valeur par UI Automation ; la réponse les laisse nulles. Les réglages n'ont pas été modifiés, et leur persistance n'est pas impliquée.
+
 ## Prochaine exploration
 
 1. Vérifier les propriétés modifiables restantes des contrôles et conteneurs, ainsi que leur suppression et leur réorganisation, sur des classeurs jetables.
