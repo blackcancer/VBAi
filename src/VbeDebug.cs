@@ -349,6 +349,8 @@ namespace CodexVBE
             if ((request.Action == "toggle_breakpoint" || request.Action == "set_next_statement") &&
                 (string.IsNullOrWhiteSpace(line) || line.TrimStart().StartsWith("'", StringComparison.Ordinal)))
                 throw new InvalidOperationException("The requested debug action requires an executable line.");
+            if (request.Action == "set_next_statement")
+                ValidateSetNextStatementProcedure(request, module);
 
             dynamic pane = module.CodePane;
             pane.Show();
@@ -387,6 +389,23 @@ namespace CodexVBE
                     ? "VBIDE exposes no breakpoint inventory through this command; toggle effect was not verified."
                     : pending ? "The VBE may process this command asynchronously; immediate state did not yet prove an effect." : null,
                 StateBefore = before, StateAfter = after, StateAfterError = afterError };
+        }
+
+        private void ValidateSetNextStatementProcedure(Request request, dynamic module)
+        {
+            dynamic activePane = vbe.ActiveCodePane;
+            if (activePane == null || !SameComObject(activePane, (object)module.CodePane))
+                throw new InvalidOperationException("Show Next Statement in the target code pane before setting a new execution line.");
+            int currentLine = 0, startColumn = 0, endLine = 0, endColumn = 0;
+            activePane.GetSelection(ref currentLine, ref startColumn, ref endLine, ref endColumn);
+            int currentKind = 0, targetKind = 0;
+            string currentProcedure = (string)module.ProcOfLine[currentLine, ref currentKind];
+            string targetProcedure = (string)module.ProcOfLine[request.StartLine, ref targetKind];
+            if (string.IsNullOrWhiteSpace(currentProcedure) ||
+                string.IsNullOrWhiteSpace(targetProcedure) ||
+                currentKind != targetKind ||
+                !string.Equals(currentProcedure, targetProcedure, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Set Next Statement requires a target in the currently selected procedure. Use Show Next Statement first.");
         }
 
         private static string DebugEffect(string action, object before, object after)
