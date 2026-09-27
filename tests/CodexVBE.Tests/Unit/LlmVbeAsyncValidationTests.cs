@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Web.Script.Serialization;
 using System.Threading.Tasks;
 using CodexVBE;
@@ -53,6 +54,53 @@ namespace CodexVBE.Tests.Unit
                 "{\"Project\":\"WorkbookB\",\"ExpectedMode\":2}", "autre projet");
             tools.ValidateScope = () => { throw new InvalidOperationException("stale conversation scope"); };
             await Failure(tools, "debug_item", "{}", "stale conversation scope");
+        }
+
+        [TestMethod]
+        public async Task AsyncDispatchReturnsReadOnlyStatusFromInMemorySession()
+        {
+            var tools = new LlmVbeTools(new VbeSession(new object()), null, new LlmSettings());
+            var response = Json.Deserialize<Response>(await tools.InvokeAsync("status", "{}"));
+            Assert.IsTrue(response.Ok);
+            Assert.IsNotNull(response.Data);
+        }
+
+        [TestMethod]
+        public async Task AsyncNativePreflightRejectsWrongShapesWithoutOpeningDialogs()
+        {
+            var tools = new LlmVbeTools(null, null, new LlmSettings { VbeEditApproval = "Automatic" });
+            await Failure(tools, "debug_windows", "[]", "Tool arguments must be an object");
+            await Failure(tools, "debug_windows", "{\"IncludeCallStack\":1}", "must be a boolean");
+            await Failure(tools, "debug_windows", "{\"Unexpected\":true}", "Unexpected argument");
+            await Failure(tools, "quick_watch", "[]", "Tool arguments must be an object");
+            await Failure(tools, "edit_watch", "[]", "Tool arguments must be an object");
+            await Failure(tools, "remove_watch", "[]", "Tool arguments must be an object");
+        }
+
+        [TestMethod]
+        public async Task CompileRequiresUiContextBeforeNativeDialogInspection()
+        {
+            var tools = new LlmVbeTools(null, null, new LlmSettings());
+            var prior = SynchronizationContext.Current;
+            try
+            {
+                SynchronizationContext.SetSynchronizationContext(null);
+                await Failure(tools, "compile_project", "{\"Project\":\"P\",\"ExpectedMode\":2}",
+                    "VBE UI context is unavailable");
+            }
+            finally { SynchronizationContext.SetSynchronizationContext(prior); }
+        }
+
+        [TestMethod]
+        public async Task ImmediateExecuteRejectsModeChangedBeforeNativeExecution()
+        {
+            var host = new VbeSessionTests.FakeVbe();
+            host.VBProjects.Add(new VbeSessionTests.FakeProject { Name = "P", FileName = @"C:\Temp\P.xlsm", Mode = 2 });
+            var tools = new LlmVbeTools(new VbeSession(host), null,
+                new LlmSettings { VbeEditApproval = "Automatic" });
+            await Failure(tools, "immediate_execute",
+                "{\"Project\":\"P\",\"ExpectedMode\":1,\"Text\":\"Debug.Print 1\"}",
+                "Project mode changed");
         }
 
         private static async Task Failure(LlmVbeTools tools, string name, string arguments, string fragment)

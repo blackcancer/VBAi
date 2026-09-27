@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -65,10 +67,51 @@ namespace CodexVBE.Tests.Unit
             return window;
         }
 
+        private static ChatWindow ReadyHttpWindow(ChatSessionState session)
+        {
+            var window = Surfaces();
+            var settings = new LlmSettings();
+            Set(window, "settings", settings);
+            Set(window, "tools", new LlmVbeTools(new VbeSession(new object()), window, settings));
+            Set(window, "currentSession", session);
+            var providers = Get<ComboBox>(window, "providerPicker");
+            providers.Items.Add(LlmProvider.All[2]);
+            providers.SelectedIndex = 0;
+            var models = Get<ComboBox>(window, "modelPicker");
+            models.Items.Add(new LlmModelOption("local-test", "Local test"));
+            models.SelectedIndex = 0;
+            return window;
+        }
+
+        private sealed class ChatResponseHandler : HttpMessageHandler
+        {
+            private readonly Queue<string> responses = new Queue<string>();
+            public readonly List<string> Requests = new List<string>();
+            public ChatResponseHandler(params string[] bodies) { foreach (string body in bodies) responses.Enqueue(body); }
+            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                Requests.Add(await request.Content.ReadAsStringAsync());
+                if (responses.Count == 0) throw new InvalidOperationException("Unexpected provider request.");
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(responses.Dequeue()) };
+            }
+        }
+
         private static void Question(ChatWindow window, string text)
         {
             var prompt = Get<object>(window, "prompt");
             prompt.GetType().GetProperty("Text").SetValue(prompt, text, null);
+        }
+
+        private static object AddScope(ChatWindow window, string key)
+        {
+            var type = typeof(ChatWindow).GetNestedType("MacroScope", BindingFlags.NonPublic);
+            var scope = Activator.CreateInstance(type, true);
+            type.GetField("Key").SetValue(scope, key);
+            type.GetField("Project").SetValue(scope, key);
+            type.GetField("Name").SetValue(scope, key);
+            type.GetField("Label").SetValue(scope, key);
+            Get<ComboBox>(window, "scopePicker").Items.Add(scope);
+            return scope;
         }
 
         private static void CompleteOnSta(Task task)
@@ -511,6 +554,209 @@ namespace CodexVBE.Tests.Unit
                     foreach (string file in Directory.GetFiles(directory)) File.Delete(file);
                     Directory.Delete(directory, false);
                 }
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void ModelCatalogueSelectsSavedModelAndRejectsLateStaleResult()
+        {
+            using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:test", Model = "saved" }))
+            {
+                var first = new TaskCompletionSource<LlmModelOption[]>();
+                int calls = 0;
+                window.ModelCatalogueOverride = provider => ++calls == 1 ? first.Task : Task.FromResult(new[] {
+                    new LlmModelOption("other", "Other"), new LlmModelOption("saved", "Saved") });
+                var stale = (Task)Call(window, "LoadModelsAsync");
+                CompleteOnSta((Task)Call(window, "LoadModelsAsync"));
+                first.SetResult(new[] { new LlmModelOption("stale", "Stale") });
+                CompleteOnSta(stale);
+                var picker = Get<ComboBox>(window, "modelPicker");
+                Assert.AreEqual(2, picker.Items.Count);
+                Assert.AreEqual("saved", ((LlmModelOption)picker.SelectedItem).Id);
+                Assert.IsTrue(Get<Button>(window, "refreshModels").Enabled);
+                Set(window, "currentSession", null);
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void ModelCatalogueFailureLeavesRefreshAvailable()
+        {
+            using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:test" }))
+            {
+                window.ModelCatalogueOverride = provider => Task.FromException<LlmModelOption[]>(
+                    new InvalidOperationException("catalogue failed"));
+                CompleteOnSta((Task)Call(window, "LoadModelsAsync"));
+                Assert.AreEqual(0, Get<ComboBox>(window, "modelPicker").Items.Count);
+                Assert.IsTrue(Get<Button>(window, "refreshModels").Enabled);
+                Assert.IsFalse(Get<ComboBox>(window, "modelPicker").Enabled);
+                Set(window, "currentSession", null);
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void HttpProviderCompletesToolCallAndAnswerWithoutNetwork()
+        {
+            var session = new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" };
+            using (var window = ReadyHttpWindow(session))
+            {
+                var handler = new ChatResponseHandler(
+                    "{\"choices\":[{\"finish_reason\":\"tool_calls\",\"message\":{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"id\":\"call-1\",\"type\":\"function\",\"function\":{\"name\":\"status\",\"arguments\":\"{}\"}}]}}]}",
+                    "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\",\"content\":\"Terminé\"}}]}");
+                window.HttpHandlerOverride = () => handler;
+                Question(window, "Quel est le statut ?");
+                CompleteOnSta((Task)Call(window, "SendAsync"));
+                Assert.AreEqual(2, handler.Requests.Count);
+                StringAssert.Contains(handler.Requests[1], "call-1");
+                var entries = Get<List<ChatEntry>>(window, "transcriptEntries");
+                Assert.AreEqual("Outil", entries[1].Speaker);
+                Assert.AreEqual("Terminé", entries[2].Text);
+                Assert.IsFalse(Get<bool>(window, "busy"));
+                Set(window, "currentSession", null);
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void HttpProviderFailureRepairsConversationHistoryForRetry()
+        {
+            var session = new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" };
+            using (var window = ReadyHttpWindow(session))
+            {
+                var handler = new ChatResponseHandler();
+                window.HttpHandlerOverride = () => handler;
+                Question(window, "Réessaie ensuite");
+                CompleteOnSta((Task)Call(window, "SendAsync"));
+                Assert.AreEqual(1, handler.Requests.Count);
+                Assert.AreEqual(3, Get<List<object>>(window, "messages").Count);
+                Assert.AreEqual("Erreur", Get<List<ChatEntry>>(window, "transcriptEntries")[1].Speaker);
+                Assert.AreEqual("Réessaie ensuite", session.Draft);
+                Assert.IsFalse(Get<bool>(window, "busy"));
+                Set(window, "currentSession", null);
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void ScopeSwitchLoadsSavedConversationAndMemoryThenRestoresCachedScope()
+        {
+            string path = Path.Combine(Path.GetTempPath(), "CodexVBE-Scope-" + Guid.NewGuid().ToString("N"), "chat.db");
+            try
+            {
+                using (var store = new ChatSessionStore(path))
+                using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:A", Title = "A" }))
+                {
+                    window.ModelCatalogueOverride = provider => Task.FromResult(new LlmModelOption[0]);
+                    var original = Get<ChatSessionState>(window, "currentSession");
+                    Get<List<ChatSessionState>>(window, "scopeSessions").Add(original);
+                    var scopes = Get<ComboBox>(window, "scopePicker");
+                    AddScope(window, "temporary:A");
+                    AddScope(window, "temporary:B");
+                    store.Save(new ChatSessionState { Scope = "temporary:B", Title = "B", Draft = "Brouillon B" });
+                    store.SaveMemory("temporary:B", "Mémoire B");
+                    Set(window, "sessionStore", store);
+                    scopes.SelectedIndex = 1;
+                    Call(window, "ChangeScope");
+                    Assert.AreEqual("B", Get<ChatSessionState>(window, "currentSession").Title);
+                    Assert.AreEqual("Brouillon B", Get<object>(window, "prompt").GetType().GetProperty("Text").GetValue(Get<object>(window, "prompt"), null));
+                    Assert.AreEqual("Mémoire B", Get<TextBox>(window, "memoryEditor").Text);
+                    scopes.SelectedIndex = 0;
+                    Call(window, "ChangeScope");
+                    Assert.AreSame(original, Get<ChatSessionState>(window, "currentSession"));
+                    Set(window, "currentSession", null);
+                    Set(window, "sessionStore", null);
+                }
+            }
+            finally
+            {
+                string directory = Path.GetDirectoryName(path);
+                if (Directory.Exists(directory))
+                {
+                    foreach (string file in Directory.GetFiles(directory)) File.Delete(file);
+                    Directory.Delete(directory, false);
+                }
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void ForkKeepsOnlySelectedConversationPrefixAndBuildsResumeContext()
+        {
+            using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:test", Title = "Original" }))
+            {
+                window.ModelCatalogueOverride = provider => Task.FromResult(new LlmModelOption[0]);
+                var original = Get<ChatSessionState>(window, "currentSession");
+                Get<List<ChatSessionState>>(window, "scopeSessions").Add(original);
+                var first = new ChatEntry { Speaker = "Vous", Text = "Question initiale" };
+                var reply = new ChatEntry { Speaker = "Assistant", Text = "Réponse initiale" };
+                Call(window, "AddEntry", first);
+                Call(window, "AddEntry", reply);
+                Call(window, "AddEntry", new ChatEntry { Speaker = "Vous", Text = "Suite exclue" });
+                Call(window, "ForkChat", reply);
+                var fork = Get<ChatSessionState>(window, "currentSession");
+                Assert.AreNotSame(original, fork);
+                Assert.AreEqual(2, fork.Entries.Count);
+                StringAssert.Contains(fork.MessagesJson, "Question initiale");
+                Assert.IsFalse(fork.MessagesJson.Contains("Suite exclue"));
+                StringAssert.Contains(fork.ResumeContext, "Réponse initiale");
+                Assert.AreEqual(3, original.Entries.Count);
+                Set(window, "currentSession", null);
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void StreamingSummaryAndToolEntriesCompleteInPlace()
+        {
+            using (var window = Surfaces())
+            {
+                Call(window, "ReceiveChatUpdate", "summary", "summary-1", "Réflexion ", false);
+                Call(window, "ReceiveChatUpdate", "summary", "summary-1", "terminée", true);
+                Call(window, "ReceiveChatUpdate", "tool", "tool-1", "Lecture", false);
+                Call(window, "ReceiveChatUpdate", "tool", "tool-1", null, true);
+                var entries = Get<List<ChatEntry>>(window, "transcriptEntries");
+                Assert.AreEqual(2, entries.Count);
+                Assert.AreEqual("Réflexion", entries[0].Speaker);
+                Assert.AreEqual("terminée", entries[0].Text);
+                Assert.AreEqual("Outil", entries[1].Speaker);
+                Assert.AreEqual("Lecture", entries[1].Text);
+                Assert.AreEqual(2, Get<HashSet<string>>(window, "completedStreams").Count);
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void WorkflowRejectsStaleModuleAttachmentBeforeProviderCall()
+        {
+            var host = new VbeSessionTests.FakeVbe();
+            var project = new VbeSessionTests.FakeProject { Name = "P", FileName = @"C:\Temp\P.xlsm", Mode = 2 };
+            project.VBComponents.Items.Add(new VbeSessionTests.FakeComponent { Name = "Module1", Type = 1,
+                CodeModule = new VbeSessionTests.FakeModule("Sub Test()\r\nEnd Sub") });
+            host.VBProjects.Add(project);
+            using (var window = Surfaces())
+            {
+                Set(window, "scopeSession", new VbeSession(host));
+                Get<List<ChatAttachment>>(window, "draftAttachments").Add(new ChatAttachment {
+                    Label = "Sélection", Text = "Sub Test()", Project = "P", Module = "Module1", Sha256 = "stale" });
+                var error = Assert.ThrowsException<TargetInvocationException>(() =>
+                    Call(window, "PrepareAttachments", "Question"));
+                StringAssert.Contains(error.InnerException.Message, "Sélection");
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void VerificationReportsUnverifiedWhenNoProjectIsConnected()
+        {
+            using (var window = Surfaces())
+            {
+                CompleteOnSta((Task)Call(window, "VerifyProjectAsync"));
+                var entries = Get<List<ChatEntry>>(window, "transcriptEntries");
+                Assert.AreEqual(1, entries.Count);
+                Assert.AreEqual("Vérification", entries[0].Speaker);
+                Assert.IsFalse(string.IsNullOrWhiteSpace(entries[0].Text));
             }
         }
     }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
@@ -24,6 +25,8 @@ namespace CodexVBE
         private LlmChatClient activeHttpClient;
         internal Func<string, string, string, Task<string>> CodexTurnOverride;
         internal Func<Task> CodexInterruptOverride;
+        internal Func<LlmProvider, Task<LlmModelOption[]>> ModelCatalogueOverride;
+        internal Func<HttpMessageHandler> HttpHandlerOverride;
 
         public ChatWindow()
         {
@@ -141,7 +144,9 @@ namespace CodexVBE
             try
             {
                 LlmModelOption[] models;
-                if (provider.IsCodex)
+                if (ModelCatalogueOverride != null)
+                    models = await ModelCatalogueOverride(provider);
+                else if (provider.IsCodex)
                 {
                     if (codex == null)
                         codex = CreateCodexClient();
@@ -363,7 +368,8 @@ namespace CodexVBE
                     SetStatus(UiText.Get("Codex — ready"));
                     return;
                 }
-                using (var client = new LlmChatClient((LlmProvider)providerPicker.SelectedItem, settings, selectedModel.Id))
+                using (var client = new LlmChatClient((LlmProvider)providerPicker.SelectedItem, settings,
+                    selectedModel.Id, HttpHandlerOverride?.Invoke()))
                 {
                     activeHttpClient = client;
                     client.ToolHandler = async (name, arguments) => {
