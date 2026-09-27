@@ -69,7 +69,7 @@ namespace CodexVBE
                 TreeVersion = (string)tree.TreeVersion, TotalRows = rowCount,
                 ColumnCount = columnCount, Offset = request.Offset,
                 ReturnedRows = rows.Count, HasMore = end < rowCount, Rows = rows,
-                Scope = "Read-only design-time MSForms.List; indexed items are not included in TreeVersion." };
+                Scope = "Read-only design-time MSForms.List. TreeVersion may reflect ListCount but does not fingerprint indexed item values." };
         }
     }
 }
