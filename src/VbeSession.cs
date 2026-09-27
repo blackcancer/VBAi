@@ -124,6 +124,8 @@ namespace CodexVBE
                     return Response.Success(forms.State(request.Project, request.Form));
                 case "form_tree":
                     return Response.Success(forms.Tree(request.Project, request.Form));
+                case "form_list_items":
+                    return Response.Success(forms.ListItems(request));
                 case "form_event_catalog":
                     return Response.Success(forms.EventCatalog(request.Project, request.Form, request.ControlPath));
                 case "form_parent_probe":
