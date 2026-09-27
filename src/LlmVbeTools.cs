@@ -41,7 +41,7 @@ namespace CodexVBE
                     new { type = "string" }, new { type = "number" }, new { type = "boolean" } } } :
                     field == "PathSegments" ? (object)new { type = "array", items = new { type = "string" }, minItems = 1, maxItems = 16 } :
                     new { type = field == "StartLine" || field == "StartColumn" || field == "EndColumn" || field == "Count" || field == "ExpectedMode" || field == "ControlId" || field == "ProcKind" || field == "InsertIndex" ||
-                        field == "Offset" || field == "Limit" || field == "TypeIndex" || field == "ZPosition" ||
+                        field == "Offset" || field == "Limit" || field == "RowIndex" || field == "TypeIndex" || field == "ZPosition" ||
                         field == "Major" || field == "Minor" ? "integer" :
                     field == "Left" || field == "Top" || field == "Width" || field == "Height" || field == "FontSize" ? "number" :
                     field == "FontBold" || field == "WholeWord" || field == "MatchCase" || field == "PatternSearch" || field == "IncludeCallStack" ? "boolean" : "string" };
@@ -160,8 +160,11 @@ namespace CodexVBE
             Definition("form_state", "Read a UserForm and all its controls with geometry, caption and font.", new[] { "Project", "Form" }, "Project", "Form"),
             Definition("form_tree", "Read the recursive UserForm hierarchy, including Frame controls, MultiPage pages and TabStrip tabs. FormVersion and TreeVersion are the same recursive revision; use it for ExpectedFormVersion or ExpectedTreeVersion.",
                 new[] { "Project", "Form" }, "Project", "Form"),
-            Definition("form_list_items", "Read a bounded page of indexed items from a design-time MSForms ComboBox or ListBox selected by canonical form_tree ControlPath. Offset is a zero-based row index; Limit defaults to 20 and is capped so at most 128 cells are read. Returns item values and per-cell errors. TreeVersion can change when ListCount changes but does not fingerprint item values.",
+            Definition("form_list_items", "Read a bounded page of indexed items from a design-time MSForms ComboBox or ListBox selected by canonical form_tree ControlPath. Offset is a zero-based row index; Limit defaults to 20 and is capped so at most 128 cells are read. Returns item values and per-cell errors. ListVersion fingerprints type, path, dimensions and values only when the full list fits on this page and every cell is readable; for remove_form_list_item request Offset=0, Limit=64. TreeVersion alone does not fingerprint item values.",
                 new[] { "Project", "Form", "ControlPath" }, "Project", "Form", "ControlPath", "Offset", "Limit"),
+            Definition("remove_form_list_item", "Remove exactly one zero-based row from an unbound, one-column design-time ComboBox or ListBox of at most 64 readable items. First read form_tree and the complete form_list_items page with Offset=0 and Limit=64; supply both current ExpectedTreeVersion and ExpectedListVersion. Requires VBE edit policy. Multicolumn and RowSource-bound lists are refused; re-read after mutation.",
+                new[] { "Project", "Form", "ControlPath", "RowIndex", "ExpectedTreeVersion", "ExpectedListVersion" },
+                "Project", "Form", "ControlPath", "RowIndex", "ExpectedTreeVersion", "ExpectedListVersion"),
             Definition("form_event_catalog", "Read the COM source-interface event names for a UserForm or a control selected by canonical form_tree ControlPath. This is only the COM source catalog: VBA/VBE events such as UserForm.Initialize can be absent. SourceInterfacesComplete does not mean all usable VBE events are listed; CreateEventProc validates a requested event name.",
                 new[] { "Project", "Form" }, "Project", "Form", "ControlPath"),
             Definition("form_properties", "Read the designer properties of a UserForm.", new[] { "Project", "Form" }, "Project", "Form"),

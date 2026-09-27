@@ -33,6 +33,8 @@ namespace CodexVBE
         public int Minor { get; set; }
         public int Offset { get; set; }
         public int Limit { get; set; }
+        public int? RowIndex { get; set; }
+        public string ExpectedListVersion { get; set; }
         public int TypeIndex { get; set; }
         public string TypeIdentity { get; set; }
         public string ExpectedReferencesVersion { get; set; }
