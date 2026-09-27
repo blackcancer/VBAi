@@ -208,6 +208,10 @@ Pendant trois répétitions de cet arrêt, `open_debug_pane` a rendu Variables l
 
 Dans Excel visible PID 33580, `save_host_document_as` a enregistré un classeur sans nom en `.xlsm` à un chemin neuf explicitement fourni. `remove_procedure` et `insert_code_file` ont conservé leurs SHA après fermeture/réouverture. Excel a laissé un autre projet vierge nommé `VBAProject` ; le résolveur commun accepte maintenant le `FileName` absolu de `list_projects` comme sélecteur exact lorsque des noms se répètent. La lecture des deux modules par ce chemin a confirmé la persistance. Le CodeBase COM a été redirigé temporairement vers la DLL Release pour cet essai, puis restauré vers Debug ; la DLL Debug est verrouillée par SOLIDWORKS ouvert.
 
+Dans le VBE SOLIDWORKS rouvert par l'utilisateur, PID 23064, le UserForm jetable a conservé `Caption` et `Width`, ainsi que le `Caption`, le nom et la taille de police de son Label après export/import ; la classe a également conservé le SHA de son code. Un nouvel essai a atteint le point d'arrêt ligne 5, exécuté Pas à pas principal jusqu'à la ligne 6 puis Reprise jusqu'à une sortie disque valant `2`. Le mode Conception, les composants de départ et le SHA de `test1` ont été retrouvés après chaque essai.
+
+La sonde MSAA native descend maintenant dans les enfants de « Variables locales ». Pendant l'arrêt, elle retrouve le champ de contexte de procédure, mais aucune ligne de variable ; `debug_windows` rend `Items=[]` avec `Available=true`. La lecture des variables reste donc non prouvée dans SOLIDWORKS. `project_properties` indique `Type=vbext_pt_HostProject` pour `test.swp` : [`VBProject.SaveAs` est réservé aux projets autonomes](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/saveas-method-vba-add-in-object-model), donc la persistance de cette macro exige une méthode propre à l'hôte. Son fichier n'a pas été enregistré pendant ces essais.
+
 ## Prochaine exploration
 
 1. Vérifier les propriétés modifiables restantes des contrôles et conteneurs, ainsi que leur suppression et leur réorganisation, sur des classeurs jetables.

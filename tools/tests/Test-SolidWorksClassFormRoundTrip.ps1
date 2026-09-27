@@ -50,6 +50,29 @@ try {
             ExpectedFormVersion = $tree.FormVersion; ControlType = 'Forms.Label.1';
             Control = 'lblProbe'; Left = 12; Top = 12; Width = 80; Height = 20;
             Caption = 'SolidWorks probe' } | Out-Null
+        $state = Invoke-Vbe @{ Command = 'form_state'; Project = $project; Form = $name }
+        Invoke-Vbe @{ Command = 'set_form_property'; Project = $project; Form = $name;
+            ExpectedFormVersion = $state.Version; Property = 'Caption'; Value = 'CodexVBE form probe' } | Out-Null
+        $state = Invoke-Vbe @{ Command = 'form_state'; Project = $project; Form = $name }
+        Invoke-Vbe @{ Command = 'set_form_property'; Project = $project; Form = $name;
+            ExpectedFormVersion = $state.Version; Property = 'Width'; Value = 240 } | Out-Null
+        foreach ($entry in @(
+            @{ Property = 'Caption'; Value = 'Label from CodexVBE' },
+            @{ Property = 'Font.Name'; Value = 'Arial' },
+            @{ Property = 'Font.Size'; Value = 14 }
+        )) {
+            $tree = Invoke-Vbe @{ Command = 'form_tree'; Project = $project; Form = $name }
+            Invoke-Vbe @{ Command = 'set_form_node_property'; Project = $project; Form = $name;
+                ControlPath = 'Controls/lblProbe'; ExpectedTreeVersion = $tree.TreeVersion;
+                Property = $entry.Property; Value = $entry.Value } | Out-Null
+        }
+        $state = Invoke-Vbe @{ Command = 'form_state'; Project = $project; Form = $name }
+        $label = @($state.Controls | Where-Object { $_.Name -eq 'lblProbe' }) | Select-Object -First 1
+        if ($state.Caption -ne 'CodexVBE form probe' -or [Math]::Abs($state.Width - 240) -gt 0.1 -or
+            $label.Caption -ne 'Label from CodexVBE' -or $label.FontName -ne 'Arial' -or
+            [Math]::Abs($label.FontSize - 14) -gt 0.1) {
+            throw 'SOLIDWORKS did not retain the form/label designer properties.'
+        }
     }
     $codeBefore = Invoke-Vbe @{ Command = 'read_module'; Project = $project; Module = $name }
     $treeBefore = if ($Kind -eq 'Form') { Invoke-Vbe @{ Command = 'form_tree'; Project = $project; Form = $name } } else { $null }
@@ -74,8 +97,13 @@ try {
     }
     if ($Kind -eq 'Form') {
         $treeAfter = Invoke-Vbe @{ Command = 'form_tree'; Project = $project; Form = $name }
+        $stateAfter = Invoke-Vbe @{ Command = 'form_state'; Project = $project; Form = $name }
+        $labelAfter = @($stateAfter.Controls | Where-Object { $_.Name -eq 'lblProbe' }) | Select-Object -First 1
         if ($treeAfter.TreeVersion -ne $treeBefore.TreeVersion -or
-            @($treeAfter.Controls | Where-Object { $_.Name -eq 'lblProbe' }).Count -ne 1) {
+            @($treeAfter.Controls | Where-Object { $_.Name -eq 'lblProbe' }).Count -ne 1 -or
+            $stateAfter.Caption -ne 'CodexVBE form probe' -or [Math]::Abs($stateAfter.Width - 240) -gt 0.1 -or
+            $labelAfter.Caption -ne 'Label from CodexVBE' -or $labelAfter.FontName -ne 'Arial' -or
+            [Math]::Abs($labelAfter.FontSize - 14) -gt 0.1) {
             throw 'The UserForm designer tree changed during export/import.'
         }
     }
