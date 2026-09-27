@@ -781,6 +781,12 @@ namespace CodexVBE
             if (root == null) throw new InvalidOperationException("Property is not exposed: " + propertyPath[0]);
             if (propertyPath.Length == 1)
             {
+                // A real Excel Label exposed Cancel as writable through
+                // PropertyDescriptor, but the COM setter returned member-not-found.
+                // Reject the known bad path before invoking native COM.
+                if (string.Equals(root.Name, "Cancel", StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(TypeDescriptor.GetClassName(target), "Label", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("Cancel has no usable designer setter in the tested Excel VBE.");
                 if (root.IsReadOnly) throw new InvalidOperationException("Property is read-only: " + root.Name);
                 object oldValue = root.GetValue(target);
                 object converted = ConvertDescriptorValue(request.Value, root.PropertyType, oldValue);
