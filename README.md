@@ -6,7 +6,7 @@ Complément COM expérimental pour le VBE 64 bits, notamment dans Excel et SOLID
 
 - CodexVBE.sln : solution à ouvrir dans Visual Studio Community, configuration Debug ou Release, plateforme x64.
 - CodexVBE.csproj : projet .NET Framework 4.8.
-- src/ : code du complément chargé dans l'hôte du VBE.
+- src/ : code du complément chargé dans l'hôte du VBE, organisé par Host, Bridge, Vbe et Llm ; voir [l'architecture](docs/architecture.md).
 - tools/ : scripts d'installation, de diagnostic et d'appel de la passerelle.
 - tools/VbeController/ : recherches et inventaire des fenêtres, sans interaction clavier.
 - test.swp : macro de travail jetable, maintenue ouverte dans le VBE.

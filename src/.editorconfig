@@ -1,0 +1,3 @@
+# The COM add-in keeps its stable CodexVBE namespace across feature folders.
+[*.cs]
+dotnet_diagnostic.IDE0130.severity = none

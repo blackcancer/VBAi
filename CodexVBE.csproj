@@ -11,12 +11,12 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="src\**\*.cs" />
-    <Compile Update="src\ChatWindow.cs"><SubType>Form</SubType></Compile>
-    <Compile Update="src\ChatWindow.Designer.cs"><DependentUpon>ChatWindow.cs</DependentUpon></Compile>
-    <Compile Update="src\LlmSettingsWindow.cs"><SubType>Form</SubType></Compile>
-    <Compile Update="src\LlmSettingsWindow.Designer.cs"><DependentUpon>LlmSettingsWindow.cs</DependentUpon></Compile>
-    <EmbeddedResource Update="src\ChatWindow.resx"><DependentUpon>ChatWindow.cs</DependentUpon></EmbeddedResource>
-    <EmbeddedResource Update="src\LlmSettingsWindow.resx"><DependentUpon>LlmSettingsWindow.cs</DependentUpon></EmbeddedResource>
+    <Compile Update="src\Llm\Chat\ChatWindow.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="src\Llm\Chat\ChatWindow.Designer.cs"><DependentUpon>ChatWindow.cs</DependentUpon></Compile>
+    <Compile Update="src\Llm\Settings\LlmSettingsWindow.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="src\Llm\Settings\LlmSettingsWindow.Designer.cs"><DependentUpon>LlmSettingsWindow.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="src\Llm\Chat\ChatWindow.resx"><DependentUpon>ChatWindow.cs</DependentUpon></EmbeddedResource>
+    <EmbeddedResource Update="src\Llm\Settings\LlmSettingsWindow.resx"><DependentUpon>LlmSettingsWindow.cs</DependentUpon></EmbeddedResource>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Net.Http" />
