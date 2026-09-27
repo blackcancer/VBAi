@@ -41,12 +41,15 @@ namespace CodexVBE
                 SelectedProject = selectedProject, ActiveModule = activeModule, Selection = selection };
         }
 
-        public object ListCommands(string query)
+        public object ListCommands(string query, int offset, int limit)
         {
+            if (offset < 0 || limit < 0)
+                throw new ArgumentOutOfRangeException("Offset and Limit must be non-negative.");
+            int pageSize = limit == 0 ? 200 : Math.Min(limit, 200);
             var entries = EnumerateCommands();
             if (!string.IsNullOrWhiteSpace(query))
                 entries = entries.Where(e => e.Path.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
-            return entries.Take(200).Select(e => new { e.Path, e.Caption, e.Id, e.Enabled }).ToArray();
+            return entries.Skip(offset).Take(pageSize).Select(e => new { e.Path, e.Caption, e.Id, e.Enabled }).ToArray();
         }
 
         public object OpenObjectBrowser(VbeEditorWindows windows)

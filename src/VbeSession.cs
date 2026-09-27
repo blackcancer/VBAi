@@ -111,7 +111,7 @@ namespace CodexVBE
                 case "debug_global":
                     return Response.Success(debugger.ExecuteGlobalDebugCommand(request));
                 case "list_commands":
-                    return Response.Success(debugger.ListCommands(request.Query));
+                    return Response.Success(debugger.ListCommands(request.Query, request.Offset, request.Limit));
                 case "select_code":
                     return Response.Success(debugger.SelectCode(request));
                 case "invoke_debug":
