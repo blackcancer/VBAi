@@ -1,6 +1,6 @@
 # Interface de conversation et sessions VBA
 
-Le chat utilise une surface WPF unique dans la fenêtre hôte WinForms. Le sélecteur de document détermine le projet auquel appartiennent les conversations. Les réglages sont regroupés sous le champ de saisie ; le menu supérieur donne accès à la configuration et au rafraîchissement des modèles.
+La structure fixe du chat est construite dans ChatWindow.Designer.cs et reste éditable avec le concepteur WinForms de Visual Studio. Deux zones WPF hébergent le fil de conversation et la saisie avec correction orthographique ; seuls leurs contenus et les références sont créés dynamiquement. Les contrôles WinForms personnalisés conservent les boutons arrondis et la carte de saisie. Le constructeur sans paramètre initialise uniquement le designer, sans ouvrir de session ni de base SQLite. Le sélecteur de document détermine le projet auquel appartiennent les conversations. Les réglages sont regroupés sous le champ de saisie ; le menu supérieur donne accès à la configuration et au rafraîchissement des modèles.
 
 ## Interactions disponibles
 
@@ -45,7 +45,8 @@ Les clés API ne sont pas enregistrées dans cette base. Les contenus de convers
 Depuis le worktree :
 
 ```powershell
-dotnet build CodexVBE.csproj -c Debug -p:OutputPath=artifacts/chat-build/final/ -p:BaseIntermediateOutputPath=artifacts/chat-build/obj/ -p:AppendTargetFrameworkToOutputPath=false
+dotnet build CodexVBE.csproj -c Debug -p:Platform=x64 -p:OutputPath=artifacts/chat-build/final/ -p:BaseIntermediateOutputPath=artifacts/chat-build/obj/ -p:AppendTargetFrameworkToOutputPath=false
+powershell.exe -Sta -NoProfile -File tools/tests/Test-ChatDesigner.ps1
 powershell.exe -Sta -NoProfile -File tools/tests/Test-ChatUx.ps1
 powershell.exe -Sta -NoProfile -File tools/tests/Test-ChatWorkflow.ps1
 powershell.exe -Sta -NoProfile -File tools/tests/Render-ChatUx.ps1 -Mode Conversation
@@ -59,7 +60,7 @@ Les tests Workflow couvrent en plus les refus d’outils synchrones/asynchrones 
 
 Validation locale du 27 septembre 2026 : compilation sans erreur ni avertissement ; suites ChatUx et ChatWorkflow passantes. Dans Excel, le chat a affiché le projet VBA, le fournisseur Codex, sept modèles du catalogue, le modèle par défaut et son effort. Les deux fenêtres WinForms s'ouvrent dans le concepteur Visual Studio sans erreur. L'activation COM du contrôle du chat réussit dans la session utilisateur, mais `VBIDE.Windows.CreateToolWindow` refuse encore de l'héberger avec `CO_E_CLASSSTRING` ; l'ancrage est **FAILED**, la fenêtre flottante reste utilisable. Menus contextuels, capture native de sélection et compilation avec localisation d'erreur : **NOT_RUN** dans cet essai. Les captures `surface-*.png` rendent directement la surface WPF pour éviter les problèmes de cadrage ou de recouvrement entre écrans.
 
-Les captures utilisent la vraie fenêtre WPF avec des données de démonstration sur le deuxième écran lorsqu'il est disponible. Elles ne constituent pas une validation dans Excel ou dans un hôte VBE réel. La reprise distante d'un thread authentifié et l'interruption d'une action COM en cours restent à valider dans l'hôte. Les fournisseurs autres que Codex affichent actuellement leur réponse finale, sans streaming ni résumé de réflexion.
+Les captures modern-*.png composent le formulaire WinForms et ses deux zones WPF avec des données de démonstration sur le deuxième écran lorsqu'il est disponible. Elles ne constituent pas une validation dans Excel ou dans un hôte VBE réel. La reprise distante d'un thread authentifié et l'interruption d'une action COM en cours restent à valider dans l'hôte. Les fournisseurs autres que Codex affichent actuellement leur réponse finale, sans streaming ni résumé de réflexion.
 
 ## Références de conception
 

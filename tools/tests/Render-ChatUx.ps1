@@ -17,6 +17,7 @@ function Call($object, [string]$name, [object[]]$arguments) { $object.GetType().
 $session = [Activator]::CreateInstance($assembly.GetType('CodexVBE.VbeSession'), $flags, $null, @([RenderVbe]::new()), $null)
 $window = New-Internal ChatWindow
 try {
+    Call $window InitializeShell @()
     Call $window InitializeComposer @($session)
     Call $window InitializeTranscript @()
     foreach ($pair in @(@('providerPicker','Codex'), @('modelPicker','GPT-6 Sol'), @('effortPicker','Moyen'), @('scopePicker','SuiviBudget - Budget.xlsm'))) {
@@ -25,7 +26,7 @@ try {
         $picker.SelectedIndex = 0
     }
     (Field $window status).Text = 'Prêt'
-    (Field $window effortPicker).IsEnabled = $true
+    (Field $window effortPicker).Enabled = $true
     (Field $window sessionTitle).Text = 'Fiabiliser le calcul du total'
     $reference = New-Internal VbeChatReference
     $reference.Project = 'SuiviBudget'; $reference.Module = 'ModuleCalcul'; $reference.Name = 'CalculerTotal'; $reference.Kind = 'Function'
@@ -46,8 +47,8 @@ try {
         (Field $window codeChanges).Add($change)
         Call $window AddCodeChangeCard @($change)
         Call $window AddTranscriptMessage @('Assistant', 'La dernière ligne est maintenant incluse dans **CalculerTotal**. Le changement est appliqué et reste annulable.')
-        (Field $window changes).Content = 'Modifications · 1'
-        (Field $window changes).IsEnabled = $true
+        (Field $window changes).Text = 'Modifications · 1'
+        (Field $window changes).Enabled = $true
     }
     if ($Mode -eq 'History') {
         foreach ($title in @('Fiabiliser le calcul du total', 'Expliquer la macro de consolidation', 'Ajouter un export CSV')) {
@@ -55,7 +56,8 @@ try {
             (Field $window scopeSessions).Add($chat)
         }
         Call $window RefreshHistory @()
-        (Field $window historyPanel).Visibility = [Windows.Visibility]::Visible
+        (Field $window historyPanel).Visible = $true
+        (Field $window historyPanel).BringToFront()
         (Field $window chatTitleEditor).Text = 'Fiabiliser le calcul du total'
     }
     $screen = [Windows.Forms.Screen]::AllScreens | Where-Object { -not $_.Primary } | Select-Object -First 1
@@ -66,6 +68,10 @@ try {
         $screen.WorkingArea.Top + [int](($screen.WorkingArea.Height - $window.Height)/2))
     $window.Show(); $window.Activate()
     [Windows.Forms.Application]::DoEvents()
+    if ($Mode -eq 'History') {
+        (Field $window historyPanel).Visible = $true
+        (Field $window historyPanel).BringToFront()
+    }
     if ($Mode -eq 'Reference') {
         $prompt = Field $window prompt
         $prompt.Text = 'Explique @'
@@ -85,21 +91,43 @@ try {
     Start-Sleep -Milliseconds 300
     [Windows.Forms.Application]::DoEvents()
     $bitmap = [Drawing.Bitmap]::new($window.Width, $window.Height)
-    # Also capture the rendered WPF surface directly, independent of foreground occlusion and monitor DPI.
-    $surface = (Field $window shellHost).Child
-    $surface.UpdateLayout()
-    $target = [Windows.Media.Imaging.RenderTargetBitmap]::new([int][Math]::Ceiling($surface.ActualWidth), [int][Math]::Ceiling($surface.ActualHeight), 96, 96, [Windows.Media.PixelFormats]::Pbgra32)
-    $target.Render($surface)
-    $encoder = [Windows.Media.Imaging.PngBitmapEncoder]::new()
-    $encoder.Frames.Add([Windows.Media.Imaging.BitmapFrame]::Create($target))
-    $surfacePath = Join-Path (Get-Location) "artifacts/chat-build/surface-$Mode-$Width.png"
-    $stream = [IO.File]::Create($surfacePath)
-    try { $encoder.Save($stream) } finally { $stream.Dispose() }
-    Write-Output $surfacePath
     try {
+        $window.DrawToBitmap($bitmap, [Drawing.Rectangle]::new(0, 0, $window.Width, $window.Height))
         $graphics = [Drawing.Graphics]::FromImage($bitmap)
-        try { $graphics.CopyFromScreen($window.Location, [Drawing.Point]::Empty, $window.Size) }
-        finally { $graphics.Dispose() }
+        try {
+            $drawer = Field $window historyPanel
+            if ($drawer.Visible) {
+                $drawerLocation = $drawer.PointToScreen([Drawing.Point]::Empty)
+                $graphics.ExcludeClip([Drawing.Rectangle]::new($drawerLocation.X - $window.Left, $drawerLocation.Y - $window.Top, $drawer.Width, $drawer.Height))
+            }
+            foreach ($hostName in @('transcriptHost','promptHost')) {
+                $hostControl = Field $window $hostName
+                $surface = $hostControl.Child
+                if (-not $surface -or -not $hostControl.Visible -or $surface.ActualWidth -le 0 -or $surface.ActualHeight -le 0) { continue }
+                $target = [Windows.Media.Imaging.RenderTargetBitmap]::new([int][Math]::Ceiling($surface.ActualWidth), [int][Math]::Ceiling($surface.ActualHeight), 96, 96, [Windows.Media.PixelFormats]::Pbgra32)
+                $target.Render($surface)
+                $encoder = [Windows.Media.Imaging.PngBitmapEncoder]::new()
+                $encoder.Frames.Add([Windows.Media.Imaging.BitmapFrame]::Create($target))
+                $stream = [IO.MemoryStream]::new()
+                try {
+                    $encoder.Save($stream); $stream.Position = 0
+                    $island = [Drawing.Image]::FromStream($stream)
+                    try {
+                        $location = $hostControl.PointToScreen([Drawing.Point]::Empty)
+                        $graphics.DrawImage($island, [Drawing.Rectangle]::new($location.X - $window.Left, $location.Y - $window.Top, $hostControl.Width, $hostControl.Height))
+                    } finally { $island.Dispose() }
+                } finally { $stream.Dispose() }
+            }
+            if ($Mode -eq 'History') {
+                $graphics.ResetClip()
+                $drawerBitmap = [Drawing.Bitmap]::new($drawer.Width, $drawer.Height)
+                try {
+                    $drawer.DrawToBitmap($drawerBitmap, [Drawing.Rectangle]::new(0, 0, $drawer.Width, $drawer.Height))
+                    $drawerLocation = $drawer.PointToScreen([Drawing.Point]::Empty)
+                    $graphics.DrawImageUnscaled($drawerBitmap, $drawerLocation.X - $window.Left, $drawerLocation.Y - $window.Top)
+                } finally { $drawerBitmap.Dispose() }
+            }
+        } finally { $graphics.Dispose() }
         $path = Join-Path (Get-Location) "artifacts/chat-build/modern-$Mode-$Width.png"
         $bitmap.Save($path, [Drawing.Imaging.ImageFormat]::Png)
         Write-Output $path

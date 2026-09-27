@@ -234,45 +234,49 @@ namespace CodexVBE
                 .GroupBy(item => item.Token, StringComparer.Ordinal).Select(group => group.Last()).ToArray();
         }
 
+        private static Forms.Button ContextButton(string text)
+        {
+            return new Forms.Button { Text = text, AutoSize = true, Height = 27,
+                FlatStyle = Forms.FlatStyle.Flat, BackColor = System.Drawing.Color.FromArgb(239, 246, 255),
+                ForeColor = System.Drawing.Color.FromArgb(29, 78, 216), Margin = new Forms.Padding(2),
+                Padding = new Forms.Padding(4, 0, 4, 0), Cursor = Forms.Cursors.Hand };
+        }
+
         private void RefreshContextChips()
         {
             if (contextChips == null || prompt == null) return;
-            promptHint.Visibility = prompt.Text.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
-            contextChips.Children.Clear();
-            if (attachMemory.IsChecked == true && !string.IsNullOrWhiteSpace(projectMemory))
+            contextChips.SuspendLayout();
+            try
             {
-                var memory = ChatButton("Mémoire jointe · ×");
-                memory.Padding = new Thickness(6, 3, 6, 3);
-                memory.ToolTip = "Retirer les notes du prochain message";
-                memory.Margin = new Thickness(0, 0, 6, 4);
-                memory.Click += (s, e) => attachMemory.IsChecked = false;
-                contextChips.Children.Add(memory);
+                while (contextChips.Controls.Count > 0) contextChips.Controls[0].Dispose();
+                if (attachMemory.Checked && !string.IsNullOrWhiteSpace(projectMemory))
+                {
+                    var memory = ContextButton("Mémoire jointe · ×");
+                    toolTips.SetToolTip(memory, "Retirer les notes du prochain message");
+                    memory.Click += (s, e) => attachMemory.Checked = false;
+                    contextChips.Controls.Add(memory);
+                }
+                foreach (var item in CurrentReferences(prompt.Text))
+                {
+                    var row = new Forms.FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Forms.Padding(0) };
+                    var link = ContextButton(item.Token);
+                    toolTips.SetToolTip(link, "Ouvrir dans le VBE");
+                    link.Click += (s, e) => NavigateReference(item); row.Controls.Add(link);
+                    var remove = ContextButton("×");
+                    toolTips.SetToolTip(remove, "Retirer cette référence du contexte");
+                    remove.Click += (s, e) => { selectedReferences.RemoveAll(value => value.Token == item.Token); RefreshContextChips(); ScheduleSessionSave(); };
+                    row.Controls.Add(remove); contextChips.Controls.Add(row);
+                }
+                foreach (var attachment in draftAttachments.ToArray())
+                {
+                    var chip = ContextButton(attachment.Label + " · ×");
+                    toolTips.SetToolTip(chip, "Retirer cette sélection");
+                    chip.Click += (s, e) => { draftAttachments.Remove(attachment); RefreshContextChips(); ScheduleSessionSave(); };
+                    contextChips.Controls.Add(chip);
+                }
+                contextChips.Visible = contextChips.Controls.Count > 0;
             }
-            foreach (var item in CurrentReferences(prompt.Text))
-            {
-                var row = new StackPanel { Orientation = Orientation.Horizontal };
-                var link = ChatButton(item.Token);
-                link.Padding = new Thickness(6, 3, 6, 3);
-                link.ToolTip = "Ouvrir dans le VBE";
-                link.Click += (s, e) => NavigateReference(item);
-                row.Children.Add(link);
-                var remove = ChatButton("×");
-                remove.Padding = new Thickness(5, 3, 5, 3);
-                remove.ToolTip = "Retirer cette référence du contexte";
-                remove.Click += (s, e) => {
-                    selectedReferences.RemoveAll(value => value.Token == item.Token);
-                    RefreshContextChips();
-                    ScheduleSessionSave();
-                };
-                row.Children.Add(remove);
-                contextChips.Children.Add(new Border { Child = row, Margin = new Thickness(0, 0, 6, 4) });
-            }
-            foreach (var attachment in draftAttachments.ToArray()) {
-                var chip = ChatButton(attachment.Label + " · ×"); chip.ToolTip = "Retirer cette sélection";
-                chip.Click += (s, e) => { draftAttachments.Remove(attachment); RefreshContextChips(); ScheduleSessionSave(); };
-                contextChips.Children.Add(chip);
-            }
-            contextChips.Visibility = contextChips.Children.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+            finally { contextChips.ResumeLayout(true); }
         }
 
         private void NavigateReference(VbeChatReference reference)

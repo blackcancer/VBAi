@@ -3,6 +3,8 @@
     <TargetFramework>net48</TargetFramework>
     <OutputType>Library</OutputType>
     <PlatformTarget>x64</PlatformTarget>
+    <Platforms>x64</Platforms>
+    <UseWindowsForms>true</UseWindowsForms>
     <OutputPath>bin\$(Configuration)\</OutputPath>
     <LangVersion>7.3</LangVersion>
     <Nullable>disable</Nullable>

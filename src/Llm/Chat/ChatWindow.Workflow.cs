@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,52 +10,10 @@ namespace CodexVBE
 {
     internal sealed partial class ChatWindow
     {
-        private ComboBox modePicker;
-        private CheckBox verifyAfterEdit;
-        private StackPanel contextPreview;
         private readonly List<ChatAttachment> draftAttachments = new List<ChatAttachment>();
         private string activeTurnId;
         public event Action DockRequested;
         public void ReportDockFailure(string reason) { SetStatus("Ancrage indisponible : " + reason + " · vérifiez l’installation du contrôle COM."); }
-
-        private void BuildWorkflowControls(StackPanel top, WrapPanel historyButtons, StackPanel composer)
-        {
-            var row = new WrapPanel { Margin = new Thickness(20, 0, 20, 8) };
-            modePicker = ChatPicker("Mode de travail");
-            foreach (var mode in Enum.GetValues(typeof(ChatMode))) modePicker.Items.Add(mode);
-            modePicker.SelectedItem = ChatMode.Agent;
-            modePicker.SelectionChanged += (s, e) => {
-                if (loadingSession || busy || currentSession == null) return;
-                currentSession.Mode = (ChatMode)modePicker.SelectedItem;
-                if (tools != null) tools.Mode = currentSession.Mode;
-                ScheduleSessionSave();
-                SetStatus(currentSession.Mode == ChatMode.Agent ? "Agent : modifications autorisées par la politique VBE" : currentSession.Mode + " : aucune modification ni exécution de macro");
-            };
-            row.Children.Add(modePicker);
-            var selection = ChatButton("Joindre la sélection"); selection.Margin = new Thickness(6, 0, 0, 0);
-            selection.Click += (s, e) => CaptureSelection(); row.Children.Add(selection);
-            var compile = ChatButton("Vérifier VBA"); compile.Margin = new Thickness(6, 0, 0, 0);
-            compile.Click += async (s, e) => {
-                if (busy) return;
-                SetBusy(true);
-                try { await VerifyProjectAsync(); } finally { SetBusy(false); SaveCurrentSession(); }
-            };
-            row.Children.Add(compile);
-            top.Children.Add(row);
-            verifyAfterEdit = new CheckBox { Content = "Compiler après les modifications", IsChecked = true,
-                FontSize = 11, Margin = new Thickness(20, 0, 20, 8) };
-            top.Children.Add(verifyAfterEdit);
-            var pin = ChatButton("Épingler / détacher");
-            pin.Click += (s, e) => { if (busy || currentSession == null) return; currentSession.Pinned = !currentSession.Pinned; SaveCurrentSession(); RefreshHistory(); };
-            historyButtons.Children.Add(pin);
-            var export = ChatButton("Exporter Markdown"); export.Click += (s, e) => ExportCurrentChat(); historyButtons.Children.Add(export);
-            contextPreview = new StackPanel();
-            var preview = new Expander { Header = "Contexte envoyé · inspecter et actualiser", Content = new ScrollViewer {
-                Content = contextPreview, MaxHeight = 150, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
-                Margin = new Thickness(12, 4, 12, 4), FontSize = 11 };
-            preview.Expanded += (s, e) => RefreshContextPreview();
-            composer.Children.Add(preview);
-        }
 
         private ChatAttachment[] PrepareAttachments(string question)
         {
@@ -81,20 +39,29 @@ namespace CodexVBE
         private void RefreshContextPreview()
         {
             if (contextPreview == null || prompt == null) return;
-            contextPreview.Children.Clear();
+            while (contextPreview.Controls.Count > 0) contextPreview.Controls[0].Dispose();
             try
             {
                 EnsureCurrentScope();
                 var attachments = PrepareAttachments(prompt.Text);
                 foreach (var attachment in attachments)
-                    contextPreview.Children.Add(new Expander { Header = attachment.Label + " · " + attachment.Text.Length + " caractères",
-                        Content = SelectableText(attachment.Text) });
-                int memorySize = attachMemory.IsChecked == true ? projectMemory.Length : 0;
-                if (memorySize > 0) contextPreview.Children.Add(new Expander { Header = "Mémoire · " + memorySize + " caractères", Content = SelectableText(projectMemory) });
-                contextPreview.Children.Add(new TextBlock { Text = (attachments.Sum(x => x.Text.Length) + memorySize) +
-                    " caractères de contexte explicite. L’historique de cette conversation accompagne aussi la demande.", TextWrapping = TextWrapping.Wrap });
+                    AddContextPreview(attachment.Label + " · " + attachment.Text.Length + " caractères", attachment.Text);
+                int memorySize = attachMemory.Checked ? projectMemory.Length : 0;
+                if (memorySize > 0) AddContextPreview("Mémoire · " + memorySize + " caractères", projectMemory);
+                AddContextPreview("Contexte explicite", (attachments.Sum(x => x.Text.Length) + memorySize) +
+                    " caractères. L’historique de cette conversation accompagne aussi la demande.");
             }
-            catch (Exception ex) { contextPreview.Children.Add(new TextBlock { Text = ex.Message, TextWrapping = TextWrapping.Wrap, Foreground = Ink("#B91C1C") }); }
+            catch (Exception ex) { AddContextPreview("Contexte indisponible", ex.Message); }
+        }
+
+        private void AddContextPreview(string title, string text)
+        {
+            var group = new System.Windows.Forms.GroupBox { Text = title, Height = 110,
+                Width = Math.Max(200, contextPreview.ClientSize.Width - 26), Padding = new System.Windows.Forms.Padding(6) };
+            group.Controls.Add(new System.Windows.Forms.TextBox { Text = text, ReadOnly = true, Multiline = true,
+                Dock = System.Windows.Forms.DockStyle.Fill, ScrollBars = System.Windows.Forms.ScrollBars.Vertical,
+                BackColor = System.Drawing.Color.White, BorderStyle = System.Windows.Forms.BorderStyle.None });
+            contextPreview.Controls.Add(group);
         }
 
         private IDictionary<string, object> ReadWorkflow(string command, string project = null, string module = null)
