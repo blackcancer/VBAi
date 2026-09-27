@@ -13,10 +13,12 @@ namespace CodexVBE
         public string[] AllowedValues { get; set; }
         // COM descriptors can advertise a setter that fails at invocation
         // (observed for Label.Cancel). This is metadata, not runtime proof.
+        private string setterStatus;
         public string SetterStatus
         {
-            get { return ReadOnly == true ? "DescriptorReadOnly" :
-                ReadOnly == false ? "DescriptorCandidateUnverified" : "Unknown"; }
+            get { return setterStatus ?? (ReadOnly == true ? "DescriptorReadOnly" :
+                ReadOnly == false ? "DescriptorCandidateUnverified" : "Unknown"); }
+            set { setterStatus = value; }
         }
         public object Value { get; set; }
         public string Display { get; set; }

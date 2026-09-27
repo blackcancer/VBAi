@@ -220,11 +220,13 @@ namespace CodexVBE
         private static List<VbePropertyInfo> ReadObjectProperties(object item)
         {
             var result = new List<VbePropertyInfo>();
+            string targetType = TypeDescriptor.GetClassName(item);
             foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(item))
             {
                 var info = new VbePropertyInfo { Name = descriptor.Name,
                     Type = descriptor.PropertyType?.FullName, ReadOnly = descriptor.IsReadOnly,
-                    AllowedValues = EnumChoices(descriptor.PropertyType) };
+                    AllowedValues = EnumChoices(descriptor.PropertyType),
+                    SetterStatus = DesignerSetterStatus(targetType, descriptor) };
                 try
                 {
                     object value = descriptor.GetValue(item);
@@ -399,7 +401,8 @@ namespace CodexVBE
                 PropertyDescriptor descriptor = descriptors.Find(name, true);
                 var info = new VbePropertyInfo { Name = name, Type = descriptor?.PropertyType?.FullName,
                     ReadOnly = descriptor == null ? (bool?)null : descriptor.IsReadOnly,
-                    AllowedValues = EnumChoices(descriptor?.PropertyType) };
+                    AllowedValues = EnumChoices(descriptor?.PropertyType),
+                    SetterStatus = descriptor == null ? "Unknown" : DesignerSetterStatus("UserForm", descriptor) };
                 if (string.Equals(name, "Picture", StringComparison.OrdinalIgnoreCase))
                 {
                     info.Kind = "object";
@@ -480,6 +483,24 @@ namespace CodexVBE
             catch { return null; }
         }
 
+        private static string DesignerSetterStatus(string targetType, PropertyDescriptor descriptor)
+        {
+            if (descriptor.IsReadOnly) return "DescriptorReadOnly";
+            if (string.Equals(descriptor.Name, "_Font_Reserved", StringComparison.OrdinalIgnoreCase))
+                return "GetterUnavailable";
+            if (string.Equals(targetType, "Label", StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(descriptor.Name, "Cancel", StringComparison.OrdinalIgnoreCase))
+                return "BlockedNativeSetterFailure";
+            if (string.Equals(targetType, "ToggleButton", StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(descriptor.Name, "Value", StringComparison.OrdinalIgnoreCase))
+                return "BlockedAfterHostCrash";
+            if (string.Equals(targetType, "SpinButton", StringComparison.OrdinalIgnoreCase) &&
+                new[] { "Min", "Max", "Value", "Delay", "SmallChange" }
+                    .Any(name => string.Equals(descriptor.Name, name, StringComparison.OrdinalIgnoreCase)))
+                return "BlockedAfterHostCrash";
+            return "DescriptorCandidateUnverified";
+        }
+
         private static object NormalizeScalar(object value)
         {
             if (value == null) return null;
@@ -508,6 +529,7 @@ namespace CodexVBE
         {
             dynamic form = GetForm(GetProject(projectName), formName);
             object control = GetControl(form.Designer, controlName);
+            string targetType = TypeDescriptor.GetClassName(control);
             var result = new List<object>();
             foreach (PropertyDescriptor descriptor in TypeDescriptor.GetProperties(control))
             {
@@ -523,7 +545,7 @@ namespace CodexVBE
                 result.Add(new { Name = descriptor.Name,
                     Type = descriptor.PropertyType == null ? null : descriptor.PropertyType.FullName,
                     ReadOnly = descriptor.IsReadOnly,
-                    SetterStatus = descriptor.IsReadOnly ? "DescriptorReadOnly" : "DescriptorCandidateUnverified",
+                    SetterStatus = DesignerSetterStatus(targetType, descriptor),
                     AllowedValues = EnumChoices(descriptor.PropertyType),
                     Value = value, Error = error });
             }
@@ -791,6 +813,8 @@ namespace CodexVBE
                 throw new ArgumentException("Property must be a property name or one object member path.");
             PropertyDescriptor root = TypeDescriptor.GetProperties(target).Find(propertyPath[0], true);
             if (root == null) throw new InvalidOperationException("Property is not exposed: " + propertyPath[0]);
+            if (string.Equals(root.Name, "_Font_Reserved", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("_Font_Reserved is a COM reserved member whose getter is unavailable in the tested VBE.");
             if (propertyPath.Length == 1)
             {
                 // A disposable Excel session crashed with heap corruption

@@ -2,7 +2,7 @@
 
 L'inventaire source [excel-control-properties.csv](excel-control-properties.csv) contient 771 descripteurs réels relevés sur les 14 contrôles natifs dans Excel. `form_tree` lit les propriétés des contrôles, Frames, Pages et Tabs par chemin canonique ; `form_control_properties` lit les contrôles du premier niveau. Les descripteurs n'établissent pas à eux seuls qu'un setter COM fonctionne.
 
-| Type | Descripteurs | Getters en erreur | Lecture seule déclarée | Setter candidat non prouvé |
+| Type | Descripteurs | Getters en erreur | Lecture seule déclarée | Descripteur modifiable hors erreur |
 | --- | ---: | ---: | ---: | ---: |
 | CheckBox | 57 | 1 | 9 | 47 |
 | ComboBox | 86 | 1 | 16 | 69 |
@@ -20,7 +20,9 @@ L'inventaire source [excel-control-properties.csv](excel-control-properties.csv)
 | ToggleButton | 57 | 1 | 9 | 47 |
 | **Total** | **771** | **11** | **139** | **621** |
 
-Les 11 getters en erreur sont tous `_Font_Reserved` (`DISP_E_MEMBERNOTFOUND`). Ce nom reste visible dans le descripteur COM, mais sa valeur n'est pas lisible dans l'Excel testé. Les 621 candidats sont un **plafond de possibilités à qualifier**, pas 621 écritures validées : `Label.Cancel` annonçait un setter qui a échoué, et certaines écritures sur ToggleButton/SpinButton ont précédé des crashs Excel. Les garde-fous correspondants sont décrits dans [forms-duplication-coverage.md](forms-duplication-coverage.md).
+Les 11 getters en erreur sont tous `_Font_Reserved` (`DISP_E_MEMBERNOTFOUND`). Ce nom reste visible dans le descripteur COM, mais sa valeur n'est pas lisible dans l'Excel testé. Les 621 descripteurs marqués modifiables sont un **plafond de possibilités à qualifier**, pas 621 écritures validées : `Label.Cancel` annonçait un setter qui a échoué, et certaines écritures sur ToggleButton/SpinButton ont précédé des crashs Excel. Les garde-fous correspondants sont décrits dans [forms-duplication-coverage.md](forms-duplication-coverage.md).
+
+La lecture vivante expose maintenant un `SetterStatus` distinct pour les cas connus : `GetterUnavailable` pour `_Font_Reserved`, `BlockedNativeSetterFailure` pour `Label.Cancel`, `BlockedAfterHostCrash` pour `ToggleButton.Value` et `SpinButton.Min/Max/Value/Delay/SmallChange`. Les 614 autres descripteurs annoncés modifiables restent `DescriptorCandidateUnverified` jusqu'à preuve de mutation et relecture sur le type exact. Les 139 `DescriptorReadOnly` décrivent seulement la métadonnée COM. Le code refuse aussi `_Font_Reserved` avant tout setter ; les refus des sept propriétés à risque ont été testés séparément pour ToggleButton/SpinButton.
 
 Parmi ces descripteurs, 110 propriétés sont des énumérations. Leur nom de type COM contient un préfixe numérique propre à la session ; l'identifiant ne doit pas être persisté. `AllowedValues` expose maintenant les noms de choix depuis le type vivant dans `form_tree`, `form_control_properties` et `form_properties`. Dans Excel PID 40884, `Test-ControlEnumChoices.ps1` a relu les 14 types, 18 nœuds, les 771 propriétés et 110 catalogues enum sans choix manquant. `Label.TextAlign` a rendu `Left`, `Center`, `Right`. Deux lectures consécutives ont gardé la même `TreeVersion` ; Excel s'est fermé normalement sans événement Application Error 1000.
 
