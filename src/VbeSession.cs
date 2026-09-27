@@ -128,6 +128,8 @@ namespace CodexVBE
                     return Response.Success(forms.ListItems(request));
                 case "probe_append_form_list_item":
                     return Response.Success(forms.AppendListItem(request));
+                case "add_form_list_item":
+                    return Response.Success(forms.AddListItem(request));
                 case "remove_form_list_item":
                     return Response.Success(forms.RemoveListItem(request));
                 case "form_event_catalog":
