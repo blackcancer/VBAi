@@ -19,7 +19,7 @@ namespace CodexVBE
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
         private readonly List<string> userRequests = new List<string>();
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
-            "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "compile_project", "open_debug_pane", "list_commands", "select_code",
+            "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "compile_project", "open_debug_pane", "list_commands", "select_code",
             "project_properties", "component_properties", "component_property_value", "vbe_windows", "code_panes", "open_object_browser", "list_procedures", "find_code", "select_procedure", "list_forms",
             "form_state", "form_tree", "form_properties", "form_control_properties", "form_event_catalog",
             "list_form_control_types", "open_form"
@@ -72,6 +72,8 @@ namespace CodexVBE
                 new[] { "Action" }, "Action"),
             Definition("debug_state", "Read design/run/break mode and the active code location for one project. Mode 1 is break; mode 2 is design.",
                 new[] { "Project" }, "Project"),
+            Definition("read_debug_options", "Read the VBE-wide error trapping setting from Tools > Options > General through the native dialog, then close with Cancel. No preference is changed. Returns the exact selected radio label and available choices; no shortcuts or coordinates.",
+                new string[0]),
             Definition("compile_project", "Compile the named VBA project using the native VBE command in design mode. Captures and dismisses a native compile error dialog; on failure read debug_state to locate the selected token. A successful response means no native diagnostic was observed. ExpectedMode must be 2.",
                 new[] { "Project", "ExpectedMode" }, "Project", "ExpectedMode"),
             Definition("list_commands", "List VBE CommandBars controls matching an optional caption/path Query. Returns transient Id, caption and enabled state; use these exact values for invoke_debug.",
@@ -296,6 +298,18 @@ namespace CodexVBE
 
         public async Task<string> InvokeAsync(string name, string arguments)
         {
+            if (name == "read_debug_options")
+            {
+                try
+                {
+                    await Task.Run(() => VbeDebugWindows.EnsureNoDebugOptionsDialog());
+                    string scheduled = Invoke(name, arguments);
+                    Response initial = json.Deserialize<Response>(scheduled);
+                    if (initial == null || !initial.Ok) return scheduled;
+                    return json.Serialize(Response.Success(await Task.Run(() => VbeDebugWindows.ReadDebugOptions())));
+                }
+                catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+            }
             if (name == "quick_watch")
             {
                 try

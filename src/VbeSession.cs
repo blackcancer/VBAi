@@ -104,6 +104,8 @@ namespace CodexVBE
                     return Response.Success(debugger.QueueEditWatchDialog(request));
                 case "quick_watch":
                     return Response.Success(debugger.QueueQuickWatchDialog(request));
+                case "read_debug_options":
+                    return Response.Success(debugger.QueueDebugOptionsDialog());
                 case "remove_watch":
                     return Response.Success(debugger.RemoveSelectedWatch(request));
                 case "debug_global":

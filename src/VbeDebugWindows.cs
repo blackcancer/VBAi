@@ -94,6 +94,71 @@ namespace CodexVBE
                 Buttons = buttons.ToArray(), Error = (string)null };
         }
 
+        public static void EnsureNoDebugOptionsDialog()
+        {
+            if (FindDialog("Options") != IntPtr.Zero)
+                throw new InvalidOperationException("A VBE Options dialog is already open; the add-in will not close a user-owned dialog.");
+        }
+
+        public static object ReadDebugOptions()
+        {
+            IntPtr dialog = IntPtr.Zero;
+            for (int attempt = 0; attempt < 60 && dialog == IntPtr.Zero; attempt++)
+            { Thread.Sleep(50); dialog = FindDialog("Options"); }
+            if (dialog == IntPtr.Zero) throw new InvalidOperationException("The native VBE Options dialog did not open.");
+            string selected = null;
+            string[] choices = null;
+            try
+            {
+                AutomationElement root = AutomationElement.FromHandle(dialog);
+                var generalCondition = new AndCondition(
+                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem),
+                    new OrCondition(
+                        new PropertyCondition(AutomationElement.NameProperty, "Général"),
+                        new PropertyCondition(AutomationElement.NameProperty, "General")));
+                AutomationElementCollection tabs = root.FindAll(TreeScope.Descendants, generalCondition);
+                if (tabs.Count != 1 || !tabs[0].TryGetCurrentPattern(SelectionItemPattern.Pattern, out object tabPattern))
+                    throw new InvalidOperationException("The native General options tab is unavailable.");
+                ((SelectionItemPattern)tabPattern).Select();
+                // The VBE UIA provider flattens the group and its radios as
+                // siblings, so query the dialog and check each exact label.
+                AutomationElementCollection radios = root.FindAll(TreeScope.Descendants,
+                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.RadioButton));
+                if (radios.Count != 3)
+                    throw new InvalidOperationException("Expected three native error trapping choices; found " + radios.Count + ".");
+                var names = new List<string>();
+                for (int index = 0; index < radios.Count; index++)
+                {
+                    AutomationElement radio = radios[index];
+                    string name = radio.Current.Name;
+                    if (string.IsNullOrWhiteSpace(name) ||
+                        !(name.StartsWith("Arrêt ", StringComparison.OrdinalIgnoreCase) ||
+                          name.StartsWith("Break ", StringComparison.OrdinalIgnoreCase)) ||
+                        !radio.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object radioPattern))
+                        throw new InvalidOperationException("A native error trapping radio is unreadable.");
+                    names.Add(name);
+                    if (((SelectionItemPattern)radioPattern).Current.IsSelected)
+                    {
+                        if (selected != null) throw new InvalidOperationException("Multiple error trapping choices appear selected.");
+                        selected = name;
+                    }
+                }
+                if (selected == null) throw new InvalidOperationException("No error trapping choice appears selected.");
+                choices = names.ToArray();
+            }
+            finally { CloseDialog(dialog); }
+            bool closed = false;
+            for (int attempt = 0; attempt < 20; attempt++)
+            {
+                if (FindDialog("Options") == IntPtr.Zero) { closed = true; break; }
+                Thread.Sleep(50);
+            }
+            if (!closed) throw new InvalidOperationException("The add-in read VBE Options but could not close its dialog.");
+            return new { Scope = "VBE", ErrorTrapping = selected, Choices = choices,
+                Verification = "NativeOptionsReadback", DialogClosed = true,
+                Limit = "This is the currently displayed VBE-wide preference, not a diagnosis of an active runtime error." };
+        }
+
         public static object ExecuteImmediate(string command)
         {
             if (string.IsNullOrWhiteSpace(command) || command.Length > 2048 ||

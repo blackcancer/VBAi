@@ -171,6 +171,21 @@ namespace CodexVBE
                 request.Expression, request.StartLine, request.StartColumn, request.EndColumn };
         }
 
+        public object QueueDebugOptionsDialog()
+        {
+            var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 522 && entry.Enabled &&
+                string.Equals((entry.Caption ?? "").Replace("&", "").TrimEnd('.'),
+                    "Options", StringComparison.OrdinalIgnoreCase));
+            if (command == null) throw new InvalidOperationException("The native VBE Tools > Options command is unavailable.");
+            SynchronizationContext context = SynchronizationContext.Current;
+            if (context == null) throw new InvalidOperationException("The VBE UI context is unavailable.");
+            context.Post(_ => {
+                try { ((dynamic)command.Control).Execute(); }
+                catch (Exception ex) { LoadLog.Write("VBE Options dialog failed: " + ex.Message); }
+            }, null);
+            return new { Scheduled = true, ControlId = command.Id, Control = command.Path };
+        }
+
         public object RemoveSelectedWatch(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project) ||
