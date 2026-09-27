@@ -29,3 +29,40 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    using System.Linq;
+    using CodexVBE;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    [TestClass]
+    public sealed class DiffModelCoverageTests
+    {
+        [TestMethod]
+        public void InsertionsAndDeletionsRetainLineNumbersInBothLayouts()
+        {
+            foreach(var unified in new[]{false,true})
+            {
+                var insert=DiffModel.Build("a\nz","a\nb\nc\nz",unified,false);
+                Assert.AreEqual(4,insert.Count); Assert.IsNull(insert[1].Old); Assert.AreEqual(2,insert[1].New); Assert.AreEqual("b",insert[1].Unified);
+                var delete=DiffModel.Build("a\nb\nc\nz","a\nz",unified,false);
+                Assert.AreEqual(4,delete.Count); Assert.AreEqual(2,delete[1].Old); Assert.IsNull(delete[1].New); Assert.AreEqual("b",delete[1].Unified);
+                var replace=DiffModel.Build("a\nb\nc","x",unified,false);
+                Assert.IsTrue(replace.All(r=>r.Hunk>=0)); Assert.AreEqual(unified ? 4 : 3,replace.Count);
+                Assert.AreEqual("a",new DiffRow{Left="a"}.Unified);
+            }
+        }
+        [TestMethod]
+        public void CollapseKeepsChangedContextAndGroupsConsecutiveHiddenRows()
+        {
+            Assert.AreEqual(0,DiffModel.Build("","",true,true).Count);
+            var unchanged=DiffModel.Build("a\nb\nc","a\nb\nc",false,true);
+            Assert.AreEqual(1,unchanged.Count); Assert.IsTrue(unchanged[0].Fold);
+            string before=string.Join("\n",Enumerable.Range(0,30).Select(i=>"line"+i));
+            string after=before.Replace("line0\n","first\n").Replace("line15\n","middle\n").Replace("line29","last");
+            var rows=DiffModel.Build(before,after,false,true);
+            Assert.AreEqual(2,rows.Count(r=>r.Fold)); Assert.AreEqual(3,rows.Count(r=>r.Hunk>=0));
+            Assert.IsFalse(rows.First().Fold); Assert.IsFalse(rows.Last().Fold);
+        }
+    }
+}

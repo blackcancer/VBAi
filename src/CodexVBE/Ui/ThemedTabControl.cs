@@ -38,7 +38,7 @@ namespace CodexVBE
         protected override void WndProc(ref Message message)
         {
             base.WndProc(ref message);
-            if ((message.Msg == 0x000F || message.Msg == 0x0318) && UiTheme.Dark && !SystemInformation.HighContrast)
+            if ((message.Msg == 0x000F || message.Msg == 0x0318) && UiTheme.Dark && !UiTheme.HighContrast())
             {
                 using (var graphics = message.Msg == 0x0318 ? Graphics.FromHdc(message.WParam) : CreateGraphics())
                 {

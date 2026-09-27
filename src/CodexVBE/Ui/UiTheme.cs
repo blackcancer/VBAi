@@ -14,27 +14,34 @@ namespace CodexVBE
         private static extern int SetWindowTheme(IntPtr window, string app, string ids);
         [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr window, int attribute, ref int value, int size);
-        private static readonly string FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexVBE", "theme.txt");
+        // Environment reads and storage can be substituted without changing Windows preferences.
+        internal static string FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexVBE", "theme.txt");
+        internal static Func<bool> HighContrast = () => SystemInformation.HighContrast;
+        internal static Func<Color> WindowColor = () => SystemColors.Window;
+        internal static Func<object> ReadSystemTheme = () => Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 1);
+        internal static Func<string, string> ReadTheme = File.ReadAllText;
+        internal static Action<string, string> WriteTheme = File.WriteAllText;
         internal static ThemeChoice Choice { get; private set; } = Load();
         internal static event Action Changed;
         internal static bool Dark
         {
             get {
-                if (SystemInformation.HighContrast) return SystemColors.Window.GetBrightness() < 0.5f;
+                if (HighContrast()) return WindowColor().GetBrightness() < 0.5f;
                 if (Choice != ThemeChoice.System) return Choice == ThemeChoice.Dark;
-                try { return (int?)Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 1) == 0; } catch { return false; }
+                try { return (int?)ReadSystemTheme() == 0; } catch { return false; }
             }
         }
-        internal static Color Surface { get { return SystemInformation.HighContrast ? SystemColors.Window : Dark ? Color.FromArgb(30, 34, 42) : Color.White; } }
-        internal static Color Background { get { return SystemInformation.HighContrast ? SystemColors.Control : Dark ? Color.FromArgb(22, 26, 33) : Color.FromArgb(248, 250, 252); } }
-        internal static Color Foreground { get { return SystemInformation.HighContrast ? SystemColors.WindowText : Dark ? Color.FromArgb(226, 232, 240) : Color.FromArgb(30, 41, 59); } }
+        internal static Color Surface { get { return HighContrast() ? SystemColors.Window : Dark ? Color.FromArgb(30, 34, 42) : Color.White; } }
+        internal static Color Background { get { return HighContrast() ? SystemColors.Control : Dark ? Color.FromArgb(22, 26, 33) : Color.FromArgb(248, 250, 252); } }
+        internal static Color Foreground { get { return HighContrast() ? SystemColors.WindowText : Dark ? Color.FromArgb(226, 232, 240) : Color.FromArgb(30, 41, 59); } }
         internal static Color Added { get { return Dark ? Color.FromArgb(24, 64, 42) : Color.FromArgb(232, 247, 237); } }
         internal static Color Removed { get { return Dark ? Color.FromArgb(78, 35, 40) : Color.FromArgb(255, 240, 240); } }
-        static UiTheme() { SystemEvents.UserPreferenceChanged += (s, e) => Changed?.Invoke(); }
-        private static ThemeChoice Load() { try { ThemeChoice value; if (Enum.TryParse(File.ReadAllText(FileName), out value) && Enum.IsDefined(typeof(ThemeChoice), value)) return value; } catch { } return ThemeChoice.System; }
+        static UiTheme() { SystemEvents.UserPreferenceChanged += PreferencesChanged; }
+        private static void PreferencesChanged(object sender, UserPreferenceChangedEventArgs e) { Changed?.Invoke(); }
+        private static ThemeChoice Load() { try { ThemeChoice value; if (Enum.TryParse(ReadTheme(FileName), out value) && Enum.IsDefined(typeof(ThemeChoice), value)) return value; } catch { } return ThemeChoice.System; }
         internal static void Select(ThemeChoice choice)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(FileName)); File.WriteAllText(FileName, choice.ToString());
+            Directory.CreateDirectory(Path.GetDirectoryName(FileName)); WriteTheme(FileName, choice.ToString());
             Choice = choice; Changed?.Invoke();
         }
         internal static void Attach(Form form)
@@ -68,7 +75,7 @@ namespace CodexVBE
         {
             var control = (Control)sender;
             if (!control.IsHandleCreated || LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
-            bool dark = Dark && !SystemInformation.HighContrast;
+            bool dark = Dark && !HighContrast();
             // Per-window styling only: do not change Office/SOLIDWORKS process-wide theme policy.
             if (control is TextBoxBase || control is ListBox || control is ComboBox || control is DataGridView)
                 SetWindowTheme(control.Handle, dark ? (control is ComboBox ? "DarkMode_CFD" : "DarkMode_Explorer") : null, null);
