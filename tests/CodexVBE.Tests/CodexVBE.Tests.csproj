@@ -30,6 +30,7 @@
     <Compile Include="Unit\VbeProjectExcelHostTests.cs" />
     <Compile Include="Unit\VbeDebugWindowsTests.cs" />
     <Compile Include="Unit\VbeReferenceTypesTests.cs" />
+    <Compile Include="Unit\VbeReferenceTypesBranchTests.cs" />
     <Compile Include="Unit\VbeFormsTests.cs" />
     <Compile Include="Unit\LlmVbeToolContractTests.cs" />
     <Compile Include="Unit\VbeDebugTests.cs" />

@@ -161,6 +161,32 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual(false, Prop(emptyMembers, "HasMore"));
         }
 
+        [TestMethod]
+        public void CoclassMembersResolveThroughItsDefaultNonSourceInterface()
+        {
+            if (!File.Exists(StdOlePath)) Assert.Inconclusive("Windows stdole2.tlb is unavailable.");
+            var reference = ReferenceFor(StdOlePath);
+            var project = new FakeProject { Name = "Projet" };
+            project.References.Add(reference);
+            var host = new FakeVbe();
+            host.VBProjects.Add(project);
+            var reader = new VbeReferenceTypes(host);
+            var request = new Request { Project = project.Name, Guid = reference.GUID,
+                Major = reference.Major, Minor = reference.Minor, Limit = 50 };
+            object page = reader.ListTypes(request);
+            object selected = null;
+            foreach (object type in (IEnumerable)Prop(page, "Types"))
+                if ((string)Prop(type, "Kind") == "TKIND_COCLASS")
+                { selected = type; break; }
+            if (selected == null) Assert.Inconclusive("stdole2.tlb exposes no coclass on this system.");
+            request.TypeIndex = Convert.ToInt32(Prop(selected, "TypeIndex"));
+            request.TypeIdentity = (string)Prop(selected, "TypeIdentity");
+            object members = reader.ListMembers(request);
+            Assert.AreEqual("DefaultNonSourceInterface", Prop(members, "Resolution"));
+            Assert.IsTrue(Convert.ToInt32(Prop(members, "TotalMembers")) > 0);
+            Assert.AreEqual(request.TypeIdentity, Prop(Prop(members, "Type"), "Identity"));
+        }
+
         private static FakeReference ReferenceFor(string path)
         {
             ITypeLib library;

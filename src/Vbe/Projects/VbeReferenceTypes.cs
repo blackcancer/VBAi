@@ -23,6 +23,8 @@ namespace CodexVBE
         private const int MaxTypes = 10000;
         private const int MaxMembers = 10000;
         private readonly dynamic vbe;
+        private readonly Func<string, ITypeLib> loadFile;
+        private readonly Func<Guid, ushort, ushort, ITypeLib> loadRegistered;
 
         [DllImport("oleaut32.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
         private static extern void LoadTypeLibEx(string file, int regKind, out ITypeLib typeLib);
@@ -31,7 +33,30 @@ namespace CodexVBE
         private static extern void LoadRegTypeLib(ref Guid guid, ushort major, ushort minor,
             int lcid, out ITypeLib typeLib);
 
-        public VbeReferenceTypes(object vbe) { this.vbe = vbe; }
+        public VbeReferenceTypes(object vbe)
+            : this(vbe, LoadSelectedFile, LoadRegisteredLibrary) { }
+
+        internal VbeReferenceTypes(object vbe, Func<string, ITypeLib> loadFile,
+            Func<Guid, ushort, ushort, ITypeLib> loadRegistered)
+        {
+            this.vbe = vbe;
+            this.loadFile = loadFile ?? throw new ArgumentNullException(nameof(loadFile));
+            this.loadRegistered = loadRegistered ?? throw new ArgumentNullException(nameof(loadRegistered));
+        }
+
+        private static ITypeLib LoadSelectedFile(string path)
+        {
+            ITypeLib library;
+            LoadTypeLibEx(path, 2, out library); // REGKIND_NONE
+            return library;
+        }
+
+        private static ITypeLib LoadRegisteredLibrary(Guid guid, ushort major, ushort minor)
+        {
+            ITypeLib library;
+            LoadRegTypeLib(ref guid, major, minor, 0, out library);
+            return library;
+        }
 
         public object ListTypes(Request request)
         {
@@ -163,20 +188,19 @@ namespace CodexVBE
             return found;
         }
 
-        private static LoadedLibrary OpenLibrary(ReferenceSource reference)
+        private LoadedLibrary OpenLibrary(ReferenceSource reference)
         {
             ITypeLib library;
             string source = "SelectedReferenceFile: LoadTypeLibEx(REGKIND_NONE)";
             object fallbackError = null;
-            try { LoadTypeLibEx(reference.FullPath, 2, out library); } // REGKIND_NONE
+            try { library = loadFile(reference.FullPath); }
             catch (COMException ex)
             {
                 fallbackError = Error(ex);
                 Guid guid = Guid.Parse(reference.Guid);
                 try
                 {
-                    LoadRegTypeLib(ref guid, (ushort)reference.Major, (ushort)reference.Minor, 0,
-                        out library);
+                    library = loadRegistered(guid, (ushort)reference.Major, (ushort)reference.Minor);
                 }
                 catch (COMException registryError)
                 {
