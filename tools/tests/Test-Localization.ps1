@@ -31,8 +31,8 @@ try {
     Assert ((Invoke-Text Detect @($null,$french)).Name -eq 'fr-FR') 'Missing IDE must fall back to Windows display language.'
     Assert ((Invoke-Text Detect @($null,[Globalization.CultureInfo]::GetCultureInfo('fi-FI'))).Name -eq 'en-US') 'Unsupported Windows language must fall back to English.'
 
-    $neutral = [xml](Get-Content src/Localization/UiStrings.resx -Raw -Encoding UTF8)
-    $translated = [xml](Get-Content src/Localization/UiStringsFrench.resx -Raw -Encoding UTF8)
+    $neutral = [xml](Get-Content src/CodexVBE/Localization/UiStrings.resx -Raw -Encoding UTF8)
+    $translated = [xml](Get-Content src/CodexVBE/Localization/UiStringsFrench.resx -Raw -Encoding UTF8)
     $keys = @($neutral.root.data | ForEach-Object { $_.name })
     $translatedKeys = @($translated.root.data | ForEach-Object { $_.name })
     Assert ((Compare-Object $keys $translatedKeys).Count -eq 0) 'Translation resource keys differ.'

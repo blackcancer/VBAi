@@ -52,7 +52,7 @@ de messages et les chemins de données restent compatibles avec les sessions exi
 
 ## Maintenance
 
-`src/Localization/UiStrings.resx` contient les clés anglaises et
+`src/CodexVBE/Localization/UiStrings.resx` contient les clés anglaises et
 `UiStringsFrench.resx` leurs traductions françaises. Les autres catalogues suivent
 le même schéma et sont déclarés dans `UiLanguages.cs`. Tous les catalogues sont
 embarqués dans la DLL principale ; aucun assembly satellite à déployer.

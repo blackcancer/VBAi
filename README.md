@@ -12,13 +12,17 @@ Complément COM expérimental pour le VBE 64 bits, notamment dans Excel et SOLID
 ## Organisation
 
 - CodexVBE.sln : solution à ouvrir dans Visual Studio Community, configuration Debug ou Release, plateforme x64.
-- CodexVBE.csproj : projet .NET Framework 4.8.
-- src/ : code du complément chargé dans l'hôte du VBE, organisé par Host, Bridge, Vbe et Llm ; voir [l'architecture](docs/architecture.md).
+- src/CodexVBE/CodexVBE.csproj : complément COM .NET Framework 4.8.
+- src/CodexVBE/ : code du complément chargé dans l'hôte du VBE, organisé par Host, Bridge, Vbe et Llm ; voir [l'architecture](docs/architecture.md).
+- tests/ : projet VSTest et exécutables de diagnostic ; voir [les tests](tests/README.md).
+- Directory.Build.props : paramètres de compilation communs aux quatre projets.
+- assets/ : ressources graphiques embarquées dans le complément.
 - tools/ : scripts d'installation, de diagnostic et d'appel de la passerelle.
 - tools/VbeController/ : recherches et inventaire des fenêtres, sans interaction clavier.
 - test.swp : macro de travail jetable, maintenue ouverte dans le VBE.
 - test-backups/ : copie de secours fournie par l'utilisateur et sauvegardes de test. Ne pas restaurer lors des essais ordinaires.
-- bin/ et obj/ : sorties de compilation.
+- bin/ : DLL du complément conservée au chemin attendu par l’installation.
+- artifacts/ : rapports et compilations isolées ; obj/ et bin/ propres aux projets restent ignorés par Git.
 
 ## État vérifié
 
@@ -32,10 +36,11 @@ Les commandes `debug_state`, `list_commands`, `select_code` et `invoke_debug` s�
 
 ## Utilisation
 
-La DLL et sa bibliothèque de types COM se trouvent sous bin/Debug/net48/. Ne pas les reconstruire pendant une session VBE qui les a chargées. Ouvrir CodexVBE.sln dans Visual Studio Community, compiler en x64, générer `CodexVBE.tlb` avec l'outil Microsoft `TlbExp.exe`, puis relancer l'hôte pour charger la nouvelle version. La compilation ne prend que les sources de `src/` ; les sondes de `tools/` n'entrent pas dans le complément.
+La DLL et sa bibliothèque de types COM se trouvent sous bin/Debug/net48/. Ne pas les reconstruire pendant une session VBE qui les a chargées. Ouvrir CodexVBE.sln dans Visual Studio Community, compiler en x64, générer `CodexVBE.tlb` avec l'outil Microsoft `TlbExp.exe`, puis relancer l'hôte pour charger la nouvelle version. La compilation ne prend que les sources de `src/CodexVBE/` ; les sondes de `tools/` n'entrent pas dans le complément.
 
 Depuis un PowerShell de développement Visual Studio 64 bits, dans la racine du projet :
 
+    dotnet build CodexVBE.sln -c Debug -p:Platform=x64
     TlbExp.exe .\bin\Debug\net48\CodexVBE.dll /out:.\bin\Debug\net48\CodexVBE.tlb
     powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Install-CodexVBE.ps1
     $hostProcessId = (Get-Process EXCEL | Select-Object -First 1).Id

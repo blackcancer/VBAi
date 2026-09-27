@@ -145,7 +145,7 @@ doit suivre le processus habituel de signature du projet.
 Le staging par fichier, le transport automatique des changements non commitées entre branches,
 les pull requests et la création de dépôts GitHub depuis l’interface restent hors de ce périmètre.
 
-`tools/tests/Git/GitTests.csproj` teste de vrais dépôts Git locaux, les échanges push/fetch,
+`tests/CodexVBE.Git.Smoke/CodexVBE.Git.Smoke.csproj` teste de vrais dépôts Git locaux, les échanges push/fetch,
 les protections contre les divergences, les sauvegardes privées, le cycle complet des commandes WinForms,
 les erreurs COM simulées, les modules hôtes et les ressources de formulaires. Le formulaire est aussi chargé
 dans `DesignSurface` avec un constructeur sans services actifs. Les tests avancés effectuent une vraie fusion conflictuelle,

@@ -45,7 +45,7 @@ Les clés API ne sont pas enregistrées dans cette base. Les contenus de convers
 Depuis le worktree :
 
 ```powershell
-dotnet build CodexVBE.csproj -c Debug -p:Platform=x64 -p:OutputPath=artifacts/chat-build/final/ -p:BaseIntermediateOutputPath=artifacts/chat-build/obj/ -p:AppendTargetFrameworkToOutputPath=false
+dotnet build src/CodexVBE/CodexVBE.csproj -c Debug -p:Platform=x64 -p:BuildOutputRoot="$PWD/artifacts/chat-build"
 powershell.exe -Sta -NoProfile -File tools/tests/Test-ChatDesigner.ps1
 powershell.exe -Sta -NoProfile -File tools/tests/Test-ChatUx.ps1
 powershell.exe -Sta -NoProfile -File tools/tests/Test-ChatWorkflow.ps1

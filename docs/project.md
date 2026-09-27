@@ -29,12 +29,12 @@ Ces points décrivent **la cible**, pas les capacités déjà terminées. Le VBE
 
 | Élément | Rôle |
 | --- | --- |
-| `CodexVBE.sln`, `CodexVBE.csproj` | Solution Visual Studio Community, cible `net48`, plateforme x64. |
-| `src/Host/AddIn.cs` | Point d'entrée COM du complément VBE ; démarre la passerelle dans le processus hôte du VBE. |
-| `src/Bridge/BridgeServer.cs` | Tube nommé `CodexVBE.<PID hôte>` limité au compte Windows courant ; transfert de requêtes JSON vers le thread du VBE. |
-| `src/Vbe/VbeSession.cs` | Inventaire des projets/modules, lecture, remplacement de lignes et distribution des commandes. |
-| `src/Vbe/Debug/VbeDebug.cs` | Sélection d'une ligne par `CodePane.SetSelection`, inventaire des contrôles VBE et invocation native par `CommandBarControl.Execute`. |
-| `src/Bridge/Protocol.cs` | Contrat JSON des requêtes et réponses. |
+| `CodexVBE.sln`, `src/CodexVBE/CodexVBE.csproj` | Solution Visual Studio Community, cible `net48`, plateforme x64. |
+| `src/CodexVBE/Host/AddIn.cs` | Point d'entrée COM du complément VBE ; démarre la passerelle dans le processus hôte du VBE. |
+| `src/CodexVBE/Bridge/BridgeServer.cs` | Tube nommé `CodexVBE.<PID hôte>` limité au compte Windows courant ; transfert de requêtes JSON vers le thread du VBE. |
+| `src/CodexVBE/Vbe/VbeSession.cs` | Inventaire des projets/modules, lecture, remplacement de lignes et distribution des commandes. |
+| `src/CodexVBE/Vbe/Debug/VbeDebug.cs` | Sélection d'une ligne par `CodePane.SetSelection`, inventaire des contrôles VBE et invocation native par `CommandBarControl.Execute`. |
+| `src/CodexVBE/Bridge/Protocol.cs` | Contrat JSON des requêtes et réponses. |
 | `tools/Invoke-CodexVBE.ps1` | Client de la passerelle intégrée. |
 | `tools/VbeController/Invoke-VbeController.ps1` | Contrôleur externe en lecture seule pour l'état, les fenêtres, les recherches, les variables locales et la sortie de la fenêtre Exécution. |
 | `tools/Install-CodexVBE.ps1`, `tools/Test-CodexVBEInstallation.ps1` | Inscription COM utilisateur courant et diagnostic. |

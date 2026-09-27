@@ -20,7 +20,7 @@ public class FakeComponent { public string Name { get { return "Module1"; } } pu
 public class FakeProject { public string Name { get { return "Projet"; } } public string FileName { get { return "probe.xlsm"; } } public int Mode { get { return 2; } } public FakeComponent[] VBComponents = new[] { new FakeComponent() }; }
 public class FakeVbe { public FakeProject[] VBProjects = new[] { new FakeProject() }; }
 '@
-$assembly = [Reflection.Assembly]::LoadFrom((Resolve-Path 'artifacts\chat-build\final\CodexVBE.dll'))
+$assembly = [Reflection.Assembly]::LoadFrom((Resolve-Path 'artifacts\chat-build\CodexVBE\Debug\net48\CodexVBE.dll'))
 $flags = [Reflection.BindingFlags]'Instance,NonPublic,Public'
 $vbe = [FakeVbe]::new()
 $sessionType = $assembly.GetType('CodexVBE.VbeSession')

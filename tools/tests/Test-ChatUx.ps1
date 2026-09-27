@@ -1,4 +1,4 @@
-﻿param([string]$AssemblyPath = "artifacts/chat-build/final/CodexVBE.dll")
+﻿param([string]$AssemblyPath = "artifacts/chat-build/CodexVBE/Debug/net48/CodexVBE.dll")
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms, PresentationFramework
 Add-Type -TypeDefinition @'

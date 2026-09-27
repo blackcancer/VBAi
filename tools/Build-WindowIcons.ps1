@@ -41,9 +41,9 @@ foreach ($name in @('assistant', 'settings', 'github')) {
 }
 
 $forms = @{
-    'src/Llm/Chat/ChatWindow.resx' = 'assistant'
-    'src/Llm/Settings/LlmSettingsWindow.resx' = 'settings'
-    'src/Git/GitWindow.resx' = 'github'
+    'src/CodexVBE/Llm/Chat/ChatWindow.resx' = 'assistant'
+    'src/CodexVBE/Llm/Settings/LlmSettingsWindow.resx' = 'settings'
+    'src/CodexVBE/Git/GitWindow.resx' = 'github'
 }
 foreach ($relative in $forms.Keys) {
     $path = Join-Path $ProjectRoot $relative
@@ -61,7 +61,7 @@ foreach ($relative in $forms.Keys) {
     $document.Save($path)
 }
 
-$chatPath = Join-Path $ProjectRoot 'src/Llm/Chat/ChatWindow.resx'
+$chatPath = Join-Path $ProjectRoot 'src/CodexVBE/Llm/Chat/ChatWindow.resx'
 $document = [xml](Get-Content -LiteralPath $chatPath -Raw)
 foreach ($entry in @(@('configure.Image', 'settings'), @('github.Image', 'github'))) {
     $old = $document.SelectSingleNode('/root/data[@name="' + $entry[0] + '"]')

@@ -1,9 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>
     <IsTestProject>true</IsTestProject>
-    <PlatformTarget>x64</PlatformTarget>
-    <LangVersion>7.3</LangVersion>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <GenerateProgramFile>false</GenerateProgramFile>
   </PropertyGroup>
@@ -14,63 +11,15 @@
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Unit\StreamTests.cs" />
-    <Compile Include="Unit\ProviderProtocolTests.cs" />
-    <Compile Include="Unit\HistoryAndCodeTests.cs" />
-    <Compile Include="Unit\WinFormsDesignerTests.cs" />
-    <Compile Include="Unit\VbeSessionContractTests.cs" />
-    <Compile Include="Unit\DebugCommandTests.cs" />
-    <Compile Include="Unit\ProjectResolverTests.cs" />
-    <Compile Include="Unit\CodeFileEncodingTests.cs" />
-    <Compile Include="Unit\UiLocalizationTests.cs" />
-    <Compile Include="Unit\GitReviewTests.cs" />
-    <Compile Include="Unit\VbeEditorWindowsTests.cs" />
-    <Compile Include="Unit\VbeFormsContractTests.cs" />
-    <Compile Include="Unit\VbeCodeNavigationCoverageTests.cs" />
-    <Compile Include="Unit\VbeProjectComponentsTests.cs" />
-    <Compile Include="Unit\VbeProjectExcelHostTests.cs" />
-    <Compile Include="Unit\VbeDebugWindowsTests.cs" />
-    <Compile Include="Unit\VbeReferenceTypesTests.cs" />
-    <Compile Include="Unit\VbeReferenceTypesBranchTests.cs" />
-    <Compile Include="Unit\VbeFormsTests.cs" />
-    <Compile Include="Unit\LlmVbeToolContractTests.cs" />
-    <Compile Include="Unit\VbeDebugTests.cs" />
-    <Compile Include="Unit\VbeSessionTests.cs" />
-    <Compile Include="Unit\VbeProcedureMutationTests.cs" />
-    <Compile Include="Unit\VbeFormsPartialTests.cs" />
-    <Compile Include="Unit\VbeFormsInitializerTests.cs" />
-    <Compile Include="Unit\VbeDebugWindowsBoundaryTests.cs" />
-    <Compile Include="Unit\VbeDebugWindowsParsingTests.cs" />
-    <Compile Include="Unit\BridgeServerTests.cs" />
-    <Compile Include="Unit\LlmVbeAsyncValidationTests.cs" />
-    <Compile Include="Unit\VbeChatReferenceTests.cs" />
-    <Compile Include="Unit\ChatWindowStateTests.cs" />
-    <Compile Include="Unit\GitWindowStateTests.cs" />
-    <Compile Include="Unit\CodexAppServerClientTests.cs" />
-    <Compile Include="Unit\VbeDebugWindowsNativeTests.cs" />
-    <Compile Include="Unit\VbeDebugWindowsWatchProbeTests.cs" />
-    <Compile Include="Unit\VbeDebugWindowsImmediateProbeTests.cs" />
-    <Compile Include="Unit\VbeDebugWindowsSignatureProbeTests.cs" />
-    <Compile Include="Unit\VbeDebugWindowsOptionsProbeTests.cs" />
-    <Compile Include="Unit\VbeFormsFrameDuplicationTests.cs" />
-    <Compile Include="Unit\VbeFormsCoreBranchTests.cs" />
-    <Compile Include="Unit\VbeFormsValueDuplicationTests.cs" />
-    <Compile Include="Unit\HostSettingsWindowTests.cs" />
-    <Compile Include="Unit\HostSettingsCoverageTests.cs" />
-    <Compile Include="Unit\VbeMenuLifecycleTests.cs" />
-    <Compile Include="Integration\SessionStoreTests.cs" />
-    <Compile Include="Integration\ExcelHostTests.cs" />
-    <Compile Include="Integration\ExcelVbeFixture.cs" />
-    <Compile Include="Integration\ExcelProjectPersistenceTests.cs" />
-    <Compile Include="Integration\SolidWorksHostTests.cs" />
-    <Compile Include="Integration\VbeBridgeClient.cs" />
-    <Compile Include="Integration\GitCoverageTests.cs" />
-    <Compile Include="Integration\ProviderCoverageTests.cs" />
-    <Compile Include="..\..\tools\tests\Git\GitTests.cs" Link="Integration\GitTests.cs" />
-    <Compile Include="..\..\tools\tests\Git\AdvancedGitTests.cs" Link="Integration\AdvancedGitTests.cs" />
-    <Compile Include="..\..\tools\tests\Providers\ProviderTests.cs" Link="Integration\ProviderTests.cs" />
-    <Compile Include="..\..\tools\tests\Providers\ExtendedProviderTests.cs" Link="Integration\ExtendedProviderTests.cs" />
-    <Compile Include="..\..\tools\tests\Providers\GitHubSettingsTests.cs" Link="Integration\GitHubSettingsTests.cs" />
+    <Compile Include="Unit\**\*.cs" />
+    <Compile Include="Integration\**\*.cs" />
+    <Compile Include="Scenarios\**\*.cs" />
+    <Compile Include="Infrastructure\**\*.cs" />
+    <Compile Include="..\CodexVBE.Git.Smoke\GitTests.cs" Link="Shared\Git\GitTests.cs" />
+    <Compile Include="..\CodexVBE.Git.Smoke\AdvancedGitTests.cs" Link="Shared\Git\AdvancedGitTests.cs" />
+    <Compile Include="..\CodexVBE.Providers.Smoke\ProviderTests.cs" Link="Shared\Providers\ProviderTests.cs" />
+    <Compile Include="..\CodexVBE.Providers.Smoke\ExtendedProviderTests.cs" Link="Shared\Providers\ExtendedProviderTests.cs" />
+    <Compile Include="..\CodexVBE.Providers.Smoke\GitHubSettingsTests.cs" Link="Shared\Providers\GitHubSettingsTests.cs" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Windows.Forms" />
@@ -79,6 +28,7 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\tools\tests\Test-TestLayout.ps1" Link="Architecture\Test-TestLayout.ps1" />
     <None Include="..\..\tools\tests\Test-SolidWorksDebug.ps1" Link="Manual\Debug\Test-SolidWorksDebug.ps1" />
     <None Include="..\..\tools\tests\Test-SolidWorksBreakpoint.ps1" Link="Manual\Debug\Test-SolidWorksBreakpoint.ps1" />
     <None Include="..\..\tools\tests\Test-VbeOptions.ps1" Link="Manual\Debug\Test-VbeOptions.ps1" />
@@ -93,8 +43,14 @@
     <None Include="..\..\tools\probes\Inspect-DebugTree.ps1" Link="Manual\Debug\Inspect-DebugTree.ps1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\CodexVBE.csproj" />
-    <ProjectReference Include="..\..\tools\tests\Providers\ProviderTests.csproj" ReferenceOutputAssembly="false" />
-    <None Include="..\..\tools\tests\Providers\bin\$(Configuration)\net48\ProviderTests.exe" Link="ProviderTests.exe" CopyToOutputDirectory="PreserveNewest" />
+    <ProjectReference Include="..\..\src\CodexVBE\CodexVBE.csproj" />
+    <ProjectReference Include="..\CodexVBE.Providers.Smoke\CodexVBE.Providers.Smoke.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
+  <Target Name="CopyProviderFixture" AfterTargets="Build">
+    <MSBuild Projects="..\CodexVBE.Providers.Smoke\CodexVBE.Providers.Smoke.csproj" Targets="GetTargetPath" BuildInParallel="false">
+      <Output TaskParameter="TargetOutputs" ItemName="ProviderFixture" />
+    </MSBuild>
+    <Copy SourceFiles="@(ProviderFixture)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(ProviderFixture->'%(FullPath).config')" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" Condition="Exists('%(ProviderFixture.FullPath).config')" />
+  </Target>
 </Project>

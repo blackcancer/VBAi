@@ -57,8 +57,8 @@ Seuls les outils VBA déclarés sont exposés. Les demandes natives shell/fichie
 ## Vérification
 
 ```powershell
-dotnet build tools/tests/Providers/ProviderTests.csproj -c Debug -p:OutputPath=../../../artifacts/provider-tests/
-./artifacts/provider-tests/ProviderTests.exe
+dotnet build tests/CodexVBE.Providers.Smoke/CodexVBE.Providers.Smoke.csproj -c Debug -p:BuildOutputRoot="$PWD/artifacts/provider-tests"
+./artifacts/provider-tests/CodexVBE.Providers.Smoke/Debug/net48/ProviderTests.exe
 ```
 
 Les tests utilisent des gestionnaires HTTP simulés et un processus CLI de test avec le véritable cadrage `Content-Length` : URLs, en-têtes, catalogues, pagination, appels/résultats d’outils, Unicode, métadonnées de continuation, stockage DPAPI, migration des réglages, brouillons du formulaire et annulation. Copilot couvre les protocoles 2/3, les permissions natives refusées, les outils enregistrés, les doublons, les sessions étrangères, une version inconnue et l’arrêt d’une réponse.

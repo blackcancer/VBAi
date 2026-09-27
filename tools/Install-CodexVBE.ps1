@@ -16,7 +16,7 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $assemblyPath = Join-Path $projectRoot 'bin\Debug\net48\CodexVBE.dll'
 $typeLibPath = Join-Path $projectRoot 'bin\Debug\net48\CodexVBE.tlb'
 if (-not (Test-Path -LiteralPath $assemblyPath)) {
-    throw "Build CodexVBE.csproj first. Missing: $assemblyPath"
+    throw "Build src/CodexVBE/CodexVBE.csproj first. Missing: $assemblyPath"
 }
 foreach ($dependency in @('Markdig.dll', 'System.Memory.dll', 'System.Buffers.dll', 'System.Numerics.Vectors.dll', 'System.Runtime.CompilerServices.Unsafe.dll')) {
     if (-not (Test-Path -LiteralPath (Join-Path (Split-Path -Parent $assemblyPath) $dependency))) {

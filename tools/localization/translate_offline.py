@@ -33,7 +33,7 @@ def main():
     args = parser.parse_args()
     root = args.root.resolve()
     os.chdir(root)
-    folder = root / 'src/Localization'
+    folder = root / 'src/CodexVBE/Localization'
     tree = ET.parse(folder / 'UiStrings.resx')
     entries = [(node.attrib['name'], node.findtext('value') or '') for node in tree.getroot().findall('data')]
     output = folder / ('UiStrings' + LANGUAGES[args.language] + '.resx')

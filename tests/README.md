@@ -1,22 +1,69 @@
-# Tests VSTest
+# Tests de CodexVBE
 
-`CodexVBE.Tests` is an x64 .NET Framework 4.8 MSTest project in `CodexVBE.sln`. Test Explorer discovers the cases by category. Tests reference the production DLL; `InternalsVisibleTo` exposes internal code to this test assembly without copying production source.
+Les trois projets de test et diagnostic sont regroupés ici et visibles dans `CodexVBE.sln`. Ils ciblent .NET Framework 4.8 x64 et référencent le véritable complément sous `src/CodexVBE`.
 
-Run unit tests by default from the repository root:
+## Organisation
+
+- `CodexVBE.Tests/Unit/` : miroir des dossiers **et des fichiers** de production, avec le suffixe `.Tests.cs`.
+- `CodexVBE.Tests/Scenarios/` : scénarios complémentaires qui vérifient plusieurs fichiers ensemble.
+- `CodexVBE.Tests/Infrastructure/Fixtures/` : doubles de test, utilitaires et initialisation partagés.
+- `CodexVBE.Tests/Integration/` : stockage local, Git, fournisseurs et hôtes Excel/SOLIDWORKS.
+- `CodexVBE.Tests/Infrastructure/Hosts/` : fixtures hôtes et client du tube nommé.
+- `CodexVBE.Git.Smoke/` : scénarios Git partagés avec VSTest et exécutable `GitTests.exe`.
+- `CodexVBE.Providers.Smoke/` : scénarios fournisseurs partagés et exécutable `ProviderTests.exe`.
+
+Les sources partagées apparaissent sous `Shared` dans VSTest. Les scripts PowerShell restent sous `tools/tests` et `tools/probes`, avec des liens sous `Manual/Debug` dans Visual Studio. Ils ne sont ni des tests MSTest ni du code livré dans le complément.
+
+### Convention miroir
+
+| Production sous `src/CodexVBE/` | Tests sous `CodexVBE.Tests/Unit/` |
+| --- | --- |
+| `Host/AddIn.cs` | `Host/AddIn.Tests.cs` |
+| `Llm/Chat/ChatWindow.Sessions.cs` | `Llm/Chat/ChatWindow.Sessions.Tests.cs` |
+| `Vbe/Forms/VbeForms.CheckBoxDuplication.cs` | `Vbe/Forms/VbeForms.CheckBoxDuplication.Tests.cs` |
+
+Un nouveau test ciblé rejoint le fichier miroir de l’implémentation, y compris pour une classe partielle.
+Les parcours qui vérifient plusieurs surfaces ensemble restent dans `Scenarios` ; les parcours avec
+stockage ou hôte réel restent dans `Integration`. Les catégories et identifiants VSTest existants
+sont conservés. Les classes de test utilisent `partial` pour partager leurs auxiliaires sous
+`Infrastructure/Fixtures`, sans recopier les doubles COM ou renommer leurs types utilisés par réflexion.
+
+Il n’y a pas de fichier miroir vide pour simuler une couverture. L’absence de miroir dédié ne prouve
+pas l’absence de couverture par un scénario ; seule la mesure de couverture établit les lignes et
+branches exécutées. Pour contrôler la convention et obtenir l’inventaire des correspondances :
 
 ```powershell
-dotnet test CodexVBE.sln --filter TestCategory=Unit
+powershell.exe -NoProfile -File tools/tests/Test-TestLayout.ps1 -ReportPath artifacts/test-layout/mirror-inventory.json
 ```
 
-Run unit tests plus the local SQLite integration test with coverage:
+## Suite locale
+
+Depuis la racine du dépôt :
 
 ```powershell
-dotnet test tests/CodexVBE.Tests/CodexVBE.Tests.csproj --filter "TestCategory=Unit|TestCategory=LocalIntegration" --collect:"XPlat Code Coverage"
+dotnet test tests/CodexVBE.Tests/CodexVBE.Tests.csproj -c Debug
 ```
 
-The latest complete measured run on 2026-09-27 passed **347 tests**, with **3 opt-in host tests skipped** and no failures. The `CodexVBE` package in Cobertura reports **76.15% of production lines** and **74.33% of production branches**. The collector excludes the auxiliary `ProviderTests` executable from this add-in measure; no production files or methods were excluded. The two Excel tests passed separately in a live isolated Excel instance. The SOLIDWORKS test still needs a preloaded host.
+Pour une compilation isolée, notamment quand Excel a chargé la DLL installée :
 
-The `Excel` category is opt-in runtime integration. Its smoke test creates a separate Excel process and temporary workbook, reads and saves the workbook, opens the VBE through Excel's native `CommandBars.ExecuteMso("VisualBasic")` command, and queries the add-in pipe `CodexVBE.<PID>`. It verifies the VBE environment, the exact temporary project path, and `CodexVBE.AddIn` with `Connect=true`. The test records existing Excel PIDs and closes only its own workbook and process.
+```powershell
+dotnet build CodexVBE.sln -c Debug -p:BuildOutputRoot="$PWD/artifacts/build"
+dotnet test tests/CodexVBE.Tests/CodexVBE.Tests.csproj -c Debug --no-build -p:BuildOutputRoot="$PWD/artifacts/build" --results-directory artifacts/test-results --logger "trx;LogFileName=tests.trx"
+```
+
+MSBuild copie automatiquement le processus CLI simulé dans la sortie VSTest. Les tests fournisseurs utilisent des réponses HTTP et des processus simulés ; les essais authentifiés ne sont pas lancés par défaut. Les tests WinForms nécessitent Windows et une session interactive. Les tests Git nécessitent `git.exe` et travaillent sur des dépôts temporaires locaux.
+
+Le filtre `--filter TestCategory=Unit` limite l’exécution aux tests unitaires. Une validation globale doit exécuter la suite complète sans ce filtre. Les résultats TRX font foi pour le nombre de tests exécutés, échoués et ignorés ; les anciens pourcentages ne sont pas des résultats actuels.
+
+## Couverture
+
+```powershell
+dotnet test tests/CodexVBE.Tests/CodexVBE.Tests.csproj -c Debug --collect:"XPlat Code Coverage" --results-directory artifacts/coverage -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Exclude=[ProviderTests]*
+```
+
+Le filtre exclut uniquement l’exécutable auxiliaire des mesures du complément. Aucun fichier, méthode ou branche de production ne doit être exclu pour atteindre la cible. Le code exécuté dans Excel ou SOLIDWORKS n’est pas mesuré par le collecteur du processus VSTest.
+
+## Excel automatisé — hôte prioritaire
 
 ```powershell
 $env:CODEXVBE_RUN_EXCEL_TESTS = '1'
@@ -24,16 +71,14 @@ dotnet test tests/CodexVBE.Tests/CodexVBE.Tests.csproj --filter TestCategory=Exc
 Remove-Item Env:CODEXVBE_RUN_EXCEL_TESTS
 ```
 
-The latest opt-in run on 2026-09-27 passed **2/2 Excel tests**. The reusable `ExcelVbeFixture` starts an owned visible Excel process, opens its VBE through `ExecuteMso("VisualBasic")`, sends requests over the production bridge, then closes only that process. The second test verifies the first `.xlsm` SaveAs and a subsequent Save through the same VBE project. Direct external access to `excel.VBE` was separately attempted and refused by Excel's AccessVBOM trust setting; these tests do not modify that user-level setting. Code executed inside Excel is not measured by the testhost's Coverlet collector.
+`ExcelVbeFixture` crée une instance Excel visible et un classeur temporaire, ouvre le VBE par `CommandBars.ExecuteMso("VisualBasic")`, puis appelle le tube `CodexVBE.<PID>`. Les tests vérifient le chargement du complément, le projet ciblé et sa sauvegarde. Ils ferment uniquement leur propre classeur et processus. L’installation du complément est un prérequis ; les tests ne changent pas AccessVBOM. Une compilation isolée ne remplace pas la DLL installée.
 
-The standalone console harness executables in `tools/tests/Providers` and `tools/tests/Git` are separate from VSTest; selected source files are linked as VSTest integration cases. The PowerShell debug scripts are linked under **Manual/Debug** in the test project so they appear with the tests in Visual Studio. They remain opt-in host probes, not MSTest cases or part of the coverage run. The production project compiles only `src/**/*.cs`; no debug test class is shipped in the add-in. Excel is the first host for automated COM integration.
-
-The `SolidWorks` category is strictly opt-in. It requires `CODEXVBE_SOLIDWORKS_PID` to name an **existing** `SLDWORKS` process whose VBE and CodexVBE add-in are already loaded. The test connects to that PID's bridge, verifies a VBE project and `CodexVBE.AddIn` with `Connect=true`, and does not start, close, or modify SOLIDWORKS. To run it after preloading the host:
+## SOLIDWORKS préchargé
 
 ```powershell
-$env:CODEXVBE_SOLIDWORKS_PID = '<existing SLDWORKS PID>'
+$env:CODEXVBE_SOLIDWORKS_PID = '<PID SLDWORKS existant>'
 dotnet test tests/CodexVBE.Tests/CodexVBE.Tests.csproj --filter TestCategory=SolidWorks
 Remove-Item Env:CODEXVBE_SOLIDWORKS_PID
 ```
 
-With SOLIDWORKS closed and no PID supplied, VSTest reported **1 ignored** SolidWorks test on 2026-09-27. The runtime check is `NOT_RUN`. The existing SOLIDWORKS PowerShell probes remain separate and were not executed by this VSTest case.
+L’utilisateur doit avoir ouvert SOLIDWORKS, son VBE et le complément. Le test utilise la passerelle du PID fourni, vérifie le projet et le complément connecté, sans lancer ni fermer SOLIDWORKS. Sans activation explicite, les tests hôtes sont ignorés : ils restent `NOT_RUN`, pas validés par les simulations locales.

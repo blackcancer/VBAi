@@ -1,4 +1,4 @@
-﻿param([string]$AssemblyPath = 'artifacts/chat-build/final/CodexVBE.dll')
+﻿param([string]$AssemblyPath = 'artifacts/chat-build/CodexVBE/Debug/net48/CodexVBE.dll')
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing, System.Design, WindowsFormsIntegration
 Add-Type -ReferencedAssemblies System.dll, System.Design.dll -TypeDefinition @'
@@ -31,7 +31,7 @@ try {
     $text.SetValue($button, 'Designer edit probe')
     Assert ($button.Text -eq 'Designer edit probe') 'Designer property edit was not applied.'
     $text.SetValue($button, $before)
-    $source = [IO.File]::ReadAllText((Join-Path (Get-Location) 'src/Llm/Chat/ChatWindow.Designer.cs'))
+    $source = [IO.File]::ReadAllText((Join-Path (Get-Location) 'src/CodexVBE/Llm/Chat/ChatWindow.Designer.cs'))
     Assert (-not $source.Contains('InitializeShell') -and -not $source.Contains('BuildWorkflowControls')) 'InitializeComponent calls a runtime UI factory.'
     Assert (-not $source.Contains('Maj+Entrée') -and -not $source.Contains('Entrée : envoyer')) 'Unwanted keyboard annotation remains.'
     Write-Output 'PASS complete WinForms hierarchy, inert designer constructor and removed keyboard annotation'

@@ -2,7 +2,7 @@
     [ValidateSet('Conversation', 'History', 'Reference', 'Command', 'Welcome')][string]$Mode = 'Conversation',
     [int]$Width = 720,
     [int]$Height = 950,
-    [string]$AssemblyPath = 'artifacts/chat-build/final/CodexVBE.dll'
+    [string]$AssemblyPath = 'artifacts/chat-build/CodexVBE/Debug/net48/CodexVBE.dll'
 )
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing, PresentationFramework
