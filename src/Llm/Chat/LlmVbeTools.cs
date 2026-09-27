@@ -18,6 +18,7 @@ namespace CodexVBE
         private readonly LlmSettings settings;
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
         private readonly List<string> userRequests = new List<string>();
+        public event Action<CodeChange> CodeEdited;
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
             "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "compile_project", "open_debug_pane", "list_commands", "select_code",
             "project_properties", "component_properties", "component_property_value", "vbe_windows", "code_panes", "open_object_browser", "list_procedures", "find_code", "select_procedure", "list_forms",
@@ -281,7 +282,15 @@ namespace CodexVBE
                     return json.Serialize(Response.Failure("Les modifications VBE sont désactivées (mode Lecture seule)."));
                 if (edit && settings.VbeEditApproval != "Automatic" && settings.VbeEditApproval != "AskEachTime")
                     return json.Serialize(Response.Failure("Politique de modification VBE inconnue ; action refusée."));
-                if (edit && settings.VbeEditApproval == "AskEachTime")
+                CodeSnapshot beforeCode = null;
+                if (name == "replace_lines")
+                {
+                    beforeCode = ReadCode(request.Project, request.Module);
+                    if (!string.Equals(beforeCode.Sha256, request.ExpectedSha256, StringComparison.OrdinalIgnoreCase))
+                        return json.Serialize(Response.Failure("Le module a changé depuis la lecture du modèle."));
+                    CodeChange.PreviewRows(beforeCode.Code, request);
+                }
+                if (edit && settings.VbeEditApproval == "AskEachTime" && name != "replace_lines")
                 {
                     string summary = name + "\r\n\r\n" + json.Serialize(values);
                     using (var approval = new Form { Text = "CodexVBE — valider la modification", Width = 740,
@@ -303,11 +312,53 @@ namespace CodexVBE
                             return json.Serialize(Response.Failure("User rejected the edit."));
                     }
                 }
-                return json.Serialize(name == "status"
+                Response result = name == "status"
                     ? Response.Success(LlmVbeContext.LiveSnapshot(session))
-                    : session.Execute(request));
+                    : session.Execute(request);
+                if (result.Ok && beforeCode != null)
+                {
+                    try
+                    {
+                        CodeSnapshot afterCode = ReadCode(request.Project, request.Module);
+                        if (!string.Equals(beforeCode.Sha256, afterCode.Sha256, StringComparison.OrdinalIgnoreCase))
+                        {
+                            int lineCount = Convert.ToInt32(((dynamic)result.Data).Lines);
+                            CodeEdited?.Invoke(new CodeChange(request.Project, request.Module,
+                                beforeCode.Code, beforeCode.Sha256, afterCode.Code, afterCode.Sha256, lineCount));
+                        }
+                    }
+                    catch (Exception ex) { LoadLog.Write("Code diff readback failed: " + ex.Message); }
+                }
+                return json.Serialize(result);
             }
             catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+        }
+
+        private sealed class CodeSnapshot
+        {
+            public string Code;
+            public string Sha256;
+        }
+
+        private CodeSnapshot ReadCode(string project, string module)
+        {
+            Response response = session.Execute(new Request { Command = "read_module",
+                Project = project, Module = module });
+            if (!response.Ok) throw new InvalidOperationException(response.Error);
+            dynamic data = response.Data;
+            return new CodeSnapshot { Code = (string)data.Code, Sha256 = (string)data.Sha256 };
+        }
+
+        public Response RestoreCodeChange(CodeChange change)
+        {
+            if (change == null || change.Restored)
+                return Response.Failure("Cette modification a déjà été restaurée.");
+            var arguments = new { Project = change.Project, Module = change.Module,
+                ExpectedSha256 = change.AfterSha256, StartLine = 1,
+                Count = change.AfterLineCount, Text = change.Before };
+            Response result = json.Deserialize<Response>(Invoke("replace_lines", json.Serialize(arguments)));
+            if (result != null && result.Ok) change.Restored = true;
+            return result ?? Response.Failure("La restauration n'a renvoyé aucun résultat.");
         }
 
         public async Task<string> InvokeAsync(string name, string arguments)

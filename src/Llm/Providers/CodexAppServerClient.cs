@@ -27,13 +27,19 @@ namespace CodexVBE
         private TaskCompletionSource<string> turnDone;
         private string finalText;
         private bool disposed;
+        private string activeTurnId;
+        private bool interruptRequested;
+        public string ThreadId { get { return threadId; } }
+        public event Action<string> ThreadReady;
+        public event Action<string, string, string, bool> ChatUpdate;
 
-        public CodexAppServerClient(SynchronizationContext ui, LlmVbeTools tools, Action<string> progress, LlmSettings settings)
+        public CodexAppServerClient(SynchronizationContext ui, LlmVbeTools tools, Action<string> progress, LlmSettings settings, string resumeThreadId = null)
         {
             this.ui = ui ?? throw new ArgumentNullException(nameof(ui));
             this.tools = tools ?? throw new ArgumentNullException(nameof(tools));
             this.progress = progress ?? (_ => { });
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            threadId = resumeThreadId;
         }
 
         public async Task<LlmModelOption[]> ListModelsAsync()
@@ -78,20 +84,31 @@ namespace CodexVBE
         {
             if (string.IsNullOrWhiteSpace(prompt)) throw new ArgumentException("A prompt is required.");
             if (turnDone != null) throw new InvalidOperationException("A Codex turn is already running.");
-            if (process == null) await StartAsync();
             finalText = null;
+            interruptRequested = false;
             turnDone = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
             try
             {
-                await RequestAsync("turn/start", new {
+                if (process == null) await StartAsync();
+                if (interruptRequested) throw new OperationCanceledException();
+                var started = await RequestAsync("turn/start", new {
                     threadId,
                     model,
                     effort,
                     input = new[] { new { type = "text", text = prompt } }
                 });
+                activeTurnId = GetString(GetObject(GetObject(started, "result"), "turn"), "id") ?? activeTurnId;
+                if (interruptRequested) await InterruptAsync();
                 return await turnDone.Task;
             }
-            finally { turnDone = null; }
+            finally { turnDone = null; activeTurnId = null; }
+        }
+
+        public async Task InterruptAsync()
+        {
+            interruptRequested = true;
+            if (turnDone != null && activeTurnId != null)
+                await RequestAsync("turn/interrupt", new { threadId, turnId = activeTurnId });
         }
 
         private async Task StartAsync()
@@ -152,17 +169,20 @@ namespace CodexVBE
                         description = (string)function.description, inputSchema = function.parameters };
                 }).ToArray();
                 progress("Codex : ouverture de la conversation VBE");
-                var started = await RequestAsync("thread/start", new {
-                    ephemeral = true,
+                var started = !string.IsNullOrEmpty(threadId)
+                    ? await RequestAsync("thread/resume", new { threadId, approvalPolicy = "untrusted", sandbox = "read-only" })
+                    : await RequestAsync("thread/start", new {
+                    ephemeral = false,
                     cwd = Path.GetTempPath(),
                     sandbox = "read-only",
-                    approvalPolicy = "never",
+                    approvalPolicy = "untrusted",
                     serviceName = "codexvbe",
                     developerInstructions = LlmVbeContext.DeveloperInstructions,
                     dynamicTools = definitions
                 });
                 threadId = GetString(GetObject(GetObject(started, "result"), "thread"), "id");
                 if (string.IsNullOrWhiteSpace(threadId)) throw new InvalidOperationException("Codex did not create a thread.");
+                ThreadReady?.Invoke(threadId);
                 progress("Codex connecté avec ChatGPT");
             }
             catch
@@ -226,21 +246,54 @@ namespace CodexVBE
                 if (GetString(parameters, "threadId") != threadId || turnDone == null) return;
                 switch (GetString(message, "method"))
                 {
+                    case "turn/started":
+                        activeTurnId = GetString(GetObject(parameters, "turn"), "id");
+                        break;
+                    case "item/agentMessage/delta":
+                        PublishUpdate("message", GetString(parameters, "itemId"), GetString(parameters, "delta"), false);
+                        break;
+                    case "item/reasoning/summaryTextDelta":
+                        PublishUpdate("summary", GetString(parameters, "itemId"), GetString(parameters, "delta"), false);
+                        break;
+                    case "item/reasoning/summaryPartAdded":
+                        PublishUpdate("summary", GetString(parameters, "itemId"), "\n\n", false);
+                        break;
                     case "item/completed":
                         var item = GetObject(parameters, "item");
-                        if (GetString(item, "type") == "agentMessage" && GetString(item, "phase") == "final_answer")
-                            finalText = GetString(item, "text");
+                        if (GetString(item, "type") == "agentMessage")
+                        {
+                            bool final = GetString(item, "phase") != "commentary";
+                            if (final) finalText = GetString(item, "text");
+                            PublishUpdate(final ? "final" : "message", GetString(item, "id"), GetString(item, "text"), true);
+                        }
+                        else if (GetString(item, "type") == "reasoning")
+                        {
+                            object summary;
+                            if (item.TryGetValue("summary", out summary) && summary is object[])
+                                PublishUpdate("summary", GetString(item, "id"), string.Join("\n\n", ((object[])summary).Select(Convert.ToString)), true);
+                        }
                         break;
                     case "turn/completed":
                         var turn = GetObject(parameters, "turn");
                         string status = GetString(turn, "status");
-                        if (status == "completed") turnDone.TrySetResult(finalText ?? "Codex a terminé sans réponse textuelle.");
-                        else turnDone.TrySetException(new InvalidOperationException(
-                            GetString(GetObject(turn, "error"), "message") ?? "Codex turn: " + status));
+                        var completion = turnDone;
+                        string answer = finalText;
+                        ui.Post(_ => {
+                            if (status == "completed") completion.TrySetResult(answer ?? "Codex a terminé sans réponse textuelle.");
+                            else if (status == "interrupted") completion.TrySetException(new OperationCanceledException());
+                            else completion.TrySetException(new InvalidOperationException(
+                                GetString(GetObject(turn, "error"), "message") ?? "Codex turn: " + status));
+                        }, null);
                         break;
                 }
             }
             catch (Exception ex) { FailPending(ex); }
+        }
+
+        private void PublishUpdate(string kind, string id, string text, bool complete)
+        {
+            if (string.IsNullOrEmpty(id)) return;
+            ui.Post(_ => { if (!disposed) ChatUpdate?.Invoke(kind, id, text, complete); }, null);
         }
 
         private void HandleToolCall(object requestId, IDictionary<string, object> parameters)
@@ -250,11 +303,15 @@ namespace CodexVBE
                 {
                     if (GetString(parameters, "threadId") != threadId || turnDone == null)
                         throw new InvalidOperationException("Tool call does not belong to the active VBE conversation.");
+                    if (interruptRequested || disposed) throw new OperationCanceledException("Conversation interrompue.");
                     string name = GetString(parameters, "tool");
                     progress("Codex appelle " + name);
+                    string activityId = "tool-" + Convert.ToString(requestId);
+                    ChatUpdate?.Invoke("tool", activityId, name + " · en cours", false);
                     string arguments = NewJson().Serialize(parameters["arguments"]);
                     string output = await tools.InvokeAsync(name, arguments);
                     var response = NewJson().Deserialize<Response>(output);
+                    ChatUpdate?.Invoke("tool", activityId, name + (response != null && response.Ok ? " · terminé" : " · échec"), true);
                     Send(new { id = requestId, result = new {
                         contentItems = new[] { new { type = "inputText", text = output } },
                         success = response != null && response.Ok

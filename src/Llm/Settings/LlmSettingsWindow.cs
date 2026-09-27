@@ -48,7 +48,7 @@ namespace CodexVBE
             InitializeComponent();
             ApplyLayoutTuning();
             provider.Items.AddRange(LlmProvider.All);
-            approvalPicker.Items.AddRange(new object[] { "Automatique", "Demander à chaque action", "Lecture seule" });
+            approvalPicker.Items.AddRange(new object[] { "Automatique", "Demander pour les autres actions", "Lecture seule" });
             approvalPicker.SelectedIndex = settings.VbeEditApproval == "ReadOnly" ? 2 :
                 settings.VbeEditApproval == "AskEachTime" ? 1 : 0;
             int current = Array.FindIndex(LlmProvider.All, item => item.Name == settings.ProviderName);
