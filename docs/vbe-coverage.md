@@ -154,6 +154,8 @@ Dans Excel PID 18212, `Inspect-CodeSelectionAttributes.ps1` a lu par UI Automati
 
 Dans Excel PID 49824, `Test-EditWatchType.ps1` a créé un espion simple `probeValue = 2` au contexte `ThisWorkbook.CodexBreakpointProbe`, relu `Faux`, puis appelé `edit_watch` avec la même expression et `WatchType=break_when_true`. Après `continue`, `debug_state` a confirmé une pause à la ligne 5 et `debug_windows` a relu l'espion à `Vrai`. Le changement de condition par `edit_watch` a donc une preuve d'effet dans ce contexte, au-delà du bouton radio sélectionné et de la relecture de l'expression.
 
+Dans Excel PID 12736, `Test-NestedCallStack.ps1` a arrêté `CodexStackInner` à la ligne 10 pendant un appel depuis `CodexStackOuter`. `debug_windows` avec `IncludeCallStack=true` a relu les cadres natifs dans l'ordre : `VBAProject.ThisWorkbook.CodexStackInner`, `[<Code non Basic>]`, `VBAProject.ThisWorkbook.CodexStackOuter`, `[<Code non Basic>]`. La boîte Pile des appels a été ouverte depuis le bouton natif de Variables locales et refermée après lecture, sans raccourci ni coordonnées. Le premier essai de la sonde a échoué avant le point d'arrêt parce que le volet de code n'était pas encore activé ; la sélection par `select_code` a corrigé ce prérequis.
+
 ## Prochaine exploration
 
 1. Vérifier les propriétés modifiables restantes des contrôles et conteneurs, ainsi que leur suppression et leur réorganisation, sur des classeurs jetables.
