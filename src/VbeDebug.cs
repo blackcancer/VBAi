@@ -302,7 +302,8 @@ namespace CodexVBE
             int newMode = (int)current.Mode;
             if (oldMode != newMode)
                 return "Project mode changed from " + oldMode + " to " + newMode + ".";
-            if (action == "step_into" || action == "step_over" || action == "continue")
+            if (action == "step_into" || action == "step_over" || action == "step_out" ||
+                action == "run_to_cursor" || action == "continue")
             {
                 try
                 {
@@ -347,6 +348,15 @@ namespace CodexVBE
                     return mode == 1 &&
                         (label.IndexOf("Step Over", StringComparison.OrdinalIgnoreCase) >= 0 ||
                          label.IndexOf("pas à pas principal", StringComparison.OrdinalIgnoreCase) >= 0);
+                case "step_out":
+                    return mode == 1 &&
+                        (label.IndexOf("Step Out", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         label.IndexOf("pas à pas sortant", StringComparison.OrdinalIgnoreCase) >= 0);
+                case "run_to_cursor":
+                    return mode == 1 &&
+                        (label.IndexOf("Run To Cursor", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         label.IndexOf("Exécuter jusqu'au curseur", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         label.IndexOf("Exécuter jusqu’au curseur", StringComparison.OrdinalIgnoreCase) >= 0);
                 default:
                     return false;
             }

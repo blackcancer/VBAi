@@ -61,6 +61,8 @@ namespace CodexVBE
             Definition("debug_windows", "Read visible native VBE Locals, Watches and Immediate windows via accessibility. Optional IncludeCallStack opens the native Call Stack dialog through the Locals button, reads its frames, then closes it. Missing windows are reported as unavailable, not empty. No shortcuts or coordinate clicks are used.",
                 new string[0], "IncludeCallStack"),
             Definition("debug_dialog", "Read a visible native VBA diagnostic dialog, including its exact message and button labels. Works while the VBE UI thread is modal; does not dismiss the dialog.", new string[0]),
+            Definition("immediate_execute", "Execute one line in the visible VBE Immediate window through native character and Enter messages, without shortcuts or coordinates. Requires Project and current ExpectedMode (1 break or 2 design). Returns exact text before/after; arbitrary side effects require separate verification. Automatic VBE edit policy is required.",
+                new[] { "Project", "ExpectedMode", "Text" }, "Project", "ExpectedMode", "Text"),
             Definition("respond_debug_dialog", "Activate one button on a visible native VBA run-time or compile diagnostic. Supply the exact Diagnostic and Button strings returned by debug_dialog, then read debug_state separately. Requires automatic VBE edit policy; no shortcut or coordinate click is used.",
                 new[] { "Diagnostic", "Button" }, "Diagnostic", "Button"),
             Definition("open_debug_pane", "Open the native Locals, Watches or Immediate pane. Action is locals, watches or immediate. The effect may be asynchronous; verify with debug_windows in a separate request.",
@@ -74,7 +76,7 @@ namespace CodexVBE
             Definition("select_code", "Activate a code pane and select an exact line after checking the current module SHA-256. Does not edit source code.",
                 new[] { "Project", "Module", "ExpectedSha256", "StartLine" },
                 "Project", "Module", "ExpectedSha256", "StartLine"),
-            Definition("invoke_debug", "Execute a native VBE debugger command on an exact project/module/line after checking SHA-256, expected mode, command Id and caption. Action is toggle_breakpoint, run, continue, step_into or step_over. VBE may apply the effect after return: read debug_state and debug_windows separately. Breakpoint toggle is not yet independently verifiable.",
+            Definition("invoke_debug", "Execute a native VBE debugger command on an exact project/module/line after checking SHA-256, expected mode, command Id and caption. Action is toggle_breakpoint, run, continue, step_into, step_over, step_out or run_to_cursor. The last two require break mode. VBE may apply the effect after return: read debug_state and debug_windows separately. Breakpoint toggle is not yet independently verifiable.",
                 new[] { "Project", "Module", "ExpectedSha256", "StartLine", "ExpectedMode", "Action", "ControlId", "ControlCaption" },
                 "Project", "Module", "ExpectedSha256", "StartLine", "ExpectedMode", "Action", "ControlId", "ControlCaption"),
             Definition("add_watch", "Add a native VBE watch in the active break-mode project and module, using the current procedure context. ExpectedMode must be 1. Optional Procedure must match the native dialog context. WatchType is expression (default), break_when_true or break_when_changed. The expression is evaluated by VBE and can call VBA functions. The dialog is completed through native controls without shortcuts or coordinates; then call debug_windows to re-read its value.",
@@ -285,6 +287,28 @@ namespace CodexVBE
 
         public async Task<string> InvokeAsync(string name, string arguments)
         {
+            if (name == "immediate_execute")
+            {
+                try
+                {
+                    if (settings.VbeEditApproval != "Automatic")
+                        return json.Serialize(Response.Failure("Automatic VBE edit policy is required for Immediate execution."));
+                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
+                    if (values == null || values.Count != 3 || !values.ContainsKey("Project") ||
+                        !values.ContainsKey("ExpectedMode") || !values.ContainsKey("Text") ||
+                        !(values["Project"] is string) || !(values["ExpectedMode"] is int) ||
+                        !(values["Text"] is string) ||
+                        ((int)values["ExpectedMode"] != 1 && (int)values["ExpectedMode"] != 2))
+                        throw new ArgumentException("Project, ExpectedMode and Text are required.");
+                    var state = session.Execute(new Request { Command = "debug_state", Project = (string)values["Project"] });
+                    if (!state.Ok) return json.Serialize(state);
+                    if ((int)((dynamic)state.Data).Mode != (int)values["ExpectedMode"])
+                        return json.Serialize(Response.Failure("Project mode changed before Immediate execution."));
+                    return json.Serialize(Response.Success(await Task.Run(() =>
+                        VbeDebugWindows.ExecuteImmediate((string)values["Text"]))));
+                }
+                catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+            }
             if (name == "debug_dialog" || name == "respond_debug_dialog")
             {
                 try

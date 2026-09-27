@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Automation;
+using System.Windows.Automation.Text;
 
 namespace CodexVBE
 {
@@ -32,6 +34,10 @@ namespace CodexVBE
             ref Guid interfaceId, [MarshalAs(UnmanagedType.Interface)] out object accessible);
 
         private const int BmClick = 0x00F5;
+        private const int WmChar = 0x0102;
+        private const int WmKeyDown = 0x0100;
+        private const int WmKeyUp = 0x0101;
+        private const int VkReturn = 13;
         private const uint ObjidClient = 4294967292;
         private static readonly Guid IidAccessible = new Guid("618736e0-3c3d-11cf-810c-00aa00389b71");
 
@@ -86,6 +92,55 @@ namespace CodexVBE
                     Buttons = buttons.ToArray(), Error = "Expected one native diagnostic message; found " + messages.Count + "." };
             return new { Available = true, Diagnostic = messages[0],
                 Buttons = buttons.ToArray(), Error = (string)null };
+        }
+
+        public static object ExecuteImmediate(string command)
+        {
+            if (string.IsNullOrWhiteSpace(command) || command.Length > 2048 ||
+                command.IndexOfAny(new[] { '\r', '\n', '\0' }) >= 0 ||
+                command.Any(character => char.IsControl(character)))
+                throw new ArgumentException("Immediate command must be one nonempty printable line of at most 2048 characters.");
+            IntPtr root = FindVbeRoot();
+            if (root == IntPtr.Zero) throw new InvalidOperationException("The VBE window is not open.");
+            IntPtr pane = FindPane(ChildWindows(root), "Exécution", "Immediate");
+            if (pane == IntPtr.Zero) throw new InvalidOperationException("The Immediate window must be visible.");
+            AutomationElement document = ImmediateDocument(pane);
+            var pattern = (TextPattern)document.GetCurrentPattern(TextPattern.Pattern);
+            string before = pattern.DocumentRange.GetText(-1);
+            document.SetFocus();
+            TextPatternRange atEnd = pattern.DocumentRange.Clone();
+            atEnd.MoveEndpointByRange(TextPatternRangeEndpoint.Start, pattern.DocumentRange,
+                TextPatternRangeEndpoint.End);
+            atEnd.Select();
+            foreach (char character in command)
+                if (!PostMessage(pane, WmChar, new IntPtr(character), IntPtr.Zero))
+                    throw new InvalidOperationException("The native Immediate pane rejected a character message.");
+            string echoed = null;
+            for (int attempt = 0; attempt < 40; attempt++)
+            {
+                Thread.Sleep(25);
+                echoed = ImmediateText(pane);
+                if (echoed == before + command || echoed == before + command + "\r\n") break;
+            }
+            if (echoed != before + command && echoed != before + command + "\r\n")
+                throw new InvalidOperationException("The Immediate pane did not echo the exact command; Enter was not sent.");
+            if (!PostMessage(pane, WmKeyDown, new IntPtr(VkReturn), IntPtr.Zero) ||
+                !PostMessage(pane, WmKeyUp, new IntPtr(VkReturn), IntPtr.Zero))
+                throw new InvalidOperationException("The native Immediate pane rejected Enter.");
+            string after = echoed;
+            for (int attempt = 0; attempt < 40; attempt++)
+            {
+                Thread.Sleep(25);
+                after = ImmediateText(pane);
+                if (after != echoed) break;
+            }
+            return new { Command = command, TextBefore = before, TextAfter = after,
+                OutputDelta = after.StartsWith(before, StringComparison.Ordinal)
+                    ? after.Substring(before.Length) : (string)null,
+                CommandEchoObserved = true,
+                Verification = after != echoed ? "ImmediateTextChangedAfterEnter" : "Pending",
+                VerificationPending = after == echoed,
+                Limit = "Text changed after Enter, but this does not prove an arbitrary VBA statement had the intended side effect. Read debug_state and relevant values separately." };
         }
 
         public static object RespondDebugDialog(Request request)
@@ -417,16 +472,27 @@ namespace CodexVBE
             if (handle == IntPtr.Zero) return new { Available = false, Text = (string)null, Error = "Window is not visible." };
             try
             {
-                AutomationElement root = AutomationElement.FromHandle(handle);
-                var condition = new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Document);
-                AutomationElementCollection documents = root.FindAll(TreeScope.Descendants, condition);
-                if (documents.Count != 1) throw new InvalidOperationException("Expected one Immediate document; found " + documents.Count + ".");
-                object pattern;
-                if (!documents[0].TryGetCurrentPattern(TextPattern.Pattern, out pattern))
-                    throw new InvalidOperationException("The Immediate document does not expose TextPattern.");
-                return new { Available = true, Text = ((TextPattern)pattern).DocumentRange.GetText(-1), Error = (string)null };
+                return new { Available = true, Text = ImmediateText(handle), Error = (string)null };
             }
             catch (Exception ex) { return new { Available = true, Text = (string)null, Error = ex.Message }; }
+        }
+
+        private static AutomationElement ImmediateDocument(IntPtr handle)
+        {
+            AutomationElement root = AutomationElement.FromHandle(handle);
+            var condition = new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Document);
+            AutomationElementCollection documents = root.FindAll(TreeScope.Descendants, condition);
+            if (documents.Count != 1)
+                throw new InvalidOperationException("Expected one Immediate document; found " + documents.Count + ".");
+            if (!documents[0].TryGetCurrentPattern(TextPattern.Pattern, out _))
+                throw new InvalidOperationException("The Immediate document does not expose TextPattern.");
+            return documents[0];
+        }
+
+        private static string ImmediateText(IntPtr handle)
+        {
+            var pattern = (TextPattern)ImmediateDocument(handle).GetCurrentPattern(TextPattern.Pattern);
+            return pattern.DocumentRange.GetText(-1);
         }
 
         private static object ReadCallStack(IntPtr locals)

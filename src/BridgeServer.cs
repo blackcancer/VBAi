@@ -59,6 +59,18 @@ namespace CodexVBE
                                     response = Response.Success(VbeDebugWindows.ReadDebugDialog());
                                 else if (request != null && request.Command == "respond_debug_dialog")
                                     response = Response.Success(VbeDebugWindows.RespondDebugDialog(request));
+                                else if (request != null && request.Command == "immediate_execute")
+                                {
+                                    if (string.IsNullOrWhiteSpace(request.Project) ||
+                                        (request.ExpectedMode != 1 && request.ExpectedMode != 2))
+                                        throw new ArgumentException("Project and ExpectedMode (1 or 2) are required.");
+                                    var state = (Response)dispatcher.Invoke(new Func<Response>(() =>
+                                        session.Execute(new Request { Command = "debug_state", Project = request.Project })));
+                                    if (!state.Ok) response = state;
+                                    else if ((int)((dynamic)state.Data).Mode != request.ExpectedMode)
+                                        response = Response.Failure("Project mode changed before Immediate execution.");
+                                    else response = Response.Success(VbeDebugWindows.ExecuteImmediate(request.Text));
+                                }
                                 else if (request != null && request.Command == "compile_project")
                                 {
                                     VbeDebugWindows.EnsureNoCompileDialog();
