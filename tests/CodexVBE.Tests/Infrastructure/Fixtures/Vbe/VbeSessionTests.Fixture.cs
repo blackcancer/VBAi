@@ -153,6 +153,9 @@ namespace CodexVBE.Tests.Unit
         {
             public List<FakeComponent> Items { get; } = new List<FakeComponent>();
             public string RejectedName { get; set; }
+            public string ForcedReadbackName { get; set; }
+            public int? ForcedAddedType { get; set; }
+            public bool FailRemoval { get; set; }
             public int RemoveCount { get; private set; }
 
             public FakeComponent Add(int type)
@@ -164,6 +167,8 @@ namespace CodexVBE.Tests.Unit
                     CodeModule = new FakeModule("")
                 };
                 component.RejectedName = RejectedName;
+                component.ReadbackName = ForcedReadbackName;
+                if (ForcedAddedType.HasValue) component.Type = ForcedAddedType.Value;
                 Items.Add(component);
                 return component;
             }
@@ -171,6 +176,7 @@ namespace CodexVBE.Tests.Unit
             public void Remove(FakeComponent component)
             {
                 RemoveCount++;
+                if (FailRemoval) throw new InvalidOperationException("Removal rejected by VBE");
                 Items.Remove(component);
             }
 
@@ -189,12 +195,13 @@ namespace CodexVBE.Tests.Unit
         {
             private string name;
             public string RejectedName { get; set; }
+            public string ReadbackName { get; set; }
 
             public string Name
             {
                 get
                 {
-                    return name;
+                    return ReadbackName ?? name;
                 }
 
                 set

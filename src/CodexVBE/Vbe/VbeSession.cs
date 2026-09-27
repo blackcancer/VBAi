@@ -19,10 +19,35 @@ namespace CodexVBE
         private readonly VbeCodeNavigation codeNavigation;
         private readonly VbeReferenceTypes referenceTypes;
 
-        public VbeSession(object vbe) { this.vbe = vbe; debugger = new VbeDebug(vbe);
-            forms = new VbeForms(vbe); components = new VbeProjectComponents(vbe, forms);
+        internal interface ISigningStore : IDisposable
+        {
+            X509Certificate2Collection Certificates { get; }
+            void Open(OpenFlags flags);
+        }
+
+        private sealed class NativeSigningStore : ISigningStore
+        {
+            private readonly X509Store store;
+            public NativeSigningStore(StoreLocation location) { store = new X509Store(StoreName.My, location); }
+            public X509Certificate2Collection Certificates => store.Certificates;
+            public void Open(OpenFlags flags) { store.Open(flags); }
+            public void Dispose() { store.Dispose(); }
+        }
+
+        // Keep OS reads and native scheduling injectable without changing the signing checks.
+        internal Func<StoreLocation, ISigningStore> SigningStore = location => new NativeSigningStore(location);
+        internal Func<string> SigningProcessName = () => System.Diagnostics.Process.GetCurrentProcess().ProcessName;
+        internal Func<DateTime> SigningClock = () => DateTime.Now;
+        internal Func<Request, object> SignatureScheduler;
+
+        public VbeSession(object vbe) : this(vbe, null) { }
+
+        internal VbeSession(object vbe, VbeProjectComponents.IExcelHostProbe host) { this.vbe = vbe; debugger = new VbeDebug(vbe);
+            forms = new VbeForms(vbe); components = host == null
+                ? new VbeProjectComponents(vbe, forms) : new VbeProjectComponents(vbe, forms, host);
             editorWindows = new VbeEditorWindows(vbe); codeNavigation = new VbeCodeNavigation(vbe, forms);
-            referenceTypes = new VbeReferenceTypes(vbe); }
+            referenceTypes = new VbeReferenceTypes(vbe);
+            SignatureScheduler = request => debugger.QueueSignatureDialog(request); }
 
         public Response Execute(Request request)
         {
@@ -275,7 +300,7 @@ namespace CodexVBE
             if ((bool)signatureStatus.Available && (bool)signatureStatus.Signed)
                 throw new InvalidOperationException("The host reports an existing VBA signature; this command only adds the first signature.");
             bool unsignedVerified = (bool)signatureStatus.Available && !(bool)signatureStatus.Signed;
-            if (string.Equals(System.Diagnostics.Process.GetCurrentProcess().ProcessName, "EXCEL",
+            if (string.Equals(SigningProcessName(), "EXCEL",
                 StringComparison.OrdinalIgnoreCase))
             {
                 string projectPath = null;
@@ -298,13 +323,13 @@ namespace CodexVBE
             string thumbprint = request.CertificateThumbprint.Replace(" ", "").ToUpperInvariant();
             if (!Regex.IsMatch(thumbprint, "^[0-9A-F]{40}$"))
                 throw new ArgumentException("CertificateThumbprint must be a SHA-1 certificate thumbprint.");
-            using (var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
+            using (var store = SigningStore(StoreLocation.CurrentUser))
             {
                 store.Open(OpenFlags.ReadOnly);
                 var matches = store.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, false);
                 if (matches.Count != 1) throw new InvalidOperationException("The selected certificate is absent or ambiguous.");
                 var certificate = matches[0];
-                if (!certificate.HasPrivateKey || DateTime.Now < certificate.NotBefore || DateTime.Now > certificate.NotAfter)
+                if (!certificate.HasPrivateKey || SigningClock() < certificate.NotBefore || SigningClock() > certificate.NotAfter)
                     throw new InvalidOperationException("The certificate needs a usable private key and current validity.");
                 bool codeSigning = certificate.Extensions.OfType<X509EnhancedKeyUsageExtension>()
                     .SelectMany(extension => extension.EnhancedKeyUsages.Cast<System.Security.Cryptography.Oid>())
@@ -317,7 +342,7 @@ namespace CodexVBE
                 foreach (var item in store.Certificates.Cast<X509Certificate2>())
                     if (string.Equals(item.GetNameInfo(X509NameType.SimpleName, false), displayName,
                         StringComparison.OrdinalIgnoreCase)) matchingThumbprints.Add(item.Thumbprint);
-                using (var machineStore = new X509Store(StoreName.My, StoreLocation.LocalMachine))
+                using (var machineStore = SigningStore(StoreLocation.LocalMachine))
                 {
                     machineStore.Open(OpenFlags.ReadOnly);
                     foreach (var item in machineStore.Certificates.Cast<X509Certificate2>())
@@ -326,7 +351,7 @@ namespace CodexVBE
                 }
                 if (matchingThumbprints.Count != 1 || !matchingThumbprints.Contains(thumbprint))
                     throw new InvalidOperationException("The certificate display name is ambiguous across personal certificate stores.");
-                object scheduled = debugger.QueueSignatureDialog(request);
+                object scheduled = SignatureScheduler(request);
                 return new { Scheduled = true, Project = request.Project,
                     CertificateThumbprint = thumbprint, CertificateName = displayName,
                     UnsignedVerified = unsignedVerified,
@@ -336,7 +361,7 @@ namespace CodexVBE
 
         private object ListSigningCertificates()
         {
-            using (var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
+            using (var store = SigningStore(StoreLocation.CurrentUser))
             {
                 store.Open(OpenFlags.ReadOnly);
                 return store.Certificates.Cast<X509Certificate2>()
@@ -350,7 +375,7 @@ namespace CodexVBE
                         certificate.Subject, certificate.Issuer,
                         NotBefore = certificate.NotBefore.ToString("o"),
                         NotAfter = certificate.NotAfter.ToString("o"),
-                        EligibleNow = DateTime.Now >= certificate.NotBefore && DateTime.Now <= certificate.NotAfter
+                        EligibleNow = SigningClock() >= certificate.NotBefore && SigningClock() <= certificate.NotAfter
                     }).ToArray();
             }
         }

@@ -83,6 +83,374 @@ namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections;
+    using System.Linq;
+    using System.Reflection;
+    using System.Security.Cryptography.X509Certificates;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using CodexVBE;
+
+    [TestClass]
+    [TestCategory("Unit")]
+    public sealed partial class VbeSessionCoverageTests
+    {
+        [TestMethod]
+        public void SigningRequiresAllIdentityFieldsBeforeReadingAnyCertificateStore()
+        {
+            using (var fixture = new SigningFixture())
+            {
+                var method = typeof(VbeSession).GetMethod("BeginSignProject", BindingFlags.Instance | BindingFlags.NonPublic);
+                var nullRequest = Assert.ThrowsException<TargetInvocationException>(() => method.Invoke(fixture.Session, new object[] { null }));
+                Assert.IsInstanceOfType(nullRequest.InnerException, typeof(ArgumentException));
+                foreach (var field in new[] { "Project", "ExpectedProjectVersion", "CertificateThumbprint" })
+                    foreach (var value in new[] { null, "", " " })
+                    {
+                        var request = fixture.Request(new string('A', 40));
+                        typeof(Request).GetProperty(field).SetValue(request, value);
+                        var error = Assert.ThrowsException<ArgumentException>(() => fixture.Session.Execute(request));
+                        StringAssert.Contains(error.Message, "are required");
+                    }
+                Assert.AreEqual(0, fixture.Opened.Count);
+                Assert.AreEqual(0, fixture.Scheduled);
+            }
+        }
+
+        [TestMethod]
+        public void SigningRejectsChangedModeRevisionUnsavedProjectAndInvalidThumbprint()
+        {
+            using (var fixture = new SigningFixture())
+            {
+                var request = fixture.Request(new string('A', 40));
+                request.ExpectedMode = 1;
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(request)).Message, "design mode");
+                fixture.Project.Mode = 1;
+                request = fixture.Request(new string('A', 40));
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(request)).Message, "design mode");
+                fixture.Project.Mode = 2;
+                request = fixture.Request(new string('A', 40));
+                request.ExpectedProjectVersion = "stale";
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(request)).Message, "changed");
+                fixture.Project.Saved = false;
+                request = fixture.Request(new string('A', 40));
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(request)).Message, "Save the VBA project");
+                fixture.Project.Saved = true;
+                foreach (var thumbprint in new[] { "invalid", new string('A', 39), new string('G', 40) })
+                    Assert.ThrowsException<ArgumentException>(() => fixture.Session.Execute(fixture.Request(thumbprint)));
+                Assert.AreEqual(0, fixture.Opened.Count);
+                Assert.AreEqual(0, fixture.Scheduled);
+            }
+        }
+
+        [TestMethod]
+        public void SigningRejectsMissingDuplicateKeylessExpiredFutureAndNonSigningCertificates()
+        {
+            using (var fixture = new SigningFixture())
+            using (var valid = new CertificateFixture())
+            using (var publicOnly = new X509Certificate2(valid.Certificate.Export(X509ContentType.Cert)))
+            using (var expired = new CertificateFixture("Expired", true, after: new DateTimeOffset(2029, 2, 1, 0, 0, 0, TimeSpan.Zero)))
+            using (var future = new CertificateFixture("Future", true, before: new DateTimeOffset(2030, 2, 1, 0, 0, 0, TimeSpan.Zero)))
+            using (var wrongUsage = new CertificateFixture("No code signing", false))
+            {
+                var missing = Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(fixture.Request(valid.Certificate.Thumbprint)));
+                StringAssert.Contains(missing.Message, "absent or ambiguous");
+                fixture.Personal.Certificates.Add(valid.Certificate);
+                fixture.Personal.Certificates.Add(valid.Certificate);
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(fixture.Request(valid.Certificate.Thumbprint))).Message, "absent or ambiguous");
+                foreach (var certificate in new[] { publicOnly, expired.Certificate, future.Certificate, wrongUsage.Certificate })
+                {
+                    fixture.Personal.Certificates.Clear();
+                    fixture.Personal.Certificates.Add(certificate);
+                    var error = Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(fixture.Request(certificate.Thumbprint)));
+                    StringAssert.Contains(error.Message, certificate == wrongUsage.Certificate ? "code signing" : "private key and current validity");
+                }
+                Assert.AreEqual(0, fixture.Scheduled);
+                Assert.IsTrue(fixture.Personal.Disposed);
+                Assert.IsNull(fixture.Machine.Flags);
+            }
+        }
+
+        [TestMethod]
+        public void SigningRejectsEmptyAndAmbiguousCertificateDisplayNamesAcrossBothStores()
+        {
+            using (var fixture = new SigningFixture())
+            using (var selected = new CertificateFixture("Same name"))
+            using (var collision = new CertificateFixture("Same name"))
+            using (var different = new CertificateFixture("Different name"))
+            using (var nameless = new CertificateFixture(""))
+            {
+                fixture.Personal.Certificates.Add(nameless.Certificate);
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(fixture.Request(nameless.Certificate.Thumbprint))).Message, "display name is empty");
+                fixture.Personal.Certificates.Clear();
+                fixture.Personal.Certificates.Add(selected.Certificate);
+                fixture.Personal.Certificates.Add(different.Certificate);
+                fixture.Machine.Certificates.Add(collision.Certificate);
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(fixture.Request(selected.Certificate.Thumbprint))).Message, "ambiguous across");
+                Assert.AreEqual(0, fixture.Scheduled);
+                Assert.IsTrue(fixture.Personal.Disposed);
+                Assert.IsTrue(fixture.Machine.Disposed);
+                fixture.Machine.Certificates.Clear();
+                fixture.Personal.Certificates.Add(collision.Certificate);
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(fixture.Request(selected.Certificate.Thumbprint))).Message, "ambiguous across");
+            }
+        }
+
+        [TestMethod]
+        public void SigningSchedulesTheExactCertificateOnlyAfterValidationAndDisposesBothStores()
+        {
+            using (var fixture = new SigningFixture())
+            using (var selected = new CertificateFixture())
+            using (var other = new CertificateFixture("Other certificate"))
+            {
+                fixture.Personal.Certificates.Add(selected.Certificate);
+                fixture.Personal.Certificates.Add(other.Certificate);
+                fixture.Machine.Certificates.Add(other.Certificate);
+                fixture.Machine.Certificates.Add(selected.Certificate);
+                for (int attempt = 0; attempt < 2; attempt++)
+                {
+                    var lower = selected.Certificate.Thumbprint.ToLowerInvariant();
+                    var spaced = string.Join(" ", Enumerable.Range(0, lower.Length / 2).Select(i => lower.Substring(i * 2, 2)));
+                    var request = fixture.Request(spaced);
+                    request.ExpectedProjectVersion = request.ExpectedProjectVersion.ToUpperInvariant();
+                    dynamic result = fixture.Session.Execute(request).Data;
+                    Assert.IsTrue((bool)result.Scheduled);
+                    Assert.IsFalse((bool)result.UnsignedVerified);
+                    Assert.AreEqual(fixture.Project.Name, (string)result.Project);
+                    Assert.AreEqual(selected.Certificate.Thumbprint, (string)result.CertificateThumbprint);
+                    Assert.AreEqual("CodexVBE Unit Signing", (string)result.CertificateName);
+                    Assert.AreSame(fixture.NativeResult, (object)result.NativeCommand);
+                    Assert.AreSame(request, fixture.ScheduledRequest);
+                }
+                Assert.AreEqual(2, fixture.Scheduled);
+                Assert.AreEqual(OpenFlags.ReadOnly, fixture.Personal.Flags);
+                Assert.AreEqual(OpenFlags.ReadOnly, fixture.Machine.Flags);
+                Assert.IsTrue(fixture.Personal.Disposed);
+                Assert.IsTrue(fixture.Machine.Disposed);
+                Assert.IsTrue(fixture.Project.Saved);
+                Assert.IsFalse(fixture.Workbook.VBASigned);
+            }
+        }
+
+        [TestMethod]
+        public void SigningPropagatesStoreAndSchedulerFailuresWithoutLeakingOpenedStores()
+        {
+            using (var fixture = new SigningFixture())
+            using (var selected = new CertificateFixture())
+            {
+                fixture.Personal.Certificates.Add(selected.Certificate);
+                var personalFailure = new InvalidOperationException("personal store denied");
+                fixture.Personal.OpenError = personalFailure;
+                Assert.AreSame(personalFailure, Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(fixture.Request(selected.Certificate.Thumbprint))));
+                Assert.IsTrue(fixture.Personal.Disposed);
+                fixture.Personal.OpenError = null;
+                var machineFailure = new InvalidOperationException("machine store denied");
+                fixture.Machine.OpenError = machineFailure;
+                Assert.AreSame(machineFailure, Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(fixture.Request(selected.Certificate.Thumbprint))));
+                Assert.IsTrue(fixture.Machine.Disposed);
+                fixture.Machine.OpenError = null;
+                var schedulerFailure = new InvalidOperationException("native queue denied");
+                fixture.Session.SignatureScheduler = request => { throw schedulerFailure; };
+                Assert.AreSame(schedulerFailure, Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(fixture.Request(selected.Certificate.Thumbprint))));
+                Assert.IsTrue(fixture.Personal.Disposed);
+                Assert.IsTrue(fixture.Machine.Disposed);
+                Assert.AreEqual(0, fixture.Scheduled);
+            }
+        }
+
+        [TestMethod]
+        public void ExcelSigningRequiresUnsignedSavedMacroFileAndRealVbaContent()
+        {
+            using (var fixture = new SigningFixture(true))
+            using (var selected = new CertificateFixture())
+            {
+                fixture.Personal.Certificates.Add(selected.Certificate);
+                fixture.Workbook.VBASigned = true;
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(fixture.Request(selected.Certificate.Thumbprint))).Message, "existing VBA signature");
+                fixture.Workbook.VBASigned = false;
+                foreach (var path in new[] { null, "", "relative.xlsm", fixture.FilePath + ".missing" })
+                {
+                    fixture.SetPath(path);
+                    StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(fixture.Request(selected.Certificate.Thumbprint))).Message, "Save the macro-enabled");
+                }
+                fixture.SetPath(fixture.FilePath);
+                fixture.Project.ThrowFileName = true;
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(fixture.Request(selected.Certificate.Thumbprint))).Message, "Save the macro-enabled");
+                fixture.Project.ThrowFileName = false;
+                fixture.Host.IsExcel = false;
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(fixture.Request(selected.Certificate.Thumbprint))).Message, "Save the macro-enabled");
+                fixture.Host.IsExcel = true;
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(fixture.Request(selected.Certificate.Thumbprint))).Message, "no VBA content");
+                var document = new VbeSessionTests.FakeComponent { Name = "ThisWorkbook", Type = 100, CodeModule = new VbeSessionTests.FakeModule("") };
+                fixture.Project.VBComponents.Items.Add(document);
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(fixture.Request(selected.Certificate.Thumbprint))).Message, "no VBA content");
+                document.CodeModule = new VbeSessionTests.FakeModule("Option Explicit");
+                dynamic documentResult = fixture.Session.Execute(fixture.Request(selected.Certificate.Thumbprint)).Data;
+                Assert.IsTrue((bool)documentResult.UnsignedVerified);
+                document.CodeModule = new VbeSessionTests.FakeModule("");
+                fixture.Project.VBComponents.Items.Add(new VbeSessionTests.FakeComponent { Name = "Module1", Type = 1, CodeModule = new VbeSessionTests.FakeModule("") });
+                Assert.IsTrue(fixture.Session.Execute(fixture.Request(selected.Certificate.Thumbprint)).Ok);
+                Assert.AreEqual(2, fixture.Scheduled);
+                Assert.IsFalse(fixture.Workbook.VBASigned);
+            }
+        }
+
+        [TestMethod]
+        public void ExcelSigningRejectsAnExistingNonMacroFormatBeforeReadingCertificates()
+        {
+            using (var fixture = new SigningFixture(true))
+            {
+                string path = fixture.FilePath + ".txt";
+                System.IO.File.WriteAllText(path, "format fixture");
+                try
+                {
+                    fixture.SetPath(path);
+                    StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => fixture.Session.Execute(fixture.Request(new string('A', 40)))).Message, "format does not support");
+                    Assert.AreEqual(0, fixture.Opened.Count);
+                }
+                finally { System.IO.File.Delete(path); }
+            }
+        }
+
+        [TestMethod]
+        public void CertificateCatalogueFiltersUsageAndPrivateKeyAndReportsValidityWithoutSigning()
+        {
+            using (var fixture = new SigningFixture())
+            using (var valid = new CertificateFixture())
+            using (var noUsage = new CertificateFixture("No usage", false))
+            using (var expired = new CertificateFixture("Expired", true, after: new DateTimeOffset(2029, 2, 1, 0, 0, 0, TimeSpan.Zero)))
+            using (var future = new CertificateFixture("Future", true, before: new DateTimeOffset(2030, 2, 1, 0, 0, 0, TimeSpan.Zero)))
+            using (var publicOnly = new X509Certificate2(valid.Certificate.Export(X509ContentType.Cert)))
+            {
+                fixture.Personal.Certificates.AddRange(new[] { publicOnly, noUsage.Certificate, valid.Certificate, expired.Certificate, future.Certificate });
+                var rows = ((IEnumerable)fixture.Session.Execute(new Request { Command = "list_signing_certificates" }).Data).Cast<dynamic>().ToArray();
+                Assert.AreEqual(3, rows.Length);
+                Assert.AreEqual(valid.Certificate.Thumbprint, (string)rows[0].Thumbprint);
+                Assert.IsTrue((bool)rows[0].EligibleNow);
+                Assert.IsFalse((bool)rows[1].EligibleNow);
+                Assert.IsFalse((bool)rows[2].EligibleNow);
+                Assert.AreEqual(valid.Certificate.Subject, (string)rows[0].Subject);
+                Assert.AreEqual(valid.Certificate.Issuer, (string)rows[0].Issuer);
+                Assert.AreEqual(valid.Certificate.NotBefore.ToString("o"), (string)rows[0].NotBefore);
+                Assert.AreEqual(valid.Certificate.NotAfter.ToString("o"), (string)rows[0].NotAfter);
+                Assert.IsTrue(fixture.Personal.Disposed);
+                Assert.AreEqual(0, fixture.Scheduled);
+            }
+        }
+
+        [TestMethod]
+        public void DefaultSigningServicesReadOnlyStoresAndUseTheActualProcessAndClock()
+        {
+            var session = new VbeSession(new SessionHost());
+            Assert.AreEqual(System.Diagnostics.Process.GetCurrentProcess().ProcessName, session.SigningProcessName());
+            Assert.IsTrue(Math.Abs((DateTime.Now - session.SigningClock()).TotalSeconds) < 5);
+            foreach (var location in new[] { StoreLocation.CurrentUser, StoreLocation.LocalMachine })
+                using (var store = session.SigningStore(location))
+                {
+                    store.Open(OpenFlags.ReadOnly);
+                    Assert.IsNotNull(store.Certificates);
+                }
+        }
+
+        [TestMethod]
+        public void DefaultSchedulerRetainsTheNativeExactProjectCheck()
+        {
+            using (var fixture = new SigningFixture())
+            using (var selected = new CertificateFixture())
+            {
+                var session = new VbeSession(fixture.Vbe, fixture.Host);
+                session.SigningClock = fixture.Session.SigningClock;
+                session.SigningStore = fixture.Session.SigningStore;
+                session.SigningProcessName = fixture.Session.SigningProcessName;
+                fixture.Personal.Certificates.Add(selected.Certificate);
+                fixture.Vbe.ActiveVBProject = null;
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => session.Execute(fixture.Request(selected.Certificate.Thumbprint))).Message, "Select the exact project");
+                Assert.IsTrue(fixture.Personal.Disposed);
+                Assert.IsTrue(fixture.Machine.Disposed);
+            }
+        }
+
+        [TestMethod]
+        public void GitProjectResolvesTheSelectedLiveProjectAndRefusesChangedDocumentPath()
+        {
+            using (var fixture = new SigningFixture())
+            {
+                var linked = fixture.Session.GitProject(fixture.Project.Name, fixture.FilePath + ".other");
+                var error = Assert.ThrowsException<InvalidOperationException>(() => linked.Capture());
+                StringAssert.Contains(error.Message, UiText.Get("The linked document changed. Reopen GitHub integration."));
+                Assert.IsTrue(fixture.Project.Saved);
+            }
+        }
+
+        [TestMethod]
+        public void ComponentCreationRefusesWrongNativeNameOrTypeAndRetainsOriginalRenameFailure()
+        {
+            foreach (var wrongName in new[] { true, false })
+            {
+                var project = new VbeSessionTests.FakeProject { Name = "Components", Mode = 2 };
+                var host = new SessionHost();
+                host.VBProjects.Add(project);
+                if (wrongName) project.VBComponents.ForcedReadbackName = "Unexpected";
+                else project.VBComponents.ForcedAddedType = 3;
+                var session = new VbeSession(host);
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => session.Execute(new Request {
+                    Command = "create_module", Project = project.Name, Module = "Created", ExpectedMode = 2 })).Message,
+                    "did not create the requested component identity");
+                Assert.AreEqual(1, project.VBComponents.Items.Count);
+            }
+            var rejected = new VbeSessionTests.FakeProject { Name = "Rejected", Mode = 2 };
+            rejected.VBComponents.RejectedName = "RejectedModule";
+            rejected.VBComponents.FailRemoval = true;
+            var rejectingHost = new SessionHost();
+            rejectingHost.VBProjects.Add(rejected);
+            var rejectingSession = new VbeSession(rejectingHost);
+            var failure = Assert.ThrowsException<InvalidOperationException>(() => rejectingSession.Execute(new Request {
+                Command = "create_class", Project = rejected.Name, Module = "RejectedModule", ExpectedMode = 2 }));
+            Assert.AreEqual("Rejected by VBE", failure.Message);
+            Assert.AreEqual(1, rejected.VBComponents.RemoveCount);
+            Assert.AreEqual(1, rejected.VBComponents.Items.Count);
+        }
+
+        [TestMethod]
+        public void ComponentCreationRejectsAProjectThatHasLeftDesignModeBeforeAddingAnything()
+        {
+            foreach (var command in new[] { "create_module", "create_class" })
+            {
+                var project = new VbeSessionTests.FakeProject { Name = "Executing", Mode = 1 };
+                var host = new SessionHost();
+                host.VBProjects.Add(project);
+                var session = new VbeSession(host);
+                var failure = Assert.ThrowsException<InvalidOperationException>(() => session.Execute(new Request {
+                    Command = command, Project = project.Name, Module = "NewComponent", ExpectedMode = 2 }));
+                Assert.AreEqual("The project is no longer in design mode.", failure.Message);
+                Assert.AreEqual(0, project.VBComponents.Items.Count);
+            }
+        }
+
+        [TestMethod]
+        public void ReferenceFileAndRemovalRejectMissingPathsAndEveryIdentityMismatchBeforeMutation()
+        {
+            var project = new VbeSessionTests.FakeProject { Name = "References", Mode = 2 };
+            var host = new SessionHost();
+            host.VBProjects.Add(project);
+            var session = new VbeSession(host);
+            foreach (var path in new[] { null, "", " ", "relative.tlb" })
+                Assert.ThrowsException<ArgumentException>(() => session.Execute(new Request {
+                    Command = "add_reference_file", Project = project.Name, Path = path }));
+            const string selected = "{11111111-1111-1111-1111-111111111111}";
+            project.References.Items.Add(new VbeSessionTests.FakeReference { GUID = selected, Major = 2, Minor = 3 });
+            dynamic state = session.Execute(new Request { Command = "list_references", Project = project.Name }).Data;
+            foreach (var mismatch in new[] { 0, 1, 2 })
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => session.Execute(new Request {
+                    Command = "remove_reference", Project = project.Name, ExpectedReferencesVersion = state.Version,
+                    Guid = mismatch == 0 ? "{22222222-2222-2222-2222-222222222222}" : selected,
+                    Major = mismatch == 1 ? 4 : 2, Minor = mismatch == 2 ? 4 : 3 })).Message, "exact reference was not found");
+            Assert.AreEqual(1, project.References.Items.Count);
+        }
+    }
+}
+
+namespace CodexVBE.Tests.Unit
+{
+    using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -527,6 +895,177 @@ namespace CodexVBE.Tests.Unit
             remove.ExpectedReferencesVersion = (string)((dynamic)f.Session.Execute(new Request { Command = "list_references", Project = f.Project.Name }).Data).Version;
             Assert.IsTrue(f.Session.Execute(remove).Ok);
             Assert.AreEqual(0, f.Project.References.Items.Count);
+        }
+    }
+}
+
+namespace CodexVBE.Tests.Unit
+{
+    using System;
+    using System.Collections;
+    using System.Linq;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using CodexVBE;
+
+    public sealed partial class VbeSessionCoverageTests
+    {
+        [DataTestMethod]
+        [DataRow("focus_vbe_window", typeof(ArgumentException))]
+        [DataRow("show_vbe_window", typeof(ArgumentException))]
+        [DataRow("window_linkage", typeof(ArgumentException))]
+        [DataRow("close_vbe_window", typeof(ArgumentException))]
+        [DataRow("open_object_browser", typeof(InvalidOperationException))]
+        [DataRow("list_procedures", typeof(ArgumentException))]
+        [DataRow("find_code", typeof(ArgumentException))]
+        [DataRow("select_procedure", typeof(ArgumentException))]
+        [DataRow("create_event_procedure", typeof(ArgumentException))]
+        [DataRow("create_procedure", typeof(ArgumentException))]
+        [DataRow("replace_procedure", typeof(ArgumentException))]
+        [DataRow("remove_procedure", typeof(ArgumentException))]
+        [DataRow("insert_code_file", typeof(ArgumentException))]
+        [DataRow("inspect_code_file", typeof(ArgumentException))]
+        [DataRow("save_host_document", typeof(ArgumentException))]
+        [DataRow("save_host_document_as", typeof(ArgumentException))]
+        [DataRow("read_project_signature_dialog", typeof(ArgumentException))]
+        [DataRow("sign_project", typeof(ArgumentException))]
+        [DataRow("component_properties", typeof(ArgumentException))]
+        [DataRow("component_property_value", typeof(ArgumentException))]
+        [DataRow("component_probe", typeof(ArgumentException))]
+        [DataRow("set_project_property", typeof(ArgumentException))]
+        [DataRow("set_component_property", typeof(ArgumentException))]
+        [DataRow("set_class_instancing", typeof(ArgumentException))]
+        [DataRow("rename_component", typeof(ArgumentException))]
+        [DataRow("remove_component", typeof(ArgumentException))]
+        [DataRow("import_component", typeof(ArgumentException))]
+        [DataRow("export_component", typeof(ArgumentException))]
+        [DataRow("list_reference_types", typeof(ArgumentException))]
+        [DataRow("list_type_members", typeof(ArgumentException))]
+        [DataRow("add_reference_guid", typeof(ArgumentException))]
+        [DataRow("add_reference_file", typeof(ArgumentException))]
+        [DataRow("remove_reference", typeof(ArgumentException))]
+        [DataRow("read_module", typeof(ArgumentException))]
+        [DataRow("create_module", typeof(ArgumentException))]
+        [DataRow("create_class", typeof(ArgumentException))]
+        [DataRow("run_sub", typeof(ArgumentException))]
+        [DataRow("compile_project", typeof(InvalidOperationException))]
+        [DataRow("open_debug_pane", typeof(ArgumentException))]
+        [DataRow("add_watch", typeof(ArgumentException))]
+        [DataRow("edit_watch", typeof(ArgumentException))]
+        [DataRow("quick_watch", typeof(ArgumentException))]
+        [DataRow("read_debug_options", typeof(InvalidOperationException))]
+        [DataRow("read_vbe_options", typeof(InvalidOperationException))]
+        [DataRow("remove_watch", typeof(ArgumentException))]
+        [DataRow("debug_global", typeof(InvalidOperationException))]
+        [DataRow("select_code", typeof(ArgumentException))]
+        [DataRow("select_code_range", typeof(ArgumentException))]
+        [DataRow("invoke_debug", typeof(ArgumentException))]
+        [DataRow("form_state", typeof(ArgumentException))]
+        [DataRow("form_tree", typeof(ArgumentException))]
+        [DataRow("form_list_items", typeof(ArgumentException))]
+        [DataRow("set_form_list_initializer", typeof(ArgumentException))]
+        [DataRow("probe_append_form_list_item", typeof(ArgumentException))]
+        [DataRow("add_form_list_item", typeof(ArgumentException))]
+        [DataRow("remove_form_list_item", typeof(ArgumentException))]
+        [DataRow("form_event_catalog", typeof(ArgumentException))]
+        [DataRow("form_parent_probe", typeof(ArgumentException))]
+        [DataRow("form_properties", typeof(ArgumentException))]
+        [DataRow("set_form_property", typeof(ArgumentException))]
+        [DataRow("set_form_picture", typeof(ArgumentException))]
+        [DataRow("form_control_properties", typeof(ArgumentException))]
+        [DataRow("create_form", typeof(ArgumentException))]
+        [DataRow("open_form", typeof(ArgumentException))]
+        [DataRow("add_form_control", typeof(ArgumentException))]
+        [DataRow("add_nested_form_control", typeof(ArgumentException))]
+        [DataRow("set_form_node_property", typeof(ArgumentException))]
+        [DataRow("set_form_node_picture", typeof(ArgumentException))]
+        [DataRow("z_order_form_control", typeof(ArgumentException))]
+        [DataRow("form_property_accessors", typeof(ArgumentException))]
+        [DataRow("duplicate_form_label", typeof(ArgumentException))]
+        [DataRow("duplicate_form_textbox", typeof(ArgumentException))]
+        [DataRow("duplicate_form_checkbox", typeof(ArgumentException))]
+        [DataRow("duplicate_form_togglebutton", typeof(ArgumentException))]
+        [DataRow("duplicate_form_commandbutton", typeof(ArgumentException))]
+        [DataRow("duplicate_form_combobox", typeof(ArgumentException))]
+        [DataRow("duplicate_empty_form_frame", typeof(ArgumentException))]
+        [DataRow("frame_copy_plan", typeof(ArgumentException))]
+        [DataRow("duplicate_form_frame_labels", typeof(ArgumentException))]
+        [DataRow("frame_simple_copy_plan", typeof(ArgumentException))]
+        [DataRow("duplicate_form_frame_simple_children", typeof(ArgumentException))]
+        [DataRow("frame_profile_copy_plan", typeof(ArgumentException))]
+        [DataRow("duplicate_form_frame_profiled", typeof(ArgumentException))]
+        [DataRow("duplicate_form_optionbutton", typeof(ArgumentException))]
+        [DataRow("remove_form_control", typeof(ArgumentException))]
+        [DataRow("add_form_page", typeof(ArgumentException))]
+        [DataRow("add_form_tab", typeof(ArgumentException))]
+        [DataRow("remove_form_page_tab", typeof(ArgumentException))]
+        [DataRow("set_form_control_geometry", typeof(ArgumentException))]
+        [DataRow("rename_form_control", typeof(ArgumentException))]
+        [DataRow("set_form_control_caption", typeof(ArgumentException))]
+        [DataRow("set_form_control_font", typeof(ArgumentException))]
+        public void PublishedCommandRejectsIncompleteArgumentsBeforeAnyHostMutation(string command, Type expected)
+        {
+            using (var fixture = new SigningFixture())
+            {
+                for (int attempt = 0; attempt < 2; attempt++)
+                {
+                    Exception rejection = null;
+                    try { fixture.Session.Execute(new Request { Command = command, Project = fixture.Project.Name }); }
+                    catch (Exception error) { rejection = error; }
+                    Assert.IsNotNull(rejection, command + " accepted an incomplete request.");
+                    Assert.AreEqual(expected, rejection.GetType(), command + ": " + rejection.Message);
+                    Assert.IsFalse(string.IsNullOrWhiteSpace(rejection.Message), command);
+                    Assert.IsFalse(rejection.Message.Contains("Unknown command"), command);
+                }
+                Assert.AreEqual(0, fixture.Project.VBComponents.Items.Count, command);
+                Assert.AreEqual(0, fixture.Project.References.Items.Count, command);
+                Assert.AreEqual(0, fixture.Scheduled, command);
+                Assert.IsTrue(fixture.Project.Saved, command);
+                Assert.AreEqual(2, fixture.Project.Mode, command);
+            }
+        }
+
+        [TestMethod]
+        public void ReadOnlyRoutesReturnTypedEmptySnapshotsAndNeverScheduleOrMutateTheHost()
+        {
+            using (var fixture = new SigningFixture())
+            {
+                foreach (var command in new[] { "status", "list_projects", "list_modules", "vbe_windows", "vbe_environment",
+                    "list_addins", "code_panes", "project_properties", "project_persistence_status", "project_signature_status",
+                    "list_signing_certificates", "list_references", "debug_state", "list_commands", "list_forms", "list_form_control_types" })
+                    for (int attempt = 0; attempt < 2; attempt++)
+                    {
+                        var response = fixture.Session.Execute(new Request { Command = command, Project = fixture.Project.Name });
+                        Assert.IsTrue(response.Ok, command);
+                        Assert.IsNull(response.Error, command);
+                        Assert.IsNotNull(response.Data, command);
+                        dynamic data = response.Data;
+                        if (command == "status") { Assert.IsTrue((bool)data.Connected); Assert.AreEqual("0.1.0", (string)data.Version); }
+                        if (command == "list_projects") Assert.AreEqual(fixture.Project.Name, (string)((IEnumerable)response.Data).Cast<dynamic>().Single().Name);
+                        if (command == "list_modules" || command == "list_commands" || command == "list_signing_certificates") Assert.AreEqual(0, ((IEnumerable)response.Data).Cast<object>().Count(), command);
+                        if (command == "list_addins") Assert.AreEqual(0, (int)data.Count);
+                        if (command == "vbe_environment") Assert.AreEqual("7.1", (string)data.Properties["Version"]);
+                        if (command == "debug_state") Assert.AreEqual(2, (int)data.Mode);
+                        if (command == "project_persistence_status" || command == "project_signature_status") Assert.AreEqual(fixture.Project.Name, (string)data.Project);
+                    }
+                Assert.AreEqual(0, fixture.Project.VBComponents.Items.Count);
+                Assert.AreEqual(0, fixture.Project.References.Items.Count);
+                Assert.AreEqual(0, fixture.Scheduled);
+            }
+        }
+
+        [TestMethod]
+        public void DisabledRenameAndIncompleteEditReturnExplicitFailuresRatherThanUnknownCommand()
+        {
+            using (var fixture = new SigningFixture())
+                foreach (var command in new[] { "rename_project", "replace_lines" })
+                    for (int attempt = 0; attempt < 2; attempt++)
+                    {
+                        var response = fixture.Session.Execute(new Request { Command = command, Project = fixture.Project.Name });
+                        Assert.IsFalse(response.Ok);
+                        Assert.IsNull(response.Data);
+                        StringAssert.Contains(response.Error, command == "rename_project" ? "rename is disabled" : "ExpectedSha256 is required");
+                        Assert.AreEqual("SigningProject", fixture.Project.Name);
+                    }
         }
     }
 }
