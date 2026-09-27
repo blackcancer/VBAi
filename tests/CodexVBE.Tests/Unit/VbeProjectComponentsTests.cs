@@ -16,7 +16,7 @@ namespace CodexVBE.Tests.Unit
         {
             var vbe = new FakeVbe();
             vbe.VBProjects.Add(project);
-            return new VbeProjectComponents(vbe, null);
+            return new VbeProjectComponents(vbe, new VbeForms(vbe));
         }
 
         [TestMethod]
@@ -114,6 +114,30 @@ namespace CodexVBE.Tests.Unit
         }
 
         [TestMethod]
+        public void RemoveComponentChecksBothVersionsAndReturnsUpdatedInventory()
+        {
+            var project = new FakeProject();
+            var module = new FakeComponent("Module1", 1);
+            project.VBComponents.Add(module);
+            var service = Service(project);
+            dynamic projectState = service.ProjectProperties(project.Name);
+            dynamic componentState = service.ComponentProperties(project.Name, module.Name);
+            var request = new Request { Project = project.Name, Module = module.Name,
+                ExpectedProjectVersion = "stale", ExpectedComponentVersion = componentState.Version };
+            Assert.ThrowsException<InvalidOperationException>(() => service.RemoveComponent(request));
+            Assert.AreEqual(0, project.VBComponents.RemoveAttempts);
+            request.ExpectedProjectVersion = projectState.Version;
+            request.ExpectedComponentVersion = "stale";
+            Assert.ThrowsException<InvalidOperationException>(() => service.RemoveComponent(request));
+            Assert.AreEqual(0, project.VBComponents.RemoveAttempts);
+            request.ExpectedComponentVersion = componentState.Version;
+            dynamic result = service.RemoveComponent(request);
+            Assert.AreEqual(1, project.VBComponents.RemoveAttempts);
+            Assert.AreEqual(0, project.VBComponents.Count());
+            Assert.AreNotEqual((string)projectState.Version, (string)result.Version);
+        }
+
+        [TestMethod]
         public void ImportErrorAfterAppliedChangeNeverTriggersAutomaticRetry()
         {
             var project = new FakeProject();
@@ -137,6 +161,52 @@ namespace CodexVBE.Tests.Unit
         }
 
         [TestMethod]
+        public void ImportWithoutExactlyOneNewComponentReportsUncertainOutcome()
+        {
+            foreach (int addedCount in new[] { 0, 2 })
+            {
+                var project = new FakeProject();
+                project.VBComponents.ImportAddedCount = addedCount;
+                var service = Service(project);
+                dynamic state = service.ProjectProperties(project.Name);
+                string path = Path.Combine(Path.GetTempPath(), "CodexVBE-import-" + Guid.NewGuid().ToString("N") + ".bas");
+                File.WriteAllText(path, "Attribute VB_Name = \"ImportedModule\"");
+                try
+                {
+                    var error = Assert.ThrowsException<InvalidOperationException>(() => service.ImportComponent(
+                        new Request { Project = project.Name, Path = path, ExpectedProjectVersion = state.Version }));
+                    StringAssert.Contains(error.Message, "new components: " + addedCount);
+                    Assert.AreEqual(1, project.VBComponents.ImportAttempts);
+                }
+                finally { File.Delete(path); }
+            }
+        }
+
+        [TestMethod]
+        public void ImportSuccessReturnsVerifiedComponentAndProject()
+        {
+            var project = new FakeProject();
+            var service = Service(project);
+            dynamic state = service.ProjectProperties(project.Name);
+            string path = Path.Combine(Path.GetTempPath(), "CodexVBE-import-" + Guid.NewGuid().ToString("N") + ".bas");
+            File.WriteAllText(path, "Attribute VB_Name = \"ImportedModule\"");
+            try
+            {
+                dynamic result = service.ImportComponent(new Request {
+                    Project = project.Name, Path = path, ExpectedProjectVersion = state.Version });
+                Assert.IsTrue((bool)result.Applied);
+                Assert.IsTrue((bool)result.Verified);
+                Assert.IsFalse((bool)result.VerificationPending);
+                Assert.IsNull((object)result.ImportError);
+                Assert.IsNull((object)result.NextRead);
+                Assert.AreEqual("ImportedModule", (string)result.ImportedName);
+                Assert.AreEqual(1, project.VBComponents.ImportAttempts);
+                Assert.AreEqual(1, project.VBComponents.Count());
+            }
+            finally { File.Delete(path); }
+        }
+
+        [TestMethod]
         public void ExportRequiresFileReadbackAfterVbeReportsSuccess()
         {
             var project = new FakeProject();
@@ -155,6 +225,53 @@ namespace CodexVBE.Tests.Unit
                 Assert.AreEqual(1, module.ExportAttempts);
             }
             finally { if (File.Exists(path)) File.Delete(path); }
+        }
+
+        [TestMethod]
+        public void ExportCreatesFileAndNeverOverwritesIt()
+        {
+            var project = new FakeProject();
+            var module = new FakeComponent("Module1", 1) { WriteExportFile = true };
+            project.VBComponents.Add(module);
+            var service = Service(project);
+            dynamic state = service.ComponentProperties(project.Name, module.Name);
+            string path = Path.Combine(Path.GetTempPath(), "CodexVBE-export-" + Guid.NewGuid().ToString("N") + ".bas");
+            try
+            {
+                var request = new Request { Project = project.Name, Module = module.Name, Path = path,
+                    ExpectedComponentVersion = state.Version };
+                dynamic result = service.ExportComponent(request);
+                Assert.AreEqual(path, (string)result.Path);
+                Assert.IsTrue((long)result.Bytes > 0);
+                Assert.AreEqual(1, module.ExportAttempts);
+                Assert.ThrowsException<IOException>(() => service.ExportComponent(request));
+                Assert.AreEqual(1, module.ExportAttempts);
+            }
+            finally { if (File.Exists(path)) File.Delete(path); }
+        }
+
+        [TestMethod]
+        public void FormExportPreservesExistingFrxCompanion()
+        {
+            var project = new FakeProject();
+            var form = new FakeComponent("Form1", 3) { WriteExportFile = true };
+            project.VBComponents.Add(form);
+            var service = Service(project);
+            dynamic state = service.ComponentProperties(project.Name, form.Name);
+            string path = Path.Combine(Path.GetTempPath(), "CodexVBE-export-" + Guid.NewGuid().ToString("N") + ".frm");
+            string companion = Path.ChangeExtension(path, ".frx");
+            File.WriteAllText(companion, "existing binary companion");
+            try
+            {
+                var error = Assert.ThrowsException<IOException>(() => service.ExportComponent(new Request {
+                    Project = project.Name, Module = form.Name, Path = path,
+                    ExpectedComponentVersion = state.Version }));
+                StringAssert.Contains(error.Message, "FRX companion");
+                Assert.AreEqual(0, form.ExportAttempts);
+                Assert.IsFalse(File.Exists(path));
+                Assert.AreEqual("existing binary companion", File.ReadAllText(companion));
+            }
+            finally { File.Delete(companion); if (File.Exists(path)) File.Delete(path); }
         }
 
         [TestMethod]
@@ -274,12 +391,14 @@ namespace CodexVBE.Tests.Unit
             public int RemoveAttempts { get; private set; }
             public int ImportAttempts { get; private set; }
             public bool ImportThenThrow { get; set; }
+            public int ImportAddedCount { get; set; } = 1;
             public void Add(FakeComponent component) { items.Add(component); }
             public void Remove(FakeComponent component) { RemoveAttempts++; items.Remove(component); }
             public void Import(string path)
             {
                 ImportAttempts++;
-                items.Add(new FakeComponent("ImportedModule", 1));
+                for (int index = 0; index < ImportAddedCount; index++)
+                    items.Add(new FakeComponent(index == 0 ? "ImportedModule" : "ImportedModule" + index, 1));
                 if (ImportThenThrow) throw new InvalidOperationException("COM error after add");
             }
             public IEnumerator<FakeComponent> GetEnumerator() { return items.GetEnumerator(); }
@@ -288,14 +407,36 @@ namespace CodexVBE.Tests.Unit
 
         public sealed class FakeComponent
         {
-            public FakeComponent(string name, int type) { Name = name; Type = type; }
+            public FakeComponent(string name, int type)
+            {
+                Name = name;
+                Type = type;
+                if (type == 3)
+                {
+                    Designer = new FakeDesigner();
+                    Properties.Add(new FakeProperty { Name = "Caption", Value = name });
+                    Properties.Add(new FakeProperty { Name = "Width", Value = 240d });
+                    Properties.Add(new FakeProperty { Name = "Height", Value = 180d });
+                }
+            }
             public string Name { get; set; }
             public string Description { get; set; } = "Original";
             public int Type { get; set; }
             public FakePropertyCollection Properties { get; } = new FakePropertyCollection();
+            public FakeDesigner Designer { get; }
             public FakeCodeModule CodeModule { get; } = new FakeCodeModule();
             public int ExportAttempts { get; private set; }
-            public void Export(string path) { ExportAttempts++; }
+            public bool WriteExportFile { get; set; }
+            public void Export(string path)
+            {
+                ExportAttempts++;
+                if (WriteExportFile) File.WriteAllText(path, "Attribute VB_Name = \"" + Name + "\"");
+            }
+        }
+
+        public sealed class FakeDesigner
+        {
+            public List<object> Controls { get; } = new List<object>();
         }
 
         public sealed class FakePropertyCollection : IEnumerable<FakeProperty>

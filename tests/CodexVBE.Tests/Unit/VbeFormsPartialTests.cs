@@ -230,11 +230,24 @@ namespace CodexVBE.Tests.Unit
             public int Count => items.Count;
             public int RemoveCount { get; private set; }
             public bool FailNextCaption { get; set; }
+            public bool FailNextValue { get; set; }
+            public bool FailNextListWidth { get; set; }
+            public bool FailNextChildCaption { get; set; }
+            public bool FailNextRemove { get; set; }
             public FakeControl Add(string progId, string name, bool visible)
             {
-                var control = AddExisting(progId == "Forms.Label.1" ? "Label" : "Other", name);
+                string type = progId.StartsWith("Forms.", StringComparison.Ordinal) &&
+                    progId.EndsWith(".1", StringComparison.Ordinal)
+                    ? progId.Substring(6, progId.Length - 8) : "Other";
+                var control = AddExisting(type, name);
                 control.FailCaption = FailNextCaption;
                 FailNextCaption = false;
+                control.FailValue = FailNextValue;
+                FailNextValue = false;
+                control.FailListWidth = FailNextListWidth;
+                FailNextListWidth = false;
+                control.Controls.FailNextCaption = FailNextChildCaption;
+                FailNextChildCaption = false;
                 return control;
             }
             public FakeControl AddExisting(string type, string name)
@@ -244,7 +257,12 @@ namespace CodexVBE.Tests.Unit
                 return control;
             }
             public FakeControl Item(string name) { return items.Single(x => x.Name == name); }
-            public void Remove(string name) { RemoveCount++; items.Remove(Item(name)); }
+            public void Remove(string name)
+            {
+                RemoveCount++;
+                if (FailNextRemove) { FailNextRemove = false; throw new InvalidOperationException("Native Remove failed"); }
+                items.Remove(Item(name));
+            }
             public IEnumerator<FakeControl> GetEnumerator() { return items.GetEnumerator(); }
             IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
         }
@@ -252,16 +270,21 @@ namespace CodexVBE.Tests.Unit
         public sealed class FakeControl
         {
             private string caption = "Original";
+            private object value;
+            private object listWidth = "60 pt";
             public FakeControl(string type, string name, object parent)
             {
                 TypeDescriptor.AddProvider(new NamedProvider(TypeDescriptor.GetProvider(this), type), this);
                 Name = name; Parent = parent; Controls = new FakeControls(this);
+                if (type == "CheckBox" || type == "ToggleButton" || type == "OptionButton") value = false;
             }
             public string Name { get; set; }
             public object Parent { get; }
             public FakeControls Controls { get; }
             public FakeFont Font { get; } = new FakeFont();
             public bool FailCaption { get; set; }
+            public bool FailValue { get; set; }
+            public bool FailListWidth { get; set; }
             public string Caption
             {
                 get { return caption; }
@@ -272,6 +295,16 @@ namespace CodexVBE.Tests.Unit
             public double Width { get; set; } = 20;
             public double Height { get; set; } = 10;
             public int BackColor { get; set; }
+            public object Value
+            {
+                get { return value; }
+                set { if (FailValue) throw new InvalidOperationException("Native Value setter failed"); this.value = value; }
+            }
+            public object ListWidth
+            {
+                get { return listWidth; }
+                set { if (FailListWidth) throw new InvalidOperationException("Native ListWidth setter failed"); listWidth = value; }
+            }
             public string RowSource { get; set; } = "";
             public int ColumnCount { get; set; } = 1;
             public List<string> Items { get; } = new List<string>();

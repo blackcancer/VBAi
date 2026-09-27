@@ -41,3 +41,25 @@ operations through `NativeProbe`.
 These limits remain after the fake suite passes. No coverage exclusion was
 added. The grouped VSTest/Cobertura report is at
 `artifacts/coverage/batch-comprehensive-final/9bf3adb1-a9d7-4eac-bc7c-3913122c6063/coverage.cobertura.xml`.
+
+## Follow-up deterministic batch (pending grouped VSTest)
+
+The new `IWatchProbe` cases cover Add/Edit Watch dialog absence, missing
+controls, changed selection/context, type selection failure, edit echo failure,
+refused OK, native validation error, close timeout, hidden Watches pane,
+pending readback, and verified edit readback. `ISignatureProbe` cases cover
+dialog timeout, inaccessible or missing Cancel control, exact labels and
+Cancel action, and failure to close. `IOptionsProbe` cases cover dialog
+timeout, tab bounds and names, control visibility, disabled and blank text
+filtering, control bound, and close timeout. These cases were compiled but
+were **not run** in this batch; the earlier 219/2 result above does not
+include them.
+
+The Win32 message delivery, VBE watch mutation, live UIA values, MSAA
+certificate tree, native dialog ownership, and actual close timing still
+require a VBE host. The probe tests verify decisions from simulated native
+observations only. `ReadDebugOptions`, `CompleteProjectSignature`,
+`ExecuteImmediate`, `ChangeDebugItem`, `CompleteQuickWatch`, and the
+low-level UIA/MSAA extraction branches are not fully reachable by this
+deterministic batch. They remain explicit obstacles to a claim of 100% line
+and branch coverage.

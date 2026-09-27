@@ -1,7 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using CodexVBE;
@@ -44,6 +47,40 @@ namespace CodexVBE.Tests.Unit
             Call(window, "InitializeComposer", new object[] { null });
             Call(window, "InitializeTranscript");
             return window;
+        }
+
+        private static ChatWindow ReadyCodexWindow(ChatSessionState session)
+        {
+            var window = Surfaces();
+            var settings = new LlmSettings();
+            Set(window, "settings", settings);
+            Set(window, "tools", new LlmVbeTools(null, window, settings));
+            Set(window, "currentSession", session);
+            var providers = Get<ComboBox>(window, "providerPicker");
+            providers.Items.Add(LlmProvider.All[0]);
+            providers.SelectedIndex = 0;
+            var models = Get<ComboBox>(window, "modelPicker");
+            models.Items.Add(new LlmModelOption("gpt-test", "Test", true, null, new LlmEffortOption[0]));
+            models.SelectedIndex = 0;
+            return window;
+        }
+
+        private static void Question(ChatWindow window, string text)
+        {
+            var prompt = Get<object>(window, "prompt");
+            prompt.GetType().GetProperty("Text").SetValue(prompt, text, null);
+        }
+
+        private static void CompleteOnSta(Task task)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(5);
+            while (!task.IsCompleted && DateTime.UtcNow < deadline)
+            {
+                Application.DoEvents();
+                Thread.Sleep(1);
+            }
+            Assert.IsTrue(task.IsCompleted, "The chat operation did not complete on the STA thread.");
+            task.GetAwaiter().GetResult();
         }
 
         [TestMethod]
@@ -314,6 +351,166 @@ namespace CodexVBE.Tests.Unit
                     new ChatAttachment { Label = "Selection", Text = "VBA code" });
                 Call(window, "RefreshContextPreview");
                 Assert.AreEqual(2, Get<FlowLayoutPanel>(window, "contextPreview").Controls.Count);
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void CodexSendRecordsQuestionAnswerAndStructuredRequestWithoutNetwork()
+        {
+            var session = new ChatSessionState { Scope = "temporary:test", ResumeContext = "Earlier branch" };
+            using (var window = ReadyCodexWindow(session))
+            {
+                string request = null;
+                window.CodexTurnOverride = (text, model, effort) => {
+                    request = text;
+                    Assert.AreEqual("gpt-test", model);
+                    Assert.IsNull(effort);
+                    return Task.FromResult("Réponse complète");
+                };
+                Question(window, "Corrige la procédure");
+                ((Task)Call(window, "SendAsync")).GetAwaiter().GetResult();
+                var entries = Get<List<ChatEntry>>(window, "transcriptEntries");
+                Assert.AreEqual(2, entries.Count);
+                Assert.AreEqual("Vous", entries[0].Speaker);
+                Assert.AreEqual("Réponse complète", entries[1].Text);
+                StringAssert.Contains(request, "Corrige la procédure");
+                StringAssert.Contains(request, "Earlier branch");
+                Assert.IsNull(session.ResumeContext);
+                Assert.IsFalse(Get<bool>(window, "busy"));
+                Assert.AreEqual("", session.Draft);
+                Set(window, "currentSession", null);
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void FailedCodexSendRestoresDraftAndContextForRetry()
+        {
+            var session = new ChatSessionState { Scope = "temporary:test" };
+            using (var window = ReadyCodexWindow(session))
+            {
+                var drafts = Get<List<ChatAttachment>>(window, "draftAttachments");
+                drafts.Add(new ChatAttachment { Label = "Extrait", Text = "Sub Écrire()" });
+                window.CodexTurnOverride = (text, model, effort) =>
+                    Task.FromException<string>(new InvalidOperationException("provider failed"));
+                Question(window, "Explique le code");
+                ((Task)Call(window, "SendAsync")).GetAwaiter().GetResult();
+                Assert.AreEqual("Explique le code", session.Draft);
+                Assert.AreEqual(1, drafts.Count);
+                Assert.AreEqual("Extrait", drafts[0].Label);
+                Assert.AreEqual("Erreur", Get<List<ChatEntry>>(window, "transcriptEntries")[1].Speaker);
+                Assert.IsFalse(Get<bool>(window, "busy"));
+                Set(window, "currentSession", null);
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void StopCodexSendRecordsInterruptionAndDoesNotRestoreDraft()
+        {
+            var session = new ChatSessionState { Scope = "temporary:test" };
+            using (var window = ReadyCodexWindow(session))
+            {
+                var pending = new TaskCompletionSource<string>();
+                window.CodexTurnOverride = (text, model, effort) => pending.Task;
+                window.CodexInterruptOverride = () => {
+                    pending.SetException(new OperationCanceledException());
+                    return Task.FromResult(0);
+                };
+                Question(window, "Arrête cette réponse");
+                var send = (Task)Call(window, "SendAsync");
+                Assert.IsTrue(Get<bool>(window, "busy"));
+                CompleteOnSta((Task)Call(window, "StopTurnAsync"));
+                CompleteOnSta(send);
+                Assert.AreEqual("Assistant", Get<List<ChatEntry>>(window, "transcriptEntries")[1].Speaker);
+                Assert.AreEqual("", session.Draft);
+                Assert.IsFalse(Get<bool>(window, "busy"));
+                Set(window, "currentSession", null);
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void StopFailureReenablesControlForAnotherAttempt()
+        {
+            using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:test" }))
+            {
+                Call(window, "SetBusy", true);
+                window.CodexInterruptOverride = () => Task.FromException(new InvalidOperationException("stop failed"));
+                ((Task)Call(window, "StopTurnAsync")).GetAwaiter().GetResult();
+                Assert.IsFalse(Get<bool>(window, "stopRequested"));
+                Assert.IsTrue(Get<Button>(window, "send").Enabled);
+                Assert.IsTrue(Get<bool>(window, "busy"));
+                Call(window, "SetBusy", false);
+                Set(window, "currentSession", null);
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void SendPreflightRejectsMissingModelAndOversizedContext()
+        {
+            using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:test" }))
+            {
+                bool invoked = false;
+                window.CodexTurnOverride = (text, model, effort) => {
+                    invoked = true;
+                    return Task.FromResult("unexpected");
+                };
+                var modelPicker = Get<ComboBox>(window, "modelPicker");
+                modelPicker.SelectedIndex = -1;
+                Question(window, "Question");
+                ((Task)Call(window, "SendAsync")).GetAwaiter().GetResult();
+                Assert.IsFalse(invoked);
+                Assert.AreEqual(0, Get<List<ChatEntry>>(window, "transcriptEntries").Count);
+                modelPicker.SelectedIndex = 0;
+                Get<List<ChatAttachment>>(window, "draftAttachments").Add(
+                    new ChatAttachment { Label = "Très long", Text = new string('x', 48001) });
+                ((Task)Call(window, "SendAsync")).GetAwaiter().GetResult();
+                Assert.IsFalse(invoked);
+                Assert.AreEqual("Question", Get<object>(window, "prompt").GetType().GetProperty("Text").GetValue(Get<object>(window, "prompt"), null));
+                Assert.IsFalse(Get<bool>(window, "busy"));
+                Set(window, "currentSession", null);
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void CurrentSessionPersistsDraftMessagesAndEntriesInIsolatedStore()
+        {
+            string path = Path.Combine(Path.GetTempPath(), "CodexVBE-Chat-" + Guid.NewGuid().ToString("N"), "chat.db");
+            try
+            {
+                using (var store = new ChatSessionStore(path))
+                using (var window = Surfaces())
+                {
+                    var session = new ChatSessionState { Scope = "temporary:test", Title = "Essai éè" };
+                    Set(window, "sessionStore", store);
+                    Set(window, "currentSession", session);
+                    Question(window, "Brouillon éè");
+                    Get<List<object>>(window, "messages").Add(new Dictionary<string, object> {
+                        ["role"] = "user", ["content"] = "Question éè" });
+                    Call(window, "AddTranscriptMessage", "Assistant", "Réponse éè");
+                    Call(window, "SaveCurrentSession");
+                    var restored = store.List(session.Scope);
+                    Assert.AreEqual(1, restored.Count);
+                    Assert.AreEqual("Essai éè", restored[0].Title);
+                    Assert.AreEqual("Brouillon éè", restored[0].Draft);
+                    StringAssert.Contains(restored[0].MessagesJson, "Question éè");
+                    Assert.AreEqual("Réponse éè", restored[0].Entries[0].Text);
+                    Set(window, "currentSession", null);
+                    Set(window, "sessionStore", null);
+                }
+            }
+            finally
+            {
+                string directory = Path.GetDirectoryName(path);
+                if (Directory.Exists(directory))
+                {
+                    foreach (string file in Directory.GetFiles(directory)) File.Delete(file);
+                    Directory.Delete(directory, false);
+                }
             }
         }
     }

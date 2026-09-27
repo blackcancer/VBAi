@@ -65,6 +65,178 @@ namespace CodexVBE
             void Pause(int milliseconds);
         }
 
+        // Keep the Win32 boundary injectable for dialog decisions. The production
+        // implementation below still calls the same native functions.
+        internal interface IWatchProbe
+        {
+            IntPtr Dialog(params string[] titles);
+            IntPtr Item(IntPtr dialog, int id);
+            string Text(IntPtr handle);
+            bool Click(IntPtr handle);
+            bool Checked(IntPtr handle);
+            void Replace(IntPtr handle, string text);
+            void Pause(int milliseconds);
+            string Message(IntPtr dialog);
+            void Close(IntPtr dialog);
+            IntPtr VbeRoot();
+            List<IntPtr> Children(IntPtr root);
+            IntPtr Pane(IEnumerable<IntPtr> panes, params string[] names);
+            object List(IntPtr handle);
+            int WatchMatches(IntPtr pane, string expression, string context);
+        }
+
+        private sealed class NativeWatchProbe : IWatchProbe
+        {
+            public IntPtr Dialog(params string[] titles) { return FindDialog(titles); }
+            public IntPtr Item(IntPtr dialog, int id) { return GetDlgItem(dialog, id); }
+            public string Text(IntPtr handle) { return WindowText(handle); }
+            public bool Click(IntPtr handle) { return PostMessage(handle, BmClick, IntPtr.Zero, IntPtr.Zero); }
+            public bool Checked(IntPtr handle) { return SendMessageInt(handle, 0x00F0, IntPtr.Zero, IntPtr.Zero).ToInt32() == 1; }
+            public void Replace(IntPtr handle, string value)
+            {
+                SendMessageInt(handle, 0x00B1, IntPtr.Zero, new IntPtr(-1));
+                SendMessageText(handle, 0x00C2, new IntPtr(1), value);
+            }
+            public void Pause(int milliseconds) { Thread.Sleep(milliseconds); }
+            public string Message(IntPtr dialog) { return AccessibleDialogMessage(dialog); }
+            public void Close(IntPtr dialog) { CloseDialog(dialog); }
+            public IntPtr VbeRoot() { return FindVbeRoot(); }
+            public List<IntPtr> Children(IntPtr root) { return ChildWindows(root); }
+            public IntPtr Pane(IEnumerable<IntPtr> panes, params string[] names) { return FindPane(panes, names); }
+            public object List(IntPtr handle) { return ReadList(handle); }
+            public int WatchMatches(IntPtr pane, string expression, string context)
+            { return MatchingWatchRows(pane, expression, context).Count; }
+        }
+
+        internal sealed class SignatureChild
+        {
+            public int Index;
+            public int Role;
+            public string Name;
+        }
+
+        internal interface ISignatureProbe
+        {
+            IntPtr Dialog();
+            IList<SignatureChild> Children(IntPtr dialog);
+            void Cancel(IntPtr dialog, int index);
+            void Close(IntPtr dialog);
+            void Pause(int milliseconds);
+        }
+
+        private sealed class NativeSignatureProbe : ISignatureProbe
+        {
+            private Accessibility.IAccessible accessible;
+            public IntPtr Dialog() { return FindSignatureDialog(); }
+            public IList<SignatureChild> Children(IntPtr dialog)
+            {
+                accessible = SignatureAccessible(dialog);
+                var children = new List<SignatureChild>();
+                for (int index = 1; index <= Math.Min(accessible.accChildCount, 64); index++)
+                {
+                    try
+                    {
+                        children.Add(new SignatureChild { Index = index, Name = accessible.get_accName(index),
+                            Role = Convert.ToInt32(accessible.get_accRole(index)) });
+                    }
+                    catch { /* A single inaccessible MSAA child is skipped. */ }
+                }
+                return children;
+            }
+            public void Cancel(IntPtr dialog, int index) { accessible.accDoDefaultAction(index); }
+            public void Close(IntPtr dialog) { PostMessage(dialog, 0x0010, IntPtr.Zero, IntPtr.Zero); }
+            public void Pause(int milliseconds) { Thread.Sleep(milliseconds); }
+        }
+
+        internal sealed class OptionsControl
+        {
+            public string Name;
+            public string Type;
+            public object Value;
+            public string Error;
+            public bool Visible = true;
+            public bool Enabled = true;
+        }
+
+        internal interface IOptionsProbe
+        {
+            IntPtr Dialog();
+            IList<string> Tabs(IntPtr dialog);
+            IList<OptionsControl> Controls(IntPtr dialog, int tabIndex);
+            void Close(IntPtr dialog);
+            void Pause(int milliseconds);
+        }
+
+        private sealed class NativeOptionsProbe : IOptionsProbe
+        {
+            private AutomationElement root;
+            private AutomationElementCollection tabItems;
+            public IntPtr Dialog() { return FindDialog("Options"); }
+            public IList<string> Tabs(IntPtr dialog)
+            {
+                root = AutomationElement.FromHandle(dialog);
+                tabItems = root.FindAll(TreeScope.Descendants,
+                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem));
+                return tabItems.Cast<AutomationElement>().Select(tab => tab.Current.Name).ToArray();
+            }
+            public IList<OptionsControl> Controls(IntPtr dialog, int tabIndex)
+            {
+                object tabPattern;
+                if (!tabItems[tabIndex].TryGetCurrentPattern(SelectionItemPattern.Pattern, out tabPattern))
+                    throw new InvalidOperationException("A native VBE Options tab is unreadable.");
+                ((SelectionItemPattern)tabPattern).Select();
+                Thread.Sleep(75);
+                var descendants = root.FindAll(TreeScope.Descendants,
+                    new OrCondition(
+                        new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.CheckBox),
+                        new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.RadioButton),
+                        new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit),
+                        new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ComboBox),
+                        new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.List),
+                        new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem),
+                        new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Slider),
+                        new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text)));
+                if (descendants.Count > 2000)
+                    throw new InvalidOperationException("The Options dialog has too many controls to inspect safely: " +
+                        descendants.Count + ".");
+                var controls = new List<OptionsControl>();
+                for (int index = 0; index < descendants.Count; index++)
+                {
+                    AutomationElement element = descendants[index];
+                    try
+                    {
+                        ControlType kind = element.Current.ControlType;
+                        var control = new OptionsControl { Name = element.Current.Name,
+                            Type = kind.ProgrammaticName, Visible = !element.Current.IsOffscreen,
+                            Enabled = element.Current.IsEnabled };
+                        if (!control.Visible || !control.Enabled) { controls.Add(control); continue; }
+                        try
+                        {
+                            if (kind == ControlType.CheckBox &&
+                                element.TryGetCurrentPattern(TogglePattern.Pattern, out object toggle))
+                                control.Value = ((TogglePattern)toggle).Current.ToggleState.ToString();
+                            else if ((kind == ControlType.RadioButton || kind == ControlType.ListItem) &&
+                                element.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object selection))
+                                control.Value = ((SelectionItemPattern)selection).Current.IsSelected;
+                            else if ((kind == ControlType.Edit || kind == ControlType.ComboBox) &&
+                                !element.Current.IsPassword &&
+                                element.TryGetCurrentPattern(ValuePattern.Pattern, out object input))
+                                control.Value = ((ValuePattern)input).Current.Value;
+                            else if (kind == ControlType.Slider &&
+                                element.TryGetCurrentPattern(RangeValuePattern.Pattern, out object slider))
+                                control.Value = ((RangeValuePattern)slider).Current.Value;
+                        }
+                        catch (Exception ex) { control.Error = ex.Message; }
+                        controls.Add(control);
+                    }
+                    catch (ElementNotAvailableException) { }
+                }
+                return controls;
+            }
+            public void Close(IntPtr dialog) { CloseDialog(dialog); }
+            public void Pause(int milliseconds) { Thread.Sleep(milliseconds); }
+        }
+
         private sealed class NativeProbe : INativeProbe
         {
             public IntPtr VbeRoot() { return FindVbeRoot(); }
@@ -177,9 +349,14 @@ namespace CodexVBE
 
         public static object ReadSignatureDialog(string project)
         {
+            return ReadSignatureDialog(project, new NativeSignatureProbe());
+        }
+
+        internal static object ReadSignatureDialog(string project, ISignatureProbe native)
+        {
             IntPtr dialog = IntPtr.Zero;
             for (int attempt = 0; attempt < 60 && dialog == IntPtr.Zero; attempt++)
-            { Thread.Sleep(50); dialog = FindSignatureDialog(); }
+            { native.Pause(50); dialog = native.Dialog(); }
             if (dialog == IntPtr.Zero)
                 throw new InvalidOperationException("The native VBE Digital Signature dialog did not open.");
             var labels = new List<string>();
@@ -187,45 +364,36 @@ namespace CodexVBE
             bool cancelled = false;
             try
             {
-                object accessible;
-                Guid iid = IidAccessible;
-                int hr = AccessibleObjectFromWindow(dialog, ObjidClient, ref iid, out accessible);
-                if (hr != 0 || !(accessible is Accessibility.IAccessible))
-                    throw new COMException("The native signature dialog is not accessible through MSAA.", hr);
-                var root = (Accessibility.IAccessible)accessible;
-                int count = Math.Min(root.accChildCount, 64);
                 int cancelIndex = 0;
-                for (int index = 1; index <= count; index++)
+                foreach (SignatureChild child in native.Children(dialog))
                 {
-                    string name;
-                    int role;
-                    try { name = root.get_accName(index); role = Convert.ToInt32(root.get_accRole(index)); }
-                    catch { continue; }
+                    string name = child.Name;
+                    int role = child.Role;
                     if (string.IsNullOrWhiteSpace(name)) continue;
                     if (role == 43)
                     {
                         buttons.Add(name);
                         if (string.Equals(name, "Annuler", StringComparison.OrdinalIgnoreCase) ||
                             string.Equals(name, "Cancel", StringComparison.OrdinalIgnoreCase))
-                            cancelIndex = index;
+                            cancelIndex = child.Index;
                     }
                     else if (role == 41) labels.Add(name);
                 }
                 if (cancelIndex == 0)
                     throw new InvalidOperationException("The native Digital Signature dialog has no accessible Cancel button.");
-                root.accDoDefaultAction(cancelIndex);
+                native.Cancel(dialog, cancelIndex);
                 cancelled = true;
             }
             finally
             {
-                if (!cancelled && FindSignatureDialog() == dialog)
-                    PostMessage(dialog, 0x0010, IntPtr.Zero, IntPtr.Zero); // WM_CLOSE on our exact dialog
+                if (!cancelled && native.Dialog() == dialog)
+                    native.Close(dialog); // WM_CLOSE on our exact dialog
             }
             bool closed = false;
             for (int attempt = 0; attempt < 20; attempt++)
             {
-                if (FindSignatureDialog() == IntPtr.Zero) { closed = true; break; }
-                Thread.Sleep(50);
+                if (native.Dialog() == IntPtr.Zero) { closed = true; break; }
+                native.Pause(50);
             }
             if (!closed) throw new InvalidOperationException("The signature dialog was read but did not close.");
             string currentCertificate = CertificateBeforeHeading(labels,
@@ -441,95 +609,53 @@ namespace CodexVBE
 
         public static object ReadVbeOptions()
         {
+            return ReadVbeOptions(new NativeOptionsProbe());
+        }
+
+        internal static object ReadVbeOptions(IOptionsProbe native)
+        {
             IntPtr dialog = IntPtr.Zero;
             for (int attempt = 0; attempt < 60 && dialog == IntPtr.Zero; attempt++)
-            { Thread.Sleep(50); dialog = FindDialog("Options"); }
+            { native.Pause(50); dialog = native.Dialog(); }
             if (dialog == IntPtr.Zero)
                 throw new InvalidOperationException("The native VBE Options dialog did not open.");
             var tabs = new List<object>();
             try
             {
-                AutomationElement root = AutomationElement.FromHandle(dialog);
-                AutomationElementCollection tabItems = root.FindAll(TreeScope.Descendants,
-                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem));
-                if (tabItems.Count < 1 || tabItems.Count > 8)
-                    throw new InvalidOperationException("Unexpected native VBE Options tab count: " + tabItems.Count + ".");
-                for (int tabIndex = 0; tabIndex < tabItems.Count; tabIndex++)
+                IList<string> tabNames = native.Tabs(dialog);
+                if (tabNames.Count < 1 || tabNames.Count > 8)
+                    throw new InvalidOperationException("Unexpected native VBE Options tab count: " + tabNames.Count + ".");
+                for (int tabIndex = 0; tabIndex < tabNames.Count; tabIndex++)
                 {
-                    AutomationElement tab = tabItems[tabIndex];
-                    string tabName = tab.Current.Name;
-                    if (string.IsNullOrWhiteSpace(tabName) ||
-                        !tab.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object tabPattern))
+                    string tabName = tabNames[tabIndex];
+                    if (string.IsNullOrWhiteSpace(tabName))
                         throw new InvalidOperationException("A native VBE Options tab is unreadable.");
-                    ((SelectionItemPattern)tabPattern).Select();
-                    Thread.Sleep(75);
-                    var controls = new List<object>();
-                    AutomationElementCollection descendants = root.FindAll(TreeScope.Descendants,
-                        new OrCondition(
-                            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.CheckBox),
-                            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.RadioButton),
-                            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit),
-                            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ComboBox),
-                            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.List),
-                            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem),
-                            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Slider),
-                            new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text)));
-                    if (descendants.Count > 2000)
+                    IList<OptionsControl> observed = native.Controls(dialog, tabIndex);
+                    if (observed.Count > 2000)
                         throw new InvalidOperationException("The Options dialog has too many controls to inspect safely: " +
-                            descendants.Count + ".");
-                    for (int index = 0; index < descendants.Count; index++)
+                            observed.Count + ".");
+                    var controls = new List<object>();
+                    foreach (OptionsControl control in observed)
                     {
-                        AutomationElement element = descendants[index];
-                        try
-                        {
-                            if (element.Current.IsOffscreen || !element.Current.IsEnabled) continue;
-                            ControlType kind = element.Current.ControlType;
-                            if (kind != ControlType.CheckBox && kind != ControlType.RadioButton &&
-                                kind != ControlType.Edit && kind != ControlType.ComboBox &&
-                                kind != ControlType.List && kind != ControlType.ListItem &&
-                                kind != ControlType.Slider && kind != ControlType.Text) continue;
-                            string name = element.Current.Name;
-                            if (string.IsNullOrWhiteSpace(name) && kind == ControlType.Text) continue;
-                            object value = null;
-                            string error = null;
-                            try
-                            {
-                                if (kind == ControlType.CheckBox &&
-                                    element.TryGetCurrentPattern(TogglePattern.Pattern, out object toggle))
-                                    value = ((TogglePattern)toggle).Current.ToggleState.ToString();
-                                else if ((kind == ControlType.RadioButton || kind == ControlType.ListItem) &&
-                                    element.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object selection))
-                                    value = ((SelectionItemPattern)selection).Current.IsSelected;
-                                else if ((kind == ControlType.Edit || kind == ControlType.ComboBox) &&
-                                    !element.Current.IsPassword &&
-                                    element.TryGetCurrentPattern(ValuePattern.Pattern, out object input))
-                                    value = ((ValuePattern)input).Current.Value;
-                                else if (kind == ControlType.Slider &&
-                                    element.TryGetCurrentPattern(RangeValuePattern.Pattern, out object slider))
-                                    value = ((RangeValuePattern)slider).Current.Value;
-                            }
-                            catch (Exception ex) { error = ex.Message; }
-                            controls.Add(new { Name = name, Type = kind.ProgrammaticName,
-                                Value = value, Error = error });
-                        }
-                        catch (ElementNotAvailableException) { }
+                        if (!control.Visible || !control.Enabled) continue;
+                        if (string.IsNullOrWhiteSpace(control.Name) && control.Type == "ControlType.Text") continue;
+                        controls.Add(new { control.Name, control.Type, control.Value, control.Error });
                     }
                     tabs.Add(new { Tab = tabName, Controls = controls, Count = controls.Count });
                 }
             }
-            finally { CloseDialog(dialog); }
+            finally { native.Close(dialog); }
             bool closed = false;
             for (int attempt = 0; attempt < 20; attempt++)
             {
-                if (FindDialog("Options") == IntPtr.Zero) { closed = true; break; }
-                Thread.Sleep(50);
+                if (native.Dialog() == IntPtr.Zero) { closed = true; break; }
+                native.Pause(50);
             }
             if (!closed) throw new InvalidOperationException("The add-in read VBE Options but could not close its dialog.");
             return new { Scope = "VBE", Tabs = tabs, Count = tabs.Count,
                 DialogClosed = true, Verification = "NativeOptionsReadback",
                 Limit = "Only visible native controls were observed; no settings were changed." };
         }
-
         public static object ExecuteImmediate(string command)
         {
             if (string.IsNullOrWhiteSpace(command) || command.Length > 2048 ||
@@ -713,23 +839,28 @@ namespace CodexVBE
 
         public static object CompleteAddWatch(Request request)
         {
+            return CompleteAddWatch(request, new NativeWatchProbe());
+        }
+
+        internal static object CompleteAddWatch(Request request, IWatchProbe native)
+        {
             IntPtr dialog = IntPtr.Zero;
             for (int attempt = 0; attempt < 60 && dialog == IntPtr.Zero; attempt++)
-            { Thread.Sleep(50); dialog = FindDialog("Ajouter un espion", "Add Watch"); }
+            { native.Pause(50); dialog = native.Dialog("Ajouter un espion", "Add Watch"); }
             if (dialog == IntPtr.Zero) throw new InvalidOperationException("The Add Watch dialog did not open.");
             bool completed = false;
             try
             {
-                IntPtr edit = GetDlgItem(dialog, 4853);
-                IntPtr project = GetDlgItem(dialog, 4858);
-                IntPtr module = GetDlgItem(dialog, 4857);
-                IntPtr procedure = GetDlgItem(dialog, 4856);
-                IntPtr ok = GetDlgItem(dialog, 1);
+                IntPtr edit = native.Item(dialog, 4853);
+                IntPtr project = native.Item(dialog, 4858);
+                IntPtr module = native.Item(dialog, 4857);
+                IntPtr procedure = native.Item(dialog, 4856);
+                IntPtr ok = native.Item(dialog, 1);
                 if (edit == IntPtr.Zero || project == IntPtr.Zero || module == IntPtr.Zero || ok == IntPtr.Zero)
                     throw new InvalidOperationException("The native Add Watch dialog controls changed.");
-                string shownProject = WindowText(project);
-                string shownModule = WindowText(module);
-                string shownProcedure = procedure == IntPtr.Zero ? null : WindowText(procedure);
+                string shownProject = native.Text(project);
+                string shownModule = native.Text(module);
+                string shownProcedure = procedure == IntPtr.Zero ? null : native.Text(procedure);
                 if (!string.Equals(shownProject, request.Project, StringComparison.OrdinalIgnoreCase) ||
                     !string.Equals(shownModule, request.Module, StringComparison.OrdinalIgnoreCase) ||
                     (!string.IsNullOrWhiteSpace(request.Procedure) &&
@@ -737,40 +868,39 @@ namespace CodexVBE
                     throw new InvalidOperationException("Add Watch context changed: " + shownProject + "." + shownModule + "." + shownProcedure);
                 int typeId = request.WatchType == "break_when_true" ? 4851 :
                     request.WatchType == "break_when_changed" ? 4852 : 4850;
-                IntPtr typeButton = GetDlgItem(dialog, typeId);
-                if (typeButton == IntPtr.Zero || !PostMessage(typeButton, BmClick, IntPtr.Zero, IntPtr.Zero))
+                IntPtr typeButton = native.Item(dialog, typeId);
+                if (typeButton == IntPtr.Zero || !native.Click(typeButton))
                     throw new InvalidOperationException("The native watch type option was unavailable.");
-                Thread.Sleep(30);
-                if (SendMessageInt(typeButton, 0x00F0, IntPtr.Zero, IntPtr.Zero).ToInt32() != 1) // BM_GETCHECK
+                native.Pause(30);
+                if (!native.Checked(typeButton))
                     throw new InvalidOperationException("The native watch type option was not selected.");
                 // EM_REPLACESEL triggers the VBE's edit notifications. WM_SETTEXT
                 // alone changes the visible text but is rejected as an empty expression.
-                SendMessageInt(edit, 0x00B1, IntPtr.Zero, new IntPtr(-1)); // EM_SETSEL
-                SendMessageText(edit, 0x00C2, new IntPtr(1), request.Expression); // EM_REPLACESEL
-                if (!string.Equals(WindowText(edit), request.Expression, StringComparison.Ordinal))
+                native.Replace(edit, request.Expression);
+                if (!string.Equals(native.Text(edit), request.Expression, StringComparison.Ordinal))
                     throw new InvalidOperationException("The watch expression was not reflected by the native edit control.");
-                if (!PostMessage(ok, BmClick, IntPtr.Zero, IntPtr.Zero))
+                if (!native.Click(ok))
                     throw new InvalidOperationException("The Add Watch dialog refused its OK command.");
                 IntPtr error = IntPtr.Zero;
                 for (int attempt = 0; attempt < 40; attempt++)
                 {
-                    Thread.Sleep(50);
-                    dialog = FindDialog("Ajouter un espion", "Add Watch");
+                    native.Pause(50);
+                    dialog = native.Dialog("Ajouter un espion", "Add Watch");
                     if (dialog == IntPtr.Zero) { completed = true; break; }
-                    error = FindDialog("Microsoft Visual Basic pour Applications", "Microsoft Visual Basic for Applications");
+                    error = native.Dialog("Microsoft Visual Basic pour Applications", "Microsoft Visual Basic for Applications");
                     if (error != IntPtr.Zero) break;
                 }
                 if (error != IntPtr.Zero)
                 {
-                    string detail = AccessibleDialogMessage(error);
-                    CloseDialog(error);
+                    string detail = native.Message(error);
+                    native.Close(error);
                     throw new InvalidOperationException("VBE rejected the watch expression: " + detail);
                 }
                 if (!completed) throw new InvalidOperationException("The Add Watch dialog did not close after OK.");
-                IntPtr root = FindVbeRoot();
+                IntPtr root = native.VbeRoot();
                 IntPtr watches = root == IntPtr.Zero ? IntPtr.Zero :
-                    FindPane(ChildWindows(root), "Espions", "Watch", "Watches");
-                object watchState = ReadList(watches);
+                    native.Pane(native.Children(root), "Espions", "Watch", "Watches");
+                object watchState = native.List(watches);
                 return new { Added = true, request.Expression,
                     WatchType = string.IsNullOrWhiteSpace(request.WatchType) ? "expression" : request.WatchType,
                     Context = new {
@@ -785,32 +915,37 @@ namespace CodexVBE
             {
                 if (!completed)
                 {
-                    IntPtr remaining = FindDialog("Ajouter un espion", "Add Watch");
-                    if (remaining != IntPtr.Zero) CloseDialog(remaining);
+                    IntPtr remaining = native.Dialog("Ajouter un espion", "Add Watch");
+                    if (remaining != IntPtr.Zero) native.Close(remaining);
                 }
             }
         }
 
         public static object CompleteEditWatch(Request request)
         {
+            return CompleteEditWatch(request, new NativeWatchProbe());
+        }
+
+        internal static object CompleteEditWatch(Request request, IWatchProbe native)
+        {
             IntPtr dialog = IntPtr.Zero;
             for (int attempt = 0; attempt < 60 && dialog == IntPtr.Zero; attempt++)
-            { Thread.Sleep(50); dialog = FindDialog("Modifier un espion", "Edit Watch"); }
+            { native.Pause(50); dialog = native.Dialog("Modifier un espion", "Edit Watch"); }
             if (dialog == IntPtr.Zero) throw new InvalidOperationException("The Edit Watch dialog did not open.");
             bool completed = false;
             try
             {
-                IntPtr edit = GetDlgItem(dialog, 4853);
-                IntPtr project = GetDlgItem(dialog, 4858);
-                IntPtr module = GetDlgItem(dialog, 4857);
-                IntPtr procedure = GetDlgItem(dialog, 4856);
-                IntPtr ok = GetDlgItem(dialog, 1);
+                IntPtr edit = native.Item(dialog, 4853);
+                IntPtr project = native.Item(dialog, 4858);
+                IntPtr module = native.Item(dialog, 4857);
+                IntPtr procedure = native.Item(dialog, 4856);
+                IntPtr ok = native.Item(dialog, 1);
                 if (edit == IntPtr.Zero || project == IntPtr.Zero || module == IntPtr.Zero || ok == IntPtr.Zero)
                     throw new InvalidOperationException("The native Edit Watch controls changed.");
-                string original = WindowText(edit);
-                string shownProject = WindowText(project);
-                string shownModule = WindowText(module);
-                string shownProcedure = procedure == IntPtr.Zero ? null : WindowText(procedure);
+                string original = native.Text(edit);
+                string shownProject = native.Text(project);
+                string shownModule = native.Text(module);
+                string shownProcedure = procedure == IntPtr.Zero ? null : native.Text(procedure);
                 string shownContext = shownModule + (string.IsNullOrWhiteSpace(shownProcedure) ? "" : "." + shownProcedure);
                 if (!string.Equals(original, request.Expression, StringComparison.Ordinal) ||
                     !string.Equals(shownProject, request.Project, StringComparison.OrdinalIgnoreCase) ||
@@ -820,38 +955,37 @@ namespace CodexVBE
                 {
                     int typeId = request.WatchType == "break_when_true" ? 4851 :
                         request.WatchType == "break_when_changed" ? 4852 : 4850;
-                    IntPtr typeButton = GetDlgItem(dialog, typeId);
-                    if (typeButton == IntPtr.Zero || !PostMessage(typeButton, BmClick, IntPtr.Zero, IntPtr.Zero))
+                    IntPtr typeButton = native.Item(dialog, typeId);
+                    if (typeButton == IntPtr.Zero || !native.Click(typeButton))
                         throw new InvalidOperationException("The requested native watch type is unavailable.");
-                    Thread.Sleep(30);
-                    if (SendMessageInt(typeButton, 0x00F0, IntPtr.Zero, IntPtr.Zero).ToInt32() != 1)
+                    native.Pause(30);
+                    if (!native.Checked(typeButton))
                         throw new InvalidOperationException("The requested native watch type was not selected.");
                 }
-                SendMessageInt(edit, 0x00B1, IntPtr.Zero, new IntPtr(-1)); // EM_SETSEL
-                SendMessageText(edit, 0x00C2, new IntPtr(1), request.NewExpression); // EM_REPLACESEL
-                if (!string.Equals(WindowText(edit), request.NewExpression, StringComparison.Ordinal))
+                native.Replace(edit, request.NewExpression);
+                if (!string.Equals(native.Text(edit), request.NewExpression, StringComparison.Ordinal))
                     throw new InvalidOperationException("The new watch expression was not reflected by the native edit control.");
-                if (!PostMessage(ok, BmClick, IntPtr.Zero, IntPtr.Zero))
+                if (!native.Click(ok))
                     throw new InvalidOperationException("The Edit Watch dialog refused its OK command.");
                 IntPtr error = IntPtr.Zero;
                 for (int attempt = 0; attempt < 40; attempt++)
                 {
-                    Thread.Sleep(50);
-                    if (FindDialog("Modifier un espion", "Edit Watch") == IntPtr.Zero)
+                    native.Pause(50);
+                    if (native.Dialog("Modifier un espion", "Edit Watch") == IntPtr.Zero)
                     { completed = true; break; }
-                    error = FindDialog("Microsoft Visual Basic pour Applications", "Microsoft Visual Basic for Applications");
+                    error = native.Dialog("Microsoft Visual Basic pour Applications", "Microsoft Visual Basic for Applications");
                     if (error != IntPtr.Zero) break;
                 }
                 if (error != IntPtr.Zero)
                 {
-                    string detail = AccessibleDialogMessage(error);
-                    CloseDialog(error);
+                    string detail = native.Message(error);
+                    native.Close(error);
                     throw new InvalidOperationException("VBE rejected the edited watch: " + detail);
                 }
                 if (!completed) throw new InvalidOperationException("The Edit Watch dialog did not close after OK.");
-                IntPtr root = FindVbeRoot();
+                IntPtr root = native.VbeRoot();
                 IntPtr pane = root == IntPtr.Zero ? IntPtr.Zero :
-                    FindPane(ChildWindows(root), "Espions", "Watch", "Watches");
+                    native.Pane(native.Children(root), "Espions", "Watch", "Watches");
                 if (pane == IntPtr.Zero)
                     return new { Edited = true, OldExpression = request.Expression, request.NewExpression,
                         request.Context, Verification = "Pending", VerificationPending = true,
@@ -859,11 +993,11 @@ namespace CodexVBE
                 bool verified = false;
                 for (int attempt = 0; attempt < 20; attempt++)
                 {
-                    bool newPresent = MatchingWatchRows(pane, request.NewExpression, request.Context).Count == 1;
+                    bool newPresent = native.WatchMatches(pane, request.NewExpression, request.Context) == 1;
                     bool oldAbsent = request.NewExpression == request.Expression ||
-                        MatchingWatchRows(pane, request.Expression, request.Context).Count == 0;
+                        native.WatchMatches(pane, request.Expression, request.Context) == 0;
                     if (newPresent && oldAbsent) { verified = true; break; }
-                    Thread.Sleep(50);
+                    native.Pause(50);
                 }
                 return new { Edited = true, OldExpression = request.Expression, request.NewExpression,
                     request.Context, Verification = verified ? "ReadbackVerified" : "Pending",
@@ -874,8 +1008,8 @@ namespace CodexVBE
             {
                 if (!completed)
                 {
-                    IntPtr remaining = FindDialog("Modifier un espion", "Edit Watch");
-                    if (remaining != IntPtr.Zero) CloseDialog(remaining);
+                    IntPtr remaining = native.Dialog("Modifier un espion", "Edit Watch");
+                    if (remaining != IntPtr.Zero) native.Close(remaining);
                 }
             }
         }

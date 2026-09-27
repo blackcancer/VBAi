@@ -22,6 +22,8 @@ namespace CodexVBE
         private bool restoringSelection;
         private bool stopRequested;
         private LlmChatClient activeHttpClient;
+        internal Func<string, string, string, Task<string>> CodexTurnOverride;
+        internal Func<Task> CodexInterruptOverride;
 
         public ChatWindow()
         {
@@ -286,7 +288,8 @@ namespace CodexVBE
             SetStatus(UiText.Get("Stopping…"));
             try
             {
-                if (codex != null) await codex.InterruptAsync();
+                if (CodexInterruptOverride != null) await CodexInterruptOverride();
+                else if (codex != null) await codex.InterruptAsync();
                 else activeHttpClient?.Dispose();
             }
             catch (Exception ex) { SetStatus(UiText.Get("Unable to stop: ") + ex.Message); stopRequested = false; send.Enabled = true; }
@@ -350,11 +353,12 @@ namespace CodexVBE
             {
                 if (provider.IsCodex)
                 {
-                    if (codex == null)
+                    if (codex == null && CodexTurnOverride == null)
                         codex = CreateCodexClient();
                     SetStatus(UiText.Get("Codex — working"));
-                    CompleteAssistantResponse(await codex.TurnAsync(requestText, selectedModel.Id,
-                        selectedEffort == null ? null : selectedEffort.Id));
+                    CompleteAssistantResponse(await (CodexTurnOverride != null
+                        ? CodexTurnOverride(requestText, selectedModel.Id, selectedEffort == null ? null : selectedEffort.Id)
+                        : codex.TurnAsync(requestText, selectedModel.Id, selectedEffort == null ? null : selectedEffort.Id)));
                     currentSession.ResumeContext = null;
                     SetStatus(UiText.Get("Codex — ready"));
                     return;

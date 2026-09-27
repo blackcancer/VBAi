@@ -45,6 +45,13 @@
     <Compile Include="Unit\GitWindowStateTests.cs" />
     <Compile Include="Unit\CodexAppServerClientTests.cs" />
     <Compile Include="Unit\VbeDebugWindowsNativeTests.cs" />
+    <Compile Include="Unit\VbeDebugWindowsWatchProbeTests.cs" />
+    <Compile Include="Unit\VbeDebugWindowsSignatureProbeTests.cs" />
+    <Compile Include="Unit\VbeDebugWindowsOptionsProbeTests.cs" />
+    <Compile Include="Unit\VbeFormsFrameDuplicationTests.cs" />
+    <Compile Include="Unit\VbeFormsValueDuplicationTests.cs" />
+    <Compile Include="Unit\HostSettingsWindowTests.cs" />
+    <Compile Include="Unit\HostSettingsCoverageTests.cs" />
     <Compile Include="Integration\SessionStoreTests.cs" />
     <Compile Include="Integration\ExcelHostTests.cs" />
     <Compile Include="Integration\SolidWorksHostTests.cs" />
