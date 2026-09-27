@@ -276,11 +276,15 @@ namespace CodexVBE.Tests.Unit
             {
                 TypeDescriptor.AddProvider(new NamedProvider(TypeDescriptor.GetProvider(this), type), this);
                 Name = name; Parent = parent; Controls = new FakeControls(this);
+                Pages = new FakePageTabCollection(this);
+                Tabs = new FakePageTabCollection(this);
                 if (type == "CheckBox" || type == "ToggleButton" || type == "OptionButton") value = false;
             }
             public string Name { get; set; }
             public object Parent { get; }
             public FakeControls Controls { get; }
+            public FakePageTabCollection Pages { get; }
+            public FakePageTabCollection Tabs { get; }
             public FakeFont Font { get; } = new FakeFont();
             public bool FailCaption { get; set; }
             public bool FailValue { get; set; }
@@ -307,9 +311,53 @@ namespace CodexVBE.Tests.Unit
             }
             public string RowSource { get; set; } = "";
             public int ColumnCount { get; set; } = 1;
+            public int ScrollBars { get; set; }
+            public int Min { get; set; }
+            public bool Cancel { get; set; }
             public List<string> Items { get; } = new List<string>();
             public int ListCount => Items.Count;
             public void AddItem(string text) { Items.Add(text); }
+        }
+
+        public sealed class FakePageTabCollection : IEnumerable<FakePageTab>
+        {
+            private readonly FakeControl owner;
+            private readonly List<FakePageTab> items = new List<FakePageTab>();
+            public bool FailAfterAdd { get; set; }
+            public bool FailRemove { get; set; }
+            public int Count => items.Count;
+            public FakePageTabCollection(FakeControl owner) { this.owner = owner; }
+            public FakePageTab Add(string name, string caption)
+            {
+                return Add(name, caption, items.Count);
+            }
+            public FakePageTab Add(string name, string caption, int index)
+            {
+                var item = new FakePageTab(name, caption, owner);
+                items.Insert(index, item);
+                if (FailAfterAdd) throw new InvalidOperationException("Native collection failed after Add");
+                return item;
+            }
+            public void Remove(int index)
+            {
+                if (FailRemove) throw new InvalidOperationException("Native collection Remove failed");
+                items.RemoveAt(index);
+            }
+            public IEnumerator<FakePageTab> GetEnumerator() { return items.GetEnumerator(); }
+            IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
+        }
+
+        public sealed class FakePageTab
+        {
+            public FakePageTab(string name, string caption, FakeControl parent)
+            {
+                Name = name; Caption = caption; Parent = parent;
+                Controls = new FakeControls(this);
+            }
+            public string Name { get; set; }
+            public string Caption { get; set; }
+            public FakeControl Parent { get; }
+            public FakeControls Controls { get; }
         }
 
         public sealed class FakeFont

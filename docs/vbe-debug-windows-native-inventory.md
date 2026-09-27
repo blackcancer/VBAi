@@ -63,3 +63,25 @@ observations only. `ReadDebugOptions`, `CompleteProjectSignature`,
 low-level UIA/MSAA extraction branches are not fully reachable by this
 deterministic batch. They remain explicit obstacles to a claim of 100% line
 and branch coverage.
+
+## Additional native decision scenarios (pending grouped VSTest)
+
+The watch probe now exercises Quick Watch dialog controls, expression and
+context readback, selection of a unique row, and watch removal readback,
+including hidden, ambiguous, unsupported, pending, and observed states.
+The Options probe also exercises the three error trapping radio choices:
+invalid count/name/pattern, zero or multiple selections, successful readback,
+and a dialog that remains open. `VbeDebugTests` adds host-independent
+branches for absent editor selection, Watches/Immediate command routing,
+pending break/reset transitions, and watch-dialog preflight.
+
+The probe does not simulate UIA provider behavior itself. `ReadList`,
+`ImmediateDocument`, `ReadCallStack`, `MatchingWatchRows`, low-level
+`NativeOptionsProbe` extraction, and actual command effects still need a
+visible native VBE in an appropriate host. `CompleteProjectSignature` also
+needs the protected Windows certificate picker and live certificate readback.
+
+`IImmediateProbe` also covers command validation, missing host/pane, rejected
+character messages, exact echo timeout, rejected Enter, pending output, and
+changed text. The native `TextPattern` document, focus, and posted-message
+effects remain a live-host acceptance boundary.

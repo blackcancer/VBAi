@@ -17,6 +17,11 @@ namespace CodexVBE.Tests.Integration
 
         internal static IDictionary<string, object> Read(int processId, string command)
         {
+            return Read(processId, new { Command = command });
+        }
+
+        internal static IDictionary<string, object> Read(int processId, object request)
+        {
             var json = new JavaScriptSerializer();
             for (int attempt = 0; attempt < 20; attempt++)
             {
@@ -28,7 +33,7 @@ namespace CodexVBE.Tests.Integration
                         using (var writer = new StreamWriter(pipe, new UTF8Encoding(false), 4096, true) { AutoFlush = true })
                         using (var reader = new StreamReader(pipe, new UTF8Encoding(false), false, 4096, true))
                         {
-                            writer.WriteLine(json.Serialize(new { Command = command }));
+                            writer.WriteLine(json.Serialize(request));
                             return Object(json.DeserializeObject(reader.ReadLine()));
                         }
                     }

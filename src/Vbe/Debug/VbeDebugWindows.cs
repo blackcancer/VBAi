@@ -83,10 +83,12 @@ namespace CodexVBE
             IntPtr Pane(IEnumerable<IntPtr> panes, params string[] names);
             object List(IntPtr handle);
             int WatchMatches(IntPtr pane, string expression, string context);
+            bool SelectWatchRow(IntPtr pane, string expression, string context);
         }
 
         private sealed class NativeWatchProbe : IWatchProbe
         {
+            private List<AutomationElement> lastRows;
             public IntPtr Dialog(params string[] titles) { return FindDialog(titles); }
             public IntPtr Item(IntPtr dialog, int id) { return GetDlgItem(dialog, id); }
             public string Text(IntPtr handle) { return WindowText(handle); }
@@ -105,7 +107,18 @@ namespace CodexVBE
             public IntPtr Pane(IEnumerable<IntPtr> panes, params string[] names) { return FindPane(panes, names); }
             public object List(IntPtr handle) { return ReadList(handle); }
             public int WatchMatches(IntPtr pane, string expression, string context)
-            { return MatchingWatchRows(pane, expression, context).Count; }
+            {
+                lastRows = MatchingWatchRows(pane, expression, context);
+                return lastRows.Count;
+            }
+            public bool SelectWatchRow(IntPtr pane, string expression, string context)
+            {
+                AutomationElement row = lastRows.Single();
+                if (!row.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object pattern)) return false;
+                ((SelectionItemPattern)pattern).Select();
+                row.SetFocus();
+                return true;
+            }
         }
 
         internal sealed class SignatureChild
@@ -158,11 +171,19 @@ namespace CodexVBE
             public bool Enabled = true;
         }
 
+        internal sealed class OptionsChoice
+        {
+            public string Name;
+            public bool Selected;
+            public bool Readable = true;
+        }
+
         internal interface IOptionsProbe
         {
             IntPtr Dialog();
             IList<string> Tabs(IntPtr dialog);
             IList<OptionsControl> Controls(IntPtr dialog, int tabIndex);
+            IList<OptionsChoice> ErrorChoices(IntPtr dialog);
             void Close(IntPtr dialog);
             void Pause(int milliseconds);
         }
@@ -233,7 +254,72 @@ namespace CodexVBE
                 }
                 return controls;
             }
+            public IList<OptionsChoice> ErrorChoices(IntPtr dialog)
+            {
+                AutomationElement options = AutomationElement.FromHandle(dialog);
+                var generalCondition = new AndCondition(
+                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem),
+                    new OrCondition(
+                        new PropertyCondition(AutomationElement.NameProperty, "Général"),
+                        new PropertyCondition(AutomationElement.NameProperty, "General")));
+                AutomationElementCollection tabs = options.FindAll(TreeScope.Descendants, generalCondition);
+                if (tabs.Count != 1 || !tabs[0].TryGetCurrentPattern(SelectionItemPattern.Pattern, out object tabPattern))
+                    throw new InvalidOperationException("The native General options tab is unavailable.");
+                ((SelectionItemPattern)tabPattern).Select();
+                var radios = options.FindAll(TreeScope.Descendants,
+                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.RadioButton));
+                var result = new List<OptionsChoice>();
+                for (int index = 0; index < radios.Count; index++)
+                {
+                    AutomationElement radio = radios[index];
+                    var choice = new OptionsChoice { Name = radio.Current.Name };
+                    choice.Readable = radio.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object pattern);
+                    if (choice.Readable) choice.Selected = ((SelectionItemPattern)pattern).Current.IsSelected;
+                    result.Add(choice);
+                }
+                return result;
+            }
             public void Close(IntPtr dialog) { CloseDialog(dialog); }
+            public void Pause(int milliseconds) { Thread.Sleep(milliseconds); }
+        }
+
+        internal interface IImmediateProbe
+        {
+            IntPtr VbeRoot();
+            List<IntPtr> Children(IntPtr root);
+            IntPtr Pane(IEnumerable<IntPtr> panes, params string[] names);
+            string Prepare(IntPtr pane);
+            string Text(IntPtr pane);
+            bool PostChar(IntPtr pane, char character);
+            bool PostEnter(IntPtr pane);
+            void Pause(int milliseconds);
+        }
+
+        private sealed class NativeImmediateProbe : IImmediateProbe
+        {
+            public IntPtr VbeRoot() { return FindVbeRoot(); }
+            public List<IntPtr> Children(IntPtr root) { return ChildWindows(root); }
+            public IntPtr Pane(IEnumerable<IntPtr> panes, params string[] names) { return FindPane(panes, names); }
+            public string Prepare(IntPtr pane)
+            {
+                AutomationElement document = ImmediateDocument(pane);
+                var pattern = (TextPattern)document.GetCurrentPattern(TextPattern.Pattern);
+                string before = pattern.DocumentRange.GetText(-1);
+                document.SetFocus();
+                TextPatternRange atEnd = pattern.DocumentRange.Clone();
+                atEnd.MoveEndpointByRange(TextPatternRangeEndpoint.Start, pattern.DocumentRange,
+                    TextPatternRangeEndpoint.End);
+                atEnd.Select();
+                return before;
+            }
+            public string Text(IntPtr pane) { return ImmediateText(pane); }
+            public bool PostChar(IntPtr pane, char character)
+            { return PostMessage(pane, WmChar, new IntPtr(character), IntPtr.Zero); }
+            public bool PostEnter(IntPtr pane)
+            {
+                return PostMessage(pane, WmKeyDown, new IntPtr(VkReturn), IntPtr.Zero) &&
+                    PostMessage(pane, WmKeyUp, new IntPtr(VkReturn), IntPtr.Zero);
+            }
             public void Pause(int milliseconds) { Thread.Sleep(milliseconds); }
         }
 
@@ -550,42 +636,33 @@ namespace CodexVBE
 
         public static object ReadDebugOptions()
         {
+            return ReadDebugOptions(new NativeOptionsProbe());
+        }
+
+        internal static object ReadDebugOptions(IOptionsProbe native)
+        {
             IntPtr dialog = IntPtr.Zero;
             for (int attempt = 0; attempt < 60 && dialog == IntPtr.Zero; attempt++)
-            { Thread.Sleep(50); dialog = FindDialog("Options"); }
+            { native.Pause(50); dialog = native.Dialog(); }
             if (dialog == IntPtr.Zero) throw new InvalidOperationException("The native VBE Options dialog did not open.");
             string selected = null;
             string[] choices = null;
             try
             {
-                AutomationElement root = AutomationElement.FromHandle(dialog);
-                var generalCondition = new AndCondition(
-                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem),
-                    new OrCondition(
-                        new PropertyCondition(AutomationElement.NameProperty, "Général"),
-                        new PropertyCondition(AutomationElement.NameProperty, "General")));
-                AutomationElementCollection tabs = root.FindAll(TreeScope.Descendants, generalCondition);
-                if (tabs.Count != 1 || !tabs[0].TryGetCurrentPattern(SelectionItemPattern.Pattern, out object tabPattern))
-                    throw new InvalidOperationException("The native General options tab is unavailable.");
-                ((SelectionItemPattern)tabPattern).Select();
-                // The VBE UIA provider flattens the group and its radios as
-                // siblings, so query the dialog and check each exact label.
-                AutomationElementCollection radios = root.FindAll(TreeScope.Descendants,
-                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.RadioButton));
+                IList<OptionsChoice> radios = native.ErrorChoices(dialog);
                 if (radios.Count != 3)
                     throw new InvalidOperationException("Expected three native error trapping choices; found " + radios.Count + ".");
                 var names = new List<string>();
-                for (int index = 0; index < radios.Count; index++)
+                foreach (OptionsChoice radio in radios)
                 {
-                    AutomationElement radio = radios[index];
-                    string name = radio.Current.Name;
+                    string name = radio.Name;
                     if (string.IsNullOrWhiteSpace(name) ||
                         !(name.StartsWith("Arrêt ", StringComparison.OrdinalIgnoreCase) ||
                           name.StartsWith("Break ", StringComparison.OrdinalIgnoreCase)) ||
-                        !radio.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object radioPattern))
+                        !radio.Readable)
                         throw new InvalidOperationException("A native error trapping radio is unreadable.");
                     names.Add(name);
-                    if (((SelectionItemPattern)radioPattern).Current.IsSelected)
+                    if (radio.Selected)
                     {
                         if (selected != null) throw new InvalidOperationException("Multiple error trapping choices appear selected.");
                         selected = name;
@@ -594,19 +671,18 @@ namespace CodexVBE
                 if (selected == null) throw new InvalidOperationException("No error trapping choice appears selected.");
                 choices = names.ToArray();
             }
-            finally { CloseDialog(dialog); }
+            finally { native.Close(dialog); }
             bool closed = false;
             for (int attempt = 0; attempt < 20; attempt++)
             {
-                if (FindDialog("Options") == IntPtr.Zero) { closed = true; break; }
-                Thread.Sleep(50);
+                if (native.Dialog() == IntPtr.Zero) { closed = true; break; }
+                native.Pause(50);
             }
             if (!closed) throw new InvalidOperationException("The add-in read VBE Options but could not close its dialog.");
             return new { Scope = "VBE", ErrorTrapping = selected, Choices = choices,
                 Verification = "NativeOptionsReadback", DialogClosed = true,
                 Limit = "This is the currently displayed VBE-wide preference, not a diagnosis of an active runtime error." };
         }
-
         public static object ReadVbeOptions()
         {
             return ReadVbeOptions(new NativeOptionsProbe());
@@ -658,42 +734,39 @@ namespace CodexVBE
         }
         public static object ExecuteImmediate(string command)
         {
+            return ExecuteImmediate(command, new NativeImmediateProbe());
+        }
+
+        internal static object ExecuteImmediate(string command, IImmediateProbe native)
+        {
             if (string.IsNullOrWhiteSpace(command) || command.Length > 2048 ||
                 command.IndexOfAny(new[] { '\r', '\n', '\0' }) >= 0 ||
                 command.Any(character => char.IsControl(character)))
                 throw new ArgumentException("Immediate command must be one nonempty printable line of at most 2048 characters.");
-            IntPtr root = FindVbeRoot();
+            IntPtr root = native.VbeRoot();
             if (root == IntPtr.Zero) throw new InvalidOperationException("The VBE window is not open.");
-            IntPtr pane = FindPane(ChildWindows(root), "Exécution", "Immediate");
+            IntPtr pane = native.Pane(native.Children(root), "Exécution", "Immediate");
             if (pane == IntPtr.Zero) throw new InvalidOperationException("The Immediate window must be visible.");
-            AutomationElement document = ImmediateDocument(pane);
-            var pattern = (TextPattern)document.GetCurrentPattern(TextPattern.Pattern);
-            string before = pattern.DocumentRange.GetText(-1);
-            document.SetFocus();
-            TextPatternRange atEnd = pattern.DocumentRange.Clone();
-            atEnd.MoveEndpointByRange(TextPatternRangeEndpoint.Start, pattern.DocumentRange,
-                TextPatternRangeEndpoint.End);
-            atEnd.Select();
+            string before = native.Prepare(pane);
             foreach (char character in command)
-                if (!PostMessage(pane, WmChar, new IntPtr(character), IntPtr.Zero))
+                if (!native.PostChar(pane, character))
                     throw new InvalidOperationException("The native Immediate pane rejected a character message.");
             string echoed = null;
             for (int attempt = 0; attempt < 40; attempt++)
             {
-                Thread.Sleep(25);
-                echoed = ImmediateText(pane);
+                native.Pause(25);
+                echoed = native.Text(pane);
                 if (echoed == before + command || echoed == before + command + "\r\n") break;
             }
             if (echoed != before + command && echoed != before + command + "\r\n")
                 throw new InvalidOperationException("The Immediate pane did not echo the exact command; Enter was not sent.");
-            if (!PostMessage(pane, WmKeyDown, new IntPtr(VkReturn), IntPtr.Zero) ||
-                !PostMessage(pane, WmKeyUp, new IntPtr(VkReturn), IntPtr.Zero))
+            if (!native.PostEnter(pane))
                 throw new InvalidOperationException("The native Immediate pane rejected Enter.");
             string after = echoed;
             for (int attempt = 0; attempt < 40; attempt++)
             {
-                Thread.Sleep(25);
-                after = ImmediateText(pane);
+                native.Pause(25);
+                after = native.Text(pane);
                 if (after != echoed) break;
             }
             return new { Command = command, TextBefore = before, TextAfter = after,
@@ -1016,21 +1089,26 @@ namespace CodexVBE
 
         public static object CompleteQuickWatch(Request request)
         {
+            return CompleteQuickWatch(request, new NativeWatchProbe());
+        }
+
+        internal static object CompleteQuickWatch(Request request, IWatchProbe native)
+        {
             IntPtr dialog = IntPtr.Zero;
             for (int attempt = 0; attempt < 60 && dialog == IntPtr.Zero; attempt++)
-            { Thread.Sleep(50); dialog = FindDialog("Espion express", "Quick Watch"); }
+            { native.Pause(50); dialog = native.Dialog("Espion express", "Quick Watch"); }
             if (dialog == IntPtr.Zero) throw new InvalidOperationException("The Quick Watch dialog did not open.");
             try
             {
-                IntPtr expressionControl = GetDlgItem(dialog, 4751);
-                IntPtr valueControl = GetDlgItem(dialog, 4752);
-                IntPtr contextControl = GetDlgItem(dialog, 4753);
+                IntPtr expressionControl = native.Item(dialog, 4751);
+                IntPtr valueControl = native.Item(dialog, 4752);
+                IntPtr contextControl = native.Item(dialog, 4753);
                 if (expressionControl == IntPtr.Zero || valueControl == IntPtr.Zero ||
-                    contextControl == IntPtr.Zero || GetDlgItem(dialog, 2) == IntPtr.Zero)
+                    contextControl == IntPtr.Zero || native.Item(dialog, 2) == IntPtr.Zero)
                     throw new InvalidOperationException("The native Quick Watch controls changed.");
-                string expression = WindowText(expressionControl);
-                string value = WindowText(valueControl);
-                string context = WindowText(contextControl);
+                string expression = native.Text(expressionControl);
+                string value = native.Text(valueControl);
+                string context = native.Text(contextControl);
                 if (!string.Equals(expression, request.Expression, StringComparison.Ordinal) ||
                     !context.StartsWith(request.Project + "." + request.Module + ".", StringComparison.OrdinalIgnoreCase) ||
                     (!string.IsNullOrWhiteSpace(request.Procedure) &&
@@ -1041,40 +1119,49 @@ namespace CodexVBE
                     Verification = "NativeDialogReadback",
                     Limit = "Evaluating a VBA expression may call user code; a displayed value is valid for this paused context only." };
             }
-            finally { CloseDialog(dialog); }
+            finally { native.Close(dialog); }
         }
 
         public static object SelectWatch(Request request)
         {
+            return SelectWatch(request, new NativeWatchProbe());
+        }
+
+        internal static object SelectWatch(Request request, IWatchProbe native)
+        {
             if (request == null || string.IsNullOrWhiteSpace(request.Expression) ||
                 string.IsNullOrWhiteSpace(request.Context))
                 throw new ArgumentException("Expression and Context are required.");
-            IntPtr root = FindVbeRoot();
-            IntPtr pane = root == IntPtr.Zero ? IntPtr.Zero : FindPane(ChildWindows(root), "Espions", "Watch", "Watches");
+            IntPtr root = native.VbeRoot();
+            IntPtr pane = root == IntPtr.Zero ? IntPtr.Zero :
+                native.Pane(native.Children(root), "Espions", "Watch", "Watches");
             if (pane == IntPtr.Zero) throw new InvalidOperationException("The native Watches pane must be visible.");
-            var rows = MatchingWatchRows(pane, request.Expression, request.Context);
-            if (rows.Count != 1)
-                throw new InvalidOperationException("Expected one matching native watch; found " + rows.Count + ".");
-            object pattern;
-            if (!rows[0].TryGetCurrentPattern(SelectionItemPattern.Pattern, out pattern))
+            int matches = native.WatchMatches(pane, request.Expression, request.Context);
+            if (matches != 1)
+                throw new InvalidOperationException("Expected one matching native watch; found " + matches + ".");
+            if (!native.SelectWatchRow(pane, request.Expression, request.Context))
                 throw new InvalidOperationException("The native watch row does not support selection.");
-            ((SelectionItemPattern)pattern).Select();
-            rows[0].SetFocus();
             return new { Selected = true, request.Expression, request.Context };
         }
 
         public static object VerifyWatchRemoved(Request request)
         {
-            IntPtr root = FindVbeRoot();
-            IntPtr pane = root == IntPtr.Zero ? IntPtr.Zero : FindPane(ChildWindows(root), "Espions", "Watch", "Watches");
+            return VerifyWatchRemoved(request, new NativeWatchProbe());
+        }
+
+        internal static object VerifyWatchRemoved(Request request, IWatchProbe native)
+        {
+            IntPtr root = native.VbeRoot();
+            IntPtr pane = root == IntPtr.Zero ? IntPtr.Zero :
+                native.Pane(native.Children(root), "Espions", "Watch", "Watches");
             if (pane == IntPtr.Zero)
                 return new { Removed = false, VerificationPending = true,
                     Error = "The Watches pane is no longer visible; absence cannot be verified." };
             for (int attempt = 0; attempt < 20; attempt++)
             {
-                if (MatchingWatchRows(pane, request.Expression, request.Context).Count == 0)
+                if (native.WatchMatches(pane, request.Expression, request.Context) == 0)
                     return new { Removed = true, VerificationPending = false, Error = (string)null };
-                Thread.Sleep(50);
+                native.Pause(50);
             }
             return new { Removed = false, VerificationPending = true,
                 Error = "The selected watch is still visible after the native command." };

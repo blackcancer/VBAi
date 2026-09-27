@@ -133,12 +133,114 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual("Pending", (string)oldStillPresent.Verification);
         }
 
+        [TestMethod]
+        public void QuickWatchRequiresDialogControlsExpressionAndExactContext()
+        {
+            var request = new Request { Project = "Book", Module = "Module1",
+                Procedure = "Run", Expression = "x" };
+            var fake = new WatchFake { Open = false };
+            Assert.ThrowsException<InvalidOperationException>(
+                () => VbeDebugWindows.CompleteQuickWatch(request, fake));
+            Assert.AreEqual(60, fake.Pauses);
+            foreach (int missing in new[] { 4751, 4752, 4753, 2 })
+            {
+                fake = QuickFake();
+                fake.Missing = missing;
+                Assert.ThrowsException<InvalidOperationException>(
+                    () => VbeDebugWindows.CompleteQuickWatch(request, fake));
+                Assert.AreEqual(1, fake.Closes);
+            }
+            fake = QuickFake();
+            fake.Texts[4751] = "other";
+            Assert.ThrowsException<InvalidOperationException>(
+                () => VbeDebugWindows.CompleteQuickWatch(request, fake));
+            fake = QuickFake();
+            fake.Texts[4753] = "Other.Module1.Run";
+            Assert.ThrowsException<InvalidOperationException>(
+                () => VbeDebugWindows.CompleteQuickWatch(request, fake));
+            fake = QuickFake();
+            fake.Texts[4753] = "Book.Module1.Other";
+            Assert.ThrowsException<InvalidOperationException>(
+                () => VbeDebugWindows.CompleteQuickWatch(request, fake));
+        }
+
+        [TestMethod]
+        public void QuickWatchReadbackIncludesDisplayedValueAndAlwaysClosesOwnDialog()
+        {
+            var fake = QuickFake();
+            dynamic result = VbeDebugWindows.CompleteQuickWatch(new Request {
+                Project = "Book", Module = "Module1", Expression = "x" }, fake);
+            Assert.AreEqual("42", (string)result.Value);
+            Assert.AreEqual("Book.Module1.Run", (string)result.Context);
+            Assert.AreEqual("NativeDialogReadback", (string)result.Verification);
+            Assert.AreEqual(1, fake.Closes);
+        }
+
+        [TestMethod]
+        public void SelectWatchRequiresUniqueVisibleSelectableNativeRow()
+        {
+            var request = new Request { Expression = "x", Context = "Book.Module1.Run" };
+            var fake = new WatchFake();
+            Assert.ThrowsException<ArgumentException>(
+                () => VbeDebugWindows.SelectWatch(null, fake));
+            Assert.ThrowsException<InvalidOperationException>(
+                () => VbeDebugWindows.SelectWatch(request, fake));
+            fake.Root = new IntPtr(4);
+            fake.PaneHandle = new IntPtr(5);
+            Assert.ThrowsException<InvalidOperationException>(
+                () => VbeDebugWindows.SelectWatch(request, fake));
+            fake.OldMatches = 2;
+            Assert.ThrowsException<InvalidOperationException>(
+                () => VbeDebugWindows.SelectWatch(request, fake));
+            fake.OldMatches = 1;
+            fake.SelectSucceeds = false;
+            Assert.ThrowsException<InvalidOperationException>(
+                () => VbeDebugWindows.SelectWatch(request, fake));
+            fake.SelectSucceeds = true;
+            dynamic selected = VbeDebugWindows.SelectWatch(request, fake);
+            Assert.IsTrue((bool)selected.Selected);
+            Assert.AreEqual(2, fake.SelectAttempts);
+        }
+
+        [TestMethod]
+        public void VerifyWatchRemovedDistinguishesHiddenPendingTimeoutAndObservedAbsence()
+        {
+            var request = new Request { Expression = "x", Context = "Book.Module1.Run" };
+            var fake = new WatchFake();
+            dynamic hidden = VbeDebugWindows.VerifyWatchRemoved(request, fake);
+            Assert.IsTrue((bool)hidden.VerificationPending);
+            Assert.IsFalse((bool)hidden.Removed);
+            fake.Root = new IntPtr(4);
+            fake.PaneHandle = new IntPtr(5);
+            dynamic absent = VbeDebugWindows.VerifyWatchRemoved(request, fake);
+            Assert.IsTrue((bool)absent.Removed);
+            fake.OldMatches = 1;
+            dynamic pending = VbeDebugWindows.VerifyWatchRemoved(request, fake);
+            Assert.IsTrue((bool)pending.VerificationPending);
+            Assert.AreEqual(20, fake.Pauses);
+            fake.DisappearAfter = fake.WatchReadAttempts + 3;
+            dynamic removed = VbeDebugWindows.VerifyWatchRemoved(request, fake);
+            Assert.IsTrue((bool)removed.Removed);
+            Assert.IsFalse((bool)removed.VerificationPending);
+        }
+
+        private static WatchFake QuickFake()
+        {
+            var fake = new WatchFake();
+            fake.Texts[4751] = "x";
+            fake.Texts[4752] = "42";
+            fake.Texts[4753] = "Book.Module1.Run";
+            return fake;
+        }
+
         private sealed class WatchFake : VbeDebugWindows.IWatchProbe
         {
             public readonly Dictionary<int, string> Texts = new Dictionary<int, string> {
                 { 4853, "x" }, { 4858, "Book" }, { 4857, "Module1" }, { 4856, "Run" } };
             public bool Open = true, CloseAfterOk = true, Check = true, ReplaceEcho = true, ErrorOpen;
-            public int Missing, RefuseClick, Closes, Pauses, NewMatches, OldMatches, WatchReadAttempts;
+            public int Missing, RefuseClick, Closes, Pauses, NewMatches, OldMatches, WatchReadAttempts,
+                SelectAttempts, DisappearAfter;
+            public bool SelectSucceeds = true;
             public IntPtr Root, PaneHandle, ListHandle;
             private bool clickedOk;
             public IntPtr Dialog(params string[] titles)
@@ -164,7 +266,13 @@ namespace CodexVBE.Tests.Unit
             public IntPtr Pane(IEnumerable<IntPtr> panes, params string[] names) { return PaneHandle; }
             public object List(IntPtr handle) { ListHandle = handle; return new { Available = handle != IntPtr.Zero }; }
             public int WatchMatches(IntPtr pane, string expression, string context)
-            { WatchReadAttempts++; return expression == "y" ? NewMatches : OldMatches; }
+            {
+                WatchReadAttempts++;
+                if (DisappearAfter > 0 && WatchReadAttempts >= DisappearAfter) return 0;
+                return expression == "y" ? NewMatches : OldMatches;
+            }
+            public bool SelectWatchRow(IntPtr pane, string expression, string context)
+            { SelectAttempts++; return SelectSucceeds; }
         }
     }
 }

@@ -302,5 +302,62 @@ namespace CodexVBE.Tests.Unit
             StringAssert.Contains(error.Message, "rollback was incomplete");
             Assert.AreEqual(2, f.Form.Designer.Controls.Count);
         }
+
+        [TestMethod]
+        public void ProfiledPlanReportsEmptyFrameNameCollisionAndInvalidGeometry()
+        {
+            var f = Create("Frame");
+            dynamic empty = f.Service.FrameProfileCopyPlan(f.Request(name: "FrameCopy"));
+            Assert.IsFalse((bool)empty.EligibleForLimitedProbe);
+            Assert.IsTrue(((IEnumerable)empty.Issues).Cast<string>()
+                .Any(issue => issue.Contains("duplicate_empty_form_frame")));
+            f.Source.Controls.AddExisting("Label", "Title");
+            f.Form.Designer.Controls.AddExisting("Label", "FrameCopy_Title");
+            dynamic collision = f.Service.FrameProfileCopyPlan(f.Request(name: "FrameCopy"));
+            Assert.IsFalse((bool)collision.EligibleForLimitedProbe);
+            Assert.IsTrue(((IEnumerable)collision.Issues).Cast<string>()
+                .Any(issue => issue.Contains("proposed child name already exists")));
+            f.Source.Width = 0;
+            dynamic badGeometry = f.Service.FrameProfileCopyPlan(f.Request(name: "FrameCopy"));
+            Assert.IsTrue(((IEnumerable)badGeometry.Issues).Cast<string>()
+                .Any(issue => issue.Contains("geometry")));
+        }
+
+        [TestMethod]
+        public void ProfiledPlanRefusesUnreadableChildProfilesWithoutMutation()
+        {
+            var f = Create("Frame");
+            var label = f.Source.Controls.AddExisting("Label", "Title");
+            label.Font.Size = 250;
+            dynamic fontIssue = f.Service.FrameProfileCopyPlan(f.Request(name: "FrameCopy"));
+            Assert.IsFalse((bool)fontIssue.EligibleForLimitedProbe);
+            Assert.IsTrue(((IEnumerable)fontIssue.Issues).Cast<string>()
+                .Any(issue => issue.Contains("font is outside")));
+            label.Font.Size = 10;
+            f.Source.Controls.AddExisting("TextBox", "Entry").Value = 42;
+            dynamic textIssue = f.Service.FrameProfileCopyPlan(f.Request(name: "FrameCopy"));
+            Assert.IsTrue(((IEnumerable)textIssue.Issues).Cast<string>()
+                .Any(issue => issue.Contains("TextBox.Value must be text")));
+            f.Source.Controls.Item("Entry").Value = "good";
+            f.Source.Controls.AddExisting("ComboBox", "Choices").ListWidth = "";
+            dynamic comboIssue = f.Service.FrameProfileCopyPlan(f.Request(name: "FrameCopy"));
+            Assert.IsTrue(((IEnumerable)comboIssue.Issues).Cast<string>()
+                .Any(issue => issue.Contains("ListWidth must be nonempty")));
+            Assert.AreEqual(1, f.Form.Designer.Controls.Count);
+        }
+
+        [TestMethod]
+        public void ProfiledPlanRejectsStaleTreeAndDirectChildLimit()
+        {
+            var f = Create("Frame");
+            var request = f.Request(name: "FrameCopy");
+            request.ExpectedTreeVersion = "stale";
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.FrameProfileCopyPlan(request));
+            for (int index = 0; index < 129; index++)
+                f.Source.Controls.AddExisting("Label", "Label" + index);
+            request.ExpectedTreeVersion = ((dynamic)f.Service.Tree(f.Project.Name, f.Form.Name)).TreeVersion;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.FrameProfileCopyPlan(request));
+            Assert.AreEqual(1, f.Form.Designer.Controls.Count);
+        }
     }
 }

@@ -494,6 +494,88 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual(1, document.CodeModule.CodePane.ShowCount);
         }
 
+        [TestMethod]
+        public void StateWithoutActivePanePreservesProjectModeWithoutInventingSelection()
+        {
+            var f = Create(2);
+            f.Vbe.ActiveCodePane = null;
+            dynamic state = f.Service.State(f.Project.Name);
+            Assert.AreEqual(2, (int)state.Mode);
+            Assert.IsNull((string)state.SelectedProject);
+            Assert.IsNull((string)state.ActiveModule);
+            Assert.IsNull((object)state.Selection);
+        }
+
+        [TestMethod]
+        public void NativePaneRoutingUsesExactIdsForWatchAndImmediate()
+        {
+            var f = Create();
+            var watch = new FakeControl { Caption = "&Espions", Id = 2556 };
+            var immediate = new FakeControl { Caption = "&Immediate Window", Id = 2554 };
+            f.Bar.Controls.AddRange(new[] { watch, immediate });
+            dynamic watchResult = f.Service.OpenDebugPane("watches", null);
+            dynamic immediateResult = f.Service.OpenDebugPane("immediate", null);
+            Assert.AreEqual(2556, (int)watchResult.ControlId);
+            Assert.AreEqual(2554, (int)immediateResult.ControlId);
+            Assert.AreEqual(1, watch.ExecuteCount);
+            Assert.AreEqual(1, immediate.ExecuteCount);
+            Assert.ThrowsException<ArgumentException>(() => f.Service.OpenDebugPane(null, null));
+        }
+
+        [TestMethod]
+        public void GlobalDebugRejectsInvalidActionsAndReportsPendingModeTransitions()
+        {
+            var f = Create(0);
+            Assert.ThrowsException<ArgumentException>(() => f.Service.ExecuteGlobalDebugCommand(null));
+            Assert.ThrowsException<ArgumentException>(() => f.Service.ExecuteGlobalDebugCommand(
+                new Request { Project = f.Project.Name, ExpectedMode = 0, Action = "invalid" }));
+            var breaker = new FakeControl { Caption = "Break", Id = 189 };
+            f.Bar.Controls.Add(breaker);
+            dynamic pendingBreak = f.Service.ExecuteGlobalDebugCommand(new Request {
+                Project = f.Project.Name, ExpectedMode = 0, Action = "break" });
+            Assert.AreEqual("Unverified", (string)pendingBreak.Verification);
+            Assert.IsTrue((bool)pendingBreak.VerificationPending);
+            Assert.AreEqual(1, breaker.ExecuteCount);
+            f.Project.Mode = 1;
+            var reset = new FakeControl { Caption = "Reset", Id = 228 };
+            f.Bar.Controls.Add(reset);
+            dynamic pendingReset = f.Service.ExecuteGlobalDebugCommand(new Request {
+                Project = f.Project.Name, ExpectedMode = 1, Action = "reset" });
+            Assert.AreEqual("Unverified", (string)pendingReset.Verification);
+            Assert.IsTrue((bool)pendingReset.VerificationPending);
+            Assert.AreEqual(1, reset.ExecuteCount);
+            f.Project.Mode = 0;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.ExecuteGlobalDebugCommand(
+                new Request { Project = f.Project.Name, ExpectedMode = 0, Action = "clear_all_breakpoints" }));
+        }
+
+        [TestMethod]
+        public void WatchDialogPreflightRejectsMissingIdentityLengthAndUiContext()
+        {
+            var f = Create(1);
+            Assert.ThrowsException<ArgumentException>(() => f.Service.QueueAddWatchDialog(null));
+            Assert.ThrowsException<ArgumentException>(() => f.Service.QueueAddWatchDialog(new Request {
+                Project = f.Project.Name, Module = "Module1", Expression = new string('x', 1025) }));
+            Assert.ThrowsException<ArgumentException>(() => f.Service.QueueEditWatchDialog(new Request {
+                Project = f.Project.Name, Expression = "x", Context = "Module1",
+                NewExpression = new string('x', 1025) }));
+            Assert.ThrowsException<ArgumentException>(() => f.Service.QueueQuickWatchDialog(new Request {
+                Project = f.Project.Name, Expression = "x", StartColumn = 1, EndColumn = 1 }));
+            Assert.ThrowsException<ArgumentException>(() => f.Service.RemoveSelectedWatch(null));
+            var add = new FakeControl { Caption = "Add Watch...", Id = 1820 };
+            f.Bar.Controls.Add(add);
+            var previous = SynchronizationContext.Current;
+            SynchronizationContext.SetSynchronizationContext(null);
+            try
+            {
+                Assert.ThrowsException<InvalidOperationException>(() => f.Service.QueueAddWatchDialog(
+                    new Request { Project = f.Project.Name, Module = "Module1",
+                        Expression = "x", ExpectedMode = 1 }));
+            }
+            finally { SynchronizationContext.SetSynchronizationContext(previous); }
+            Assert.AreEqual(0, add.ExecuteCount);
+        }
+
         private sealed class RecordingContext : SynchronizationContext
         {
             private readonly List<Tuple<SendOrPostCallback, object>> callbacks =

@@ -14,7 +14,7 @@ Run unit tests plus the local SQLite integration test with coverage:
 dotnet test tests/CodexVBE.Tests/CodexVBE.Tests.csproj --filter "TestCategory=Unit|TestCategory=LocalIntegration" --collect:"XPlat Code Coverage"
 ```
 
-The latest complete measured run on 2026-09-27 passed **315 tests**, with **2 host tests skipped** and no failures. The `CodexVBE` package in Cobertura reports **73.68% of production lines** and **70.50% of production branches**. The isolated build also places the auxiliary `ProviderTests` executable in the test output; its separate package must not be included when reporting add-in coverage. No production files or methods were excluded. The two skipped host cases still need a separate live run.
+The latest complete measured run on 2026-09-27 passed **347 tests**, with **3 opt-in host tests skipped** and no failures. The `CodexVBE` package in Cobertura reports **76.15% of production lines** and **74.33% of production branches**. The collector excludes the auxiliary `ProviderTests` executable from this add-in measure; no production files or methods were excluded. The two Excel tests passed separately in a live isolated Excel instance. The SOLIDWORKS test still needs a preloaded host.
 
 The `Excel` category is opt-in runtime integration. Its smoke test creates a separate Excel process and temporary workbook, reads and saves the workbook, opens the VBE through Excel's native `CommandBars.ExecuteMso("VisualBasic")` command, and queries the add-in pipe `CodexVBE.<PID>`. It verifies the VBE environment, the exact temporary project path, and `CodexVBE.AddIn` with `Connect=true`. The test records existing Excel PIDs and closes only its own workbook and process.
 
@@ -24,7 +24,7 @@ dotnet test tests/CodexVBE.Tests/CodexVBE.Tests.csproj --filter TestCategory=Exc
 Remove-Item Env:CODEXVBE_RUN_EXCEL_TESTS
 ```
 
-The actual opt-in run on 2026-09-27 passed **1/1 Excel test**. Direct external access to `excel.VBE` was separately attempted and refused by Excel's AccessVBOM trust setting; the passing test instead validates VBE, add-in, and project via the native command and the production bridge. It does not modify that user-level setting.
+The latest opt-in run on 2026-09-27 passed **2/2 Excel tests**. The reusable `ExcelVbeFixture` starts an owned visible Excel process, opens its VBE through `ExecuteMso("VisualBasic")`, sends requests over the production bridge, then closes only that process. The second test verifies the first `.xlsm` SaveAs and a subsequent Save through the same VBE project. Direct external access to `excel.VBE` was separately attempted and refused by Excel's AccessVBOM trust setting; these tests do not modify that user-level setting. Code executed inside Excel is not measured by the testhost's Coverlet collector.
 
 The standalone console harness executables in `tools/tests/Providers` and `tools/tests/Git` are separate from VSTest; selected source files are linked as VSTest integration cases. The PowerShell debug scripts are linked under **Manual/Debug** in the test project so they appear with the tests in Visual Studio. They remain opt-in host probes, not MSTest cases or part of the coverage run. The production project compiles only `src/**/*.cs`; no debug test class is shipped in the add-in. Excel is the first host for automated COM integration.
 

@@ -27,6 +27,7 @@
     <Compile Include="Unit\VbeFormsContractTests.cs" />
     <Compile Include="Unit\VbeCodeNavigationCoverageTests.cs" />
     <Compile Include="Unit\VbeProjectComponentsTests.cs" />
+    <Compile Include="Unit\VbeProjectExcelHostTests.cs" />
     <Compile Include="Unit\VbeDebugWindowsTests.cs" />
     <Compile Include="Unit\VbeReferenceTypesTests.cs" />
     <Compile Include="Unit\VbeFormsTests.cs" />
@@ -46,14 +47,18 @@
     <Compile Include="Unit\CodexAppServerClientTests.cs" />
     <Compile Include="Unit\VbeDebugWindowsNativeTests.cs" />
     <Compile Include="Unit\VbeDebugWindowsWatchProbeTests.cs" />
+    <Compile Include="Unit\VbeDebugWindowsImmediateProbeTests.cs" />
     <Compile Include="Unit\VbeDebugWindowsSignatureProbeTests.cs" />
     <Compile Include="Unit\VbeDebugWindowsOptionsProbeTests.cs" />
     <Compile Include="Unit\VbeFormsFrameDuplicationTests.cs" />
+    <Compile Include="Unit\VbeFormsCoreBranchTests.cs" />
     <Compile Include="Unit\VbeFormsValueDuplicationTests.cs" />
     <Compile Include="Unit\HostSettingsWindowTests.cs" />
     <Compile Include="Unit\HostSettingsCoverageTests.cs" />
     <Compile Include="Integration\SessionStoreTests.cs" />
     <Compile Include="Integration\ExcelHostTests.cs" />
+    <Compile Include="Integration\ExcelVbeFixture.cs" />
+    <Compile Include="Integration\ExcelProjectPersistenceTests.cs" />
     <Compile Include="Integration\SolidWorksHostTests.cs" />
     <Compile Include="Integration\VbeBridgeClient.cs" />
     <Compile Include="Integration\GitCoverageTests.cs" />

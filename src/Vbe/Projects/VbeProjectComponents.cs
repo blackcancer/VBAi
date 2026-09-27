@@ -18,14 +18,41 @@ namespace CodexVBE
         [DllImport("user32.dll")]
         private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
 
+        internal interface IExcelHostProbe
+        {
+            bool IsExcel { get; }
+            int CurrentProcessId { get; }
+            object ExcelApplication();
+            uint WindowProcessId(IntPtr window);
+        }
+
+        private sealed class NativeExcelHostProbe : IExcelHostProbe
+        {
+            public bool IsExcel => string.Equals(Process.GetCurrentProcess().ProcessName,
+                "EXCEL", StringComparison.OrdinalIgnoreCase);
+            public int CurrentProcessId => Process.GetCurrentProcess().Id;
+            public object ExcelApplication() { return Marshal.GetActiveObject("Excel.Application"); }
+            public uint WindowProcessId(IntPtr window)
+            {
+                uint processId;
+                GetWindowThreadProcessId(window, out processId);
+                return processId;
+            }
+        }
+
         private readonly dynamic vbe;
         private readonly VbeForms forms;
+        private readonly IExcelHostProbe host;
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
 
         public VbeProjectComponents(object vbe, VbeForms forms)
+            : this(vbe, forms, new NativeExcelHostProbe()) { }
+
+        internal VbeProjectComponents(object vbe, VbeForms forms, IExcelHostProbe host)
         {
             this.vbe = vbe;
             this.forms = forms;
+            this.host = host ?? throw new ArgumentNullException(nameof(host));
         }
 
         public object ProjectProperties(string projectName)
@@ -56,15 +83,14 @@ namespace CodexVBE
         public object SignatureStatus(string projectName)
         {
             dynamic project = GetProject(projectName);
-            if (!string.Equals(Process.GetCurrentProcess().ProcessName, "EXCEL", StringComparison.OrdinalIgnoreCase))
+            if (!host.IsExcel)
                 return new { Project = projectName, Available = false, Signed = (bool?)null,
                     Source = "Host", Reason = "This host does not expose Excel.Workbook.VBASigned." };
             try
             {
-                dynamic excel = Marshal.GetActiveObject("Excel.Application");
-                uint excelProcessId;
-                GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(excel.Hwnd)), out excelProcessId);
-                if (excelProcessId != (uint)Process.GetCurrentProcess().Id)
+                dynamic excel = host.ExcelApplication();
+                uint excelProcessId = host.WindowProcessId(new IntPtr(Convert.ToInt64(excel.Hwnd)));
+                if (excelProcessId != (uint)host.CurrentProcessId)
                     return new { Project = projectName, Available = false, Signed = (bool?)null,
                         Source = "Excel.Workbook.VBASigned", Reason = "The registered Excel instance is not this VBE host." };
                 string projectPath = null;
@@ -96,7 +122,7 @@ namespace CodexVBE
         {
             dynamic project = GetProject(projectName);
             bool projectSaved = (bool)project.Saved;
-            if (!string.Equals(Process.GetCurrentProcess().ProcessName, "EXCEL", StringComparison.OrdinalIgnoreCase))
+            if (!host.IsExcel)
                 return new { Project = projectName, ProjectSaved = projectSaved,
                     HostAvailable = false, HostPath = (string)null, HostSaved = (bool?)null,
                     HostReadOnly = (bool?)null, HostHasPath = (bool?)null,
@@ -125,7 +151,7 @@ namespace CodexVBE
             if (request == null || string.IsNullOrWhiteSpace(request.ExpectedHostPath) ||
                 !Path.IsPathRooted(request.ExpectedHostPath))
                 throw new ArgumentException("ExpectedHostPath must be the absolute path read from project_persistence_status.");
-            if (!string.Equals(Process.GetCurrentProcess().ProcessName, "EXCEL", StringComparison.OrdinalIgnoreCase))
+            if (!host.IsExcel)
                 throw new InvalidOperationException("This host has no supported document Save API in CodexVBE.");
             dynamic project = GetDesignProject(request.Project);
             AssertProjectVersion(request, project);
@@ -156,7 +182,7 @@ namespace CodexVBE
             if (request == null || string.IsNullOrWhiteSpace(request.Path) ||
                 string.IsNullOrWhiteSpace(request.ExpectedProjectVersion))
                 throw new ArgumentException("Path and ExpectedProjectVersion are required.");
-            if (!string.Equals(Process.GetCurrentProcess().ProcessName, "EXCEL", StringComparison.OrdinalIgnoreCase))
+            if (!host.IsExcel)
                 throw new InvalidOperationException("This host has no supported SaveAs API in CodexVBE.");
             string path = RequireAbsolutePath(request.Path);
             if (!string.Equals(Path.GetExtension(path), ".xlsm", StringComparison.OrdinalIgnoreCase))
@@ -191,10 +217,9 @@ namespace CodexVBE
 
         private dynamic MatchExcelWorkbook(dynamic project, bool allowUnsaved)
         {
-            dynamic excel = Marshal.GetActiveObject("Excel.Application");
-            uint excelProcessId;
-            GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(excel.Hwnd)), out excelProcessId);
-            if (excelProcessId != (uint)Process.GetCurrentProcess().Id)
+            dynamic excel = host.ExcelApplication();
+            uint excelProcessId = host.WindowProcessId(new IntPtr(Convert.ToInt64(excel.Hwnd)));
+            if (excelProcessId != (uint)host.CurrentProcessId)
                 throw new InvalidOperationException("The registered Excel instance is not this VBE host.");
             string projectPath = null;
             try { projectPath = (string)project.FileName; }
@@ -218,17 +243,16 @@ namespace CodexVBE
 
         public object PersistExcelSignature(string projectName)
         {
-            if (!string.Equals(Process.GetCurrentProcess().ProcessName, "EXCEL", StringComparison.OrdinalIgnoreCase))
+            if (!host.IsExcel)
                 return new { Available = false, Saved = false,
                     Reason = "The host is not Excel; save the host document with its native command." };
             dynamic project = GetProject(projectName);
             string projectPath = (string)project.FileName;
             if (string.IsNullOrWhiteSpace(projectPath) || !Path.IsPathRooted(projectPath))
                 throw new InvalidOperationException("The Excel VBA project has no saved workbook path.");
-            dynamic excel = Marshal.GetActiveObject("Excel.Application");
-            uint excelProcessId;
-            GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(excel.Hwnd)), out excelProcessId);
-            if (excelProcessId != (uint)Process.GetCurrentProcess().Id)
+            dynamic excel = host.ExcelApplication();
+            uint excelProcessId = host.WindowProcessId(new IntPtr(Convert.ToInt64(excel.Hwnd)));
+            if (excelProcessId != (uint)host.CurrentProcessId)
                 throw new InvalidOperationException("The registered Excel instance is not this VBE host.");
             dynamic match = null;
             foreach (dynamic workbook in excel.Workbooks)
