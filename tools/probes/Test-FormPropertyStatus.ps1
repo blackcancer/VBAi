@@ -33,7 +33,8 @@ Invoke-Vbe @{ Command = 'create_form'; Project = $project; Form = $Form } | Out-
 foreach ($item in @(
     @{ Type = 'Label'; Name = 'lblProbe'; Left = 12 },
     @{ Type = 'SpinButton'; Name = 'spnProbe'; Left = 100 },
-    @{ Type = 'ToggleButton'; Name = 'tglProbe'; Left = 160 }
+    @{ Type = 'ToggleButton'; Name = 'tglProbe'; Left = 160 },
+    @{ Type = 'TextBox'; Name = 'txtProbe'; Left = 220 }
 )) {
     $tree = Invoke-Vbe @{ Command = 'form_tree'; Project = $project; Form = $Form }
     Invoke-Vbe @{ Command = 'add_form_control'; Project = $project; Form = $Form;
@@ -47,6 +48,7 @@ $checks = @(
     @{ Control = 'lblProbe'; Property = 'Cancel'; Expected = 'BlockedNativeSetterFailure' },
     @{ Control = 'lblProbe'; Property = '_Font_Reserved'; Expected = 'GetterUnavailable' },
     @{ Control = 'tglProbe'; Property = 'Value'; Expected = 'BlockedAfterHostCrash' },
+    @{ Control = 'txtProbe'; Property = 'ScrollBars'; Expected = 'BlockedAfterHostCrash' },
     @{ Control = 'spnProbe'; Property = 'Min'; Expected = 'BlockedAfterHostCrash' },
     @{ Control = 'spnProbe'; Property = 'Max'; Expected = 'BlockedAfterHostCrash' },
     @{ Control = 'spnProbe'; Property = 'Value'; Expected = 'BlockedAfterHostCrash' },
@@ -70,12 +72,21 @@ if ($blocked.Ok -or $blocked.Error -notmatch 'reserved member' -or
     $after.TreeVersion -ne $tree.TreeVersion) {
     throw 'The reserved Font member was not refused before mutation.'
 }
+$scrollBlocked = Invoke-VbeRaw @{ Command = 'set_form_node_property'; Project = $project; Form = $Form;
+    ControlPath = 'Controls/txtProbe'; Property = 'ScrollBars'; Value = 'Vertical';
+    ExpectedTreeVersion = $tree.TreeVersion }
+$afterScroll = Invoke-Vbe @{ Command = 'form_tree'; Project = $project; Form = $Form }
+if ($scrollBlocked.Ok -or $scrollBlocked.Error -notmatch 'temporarily disabled' -or
+    $afterScroll.TreeVersion -ne $tree.TreeVersion) {
+    throw 'TextBox.ScrollBars was not refused before mutation.'
+}
 
 [pscustomobject]@{
     HostProcessId = $HostProcessId
     CheckedStatuses = $checks.Count
     FormTreeAndControlPropertiesAgree = $true
     ReservedMemberRefused = $true
-    TreeVersionStable = ($after.TreeVersion -eq $tree.TreeVersion)
+    ScrollBarsRefused = $true
+    TreeVersionStable = ($afterScroll.TreeVersion -eq $tree.TreeVersion)
     ExcelAlive = [bool](Get-Process -Id $HostProcessId -ErrorAction SilentlyContinue)
 } | Format-List

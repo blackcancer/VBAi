@@ -494,6 +494,9 @@ namespace CodexVBE
             if (string.Equals(targetType, "ToggleButton", StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(descriptor.Name, "Value", StringComparison.OrdinalIgnoreCase))
                 return "BlockedAfterHostCrash";
+            if (string.Equals(targetType, "TextBox", StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(descriptor.Name, "ScrollBars", StringComparison.OrdinalIgnoreCase))
+                return "BlockedAfterHostCrash";
             if (string.Equals(targetType, "SpinButton", StringComparison.OrdinalIgnoreCase) &&
                 new[] { "Min", "Max", "Value", "Delay", "SmallChange" }
                     .Any(name => string.Equals(descriptor.Name, name, StringComparison.OrdinalIgnoreCase)))
@@ -817,6 +820,12 @@ namespace CodexVBE
                 throw new InvalidOperationException("_Font_Reserved is a COM reserved member whose getter is unavailable in the tested VBE.");
             if (propertyPath.Length == 1)
             {
+                // A single TextBox.ScrollBars=Vertical write was followed by
+                // Excel heap corruption after a successful readback.
+                if (string.Equals(TypeDescriptor.GetClassName(target), "TextBox", StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(root.Name, "ScrollBars", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException(
+                        "TextBox.ScrollBars editing is temporarily disabled: Excel crashed after a design-time write.");
                 // A disposable Excel session crashed with heap corruption
                 // shortly after a sequence of these SpinButton setters. The
                 // responsible member has not yet been isolated.
