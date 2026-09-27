@@ -20,6 +20,7 @@ internal static partial class GitTests
     }
     private static void Advanced()
     {
+        ReviewWorkflow();
         string remote = Path.Combine(root, "advanced-origin.git"); Git(root, "init --bare \"" + remote + "\"");
         var repo = Repo("advanced", remote);
         var host = new FakeProject { FileName = Path.Combine(root, "advanced.xlsm") };
@@ -57,6 +58,7 @@ internal static partial class GitTests
         Reject(() => action("merge_complete", null, "Merge"), "Unresolved merge cannot be committed");
         var content = Pump(operations.ConflictAsync("vba/Module1.bas"));
         Assert(content.Ours.Contains("Value = 3") && content.Theirs.Contains("Value = 2"), "Both conflict sides available");
+        Assert(content.Base.Contains("Value = 1"), "Common ancestor available for conflict resolution");
         Pump(operations.ExecuteAsync("merge_resolve", revision(), text: "", choice: "theirs", path: "vba/Module1.bas"));
         action("merge_complete", null, "Merge resolved feature");
         Assert(host.VBComponents.Item("Module1").CodeModule.Text.Contains("Value = 2"), "Resolved merge imports chosen content");
@@ -103,5 +105,40 @@ internal static partial class GitTests
         args = argsForEdit(); args["ExpectedState"] = stale; args["Name"] = "stale-agent";
         Assert(!invoke("git_checkpoint_create", args).Ok, "Agent stale revision rejected");
         Console.WriteLine("PASS named checkpoints, branch switches, persisted branch, real merges/conflicts and agent tool policies");
+    }
+
+    private static void ReviewWorkflow()
+    {
+        string remote = Path.Combine(root, "review-origin.git"); Git(root, "init --bare \"" + remote + "\"");
+        var repo = Repo("review", remote);
+        var host = new FakeProject { FileName = Path.Combine(root, "review.xlsm") };
+        host.VBComponents.Add(new FakeComponent("Alpha", 1, "Attribute VB_Name = \"Alpha\"\nPublic Const Value = 1\n"));
+        host.VBComponents.Add(new FakeComponent("Beta", 1, "Attribute VB_Name = \"Beta\"\nPublic Const Value = 1\n"));
+        var project = new VbaGitProject(() => host, host.FileName);
+        using (var operations = new MacroGitOperations(project, repo))
+        {
+            Pump(operations.ExecuteAsync("commit", text: "Base"));
+            string first = repo.Resolve(repo.Head);
+            host.VBComponents.Item("Alpha").CodeModule.Text = host.VBComponents.Item("Alpha").CodeModule.Text.Replace("= 1", "= 2");
+            host.VBComponents.Item("Beta").CodeModule.Text = host.VBComponents.Item("Beta").CodeModule.Text.Replace("= 1", "= 3");
+            Pump(operations.ExecuteAsync("commit_selected", text: "Alpha only", modules: new[] { "Alpha" }));
+            var committed = repo.Read(repo.Resolve(repo.Head));
+            Assert(VbaGitSnapshot.Utf8.GetString(committed.Files["Alpha.bas"]).Contains("= 2"), "Selected module committed");
+            Assert(VbaGitSnapshot.Utf8.GetString(committed.Files["Beta.bas"]).Contains("= 1"), "Unselected module not committed");
+            Assert(project.Capture().Changes(committed).SequenceEqual(new[] { "~ Beta.bas" }), "Unselected changes remain visible");
+            Reject(() => Pump(operations.ExecuteAsync("commit_selected", text: "Empty", modules: new string[0])), "Empty selection rejected");
+            string review = null; operations.ImportPreview = text => review = text;
+            Pump(operations.ExecuteAsync("module_restore", name: first, path: "Alpha"));
+            Assert(host.VBComponents.Item("Alpha").CodeModule.Text.Contains("= 1") && host.VBComponents.Item("Beta").CodeModule.Text.Contains("= 3"), "Targeted restore preserves other local edits");
+            Assert(review != null && review.Contains("Alpha.bas") && repo.Checkpoints().Length > 0, "Import summary and checkpoint available");
+            Pump(operations.ExecuteAsync("rollback"));
+            Assert(host.VBComponents.Item("Alpha").CodeModule.Text.Contains("= 2") && host.VBComponents.Item("Beta").CodeModule.Text.Contains("= 3"), "Targeted restore is reversible");
+            Assert(repo.Commits().Length == 2 && repo.CommitDetails(first).Contains("Base"), "Structured commit history");
+            repo.SavePullDraft("feature/target", "Review title", "Review body");
+            Assert(repo.PullDraft().Title == "Review title", "Local PR draft persisted");
+            var cancellation = new System.Threading.CancellationTokenSource(); cancellation.Cancel(); repo.Cancellation = cancellation.Token;
+            Reject(() => repo.Fetch(), "Cancelled fetch stops before Git work"); repo.Cancellation = System.Threading.CancellationToken.None;
+            Assert(repo.Resolve(repo.Head) != null, "Cancellation preserves the current branch");
+        }
     }
 }

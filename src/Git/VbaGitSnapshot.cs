@@ -78,6 +78,33 @@ namespace CodexVBE
                 .Select(x => (!before.ContainsKey(x) ? "+ " : !after.ContainsKey(x) ? "− " : "~ ") + x).ToArray();
         }
 
+        // Components, including their form resources, are the smallest commit/import unit.
+        internal static VbaGitSnapshot Select(VbaGitSnapshot baseline, VbaGitSnapshot source, IEnumerable<string> names, bool references = false)
+        {
+            if (source == null) throw new ArgumentException(UiText.Get("The target contains no VBA sources."));
+            var selected = new HashSet<string>(names ?? new string[0], StringComparer.Ordinal);
+            var known = (baseline?.Manifest.Components ?? new VbaGitComponent[0]).Concat(source.Manifest.Components).Select(x => x.Name);
+            if (selected.Any(x => !known.Contains(x))) throw new ArgumentException(UiText.Get("Unknown VBA module."));
+            var components = (baseline?.Manifest.Components ?? new VbaGitComponent[0]).Where(x => !selected.Contains(x.Name))
+                .Concat(source.Manifest.Components.Where(x => selected.Contains(x.Name))).OrderBy(x => x.Name, StringComparer.Ordinal).ToArray();
+            var files = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+            foreach (var component in components)
+            {
+                var origin = selected.Contains(component.Name) ? source : baseline;
+                files.Add(component.FileName, origin.Files[component.FileName]);
+                if (component.HasResources) files.Add(component.Name + ".frx", origin.Files[component.Name + ".frx"]);
+            }
+            return new VbaGitSnapshot(new VbaGitManifest { Components = components,
+                References = references || baseline == null ? source.Manifest.References : baseline.Manifest.References }, files);
+        }
+
+        internal string ImportSummary(VbaGitSnapshot previous)
+        {
+            return string.Join(Environment.NewLine, Changes(previous)) + Environment.NewLine +
+                UiText.Get("Required VBA references") + ": " + Manifest.References + Environment.NewLine +
+                (previous != null && previous.Manifest.References != Manifest.References ? UiText.Get("References differ: align them in the VBE before importing.") : UiText.Get("A checkpoint protects this import."));
+        }
+
         internal static void ValidateName(string name)
         {
             if (!Regex.IsMatch(name ?? "", @"^[\p{L}][\p{L}\p{N}_]{0,39}$") ||

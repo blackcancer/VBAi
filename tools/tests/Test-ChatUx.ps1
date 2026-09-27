@@ -161,6 +161,9 @@ try {
     Assert ((Call $store ReadMemory @($a.Scope)) -eq 'Convention locale A') 'Project memory did not survive reopening.'
     Call $window ActivateSession @($restoredA, $true)
     Assert ((Field $window prompt).Text -eq 'Brouillon @Projet.Module1.Hello') 'Draft was not restored.'
+    $window.Show(); [Windows.Forms.Application]::DoEvents()
+    (Field $window conversationItems).UpdateLayout()
+    [Windows.Forms.Application]::DoEvents()
     Assert ((Field $window rollbackButtons).Count -eq 1) 'Inline rollback card was not restored.'
     Assert ((Field $window prompt).SpellCheck.IsEnabled) 'Spell checking regressed.'
     $interrupted = New-Internal ChatSessionState

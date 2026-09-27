@@ -1533,4 +1533,247 @@
   <data name="☰ Chats" xml:space="preserve">
     <value>☰ Чаты</value>
   </data>
+  <data name="A checkpoint protects this import." xml:space="preserve">
+    <value>Контрольно-пропускной пункт защищает этот импорт.</value>
+  </data>
+  <data name="After" xml:space="preserve">
+    <value>После</value>
+  </data>
+  <data name="Appearance" xml:space="preserve">
+    <value>внешний вид</value>
+  </data>
+  <data name="Before" xml:space="preserve">
+    <value>Прежде чем</value>
+  </data>
+  <data name="Check repository permissions or wait for the GitHub rate limit to reset." xml:space="preserve">
+    <value>Проверьте разрешения репозитория или дождитесь сбрасывания лимита скорости GitHub.</value>
+  </data>
+  <data name="Check the branch, title and repository name; a pull request may already exist." xml:space="preserve">
+    <value>Проверьте ветку, название и название хранилища; запрос на вытягивание может уже существовать.</value>
+  </data>
+  <data name="Check the connection, account and Git state, then retry." xml:space="preserve">
+    <value>Проверьте соединение, учетную запись и состояние Git, затем повторите попытку.</value>
+  </data>
+  <data name="Check the repository name and account access." xml:space="preserve">
+    <value>Проверьте имя хранилища и доступ к учетной записи.</value>
+  </data>
+  <data name="Checks" xml:space="preserve">
+    <value>Проверка</value>
+  </data>
+  <data name="Code" xml:space="preserve">
+    <value>Код</value>
+  </data>
+  <data name="Comments" xml:space="preserve">
+    <value>Комментарий</value>
+  </data>
+  <data name="Commit checked modules and their form resources. Push publishes them afterwards." xml:space="preserve">
+    <value>Выполняйте проверки модулей и их ресурсов формы. Push публикует их позже.</value>
+  </data>
+  <data name="Commit not found." xml:space="preserve">
+    <value>Обязательство не найдено.</value>
+  </data>
+  <data name="Commit selected" xml:space="preserve">
+    <value>Обязательство выбранное</value>
+  </data>
+  <data name="Commit status" xml:space="preserve">
+    <value>Статус участника</value>
+  </data>
+  <data name="Common ancestor" xml:space="preserve">
+    <value>Общий предок</value>
+  </data>
+  <data name="Compare returns to live VBA." xml:space="preserve">
+    <value>Сравните возвраты в живую VBA.</value>
+  </data>
+  <data name="Compare revisions" xml:space="preserve">
+    <value>Сравнить ревизии</value>
+  </data>
+  <data name="Connecting to GitHub…" xml:space="preserve">
+    <value>Подключение к GitHub...</value>
+  </data>
+  <data name="Create pull request" xml:space="preserve">
+    <value>Создать запрос pull</value>
+  </data>
+  <data name="Create repository" xml:space="preserve">
+    <value>Создать репозиторий</value>
+  </data>
+  <data name="Dark" xml:space="preserve">
+    <value>темный</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>Подробности</value>
+  </data>
+  <data name="Draft" xml:space="preserve">
+    <value>Проект проекта</value>
+  </data>
+  <data name="Enter a title and a different target branch." xml:space="preserve">
+    <value>Введите название и другую целевую ветвь.</value>
+  </data>
+  <data name="Files" xml:space="preserve">
+    <value>Файлы</value>
+  </data>
+  <data name="Find" xml:space="preserve">
+    <value>Найти</value>
+  </data>
+  <data name="Fold context" xml:space="preserve">
+    <value>Складной контекст</value>
+  </data>
+  <data name="Form resources included" xml:space="preserve">
+    <value>Форменные ресурсы включены</value>
+  </data>
+  <data name="GitHub is unavailable. Try again later." xml:space="preserve">
+    <value>GitHub недоступен. Попробуй позже.</value>
+  </data>
+  <data name="Import summary" xml:space="preserve">
+    <value>Резюме импорта</value>
+  </data>
+  <data name="Invalid pull request draft." xml:space="preserve">
+    <value>Недействительный призыв к отставке.</value>
+  </data>
+  <data name="Invalid repository name." xml:space="preserve">
+    <value>Недействительное название хранилища.</value>
+  </data>
+  <data name="Light" xml:space="preserve">
+    <value>Свет</value>
+  </data>
+  <data name="Load earlier messages" xml:space="preserve">
+    <value>Загрузить более ранние сообщения</value>
+  </data>
+  <data name="Load prepared draft" xml:space="preserve">
+    <value>Загрузка подготовленный проект</value>
+  </data>
+  <data name="Load pull requests" xml:space="preserve">
+    <value>Запросы на вытягивание груза</value>
+  </data>
+  <data name="Load repositories" xml:space="preserve">
+    <value>Загруженные репозитории</value>
+  </data>
+  <data name="Merged" xml:space="preserve">
+    <value>слитый</value>
+  </data>
+  <data name="New pull request" xml:space="preserve">
+    <value>Новый запрос на Щелчок</value>
+  </data>
+  <data name="New repository name" xml:space="preserve">
+    <value>Новое имя репозитория</value>
+  </data>
+  <data name="Next change" xml:space="preserve">
+    <value>Следующее изменение</value>
+  </data>
+  <data name="No prepared draft for this branch." xml:space="preserve">
+    <value>Никакого подготовленного проекта для этой ветви.</value>
+  </data>
+  <data name="Only HTTP and HTTPS links can be opened." xml:space="preserve">
+    <value>Только HTTP и HTTPS ссылки могут быть открыты.</value>
+  </data>
+  <data name="Open on GitHub" xml:space="preserve">
+    <value>Открыть на GitHub</value>
+  </data>
+  <data name="Operation cancelled." xml:space="preserve">
+    <value>Операция отменена.</value>
+  </data>
+  <data name="Operation complete." xml:space="preserve">
+    <value>Операция завершена.</value>
+  </data>
+  <data name="Personal account" xml:space="preserve">
+    <value>Личный счет</value>
+  </data>
+  <data name="Preview import" xml:space="preserve">
+    <value>Предварительный просмотр импорта</value>
+  </data>
+  <data name="Preview only. Pull imports these changes with a checkpoint." xml:space="preserve">
+    <value>Только предварительный просмотр. Pull Импорт этих изменений с помощью контрольно-пропускного пункта.</value>
+  </data>
+  <data name="Previous change" xml:space="preserve">
+    <value>Предыдущие изменения</value>
+  </data>
+  <data name="Private" xml:space="preserve">
+    <value>частный</value>
+  </data>
+  <data name="Pull request description" xml:space="preserve">
+    <value>Описание запроса Pull</value>
+  </data>
+  <data name="Pull request title" xml:space="preserve">
+    <value>Заголовок запроса Pull</value>
+  </data>
+  <data name="Pull requests" xml:space="preserve">
+    <value>Pull просьбы</value>
+  </data>
+  <data name="References differ: align them in the VBE before importing." xml:space="preserve">
+    <value>Ссылки различаются: выравнивайте их в VBE перед импортом.</value>
+  </data>
+  <data name="Repositories" xml:space="preserve">
+    <value>Репозитории</value>
+  </data>
+  <data name="Repository owner" xml:space="preserve">
+    <value>Владелец репозитория</value>
+  </data>
+  <data name="Repository selected. Click Link repository to connect this document." xml:space="preserve">
+    <value>Выбран репозиторий. Нажмите репозитарий Link, чтобы подключить этот документ.</value>
+  </data>
+  <data name="Required VBA references" xml:space="preserve">
+    <value>Требуемые ссылки VBA</value>
+  </data>
+  <data name="Restore only the selected module from the reviewed revision, with a checkpoint first." xml:space="preserve">
+    <value>Восстановить только выбранный модуль из рассмотренного пересмотра, сначала с контрольной точки.</value>
+  </data>
+  <data name="Restore selected module" xml:space="preserve">
+    <value>Восстановление выбранного модуля</value>
+  </data>
+  <data name="Reviewing checkpoint" xml:space="preserve">
+    <value>Обзор контрольно-пропускного пункта</value>
+  </data>
+  <data name="Reviewing revision" xml:space="preserve">
+    <value>Пересмотренный вариант</value>
+  </data>
+  <data name="Search code" xml:space="preserve">
+    <value>Поисковый код</value>
+  </data>
+  <data name="Search repositories" xml:space="preserve">
+    <value>Репозитории поиска</value>
+  </data>
+  <data name="Select a commit from history." xml:space="preserve">
+    <value>Выберите обязательство из истории.</value>
+  </data>
+  <data name="Select a revision in History or Checkpoints, then a module to restore." xml:space="preserve">
+    <value>Выберите исправление в истории или контрольные точки, а затем модуль для восстановления.</value>
+  </data>
+  <data name="Select at least one module or the references." xml:space="preserve">
+    <value>Выберите хотя бы один модуль или ссылки.</value>
+  </data>
+  <data name="Select one commit for details, or two commits to compare their VBA sources." xml:space="preserve">
+    <value>Выберите одно обязательство для деталей, или два обязательства для сравнения их источников VBA.</value>
+  </data>
+  <data name="Show three context lines around each change." xml:space="preserve">
+    <value>Покажите три контекстные линии вокруг каждого изменения.</value>
+  </data>
+  <data name="Sign in to GitHub again in Settings." xml:space="preserve">
+    <value>Зарегистрируйтесь на GitHub снова в настройках.</value>
+  </data>
+  <data name="Source branch" xml:space="preserve">
+    <value>Источник:</value>
+  </data>
+  <data name="System" xml:space="preserve">
+    <value>Система</value>
+  </data>
+  <data name="Target branch" xml:space="preserve">
+    <value>Целевой филиал</value>
+  </data>
+  <data name="This document is already linked. Reopen GitHub to choose another repository." xml:space="preserve">
+    <value>Этот документ уже связан. Откройте GitHub, чтобы выбрать другой репозиторий.</value>
+  </data>
+  <data name="Unable to reach GitHub. Check your connection, then retry." xml:space="preserve">
+    <value>Невозможно связаться с GitHub, проверить соединение, затем повторить.</value>
+  </data>
+  <data name="Unified" xml:space="preserve">
+    <value>единый</value>
+  </data>
+  <data name="Unknown VBA module." xml:space="preserve">
+    <value>Неизвестный модуль VBA.</value>
+  </data>
+  <data name="Use repository" xml:space="preserve">
+    <value>Используйте репозиторий</value>
+  </data>
+  <data name="VBA references" xml:space="preserve">
+    <value>Ссылки на VBA</value>
+  </data>
 </root>

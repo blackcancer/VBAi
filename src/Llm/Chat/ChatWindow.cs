@@ -231,13 +231,13 @@ namespace CodexVBE
                 menu.Show(changes, 0, changes.Height);
                 return;
             }
-            foreach (var pair in entryViews)
-                if (pair.Key.Change == selected)
-                {
-                    followConversation = false;
-                    pair.Value.BringIntoView();
-                    break;
-                }
+            var entry = transcriptEntries.Find(x => x.Change == selected);
+            if (entry != null) {
+                followConversation = false;
+                int index = transcriptEntries.IndexOf(entry);
+                if (index < firstLoadedEntry) RefreshTranscriptWindow(index);
+                conversationItems.ScrollIntoView(entry);
+            }
         }
 
         private void SetStatus(string text)

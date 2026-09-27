@@ -1533,4 +1533,247 @@ Git Credential Manager でサインインします。コミットの作成者情
   <data name="☰ Chats" xml:space="preserve">
     <value>☰ チャット</value>
   </data>
+  <data name="A checkpoint protects this import." xml:space="preserve">
+    <value>チェックポイントは、このインポートを保護します。</value>
+  </data>
+  <data name="After" xml:space="preserve">
+    <value>アフターフォロー</value>
+  </data>
+  <data name="Appearance" xml:space="preserve">
+    <value>出演者:</value>
+  </data>
+  <data name="Before" xml:space="preserve">
+    <value>前のページへ</value>
+  </data>
+  <data name="Check repository permissions or wait for the GitHub rate limit to reset." xml:space="preserve">
+    <value>リポジトリの権限をチェックするか、GitHubのレート制限をリセットするのを待ちます。</value>
+  </data>
+  <data name="Check the branch, title and repository name; a pull request may already exist." xml:space="preserve">
+    <value>ブランチ、タイトル、リポジトリ名を確認してください。プルリクエストは既に存在している可能性があります。</value>
+  </data>
+  <data name="Check the connection, account and Git state, then retry." xml:space="preserve">
+    <value>接続、アカウント、Git の状態を確認し、再試行します。</value>
+  </data>
+  <data name="Check the repository name and account access." xml:space="preserve">
+    <value>リポジトリ名とアカウントアクセスを確認してください。</value>
+  </data>
+  <data name="Checks" xml:space="preserve">
+    <value>チェック</value>
+  </data>
+  <data name="Code" xml:space="preserve">
+    <value>コードコード</value>
+  </data>
+  <data name="Comments" xml:space="preserve">
+    <value>コメント</value>
+  </data>
+  <data name="Commit checked modules and their form resources. Push publishes them afterwards." xml:space="preserve">
+    <value>チェックされたモジュールとフォームリソースをコミットします。 Push その後にそれらを公開します。.</value>
+  </data>
+  <data name="Commit not found." xml:space="preserve">
+    <value>見つかりません。</value>
+  </data>
+  <data name="Commit selected" xml:space="preserve">
+    <value>選択したコミット</value>
+  </data>
+  <data name="Commit status" xml:space="preserve">
+    <value>コミットステータス</value>
+  </data>
+  <data name="Common ancestor" xml:space="preserve">
+    <value>共通の祖先</value>
+  </data>
+  <data name="Compare returns to live VBA." xml:space="preserve">
+    <value>ライブVBAへのリターンを比較します。</value>
+  </data>
+  <data name="Compare revisions" xml:space="preserve">
+    <value>リビジョンの比較</value>
+  </data>
+  <data name="Connecting to GitHub…" xml:space="preserve">
+    <value>GitHub に接続する</value>
+  </data>
+  <data name="Create pull request" xml:space="preserve">
+    <value>プルリクエストを作成する</value>
+  </data>
+  <data name="Create repository" xml:space="preserve">
+    <value>リポジトリの作成</value>
+  </data>
+  <data name="Dark" xml:space="preserve">
+    <value>ダーク</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>インフォメーション</value>
+  </data>
+  <data name="Draft" xml:space="preserve">
+    <value>ドラフト</value>
+  </data>
+  <data name="Enter a title and a different target branch." xml:space="preserve">
+    <value>タイトルと異なるターゲットブランチを入力します。</value>
+  </data>
+  <data name="Files" xml:space="preserve">
+    <value>ファイル</value>
+  </data>
+  <data name="Find" xml:space="preserve">
+    <value>詳しくはこちら</value>
+  </data>
+  <data name="Fold context" xml:space="preserve">
+    <value>フォールドコンテクスト</value>
+  </data>
+  <data name="Form resources included" xml:space="preserve">
+    <value>フォームリソースが含まれている</value>
+  </data>
+  <data name="GitHub is unavailable. Try again later." xml:space="preserve">
+    <value>GitHub は利用できません。あとでお試しください。</value>
+  </data>
+  <data name="Import summary" xml:space="preserve">
+    <value>インポート要約</value>
+  </data>
+  <data name="Invalid pull request draft." xml:space="preserve">
+    <value>無効な引きの要求草案。</value>
+  </data>
+  <data name="Invalid repository name." xml:space="preserve">
+    <value>無効なリポジトリ名。</value>
+  </data>
+  <data name="Light" xml:space="preserve">
+    <value>ライトライト</value>
+  </data>
+  <data name="Load earlier messages" xml:space="preserve">
+    <value>以前のメッセージをロードする</value>
+  </data>
+  <data name="Load prepared draft" xml:space="preserve">
+    <value>準備された草案をロードして下さい</value>
+  </data>
+  <data name="Load pull requests" xml:space="preserve">
+    <value>プルリクエストをロードする</value>
+  </data>
+  <data name="Load repositories" xml:space="preserve">
+    <value>負荷リポジトリ</value>
+  </data>
+  <data name="Merged" xml:space="preserve">
+    <value>マージ</value>
+  </data>
+  <data name="New pull request" xml:space="preserve">
+    <value>新しい引きの要求</value>
+  </data>
+  <data name="New repository name" xml:space="preserve">
+    <value>新しいリポジトリ名</value>
+  </data>
+  <data name="Next change" xml:space="preserve">
+    <value>次の変更</value>
+  </data>
+  <data name="No prepared draft for this branch." xml:space="preserve">
+    <value>このブランチの準備ドラフトはありません。</value>
+  </data>
+  <data name="Only HTTP and HTTPS links can be opened." xml:space="preserve">
+    <value>HTTP と HTTPS のリンクのみが開きます。</value>
+  </data>
+  <data name="Open on GitHub" xml:space="preserve">
+    <value>GitHubで開く</value>
+  </data>
+  <data name="Operation cancelled." xml:space="preserve">
+    <value>キャンセル。</value>
+  </data>
+  <data name="Operation complete." xml:space="preserve">
+    <value>操作は完了します。</value>
+  </data>
+  <data name="Personal account" xml:space="preserve">
+    <value>個人アカウント</value>
+  </data>
+  <data name="Preview import" xml:space="preserve">
+    <value>プレビュー輸入</value>
+  </data>
+  <data name="Preview only. Pull imports these changes with a checkpoint." xml:space="preserve">
+    <value>プレビューのみ。 Pull これらの変更をチェックポイントでインポートします。</value>
+  </data>
+  <data name="Previous change" xml:space="preserve">
+    <value>前の変更</value>
+  </data>
+  <data name="Private" xml:space="preserve">
+    <value>プライベート</value>
+  </data>
+  <data name="Pull request description" xml:space="preserve">
+    <value>Pull 要求の記述</value>
+  </data>
+  <data name="Pull request title" xml:space="preserve">
+    <value>Pull リクエスト タイトル</value>
+  </data>
+  <data name="Pull requests" xml:space="preserve">
+    <value>Pull リクエスト</value>
+  </data>
+  <data name="References differ: align them in the VBE before importing." xml:space="preserve">
+    <value>参照は異なります: インポートする前に VBE にそれらを整列します。</value>
+  </data>
+  <data name="Repositories" xml:space="preserve">
+    <value>リポジトリ</value>
+  </data>
+  <data name="Repository owner" xml:space="preserve">
+    <value>リポジトリの所有者</value>
+  </data>
+  <data name="Repository selected. Click Link repository to connect this document." xml:space="preserve">
+    <value>選択したリポジトリ。リンクリポジトリをクリックして、このドキュメントを接続します。</value>
+  </data>
+  <data name="Required VBA references" xml:space="preserve">
+    <value>必要なVBAの参照</value>
+  </data>
+  <data name="Restore only the selected module from the reviewed revision, with a checkpoint first." xml:space="preserve">
+    <value>選択したモジュールのみをレビューされたリビジョンから復元し、チェックポイントを最初に保存します。</value>
+  </data>
+  <data name="Restore selected module" xml:space="preserve">
+    <value>選択したモジュールの復元</value>
+  </data>
+  <data name="Reviewing checkpoint" xml:space="preserve">
+    <value>チェックポイントの見直し</value>
+  </data>
+  <data name="Reviewing revision" xml:space="preserve">
+    <value>見直し改定</value>
+  </data>
+  <data name="Search code" xml:space="preserve">
+    <value>コード検索</value>
+  </data>
+  <data name="Search repositories" xml:space="preserve">
+    <value>リポジトリの検索</value>
+  </data>
+  <data name="Select a commit from history." xml:space="preserve">
+    <value>履歴からコミットを選択します。</value>
+  </data>
+  <data name="Select a revision in History or Checkpoints, then a module to restore." xml:space="preserve">
+    <value>履歴またはチェックポイントのリビジョンを選択し、復元するモジュールを選択します。</value>
+  </data>
+  <data name="Select at least one module or the references." xml:space="preserve">
+    <value>少なくとも1つのモジュールか参照を選んで下さい。</value>
+  </data>
+  <data name="Select one commit for details, or two commits to compare their VBA sources." xml:space="preserve">
+    <value>ひとつのコミットを詳細に選択するか、2つのコミットでVBAソースを比較します。</value>
+  </data>
+  <data name="Show three context lines around each change." xml:space="preserve">
+    <value>各変更の周りの3つのコンテキスト行を表示します。</value>
+  </data>
+  <data name="Sign in to GitHub again in Settings." xml:space="preserve">
+    <value>[設定] で再び GitHub にサインインします。</value>
+  </data>
+  <data name="Source branch" xml:space="preserve">
+    <value>ソースブランチ</value>
+  </data>
+  <data name="System" xml:space="preserve">
+    <value>システム</value>
+  </data>
+  <data name="Target branch" xml:space="preserve">
+    <value>ターゲットブランチ</value>
+  </data>
+  <data name="This document is already linked. Reopen GitHub to choose another repository." xml:space="preserve">
+    <value>このドキュメントは既にリンクされています。GitHubを再オープンして別のリポジトリを選択します。</value>
+  </data>
+  <data name="Unable to reach GitHub. Check your connection, then retry." xml:space="preserve">
+    <value>GitHub にアクセスできません。接続をチェックし、再試行してください。</value>
+  </data>
+  <data name="Unified" xml:space="preserve">
+    <value>インフォメーション</value>
+  </data>
+  <data name="Unknown VBA module." xml:space="preserve">
+    <value>不明なVBAモジュール。</value>
+  </data>
+  <data name="Use repository" xml:space="preserve">
+    <value>リポジトリを使用する</value>
+  </data>
+  <data name="VBA references" xml:space="preserve">
+    <value>VBAの参照</value>
+  </data>
 </root>

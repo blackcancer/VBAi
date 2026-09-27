@@ -18,6 +18,15 @@ namespace CodexVBE
 
         internal VbaGitProject(Func<object> resolve, string hostPath) { this.resolve = resolve; this.hostPath = hostPath; }
 
+        internal void OpenModule(string name, int line = 1)
+        {
+            VbaGitSnapshot.ValidateName(name);
+            dynamic project = CheckedProject();
+            dynamic pane = project.VBComponents.Item(name).CodeModule.CodePane;
+            pane.Show();
+            pane.SetSelection(Math.Max(1, line), 1, Math.Max(1, line), 1);
+        }
+
         private object CheckedProject()
         {
             dynamic project = resolve();

@@ -1533,4 +1533,247 @@ QQ 附加記憶體
   <data name="☰ Chats" xml:space="preserve">
     <value>☰ 聊天</value>
   </data>
+  <data name="A checkpoint protects this import." xml:space="preserve">
+    <value>檢查點保護此匯入 。</value>
+  </data>
+  <data name="After" xml:space="preserve">
+    <value>之後</value>
+  </data>
+  <data name="Appearance" xml:space="preserve">
+    <value>外觀</value>
+  </data>
+  <data name="Before" xml:space="preserve">
+    <value>在此之前</value>
+  </data>
+  <data name="Check repository permissions or wait for the GitHub rate limit to reset." xml:space="preserve">
+    <value>檢查暫存器許可權或等待 GitHub 速率限制重置 。</value>
+  </data>
+  <data name="Check the branch, title and repository name; a pull request may already exist." xml:space="preserve">
+    <value>檢查分支、 標題和暫存器名稱; 拖曳請求可能已經存在 。</value>
+  </data>
+  <data name="Check the connection, account and Git state, then retry." xml:space="preserve">
+    <value>檢查連線、 賬戶和 Git 狀態, 然後重試 。</value>
+  </data>
+  <data name="Check the repository name and account access." xml:space="preserve">
+    <value>檢查倉庫名稱和賬戶訪問許可權 。</value>
+  </data>
+  <data name="Checks" xml:space="preserve">
+    <value>檢查</value>
+  </data>
+  <data name="Code" xml:space="preserve">
+    <value>程式碼</value>
+  </data>
+  <data name="Comments" xml:space="preserve">
+    <value>評論</value>
+  </data>
+  <data name="Commit checked modules and their form resources. Push publishes them afterwards." xml:space="preserve">
+    <value>提交已檢查的模組及其格式資源 。 Push 之後再發表。</value>
+  </data>
+  <data name="Commit not found." xml:space="preserve">
+    <value>未找到任務 。</value>
+  </data>
+  <data name="Commit selected" xml:space="preserve">
+    <value>提交選中的</value>
+  </data>
+  <data name="Commit status" xml:space="preserve">
+    <value>提交狀態</value>
+  </data>
+  <data name="Common ancestor" xml:space="preserve">
+    <value>共同祖先</value>
+  </data>
+  <data name="Compare returns to live VBA." xml:space="preserve">
+    <value>比較回放與活生生的VBA.</value>
+  </data>
+  <data name="Compare revisions" xml:space="preserve">
+    <value>比較訂正數</value>
+  </data>
+  <data name="Connecting to GitHub…" xml:space="preserve">
+    <value>正在連線到 GitHub...</value>
+  </data>
+  <data name="Create pull request" xml:space="preserve">
+    <value>建立拉動請求</value>
+  </data>
+  <data name="Create repository" xml:space="preserve">
+    <value>建立倉庫</value>
+  </data>
+  <data name="Dark" xml:space="preserve">
+    <value>陰暗</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>細節</value>
+  </data>
+  <data name="Draft" xml:space="preserve">
+    <value>草案</value>
+  </data>
+  <data name="Enter a title and a different target branch." xml:space="preserve">
+    <value>輸入標題和不同的目標分支。</value>
+  </data>
+  <data name="Files" xml:space="preserve">
+    <value>檔案</value>
+  </data>
+  <data name="Find" xml:space="preserve">
+    <value>查詢</value>
+  </data>
+  <data name="Fold context" xml:space="preserve">
+    <value>摺疊上下文</value>
+  </data>
+  <data name="Form resources included" xml:space="preserve">
+    <value>包括的形式資源</value>
+  </data>
+  <data name="GitHub is unavailable. Try again later." xml:space="preserve">
+    <value>GitHub 無法使用。 稍後再試 。</value>
+  </data>
+  <data name="Import summary" xml:space="preserve">
+    <value>匯入摘要</value>
+  </data>
+  <data name="Invalid pull request draft." xml:space="preserve">
+    <value>無效的拉動請求草稿 。</value>
+  </data>
+  <data name="Invalid repository name." xml:space="preserve">
+    <value>無效的暫存器名稱 。</value>
+  </data>
+  <data name="Light" xml:space="preserve">
+    <value>光線</value>
+  </data>
+  <data name="Load earlier messages" xml:space="preserve">
+    <value>裝入更早的訊息</value>
+  </data>
+  <data name="Load prepared draft" xml:space="preserve">
+    <value>裝入已準備好的草稿</value>
+  </data>
+  <data name="Load pull requests" xml:space="preserve">
+    <value>裝入拉動請求</value>
+  </data>
+  <data name="Load repositories" xml:space="preserve">
+    <value>裝入倉庫</value>
+  </data>
+  <data name="Merged" xml:space="preserve">
+    <value>合併</value>
+  </data>
+  <data name="New pull request" xml:space="preserve">
+    <value>新拉動請求</value>
+  </data>
+  <data name="New repository name" xml:space="preserve">
+    <value>新建倉庫名稱</value>
+  </data>
+  <data name="Next change" xml:space="preserve">
+    <value>下一次更改</value>
+  </data>
+  <data name="No prepared draft for this branch." xml:space="preserve">
+    <value>沒有為這個分支起草任何草案。</value>
+  </data>
+  <data name="Only HTTP and HTTPS links can be opened." xml:space="preserve">
+    <value>僅限 HTTP 財務報告和審定財務報表 HTTPS 連結可以開啟。</value>
+  </data>
+  <data name="Open on GitHub" xml:space="preserve">
+    <value>在 GitHub 上開啟</value>
+  </data>
+  <data name="Operation cancelled." xml:space="preserve">
+    <value>操作已取消 。</value>
+  </data>
+  <data name="Operation complete." xml:space="preserve">
+    <value>行動完畢</value>
+  </data>
+  <data name="Personal account" xml:space="preserve">
+    <value>個人賬戶</value>
+  </data>
+  <data name="Preview import" xml:space="preserve">
+    <value>預覽匯入</value>
+  </data>
+  <data name="Preview only. Pull imports these changes with a checkpoint." xml:space="preserve">
+    <value>僅預覽. Pull 輸入這些更改,並設定檢查站。</value>
+  </data>
+  <data name="Previous change" xml:space="preserve">
+    <value>上一個變動</value>
+  </data>
+  <data name="Private" xml:space="preserve">
+    <value>私人</value>
+  </data>
+  <data name="Pull request description" xml:space="preserve">
+    <value>Pull 請求說明</value>
+  </data>
+  <data name="Pull request title" xml:space="preserve">
+    <value>Pull 請求標題</value>
+  </data>
+  <data name="Pull requests" xml:space="preserve">
+    <value>Pull 請求</value>
+  </data>
+  <data name="References differ: align them in the VBE before importing." xml:space="preserve">
+    <value>參考文獻不同:在匯入前在VBE中對齊.</value>
+  </data>
+  <data name="Repositories" xml:space="preserve">
+    <value>倉庫</value>
+  </data>
+  <data name="Repository owner" xml:space="preserve">
+    <value>倉庫所有者</value>
+  </data>
+  <data name="Repository selected. Click Link repository to connect this document." xml:space="preserve">
+    <value>選擇倉庫。 單擊連結暫存器連線此文件 。</value>
+  </data>
+  <data name="Required VBA references" xml:space="preserve">
+    <value>要求的VBA參考文獻</value>
+  </data>
+  <data name="Restore only the selected module from the reviewed revision, with a checkpoint first." xml:space="preserve">
+    <value>僅從已審查的修訂版中恢復所選模組,並首先設定檢查點。</value>
+  </data>
+  <data name="Restore selected module" xml:space="preserve">
+    <value>恢復所選模組</value>
+  </data>
+  <data name="Reviewing checkpoint" xml:space="preserve">
+    <value>審查檢查站</value>
+  </data>
+  <data name="Reviewing revision" xml:space="preserve">
+    <value>審查訂正案</value>
+  </data>
+  <data name="Search code" xml:space="preserve">
+    <value>搜尋程式碼</value>
+  </data>
+  <data name="Search repositories" xml:space="preserve">
+    <value>搜尋暫存器</value>
+  </data>
+  <data name="Select a commit from history." xml:space="preserve">
+    <value>從歷史中選擇一個承諾 。</value>
+  </data>
+  <data name="Select a revision in History or Checkpoints, then a module to restore." xml:space="preserve">
+    <value>在歷史或檢查點中選擇修訂,然後選擇要恢復的模組。</value>
+  </data>
+  <data name="Select at least one module or the references." xml:space="preserve">
+    <value>選擇至少一個模組或引用 。</value>
+  </data>
+  <data name="Select one commit for details, or two commits to compare their VBA sources." xml:space="preserve">
+    <value>選擇一個詳細的承諾,或者兩個承諾比較他們的VBA來源.</value>
+  </data>
+  <data name="Show three context lines around each change." xml:space="preserve">
+    <value>每個變化周圍顯示三條上下文行。</value>
+  </data>
+  <data name="Sign in to GitHub again in Settings." xml:space="preserve">
+    <value>在設定中再次向 GitHub 簽名 。</value>
+  </data>
+  <data name="Source branch" xml:space="preserve">
+    <value>源分支</value>
+  </data>
+  <data name="System" xml:space="preserve">
+    <value>系統</value>
+  </data>
+  <data name="Target branch" xml:space="preserve">
+    <value>目標分支</value>
+  </data>
+  <data name="This document is already linked. Reopen GitHub to choose another repository." xml:space="preserve">
+    <value>此文件已經連結。 重新開啟 GitHub 以選擇另一個暫存器 。</value>
+  </data>
+  <data name="Unable to reach GitHub. Check your connection, then retry." xml:space="preserve">
+    <value>無法聯絡到 GitHub。 請檢查您的連線, 然後重試 。</value>
+  </data>
+  <data name="Unified" xml:space="preserve">
+    <value>統一</value>
+  </data>
+  <data name="Unknown VBA module." xml:space="preserve">
+    <value>未知的VBA模組.</value>
+  </data>
+  <data name="Use repository" xml:space="preserve">
+    <value>使用暫存器</value>
+  </data>
+  <data name="VBA references" xml:space="preserve">
+    <value>VBA 參考文獻</value>
+  </data>
 </root>

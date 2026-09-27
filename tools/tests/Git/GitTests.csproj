@@ -5,6 +5,7 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Markdig" Version="0.37.0" />
     <Compile Include="GitTests.cs" />
     <Compile Include="AdvancedGitTests.cs" />
     <Compile Include="../../../src/**/*.cs" />

@@ -1533,4 +1533,247 @@
   <data name="☰ Chats" xml:space="preserve">
     <value>☰ المحادثات</value>
   </data>
+  <data name="A checkpoint protects this import." xml:space="preserve">
+    <value>نقطة تفتيش تحمي هذا الاستيراد</value>
+  </data>
+  <data name="After" xml:space="preserve">
+    <value>بعد</value>
+  </data>
+  <data name="Appearance" xml:space="preserve">
+    <value>التلميذ</value>
+  </data>
+  <data name="Before" xml:space="preserve">
+    <value>من قبل</value>
+  </data>
+  <data name="Check repository permissions or wait for the GitHub rate limit to reset." xml:space="preserve">
+    <value>تفحص الرخصة أو تنتظر GitHub الحد الأقصى للانتعاش.</value>
+  </data>
+  <data name="Check the branch, title and repository name; a pull request may already exist." xml:space="preserve">
+    <value>تحقق من الفرع واللقب واسم المستودع؛ وقد يوجد بالفعل طلب سحب.</value>
+  </data>
+  <data name="Check the connection, account and Git state, then retry." xml:space="preserve">
+    <value>تحقق من الاتّصال والحساب Git الولاية، ثم العودة.</value>
+  </data>
+  <data name="Check the repository name and account access." xml:space="preserve">
+    <value>تحقق من اسم المستودع ووصول الحساب</value>
+  </data>
+  <data name="Checks" xml:space="preserve">
+    <value>الشيكات</value>
+  </data>
+  <data name="Code" xml:space="preserve">
+    <value>المدونة</value>
+  </data>
+  <data name="Comments" xml:space="preserve">
+    <value>التعليقات</value>
+  </data>
+  <data name="Commit checked modules and their form resources. Push publishes them afterwards." xml:space="preserve">
+    <value>ابدأوا بتفتيش الوحدات وشكل مواردهم Push ينشرها بعد ذلك.</value>
+  </data>
+  <data name="Commit not found." xml:space="preserve">
+    <value>لم يتم العثور عليه</value>
+  </data>
+  <data name="Commit selected" xml:space="preserve">
+    <value>Commit selected</value>
+  </data>
+  <data name="Commit status" xml:space="preserve">
+    <value>الحالة الإبتدائية</value>
+  </data>
+  <data name="Common ancestor" xml:space="preserve">
+    <value>أسلاف مشتركون</value>
+  </data>
+  <data name="Compare returns to live VBA." xml:space="preserve">
+    <value>بالمقارنة مع العودة إلى الحياة VBA.</value>
+  </data>
+  <data name="Compare revisions" xml:space="preserve">
+    <value>تنقيحات مقارنة</value>
+  </data>
+  <data name="Connecting to GitHub…" xml:space="preserve">
+    <value>التواصل مع GitHub...</value>
+  </data>
+  <data name="Create pull request" xml:space="preserve">
+    <value>طلب سحب الصنع</value>
+  </data>
+  <data name="Create repository" xml:space="preserve">
+    <value>مستودعات الخلق</value>
+  </data>
+  <data name="Dark" xml:space="preserve">
+    <value>الظلام</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>التفاصيل</value>
+  </data>
+  <data name="Draft" xml:space="preserve">
+    <value>مشروع</value>
+  </data>
+  <data name="Enter a title and a different target branch." xml:space="preserve">
+    <value>أدخل لقب وفرع مستهدف مختلف</value>
+  </data>
+  <data name="Files" xml:space="preserve">
+    <value>الملفات</value>
+  </data>
+  <data name="Find" xml:space="preserve">
+    <value>اعثر على</value>
+  </data>
+  <data name="Fold context" xml:space="preserve">
+    <value>السياق القديم</value>
+  </data>
+  <data name="Form resources included" xml:space="preserve">
+    <value>الموارد الاستمارة المدرجة</value>
+  </data>
+  <data name="GitHub is unavailable. Try again later." xml:space="preserve">
+    <value>GitHub غير متاح، حاول مرة أخرى لاحقاً</value>
+  </data>
+  <data name="Import summary" xml:space="preserve">
+    <value>موجز الواردات</value>
+  </data>
+  <data name="Invalid pull request draft." xml:space="preserve">
+    <value>مشروع طلب سحب غير سليم.</value>
+  </data>
+  <data name="Invalid repository name." xml:space="preserve">
+    <value>اسم مستودع غير مقصود.</value>
+  </data>
+  <data name="Light" xml:space="preserve">
+    <value>النور</value>
+  </data>
+  <data name="Load earlier messages" xml:space="preserve">
+    <value>رسائل سابقة</value>
+  </data>
+  <data name="Load prepared draft" xml:space="preserve">
+    <value>مشروع عنوان معدّ</value>
+  </data>
+  <data name="Load pull requests" xml:space="preserve">
+    <value>طلبات سحب القرض</value>
+  </data>
+  <data name="Load repositories" xml:space="preserve">
+    <value>مستودعات للوقود</value>
+  </data>
+  <data name="Merged" xml:space="preserve">
+    <value>Merged</value>
+  </data>
+  <data name="New pull request" xml:space="preserve">
+    <value>طلب سحب جديد</value>
+  </data>
+  <data name="New repository name" xml:space="preserve">
+    <value>اسم مستودع جديد</value>
+  </data>
+  <data name="Next change" xml:space="preserve">
+    <value>التغيير التالي</value>
+  </data>
+  <data name="No prepared draft for this branch." xml:space="preserve">
+    <value>لا توجد مسودة معدة لهذا الفرع</value>
+  </data>
+  <data name="Only HTTP and HTTPS links can be opened." xml:space="preserve">
+    <value>Only HTTP and HTTPS links can be opened.</value>
+  </data>
+  <data name="Open on GitHub" xml:space="preserve">
+    <value>افتح الباب GitHub</value>
+  </data>
+  <data name="Operation cancelled." xml:space="preserve">
+    <value>ألغيت العملية</value>
+  </data>
+  <data name="Operation complete." xml:space="preserve">
+    <value>العملية كاملة.</value>
+  </data>
+  <data name="Personal account" xml:space="preserve">
+    <value>الحساب الشخصي</value>
+  </data>
+  <data name="Preview import" xml:space="preserve">
+    <value>الواردات قبل الاستعراض</value>
+  </data>
+  <data name="Preview only. Pull imports these changes with a checkpoint." xml:space="preserve">
+    <value>المقابلة فقط. Pull تستورد هذه التغييرات بنقطة تفتيش.</value>
+  </data>
+  <data name="Previous change" xml:space="preserve">
+    <value>التغيير السابق</value>
+  </data>
+  <data name="Private" xml:space="preserve">
+    <value>خاص</value>
+  </data>
+  <data name="Pull request description" xml:space="preserve">
+    <value>Pull وصف الطلب</value>
+  </data>
+  <data name="Pull request title" xml:space="preserve">
+    <value>Pull طلب العنوان</value>
+  </data>
+  <data name="Pull requests" xml:space="preserve">
+    <value>Pull الطلبات</value>
+  </data>
+  <data name="References differ: align them in the VBE before importing." xml:space="preserve">
+    <value>المراجع تختلف: اتساقها في VBE قبل الإستيراد</value>
+  </data>
+  <data name="Repositories" xml:space="preserve">
+    <value>المخازن</value>
+  </data>
+  <data name="Repository owner" xml:space="preserve">
+    <value>الجهة الوديعة</value>
+  </data>
+  <data name="Repository selected. Click Link repository to connect this document." xml:space="preserve">
+    <value>مخزن مختار، مخزن (ليك لينك) لربط هذه الوثيقة.</value>
+  </data>
+  <data name="Required VBA references" xml:space="preserve">
+    <value>المبلغ المطلوب VBA المراجع</value>
+  </data>
+  <data name="Restore only the selected module from the reviewed revision, with a checkpoint first." xml:space="preserve">
+    <value>Reore only the selected module from the reviewed revision, with a checkpoint first.</value>
+  </data>
+  <data name="Restore selected module" xml:space="preserve">
+    <value>وحدة نموذجية مختارة من طراز Restore</value>
+  </data>
+  <data name="Reviewing checkpoint" xml:space="preserve">
+    <value>إعادة النظر في نقاط التفتيش</value>
+  </data>
+  <data name="Reviewing revision" xml:space="preserve">
+    <value>تنقيح الاستعراض</value>
+  </data>
+  <data name="Search code" xml:space="preserve">
+    <value>رمز البحث</value>
+  </data>
+  <data name="Search repositories" xml:space="preserve">
+    <value>مستودعات البحث</value>
+  </data>
+  <data name="Select a commit from history." xml:space="preserve">
+    <value>إختارْ a إرتكبْ مِنْ التاريخِ.</value>
+  </data>
+  <data name="Select a revision in History or Checkpoints, then a module to restore." xml:space="preserve">
+    <value>اختيار تنقيح في التاريخ أو نقاط التفتيش، ثم نموذج لاستعادة.</value>
+  </data>
+  <data name="Select at least one module or the references." xml:space="preserve">
+    <value>اختيار وحدة واحدة على الأقل أو الإشارات.</value>
+  </data>
+  <data name="Select one commit for details, or two commits to compare their VBA sources." xml:space="preserve">
+    <value>اختيار واحد يلتزم بالتفاصيل، أو اثنين يلتزمان بمقارنة مصادرهم الخاصة بـ VBA.</value>
+  </data>
+  <data name="Show three context lines around each change." xml:space="preserve">
+    <value>تبين ثلاثة خطوط سياقية حول كل تغيير.</value>
+  </data>
+  <data name="Sign in to GitHub again in Settings." xml:space="preserve">
+    <value>التوقيع على GitHub مرة أخرى في ستينغز.</value>
+  </data>
+  <data name="Source branch" xml:space="preserve">
+    <value>فرع المصدر</value>
+  </data>
+  <data name="System" xml:space="preserve">
+    <value>النظام</value>
+  </data>
+  <data name="Target branch" xml:space="preserve">
+    <value>الفرع المستهدف</value>
+  </data>
+  <data name="This document is already linked. Reopen GitHub to choose another repository." xml:space="preserve">
+    <value>هذه الوثيقة مرتبطة بالفعل. GitHub لاختيار مستودع آخر.</value>
+  </data>
+  <data name="Unable to reach GitHub. Check your connection, then retry." xml:space="preserve">
+    <value>غير قادر على الوصول GitHubتحقق من اتصالك، ثم إعادة النظر.</value>
+  </data>
+  <data name="Unified" xml:space="preserve">
+    <value>موحدة</value>
+  </data>
+  <data name="Unknown VBA module." xml:space="preserve">
+    <value>وحدة غير معروفة لـ (VBA).</value>
+  </data>
+  <data name="Use repository" xml:space="preserve">
+    <value>مستودعات استخدام</value>
+  </data>
+  <data name="VBA references" xml:space="preserve">
+    <value>VBA references</value>
+  </data>
 </root>

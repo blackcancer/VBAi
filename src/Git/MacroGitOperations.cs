@@ -14,6 +14,7 @@ namespace CodexVBE
         internal readonly MacroGitRepository Repository;
         private readonly VbaGitProject project;
         private FileStream cacheLock;
+        internal Action<string> ImportPreview;
         internal MacroGitOperations(VbaGitProject project, MacroGitRepository repository) { this.project = project; Repository = repository; }
 
         internal static MacroGitOperations Open(VbaGitProject project, string scope, string account)
@@ -73,13 +74,14 @@ namespace CodexVBE
             var baseline = Repository.Read(Repository.Resolve(MacroGitRepository.Baseline));
             if (baseline == null || !live.SameAs(baseline)) throw new InvalidOperationException(UiText.Get("Local changes exist. Commit them, or create a checkpoint and restore a committed state before switching branches or merging."));
         }
-        internal async Task<object> ExecuteAsync(string action, string expectedState = null, string name = null, string text = null, string choice = null, string path = null)
+        internal async Task<object> ExecuteAsync(string action, string expectedState = null, string name = null, string text = null, string choice = null, string path = null, string[] modules = null, bool references = false)
         {
             var live = project.Capture();
             if (expectedState != null && expectedState != await Task.Run(() => Revision(live))) throw new InvalidOperationException(UiText.Get("The Git/VBA state changed. Read git_status again before making changes."));
             if (action != "rollback") Ready(action.StartsWith("merge_", StringComparison.Ordinal));
             switch (action)
             {
+                case "pr_prepare": await Task.Run(() => Repository.SavePullDraft(name, text, choice)); break;
                 case "checkpoint_create": return await Task.Run(() => Repository.Checkpoint(live, name));
                 case "checkpoint_restore":
                     var saved = await Task.Run(() => Repository.Read(Repository.CheckpointCommit(name)));
@@ -92,13 +94,21 @@ namespace CodexVBE
                     var target = await Task.Run(() => Repository.Read(branchCommit));
                     await ImportAsync(target, live);
                     await Task.Run(() => { Repository.SelectBranch(name); Repository.SetRef(MacroGitRepository.Baseline, branchCommit); }); break;
+                case "module_restore":
+                    var revision = await Task.Run(() => Repository.Read(Repository.VerifiedCommit(name)));
+                    await ImportAsync(VbaGitSnapshot.Select(live, revision, new[] { path }), live);
+                    break;
+                case "commit_selected":
                 case "commit":
                     string commit = await Task.Run(() => {
                         if (string.IsNullOrWhiteSpace(text)) throw new ArgumentException(UiText.Get("A commit message is required."));
                         string parent = Repository.Resolve(Repository.Head) ?? Repository.Resolve("refs/remotes/origin/selected");
                         var previous = Repository.Read(parent);
                         if (Repository.Resolve(Repository.Head) == null && previous != null && !live.SameAs(previous)) throw new InvalidOperationException(UiText.Get("Import the remote state with Pull first."));
-                        string next = live.SameAs(previous) ? parent : Repository.Commit(live, parent, text);
+                        var staged = action == "commit_selected" ? VbaGitSnapshot.Select(previous, live, modules, references) : live;
+                        if (action == "commit_selected" && (modules == null || modules.Length == 0) && !references)
+                            throw new InvalidOperationException(UiText.Get("Select at least one module or the references."));
+                        string next = staged.SameAs(previous) ? parent : Repository.Commit(staged, parent, text);
                         Repository.SetRef(Repository.Head, next); Repository.SetRef(MacroGitRepository.Baseline, next); return next;
                     }); return new { Commit = commit, Published = false };
                 case "fetch": await Task.Run(() => Repository.Fetch()); break;
@@ -138,6 +148,7 @@ namespace CodexVBE
         private async Task ImportAsync(VbaGitSnapshot target, VbaGitSnapshot expected, bool rollback = false)
         {
             if (target == null) throw new InvalidOperationException(UiText.Get("The target contains no VBA sources."));
+            ImportPreview?.Invoke(target.ImportSummary(expected));
             if (!project.Capture().SameAs(expected)) throw new InvalidOperationException(UiText.Get("VBA changed during the operation."));
             if (expected.SameAs(target)) { if (rollback) Repository.CompleteRecovery(); return; }
             if (!rollback) await Task.Run(() => { Repository.Checkpoint(expected, UiText.Get("Before import · ") + DateTime.Now.ToString("s")); Repository.PrepareRecovery(expected); });

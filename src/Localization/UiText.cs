@@ -75,7 +75,7 @@ namespace CodexVBE
             }
             // Technical content must never be mirrored, including URLs, tokens, VBA and diffs.
             if (control is DataGridView || control is ComboBox ||
-                Array.IndexOf(new[] { "remote", "branch", "branchName", "openAiEndpoint", "ollamaEndpoint", "openAiKey", "manualModels", "resolutionText", "contextPreview", "details" }, control.Name) >= 0)
+                Array.IndexOf(new[] { "remote", "branch", "branchName", "branchList", "baseContent", "openAiEndpoint", "ollamaEndpoint", "openAiKey", "manualModels", "resolutionText", "contextPreview", "details" }, control.Name) >= 0)
                 control.RightToLeft = RightToLeft.No;
             control.Text = Get(control.Text);
             control.AccessibleName = Get(control.AccessibleName);
@@ -98,6 +98,7 @@ namespace CodexVBE
             if (control is Form && components != null)
                 foreach (IComponent component in components.Components)
                     if (component is ContextMenuStrip) ApplyItems(((ContextMenuStrip)component).Items);
+            if (form != null) UiTheme.Attach(form);
         }
 
         private static void ApplyItems(ToolStripItemCollection items)

@@ -1533,4 +1533,247 @@ Git Credential Manager로 로그인하며 커밋 작성자 정보는 Git에서 �
   <data name="☰ Chats" xml:space="preserve">
     <value>☰ 채팅</value>
   </data>
+  <data name="A checkpoint protects this import." xml:space="preserve">
+    <value>checkpoint는 이 수입을 보호합니다.</value>
+  </data>
+  <data name="After" xml:space="preserve">
+    <value>이름 *</value>
+  </data>
+  <data name="Appearance" xml:space="preserve">
+    <value>이름 *</value>
+  </data>
+  <data name="Before" xml:space="preserve">
+    <value>이전 다음</value>
+  </data>
+  <data name="Check repository permissions or wait for the GitHub rate limit to reset." xml:space="preserve">
+    <value>저장소 권한을 확인하거나 GitHub 속도 제한을 기다릴 수 있습니다.</value>
+  </data>
+  <data name="Check the branch, title and repository name; a pull request may already exist." xml:space="preserve">
+    <value>분기, 제목 및 저장소 이름 확인; 잡아당기기 요청은 이미 존재할 수 있습니다.</value>
+  </data>
+  <data name="Check the connection, account and Git state, then retry." xml:space="preserve">
+    <value>연결, 계정 및 Git 상태 확인, 다음 재시.</value>
+  </data>
+  <data name="Check the repository name and account access." xml:space="preserve">
+    <value>repository 이름과 계정 액세스를 확인합니다.</value>
+  </data>
+  <data name="Checks" xml:space="preserve">
+    <value>기타 제품</value>
+  </data>
+  <data name="Code" xml:space="preserve">
+    <value>(주)</value>
+  </data>
+  <data name="Comments" xml:space="preserve">
+    <value>이름 *</value>
+  </data>
+  <data name="Commit checked modules and their form resources. Push publishes them afterwards." xml:space="preserve">
+    <value>모듈 및 양식 리소스를 확인했습니다. Push 그 후를 게시합니다.</value>
+  </data>
+  <data name="Commit not found." xml:space="preserve">
+    <value>찾을 수 없습니다.</value>
+  </data>
+  <data name="Commit selected" xml:space="preserve">
+    <value>선택 사항</value>
+  </data>
+  <data name="Commit status" xml:space="preserve">
+    <value>Commit 상태</value>
+  </data>
+  <data name="Common ancestor" xml:space="preserve">
+    <value>일반 조상</value>
+  </data>
+  <data name="Compare returns to live VBA." xml:space="preserve">
+    <value>VBA의 수익 비교.</value>
+  </data>
+  <data name="Compare revisions" xml:space="preserve">
+    <value>수정 비교</value>
+  </data>
+  <data name="Connecting to GitHub…" xml:space="preserve">
+    <value>GitHub에 연결하기 ...</value>
+  </data>
+  <data name="Create pull request" xml:space="preserve">
+    <value>회사 소개</value>
+  </data>
+  <data name="Create repository" xml:space="preserve">
+    <value>저장소 만들기</value>
+  </data>
+  <data name="Dark" xml:space="preserve">
+    <value>한국어 (Korean)</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>제품 정보</value>
+  </data>
+  <data name="Draft" xml:space="preserve">
+    <value>퀵메뉴</value>
+  </data>
+  <data name="Enter a title and a different target branch." xml:space="preserve">
+    <value>제목과 다른 대상 지점을 입력합니다.</value>
+  </data>
+  <data name="Files" xml:space="preserve">
+    <value>파일 형식</value>
+  </data>
+  <data name="Find" xml:space="preserve">
+    <value>제품정보</value>
+  </data>
+  <data name="Fold context" xml:space="preserve">
+    <value>Fold 맥락</value>
+  </data>
+  <data name="Form resources included" xml:space="preserve">
+    <value>양식 자료 포함</value>
+  </data>
+  <data name="GitHub is unavailable. Try again later." xml:space="preserve">
+    <value>GitHub는 사용할 수 없습니다. 나중에 다시 시도하십시오.</value>
+  </data>
+  <data name="Import summary" xml:space="preserve">
+    <value>자주 묻는 질문</value>
+  </data>
+  <data name="Invalid pull request draft." xml:space="preserve">
+    <value>잘못된 풀 요청 초안.</value>
+  </data>
+  <data name="Invalid repository name." xml:space="preserve">
+    <value>잘못된 저장소 이름.</value>
+  </data>
+  <data name="Light" xml:space="preserve">
+    <value>제품 정보</value>
+  </data>
+  <data name="Load earlier messages" xml:space="preserve">
+    <value>로드 이전 메시지</value>
+  </data>
+  <data name="Load prepared draft" xml:space="preserve">
+    <value>준비된 초안</value>
+  </data>
+  <data name="Load pull requests" xml:space="preserve">
+    <value>Load Pull 요청</value>
+  </data>
+  <data name="Load repositories" xml:space="preserve">
+    <value>짐 저장소</value>
+  </data>
+  <data name="Merged" xml:space="preserve">
+    <value>지원하다</value>
+  </data>
+  <data name="New pull request" xml:space="preserve">
+    <value>새로운 풀 요청</value>
+  </data>
+  <data name="New repository name" xml:space="preserve">
+    <value>새로운 저장소 이름</value>
+  </data>
+  <data name="Next change" xml:space="preserve">
+    <value>다음 변경</value>
+  </data>
+  <data name="No prepared draft for this branch." xml:space="preserve">
+    <value>이 지점에서 준비된 초안이 없습니다.</value>
+  </data>
+  <data name="Only HTTP and HTTPS links can be opened." xml:space="preserve">
+    <value>HTTP 및 HTTPS 링크 만 열 수 있습니다.</value>
+  </data>
+  <data name="Open on GitHub" xml:space="preserve">
+    <value>GitHub에서 열기</value>
+  </data>
+  <data name="Operation cancelled." xml:space="preserve">
+    <value>운영 취소.</value>
+  </data>
+  <data name="Operation complete." xml:space="preserve">
+    <value>작업 완료.</value>
+  </data>
+  <data name="Personal account" xml:space="preserve">
+    <value>개인 계정</value>
+  </data>
+  <data name="Preview import" xml:space="preserve">
+    <value>미리보기 가져 오기</value>
+  </data>
+  <data name="Preview only. Pull imports these changes with a checkpoint." xml:space="preserve">
+    <value>미리보기 만. Pull 체크포인트로 이러한 변경을 가져옵니다.</value>
+  </data>
+  <data name="Previous change" xml:space="preserve">
+    <value>이전 변경</value>
+  </data>
+  <data name="Private" xml:space="preserve">
+    <value>한국어 (Korean)</value>
+  </data>
+  <data name="Pull request description" xml:space="preserve">
+    <value>Pull 요청 설명</value>
+  </data>
+  <data name="Pull request title" xml:space="preserve">
+    <value>Pull 요청 제목</value>
+  </data>
+  <data name="Pull requests" xml:space="preserve">
+    <value>Pull 이름 *</value>
+  </data>
+  <data name="References differ: align them in the VBE before importing." xml:space="preserve">
+    <value>참조는 다릅니다 : 가져 오기 전에 VBE에서 정렬합니다.</value>
+  </data>
+  <data name="Repositories" xml:space="preserve">
+    <value>회사연혁</value>
+  </data>
+  <data name="Repository owner" xml:space="preserve">
+    <value>Repository 소유자</value>
+  </data>
+  <data name="Repository selected. Click Link repository to connect this document." xml:space="preserve">
+    <value>선택한 저장소. 이 문서를 연결하기 위해 Link 저장소를 클릭합니다.</value>
+  </data>
+  <data name="Required VBA references" xml:space="preserve">
+    <value>필수 VBA 참고 사항</value>
+  </data>
+  <data name="Restore only the selected module from the reviewed revision, with a checkpoint first." xml:space="preserve">
+    <value>검토 된 개정에서 선택한 모듈 만 복원, 체크 포인트와 함께 먼저.</value>
+  </data>
+  <data name="Restore selected module" xml:space="preserve">
+    <value>선택된 모듈 복원</value>
+  </data>
+  <data name="Reviewing checkpoint" xml:space="preserve">
+    <value>자주 묻는 질문</value>
+  </data>
+  <data name="Reviewing revision" xml:space="preserve">
+    <value>감사의 표</value>
+  </data>
+  <data name="Search code" xml:space="preserve">
+    <value>검색 코드</value>
+  </data>
+  <data name="Search repositories" xml:space="preserve">
+    <value>검색 repositories</value>
+  </data>
+  <data name="Select a commit from history." xml:space="preserve">
+    <value>역사의 커밋을 선택합니다.</value>
+  </data>
+  <data name="Select a revision in History or Checkpoints, then a module to restore." xml:space="preserve">
+    <value>History 또는 Checkpoints의 개정을 선택하면 모듈이 복원됩니다.</value>
+  </data>
+  <data name="Select at least one module or the references." xml:space="preserve">
+    <value>적어도 1개의 단위 또는 참고를 선택하십시오.</value>
+  </data>
+  <data name="Select one commit for details, or two commits to compare their VBA sources." xml:space="preserve">
+    <value>세부 사항에 대한 하나의 커밋을 선택, 또는 두 개의 커밋은 VBA 소스를 비교합니다.</value>
+  </data>
+  <data name="Show three context lines around each change." xml:space="preserve">
+    <value>각 변화의 3개의 컨텍스트 라인을 표시합니다.</value>
+  </data>
+  <data name="Sign in to GitHub again in Settings." xml:space="preserve">
+    <value>설정에서 GitHub에 다시 로그인하십시오.</value>
+  </data>
+  <data name="Source branch" xml:space="preserve">
+    <value>소스 분기</value>
+  </data>
+  <data name="System" xml:space="preserve">
+    <value>시스템</value>
+  </data>
+  <data name="Target branch" xml:space="preserve">
+    <value>대상 지점</value>
+  </data>
+  <data name="This document is already linked. Reopen GitHub to choose another repository." xml:space="preserve">
+    <value>이 문서는 이미 링크되어 있습니다. Reopen GitHub는 다른 저장소를 선택할 수 있습니다.</value>
+  </data>
+  <data name="Unable to reach GitHub. Check your connection, then retry." xml:space="preserve">
+    <value>GitHub에 도달 할 수 없습니다. 연결 확인, 다음 다시 시도.</value>
+  </data>
+  <data name="Unified" xml:space="preserve">
+    <value>인증 및 인증</value>
+  </data>
+  <data name="Unknown VBA module." xml:space="preserve">
+    <value>알 수없는 VBA 모듈.</value>
+  </data>
+  <data name="Use repository" xml:space="preserve">
+    <value>repository 사용</value>
+  </data>
+  <data name="VBA references" xml:space="preserve">
+    <value>VBA 참조</value>
+  </data>
 </root>

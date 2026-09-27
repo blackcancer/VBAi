@@ -1533,4 +1533,247 @@ Accesso tramite Git Credential Manager; l’identità dei commit si configura in
   <data name="☰ Chats" xml:space="preserve">
     <value>☰ Chat</value>
   </data>
+  <data name="A checkpoint protects this import." xml:space="preserve">
+    <value>Un posto di blocco protegge questa importazione.</value>
+  </data>
+  <data name="After" xml:space="preserve">
+    <value>Dopo</value>
+  </data>
+  <data name="Appearance" xml:space="preserve">
+    <value>Aspetto</value>
+  </data>
+  <data name="Before" xml:space="preserve">
+    <value>Prima di prima</value>
+  </data>
+  <data name="Check repository permissions or wait for the GitHub rate limit to reset." xml:space="preserve">
+    <value>Controllare le autorizzazioni del repository o attendere il limite di velocità GitHub per resettare.</value>
+  </data>
+  <data name="Check the branch, title and repository name; a pull request may already exist." xml:space="preserve">
+    <value>Controllare il ramo, il titolo e il nome del repository; una richiesta pull può già esistere.</value>
+  </data>
+  <data name="Check the connection, account and Git state, then retry." xml:space="preserve">
+    <value>Controllare la connessione, account e stato Git, quindi riprovare.</value>
+  </data>
+  <data name="Check the repository name and account access." xml:space="preserve">
+    <value>Controlla il nome del repository e l'accesso all'account.</value>
+  </data>
+  <data name="Checks" xml:space="preserve">
+    <value>Controlli</value>
+  </data>
+  <data name="Code" xml:space="preserve">
+    <value>Codice</value>
+  </data>
+  <data name="Comments" xml:space="preserve">
+    <value>Osservazioni</value>
+  </data>
+  <data name="Commit checked modules and their form resources. Push publishes them afterwards." xml:space="preserve">
+    <value>Impegnare i moduli controllati e le loro risorse formali. Push li pubblica in seguito.</value>
+  </data>
+  <data name="Commit not found." xml:space="preserve">
+    <value>Impegno non trovato.</value>
+  </data>
+  <data name="Commit selected" xml:space="preserve">
+    <value>Impegno selezionato</value>
+  </data>
+  <data name="Commit status" xml:space="preserve">
+    <value>Stato membro</value>
+  </data>
+  <data name="Common ancestor" xml:space="preserve">
+    <value>Antenato comune</value>
+  </data>
+  <data name="Compare returns to live VBA." xml:space="preserve">
+    <value>Confronta i ritorni per vivere VBA.</value>
+  </data>
+  <data name="Compare revisions" xml:space="preserve">
+    <value>Confronta le revisioni</value>
+  </data>
+  <data name="Connecting to GitHub…" xml:space="preserve">
+    <value>Collegamento a GitHub...</value>
+  </data>
+  <data name="Create pull request" xml:space="preserve">
+    <value>Creare richiesta pull</value>
+  </data>
+  <data name="Create repository" xml:space="preserve">
+    <value>Creare un repository</value>
+  </data>
+  <data name="Dark" xml:space="preserve">
+    <value>Oscuro</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>Dettagli</value>
+  </data>
+  <data name="Draft" xml:space="preserve">
+    <value>Progetto</value>
+  </data>
+  <data name="Enter a title and a different target branch." xml:space="preserve">
+    <value>Immettere un titolo e un ramo di destinazione diverso.</value>
+  </data>
+  <data name="Files" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="Find" xml:space="preserve">
+    <value>Trova</value>
+  </data>
+  <data name="Fold context" xml:space="preserve">
+    <value>Contesto pieghevole</value>
+  </data>
+  <data name="Form resources included" xml:space="preserve">
+    <value>Risorse formali incluse</value>
+  </data>
+  <data name="GitHub is unavailable. Try again later." xml:space="preserve">
+    <value>GitHub non è disponibile.</value>
+  </data>
+  <data name="Import summary" xml:space="preserve">
+    <value>Riepilogo delle importazioni</value>
+  </data>
+  <data name="Invalid pull request draft." xml:space="preserve">
+    <value>Richiesta di estrazione non valida.</value>
+  </data>
+  <data name="Invalid repository name." xml:space="preserve">
+    <value>Nome del repository non valido.</value>
+  </data>
+  <data name="Light" xml:space="preserve">
+    <value>Luce</value>
+  </data>
+  <data name="Load earlier messages" xml:space="preserve">
+    <value>Caricare messaggi precedenti</value>
+  </data>
+  <data name="Load prepared draft" xml:space="preserve">
+    <value>Progetto di carico preparato</value>
+  </data>
+  <data name="Load pull requests" xml:space="preserve">
+    <value>Caricare le richieste</value>
+  </data>
+  <data name="Load repositories" xml:space="preserve">
+    <value>Depositi di carico</value>
+  </data>
+  <data name="Merged" xml:space="preserve">
+    <value>Meritato</value>
+  </data>
+  <data name="New pull request" xml:space="preserve">
+    <value>Nuova richiesta di pull</value>
+  </data>
+  <data name="New repository name" xml:space="preserve">
+    <value>Nuovo nome del repository</value>
+  </data>
+  <data name="Next change" xml:space="preserve">
+    <value>Prossimo cambiamento</value>
+  </data>
+  <data name="No prepared draft for this branch." xml:space="preserve">
+    <value>Nessun progetto preparato per questo ramo.</value>
+  </data>
+  <data name="Only HTTP and HTTPS links can be opened." xml:space="preserve">
+    <value>Solo i collegamenti HTTP e HTTPS possono essere aperti.</value>
+  </data>
+  <data name="Open on GitHub" xml:space="preserve">
+    <value>Aprire su GitHub</value>
+  </data>
+  <data name="Operation cancelled." xml:space="preserve">
+    <value>Operazione annullata.</value>
+  </data>
+  <data name="Operation complete." xml:space="preserve">
+    <value>Operazione completa.</value>
+  </data>
+  <data name="Personal account" xml:space="preserve">
+    <value>Account personale</value>
+  </data>
+  <data name="Preview import" xml:space="preserve">
+    <value>Importazione dell'anteprima</value>
+  </data>
+  <data name="Preview only. Pull imports these changes with a checkpoint." xml:space="preserve">
+    <value>Solo l'anteprima. Pull importa questi cambiamenti con un punto di controllo.</value>
+  </data>
+  <data name="Previous change" xml:space="preserve">
+    <value>Cambiamento precedente</value>
+  </data>
+  <data name="Private" xml:space="preserve">
+    <value>Privato</value>
+  </data>
+  <data name="Pull request description" xml:space="preserve">
+    <value>Pull descrizione della richiesta</value>
+  </data>
+  <data name="Pull request title" xml:space="preserve">
+    <value>Pull richiesta titolo</value>
+  </data>
+  <data name="Pull requests" xml:space="preserve">
+    <value>Pull richieste</value>
+  </data>
+  <data name="References differ: align them in the VBE before importing." xml:space="preserve">
+    <value>I riferimenti differiscono: allinearli nel VBE prima di importare.</value>
+  </data>
+  <data name="Repositories" xml:space="preserve">
+    <value>Repositori</value>
+  </data>
+  <data name="Repository owner" xml:space="preserve">
+    <value>Repository proprietario</value>
+  </data>
+  <data name="Repository selected. Click Link repository to connect this document." xml:space="preserve">
+    <value>Repository selezionato. Fare clic su Link repository per collegare questo documento.</value>
+  </data>
+  <data name="Required VBA references" xml:space="preserve">
+    <value>Referenze VBA richieste</value>
+  </data>
+  <data name="Restore only the selected module from the reviewed revision, with a checkpoint first." xml:space="preserve">
+    <value>Ripristina solo il modulo selezionato dalla revisione revisionata, con un checkpoint prima.</value>
+  </data>
+  <data name="Restore selected module" xml:space="preserve">
+    <value>Ripristinare il modulo selezionato</value>
+  </data>
+  <data name="Reviewing checkpoint" xml:space="preserve">
+    <value>Checkpoint di revisione</value>
+  </data>
+  <data name="Reviewing revision" xml:space="preserve">
+    <value>Revisione della revisione</value>
+  </data>
+  <data name="Search code" xml:space="preserve">
+    <value>Codice di ricerca</value>
+  </data>
+  <data name="Search repositories" xml:space="preserve">
+    <value>Repositori di ricerca</value>
+  </data>
+  <data name="Select a commit from history." xml:space="preserve">
+    <value>Selezionare un commit dalla storia.</value>
+  </data>
+  <data name="Select a revision in History or Checkpoints, then a module to restore." xml:space="preserve">
+    <value>Selezionare una revisione in Storia o Checkpoint, quindi un modulo da ripristinare.</value>
+  </data>
+  <data name="Select at least one module or the references." xml:space="preserve">
+    <value>Selezionare almeno un modulo o i riferimenti.</value>
+  </data>
+  <data name="Select one commit for details, or two commits to compare their VBA sources." xml:space="preserve">
+    <value>Selezionare un commit per i dettagli, o due commit per confrontare le loro sorgenti VBA.</value>
+  </data>
+  <data name="Show three context lines around each change." xml:space="preserve">
+    <value>Mostra tre linee di contesto intorno a ogni cambiamento.</value>
+  </data>
+  <data name="Sign in to GitHub again in Settings." xml:space="preserve">
+    <value>Accedi a GitHub di nuovo in Impostazioni.</value>
+  </data>
+  <data name="Source branch" xml:space="preserve">
+    <value>Ambito di origine</value>
+  </data>
+  <data name="System" xml:space="preserve">
+    <value>Sistema</value>
+  </data>
+  <data name="Target branch" xml:space="preserve">
+    <value>Ambito di destinazione</value>
+  </data>
+  <data name="This document is already linked. Reopen GitHub to choose another repository." xml:space="preserve">
+    <value>Questo documento è già collegato. Riaprire GitHub per scegliere un altro repository.</value>
+  </data>
+  <data name="Unable to reach GitHub. Check your connection, then retry." xml:space="preserve">
+    <value>Non è possibile raggiungere GitHub. Controllare la connessione, poi riprovare.</value>
+  </data>
+  <data name="Unified" xml:space="preserve">
+    <value>Unificato</value>
+  </data>
+  <data name="Unknown VBA module." xml:space="preserve">
+    <value>Modulo VBA sconosciuto.</value>
+  </data>
+  <data name="Use repository" xml:space="preserve">
+    <value>Utilizzare il repository</value>
+  </data>
+  <data name="VBA references" xml:space="preserve">
+    <value>Riferimenti VBA</value>
+  </data>
 </root>

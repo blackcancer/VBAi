@@ -23,6 +23,7 @@
     <Compile Include="Unit\ProjectResolverTests.cs" />
     <Compile Include="Unit\CodeFileEncodingTests.cs" />
     <Compile Include="Unit\UiLocalizationTests.cs" />
+    <Compile Include="Unit\GitReviewTests.cs" />
     <Compile Include="Unit\VbeEditorWindowsTests.cs" />
     <Compile Include="Unit\VbeFormsContractTests.cs" />
     <Compile Include="Integration\SessionStoreTests.cs" />
@@ -37,6 +38,7 @@
     <Compile Include="..\..\tools\tests\Providers\ExtendedProviderTests.cs" Link="Integration\ExtendedProviderTests.cs" />
     <Compile Include="..\..\tools\tests\Providers\GitHubSettingsTests.cs" Link="Integration\GitHubSettingsTests.cs" />
     <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Net.Http" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Design" />

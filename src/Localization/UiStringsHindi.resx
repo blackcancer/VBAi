@@ -1533,4 +1533,247 @@ Git Credential Manager से साइन-इन करें; कमिट ल
   <data name="☰ Chats" xml:space="preserve">
     <value>☰ चैट</value>
   </data>
+  <data name="A checkpoint protects this import." xml:space="preserve">
+    <value>एक चेकपॉइंट इस आयात की रक्षा करता है।</value>
+  </data>
+  <data name="After" xml:space="preserve">
+    <value>बाद में</value>
+  </data>
+  <data name="Appearance" xml:space="preserve">
+    <value>दिखावट</value>
+  </data>
+  <data name="Before" xml:space="preserve">
+    <value>पहले</value>
+  </data>
+  <data name="Check repository permissions or wait for the GitHub rate limit to reset." xml:space="preserve">
+    <value>रेपोजिटरी अनुमतियों की जाँच करें या प्रतीक्षा करें GitHub रीसेट करने के लिए दर सीमा।</value>
+  </data>
+  <data name="Check the branch, title and repository name; a pull request may already exist." xml:space="preserve">
+    <value>शाखा, शीर्षक और भंडारी नाम की जाँच करें; एक पुल अनुरोध पहले से ही मौजूद हो सकता है।</value>
+  </data>
+  <data name="Check the connection, account and Git state, then retry." xml:space="preserve">
+    <value>कनेक्शन, खाता और चेक करें Git राज्य, फिर से प्रयास करें।</value>
+  </data>
+  <data name="Check the repository name and account access." xml:space="preserve">
+    <value>रेपोजिटरी नाम और खाता एक्सेस की जाँच करें।</value>
+  </data>
+  <data name="Checks" xml:space="preserve">
+    <value>चेक</value>
+  </data>
+  <data name="Code" xml:space="preserve">
+    <value>कोड</value>
+  </data>
+  <data name="Comments" xml:space="preserve">
+    <value>टिप्पणियाँ</value>
+  </data>
+  <data name="Commit checked modules and their form resources. Push publishes them afterwards." xml:space="preserve">
+    <value>Commit जाँच मॉड्यूल और उनके फार्म संसाधनों। Push बाद में उन्हें प्रकाशित करता है।</value>
+  </data>
+  <data name="Commit not found." xml:space="preserve">
+    <value>Commit पाया नहीं।</value>
+  </data>
+  <data name="Commit selected" xml:space="preserve">
+    <value>चुना गया</value>
+  </data>
+  <data name="Commit status" xml:space="preserve">
+    <value>Commit स्थिति</value>
+  </data>
+  <data name="Common ancestor" xml:space="preserve">
+    <value>सामान्य पूर्वज</value>
+  </data>
+  <data name="Compare returns to live VBA." xml:space="preserve">
+    <value>VBA को रहने के लिए रिटर्न की तुलना करें।</value>
+  </data>
+  <data name="Compare revisions" xml:space="preserve">
+    <value>संशोधनों की तुलना</value>
+  </data>
+  <data name="Connecting to GitHub…" xml:space="preserve">
+    <value>GitHub से कनेक्ट ...</value>
+  </data>
+  <data name="Create pull request" xml:space="preserve">
+    <value>पुल अनुरोध बनाएं</value>
+  </data>
+  <data name="Create repository" xml:space="preserve">
+    <value>भंडार बनाना</value>
+  </data>
+  <data name="Dark" xml:space="preserve">
+    <value>अंधेरा</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>विवरण</value>
+  </data>
+  <data name="Draft" xml:space="preserve">
+    <value>ड्राफ्ट</value>
+  </data>
+  <data name="Enter a title and a different target branch." xml:space="preserve">
+    <value>एक शीर्षक और एक अलग लक्ष्य शाखा दर्ज करें।</value>
+  </data>
+  <data name="Files" xml:space="preserve">
+    <value>फ़ाइलें</value>
+  </data>
+  <data name="Find" xml:space="preserve">
+    <value>खोजना</value>
+  </data>
+  <data name="Fold context" xml:space="preserve">
+    <value>मोड़ संदर्भ</value>
+  </data>
+  <data name="Form resources included" xml:space="preserve">
+    <value>फार्म संसाधनों में शामिल</value>
+  </data>
+  <data name="GitHub is unavailable. Try again later." xml:space="preserve">
+    <value>GitHub बाद में कोशिश करो।</value>
+  </data>
+  <data name="Import summary" xml:space="preserve">
+    <value>सारांश आयात करें</value>
+  </data>
+  <data name="Invalid pull request draft." xml:space="preserve">
+    <value>अमान्य पुल अनुरोध ड्राफ्ट।</value>
+  </data>
+  <data name="Invalid repository name." xml:space="preserve">
+    <value>Invalid repository name.</value>
+  </data>
+  <data name="Light" xml:space="preserve">
+    <value>प्रकाश</value>
+  </data>
+  <data name="Load earlier messages" xml:space="preserve">
+    <value>पहले संदेशों को लोड करें</value>
+  </data>
+  <data name="Load prepared draft" xml:space="preserve">
+    <value>लोड तैयार मसौदा</value>
+  </data>
+  <data name="Load pull requests" xml:space="preserve">
+    <value>लोड पुल अनुरोध</value>
+  </data>
+  <data name="Load repositories" xml:space="preserve">
+    <value>भार भंडार</value>
+  </data>
+  <data name="Merged" xml:space="preserve">
+    <value>मर्ज</value>
+  </data>
+  <data name="New pull request" xml:space="preserve">
+    <value>नई पुल अनुरोध</value>
+  </data>
+  <data name="New repository name" xml:space="preserve">
+    <value>नया नाम</value>
+  </data>
+  <data name="Next change" xml:space="preserve">
+    <value>अगला परिवर्तन</value>
+  </data>
+  <data name="No prepared draft for this branch." xml:space="preserve">
+    <value>इस शाखा के लिए कोई तैयार ड्राफ्ट नहीं है।</value>
+  </data>
+  <data name="Only HTTP and HTTPS links can be opened." xml:space="preserve">
+    <value>केवल HTTP और HTTPS लिंक खोले जा सकते हैं।</value>
+  </data>
+  <data name="Open on GitHub" xml:space="preserve">
+    <value>GitHub पर खुला</value>
+  </data>
+  <data name="Operation cancelled." xml:space="preserve">
+    <value>ऑपरेशन रद्द कर दिया गया।</value>
+  </data>
+  <data name="Operation complete." xml:space="preserve">
+    <value>पूर्ण संचालन।</value>
+  </data>
+  <data name="Personal account" xml:space="preserve">
+    <value>व्यक्तिगत खाता</value>
+  </data>
+  <data name="Preview import" xml:space="preserve">
+    <value>आयात की समीक्षा</value>
+  </data>
+  <data name="Preview only. Pull imports these changes with a checkpoint." xml:space="preserve">
+    <value>केवल पूर्वावलोकन करें। Pull इन परिवर्तनों को एक चेकपॉइंट के साथ आयात करें।</value>
+  </data>
+  <data name="Previous change" xml:space="preserve">
+    <value>पिछला परिवर्तन</value>
+  </data>
+  <data name="Private" xml:space="preserve">
+    <value>निजी</value>
+  </data>
+  <data name="Pull request description" xml:space="preserve">
+    <value>Pull अनुरोध विवरण</value>
+  </data>
+  <data name="Pull request title" xml:space="preserve">
+    <value>Pull अनुरोध शीर्षक</value>
+  </data>
+  <data name="Pull requests" xml:space="preserve">
+    <value>Pull अनुरोध</value>
+  </data>
+  <data name="References differ: align them in the VBE before importing." xml:space="preserve">
+    <value>संदर्भ भिन्न हैं: उन्हें उनमें संरेखित करें VBE आयात से पहले।</value>
+  </data>
+  <data name="Repositories" xml:space="preserve">
+    <value>रेपोसिटरी</value>
+  </data>
+  <data name="Repository owner" xml:space="preserve">
+    <value>रेपोसिटरी मालिक</value>
+  </data>
+  <data name="Repository selected. Click Link repository to connect this document." xml:space="preserve">
+    <value>रिपॉज़िटरी का चयन किया गया। इस दस्तावेज़ को जोड़ने के लिए लिंक रिपॉजिटरी पर क्लिक करें।</value>
+  </data>
+  <data name="Required VBA references" xml:space="preserve">
+    <value>आवश्यक VBA संदर्भ</value>
+  </data>
+  <data name="Restore only the selected module from the reviewed revision, with a checkpoint first." xml:space="preserve">
+    <value>पहले चेकपॉइंट के साथ केवल समीक्षा किए गए संशोधन से चयनित मॉड्यूल को पुनर्स्थापित करें।</value>
+  </data>
+  <data name="Restore selected module" xml:space="preserve">
+    <value>चयनित मॉड्यूल को पुनर्स्थापित करें</value>
+  </data>
+  <data name="Reviewing checkpoint" xml:space="preserve">
+    <value>चेकपॉइंट की समीक्षा करना</value>
+  </data>
+  <data name="Reviewing revision" xml:space="preserve">
+    <value>संशोधन की समीक्षा</value>
+  </data>
+  <data name="Search code" xml:space="preserve">
+    <value>खोज कोड</value>
+  </data>
+  <data name="Search repositories" xml:space="preserve">
+    <value>खोज</value>
+  </data>
+  <data name="Select a commit from history." xml:space="preserve">
+    <value>इतिहास से एक प्रतिबद्धता चुनें।</value>
+  </data>
+  <data name="Select a revision in History or Checkpoints, then a module to restore." xml:space="preserve">
+    <value>इतिहास या चेकपॉइंट्स में संशोधन का चयन करें, फिर एक मॉड्यूल को बहाल करने के लिए।</value>
+  </data>
+  <data name="Select at least one module or the references." xml:space="preserve">
+    <value>कम से कम एक मॉड्यूल या संदर्भ चुनें।</value>
+  </data>
+  <data name="Select one commit for details, or two commits to compare their VBA sources." xml:space="preserve">
+    <value>विवरण के लिए एक प्रतिबद्धता का चयन करें, या दो अपनी तुलना करने के लिए प्रतिबद्ध हैं। VBA सूत्रों।</value>
+  </data>
+  <data name="Show three context lines around each change." xml:space="preserve">
+    <value>प्रत्येक परिवर्तन के आसपास तीन संदर्भ रेखाएं दिखाएं।</value>
+  </data>
+  <data name="Sign in to GitHub again in Settings." xml:space="preserve">
+    <value>साइन इन करें GitHub फिर से सेटिंग में।</value>
+  </data>
+  <data name="Source branch" xml:space="preserve">
+    <value>स्रोत शाखा</value>
+  </data>
+  <data name="System" xml:space="preserve">
+    <value>प्रणाली</value>
+  </data>
+  <data name="Target branch" xml:space="preserve">
+    <value>लक्ष्य शाखा</value>
+  </data>
+  <data name="This document is already linked. Reopen GitHub to choose another repository." xml:space="preserve">
+    <value>यह दस्तावेज़ पहले से ही जुड़ा हुआ है। फिर से खोलना GitHub एक दूसरे का चयन करने के लिए।</value>
+  </data>
+  <data name="Unable to reach GitHub. Check your connection, then retry." xml:space="preserve">
+    <value>पहुँच पाने में असमर्थ GitHubअपने कनेक्शन की जाँच करें, फिर पुनः प्रयास करें।</value>
+  </data>
+  <data name="Unified" xml:space="preserve">
+    <value>एकीकृत</value>
+  </data>
+  <data name="Unknown VBA module." xml:space="preserve">
+    <value>अज्ञात VBA मॉड्यूल।</value>
+  </data>
+  <data name="Use repository" xml:space="preserve">
+    <value>रेपोसिटरी का प्रयोग करें</value>
+  </data>
+  <data name="VBA references" xml:space="preserve">
+    <value>VBA संदर्भ</value>
+  </data>
 </root>
