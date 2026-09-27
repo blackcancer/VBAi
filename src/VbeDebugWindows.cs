@@ -431,6 +431,36 @@ namespace CodexVBE
             }
         }
 
+        public static object CompleteQuickWatch(Request request)
+        {
+            IntPtr dialog = IntPtr.Zero;
+            for (int attempt = 0; attempt < 60 && dialog == IntPtr.Zero; attempt++)
+            { Thread.Sleep(50); dialog = FindDialog("Espion express", "Quick Watch"); }
+            if (dialog == IntPtr.Zero) throw new InvalidOperationException("The Quick Watch dialog did not open.");
+            try
+            {
+                IntPtr expressionControl = GetDlgItem(dialog, 4751);
+                IntPtr valueControl = GetDlgItem(dialog, 4752);
+                IntPtr contextControl = GetDlgItem(dialog, 4753);
+                if (expressionControl == IntPtr.Zero || valueControl == IntPtr.Zero ||
+                    contextControl == IntPtr.Zero || GetDlgItem(dialog, 2) == IntPtr.Zero)
+                    throw new InvalidOperationException("The native Quick Watch controls changed.");
+                string expression = WindowText(expressionControl);
+                string value = WindowText(valueControl);
+                string context = WindowText(contextControl);
+                if (!string.Equals(expression, request.Expression, StringComparison.Ordinal) ||
+                    !context.StartsWith(request.Project + "." + request.Module + ".", StringComparison.OrdinalIgnoreCase) ||
+                    (!string.IsNullOrWhiteSpace(request.Procedure) &&
+                     !string.Equals(context, request.Project + "." + request.Module + "." + request.Procedure,
+                         StringComparison.OrdinalIgnoreCase)))
+                    throw new InvalidOperationException("Quick Watch expression or context differs from the selected code.");
+                return new { Expression = expression, Value = value, Context = context,
+                    Verification = "NativeDialogReadback",
+                    Limit = "Evaluating a VBA expression may call user code; a displayed value is valid for this paused context only." };
+            }
+            finally { CloseDialog(dialog); }
+        }
+
         public static object SelectWatch(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Expression) ||

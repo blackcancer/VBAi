@@ -147,6 +147,30 @@ namespace CodexVBE
             return new { Scheduled = true, ControlId = command.Id, request.Expression, request.Context };
         }
 
+        public object QueueQuickWatchDialog(Request request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Expression) ||
+                request.Expression.Length > 1024 || request.StartColumn < 1 ||
+                request.EndColumn <= request.StartColumn)
+                throw new ArgumentException("A selected single-line Expression with columns is required.");
+            dynamic state = State(request.Project);
+            if ((int)state.Mode != 1 || request.ExpectedMode != 1)
+                throw new InvalidOperationException("Quick Watch requires the project in break mode.");
+            SelectCode(request);
+            var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 229 && entry.Enabled &&
+                ((entry.Caption ?? "").Replace("&", "").IndexOf("Espion express", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 (entry.Caption ?? "").IndexOf("Quick Watch", StringComparison.OrdinalIgnoreCase) >= 0));
+            if (command == null) throw new InvalidOperationException("The native Quick Watch command is unavailable.");
+            SynchronizationContext context = SynchronizationContext.Current;
+            if (context == null) throw new InvalidOperationException("The VBE UI context is unavailable.");
+            context.Post(_ => {
+                try { ((dynamic)command.Control).Execute(); }
+                catch (Exception ex) { LoadLog.Write("Quick Watch dialog failed: " + ex.Message); }
+            }, null);
+            return new { Scheduled = true, ControlId = command.Id, request.Project, request.Module,
+                request.Expression, request.StartLine, request.StartColumn, request.EndColumn };
+        }
+
         public object RemoveSelectedWatch(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project) ||
@@ -257,14 +281,30 @@ namespace CodexVBE
             dynamic project = GetProject(request.Project);
             dynamic module = GetModule(project, request.Module);
             string line = ValidateLocation(request, module);
+            if ((request.StartColumn == 0) != (request.EndColumn == 0))
+                throw new ArgumentException("StartColumn and EndColumn must be supplied together.");
+            int startColumn = request.StartColumn == 0 ? 1 : request.StartColumn;
+            int endColumn = request.EndColumn == 0 ? 1 : request.EndColumn;
+            if (startColumn < 1 || endColumn < startColumn || endColumn > line.Length + 1)
+                throw new ArgumentOutOfRangeException("The selected columns are outside the current code line.");
+            string selectedText = line.Substring(startColumn - 1, endColumn - startColumn);
+            if (!string.IsNullOrEmpty(request.Expression) &&
+                !string.Equals(selectedText, request.Expression, StringComparison.Ordinal))
+                throw new InvalidOperationException("The selected source text does not match Expression.");
             dynamic pane = module.CodePane;
             pane.Show();
-            pane.SetSelection(request.StartLine, 1, request.StartLine, 1);
+            pane.SetSelection(request.StartLine, startColumn, request.StartLine, endColumn);
+            int actualStartLine = 0, actualStartColumn = 0, actualEndLine = 0, actualEndColumn = 0;
+            pane.GetSelection(ref actualStartLine, ref actualStartColumn, ref actualEndLine, ref actualEndColumn);
+            if (actualStartLine != request.StartLine || actualEndLine != request.StartLine ||
+                actualStartColumn != startColumn || actualEndColumn != endColumn)
+                throw new InvalidOperationException("The native code pane did not retain the requested selection.");
             return new
             {
                 request.Project,
                 request.Module,
-                Line = request.StartLine, Text = line, Mode = (int)project.Mode,
+                Line = request.StartLine, Text = line, SelectedText = selectedText,
+                StartColumn = startColumn, EndColumn = endColumn, Mode = (int)project.Mode,
                 State = State(request.Project) };
         }
 

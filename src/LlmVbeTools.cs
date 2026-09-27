@@ -40,7 +40,7 @@ namespace CodexVBE
                 properties[field] = field == "Value" ? (object)new { anyOf = new object[] {
                     new { type = "string" }, new { type = "number" }, new { type = "boolean" } } } :
                     field == "PathSegments" ? (object)new { type = "array", items = new { type = "string" }, minItems = 1, maxItems = 16 } :
-                    new { type = field == "StartLine" || field == "Count" || field == "ExpectedMode" || field == "ControlId" || field == "ProcKind" || field == "InsertIndex" ||
+                    new { type = field == "StartLine" || field == "StartColumn" || field == "EndColumn" || field == "Count" || field == "ExpectedMode" || field == "ControlId" || field == "ProcKind" || field == "InsertIndex" ||
                         field == "Offset" || field == "Limit" || field == "TypeIndex" || field == "ZPosition" ||
                         field == "Major" || field == "Minor" ? "integer" :
                     field == "Left" || field == "Top" || field == "Width" || field == "Height" || field == "FontSize" ? "number" :
@@ -76,9 +76,12 @@ namespace CodexVBE
                 new[] { "Project", "ExpectedMode" }, "Project", "ExpectedMode"),
             Definition("list_commands", "List VBE CommandBars controls matching an optional caption/path Query. Returns transient Id, caption and enabled state; use these exact values for invoke_debug.",
                 new string[0], "Query"),
-            Definition("select_code", "Activate a code pane and select an exact line after checking the current module SHA-256. Does not edit source code.",
+            Definition("select_code", "Activate a code pane and select an exact line or single-line text range after checking the current module SHA-256. Optional StartColumn and EndColumn are one-based, with an exclusive end; Expression can assert the selected source text. Does not edit source code.",
                 new[] { "Project", "Module", "ExpectedSha256", "StartLine" },
-                "Project", "Module", "ExpectedSha256", "StartLine"),
+                "Project", "Module", "ExpectedSha256", "StartLine", "StartColumn", "EndColumn", "Expression"),
+            Definition("quick_watch", "Evaluate exactly the selected single-line VBA expression in break mode through the native Quick Watch dialog. Requires current module SHA-256, one-based selection columns and exact Expression; optional Procedure asserts context. The expression can call VBA code and have side effects. The dialog value is read and closed without shortcuts or coordinates; Automatic VBE edit policy is required.",
+                new[] { "Project", "Module", "ExpectedSha256", "ExpectedMode", "StartLine", "StartColumn", "EndColumn", "Expression" },
+                "Project", "Module", "ExpectedSha256", "ExpectedMode", "StartLine", "StartColumn", "EndColumn", "Expression", "Procedure"),
             Definition("invoke_debug", "Execute a native VBE debugger command on an exact project/module/line after checking SHA-256, expected mode, command Id and caption. Action is toggle_breakpoint, run, continue, step_into, step_over, step_out, run_to_cursor or set_next_statement. The last four require break mode. Setting the next statement changes control flow; verify by subsequent execution. VBE may apply the effect after return: read debug_state and debug_windows separately. Breakpoint toggle is not yet independently verifiable.",
                 new[] { "Project", "Module", "ExpectedSha256", "StartLine", "ExpectedMode", "Action", "ControlId", "ControlCaption" },
                 "Project", "Module", "ExpectedSha256", "StartLine", "ExpectedMode", "Action", "ControlId", "ControlCaption"),
@@ -293,6 +296,23 @@ namespace CodexVBE
 
         public async Task<string> InvokeAsync(string name, string arguments)
         {
+            if (name == "quick_watch")
+            {
+                try
+                {
+                    if (settings.VbeEditApproval != "Automatic")
+                        return json.Serialize(Response.Failure("Automatic VBE edit policy is required for Quick Watch evaluation."));
+                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
+                    if (values == null) throw new ArgumentException("Tool arguments must be an object.");
+                    var requestValues = new Dictionary<string, object>(values) { ["Command"] = name };
+                    Request request = json.Deserialize<Request>(json.Serialize(requestValues));
+                    string scheduled = Invoke(name, arguments);
+                    Response initial = json.Deserialize<Response>(scheduled);
+                    if (initial == null || !initial.Ok) return scheduled;
+                    return json.Serialize(Response.Success(await Task.Run(() => VbeDebugWindows.CompleteQuickWatch(request))));
+                }
+                catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+            }
             if (name == "edit_watch")
             {
                 try

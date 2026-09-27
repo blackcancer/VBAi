@@ -111,6 +111,11 @@ namespace CodexVBE
                                     response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));
                                     if (response.Ok) response = Response.Success(VbeDebugWindows.CompleteEditWatch(request));
                                 }
+                                else if (request != null && request.Command == "quick_watch")
+                                {
+                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));
+                                    if (response.Ok) response = Response.Success(VbeDebugWindows.CompleteQuickWatch(request));
+                                }
                                 else if (request != null && request.Command == "remove_watch")
                                 {
                                     VbeDebugWindows.SelectWatch(request);
