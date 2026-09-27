@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -18,6 +18,7 @@ namespace CodexVBE
         private readonly List<ChatSessionState> scopeSessions = new List<ChatSessionState>();
         private readonly Dictionary<string, List<ChatSessionState>> cachedScopes = new Dictionary<string, List<ChatSessionState>>();
         private DispatcherTimer saveTimer;
+        private DispatcherTimer projectRetryTimer;
         private ComboBox scopePicker;
         private ListBox sessionList;
         private TextBox historySearch;
@@ -48,24 +49,7 @@ namespace CodexVBE
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CodexVBE", "chat.db"));
             }
             catch (Exception ex) { storageFailed = true; SetStatus("Historique non enregistré : " + ex.Message); }
-            var projects = session.Execute(new Request { Command = "list_projects" });
-            if (projects.Ok)
-            {
-                var values = json.DeserializeObject(json.Serialize(projects.Data)) as object[];
-                if (values != null) foreach (var raw in values)
-                {
-                    var project = raw as IDictionary<string, object>;
-                    if (project == null) continue;
-                    string name = Convert.ToString(project["Name"]);
-                    string path = Convert.ToString(project["FileName"]);
-                    bool saved = !string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path);
-                    scopePicker.Items.Add(new MacroScope {
-                        Project = name,
-                        Key = saved ? Path.GetFullPath(path).ToUpperInvariant() : "temporary:" + Guid.NewGuid().ToString("N"),
-                        Label = name + " · " + (saved ? Path.GetFileName(path) : "document non enregistré")
-                    });
-                }
-            }
+            var projects = PopulateProjectScopes(session);
             scopePicker.SelectionChanged += (s, e) => ChangeScope();
             sessionList.SelectionChanged += (s, e) => {
                 var selected = sessionList.SelectedItem as ChatSessionState;
@@ -91,7 +75,40 @@ namespace CodexVBE
             {
                 send.IsEnabled = false;
                 SetStatus(projects.Ok ? "Ouvrez un projet VBA pour démarrer une conversation." : projects.Error);
+                projectRetryTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+                projectRetryTimer.Tick += (s, e) => {
+                    if (IsDisposed) { projectRetryTimer.Stop(); return; }
+                    try { if (scopePicker.Items.Count == 0) PopulateProjectScopes(session); }
+                    catch (Exception ex) { LoadLog.Write("Chat project discovery retry failed: " + ex.Message); return; }
+                    if (scopePicker.Items.Count == 0) return;
+                    projectRetryTimer.Stop();
+                    send.IsEnabled = true;
+                    scopePicker.SelectedIndex = 0;
+                };
+                projectRetryTimer.Start();
             }
+        }
+
+        private Response PopulateProjectScopes(VbeSession session)
+        {
+            var projects = session.Execute(new Request { Command = "list_projects" });
+            if (!projects.Ok) return projects;
+            var values = json.DeserializeObject(json.Serialize(projects.Data)) as object[];
+            if (values == null) return projects;
+            foreach (var raw in values)
+            {
+                var project = raw as IDictionary<string, object>;
+                if (project == null) continue;
+                string name = Convert.ToString(project["Name"]);
+                string path = Convert.ToString(project["FileName"]);
+                bool saved = !string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path);
+                scopePicker.Items.Add(new MacroScope {
+                    Project = name,
+                    Key = saved ? Path.GetFullPath(path).ToUpperInvariant() : "temporary:" + Guid.NewGuid().ToString("N"),
+                    Label = name + " · " + (saved ? Path.GetFileName(path) : "document non enregistré")
+                });
+            }
+            return projects;
         }
 
         private void ChangeScope()
@@ -126,6 +143,10 @@ namespace CodexVBE
             {
                 codex?.Dispose(); codex = null;
                 currentSession = session;
+                modePicker.SelectedItem = session.Mode;
+                if (tools != null) tools.Mode = session.Mode;
+                draftAttachments.Clear();
+                if (session.DraftAttachments != null) draftAttachments.AddRange(session.DraftAttachments);
                 attachMemory.IsChecked = false;
                 ClearTranscript(); codeChanges.Clear(); completedStreams.Clear(); streamedFinalText = null;
                 messages.Clear();
@@ -151,7 +172,6 @@ namespace CodexVBE
                 RefreshCodeChangeCards();
                 int provider = Array.FindIndex(LlmProvider.All, item => item.Name == session.Provider);
                 providerPicker.SelectedIndex = provider < 0 ? 0 : provider;
-                settings.ProviderName = ((LlmProvider)providerPicker.SelectedItem).Name;
                 sessionTitle.Text = session.Title;
                 chatTitleEditor.Text = session.Title;
                 historyPanel.Visibility = Visibility.Collapsed;
@@ -169,7 +189,7 @@ namespace CodexVBE
             loadingSession = true;
             string query = historySearch.Text ?? "";
             sessionList.ItemsSource = scopeSessions.Where(x => (!x.Archived || showArchived.IsChecked == true) &&
-                x.Title.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0).ToArray();
+                ChatHistory.Matches(x, query)).OrderByDescending(x => x.Pinned).ToArray();
             sessionList.SelectedItem = currentSession;
             loadingSession = previous;
         }
@@ -187,6 +207,7 @@ namespace CodexVBE
             currentSession.Entries = transcriptEntries.ToList();
             currentSession.MessagesJson = json.Serialize(messages);
             currentSession.Draft = prompt.Text;
+            currentSession.DraftAttachments = draftAttachments.ToArray();
             currentSession.DraftReferences = CurrentReferences(prompt.Text);
             if (codex != null && !string.IsNullOrEmpty(codex.ThreadId)) currentSession.CodexThreadId = codex.ThreadId;
             try { sessionStore?.Save(currentSession); }
@@ -199,7 +220,7 @@ namespace CodexVBE
             var scope = scopePicker.SelectedItem as MacroScope;
             if (scope == null) return;
             SaveCurrentSession();
-            var session = new ChatSessionState { Scope = scope.Key, Provider = provider ?? currentSession?.Provider ?? settings.ProviderName };
+            var session = new ChatSessionState { Scope = scope.Key, Provider = provider ?? settings.ProviderName };
             scopeSessions.Insert(0, session);
             ActivateSession(session, false);
             SaveCurrentSession();
@@ -252,6 +273,7 @@ namespace CodexVBE
         {
             var scope = scopePicker.SelectedItem as MacroScope;
             if (scope == null || scopeSession == null) return;
+            if (tools != null) tools.BoundProject = scope.Project;
             var response = scopeSession.Execute(new Request { Command = "list_projects" });
             if (!response.Ok) throw new InvalidOperationException(response.Error);
             var projects = json.DeserializeObject(json.Serialize(response.Data)) as object[];

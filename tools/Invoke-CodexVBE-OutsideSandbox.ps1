@@ -20,6 +20,8 @@ if ($ExpectedSid -and [Security.Principal.WindowsIdentity]::GetCurrent().User.Va
 $classId = '{8E854243-087F-4D6C-9E0E-8622B0E50883}'
 $typeLibId = '{AF3C2AF7-155F-4DDB-AC8F-D02CD58DEDC9}'
 $progId = 'CodexVBE.AddIn'
+$chatProgId = 'CodexVBE.ChatToolWindow'
+$chatClassId = '{0F4D723B-97D8-42E5-9B31-70646B97C8D2}'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $dll = if ($ExpectedAssemblyPath) { [IO.Path]::GetFullPath($ExpectedAssemblyPath) }
     else { Join-Path $projectRoot 'bin\Debug\net48\CodexVBE.dll' }
@@ -32,16 +34,25 @@ function Assert-Registration([bool] $shouldExist) {
         $addin = $registry.OpenSubKey("Software\Microsoft\VBA\VBE\6.0\Addins64\$progId")
         $progid = $registry.OpenSubKey("Software\Classes\$progId\CLSID")
         $server = $registry.OpenSubKey("Software\Classes\CLSID\$classId\InprocServer32")
+        $chatProgIdKey = $registry.OpenSubKey("Software\Classes\$chatProgId\CLSID")
+        $chatServer = $registry.OpenSubKey("Software\Classes\CLSID\$chatClassId\InprocServer32")
         $registeredTypeLib = $registry.OpenSubKey("Software\Classes\TypeLib\$typeLibId\0.1\0\win64")
         try {
             if ($shouldExist) {
-                if (-not $addin -or -not $progid -or -not $server -or -not $registeredTypeLib) { throw 'A VBE, COM or type library registration key is missing.' }
+                if (-not $addin) { throw 'VBE Addins64 registration is missing.' }
+                if (-not $progid) { throw 'Add-in ProgID registration is missing.' }
+                if (-not $server) { throw 'Add-in COM server registration is missing.' }
+                if (-not $registeredTypeLib) { throw 'Type library registration is missing.' }
+                if (-not $chatProgIdKey) { throw 'Chat control ProgID registration is missing.' }
+                if (-not $chatServer) { throw 'Chat control COM server registration is missing.' }
                 if ($addin.GetValue('LoadBehavior') -ne 3) { throw 'LoadBehavior is not 3.' }
                 if ($progid.GetValue('') -ne $classId) { throw 'The ProgID points to another CLSID.' }
                 if ($server.GetValue('CodeBase') -cne $expectedCodeBase) { throw 'The COM CodeBase points to another DLL.' }
+                if ($chatProgIdKey.GetValue('') -ne $chatClassId) { throw 'The chat control ProgID points to another CLSID.' }
+                if ($chatServer.GetValue('CodeBase') -cne $expectedCodeBase) { throw 'The chat control CodeBase points to another DLL.' }
                 if ($registeredTypeLib.GetValue('') -cne ([IO.Path]::GetFullPath($typeLib))) { throw 'The type library points to another file.' }
             }
-            elseif ($addin -or $progid -or $server -or $registeredTypeLib) {
+            elseif ($addin -or $progid -or $server -or $registeredTypeLib -or $chatProgIdKey -or $chatServer) {
                 throw 'A CodexVBE registration key remains after uninstall.'
             }
         }
@@ -49,6 +60,8 @@ function Assert-Registration([bool] $shouldExist) {
             if ($addin) { $addin.Dispose() }
             if ($progid) { $progid.Dispose() }
             if ($server) { $server.Dispose() }
+            if ($chatProgIdKey) { $chatProgIdKey.Dispose() }
+            if ($chatServer) { $chatServer.Dispose() }
             if ($registeredTypeLib) { $registeredTypeLib.Dispose() }
         }
     }

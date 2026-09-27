@@ -1,5 +1,5 @@
 ﻿param(
-    [ValidateSet('Conversation', 'History', 'Reference', 'Welcome')][string]$Mode = 'Conversation',
+    [ValidateSet('Conversation', 'History', 'Reference', 'Command', 'Welcome')][string]$Mode = 'Conversation',
     [int]$Width = 720,
     [int]$Height = 950,
     [string]$AssemblyPath = 'artifacts/chat-build/final/CodexVBE.dll'
@@ -39,6 +39,7 @@ try {
         Call $window ReceiveChatUpdate @('summary', 'demo-summary', 'La boucle omet la dernière ligne. Je corrige sa borne supérieure et conserve le reste de la procédure.', $true)
         $change = New-Internal CodeChange
         $change.Project = 'SuiviBudget'; $change.Module = 'ModuleCalcul'
+        $change.TurnId = 'demo-turn'
         $change.Before = "For i = 1 To derniereLigne - 1`r`n    total = total + Cells(i, 2).Value`r`nNext i"
         $change.After = "For i = 1 To derniereLigne`r`n    total = total + Cells(i, 2).Value`r`nNext i"
         $change.BeforeSha256 = '1234567890'; $change.AfterSha256 = '0987654321'; $change.AfterLineCount = 3
@@ -75,10 +76,26 @@ try {
         $prompt.Focus() | Out-Null
         Call $window UpdateReferences @()
     }
+    if ($Mode -eq 'Command') {
+        $prompt = Field $window prompt
+        $prompt.Text = '/'; $prompt.CaretIndex = 1; $prompt.Focus() | Out-Null
+        Call $window UpdateReferences @()
+    }
     [Windows.Forms.Application]::DoEvents()
     Start-Sleep -Milliseconds 300
     [Windows.Forms.Application]::DoEvents()
     $bitmap = [Drawing.Bitmap]::new($window.Width, $window.Height)
+    # Also capture the rendered WPF surface directly, independent of foreground occlusion and monitor DPI.
+    $surface = (Field $window shellHost).Child
+    $surface.UpdateLayout()
+    $target = [Windows.Media.Imaging.RenderTargetBitmap]::new([int][Math]::Ceiling($surface.ActualWidth), [int][Math]::Ceiling($surface.ActualHeight), 96, 96, [Windows.Media.PixelFormats]::Pbgra32)
+    $target.Render($surface)
+    $encoder = [Windows.Media.Imaging.PngBitmapEncoder]::new()
+    $encoder.Frames.Add([Windows.Media.Imaging.BitmapFrame]::Create($target))
+    $surfacePath = Join-Path (Get-Location) "artifacts/chat-build/surface-$Mode-$Width.png"
+    $stream = [IO.File]::Create($surfacePath)
+    try { $encoder.Save($stream) } finally { $stream.Dispose() }
+    Write-Output $surfacePath
     try {
         $graphics = [Drawing.Graphics]::FromImage($bitmap)
         try { $graphics.CopyFromScreen($window.Location, [Drawing.Point]::Empty, $window.Size) }

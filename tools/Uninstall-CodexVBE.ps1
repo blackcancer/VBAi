@@ -41,6 +41,7 @@ try {
     if (Test-Path -LiteralPath $typeLibPath) {
         & (Join-Path $PSScriptRoot 'Register-CodexVBETypeLib.ps1') -Unregister
     }
+    & (Join-Path $PSScriptRoot 'Register-ChatToolWindow.ps1') -Unregister
     $registry.DeleteSubKeyTree("Software\Classes\$progId", $false)
     $registry.DeleteSubKeyTree("Software\Classes\CLSID\$classId", $false)
     Write-Output "Unregistered $progId for the current user."

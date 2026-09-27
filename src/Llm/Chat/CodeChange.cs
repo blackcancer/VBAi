@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Text;
 
@@ -27,6 +27,8 @@ namespace CodexVBE
         public int AfterLineCount { get; set; }
         public DateTime Time { get; set; }
         public bool Restored { get; set; }
+        public string TurnId { get; set; }
+        public System.Collections.Generic.List<int> RestoredHunks { get; set; } = new System.Collections.Generic.List<int>();
         [System.Web.Script.Serialization.ScriptIgnore] public string Diff { get { return FormatDiff(Before, After); } }
         [System.Web.Script.Serialization.ScriptIgnore] public CodeDiffLine[] Rows { get { return BuildRows(Before, After); } }
         [System.Web.Script.Serialization.ScriptIgnore] public string Label { get { return Time.ToString("HH:mm:ss") + "  " + Project + "." + Module +
@@ -83,32 +85,22 @@ namespace CodexVBE
 
         public static CodeDiffLine[] BuildRows(string before, string after)
         {
-            string[] oldLines = Lines(before);
-            string[] newLines = Lines(after);
-            int prefix = 0;
-            while (prefix < oldLines.Length && prefix < newLines.Length &&
-                oldLines[prefix] == newLines[prefix]) prefix++;
-            int suffix = 0;
-            while (suffix < oldLines.Length - prefix && suffix < newLines.Length - prefix &&
-                oldLines[oldLines.Length - suffix - 1] == newLines[newLines.Length - suffix - 1]) suffix++;
-            if (prefix == oldLines.Length && prefix == newLines.Length)
-                return new[] { new CodeDiffLine { Kind = CodeDiffKind.Notice, Text = "Aucune différence de code." } };
+            var oldLines = CodeRollback.Lines(before); var newLines = CodeRollback.Lines(after);
+            var hunks = CodeRollback.Hunks(before, after);
             var rows = new System.Collections.Generic.List<CodeDiffLine>();
-            for (int line = Math.Max(0, prefix - 3); line < prefix; line++)
-                rows.Add(new CodeDiffLine { Kind = CodeDiffKind.Context,
-                    OldLine = line + 1, NewLine = line + 1, Text = oldLines[line] });
-            for (int line = prefix; line < oldLines.Length - suffix; line++)
-                rows.Add(new CodeDiffLine { Kind = CodeDiffKind.Removed,
-                    OldLine = line + 1, Text = oldLines[line] });
-            for (int line = prefix; line < newLines.Length - suffix; line++)
-                rows.Add(new CodeDiffLine { Kind = CodeDiffKind.Added,
-                    NewLine = line + 1, Text = newLines[line] });
-            for (int line = 0; line < Math.Min(3, suffix); line++)
-                rows.Add(new CodeDiffLine { Kind = CodeDiffKind.Context,
-                    OldLine = oldLines.Length - suffix + line + 1,
-                    NewLine = newLines.Length - suffix + line + 1,
-                    Text = oldLines[oldLines.Length - suffix + line] });
-            return rows.ToArray();
+            foreach (var hunk in hunks)
+            {
+                rows.Add(new CodeDiffLine { Kind = CodeDiffKind.Notice, Text = "Bloc " + (hunk.Index + 1) });
+                for (int i = Math.Max(0, hunk.BeforeStart - 3); i < hunk.BeforeStart; i++)
+                    rows.Add(new CodeDiffLine { Kind = CodeDiffKind.Context, OldLine = i + 1, NewLine = hunk.AfterStart - hunk.BeforeStart + i + 1, Text = oldLines[i] });
+                for (int i = 0; i < hunk.Before.Length; i++)
+                    rows.Add(new CodeDiffLine { Kind = CodeDiffKind.Removed, OldLine = hunk.BeforeStart + i + 1, Text = hunk.Before[i] });
+                for (int i = 0; i < hunk.After.Length; i++)
+                    rows.Add(new CodeDiffLine { Kind = CodeDiffKind.Added, NewLine = hunk.AfterStart + i + 1, Text = hunk.After[i] });
+                for (int i = hunk.AfterStart + hunk.After.Length; i < Math.Min(newLines.Length, hunk.AfterStart + hunk.After.Length + 3); i++)
+                    rows.Add(new CodeDiffLine { Kind = CodeDiffKind.Context, OldLine = hunk.BeforeStart + hunk.Before.Length + i - hunk.AfterStart - hunk.After.Length + 1, NewLine = i + 1, Text = newLines[i] });
+            }
+            return rows.Count == 0 ? new[] { new CodeDiffLine { Kind = CodeDiffKind.Notice, Text = "Aucune différence de code." } } : rows.ToArray();
         }
 
         private static string[] Lines(string code)

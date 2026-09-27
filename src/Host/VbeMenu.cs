@@ -13,10 +13,11 @@ namespace CodexVBE
         private readonly object settingsButton;
         private readonly ClickHandler viewHandler;
         private readonly ClickHandler settingsHandler;
+        private readonly List<Tuple<object, ClickHandler>> editorButtons = new List<Tuple<object, ClickHandler>>();
 
         private delegate void ClickHandler(object control, ref bool cancelDefault);
 
-        public VbeMenu(object vbe, Action showAssistant, Action showSettings)
+        public VbeMenu(object vbe, Action showAssistant, Action showSettings, Action<string> editorAction = null)
         {
             dynamic view = FindMenu(vbe, "affichage", "view");
             dynamic tools = FindMenu(vbe, "outils", "tools");
@@ -32,6 +33,24 @@ namespace CodexVBE
             {
                 ComEventsHelper.Combine(viewButton, ClickInterface, 1, viewHandler);
                 ComEventsHelper.Combine(settingsButton, ClickInterface, 1, settingsHandler);
+                if (editorAction != null)
+                {
+                    foreach (dynamic bar in ((dynamic)vbe).CommandBars)
+                    {
+                        string name = Normalize((string)bar.Name);
+                        if (name != "code window" && name != "code window (break)" && name != "fenêtre code") continue;
+                        foreach (var action in new[] { "/expliquer", "/corriger", "/refactoriser" })
+                        {
+                            string command = action;
+                            object button = bar.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
+                            ((dynamic)button).Caption = "CodexVBE · " + action.Substring(1);
+                            ((dynamic)button).Tag = "CodexVBE." + action.Substring(1);
+                            ClickHandler handler = (object control, ref bool cancel) => { cancel = true; editorAction(command); };
+                            editorButtons.Add(Tuple.Create(button, handler));
+                            ComEventsHelper.Combine(button, ClickInterface, 1, handler);
+                        }
+                    }
+                }
             }
             catch
             {
@@ -65,6 +84,12 @@ namespace CodexVBE
 
         public void Dispose()
         {
+            foreach (var item in editorButtons)
+            {
+                try { ComEventsHelper.Remove(item.Item1, ClickInterface, 1, item.Item2); } catch { }
+                try { ((dynamic)item.Item1).Delete(); } catch { }
+            }
+            editorButtons.Clear();
             if (viewButton != null)
             {
                 try { if (viewHandler != null) ComEventsHelper.Remove(viewButton, ClickInterface, 1, viewHandler); } catch { }

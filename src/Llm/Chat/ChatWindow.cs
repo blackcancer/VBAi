@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,17 +19,21 @@ namespace CodexVBE
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
         private bool busy;
         private int catalogueVersion;
+        private bool restoringSelection;
         private bool stopRequested;
         private LlmChatClient activeHttpClient;
 
         public ChatWindow()
         {
             InitializeComponent();
+            if (LicenseManager.UsageMode != LicenseUsageMode.Designtime)
+                InitializeShell();
         }
 
         public ChatWindow(VbeSession session)
         {
             InitializeComponent();
+            InitializeShell();
             InitializeComposer(session);
             InitializeTranscript();
             foreach (var item in LlmProvider.All) providerPicker.Items.Add(item);
@@ -36,7 +41,9 @@ namespace CodexVBE
             try { settings = LlmSettings.Load(); }
             catch (Exception ex) { LoadLog.Write("LLM settings load failed: " + ex.Message); settings = new LlmSettings(); }
             tools = new LlmVbeTools(session, this, settings);
+            tools.ValidateScope = EnsureCurrentScope;
             tools.CodeEdited += change => {
+                change.TurnId = activeTurnId;
                 codeChanges.Add(change);
                 changes.IsEnabled = true;
                 changes.Content = "Modifications · " + codeChanges.Count;
@@ -47,7 +54,15 @@ namespace CodexVBE
             providerPicker.SelectionChanged += (sender, args) => {
                 if (loadingSession || busy) return;
                 var provider = providerPicker.SelectedItem as LlmProvider;
-                if (provider != null) NewSession(provider.Name);
+                if (provider == null) return;
+                settings.ProviderName = provider.Name;
+                try { settings.Save(); } catch (Exception ex) { LoadLog.Write("Provider selection save failed: " + ex.Message); }
+                if (scopePicker.SelectedItem == null)
+                {
+                    ResetProviderConnection();
+                    _ = LoadModelsAsync();
+                }
+                else NewSession(provider.Name);
             };
             configure.Click += (sender, args) => ShowSettings();
             refreshModels.Click += async (sender, args) => await LoadModelsAsync();
@@ -55,24 +70,35 @@ namespace CodexVBE
                 var selectedModel = modelPicker.SelectedItem as LlmModelOption;
                 var selectedProvider = providerPicker.SelectedItem as LlmProvider;
                 if (selectedModel == null || selectedProvider == null) return;
-                settings.SetSelectedModel(selectedProvider, selectedModel.Id);
-                if (currentSession != null) currentSession.Model = selectedModel.Id;
+                if (currentSession != null)
+                {
+                    if (!restoringSelection && currentSession.Model != selectedModel.Id) currentSession.Effort = null;
+                    currentSession.Model = selectedModel.Id;
+                }
+                if (!restoringSelection) settings.SetSelectedModel(selectedProvider, selectedModel.Id);
                 UpdateEfforts(selectedProvider, selectedModel);
                 ScheduleSessionSave();
-                try { settings.Save(); } catch (Exception ex) { LoadLog.Write("Model selection save failed: " + ex.Message); }
+                if (!restoringSelection)
+                    try { settings.Save(); } catch (Exception ex) { LoadLog.Write("Model selection save failed: " + ex.Message); }
             };
             effortPicker.SelectionChanged += (sender, args) => {
                 var selectedProvider = providerPicker.SelectedItem as LlmProvider;
                 var selectedModel = modelPicker.SelectedItem as LlmModelOption;
                 var selectedEffort = effortPicker.SelectedItem as LlmEffortOption;
                 if (selectedProvider == null || selectedModel == null || selectedEffort == null) return;
-                settings.SetReasoningEffort(selectedProvider, selectedModel.Id, selectedEffort.Id);
                 if (currentSession != null) currentSession.Effort = selectedEffort.Id;
+                if (!restoringSelection) settings.SetReasoningEffort(selectedProvider, selectedModel.Id, selectedEffort.Id);
                 ScheduleSessionSave();
-                try { settings.Save(); } catch (Exception ex) { LoadLog.Write("Reasoning effort save failed: " + ex.Message); }
+                if (!restoringSelection)
+                    try { settings.Save(); } catch (Exception ex) { LoadLog.Write("Reasoning effort save failed: " + ex.Message); }
             };
             send.Click += async (sender, args) => { if (busy) await StopTurnAsync(); else await SendAsync(); };
+            int defaultProvider = Array.FindIndex(LlmProvider.All, item => item.Name == settings.ProviderName);
+            loadingSession = true;
+            try { providerPicker.SelectedIndex = defaultProvider < 0 ? 0 : defaultProvider; }
+            finally { loadingSession = false; }
             InitializeSessions(session);
+            if (scopePicker.SelectedItem == null) _ = LoadModelsAsync();
         }
 
         private void UpdateEfforts(LlmProvider provider, LlmModelOption model)
@@ -121,17 +147,24 @@ namespace CodexVBE
                 else models = await LlmChatClient.ListModelsAsync(provider, settings);
                 if (IsDisposed || version != catalogueVersion || provider != providerPicker.SelectedItem) return;
                 foreach (var item in models) modelPicker.Items.Add(item);
+                LoadLog.Write("Chat model catalogue: " + provider.Name + " count=" + models.Length);
                 string saved = currentSession?.Model ?? settings.GetSelectedModel(provider);
                 int selected = Array.FindIndex(models, item => item.Id == saved);
                 if (selected < 0) selected = Array.FindIndex(models, item => item.IsDefault);
                 if (selected < 0 && models.Length > 0) selected = 0;
-                if (selected >= 0) modelPicker.SelectedIndex = selected;
+                if (selected >= 0)
+                {
+                    restoringSelection = true;
+                    try { modelPicker.SelectedIndex = selected; }
+                    finally { restoringSelection = false; }
+                }
                 SetStatus(models.Length == 0 ? "Aucun modèle disponible pour ce fournisseur." : provider.Name + " — prêt");
             }
             catch (Exception ex)
             {
                 if (!IsDisposed && version == catalogueVersion)
                     SetStatus("Catalogue indisponible : " + ex.Message);
+                LoadLog.Write("Chat model catalogue failed: " + provider.Name + " " + ex);
                 if (provider.IsCodex && version == catalogueVersion) { codex?.Dispose(); codex = null; }
             }
             finally
@@ -225,6 +258,7 @@ namespace CodexVBE
         private void SetBusy(bool value)
         {
             busy = value;
+            modePicker.IsEnabled = !value;
             send.Content = value ? "Arrêter ■" : "Envoyer ↑";
             send.IsEnabled = true;
             newChat.IsEnabled = scopePicker.IsEnabled = sessionList.IsEnabled =
@@ -256,7 +290,12 @@ namespace CodexVBE
             var selectedModel = modelPicker.SelectedItem as LlmModelOption;
             if (selectedModel == null) { SetStatus("Choisissez un modèle disponible avant d'envoyer."); return; }
             string requestText;
-            try { EnsureCurrentScope(); requestText = ResolveReferences(question); }
+            ChatAttachment[] attachments;
+            try {
+                EnsureCurrentScope(); attachments = PrepareAttachments(question);
+                requestText = ChatCommand.Expand(question);
+                foreach (var attachment in attachments) requestText += "\n\n<context label=\"" + attachment.Label + "\">\n" + attachment.Text + "\n</context>";
+            }
             catch (Exception ex) { SetStatus("Contexte : " + ex.Message); return; }
             var scope = scopePicker.SelectedItem as MacroScope;
             if (scope != null) requestText = "Projet VBA de cette conversation : " + scope.Label + "\n\n" + requestText;
@@ -265,23 +304,26 @@ namespace CodexVBE
                 requestText += "\n\n<memoire-document>\n" + attachedMemory + "\n</memoire-document>";
             var selectedEffort = effortPicker.SelectedItem as LlmEffortOption;
             var attachedReferences = CurrentReferences(question);
+            var pendingDraftAttachments = draftAttachments.ToArray();
             stopRequested = false;
+            activeTurnId = Guid.NewGuid().ToString("N");
+            tools.Mode = currentSession.Mode;
+            requestText = "Mode de cette demande : " + currentSession.Mode + (currentSession.Mode == ChatMode.Agent ? ".\n" : ". Analyse uniquement ; aucune modification ni exécution de macro.\n") + requestText;
+            if (!string.IsNullOrEmpty(currentSession.ResumeContext)) requestText = "Historique de la branche (contexte uniquement ; relire le code vivant) :\n" + currentSession.ResumeContext + "\n\n" + requestText;
             streamedFinalText = null;
             RenameFromQuestion(question);
             SetBusy(true);
             prompt.Clear();
             HideReferences();
             selectedReferences.Clear();
+            draftAttachments.Clear();
             attachMemory.IsChecked = false;
             followConversation = true;
-            AddEntry(new ChatEntry { Speaker = "Vous", Text = question, References = attachedReferences, AttachedMemory = attachedMemory });
+            AddEntry(new ChatEntry { Speaker = "Vous", Text = question, References = attachedReferences, AttachedMemory = attachedMemory, Attachments = attachments, TurnId = activeTurnId });
             tools.NoteUserRequest(question);
             int checkpoint = messages.Count;
             var provider = (LlmProvider)providerPicker.SelectedItem;
             tools.CurrentProviderName = provider.Name;
-            settings.ProviderName = provider.Name;
-            try { settings.Save(); }
-            catch (Exception saveError) { LoadLog.Write("LLM settings save failed: " + saveError.Message); }
             if (!provider.IsCodex) messages.Add(new { role = "user", content = requestText });
             SaveCurrentSession();
             try
@@ -293,6 +335,7 @@ namespace CodexVBE
                     SetStatus("Codex — en cours");
                     CompleteAssistantResponse(await codex.TurnAsync(requestText, selectedModel.Id,
                         selectedEffort == null ? null : selectedEffort.Id));
+                    currentSession.ResumeContext = null;
                     SetStatus("Codex — prêt");
                     return;
                 }
@@ -312,6 +355,7 @@ namespace CodexVBE
                         {
                             string answer = message.ContainsKey("content") ? Convert.ToString(message["content"]) : "";
                             Append("Assistant", string.IsNullOrWhiteSpace(answer) ? "Aucune réponse textuelle." : answer);
+                            currentSession.ResumeContext = null;
                             SetStatus(client.DisplayName + " — prêt");
                             return;
                         }
@@ -346,6 +390,8 @@ namespace CodexVBE
                 if (!stopRequested && prompt.Text.Length == 0)
                 {
                     selectedReferences.AddRange(attachedReferences);
+                    draftAttachments.AddRange(pendingDraftAttachments);
+                    attachMemory.IsChecked = !string.IsNullOrEmpty(attachedMemory);
                     prompt.Text = question;
                     RefreshContextChips();
                 }
@@ -353,7 +399,13 @@ namespace CodexVBE
             finally
             {
                 activeHttpClient = null;
-                if (!IsDisposed) { SetBusy(false); SaveCurrentSession(); }
+                if (!IsDisposed) {
+                    var intervention = codeChanges.FindAll(x => x.TurnId == activeTurnId);
+                    if (intervention.Count > 0) AddEntry(new ChatEntry { Speaker = "Intervention", TurnId = activeTurnId,
+                        Text = intervention.Count + " modification(s) appliquée(s). Retrouvez les fichiers et annulez cette intervention ci-dessous." });
+                    if (verifyAfterEdit.IsChecked == true && codeChanges.Exists(x => x.TurnId == activeTurnId)) await VerifyProjectAsync();
+                    activeTurnId = null; SetBusy(false); SaveCurrentSession();
+                }
             }
         }
 

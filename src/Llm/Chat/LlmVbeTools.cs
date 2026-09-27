@@ -26,6 +26,26 @@ namespace CodexVBE
             "list_form_control_types", "open_form"
         };
         public string CurrentProviderName { get; set; }
+        public ChatMode Mode { get; set; } = ChatMode.Agent;
+        public Action ValidateScope { get; set; }
+        public string BoundProject { get; set; }
+        private bool restoring;
+
+        private void GuardMode(string name)
+        {
+            ValidateScope?.Invoke();
+            if (!restoring && Mode != ChatMode.Agent && !ReadOnlyTools.Contains(name))
+                throw new InvalidOperationException("Le mode " + Mode + " interdit cet outil de modification ou d'exécution : " + name);
+        }
+
+        private void GuardProject(string name, string arguments)
+        {
+            if (string.IsNullOrEmpty(BoundProject) || (ReadOnlyTools.Contains(name) && name != "compile_project")) return;
+            var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
+            object project;
+            if (values != null && values.TryGetValue("Project", out project) && !string.Equals(Convert.ToString(project), BoundProject, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Cette action vise un autre projet que celui de la conversation.");
+        }
 
         public LlmVbeTools(VbeSession session, IWin32Window owner, LlmSettings settings)
         {
@@ -253,6 +273,8 @@ namespace CodexVBE
 
         public string Invoke(string name, string arguments)
         {
+            try { GuardMode(name); GuardProject(name, arguments); }
+            catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             var definition = Definitions.Cast<dynamic>().FirstOrDefault(item => (string)item.function.name == name);
             if (definition == null) return json.Serialize(Response.Failure("Unknown tool: " + name));
             try
@@ -341,7 +363,7 @@ namespace CodexVBE
                 Response result = name == "status"
                     ? Response.Success(LlmVbeContext.LiveSnapshot(session))
                     : session.Execute(request);
-                if (result.Ok && beforeCode != null)
+                if (result.Ok && beforeCode != null && !restoring)
                 {
                     try
                     {
@@ -377,18 +399,52 @@ namespace CodexVBE
 
         public Response RestoreCodeChange(CodeChange change)
         {
-            if (change == null || change.Restored)
-                return Response.Failure("Cette modification a déjà été restaurée.");
-            var arguments = new { Project = change.Project, Module = change.Module,
-                ExpectedSha256 = change.AfterSha256, StartLine = 1,
-                Count = change.AfterLineCount, Text = change.Before };
-            Response result = json.Deserialize<Response>(Invoke("replace_lines", json.Serialize(arguments)));
-            if (result != null && result.Ok) change.Restored = true;
-            return result ?? Response.Failure("La restauration n'a renvoyé aucun résultat.");
+            return RestoreChanges(new[] { change }, null);
+        }
+
+        public Response RestoreChanges(CodeChange[] changes, int? hunk)
+        {
+            try
+            {
+                ValidateScope?.Invoke();
+                var pending = changes.Where(x => x != null && !x.Restored).Reverse().ToArray();
+                if (pending.Length == 0) return Response.Failure("Ces modifications sont déjà annulées.");
+                var snapshots = new Dictionary<string, CodeSnapshot>();
+                var planned = new Dictionary<string, string>();
+                foreach (var change in pending)
+                {
+                    string key = change.Project + "\0" + change.Module;
+                    if (!snapshots.ContainsKey(key)) { snapshots[key] = ReadCode(change.Project, change.Module); planned[key] = snapshots[key].Code; }
+                    planned[key] = CodeRollback.Apply(change, planned[key], hunk);
+                }
+                // Preflight every module before applying anything. Each write still checks its live SHA.
+                restoring = true;
+                int applied = 0;
+                foreach (var group in pending.GroupBy(x => x.Project + "\0" + x.Module))
+                {
+                    var change = group.First(); var snapshot = snapshots[group.Key];
+                    var arguments = new { Project = change.Project, Module = change.Module, ExpectedSha256 = snapshot.Sha256,
+                        StartLine = 1, Count = CodeRollback.Lines(snapshot.Code).Length, Text = planned[group.Key] };
+                    var result = json.Deserialize<Response>(Invoke("replace_lines", json.Serialize(arguments)));
+                    if (result == null || !result.Ok) return Response.Failure("Annulation arrêtée après " + applied + " module(s). " + result?.Error);
+                    foreach (var item in group)
+                    {
+                        foreach (var block in CodeRollback.Hunks(item.Before, item.After).Where(x => !hunk.HasValue || x.Index == hunk.Value))
+                            if (!item.RestoredHunks.Contains(block.Index)) item.RestoredHunks.Add(block.Index);
+                        item.Restored = item.RestoredHunks.Count == CodeRollback.Hunks(item.Before, item.After).Length;
+                    }
+                    applied++;
+                }
+                return Response.Success(new { RestoredModules = applied });
+            }
+            catch (Exception ex) { return Response.Failure(ex.Message); }
+            finally { restoring = false; }
         }
 
         public async Task<string> InvokeAsync(string name, string arguments)
         {
+            try { GuardMode(name); GuardProject(name, arguments); }
+            catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             if (name == "sign_project")
             {
                 try

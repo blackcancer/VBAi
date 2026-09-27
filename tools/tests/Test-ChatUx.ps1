@@ -1,4 +1,4 @@
-param([string]$AssemblyPath = "artifacts/chat-build/final/CodexVBE.dll")
+﻿param([string]$AssemblyPath = "artifacts/chat-build/final/CodexVBE.dll")
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms, PresentationFramework
 Add-Type -TypeDefinition @'
@@ -159,6 +159,24 @@ try {
     Call $window ActivateSession @($interrupted, $true)
     Assert ((Field $window messages).Count -eq 2) 'Interrupted tool history was not repaired.'
     Assert (-not ((Field $window json).Serialize((Field $window messages))).Contains('unfinished')) 'Orphaned tool call survived restart.'
+
+    Call $window ActivateSession @($restoredA, $true)
+    $restoredA.Pinned = $true
+    (Field $window modePicker).SelectedItem = [Enum]::Parse($assembly.GetType('CodexVBE.ChatMode'), 'Plan')
+    $attachment = New-Internal ChatAttachment
+    $attachment.Label = 'Captured selection'; $attachment.Text = 'Debug.Print 42'; $attachment.Sha256 = 'snapshot'
+    (Field $window draftAttachments).Add($attachment)
+    Call $window SaveCurrentSession @()
+    $saved = @(Call $store List @($a.Scope)) | Where-Object { $_.Id -eq $a.Id }
+    Assert ($saved.Pinned -and $saved.Mode.ToString() -eq 'Plan' -and $saved.DraftAttachments[0].Text -eq 'Debug.Print 42') 'Workflow state was not persisted.'
+    $last = (Field $window transcriptEntries)[2]
+    Call $window ForkChat @($last)
+    $fork = Field $window currentSession
+    Assert ($fork.Id -ne $a.Id -and $fork.Scope -eq $a.Scope -and -not $fork.CodexThreadId) 'Fork reused a provider thread or crossed a macro.'
+    Assert ($fork.Entries.Count -eq 3 -and $fork.ResumeContext.Contains('Reponse complete.')) 'Fork lost the selected conversation prefix.'
+    Assert (-not $fork.MessagesJson.Contains('unfinished')) 'Fork copied orphaned tool history.'
+    Write-Output 'PASS pinned mode/attachment persistence and provider-independent conversation fork'
+
     Write-Output 'PASS SQLite reopen, document isolation, draft, references, streamed response, inline diff and rollback history'
 }
 finally {
