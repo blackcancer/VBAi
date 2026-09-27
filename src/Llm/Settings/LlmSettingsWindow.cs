@@ -159,7 +159,8 @@ namespace CodexVBE
                 bool missing = selected != null && Array.IndexOf(accounts, selected) < 0;
                 githubStatus.Text = missing ? UiText.Get("The selected account is no longer saved. Sign in again or choose another account.") :
                     accounts.Length == 0 ? UiText.Get("No saved GitHub account. Click Sign in.") :
-                    accounts.Length + UiText.Get(" account(s) available through Git Credential Manager. Repository access will be checked during synchronization.");
+                    (login ? UiText.Get("GitHub sign-in completed. ") : "") + accounts.Length +
+                    UiText.Get(" account(s) available through Git Credential Manager. Repository access will be checked during synchronization.");
             }
             catch (OperationCanceledException) { }
             catch (Exception ex) { if (!IsDisposed) githubStatus.Text = ex.Message; }

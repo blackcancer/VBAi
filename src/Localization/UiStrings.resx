@@ -324,6 +324,9 @@ Project identifier to use in tools: </value>
   <data name="Complete GitHub sign-in in your browser…" xml:space="preserve">
     <value>Complete GitHub sign-in in your browser…</value>
   </data>
+  <data name="GitHub sign-in completed. " xml:space="preserve">
+    <value>GitHub sign-in completed. </value>
+  </data>
   <data name="Complete merge" xml:space="preserve">
     <value>Complete merge</value>
   </data>

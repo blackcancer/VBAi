@@ -324,6 +324,9 @@ Identifiant Project à utiliser dans les outils : </value>
   <data name="Complete GitHub sign-in in your browser…" xml:space="preserve">
     <value>Terminez la connexion GitHub dans votre navigateur…</value>
   </data>
+  <data name="GitHub sign-in completed. " xml:space="preserve">
+    <value>Connexion GitHub terminée. </value>
+  </data>
   <data name="Complete merge" xml:space="preserve">
     <value>Terminer la fusion</value>
   </data>

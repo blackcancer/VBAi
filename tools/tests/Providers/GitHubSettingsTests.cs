@@ -34,6 +34,8 @@ internal static partial class ProviderTests
             ((ComboBox)field("provider")).SelectedItem = Provider("LM Studio");
             Assert((string)picker.SelectedItem == "bob", "GitHub account independent of AI provider");
             refresh(true); Assert(logins == 1 && (string)picker.SelectedItem == "bob", "Explicit browser login and refresh");
+            Assert(((Label)field("githubStatus")).Text.StartsWith(UiText.Get("GitHub sign-in completed. "), StringComparison.Ordinal),
+                "A completed browser flow must show an explicit confirmation in Settings");
             accounts = "alice\n"; refresh(false);
             Assert(((Label)field("githubStatus")).Text == UiText.Get("The selected account is no longer saved. Sign in again or choose another account."), "Missing preferred account not silently switched");
             accounts = "alice\nbob\n";
