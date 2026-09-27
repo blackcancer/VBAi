@@ -47,6 +47,8 @@ namespace CodexVBE
         public string WatchType { get; set; }
         public string Diagnostic { get; set; }
         public string Button { get; set; }
+        public string Pane { get; set; }
+        public string[] PathSegments { get; set; }
         public string ObjectName { get; set; }
         public int ProcKind { get; set; }
         public int? InsertIndex { get; set; }

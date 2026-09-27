@@ -143,6 +143,47 @@ namespace CodexVBE
                 Limit = "Text changed after Enter, but this does not prove an arbitrary VBA statement had the intended side effect. Read debug_state and relevant values separately." };
         }
 
+        public static object ChangeDebugItem(Request request)
+        {
+            if (request == null || (request.Pane != "locals" && request.Pane != "watches") ||
+                (request.Action != "expand" && request.Action != "collapse") ||
+                request.PathSegments == null || request.PathSegments.Length == 0 ||
+                request.PathSegments.Length > 16 || request.PathSegments.Any(string.IsNullOrWhiteSpace))
+                throw new ArgumentException("Pane, Action and nonempty PathSegments are required.");
+            IntPtr root = FindVbeRoot();
+            if (root == IntPtr.Zero) throw new InvalidOperationException("The VBE window is not open.");
+            IntPtr pane = request.Pane == "locals" ?
+                FindPane(ChildWindows(root), "Variables locales", "Locals") :
+                FindPane(ChildWindows(root), "Espions", "Watch", "Watches");
+            if (pane == IntPtr.Zero) throw new InvalidOperationException("The requested debug pane is not visible.");
+            AutomationElement scope = AutomationElement.FromHandle(pane);
+            var condition = new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem);
+            AutomationElementCollection rows = scope.FindAll(TreeScope.Descendants, condition);
+            AutomationElement target = null;
+            int matches = 0;
+            for (int index = 0; index < rows.Count; index++)
+            {
+                if (!ItemPath(rows[index]).SequenceEqual(request.PathSegments, StringComparer.Ordinal)) continue;
+                target = rows[index]; matches++;
+            }
+            if (matches != 1)
+                throw new InvalidOperationException("Expected one matching debug item; found " + matches + ".");
+            object rawPattern;
+            if (!target.TryGetCurrentPattern(ExpandCollapsePattern.Pattern, out rawPattern))
+                throw new InvalidOperationException("The selected debug item cannot be expanded or collapsed.");
+            var pattern = (ExpandCollapsePattern)rawPattern;
+            if (request.Action == "expand") pattern.Expand();
+            else pattern.Collapse();
+            Thread.Sleep(50);
+            int childCount = target.FindAll(TreeScope.Children, condition).Count;
+            bool verified = request.Action == "expand" ? childCount > 0 : childCount == 0;
+            return new { request.Pane, request.Action, request.PathSegments,
+                ChildCount = childCount, Verification = verified ? "Observed" : "Pending",
+                VerificationPending = !verified,
+                CountLimit = "ChildCount counts UIA-exposed children at this moment; long native trees may expose only a subset.",
+                NextRead = "Call debug_windows to read the current hierarchical rows." };
+        }
+
         public static object RespondDebugDialog(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Diagnostic) ||
@@ -424,7 +465,8 @@ namespace CodexVBE
 
         private static object ReadList(IntPtr handle)
         {
-            if (handle == IntPtr.Zero) return new { Available = false, Items = new object[0], Error = "Window is not visible." };
+            if (handle == IntPtr.Zero) return new { Available = false, Items = new object[0], Error = "Window is not visible.",
+                Coverage = "UIAExposedRowsOnly" };
             try
             {
                 AutomationElement root = AutomationElement.FromHandle(handle);
@@ -453,6 +495,7 @@ namespace CodexVBE
                         (match.Groups[2].Value.IndexOf("Aucune variable", StringComparison.OrdinalIgnoreCase) >= 0 ||
                          match.Groups[2].Value.IndexOf("No variables", StringComparison.OrdinalIgnoreCase) >= 0))
                         continue;
+                    string[] itemPath = ItemPath(element);
                     items.Add(new { Raw = raw, Expression = match.Success ? match.Groups[1].Value :
                             watch.Success ? watch.Groups[1].Value : null,
                         Value = match.Success ? match.Groups[2].Value.Trim() :
@@ -460,11 +503,32 @@ namespace CodexVBE
                         Type = match.Success ? match.Groups[3].Value :
                             watch.Success ? watch.Groups[3].Value : null,
                         Context = watch.Success ? watch.Groups[4].Value : null,
+                        PathSegments = itemPath,
+                        Depth = Math.Max(0, itemPath.Length - 1),
                         Parsed = match.Success || watch.Success });
                 }
-                return new { Available = true, Items = items.ToArray(), Error = (string)null };
+                return new { Available = true, Items = items.ToArray(), Error = (string)null,
+                    Coverage = "UIAExposedRowsOnly" };
             }
-            catch (Exception ex) { return new { Available = true, Items = new object[0], Error = ex.Message }; }
+            catch (Exception ex) { return new { Available = true, Items = new object[0], Error = ex.Message,
+                Coverage = "UIAExposedRowsOnly" }; }
+        }
+
+        private static string[] ItemPath(AutomationElement element)
+        {
+            var segments = new List<string>();
+            AutomationElement current = element;
+            for (int depth = 0; depth < 16 && current != null &&
+                current.Current.ControlType == ControlType.ListItem; depth++)
+            {
+                Match match = Regex.Match(current.Current.Name ?? "",
+                    @"^Expression\s+(.*?)\s+(?:Valeur|Value)\s+", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                if (!match.Success) break;
+                segments.Add(match.Groups[1].Value);
+                current = TreeWalker.RawViewWalker.GetParent(current);
+            }
+            segments.Reverse();
+            return segments.ToArray();
         }
 
         private static object ReadImmediate(IntPtr handle)

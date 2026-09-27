@@ -19,7 +19,7 @@ namespace CodexVBE
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
         private readonly List<string> userRequests = new List<string>();
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
-            "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "compile_project", "open_debug_pane", "list_commands", "select_code",
+            "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "compile_project", "open_debug_pane", "list_commands", "select_code",
             "project_properties", "component_properties", "component_property_value", "vbe_windows", "code_panes", "open_object_browser", "list_procedures", "find_code", "select_procedure", "list_forms",
             "form_state", "form_tree", "form_properties", "form_control_properties", "form_event_catalog",
             "list_form_control_types", "open_form"
@@ -39,6 +39,7 @@ namespace CodexVBE
             foreach (string field in fields)
                 properties[field] = field == "Value" ? (object)new { anyOf = new object[] {
                     new { type = "string" }, new { type = "number" }, new { type = "boolean" } } } :
+                    field == "PathSegments" ? (object)new { type = "array", items = new { type = "string" }, minItems = 1, maxItems = 16 } :
                     new { type = field == "StartLine" || field == "Count" || field == "ExpectedMode" || field == "ControlId" || field == "ProcKind" || field == "InsertIndex" ||
                         field == "Offset" || field == "Limit" || field == "TypeIndex" || field == "ZPosition" ||
                         field == "Major" || field == "Minor" ? "integer" :
@@ -61,6 +62,8 @@ namespace CodexVBE
             Definition("debug_windows", "Read visible native VBE Locals, Watches and Immediate windows via accessibility. Optional IncludeCallStack opens the native Call Stack dialog through the Locals button, reads its frames, then closes it. Missing windows are reported as unavailable, not empty. No shortcuts or coordinate clicks are used.",
                 new string[0], "IncludeCallStack"),
             Definition("debug_dialog", "Read a visible native VBA diagnostic dialog, including its exact message and button labels. Works while the VBE UI thread is modal; does not dismiss the dialog.", new string[0]),
+            Definition("debug_item", "Expand or collapse exactly one row in a visible Locals or Watches pane by its PathSegments from debug_windows. Pane is locals or watches; Action is expand or collapse. Returns observed direct child count, then re-read debug_windows. Uses UI Automation, no shortcuts or coordinates.",
+                new[] { "Pane", "Action", "PathSegments" }, "Pane", "Action", "PathSegments"),
             Definition("immediate_execute", "Execute one line in the visible VBE Immediate window through native character and Enter messages, without shortcuts or coordinates. Requires Project and current ExpectedMode (1 break or 2 design). Returns exact text before/after; arbitrary side effects require separate verification. Automatic VBE edit policy is required.",
                 new[] { "Project", "ExpectedMode", "Text" }, "Project", "ExpectedMode", "Text"),
             Definition("respond_debug_dialog", "Activate one button on a visible native VBA run-time or compile diagnostic. Supply the exact Diagnostic and Button strings returned by debug_dialog, then read debug_state separately. Requires automatic VBE edit policy; no shortcut or coordinate click is used.",
@@ -287,6 +290,20 @@ namespace CodexVBE
 
         public async Task<string> InvokeAsync(string name, string arguments)
         {
+            if (name == "debug_item")
+            {
+                try
+                {
+                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
+                    if (values == null || values.Count != 3 || !values.ContainsKey("Pane") ||
+                        !values.ContainsKey("Action") || !values.ContainsKey("PathSegments"))
+                        throw new ArgumentException("Pane, Action and PathSegments are required.");
+                    var requestValues = new Dictionary<string, object>(values) { ["Command"] = name };
+                    Request request = json.Deserialize<Request>(json.Serialize(requestValues));
+                    return json.Serialize(Response.Success(await Task.Run(() => VbeDebugWindows.ChangeDebugItem(request))));
+                }
+                catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+            }
             if (name == "immediate_execute")
             {
                 try
