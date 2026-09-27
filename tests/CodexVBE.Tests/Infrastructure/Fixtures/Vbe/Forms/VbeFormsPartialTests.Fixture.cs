@@ -118,8 +118,13 @@ namespace CodexVBE.Tests.Unit
                 this.owner = owner;
             }
 
-            public int Count => items.Count;
+            public int Count => CountOverride ?? items.Count;
+            internal int? CountOverride;
+            internal Action BeforeEnumeration;
             public int RemoveCount { get; private set; }
+            internal Action<FakeControl> ConfigureAdded;
+            internal bool FailAdd;
+            internal bool HideAdded;
             public bool FailNextCaption { get; set; }
             public bool FailNextValue { get; set; }
             public bool FailNextListWidth { get; set; }
@@ -128,8 +133,9 @@ namespace CodexVBE.Tests.Unit
 
             public FakeControl Add(string progId, string name, bool visible)
             {
+                if (FailAdd) throw new InvalidOperationException("Native Add failed");
                 string type = progId.StartsWith("Forms.", StringComparison.Ordinal) && progId.EndsWith(".1", StringComparison.Ordinal) ? progId.Substring(6, progId.Length - 8) : "Other";
-                var control = AddExisting(type, name);
+                var control = HideAdded ? new FakeControl(type, name, owner) : AddExisting(type, name);
                 control.FailCaption = FailNextCaption;
                 FailNextCaption = false;
                 control.FailValue = FailNextValue;
@@ -138,6 +144,7 @@ namespace CodexVBE.Tests.Unit
                 FailNextListWidth = false;
                 control.Controls.FailNextCaption = FailNextChildCaption;
                 FailNextChildCaption = false;
+                ConfigureAdded?.Invoke(control);
                 return control;
             }
 
@@ -167,7 +174,7 @@ namespace CodexVBE.Tests.Unit
 
             public IEnumerator<FakeControl> GetEnumerator()
             {
-                return items.GetEnumerator();
+                BeforeEnumeration?.Invoke(); return items.GetEnumerator();
             }
 
             IEnumerator IEnumerable.GetEnumerator()
@@ -178,6 +185,8 @@ namespace CodexVBE.Tests.Unit
 
         public sealed class FakeControl
         {
+            internal readonly Dictionary<string, object> ReadOverrides = new Dictionary<string, object>();
+            private object ReadValue(string name, object value) { object result; return ReadOverrides.TryGetValue(name, out result) ? result : value; }
             private string caption = "Original";
             private object value;
             private object listWidth = "60 pt";
@@ -194,7 +203,7 @@ namespace CodexVBE.Tests.Unit
             }
 
             public string Name { get; set; }
-            public object Parent { get; }
+            public object Parent { get; set; }
             public FakeControls Controls { get; }
             public FakePageTabCollection Pages { get; }
             public FakePageTabCollection Tabs { get; }
@@ -207,7 +216,7 @@ namespace CodexVBE.Tests.Unit
             {
                 get
                 {
-                    return caption;
+                    return (string)ReadValue("Caption", caption);
                 }
 
                 set
@@ -218,17 +227,17 @@ namespace CodexVBE.Tests.Unit
                 }
             }
 
-            public double Left { get; set; }
-            public double Top { get; set; }
-            public double Width { get; set; } = 20;
-            public double Height { get; set; } = 10;
-            public int BackColor { get; set; }
+            private double left = 0; public double Left { get { return Convert.ToDouble(ReadValue("Left", left)); } set { left = value; } }
+            private double top = 0; public double Top { get { return Convert.ToDouble(ReadValue("Top", top)); } set { top = value; } }
+            private double width = 20; public double Width { get { return Convert.ToDouble(ReadValue("Width", width)); } set { width = value; } }
+            private double height = 10; public double Height { get { return Convert.ToDouble(ReadValue("Height", height)); } set { height = value; } }
+            private object backColor = 0; public object BackColor { get { return ReadValue("BackColor", backColor); } set { backColor = value; } }
 
             public object Value
             {
                 get
                 {
-                    return value;
+                    return ReadValue("Value", value);
                 }
 
                 set
@@ -243,7 +252,7 @@ namespace CodexVBE.Tests.Unit
             {
                 get
                 {
-                    return listWidth;
+                    return ReadValue("ListWidth", listWidth);
                 }
 
                 set
@@ -331,9 +340,14 @@ namespace CodexVBE.Tests.Unit
 
         public sealed class FakeFont
         {
-            public string Name { get; set; } = "Arial";
-            public double Size { get; set; } = 10;
-            public bool Bold { get; set; }
+            internal readonly Dictionary<string, object> ReadOverrides = new Dictionary<string, object>();
+            private object ReadValue(string name, object value) { object result; return ReadOverrides.TryGetValue(name, out result) ? result : value; }
+            private string name = "Arial";
+            private double size = 10;
+            private bool bold;
+            public string Name { get { return (string)ReadValue("Name", name); } set { name = value; } }
+            public double Size { get { return (double)ReadValue("Size", size); } set { size = value; } }
+            public bool Bold { get { return (bool)ReadValue("Bold", bold); } set { bold = value; } }
         }
 
         private sealed class NamedProvider : TypeDescriptionProvider

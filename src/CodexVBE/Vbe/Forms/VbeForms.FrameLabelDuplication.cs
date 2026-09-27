@@ -74,8 +74,6 @@ namespace CodexVBE
             }
             if (labels.Count == 0)
                 throw new InvalidOperationException("Use duplicate_empty_form_frame for an empty Frame.");
-            if (labels.Count != (int)plan.DirectChildCount)
-                throw new InvalidOperationException("Frame child count changed during preflight.");
 
             dynamic rootControls = form.Designer.Controls;
             dynamic copiedFrame = null;

@@ -63,3 +63,23 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+namespace CodexVBE.Tests.Unit
+{
+    using System;
+    using System.Drawing;
+    using System.Reflection;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    public sealed partial class VbeFormsFrameDuplicationTests
+    {
+        [TestMethod] public void LabelFrameChecksPreflightGeometryFontsAndConcurrentTreeChanges() { FramePreflightFailures("labels"); }
+        [TestMethod] public void LabelFrameChecksEverySupportedReadbackAndHierarchyField() { FrameReadbackFailures("labels"); }
+        [TestMethod] public void LabelFrameReportsNativeFailuresAndIncompleteChildOrRootRollback() { FrameNativeAndRollbackFailures("labels"); }
+        [TestMethod]
+        public void LabelColorConverterAcceptsNativeOleIntegersAndManagedColors()
+        {
+            var method=typeof(CodexVBE.VbeForms).GetMethod("CopyOleColor",BindingFlags.NonPublic|BindingFlags.Static);
+            Assert.AreEqual(ColorTranslator.ToOle(Color.Red),method.Invoke(null,new object[]{Color.Red}));
+            Assert.AreEqual(255,method.Invoke(null,new object[]{255}));
+        }
+    }
+}

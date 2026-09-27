@@ -34,8 +34,7 @@ namespace CodexVBE
             if (!TreeContainsPath((IEnumerable)tree.Controls, request.ControlPath))
                 throw new InvalidOperationException("ControlPath is not canonical in form_tree.");
             string[] parts = request.ControlPath.Split('/');
-            if (parts.Length < 2 || parts.Length % 2 != 0 ||
-                !string.Equals(parts[parts.Length - 2], "Controls", StringComparison.Ordinal))
+            if (!string.Equals(parts[parts.Length - 2], "Controls", StringComparison.Ordinal))
                 throw new ArgumentException("ControlPath must identify a Frame control.");
 
             object source = ResolveTreeItem(form.Designer, request.ControlPath);

@@ -76,7 +76,7 @@ namespace CodexVBE
                         item.FontSize <= 0 || item.FontSize > 200)
                         throw new InvalidOperationException("Source Label has an unsupported font: " + childPlan.SourcePath);
                 }
-                else if (string.Equals(kind, "TextBox", StringComparison.OrdinalIgnoreCase))
+                else
                 {
                     object raw = control.Value;
                     if (raw != null && !(raw is string))
@@ -84,13 +84,10 @@ namespace CodexVBE
                     item.TextValue = (string)raw;
                     textBoxCount++;
                 }
-                else throw new InvalidOperationException("Unsupported child escaped the copy plan: " + kind);
                 children.Add(item);
             }
             if (textBoxCount == 0)
                 throw new InvalidOperationException("Use duplicate_form_frame_labels when no TextBox child exists.");
-            if (children.Count != (int)plan.DirectChildCount)
-                throw new InvalidOperationException("Frame child count changed during preflight.");
 
             dynamic rootControls = form.Designer.Controls;
             dynamic copiedFrame = null;
