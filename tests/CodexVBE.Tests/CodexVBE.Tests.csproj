@@ -28,6 +28,8 @@
     <Compile Include="Unit\VbeCodeNavigationCoverageTests.cs" />
     <Compile Include="Unit\VbeProjectComponentsTests.cs" />
     <Compile Include="Unit\VbeDebugWindowsTests.cs" />
+    <Compile Include="Unit\VbeReferenceTypesTests.cs" />
+    <Compile Include="Unit\VbeFormsTests.cs" />
     <Compile Include="Integration\SessionStoreTests.cs" />
     <Compile Include="Integration\ExcelHostTests.cs" />
     <Compile Include="Integration\SolidWorksHostTests.cs" />
