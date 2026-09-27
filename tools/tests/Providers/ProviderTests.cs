@@ -13,6 +13,7 @@ using CodexVBE;
 
 internal static partial class ProviderTests
 {
+    internal static string CopilotFixtureExecutable { get; set; }
     private static readonly JavaScriptSerializer Json = new JavaScriptSerializer();
     private static void Assert(bool condition, string message) { if (!condition) throw new Exception(message); }
     private static IDictionary<string, object> Obj(object x) { return ClaudeProtocol.Object(x); }
@@ -37,6 +38,10 @@ internal static partial class ProviderTests
             if (args.Contains("--live-openrouter-tools")) { LiveOpenRouterTools().GetAwaiter().GetResult(); return 0; }
             SettingsUi(); GitHubSettingsUi(); Run().GetAwaiter().GetResult(); Extended().GetAwaiter().GetResult(); return 0;
         } catch (Exception ex) { Console.Error.WriteLine(ex); return 1; }
+    }
+    internal static void RunCoverageSuite()
+    {
+        SettingsUi(); GitHubSettingsUi(); Run().GetAwaiter().GetResult(); Extended().GetAwaiter().GetResult();
     }
     private static void SettingsUi()
     {
@@ -145,7 +150,7 @@ internal static partial class ProviderTests
 
         string previous = Environment.GetEnvironmentVariable("CODEXVBE_COPILOT_CLI");
         try {
-            Environment.SetEnvironmentVariable("CODEXVBE_COPILOT_CLI", Assembly.GetExecutingAssembly().Location);
+            Environment.SetEnvironmentVariable("CODEXVBE_COPILOT_CLI", CopilotFixtureExecutable ?? Assembly.GetExecutingAssembly().Location);
             foreach (string version in new[] { "2", "3" }) {
                 Environment.SetEnvironmentVariable("CODEXVBE_TEST_COPILOT_VERSION", version);
                 using (var client = new CopilotClient()) Assert((await client.ListModelsAsync()).Single().Id == "test-model", "Copilot models");

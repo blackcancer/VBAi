@@ -16,13 +16,19 @@ internal static partial class GitTests
     [STAThread]
     private static int Main()
     {
+        try { RunSuite(); Console.WriteLine("PASS " + checks + " Git checks (local Git + simulated VBE). Real hosts: NOT_RUN."); return 0; }
+        catch (Exception ex) { Console.Error.WriteLine(ex); return 1; }
+    }
+
+    internal static void RunSuite()
+    {
+        checks = 0;
         System.Windows.Forms.Application.EnableVisualStyles();
         // Regression: .NET Framework otherwise prepends this BOM to redirected binary stdin.
         Console.InputEncoding = new UTF8Encoding(true);
         root = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "runs", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
-        try { Snapshots(); Repositories(); ProjectImport(); Workflow(); Advanced(); Designer(); Console.WriteLine("PASS " + checks + " Git checks (local Git + simulated VBE). Real hosts: NOT_RUN."); return 0; }
-        catch (Exception ex) { Console.Error.WriteLine(ex); return 1; }
+        Snapshots(); Repositories(); ProjectImport(); Workflow(); Advanced(); Designer();
     }
     private static void Assert(bool ok, string message) { checks++; if (!ok) throw new Exception(message); }
     private static void Reject(Action action, string message)
@@ -179,29 +185,29 @@ internal static partial class GitTests
                 while ((bool)Get(form, "running")) { System.Windows.Forms.Application.DoEvents(); System.Threading.Thread.Sleep(5); if (clock.ElapsedMilliseconds > 30000) throw new Exception("Workflow timeout: " + method); }
             };
             Func<string> status = () => ((System.Windows.Forms.Label)form.Controls.Find("status", true)[0]).Text;
-            run("Commit_Click"); Assert(status().StartsWith("Commit local créé"), "UI creates local commit: " + status());
+            run("Commit_Click"); Assert(status() == UiText.Get("Local commit created. Use Push to publish it."), "UI creates local commit: " + status());
             Assert(a.Fetch() == null, "Commit does not publish");
-            run("Push_Click"); Assert(status().StartsWith("Push terminé"), "Separate UI push: " + status());
+            run("Push_Click"); Assert(status() == UiText.Get("Push complete."), "Separate UI push: " + status());
             string first = b.Fetch();
             var files = initial.Serialize(); files["Module1.bas"] = Encoding.UTF8.GetBytes("Attribute VB_Name = \"Module1\"\nOption Explicit\nPublic Const Value = 2\n");
             var target = VbaGitSnapshot.Read(files);
             string second = b.Commit(target, first, "Remote change"); b.Push(second);
             host.VBComponents.Item("Module1").CodeModule.Text += "' Local uncommitted\n";
-            run("Pull_Click"); Assert(status().Contains("modifications locales"), "UI rejects dirty VBA before pull");
+            run("Pull_Click"); Assert(status() == UiText.Get("VBA contains uncommitted local changes."), "UI rejects dirty VBA before pull");
             host.VBComponents.Item("Module1").CodeModule.Text = Encoding.UTF8.GetString(initial.Files["Module1.bas"]);
             run("Fetch_Click"); Assert(project.Capture().SameAs(initial), "UI Fetch never imports");
-            run("Pull_Click"); Assert(status().StartsWith("Pull et import terminés") && project.Capture().SameAs(target), "UI pull and import: " + status());
+            run("Pull_Click"); Assert(status() == UiText.Get("Pull and import complete. Check and save the document.") && project.Capture().SameAs(target), "UI pull and import: " + status());
             string backupBefore = a.Resolve(MacroGitRepository.Backup);
             run("Pull_Click"); Assert(a.Resolve(MacroGitRepository.Backup) == backupBefore, "No-op pull preserves rollback");
             run("Restore_Click"); Assert(project.Capture().SameAs(initial), "UI rollback restores initial VBA: " + status());
             var list = (System.Windows.Forms.ListBox)form.Controls.Find("changes", true)[0];
             Assert(list.Items.Count > 0, "Restoration is shown as an uncommitted change");
-            run("Pull_Click"); Assert(status().Contains("modifications locales"), "Pull does not overwrite local restoration");
+            run("Pull_Click"); Assert(status() == UiText.Get("VBA contains uncommitted local changes."), "Pull does not overwrite local restoration");
             run("Commit_Click"); run("Push_Click"); Assert(a.Read(a.Fetch()).SameAs(initial), "Restoration published as new commit");
             string third = b.Commit(target, b.Fetch(), "Another remote edit"); b.Push(third);
             host.VBComponents.ThrowAfterImport = true;
             run("Pull_Click"); Assert(a.RecoveryPending, "Partial import leaves durable recovery marker");
-            run("Commit_Click"); Assert(status().Contains("interrompu"), "Partial import blocks committing");
+            run("Commit_Click"); Assert(status() == UiText.Get("Restore the interrupted import before continuing."), "Partial import blocks committing");
             host.VBComponents.ThrowAfterImport = false;
             run("Restore_Click"); Assert(!a.RecoveryPending && project.Capture().SameAs(initial), "Restore recovers partial import: " + status());
             form.Close();

@@ -19,15 +19,28 @@
     <Compile Include="Unit\HistoryAndCodeTests.cs" />
     <Compile Include="Unit\WinFormsDesignerTests.cs" />
     <Compile Include="Unit\VbeSessionContractTests.cs" />
+    <Compile Include="Unit\DebugCommandTests.cs" />
+    <Compile Include="Unit\ProjectResolverTests.cs" />
     <Compile Include="Integration\SessionStoreTests.cs" />
     <Compile Include="Integration\ExcelHostTests.cs" />
     <Compile Include="Integration\SolidWorksHostTests.cs" />
     <Compile Include="Integration\VbeBridgeClient.cs" />
+    <Compile Include="Integration\GitCoverageTests.cs" />
+    <Compile Include="Integration\ProviderCoverageTests.cs" />
+    <Compile Include="..\..\tools\tests\Git\GitTests.cs" Link="Integration\GitTests.cs" />
+    <Compile Include="..\..\tools\tests\Git\AdvancedGitTests.cs" Link="Integration\AdvancedGitTests.cs" />
+    <Compile Include="..\..\tools\tests\Providers\ProviderTests.cs" Link="Integration\ProviderTests.cs" />
+    <Compile Include="..\..\tools\tests\Providers\ExtendedProviderTests.cs" Link="Integration\ExtendedProviderTests.cs" />
+    <Compile Include="..\..\tools\tests\Providers\GitHubSettingsTests.cs" Link="Integration\GitHubSettingsTests.cs" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Design" />
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\CodexVBE.csproj" />
+    <ProjectReference Include="..\..\tools\tests\Providers\ProviderTests.csproj" ReferenceOutputAssembly="false" />
+    <None Include="..\..\tools\tests\Providers\bin\$(Configuration)\net48\ProviderTests.exe" Link="ProviderTests.exe" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

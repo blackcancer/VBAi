@@ -35,7 +35,7 @@ internal static partial class ProviderTests
             Assert((string)picker.SelectedItem == "bob", "GitHub account independent of AI provider");
             refresh(true); Assert(logins == 1 && (string)picker.SelectedItem == "bob", "Explicit browser login and refresh");
             accounts = "alice\n"; refresh(false);
-            Assert(((Label)field("githubStatus")).Text.Contains("n’est plus mémorisé"), "Missing preferred account not silently switched");
+            Assert(((Label)field("githubStatus")).Text == UiText.Get("The selected account is no longer saved. Sign in again or choose another account."), "Missing preferred account not silently switched");
             accounts = "alice\nbob\n";
             form.Show(); Application.DoEvents(); form.Refresh();
             Assert(picker.Visible && ((Button)field("githubLogin")).Visible, "GitHub section visible for local AI provider");
