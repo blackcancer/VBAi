@@ -100,6 +100,104 @@ namespace CodexVBE
                 throw new InvalidOperationException("A VBE Options dialog is already open; the add-in will not close a user-owned dialog.");
         }
 
+        public static void EnsureNoSignatureDialog()
+        {
+            if (FindSignatureDialog() != IntPtr.Zero)
+                throw new InvalidOperationException("A VBE Digital Signature dialog is already open; the add-in will not close a user-owned dialog.");
+        }
+
+        public static object ReadSignatureDialog(string project)
+        {
+            IntPtr dialog = IntPtr.Zero;
+            for (int attempt = 0; attempt < 60 && dialog == IntPtr.Zero; attempt++)
+            { Thread.Sleep(50); dialog = FindSignatureDialog(); }
+            if (dialog == IntPtr.Zero)
+                throw new InvalidOperationException("The native VBE Digital Signature dialog did not open.");
+            var labels = new List<string>();
+            var buttons = new List<string>();
+            bool cancelled = false;
+            try
+            {
+                object accessible;
+                Guid iid = IidAccessible;
+                int hr = AccessibleObjectFromWindow(dialog, ObjidClient, ref iid, out accessible);
+                if (hr != 0 || !(accessible is Accessibility.IAccessible))
+                    throw new COMException("The native signature dialog is not accessible through MSAA.", hr);
+                var root = (Accessibility.IAccessible)accessible;
+                int count = Math.Min(root.accChildCount, 64);
+                int cancelIndex = 0;
+                for (int index = 1; index <= count; index++)
+                {
+                    string name;
+                    int role;
+                    try { name = root.get_accName(index); role = Convert.ToInt32(root.get_accRole(index)); }
+                    catch { continue; }
+                    if (string.IsNullOrWhiteSpace(name)) continue;
+                    if (role == 43)
+                    {
+                        buttons.Add(name);
+                        if (string.Equals(name, "Annuler", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(name, "Cancel", StringComparison.OrdinalIgnoreCase))
+                            cancelIndex = index;
+                    }
+                    else if (role == 41) labels.Add(name);
+                }
+                if (cancelIndex == 0)
+                    throw new InvalidOperationException("The native Digital Signature dialog has no accessible Cancel button.");
+                root.accDoDefaultAction(cancelIndex);
+                cancelled = true;
+            }
+            finally
+            {
+                if (!cancelled && FindSignatureDialog() == dialog)
+                    PostMessage(dialog, 0x0010, IntPtr.Zero, IntPtr.Zero); // WM_CLOSE on our exact dialog
+            }
+            bool closed = false;
+            for (int attempt = 0; attempt < 20; attempt++)
+            {
+                if (FindSignatureDialog() == IntPtr.Zero) { closed = true; break; }
+                Thread.Sleep(50);
+            }
+            if (!closed) throw new InvalidOperationException("The signature dialog was read but did not close.");
+            string currentCertificate = CertificateBeforeHeading(labels,
+                "Signature actuelle du projet VBA", "The VBA project is currently signed as");
+            string signAsCertificate = CertificateBeforeHeading(labels, "Signer en tant que", "Sign as");
+            return new { Project = project, CurrentCertificate = currentCertificate,
+                SignAsCertificate = signAsCertificate, Labels = labels.ToArray(), Buttons = buttons.ToArray(),
+                DialogClosed = true, Verification = "NativeSignatureDialogReadback",
+                Limit = "Labels reflect the native dialog; no certificate was selected, assigned, removed or cryptographically validated." };
+        }
+
+        private static string CertificateBeforeHeading(IList<string> labels, params string[] headings)
+        {
+            for (int index = 2; index < labels.Count; index++)
+                if (headings.Any(heading => string.Equals(labels[index], heading, StringComparison.OrdinalIgnoreCase)) &&
+                    (labels[index - 1].StartsWith("Nom du certificat", StringComparison.OrdinalIgnoreCase) ||
+                     labels[index - 1].StartsWith("Certificate name", StringComparison.OrdinalIgnoreCase)))
+                    return labels[index - 2];
+            return null;
+        }
+
+        private static IntPtr FindSignatureDialog()
+        {
+            IntPtr result = IntPtr.Zero;
+            uint currentPid = (uint)Process.GetCurrentProcess().Id;
+            EnumWindows((handle, parameter) => {
+                uint pid;
+                GetWindowThreadProcessId(handle, out pid);
+                if (pid != currentPid || !IsWindowVisible(handle)) return true;
+                string title = WindowText(handle);
+                if (!string.Equals(title, "Signature numérique", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(title, "Digital Signature", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(title, "Signature électronique", StringComparison.OrdinalIgnoreCase)) return true;
+                string kind = ClassName(handle);
+                if (kind != "#32770" && !kind.StartsWith("bosa_sdm_", StringComparison.OrdinalIgnoreCase)) return true;
+                result = handle;
+                return false;
+            }, IntPtr.Zero);
+            return result;
+        }
+
         public static object ReadDebugOptions()
         {
             IntPtr dialog = IntPtr.Zero;

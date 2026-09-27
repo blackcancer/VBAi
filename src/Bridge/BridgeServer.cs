@@ -122,6 +122,13 @@ namespace CodexVBE
                                     response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));
                                     if (response.Ok) response = Response.Success(VbeDebugWindows.ReadDebugOptions());
                                 }
+                                else if (request != null && request.Command == "read_project_signature_dialog")
+                                {
+                                    VbeDebugWindows.EnsureNoSignatureDialog();
+                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));
+                                    if (response.Ok) response = Response.Success(
+                                        VbeDebugWindows.ReadSignatureDialog(request.Project));
+                                }
                                 else if (request != null && request.Command == "remove_watch")
                                 {
                                     VbeDebugWindows.SelectWatch(request);

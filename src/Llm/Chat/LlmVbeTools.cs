@@ -20,7 +20,7 @@ namespace CodexVBE
         private readonly List<string> userRequests = new List<string>();
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
             "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "compile_project", "open_debug_pane", "list_commands", "select_code",
-            "project_properties", "project_signature_status", "component_properties", "component_property_value", "vbe_windows", "code_panes", "open_object_browser", "list_procedures", "find_code", "select_procedure", "list_forms",
+            "project_properties", "project_signature_status", "read_project_signature_dialog", "component_properties", "component_property_value", "vbe_windows", "code_panes", "open_object_browser", "list_procedures", "find_code", "select_procedure", "list_forms",
             "form_state", "form_tree", "form_list_items", "form_properties", "form_control_properties", "form_event_catalog",
             "list_form_control_types", "open_form"
         };
@@ -118,6 +118,8 @@ namespace CodexVBE
                 new[] { "Project" }, "Project"),
             Definition("project_signature_status", "Read whether the exact Excel workbook owning this VBE project has a signed VBA project. Returns Available=false when the host is not Excel, the registered Excel instance differs from this VBE, or its project cannot be matched. This does not sign, validate the certificate, or inspect pending edits.",
                 new[] { "Project" }, "Project"),
+            Definition("read_project_signature_dialog", "Read the labels and buttons of the native VBE Digital Signature dialog for the currently active project, then close it through its accessible Cancel action. Project must exactly match ActiveVBProject and ExpectedMode must be 2. This is a read-only observation of the displayed certificate names; it does not assign, remove or validate a certificate. No shortcuts or coordinate clicks.",
+                new[] { "Project", "ExpectedMode" }, "Project", "ExpectedMode"),
             Definition("component_properties", "Read all exposed VBComponent and designer properties, code SHA-256, and a component revision. Works for document, standard, class and form components when VBIDE allows access.",
                 new[] { "Project", "Module" }, "Project", "Module"),
             Definition("component_property_value", "Read one named VBComponent host property on demand. Type 100 document properties belong to the host object, not the common VBE editor; Excel MailEnvelope returns an explicit error because its getter blocks COM inspection.",
@@ -320,6 +322,20 @@ namespace CodexVBE
 
         public async Task<string> InvokeAsync(string name, string arguments)
         {
+            if (name == "read_project_signature_dialog")
+            {
+                try
+                {
+                    await Task.Run(() => VbeDebugWindows.EnsureNoSignatureDialog());
+                    string scheduled = Invoke(name, arguments);
+                    Response initial = json.Deserialize<Response>(scheduled);
+                    if (initial == null || !initial.Ok) return scheduled;
+                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
+                    return json.Serialize(Response.Success(await Task.Run(() =>
+                        VbeDebugWindows.ReadSignatureDialog((string)values["Project"]))));
+                }
+                catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+            }
             if (name == "read_debug_options")
             {
                 try

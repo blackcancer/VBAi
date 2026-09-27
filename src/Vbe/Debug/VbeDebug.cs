@@ -405,6 +405,30 @@ namespace CodexVBE
                 StateBefore = before, StateAfter = after, StateAfterError = afterError };
         }
 
+        public object QueueSignatureDialog(Request request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Project) || request.ExpectedMode != 2)
+                throw new ArgumentException("Project and ExpectedMode=2 are required.");
+            dynamic project = GetProject(request.Project);
+            if ((int)project.Mode != 2)
+                throw new InvalidOperationException("The selected project must be in design mode.");
+            dynamic active = vbe.ActiveVBProject;
+            if (active == null || !SameComObject((object)active, (object)project))
+                throw new InvalidOperationException("Select the exact project in VBE before opening its signature dialog.");
+            var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 746 && entry.Enabled &&
+                ((entry.Caption ?? "").Replace("&", "").IndexOf("Signature", StringComparison.OrdinalIgnoreCase) >= 0));
+            if (command == null)
+                throw new InvalidOperationException("The native VBE Digital Signature command is unavailable.");
+            SynchronizationContext context = SynchronizationContext.Current;
+            if (context == null) throw new InvalidOperationException("The VBE UI context is unavailable.");
+            context.Post(_ => {
+                try { ((dynamic)command.Control).Execute(); }
+                catch (Exception ex) { LoadLog.Write("VBE Digital Signature dialog failed: " + ex.Message); }
+            }, null);
+            return new { Scheduled = true, Project = request.Project, ControlId = command.Id,
+                Control = command.Path };
+        }
+
         public object RunSub(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Procedure) ||

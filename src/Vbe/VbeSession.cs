@@ -54,6 +54,8 @@ namespace CodexVBE
                     return Response.Success(components.ProjectProperties(request.Project));
                 case "project_signature_status":
                     return Response.Success(components.SignatureStatus(request.Project));
+                case "read_project_signature_dialog":
+                    return Response.Success(debugger.QueueSignatureDialog(request));
                 case "component_properties":
                     return Response.Success(components.ComponentProperties(request.Project, request.Module));
                 case "component_property_value":
