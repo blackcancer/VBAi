@@ -318,6 +318,7 @@ namespace CodexVBE
         private void ReceiveChatUpdate(string kind, string id, string text, bool complete)
         {
             if (IsDisposed || conversationItems == null) return;
+            if (kind == "summary" && !liveEntries.ContainsKey(id) && string.IsNullOrWhiteSpace(text)) return;
             ChatEntry entry;
             if (!liveEntries.TryGetValue(id, out entry))
             {
@@ -326,7 +327,7 @@ namespace CodexVBE
                 liveEntries[id] = entry;
                 AddEntry(entry);
             }
-            entry.Text = complete ? (text ?? entry.Text) : entry.Text + (text ?? "");
+            entry.Text = complete ? (string.IsNullOrWhiteSpace(text) ? entry.Text : text) : entry.Text + (text ?? "");
             if (complete)
             {
                 completedStreams.Add(id);

@@ -73,11 +73,16 @@ Set-Field $client turnDone $completion
 try {
     Call $client OnLine @('{"method":"item/reasoning/textDelta","params":{"threadId":"test-thread","itemId":"r","delta":"not a summary"}}')
     Call $client OnLine @('{"method":"item/agentMessage/delta","params":{"threadId":"another-thread","itemId":"a","delta":"foreign"}}')
+    Call $client OnLine @('{"method":"item/reasoning/summaryPartAdded","params":{"threadId":"test-thread","itemId":"r","summaryIndex":0}}')
     Call $client OnLine @('{"method":"item/reasoning/summaryTextDelta","params":{"threadId":"test-thread","itemId":"r","delta":"summary"}}')
+    Call $client OnLine @('{"method":"item/completed","params":{"threadId":"test-thread","item":{"id":"r","type":"reasoning","summary":[{"type":"summary_text","text":"Final summary."}]}}}')
+    Call $client OnLine @('{"method":"item/completed","params":{"threadId":"test-thread","item":{"id":"empty","type":"reasoning","summary":[]}}}')
     Call $client OnLine @('{"method":"item/completed","params":{"threadId":"test-thread","item":{"id":"a","type":"agentMessage","phase":"final_answer","text":"final"}}}')
     Call $client OnLine @('{"method":"turn/completed","params":{"threadId":"test-thread","turn":{"status":"completed"}}}')
     [Windows.Forms.Application]::DoEvents()
-    Assert ($events.Count -eq 2 -and $events[0].StartsWith('summary|') -and $events[1].StartsWith('final|')) 'Protocol updates leaked or lost an event.'
+    Assert ($events.Count -eq 4 -and $events[0] -eq 'summary|r|summary|False' -and
+        $events[1] -eq 'summary|r|Final summary.|True' -and $events[2] -eq 'summary|empty||True' -and
+        $events[3] -eq 'final|a|final|True') 'Protocol did not decode the reasoning summary correctly.'
     Assert ($completion.Task.IsCompleted -and $completion.Task.Result -eq 'final') 'Protocol turn completion failed.'
     Write-Output 'PASS protocol summaries, final answer and foreign-thread isolation'
 }
@@ -104,10 +109,13 @@ try {
     Call $window AddTranscriptMessage @('Vous', 'Analyser @Projet.Module1.Hello')
     Call $window ReceiveChatUpdate @('summary', 'summary-1', 'Verification de la procedure.', $false)
     Call $window ReceiveChatUpdate @('summary', 'summary-1', 'Verification terminee.', $true)
+    Call $window ReceiveChatUpdate @('summary', 'empty-summary', $null, $true)
     Call $window ReceiveChatUpdate @('message', 'answer-1', 'Reponse ', $false)
     Call $window ReceiveChatUpdate @('final', 'answer-1', 'Reponse complete.', $true)
     Call $window CompleteAssistantResponse @('Reponse complete.')
     Assert ((Field $window transcriptEntries).Count -eq 3) 'Streaming duplicated the final answer.'
+    $summaryEntry = @((Field $window transcriptEntries) | Where-Object { $_.Speaker -eq 'Réflexion' })
+    Assert ($summaryEntry.Count -eq 1 -and $summaryEntry[0].Text -eq 'Verification terminee.') 'The summary was empty or its completed text was lost.'
     $change = New-Internal CodeChange
     $change.Project = 'Projet'; $change.Module = 'Module1'
     $change.Before = "Sub Hello()\r\nEnd Sub"; $change.After = "Sub Hello()\r\nDebug.Print 1\r\nEnd Sub"

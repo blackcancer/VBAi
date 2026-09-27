@@ -95,6 +95,7 @@ namespace CodexVBE
                     threadId,
                     model,
                     effort,
+                    summary = "auto",
                     input = new[] { new { type = "text", text = prompt } }
                 });
                 activeTurnId = GetString(GetObject(GetObject(started, "result"), "turn"), "id") ?? activeTurnId;
@@ -241,7 +242,10 @@ namespace CodexVBE
                         PublishUpdate("summary", GetString(parameters, "itemId"), GetString(parameters, "delta"), false);
                         break;
                     case "item/reasoning/summaryPartAdded":
-                        PublishUpdate("summary", GetString(parameters, "itemId"), "\n\n", false);
+                        object summaryIndex;
+                        if (parameters.TryGetValue("summaryIndex", out summaryIndex) &&
+                            Convert.ToInt32(summaryIndex) > 0)
+                            PublishUpdate("summary", GetString(parameters, "itemId"), "\n\n", false);
                         break;
                     case "item/completed":
                         var item = GetObject(parameters, "item");
@@ -255,7 +259,15 @@ namespace CodexVBE
                         {
                             object summary;
                             if (item.TryGetValue("summary", out summary) && summary is object[])
-                                PublishUpdate("summary", GetString(item, "id"), string.Join("\n\n", ((object[])summary).Select(Convert.ToString)), true);
+                            {
+                                var parts = ((object[])summary).Select(part => {
+                                    var value = part as IDictionary<string, object>;
+                                    return value != null ? GetString(value, "text") : part as string;
+                                }).Where(part => !string.IsNullOrWhiteSpace(part));
+                                var text = string.Join("\n\n", parts);
+                                PublishUpdate("summary", GetString(item, "id"),
+                                    string.IsNullOrWhiteSpace(text) ? null : text, true);
+                            }
                         }
                         break;
                     case "turn/completed":
