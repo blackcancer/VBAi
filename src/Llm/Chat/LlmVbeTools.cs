@@ -20,7 +20,7 @@ namespace CodexVBE
         private readonly List<string> userRequests = new List<string>();
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
             "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "compile_project", "open_debug_pane", "list_commands", "select_code",
-            "project_properties", "project_signature_status", "read_project_signature_dialog", "list_signing_certificates", "component_properties", "component_property_value", "vbe_windows", "code_panes", "open_object_browser", "list_procedures", "find_code", "select_procedure", "list_forms",
+            "project_properties", "project_persistence_status", "project_signature_status", "read_project_signature_dialog", "list_signing_certificates", "component_properties", "component_property_value", "vbe_windows", "code_panes", "open_object_browser", "list_procedures", "find_code", "select_procedure", "list_forms",
             "form_state", "form_tree", "form_list_items", "form_properties", "form_control_properties", "form_event_catalog",
             "list_form_control_types", "open_form"
         };
@@ -116,6 +116,11 @@ namespace CodexVBE
                 "Project", "Form", "ObjectName", "EventName", "ExpectedSha256", "ExpectedTreeVersion"),
             Definition("project_properties", "Read all exposed VBProject properties, component identities and a project revision.",
                 new[] { "Project" }, "Project"),
+            Definition("project_persistence_status", "Read VBProject.Saved and, for the exact Excel workbook owning the project, Workbook.Saved, path and read-only state. Available=false outside Excel or when the workbook cannot be matched. This does not write to disk.",
+                new[] { "Project" }, "Project"),
+            Definition("save_host_document", "Save only the already-named, writable Excel workbook owning the exact design-mode VBE project. Requires the current ExpectedProjectVersion and the ExpectedHostPath returned by project_persistence_status. Returns both VBProject.Saved and Workbook.Saved after Workbook.Save. Unsaved workbooks and other hosts are refused; SaveAs is a separate operation.",
+                new[] { "Project", "ExpectedProjectVersion", "ExpectedHostPath" },
+                "Project", "ExpectedProjectVersion", "ExpectedHostPath"),
             Definition("project_signature_status", "Read whether the exact Excel workbook owning this VBE project has a signed VBA project. Returns Available=false when the host is not Excel, the registered Excel instance differs from this VBE, or its project cannot be matched. This does not sign, validate the certificate, or inspect pending edits.",
                 new[] { "Project" }, "Project"),
             Definition("list_signing_certificates", "List public metadata and thumbprints of CurrentUser/My certificates with a private key and Code Signing EKU. EligibleNow indicates the validity dates only; it does not establish certificate trust. Use an exact thumbprint with sign_project.",

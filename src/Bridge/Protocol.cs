@@ -43,6 +43,7 @@ namespace CodexVBE
         public string ExpectedTreeVersion { get; set; }
         public string ControlPath { get; set; }
         public string ExpectedProjectVersion { get; set; }
+        public string ExpectedHostPath { get; set; }
         public string CertificateThumbprint { get; set; }
         public string ExpectedComponentVersion { get; set; }
         public string NewName { get; set; }

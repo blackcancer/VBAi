@@ -53,6 +53,10 @@ namespace CodexVBE
                     return Response.Success(codeNavigation.CreateEventProcedure(request));
                 case "project_properties":
                     return Response.Success(components.ProjectProperties(request.Project));
+                case "project_persistence_status":
+                    return Response.Success(components.PersistenceStatus(request.Project));
+                case "save_host_document":
+                    return Response.Success(components.SaveHostDocument(request));
                 case "project_signature_status":
                     return Response.Success(components.SignatureStatus(request.Project));
                 case "list_signing_certificates":

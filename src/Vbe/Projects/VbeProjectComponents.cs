@@ -92,6 +92,92 @@ namespace CodexVBE
             }
         }
 
+        public object PersistenceStatus(string projectName)
+        {
+            dynamic project = GetProject(projectName);
+            bool projectSaved = (bool)project.Saved;
+            if (!string.Equals(Process.GetCurrentProcess().ProcessName, "EXCEL", StringComparison.OrdinalIgnoreCase))
+                return new { Project = projectName, ProjectSaved = projectSaved,
+                    HostAvailable = false, HostPath = (string)null, HostSaved = (bool?)null,
+                    HostReadOnly = (bool?)null, HostHasPath = (bool?)null,
+                    Reason = "The host is not Excel; its document save state is unavailable." };
+            try
+            {
+                dynamic workbook = MatchExcelWorkbook(project, true);
+                string path = (string)workbook.Path;
+                bool hasPath = !string.IsNullOrWhiteSpace(path);
+                return new { Project = projectName, ProjectSaved = projectSaved,
+                    HostAvailable = true, HostPath = hasPath ? (string)workbook.FullName : null,
+                    HostSaved = (bool?)((bool)workbook.Saved),
+                    HostReadOnly = (bool?)((bool)workbook.ReadOnly),
+                    HostHasPath = (bool?)hasPath, Reason = (string)null };
+            }
+            catch (Exception ex)
+            {
+                return new { Project = projectName, ProjectSaved = projectSaved,
+                    HostAvailable = false, HostPath = (string)null, HostSaved = (bool?)null,
+                    HostReadOnly = (bool?)null, HostHasPath = (bool?)null, Reason = ex.Message };
+            }
+        }
+
+        public object SaveHostDocument(Request request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.ExpectedHostPath) ||
+                !Path.IsPathRooted(request.ExpectedHostPath))
+                throw new ArgumentException("ExpectedHostPath must be the absolute path read from project_persistence_status.");
+            if (!string.Equals(Process.GetCurrentProcess().ProcessName, "EXCEL", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("This host has no supported document Save API in CodexVBE.");
+            dynamic project = GetDesignProject(request.Project);
+            AssertProjectVersion(request, project);
+            string projectPath = (string)project.FileName;
+            if (string.IsNullOrWhiteSpace(projectPath) || !Path.IsPathRooted(projectPath) ||
+                !string.Equals(Path.GetFullPath(projectPath), Path.GetFullPath(request.ExpectedHostPath),
+                    StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The selected VBA project's workbook path changed since it was read.");
+            dynamic workbook = MatchExcelWorkbook(project, false);
+            if ((bool)workbook.ReadOnly) throw new InvalidOperationException("The workbook is read-only and cannot be saved.");
+            bool beforeHostSaved = (bool)workbook.Saved;
+            bool beforeProjectSaved = (bool)project.Saved;
+            workbook.Save();
+            bool hostSaved = (bool)workbook.Saved;
+            bool projectSaved = (bool)project.Saved;
+            if (!hostSaved || !projectSaved)
+                throw new InvalidOperationException("Excel did not mark the workbook and VBA project as saved; a BeforeSave handler may have cancelled the save.");
+            return new { Project = request.Project, HostPath = projectPath,
+                SaveInvoked = true, HostSavedBefore = beforeHostSaved,
+                ProjectSavedBefore = beforeProjectSaved, HostSaved = hostSaved,
+                ProjectSaved = projectSaved,
+                Verification = "ExcelWorkbookSaveAndSavedReadback",
+                Limit = "The host reported Saved=true. Reopen the file to verify that a specific code edit persisted on disk." };
+        }
+
+        private dynamic MatchExcelWorkbook(dynamic project, bool allowUnsaved)
+        {
+            dynamic excel = Marshal.GetActiveObject("Excel.Application");
+            uint excelProcessId;
+            GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(excel.Hwnd)), out excelProcessId);
+            if (excelProcessId != (uint)Process.GetCurrentProcess().Id)
+                throw new InvalidOperationException("The registered Excel instance is not this VBE host.");
+            string projectPath = null;
+            try { projectPath = (string)project.FileName; }
+            catch { }
+            if (string.IsNullOrWhiteSpace(projectPath) && allowUnsaved &&
+                (int)excel.Workbooks.Count == 1 && (int)vbe.VBProjects.Count == 1)
+                return excel.Workbooks.Item(1);
+            if (string.IsNullOrWhiteSpace(projectPath) || !Path.IsPathRooted(projectPath))
+                throw new InvalidOperationException("The project has no saved workbook path.");
+            dynamic match = null;
+            foreach (dynamic workbook in excel.Workbooks)
+            {
+                if (!string.Equals(Path.GetFullPath((string)workbook.FullName),
+                    Path.GetFullPath(projectPath), StringComparison.OrdinalIgnoreCase)) continue;
+                if (match != null) throw new InvalidOperationException("Multiple workbooks match the selected VBA project.");
+                match = workbook;
+            }
+            if (match == null) throw new InvalidOperationException("No workbook matches the selected VBA project.");
+            return match;
+        }
+
         public object PersistExcelSignature(string projectName)
         {
             if (!string.Equals(Process.GetCurrentProcess().ProcessName, "EXCEL", StringComparison.OrdinalIgnoreCase))
