@@ -162,6 +162,8 @@ Dans Excel PID 39828, `Inspect-CodePaneAccessibility.ps1` a comparé le volet `T
 
 Dans Excel PID 49772, une macro jetable bornée à 30 secondes et appelant `DoEvents` est passée en mode exécution (`Mode=0`). `debug_global` avec `Action=break`, `ExpectedMode=0` a invoqué le contrôle natif `Exécution > Arrêt` (`Id=189`) ; le retour immédiat indiquait encore `Verification=Unverified`, puis un appel distinct à `debug_state` a confirmé `Mode=1`, ligne 5. Un second appel `break` en mode pause a été refusé avant l'invocation native (`Break requires run mode`), et `reset` a ramené le projet en mode conception (`Mode=2`). La route agit sur l'exécution du VBE entier et ne doit être utilisée que lorsqu'une interruption est voulue ; un macro sans `DoEvents` peut ne pas laisser le pont traiter la commande avant de terminer.
 
+Dans Excel PID 45004, `tools/probes/Test-StepOver.ps1` a arrêté une procédure appelante sur la ligne 4, juste avant l'appel d'une procédure interne. `step_over` a invoqué la commande native « Pas à pas principal » (`Id=194`) ; un appel distinct à `debug_state` a ensuite lu le mode pause sur la ligne 5 de l'appelante. Variables locales a relu `value=6`, contre `1` avant l'appel, ce qui démontre l'exécution de la procédure interne sans arrêt dans son corps. Cet essai complète les preuves de `step_into` et `step_out` sur Excel ; l'état retourné immédiatement par la commande reste potentiellement différé.
+
 ## Prochaine exploration
 
 1. Vérifier les propriétés modifiables restantes des contrôles et conteneurs, ainsi que leur suppression et leur réorganisation, sur des classeurs jetables.
