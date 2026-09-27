@@ -38,6 +38,13 @@
     <Compile Include="Unit\VbeFormsInitializerTests.cs" />
     <Compile Include="Unit\VbeDebugWindowsBoundaryTests.cs" />
     <Compile Include="Unit\VbeDebugWindowsParsingTests.cs" />
+    <Compile Include="Unit\BridgeServerTests.cs" />
+    <Compile Include="Unit\LlmVbeAsyncValidationTests.cs" />
+    <Compile Include="Unit\VbeChatReferenceTests.cs" />
+    <Compile Include="Unit\ChatWindowStateTests.cs" />
+    <Compile Include="Unit\GitWindowStateTests.cs" />
+    <Compile Include="Unit\CodexAppServerClientTests.cs" />
+    <Compile Include="Unit\VbeDebugWindowsNativeTests.cs" />
     <Compile Include="Integration\SessionStoreTests.cs" />
     <Compile Include="Integration\ExcelHostTests.cs" />
     <Compile Include="Integration\SolidWorksHostTests.cs" />

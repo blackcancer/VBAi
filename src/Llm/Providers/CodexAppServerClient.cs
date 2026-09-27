@@ -11,6 +11,65 @@ using System.Web.Script.Serialization;
 
 namespace CodexVBE
 {
+    internal interface ICodexAppServerTransport : IDisposable
+    {
+        event Action<string> LineReceived;
+        event Action<Exception> Exited;
+        bool IsRunning { get; }
+        void Start();
+        void Send(string line);
+    }
+
+    internal sealed class CodexProcessTransport : ICodexAppServerTransport
+    {
+        private Process process;
+        public event Action<string> LineReceived;
+        public event Action<Exception> Exited;
+        public bool IsRunning { get { return process != null && !process.HasExited; } }
+
+        public void Start()
+        {
+            string executable = Environment.GetEnvironmentVariable("CODEXVBE_CODEX_CLI");
+            if (string.IsNullOrWhiteSpace(executable))
+            {
+                string installed = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Programs", "OpenAI", "Codex", "bin", "codex.exe");
+                executable = File.Exists(installed) ? installed : "codex.exe";
+            }
+            var info = new ProcessStartInfo(executable, "app-server") {
+                UseShellExecute = false, RedirectStandardInput = true,
+                RedirectStandardOutput = true, RedirectStandardError = true,
+                CreateNoWindow = true, StandardOutputEncoding = new UTF8Encoding(false),
+                StandardErrorEncoding = new UTF8Encoding(false)
+            };
+            process = new Process { StartInfo = info, EnableRaisingEvents = true };
+            process.Exited += (sender, args) => Exited?.Invoke(new InvalidOperationException(UiText.Get("Codex app-server stopped.")));
+            if (!ProcessInput.StartWithoutPreamble(process))
+                throw new InvalidOperationException(UiText.Get("Unable to start codex app-server."));
+            process.OutputDataReceived += (sender, args) => { if (args.Data != null) LineReceived?.Invoke(args.Data); };
+            // Drain stderr; diagnostics are never protocol messages.
+            process.ErrorDataReceived += (sender, args) => { };
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+        }
+
+        public void Send(string line)
+        {
+            if (!IsRunning) throw new InvalidOperationException("Codex app-server is not running.");
+            byte[] bytes = new UTF8Encoding(false).GetBytes(line + "\n");
+            process.StandardInput.BaseStream.Write(bytes, 0, bytes.Length);
+            process.StandardInput.BaseStream.Flush();
+        }
+
+        public void Dispose()
+        {
+            if (process == null) return;
+            try { if (!process.HasExited) process.Kill(); } catch { }
+            process.Dispose();
+            process = null;
+        }
+    }
+
     // Owns a single Codex CLI child process. Codex itself owns ChatGPT authentication.
     internal sealed class CodexAppServerClient : IDisposable
     {
@@ -21,7 +80,8 @@ namespace CodexVBE
         private readonly Dictionary<int, TaskCompletionSource<IDictionary<string, object>>> requests =
             new Dictionary<int, TaskCompletionSource<IDictionary<string, object>>>();
         private readonly object gate = new object();
-        private Process process;
+        private readonly ICodexAppServerTransport transport;
+        private bool transportStarted;
         private int nextId;
         private string threadId;
         private TaskCompletionSource<string> turnDone;
@@ -34,17 +94,24 @@ namespace CodexVBE
         public event Action<string, string, string, bool> ChatUpdate;
 
         public CodexAppServerClient(SynchronizationContext ui, LlmVbeTools tools, Action<string> progress, LlmSettings settings, string resumeThreadId = null)
+            : this(ui, tools, progress, settings, resumeThreadId, new CodexProcessTransport()) { }
+
+        internal CodexAppServerClient(SynchronizationContext ui, LlmVbeTools tools, Action<string> progress,
+            LlmSettings settings, string resumeThreadId, ICodexAppServerTransport transport)
         {
             this.ui = ui ?? throw new ArgumentNullException(nameof(ui));
             this.tools = tools ?? throw new ArgumentNullException(nameof(tools));
             this.progress = progress ?? (_ => { });
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            this.transport = transport ?? throw new ArgumentNullException(nameof(transport));
+            this.transport.LineReceived += OnLine;
+            this.transport.Exited += FailPending;
             threadId = resumeThreadId;
         }
 
         public async Task<LlmModelOption[]> ListModelsAsync()
         {
-            if (process == null) await StartAsync();
+            if (!transportStarted) await StartAsync();
             var result = new List<LlmModelOption>();
             string cursor = null;
             do
@@ -89,7 +156,7 @@ namespace CodexVBE
             turnDone = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
             try
             {
-                if (process == null) await StartAsync();
+                if (!transportStarted) await StartAsync();
                 if (interruptRequested) throw new OperationCanceledException();
                 var started = await RequestAsync("turn/start", new {
                     threadId,
@@ -114,29 +181,10 @@ namespace CodexVBE
 
         private async Task StartAsync()
         {
-            string executable = Environment.GetEnvironmentVariable("CODEXVBE_CODEX_CLI");
-            if (string.IsNullOrWhiteSpace(executable))
-            {
-                string installed = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "Programs", "OpenAI", "Codex", "bin", "codex.exe");
-                executable = File.Exists(installed) ? installed : "codex.exe";
-            }
-            var info = new ProcessStartInfo(executable, "app-server") {
-                UseShellExecute = false, RedirectStandardInput = true,
-                RedirectStandardOutput = true, RedirectStandardError = true,
-                CreateNoWindow = true, StandardOutputEncoding = new UTF8Encoding(false),
-                StandardErrorEncoding = new UTF8Encoding(false)
-            };
-            process = new Process { StartInfo = info, EnableRaisingEvents = true };
-            process.Exited += (sender, args) => FailPending(new InvalidOperationException(UiText.Get("Codex app-server stopped.")));
             try
             {
-                if (!ProcessInput.StartWithoutPreamble(process)) throw new InvalidOperationException(UiText.Get("Unable to start codex app-server."));
-                process.OutputDataReceived += (sender, args) => { if (args.Data != null) OnLine(args.Data); };
-                // Read stderr so the child cannot block on a full pipe. Diagnostics are never treated as protocol data.
-                process.ErrorDataReceived += (sender, args) => { };
-                process.BeginOutputReadLine();
-                process.BeginErrorReadLine();
+                transport.Start();
+                transportStarted = true;
                 progress(UiText.Get("Codex: initializing the local server"));
                 await RequestAsync("initialize", new {
                     clientInfo = new { name = "codexvbe", title = "CodexVBE", version = "0.1.0" },
@@ -180,7 +228,7 @@ namespace CodexVBE
 
         private Task<IDictionary<string, object>> RequestAsync(string method, object parameters)
         {
-            if (disposed || process == null || process.HasExited)
+            if (disposed || !transportStarted || !transport.IsRunning)
                 throw new InvalidOperationException("Codex app-server is not running.");
             int id;
             var completion = new TaskCompletionSource<IDictionary<string, object>>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -195,11 +243,8 @@ namespace CodexVBE
             string line = NewJson().Serialize(message);
             lock (gate)
             {
-                if (process == null || process.HasExited) throw new InvalidOperationException("Codex app-server is not running.");
-                // .NET Framework's redirected StandardInput writer can emit a BOM; JSONL requires a raw JSON byte first.
-                byte[] bytes = new UTF8Encoding(false).GetBytes(line + "\n");
-                process.StandardInput.BaseStream.Write(bytes, 0, bytes.Length);
-                process.StandardInput.BaseStream.Flush();
+                if (!transportStarted || !transport.IsRunning) throw new InvalidOperationException("Codex app-server is not running.");
+                transport.Send(line);
             }
         }
 
@@ -351,10 +396,7 @@ namespace CodexVBE
             if (disposed) return;
             disposed = true;
             FailPending(new ObjectDisposedException(nameof(CodexAppServerClient)));
-            if (process == null) return;
-            try { if (!process.HasExited) process.Kill(); } catch { }
-            process.Dispose();
-            process = null;
+            transport.Dispose();
         }
     }
 }

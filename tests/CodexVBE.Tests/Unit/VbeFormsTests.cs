@@ -188,6 +188,230 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual(0, fixture.Form.Designer.Controls.Item("Label1").Left);
         }
 
+        [TestMethod]
+        public void CreateAndOpenFormRequireValidIdentityAndDesignMode()
+        {
+            var fixture = NewFixture();
+            var request = new Request { Project = fixture.Project.Name, Form = "NewForm" };
+            fixture.Project.Mode = 1;
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.Create(request));
+            fixture.Project.Mode = 2;
+            request.Form = "2Invalid";
+            Assert.ThrowsException<ArgumentException>(() => fixture.Service.Create(request));
+            request.Form = "form1";
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.Create(request));
+            request.Form = "NewForm";
+            dynamic created = fixture.Service.Create(request);
+            Assert.AreEqual("NewForm", (string)created.Form);
+            var form = fixture.Project.VBComponents.OfType<FakeForm>().Single(item => item.Name == "NewForm");
+            Assert.IsTrue(form.DesignerWindow().Visible);
+            form.DesignerWindow().Visible = false;
+            dynamic opened = fixture.Service.Open(fixture.Project.Name, "newform");
+            Assert.IsTrue(form.DesignerWindow().Visible);
+            Assert.AreEqual("NewForm", (string)opened.Form);
+        }
+
+        [TestMethod]
+        public void FailedFormRenameRollsBackOnlyTheCreatedComponent()
+        {
+            var fixture = NewFixture();
+            fixture.Project.VBComponents.RejectedCreatedName = "DeniedForm";
+            var error = Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.Create(
+                new Request { Project = fixture.Project.Name, Form = "DeniedForm" }));
+            StringAssert.Contains(error.Message, "absent after rollback");
+            Assert.AreEqual(1, fixture.Project.VBComponents.Count);
+            Assert.AreEqual("Form1", fixture.Project.VBComponents.OfType<FakeForm>().Single().Name);
+        }
+
+        [TestMethod]
+        public void ControlGeometryNameCaptionAndFontRoundTripWithFreshVersion()
+        {
+            var fixture = NewFixture();
+            var control = fixture.Form.Designer.Controls.AddExisting("Label1");
+            dynamic before = fixture.Service.State(fixture.Project.Name, fixture.Form.Name);
+            var request = new Request { Project = fixture.Project.Name, Form = fixture.Form.Name,
+                Control = "Label1", ExpectedFormVersion = before.Version,
+                Left = 12, Top = 7, Width = 80, Height = 21 };
+            dynamic moved = fixture.Service.SetControlGeometry(request);
+            Assert.AreEqual(12d, control.Left);
+            Assert.AreEqual(80d, control.Width);
+            request.ExpectedFormVersion = moved.Version;
+            request.NewName = "Heading";
+            dynamic renamed = fixture.Service.RenameControl(request);
+            Assert.AreEqual("Heading", control.Name);
+            request.Control = "Heading";
+            request.ExpectedFormVersion = renamed.Version;
+            request.Caption = "New heading";
+            dynamic captioned = fixture.Service.SetControlCaption(request);
+            Assert.AreEqual("New heading", control.Caption);
+            request.ExpectedFormVersion = captioned.Version;
+            request.FontName = "Consolas";
+            request.FontSize = 13;
+            request.FontBold = true;
+            dynamic font = fixture.Service.SetControlFont(request);
+            Assert.AreEqual("Consolas", control.Font.Name);
+            Assert.AreEqual(13d, control.Font.Size);
+            Assert.IsTrue(control.Font.Bold);
+            Assert.AreNotEqual((string)before.Version, (string)font.Version);
+        }
+
+        [TestMethod]
+        public void ControlEditsRejectDuplicateNameMissingCaptionInvalidFontAndStaleState()
+        {
+            var fixture = NewFixture();
+            fixture.Form.Designer.Controls.AddExisting("Label1");
+            fixture.Form.Designer.Controls.AddExisting("Keep");
+            dynamic state = fixture.Service.State(fixture.Project.Name, fixture.Form.Name);
+            var request = new Request { Project = fixture.Project.Name, Form = fixture.Form.Name,
+                Control = "Label1", ExpectedFormVersion = state.Version, NewName = "Keep" };
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.RenameControl(request));
+            request.NewName = "2Bad";
+            Assert.ThrowsException<ArgumentException>(() => fixture.Service.RenameControl(request));
+            request.Caption = null;
+            Assert.ThrowsException<ArgumentException>(() => fixture.Service.SetControlCaption(request));
+            request.FontName = "Arial";
+            request.FontSize = double.NaN;
+            Assert.ThrowsException<ArgumentException>(() => fixture.Service.SetControlFont(request));
+            request.FontSize = 11;
+            request.ExpectedFormVersion = "stale";
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.SetControlFont(request));
+            Assert.AreEqual("Label1", fixture.Form.Designer.Controls.Item("Label1").Name);
+        }
+
+        [TestMethod]
+        public void ControlPropertiesIncludeCurrentNativeValuesAndRejectUnknownControl()
+        {
+            var fixture = NewFixture();
+            fixture.Form.Designer.Controls.AddExisting("Label1").Caption = "Visible text";
+            var properties = ((IEnumerable)fixture.Service.ControlProperties(fixture.Project.Name,
+                fixture.Form.Name, "Label1")).Cast<object>().ToArray();
+            var caption = properties.Single(property => (string)((dynamic)property).Name == "Caption");
+            Assert.AreEqual("Visible text", (string)((dynamic)caption).Value);
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.ControlProperties(
+                fixture.Project.Name, fixture.Form.Name, "Missing"));
+        }
+
+        [TestMethod]
+        public void FormPropertiesWriteScalarIdentityAndAllSupportedFontMembers()
+        {
+            var fixture = NewFixture();
+            var request = new Request { Project = fixture.Project.Name, Form = fixture.Form.Name,
+                ExpectedFormVersion = ((dynamic)fixture.Service.State(fixture.Project.Name, fixture.Form.Name)).Version };
+            request.Property = "Width";
+            request.Value = "345.5";
+            dynamic resized = fixture.Service.SetProperty(request);
+            Assert.AreEqual(345.5d, fixture.Form.Designer.Width);
+            request.ExpectedFormVersion = resized.State.Version;
+            request.Property = "Name";
+            request.Value = "RenamedForm";
+            dynamic renamed = fixture.Service.SetProperty(request);
+            Assert.AreEqual("RenamedForm", fixture.Form.Name);
+            request.Form = fixture.Form.Name;
+            request.ExpectedFormVersion = renamed.State.Version;
+            foreach (var edit in new[] {
+                Tuple.Create("Font.Name", (object)"Consolas"),
+                Tuple.Create("Font.Size", (object)12.5d),
+                Tuple.Create("Font.Bold", (object)true),
+                Tuple.Create("Font.Italic", (object)true),
+                Tuple.Create("Font.Underline", (object)true),
+                Tuple.Create("Font.Strikethrough", (object)true) })
+            {
+                request.Property = edit.Item1;
+                request.Value = edit.Item2;
+                dynamic result = fixture.Service.SetProperty(request);
+                request.ExpectedFormVersion = result.State.Version;
+            }
+            Assert.AreEqual("Consolas", fixture.Form.Designer.Font.Name);
+            Assert.AreEqual(12.5d, fixture.Form.Designer.Font.Size);
+            Assert.IsTrue(fixture.Form.Designer.Font.Bold);
+            Assert.IsTrue(fixture.Form.Designer.Font.Italic);
+            Assert.IsTrue(fixture.Form.Designer.Font.Underline);
+            Assert.IsTrue(fixture.Form.Designer.Font.Strikethrough);
+        }
+
+        [TestMethod]
+        public void FormPropertyWritesRejectUnknownUnsafeAndMalformedMembers()
+        {
+            var fixture = NewFixture();
+            var request = new Request { Project = fixture.Project.Name, Form = fixture.Form.Name,
+                ExpectedFormVersion = ((dynamic)fixture.Service.State(fixture.Project.Name, fixture.Form.Name)).Version,
+                Value = "value" };
+            foreach (string property in new[] { "Missing", "Caption.Other" })
+            {
+                request.Property = property;
+                Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.SetProperty(request));
+            }
+            request.Property = "Font..Size";
+            Assert.ThrowsException<ArgumentException>(() => fixture.Service.SetProperty(request));
+            request.Property = "Font.Unknown";
+            request.Value = true;
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.SetProperty(request));
+            request.Property = "Font.Size";
+            request.Value = double.PositiveInfinity;
+            Assert.ThrowsException<ArgumentException>(() => fixture.Service.SetProperty(request));
+            request.Property = "Name";
+            request.Value = "2Bad";
+            Assert.ThrowsException<ArgumentException>(() => fixture.Service.SetProperty(request));
+            Assert.AreEqual("Form1", fixture.Form.Name);
+        }
+
+        [TestMethod]
+        public void EventCatalogUsesExactFormOrCanonicalControlPath()
+        {
+            var fixture = NewFixture();
+            fixture.Form.Designer.Controls.AddExisting("Label1");
+            dynamic formEvents = fixture.Service.EventCatalog(fixture.Project.Name, fixture.Form.Name, null);
+            Assert.AreEqual("UserForm", (string)formEvents.ObjectName);
+            dynamic controlEvents = fixture.Service.EventCatalog(fixture.Project.Name, fixture.Form.Name,
+                "Controls/Label1");
+            Assert.AreEqual("Label1", (string)controlEvents.ObjectName);
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.EventCatalog(
+                fixture.Project.Name, fixture.Form.Name, "Label1"));
+        }
+
+        [TestMethod]
+        public void ZOrderInvokesNativeControlButReportsUnverifiedEffect()
+        {
+            var fixture = NewFixture();
+            var control = fixture.Form.Designer.Controls.AddExisting("Label1");
+            dynamic tree = fixture.Service.Tree(fixture.Project.Name, fixture.Form.Name);
+            var request = new Request { Project = fixture.Project.Name, Form = fixture.Form.Name,
+                ControlPath = "Controls/Label1", ExpectedTreeVersion = tree.TreeVersion,
+                ZPosition = 0 };
+            dynamic moved = fixture.Service.ZOrderControl(request);
+            Assert.AreEqual(1, control.ZOrderCount);
+            Assert.AreEqual(0, control.LastZPosition);
+            Assert.AreEqual("Unverified", (string)moved.Verification);
+            Assert.IsTrue((bool)moved.VerificationPending);
+            request.ZPosition = 2;
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => fixture.Service.ZOrderControl(request));
+            request.ZPosition = 1;
+            request.ExpectedTreeVersion = "stale";
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.ZOrderControl(request));
+            Assert.AreEqual(1, control.ZOrderCount);
+        }
+
+        [TestMethod]
+        public void PageTabAndPictureCommandsRejectUnverifiedTargetsBeforeNativeWrites()
+        {
+            var fixture = NewFixture();
+            fixture.Form.Designer.Controls.AddExisting("Frame1");
+            dynamic tree = fixture.Service.Tree(fixture.Project.Name, fixture.Form.Name);
+            var page = new Request { Project = fixture.Project.Name, Form = fixture.Form.Name,
+                ParentPath = "Controls/Frame1", NewName = "Page1",
+                ExpectedTreeVersion = tree.TreeVersion };
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.AddPageOrTab(page, "Pages"));
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.AddPageOrTab(page, "Tabs"));
+            var remove = new Request { Project = fixture.Project.Name, Form = fixture.Form.Name,
+                ControlPath = "Controls/Frame1", ExpectedTreeVersion = tree.TreeVersion };
+            Assert.ThrowsException<ArgumentException>(() => fixture.Service.RemovePageOrTab(remove));
+            var picture = new Request { Project = fixture.Project.Name, Form = fixture.Form.Name,
+                ControlPath = "Controls/Frame1", Property = "Caption",
+                ExpectedTreeVersion = tree.TreeVersion };
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.SetNodePicture(picture));
+            Assert.AreEqual(1, fixture.Form.Designer.Controls.Count);
+        }
+
         private sealed class Fixture
         {
             internal FakeProject Project { get; set; }
@@ -204,7 +428,24 @@ namespace CodexVBE.Tests.Unit
         {
             public string Name { get; set; } = "VBAProject";
             public int Mode { get; set; } = 2;
-            public List<object> VBComponents { get; } = new List<object>();
+            public FakeComponents VBComponents { get; } = new FakeComponents();
+        }
+
+        public sealed class FakeComponents : IEnumerable<object>
+        {
+            private readonly List<object> items = new List<object>();
+            public string RejectedCreatedName { get; set; }
+            public int Count => items.Count;
+            public void Add(object component) { items.Add(component); }
+            public FakeForm Add(int type)
+            {
+                var form = new FakeForm("Temporary") { RejectedName = RejectedCreatedName };
+                items.Add(form);
+                return form;
+            }
+            public void Remove(object component) { items.Remove(component); }
+            public IEnumerator<object> GetEnumerator() { return items.GetEnumerator(); }
+            IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
         }
 
         public sealed class FakeModule
@@ -217,13 +458,23 @@ namespace CodexVBE.Tests.Unit
         public sealed class FakeForm
         {
             private readonly FakeWindow window = new FakeWindow();
+            private string name;
             public FakeForm(string name)
             {
                 Name = name;
                 Designer = new FakeDesigner();
                 Properties = new FakePropertyCollection(Designer);
             }
-            public string Name { get; set; }
+            public string RejectedName { get; set; }
+            public string Name
+            {
+                get { return name; }
+                set
+                {
+                    if (value == RejectedName) throw new InvalidOperationException("VBE rejected form name");
+                    name = value;
+                }
+            }
             public int Type { get { return 3; } }
             public bool HasOpenDesigner { get { return window.Visible; } }
             public FakeDesigner Designer { get; }
@@ -242,6 +493,7 @@ namespace CodexVBE.Tests.Unit
             public string Caption { get; set; } = "Original caption";
             public double Width { get; set; } = 300;
             public double Height { get; set; } = 200;
+            public FakeFont Font { get; } = new FakeFont();
             public FakeControls Controls { get; }
         }
 
@@ -253,7 +505,8 @@ namespace CodexVBE.Tests.Unit
                 properties = new List<FakeProperty> {
                     new FakeProperty("Caption", () => designer.Caption, value => designer.Caption = (string)value),
                     new FakeProperty("Width", () => designer.Width, value => designer.Width = (double)value),
-                    new FakeProperty("Height", () => designer.Height, value => designer.Height = (double)value)
+                    new FakeProperty("Height", () => designer.Height, value => designer.Height = (double)value),
+                    new FakeProperty("Font", () => designer.Font, value => throw new InvalidOperationException("Use a Font member"))
                 };
             }
             public FakeProperty Item(string name) { return properties.Single(p => p.Name == name); }
@@ -321,6 +574,9 @@ namespace CodexVBE.Tests.Unit
             public double Top { get; set; }
             public double Width { get; set; } = 20;
             public double Height { get; set; } = 10;
+            public int ZOrderCount { get; private set; }
+            public int LastZPosition { get; private set; }
+            public void ZOrder(int position) { ZOrderCount++; LastZPosition = position; }
         }
 
         public sealed class FakeFont
@@ -328,6 +584,9 @@ namespace CodexVBE.Tests.Unit
             public string Name { get; set; } = "Arial";
             public double Size { get; set; } = 10;
             public bool Bold { get; set; }
+            public bool Italic { get; set; }
+            public bool Underline { get; set; }
+            public bool Strikethrough { get; set; }
         }
     }
 }

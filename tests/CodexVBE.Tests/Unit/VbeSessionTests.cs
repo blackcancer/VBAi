@@ -292,6 +292,27 @@ namespace CodexVBE.Tests.Unit
             Assert.ThrowsException<InvalidOperationException>(() => f.Session.GitScope(f.Project.Name));
         }
 
+        [TestMethod]
+        public void SigningRejectsMissingTokenStaleProjectRunningModeUnsavedAndBadThumbprint()
+        {
+            var f = Create();
+            var request = new Request { Command = "sign_project", Project = f.Project.Name,
+                ExpectedMode = 2, CertificateThumbprint = "invalid" };
+            Assert.ThrowsException<ArgumentException>(() => f.Session.Execute(request));
+            request.ExpectedProjectVersion = "stale";
+            f.Project.Mode = 1;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Session.Execute(request));
+            f.Project.Mode = 2;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Session.Execute(request));
+            dynamic state = f.Session.Execute(new Request {
+                Command = "project_properties", Project = f.Project.Name }).Data;
+            request.ExpectedProjectVersion = state.Version;
+            f.Project.Saved = false;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Session.Execute(request));
+            f.Project.Saved = true;
+            Assert.ThrowsException<ArgumentException>(() => f.Session.Execute(request));
+        }
+
         private sealed class Fixture
         {
             public FakeVbe Vbe;
@@ -309,6 +330,7 @@ namespace CodexVBE.Tests.Unit
             private string fileName;
             public string Name { get; set; }
             public int Mode { get; set; }
+            public bool Saved { get; set; } = true;
             public bool ThrowFileName { get; set; }
             public string FileName
             {

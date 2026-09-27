@@ -178,6 +178,80 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual("PublicNotCreatable", (string)result.Meaning);
         }
 
+        [TestMethod]
+        public void ComponentProbeCoversIdentityDescriptorsCodeAndNamedProperties()
+        {
+            var project = new FakeProject();
+            var module = new FakeComponent("Module1", 1);
+            project.VBComponents.Add(module);
+            var service = Service(project);
+            dynamic identity = service.ComponentProbe(project.Name, module.Name, "identity", null);
+            Assert.AreEqual("Module1", (string)identity.Name);
+            Assert.AreEqual(1, (int)identity.Type);
+            var descriptors = ((IEnumerable)service.ComponentProbe(project.Name, module.Name,
+                "descriptor_names", null)).Cast<object>().ToArray();
+            Assert.IsTrue(descriptors.Any(item => (string)((dynamic)item).Name == "Description"));
+            var propertyNames = ((IEnumerable)service.ComponentProbe(project.Name, module.Name,
+                "designer_property_names", null)).Cast<string>().ToArray();
+            CollectionAssert.Contains(propertyNames, "Instancing");
+            Assert.AreEqual(1, (int)((dynamic)service.ComponentProbe(project.Name, module.Name,
+                "code_count", null)).Lines);
+            Assert.AreEqual(64, ((string)((dynamic)service.ComponentProbe(project.Name, module.Name,
+                "code_sha", null)).Sha256).Length);
+            dynamic descriptor = service.ComponentProbe(project.Name, module.Name,
+                "descriptor_value", "Description");
+            Assert.AreEqual("Original", (string)descriptor.Value);
+            dynamic property = service.ComponentPropertyValue(project.Name, module.Name, "Instancing");
+            Assert.AreEqual(1, (int)property.Value);
+            Assert.ThrowsException<ArgumentException>(() => service.ComponentPropertyValue(
+                project.Name, module.Name, " "));
+            Assert.ThrowsException<ArgumentException>(() => service.ComponentProbe(
+                project.Name, module.Name, "descriptor_value", "Absent"));
+            Assert.ThrowsException<ArgumentException>(() => service.ComponentProbe(
+                project.Name, module.Name, "unknown", null));
+        }
+
+        [TestMethod]
+        public void DocumentComponentDoesNotReadHostPropertiesInBulkOrProbeMailEnvelope()
+        {
+            var project = new FakeProject();
+            var document = new FakeComponent("ThisWorkbook", 100);
+            document.Properties.Add(new FakeProperty { Name = "MailEnvelope", Value = "unsafe" });
+            project.VBComponents.Add(document);
+            var service = Service(project);
+            dynamic snapshot = service.ComponentProperties(project.Name, document.Name);
+            var host = ((IEnumerable)snapshot.HostProperties).Cast<VbePropertyInfo>().ToArray();
+            Assert.AreEqual(2, host.Length);
+            Assert.IsTrue(host.All(property => property.Value == null));
+            StringAssert.Contains(host.Single(property => property.Name == "MailEnvelope").Error, "blocks");
+            Assert.ThrowsException<InvalidOperationException>(() => service.ComponentPropertyValue(
+                project.Name, document.Name, "MailEnvelope"));
+        }
+
+        [TestMethod]
+        public void NonExcelHostReportsSignatureAndPersistenceLimitsAndRejectsSaving()
+        {
+            var project = new FakeProject { Saved = false };
+            var service = Service(project);
+            dynamic signature = service.SignatureStatus(project.Name);
+            Assert.IsFalse((bool)signature.Available);
+            Assert.IsNull((object)signature.Signed);
+            dynamic persistence = service.PersistenceStatus(project.Name);
+            Assert.IsFalse((bool)persistence.ProjectSaved);
+            Assert.IsFalse((bool)persistence.HostAvailable);
+            Assert.ThrowsException<ArgumentException>(() => service.SaveHostDocument(new Request {
+                Project = project.Name, ExpectedHostPath = "relative.xlsm" }));
+            Assert.ThrowsException<InvalidOperationException>(() => service.SaveHostDocument(new Request {
+                Project = project.Name, ExpectedHostPath = @"C:\fixture\Book.xlsm" }));
+            Assert.ThrowsException<ArgumentException>(() => service.SaveHostDocumentAs(new Request {
+                Project = project.Name, Path = " " }));
+            Assert.ThrowsException<InvalidOperationException>(() => service.SaveHostDocumentAs(new Request {
+                Project = project.Name, Path = @"C:\fixture\New.xlsm", ExpectedProjectVersion = "version" }));
+            dynamic saved = service.PersistExcelSignature(project.Name);
+            Assert.IsFalse((bool)saved.Available);
+            Assert.IsFalse((bool)saved.Saved);
+        }
+
         public sealed class FakeVbe
         {
             public List<FakeProject> VBProjects { get; } = new List<FakeProject>();
@@ -230,6 +304,7 @@ namespace CodexVBE.Tests.Unit
                 new FakeProperty { Name = "Instancing", Value = 1 }
             };
             public FakeProperty Item(string name) { return items.Single(p => p.Name == name); }
+            public void Add(FakeProperty property) { items.Add(property); }
             public IEnumerator<FakeProperty> GetEnumerator() { return items.GetEnumerator(); }
             IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
         }

@@ -65,6 +65,44 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual(1, (int)linkage.Properties["LinkedWindows"].Count);
         }
 
+        [TestMethod]
+        public void CodePaneSnapshotReadsProjectModuleWindowAndSelectionWithoutOpeningPane()
+        {
+            var host = new FakeVbe();
+            var pane = new FakePane { CodeModule = new FakePaneModule {
+                Parent = new FakePaneComponent { Name = "Module1", Collection = new FakePaneCollection {
+                    Parent = new FakePaneProject { Name = "Projet", FileName = @"C:\Temp\Projet.xlsm" } } } },
+                CodePaneView = 1, TopLine = 9, CountOfVisibleLines = 30,
+                Window = new FakePaneWindow { Caption = "Module1 (Code)" } };
+            host.CodePanes.Add(pane);
+            host.ActiveCodePane = pane;
+            dynamic snapshot = new VbeEditorWindows(host).CodePanes();
+            Assert.AreEqual(1, (int)snapshot.CodePanes.Count);
+            dynamic first = snapshot.CodePanes[0];
+            Assert.AreEqual(1, (int)first.Index);
+            Assert.AreEqual("Projet", (string)first.Properties["Project"]);
+            Assert.AreEqual("Module1", (string)first.Properties["Module"]);
+            Assert.AreEqual("Module1 (Code)", (string)first.Properties["WindowCaption"]);
+            Assert.AreEqual(9, (int)first.Properties["TopLine"]);
+            Assert.AreEqual(2, (int)((dynamic)first.Properties["Selection"]).StartLine);
+            Assert.AreEqual(2, pane.SelectionReads);
+            Assert.AreEqual(0, (int)first.Errors.Count);
+        }
+
+        [TestMethod]
+        public void CodePaneSnapshotReportsUnavailableMembersIndividually()
+        {
+            var host = new FakeVbe();
+            host.CodePanes.Add(new FakePane { SelectionThrows = true });
+            dynamic snapshot = new VbeEditorWindows(host).CodePanes();
+            dynamic first = snapshot.CodePanes[0];
+            Assert.IsTrue(first.Errors.ContainsKey("Module"));
+            Assert.IsTrue(first.Errors.ContainsKey("WindowCaption"));
+            Assert.IsTrue(first.Errors.ContainsKey("Selection"));
+            Assert.AreEqual(1, (int)first.Properties["CodePaneView"]);
+            Assert.IsNull(snapshot.ActiveCodePane);
+        }
+
         public sealed class FakeVbe
         {
             public string Version { get; set; } = "7.1";
@@ -77,6 +115,27 @@ namespace CodexVBE.Tests.Unit
             public object ActiveCodePane { get; set; }
         }
         public sealed class FakeProject { public string Name { get; set; } }
+        public sealed class FakePaneProject { public string Name { get; set; } public string FileName { get; set; } }
+        public sealed class FakePaneCollection { public FakePaneProject Parent { get; set; } }
+        public sealed class FakePaneComponent { public string Name { get; set; } public FakePaneCollection Collection { get; set; } }
+        public sealed class FakePaneModule { public FakePaneComponent Parent { get; set; } }
+        public sealed class FakePaneWindow { public string Caption { get; set; } }
+        public sealed class FakePane
+        {
+            public FakePaneModule CodeModule { get; set; }
+            public int CodePaneView { get; set; } = 1;
+            public int TopLine { get; set; }
+            public int CountOfVisibleLines { get; set; }
+            public FakePaneWindow Window { get; set; }
+            public bool SelectionThrows { get; set; }
+            public int SelectionReads { get; private set; }
+            public void GetSelection(ref int startLine, ref int startColumn, ref int endLine, ref int endColumn)
+            {
+                SelectionReads++;
+                if (SelectionThrows) throw new InvalidOperationException("Selection unavailable");
+                startLine = 2; startColumn = 1; endLine = 4; endColumn = 8;
+            }
+        }
         public sealed class FakeAddIn
         {
             public string ProgId { get; set; }

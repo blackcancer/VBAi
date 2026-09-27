@@ -41,20 +41,75 @@ namespace CodexVBE
         private const uint ObjidClient = 4294967292;
         private static readonly Guid IidAccessible = new Guid("618736e0-3c3d-11cf-810c-00aa00389b71");
 
+        internal sealed class NativeControl
+        {
+            public IntPtr Handle;
+            public string Kind;
+            public string Text;
+            public bool Visible;
+        }
+
+        internal interface INativeProbe
+        {
+            IntPtr VbeRoot();
+            List<IntPtr> Children(IntPtr root);
+            IntPtr Pane(IEnumerable<IntPtr> panes, params string[] names);
+            object List(IntPtr handle);
+            object Immediate(IntPtr handle);
+            object CallStack(IntPtr locals);
+            IntPtr Dialog(params string[] titles);
+            List<NativeControl> DialogControls(IntPtr dialog);
+            string DialogMessage(IntPtr dialog);
+            bool Click(IntPtr handle);
+            bool Visible(IntPtr handle);
+            void Pause(int milliseconds);
+        }
+
+        private sealed class NativeProbe : INativeProbe
+        {
+            public IntPtr VbeRoot() { return FindVbeRoot(); }
+            public List<IntPtr> Children(IntPtr root) { return ChildWindows(root); }
+            public IntPtr Pane(IEnumerable<IntPtr> panes, params string[] names) { return FindPane(panes, names); }
+            public object List(IntPtr handle) { return ReadList(handle); }
+            public object Immediate(IntPtr handle) { return ReadImmediate(handle); }
+            public object CallStack(IntPtr locals) { return ReadCallStack(locals); }
+            public IntPtr Dialog(params string[] titles) { return FindDialog(titles); }
+            public List<NativeControl> DialogControls(IntPtr dialog)
+            {
+                var controls = new List<NativeControl>();
+                EnumChildWindows(dialog, (handle, parameter) => {
+                    controls.Add(new NativeControl { Handle = handle, Kind = ClassName(handle),
+                        Text = WindowText(handle), Visible = IsWindowVisible(handle) });
+                    return true;
+                }, IntPtr.Zero);
+                return controls;
+            }
+            public string DialogMessage(IntPtr dialog) { return AccessibleDialogMessage(dialog); }
+            public bool Click(IntPtr handle) { return PostMessage(handle, BmClick, IntPtr.Zero, IntPtr.Zero); }
+            public bool Visible(IntPtr handle) { return IsWindowVisible(handle); }
+            public void Pause(int milliseconds) { Thread.Sleep(milliseconds); }
+        }
+
         public static object Capture(bool includeCallStack)
         {
-            IntPtr root = FindVbeRoot();
+            return Capture(includeCallStack, new NativeProbe());
+        }
+
+        internal static object Capture(bool includeCallStack, INativeProbe native)
+        {
+            if (native == null) throw new ArgumentNullException(nameof(native));
+            IntPtr root = native.VbeRoot();
             if (root == IntPtr.Zero) throw new InvalidOperationException("The VBE window is not open in this host process.");
-            var panes = ChildWindows(root);
-            IntPtr locals = FindPane(panes, "Variables locales", "Locals");
-            IntPtr watches = FindPane(panes, "Espions", "Watch", "Watches");
-            IntPtr immediate = FindPane(panes, "Exécution", "Immediate");
-            object stack = includeCallStack ? ReadCallStack(locals) : null;
+            var panes = native.Children(root);
+            IntPtr locals = native.Pane(panes, "Variables locales", "Locals");
+            IntPtr watches = native.Pane(panes, "Espions", "Watch", "Watches");
+            IntPtr immediate = native.Pane(panes, "Exécution", "Immediate");
+            object stack = includeCallStack ? native.CallStack(locals) : null;
             return new {
                 HostProcessId = Process.GetCurrentProcess().Id,
-                Locals = ReadList(locals),
-                Watches = ReadList(watches),
-                Immediate = ReadImmediate(immediate),
+                Locals = native.List(locals),
+                Watches = native.List(watches),
+                Immediate = native.Immediate(immediate),
                 CallStack = stack,
                 Limits = "Native UI accessibility is observed only for visible panes. A missing pane or unavailable value is not an empty debugger collection. Breakpoints and exception state are not exposed by this snapshot."
             };
@@ -64,29 +119,38 @@ namespace CodexVBE
         // Execute call cannot be awaited with Control.Invoke in that case.
         public static void EnsureNoCompileDialog()
         {
-            if (FindDialog("Microsoft Visual Basic pour Applications",
+            EnsureNoCompileDialog(new NativeProbe());
+        }
+
+        internal static void EnsureNoCompileDialog(INativeProbe native)
+        {
+            if (native.Dialog("Microsoft Visual Basic pour Applications",
                 "Microsoft Visual Basic for Applications") != IntPtr.Zero)
                 throw new InvalidOperationException("A native VBE dialog is already open; compilation was not started.");
         }
 
         public static object ReadDebugDialog()
         {
-            IntPtr dialog = FindDialog("Microsoft Visual Basic pour Applications",
+            return ReadDebugDialog(new NativeProbe());
+        }
+
+        internal static object ReadDebugDialog(INativeProbe native)
+        {
+            IntPtr dialog = native.Dialog("Microsoft Visual Basic pour Applications",
                 "Microsoft Visual Basic for Applications");
             if (dialog == IntPtr.Zero)
                 return new { Available = false, Diagnostic = (string)null,
                     Buttons = new string[0], Error = (string)null };
             var messages = new List<string>();
             var buttons = new List<string>();
-            EnumChildWindows(dialog, (handle, parameter) => {
-                if (!IsWindowVisible(handle)) return true;
-                string title = WindowText(handle);
-                if (string.IsNullOrWhiteSpace(title)) return true;
-                string kind = ClassName(handle);
+            foreach (var control in native.DialogControls(dialog))
+            {
+                if (!control.Visible || string.IsNullOrWhiteSpace(control.Text)) continue;
+                string title = control.Text;
+                string kind = control.Kind;
                 if (kind == "Static") messages.Add(title);
                 else if (kind == "Button") buttons.Add(title);
-                return true;
-            }, IntPtr.Zero);
+            }
             if (messages.Count != 1)
                 return new { Available = true, Diagnostic = (string)null,
                     Buttons = buttons.ToArray(), Error = "Expected one native diagnostic message; found " + messages.Count + "." };
@@ -96,7 +160,12 @@ namespace CodexVBE
 
         public static void EnsureNoDebugOptionsDialog()
         {
-            if (FindDialog("Options") != IntPtr.Zero)
+            EnsureNoDebugOptionsDialog(new NativeProbe());
+        }
+
+        internal static void EnsureNoDebugOptionsDialog(INativeProbe native)
+        {
+            if (native.Dialog("Options") != IntPtr.Zero)
                 throw new InvalidOperationException("A VBE Options dialog is already open; the add-in will not close a user-owned dialog.");
         }
 
@@ -556,36 +625,41 @@ namespace CodexVBE
 
         public static object RespondDebugDialog(Request request)
         {
+            return RespondDebugDialog(request, new NativeProbe());
+        }
+
+        internal static object RespondDebugDialog(Request request, INativeProbe native)
+        {
             if (request == null || string.IsNullOrWhiteSpace(request.Diagnostic) ||
                 string.IsNullOrWhiteSpace(request.Button))
                 throw new ArgumentException("Diagnostic and Button are required.");
-            IntPtr dialog = FindDialog("Microsoft Visual Basic pour Applications",
+            IntPtr dialog = native.Dialog("Microsoft Visual Basic pour Applications",
                 "Microsoft Visual Basic for Applications");
             if (dialog == IntPtr.Zero) throw new InvalidOperationException("No native VBE dialog is visible.");
             IntPtr target = IntPtr.Zero;
             string message = null;
             int matches = 0;
-            EnumChildWindows(dialog, (handle, parameter) => {
-                if (!IsWindowVisible(handle)) return true;
-                string kind = ClassName(handle);
-                string title = WindowText(handle);
+            foreach (var control in native.DialogControls(dialog))
+            {
+                if (!control.Visible) continue;
+                string kind = control.Kind;
+                string title = control.Text;
                 if (kind == "Static" && !string.IsNullOrWhiteSpace(title)) message = title;
                 if (kind == "Button" && string.Equals(title, request.Button, StringComparison.Ordinal))
-                { target = handle; matches++; }
-                return true;
-            }, IntPtr.Zero);
+                { target = control.Handle; matches++; }
+            }
             if (!string.Equals(message, request.Diagnostic, StringComparison.Ordinal))
                 throw new InvalidOperationException("The native diagnostic changed before the button could be activated.");
             if (!IsRecognizedDiagnostic(message))
                 throw new InvalidOperationException("The visible VBE dialog is not a recognized VBA diagnostic.");
             if (matches != 1 || target == IntPtr.Zero)
                 throw new InvalidOperationException("Expected exactly one matching native dialog button.");
-            if (!PostMessage(target, BmClick, IntPtr.Zero, IntPtr.Zero))
+            if (!native.Click(target))
                 throw new InvalidOperationException("The native dialog button could not be activated.");
             for (int attempt = 0; attempt < 40; attempt++)
             {
-                Thread.Sleep(50);
-                if (!IsWindowVisible(dialog))
+                native.Pause(50);
+                if (!native.Visible(dialog))
                     return new { Activated = true, request.Button, Diagnostic = message,
                         Verification = "DialogClosed", VerificationPending = false };
             }
@@ -595,21 +669,23 @@ namespace CodexVBE
 
         public static string AwaitCompileDialog(ManualResetEventSlim completed)
         {
+            return AwaitCompileDialog(completed, new NativeProbe());
+        }
+
+        internal static string AwaitCompileDialog(ManualResetEventSlim completed, INativeProbe native)
+        {
             for (int attempt = 0; attempt < 200; attempt++)
             {
-                IntPtr dialog = FindDialog("Microsoft Visual Basic pour Applications",
+                IntPtr dialog = native.Dialog("Microsoft Visual Basic pour Applications",
                     "Microsoft Visual Basic for Applications");
                 if (dialog != IntPtr.Zero)
                 {
-                    string diagnostic = AccessibleDialogMessage(dialog);
-                    IntPtr ok = IntPtr.Zero;
-                    EnumChildWindows(dialog, (handle, parameter) => {
-                        if (ClassName(handle) == "Button" &&
-                            string.Equals(WindowText(handle), "OK", StringComparison.OrdinalIgnoreCase))
-                        { ok = handle; return false; }
-                        return true;
-                    }, IntPtr.Zero);
-                    if (ok == IntPtr.Zero || !PostMessage(ok, BmClick, IntPtr.Zero, IntPtr.Zero))
+                    string diagnostic = native.DialogMessage(dialog);
+                    IntPtr ok = native.DialogControls(dialog)
+                        .Where(control => control.Kind == "Button" &&
+                            string.Equals(control.Text, "OK", StringComparison.OrdinalIgnoreCase))
+                        .Select(control => control.Handle).FirstOrDefault();
+                    if (ok == IntPtr.Zero || !native.Click(ok))
                         throw new InvalidOperationException("The native compile diagnostic could not be dismissed.");
                     if (!completed.Wait(3000))
                         throw new TimeoutException("The Compile command did not return after its diagnostic closed.");
@@ -618,12 +694,12 @@ namespace CodexVBE
                 if (completed.IsSet)
                 {
                     // Allow the VBE to surface a delayed diagnostic after Execute.
-                    Thread.Sleep(250);
-                    dialog = FindDialog("Microsoft Visual Basic pour Applications",
+                    native.Pause(250);
+                    dialog = native.Dialog("Microsoft Visual Basic pour Applications",
                         "Microsoft Visual Basic for Applications");
                     if (dialog == IntPtr.Zero) return null;
                 }
-                Thread.Sleep(50);
+                native.Pause(50);
             }
             throw new TimeoutException("The native Compile command did not finish within ten seconds.");
         }
