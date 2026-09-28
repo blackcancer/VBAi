@@ -3,10 +3,12 @@ using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
+    /// <summary>Vérifie le catalogue et la résolution des configurations de fournisseurs LLM.</summary>
     [TestClass]
     [TestCategory("Unit")]
     public sealed class LlmProvidersTests
     {
+        /// <summary>Contrôle les drapeaux, points de terminaison et noms affichés de chaque fournisseur.</summary>
         [TestMethod]
         public void CatalogueFlagsEndpointsAndDisplayNamesMatchProviderContracts()
         {
@@ -44,6 +46,7 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual("Future" + UiText.Get(" (coming soon)"), unavailable.ToString());
         }
 
+        /// <summary>Retourne le modèle configuré et refuse les valeurs absentes ou composées d’espaces.</summary>
         [TestMethod]
         public void ResolveModelReturnsConfiguredValueAndRejectsMissingOrWhitespace()
         {

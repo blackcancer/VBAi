@@ -11,10 +11,13 @@ namespace CodexVBE.Tests.Unit
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using CodexVBE;
 
+    /// <summary>Vérifie le décodage des flux OpenAI compatibles et Claude.</summary>
     [TestClass]
     [TestCategory("Unit")]
     public sealed partial class StreamTests
     {
+        /// <summary>Recompose les arguments d’outils par index et émet les fragments de texte reçus.</summary>
+        /// <returns>Tâche terminée après lecture du flux.</returns>
         [TestMethod]
         public async Task OpenAiToolArgumentsAreReassembledByIndexAndTextIsStreamed()
         {
@@ -33,6 +36,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Refuse un appel d’outil incomplet sans marqueur de fin ou avec une raison d’arrêt invalide.</summary>
+        /// <returns>Tâche terminée après les vérifications asynchrones.</returns>
         [TestMethod]
         public async Task MissingDoneOrInvalidFinishReasonRejectsPartialToolCall()
         {
@@ -47,6 +52,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Masque le corps d’erreur du fournisseur lorsqu’un flux signale une erreur.</summary>
+        /// <returns>Tâche terminée après lecture et assertion.</returns>
         [TestMethod]
         public async Task ProviderErrorDoesNotLeakResponseBody()
         {
@@ -57,6 +64,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Conserve l’entrée d’outil Claude et la signature de réflexion pendant le décodage.</summary>
+        /// <returns>Tâche terminée après lecture du flux.</returns>
         [TestMethod]
         public async Task ClaudeToolInputAndThinkingSignatureSurviveStreaming()
         {
@@ -75,6 +84,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Observe l’annulation déjà demandée avant de commencer la lecture.</summary>
+        /// <returns>Tâche terminée après l’assertion d’annulation.</returns>
         [TestMethod]
         public async Task CancellationBeforeReadingIsObserved()
         {
@@ -89,8 +100,11 @@ namespace CodexVBE.Tests.Unit
 }
 namespace CodexVBE.Tests.Unit
 {
+    /// <summary>Complète les cas limites de framing et de terminaison des flux.</summary>
     public sealed partial class StreamTests
     {
+        /// <summary>Fusionne les fragments JSON, valeurs imbriquées et métadonnées sans perdre les scalaires.</summary>
+        /// <returns>Tâche terminée après lecture du flux.</returns>
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
         public async System.Threading.Tasks.Task OpenAiFramingMergesNullScalarsNestedValuesAndMetadata()
         {
@@ -111,6 +125,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Refuse les raisons de fin invalides pour les deux protocoles et exige leur marqueur final.</summary>
+        /// <returns>Tâche terminée après les cas OpenAI compatibles et Claude.</returns>
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
         public async System.Threading.Tasks.Task StreamStopsRejectInvalidCompletionForBothProtocols()
         {
@@ -137,6 +153,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Ignore les deltas inconnus et gère le texte initial ou vide sans fragment superflu.</summary>
+        /// <returns>Tâche terminée après lecture des flux Claude.</returns>
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
         public async System.Threading.Tasks.Task ClaudeIgnoresUnknownDeltaAndHandlesEmptyTextWithoutProgress()
         {
@@ -156,6 +174,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Refuse une entrée trop volumineuse et une annulation déclenchée pendant la progression.</summary>
+        /// <returns>Tâche terminée après vérification de la fermeture du flux.</returns>
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
         public async System.Threading.Tasks.Task OversizeInputAndCancellationDuringProgressAreRejected()
         {

@@ -6,10 +6,12 @@ namespace CodexVBE.Tests.Unit
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using CodexVBE;
 
+    /// <summary>Vérifie la conversion des requêtes et réponses du protocole Bedrock Converse.</summary>
     [TestClass]
     [TestCategory("Unit")]
     public sealed partial class ProviderProtocolTests
     {
+        /// <summary>Refuse les sorties filtrées, incomplètes ou arrêtées pour une raison inconnue.</summary>
         [TestMethod]
         public void BedrockResponseRejectsFilteredOrIncompleteOutput()
         {
@@ -40,6 +42,7 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Préserve l’entrée structurée d’un outil et son résultat lors d’un aller-retour Converse.</summary>
         [TestMethod]
         public void BedrockRoundTripKeepsStructuredToolInputAndResult()
         {
@@ -73,8 +76,10 @@ namespace CodexVBE.Tests.Unit
 }
 namespace CodexVBE.Tests.Unit
 {
+    /// <summary>Complète les scénarios de construction des requêtes Bedrock.</summary>
     public sealed partial class ProviderProtocolTests
     {
+        /// <summary>Construit les outils, instructions système et groupes distincts de résultats.</summary>
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
         public void BedrockRequestBuildsToolsSystemAndSeparatedResultGroups()
         {

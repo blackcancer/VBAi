@@ -12,15 +12,24 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CodexVBE.Tests.Unit
 {
+    /// <summary>Vérifie le client Copilot avec sessions, transports et callbacks simulés.</summary>
     [TestClass, TestCategory("Unit")]
     public sealed class CopilotClientCoverageTests
     {
+        /// <summary>Définition de l’outil de lecture de module utilisée par les fixtures.</summary>
+        /// <returns>Tableau contenant l’outil disponible dans les tours simulés.</returns>
         private static object[] Tools() { return new object[] { new { function = new { name = "read_module", description = "fixture tool", parameters = new { type = "object", properties = new { } } } } }; }
+        /// <summary>Crée l’historique système et utilisateur commun aux scénarios Copilot.</summary>
+        /// <returns>Messages de la conversation de test.</returns>
         private static List<object> History() { return new List<object> { new Dictionary<string, object> { { "role", "system" }, { "content", "Read before editing." } }, new Dictionary<string, object> { { "role", "user" }, { "content", "request" } } }; }
+        /// <summary>Crée le client après neutralisation du contexte de synchronisation WinForms courant.</summary>
+        /// <returns>Client Copilot associé au transport configuré dans le scope.</returns>
         private static CopilotClient Client()
         {
             var context = SynchronizationContext.Current; try { SynchronizationContext.SetSynchronizationContext(null); return new CopilotClient(); } finally { SynchronizationContext.SetSynchronizationContext(context); }
         }
+        /// <summary>Refuse les démarrages, requêtes après disposal et entêtes de protocole incomplets.</summary>
+        /// <returns>Tâche terminée après les vérifications asynchrones.</returns>
         [TestMethod]
         public async Task NativeStartFailuresDisposedRequestsAndProtocolHeadersFailWithoutExternalCli()
         {
@@ -35,6 +44,8 @@ namespace CodexVBE.Tests.Unit
                 }
             }
         }
+        /// <summary>Vérifie sessions encadrées, modèles, outils, permissions et streaming dans leur portée autorisée.</summary>
+        /// <returns>Tâche terminée après le tour simulé.</returns>
         [TestMethod]
         public async Task NativeFramedSessionsModelsToolsPermissionsAndStreamingStayScoped()
         {
@@ -53,6 +64,8 @@ namespace CodexVBE.Tests.Unit
                 scope.UseCopilot("models-null"); using (var client = Client()) Assert.AreEqual(0, (await client.ListModelsAsync()).Length); scope.UseCopilot(); CopilotClient.StartLogin(); var marker = Path.Combine(scope.Root, "login.marker"); var deadline = DateTime.UtcNow.AddSeconds(5); while (!File.Exists(marker) && DateTime.UtcNow < deadline) await Task.Delay(10); Assert.AreEqual("fixture login only", File.ReadAllText(marker)); StringAssert.Contains(await CopilotClient.ReadStatusAsync(), "2");
             }
         }
+        /// <summary>Termine les requêtes en attente après erreurs RPC, outils défaillants ou délais dépassés.</summary>
+        /// <returns>Tâche terminée après les scénarios d’erreur.</returns>
         [TestMethod]
         public async Task NativeRpcSessionAndToolFailuresAndDeadlinesCompletePendingRequests()
         {
@@ -66,6 +79,8 @@ namespace CodexVBE.Tests.Unit
                 scope.UseCopilot(); using (var client = Client()) { await client.ListModelsAsync(); var process = LlmBoundaryScope.Get<Process>(client, "process"); process.Kill(); Assert.IsTrue(process.WaitForExit(5000)); process.Close(); client.Dispose(); }
             }
         }
+        /// <summary>Revalide la disposal et l’état du tour avant l’exécution d’un outil par callback différé.</summary>
+        /// <returns>Tâche terminée après traitement des callbacks.</returns>
         [TestMethod]
         public async Task QueuedUiCallbacksRecheckDisposalAndCompletedTurnsBeforeInvokingTools()
         {
