@@ -59,7 +59,7 @@ window.vbai = {
   languageInspect(id, line, column) { return language.inspect(models.get(id).model, { lineNumber: line, column }); },
   diagnostics(id, version, markers) { const entry = models.get(id); if (entry && entry.model.getVersionId() === version) monaco.editor.setModelMarkers(entry.model, 'VBA compiler', markers); },
   execution(id, line) { const entry = models.get(id); if (!entry) return; entry.execution = entry.model.deltaDecorations(entry.execution || [], line > 0 ? [{ range: new monaco.Range(line, 1, line, 1), options: { isWholeLine: true, className: 'vbai-execution-line', glyphMarginClassName: 'vbai-execution', glyphMarginHoverMessage: { value: 'VBE: Show Next Statement' } } }] : []); if (line > 0) editor.revealLineInCenter(line); },
-  breakpointRequested(id, line) { const entry = models.get(id); if (!entry) return; entry.breakpoints ||= new Map(); if (entry.breakpoints.has(line)) { entry.model.deltaDecorations(entry.breakpoints.get(line), []); entry.breakpoints.delete(line); } else entry.breakpoints.set(line, entry.model.deltaDecorations([], [{ range: new monaco.Range(line, 1, line, 1), options: { glyphMarginClassName: 'vbai-breakpoint-pending', glyphMarginHoverMessage: { value: commandLabels['Breakpoint request sent; verify in VBE.'] || 'Breakpoint request sent; verify in VBE.' } } }])); },
+  breakpointRequested(id, line) { const entry = models.get(id); if (!entry) return; entry.breakpoints ||= new Map(); if (entry.breakpoints.has(line)) { entry.model.deltaDecorations(entry.breakpoints.get(line), []); } entry.breakpoints.set(line, entry.model.deltaDecorations([], [{ range: new monaco.Range(line, 1, line, 1), options: { glyphMarginClassName: 'vbai-breakpoint-pending', glyphMarginHoverMessage: { value: commandLabels['Breakpoint request sent; verify in VBE.'] || 'Breakpoint request sent; verify in VBE.' } } }])); },
   open(id, text) {
     if (!models.has(id)) {
       const model = monaco.editor.createModel(text, 'vba', monaco.Uri.parse('vbai://module/' + id));
@@ -100,7 +100,7 @@ window.vbai = {
   reveal(line, column) { editor.setPosition({ lineNumber: line, column }); editor.revealLineInCenter(line); editor.focus(); },
   command(name) { const action = editor.getAction(name); if (action) action.run(); else editor.trigger('vbai', name, {}); },
   insert(text) { editor.trigger('vbai', 'type', { text }); },
-  testInfo() { return { language: editor.getModel()?.getLanguageId(), models: models.size, theme: document.body.style.background, version: monaco.editor?.getModels().length, diff: !!diff, markers: editor.getModel() ? monaco.editor.getModelMarkers({ resource: editor.getModel().uri }).length : 0 }; }
+  testInfo() { return { language: editor.getModel()?.getLanguageId(), models: models.size, theme: document.body.style.background, version: monaco.editor?.getModels().length, diff: !!diff, pendingBreakpoints: models.get(active)?.breakpoints?.size || 0, executionMarkers: models.get(active)?.execution?.length || 0, markers: editor.getModel() ? monaco.editor.getModelMarkers({ resource: editor.getModel().uri }).length : 0 }; }
 };
 editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => send({ type: 'command', name: 'sync' }));
 function nativeCommand(name) { if (!active) return; const entry = models.get(active); send({ type: 'editorCommand', name, id: active, version: entry.model.getVersionId(), line: editor.getPosition()?.lineNumber || 1 }); }

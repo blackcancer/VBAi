@@ -1,5 +1,22 @@
 # Couverture automatisée du complément
 
+## Après intégration de la PR #7 Monaco
+
+Mesure locale du **28 septembre 2026**, branche Monaco intégrée jusqu'à `a4e3560`, avec les contrats IDE existants et le correctif de fermeture WinForms. Build isolé : **0 erreur, 0 avertissement**.
+
+| Mesure | Résultat |
+| --- | --- |
+| Suite globale VSTest | **1 358 réussis, 0 échec, 15 ignorés**, 6 min 1 s |
+| Lignes du complément | **25 249 / 26 359 — 95,78 %** |
+| Branches du complément | **25 995 / 27 897 — 93,18 %** |
+| Concepteurs WinForms | **32 surfaces validées** |
+| Organisation miroir | **184 miroirs pour 246 fichiers de production** |
+| Catalogue LLM | **204 outils** |
+
+Il reste **1 110 lignes et 1 902 branches** non exécutées. Aucun code de production n'est exclu. Les nouveaux adaptateurs Monaco ajoutent des chemins à couvrir ; les pourcentages ci-dessous sont historiques. Les 14 scénarios Excel (dont Monaco) sont désactivés pour éviter les essais concurrents ; le scénario SOLIDWORKS reste NOT_RUN. Les tests du véritable WebView2 passent dans cette suite, y compris les fermetures pendant l'initialisation et la création d'un contrôle d'état, avec conservation des brouillons sans écriture VBA.
+
+Preuves : `artifacts/pr7-integration/qualified-global/global.trx`, `8589ae6a-88d1-4b50-b986-c338cffd0f3a/coverage.cobertura.xml`, `coverage-summary.json` et `coverage-inventory.csv` dans le même répertoire. Les **93 tests ciblés réussis** précèdent le dernier delta de la branche, qui est couvert par ce passage global. Les mesures de la branche Monaco et les limites natives sont distinguées dans [la documentation de l'éditeur](modern-editor.md).
+
 ## Lot complémentaire en qualification
 
 Les contrats ParamArray, renommage de membres privés de classe et options natives ajoutent du code après la mesure ci-dessous. Le build du projet de tests passe avec **0 erreur et 0 avertissement**. Après correction des fixtures pour utiliser un véritable dialogue Win32 #32770, leur matrice locale donne **127 réussis, 0 échec, 0 ignoré** (`artifacts/vbe-next/contracts-qualified-final/contracts.trx`). Les gardes de production restent inchangées. Ce lot ciblé ne constitue pas un bilan global. La structure conserve **174 miroirs pour 231 fichiers de production**.

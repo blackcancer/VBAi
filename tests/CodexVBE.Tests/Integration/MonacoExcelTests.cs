@@ -34,6 +34,32 @@ namespace CodexVBE.Tests.Integration
                     var doc = MonacoRuntimeTests.Wait(window.OpenModule(adapter)); window.Show();
                     MonacoRuntimeTests.Wait(() => window.Ready); UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer").Stop();
                     MonacoRuntimeTests.Wait(() => MonacoRuntimeTests.Wait(window.Script("snapshots")).Contains(doc.Id));
+                    UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer").Stop();
+                    // Exercise the real Monaco action -> WebView message -> VBE compilation path.
+                    MonacoRuntimeTests.Wait(window.Script("command", "vbai.compile"));
+                    MonacoRuntimeTests.Wait(() => UiInvoke.Field<System.Windows.Forms.Label>(window, "status").Text == UiText.Get("Compilation finished: no native diagnostics observed. Macros were not executed."));
+                    Assert.AreEqual(2, (int)((dynamic)project).Mode, "Compilation must leave the project in design mode.");
+                    // Enter only our disposable Debug.Print fixture, then drive the Monaco debug actions.
+                    adapter.ShowNative(3, 1);
+                    dynamic step = null;
+                    foreach (dynamic command in (System.Collections.IEnumerable)new VbeDebug(excel.VBE).ListCommands(null, 0, 200))
+                        if ((bool)command.Enabled && VbeDebug.IsAllowed("step_into", (string)command.Caption, 1)) { step = command; break; }
+                    Assert.IsNotNull((object)step, "Native Step Into command must be present.");
+                    excel.VBE.CommandBars.FindControl(1, (int)step.Id).Execute();
+                    MonacoRuntimeTests.Wait(() => (int)((dynamic)project).Mode == 1);
+                    MonacoRuntimeTests.Wait(window.Script("command", "vbai.show_next_statement"));
+                    MonacoRuntimeTests.Wait(() => MonacoRuntimeTests.Wait(window.Script("testInfo")).Contains("\"executionMarkers\":1"));
+                    MonacoRuntimeTests.Wait(() => !UiInvoke.Field<bool>(window, "busy"));
+                    Func<int> nativeLine = () => { int a = 0, b = 0, c = 0, d = 0; excel.VBE.ActiveCodePane.GetSelection(ref a, ref b, ref c, ref d); return a; };
+                    foreach (string action in new[] { "vbai.step_into", "vbai.step_over" })
+                    {
+                        int stoppedLine = nativeLine();
+                        MonacoRuntimeTests.Wait(window.Script("command", action));
+                        MonacoRuntimeTests.Wait(() => !UiInvoke.Field<bool>(window, "busy") && nativeLine() != stoppedLine);
+                    }
+                    MonacoRuntimeTests.Wait(window.Script("command", "vbai.step_out"));
+                    MonacoRuntimeTests.Wait(() => (int)((dynamic)project).Mode == 2);
+                    MonacoRuntimeTests.Wait(() => !UiInvoke.Field<bool>(window, "busy"));
                     MonacoRuntimeTests.Wait(window.Script("reveal", 3, 1));
                     MonacoRuntimeTests.Wait(window.Script("insert", "    ' accented é\n"));
                     MonacoRuntimeTests.Wait(() => doc.Text.Contains("accented é"));
@@ -52,9 +78,15 @@ namespace CodexVBE.Tests.Integration
                     string verifyExport = Path.Combine(fixture.Root, "attribute-verification.bas");
                     special.Export(verifyExport);
                     StringAssert.Contains(File.ReadAllText(verifyExport, System.Text.Encoding.Default), "Attribute Special.VB_Description = \"Preserve me\"");
-                    var refusal = Assert.ThrowsException<InvalidOperationException>(() => guarded.Write(withChange, withChange.Replace("Sub Special", "Sub Renamed")));
-                    StringAssert.Contains(refusal.Message, "hidden procedure attributes");
-                    Assert.AreEqual(withChange, EditorDocument.Normalize(guarded.Read()));
+                    guarded.Write(withChange, withChange.Replace("Sub Special", "Sub Renamed"));
+                    Assert.IsTrue(guarded.IsComponent((object)special), "Component COM identity must survive attributed edits.");
+                    File.Delete(verifyExport); special.Export(verifyExport);
+                    StringAssert.Contains(File.ReadAllText(verifyExport, System.Text.Encoding.Default), "Attribute Renamed.VB_Description = \"Preserve me\"");
+                    StringAssert.Contains(guarded.Read(), "Sub Renamed");
+                    string renamed = EditorDocument.Normalize(guarded.Read());
+                    guarded.Write(renamed, renamed.Replace("Sub Renamed", "Sub Special"));
+                    File.Delete(verifyExport); special.Export(verifyExport);
+                    StringAssert.Contains(File.ReadAllText(verifyExport, System.Text.Encoding.Default), "Attribute Special.VB_Description = \"Preserve me\"");
                     ((dynamic)project).VBComponents.Remove(special);
                     MonacoRuntimeTests.Wait(window.Script("reveal", 3, 1));
                     MonacoRuntimeTests.Wait(window.Script("insert", "    ' local pending\n"));

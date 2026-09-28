@@ -99,6 +99,7 @@ namespace CodexVBE
             dynamic module = ((dynamic)component).CodeModule;
             if (plan != null && (plan.Before != expected || plan.After != text)) throw new InvalidOperationException("Stale synchronization plan.");
             var edit = plan?.Patch ?? EditorDocument.Difference(expected, text);
+            if (TryRewriteAttributedDeclaration(expected, text, edit, out string rewritten)) return rewritten;
             GuardProcedureAttributes(expected, edit);
             try
             {
@@ -130,6 +131,47 @@ namespace CodexVBE
                 throw new InvalidOperationException("Code synchronization failed; the original source was restored.", failure);
             }
         }
+        private bool TryRewriteAttributedDeclaration(string before, string after, Tuple<int, int, string> patch, out string result)
+        {
+            result = null;
+            // Document modules and designers have extra host-owned metadata; never rebuild them here.
+            if ((int)((dynamic)component).Type != 1 || patch.Item2 != 1 || patch.Item3.Contains("\n")) return false;
+            string directory = Path.Combine(Path.GetTempPath(), "VBAi-attributes-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory); bool preserveBackup = false;
+            try
+            {
+                string backup = Path.Combine(directory, "original.bas"), changed = Path.Combine(directory, "changed.bas"), verify = Path.Combine(directory, "verify.bas");
+                ((dynamic)component).Export(backup);
+                string original = File.ReadAllText(backup, System.Text.Encoding.Default);
+                string replacement = EditorAttributeRewrite.Prepare(original, before, patch);
+                if (replacement == null) return false;
+                File.WriteAllText(changed, replacement, System.Text.Encoding.Default);
+                dynamic code = ((dynamic)component).CodeModule;
+                Action<string> load = path => { int count = code.CountOfLines; if (count > 0) code.DeleteLines(1, count); code.AddFromFile(path); };
+                if (!CanWrite || EditorDocument.Normalize(Read()) != before) throw new InvalidOperationException("The module changed before attribute restoration.");
+                try
+                {
+                    load(changed);
+                    result = Read(); ((dynamic)component).Export(verify);
+                    if (EditorDocument.Normalize(result).TrimEnd('\n') != after.TrimEnd('\n') || EditorAttributeRewrite.Metadata(File.ReadAllText(verify, System.Text.Encoding.Default)) != EditorAttributeRewrite.Metadata(replacement))
+                        throw new InvalidOperationException("Attributed source readback mismatch.");
+                    return true;
+                }
+                catch (Exception failure)
+                {
+                    try
+                    {
+                        load(backup);
+                        File.Delete(verify); ((dynamic)component).Export(verify);
+                        if (EditorDocument.Normalize(Read()).TrimEnd('\n') != before.TrimEnd('\n') || EditorAttributeRewrite.Metadata(File.ReadAllText(verify, System.Text.Encoding.Default)) != EditorAttributeRewrite.Metadata(original))
+                            throw new InvalidOperationException("Attribute restoration mismatch.");
+                    }
+                    catch (Exception rollback) { preserveBackup = true; throw new InvalidOperationException("Attributed edit and restoration failed; original export retained at " + backup, new AggregateException(failure, rollback)); }
+                    throw new InvalidOperationException("Attributed edit failed; original source and attributes restored.", failure);
+                }
+            }
+            finally { if (!preserveBackup) Directory.Delete(directory, true); }
+        }
         public void ShowNative(int line, int column)
         {
             Validate(); dynamic pane = ((dynamic)component).CodeModule.CodePane;
@@ -140,7 +182,7 @@ namespace CodexVBE
         private void GuardProcedureAttributes(string before, Tuple<int, int, string> edit)
         {
             // CodeModule hides procedure metadata. Deleting/recreating a declaration can
-            // destroy that metadata, so these uncommon modules remain native-only for now.
+            // destroy that metadata; unsupported declaration edits remain guarded.
             string directory = Path.Combine(Path.GetTempPath(), "VBAi-editor-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
             try

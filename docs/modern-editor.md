@@ -35,7 +35,7 @@ La compilation est explicite, après synchronisation. Son premier diagnostic nat
 
 Le pas à pas nécessite le mode arrêt et utilise les commandes VBE identifiées, sans touches globales. La position affichée provient de la commande native **Afficher l’instruction suivante**, également demandée à l’entrée en mode arrêt ; ce n’est pas une lecture indépendante du pointeur d’exécution. Après un pas effectué directement dans le VBE, utiliser cette commande pour rafraîchir la position.
 
-**Limite VBIDE : aucune collection publique de points d’arrêt n’est disponible.** Le cercle creux signifie donc « demande de bascule envoyée », avec une info-bulle demandant une vérification native. Il n’affirme pas qu’un point d’arrêt est installé. Les modifications du texte invalident ces marqueurs. Les concepteurs UserForm et le moteur de débogage restent natifs.
+**Limite VBIDE : aucune collection publique de points d’arrêt n’est disponible.** Le cercle creux signifie donc « demande de bascule envoyée », avec une info-bulle demandant une vérification native. Il n'affirme pas qu'un point d'arrêt est installé. Deux bascules successives restent une demande non vérifiée, sans déduire un état désactivé. Un essai Excel confirme que CommandBarButton.State reste à zéro avant/après bascule : cette propriété ne constitue pas une preuve utilisable. Les modifications du texte invalident ces marqueurs. Les concepteurs UserForm et le moteur de débogage restent natifs.
 
 ## Synchronisation, attributs et récupération
 
@@ -43,7 +43,7 @@ Un thread dédié prépare les différences, analyse les snapshots et chiffre le
 
 Les caractères incompatibles avec la page de codes Windows sont refusés. Les écritures utilisent un patch de lignes et une relecture du formatage natif. En cas d’échec, un patch inverse est tenté ; tout échec de restauration est signalé.
 
-Les corps des procédures avec attributs masqués peuvent être modifiés. Une édition qui remplace ou scinde leur déclaration est refusée, car elle peut supprimer les métadonnées cachées. Cette protection s’applique aussi au rollback. Le renommage ou remplacement de ces déclarations demande encore un workflow d’export/import préservant les attributs ; le remplacement automatique d’un composant vivant n’est pas effectué.
+Les corps des procédures avec attributs masqués peuvent être modifiés. Le renommage seul d'une déclaration sur une ligne est également pris en charge dans les modules standards : export de sauvegarde, adaptation du propriétaire des attributs, rechargement par CodeModule.AddFromFile dans le même composant puis vérification du texte et des métadonnées par nouvel export. Le renommage inverse est testé dans Excel. Les signatures, déclarations multilignes et modules de classe/document/UserForm restent protégés. Ce rechargement reconstruit le texte du module et peut perdre ses points d'arrêt natifs ; leur inventaire n'est pas disponible. Si la restauration échoue, l'export original est conservé et son chemin est signalé.
 
 Les brouillons sont chiffrés avec DPAPI sous `%LocalAppData%\CodexVBE\EditorDrafts`, sans service externe. Le nettoyage quotidien supprime les anciennes versions de plus de 30 jours, en conservant toujours le dernier fichier par module et les fichiers appartenant à un processus vivant. Les répertoires/jonctions de réanalyse sont ignorés. Un projet jamais enregistré n’a pas d’identité durable entre redémarrages. Une interruption avant réception/sauvegarde de la dernière frappe peut encore la perdre.
 
@@ -64,9 +64,17 @@ Reconstruction reproductible des ressources : `tools/Build-MonacoAssets.ps1`, ou
 
 Les tests unitaires couvrent les révisions, conflits, plans devenus obsolètes, snapshots immuables, attributs, rétention et refus d’exécution d’un prérequis non signé. Les tests `MonacoRuntime` chargent le vrai WebView2 : édition, diff, récupération, index de langage, marqueurs et contrats LLM avec frappes concurrentes.
 
-Le test `MonacoExcel`, activé par `VBAI_EDITOR_EXCEL_TEST=1`, utilise un classeur jetable : accents, synchronisation, conflit, sauvegarde/réouverture, renommage/suppression, récupération et conservation d’un attribut masqué. Le probe enregistré vérifie séparément le double-clic, l’ancrage/détachement et la fermeture couplée. Les réglages COM et AccessVBOM temporaires sont restaurés. L’arbre VBE est identifié par HWND et lu par MSAA : certains hôtes exposent `Window.HWnd=0` et aucun enfant UIA pour cet arbre.
+Le test `MonacoExcel`, activé par `VBAI_EDITOR_EXCEL_TEST=1`, utilise un classeur jetable : accents, synchronisation, conflit, sauvegarde/réouverture, renommage/suppression, récupération, conservation et renommage d'une procédure avec attribut masqué. Il valide aussi la compilation via Monaco, le marqueur de position native et le pas à pas sur la seule procédure jetable Debug.Print. Le probe de cycle de vie n'exécute aucune macro. Le probe enregistré vérifie séparément le double-clic, l’ancrage/détachement et la fermeture couplée. Les réglages COM et AccessVBOM temporaires sont restaurés. L’arbre VBE est identifié par HWND et lu par MSAA : certains hôtes exposent `Window.HWnd=0` et aucun enfant UIA pour cet arbre.
 
-Résultats détaillés locaux sous `artifacts/monaco/`. Les 32 Designers passent le chargement et le redimensionnement. Le parcours natif double-clic/ancrage/fermeture et le roundtrip Excel sont **PASS**. Les commandes de débogage/compilation utilisent les services natifs existants ; l’ensemble de leurs interactions visuelles dans Monaco n’a pas encore été qualifié dans tous les hôtes. SOLIDWORKS reste **NOT_RUN**, conformément à la demande.
+Résultats détaillés locaux sous `artifacts/monaco/`. Les 32 Designers passent le chargement et le redimensionnement. Le parcours natif double-clic/ancrage/fermeture et le roundtrip Excel sont **PASS**. Les commandes de débogage/compilation utilisent les services natifs existants ; le parcours Excel de compilation sans erreur, instruction suivante, pas à pas et sortie est testé. Les diagnostics d'échec de compilation dans Monaco et les autres hôtes restent à qualifier. SOLIDWORKS reste **NOT_RUN**, conformément à la demande.
+
+### Intégration dans main
+
+Les résultats ci-dessus appartiennent à la qualification de la branche Monaco. Le passage d'intégration sur `main` conserve les outils IDE existants et les cinq outils Monaco : **204 outils LLM**. Les tests d'attributs et de rétention sont rattachés aux miroirs `EditorVbeModule` et `EditorDraftStore` ; **184 miroirs pour 246 fichiers de production**. Les **32 surfaces WinForms** passent le chargement et le redimensionnement dans `artifacts/pr7-integration/designers/`.
+
+Le premier passage réel a révélé une exception WinForms lors d'une fermeture pendant la création de contrôles. La fermeture attend maintenant la fin de l'initialisation, des opérations de synchronisation et de la disposition des contrôles d'état ; les callbacks ne réactualisent plus l'interface après une demande de fermeture. Deux scénarios supplémentaires vérifient la fermeture durant l'initialisation et durant la création du bouton de conflit, ainsi que la conservation des brouillons sans écriture VBA. Les exceptions de boucle UI sont remontées à VSTest au lieu de laisser un dialogue JIT bloquant.
+
+Le lot ciblé avant le dernier delta de la branche donne **93 réussis, 0 échec, 1 ignoré** (`artifacts/pr7-integration/contracts-final/integration.trx`). La qualification globale et sa mesure de couverture sont suivies dans [le bilan de couverture](test-coverage.md). Les scénarios Excel sont désactivés dans ce passage d'intégration pour préserver les essais concurrents de l'autre session ; ce passage ne répète donc pas la preuve native de la branche. Les builds d'intégration utilisent `BuildOutputRoot` pour conserver la DLL chargée dans Excel.
 
 ## Sources techniques
 
@@ -74,3 +82,4 @@ Résultats détaillés locaux sous `artifacts/monaco/`. Les 32 Designers passent
 - [Modèle d’objets VBIDE](https://learn.microsoft.com/en-us/office/vba/language/reference/visual-basic-add-in-model/objects-visual-basic-add-in-model) : code, volets et événements exposés.
 - [Attributs VBA et export/import](https://github.com/rubberduck-vba/Rubberduck/wiki/VB_Attribute-Annotations).
 - [Distribution WebView2](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution).
+- [Thread STA et réentrance WebView2](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/threading-model).
