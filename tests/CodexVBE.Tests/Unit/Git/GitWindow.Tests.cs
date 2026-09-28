@@ -1,4 +1,4 @@
-namespace CodexVBE.Tests.Unit
+    namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Drawing;
@@ -9,8 +9,10 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie l’état des commandes et contrôles de GitWindow pendant les opérations.</summary>
     public sealed partial class GitWindowStateTests
     {
+        /// <summary>Refuse les actions sans projet lié et laisse désactivés les contrôles de dépôt.</summary>
         [TestMethod]
         [STATestMethod]
         public void UnboundWindowRejectsActionsAndKeepsRepositoryControlsDisabled()
@@ -32,6 +34,7 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Empêche la fermeture et désactive les interactions pendant une opération en cours.</summary>
         [TestMethod]
         [STATestMethod]
         public void RunningWindowRejectsCloseAndDisablesInteractiveCommands()
@@ -53,6 +56,7 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Restaure les contrôles après succès et affiche l’erreur lorsqu’une action échoue.</summary>
         [TestMethod]
         [STATestMethod]
         public void PerformRestoresControlsAfterSuccessAndReportsActionFailure()

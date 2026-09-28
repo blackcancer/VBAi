@@ -11,8 +11,10 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie la sélection partielle de fichiers avec ressources et références cohérentes.</summary>
     public sealed partial class GitReviewTests
     {
+        /// <summary>Conserve les ressources du formulaire sélectionné et les références de la base appropriée.</summary>
         [TestMethod]
         public void PartialSnapshotsKeepFormResourcesAndReferencesConsistent()
         {
@@ -39,16 +41,27 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie les invariants de manifeste, fichiers, sélection et résumé des snapshots VBA.</summary>
     [TestClass]
     [TestCategory("Unit")]
     public sealed class VbaGitSnapshotCoverageTests
     {
+        /// <summary>Crée un manifeste minimal comportant un seul composant.</summary>
+        /// <param name="type">Type VBE du composant.</param>
+        /// <param name="name">Nom du composant.</param>
+        /// <param name="resources">Indique si le formulaire possède des ressources.</param>
+        /// <returns>Manifeste de test avec une référence vide.</returns>
         private static VbaGitManifest Manifest(int type = 1, string name = "Module1", bool resources = false)
         { return new VbaGitManifest { References = "", Components = new[] { new VbaGitComponent { Name = name, Type = type, HasResources = resources } } }; }
 
+        /// <summary>Crée un dictionnaire de test contenant un fichier source encodé en UTF-8 strict.</summary>
+        /// <param name="text">Texte du fichier source.</param>
+        /// <param name="filename">Nom du fichier à ajouter.</param>
+        /// <returns>Dictionnaire contenant l’unique fichier de test.</returns>
         private static Dictionary<string, byte[]> Files(string text = "Attribute VB_Name = \"Module1\"\n", string filename = "Module1.bas")
         { return new Dictionary<string, byte[]> { [filename] = VbaGitSnapshot.Utf8.GetBytes(text) }; }
 
+        /// <summary>Vérifie les rejets de manifestes incomplets, identités invalides, ressources et paquets mal formés.</summary>
         [TestMethod]
         public void ManifestComponentIdentityResourceAndPackageValidationMatrix()
         {
@@ -79,6 +92,7 @@ namespace CodexVBE.Tests.Unit
             Assert.IsTrue(host.SameAs(VbaGitSnapshot.Read(host.Serialize())));
         }
 
+        /// <summary>Vérifie l’appartenance du FRX au formulaire et la cohérence entre ressources et blobs texte.</summary>
         [TestMethod]
         public void FormResourceOwnershipAndTextBlobReferencesMatrix()
         {
@@ -98,6 +112,7 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual(1, new VbaGitSnapshot(Manifest(3, "Form1"), Files("Attribute VB_Name = \"Form1\"", "Form1.frm")).Files.Count);
         }
 
+        /// <summary>Vérifie égalité, classification des changements, sélection partielle et résumés de références.</summary>
         [TestMethod]
         public void SelectionEqualityChangeClassificationAndReferenceSummaryMatrix()
         {

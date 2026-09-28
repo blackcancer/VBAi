@@ -8,11 +8,13 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie les préconditions, opérations et récupérations du coordinateur Git VBA.</summary>
     [TestClass]
     [TestCategory("Unit")]
     [DoNotParallelize]
     public sealed partial class MacroGitOperationsTests
     {
+        /// <summary>Vérifie la validation du binding et la propriété du verrou de session.</summary>
         [TestMethod]
         public void OpenBindingValidationLockOwnershipAndReleaseMatrix()
         {
@@ -41,6 +43,8 @@ namespace CodexVBE.Tests.Unit
             finally { MacroGitOperations.CacheDirectory = previous; }
         }
 
+        /// <summary>Vérifie les règles de commit, le repli sur la base distante, la sélection et les no-op.</summary>
+        /// <returns>Tâche terminée après les assertions asynchrones.</returns>
         [TestMethod]
         public async Task CommitPolicyParentFallbackSelectionAndNoOpMatrix()
         {
@@ -65,6 +69,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Vérifie les refus pendant fusion, récupération et modifications locales.</summary>
+        /// <returns>Tâche terminée après les assertions asynchrones.</returns>
         [TestMethod]
         public async Task RecoveryMergeDirtyAndUnknownActionGuardsMatrix()
         {
@@ -86,6 +92,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Vérifie la découverte distante, fetch, push, pull et rollback.</summary>
+        /// <returns>Tâche terminée après les assertions asynchrones.</returns>
         [TestMethod]
         public async Task LocalRemoteDiscoveryFetchPushAndPullMatrix()
         {
@@ -106,6 +114,7 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Vérifie les préconditions d’import, les no-op, rollback et erreurs de récupération.</summary>
         [TestMethod]
         public void ImportPreflightNoOpRollbackAndRecoveryFailureMatrix()
         {
@@ -130,6 +139,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Refuse le rollback sans marqueurs valides, avec code modifié ou sauvegarde absente.</summary>
+        /// <returns>Tâche terminée après les assertions asynchrones.</returns>
         [TestMethod]
         public async Task RollbackRejectsMissingChangedAndUnavailableBackupMatrix()
         {
@@ -145,6 +156,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Vérifie brouillon PR, restauration ciblée, fusion et sélection de branche.</summary>
+        /// <returns>Tâche terminée après les assertions asynchrones.</returns>
         [TestMethod]
         public async Task DraftModuleRestoreMergeDefaultMessageAndBranchSelectionMatrix()
         {
