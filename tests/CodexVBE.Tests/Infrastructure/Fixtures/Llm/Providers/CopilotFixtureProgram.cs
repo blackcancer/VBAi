@@ -1,8 +1,10 @@
 namespace CodexVBE.Tests.Infrastructure
 {
     // This executable implements only fixture RPC. It never opens a browser, host or network connection.
+    /// <summary>Contient le programme autonome compilé pour simuler le protocole Copilot pendant les tests.</summary>
     internal static class CopilotFixtureProgram
     {
+        /// <summary>Source C# du processus simulé, incluant les réponses et modes d’échec contrôlés par variables d’environnement.</summary>
         internal const string Source = @"
 using System;using System.IO;using System.Text;using System.Linq;using System.Collections.Generic;using System.Web.Script.Serialization;
 internal static class Fixture {
