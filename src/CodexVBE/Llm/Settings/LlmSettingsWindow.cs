@@ -7,6 +7,14 @@ namespace CodexVBE
     internal sealed partial class LlmSettingsWindow : Form
     {
         private readonly LlmSettings settings;
+        // Keep authentication, persistence and notices at replaceable native boundaries.
+        internal static Action<LlmSettings> WriteSettings = (Action<LlmSettings>)Delegate.CreateDelegate(typeof(Action<LlmSettings>), typeof(LlmSettings).GetMethod("Save"));
+        internal static Action StartCopilotLogin = CopilotClient.StartLogin;
+        internal static Action StartCodexLogin = CodexAccount.StartLogin;
+        internal static Func<System.Threading.Tasks.Task<string>> ReadCopilotStatus = CopilotClient.ReadStatusAsync;
+        internal static Func<System.Threading.Tasks.Task<CodexAccountStatus>> ReadCodexStatus = CodexAccount.ReadStatusAsync;
+        internal static Action<ThemeChoice> SelectTheme = UiTheme.Select;
+        internal static Func<IWin32Window, string, string, MessageBoxButtons, MessageBoxIcon, DialogResult> ShowNotice = MessageBox.Show;
         private bool fittingContent;
         private readonly System.Threading.CancellationTokenSource githubCancellation = new System.Threading.CancellationTokenSource();
         private bool githubBusy;
@@ -53,7 +61,7 @@ namespace CodexVBE
             Icon = VbeWindowIcons.Icon("settings");
             UiText.Apply(this, null, githubToolTips);
             themePicker.SelectedIndex = (int)UiTheme.Choice;
-            themePicker.SelectedIndexChanged += (s, e) => { try { if (themePicker.SelectedIndex >= 0) UiTheme.Select((ThemeChoice)themePicker.SelectedIndex); } catch (Exception ex) { MessageBox.Show(this, ex.Message); } };
+            themePicker.SelectedIndexChanged += (s, e) => { try { if (themePicker.SelectedIndex >= 0) SelectTheme((ThemeChoice)themePicker.SelectedIndex); } catch (Exception ex) { ShowNotice(this, ex.Message, "", MessageBoxButtons.OK, MessageBoxIcon.None); } };
         }
 
         public LlmSettingsWindow(LlmSettings settings)
@@ -63,7 +71,7 @@ namespace CodexVBE
             Icon = VbeWindowIcons.Icon("settings");
             UiText.Apply(this, null, githubToolTips);
             themePicker.SelectedIndex = (int)UiTheme.Choice;
-            themePicker.SelectedIndexChanged += (s, e) => { try { if (themePicker.SelectedIndex >= 0) UiTheme.Select((ThemeChoice)themePicker.SelectedIndex); } catch (Exception ex) { MessageBox.Show(this, ex.Message); } };
+            themePicker.SelectedIndexChanged += (s, e) => { try { if (themePicker.SelectedIndex >= 0) SelectTheme((ThemeChoice)themePicker.SelectedIndex); } catch (Exception ex) { ShowNotice(this, ex.Message, "", MessageBoxButtons.OK, MessageBoxIcon.None); } };
             githubAccount.Items.Add(UiText.Get("Automatic Git selection"));
             githubAccount.SelectedIndex = 0;
             customName.Text = settings.CustomProviderName ?? "";
@@ -77,7 +85,7 @@ namespace CodexVBE
             provider.SelectedIndex = current < 0 ? 0 : current;
             provider.SelectedIndexChanged += (sender, args) => UpdateRows();
             codexLogin.Click += (sender, args) => {
-                try { if (((LlmProvider)provider.SelectedItem).IsCopilot) CopilotClient.StartLogin(); else CodexAccount.StartLogin(); codexStatus.Text = UiText.Get("Sign-in opened. Click Refresh after authenticating."); }
+                try { if (((LlmProvider)provider.SelectedItem).IsCopilot) StartCopilotLogin(); else StartCodexLogin(); codexStatus.Text = UiText.Get("Sign-in opened. Click Refresh after authenticating."); }
                 catch (Exception ex) { codexStatus.Text = ex.Message; }
             };
             codexRefresh.Click += async (sender, args) => await RefreshCodexStatusAsync();
@@ -193,7 +201,7 @@ namespace CodexVBE
         {
             if (((LlmProvider)provider.SelectedItem).IsCopilot) {
                 codexStatus.Text = UiText.Get("Checking GitHub Copilot…");
-                try { string status = await CopilotClient.ReadStatusAsync(); if (!IsDisposed && ((LlmProvider)provider.SelectedItem).IsCopilot) codexStatus.Text = status; }
+                try { string status = await ReadCopilotStatus(); if (!IsDisposed && ((LlmProvider)provider.SelectedItem).IsCopilot) codexStatus.Text = status; }
                 catch (Exception ex) { if (!IsDisposed && ((LlmProvider)provider.SelectedItem).IsCopilot) codexStatus.Text = ex.Message; }
                 if (!IsDisposed && Visible) FitContentHeight();
                 return;
@@ -201,7 +209,7 @@ namespace CodexVBE
             codexStatus.Text = UiText.Get("Checking ChatGPT connection…");
             try
             {
-                var result = await CodexAccount.ReadStatusAsync();
+                var result = await ReadCodexStatus();
                 if (!IsDisposed && ((LlmProvider)provider.SelectedItem).IsCodex)
                 {
                     codexStatus.Text = result.Text;
@@ -239,13 +247,13 @@ namespace CodexVBE
                     if (clearedKeys.Contains(item.Name)) settings.SetKey(item, null);
                     if (keyDrafts.TryGetValue(item.Name, out value) && !string.IsNullOrWhiteSpace(value)) settings.SetKey(item, value);
                 }
-                settings.Save();
+                WriteSettings(settings);
                 DialogResult = DialogResult.OK;
                 Close();
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, ex.Message, UiText.Get("VBAi settings"), MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowNotice(this, ex.Message, UiText.Get("VBAi settings"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

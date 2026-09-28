@@ -157,3 +157,102 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Threading.Tasks;
+    using System.Windows.Forms;
+    using CodexVBE;
+    using CodexVBE.Tests.Infrastructure;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    [TestClass, TestCategory("Unit")]
+    public sealed class LlmSettingsWindowBoundaryTests
+    {
+        private static T Get<T>(LlmSettingsWindow window, string field) { return LlmBoundaryScope.Get<T>(window, field); }
+        private static void Call(LlmSettingsWindow window, string method, params object[] args) { LlmBoundaryScope.Call(window, method, args); }
+        private static Task Refresh(LlmSettingsWindow window, string method, params object[] args) { return (Task)LlmBoundaryScope.Call(window, method, args); }
+        private static void Select(LlmSettingsWindow window, string name) { Get<ComboBox>(window, "provider").SelectedItem = LlmBoundaryScope.Provider(name); }
+        [STATestMethod]
+        public void DesignerThemeAndLayoutEventsRestoreGlobalThemeAndCoverPartialCleanup()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                foreach (bool configured in new[] { false, true }) using (var window = configured ? scope.Window(new LlmSettings { ProviderName = "OpenAI API" }) : new LlmSettingsWindow())
+                {
+                    var themes = Get<ComboBox>(window, "themePicker"); themes.SelectedIndex = -1; themes.SelectedIndex = 1; LlmSettingsWindow.SelectTheme = c => { throw new IOException("theme fixture failure"); }; themes.SelectedIndex = 2; Assert.IsTrue(scope.Notices.Contains("theme fixture failure")); LlmSettingsWindow.SelectTheme = UiTheme.Select;
+                    LayoutEventHandler reenter = (s, e) => Call(window, "FitContentHeight"); window.Layout += reenter; try { window.Show(); Call(window, "FitContentHeight"); Call(window, "OnShown", EventArgs.Empty); Assert.IsTrue(window.ClientSize.Height > 0); } finally { window.Layout -= reenter; }
+                    if (!configured) { Call(window, "UpdateRows"); LlmBoundaryScope.Pump(Refresh(window, "RefreshGitHubAsync", false)); }
+                    Call(window, "Dispose", false); window.Dispose(); window.Dispose(); Call(window, "FitContentHeight");
+                }
+                using (var window = scope.Window(new LlmSettings { ProviderName = "OpenAI API" })) { var tooltip = Get<ToolTip>(window, "githubToolTips"); try { LlmBoundaryScope.Set(window, "githubToolTips", null); Call(window, "Dispose", true); } finally { LlmBoundaryScope.Set(window, "githubToolTips", tooltip); tooltip.Dispose(); } }
+            }
+        }
+        [STATestMethod]
+        public void EveryProviderRowDraftLoginAndThemeCallbackUsesOnlyIsolatedBoundaries()
+        {
+            using (var scope = new LlmBoundaryScope())
+            using (var window = scope.Window(new LlmSettings { ProviderName = "Unknown", CustomProviderName = null, GitHubAccount = "saved-user", VbeEditApproval = "AskEachTime" }))
+            {
+                Assert.AreEqual("Codex", ((LlmProvider)Get<ComboBox>(window, "provider").SelectedItem).Name); Assert.AreEqual(1, Get<ComboBox>(window, "approvalPicker").SelectedIndex); window.Show();
+                foreach (var provider in LlmProvider.All)
+                {
+                    Select(window, provider.Name); Call(window, "UpdateRows"); Get<TextBox>(window, provider.Local ? "ollamaEndpoint" : "openAiEndpoint").Text = " https://fixture.invalid/v1/chat/completions "; Get<TextBox>(window, "openAiKey").Text = " fixture-key "; Get<CheckBox>(window, "clearKey").Checked = true; Get<TextBox>(window, "manualModels").Text = " model-a "; Call(window, "CaptureDraft"); Get<CheckBox>(window, "clearKey").Checked = false; Call(window, "CaptureDraft");
+                    if (provider.IsCodex || provider.IsCopilot) { LlmBoundaryScope.Click(Get<Button>(window, "codexLogin")); LlmBoundaryScope.Click(Get<Button>(window, "codexRefresh")); Assert.IsTrue(Get<Label>(window, "codexStatus").Text.Contains("fixture")); }
+                }
+                Assert.IsTrue(scope.Logins.Contains("copilot")); Assert.IsTrue(scope.Logins.Contains("codex")); Get<ComboBox>(window, "provider").SelectedIndex = -1; Call(window, "UpdateRows"); Select(window, "Codex"); LlmSettingsWindow.StartCodexLogin = () => { throw new IOException("login fixture failure"); }; LlmBoundaryScope.Click(Get<Button>(window, "codexLogin")); Assert.AreEqual("login fixture failure", Get<Label>(window, "codexStatus").Text);
+            }
+        }
+        [STATestMethod]
+        public void SavingValidatedDraftsKeysApprovalAndManualModelsNeverWritesUserSettings()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                foreach (var policy in new[] { "Automatic", "AskEachTime", "ReadOnly" })
+                {
+                    var settings = new LlmSettings { ProviderName = "OpenAI API", VbeEditApproval = policy, ManualModelLists = null }; settings.SetKey(LlmBoundaryScope.Provider("OpenAI API"), "old-fixture-key"); using (var window = scope.Window(settings))
+                    {
+                        Get<ComboBox>(window, "approvalPicker").SelectedIndex = policy == "ReadOnly" ? 2 : policy == "AskEachTime" ? 1 : 0; Get<TextBox>(window, "openAiEndpoint").Text = "https://fixture.invalid/v1"; Get<CheckBox>(window, "clearKey").Checked = true; Get<TextBox>(window, "openAiKey").Text = policy == "Automatic" ? " new-fixture-key " : " "; Select(window, "Personnalisé (OpenAI)"); Get<TextBox>(window, "openAiEndpoint").Text = "https://custom.invalid/v1/chat/completions"; Get<TextBox>(window, "manualModels").Text = " first\nsecond "; Get<TextBox>(window, "customName").Text = " Friendly "; Get<CheckBox>(window, "azureEntra").Checked = true;
+                        if (policy == "ReadOnly") { Get<ComboBox>(window, "githubAccount").Items.Add("fixture-account"); Get<ComboBox>(window, "githubAccount").SelectedItem = "fixture-account"; }
+                        LlmBoundaryScope.Click(Get<Button>(window, "saveButton")); Assert.AreEqual(DialogResult.OK, window.DialogResult); Assert.AreEqual(policy, settings.VbeEditApproval); Assert.AreEqual("Friendly", settings.CustomProviderName); Assert.AreEqual("first\nsecond", settings.ManualModelLists["Personnalisé (OpenAI)"]); Assert.AreEqual(policy == "ReadOnly" ? "fixture-account" : null, settings.GitHubAccount); Assert.AreEqual(policy == "Automatic" ? "new-fixture-key" : null, settings.GetKey(LlmBoundaryScope.Provider("OpenAI API")));
+                    }
+                }
+                Assert.AreEqual(3, scope.Saves);
+                using (var window = scope.Window(new LlmSettings { ProviderName = "OpenAI API" })) { Get<TextBox>(window, "openAiEndpoint").Text = "http://remote.invalid"; Call(window, "Save"); Assert.AreEqual(DialogResult.None, window.DialogResult); Assert.AreEqual(3, scope.Saves); Assert.IsTrue(scope.Notices.Last().Contains("HTTPS")); Get<TextBox>(window, "openAiEndpoint").Text = "https://valid.invalid"; LlmSettingsWindow.WriteSettings = s => { throw new IOException("save fixture failure"); }; Call(window, "Save"); Assert.AreEqual("save fixture failure", scope.Notices.Last()); }
+            }
+        }
+        [STATestMethod]
+        public void GithubLoginAccountSelectionAndConcurrentDiscoveryRespectUiLifetime()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                foreach (bool login in new[] { false, true }) foreach (var accounts in new[] { "", "one", "one\ntwo" }) foreach (var selected in new[] { null, "missing" })
+                    using (var window = scope.Window(new LlmSettings { ProviderName = "OpenAI API", GitHubAccount = selected }))
+                    {
+                        int commands = 0; LlmBoundaryScope.Set(window, "githubService", new GitHubAccountService((command, token) => { commands++; return Task.FromResult(command.Contains(" login ") ? "" : accounts); })); window.Show(); LlmBoundaryScope.Pump(Refresh(window, "RefreshGitHubAsync", login)); Assert.IsTrue(Get<Button>(window, "saveButton").Enabled); var picker = Get<ComboBox>(window, "githubAccount"); Assert.AreEqual(selected ?? (login && accounts == "one" ? "one" : UiText.Get("Automatic Git selection")), picker.SelectedItem); Assert.IsTrue(commands > 0); LlmBoundaryScope.Click(Get<Button>(window, "githubRefresh")); LlmBoundaryScope.Click(Get<Button>(window, "githubLogin"));
+                    }
+                using (var window = scope.Window(new LlmSettings { ProviderName = "OpenAI API" })) { var pending = new TaskCompletionSource<string>(); LlmBoundaryScope.Set(window, "githubService", new GitHubAccountService((c, t) => pending.Task)); var first = Refresh(window, "RefreshGitHubAsync", false); LlmBoundaryScope.Pump(Refresh(window, "RefreshGitHubAsync", true)); Assert.IsTrue(Get<bool>(window, "githubBusy")); Assert.IsFalse(Get<Button>(window, "saveButton").Enabled); pending.SetResult("fixture-user"); LlmBoundaryScope.Pump(first); Assert.IsFalse(Get<bool>(window, "githubBusy")); }
+                foreach (bool disposed in new[] { false, true }) foreach (bool canceled in new[] { false, true })
+                    using (var window = scope.Window(new LlmSettings { ProviderName = "OpenAI API" })) { var pending = new TaskCompletionSource<string>(); LlmBoundaryScope.Set(window, "githubService", new GitHubAccountService((c, t) => pending.Task)); var refresh = Refresh(window, "RefreshGitHubAsync", false); if (disposed) window.Dispose(); if (canceled) pending.SetCanceled(); else pending.SetException(new IOException("github fixture failure")); LlmBoundaryScope.Pump(refresh); if (!disposed && !canceled) Assert.AreEqual("github fixture failure", Get<Label>(window, "githubStatus").Text); }
+                using (var window = scope.Window(new LlmSettings { ProviderName = "OpenAI API" })) { var pending = new TaskCompletionSource<string>(); LlmBoundaryScope.Set(window, "githubService", new GitHubAccountService((c, t) => pending.Task)); var refresh = Refresh(window, "RefreshGitHubAsync", false); window.Dispose(); pending.SetResult("late"); LlmBoundaryScope.Pump(refresh); Assert.IsFalse(Get<bool>(window, "githubBusy")); }
+            }
+        }
+        [STATestMethod]
+        public void CodexAndCopilotStatusResultsErrorsAndLateRepliesRespectProviderChanges()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                foreach (var provider in new[] { "Codex", "GitHub Copilot" }) foreach (bool failure in new[] { false, true }) foreach (var lifetime in new[] { "current", "changed", "disposed" })
+                    using (var window = scope.Window(new LlmSettings { ProviderName = provider }))
+                    {
+                        window.Show(); var copilot = new TaskCompletionSource<string>(); var codex = new TaskCompletionSource<CodexAccountStatus>(); LlmSettingsWindow.ReadCopilotStatus = () => copilot.Task; LlmSettingsWindow.ReadCodexStatus = () => codex.Task; var refresh = Refresh(window, "RefreshCodexStatusAsync"); if (lifetime == "changed") Select(window, "Ollama"); if (lifetime == "disposed") window.Dispose(); if (failure) { if (provider == "Codex") codex.SetException(new IOException("late fixture failure")); else copilot.SetException(new IOException("late fixture failure")); } else { if (provider == "Codex") codex.SetResult(new CodexAccountStatus(false, "late fixture connected")); else copilot.SetResult("late fixture connected"); }
+                        LlmBoundaryScope.Pump(refresh); if (lifetime == "current") { Assert.AreEqual(failure ? "late fixture failure" : "late fixture connected", Get<Label>(window, "codexStatus").Text); if (provider == "Codex") Assert.IsTrue(Get<Button>(window, "codexLogin").Enabled); } else Assert.AreNotEqual(failure ? "late fixture failure" : "late fixture connected", Get<Label>(window, "codexStatus").Text);
+                        LlmSettingsWindow.ReadCopilotStatus = () => Task.FromResult("Copilot fixture connected"); LlmSettingsWindow.ReadCodexStatus = () => Task.FromResult(new CodexAccountStatus(true, "ChatGPT fixture connected"));
+                    }
+            }
+        }
+    }
+}

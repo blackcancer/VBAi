@@ -42,6 +42,10 @@ namespace CodexVBE
         /// <summary>Callback facultatif pour les fragments de texte reçus en streaming.</summary>
         /// <value>Fonction appelée pour chaque fragment, ou null si le streaming est désactivé.</value>
         public Action<string> TextDelta { get; set; }
+        /// <summary>Attend le délai natif des requêtes et réponses Copilot.</summary>
+        internal Func<TimeSpan, Task> Delay = Task.Delay;
+        /// <summary>Démarre le processus CLI sans préambule sur son entrée standard.</summary>
+        internal Func<Process, bool> StartProcess = ProcessInput.StartWithoutPreamble;
         /// <summary>Crée un sérialiseur JSON configuré pour les messages de dix mégaoctets au plus.</summary>
         /// <returns>Sérialiseur de messages Copilot.</returns>
         private static JavaScriptSerializer Json() { return new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 }; }
@@ -87,7 +91,7 @@ namespace CodexVBE
             };
             process = new Process { StartInfo = info };
             try {
-                if (!ProcessInput.StartWithoutPreamble(process)) throw new InvalidOperationException(UiText.Get("Unable to start Copilot."));
+                if (!StartProcess(process)) throw new InvalidOperationException(UiText.Get("Unable to start Copilot."));
             } catch (Exception ex) { process.Dispose(); process = null; throw new InvalidOperationException(UiText.Get("Install GitHub Copilot CLI and set CODEXVBE_COPILOT_CLI to its executable if needed."), ex); }
             process.ErrorDataReceived += (s, e) => { }; // Drain without logging tokens or prompts.
             process.BeginErrorReadLine();
@@ -136,7 +140,7 @@ namespace CodexVBE
             });
             if (Text(created, "sessionId") != sessionId) throw new InvalidOperationException("Session Copilot inattendue.");
             await RequestAsync("session.send", new { sessionId, prompt = Json().Serialize(history) });
-            if (await Task.WhenAny(completion.Task, Task.Delay(TimeSpan.FromMinutes(5))) != completion.Task) {
+            if (await Task.WhenAny(completion.Task, Delay(TimeSpan.FromMinutes(5))) != completion.Task) {
                 Dispose(); throw new TimeoutException(UiText.Get("Copilot did not finish its response within the time limit."));
             }
             return new Dictionary<string, object> { ["role"] = "assistant", ["content"] = await completion.Task };
@@ -153,7 +157,7 @@ namespace CodexVBE
             lock (gate) { if (disposed) throw new ObjectDisposedException(nameof(CopilotClient)); id = ++nextId; pending.Add(id, source); }
             try {
                 Send(new { jsonrpc = "2.0", id, method, @params = parameters });
-                if (await Task.WhenAny(source.Task, Task.Delay(TimeSpan.FromSeconds(45))) != source.Task)
+                if (await Task.WhenAny(source.Task, Delay(TimeSpan.FromSeconds(45))) != source.Task)
                     throw new TimeoutException(UiText.Get("Copilot is not responding to ") + method + UiText.Get(". Check the CLI connection."));
                 return await source.Task;
             } finally { lock (gate) pending.Remove(id); }
