@@ -40,7 +40,8 @@ namespace CodexVBE
             content.Select(0,0); ResizeText();
         }
         internal Font OwnFont(string family, float size, FontStyle style) { var existing = ownedFonts.Find(f => f.FontFamily.Name == family && f.Size == size && f.Style == style); if (existing != null) return existing; var font = new Font(family,size,style); ownedFonts.Add(font); return font; }
-        internal void Append(string text, string family = "Segoe UI", float size = 9.5f, FontStyle style = FontStyle.Regular, Color? color = null)
+        internal void Append(string text, string family = "Segoe UI", float size = 9.5f) => Append(text, family, size, FontStyle.Regular);
+        internal void Append(string text, string family, float size, FontStyle style, Color? color = null)
         {
             content.Select(content.TextLength,0); content.SelectionFont = OwnFont(family,size,style);
             content.SelectionColor = color ?? UiTheme.Foreground; content.AppendText(text ?? "");

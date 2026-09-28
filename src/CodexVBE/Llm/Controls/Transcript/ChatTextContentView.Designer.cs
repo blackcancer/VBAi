@@ -18,6 +18,7 @@ namespace CodexVBE
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
             this.layout = new System.Windows.Forms.TableLayoutPanel();
             this.copyMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.copyMenu.Name = "copyMenu";
             this.copySelection = new System.Windows.Forms.ToolStripMenuItem("Copy");
             this.copyCode = new System.Windows.Forms.ToolStripMenuItem("Copy code");
             this.copyMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { this.copySelection, this.copyCode });

@@ -23,6 +23,7 @@ namespace CodexVBE
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
             this.blockMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.blockMenu.Name = "blockMenu";
             this.undo = new ChatActionButton(); this.undo.Name = "undo"; this.undo.Text = "Undo change"; this.undo.AutoSize = true;
             this.blocks = new ChatActionButton(); this.blocks.Name = "blocks"; this.blocks.Text = "Undo a block…"; this.blocks.AutoSize = true;
             this.undoTurn = new ChatActionButton(); this.undoTurn.Name = "undoTurn"; this.undoTurn.Text = "Undo turn"; this.undoTurn.AutoSize = true;
