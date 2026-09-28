@@ -26,7 +26,7 @@ namespace CodexVBE.Tests.Integration
                 var beforeResponse = host.Command(new { Command = "project_persistence_status", Project = project });
                 Assert.AreEqual(true, beforeResponse["Ok"]);
                 var before = VbeBridgeClient.Object(beforeResponse["Data"]);
-                Assert.AreEqual(true, before["HostAvailable"]);
+                Assert.AreEqual(true, before["HostAvailable"], "Host lookup: " + Convert.ToString(before["Reason"]));
                 Assert.AreEqual(false, before["HostHasPath"]);
 
                 var projectResponse = host.Command(new { Command = "project_properties", Project = project });

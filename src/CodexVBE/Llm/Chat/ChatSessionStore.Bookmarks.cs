@@ -14,6 +14,8 @@ namespace CodexVBE
     }
     internal sealed partial class ChatSessionStore
     {
+        /// <summary>Exécute une étape SQLite native ; la validation et les transactions restent dans le magasin.</summary>
+        internal Func<IntPtr, int> StepNative = Native.sqlite3_step;
         public List<CodeBookmark> ListBookmarks(string scope)
         {
             var result = new List<CodeBookmark>();

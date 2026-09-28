@@ -75,6 +75,9 @@ namespace CodexVBE
         /// <summary>Obtient ou définit l’identifiant de fil de conversation Codex associé.</summary>
         /// <value>Identifiant de fil, ou nul si non applicable.</value>
         public string CodexThreadId { get; set; }
+        /// <summary>Dossier privé auquel appartient le fil ; nul pour un ancien fil extérieur.</summary>
+        /// <value>Chemin du stockage Codex ayant créé ce fil.</value>
+        public string CodexThreadHome { get; set; }
         /// <summary>Obtient ou définit le contexte nécessaire pour reprendre la conversation.</summary>
         /// <value>Contexte de reprise ou nul.</value>
         public string ResumeContext { get; set; }
@@ -243,7 +246,7 @@ namespace CodexVBE
             public Statement(ChatSessionStore owner, IntPtr handle) { this.owner = owner; Handle = handle; }
             /// <summary>Exécute une étape de l’instruction et vérifie son code de retour.</summary>
             /// <returns>Code SQLite de l’étape, notamment ligne disponible ou fin des résultats.</returns>
-            public int Step() { int result = Native.sqlite3_step(Handle); owner.Check(result); return result; }
+            public int Step() { int result = owner.StepNative(Handle); owner.Check(result); return result; }
             /// <summary>Finalise l’instruction native une seule fois.</summary>
             public void Dispose() { if (Handle != IntPtr.Zero) { Native.sqlite3_finalize(Handle); Handle = IntPtr.Zero; } }
         }

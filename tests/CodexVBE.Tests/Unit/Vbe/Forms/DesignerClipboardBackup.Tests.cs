@@ -9,6 +9,32 @@ namespace CodexVBE.Tests.Unit
     public sealed class DesignerClipboardBackupTests
     {
         [TestMethod]
+        public void BackupRejectsNullUnsupportedEmptyAndNonbinaryBags()
+        {
+            Assert.ThrowsException<InvalidOperationException>(()=>DesignerClipboardBackup.Capture(null));
+            var data=new DesignerDataFixture(); data.Values["MS Forms Bag"]=new object();
+            Assert.ThrowsException<InvalidOperationException>(()=>DesignerClipboardBackup.Capture(data));
+            data.Values["MS Forms Bag"]="not binary";
+            Assert.ThrowsException<InvalidOperationException>(()=>DesignerClipboardBackup.Capture(data));
+            data.Values["MS Forms Bag"]=new MemoryStream();
+            Assert.ThrowsException<InvalidOperationException>(()=>DesignerClipboardBackup.Capture(data));
+        }
+        [TestMethod]
+        public void BackupRetainsStringsOmitsNullAndMatchesEachSerializedFormat()
+        {
+            var data=new DesignerDataFixture(); data.Values["MS Forms Bag"]=new MemoryStream(new byte[]{1,2});
+            data.Values["text"]="label"; data.Values["unreadable"]=null;
+            var backup=DesignerClipboardBackup.Capture(data);
+            Assert.AreEqual(12,backup.ByteCount); CollectionAssert.AreEqual(new[]{"unreadable"},backup.OmittedFormats);
+            Assert.IsTrue(backup.Matches(backup.CreateDataObject())); Assert.IsFalse(backup.Matches(null));
+            data.Values["text"]="other"; Assert.IsFalse(backup.Matches(data));
+            data.Values["text"]="label"; data.Values["MS Forms Bag"]="wrong type"; Assert.IsFalse(backup.Matches(data));
+            data.Values["MS Forms Bag"]=null; Assert.IsFalse(backup.Matches(data));
+            data.Values["MS Forms Bag"]=new MemoryStream(new byte[]{1,2}); Assert.IsTrue(backup.Matches(data));
+            data.Values["text"]=new string('a',DesignerClipboardBackup.MaximumBytes/2);
+            Assert.ThrowsException<InvalidOperationException>(()=>DesignerClipboardBackup.Capture(data));
+        }
+        [TestMethod]
         public void BackupOwnsBytesAndDetectsDifferentPayload()
         {
             var data = new DataObject(); var bytes = new byte[] { 1, 2, 3 };

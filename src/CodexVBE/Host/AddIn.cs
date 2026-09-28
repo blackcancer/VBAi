@@ -171,13 +171,20 @@ public void OnConnection(object application, int connectMode, object addInInstan
         {
             try
             {
-                dynamic project = ((dynamic)vbe).ActiveVBProject;
+                dynamic project = null;
+                try { project = ((dynamic)vbe).ActiveVBProject; }
+                catch (System.IO.DirectoryNotFoundException) { }
+                catch (COMException) { }
                 if (project == null) throw new InvalidOperationException(UiText.Get("Select a saved VBA project to open GitHub."));
-                string path = (string)project.FileName;
-                if (string.IsNullOrWhiteSpace(path) || !System.IO.Path.IsPathRooted(path))
+                string path = null;
+                try { path = (string)project.FileName; }
+                catch (System.IO.DirectoryNotFoundException) { }
+                catch (COMException) { }
+                if (string.IsNullOrWhiteSpace(path) || !System.IO.Path.IsPathRooted(path) ||
+                    !System.IO.File.Exists(path))
                     throw new InvalidOperationException(UiText.Get("Save the macro before opening GitHub."));
                 var session = new VbeSession(vbe);
-                string scope = session.GitScope(path);
+                string scope = System.IO.Path.GetFullPath(path);
                 using (var dialog = new GitWindow(session.GitProject(path, scope), scope,
                     (string)project.Name, ReadSettings().GitHubAccount))
                     ShowModal(dialog, VbeOwner());

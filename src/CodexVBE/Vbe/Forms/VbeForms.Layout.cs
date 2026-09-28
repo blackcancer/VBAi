@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,7 +23,8 @@ namespace CodexVBE
             {
                 if (path == null || !TreeContainsPath((IEnumerable)tree.Controls, path)) throw new ArgumentException("Every path must exist in form_tree.");
                 int end = path.LastIndexOf("Controls/", StringComparison.Ordinal);
-                if (end < 0 || path.Substring(end + 9).Contains("/")) throw new ArgumentException("Select controls, not Pages or Tabs.");
+                // Every canonical tree path starts with Controls/; Pages and Tabs remain rejected here.
+                if (path.Substring(end + 9).Contains("/")) throw new ArgumentException("Select controls, not Pages or Tabs.");
                 string owner = path.Substring(0, end).TrimEnd('/');
                 if (parent != null && parent != owner) throw new ArgumentException("All selected controls must share one container.");
                 parent = owner;

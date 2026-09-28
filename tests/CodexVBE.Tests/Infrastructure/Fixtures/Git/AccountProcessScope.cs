@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Infrastructure
+namespace CodexVBE.Tests.Infrastructure
 {
     using System;
     using System.Collections.Generic;
@@ -17,6 +17,8 @@
         private readonly Func<ProcessStartInfo,Process> start = CodexAccount.StartProcess;
         private readonly Func<Process,int,bool> wait = CodexAccount.WaitForExit;
         private readonly Func<string,bool> exists = CodexAccount.FileExists;
+        private readonly Func<string,string[]> directories = CodexAccount.GetDirectories;
+        private readonly Func<string,DateTime> lastWrite = CodexAccount.GetLastWriteTimeUtc;
         private readonly string priorMode = Environment.GetEnvironmentVariable("CODEXVBE_TEST_ACCOUNT_MODE");
         private readonly string priorMarker = Environment.GetEnvironmentVariable("CODEXVBE_TEST_ACCOUNT_MARKER");
         private readonly List<Process> logins = new List<Process>();
@@ -47,7 +49,7 @@
         }
         internal Process StartLogin(ProcessStartInfo info)
         {
-            Assert.AreEqual(Executable,info.FileName);Assert.AreEqual("login",info.Arguments);Assert.IsTrue(info.UseShellExecute);
+            Assert.AreEqual(Executable,info.FileName);Assert.AreEqual("login",info.Arguments);Assert.IsFalse(info.UseShellExecute);Assert.IsFalse(info.CreateNoWindow);Assert.AreEqual(ProviderSessionStorage.CodexHome,info.EnvironmentVariables["CODEX_HOME"]);
             var process=Process.Start(info);logins.Add(process);return process;
         }
         internal void AssertLoginFinished()
@@ -59,6 +61,7 @@
         {
             foreach(var process in logins) {if(!process.HasExited) {process.Kill();process.WaitForExit(5000);}process.Dispose();}
             CodexAccount.StartProcess=start;CodexAccount.WaitForExit=wait;CodexAccount.FileExists=exists;
+            CodexAccount.GetDirectories=directories;CodexAccount.GetLastWriteTimeUtc=lastWrite;
             Environment.SetEnvironmentVariable("CODEXVBE_TEST_ACCOUNT_MODE",priorMode);
             Environment.SetEnvironmentVariable("CODEXVBE_TEST_ACCOUNT_MARKER",priorMarker);
             scope.Dispose();

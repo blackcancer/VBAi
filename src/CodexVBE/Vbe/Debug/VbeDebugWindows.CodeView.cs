@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -7,8 +7,11 @@ namespace CodexVBE
 {
     internal static partial class VbeDebugWindows
     {
-        [StructLayout(LayoutKind.Sequential)] private struct ViewRect { public int Left, Top, Right, Bottom; }
-        [DllImport("user32.dll", EntryPoint = "GetWindowRect")] private static extern bool ViewBounds(IntPtr hwnd, out ViewRect rect);
+        [StructLayout(LayoutKind.Sequential)] internal struct ViewRect { public int Left, Top, Right, Bottom; }
+        [DllImport("user32.dll", EntryPoint = "GetWindowRect")] private static extern bool NativeViewBounds(IntPtr hwnd, out ViewRect rect);
+        internal delegate bool ViewBoundsReader(IntPtr hwnd, out ViewRect rect);
+        /// <summary>Reads native window geometry; isolated in deterministic window tests.</summary>
+        internal static ViewBoundsReader ViewBounds = NativeViewBounds;
 
         internal static object ChangeCodeView(string caption, bool procedure)
         {

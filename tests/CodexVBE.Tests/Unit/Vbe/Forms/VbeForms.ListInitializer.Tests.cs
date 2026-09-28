@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Unit
+namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections;
@@ -15,6 +15,14 @@
     [TestCategory("Unit")]
     public sealed partial class VbeFormsInitializerTests
     {
+        [TestMethod]
+        public void AccessorRefusesValidIdentifiersWhoseGeneratedExpressionExceedsVbaBudget()
+        {
+            string longName=new string('a',220);
+            Assert.ThrowsException<ArgumentException>(()=>VbeForms.ListControlAccessor("Controls/"+longName+"/Controls/"+longName));
+            foreach(string invalid in new[]{(string)null,"Controls/a/Controls","Pages/a","Controls/a/Pages/b","Controls/a/Bad/b/Controls/c","Controls/invalid-name",string.Join("/",System.Linq.Enumerable.Repeat("Controls/a",9))})
+                Assert.ThrowsException<ArgumentException>(()=>VbeForms.ListControlAccessor(invalid));
+        }
         [TestMethod]
         public void InitializerWritesManagedBlockInsideExistingEventAndPreservesUserCode()
         {

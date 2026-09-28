@@ -6,6 +6,18 @@ namespace CodexVBE.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class FormHistoryDiffTests
     {
+        [TestMethod]
+        public void DiffSupportsMissingMalformedCollectionsNewNodesAndUnreadableRightHandValues()
+        {
+            Assert.AreEqual(0,FormHistoryDiff.ReadErrorCount(new {Properties="not an array",Controls="not an array"}));
+            Assert.AreEqual(0,FormHistoryDiff.Compare(new {},new {Properties=(object)null,Controls=(object)null}).Length);
+            Assert.AreEqual(0,FormHistoryDiff.Compare(Tree(Property("Caption","A")),Tree(Property("Caption",null,"unreadable"))).Length);
+            Assert.AreEqual(0,FormHistoryDiff.Compare(Tree(Property("CanUndo",false),Property("CanPaste",false)),Tree(Property("CanUndo",true),Property("CanPaste",true))).Length);
+            var added=new {Controls=new[]{new {Path="Controls/Added",Type="Label",Properties=new[]{Property("Caption","label")},Children=new object[0]}}};
+            var changes=FormHistoryDiff.Compare(new {},added);
+            Assert.AreEqual(3,changes.Length); Assert.IsTrue(changes.All(x=>x.Before==null));
+            Assert.AreEqual("Label",changes.Single(x=>x.Property=="$type").After);
+        }
         private static object Property(string name, object value, string error = null)
             => new { Name = name, Value = value, Error = error };
         private static object Tree(params object[] properties) => new { Properties = properties, Controls = new object[0] };

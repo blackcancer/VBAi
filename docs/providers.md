@@ -38,9 +38,26 @@ Bedrock utilise l’API native **Converse**, l’URL Runtime de la région chois
 
 Les clés sont chiffrées avec DPAPI pour le compte Windows courant. Elles restent dans les paramètres locaux, séparées par fournisseur ; elles ne sont pas enregistrées dans SQLite. Les anciennes propriétés OpenAI/Ollama restent lisibles. Les URL distantes exigent HTTPS ; HTTP est accepté uniquement sur une adresse de boucle locale. Les redirections HTTP automatiques sont désactivées. Les erreurs affichent le fournisseur et le statut HTTP, sans recopier le corps de la réponse susceptible de contenir des données sensibles.
 
+## Isolation des conversations
+
+Les processus CLI de VBAi ont leur propre stockage local :
+
+- Codex : `%LOCALAPPDATA%\CodexVBE\Providers\Codex`, transmis comme `CODEX_HOME`.
+- Copilot : `%LOCALAPPDATA%\CodexVBE\Providers\Copilot`, transmis comme `COPILOT_HOME`.
+
+Ces variables sont fixées seulement dans les processus enfants, y compris les commandes de connexion et de statut. Les clients habituels conservent leurs dossiers par défaut. L’historique SQLite de VBAi reste séparé du stockage interne de chaque CLI. Une connexion dans les paramètres de VBAi peut être nécessaire dans le nouveau dossier ; aucun fichier d’authentification personnel n’est copié.
+
+Une ancienne conversation Codex est reprise à partir de son historique local comme contexte, puis reçoit un nouveau fil privé. Son ancien identifiant externe n’est pas repris. Les fils déjà privés conservent leur reprise native. Cette migration ne supprime pas les anciens fils déjà inscrits dans l’historique externe.
+
+Les fournisseurs HTTP (OpenAI API, Claude, Gemini, Ollama et autres) n’exécutent pas de CLI de conversation : leur historique local est conservé par VBAi. Cela ne modifie pas la conservation éventuelle de données côté service distant.
+
+Les emplacements suivent la [configuration officielle Codex](https://developers.openai.com/codex/config-advanced/) et la [référence Copilot](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference).
+
 ## Codex : fournisseur prioritaire
 
 Codex est le fournisseur par défaut. Le complément utilise le processus `codex app-server` et le compte ChatGPT authentifié par le CLI, sans clé OpenAI API. La configuration propose l’état du compte, la connexion et l’actualisation ; les champs de clé et d’endpoint des transports HTTP sont masqués pour ce mode.
+
+Le complément résout l’exécutable dans cet ordre : `CODEXVBE_CODEX_CLI` si elle est définie, l’ancien emplacement `%LOCALAPPDATA%\Programs\OpenAI\Codex\bin\codex.exe`, les sous-dossiers versionnés de `%LOCALAPPDATA%\OpenAI\Codex\bin` (exécutable le plus récent), puis `codex.exe` dans le `PATH` du processus hôte. Aucun identifiant de version propre à un poste n’est enregistré. Sur une installation non couverte par ces emplacements, définir `CODEXVBE_CODEX_CLI` vers le véritable exécutable natif et redémarrer Excel ou SOLIDWORKS. Un lanceur `.cmd` n’est pas pris en charge par ce transport sans shell.
 
 Le catalogue provient de `model/list`. Les niveaux de raisonnement disponibles et la valeur initiale proviennent des métadonnées du modèle. Le chat transmet le modèle et l’effort au prochain tour, conserve l’identifiant du thread par session et reprend celui-ci avec `thread/resume`.
 
@@ -56,11 +73,11 @@ Tous les modèles d’un catalogue ne prennent pas nécessairement en charge les
 
 ## GitHub Copilot
 
-Installer le CLI GitHub Copilot et utiliser **Se connecter à GitHub** dans les paramètres, ou `copilot login`. Le complément utilise l’authentification gérée par ce CLI ; il n’extrait pas de jeton d’une extension Visual Studio et ne remplace pas Copilot par GitHub Models.
+Installer le CLI GitHub Copilot et utiliser **Se connecter à GitHub** dans les paramètres, en utilisant son espace privé. Le complément utilise l’authentification gérée par ce CLI ; il n’extrait pas de jeton d’une extension Visual Studio et ne remplace pas Copilot par GitHub Models.
 
 Le complément lance `copilot.exe --headless --stdio --no-auto-update --log-level error`. Si l’exécutable natif n’est pas dans PATH, renseigner son chemin dans `CODEXVBE_COPILOT_CLI`. Les lanceurs `.cmd` ne sont pas exécutés par un shell. Le catalogue provient de `models.list` ; le transport vérifie les versions de protocole 2 ou 3 et refuse les autres avec un diagnostic explicite.
 
-Une session Copilot est créée pour chaque envoi avec l’historique local et les instructions système. Les appels d’outils et leurs résultats rejoignent cet historique. Aucun identifiant de session distante Copilot n’est réutilisé entre documents. Le CLI peut conserver son propre historique suivant sa configuration ; ce comportement est distinct du stockage SQLite du complément.
+Une session Copilot est créée pour chaque envoi avec l’historique local et les instructions système. Les appels d’outils et leurs résultats rejoignent cet historique. Aucun identifiant de session distante Copilot n’est réutilisé entre documents. Le CLI conserve son état dans le dossier privé Copilot de VBAi, distinct du dossier des autres clients et du stockage SQLite du complément.
 
 Seuls les outils VBA déclarés sont exposés. Les demandes natives shell/fichiers/réseau/MCP sont refusées. Une permission `custom-tool` correspondant à un outil enregistré peut seulement acheminer l’appel vers `LlmVbeTools.InvokeAsync`, qui conserve les contrôles Discussion/Plan, Lecture seule, portée du projet, approbation configurée et révision SHA. Les appels dupliqués ne sont pas exécutés deux fois. Arrêter ferme le processus appartenant à ce client ; une action COM déjà commencée peut se terminer et conserve son rollback.
 

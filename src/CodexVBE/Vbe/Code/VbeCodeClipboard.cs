@@ -23,14 +23,22 @@ namespace CodexVBE
     internal sealed class WindowsCodeClipboard : ICodeClipboard
     {
         [DllImport("user32.dll")] private static extern uint GetClipboardSequenceNumber();
+        /// <summary>Lit la révision native du presse-papiers sans remplacer les contrôles de cohérence.</summary>
+        internal Func<uint> SequenceNative = GetClipboardSequenceNumber;
+        /// <summary>Teste la présence du format Unicode dans le presse-papiers Windows.</summary>
+        internal Func<TextDataFormat, bool> ContainsNative = Clipboard.ContainsText;
+        /// <summary>Lit le texte au format demandé depuis Windows.</summary>
+        internal Func<TextDataFormat, string> GetNative = Clipboard.GetText;
+        /// <summary>Écrit le texte au format demandé dans Windows.</summary>
+        internal Action<string, TextDataFormat> SetNative = Clipboard.SetText;
         public CodeClipboardSnapshot Read()
         {
             if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
                 throw new InvalidOperationException("Clipboard access requires the VBE STA.");
-            uint sequence = GetClipboardSequenceNumber();
-            bool hasText = Clipboard.ContainsText(TextDataFormat.UnicodeText);
-            string text = hasText ? Clipboard.GetText(TextDataFormat.UnicodeText) : null;
-            if (sequence != GetClipboardSequenceNumber()) throw new InvalidOperationException("Clipboard changed during inspection; read it again.");
+            uint sequence = SequenceNative();
+            bool hasText = ContainsNative(TextDataFormat.UnicodeText);
+            string text = hasText ? GetNative(TextDataFormat.UnicodeText) : null;
+            if (sequence != SequenceNative()) throw new InvalidOperationException("Clipboard changed during inspection; read it again.");
             if (text != null && text.Length > 1024 * 1024) throw new InvalidOperationException("Clipboard text exceeds one million characters.");
             return new CodeClipboardSnapshot { HasText = hasText, Text = text,
                 Version = sequence.ToString(CultureInfo.InvariantCulture) + ":" + VbeCodeClipboard.Hash(text ?? "") };
@@ -39,7 +47,7 @@ namespace CodexVBE
         {
             if (string.IsNullOrEmpty(text) || text.Length > 1024 * 1024) throw new ArgumentException("Copy requires 1 to 1048576 characters.");
             if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) throw new InvalidOperationException("Clipboard access requires the VBE STA.");
-            Clipboard.SetText(text, TextDataFormat.UnicodeText);
+            SetNative(text, TextDataFormat.UnicodeText);
             var result = Read();
             if (!result.HasText || result.Text != text) throw new InvalidOperationException("Clipboard readback differs; source was not cut.");
             return result;

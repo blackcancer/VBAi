@@ -300,6 +300,7 @@ namespace CodexVBE
         /// <returns>Client App Server configuré pour la fenêtre.</returns>
         private CodexAppServerClient CreateCodexClient()
         {
+            ProviderSessionStorage.PrepareCodexSession(currentSession);
             var ownerSession = currentSession;
             var client = new CodexAppServerClient(SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext(),
                 tools, SetStatus, settings, currentSession?.CodexThreadId, TransportFactory());
@@ -310,7 +311,7 @@ namespace CodexVBE
             client.ThreadReady += id =>
             {
                 if (currentSession == ownerSession && currentSession != null && !IsDisposed)
-                { currentSession.CodexThreadId = id; SaveCurrentSession(); }
+                { currentSession.CodexThreadId = id; currentSession.CodexThreadHome = ProviderSessionStorage.CodexHome; SaveCurrentSession(); }
             };
             return client;
         }
@@ -381,6 +382,7 @@ namespace CodexVBE
             requestText = UiText.Get("Mode for this request: ") + currentSession.Mode + (currentSession.Mode == ChatMode.Agent ? ".\n" : UiText.Get(". Analysis only; no edits or macro execution.\n")) + requestText;
             requestText = "<vbe-encoding-context>\n" + LlmVbeContext.EncodingInstructions +
                 "\n</vbe-encoding-context>\n\n" + requestText;
+            if (((LlmProvider)providerPicker.SelectedItem).IsCodex) ProviderSessionStorage.PrepareCodexSession(currentSession);
             if (!string.IsNullOrEmpty(currentSession.ResumeContext)) requestText = UiText.Get("Branch history (context only; read the live code again):\n") + currentSession.ResumeContext + "\n\n" + requestText;
             streamedFinalText = null;
             RenameFromQuestion(question);

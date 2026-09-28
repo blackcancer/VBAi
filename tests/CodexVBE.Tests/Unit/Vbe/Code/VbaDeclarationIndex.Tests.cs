@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Unit
+namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Linq;
@@ -49,6 +49,46 @@
             Assert.AreEqual(5, symbols.Length);
             Assert.AreEqual("Integer", symbols.Single(x => x.Name == "count").TypeName);
             Assert.AreEqual("Module", symbols.Single(x => x.Name == "moduleOnly").Scope);
+        }
+
+        [TestMethod]
+        public void IncompleteDeclarationsAndAllContainerAndModifierKindsHaveExplicitResults()
+        {
+            string source = "#\n#End\n#End Else\n#End If\nEnd\nEnd If\n" +
+                "Sub\nSub 1\nSub Bare\nSub Open(\nSub Nested(x As Long, y As Factory(1))\nEnd Sub\n" +
+                "Function F(ByRef a As Long)\nEnd Function\nProperty Get P(Optional b As String)\nEnd Property\n" +
+                "Event\nEvent 1\nEvent Changed()\nDeclare\nDeclare PtrSafe Other\nDeclare Sub External Lib \"x\" ()\nDeclare Function Fn Lib \"x\" ()\nDeclare Sub 1\n" +
+                "Type\nType 1\nType T\n1 Invalid\nField As Long\nEnd Type\nEnum\nEnum 1\nEnum E\nFirst = 1\nEnd Enum\n" +
+                "Friend Global Static counter As Long\nWithEvents listener As Object\nPrivate WithEvents notifier As Object\n" +
+                "Dim\nDim , invalid As, other As New, broken As Long = 1, , _bad\n" +
+                "Dim s$, i%, l&, f!, d#, c@, ll^\n";
+            var symbols = VbaDeclarationIndex.Read(source);
+            Assert.IsTrue(symbols.Any(x => x.Name == "Changed" && x.Kind == "Event"));
+            Assert.AreEqual(2, symbols.Count(x => x.Kind == "ExternalProcedure"));
+            Assert.IsTrue(symbols.Any(x => x.Name == "counter" && x.TypeName == "Long"));
+            Assert.IsTrue(symbols.Any(x => x.Name == "Field" && x.Kind == "Field"));
+            Assert.IsTrue(symbols.Any(x => x.Name == "First" && x.Kind == "EnumMember"));
+            Assert.AreEqual("", symbols.Single(x => x.Name == "invalid").TypeName);
+            Assert.AreEqual("", symbols.Single(x => x.Name == "other").TypeName);
+            foreach (var pair in new[] { new[] { "s", "String" }, new[] { "i", "Integer" }, new[] { "l", "Long" }, new[] { "f", "Single" }, new[] { "d", "Double" }, new[] { "c", "Currency" }, new[] { "ll", "LongLong" } })
+                Assert.AreEqual(pair[1], symbols.Single(x => x.Name == pair[0]).TypeName);
+            var suffix = typeof(VbaDeclarationIndex).GetMethod("SuffixType", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+            Assert.AreEqual("Variant", suffix.Invoke(null, new object[] { '?' }));
+        }
+
+        [TestMethod]
+        public void LexerHandlesEveryLiteralCommentContinuationAndEndOfInputShape()
+        {
+            foreach (string source in new[] { "", "\n\r\n", ":", "word:", "word:=", "word", "x_2$", "_", "a _\n b", "_\n", "a\tb", "'tail", "Rem tail", "Rem\nDim x", "\"unterminated", "\"a\"\"b\"", "\"last\"", "[name]", "[unterminated\n", "x #date#", "x #unfinished", "x #unfinished\n", "x#", "a!" })
+            {
+                var tokens = VbaDeclarationIndex.Statements(source).SelectMany(x => x).ToArray();
+                Assert.IsTrue(tokens.All(t => t.Line > 0 && t.Column > 0 && t.Text.Length > 0), source);
+            }
+            var escaped = VbaDeclarationIndex.Statements("Dim x As String = \"a\"\"b\": Dim y As Date = #1/2/2026#").ToArray();
+            Assert.AreEqual(2, escaped.Length);
+            Assert.AreEqual(2, escaped.SelectMany(x => x).Count(x => x.Text == "<literal>"));
+            var continuation = VbaDeclarationIndex.Statements("Dim a, _\r\n b As Long").Single();
+            Assert.AreEqual(2, continuation.Single(x => x.Text == "b").Line);
         }
     }
 }

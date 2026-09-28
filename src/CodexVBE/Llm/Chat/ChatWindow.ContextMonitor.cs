@@ -19,7 +19,7 @@ namespace CodexVBE
             projectEvents = new VbeCollectionEvents(() => contextDirty = true, false);
             componentEvents = new VbeCollectionEvents(() => contextDirty = true, true);
             referenceEvents = new VbeReferenceEvents(() => contextDirty = true);
-            contextMonitor = new VbeContextMonitor(session.Execute);
+            contextMonitor = new VbeContextMonitor(request => ReadHost(session, request));
             contextMonitor.Changed += () => contextDirty = true;
             contextMonitorTimer = new Timer(components) { Interval = 1500 };
             contextMonitorTimer.Tick += (sender, args) => {
@@ -71,7 +71,7 @@ namespace CodexVBE
 
         private bool RefreshAvailableScopes(VbeSession session)
         {
-            Response response = session.Execute(new Request { Command = "list_projects" });
+            Response response = ReadHost(session, new Request { Command = "list_projects" });
             if (!response.Ok) return false;
             var entries = json.DeserializeObject(json.Serialize(response.Data)) as object[];
             if (entries == null) return false;

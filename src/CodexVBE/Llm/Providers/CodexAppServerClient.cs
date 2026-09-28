@@ -33,6 +33,8 @@ namespace CodexVBE
     {
         /// <summary>Vérifie la présence du binaire Codex installé à son emplacement local.</summary>
         internal Func<string, bool> InstalledExists = File.Exists;
+        internal Func<string, string[]> GetDirectories = Directory.GetDirectories;
+        internal Func<string, DateTime> GetLastWriteTimeUtc = File.GetLastWriteTimeUtc;
         /// <summary>Démarre le processus Codex sans préambule UTF-8 parasite sur l’entrée standard.</summary>
         internal Func<Process, bool> StartProcess = ProcessInput.StartWithoutPreamble;
         /// <summary>Processus CLI Codex détenu par le transport.</summary>
@@ -48,19 +50,14 @@ namespace CodexVBE
         /// <summary>Lance « codex app-server », évite un préambule UTF-8 sur l’entrée standard et active la lecture asynchrone.</summary>
         public void Start()
         {
-            string executable = Environment.GetEnvironmentVariable("CODEXVBE_CODEX_CLI");
-            if (string.IsNullOrWhiteSpace(executable))
-            {
-                string installed = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "Programs", "OpenAI", "Codex", "bin", "codex.exe");
-                executable = InstalledExists(installed) ? installed : "codex.exe";
-            }
+            string executable = CodexCliLocator.Resolve(InstalledExists, GetDirectories, GetLastWriteTimeUtc);
             var info = new ProcessStartInfo(executable, "app-server") {
                 UseShellExecute = false, RedirectStandardInput = true,
                 RedirectStandardOutput = true, RedirectStandardError = true,
                 CreateNoWindow = true, StandardOutputEncoding = new UTF8Encoding(false),
                 StandardErrorEncoding = new UTF8Encoding(false)
             };
+            ProviderSessionStorage.ConfigureCodex(info);
             process = new Process { StartInfo = info, EnableRaisingEvents = true };
             process.Exited += (sender, args) => Exited?.Invoke(new InvalidOperationException(UiText.Get("Codex app-server stopped.")));
             if (!StartProcess(process))

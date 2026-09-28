@@ -1,39 +1,36 @@
 # Couverture automatisée du complément
 
-## Validation de la fusion `codex/chat-ux` du 28 septembre 2026
+## Fusion des extensions `codex/chat-ux` du 28 septembre 2026
 
-La branche `72628f9` est intégrée à `main` après résolution des conflits avec les frontières de test, les gardes de session et les concepteurs WinForms existants. La mesure globale inclut toutes les sources de production apportées par cette branche, sans exclusion de production ni filtre de tests.
+Fusion locale `611dcb5`, intégrant `5aed4f3` dans main après l’isolation des sessions CLI. Compilation solution et complément : **0 erreur, 0 avertissement**. Les sources CLI privées sont conservées.
 
 | Mesure | Résultat |
 | --- | --- |
-| Lignes | **17 211 / 18 517 — 92,94 %** |
-| Branches | **17 509 / 19 944 — 87,79 %** |
-| Classes instrumentées incomplètes | **63** |
-| Suite complète, hôtes activés | **910 réussis, 0 échec, 0 ignoré** |
-| Essais VSTest d’hôtes séparés | **2 Excel + 1 SOLIDWORKS réussis** |
-| Concepteurs WinForms | **24 chargements DesignSurface et modifications de taille réussis** |
-| Compilation du complément | **0 erreur, 0 avertissement** |
-| Organisation des tests | **99 miroirs pour 168 fichiers de production** |
+| Lignes | **19 201 / 19 299 — 99,49 %** |
+| Branches | **20 962 / 21 297 — 98,43 %** |
+| Classes instrumentées incomplètes | **19** |
+| Tests locaux, hors trois essais hôtes | **1 085 réussis** |
+| Suite globale avec hôtes | **1 086 réussis, 1 échec, 1 ignoré** |
+| Excel, lecture et pont | Réussi dans la suite globale |
+| Excel, sauvegarde | Échec dans la suite globale ; réussi dans le passage isolé |
+| SOLIDWORKS | NOT_RUN : instance utilisateur fermée |
+| Organisation | **128 miroirs pour 177 sources**, scénarios complémentaires |
 
-La couverture doit donc encore être complétée pour les nouvelles sources. La documentation de production à 100 % du bilan historique ne couvre pas automatiquement les nouvelles déclarations de cette branche.
+### Diagnostic Excel
 
-### Preuves de la fusion
+Le test de sauvegarde échoue avec « The registered Excel instance is not this VBE host. ». Le contrôle de PID de production empêche la sauvegarde dans une autre instance retournée par le registre COM. Le même test réussit séparément. La suite globale avec hôtes n’est donc pas entièrement verte : l’enchaînement/la cohabitation d’instances Excel utilisant ce registre reste à stabiliser. Aucun contrôle de sécurité ni assertion de sauvegarde n’a été retiré ; l’assertion rapporte maintenant la raison native.
 
-- Rapport : `artifacts/merge-chat-ux/final/f8fd3ea7-0be2-44d8-8e75-d1fa6b5ceb73/coverage.cobertura.xml`.
-- Inventaire des classes incomplètes : `coverage-summary.json`, dans le même dossier.
-- Suite globale : `artifacts/merge-chat-ux/final/global.trx`.
-- Hôtes : `artifacts/merge-chat-ux/hosts/hosts.trx`.
-- Concepteurs : `artifacts/merge-chat-ux/designers.txt`.
-- Organisation : `artifacts/merge-chat-ux/final/test-layout.json`.
+### Preuves
 
-Excel est lancé visiblement par les fixtures, son VBE est ouvert par une commande native et les instances créées sont fermées après les essais. SOLIDWORKS 2019, version `27.5.0.0072`, est testé dans le PID fourni `23056`, conservé ouvert. L’identifiant de compilation de sa DLL chargée correspond à celui du fichier reconstruit.
+- Rapport global : `artifacts/merge-chat-ux-latest/final/541bf7ad-5bdd-41fc-a733-18611912a750/coverage.cobertura.xml`.
+- Inventaire : `coverage-summary.json`, à côté du rapport ; les nouvelles déclarations, mutations et frontières natives expliquent les lacunes.
+- Suite globale : `artifacts/merge-chat-ux-latest/final/global.trx`.
+- Sauvegarde Excel isolée : `artifacts/merge-chat-ux-latest/hosts-diagnostic/hosts.trx`.
+- Catalogue reconstruit : **177 outils**, documentation vérifiée sans divergence.
+- Convention miroir : `tools/tests/Test-TestLayout.ps1`.
 
-Sur le projet jetable `test.swp`, les scripts de compilation/exécution et de breakpoint vérifient le pas à pas et la reprise, puis restaurent l’inventaire des modules et l’empreinte du code initial. La capture des variables locales indique un panneau accessible mais **zéro ligne exposée** ; elle ne prouve pas la lecture de leurs valeurs. Le diagnostic ROT externe reste `ProcessOnly`, tandis que le pont du complément et les commandes VBE fonctionnent dans ce PID.
-
-Les matrices d’outils vérifient désormais `Rows` : types des cellules, dimensions, forme rectangulaire et limites de contenu. Les anciens tests d’interface sont adaptés aux onglets de paramètres et aux quatre colonnes fixes du diff. Le contrôle du catalogue conserve l’unicité et la longueur des noms de fonctions ; les capacités de taille du catalogue des fournisseurs distants ne sont pas qualifiées par ces simulations.
+Les [extensions fonctionnelles](reference/functional-extensions.md) détaillent les nouveaux contrats et leurs qualifications natives. Le [bilan précédent à 100 % après isolation CLI](archive/test-coverage-session-isolation.md) ne couvre pas ces ajouts. Les 24 DesignSurface et les essais SOLIDWORKS précédents restent historiques, non réexécutés ici. L’audit IntelliSense continue dans sa branche dédiée.
 
 ## Reproduire la mesure
 
-Voir [le projet de tests](../tests/README.md) pour les commandes VSTest et les hôtes opt-in. Les artefacts sont générés localement et ignorés par Git. Le seul exécutable exclu du collecteur est `ProviderTests.exe`, la simulation CLI ; aucune source du complément n’est exclue.
-
-Le [bilan antérieur à 100 %](archive/test-coverage-pre-chat-ux.md) est archivé séparément. Il ne couvre pas les nouvelles sources intégrées.
+Voir [le projet de tests](../tests/README.md) pour VSTest, la couverture et les hôtes opt-in. Les artefacts sont locaux et ignorés par Git. `ProviderTests.exe` est le seul exécutable exclu ; aucune source du complément n’est exclue. Une couverture VSTest comprend les doubles natifs et ne qualifie pas toutes les commandes dans chaque hôte.

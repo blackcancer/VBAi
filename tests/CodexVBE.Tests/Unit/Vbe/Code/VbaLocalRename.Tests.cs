@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Unit
+namespace CodexVBE.Tests.Unit
 {
     using System;
     using CodexVBE;
@@ -44,6 +44,60 @@
             source = "Sub Run()\nDim value$\nvalue$ = \"text\"\nEnd Sub";
             actual = VbaLocalRename.Transform(source, Rename(), 1, 4);
             StringAssert.Contains(actual, "Dim amount$"); StringAssert.Contains(actual, "amount$ =");
+        }
+
+        [TestMethod]
+        public void ProcedureBoundsHeadersScopeAndCompilationGuardsAreCheckedBeforeAnyReplacement()
+        {
+            const string source = "Sub Run()\nDim value As Long\nvalue = 1\nEnd Sub";
+            foreach (var bounds in new[] { new[] { 0, 4, 2, 5 }, new[] { 3, 2, 2, 5 }, new[] { 3, 4, 2, 5 }, new[] { 1, 1, 2, 5 }, new[] { 1, 4, 2, 0 } })
+            {
+                var request = Rename(); request.StartLine = bounds[2]; request.StartColumn = bounds[3];
+                Assert.ThrowsException<ArgumentException>(() => VbaLocalRename.Transform(source, request, bounds[0], bounds[1]));
+            }
+            foreach (string query in new[] { null, "different" })
+            { var request = Rename(); request.Query = query; Assert.ThrowsException<InvalidOperationException>(() => VbaLocalRename.Transform(source, request, 1, 4)); }
+            foreach (string scope in new[] { null, "Other" })
+            { var request = Rename(); request.Procedure = scope; Assert.ThrowsException<InvalidOperationException>(() => VbaLocalRename.Transform(source, request, 1, 4)); }
+            foreach (string changed in new[] {
+                source.Replace("Sub Run()", "Sub Run()\n"), source.Replace("Sub Run()", "\nSub Run()"),
+                source.Replace("End Sub", "End Function"), source.Replace("End Sub", ""),
+                source.Replace("value = 1", "Dim value As String"),
+                source.Replace("value = 1", "#Const Feature = True\nvalue = 1"),
+                "DefInt A-Z\n" + source })
+            {
+                var request = Rename();
+                if (changed.StartsWith("DefInt")) { request.StartLine = 3; Assert.ThrowsException<InvalidOperationException>(() => VbaLocalRename.Transform(changed, request, 2, 5)); }
+                else if (changed.StartsWith("\n")) { request.StartLine = 3; Assert.ThrowsException<InvalidOperationException>(() => VbaLocalRename.Transform(changed, request, 1, 5)); }
+                else Assert.ThrowsException<InvalidOperationException>(() => VbaLocalRename.Transform(changed, request, 1, changed.Split('\n').Length));
+            }
+            var conditional = Rename(); conditional.StartLine = 3;
+            Assert.ThrowsException<InvalidOperationException>(() => VbaLocalRename.Transform("Sub Run()\n#If VBA7 Then\nDim value As Long\n#End If\nEnd Sub", conditional, 1, 5));
+            var module = Rename(); module.Procedure = "Module"; module.StartLine = 1;
+            Assert.ThrowsException<InvalidOperationException>(() => VbaLocalRename.Transform("Dim value As Long\nEnd Sub", module, 1, 2));
+        }
+
+        [TestMethod]
+        public void FunctionsPropertiesConstantsCaseChangesAndEveryExcludedBindingArePreserved()
+        {
+            foreach (var signature in new[] { new[] { "Function Run() As Long", "End Function" }, new[] { "Property Get Run() As Long", "End Property" }, new[] { "Sub Run()", "End Sub" } })
+            {
+                string source = signature[0] + "\nConst value As Long = 2\n" +
+                    "Debug.Print value \t, value\nCall Other(value:=value)\n" +
+                    "GoSub value\nResume value\nCall Register(AddressOf value)\n" +
+                    "If TypeOf obj Is value Then Debug.Print value\nIf obj Is value Then Debug.Print value\n" +
+                    "Debug.Print obj!value, obj ! value, obj.value\nvalue :\n" + signature[1] + "\nDim outside As Long";
+                var request = Rename(); request.StartColumn = 7;
+                string actual = VbaLocalRename.Transform(source, request, 1, source.Split('\n').Length);
+                StringAssert.Contains(actual, "Const amount"); StringAssert.Contains(actual, "Other(value:=amount)");
+                StringAssert.Contains(actual, "GoSub value"); StringAssert.Contains(actual, "Resume value");
+                StringAssert.Contains(actual, "AddressOf value"); StringAssert.Contains(actual, "TypeOf obj Is value Then Debug.Print amount");
+                StringAssert.Contains(actual, "If obj Is amount Then Debug.Print amount");
+                StringAssert.Contains(actual, "obj!value, obj ! value, obj.value"); StringAssert.Contains(actual, "value :");
+                request.NewName = "VALUE";
+                actual = VbaLocalRename.Transform(source, request, 1, source.Split('\n').Length);
+                StringAssert.Contains(actual, "Const VALUE"); StringAssert.Contains(actual, "Other(value:=VALUE)");
+            }
         }
     }
 }

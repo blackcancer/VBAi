@@ -66,7 +66,8 @@ namespace CodexVBE
 
         /// <summary>Ouvre la commande interactive de connexion Copilot.</summary>
         public static void StartLogin()
-        { Process.Start(new ProcessStartInfo(Executable, "login") { UseShellExecute = true }); }
+        { var info = new ProcessStartInfo(Executable, "login") { UseShellExecute = false, CreateNoWindow = false };
+            ProviderSessionStorage.ConfigureCopilot(info); Process.Start(info); }
 
         /// <summary>Démarre brièvement le CLI, charge son catalogue de modèles et retourne un état d’accessibilité.</summary>
         /// <returns>Texte qui indique si Copilot est accessible et le nombre de modèles.</returns>
@@ -89,6 +90,7 @@ namespace CodexVBE
                 RedirectStandardOutput = true, RedirectStandardError = true,
                 WorkingDirectory = Path.GetTempPath()
             };
+            ProviderSessionStorage.ConfigureCopilot(info);
             process = new Process { StartInfo = info };
             try {
                 if (!StartProcess(process)) throw new InvalidOperationException(UiText.Get("Unable to start Copilot."));

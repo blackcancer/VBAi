@@ -42,7 +42,7 @@ Les clés API ne sont pas enregistrées dans cette base. Les contenus de convers
 
 ## Vérification
 
-Le dernier passage global après fusion `2197c43` compte **910 tests verts**, avec les essais Excel et SOLIDWORKS activés, et **24 concepteurs WinForms** validés. Voir [le bilan courant](test-coverage.md). Les captures et essais d’interface ci-dessous sont des validations antérieures datées, avec leur propre périmètre.
+La fusion `611dcb5` ajoute 11 outils IDE. Sa mesure est de **99,49 % lignes et 98,43 % branches** ; les tests locaux passent, mais le test de sauvegarde Excel échoue dans la suite globale et réussit isolément. Les 24 concepteurs WinForms ont été validés précédemment. Voir [le bilan courant](test-coverage.md). Les captures et essais d’interface ci-dessous sont des validations antérieures datées, avec leur propre périmètre.
 
 Depuis le worktree :
 
