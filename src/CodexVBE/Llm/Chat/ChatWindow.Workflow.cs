@@ -34,7 +34,7 @@ namespace CodexVBE
 /// <param name="references">The references used by this operation.</param>
 /// <param name="drafts">The drafts used by this operation.</param>
 /// <returns>The result produced by this operation.</returns>
-private ChatAttachment[] PrepareRequestAttachments(string question, IEnumerable<VbeChatReference> references, IEnumerable<ChatAttachment> drafts)
+        private ChatAttachment[] PrepareRequestAttachments(string question, IEnumerable<VbeChatReference> references, IEnumerable<ChatAttachment> drafts)
         {
             var attachments = new List<ChatAttachment>();
             foreach (var reference in references)
@@ -161,7 +161,7 @@ private ChatAttachment[] PrepareRequestAttachments(string question, IEnumerable<
         /// <summary>Performs the prepare monaco action operation for ChatWindow.</summary>
 /// <param name="command">Text containing the command.</param>
 /// <param name="attachment">The attachment used by this operation.</param>
-internal void PrepareMonacoAction(string command, ChatAttachment attachment)
+        internal void PrepareMonacoAction(string command, ChatAttachment attachment)
         {
             if (busy) { SetStatus(UiText.Get("Wait for the response to finish before preparing an action.")); return; }
             var action = ChatCommand.All.First(x => x.Token == command);

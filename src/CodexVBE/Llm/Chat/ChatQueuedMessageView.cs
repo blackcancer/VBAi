@@ -2,8 +2,8 @@ using System;
 using System.Windows.Forms;
 namespace CodexVBE
 {
-        /// <summary>Displays one queued chat message and provides actions to send it, edit it, or remove it.</summary>
-public sealed partial class ChatQueuedMessageView : UserControl
+    /// <summary>Designer-editable row for a pending chat message.</summary>
+    public sealed partial class ChatQueuedMessageView : UserControl
     {
         /// <summary>Requests immediate dispatch after interrupting the active response.</summary>
         public event EventHandler SendNowRequested;
@@ -19,8 +19,8 @@ public sealed partial class ChatQueuedMessageView : UserControl
             edit.Click += (s, e) => EditRequested?.Invoke(this, e);
             delete.Click += (s, e) => DeleteRequested?.Invoke(this, e);
         }
-                /// <summary>Displays the queued text and exposes it as a tooltip when it is truncated.</summary>
-        /// <param name="text">Text of the queued message.</param>
-public void ShowMessage(string text) { message.Text = text; toolTips.SetToolTip(message, text); }
+        /// <summary>Displays the queued message with a full-text tooltip.</summary>
+        /// <param name="text">User message awaiting dispatch.</param>
+        public void ShowMessage(string text) { message.Text = text; toolTips.SetToolTip(message, text); }
     }
 }

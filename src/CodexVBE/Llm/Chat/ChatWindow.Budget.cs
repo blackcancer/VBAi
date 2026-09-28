@@ -6,15 +6,15 @@ using System.Threading.Tasks;
 namespace CodexVBE
 {
     /// <summary>Provides the chat window implementation.</summary>
-internal sealed partial class ChatWindow
+    internal sealed partial class ChatWindow
     {
         /// <summary>Stores the provider stream id used by ChatWindow.</summary>
-private string providerStreamId;
+        private string providerStreamId;
         /// <summary>Performs the execute budget tool operation for ChatWindow.</summary>
 /// <param name="name">Text containing the name.</param>
 /// <param name="arguments">Text containing the arguments.</param>
 /// <returns>The result produced by this operation.</returns>
-private async Task<string> ExecuteBudgetTool(string name, string arguments)
+        private async Task<string> ExecuteBudgetTool(string name, string arguments)
         {
             string label = name;
             if (name == "invoke_tool")
@@ -41,7 +41,7 @@ private async Task<string> ExecuteBudgetTool(string name, string arguments)
         /// <summary>Performs the pause budget operation for ChatWindow.</summary>
 /// <param name="provider">The provider used by this operation.</param>
 /// <param name="model">Text containing the model.</param>
-private void PauseBudget(LlmProvider provider, string model)
+        private void PauseBudget(LlmProvider provider, string model)
         {
             currentSession.BudgetPaused = true;
             currentSession.PausedTurnId = activeTurnId;
@@ -57,7 +57,7 @@ private void PauseBudget(LlmProvider provider, string model)
             SetStatus(UiText.Get("Paused — resume when ready"));
         }
         /// <summary>Performs the update budget controls operation for ChatWindow.</summary>
-private void UpdateBudgetControls()
+        private void UpdateBudgetControls()
         {
             if (resumeTurn != null) resumeTurn.Enabled = !busy && currentSession?.BudgetPaused == true;
             if (send == null || prompt == null) return;
@@ -69,7 +69,7 @@ private void UpdateBudgetControls()
         }
         /// <summary>Performs the resume budget async operation for ChatWindow.</summary>
 /// <returns>The result produced by this operation.</returns>
-private async Task ResumeBudgetAsync()
+        private async Task ResumeBudgetAsync()
         {
             if (busy || currentSession?.BudgetPaused != true) return;
             var provider = providerPicker.SelectedItem as LlmProvider;
@@ -109,7 +109,7 @@ private async Task ResumeBudgetAsync()
             }
         }
         /// <summary>Performs the complete pending tool responses operation for ChatWindow.</summary>
-private void CompletePendingToolResponses()
+        private void CompletePendingToolResponses()
         {
             var records = messages.Select(m => json.DeserializeObject(json.Serialize(m)) as IDictionary<string, object>).Where(m => m != null).ToArray();
             var answered = new HashSet<string>(records.Where(m => m.ContainsKey("tool_call_id")).Select(m => Convert.ToString(m["tool_call_id"])));
@@ -125,7 +125,7 @@ private void CompletePendingToolResponses()
 /// <param name="provider">The provider used by this operation.</param>
 /// <param name="model">Text containing the model.</param>
 /// <returns>The result produced by this operation.</returns>
-private async Task<bool> RunHttpBudgetAsync(LlmProvider provider, string model)
+        private async Task<bool> RunHttpBudgetAsync(LlmProvider provider, string model)
         {
                 using (var client = new LlmChatClient(provider, settings,
                     model, HttpHandlerOverride?.Invoke()))

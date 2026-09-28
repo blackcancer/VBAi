@@ -7,12 +7,12 @@ using System.Text.RegularExpressions;
 namespace CodexVBE
 {
     /// <summary>Renomme les projets Excel pris en charge et vérifie la conservation de leur code source.</summary>
-internal sealed partial class VbeProjectComponents
+    internal sealed partial class VbeProjectComponents
     {
                 /// <summary>Renomme un projet Excel enregistré, non protégé et identifié par son chemin stable.</summary>
         /// <param name="request">Requête contenant le chemin exact du classeur, la nouvelle valeur et la version attendue.</param>
         /// <returns>Les propriétés relues et les résultats de vérification du nom, du chemin et des sources.</returns>
-private object RenameSavedExcelProject(Request request)
+        private object RenameSavedExcelProject(Request request)
         {
             if (!host.IsExcel || string.IsNullOrWhiteSpace(request.Project) || !Path.IsPathRooted(request.Project))
                 throw new InvalidOperationException("Project rename is disabled for unqualified/unsaved/other-host scopes; select a saved Excel workbook by its exact FileName.");
@@ -51,7 +51,7 @@ private object RenameSavedExcelProject(Request request)
                 /// <summary>Empreintes des modules utilisées pour détecter une mutation inattendue du code durant le renommage.</summary>
         /// <param name="project">Projet dont les modules de code sont lus.</param>
         /// <returns>Une table nom de composant vers empreinte du texte source.</returns>
-private static Dictionary<string, string> ProjectSourceVersions(dynamic project)
+        private static Dictionary<string, string> ProjectSourceVersions(dynamic project)
         {
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             long characters = 0;

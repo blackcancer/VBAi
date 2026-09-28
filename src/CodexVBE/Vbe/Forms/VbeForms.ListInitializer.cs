@@ -73,7 +73,7 @@ namespace CodexVBE
         /// <param name="itemsWritten">Nombre de lignes de données produites.</param>
         /// <param name="columns">Nombre de colonnes existantes dans le contrôle.</param>
         /// <returns>Résultat de mutation, préservation du code et état de vérification en lecture.</returns>
-private object ApplyManagedListBlock(Request request, dynamic module, string before, string name,
+        private object ApplyManagedListBlock(Request request, dynamic module, string before, string name,
             string beginPrefix, string end, string[] generated, int itemsWritten, int columns)
         {
             string begin = generated[0].Trim();
@@ -196,7 +196,7 @@ private object ApplyManagedListBlock(Request request, dynamic module, string bef
         /// <param name="beginPrefix">Préfixe du marqueur de début suivi de l’empreinte.</param>
         /// <param name="end">Marqueur de fin du bloc.</param>
         /// <returns>Bloc VBA avec marqueurs et empreinte de son contenu.</returns>
-private static string[] GenerateListRowsBlock(string name, string[][] rows, string beginPrefix, string end)
+        private static string[] GenerateListRowsBlock(string name, string[][] rows, string beginPrefix, string end)
         {
             var body = new List<string> { "    Me." + name + ".Clear" };
             for (int row = 0; row < rows.Length; row++)

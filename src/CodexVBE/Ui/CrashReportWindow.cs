@@ -10,24 +10,24 @@ namespace CodexVBE
     internal sealed partial class CrashReportWindow : Form
     {
         /// <summary>Report currently displayed and edited by the window.</summary>
-private CrashReport report;
+        private CrashReport report;
         /// <summary>Delivery in progress, completed submission, uncertain outcome, and theme-subscription flags.</summary>
-private bool busy, submitted, uncertain, runtimeInitialized;
+        private bool busy, submitted, uncertain, runtimeInitialized;
         /// <summary>Cancellation source used when the dialog closes during an asynchronous send.</summary>
-private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
+        private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
         /// <summary>Delivery service used by the send and email actions.</summary>
-internal CrashReportDelivery Delivery = new CrashReportDelivery();
+        internal CrashReportDelivery Delivery = new CrashReportDelivery();
         /// <summary>Action used to copy report text or its saved path.</summary>
-internal Action<string> CopyText = Clipboard.SetText;
+        internal Action<string> CopyText = Clipboard.SetText;
         /// <summary>Stores the open link used by CrashReportWindow.</summary>
-internal Action<string> OpenLink = SafeLinks.Open;
+        internal Action<string> OpenLink = SafeLinks.Open;
         /// <summary>Delegate that saves a report body and returns its local path.</summary>
-internal Func<CrashReport, string, string> Store = (report, body) => report.Save(body);
+        internal Func<CrashReport, string, string> Store = (report, body) => report.Save(body);
         /// <summary>Path of the local backup saved before delivery.</summary>
-private string savedPath;
+        private string savedPath;
 
         /// <summary>Creates the report dialog and initializes its default editable report.</summary>
-public CrashReportWindow()
+        public CrashReportWindow()
         {
             InitializeComponent();
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
@@ -45,7 +45,7 @@ public CrashReportWindow()
         /// <summary>Sets the report shown by this window and refreshes its identity and preview.</summary>
         /// <param name="value">Report to display.</param>
         /// <exception cref="ArgumentNullException">The report is null.</exception>
-internal void Configure(CrashReport value)
+        internal void Configure(CrashReport value)
         {
             report = value ?? throw new ArgumentNullException(nameof(value));
             titleInput.Text = report.DefaultTitle;
@@ -54,7 +54,7 @@ internal void Configure(CrashReport value)
         }
 
         /// <summary>Applies the current UI theme to the send button, issue link, and preview.</summary>
-private void ApplyAppearance()
+        private void ApplyAppearance()
         {
             if (IsDisposed) return;
             if (InvokeRequired) { BeginInvoke(new Action(ApplyAppearance)); return; }
@@ -68,9 +68,9 @@ private void ApplyAppearance()
 
         /// <summary>Refreshes the report preview after an editable field changes.</summary>
         /// <param name="sender">Input control that changed.</param><param name="e">Change event arguments.</param>
-private void ContentChanged(object sender, EventArgs e) { RefreshPreview(); }
+        private void ContentChanged(object sender, EventArgs e) { RefreshPreview(); }
         /// <summary>Formats the current input as Markdown and updates whether delivery actions are available.</summary>
-private void RefreshPreview()
+        private void RefreshPreview()
         {
             if (report == null) return;
             try { preview.Text = report.Body(titleInput.Text, descriptionInput.Text); }
@@ -80,7 +80,7 @@ private void RefreshPreview()
 
         /// <summary>Saves and asynchronously sends the report through the configured delivery service.</summary>
         /// <param name="sender">Send button.</param><param name="e">Click event arguments.</param>
-private async void Send_Click(object sender, EventArgs e)
+        private async void Send_Click(object sender, EventArgs e)
         {
             if (busy || submitted || uncertain) return;
             SetBusy(true);
@@ -99,7 +99,7 @@ private async void Send_Click(object sender, EventArgs e)
 
         /// <summary>Saves the report and hands it to Outlook or a local mail draft.</summary>
         /// <param name="sender">Email button.</param><param name="e">Click event arguments.</param>
-private void Email_Click(object sender, EventArgs e)
+        private void Email_Click(object sender, EventArgs e)
         {
             if (busy || submitted || uncertain) return;
             SetBusy(true);
@@ -117,7 +117,7 @@ private void Email_Click(object sender, EventArgs e)
 
         /// <summary>Updates delivery flags, status text, and issue-link visibility for a delivery result.</summary>
         /// <param name="result">Result reported by the delivery service.</param>
-private void ShowResult(CrashDeliveryResult result)
+        private void ShowResult(CrashDeliveryResult result)
         {
             uncertain = result == CrashDeliveryResult.Uncertain;
             submitted = !uncertain;
@@ -130,7 +130,7 @@ private void ShowResult(CrashDeliveryResult result)
 
         /// <summary>Updates the in-progress state and disables editing while delivery runs.</summary>
         /// <param name="value">Whether delivery is currently running.</param>
-private void SetBusy(bool value)
+        private void SetBusy(bool value)
         {
             busy = value;
             progress.Visible = value;
@@ -142,14 +142,14 @@ private void SetBusy(bool value)
 
         /// <summary>Copies the formatted report body to the clipboard.</summary>
         /// <param name="sender">Copy button.</param><param name="e">Click event arguments.</param>
-private void Copy_Click(object sender, EventArgs e)
+        private void Copy_Click(object sender, EventArgs e)
         {
             try { CopyText(report.Body(titleInput.Text, descriptionInput.Text)); status.Text = UiText.Get("Technical details copied."); }
             catch (Exception) { status.Text = UiText.Get("Unable to copy technical details."); }
         }
         /// <summary>Saves a local Markdown copy and copies its path to the clipboard.</summary>
         /// <param name="sender">Save button.</param><param name="e">Click event arguments.</param>
-private void Save_Click(object sender, EventArgs e)
+        private void Save_Click(object sender, EventArgs e)
         {
             try
             {
@@ -161,19 +161,19 @@ private void Save_Click(object sender, EventArgs e)
         }
         /// <summary>Opens the successfully published GitHub issue.</summary>
         /// <param name="sender">Issue link.</param><param name="e">Link-click event arguments.</param>
-private void Issue_Click(object sender, LinkLabelLinkClickedEventArgs e)
+        private void Issue_Click(object sender, LinkLabelLinkClickedEventArgs e)
         {
             try { OpenLink(Delivery.IssueUrl); }
             catch (Exception) { status.Text = UiText.Get("Unable to open the link."); }
         }
         /// <summary>Prevents user closure while a delivery operation is still running.</summary>
         /// <param name="sender">Report window.</param><param name="e">Closing event arguments that may be cancelled.</param>
-private void WindowClosing(object sender, FormClosingEventArgs e)
+        private void WindowClosing(object sender, FormClosingEventArgs e)
         {
             if (busy && e.CloseReason == CloseReason.UserClosing) e.Cancel = true;
         }
         /// <summary>Unsubscribes from theme changes and cancels any outstanding send.</summary>
-private void DisposeRuntime()
+        private void DisposeRuntime()
         {
             if (runtimeInitialized) UiTheme.Changed -= ApplyAppearance;
             cancellation.Cancel();
@@ -183,12 +183,12 @@ private void DisposeRuntime()
         /// <summary>Creates and shows a report dialog owned by the VBE main window.</summary>
         /// <param name="vbe">VBE automation object used to obtain the native owner handle.</param>
         /// <param name="error">Optional exception used to seed the report metadata.</param>
-internal static void ShowForVbe(object vbe, Exception error = null) { ShowReportForVbe(vbe, new CrashReport(error)); }
+        internal static void ShowForVbe(object vbe, Exception error = null) { ShowReportForVbe(vbe, new CrashReport(error)); }
 
         /// <summary>Shows the supplied report in a modal window owned by the VBE when its handle is available.</summary>
         /// <param name="vbe">VBE automation object used to obtain the native owner handle.</param>
         /// <param name="report">Report to show.</param>
-internal static void ShowReportForVbe(object vbe, CrashReport report)
+        internal static void ShowReportForVbe(object vbe, CrashReport report)
         {
             IWin32Window owner = null;
             try { owner = new NativeOwner(new IntPtr(Convert.ToInt64(((dynamic)vbe).MainWindow.HWnd))); }
@@ -200,12 +200,12 @@ internal static void ShowReportForVbe(object vbe, CrashReport report)
             }
         }
         /// <summary>WinForms owner wrapper for a native VBE window handle.</summary>
-private sealed class NativeOwner : IWin32Window
+        private sealed class NativeOwner : IWin32Window
         {
             /// <summary>Creates the wrapper for a native owner window.</summary><param name="handle">Native window handle.</param>
-internal NativeOwner(IntPtr handle) { Handle = handle; }
+            internal NativeOwner(IntPtr handle) { Handle = handle; }
             /// <summary>Gets the native owner-window handle.</summary><value>Handle supplied to the constructor.</value>
-public IntPtr Handle { get; }
+            public IntPtr Handle { get; }
         }
     }
 }

@@ -19,47 +19,47 @@ Uncertain }
     internal sealed class CrashReportDelivery
     {
         /// <summary>Stores the load settings used by CrashReportDelivery.</summary>
-internal static Func<LlmSettings> LoadSettings = LlmSettings.Load;
+        internal static Func<LlmSettings> LoadSettings = LlmSettings.Load;
         /// <summary>Stores the read credential used by CrashReportDelivery.</summary>
-internal static Func<string, CancellationToken, Task<string>> ReadCredential = GitHubApi.ReadCredential;
+        internal static Func<string, CancellationToken, Task<string>> ReadCredential = GitHubApi.ReadCredential;
         /// <summary>Stores the create api used by CrashReportDelivery.</summary>
-internal static Func<string, Func<CancellationToken, Task<string>>, GitHubApi> CreateApi =
+        internal static Func<string, Func<CancellationToken, Task<string>>, GitHubApi> CreateApi =
             (account, credential) => new GitHubApi(account, credential: credential);
         /// <summary>Stores the active outlook used by CrashReportDelivery.</summary>
-internal static Func<string, object> ActiveOutlook = Marshal.GetActiveObject;
+        internal static Func<string, object> ActiveOutlook = Marshal.GetActiveObject;
         /// <summary>Stores the outlook type used by CrashReportDelivery.</summary>
-internal static Func<string, Type> OutlookType = Type.GetTypeFromProgID;
+        internal static Func<string, Type> OutlookType = Type.GetTypeFromProgID;
         /// <summary>Stores the create outlook used by CrashReportDelivery.</summary>
-internal static Func<Type, object> CreateOutlook = Activator.CreateInstance;
+        internal static Func<Type, object> CreateOutlook = Activator.CreateInstance;
         /// <summary>Stores the is com reference used by CrashReportDelivery.</summary>
-internal static Func<object, bool> IsComReference = Marshal.IsComObject;
+        internal static Func<object, bool> IsComReference = Marshal.IsComObject;
         /// <summary>Stores the release reference used by CrashReportDelivery.</summary>
-internal static Func<object, int> ReleaseReference = Marshal.ReleaseComObject;
+        internal static Func<object, int> ReleaseReference = Marshal.ReleaseComObject;
         /// <summary>Stores the open profiles used by CrashReportDelivery.</summary>
-internal static Func<string, IDisposable> OpenProfiles = path => Registry.CurrentUser.OpenSubKey(path);
+        internal static Func<string, IDisposable> OpenProfiles = path => Registry.CurrentUser.OpenSubKey(path);
         /// <summary>Stores the read profile sub keys used by CrashReportDelivery.</summary>
-internal static Func<IDisposable, int> ReadProfileSubKeys = profiles => ((RegistryKey)profiles).SubKeyCount;
+        internal static Func<IDisposable, int> ReadProfileSubKeys = profiles => ((RegistryKey)profiles).SubKeyCount;
         /// <summary>Stores the profile count used by CrashReportDelivery.</summary>
-internal static Func<string, int?> ProfileCount = version =>
+        internal static Func<string, int?> ProfileCount = version =>
         {
             using (var profiles = OpenProfiles(@"Software\Microsoft\Office" + version + @"\Outlook\Profiles"))
                 return profiles == null ? (int?)null : ReadProfileSubKeys(profiles);
         };
         /// <summary>Publisher delegate used to create a GitHub issue.</summary>
-internal Func<string, string, CancellationToken, Task<string>> Publish = PublishNative;
+        internal Func<string, string, CancellationToken, Task<string>> Publish = PublishNative;
         /// <summary>Delegate that hands a report to a configured Outlook account.</summary>
-internal Func<string, string, bool> SendOutlook = SendOutlookNative;
+        internal Func<string, string, bool> SendOutlook = SendOutlookNative;
         /// <summary>Delegate that opens a mailto draft in the system mail client.</summary>
-internal Action<string> OpenDraft = url => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        internal Action<string> OpenDraft = url => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
         /// <summary>Gets the validated GitHub issue URL after successful publication.</summary>
         /// <value>Published issue URL, or null when no validated issue URL was returned.</value>
-internal string IssueUrl { get; private set; }
+        internal string IssueUrl { get; private set; }
 
         /// <summary>Attempts GitHub publication, then falls back to Outlook or a local mail draft when safe.</summary>
         /// <param name="title">Issue title.</param><param name="body">Markdown report body.</param>
         /// <param name="savedPath">Local report path included in a mail draft.</param><param name="ct">Cancellation token for GitHub publication.</param>
         /// <returns>The channel that accepted the report, or <see cref="CrashDeliveryResult.Uncertain"/> when its final state is unknown.</returns>
-internal async Task<CrashDeliveryResult> Send(string title, string body, string savedPath, CancellationToken ct)
+        internal async Task<CrashDeliveryResult> Send(string title, string body, string savedPath, CancellationToken ct)
         {
             try
             {
@@ -82,7 +82,7 @@ internal async Task<CrashDeliveryResult> Send(string title, string body, string 
         /// <param name="title">Email subject.</param><param name="body">Full report content for Outlook.</param>
         /// <param name="savedPath">Path included in a local draft for the user to attach.</param>
         /// <returns>Outlook when it accepted the message, otherwise Draft when a local draft was opened.</returns>
-internal CrashDeliveryResult Email(string title, string body, string savedPath)
+        internal CrashDeliveryResult Email(string title, string body, string savedPath)
         {
             if (SendOutlook(title, body)) return CrashDeliveryResult.Outlook;
             // Keep mailto short enough for Windows clients. The complete report remains in the file and clipboard.
@@ -94,7 +94,7 @@ internal CrashDeliveryResult Email(string title, string body, string savedPath)
         /// <summary>Creates a GitHub issue using the configured GitHub account and credential provider.</summary>
         /// <param name="title">Issue title.</param><param name="body">Issue body.</param><param name="ct">Cancellation token.</param>
         /// <returns>HTML URL returned by GitHub, or null if the response has no URL.</returns>
-private static async Task<string> PublishNative(string title, string body, CancellationToken ct)
+        private static async Task<string> PublishNative(string title, string body, CancellationToken ct)
         {
             string account;
             try { account = LoadSettings().GitHubAccount; }
@@ -114,7 +114,7 @@ private static async Task<string> PublishNative(string title, string body, Cance
 
         /// <summary>Checks known Office versions for at least one configured Outlook profile.</summary>
         /// <returns><see langword="true"/> when a profile exists.</returns>
-private static bool HasOutlookProfile()
+        private static bool HasOutlookProfile()
         {
             // Avoid starting Outlook's account setup wizard while recovering a crash.
             foreach (string version in new[] { "16.0", "15.0", "14.0" })
@@ -126,7 +126,7 @@ private static bool HasOutlookProfile()
         /// <param name="title">Message subject.</param><param name="body">Message body.</param>
         /// <returns><see langword="true"/> when Outlook reported that it accepted the message.</returns>
         /// <exception cref="CrashMailUncertain">Outlook's Send call failed after submission may have started.</exception>
-private static bool SendOutlookNative(string title, string body)
+        private static bool SendOutlookNative(string title, string body)
         {
             object application = null, session = null, accounts = null, mail = null;
             bool sending = false;

@@ -1,14 +1,14 @@
 namespace CodexVBE
 {
     /// <summary>Vue en lecture seule des détails de la pull request sélectionnée.</summary>
-public sealed partial class GitHubPullDetailsView
+    public sealed partial class GitHubPullDetailsView
     {
         /// <summary>Affiche le titre, l’état et la description de la pull request.</summary>
-internal System.Windows.Forms.TextBox pullDetails;
+        internal System.Windows.Forms.TextBox pullDetails;
         /// <summary>Conteneur des composants managés de la vue.</summary>
-private System.ComponentModel.IContainer components;
+        private System.ComponentModel.IContainer components;
         /// <summary>Fournit les info-bulles des contrôles.</summary>
-private System.Windows.Forms.ToolTip toolTips;
+        private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)
@@ -18,7 +18,7 @@ private System.Windows.Forms.ToolTip toolTips;
         }
 
         /// <summary>Crée la zone de texte en lecture seule des détails.</summary>
-private void InitializeComponent()
+        private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);

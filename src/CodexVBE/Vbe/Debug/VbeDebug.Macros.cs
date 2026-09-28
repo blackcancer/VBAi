@@ -6,12 +6,12 @@ using System.Web.Script.Serialization;
 namespace CodexVBE
 {
     /// <summary>Catalogue les procédures publiques candidates à l’exécution sans lancer leur code.</summary>
-internal sealed partial class VbeDebug
+    internal sealed partial class VbeDebug
     {
                 /// <summary>Catalogue syntaxique des macros et procédures publiques standard, sans exécuter de code.</summary>
         /// <param name="request">Projet, filtre textuel facultatif, décalage et taille de page.</param>
         /// <returns>Procédures visibles dans les modules standard et métadonnées de couverture syntaxique.</returns>
-public object ListMacros(Request request)
+        public object ListMacros(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project) || request.Offset < 0 || request.Offset > 100000 ||
                 request.Limit < 0 || request.Limit > 500 || (request.Query?.Length ?? 0) > 256)

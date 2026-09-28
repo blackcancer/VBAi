@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace CodexVBE
 {
     /// <summary>Prépare, transmet et suit les appels scalaires aux procédures publiques du VBE.</summary>
-internal sealed partial class VbeDebug
+    internal sealed partial class VbeDebug
     {
         /// <summary>Appels récents conservés dans cette session, sans autorité de relancement.</summary>
         private readonly List<ProcedureOperation> procedureOperations = new List<ProcedureOperation>();
@@ -153,14 +153,14 @@ internal sealed partial class VbeDebug
         }
                 /// <summary>Refuse toute syntaxe autre qu’un identifiant VBA qualifiable.</summary>
         /// <param name="name">Nom de projet, module ou procédure à vérifier.</param>
-private static void ValidateProcedureIdentifier(string name)
+        private static void ValidateProcedureIdentifier(string name)
         {
             if (!Regex.IsMatch(name ?? "", @"^\p{L}[\p{L}\p{N}_]{0,254}$")) throw new ArgumentException("An exact VBA identifier is required.");
         }
                 /// <summary>Sérialise le suivi sans assimiler transmission et succès runtime.</summary>
         /// <param name="operation">Opération d’appel enregistrée en mémoire.</param>
         /// <returns>État de transmission, sortie observée et limites de vérification runtime.</returns>
-private static object ProcedureResult(ProcedureOperation operation) => new { operation.Project, operation.Module,
+        private static object ProcedureResult(ProcedureOperation operation) => new { operation.Project, operation.Module,
             operation.Procedure, Query = operation.Id, operation.State, operation.Command, operation.Output, operation.Error,
             Pending = operation.State == "Queued" || operation.State == "Delivering", RuntimeSuccessVerified = false,
             NextRead = "procedure_run_status, debug_state, debug_dialog",
@@ -169,9 +169,9 @@ private static object ProcedureResult(ProcedureOperation operation) => new { ope
         private sealed class ProcedureOperation
         {
             /// <summary>Identifiant de suivi et identité de la cible.</summary>
-public string Id, Project, Module, Procedure, State, Command, Error;
+            public string Id, Project, Module, Procedure, State, Command, Error;
             /// <summary>Sortie de transmission ou résultat exposé par l’interface native.</summary>
-public object Output;
+            public object Output;
         }
     }
 }

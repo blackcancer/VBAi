@@ -5,32 +5,32 @@ using System.Threading.Tasks;
 namespace CodexVBE
 {
     /// <summary>Represents a chat message waiting to be sent, with its captured references, attachments, and memory.</summary>
-internal sealed class QueuedChatMessage
+    internal sealed class QueuedChatMessage
     {
         /// <summary>Gets or sets the id.</summary>
 /// <value>The current value represented by this member.</value>
-public string Id { get; set; } = Guid.NewGuid().ToString("N");
+        public string Id { get; set; } = Guid.NewGuid().ToString("N");
         /// <summary>Gets or sets the text.</summary>
 /// <value>The current value represented by this member.</value>
-public string Text { get; set; }
+        public string Text { get; set; }
         /// <summary>Gets or sets the references.</summary>
 /// <value>The current value represented by this member.</value>
-public VbeChatReference[] References { get; set; }
+        public VbeChatReference[] References { get; set; }
         /// <summary>Gets or sets the attachments.</summary>
 /// <value>The current value represented by this member.</value>
-public ChatAttachment[] Attachments { get; set; }
+        public ChatAttachment[] Attachments { get; set; }
         /// <summary>Gets or sets the memory.</summary>
 /// <value>The current value represented by this member.</value>
-public string Memory { get; set; }
+        public string Memory { get; set; }
     }
     /// <summary>Provides the chat window implementation.</summary>
-internal sealed partial class ChatWindow
+    internal sealed partial class ChatWindow
     {
         /// <summary>Identifies the queued message selected for dispatch immediately after the active response stops.</summary>
-private string immediateMessageId;
+        private string immediateMessageId;
         /// <summary>Gets the current session&apos;s messages waiting for dispatch.</summary>
 /// <value>The current session&apos;s queued messages, or null when there is no active session.</value>
-private List<QueuedChatMessage> PendingMessages
+        private List<QueuedChatMessage> PendingMessages
         {
             get
             {
@@ -39,7 +39,7 @@ private List<QueuedChatMessage> PendingMessages
             }
         }
         /// <summary>Moves the current composer text, references, attachments, and captured memory into the pending queue.</summary>
-private void QueueComposerMessage()
+        private void QueueComposerMessage()
         {
             if (currentSession == null || string.IsNullOrWhiteSpace(prompt.Text)) return;
             try { EnsureCurrentScope(); }
@@ -52,7 +52,7 @@ private void QueueComposerMessage()
             HideReferences(); RefreshContextChips(); RefreshPendingMessages(); SaveCurrentSession();
         }
         /// <summary>Rebuilds the pending message rows and hooks up their send, edit, and delete actions.</summary>
-private void RefreshPendingMessages()
+        private void RefreshPendingMessages()
         {
             if (pendingMessagesPanel == null) return;
             pendingMessagesPanel.SuspendLayout();
@@ -76,7 +76,7 @@ private void RefreshPendingMessages()
         }
         /// <summary>Removes a queued message from the current session and persists the updated queue.</summary>
 /// <param name="item">Queued message to remove.</param>
-private void DeletePendingMessage(QueuedChatMessage item)
+        private void DeletePendingMessage(QueuedChatMessage item)
         {
             if (PendingMessages?.Remove(item) != true) return;
             if (immediateMessageId == item.Id) immediateMessageId = null;
@@ -84,7 +84,7 @@ private void DeletePendingMessage(QueuedChatMessage item)
         }
         /// <summary>Moves a queued message back into the composer when the current draft is empty.</summary>
 /// <param name="item">Queued message to move back into the composer.</param>
-private void EditPendingMessage(QueuedChatMessage item)
+        private void EditPendingMessage(QueuedChatMessage item)
         {
             if (PendingMessages?.Contains(item) != true) return;
             // Keep an existing draft intact rather than silently replacing it.
@@ -103,7 +103,7 @@ private void EditPendingMessage(QueuedChatMessage item)
         /// <summary>Dispatches a selected queued message immediately, stopping the active response when needed.</summary>
 /// <param name="item">Queued message to dispatch ahead of other pending messages.</param>
 /// <returns>The result produced by this operation.</returns>
-private async Task SendPendingNowAsync(QueuedChatMessage item)
+        private async Task SendPendingNowAsync(QueuedChatMessage item)
         {
             if (PendingMessages?.Contains(item) != true) return;
             if (!busy) { await SendRequestAsync(item); return; }
@@ -115,7 +115,7 @@ private async Task SendPendingNowAsync(QueuedChatMessage item)
         /// <summary>Sends the next queued message after a response completes, unless dispatch is paused or stopped.</summary>
 /// <param name="completed">Indicates whether completed is enabled.</param>
 /// <returns>The result produced by this operation.</returns>
-private async Task DispatchPendingAsync(bool completed)
+        private async Task DispatchPendingAsync(bool completed)
         {
             if (IsDisposed || busy || PendingMessages == null) return;
             var item = immediateMessageId == null ? null : PendingMessages.FirstOrDefault(m => m.Id == immediateMessageId);
@@ -124,6 +124,6 @@ private async Task DispatchPendingAsync(bool completed)
             if (item != null) await SendRequestAsync(item);
         }
         /// <summary>Keeps the selected queued message memory attached while its text is being edited in the composer.</summary>
-private string queuedDraftMemory;
+        private string queuedDraftMemory;
     }
 }

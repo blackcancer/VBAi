@@ -7,13 +7,13 @@ using System.Web.Script.Serialization;
 namespace CodexVBE
 {
     /// <summary>Expose les opérations contrôlées sur les compléments enregistrés du VBE.</summary>
-internal sealed partial class VbeEditorWindows
+    internal sealed partial class VbeEditorWindows
     {
         /// <summary>Capture l’identité et l’état de connexion lisibles d’un complément.</summary>
         /// <param name="addIn">Complément natif à interroger.</param>
         /// <param name="index">Position facultative dans l’inventaire.</param>
         /// <returns>Un instantané sérialisable et son empreinte si toutes les propriétés ont été lues.</returns>
-private static object AddInSnapshot(dynamic addIn, int? index)
+        private static object AddInSnapshot(dynamic addIn, int? index)
         {
             var fields = new Dictionary<string, object>();
             var errors = new Dictionary<string, string>();
@@ -31,7 +31,7 @@ private static object AddInSnapshot(dynamic addIn, int? index)
         /// <summary>Résout un complément enregistré par son ProgID sans accepter les identités ambiguës.</summary>
         /// <param name="progId">ProgID renvoyé par l’inventaire des compléments.</param>
         /// <returns>L’objet natif du complément correspondant.</returns>
-private dynamic FindAddIn(string progId)
+        private dynamic FindAddIn(string progId)
         {
             if (string.IsNullOrWhiteSpace(progId) || progId.Length > 255) throw new ArgumentException("ProgId from list_addins is required.");
             dynamic result = null;
@@ -48,7 +48,7 @@ private dynamic FindAddIn(string progId)
         /// <summary>Connecte ou déconnecte un complément après vérification de son état précédemment lu.</summary>
         /// <param name="request">Requête contenant l’action, le ProgID et l’empreinte attendue.</param>
         /// <returns>Le résultat de la mutation, avec état relu et erreurs natives éventuelles.</returns>
-public object SetAddInConnection(Request request)
+        public object SetAddInConnection(Request request)
         {
             if (request.Action != "connect" && request.Action != "disconnect") throw new ArgumentException("Use connect or disconnect.");
             dynamic addIn = FindAddIn(request.ProgId);

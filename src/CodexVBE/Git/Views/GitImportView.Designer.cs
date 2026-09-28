@@ -1,14 +1,14 @@
 namespace CodexVBE
 {
     /// <summary>Vue en lecture seule du résumé d’importation d’un dépôt Git.</summary>
-public sealed partial class GitImportView
+    public sealed partial class GitImportView
     {
         /// <summary>Affiche le résultat et les détails de l’importation.</summary>
-internal System.Windows.Forms.TextBox importSummary;
+        internal System.Windows.Forms.TextBox importSummary;
         /// <summary>Conteneur des composants managés de la vue.</summary>
-private System.ComponentModel.IContainer components;
+        private System.ComponentModel.IContainer components;
         /// <summary>Fournit les info-bulles des contrôles.</summary>
-private System.Windows.Forms.ToolTip toolTips;
+        private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)
@@ -18,7 +18,7 @@ private System.Windows.Forms.ToolTip toolTips;
         }
 
         /// <summary>Crée la zone multiligne en lecture seule du résumé d’importation.</summary>
-private void InitializeComponent()
+        private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);

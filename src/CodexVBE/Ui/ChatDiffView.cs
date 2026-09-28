@@ -8,7 +8,7 @@ namespace CodexVBE
     {
                 /// <summary>Les lignes varient ; la grille et les commandes proviennent du Designer de CodeDiffView.</summary>
         /// <param name="before">Original code text.</param><param name="after">Updated code text.</param>
-internal ChatDiffView(string before, string after)
+        internal ChatDiffView(string before, string after)
         {
             Height = 300;
             FlowDirection = FlowDirection.LeftToRight;

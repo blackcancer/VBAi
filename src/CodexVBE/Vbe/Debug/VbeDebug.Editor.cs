@@ -4,12 +4,12 @@ using System.Linq;
 namespace CodexVBE
 {
     /// <summary>Modifie la disposition des volets de code natifs d’un module VBE.</summary>
-internal sealed partial class VbeDebug
+    internal sealed partial class VbeDebug
     {
         /// <summary>Fractionne ou rassemble le volet actif après vérification du module et de la commande native.</summary>
         /// <param name="request">Projet, module, position, mode attendu et légende native de Split.</param>
         /// <returns>Nombre de volets observé avant et après l’opération, avec état de vérification.</returns>
-public object SetCodeSplit(Request request)
+        public object SetCodeSplit(Request request)
         {
             if (request.Action != "split" && request.Action != "unsplit") throw new ArgumentException("Use split or unsplit.");
             if (string.IsNullOrWhiteSpace(request.ControlCaption)) throw new ArgumentException("ControlCaption from native list_commands ID 302 is required.");
@@ -42,7 +42,7 @@ public object SetCodeSplit(Request request)
         /// <summary>Compte les volets natifs qui référencent exactement le module fourni.</summary>
         /// <param name="module">Module COM dont les volets sont comptés.</param>
         /// <returns>Nombre de volets de code associés au module.</returns>
-private int ModulePaneCount(object module)
+        private int ModulePaneCount(object module)
         {
             int count = 0;
             foreach (dynamic pane in vbe.CodePanes)

@@ -6,13 +6,13 @@ using System.Linq;
 namespace CodexVBE
 {
     /// <summary>Recherche les symboles exposés par les modules et les déclarations VBA d’un projet vivant.</summary>
-internal sealed partial class VbeCodeNavigation
+    internal sealed partial class VbeCodeNavigation
     {
         /// <summary>Retourne une page de modules, procédures et déclarations correspondant aux filtres de la requête.</summary>
         /// <param name="request">Projet, module facultatif, texte recherché et bornes de pagination.</param>
         /// <returns>Résultats paginés avec positions source, empreintes de modules, erreurs de lecture et limites sémantiques.</returns>
         /// <exception cref="ArgumentException">La requête dépasse les bornes de recherche ou de pagination.</exception>
-public object ProjectSymbols(Request request)
+        public object ProjectSymbols(Request request)
         {
             if (request.Offset < 0 || request.Limit < 0 || request.Limit > 200 || (request.Query ?? "").Length > 200)
                 throw new ArgumentException("Invalid symbol search bounds.");
@@ -51,7 +51,7 @@ public object ProjectSymbols(Request request)
         /// <param name="procedures">Procédures analysées du module.</param>
         /// <param name="declaration">Déclaration VBA dont la portée doit être résolue.</param>
         /// <returns>Type de procédure VBIDE correspondant, ou <see langword="null"/> hors procédure.</returns>
-private static int? DeclarationProcedureKind(System.Collections.IEnumerable procedures, VbaDeclarationIndex.Declaration declaration)
+        private static int? DeclarationProcedureKind(System.Collections.IEnumerable procedures, VbaDeclarationIndex.Declaration declaration)
         {
             foreach (dynamic procedure in procedures)
                 if (string.Equals((string)procedure.Name, declaration.Scope, StringComparison.OrdinalIgnoreCase) &&
@@ -63,7 +63,7 @@ private static int? DeclarationProcedureKind(System.Collections.IEnumerable proc
         /// <param name="name">Nom du symbole analysé.</param>
         /// <param name="request">Options de recherche de la requête.</param>
         /// <returns><see langword="true"/> lorsque le nom satisfait le filtre.</returns>
-private static bool SymbolMatches(string name, Request request)
+        private static bool SymbolMatches(string name, Request request)
         {
             var comparison = request.MatchCase ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
             return string.IsNullOrEmpty(request.Query) || (request.WholeWord ? string.Equals(name, request.Query, comparison) : name.IndexOf(request.Query, comparison) >= 0);

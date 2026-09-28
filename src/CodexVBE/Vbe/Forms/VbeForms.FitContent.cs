@@ -10,7 +10,7 @@ using System.Web.Script.Serialization;
 namespace CodexVBE
 {
     /// <summary>Mesure et redimensionne les conteneurs UserForm selon les contrôles enfants visibles.</summary>
-internal sealed partial class VbeForms
+    internal sealed partial class VbeForms
     {
         /// <summary>Measures the owning window DPI; replaceable by a bounded native contract probe.</summary>
         internal static Func<IntPtr, uint> MeasureFitWindowDpi = FitWindowDpi;
@@ -30,7 +30,7 @@ internal sealed partial class VbeForms
         /// <returns>Plan en prévisualisation ou résultat de mutation avec mesures relues et incertitude explicite.</returns>
         /// <exception cref="ArgumentException">La requête, l’action, le padding ou le chemin du conteneur est invalide.</exception>
         /// <exception cref="InvalidOperationException">L’arbre a changé ou les mesures natives et géométries ne permettent pas un ajustement sûr.</exception>
-private object FitFormContent(Request request, bool preview)
+        private object FitFormContent(Request request, bool preview)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.ExpectedTreeVersion))
                 throw new ArgumentException("ExpectedTreeVersion from form_tree is required.");
@@ -129,7 +129,7 @@ private object FitFormContent(Request request, bool preview)
         /// <param name="component">VBComponent facultatif, source des dimensions Width/Height du formulaire racine.</param>
         /// <returns>Descripteur de propriété validé.</returns>
         /// <exception cref="InvalidOperationException">La propriété n’existe pas, n’est pas numérique ou ne permet pas l’écriture demandée.</exception>
-private static PropertyDescriptor RequireFitProperty(object target, string name, bool write, object component = null)
+        private static PropertyDescriptor RequireFitProperty(object target, string name, bool write, object component = null)
         {
             var descriptor = TypeDescriptor.GetProperties(target).Find(name, false);
             // The native UserForm Designer omits Width/Height. VBIDE exposes those
@@ -154,51 +154,51 @@ private static PropertyDescriptor RequireFitProperty(object target, string name,
                 /// <summary>Lit le DPI propre à la fenêtre VBE pour la quantification des dimensions natives.</summary>
         /// <param name="window">Handle de la fenêtre hôte.</param>
         /// <returns>DPI effectif de cette fenêtre.</returns>
-[DllImport("user32.dll", EntryPoint = "GetDpiForWindow")]
+        [DllImport("user32.dll", EntryPoint = "GetDpiForWindow")]
         private static extern uint FitWindowDpi(IntPtr window);
 
         /// <summary>Adapte les dimensions de conception VBIDE absentes du Designer MSForms natif.</summary>
         private sealed class FitComponentProperty : PropertyDescriptor
         {
             /// <summary>Propriété COM exposée par VBComponent.Properties.</summary>
-private readonly object property;
+            private readonly object property;
             /// <summary>Type CLR de la valeur courante utilisée par le descripteur.</summary>
-private readonly Type valueType;
+            private readonly Type valueType;
             /// <summary>Crée un descripteur éditable pour une propriété de composant VBIDE.</summary>
             /// <param name="name">Nom de la propriété native.</param>
             /// <param name="property">Référence COM à la propriété.</param>
             /// <param name="valueType">Type de sa valeur actuelle.</param>
-internal FitComponentProperty(string name, object property, Type valueType) : base(name, null)
+            internal FitComponentProperty(string name, object property, Type valueType) : base(name, null)
             { this.property = property; this.valueType = valueType; }
             /// <summary>Obtient le type du composant cible du descripteur.</summary>
             /// <value>object, car la propriété est portée par une référence COM dynamique.</value>
-public override Type ComponentType => typeof(object);
+            public override Type ComponentType => typeof(object);
             /// <summary>Obtient le type CLR des valeurs de cette propriété.</summary>
             /// <value>Type déterminé à partir de sa valeur native courante.</value>
-public override Type PropertyType => valueType;
+            public override Type PropertyType => valueType;
             /// <summary>Indique que l’écriture est autorisée par ce descripteur.</summary>
             /// <value>Valeur false pour permettre la modification.</value>
-public override bool IsReadOnly => false;
+            public override bool IsReadOnly => false;
             /// <summary>Lit la valeur actuelle depuis la propriété COM.</summary>
             /// <param name="component">Composant cible, non utilisé par la référence déjà capturée.</param>
             /// <returns>Valeur native de la propriété.</returns>
-public override object GetValue(object component) => ((dynamic)property).Value;
+            public override object GetValue(object component) => ((dynamic)property).Value;
             /// <summary>Écrit une valeur convertie dans la propriété COM.</summary>
             /// <param name="component">Composant cible, non utilisé par la référence déjà capturée.</param>
             /// <param name="value">Nouvelle valeur native.</param>
-public override void SetValue(object component, object value) { ((dynamic)property).Value = value; }
+            public override void SetValue(object component, object value) { ((dynamic)property).Value = value; }
             /// <summary>Indique qu’aucune valeur par défaut distincte ne peut être restaurée.</summary>
             /// <param name="component">Composant cible.</param>
             /// <returns><see langword="false"/> car le descripteur ne fournit pas de valeur de réinitialisation.</returns>
-public override bool CanResetValue(object component) => false;
+            public override bool CanResetValue(object component) => false;
             /// <summary>Refuse une réinitialisation implicite de la propriété de conception.</summary>
             /// <param name="component">Composant cible.</param>
             /// <exception cref="NotSupportedException">La réinitialisation n’est pas prise en charge.</exception>
-public override void ResetValue(object component) { throw new NotSupportedException(); }
+            public override void ResetValue(object component) { throw new NotSupportedException(); }
             /// <summary>Indique que le descripteur ne sérialise pas cette valeur.</summary>
             /// <param name="component">Composant cible.</param>
             /// <returns><see langword="false"/> pour éviter de sérialiser une valeur native temporaire.</returns>
-public override bool ShouldSerializeValue(object component) => false;
+            public override bool ShouldSerializeValue(object component) => false;
         }
 
                 /// <summary>Lit une mesure native et refuse les valeurs non finies ou négatives.</summary>
@@ -206,7 +206,7 @@ public override bool ShouldSerializeValue(object component) => false;
         /// <param name="property">Descripteur de la mesure à lire.</param>
         /// <returns>Valeur convertie en points, bornée à 32767.</returns>
         /// <exception cref="InvalidOperationException">La valeur est nulle, non numérique, négative ou hors bornes.</exception>
-private static double ReadFitNumber(object target, PropertyDescriptor property)
+        private static double ReadFitNumber(object target, PropertyDescriptor property)
         {
             object value = property.GetValue(target);
             if (value == null) throw new InvalidOperationException("Native measurement is null: " + property.Name);
@@ -221,7 +221,7 @@ private static double ReadFitNumber(object target, PropertyDescriptor property)
         /// <param name="formName">Nom du formulaire utilisé pour vérifier le parent de chaque contrôle.</param>
         /// <returns>Boîtes des contrôles directs avec leurs chemins et dimensions observées.</returns>
         /// <exception cref="InvalidOperationException">Le conteneur, un type de contrôle, son nom ou sa géométrie ne peut pas être vérifié.</exception>
-private static List<FormLayoutBox> ReadFitChildren(object container, string formName)
+        private static List<FormLayoutBox> ReadFitChildren(object container, string formName)
         {
             var controls = TypeDescriptor.GetProperties(container).Find("Controls", false);
             object collection = controls == null ? null : controls.GetValue(container);

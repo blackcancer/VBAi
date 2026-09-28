@@ -6,48 +6,48 @@ using System.Web.Script.Serialization;
 namespace CodexVBE
 {
     /// <summary>Aplatit deux instantanés Designer et calcule les différences dont les deux valeurs sont lisibles.</summary>
-internal static class FormHistoryDiff
+    internal static class FormHistoryDiff
     {
         /// <summary>Changement d’une propriété ou de l’existence d’un nœud entre deux arbres Designer.</summary>
-internal sealed class Change
+        internal sealed class Change
         {
             /// <summary>Gets or sets the path.</summary>
 /// <value>The current value represented by this member.</value>
-public string Path { get; set; }
+            public string Path { get; set; }
             /// <summary>Gets or sets the property.</summary>
 /// <value>The current value represented by this member.</value>
-public string Property { get; set; }
+            public string Property { get; set; }
             /// <summary>Gets or sets the before.</summary>
 /// <value>The current value represented by this member.</value>
-public object Before { get; set; }
+            public object Before { get; set; }
             /// <summary>Gets or sets the after.</summary>
 /// <value>The current value represented by this member.</value>
-public object After { get; set; }
+            public object After { get; set; }
         }
         /// <summary>Valeur sérialisée avec les données qui permettent de comparer une propriété Designer.</summary>
-private sealed class PropertyValue
+        private sealed class PropertyValue
         {
             /// <summary>Gets or sets the value.</summary>
 /// <value>The current value represented by this member.</value>
-public object Value { get; set; }
+            public object Value { get; set; }
             /// <summary>Gets or sets the digest.</summary>
 /// <value>The current value represented by this member.</value>
-public object Digest { get; set; }
+            public object Digest { get; set; }
             /// <summary>Gets or sets the members.</summary>
 /// <value>The current value represented by this member.</value>
-public object Members { get; set; }
+            public object Members { get; set; }
             /// <summary>Gets or sets the error.</summary>
 /// <value>The current value represented by this member.</value>
-public string Error { get; set; }
+            public string Error { get; set; }
         }
         /// <summary>Indique si la valeur peut participer à une comparaison.</summary>
         /// <param name="value">Valeur de propriété aplatie.</param>
         /// <returns><see langword="true"/> si elle n’est pas affectée par une erreur de lecture.</returns>
-private static bool Readable(object value) { return !(value is PropertyValue p) || string.IsNullOrEmpty(p.Error); }
+        private static bool Readable(object value) { return !(value is PropertyValue p) || string.IsNullOrEmpty(p.Error); }
         /// <summary>Compte les propriétés illisibles dans un instantané Designer.</summary>
         /// <param name="tree">Arbre sérialisable du formulaire et de ses contrôles.</param>
         /// <returns>Nombre de propriétés contenant une erreur de lecture.</returns>
-internal static int ReadErrorCount(object tree)
+        internal static int ReadErrorCount(object tree)
         {
             var json = new JavaScriptSerializer { MaxJsonLength = 16 * 1024 * 1024 };
             return Flatten((IDictionary<string, object>)json.DeserializeObject(json.Serialize(tree))).Values.Count(x => !Readable(x));
@@ -56,7 +56,7 @@ internal static int ReadErrorCount(object tree)
         /// <param name="before">Premier instantané.</param>
         /// <param name="after">Second instantané.</param>
         /// <returns>Changements triés par chemin et propriété; les propriétés illisibles sont exclues.</returns>
-internal static Change[] Compare(object before, object after)
+        internal static Change[] Compare(object before, object after)
         {
             var json = new JavaScriptSerializer { MaxJsonLength = 16 * 1024 * 1024 };
             var left = Flatten((IDictionary<string, object>)json.DeserializeObject(json.Serialize(before)));
@@ -70,7 +70,7 @@ internal static Change[] Compare(object before, object after)
         /// <summary>Convertit l’arbre JSON en clés chemin/propriété pour comparer ses instantanés.</summary>
         /// <param name="tree">Racine désérialisée du formulaire.</param>
         /// <returns>Valeurs indexées par chemin de contrôle et nom de propriété.</returns>
-private static Dictionary<string, object> Flatten(IDictionary<string, object> tree)
+        private static Dictionary<string, object> Flatten(IDictionary<string, object> tree)
         {
             var result = new Dictionary<string, object>(StringComparer.Ordinal);
             ReadProperties(tree, "UserForm", result);
@@ -81,7 +81,7 @@ private static Dictionary<string, object> Flatten(IDictionary<string, object> tr
         /// <param name="owner">Nœud contenant éventuellement une collection enfant.</param>
         /// <param name="key">Nom de la collection à lire.</param>
         /// <param name="result">Index de différences en cours de construction.</param>
-private static void ReadNodes(IDictionary<string, object> owner, string key, Dictionary<string, object> result)
+        private static void ReadNodes(IDictionary<string, object> owner, string key, Dictionary<string, object> result)
         {
             if (!owner.TryGetValue(key, out object raw) || !(raw is object[] nodes)) return;
             foreach (IDictionary<string, object> node in nodes)
@@ -97,7 +97,7 @@ private static void ReadNodes(IDictionary<string, object> owner, string key, Dic
         /// <param name="owner">Nœud contenant les propriétés.</param>
         /// <param name="path">Chemin de formulaire ou de contrôle.</param>
         /// <param name="result">Index de différences enrichi.</param>
-private static void ReadProperties(IDictionary<string, object> owner, string path, Dictionary<string, object> result)
+        private static void ReadProperties(IDictionary<string, object> owner, string path, Dictionary<string, object> result)
         {
             if (!owner.TryGetValue("Properties", out object raw) || !(raw is object[] properties)) return;
             foreach (IDictionary<string, object> property in properties)

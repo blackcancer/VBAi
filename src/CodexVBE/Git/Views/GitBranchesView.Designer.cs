@@ -1,28 +1,28 @@
 namespace CodexVBE
 {
     /// <summary>Designer-generated controls for listing, tracking, creating, and merging branches.</summary>
-public sealed partial class GitBranchesView
+    public sealed partial class GitBranchesView
     {
         /// <summary>Actions for branch and merge operations.</summary>
-internal System.Windows.Forms.FlowLayoutPanel branchActions;
+        internal System.Windows.Forms.FlowLayoutPanel branchActions;
         /// <summary>Local and remote branches.</summary>
-internal System.Windows.Forms.ListBox branchList;
+        internal System.Windows.Forms.ListBox branchList;
         /// <summary>Branch name input or selection.</summary>
-internal CodexVBE.ThemedComboBox branchName;
+        internal CodexVBE.ThemedComboBox branchName;
         /// <summary>Refreshes available remote branches.</summary>
-internal CodexVBE.ThemedButton branchRemote;
+        internal CodexVBE.ThemedButton branchRemote;
         /// <summary>Creates the named branch.</summary>
-internal CodexVBE.ThemedButton branchCreate;
+        internal CodexVBE.ThemedButton branchCreate;
         /// <summary>Tracks the selected remote branch.</summary>
-internal CodexVBE.ThemedButton branchTrack;
+        internal CodexVBE.ThemedButton branchTrack;
         /// <summary>Switches to the selected branch.</summary>
-internal CodexVBE.ThemedButton branchSwitch;
+        internal CodexVBE.ThemedButton branchSwitch;
         /// <summary>Begins a merge of the selected branch.</summary>
-internal CodexVBE.ThemedButton mergeBegin;
+        internal CodexVBE.ThemedButton mergeBegin;
         /// <summary>Container that owns Designer components.</summary>
-private System.ComponentModel.IContainer components;
+        private System.ComponentModel.IContainer components;
         /// <summary>Tooltips associated with branch actions.</summary>
-private System.Windows.Forms.ToolTip toolTips;
+        private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)
@@ -32,7 +32,7 @@ private System.Windows.Forms.ToolTip toolTips;
         }
 
         /// <summary>Creates and arranges branch management controls.</summary>
-private void InitializeComponent()
+        private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);

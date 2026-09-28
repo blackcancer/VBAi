@@ -7,35 +7,35 @@ using System.IO;
 namespace CodexVBE
 {
     /// <summary>Gère les signets et les commandes arrière/avant des emplacements de code VBA.</summary>
-internal sealed class VbeNavigationHistory
+    internal sealed class VbeNavigationHistory
     {
         /// <summary>Instance VBE facultative utilisée pour résoudre les projets et capturer le volet actif.</summary>
-private readonly dynamic vbe;
+        private readonly dynamic vbe;
         /// <summary>Exécuteur des commandes de lecture et de sélection de code.</summary>
-private readonly Func<Request, Response> execute;
+        private readonly Func<Request, Response> execute;
         /// <summary>Signets temporaires des projets non enregistrés, indexés par identité de session et nom.</summary>
-private readonly Dictionary<string, Location> bookmarks = new Dictionary<string, Location>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Location> bookmarks = new Dictionary<string, Location>(StringComparer.OrdinalIgnoreCase);
         /// <summary>Chemin de la base locale qui conserve les signets des projets enregistrés.</summary>
-private readonly string bookmarkDatabase;
+        private readonly string bookmarkDatabase;
         /// <summary>Clés de session attribuées aux projets sans chemin persistant.</summary>
-private readonly Dictionary<object, string> unsavedProjectScopes = new Dictionary<object, string>();
+        private readonly Dictionary<object, string> unsavedProjectScopes = new Dictionary<object, string>();
         /// <summary>Pile des emplacements précédents pour la navigation arrière.</summary>
-private readonly List<Location> back = new List<Location>();
+        private readonly List<Location> back = new List<Location>();
         /// <summary>Pile des emplacements futurs après un déplacement arrière.</summary>
-private readonly List<Location> forward = new List<Location>();
+        private readonly List<Location> forward = new List<Location>();
         /// <summary>Emplacement de code identifié par projet, module, empreinte et position.</summary>
-private sealed class Location
+        private sealed class Location
         {
             /// <summary>Stores the project,module,sha256 used by Location.</summary>
-public string Project, Module, Sha256;
+            public string Project, Module, Sha256;
             /// <summary>Stores the line,column used by Location.</summary>
-public int Line, Column;
+            public int Line, Column;
         }
         /// <summary>Crée l’historique avec le VBE, le transport de commandes et le stockage des signets persistants.</summary>
         /// <param name="vbe">Instance VBE, ou null pour un transport sans automatisation directe.</param>
         /// <param name="execute">Transport des lectures et sélections de code.</param>
         /// <param name="bookmarkDatabase">Base SQLite facultative pour les projets enregistrés.</param>
-internal VbeNavigationHistory(object vbe, Func<Request, Response> execute, string bookmarkDatabase = null)
+        internal VbeNavigationHistory(object vbe, Func<Request, Response> execute, string bookmarkDatabase = null)
         {
             this.vbe = vbe; this.execute = execute;
             this.bookmarkDatabase = bookmarkDatabase ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CodexVBE", "chat.db");
@@ -45,7 +45,7 @@ internal VbeNavigationHistory(object vbe, Func<Request, Response> execute, strin
         /// <returns>Signets listés, état de suppression ou résultat de navigation.</returns>
         /// <exception cref="ArgumentException">Le projet, le nom ou l’action du signet est invalide.</exception>
         /// <exception cref="InvalidOperationException">La cible est périmée ou le signet n’existe pas.</exception>
-internal object Bookmark(Request request)
+        internal object Bookmark(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.Project)) throw new ArgumentException("Project is required.");
             string scope = request.Project;
@@ -82,7 +82,7 @@ internal object Bookmark(Request request)
         /// <param name="request">Action et nom de signet.</param>
         /// <param name="scope">Chemin absolu du projet.</param>
         /// <returns>Signets persistants, résultat d’écriture ou navigation vers la cible.</returns>
-private object PersistentBookmark(Request request, string scope)
+        private object PersistentBookmark(Request request, string scope)
         {
             if (request.Action != "list" && (string.IsNullOrWhiteSpace(request.Query) || request.Query.Length > 100 || request.Query.Any(char.IsControl)))
                 throw new ArgumentException("Query is the bookmark name, 1-100 printable characters.");
@@ -110,7 +110,7 @@ private object PersistentBookmark(Request request, string scope)
         /// <summary>Résout un sélecteur vers le chemin du fichier du projet ou son nom lorsque celui-ci n’est pas enregistré.</summary>
         /// <param name="selector">Sélecteur de projet accepté par le résolveur VBE.</param>
         /// <returns>Identité canonique utilisée pour isoler l’historique de navigation.</returns>
-private string CanonicalProject(string selector)
+        private string CanonicalProject(string selector)
         {
             if (string.IsNullOrWhiteSpace(selector)) throw new ArgumentException("Project is required.");
             if (vbe == null) return Path.IsPathRooted(selector) ? Path.GetFullPath(selector) : selector;
@@ -123,7 +123,7 @@ private string CanonicalProject(string selector)
         /// <returns>Données renvoyées par la commande de sélection VBE.</returns>
         /// <exception cref="ArgumentException">L’action ou l’emplacement demandé est invalide.</exception>
         /// <exception cref="InvalidOperationException">La pile est vide ou sa cible appartient à un autre projet.</exception>
-internal object Go(Request request)
+        internal object Go(Request request)
         {
             string project = CanonicalProject(request.Project);
             if (request.Action == "back" || request.Action == "forward")
@@ -145,7 +145,7 @@ internal object Go(Request request)
         }
         /// <summary>Capture l’emplacement du volet de code actif s’il est lisible.</summary>
         /// <returns>Emplacement courant lié à l’empreinte du module, ou null si aucun volet n’est exploitable.</returns>
-private Location CaptureCurrent()
+        private Location CaptureCurrent()
         {
             Location current = null;
             try
@@ -170,7 +170,7 @@ private Location CaptureCurrent()
         /// <param name="remember">Indique s’il faut capturer l’emplacement actif pour alimenter l’historique arrière.</param>
         /// <returns>Données retournées par la sélection de code.</returns>
         /// <exception cref="InvalidOperationException">La cible est périmée ou le transport de navigation a échoué.</exception>
-private object Navigate(Location target, bool remember)
+        private object Navigate(Location target, bool remember)
         {
             Validate(target);
             Location current = remember ? CaptureCurrent() : null;
@@ -183,7 +183,7 @@ private object Navigate(Location target, bool remember)
         /// <param name="target">Emplacement à valider.</param>
         /// <exception cref="InvalidOperationException">La source a changé ou le module n’a pas pu être lu.</exception>
         /// <exception cref="ArgumentException">La position est en dehors du texte courant.</exception>
-private void Validate(Location target)
+        private void Validate(Location target)
         {
             Response code = execute(new Request { Command = "read_module", Project = target.Project, Module = target.Module });
             if (!code.Ok) throw new InvalidOperationException(code.Error);

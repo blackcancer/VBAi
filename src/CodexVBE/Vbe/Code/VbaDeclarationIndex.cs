@@ -14,25 +14,25 @@ namespace CodexVBE
         {
                         /// <summary>Nom déclaré, sans suffixe de type VBA.</summary>
             /// <value>Identifiant nettoyé de son suffixe de type éventuel.</value>
-public string Name { get; set; }
+            public string Name { get; set; }
                         /// <summary>Catégorie syntaxique de la déclaration.</summary>
             /// <value>Type de membre tel que Variable, Constant, Procedure ou Field.</value>
-public string Kind { get; set; }
+            public string Kind { get; set; }
                         /// <summary>Nom de la procédure ou du type contenant la déclaration ; null au niveau module.</summary>
             /// <value>Portée lexicale, ou <see langword="null"/> pour une déclaration de module.</value>
-public string Scope { get; set; }
+            public string Scope { get; set; }
                         /// <summary>Type écrit dans la déclaration ou déduit de son suffixe.</summary>
             /// <value>Nom du type VBA ou Variant par défaut.</value>
-public string TypeName { get; set; }
+            public string TypeName { get; set; }
                         /// <summary>Ligne physique à base un du nom déclaré.</summary>
             /// <value>Numéro de ligne dans le texte source d’origine.</value>
-public int Line { get; set; }
+            public int Line { get; set; }
                         /// <summary>Colonne physique à base un du nom déclaré.</summary>
             /// <value>Position du premier caractère du nom.</value>
-public int Column { get; set; }
+            public int Column { get; set; }
                         /// <summary>Indique une déclaration située dans une branche de compilation conditionnelle.</summary>
             /// <value><see langword="true"/> lorsque la déclaration apparaît dans une branche #If.</value>
-public bool Conditional { get; set; }
+            public bool Conditional { get; set; }
         }
         /// <summary>Jeton lexical hors commentaires et littéraux avec ses coordonnées physiques.</summary>
         internal sealed class Token
@@ -130,7 +130,7 @@ public bool Conditional { get; set; }
         /// <param name="scope">Portée qui contient ces noms.</param>
         /// <param name="conditional">Indique si la liste est dans une compilation conditionnelle.</param>
         /// <param name="result">Collection enrichie avec les déclarations trouvées.</param>
-private static void AddList(List<Token> tokens, string kind, string scope, bool conditional, List<Declaration> result)
+        private static void AddList(List<Token> tokens, string kind, string scope, bool conditional, List<Declaration> result)
         {
             int start = 0, depth = 0;
             for (int i = 0; i <= tokens.Count; i++)
@@ -163,21 +163,21 @@ private static void AddList(List<Token> tokens, string kind, string scope, bool 
         /// <param name="type">Type déclaré ou inféré.</param>
         /// <param name="conditional">Indique une branche conditionnelle.</param>
         /// <param name="output">Collection de sortie.</param>
-private static void Add(Token token, string kind, string scope, string type, bool conditional, List<Declaration> output) =>
+        private static void Add(Token token, string kind, string scope, string type, bool conditional, List<Declaration> output) =>
             output.Add(new Declaration { Name = Bare(token.Text), Kind = kind, Scope = scope, TypeName = type,
                 Line = token.Line, Column = token.Column, Conditional = conditional });
         /// <summary>Retire un suffixe de type VBA éventuel du nom lexical.</summary>
         /// <param name="text">Jeton ou identifiant à normaliser.</param>
         /// <returns>Nom sans suffixe de type final.</returns>
-private static string Bare(string text) => text.TrimEnd('$', '%', '&', '!', '#', '@', '^');
+        private static string Bare(string text) => text.TrimEnd('$', '%', '&', '!', '#', '@', '^');
         /// <summary>Vérifie la forme lexicale d’un identifiant VBA, suffixe de type facultatif compris.</summary>
         /// <param name="text">Texte du jeton à valider.</param>
         /// <returns><see langword="true"/> si le jeton correspond à un nom VBA reconnu.</returns>
-private static bool IsName(string text) => Regex.IsMatch(text, @"^\p{L}[\p{L}\p{N}_]*[$%&!#@^]?$");
+        private static bool IsName(string text) => Regex.IsMatch(text, @"^\p{L}[\p{L}\p{N}_]*[$%&!#@^]?$");
         /// <summary>Convertit un caractère suffixe VBA en nom de type correspondant.</summary>
         /// <param name="suffix">Suffixe placé à la fin d’un identifiant.</param>
         /// <returns>Type VBA associé, ou Variant pour un suffixe non reconnu.</returns>
-private static string SuffixType(char suffix)
+        private static string SuffixType(char suffix)
         {
             switch (suffix) { case '$': return "String"; case '%': return "Integer"; case '&': return "Long";
                 case '!': return "Single"; case '#': return "Double"; case '@': return "Currency"; case '^': return "LongLong"; default: return "Variant"; }
@@ -185,7 +185,7 @@ private static string SuffixType(char suffix)
                 /// <summary>Lexeur de déclarations : conserve les positions, les continuations et les séparateurs.</summary>
         /// <param name="source">Texte VBA à découper.</param>
         /// <returns>Listes de jetons séparées par des fins de ligne ou des séparateurs d’instruction.</returns>
-internal static IEnumerable<List<Token>> Statements(string source)
+        internal static IEnumerable<List<Token>> Statements(string source)
         {
             var statement = new List<Token>();
             int line = 1, column = 1;

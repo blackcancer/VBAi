@@ -4,12 +4,12 @@ using System.IO;
 namespace CodexVBE
 {
     /// <summary>Gère l’enregistrement natif des projets VBA autonomes de macros SWP.</summary>
-internal sealed partial class VbeProjectComponents
+    internal sealed partial class VbeProjectComponents
     {
                 /// <summary>Détecte uniquement un projet VBA autonome de macro SWP, jamais un projet intégré à un document Office.</summary>
         /// <param name="project">Projet VBIDE à examiner.</param>
         /// <returns><see langword="true"/> si le type et le chemin correspondent à une macro autonome SWP.</returns>
-private static bool SupportsStandaloneMacro(dynamic project)
+        private static bool SupportsStandaloneMacro(dynamic project)
         {
             try
             {
@@ -23,7 +23,7 @@ private static bool SupportsStandaloneMacro(dynamic project)
         /// <param name="selector">Identifiant du projet à inclure dans le résultat.</param>
         /// <param name="project">Projet VBIDE dont l’état de persistance est lu.</param>
         /// <returns>Un instantané sérialisable des indicateurs de sauvegarde et du fichier hôte.</returns>
-private static object StandalonePersistence(string selector, dynamic project)
+        private static object StandalonePersistence(string selector, dynamic project)
         {
             string path = (string)project.FileName;
             bool hasPath = !string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path);
@@ -39,7 +39,7 @@ private static object StandalonePersistence(string selector, dynamic project)
         /// <param name="request">Requête contenant le projet, sa version attendue et éventuellement le chemin de destination.</param>
         /// <param name="saveAs">Sélectionne une nouvelle destination lorsque la valeur est vraie.</param>
         /// <returns>Le résultat de l’enregistrement et la vérification du chemin, de l’état et du fichier produit.</returns>
-private object SaveStandaloneMacro(Request request, bool saveAs)
+        private object SaveStandaloneMacro(Request request, bool saveAs)
         {
             dynamic project = GetDesignProject(request.Project);
             if (!SupportsStandaloneMacro((object)project))

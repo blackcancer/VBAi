@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 namespace CodexVBE
 {
     /// <summary>Complète l’adaptateur MSForms pour les écritures de propriétés scalaires du Designer.</summary>
-internal sealed partial class VbeForms
+    internal sealed partial class VbeForms
     {
         /// <summary>Identifie les objets COM natifs sans remplacer le dispatch des propriétés.</summary>
         internal static Func<object, bool> NativeDesignerObject = Marshal.IsComObject;
@@ -13,7 +13,7 @@ internal sealed partial class VbeForms
         /// <param name="target">Contrôle MSForms ou objet .NET à mettre à jour.</param>
         /// <param name="descriptor">Descripteur de la propriété à écrire.</param>
         /// <param name="value">Valeur convertie vers le type attendu par la propriété native.</param>
-private static void SetDesignerScalar(object target, PropertyDescriptor descriptor, object value)
+        private static void SetDesignerScalar(object target, PropertyDescriptor descriptor, object value)
         {
             if (!NativeDesignerObject(target)) { descriptor.SetValue(target, value); return; }
             dynamic native = target;

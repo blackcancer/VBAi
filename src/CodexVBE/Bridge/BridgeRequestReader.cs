@@ -14,7 +14,7 @@ namespace CodexVBE
 /// <param name="maxBytes">The max bytes used by this operation.</param>
 /// <param name="timeout">The timeout used by this operation.</param>
 /// <returns>The result produced by this operation.</returns>
-internal static async Task<string> ReadAsync(Stream stream, int maxBytes, TimeSpan timeout)
+        internal static async Task<string> ReadAsync(Stream stream, int maxBytes, TimeSpan timeout)
         {
             if (maxBytes < 1) throw new ArgumentOutOfRangeException(nameof(maxBytes));
             if (timeout <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(timeout));
@@ -39,7 +39,7 @@ internal static async Task<string> ReadAsync(Stream stream, int maxBytes, TimeSp
 /// <param name="stream">The stream used by this operation.</param>
 /// <param name="maxBytes">The max bytes used by this operation.</param>
 /// <returns>The result produced by this operation.</returns>
-private static async Task<string> ReadFrameAsync(Stream stream, int maxBytes)
+        private static async Task<string> ReadFrameAsync(Stream stream, int maxBytes)
         {
             var buffer = new byte[Math.Min(4096, maxBytes)];
             using (var frame = new MemoryStream())

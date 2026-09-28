@@ -16,63 +16,63 @@ namespace CodexVBE
         /// <summary>Callback signature used by the native window-enumeration functions.</summary>
         /// <param name="window">Window handle reported by Windows.</param><param name="parameter">Caller-supplied enumeration context.</param>
         /// <returns><see langword="true"/> to continue enumeration.</returns>
-private delegate bool EnumProc(IntPtr window, IntPtr parameter);
+        private delegate bool EnumProc(IntPtr window, IntPtr parameter);
         /// <summary>Enumerates top-level desktop windows.</summary>
         /// <param name="callback">Callback invoked for each top-level window.</param><param name="parameter">Context passed to each callback.</param>
         /// <returns><see langword="true"/> when enumeration succeeds.</returns>
-[DllImport("user32.dll")] private static extern bool EnumWindows(EnumProc callback, IntPtr parameter);
+        [DllImport("user32.dll")] private static extern bool EnumWindows(EnumProc callback, IntPtr parameter);
         /// <summary>Enumerates child windows of a native parent.</summary>
         /// <param name="parent">Parent window handle.</param><param name="callback">Callback invoked for each child.</param>
         /// <param name="parameter">Context passed to each callback.</param><returns><see langword="true"/> when enumeration succeeds.</returns>
-[DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, EnumProc callback, IntPtr parameter);
+        [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, EnumProc callback, IntPtr parameter);
         /// <summary>Gets the class name associated with a native window handle.</summary>
         /// <param name="window">Window handle to query.</param><param name="name">Buffer that receives the class name.</param>
         /// <param name="capacity">Character capacity of the buffer.</param><returns>Number of characters copied.</returns>
-[DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr window, StringBuilder name, int capacity);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr window, StringBuilder name, int capacity);
         /// <summary>Gets a dialog control's identifier.</summary><param name="window">Control handle.</param><returns>Control identifier.</returns>
-[DllImport("user32.dll")] private static extern int GetDlgCtrlID(IntPtr window);
+        [DllImport("user32.dll")] private static extern int GetDlgCtrlID(IntPtr window);
         /// <summary>Reads a native window style value.</summary><param name="window">Window handle.</param><param name="index">Style index.</param><returns>Style bits.</returns>
-[DllImport("user32.dll", EntryPoint = "GetWindowLongW")] private static extern int GetWindowStyle(IntPtr window, int index);
+        [DllImport("user32.dll", EntryPoint = "GetWindowLongW")] private static extern int GetWindowStyle(IntPtr window, int index);
         /// <summary>Gets the process and thread that created a native window.</summary><param name="window">Window handle.</param>
         /// <param name="process">Receives the owning process identifier.</param><returns>Owning thread identifier.</returns>
-[DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint process);
+        [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint process);
         /// <summary>Gets a related native window according to a Windows relationship command.</summary><param name="window">Starting window.</param>
         /// <param name="command">Relationship selector.</param><returns>Related window handle, or zero when absent.</returns>
-[DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr window, uint command);
+        [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr window, uint command);
         /// <summary>Gets the immediate parent of a child window.</summary><param name="window">Child window.</param><returns>Parent window handle.</returns>
-[DllImport("user32.dll")] private static extern IntPtr GetParent(IntPtr window);
+        [DllImport("user32.dll")] private static extern IntPtr GetParent(IntPtr window);
         /// <summary>Gets a dialog item by its control identifier.</summary><param name="window">Dialog window handle.</param>
         /// <param name="id">Control identifier.</param><returns>Control handle, or zero when absent.</returns>
-[DllImport("user32.dll")] private static extern IntPtr GetDlgItem(IntPtr window, int id);
+        [DllImport("user32.dll")] private static extern IntPtr GetDlgItem(IntPtr window, int id);
         /// <summary>Checks whether a native window is visible.</summary><param name="window">Window handle.</param><returns>Visibility state.</returns>
-[DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
+        [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
         /// <summary>Checks whether a native window accepts input.</summary><param name="window">Window handle.</param><returns>Enabled state.</returns>
-[DllImport("user32.dll")] private static extern bool IsWindowEnabled(IntPtr window);
+        [DllImport("user32.dll")] private static extern bool IsWindowEnabled(IntPtr window);
         /// <summary>Posts a message to a native window's queue.</summary><param name="window">Target window.</param><param name="message">Message identifier.</param>
         /// <param name="wParam">Message-specific first value.</param><param name="lParam">Message-specific second value.</param>
         /// <returns><see langword="true"/> when the message was posted.</returns>
-[DllImport("user32.dll")] private static extern bool PostMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
+        [DllImport("user32.dll")] private static extern bool PostMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
         /// <summary>Sends a message to a native window and waits for its result.</summary><param name="window">Target window.</param>
         /// <param name="message">Message identifier.</param><param name="wParam">Message-specific first value.</param>
         /// <param name="lParam">Message-specific second value.</param><returns>Window procedure result.</returns>
-[DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
+        [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
 
         /// <summary>Stores the open timeout milliseconds,worker timeout milliseconds,close timeout milliseconds,page timeout milliseconds used by VbeNativePaletteDialog.</summary>
-internal static int OpenTimeoutMilliseconds = 10000, WorkerTimeoutMilliseconds = 30000,
+        internal static int OpenTimeoutMilliseconds = 10000, WorkerTimeoutMilliseconds = 30000,
             CloseTimeoutMilliseconds = 2000, PageTimeoutMilliseconds = 1000;
         /// <summary>Stores the post dialog message used by VbeNativePaletteDialog.</summary>
-internal static Func<IntPtr, uint, IntPtr, IntPtr, bool> PostDialogMessage = PostMessage;
+        internal static Func<IntPtr, uint, IntPtr, IntPtr, bool> PostDialogMessage = PostMessage;
         /// <summary>Stores the wait worker used by VbeNativePaletteDialog.</summary>
-internal static Func<Thread, int, bool> WaitWorker = (worker, timeout) => worker.Join(timeout);
+        internal static Func<Thread, int, bool> WaitWorker = (worker, timeout) => worker.Join(timeout);
         /// <summary>Stores the owned windows used by VbeNativePaletteDialog.</summary>
-internal static Func<IntPtr, HashSet<IntPtr>> OwnedWindows = Windows;
+        internal static Func<IntPtr, HashSet<IntPtr>> OwnedWindows = Windows;
 
         /// <summary>Opens the VBE Options dialog, reads its ten color rows, optionally updates them, then closes it.</summary>
         /// <param name="vbe">VBE automation object used to invoke the Options command.</param>
         /// <param name="update">Callback receiving the observed rows and returning replacement rows, or <see langword="null"/> to leave them unchanged.</param>
         /// <returns>The rows observed before the optional update.</returns>
         /// <exception cref="InvalidOperationException">The dialog, color page, or requested update cannot be validated.</exception>
-internal static Row[] Visit(object vbe, Func<Row[], Row[]> update)
+        internal static Row[] Visit(object vbe, Func<Row[], Row[]> update)
         {
             dynamic editor = vbe;
             IntPtr owner = new IntPtr(Convert.ToInt64(editor.MainWindow.HWnd));
@@ -171,7 +171,7 @@ internal static Row[] Visit(object vbe, Func<Row[], Row[]> update)
         /// <summary>Lists visible top-level windows owned by the process and nested under the supplied VBE window.</summary>
         /// <param name="owner">VBE main-window handle used as the ownership boundary.</param>
         /// <returns>Handles of visible owned top-level windows.</returns>
-private static HashSet<IntPtr> Windows(IntPtr owner)
+        private static HashSet<IntPtr> Windows(IntPtr owner)
         {
             var result = new HashSet<IntPtr>();
             uint process;
@@ -194,7 +194,7 @@ private static HashSet<IntPtr> Windows(IntPtr owner)
         /// <summary>Reads a native window's class name.</summary>
         /// <param name="window">Window handle to query.</param>
         /// <returns>The class name returned by Windows, or an empty string.</returns>
-private static string ClassName(IntPtr window)
+        private static string ClassName(IntPtr window)
         {
             var name = new StringBuilder(256);
             GetClassName(window, name, name.Capacity);
@@ -206,7 +206,7 @@ private static string ClassName(IntPtr window)
         /// <param name="className">Required native class name.</param>
         /// <param name="id">Required control identifier, or a negative value to ignore the identifier.</param>
         /// <returns>Matching descendant window handles in enumeration order.</returns>
-private static List<IntPtr> Descendants(IntPtr parent, string className, int id = -1)
+        private static List<IntPtr> Descendants(IntPtr parent, string className, int id = -1)
         {
             var matches = new List<IntPtr>();
             EnumChildWindows(parent, (window, unused) =>
@@ -223,7 +223,7 @@ private static List<IntPtr> Descendants(IntPtr parent, string className, int id 
         /// <param name="cancellation">Token checked while switching tabs and waiting for controls.</param>
         /// <returns>Handle of the syntax-category list on the color page.</returns>
         /// <exception cref="InvalidOperationException">The tab structure or native color page is unexpected.</exception>
-internal static IntPtr FindColorPage(IntPtr dialog, CancellationToken cancellation)
+        internal static IntPtr FindColorPage(IntPtr dialog, CancellationToken cancellation)
         {
             IntPtr tabs = Descendants(dialog, "SysTabControl32").Single();
             if (!IsWindowEnabled(tabs)) throw new InvalidOperationException("The Options tabs are disabled.");
@@ -255,7 +255,7 @@ internal static IntPtr FindColorPage(IntPtr dialog, CancellationToken cancellati
         /// <param name="dialog">Options dialog handle.</param><param name="id">Dialog control identifier.</param>
         /// <returns>The matching combo-box handle.</returns>
         /// <exception cref="InvalidOperationException">The control is missing, duplicated, or has an unexpected item count.</exception>
-private static IntPtr Control(IntPtr dialog, int id)
+        private static IntPtr Control(IntPtr dialog, int id)
         {
             var matches = Descendants(dialog, "ComboBox", id);
             IntPtr handle = matches.Count == 1 ? matches[0] : IntPtr.Zero;
@@ -267,7 +267,7 @@ private static IntPtr Control(IntPtr dialog, int id)
         /// <summary>Selects one syntax-category row in the native color list.</summary>
         /// <param name="list">Handle of the color-category list box.</param><param name="index">Zero-based row index.</param>
         /// <exception cref="InvalidOperationException">The list rejects the selection or does not report it.</exception>
-private static void Select(IntPtr list, int index)
+        private static void Select(IntPtr list, int index)
         {
             if (SendMessage(list, 0x186, new IntPtr(index), IntPtr.Zero).ToInt32() != index)
                 throw new InvalidOperationException("The native color category could not be selected.");
@@ -279,7 +279,7 @@ private static void Select(IntPtr list, int index)
         /// <param name="foreground">Foreground color combo-box handle.</param><param name="background">Background color combo-box handle.</param>
         /// <param name="indicator">Indicator color combo-box handle.</param>
         /// <returns>One color row per name, in the same order.</returns>
-private static Row[] Read(IntPtr list, string[] names, IntPtr foreground, IntPtr background, IntPtr indicator)
+        private static Row[] Read(IntPtr list, string[] names, IntPtr foreground, IntPtr background, IntPtr indicator)
         {
             var rows = new Row[names.Length];
             for (int index = 0; index < names.Length; index++)
@@ -294,13 +294,13 @@ private static Row[] Read(IntPtr list, string[] names, IntPtr foreground, IntPtr
         /// <summary>Gets the selected color index from a native combo box.</summary>
         /// <param name="combo">Color combo-box handle.</param>
         /// <returns>Zero-based selection index, or the native no-selection value.</returns>
-private static int Current(IntPtr combo) => SendMessage(combo, 0x147, IntPtr.Zero, IntPtr.Zero).ToInt32();
+        private static int Current(IntPtr combo) => SendMessage(combo, 0x147, IntPtr.Zero, IntPtr.Zero).ToInt32();
 
         /// <summary>Sets and verifies the selected color index in a native combo box.</summary>
         /// <param name="combo">Color combo-box handle.</param><param name="id">Dialog control identifier used in errors.</param>
         /// <param name="index">Zero-based color index to select.</param>
         /// <exception cref="InvalidOperationException">The native control does not retain the requested selection.</exception>
-private static void SetColor(IntPtr combo, int id, int index)
+        private static void SetColor(IntPtr combo, int id, int index)
         {
             if (SendMessage(combo, 0x14e, new IntPtr(index), IntPtr.Zero).ToInt32() != index)
                 throw new InvalidOperationException("The native color selection was rejected.");

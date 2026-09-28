@@ -15,28 +15,28 @@ namespace CodexVBE
     internal sealed class UpdateFeed : IDisposable
     {
         /// <summary>GitHub API endpoint for the product repository.</summary>
-internal const string ApiRoot = "https://api.github.com/repos/blackcancer/CodexVBE";
+        internal const string ApiRoot = "https://api.github.com/repos/blackcancer/CodexVBE";
         /// <summary>Stores the load credential settings used by UpdateFeed.</summary>
-internal static Func<LlmSettings> LoadCredentialSettings = LlmSettings.Load;
+        internal static Func<LlmSettings> LoadCredentialSettings = LlmSettings.Load;
         /// <summary>Stores the read credential used by UpdateFeed.</summary>
-internal static Func<string, CancellationToken, Task<string>> ReadCredential = GitHubApi.ReadCredential;
+        internal static Func<string, CancellationToken, Task<string>> ReadCredential = GitHubApi.ReadCredential;
         /// <summary>Performs the default credential operation for UpdateFeed.</summary>
 /// <param name="ct">Token used to cancel the operation.</param>
 /// <returns>The result produced by this operation.</returns>
-private static Task<string> DefaultCredential(CancellationToken ct) => ReadCredential(LoadCredentialSettings().GitHubAccount, ct);
+        private static Task<string> DefaultCredential(CancellationToken ct) => ReadCredential(LoadCredentialSettings().GitHubAccount, ct);
         /// <summary>HTTP client used for release metadata and asset downloads.</summary>
-private readonly HttpClient client;
+        private readonly HttpClient client;
         /// <summary>Optional credential provider invoked after an unauthenticated private-repository response.</summary>
-private readonly Func<CancellationToken, Task<string>> credentials;
+        private readonly Func<CancellationToken, Task<string>> credentials;
         /// <summary>GitHub token cached for authenticated API requests, or null.</summary>
-private string token;
+        private string token;
         /// <summary>Whether this feed has already attempted credential acquisition.</summary>
-private bool triedCredentials;
+        private bool triedCredentials;
         /// <summary>JSON serializer with the accepted release-response size limit.</summary>
-private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 4 * 1024 * 1024 };
+        private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 4 * 1024 * 1024 };
         /// <summary>Creates a feed with optional HTTP and credential providers.</summary>
         /// <param name="handler">Optional HTTP handler for requests.</param><param name="credentials">Optional token provider used for private access.</param>
-internal UpdateFeed(HttpMessageHandler handler = null, Func<CancellationToken, Task<string>> credentials = null)
+        internal UpdateFeed(HttpMessageHandler handler = null, Func<CancellationToken, Task<string>> credentials = null)
         {
             client = new HttpClient(handler ?? new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromMinutes(10) };
             this.credentials = credentials ?? DefaultCredential;
@@ -44,7 +44,7 @@ internal UpdateFeed(HttpMessageHandler handler = null, Func<CancellationToken, T
         /// <summary>Sends one unauthenticated or currently-token-authenticated GET request.</summary>
         /// <param name="url">Absolute request URL.</param><param name="binary">Whether to request an installer asset.</param><param name="ct">Cancellation token.</param>
         /// <returns>HTTP response owned by the caller.</returns>
-private async Task<HttpResponseMessage> Request(string url, bool binary, CancellationToken ct)
+        private async Task<HttpResponseMessage> Request(string url, bool binary, CancellationToken ct)
         {
             using (var request = new HttpRequestMessage(HttpMethod.Get, url))
             {
@@ -61,7 +61,7 @@ private async Task<HttpResponseMessage> Request(string url, bool binary, Cancell
         /// <summary>Retries one 404 or 401 response once after obtaining repository credentials.</summary>
         /// <param name="url">Absolute request URL.</param><param name="binary">Whether to request binary content.</param><param name="ct">Cancellation token.</param>
         /// <returns>Final HTTP response owned by the caller.</returns>
-private async Task<HttpResponseMessage> AuthenticatedRequest(string url, bool binary, CancellationToken ct)
+        private async Task<HttpResponseMessage> AuthenticatedRequest(string url, bool binary, CancellationToken ct)
         {
             var response = await Request(url, binary, ct);
             if ((response.StatusCode == HttpStatusCode.NotFound || response.StatusCode == HttpStatusCode.Unauthorized) && !triedCredentials)
@@ -76,7 +76,7 @@ private async Task<HttpResponseMessage> AuthenticatedRequest(string url, bool bi
         /// <param name="current">Installed version used as the lower bound.</param><param name="previews">Whether prereleases are eligible.</param>
         /// <param name="skipped">Version the user chose to skip, or null.</param><param name="ct">Cancellation token.</param>
         /// <returns>Newest eligible release, or null when none is newer.</returns>
-internal async Task<UpdateRelease> Check(UpdateVersion current, bool previews, string skipped, CancellationToken ct)
+        internal async Task<UpdateRelease> Check(UpdateVersion current, bool previews, string skipped, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
             using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct))
@@ -86,7 +86,7 @@ internal async Task<UpdateRelease> Check(UpdateVersion current, bool previews, s
         /// <param name="asset">GitHub asset metadata and expected SHA-256 digest.</param><param name="root">Update cache root.</param>
         /// <param name="progress">Optional percentage progress reporter.</param><param name="ct">Cancellation token.</param>
         /// <returns>Path to the verified cached package.</returns>
-internal async Task<string> Download(UpdateAsset asset, string root, IProgress<int> progress, CancellationToken ct)
+        internal async Task<string> Download(UpdateAsset asset, string root, IProgress<int> progress, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
             using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct))
@@ -95,7 +95,7 @@ internal async Task<string> Download(UpdateAsset asset, string root, IProgress<i
         /// <summary>Reads a bounded UTF-8 JSON response and strips an optional byte-order mark.</summary>
         /// <param name="content">HTTP response content.</param><param name="ct">Cancellation token.</param><returns>Decoded JSON text.</returns>
         /// <exception cref="InvalidDataException">The response exceeds the 4 MiB limit.</exception>
-private static async Task<string> ReadJson(HttpContent content, CancellationToken ct)
+        private static async Task<string> ReadJson(HttpContent content, CancellationToken ct)
         {
             using (var stream = await content.ReadAsStreamAsync())
             using (var bytes = new MemoryStream())
@@ -110,7 +110,7 @@ private static async Task<string> ReadJson(HttpContent content, CancellationToke
         /// <param name="current">Installed version lower bound.</param><param name="previews">Whether prereleases are eligible.</param>
         /// <param name="skipped">Version the user chose to skip, or null.</param><param name="ct">Cancellation token.</param>
         /// <returns>Newest eligible release, or null.</returns>
-private async Task<UpdateRelease> CheckCore(UpdateVersion current, bool previews, string skipped, CancellationToken ct)
+        private async Task<UpdateRelease> CheckCore(UpdateVersion current, bool previews, string skipped, CancellationToken ct)
         {
             if (current == null) throw new InvalidDataException("Invalid product version.");
             UpdateRelease best = null;
@@ -137,7 +137,7 @@ private async Task<UpdateRelease> CheckCore(UpdateVersion current, bool previews
         /// <param name="progress">Optional percentage progress reporter.</param><param name="ct">Cancellation token.</param>
         /// <returns>Path to the verified cached package.</returns>
         /// <exception cref="InvalidDataException">Asset metadata, redirect, size, or digest validation fails.</exception>
-private async Task<string> DownloadCore(UpdateAsset asset, string root, IProgress<int> progress, CancellationToken ct)
+        private async Task<string> DownloadCore(UpdateAsset asset, string root, IProgress<int> progress, CancellationToken ct)
         {
             if (asset == null || asset.id <= 0 || asset.Hash == null || asset.size <= 0 || asset.size > 512L * 1024 * 1024)
                 throw new InvalidDataException("An installer and its GitHub SHA-256 digest are required.");
@@ -184,6 +184,6 @@ private async Task<string> DownloadCore(UpdateAsset asset, string root, IProgres
             finally { if (File.Exists(temporary)) File.Delete(temporary); }
         }
         /// <summary>Disposes the HTTP client owned by this feed.</summary>
-public void Dispose() { client.Dispose(); }
+        public void Dispose() { client.Dispose(); }
     }
 }

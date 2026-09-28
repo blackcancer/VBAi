@@ -13,11 +13,11 @@ namespace CodexVBE
         private sealed class Member
         {
             /// <summary>Nom et catégorie syntaxique du membre.</summary>
-internal string Name, Kind, Access;
+            internal string Name, Kind, Access;
             /// <summary>Type d’accesseur VBIDE et dernière ligne de sa déclaration fermée.</summary>
-internal int ProcKind, EndLine;
+            internal int ProcKind, EndLine;
             /// <summary>Jeton lexical qui porte le nom dans la source.</summary>
-internal VbaDeclarationIndex.Token Token;
+            internal VbaDeclarationIndex.Token Token;
         }
 
                 /// <summary>Prépare un plan limité aux liaisons privées directes ou Me, sans déduire un type de receveur.</summary>
@@ -27,7 +27,7 @@ internal VbaDeclarationIndex.Token Token;
         /// <returns>Plan sans mutation avec les positions privées résolues.</returns>
         /// <exception cref="ArgumentException">Le projet, les snapshots ou les identifiants de nom sont invalides.</exception>
         /// <exception cref="InvalidOperationException">La liaison est publique, ambiguë, masquée ou sort du périmètre privé pris en charge.</exception>
-internal static VbaProcedureRename.Plan Prepare(string project, IEnumerable<VbaProcedureRename.ModuleSnapshot> modules, Request request)
+        internal static VbaProcedureRename.Plan Prepare(string project, IEnumerable<VbaProcedureRename.ModuleSnapshot> modules, Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(project) || modules == null)
                 throw new ArgumentException("Project, complete snapshots and an exact declaration are required.");
@@ -115,7 +115,7 @@ internal static VbaProcedureRename.Plan Prepare(string project, IEnumerable<VbaP
         /// <param name="module">Module de classe analysé.</param>
         /// <param name="statements">Instructions lexicales du module.</param>
         /// <exception cref="InvalidOperationException">Une déclaration implicite, conditionnelle, dynamique ou non résolue empêche le renommage sûr.</exception>
-private static void Guard(VbaProcedureRename.ModuleSnapshot module, IList<List<VbaDeclarationIndex.Token>> statements)
+        private static void Guard(VbaProcedureRename.ModuleSnapshot module, IList<List<VbaDeclarationIndex.Token>> statements)
         {
             if (statements.All(x => x.Count == 0)) return;
             if (!statements.Any(x => x.Count == 2 && Same(x[0].Text, "Option") && Same(x[1].Text, "Explicit")))
@@ -134,7 +134,7 @@ private static void Guard(VbaProcedureRename.ModuleSnapshot module, IList<List<V
         /// <param name="statements">Instructions lexicales du module de classe.</param>
         /// <returns>Membres fermés avec visibilité, type et jeton du nom.</returns>
         /// <exception cref="InvalidOperationException">Une signature est illisible, imbriquée ou sans terminateur correspondant.</exception>
-private static Member[] ReadMembers(IList<List<VbaDeclarationIndex.Token>> statements)
+        private static Member[] ReadMembers(IList<List<VbaDeclarationIndex.Token>> statements)
         {
             var result = new List<Member>(); Member active = null;
             foreach (var tokens in statements)
@@ -172,7 +172,7 @@ private static Member[] ReadMembers(IList<List<VbaDeclarationIndex.Token>> state
         /// <param name="source">Source exacte du module.</param>
         /// <param name="offset">Offset de début du jeton candidat.</param>
         /// <returns><see langword="true"/> si le jeton doit être exclu des usages de membre.</returns>
-private static bool Excluded(IList<VbaDeclarationIndex.Token> tokens, int i, string source, int offset)
+        private static bool Excluded(IList<VbaDeclarationIndex.Token> tokens, int i, string source, int offset)
         {
             if (i > 0 && new[] { "as", "new", "goto", "gosub", "resume" }.Contains(tokens[i - 1].Text.ToLowerInvariant())) return true;
             int next = offset + tokens[i].Text.Length;
@@ -183,20 +183,20 @@ private static bool Excluded(IList<VbaDeclarationIndex.Token> tokens, int i, str
         /// <param name="tokens">Jetons de l’instruction.</param>
         /// <param name="i">Index du nom candidat.</param>
         /// <returns><see langword="true"/> si le nom est utilisé comme membre qualifié.</returns>
-private static bool IsMember(IList<VbaDeclarationIndex.Token> tokens, int i) => i > 0 && (tokens[i - 1].Text == "." || tokens[i - 1].Text.EndsWith("!", StringComparison.Ordinal));
+        private static bool IsMember(IList<VbaDeclarationIndex.Token> tokens, int i) => i > 0 && (tokens[i - 1].Text == "." || tokens[i - 1].Text.EndsWith("!", StringComparison.Ordinal));
                 /// <summary>Compare les noms VBA indépendamment de leur casse.</summary>
         /// <param name="left">Premier nom.</param>
         /// <param name="right">Second nom.</param>
         /// <returns><see langword="true"/> si les identifiants sont égaux sans sensibilité à la casse.</returns>
-private static bool Same(string left, string right) => string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+        private static bool Same(string left, string right) => string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
                 /// <summary>Permet de repérer puis refuser les suffixes non qualifiés.</summary>
         /// <param name="text">Nom lexical d’un jeton.</param>
         /// <returns>Nom débarrassé de son suffixe de type éventuel.</returns>
-private static string Bare(string text) => text.TrimEnd('$', '%', '&', '!', '#', '@', '^');
+        private static string Bare(string text) => text.TrimEnd('$', '%', '&', '!', '#', '@', '^');
                 /// <summary>Offsets physiques sans normalisation de la source.</summary>
         /// <param name="source">Source avec ses fins de ligne d’origine.</param>
         /// <returns>Offsets absolus de chaque début de ligne.</returns>
-private static List<int> Offsets(string source)
+        private static List<int> Offsets(string source)
         { var result = new List<int> { 0 }; for (int i = 0; i < source.Length; i++) if (source[i] == '\n') result.Add(i + 1); return result; }
     }
 }

@@ -104,11 +104,11 @@ namespace CodexVBE
         /// <summary>Dessine une étape compacte avec résultat, durée native et détail dépliable.</summary>
         /// <param name="entry">Entrée enrichie de l'historique.</param>
         /// <returns>Étape de la chronologie.</returns>
-private FrameworkElement RenderActivityStep(ChatEntry entry) => new ChatDesignerHost(CreateActivityStep(entry));
+        private FrameworkElement RenderActivityStep(ChatEntry entry) => new ChatDesignerHost(CreateActivityStep(entry));
         /// <summary>Creates a transcript row for a tool activity and its displayed state.</summary>
 /// <param name="entry">The entry used by this operation.</param>
 /// <returns>The result produced by this operation.</returns>
-private ChatActivityStepView CreateActivityStep(ChatEntry entry)
+        private ChatActivityStepView CreateActivityStep(ChatEntry entry)
         {
             var activity = entry.Activity;
             var card = new ChatActivityStepView();

@@ -9,21 +9,21 @@ namespace CodexVBE
     internal sealed partial class UpdateProgressWindow : Form
     {
         /// <summary>Install job polled while the separate updater waits for hosts to close.</summary>
-private UpdateInstallJob job;
+        private UpdateInstallJob job;
         /// <summary>Runner that verifies host leases and starts the installer.</summary>
-private UpdateInstallerRunner runner;
+        private UpdateInstallerRunner runner;
         /// <summary>Update root containing the pending job and host leases.</summary>
-private string root;
+        private string root;
         /// <summary>Whether a poll is active and whether the updater was launched in background mode.</summary>
-private bool polling, background;
+        private bool polling, background;
         /// <summary>Whether this window is handling runtime prerequisite installation instead of a product update.</summary>
-private bool prerequisite, closingInternally;
+        private bool prerequisite, closingInternally;
         /// <summary>Stores the create prerequisite used by UpdateProgressWindow.</summary>
-internal Func<WebViewRuntimePrerequisite> CreatePrerequisite = () => new WebViewRuntimePrerequisite();
+        internal Func<WebViewRuntimePrerequisite> CreatePrerequisite = () => new WebViewRuntimePrerequisite();
         /// <summary>Stores the set exit code used by UpdateProgressWindow.</summary>
-internal Action<int> SetExitCode = code => Environment.ExitCode = code;
+        internal Action<int> SetExitCode = code => Environment.ExitCode = code;
         /// <summary>Configures this window for the WebView2 runtime prerequisite flow.</summary>
-internal void ConfigureWebView()
+        internal void ConfigureWebView()
         {
             prerequisite = true; Text = heading.Text = "VBAi · WebView2";
             version.Text = "Microsoft Edge WebView2 Runtime";
@@ -31,7 +31,7 @@ internal void ConfigureWebView()
             cancel.Text = UpdateText.Get("Close"); cancel.Enabled = false;
         }
         /// <summary>Creates the progress dialog and attaches current theme handling.</summary>
-public UpdateProgressWindow()
+        public UpdateProgressWindow()
         {
             InitializeComponent();
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
@@ -39,7 +39,7 @@ public UpdateProgressWindow()
         }
         /// <summary>Sets the update job, selects its language, and begins progress polling.</summary>
         /// <param name="root">Update root containing job state.</param><param name="job">Job to display and monitor.</param><param name="background">Whether the worker should hide after showing.</param>
-internal void Configure(string root, UpdateInstallJob job, bool background)
+        internal void Configure(string root, UpdateInstallJob job, bool background)
         {
             this.root = root; this.job = job; this.background = background;
             runner = new UpdateInstallerRunner(root);
@@ -55,7 +55,7 @@ internal void Configure(string root, UpdateInstallJob job, bool background)
         }
         /// <summary>Hides background windows and installs the WebView prerequisite when configured for that flow.</summary>
         /// <param name="e">Shown event data.</param>
-protected override async void OnShown(EventArgs e)
+        protected override async void OnShown(EventArgs e)
         {
             base.OnShown(e);
             if (DesignMode || LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
@@ -72,7 +72,7 @@ protected override async void OnShown(EventArgs e)
         }
         /// <summary>Refreshes worker status and advances one runner tick when no poll is already active.</summary>
         /// <param name="sender">Timer that raised the tick.</param><param name="e">Tick event arguments.</param>
-private async void Poll(object sender, EventArgs e)
+        private async void Poll(object sender, EventArgs e)
         {
             if (job != null) status.Text = UpdateText.Get(job.Status);
             if (runner != null) cancel.Enabled = !runner.Installing;
@@ -91,7 +91,7 @@ private async void Poll(object sender, EventArgs e)
             finally { polling = false; }
         }
         /// <summary>Performs the close background operation for UpdateProgressWindow.</summary>
-private void CloseBackground()
+        private void CloseBackground()
         {
             if (!background) return;
             closingInternally = true;
@@ -100,7 +100,7 @@ private void CloseBackground()
         }
         /// <summary>Marks an unfinished job cancelled and closes when no installation is in progress.</summary>
         /// <param name="sender">Close or cancel button.</param><param name="e">Click event arguments.</param>
-private void Close_Click(object sender, EventArgs e)
+        private void Close_Click(object sender, EventArgs e)
         {
             if (polling || runner?.Installing == true) return;
             if (job != null && !job.Completed) { job.Completed = true; job.Status = "Update cancelled."; job.Save(root); }
@@ -108,7 +108,7 @@ private void Close_Click(object sender, EventArgs e)
         }
         /// <summary>Blocks user closure during polling and records cancellation for an unfinished job.</summary>
         /// <param name="sender">Progress dialog.</param><param name="e">Closing event data that may be cancelled.</param>
-private void WindowClosing(object sender, FormClosingEventArgs e)
+        private void WindowClosing(object sender, FormClosingEventArgs e)
         {
             if (closingInternally) return;
             if (e.CloseReason == CloseReason.UserClosing && polling) { e.Cancel = true; return; }

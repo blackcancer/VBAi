@@ -9,14 +9,14 @@ using System.Text.RegularExpressions;
 namespace CodexVBE
 {
     /// <summary>Liaison déclarative d’une ComboBox ou ListBox à une plage de feuille Excel.</summary>
-internal sealed partial class VbeForms
+    internal sealed partial class VbeForms
     {
         /// <summary>Insère ou actualise dans le code du UserForm une instruction RowSource gérée pour une plage bornée.</summary>
         /// <param name="request">Classeur, formulaire, chemin du contrôle, feuille/plage et révisions attendues.</param>
         /// <returns>Résultat de la mutation et vérification du bloc VBA généré.</returns>
         /// <exception cref="ArgumentException">Les préconditions ou le chemin de feuille/plage ne sont pas valides.</exception>
         /// <exception cref="InvalidOperationException">Le projet, l’arbre, le contrôle ou le code ne correspond plus à l’instantané.</exception>
-public object SetListBinding(Request request)
+        public object SetListBinding(Request request)
         {
             string accessor = ListControlAccessor(request.ControlPath);
             int columns = ExcelBindingColumns(request.SheetName, request.RangeAddress);
@@ -56,7 +56,7 @@ public object SetListBinding(Request request)
         /// <param name="address">Adresse d’une cellule ou rectangle A1 borné.</param>
         /// <returns>Largeur de la plage, de 1 à 10 colonnes.</returns>
         /// <exception cref="ArgumentException">La feuille ou la plage est invalide ou dépasse les limites permises.</exception>
-internal static int ExcelBindingColumns(string sheet, string address)
+        internal static int ExcelBindingColumns(string sheet, string address)
         {
             if (string.IsNullOrWhiteSpace(sheet) || sheet.Length > 31 || sheet.StartsWith("'", StringComparison.Ordinal) || sheet.EndsWith("'", StringComparison.Ordinal) || sheet.Any(char.IsControl) || sheet.IndexOfAny(new[] { '[', ']', ':', '*', '?', '/', '\\' }) >= 0)
                 throw new ArgumentException("SheetName must be a literal Excel worksheet name.");
@@ -72,20 +72,20 @@ internal static int ExcelBindingColumns(string sheet, string address)
         /// <summary>Convertit les lettres d’une colonne Excel en indice numérique à partir de un.</summary>
         /// <param name="value">Lettres majuscules ou minuscules de la colonne.</param>
         /// <returns>Indice ordinal de la colonne.</returns>
-private static int ExcelColumn(string value)
+        private static int ExcelColumn(string value)
         { int result = 0; foreach (char c in value.ToUpperInvariant()) result = result * 26 + c - 'A' + 1; return result; }
         /// <summary>Construit l’instruction VBA RowSource pour l’accès validé au contrôle et à la plage.</summary>
         /// <param name="accessor">Expression générée vers le contrôle du UserForm.</param>
         /// <param name="sheet">Nom de la feuille déjà validé.</param>
         /// <param name="address">Adresse A1 déjà validée.</param>
         /// <returns>Instruction VBA qui lie RowSource à une adresse Excel externe.</returns>
-private static string BindingLine(string accessor, string sheet, string address)
+        private static string BindingLine(string accessor, string sheet, string address)
         { return "    Me." + accessor + ".RowSource = ThisWorkbook.Worksheets(\"" + sheet.Replace("\"", "\"\"") + "\").Range(\"" + address.ToUpperInvariant() + "\").Address(External:=True)"; }
         /// <summary>Vérifie qu’une ligne de code correspond à la forme contrôlée d’une liaison RowSource générée.</summary>
         /// <param name="line">Ligne VBA à vérifier.</param>
         /// <param name="accessor">Expression du contrôle cible.</param>
         /// <returns><see langword="true"/> si la ligne respecte exactement le motif attendu.</returns>
-private static bool IsManagedBindingLine(string line, string accessor)
+        private static bool IsManagedBindingLine(string line, string accessor)
         {
             return Regex.IsMatch(line, "^    Me\\." + Regex.Escape(accessor) + "\\.RowSource = ThisWorkbook\\.Worksheets\\(\"(?:[^\"]|\"\")*\"\\)\\.Range\\(\"[A-Z0-9$:]+\"\\)\\.Address\\(External:=True\\)$");
         }

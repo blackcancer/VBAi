@@ -5,12 +5,12 @@ using System.Text.RegularExpressions;
 namespace CodexVBE
 {
     /// <summary>Analyse et lie les déclarations ParamArray acceptées pour Excel.Run.</summary>
-internal static partial class VbaProcedureValues
+    internal static partial class VbaProcedureValues
     {
                 /// <summary>Lit le dernier paramètre VBA ParamArray, implicitement ou explicitement Variant.</summary>
         /// <param name="tokens">Jetons du dernier paramètre dans la signature.</param>
         /// <returns>Description du ParamArray compatible.</returns>
-private static Parameter ReadParamArrayParameter(string[] tokens)
+        private static Parameter ReadParamArrayParameter(string[] tokens)
         {
             bool implicitVariant = tokens.Length == 4;
             bool explicitVariant = tokens.Length == 6 && Same(tokens[4], "As") && Same(tokens[5], "Variant");
@@ -25,7 +25,7 @@ private static Parameter ReadParamArrayParameter(string[] tokens)
         /// <param name="values">Valeurs positionnelles fournies à l’appel.</param>
         /// <param name="names">Noms d’arguments, interdits pour cette signature.</param>
         /// <returns>Arguments préparés dans l’ordre attendu par Excel.Run.</returns>
-private static object[] BindParamArrayValues(IReadOnlyList<Parameter> parameters, object[] values, string[] names)
+        private static object[] BindParamArrayValues(IReadOnlyList<Parameter> parameters, object[] values, string[] names)
         {
             if (names != null && names.Length > 0)
                 throw new ArgumentException("All arguments of a VBA procedure declaring ParamArray must be positional; omit ArgumentNames.");

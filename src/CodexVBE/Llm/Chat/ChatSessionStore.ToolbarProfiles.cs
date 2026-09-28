@@ -5,11 +5,11 @@ using System.Linq;
 namespace CodexVBE
 {
     /// <summary>Persistance SQLite des conversations et de leur état d’interface.</summary>
-internal sealed partial class ChatSessionStore
+    internal sealed partial class ChatSessionStore
     {
                 /// <summary>Lit les seules barres personnalisées du profil d’hôte courant avec une borne avant désérialisation.</summary>
         /// <returns>Profils stockés, après vérification de leur taille.</returns>
-internal VbeToolbarProfiles.Bar[] ReadToolbarProfiles()
+        internal VbeToolbarProfiles.Bar[] ReadToolbarProfiles()
         {
             Execute("CREATE TABLE IF NOT EXISTS vbe_toolbar_profiles (name_key TEXT PRIMARY KEY, payload TEXT NOT NULL)");
             var result = new List<VbeToolbarProfiles.Bar>();
@@ -26,7 +26,7 @@ internal VbeToolbarProfiles.Bar[] ReadToolbarProfiles()
         /// <param name="name">Clé du profil à modifier ou supprimer.</param>
         /// <param name="state">Nouvel état; <see langword="null"/> supprime le profil.</param>
         /// <param name="validate">Validation appliquée avant et après la modification proposée.</param>
-internal void UpdateToolbarProfile(string name, VbeToolbarProfiles.Bar state, Action<VbeToolbarProfiles.Bar[]> validate)
+        internal void UpdateToolbarProfile(string name, VbeToolbarProfiles.Bar state, Action<VbeToolbarProfiles.Bar[]> validate)
         {
             Execute("BEGIN IMMEDIATE");
             try

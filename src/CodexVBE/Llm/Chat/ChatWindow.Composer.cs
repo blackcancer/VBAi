@@ -26,7 +26,7 @@ namespace CodexVBE
         /// <summary>Résultats sélectionnables de la recherche contextuelle.</summary>
         private Forms.ListBox referenceList;
         /// <summary>Hosts the live reference suggestions shown below the composer.</summary>
-private ChatSuggestionsView referenceView;
+        private ChatSuggestionsView referenceView;
         /// <summary>État de la recherche ou instructions de sélection affichés sous la liste.</summary>
         private Forms.Label referenceStatus;
         /// <summary>Index des références du projet VBA courant.</summary>

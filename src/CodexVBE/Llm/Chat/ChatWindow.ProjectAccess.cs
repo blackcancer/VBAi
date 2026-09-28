@@ -6,10 +6,10 @@ using System.Windows.Forms;
 namespace CodexVBE
 {
     /// <summary>Provides the chat window implementation.</summary>
-internal sealed partial class ChatWindow
+    internal sealed partial class ChatWindow
     {
         /// <summary>Performs the migrate provider privacy operation for ChatWindow.</summary>
-private void MigrateProviderPrivacy()
+        private void MigrateProviderPrivacy()
         {
             if (currentSession == null || currentSession.ReadAccessPolicyVersion >= 1) return;
             bool hadContext = transcriptEntries.Count > 0 || messages.Count > 0 ||
@@ -27,7 +27,7 @@ private void MigrateProviderPrivacy()
         }
 
         /// <summary>Performs the configure project access operation for ChatWindow.</summary>
-private void ConfigureProjectAccess()
+        private void ConfigureProjectAccess()
         {
             if (busy || currentSession == null || tools == null) return;
             try

@@ -4,26 +4,26 @@ using System.Linq;
 namespace CodexVBE
 {
     /// <summary>Géométrie d’un contrôle identifiée par son chemin canonique dans le formulaire.</summary>
-internal sealed class FormLayoutBox
+    internal sealed class FormLayoutBox
     {
         /// <summary>Chemin du contrôle dans l’arbre Designer.</summary>
         /// <value>Chemin utilisé pour retrouver le contrôle à appliquer.</value>
-public string Path { get; set; }
+        public string Path { get; set; }
         /// <summary>Position horizontale du bord gauche, en points.</summary>
         /// <value>Coordonnée relative au conteneur parent.</value>
-public double Left { get; set; }
+        public double Left { get; set; }
         /// <summary>Position verticale du bord supérieur, en points.</summary>
         /// <value>Coordonnée relative au conteneur parent.</value>
-public double Top { get; set; }
+        public double Top { get; set; }
         /// <summary>Largeur du contrôle, en points.</summary>
         /// <value>Dimension positive validée.</value>
-public double Width { get; set; }
+        public double Width { get; set; }
         /// <summary>Hauteur du contrôle, en points.</summary>
         /// <value>Dimension positive validée.</value>
-public double Height { get; set; }
+        public double Height { get; set; }
     }
     /// <summary>Calcule une disposition de contrôles sans modifier leur taille ou position d’origine.</summary>
-internal static class FormLayoutPlan
+    internal static class FormLayoutPlan
     {
         /// <summary>Crée les nouvelles géométries après alignement, distribution, espacement ou centrage des contrôles.</summary>
         /// <param name="input">Contrôles sélectionnés avec leur chemin et géométrie actuelle.</param>
@@ -34,7 +34,7 @@ internal static class FormLayoutPlan
         /// <returns>Nouvelles boîtes de disposition dans l’ordre d’entrée.</returns>
         /// <exception cref="ArgumentException">Le nombre de contrôles, la géométrie, les dimensions ou l’action sont invalides.</exception>
         /// <exception cref="InvalidOperationException">Le résultat chevauche les contrôles ou sort du conteneur.</exception>
-internal static FormLayoutBox[] Create(FormLayoutBox[] input, string action, double step, double parentWidth, double parentHeight)
+        internal static FormLayoutBox[] Create(FormLayoutBox[] input, string action, double step, double parentWidth, double parentHeight)
         {
             if (input == null || input.Length < 2 || input.Length > 64) throw new ArgumentException("Select 2 to 64 controls in the same container.");
             if (double.IsNaN(parentWidth) || double.IsInfinity(parentWidth) || parentWidth <= 0 ||

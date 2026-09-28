@@ -5,12 +5,12 @@ using System.Linq;
 namespace CodexVBE
 {
     /// <summary>Récupère de manière gardée un arbre de contrôles coupé et sauvegardé par le presse-papiers Designer.</summary>
-internal sealed partial class VbeForms
+    internal sealed partial class VbeForms
     {
         /// <summary>Indique si une récupération de coupe correspond encore au formulaire, au conteneur et à la révision fournis.</summary>
         /// <param name="request">Formulaire, chemin parent et identifiant de récupération.</param>
         /// <returns><see langword="true"/> si la sauvegarde est encore admissible et n’a jamais été tentée.</returns>
-internal bool CanRecoverCut(Request request)
+        internal bool CanRecoverCut(Request request)
         {
             try
             {
@@ -25,7 +25,7 @@ internal bool CanRecoverCut(Request request)
         /// <param name="request">Formulaire, conteneur, révisions et identifiant du presse-papiers de récupération.</param>
         /// <returns>État de vérification, différences restantes et limites de fidélité de la restauration.</returns>
         /// <exception cref="InvalidOperationException">La récupération est absente, déjà consommée ou le formulaire a changé depuis la coupe.</exception>
-public object RecoverDesignerCut(Request request)
+        public object RecoverDesignerCut(Request request)
         {
             dynamic form = GetForm(GetDesignProject(request.Project), request.Form);
             var recovery = clipboardRecoveries.FirstOrDefault(x => x.Id == request.DesignerClipboardRecoveryId);

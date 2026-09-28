@@ -9,199 +9,199 @@ namespace CodexVBE
     internal static class VbeNativeTheme
     {
         /// <summary>Process environment variable that explicitly enables the native dark-mode experiment.</summary>
-internal const string ExperimentVariable = "CODEXVBE_NATIVE_DARK_EXPERIMENT";
+        internal const string ExperimentVariable = "CODEXVBE_NATIVE_DARK_EXPERIMENT";
         /// <summary>Process environment variable that enables the experimental local chrome-refresh path.</summary>
-internal const string LocalRefreshExperimentVariable = "CODEXVBE_NATIVE_LOCAL_REFRESH_EXPERIMENT";
+        internal const string LocalRefreshExperimentVariable = "CODEXVBE_NATIVE_LOCAL_REFRESH_EXPERIMENT";
         /// <summary>Native message sent when a window's theme changes.</summary>
-private const uint WmThemeChanged = 0x031A;
+        private const uint WmThemeChanged = 0x031A;
         /// <summary>Private message requesting a deferred chrome repaint.</summary>
-private const uint WmRefreshChrome = 0x8000 + 0x564;
+        private const uint WmRefreshChrome = 0x8000 + 0x564;
         /// <summary>Private message requesting a deferred caption repaint.</summary>
-private const uint WmRefreshCaption = 0x8000 + 0x565;
+        private const uint WmRefreshCaption = 0x8000 + 0x565;
         // Read-only counters for the disposable native-renderer probe. Disabled
         // outside its process environment gate; no pointer crosses processes.
         /// <summary>Probe-only message that reads the direct property-tab paint counter.</summary>
-private const uint WmQueryPropertyTabPaint = 0x8000 + 0x56A;
+        private const uint WmQueryPropertyTabPaint = 0x8000 + 0x56A;
         /// <summary>Probe-only message that reads the native toolbar paint counter.</summary>
-private const uint WmQueryToolbarPaint = 0x8000 + 0x56B;
+        private const uint WmQueryToolbarPaint = 0x8000 + 0x56B;
         /// <summary>Windows message sent before a control erases its background.</summary>
-private const uint WmEraseBackground = 0x0014;
+        private const uint WmEraseBackground = 0x0014;
         /// <summary>Windows message sent when a window is destroyed.</summary>
-private const uint WmNcDestroy = 0x0082;
+        private const uint WmNcDestroy = 0x0082;
         /// <summary>Windows color request for edit controls.</summary>
-private const uint WmCtlColorEdit = 0x0133;
+        private const uint WmCtlColorEdit = 0x0133;
         /// <summary>Windows color request for list boxes.</summary>
-private const uint WmCtlColorListBox = 0x0134;
+        private const uint WmCtlColorListBox = 0x0134;
         /// <summary>Windows color request for buttons.</summary>
-private const uint WmCtlColorButton = 0x0135;
+        private const uint WmCtlColorButton = 0x0135;
         /// <summary>Windows color request for dialog backgrounds.</summary>
-private const uint WmCtlColorDialog = 0x0136;
+        private const uint WmCtlColorDialog = 0x0136;
         /// <summary>Windows color request for scroll bars.</summary>
-private const uint WmCtlColorScrollBar = 0x0137;
+        private const uint WmCtlColorScrollBar = 0x0137;
         /// <summary>Windows color request for static controls.</summary>
-private const uint WmCtlColorStatic = 0x0138;
+        private const uint WmCtlColorStatic = 0x0138;
         /// <summary>Tree-view message that sets its background color.</summary>
-private const uint TreeSetBackground = 0x111D;
+        private const uint TreeSetBackground = 0x111D;
         /// <summary>Tree-view message that sets its text color.</summary>
-private const uint TreeSetText = 0x111E;
+        private const uint TreeSetText = 0x111E;
         /// <summary>List-view message that sets its background color.</summary>
-private const uint ListSetBackground = 0x1001;
+        private const uint ListSetBackground = 0x1001;
         /// <summary>List-view message that sets its text color.</summary>
-private const uint ListSetText = 0x1024;
+        private const uint ListSetText = 0x1024;
         /// <summary>List-view message that sets its text background color.</summary>
-private const uint ListSetTextBackground = 0x1026;
+        private const uint ListSetTextBackground = 0x1026;
         /// <summary>Rich Edit message that sets the editor background color.</summary>
-private const uint RichEditSetBackground = 0x0443;
+        private const uint RichEditSetBackground = 0x0443;
         /// <summary>RedrawWindow flags used to invalidate and update themed editor windows.</summary>
-private const uint RedrawFlags = 0x0001 | 0x0004 | 0x0080 | 0x0100 | 0x0400;
+        private const uint RedrawFlags = 0x0001 | 0x0004 | 0x0080 | 0x0100 | 0x0400;
         /// <summary>WinEvent identifier for a newly created accessible object.</summary>
-private const uint EventObjectCreate = 0x8000;
+        private const uint EventObjectCreate = 0x8000;
         /// <summary>WinEvent identifier for a destroyed accessible object.</summary>
-private const uint EventObjectDestroy = 0x8001;
+        private const uint EventObjectDestroy = 0x8001;
         /// <summary>WinEvent identifier for an accessible object becoming visible.</summary>
-private const uint EventObjectShow = 0x8002;
+        private const uint EventObjectShow = 0x8002;
         /// <summary>WinEvent hook mode that delivers callbacks out of context.</summary>
-private const uint WinEventOutOfContext = 0x0000;
+        private const uint WinEventOutOfContext = 0x0000;
         /// <summary>Accessible object identifier representing the window itself.</summary>
-private const int ObjectIdWindow = 0;
+        private const int ObjectIdWindow = 0;
         /// <summary>GetWindow selector for the owner window.</summary>
-private const uint GetWindowOwner = 4;
+        private const uint GetWindowOwner = 4;
         /// <summary>GetAncestor selector for the root ancestor.</summary>
-private const uint GetAncestorRoot = 2;
+        private const uint GetAncestorRoot = 2;
         /// <summary>Dark background RGB color used for native controls.</summary>
-private const int Background = 0x002B2420;
+        private const int Background = 0x002B2420;
         /// <summary>Light foreground RGB color used for native controls.</summary>
-private const int Foreground = 0x00F0E8E2;
+        private const int Foreground = 0x00F0E8E2;
 
         /// <summary>Callback used to enumerate native child windows.</summary>
         /// <param name="window">Child window handle.</param><param name="parameter">Caller-supplied context.</param>
         /// <returns><see langword="true"/> to continue enumeration.</returns>
-internal delegate bool EnumWindowCallback(IntPtr window, IntPtr parameter);
+        internal delegate bool EnumWindowCallback(IntPtr window, IntPtr parameter);
         /// <summary>Private Windows theme API for setting the process preferred app mode.</summary>
         /// <param name="mode">Native preferred-mode value.</param><returns>Previous mode value.</returns>
-[UnmanagedFunctionPointer(CallingConvention.Winapi)] private delegate int SetPreferredAppModeDelegate(int mode);
+        [UnmanagedFunctionPointer(CallingConvention.Winapi)] private delegate int SetPreferredAppModeDelegate(int mode);
         /// <summary>Private Windows theme API for allowing dark mode on one window.</summary>
         /// <param name="window">Target window handle.</param><param name="allow">Whether dark mode is allowed.</param>
         /// <returns>Whether Windows accepted the setting.</returns>
-[UnmanagedFunctionPointer(CallingConvention.Winapi)] private delegate bool AllowDarkModeForWindowDelegate(IntPtr window, bool allow);
+        [UnmanagedFunctionPointer(CallingConvention.Winapi)] private delegate bool AllowDarkModeForWindowDelegate(IntPtr window, bool allow);
         /// <summary>Private no-argument theme refresh API.</summary>
-[UnmanagedFunctionPointer(CallingConvention.Winapi)] private delegate void VoidThemeDelegate();
+        [UnmanagedFunctionPointer(CallingConvention.Winapi)] private delegate void VoidThemeDelegate();
         /// <summary>Native comctl32 subclass procedure callback.</summary>
         /// <param name="window">Window receiving the message.</param><param name="message">Windows message identifier.</param>
         /// <param name="wParam">Message-specific first value.</param><param name="lParam">Message-specific second value.</param>
         /// <param name="subclassId">Identifier supplied when the subclass was installed.</param><param name="referenceData">Subclass caller data.</param>
         /// <returns>Window-procedure result.</returns>
-internal delegate IntPtr SubclassCallback(IntPtr window, uint message, IntPtr wParam, IntPtr lParam, UIntPtr subclassId, IntPtr referenceData);
+        internal delegate IntPtr SubclassCallback(IntPtr window, uint message, IntPtr wParam, IntPtr lParam, UIntPtr subclassId, IntPtr referenceData);
         /// <summary>Callback invoked for Windows accessibility events watched by this theme.</summary>
         /// <param name="hook">Installed event hook.</param><param name="eventType">Event identifier.</param><param name="window">Associated window.</param>
         /// <param name="objectId">Accessible object identifier.</param><param name="childId">Accessible child identifier.</param>
         /// <param name="eventThread">Thread that raised the event.</param><param name="eventTime">Event timestamp.</param>
-internal delegate void WinEventCallback(IntPtr hook, uint eventType, IntPtr window, int objectId, int childId, uint eventThread, uint eventTime);
+        internal delegate void WinEventCallback(IntPtr hook, uint eventType, IntPtr window, int objectId, int childId, uint eventThread, uint eventTime);
 
         /// <summary>Enumerates child windows owned by a native parent.</summary><param name="parent">Parent handle.</param><param name="callback">Enumeration callback.</param><param name="parameter">Callback context.</param><returns>Native enumeration result.</returns>
-[DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, EnumWindowCallback callback, IntPtr parameter);
+        [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, EnumWindowCallback callback, IntPtr parameter);
         /// <summary>Retrieves a native window's class name.</summary><param name="window">Window handle.</param><param name="text">Output text buffer.</param><param name="capacity">Buffer capacity.</param><returns>Characters copied.</returns>
-[DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr window, StringBuilder text, int capacity);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr window, StringBuilder text, int capacity);
         /// <summary>Retrieves a native window's caption text.</summary><param name="window">Window handle.</param><param name="text">Output text buffer.</param><param name="capacity">Buffer capacity.</param><returns>Characters copied.</returns>
-[DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr window, StringBuilder text, int capacity);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr window, StringBuilder text, int capacity);
         /// <summary>Sends a Windows message and waits for its window-procedure result.</summary><param name="window">Target handle.</param><param name="message">Message identifier.</param><param name="wParam">First message value.</param><param name="lParam">Second message value.</param><returns>Window-procedure result.</returns>
-[DllImport("user32.dll")] private static extern int SendMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
+        [DllImport("user32.dll")] private static extern int SendMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
         /// <summary>Posts a Windows message to the target window's queue.</summary><param name="window">Target handle.</param><param name="message">Message identifier.</param><param name="wParam">First message value.</param><param name="lParam">Second message value.</param><returns>Whether the message was posted.</returns>
-[DllImport("user32.dll")] private static extern bool PostMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
+        [DllImport("user32.dll")] private static extern bool PostMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
         /// <summary>Reads a native window style or extended style.</summary><param name="window">Window handle.</param><param name="index">Style selector.</param><returns>Style bits.</returns>
-[DllImport("user32.dll", EntryPoint = "GetWindowLongW")] private static extern int GetWindowStyle(IntPtr window, int index);
+        [DllImport("user32.dll", EntryPoint = "GetWindowLongW")] private static extern int GetWindowStyle(IntPtr window, int index);
         /// <summary>Gets a window's client rectangle in client coordinates.</summary><param name="window">Window handle.</param><param name="rectangle">Receives the rectangle.</param><returns>Whether the rectangle was read.</returns>
-[DllImport("user32.dll")] private static extern bool GetClientRect(IntPtr window, out NativeRect rectangle);
+        [DllImport("user32.dll")] private static extern bool GetClientRect(IntPtr window, out NativeRect rectangle);
         /// <summary>Finds a child window by class and optional caption.</summary><param name="parent">Parent handle.</param><param name="after">Previous child handle used to continue the search.</param><param name="className">Class name, or null.</param><param name="caption">Caption, or null.</param><returns>Matching child handle, or zero.</returns>
-[DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string className, string caption);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string className, string caption);
         /// <summary>Fills a rectangle in a device context with a brush.</summary><param name="deviceContext">Target device context.</param><param name="rectangle">Rectangle to fill.</param><param name="brush">Brush handle.</param><returns>Native operation result.</returns>
-[DllImport("user32.dll")] private static extern int FillRect(IntPtr deviceContext, ref NativeRect rectangle, IntPtr brush);
+        [DllImport("user32.dll")] private static extern int FillRect(IntPtr deviceContext, ref NativeRect rectangle, IntPtr brush);
         /// <summary>Creates a solid GDI brush from a COLORREF value.</summary><param name="color">RGB color value.</param><returns>Brush handle, or zero on failure.</returns>
-[DllImport("gdi32.dll")] private static extern IntPtr CreateSolidBrush(int color);
+        [DllImport("gdi32.dll")] private static extern IntPtr CreateSolidBrush(int color);
         /// <summary>Deletes a GDI object previously created by the add-in.</summary><param name="value">GDI object handle.</param><returns>Whether it was deleted.</returns>
-[DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr value);
+        [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr value);
         /// <summary>Saves the current state of a device context.</summary><param name="deviceContext">Device context to save.</param><returns>Saved state identifier, or zero on failure.</returns>
-[DllImport("gdi32.dll")] private static extern int SaveDC(IntPtr deviceContext);
+        [DllImport("gdi32.dll")] private static extern int SaveDC(IntPtr deviceContext);
         /// <summary>Restores a device context to a saved state.</summary><param name="deviceContext">Device context to restore.</param><param name="saved">Saved state identifier.</param><returns>Whether restoration succeeded.</returns>
-[DllImport("gdi32.dll")] private static extern bool RestoreDC(IntPtr deviceContext, int saved);
+        [DllImport("gdi32.dll")] private static extern bool RestoreDC(IntPtr deviceContext, int saved);
         /// <summary>Sets the text color for subsequent GDI drawing.</summary><param name="deviceContext">Target device context.</param><param name="color">COLORREF value.</param><returns>Previous text color.</returns>
-[DllImport("gdi32.dll")] private static extern int SetTextColor(IntPtr deviceContext, int color);
+        [DllImport("gdi32.dll")] private static extern int SetTextColor(IntPtr deviceContext, int color);
         /// <summary>Sets the text background color for subsequent GDI drawing.</summary><param name="deviceContext">Target device context.</param><param name="color">COLORREF value.</param><returns>Previous background color.</returns>
-[DllImport("gdi32.dll")] private static extern int SetBkColor(IntPtr deviceContext, int color);
+        [DllImport("gdi32.dll")] private static extern int SetBkColor(IntPtr deviceContext, int color);
         /// <summary>Invalidates and optionally redraws a window or selected region.</summary><param name="window">Window handle.</param><param name="update">Update rectangle, or zero.</param><param name="region">Update region, or zero.</param><param name="flags">Redraw behavior flags.</param><returns>Whether the redraw request succeeded.</returns>
-[DllImport("user32.dll")] private static extern bool RedrawWindow(IntPtr window, IntPtr update, IntPtr region, uint flags);
+        [DllImport("user32.dll")] private static extern bool RedrawWindow(IntPtr window, IntPtr update, IntPtr region, uint flags);
         /// <summary>Checks whether one window is a descendant of another.</summary><param name="parent">Candidate ancestor handle.</param><param name="window">Candidate child handle.</param><returns>Whether the relationship holds.</returns>
-[DllImport("user32.dll")] private static extern bool IsChild(IntPtr parent, IntPtr window);
+        [DllImport("user32.dll")] private static extern bool IsChild(IntPtr parent, IntPtr window);
         /// <summary>Gets the process and thread that created a window.</summary><param name="window">Window handle.</param><param name="processId">Receives the process identifier.</param><returns>Thread identifier.</returns>
-[DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
+        [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
         /// <summary>Gets the current native thread identifier.</summary><returns>Calling thread identifier.</returns>
-[DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
+        [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
         /// <summary>Gets a related window according to a Windows relationship selector.</summary><param name="window">Starting window.</param><param name="command">Relationship selector.</param><returns>Related handle or zero.</returns>
-[DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr window, uint command);
+        [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr window, uint command);
         /// <summary>Gets a specified ancestor window.</summary><param name="window">Starting window.</param><param name="flags">Ancestor selector.</param><returns>Ancestor handle or zero.</returns>
-[DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr window, uint flags);
+        [DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr window, uint flags);
         /// <summary>Installs a hook for a range of accessibility events.</summary>
         /// <param name="eventMin">First event identifier.</param><param name="eventMax">Last event identifier.</param><param name="module">Callback module, or zero.</param>
         /// <param name="callback">Event callback.</param><param name="processId">Process filter, or zero.</param><param name="threadId">Thread filter, or zero.</param>
         /// <param name="flags">Hook behavior flags.</param><returns>Hook handle, or zero on failure.</returns>
-[DllImport("user32.dll")] private static extern IntPtr SetWinEventHook(uint eventMin, uint eventMax, IntPtr module, WinEventCallback callback, uint processId, uint threadId, uint flags);
+        [DllImport("user32.dll")] private static extern IntPtr SetWinEventHook(uint eventMin, uint eventMax, IntPtr module, WinEventCallback callback, uint processId, uint threadId, uint flags);
         /// <summary>Removes an accessibility event hook.</summary><param name="hook">Hook handle.</param><returns>Whether it was removed.</returns>
-[DllImport("user32.dll")] private static extern bool UnhookWinEvent(IntPtr hook);
+        [DllImport("user32.dll")] private static extern bool UnhookWinEvent(IntPtr hook);
         /// <summary>Installs a subclass procedure on a window.</summary><param name="window">Window handle.</param><param name="callback">Subclass callback.</param><param name="subclassId">Unique identifier for this subclass.</param><param name="referenceData">Callback context.</param><returns>Whether installation succeeded.</returns>
-[DllImport("comctl32.dll")] private static extern bool SetWindowSubclass(IntPtr window, SubclassCallback callback, UIntPtr subclassId, IntPtr referenceData);
+        [DllImport("comctl32.dll")] private static extern bool SetWindowSubclass(IntPtr window, SubclassCallback callback, UIntPtr subclassId, IntPtr referenceData);
         /// <summary>Removes a previously installed subclass procedure.</summary><param name="window">Window handle.</param><param name="callback">Subclass callback used during installation.</param><param name="subclassId">Subclass identifier.</param><returns>Whether removal succeeded.</returns>
-[DllImport("comctl32.dll")] private static extern bool RemoveWindowSubclass(IntPtr window, SubclassCallback callback, UIntPtr subclassId);
+        [DllImport("comctl32.dll")] private static extern bool RemoveWindowSubclass(IntPtr window, SubclassCallback callback, UIntPtr subclassId);
         /// <summary>Calls the next procedure in the window subclass chain.</summary><param name="window">Window receiving the message.</param><param name="message">Message identifier.</param><param name="wParam">First message value.</param><param name="lParam">Second message value.</param><returns>Window-procedure result.</returns>
-[DllImport("comctl32.dll")] private static extern IntPtr DefSubclassProc(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
+        [DllImport("comctl32.dll")] private static extern IntPtr DefSubclassProc(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
         /// <summary>Sets or clears the visual style theme for a native window.</summary><param name="window">Window handle.</param><param name="appName">Theme application name, or null.</param><param name="idList">Theme class list, or null.</param><returns>HRESULT from uxtheme.</returns>
-[DllImport("uxtheme.dll", CharSet = CharSet.Unicode)] private static extern int SetWindowTheme(IntPtr window, string appName, string idList);
+        [DllImport("uxtheme.dll", CharSet = CharSet.Unicode)] private static extern int SetWindowTheme(IntPtr window, string appName, string idList);
         /// <summary>Sets a Desktop Window Manager attribute for a native window.</summary><param name="window">Window handle.</param><param name="attribute">DWM attribute identifier.</param><param name="value">Attribute value.</param><param name="size">Value size in bytes.</param><returns>HRESULT from DWM.</returns>
-[DllImport("dwmapi.dll")] private static extern int DwmSetWindowAttribute(IntPtr window, int attribute, ref int value, int size);
+        [DllImport("dwmapi.dll")] private static extern int DwmSetWindowAttribute(IntPtr window, int attribute, ref int value, int size);
         /// <summary>Gets a loaded module handle without loading a new module.</summary><param name="moduleName">Module name, or null for the current process.</param><returns>Module handle, or zero.</returns>
-[DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr GetModuleHandle(string moduleName);
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr GetModuleHandle(string moduleName);
         /// <summary>Resolves a function exported by ordinal from a native module.</summary><param name="module">Loaded module handle.</param><param name="ordinal">Export ordinal represented as a pointer-sized integer.</param><returns>Function pointer, or zero.</returns>
-[DllImport("kernel32.dll", CharSet = CharSet.Ansi, ExactSpelling = true)] private static extern IntPtr GetProcAddress(IntPtr module, IntPtr ordinal);
+        [DllImport("kernel32.dll", CharSet = CharSet.Ansi, ExactSpelling = true)] private static extern IntPtr GetProcAddress(IntPtr module, IntPtr ordinal);
 
         /// <summary>Native OSVERSIONINFOEX-compatible structure returned by RtlGetVersion.</summary>
-[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         internal struct NativeOsVersion
         {
             /// <summary>Structure size, Windows version tuple, and platform identifier.</summary>
-internal uint Size, Major, Minor, Build, Platform;
+            internal uint Size, Major, Minor, Build, Platform;
             /// <summary>Service-pack string embedded in the native structure.</summary>
-[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)] internal string ServicePack;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)] internal string ServicePack;
         }
         /// <summary>Reads the actual Windows version without compatibility-manifest version virtualization.</summary>
         /// <param name="version">Receives the native OS version structure.</param><returns>NTSTATUS result code.</returns>
-[DllImport("ntdll.dll", ExactSpelling = true)] private static extern int RtlGetVersion(ref NativeOsVersion version);
+        [DllImport("ntdll.dll", ExactSpelling = true)] private static extern int RtlGetVersion(ref NativeOsVersion version);
 
         /// <summary>Defines the read client callback.</summary>
 /// <param name="window">The window used by this operation.</param>
 /// <param name="rectangle">The rectangle used by this operation.</param>
 /// <returns>The result produced by this operation.</returns>
-internal delegate bool ReadClient(IntPtr window, out NativeRect rectangle);
+        internal delegate bool ReadClient(IntPtr window, out NativeRect rectangle);
         /// <summary>Defines the read window thread callback.</summary>
 /// <param name="window">The window used by this operation.</param>
 /// <param name="process">The process used by this operation.</param>
 /// <returns>The result produced by this operation.</returns>
-internal delegate uint ReadWindowThread(IntPtr window, out uint process);
+        internal delegate uint ReadWindowThread(IntPtr window, out uint process);
         /// <summary>Defines the window attribute callback.</summary>
 /// <param name="window">The window used by this operation.</param>
 /// <param name="attribute">The attribute used by this operation.</param>
 /// <param name="value">The value used by this operation.</param>
 /// <param name="size">The size used by this operation.</param>
 /// <returns>The result produced by this operation.</returns>
-internal delegate int WindowAttribute(IntPtr window, int attribute, ref int value, int size);
+        internal delegate int WindowAttribute(IntPtr window, int attribute, ref int value, int size);
         /// <summary>Defines the read os version callback.</summary>
 /// <param name="version">The version used by this operation.</param>
 /// <returns>The result produced by this operation.</returns>
-internal delegate int ReadOsVersion(ref NativeOsVersion version);
+        internal delegate int ReadOsVersion(ref NativeOsVersion version);
         /// <summary>Defines the paint region callback.</summary>
 /// <param name="dc">The dc used by this operation.</param>
 /// <param name="rectangle">The rectangle used by this operation.</param>
 /// <param name="brush">The brush used by this operation.</param>
 /// <returns>The result produced by this operation.</returns>
-internal delegate int PaintRegion(IntPtr dc, ref NativeRect rectangle, IntPtr brush);
+        internal delegate int PaintRegion(IntPtr dc, ref NativeRect rectangle, IntPtr brush);
         /// <summary>Defines the paint surface callback.</summary>
 /// <param name="window">The window used by this operation.</param>
 /// <param name="client">Indicates whether client is enabled.</param>
@@ -209,74 +209,74 @@ internal delegate int PaintRegion(IntPtr dc, ref NativeRect rectangle, IntPtr br
 /// <param name="hosted">Indicates whether hosted is enabled.</param>
 /// <param name="preserve">Indicates whether preserve is enabled.</param>
 /// <param name="code">Indicates whether code is enabled.</param>
-internal delegate void PaintSurface(IntPtr window, bool client, IntPtr dc, bool hosted, bool preserve, bool code);
+        internal delegate void PaintSurface(IntPtr window, bool client, IntPtr dc, bool hosted, bool preserve, bool code);
         /// <summary>Stores the enumerate children used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, EnumWindowCallback, IntPtr, bool> EnumerateChildren = EnumChildWindows;
+        internal static Func<IntPtr, EnumWindowCallback, IntPtr, bool> EnumerateChildren = EnumChildWindows;
         /// <summary>Stores the read class name,read window text used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, StringBuilder, int, int> ReadClassName = GetClassName, ReadWindowText = GetWindowText;
+        internal static Func<IntPtr, StringBuilder, int, int> ReadClassName = GetClassName, ReadWindowText = GetWindowText;
         /// <summary>Stores the native send used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, uint, IntPtr, IntPtr, int> NativeSend = SendMessage;
+        internal static Func<IntPtr, uint, IntPtr, IntPtr, int> NativeSend = SendMessage;
         /// <summary>Stores the native post used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, uint, IntPtr, IntPtr, bool> NativePost = PostMessage;
+        internal static Func<IntPtr, uint, IntPtr, IntPtr, bool> NativePost = PostMessage;
         /// <summary>Stores the read style used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, int, int> ReadStyle = GetWindowStyle;
+        internal static Func<IntPtr, int, int> ReadStyle = GetWindowStyle;
         /// <summary>Stores the read client bounds used by VbeNativeTheme.</summary>
-internal static ReadClient ReadClientBounds = GetClientRect;
+        internal static ReadClient ReadClientBounds = GetClientRect;
         /// <summary>Stores the find child used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, IntPtr, string, string, IntPtr> FindChild = FindWindowEx;
+        internal static Func<IntPtr, IntPtr, string, string, IntPtr> FindChild = FindWindowEx;
         /// <summary>Stores the paint background used by VbeNativeTheme.</summary>
-internal static PaintRegion PaintBackground = FillRect;
+        internal static PaintRegion PaintBackground = FillRect;
         /// <summary>Stores the new brush used by VbeNativeTheme.</summary>
-internal static Func<int, IntPtr> NewBrush = CreateSolidBrush;
+        internal static Func<int, IntPtr> NewBrush = CreateSolidBrush;
         /// <summary>Stores the release brush used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, bool> ReleaseBrush = DeleteObject;
+        internal static Func<IntPtr, bool> ReleaseBrush = DeleteObject;
         /// <summary>Stores the save device context used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, int> SaveDeviceContext = SaveDC;
+        internal static Func<IntPtr, int> SaveDeviceContext = SaveDC;
         /// <summary>Stores the restore device context used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, int, bool> RestoreDeviceContext = RestoreDC;
+        internal static Func<IntPtr, int, bool> RestoreDeviceContext = RestoreDC;
         /// <summary>Stores the foreground color,background color used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, int, int> ForegroundColor = SetTextColor, BackgroundColor = SetBkColor;
+        internal static Func<IntPtr, int, int> ForegroundColor = SetTextColor, BackgroundColor = SetBkColor;
         /// <summary>Stores the redraw used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, IntPtr, IntPtr, uint, bool> Redraw = RedrawWindow;
+        internal static Func<IntPtr, IntPtr, IntPtr, uint, bool> Redraw = RedrawWindow;
         /// <summary>Stores the child relation used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, IntPtr, bool> ChildRelation = IsChild;
+        internal static Func<IntPtr, IntPtr, bool> ChildRelation = IsChild;
         /// <summary>Stores the window thread used by VbeNativeTheme.</summary>
-internal static ReadWindowThread WindowThread = GetWindowThreadProcessId;
+        internal static ReadWindowThread WindowThread = GetWindowThreadProcessId;
         /// <summary>Stores the current thread used by VbeNativeTheme.</summary>
-internal static Func<uint> CurrentThread = GetCurrentThreadId;
+        internal static Func<uint> CurrentThread = GetCurrentThreadId;
         /// <summary>Stores the window relation,ancestor used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, uint, IntPtr> WindowRelation = GetWindow, Ancestor = GetAncestor;
+        internal static Func<IntPtr, uint, IntPtr> WindowRelation = GetWindow, Ancestor = GetAncestor;
         /// <summary>Stores the install window hook used by VbeNativeTheme.</summary>
-internal static Func<uint, uint, IntPtr, WinEventCallback, uint, uint, uint, IntPtr> InstallWindowHook = SetWinEventHook;
+        internal static Func<uint, uint, IntPtr, WinEventCallback, uint, uint, uint, IntPtr> InstallWindowHook = SetWinEventHook;
         /// <summary>Stores the remove window hook used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, bool> RemoveWindowHook = UnhookWinEvent;
+        internal static Func<IntPtr, bool> RemoveWindowHook = UnhookWinEvent;
         /// <summary>Stores the install subclass used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, SubclassCallback, UIntPtr, IntPtr, bool> InstallSubclass = SetWindowSubclass;
+        internal static Func<IntPtr, SubclassCallback, UIntPtr, IntPtr, bool> InstallSubclass = SetWindowSubclass;
         /// <summary>Stores the remove subclass used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, SubclassCallback, UIntPtr, bool> RemoveSubclass = RemoveWindowSubclass;
+        internal static Func<IntPtr, SubclassCallback, UIntPtr, bool> RemoveSubclass = RemoveWindowSubclass;
         /// <summary>Stores the native procedure used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, uint, IntPtr, IntPtr, IntPtr> NativeProcedure = DefSubclassProc;
+        internal static Func<IntPtr, uint, IntPtr, IntPtr, IntPtr> NativeProcedure = DefSubclassProc;
         /// <summary>Stores the set native theme used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, string, string, int> SetNativeTheme = SetWindowTheme;
+        internal static Func<IntPtr, string, string, int> SetNativeTheme = SetWindowTheme;
         /// <summary>Stores the set attribute used by VbeNativeTheme.</summary>
-internal static WindowAttribute SetAttribute = DwmSetWindowAttribute;
+        internal static WindowAttribute SetAttribute = DwmSetWindowAttribute;
         /// <summary>Stores the theme module used by VbeNativeTheme.</summary>
-internal static Func<string, IntPtr> ThemeModule = GetModuleHandle;
+        internal static Func<string, IntPtr> ThemeModule = GetModuleHandle;
         /// <summary>Stores the native entry point used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, IntPtr, IntPtr> NativeEntryPoint = GetProcAddress;
+        internal static Func<IntPtr, IntPtr, IntPtr> NativeEntryPoint = GetProcAddress;
         /// <summary>Stores the read version used by VbeNativeTheme.</summary>
-internal static ReadOsVersion ReadVersion = RtlGetVersion;
+        internal static ReadOsVersion ReadVersion = RtlGetVersion;
         /// <summary>Stores the draw chrome used by VbeNativeTheme.</summary>
-internal static PaintSurface DrawChrome = VbeNativeChrome.Paint;
+        internal static PaintSurface DrawChrome = VbeNativeChrome.Paint;
         /// <summary>Stores the draw border,draw combo used by VbeNativeTheme.</summary>
-internal static Action<IntPtr> DrawBorder = VbeNativeChrome.PaintBorder, DrawCombo = VbeNativeChrome.PaintComboButton;
+        internal static Action<IntPtr> DrawBorder = VbeNativeChrome.PaintBorder, DrawCombo = VbeNativeChrome.PaintComboButton;
         /// <summary>Stores the draw property row used by VbeNativeTheme.</summary>
-internal static Action<IntPtr, NativeRect> DrawPropertyRow = VbeNativeChrome.PaintPropertyRow;
+        internal static Action<IntPtr, NativeRect> DrawPropertyRow = VbeNativeChrome.PaintPropertyRow;
 
         /// <summary>Reads the native Windows major, minor, and build version.</summary>
         /// <returns>Native Windows version tuple.</returns>
         /// <exception cref="PlatformNotSupportedException">Windows version information could not be read.</exception>
-internal static Version ReadNativeWindowsVersion()
+        internal static Version ReadNativeWindowsVersion()
         {
             var version = new NativeOsVersion { Size = (uint)Marshal.SizeOf(typeof(NativeOsVersion)), ServicePack = string.Empty };
             if (ReadVersion(ref version) != 0)
@@ -286,7 +286,7 @@ internal static Version ReadNativeWindowsVersion()
 
         /// <summary>Checks whether a Windows version is qualified for the preferred-app-mode private API ABI.</summary>
         /// <param name="version">Native Windows version to check.</param><returns>Whether the supported Windows 10 build range is met.</returns>
-internal static bool SupportsPreferredAppMode(Version version)
+        internal static bool SupportsPreferredAppMode(Version version)
         {
             // Ordinal 135 used a different signature in Windows 10 1809.
             // Future major versions must be qualified before calling private APIs.
@@ -294,93 +294,93 @@ internal static bool SupportsPreferredAppMode(Version version)
         }
 
         /// <summary>Native rectangle using left, top, right, and bottom edge coordinates.</summary>
-[StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential)]
         internal struct NativeRect { /// <summary>Bounds in left, top, right, bottom coordinate order.</summary>
 internal int Left, Top, Right, Bottom; }
 
         /// <summary>Layout-compatible WM_DRAWITEM payload for an owner-drawn control.</summary>
-[StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential)]
         internal struct NativeDrawItem
         {
             /// <summary>Control type, identifier, item identifier, draw action, and item state.</summary>
-internal uint ControlType, ControlId, ItemId, Action, State;
+            internal uint ControlType, ControlId, ItemId, Action, State;
             /// <summary>Control window and drawing device context.</summary>
-internal IntPtr Window, DeviceContext;
+            internal IntPtr Window, DeviceContext;
             /// <summary>Item bounds in the device context.</summary>
-internal NativeRect Bounds;
+            internal NativeRect Bounds;
             /// <summary>Control-defined item data pointer.</summary>
-internal UIntPtr Data;
+            internal UIntPtr Data;
         }
 
         /// <summary>Unique identifier and callback instances retained for installed native hooks.</summary>
-private static readonly UIntPtr SubclassId = new UIntPtr(0x56424544);
+        private static readonly UIntPtr SubclassId = new UIntPtr(0x56424544);
         /// <summary>Subclass callback installed on eligible VBE windows.</summary>
-private static readonly SubclassCallback Subclass = ThemeWindowProcedure;
+        private static readonly SubclassCallback Subclass = ThemeWindowProcedure;
         /// <summary>WinEvent callback retained for the lifetime of the event hook.</summary>
-private static readonly WinEventCallback WindowEvent = WindowEventReceived;
+        private static readonly WinEventCallback WindowEvent = WindowEventReceived;
         /// <summary>Synchronization object protecting native window tracking collections.</summary>
-private static readonly object Sync = new object();
+        private static readonly object Sync = new object();
         /// <summary>Windows currently opted into the native dark theme.</summary>
-private static readonly List<IntPtr> themedWindows = new List<IntPtr>();
+        private static readonly List<IntPtr> themedWindows = new List<IntPtr>();
         /// <summary>Windows with this class's subclass callback installed.</summary>
-private static readonly List<IntPtr> subclassedWindows = new List<IntPtr>();
+        private static readonly List<IntPtr> subclassedWindows = new List<IntPtr>();
         /// <summary>Command bars with a deferred chrome repaint queued.</summary>
-private static readonly HashSet<IntPtr> pendingChrome = new HashSet<IntPtr>();
+        private static readonly HashSet<IntPtr> pendingChrome = new HashSet<IntPtr>();
         /// <summary>Pane captions with a deferred repaint queued.</summary>
-private static readonly HashSet<IntPtr> pendingCaptions = new HashSet<IntPtr>();
+        private static readonly HashSet<IntPtr> pendingCaptions = new HashSet<IntPtr>();
         /// <summary>Native toolbar paint and deferred-paint diagnostic counters.</summary>
-private static int toolbarPaintCount, toolbarDeferredPaintCount;
+        private static int toolbarPaintCount, toolbarDeferredPaintCount;
         /// <summary>Whether the opt-in local refresh experiment is enabled for the current process.</summary>
-private static bool localChromeRefresh;
+        private static bool localChromeRefresh;
         /// <summary>Direct renderers attached to supported native Properties tab controls.</summary>
-private static readonly Dictionary<IntPtr, VbeNativePropertyTabs> propertyTabs = new Dictionary<IntPtr, VbeNativePropertyTabs>();
+        private static readonly Dictionary<IntPtr, VbeNativePropertyTabs> propertyTabs = new Dictionary<IntPtr, VbeNativePropertyTabs>();
         /// <summary>Original text and background colors saved for a native child control.</summary>
-private sealed class ControlPalette
+        private sealed class ControlPalette
         {
             /// <summary>Background, foreground, and text-background COLORREF values.</summary>
-internal int Background, Foreground, TextBackground;
+            internal int Background, Foreground, TextBackground;
         }
         /// <summary>Original control colors, keyed by child window handle.</summary>
-private static readonly Dictionary<IntPtr, ControlPalette> originalControlColors = new Dictionary<IntPtr, ControlPalette>();
+        private static readonly Dictionary<IntPtr, ControlPalette> originalControlColors = new Dictionary<IntPtr, ControlPalette>();
         /// <summary>Resolved private API that opts one native window into dark mode.</summary>
-private static AllowDarkModeForWindowDelegate allowDarkMode;
+        private static AllowDarkModeForWindowDelegate allowDarkMode;
         /// <summary>Resolved private API that controls process preferred theme mode.</summary>
-private static SetPreferredAppModeDelegate setPreferredMode;
+        private static SetPreferredAppModeDelegate setPreferredMode;
         /// <summary>Resolved private API that flushes cached native menu themes.</summary>
-private static VoidThemeDelegate flushMenuThemes;
+        private static VoidThemeDelegate flushMenuThemes;
         /// <summary>GDI brush used to erase native control backgrounds.</summary>
-private static IntPtr backgroundBrush;
+        private static IntPtr backgroundBrush;
         /// <summary>Main VBE editor window handle currently managed by this theme.</summary>
-private static IntPtr editorWindow;
+        private static IntPtr editorWindow;
         /// <summary>Process theme mode value saved before the experiment changed it.</summary>
-private static int previousPreferredMode;
+        private static int previousPreferredMode;
         /// <summary>Installed WinEvent hook that tracks VBE windows created or shown later.</summary>
-private static IntPtr windowEventHook;
+        private static IntPtr windowEventHook;
         /// <summary>Whether this type changed the process preferred mode and must restore it.</summary>
-private static bool preferredModeChanged;
+        private static bool preferredModeChanged;
         /// <summary>Deferred palette transaction service, when the VBE automation object is available.</summary>
-private static VbeNativePalette nativePalette;
+        private static VbeNativePalette nativePalette;
         /// <summary>Handle of the Immediate window captured during initialization.</summary>
-private static IntPtr immediateWindow;
+        private static IntPtr immediateWindow;
         /// <summary>Caption captured with the Immediate window handle.</summary>
-private static string immediateCaption;
+        private static string immediateCaption;
 
                 /// <summary>Returns whether the explicitly gated experiment is enabled for this host process.</summary>
         /// <returns><see langword="true"/> when the process environment variable equals <c>1</c>.</returns>
-internal static bool ExperimentEnabled()
+        internal static bool ExperimentEnabled()
         {
             return string.Equals(Environment.GetEnvironmentVariable(ExperimentVariable), "1", StringComparison.Ordinal);
         }
 
         /// <summary>Stores the apply native theme used by VbeNativeTheme.</summary>
-internal static Func<IntPtr, int> ApplyNativeTheme = Apply;
+        internal static Func<IntPtr, int> ApplyNativeTheme = Apply;
         /// <summary>Stores the create palette used by VbeNativeTheme.</summary>
-internal static Func<object, IntPtr, VbeNativePalette> CreatePalette = (vbe, editor) => new VbeNativePalette(vbe, editor);
+        internal static Func<object, IntPtr, VbeNativePalette> CreatePalette = (vbe, editor) => new VbeNativePalette(vbe, editor);
 
                 /// <summary>Stores the VBE owner and applies the persisted or explicitly gated preference.</summary>
         /// <param name="editor">VBE main-window handle.</param><param name="enabled">Persisted preference for native styling.</param>
         /// <param name="vbe">Optional VBE automation object used for Immediate-window detection and palette recovery.</param>
-internal static void Initialize(IntPtr editor, bool enabled, object vbe = null)
+        internal static void Initialize(IntPtr editor, bool enabled, object vbe = null)
         {
             if (editor == IntPtr.Zero) throw new ArgumentException("The VBE main window handle is required.", nameof(editor));
             editorWindow = editor;
@@ -409,7 +409,7 @@ internal static void Initialize(IntPtr editor, bool enabled, object vbe = null)
 
                 /// <summary>Applies or removes native dark styling in the current VBE process.</summary>
         /// <param name="enabled">Whether to apply the dark style or restore the tracked native state.</param>
-internal static void SetEnabled(bool enabled)
+        internal static void SetEnabled(bool enabled)
         {
             if (!enabled)
             {
@@ -470,7 +470,7 @@ internal static void SetEnabled(bool enabled)
 
                 /// <summary>Removes installed native hooks and restores tracked windows and process theme preferences.</summary>
         /// <returns><see langword="true"/> when the renderer stopped and managed state was reset; otherwise <see langword="false"/>.</returns>
-internal static bool Reset()
+        internal static bool Reset()
         {
             lock (Sync)
             {
@@ -518,7 +518,7 @@ internal static bool Reset()
 
                 /// <summary>Disconnects the experiment while preserving state if native hooks cannot be stopped safely.</summary>
         /// <returns><see langword="true"/> when disconnection completed; otherwise <see langword="false"/>.</returns>
-internal static bool Disconnect()
+        internal static bool Disconnect()
         {
             if (!Reset()) return false;
             nativePalette?.Dispose();
@@ -532,7 +532,7 @@ internal static bool Disconnect()
         /// <summary>Applies dark control colors to supported child controls and saves their prior values.</summary>
         /// <param name="window">Child control handle.</param>
         /// <param name="className">Native window class used to select control-specific color messages.</param>
-internal static void ApplyControlPalette(IntPtr window, string className)
+        internal static void ApplyControlPalette(IntPtr window, string className)
         {
             if (originalControlColors.ContainsKey(window)) return;
             IntPtr background = new IntPtr(Background);
@@ -563,7 +563,7 @@ internal static void ApplyControlPalette(IntPtr window, string className)
         /// <summary>Restores a tracked control's original colors after the experimental theme is removed.</summary>
         /// <param name="window">Child control handle.</param>
         /// <param name="className">Native window class used to restore control-specific color messages.</param>
-internal static void RestoreControlPalette(IntPtr window, string className)
+        internal static void RestoreControlPalette(IntPtr window, string className)
         {
             ControlPalette original;
             if (!originalControlColors.TryGetValue(window, out original)) return;
@@ -590,7 +590,7 @@ internal static void RestoreControlPalette(IntPtr window, string className)
 
         /// <summary>Registers one VBE-owned window with the native theme and its required redraw handlers.</summary>
         /// <param name="window">Window to theme.</param>
-private static void ApplyWindow(IntPtr window)
+        private static void ApplyWindow(IntPtr window)
         {
             lock (Sync)
             {
@@ -648,7 +648,7 @@ private static void ApplyWindow(IntPtr window)
         /// <param name="window">Window associated with the event.</param><param name="objectId">Accessible object identifier.</param>
         /// <param name="childId">Accessible child identifier.</param><param name="eventThread">Thread that raised the event.</param>
         /// <param name="eventTime">Event timestamp supplied by Windows.</param>
-private static void WindowEventReceived(IntPtr hook, uint eventType, IntPtr window, int objectId, int childId, uint eventThread, uint eventTime)
+        private static void WindowEventReceived(IntPtr hook, uint eventType, IntPtr window, int objectId, int childId, uint eventThread, uint eventTime)
         {
             if (objectId != ObjectIdWindow || childId != 0) return;
             // Destruction can arrive after the parent relationship has disappeared.
@@ -677,7 +677,7 @@ private static void WindowEventReceived(IntPtr hook, uint eventType, IntPtr wind
         /// <summary>Checks whether a window is the VBE editor or a descendant owned by it.</summary>
         /// <param name="window">Window being checked.</param>
         /// <returns><see langword="true"/> when the window belongs to the active VBE editor.</returns>
-private static bool BelongsToEditor(IntPtr window)
+        private static bool BelongsToEditor(IntPtr window)
         {
             if (editorWindow == IntPtr.Zero || window == IntPtr.Zero) return false;
             if (window == editorWindow || ChildRelation(editorWindow, window)) return true;
@@ -694,7 +694,7 @@ private static bool BelongsToEditor(IntPtr window)
         /// <summary>Identifies native VBE window classes whose messages need experimental handling.</summary>
         /// <param name="className">Native window class name.</param>
         /// <returns><see langword="true"/> for a class handled by the theme subclass.</returns>
-internal static bool ShouldSubclass(string className)
+        internal static bool ShouldSubclass(string className)
         {
             return className == "#32770" || className == "wndclass_desked_gsk" || className == "MDIClient" ||
                 className == "VbaWindow" || className == "PROJECT" || className == "wndclass_pbrs" ||
@@ -705,7 +705,7 @@ internal static bool ShouldSubclass(string className)
 
         /// <summary>Removes a destroyed window from all tracking collections without releasing shared process state.</summary>
         /// <param name="window">Destroyed window handle.</param>
-private static void ForgetWindow(IntPtr window)
+        private static void ForgetWindow(IntPtr window)
         {
             lock (Sync)
             {
@@ -730,7 +730,7 @@ private static void ForgetWindow(IntPtr window)
         /// <param name="subclassId">Identifier supplied when the subclass was installed.</param>
         /// <param name="referenceData">Caller data supplied when the subclass was installed.</param>
         /// <returns>Window-procedure result for the handled or delegated message.</returns>
-private static IntPtr ThemeWindowProcedure(IntPtr window, uint message, IntPtr wParam, IntPtr lParam, UIntPtr subclassId, IntPtr referenceData)
+        private static IntPtr ThemeWindowProcedure(IntPtr window, uint message, IntPtr wParam, IntPtr lParam, UIntPtr subclassId, IntPtr referenceData)
         {
             if (message == WmQueryToolbarPaint && ExperimentEnabled())
                 return new IntPtr(wParam.ToInt64() == 1 ? toolbarDeferredPaintCount : toolbarPaintCount);
@@ -899,7 +899,7 @@ private static IntPtr ThemeWindowProcedure(IntPtr window, uint message, IntPtr w
         /// <summary>Applies the selected chrome repaint path for a native VBE window class.</summary>
         /// <param name="window">Window to repaint.</param><param name="className">Native class name.</param>
         /// <param name="dc">Device context supplied by the current paint message, or zero.</param>
-private static void PaintChrome(IntPtr window, string className, IntPtr dc)
+        private static void PaintChrome(IntPtr window, string className, IntPtr dc)
         {
             // A direct renderer must never be followed by image recoloring or a
             // screen-DC border pass, including already queued legacy refreshes.
@@ -920,7 +920,7 @@ private static void PaintChrome(IntPtr window, string className, IntPtr dc)
         /// <summary>Checks whether a dialog button uses a text label that should inherit its parent's text color.</summary>
         /// <param name="window">Native button handle.</param>
         /// <returns><see langword="true"/> for checkbox, radio, three-state, or group-box styles.</returns>
-private static bool IsDialogLabelButton(IntPtr window)
+        private static bool IsDialogLabelButton(IntPtr window)
         {
             int buttonType = ReadStyle(window, -16) & 0x0f;
             // Checkbox, three-state, radio and group-box labels need the parent
@@ -931,12 +931,12 @@ private static bool IsDialogLabelButton(IntPtr window)
         /// <summary>Gets the immediate parent window through the native ancestor API.</summary>
         /// <param name="window">Window whose parent is requested.</param>
         /// <returns>Parent handle, or zero when none exists.</returns>
-private static IntPtr GetAncestorParent(IntPtr window) { return Ancestor(window, 1); }
+        private static IntPtr GetAncestorParent(IntPtr window) { return Ancestor(window, 1); }
 
         /// <summary>Identifies VBE code panes, including the Immediate window and panes with a code toolbar.</summary>
         /// <param name="window">Candidate VBE window.</param><param name="className">Candidate's native class name.</param>
         /// <returns><see langword="true"/> when the window displays VBA code.</returns>
-private static bool IsCodeSurface(IntPtr window, string className)
+        private static bool IsCodeSurface(IntPtr window, string className)
         {
             return className == "VbaWindow" && (window == immediateWindow ||
                 FindChild(window, IntPtr.Zero, "ObtbarWndClass", null) != IntPtr.Zero);
@@ -944,7 +944,7 @@ private static bool IsCodeSurface(IntPtr window, string className)
 
         /// <summary>Posts deferred repaint messages to tracked command bars and captions inside a container.</summary>
         /// <param name="container">Native container whose chrome should be refreshed.</param>
-private static void QueueContainerChromeRefresh(IntPtr container)
+        private static void QueueContainerChromeRefresh(IntPtr container)
         {
             foreach (IntPtr candidate in subclassedWindows.ToArray())
             {
@@ -962,7 +962,7 @@ private static void QueueContainerChromeRefresh(IntPtr container)
         /// <summary>Attaches the direct text renderer when the native Properties tabs meet its supported constraints.</summary>
         /// <param name="window">Candidate tab-control handle.</param>
         /// <returns><see langword="true"/> when a renderer is already attached or was created successfully.</returns>
-private static bool TryAttachPropertyTabs(IntPtr window)
+        private static bool TryAttachPropertyTabs(IntPtr window)
         {
             if (propertyTabs.ContainsKey(window)) return true;
             VbeNativePropertyTabs renderer;
@@ -976,7 +976,7 @@ private static bool TryAttachPropertyTabs(IntPtr window)
         /// <summary>Checks that a window belongs to this process and the calling thread.</summary>
         /// <param name="window">Window handle to inspect.</param>
         /// <returns><see langword="true"/> when both process and thread match.</returns>
-private static bool IsCurrentWindowThread(IntPtr window)
+        private static bool IsCurrentWindowThread(IntPtr window)
         {
             uint processId;
             return WindowThread(window, out processId) == CurrentThread() &&
@@ -984,7 +984,7 @@ private static bool IsCurrentWindowThread(IntPtr window)
         }
 
         /// <summary>Creates the shared background brush on first use.</summary>
-private static void EnsureBackgroundBrush()
+        private static void EnsureBackgroundBrush()
         {
             if (backgroundBrush == IntPtr.Zero) backgroundBrush = NewBrush(Background);
         }
@@ -993,7 +993,7 @@ private static void EnsureBackgroundBrush()
         /// <typeparam name="T">Delegate type matching the native ordinal's ABI.</typeparam>
         /// <param name="module">Loaded module that exports the ordinal.</param><param name="ordinal">Export ordinal.</param>
         /// <returns>The marshaled delegate, or <see langword="null"/> if the module or export is unavailable.</returns>
-private static T Resolve<T>(IntPtr module, int ordinal) where T : class
+        private static T Resolve<T>(IntPtr module, int ordinal) where T : class
         {
             if (module == IntPtr.Zero) return null;
             IntPtr address = NativeEntryPoint(module, new IntPtr(ordinal));
@@ -1003,7 +1003,7 @@ private static T Resolve<T>(IntPtr module, int ordinal) where T : class
         /// <summary>Reads a native window's class name into a managed string.</summary>
         /// <param name="window">Window handle whose class is queried.</param>
         /// <returns>Class name, or an empty string when Windows returns no name.</returns>
-private static string WindowClass(IntPtr window)
+        private static string WindowClass(IntPtr window)
         {
             var text = new StringBuilder(256);
             ReadClassName(window, text, text.Capacity);
@@ -1013,7 +1013,7 @@ private static string WindowClass(IntPtr window)
         /// <summary>Recognizes managed add-in surface classes that should retain their own rendering.</summary>
         /// <param name="className">Native class name to inspect.</param>
         /// <returns><see langword="true"/> for Windows Forms, WPF wrapper, or GenericPane windows.</returns>
-internal static bool IsManagedAddInWindow(string className)
+        internal static bool IsManagedAddInWindow(string className)
         {
             return className.StartsWith("WindowsForms10.", StringComparison.Ordinal) ||
                 className.StartsWith("HwndWrapper[", StringComparison.Ordinal) ||

@@ -3,14 +3,14 @@ using System;
 namespace CodexVBE
 {
     /// <summary>Applique les commandes Undo et Redo natives au concepteur d’un formulaire.</summary>
-internal sealed partial class VbeForms
+    internal sealed partial class VbeForms
     {
         /// <summary>Exécute une action d’historique si l’arbre et l’état natif correspondent encore à la lecture fournie.</summary>
         /// <param name="request">Projet, formulaire, action et version d’arbre attendue.</param>
         /// <returns>Action exécutée, changements observés et erreurs de lecture avant/après.</returns>
         /// <exception cref="ArgumentException">L’action ou la version de précondition est absente/invalide.</exception>
         /// <exception cref="InvalidOperationException">L’arbre a changé ou l’action Undo/Redo n’est pas disponible.</exception>
-public object NativeHistory(Request request)
+        public object NativeHistory(Request request)
         {
             if (request.Action != "undo" && request.Action != "redo") throw new ArgumentException("Action must be undo or redo.");
             if (string.IsNullOrWhiteSpace(request.ExpectedTreeVersion)) throw new ArgumentException("ExpectedTreeVersion from form_tree is required.");

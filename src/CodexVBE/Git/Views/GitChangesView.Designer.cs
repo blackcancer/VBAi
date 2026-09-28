@@ -1,32 +1,32 @@
 namespace CodexVBE
 {
     /// <summary>Designer-generated controls for reviewing and committing project changes.</summary>
-public sealed partial class GitChangesView
+    public sealed partial class GitChangesView
     {
         /// <summary>Caption for the commit message input.</summary>
-internal System.Windows.Forms.Label messageLabel;
+        internal System.Windows.Forms.Label messageLabel;
         /// <summary>Commit message input.</summary>
-internal System.Windows.Forms.TextBox commitMessage;
+        internal System.Windows.Forms.TextBox commitMessage;
         /// <summary>Commits selected changes.</summary>
-internal CodexVBE.ThemedButton commit;
+        internal CodexVBE.ThemedButton commit;
         /// <summary>Split layout for changed files and their code diff.</summary>
-internal System.Windows.Forms.SplitContainer changeSplit;
+        internal System.Windows.Forms.SplitContainer changeSplit;
         /// <summary>Side-by-side or unified diff for the selected file.</summary>
-internal CodexVBE.CodeDiffView diff;
+        internal CodexVBE.CodeDiffView diff;
         /// <summary>Changed files available for staging and review.</summary>
-internal System.Windows.Forms.CheckedListBox changes;
+        internal System.Windows.Forms.CheckedListBox changes;
         /// <summary>Actions for opening and restoring the selected module.</summary>
-internal System.Windows.Forms.FlowLayoutPanel reviewActions;
+        internal System.Windows.Forms.FlowLayoutPanel reviewActions;
         /// <summary>Opens the selected VBA module.</summary>
-internal CodexVBE.ThemedButton openModule;
+        internal CodexVBE.ThemedButton openModule;
         /// <summary>Restores the selected module content.</summary>
-internal CodexVBE.ThemedButton restoreModule;
+        internal CodexVBE.ThemedButton restoreModule;
         /// <summary>Layout for the code-diff editor.</summary>
-internal System.Windows.Forms.TableLayoutPanel editorLayout;
+        internal System.Windows.Forms.TableLayoutPanel editorLayout;
         /// <summary>Container that owns Designer components.</summary>
-private System.ComponentModel.IContainer components;
+        private System.ComponentModel.IContainer components;
         /// <summary>Tooltips associated with change actions.</summary>
-private System.Windows.Forms.ToolTip toolTips;
+        private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)
@@ -36,7 +36,7 @@ private System.Windows.Forms.ToolTip toolTips;
         }
 
         /// <summary>Creates and arranges change review and commit controls.</summary>
-private void InitializeComponent()
+        private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);

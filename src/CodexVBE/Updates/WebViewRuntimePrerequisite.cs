@@ -9,45 +9,45 @@ using Microsoft.Win32;
 namespace CodexVBE
 {
     /// <summary>Checks, downloads, verifies, and silently installs the Microsoft WebView2 runtime when needed.</summary>
-internal sealed class WebViewRuntimePrerequisite
+    internal sealed class WebViewRuntimePrerequisite
     {
         /// <summary>Stores the open registry root used by WebViewRuntimePrerequisite.</summary>
-internal static Func<RegistryHive, RegistryView, IDisposable> OpenRegistryRoot = (hive, view) => RegistryKey.OpenBaseKey(hive, view);
+        internal static Func<RegistryHive, RegistryView, IDisposable> OpenRegistryRoot = (hive, view) => RegistryKey.OpenBaseKey(hive, view);
         /// <summary>Stores the open runtime key used by WebViewRuntimePrerequisite.</summary>
-internal static Func<IDisposable, string, IDisposable> OpenRuntimeKey = (root, path) => ((RegistryKey)root).OpenSubKey(path);
+        internal static Func<IDisposable, string, IDisposable> OpenRuntimeKey = (root, path) => ((RegistryKey)root).OpenSubKey(path);
         /// <summary>Stores the read runtime version used by WebViewRuntimePrerequisite.</summary>
-internal static Func<IDisposable, object> ReadRuntimeVersion = key => ((RegistryKey)key).GetValue("pv");
+        internal static Func<IDisposable, object> ReadRuntimeVersion = key => ((RegistryKey)key).GetValue("pv");
         /// <summary>Stores the create client used by WebViewRuntimePrerequisite.</summary>
-internal static Func<HttpClient> CreateClient = NewClient;
+        internal static Func<HttpClient> CreateClient = NewClient;
         /// <summary>Performs the new client operation for WebViewRuntimePrerequisite.</summary>
 /// <returns>The result produced by this operation.</returns>
-private static HttpClient NewClient() => new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
+        private static HttpClient NewClient() => new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
         /// <summary>Stores the verify trust used by WebViewRuntimePrerequisite.</summary>
-internal static Func<string, bool> VerifyTrust = UpdateInstallerRunner.VerifySignatureNative;
+        internal static Func<string, bool> VerifyTrust = UpdateInstallerRunner.VerifySignatureNative;
         /// <summary>Stores the load certificate used by WebViewRuntimePrerequisite.</summary>
-internal static Func<string, X509Certificate2> LoadCertificate = NativeCertificate;
+        internal static Func<string, X509Certificate2> LoadCertificate = NativeCertificate;
         /// <summary>Performs the native certificate operation for WebViewRuntimePrerequisite.</summary>
 /// <param name="path">Text containing the path.</param>
 /// <returns>The result produced by this operation.</returns>
-private static X509Certificate2 NativeCertificate(string path) => new X509Certificate2(X509Certificate.CreateFromSignedFile(path));
+        private static X509Certificate2 NativeCertificate(string path) => new X509Certificate2(X509Certificate.CreateFromSignedFile(path));
         /// <summary>Stores the start process used by WebViewRuntimePrerequisite.</summary>
-internal static Func<ProcessStartInfo, Process> StartProcess = Process.Start;
+        internal static Func<ProcessStartInfo, Process> StartProcess = Process.Start;
         /// <summary>Microsoft-hosted Evergreen WebView2 bootstrapper URL.</summary>
-internal const string Bootstrapper = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
+        internal const string Bootstrapper = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
         /// <summary>Runtime detection delegate.</summary>
-internal Func<bool> IsInstalled = Installed;
+        internal Func<bool> IsInstalled = Installed;
         /// <summary>Bootstrapper download delegate.</summary>
-internal Func<string, Task> Download = DownloadNative;
+        internal Func<string, Task> Download = DownloadNative;
         /// <summary>Microsoft signature and publisher verification delegate.</summary>
-internal Func<string, bool> Verify = VerifyMicrosoft;
+        internal Func<string, bool> Verify = VerifyMicrosoft;
         /// <summary>Silent bootstrapper installation delegate.</summary>
-internal Func<string, int> Install = InstallNative;
+        internal Func<string, int> Install = InstallNative;
         /// <summary>Checks whether a WebView2 runtime version string parses to a positive version.</summary>
         /// <param name="value">Registry version value.</param><returns>Whether it is a valid, nonzero version.</returns>
-internal static bool ValidVersion(string value) => Version.TryParse(value, out var version) && version > new Version(0, 0, 0, 0);
+        internal static bool ValidVersion(string value) => Version.TryParse(value, out var version) && version > new Version(0, 0, 0, 0);
         /// <summary>Checks both registry hives and both registry views for an installed WebView2 runtime.</summary>
         /// <returns><see langword="true"/> when a valid runtime version is registered.</returns>
-internal static bool Installed()
+        internal static bool Installed()
         {
             foreach (var hive in new[] { RegistryHive.CurrentUser, RegistryHive.LocalMachine })
             foreach (var view in new[] { RegistryView.Registry32, RegistryView.Registry64 })
@@ -61,7 +61,7 @@ internal static bool Installed()
         /// <returns>Task that completes after installation has been verified.</returns>
         /// <exception cref="InvalidDataException">The downloaded file fails signature or publisher verification.</exception>
         /// <exception cref="InvalidOperationException">Installation exits unsuccessfully or the runtime remains absent.</exception>
-internal async Task Ensure(string folder)
+        internal async Task Ensure(string folder)
         {
             if (IsInstalled()) return;
             string directory = Path.Combine(folder, "WebView2-" + Guid.NewGuid().ToString("N"));
@@ -78,7 +78,7 @@ internal async Task Ensure(string folder)
         }
         /// <summary>Downloads the Microsoft bootstrapper over HTTPS with a two-minute timeout and size limit.</summary>
         /// <param name="path">New file path for the downloaded bootstrapper.</param><returns>Task completed after the file is written.</returns>
-private static async Task DownloadNative(string path)
+        private static async Task DownloadNative(string path)
         {
             using (var client = CreateClient())
             using (var response = await client.GetAsync(Bootstrapper, HttpCompletionOption.ResponseHeadersRead))
@@ -96,7 +96,7 @@ private static async Task DownloadNative(string path)
         }
         /// <summary>Verifies the Authenticode signature and Microsoft Corporation signer name.</summary>
         /// <param name="path">Downloaded bootstrapper path.</param><returns>Whether signature and publisher checks pass.</returns>
-private static bool VerifyMicrosoft(string path)
+        private static bool VerifyMicrosoft(string path)
         {
             if (!VerifyTrust(path)) return false;
             using (var certificate = LoadCertificate(path))
@@ -105,7 +105,7 @@ private static bool VerifyMicrosoft(string path)
         /// <summary>Runs the bootstrapper silently and returns its process exit code.</summary>
         /// <param name="path">Verified bootstrapper path.</param><returns>Process exit code.</returns>
         /// <exception cref="InvalidOperationException">The installer process could not be started.</exception>
-private static int InstallNative(string path)
+        private static int InstallNative(string path)
         {
             using (var process = StartProcess(new ProcessStartInfo(path, "/silent /install") { UseShellExecute = false, CreateNoWindow = true }))
             { if (process == null) throw new InvalidOperationException("WebView2 installer did not start."); process.WaitForExit(); return process.ExitCode; }

@@ -6,18 +6,18 @@ using System.Web.Script.Serialization;
 namespace CodexVBE
 {
     /// <summary>Inspecte et modifie les vues, sélections et défilements des volets de code natifs.</summary>
-internal sealed partial class VbeDebug
+    internal sealed partial class VbeDebug
     {
         /// <summary>Volets COM observés lors de la dernière lecture, indexés par jeton éphémère.</summary>
-private readonly Dictionary<string, object> inspectedPanes = new Dictionary<string, object>(StringComparer.Ordinal);
+        private readonly Dictionary<string, object> inspectedPanes = new Dictionary<string, object>(StringComparer.Ordinal);
 
         /// <summary>Empreintes des états associés aux jetons de volets observés.</summary>
-private readonly Dictionary<string, string> inspectedPaneVersions = new Dictionary<string, string>(StringComparer.Ordinal);
+        private readonly Dictionary<string, string> inspectedPaneVersions = new Dictionary<string, string>(StringComparer.Ordinal);
 
         /// <summary>Lit les volets ouverts du module et émet des jetons valables jusqu’à la lecture suivante.</summary>
         /// <param name="request">Sélecteur du projet et du module.</param>
         /// <returns>Instantanés de volets lisibles, avec erreurs pour les entrées natives indisponibles.</returns>
-public object CodePaneLayout(Request request)
+        public object CodePaneLayout(Request request)
         {
             dynamic module = GetModule(GetProject(request.Project), request.Module);
             inspectedPanes.Clear();
@@ -45,7 +45,7 @@ public object CodePaneLayout(Request request)
         /// <summary>Défile le volet relu vers une ligne après vérification de son identité et de sa version.</summary>
         /// <param name="request">Jeton de volet, position, mode attendu et empreinte observée.</param>
         /// <returns>États du volet avant et après l’opération avec résultats de lecture.</returns>
-public object ScrollCodePane(Request request)
+        public object ScrollCodePane(Request request)
         {
             object raw;
             if (string.IsNullOrWhiteSpace(request.Pane) || !inspectedPanes.TryGetValue(request.Pane, out raw))
@@ -81,7 +81,7 @@ public object ScrollCodePane(Request request)
         /// <summary>Change en procédure ou en module la vue de toute la fenêtre de code.</summary>
         /// <param name="request">Jeton du volet, action, emplacement, mode et empreinte attendus.</param>
         /// <returns>États de tous les volets de la fenêtre et résultat de la commande native.</returns>
-public object SetCodePaneView(Request request)
+        public object SetCodePaneView(Request request)
         {
             if (request.Action != "procedure" && request.Action != "module")
                 throw new ArgumentException("Action must be procedure or module.");
@@ -135,7 +135,7 @@ public object SetCodePaneView(Request request)
         /// <param name="module">Reçoit le module si l’entrée native est encore valide.</param>
         /// <param name="error">Reçoit le message COM si la lecture échoue.</param>
         /// <returns><see langword="true"/> si la référence au module a pu être lue.</returns>
-internal static bool TryLivePaneModule(object pane, out object module, out string error)
+        internal static bool TryLivePaneModule(object pane, out object module, out string error)
         {
             try { module = ((dynamic)pane).CodeModule; error = null; return true; }
             catch (System.Runtime.InteropServices.COMException ex) when (ex.HResult == unchecked((int)0x80020010))
@@ -149,7 +149,7 @@ internal static bool TryLivePaneModule(object pane, out object module, out strin
         /// <summary>Capture le viewport, la sélection, la vue et l’empreinte source d’un volet.</summary>
         /// <param name="pane">Volet natif à lire.</param>
         /// <returns>État sérialisable du viewport et du module.</returns>
-private static object CodePaneState(dynamic pane)
+        private static object CodePaneState(dynamic pane)
         {
             int start = 0, column = 0, end = 0, endColumn = 0;
             pane.GetSelection(ref start, ref column, ref end, ref endColumn);
@@ -163,6 +163,6 @@ private static object CodePaneState(dynamic pane)
         /// <summary>Calcule la version SHA-256 d’un état de volet sérialisé.</summary>
         /// <param name="state">État précédemment capturé.</param>
         /// <returns>Empreinte de l’état du volet.</returns>
-private static string PaneVersion(object state) { return Hash(new JavaScriptSerializer().Serialize(state)); }
+        private static string PaneVersion(object state) { return Hash(new JavaScriptSerializer().Serialize(state)); }
     }
 }

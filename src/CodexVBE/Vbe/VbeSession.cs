@@ -13,12 +13,12 @@ namespace CodexVBE
     internal sealed class VbeSession
     {
         /// <summary>Fournit la fenêtre d’éditeur moderne, en pouvant la créer à la demande.</summary>
-internal Func<bool, ModernEditorWindow> ModernEditor;
+        internal Func<bool, ModernEditorWindow> ModernEditor;
         /// <summary>Résout un composant du projet vers l’adaptateur de module VBE.</summary>
         /// <param name="projectName">Sélecteur du projet dans la session.</param>
         /// <param name="moduleName">Nom exact du composant à résoudre.</param>
         /// <returns>Adaptateur lié aux objets COM du projet et du composant trouvé.</returns>
-internal IEditorModule ResolveEditorModule(string projectName, string moduleName)
+        internal IEditorModule ResolveEditorModule(string projectName, string moduleName)
         {
             dynamic project = GetProject(projectName);
             if (string.IsNullOrWhiteSpace(moduleName)) throw new ArgumentException("Module is required.");
@@ -42,11 +42,11 @@ internal IEditorModule ResolveEditorModule(string projectName, string moduleName
         /// <summary>Service d’inspection des bibliothèques et types exposés par les références.</summary>
         private readonly VbeReferenceTypes referenceTypes;
         /// <summary>Service d’édition du code source par opérations préparées.</summary>
-private readonly VbeCodeEdits codeEdits;
+        private readonly VbeCodeEdits codeEdits;
         /// <summary>Service de lecture et d’écriture du presse-papiers de code.</summary>
-private readonly VbeCodeClipboard codeClipboard;
+        private readonly VbeCodeClipboard codeClipboard;
         /// <summary>Service de navigation et d’historique de positions du code.</summary>
-private readonly VbeNavigationHistory navigationHistory;
+        private readonly VbeNavigationHistory navigationHistory;
 
         /// <summary>Abstraction du magasin de certificats utilisée pour lire les certificats de signature.</summary>
         internal interface ISigningStore : IDisposable
@@ -115,7 +115,7 @@ private readonly VbeNavigationHistory navigationHistory;
         /// <param name="bookmarkDatabase">Chemin SQLite des signets, ou nul pour le stockage par défaut.</param>
         /// <param name="toolbarProcessName">Fournit le nom de processus utilisé pour choisir le profil natif.</param>
         /// <param name="localApplicationData">Fournit le dossier de données locales pour le profil des barres.</param>
-internal VbeSession(object vbe, VbeProjectComponents.IExcelHostProbe host, string bookmarkDatabase,
+        internal VbeSession(object vbe, VbeProjectComponents.IExcelHostProbe host, string bookmarkDatabase,
             Func<string> toolbarProcessName, Func<string> localApplicationData) { this.vbe = vbe; debugger = new VbeDebug(vbe);
             forms = new VbeForms(vbe); components = host == null
                 ? new VbeProjectComponents(vbe, forms) : new VbeProjectComponents(vbe, forms, host);

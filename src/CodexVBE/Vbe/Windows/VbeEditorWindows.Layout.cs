@@ -8,13 +8,13 @@ using System.Web.Script.Serialization;
 namespace CodexVBE
 {
     /// <summary>Lit, versionne et modifie l’état des fenêtres et volets natifs du VBE.</summary>
-internal sealed partial class VbeEditorWindows
+    internal sealed partial class VbeEditorWindows
     {
         /// <summary>Lit les propriétés d’une fenêtre et calcule une version si toutes les lectures réussissent.</summary>
         /// <param name="caption">Légende exacte de la fenêtre.</param>
         /// <param name="type">Type VBIDE de la fenêtre.</param>
         /// <returns>Propriétés, liens des volets et empreinte de précondition éventuelle.</returns>
-public object WindowLayout(string caption, int type)
+        public object WindowLayout(string caption, int type)
         {
             dynamic window = FindExactWindow(caption, type);
             dynamic snapshot = WindowSnapshot(window, null);
@@ -39,7 +39,7 @@ public object WindowLayout(string caption, int type)
         /// <returns>États avant/après, résultat de relecture et statut de persistance non qualifié.</returns>
         /// <exception cref="ArgumentException">L’action n’est pas restore, minimize ou maximize.</exception>
         /// <exception cref="InvalidOperationException">Le volet appartient à une frame qui doit être modifiée comme un tout.</exception>
-public object SetWindowState(Request request)
+        public object SetWindowState(Request request)
         {
             int desired;
             switch (request.Action)
@@ -76,7 +76,7 @@ public object SetWindowState(Request request)
         /// <returns>Rectangle avant/après et résultat de vérification native.</returns>
         /// <exception cref="ArgumentException">Le rectangle contient des coordonnées ou dimensions hors limites.</exception>
         /// <exception cref="InvalidOperationException">La fenêtre est maximisée ou attachée, ou l’hôte refuse les dimensions.</exception>
-public object SetWindowBounds(Request request)
+        public object SetWindowBounds(Request request)
         {
             var values = new[] { request.Left, request.Top, request.Width, request.Height };
             if (values.Any(x => double.IsNaN(x) || double.IsInfinity(x) || x != Math.Truncate(x) || x < -32768 || x > 32767) || request.Width < 80 || request.Height < 60)
@@ -114,7 +114,7 @@ public object SetWindowBounds(Request request)
         /// <returns>État de liaison vérifié ou état pending après un échec de lecture native.</returns>
         /// <exception cref="ArgumentException">L’action, le type de volet ou la cible est invalide.</exception>
         /// <exception cref="InvalidOperationException">La topologie ou version attendue ne peut pas être vérifiée.</exception>
-public object LinkWindow(Request request)
+        public object LinkWindow(Request request)
         {
             if (request.Action != "link" && request.Action != "unlink") throw new ArgumentException("Use link or unlink.");
             if (!(request.WindowType >= 2 && request.WindowType <= 7) && request.WindowType != 10 && request.WindowType != 15)
@@ -165,7 +165,7 @@ public object LinkWindow(Request request)
         /// <param name="expected">Empreinte lue avant l’opération.</param>
         /// <returns>Instantané validé de l’agencement courant.</returns>
         /// <exception cref="InvalidOperationException">L’agencement est incomplet ou a changé.</exception>
-private object CheckedLayout(string caption, int type, string expected)
+        private object CheckedLayout(string caption, int type, string expected)
         {
             dynamic state = WindowLayout(caption, type);
             if (string.IsNullOrWhiteSpace(expected) || state.WindowVersion == null || !string.Equals(expected, (string)state.WindowVersion, StringComparison.OrdinalIgnoreCase))
@@ -177,7 +177,7 @@ private object CheckedLayout(string caption, int type, string expected)
         /// <param name="caption">Légende attendue.</param>
         /// <param name="type">Type de fenêtre attendu.</param>
         /// <returns><see langword="true"/> si une correspondance unique existe.</returns>
-private static bool FrameContains(dynamic frame, string caption, int type)
+        private static bool FrameContains(dynamic frame, string caption, int type)
         {
             int matches = 0;
             foreach (dynamic window in frame.LinkedWindows) if ((string)window.Caption == caption && (int)window.Type == type) matches++;
@@ -188,7 +188,7 @@ private static bool FrameContains(dynamic frame, string caption, int type)
         /// <param name="caption">Légende attendue.</param>
         /// <param name="type">Type de fenêtre attendu.</param>
         /// <returns><see langword="true"/> si le membre attendu est l’unique enfant.</returns>
-private static bool SingleMemberFrame(dynamic frame, string caption, int type)
+        private static bool SingleMemberFrame(dynamic frame, string caption, int type)
         {
             int count = 0; foreach (dynamic window in frame.LinkedWindows) count++;
             return count == 1 && FrameContains(frame, caption, type);

@@ -16,21 +16,21 @@ namespace CodexVBE
     {
         /// <summary>Obtient le code HTTP à l’origine du refus structuré.</summary>
         /// <value>Code numérique renvoyé par GitHub.</value>
-internal int Status { get; }
+        internal int Status { get; }
         /// <summary>Crée une erreur API en conservant le statut HTTP pour le traitement de repli.</summary>
         /// <param name="status">Code HTTP renvoyé par GitHub.</param>
         /// <param name="message">Message d’erreur présenté à l’appelant.</param>
-internal GitHubApiFailure(int status, string message) : base(message) { Status = status; }
+        internal GitHubApiFailure(int status, string message) : base(message) { Status = status; }
     }
     /// <summary>Issue créée sur GitHub.</summary>
     internal sealed class GitHubIssue
     {
         /// <summary>Obtient ou définit le numéro attribué à l’issue.</summary>
         /// <value>Numéro de l’issue dans le dépôt.</value>
-public int number { get; set; }
+        public int number { get; set; }
         /// <summary>Obtient ou définit l’URL Web de l’issue.</summary>
         /// <value>Adresse de l’issue sur GitHub.</value>
-public string html_url { get; set; }
+        public string html_url { get; set; }
     }
     /// <summary>Informations de dépôt renvoyées par l’API GitHub.</summary>
     internal sealed class GitHubRepositoryInfo
@@ -196,7 +196,7 @@ public string html_url { get; set; }
         /// <returns>Issue créée avec son numéro et son URL.</returns>
         /// <exception cref="ArgumentException">Le titre est invalide ou le rapport dépasse la limite.</exception>
         /// <exception cref="InvalidOperationException">GitHub refuse la création ou est indisponible.</exception>
-internal Task<GitHubIssue> CreateIssue(string url, string title, string body, CancellationToken ct)
+        internal Task<GitHubIssue> CreateIssue(string url, string title, string body, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(title) || title.Length > 180 || (body?.Length ?? 0) > 60000)
                 throw new ArgumentException("Invalid issue title or body.");

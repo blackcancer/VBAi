@@ -1,46 +1,46 @@
 namespace CodexVBE
 {
     /// <summary>Designer-generated pull-request list, composition, and review pages.</summary>
-public sealed partial class GitHubPullRequestsView
+    public sealed partial class GitHubPullRequestsView
     {
         /// <summary>Root layout for pull list and review tabs.</summary>
-internal System.Windows.Forms.TableLayoutPanel pullLayout;
+        internal System.Windows.Forms.TableLayoutPanel pullLayout;
         /// <summary>Actions for loading and opening pull requests.</summary>
-internal System.Windows.Forms.FlowLayoutPanel pullActions;
+        internal System.Windows.Forms.FlowLayoutPanel pullActions;
         /// <summary>Composition and review page selector.</summary>
-internal CodexVBE.ThemedTabControl pullTabs;
+        internal CodexVBE.ThemedTabControl pullTabs;
         /// <summary>Pull-request composition page.</summary>
-internal System.Windows.Forms.TabPage composeTab;
+        internal System.Windows.Forms.TabPage composeTab;
         /// <summary>Pull-request detail page.</summary>
-internal System.Windows.Forms.TabPage detailTab;
+        internal System.Windows.Forms.TabPage detailTab;
         /// <summary>Changed-files page.</summary>
-internal System.Windows.Forms.TabPage filesTab;
+        internal System.Windows.Forms.TabPage filesTab;
         /// <summary>Review-comments page.</summary>
-internal System.Windows.Forms.TabPage commentsTab;
+        internal System.Windows.Forms.TabPage commentsTab;
         /// <summary>Continuous-integration checks page.</summary>
-internal System.Windows.Forms.TabPage checksTab;
+        internal System.Windows.Forms.TabPage checksTab;
         /// <summary>Pull requests for the selected repository.</summary>
-internal System.Windows.Forms.ListBox pulls;
+        internal System.Windows.Forms.ListBox pulls;
         /// <summary>Loads pull requests from GitHub.</summary>
-internal CodexVBE.ThemedButton loadPulls;
+        internal CodexVBE.ThemedButton loadPulls;
         /// <summary>Opens the selected pull request.</summary>
-internal CodexVBE.ThemedButton openPull;
+        internal CodexVBE.ThemedButton openPull;
         /// <summary>Loads a saved pull-request draft.</summary>
-internal CodexVBE.ThemedButton loadDraft;
+        internal CodexVBE.ThemedButton loadDraft;
         /// <summary>Pull-request composition editor.</summary>
-internal CodexVBE.GitHubPullComposeView gitHubPullComposeView;
+        internal CodexVBE.GitHubPullComposeView gitHubPullComposeView;
         /// <summary>Selected pull-request summary and metadata.</summary>
-internal CodexVBE.GitHubPullDetailsView gitHubPullDetailsView;
+        internal CodexVBE.GitHubPullDetailsView gitHubPullDetailsView;
         /// <summary>Changed files for the selected pull request.</summary>
-internal CodexVBE.GitHubPullFilesView gitHubPullFilesView;
+        internal CodexVBE.GitHubPullFilesView gitHubPullFilesView;
         /// <summary>Review comments for the selected pull request.</summary>
-internal CodexVBE.GitHubPullCommentsView gitHubPullCommentsView;
+        internal CodexVBE.GitHubPullCommentsView gitHubPullCommentsView;
         /// <summary>CI check results for the selected pull request.</summary>
-internal CodexVBE.GitHubPullChecksView gitHubPullChecksView;
+        internal CodexVBE.GitHubPullChecksView gitHubPullChecksView;
         /// <summary>Container that owns Designer components.</summary>
-private System.ComponentModel.IContainer components;
+        private System.ComponentModel.IContainer components;
         /// <summary>Tooltips associated with pull-request actions.</summary>
-private System.Windows.Forms.ToolTip toolTips;
+        private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)
@@ -50,7 +50,7 @@ private System.Windows.Forms.ToolTip toolTips;
         }
 
         /// <summary>Creates and arranges pull-request pages and nested views.</summary>
-private void InitializeComponent()
+        private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);

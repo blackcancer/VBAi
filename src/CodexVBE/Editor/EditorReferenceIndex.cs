@@ -21,17 +21,17 @@ namespace CodexVBE
         /// <param name="registration">Mode de chargement OLE Automation.</param>
         /// <param name="library">Reçoit l’interface ITypeLib chargée.</param>
         /// <exception cref="COMException">Le fichier ne peut pas être chargé comme bibliothèque de types.</exception>
-[DllImport("oleaut32.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
+        [DllImport("oleaut32.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
         private static extern void LoadTypeLibEx(string path, int registration, out ITypeLib library);
         /// <summary>Clé de cache du dernier index sur le thread courant.</summary>
-[ThreadStatic] private static string cacheKey;
+        [ThreadStatic] private static string cacheKey;
         /// <summary>Symboles issus du dernier index correspondant à la clé de cache.</summary>
-[ThreadStatic] private static EditorSymbol[] cacheValue;
+        [ThreadStatic] private static EditorSymbol[] cacheValue;
         /// <summary>Lit les membres accessibles des types demandés dans les fichiers de référence.</summary>
         /// <param name="paths">Chemins des bibliothèques de types référencées.</param>
         /// <param name="requestedTypes">Noms complets des types utilisés par le projet.</param>
         /// <returns>Symboles externes avec leur propriétaire et leurs paramètres.</returns>
-internal static EditorSymbol[] Read(string[] paths, string[] requestedTypes)
+        internal static EditorSymbol[] Read(string[] paths, string[] requestedTypes)
         {
             string key = string.Join("|", paths.Select(p => p + ":" + System.IO.File.GetLastWriteTimeUtc(p).Ticks)) + ":" + string.Join("|", requestedTypes);
             if (key == cacheKey) return cacheValue;
@@ -76,7 +76,7 @@ internal static EditorSymbol[] Read(string[] paths, string[] requestedTypes)
 /// <param name="info">The info used by this operation.</param>
 /// <param name="description">The description used by this operation.</param>
 /// <returns>The result produced by this operation.</returns>
-private static string ReturnType(ITypeInfo info, TYPEDESC description)
+        private static string ReturnType(ITypeInfo info, TYPEDESC description)
         {
             var kind = (VarEnum)description.vt;
             if (kind == VarEnum.VT_PTR || kind == VarEnum.VT_SAFEARRAY)
@@ -98,7 +98,7 @@ private static string ReturnType(ITypeInfo info, TYPEDESC description)
         /// <param name="symbols">Collection de résultats enrichie pendant le parcours.</param>
         /// <param name="visited">Identifiants de types déjà visités, pour éviter les cycles.</param>
         /// <param name="depth">Profondeur d’héritage courante, limitée pour borner la récursion.</param>
-private static void ReadMembers(ITypeInfo info, string owner, List<EditorSymbol> symbols, HashSet<Guid> visited, int depth)
+        private static void ReadMembers(ITypeInfo info, string owner, List<EditorSymbol> symbols, HashSet<Guid> visited, int depth)
         {
             if (depth > 8) return;
             info.GetTypeAttr(out IntPtr pointer);

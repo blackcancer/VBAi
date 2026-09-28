@@ -9,6 +9,6 @@ namespace CodexVBE
                 /// <summary>Remplace le titre et le contenu sans reconstruire les contrôles.</summary>
         /// <param name="title">Titre affiché au-dessus du contenu.</param>
         /// <param name="text">Texte présenté dans la zone de lecture.</param>
-public void ShowContent(string title, string text) { section.Text = title ?? ""; content.Text = text ?? ""; }
+        public void ShowContent(string title, string text) { section.Text = title ?? ""; content.Text = text ?? ""; }
     }
 }

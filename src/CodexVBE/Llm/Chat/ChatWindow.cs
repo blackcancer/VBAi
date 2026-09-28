@@ -371,7 +371,7 @@ namespace CodexVBE
         /// <summary>Builds and sends a chat request, then removes its queued message after dispatch succeeds.</summary>
 /// <param name="queued">The queued used by this operation.</param>
 /// <returns>The result produced by this operation.</returns>
-private async Task SendRequestAsync(QueuedChatMessage queued)
+        private async Task SendRequestAsync(QueuedChatMessage queued)
         {
             string question = (queued?.Text ?? prompt.Text).Trim();
             if (!busy && question.Length == 0 && currentSession?.BudgetPaused == true) { await ResumeBudgetAsync(); return; }

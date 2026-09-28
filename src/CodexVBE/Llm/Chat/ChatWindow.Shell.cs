@@ -47,7 +47,7 @@ namespace CodexVBE
                 /// <summary>Affiche la boîte d’informations depuis la commande de menu.</summary>
         /// <param name="sender">Élément de menu qui a déclenché l’événement.</param>
         /// <param name="e">Arguments de l’événement de clic.</param>
-private void About_Click(object sender, EventArgs e)
+        private void About_Click(object sender, EventArgs e)
         {
             using (var dialog = new AboutWindow()) ShowModal(dialog, this);
         }

@@ -8,24 +8,24 @@ using System.Threading;
 namespace CodexVBE
 {
     /// <summary>Exécute une commande Run native après validation de l’identité et des révisions du UserForm.</summary>
-internal sealed partial class VbeForms
+    internal sealed partial class VbeForms
     {
         /// <summary>État suivi d’une commande native de lancement de formulaire.</summary>
-private sealed class FormRunOperation
+        private sealed class FormRunOperation
         {
             /// <summary>Stores the id,project,form,state,error used by FormRunOperation.</summary>
-public string Id, Project, Form, State, Error;
+            public string Id, Project, Form, State, Error;
             /// <summary>Stores the command completed used by FormRunOperation.</summary>
-public bool CommandCompleted;
+            public bool CommandCompleted;
         }
         /// <summary>Opérations de lancement récentes conservées pour interrogation de leur état.</summary>
-private readonly List<FormRunOperation> formRuns = new List<FormRunOperation>();
+        private readonly List<FormRunOperation> formRuns = new List<FormRunOperation>();
 
         /// <summary>Retourne l’état d’une opération Run identifiée dans le projet demandé.</summary>
         /// <param name="request">Identifiants de projet et d’opération transmis dans Query.</param>
         /// <returns>État courant de la commande et indicateur explicite que l’affichage réel n’est pas vérifié.</returns>
         /// <exception cref="ArgumentException">Aucune opération ne correspond au projet et à l’identifiant fournis.</exception>
-public object FormRunStatus(Request request)
+        public object FormRunStatus(Request request)
         {
             var operation = formRuns.SingleOrDefault(item => item.Id == request.Query && item.Project == request.Project);
             if (operation == null) throw new ArgumentException("Unknown UserForm run operation for this project.");
@@ -37,7 +37,7 @@ public object FormRunStatus(Request request)
         /// <returns>Instantané de l’opération mise en file; il ne confirme pas que le formulaire s’est affiché.</returns>
         /// <exception cref="ArgumentException">Une version, un projet, un formulaire ou la légende de commande manque.</exception>
         /// <exception cref="InvalidOperationException">Le contexte UI, l’identité du formulaire ou la commande Run ne peut pas être validé.</exception>
-public object RunForm(Request request)
+        public object RunForm(Request request)
         {
             if (request.ExpectedMode != 2 || string.IsNullOrWhiteSpace(request.Project) ||
                 string.IsNullOrWhiteSpace(request.Form) || string.IsNullOrWhiteSpace(request.ExpectedSha256) ||
@@ -86,7 +86,7 @@ public object RunForm(Request request)
         /// <summary>Construit le résultat public de suivi sans confondre le retour de commande avec une preuve d’affichage.</summary>
         /// <param name="operation">État interne à exposer.</param>
         /// <returns>Opération, état, erreur éventuelle et lectures natives recommandées.</returns>
-private static object FormRunSnapshot(FormRunOperation operation)
+        private static object FormRunSnapshot(FormRunOperation operation)
         {
             return new { OperationId = operation.Id, operation.Project, operation.Form, operation.State,
                 operation.CommandCompleted, operation.Error, RuntimeVerified = false,
@@ -98,7 +98,7 @@ private static object FormRunSnapshot(FormRunOperation operation)
         /// <param name="expectedSha">SHA-256 du code lu précédemment.</param>
         /// <param name="expectedTree">Version de l’arbre Designer lue précédemment.</param>
         /// <exception cref="InvalidOperationException">Le code ou l’arbre a changé depuis l’inspection.</exception>
-private static void ValidateFormRun(dynamic form, string expectedSha, string expectedTree)
+        private static void ValidateFormRun(dynamic form, string expectedSha, string expectedTree)
         {
             dynamic module = form.CodeModule;
             int count = (int)module.CountOfLines;
@@ -115,7 +115,7 @@ private static void ValidateFormRun(dynamic form, string expectedSha, string exp
         /// <param name="project">Projet VBA attendu comme actif.</param>
         /// <param name="form">UserForm dont la fenêtre doit recevoir le focus.</param>
         /// <exception cref="InvalidOperationException">La fenêtre active ou le projet ne correspond pas à la cible.</exception>
-private void FocusFormRun(object project, dynamic form)
+        private void FocusFormRun(object project, dynamic form)
         {
             dynamic window = form.DesignerWindow();
             window.Visible = true;
@@ -128,7 +128,7 @@ private void FocusFormRun(object project, dynamic form)
         /// <param name="caption">Légende exacte obtenue depuis l’inventaire des commandes.</param>
         /// <returns>Contrôle natif activable correspondant à Run.</returns>
         /// <exception cref="InvalidOperationException">La commande exacte est absente, désactivée ou renommée.</exception>
-internal object RequireFormRunCommand(string caption)
+        internal object RequireFormRunCommand(string caption)
         {
             dynamic command = vbe.CommandBars.FindControl(1, 186);
             // The stable native command identity and exact inspected caption work

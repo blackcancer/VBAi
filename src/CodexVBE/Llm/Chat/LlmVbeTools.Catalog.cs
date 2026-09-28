@@ -6,33 +6,33 @@ using System.Threading.Tasks;
 namespace CodexVBE
 {
     /// <summary>Provides the llm vbe tools implementation.</summary>
-internal sealed partial class LlmVbeTools
+    internal sealed partial class LlmVbeTools
     {
         /// <summary>Stores the loaded families used by LlmVbeTools.</summary>
-private readonly HashSet<string> loadedFamilies = new HashSet<string>(StringComparer.Ordinal);
+        private readonly HashSet<string> loadedFamilies = new HashSet<string>(StringComparer.Ordinal);
         /// <summary>Stores the family priority used by LlmVbeTools.</summary>
-private readonly Dictionary<string, int> familyPriority = new Dictionary<string, int>(StringComparer.Ordinal);
+        private readonly Dictionary<string, int> familyPriority = new Dictionary<string, int>(StringComparer.Ordinal);
         /// <summary>Stores the next family priority used by LlmVbeTools.</summary>
-private int nextFamilyPriority;
+        private int nextFamilyPriority;
         /// <summary>Stores the families used by LlmVbeTools.</summary>
-private static readonly string[] Families = { "code", "forms", "debug", "git", "environment" };
+        private static readonly string[] Families = { "code", "forms", "debug", "git", "environment" };
         /// <summary>Stores the core tools used by LlmVbeTools.</summary>
-private static readonly HashSet<string> CoreTools = new HashSet<string>(StringComparer.Ordinal)
+        private static readonly HashSet<string> CoreTools = new HashSet<string>(StringComparer.Ordinal)
         { "status", "list_projects", "list_modules", "read_module", "monaco_open", "monaco_read", "discover_tools", "invoke_tool" };
         /// <summary>Gets the catalog definitions.</summary>
 /// <value>The current value represented by this member.</value>
-private static object[] CatalogDefinitions => new[] {
+        private static object[] CatalogDefinitions => new[] {
             Definition("discover_tools", "Discover complete tool schemas for one family: code, forms, debug, git or environment; Family=all lists every available schema. Discussion/Plan expose inspections only. HTTP also loads discovered families for following model rounds. All writes remain subject to Agent mode and project/privacy policies.", new[] { "Family" }, "Family"),
             Definition("invoke_tool", "Invoke an exact tool discovered with discover_tools. ToolName is its name and ArgumentsJson is its JSON argument object encoded as a string. All normal mode, project, privacy and approval guards apply. Never recursively invoke a catalogue gateway.", new[] { "ToolName", "ArgumentsJson" }, "ToolName", "ArgumentsJson")
         };
         /// <summary>Performs the is catalog tool operation for LlmVbeTools.</summary>
 /// <param name="name">Text containing the name.</param>
 /// <returns>The result produced by this operation.</returns>
-internal static bool IsCatalogTool(string name) => name == "discover_tools" || name == "invoke_tool";
+        internal static bool IsCatalogTool(string name) => name == "discover_tools" || name == "invoke_tool";
         /// <summary>Performs the tool family operation for LlmVbeTools.</summary>
 /// <param name="name">Text containing the name.</param>
 /// <returns>The result produced by this operation.</returns>
-internal static string ToolFamily(string name)
+        internal static string ToolFamily(string name)
         {
             if (name.StartsWith("git_", StringComparison.Ordinal)) return "git";
             if (name.IndexOf("form", StringComparison.Ordinal) >= 0 || name.IndexOf("designer", StringComparison.Ordinal) >= 0) return "forms";
@@ -47,7 +47,7 @@ internal static string ToolFamily(string name)
         /// <summary>Performs the catalog for provider operation for LlmVbeTools.</summary>
 /// <param name="gatewayOnly">Indicates whether gateway only is enabled.</param>
 /// <returns>The result produced by this operation.</returns>
-internal object[] CatalogForProvider(bool gatewayOnly = false)
+        internal object[] CatalogForProvider(bool gatewayOnly = false)
         {
             return Definitions.Where(raw =>
             {
@@ -59,12 +59,12 @@ internal object[] CatalogForProvider(bool gatewayOnly = false)
                 .Take(64).ToArray();
         }
         /// <summary>Performs the reset catalog operation for LlmVbeTools.</summary>
-internal void ResetCatalog() { loadedFamilies.Clear(); familyPriority.Clear(); nextFamilyPriority = 0; }
+        internal void ResetCatalog() { loadedFamilies.Clear(); familyPriority.Clear(); nextFamilyPriority = 0; }
         /// <summary>Performs the invoke catalog async operation for LlmVbeTools.</summary>
 /// <param name="name">Text containing the name.</param>
 /// <param name="arguments">Text containing the arguments.</param>
 /// <returns>The result produced by this operation.</returns>
-internal async Task<string> InvokeCatalogAsync(string name, string arguments)
+        internal async Task<string> InvokeCatalogAsync(string name, string arguments)
         {
             try
             {

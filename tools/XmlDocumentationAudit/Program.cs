@@ -227,9 +227,9 @@ static int TransplantDocumentation(string targetRoot, string sourceRoot)
             var key = DeclarationEntries(declaration).Select(entry => entry.Key)
                 .FirstOrDefault(docsByKey.ContainsKey);
             if (key is null) continue;
-            var leading = declaration.GetLeadingTrivia().Where(trivia => !IsDocumentationTrivia(trivia));
+            var leading = declaration.GetLeadingTrivia().Where(trivia => !IsDocumentationTrivia(trivia)).ToArray();
             replacements[declaration] = declaration.WithLeadingTrivia(
-                leading.Concat(AlignParameterNames(docsByKey[key], declaration)));
+                PlaceDocumentation(leading, AlignParameterNames(docsByKey[key], declaration)));
             commentsCopied++;
         }
 
@@ -315,6 +315,15 @@ static bool IsDocumentationTrivia(SyntaxTrivia trivia) => trivia.IsKind(SyntaxKi
 static List<SyntaxTrivia> DocumentationTrivia(SyntaxNode node) => node.GetLeadingTrivia()
     .Where(IsDocumentationTrivia).ToList();
 
+static IEnumerable<SyntaxTrivia> PlaceDocumentation(IEnumerable<SyntaxTrivia> originalLeading,
+    IEnumerable<SyntaxTrivia> documentation)
+{
+    var leading = originalLeading.ToArray();
+    var indent = leading.LastOrDefault(trivia => trivia.IsKind(SyntaxKind.WhitespaceTrivia));
+    if (indent.RawKind == 0) return leading.Concat(documentation);
+    return leading.Concat(documentation).Append(indent);
+}
+
 static int CompleteDocumentation(string root)
 {
     var declarationsCompleted = 0;
@@ -344,10 +353,10 @@ static int CompleteDocumentation(string root)
                 xml.AppendLine("/// <returns>The result produced by this operation.</returns>");
             if (node is PropertyDeclarationSyntax or IndexerDeclarationSyntax && (!canPreserve || issues.Contains("value")))
                 xml.AppendLine("/// <value>The current value represented by this member.</value>");
-            var leading = node.GetLeadingTrivia().Where(trivia => !IsDocumentationTrivia(trivia))
-                .Concat(canPreserve ? existing : [])
+            var leading = node.GetLeadingTrivia().Where(trivia => !IsDocumentationTrivia(trivia)).ToArray();
+            var documentation = (canPreserve ? existing : [])
                 .Concat(SyntaxFactory.ParseLeadingTrivia(xml.ToString()));
-            replacements[node] = node.WithLeadingTrivia(leading);
+            replacements[node] = node.WithLeadingTrivia(PlaceDocumentation(leading, documentation));
             declarationsCompleted++;
         }
         if (replacements.Count == 0) continue;
@@ -549,9 +558,9 @@ static int RefineDocumentation(string root)
                     "<value>" + EscapeXml(valueDescription) + "</value>",
                     System.Text.RegularExpressions.RegexOptions.Singleline, TimeSpan.FromSeconds(1));
             if (StringComparer.Ordinal.Equals(oldText, newText)) continue;
-            var leading = node.GetLeadingTrivia().Where(trivia => !IsDocumentationTrivia(trivia))
-                .Concat(SyntaxFactory.ParseLeadingTrivia(newText));
-            replacements[node] = node.WithLeadingTrivia(leading);
+            var leading = node.GetLeadingTrivia().Where(trivia => !IsDocumentationTrivia(trivia)).ToArray();
+            replacements[node] = node.WithLeadingTrivia(PlaceDocumentation(leading,
+                SyntaxFactory.ParseLeadingTrivia(newText)));
             commentsRefined++;
         }
         if (replacements.Count == 0) continue;

@@ -7,7 +7,7 @@ namespace CodexVBE
     public class ChatDesignerView : UserControl
     {
         /// <summary>Stores the watched used by ChatDesignerView.</summary>
-private readonly HashSet<FlowLayoutPanel> watched = new HashSet<FlowLayoutPanel>();
+        private readonly HashSet<FlowLayoutPanel> watched = new HashSet<FlowLayoutPanel>();
         /// <summary>Connects resize behavior to Designer-created containers.</summary>
         /// <param name="e">Added control.</param>
         protected override void OnControlAdded(ControlEventArgs e)
@@ -16,7 +16,7 @@ private readonly HashSet<FlowLayoutPanel> watched = new HashSet<FlowLayoutPanel>
         }
         /// <summary>Registers a control whose preferred height should trigger row remeasurement.</summary>
 /// <param name="parent">The parent used by this operation.</param>
-private void Watch(Control parent)
+        private void Watch(Control parent)
         {
             if (parent is FlowLayoutPanel flow && flow.FlowDirection == FlowDirection.TopDown && watched.Add(flow)) {
                 int lastWidth = -1;
@@ -30,7 +30,7 @@ private void Watch(Control parent)
         }
         /// <summary>Resizes the designer host rows to fit their current transcript controls.</summary>
 /// <param name="flow">The flow used by this operation.</param>
-private static void ResizeRows(FlowLayoutPanel flow)
+        private static void ResizeRows(FlowLayoutPanel flow)
         {
             if (flow.ClientSize.Width <= 0) return;
             foreach (Control child in flow.Controls) {

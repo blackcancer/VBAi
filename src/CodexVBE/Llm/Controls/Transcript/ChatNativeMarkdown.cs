@@ -10,17 +10,17 @@ using Markdig.Extensions.TaskLists;
 namespace CodexVBE
 {
     /// <summary>Renders provider Markdown in the native chat transcript, including code, tables, links, and VBA references.</summary>
-internal static class ChatNativeMarkdown
+    internal static class ChatNativeMarkdown
     {
         /// <summary>Parses the Markdown extensions supported by the native transcript renderer.</summary>
-private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().UsePipeTables().UseAutoLinks().UseEmphasisExtras().UseTaskLists().Build();
+        private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().UsePipeTables().UseAutoLinks().UseEmphasisExtras().UseTaskLists().Build();
         /// <summary>Parses Markdown and renders its blocks and interactive references into the transcript view.</summary>
 /// <param name="view">Transcript control that receives the rendered content.</param>
 /// <param name="text">Markdown source returned by the chat provider.</param>
 /// <param name="refs">Recognized VBA references keyed by their visible token.</param>
 /// <param name="navigate">Callback invoked when the user activates a recognized VBA reference.</param>
 /// <param name="error">Callback that receives link activation errors.</param>
-internal static void Render(ChatTextContentView view, string text, IDictionary<string,VbeChatReference> refs, Action<VbeChatReference> navigate, Action<string> error)
+        internal static void Render(ChatTextContentView view, string text, IDictionary<string,VbeChatReference> refs, Action<VbeChatReference> navigate, Action<string> error)
         { Blocks(view, Markdown.Parse(text,Pipeline), refs,navigate,error); }
         /// <summary>Renders Markdown blocks, including nested lists, tables, quotes, and code, into the transcript view.</summary>
 /// <param name="view">The view used by this operation.</param>
@@ -28,7 +28,7 @@ internal static void Render(ChatTextContentView view, string text, IDictionary<s
 /// <param name="refs">The refs used by this operation.</param>
 /// <param name="navigate">The navigate used by this operation.</param>
 /// <param name="error">The error used by this operation.</param>
-private static void Blocks(ChatTextContentView view, ContainerBlock blocks, IDictionary<string,VbeChatReference> refs, Action<VbeChatReference> navigate, Action<string> error)
+        private static void Blocks(ChatTextContentView view, ContainerBlock blocks, IDictionary<string,VbeChatReference> refs, Action<VbeChatReference> navigate, Action<string> error)
         {
             foreach (var block in blocks) {
                 if (block is CodeBlock code) {
@@ -64,7 +64,7 @@ private static void Blocks(ChatTextContentView view, ContainerBlock blocks, IDic
 /// <param name="error">The error used by this operation.</param>
 /// <param name="style">The style used by this operation.</param>
 /// <param name="size">The size used by this operation.</param>
-private static void Inlines(ChatTextContentView view, ContainerInline source, IDictionary<string,VbeChatReference> refs, Action<VbeChatReference> navigate, Action<string> error, FontStyle style, float size)
+        private static void Inlines(ChatTextContentView view, ContainerInline source, IDictionary<string,VbeChatReference> refs, Action<VbeChatReference> navigate, Action<string> error, FontStyle style, float size)
         {
             foreach (var inline in source) {
                 if (inline is LiteralInline literal) {

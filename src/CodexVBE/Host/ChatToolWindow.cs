@@ -66,7 +66,7 @@ namespace CodexVBE
                 /// <summary>Lit la taille réelle de la zone cliente du site natif, qui peut différer du cadre VBIDE.</summary>
         /// <param name="size">Reçoit la taille lue, ou une taille vide si le site ne peut pas être interrogé.</param>
         /// <returns><see langword="true"/> si la zone cliente native a été lue.</returns>
-internal bool TryGetNativeSiteSize(out System.Drawing.Size size)
+        internal bool TryGetNativeSiteSize(out System.Drawing.Size size)
         {
             size = System.Drawing.Size.Empty;
             if (!IsHandleCreated || IsDisposed) return false;

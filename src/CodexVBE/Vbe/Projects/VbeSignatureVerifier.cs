@@ -67,13 +67,13 @@ namespace CodexVBE
         /// <param name="action">Identifiant de la politique d’action, passé par référence.</param>
         /// <param name="data">Structure native des options et de l’état de vérification.</param>
         /// <returns>Code HRESULT natif de WinVerifyTrust.</returns>
-internal delegate int VerifyCall(IntPtr owner, ref Guid action, ref TrustData data);
+        internal delegate int VerifyCall(IntPtr owner, ref Guid action, ref TrustData data);
                 /// <summary>Appel Windows de vérification et de fermeture.</summary>
         /// <param name="owner">Handle propriétaire de l’appel.</param>
         /// <param name="action">Identifiant de la politique d’action, passé par référence.</param>
         /// <param name="data">Données natives du fichier et options de vérification.</param>
         /// <returns>Code HRESULT retourné par WinVerifyTrust.</returns>
-[DllImport("wintrust.dll", ExactSpelling = true, PreserveSig = true)]
+        [DllImport("wintrust.dll", ExactSpelling = true, PreserveSig = true)]
         private static extern int WinVerifyTrust(IntPtr owner, ref Guid action, ref TrustData data);
         /// <summary>Appel natif par défaut, injectable pour les erreurs de politique.</summary>
         internal VerifyCall Native = WinVerifyTrust;
@@ -131,7 +131,7 @@ internal delegate int VerifyCall(IntPtr owner, ref Guid action, ref TrustData da
         /// <param name="handle">Handle ouvert en lecture du fichier.</param>
         /// <param name="subject">Identifiant du sujet Office SIP approprié au format.</param>
         /// <returns>Code HRESULT de la vérification de confiance native.</returns>
-private int VerifyNative(string path, IntPtr handle, Guid subject)
+        private int VerifyNative(string path, IntPtr handle, Guid subject)
         {
             IntPtr subjectBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Guid)));
             IntPtr fileBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(TrustFile)));
@@ -152,7 +152,7 @@ private int VerifyNative(string path, IntPtr handle, Guid subject)
                 /// <summary>Lit la bibliothèque du SIP Office x64 enregistré pour la vérification du digest.</summary>
         /// <param name="subject">Identifiant du sujet SIP Office.</param>
         /// <returns>Chemin configuré de la bibliothèque, ou <see langword="null"/> si la valeur est absente ou illisible.</returns>
-private static string ReadProvider(Guid subject)
+        private static string ReadProvider(Guid subject)
         {
             using (var registry = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
             using (var key = registry.OpenSubKey(@"SOFTWARE\Microsoft\Cryptography\OID\EncodingType 0\CryptSIPDllVerifyIndirectData\" + subject.ToString("B")))
@@ -162,7 +162,7 @@ private static string ReadProvider(Guid subject)
                 /// <summary>Classe les résultats sans confondre absence, altération et confiance incomplète.</summary>
         /// <param name="result">Code HRESULT produit par WinVerifyTrust.</param>
         /// <returns>Étiquette stable correspondant aux codes reconnus, ou <c>VerificationFailed</c>.</returns>
-private static string Status(int result)
+        private static string Status(int result)
         {
             switch (unchecked((uint)result))
             {

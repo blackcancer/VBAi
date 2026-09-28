@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 namespace CodexVBE
 {
     /// <summary>Prévisualise et applique des renommages liés aux membres privés de modules de classe ordinaires.</summary>
-internal sealed partial class VbeCodeEdits
+    internal sealed partial class VbeCodeEdits
     {
         /// <summary>Factory locale de chemin temporaire ; chaque instance possède sa dépendance.</summary>
         private readonly Func<string> classMemberExportPath = () => Path.Combine(Path.GetTempPath(),
@@ -24,15 +24,15 @@ internal sealed partial class VbeCodeEdits
         private sealed class ClassMemberProjectSnapshot
         {
             /// <summary>Snapshot des modules VBA du projet inspecté.</summary>
-internal ProcedureProjectSnapshot Project;
+            internal ProcedureProjectSnapshot Project;
             /// <summary>Empreinte combinée du catalogue de projet et de l’export natif du composant cible.</summary>
-internal string Version, ExportVersion;
+            internal string Version, ExportVersion;
         }
 
                 /// <summary>Prévisualise un membre privé de classe et ses références internes réellement liées.</summary>
         /// <param name="request">Projet, module, nom à rechercher et nouveau nom demandé.</param>
         /// <returns>Plan de renommage, empreintes de précondition et description des limites de liaison.</returns>
-internal object PreviewClassMemberRename(Request request)
+        internal object PreviewClassMemberRename(Request request)
         {
             var snapshot = CaptureClassMemberProject(request);
             var plan = VbaClassMemberRename.Prepare(snapshot.Project.CanonicalProjectName, snapshot.Project.Modules, request);
@@ -47,7 +47,7 @@ internal object PreviewClassMemberRename(Request request)
         /// <returns>Résultat vérifié par module, avec état non atomique et limites d’annulation.</returns>
         /// <exception cref="ArgumentException">La requête ne porte pas le mode design ou la version d’aperçu attendue.</exception>
         /// <exception cref="InvalidOperationException">Le projet a changé ou une écriture/readback a échoué.</exception>
-internal object ApplyClassMemberRename(Request request)
+        internal object ApplyClassMemberRename(Request request)
         {
             if (request == null || request.ExpectedMode != 2 || string.IsNullOrWhiteSpace(request.ExpectedProjectVersion))
                 throw new ArgumentException("ExpectedMode=2 and ExpectedProjectVersion from preview_class_member_rename are required.");
@@ -86,7 +86,7 @@ internal object ApplyClassMemberRename(Request request)
                 /// <summary>Ajoute la version de l'export natif au catalogue et SHA de tous les composants.</summary>
         /// <param name="request">Projet et module de classe sélectionné.</param>
         /// <returns>Snapshot combiné du catalogue de projet et des métadonnées de l’export cible.</returns>
-private ClassMemberProjectSnapshot CaptureClassMemberProject(Request request)
+        private ClassMemberProjectSnapshot CaptureClassMemberProject(Request request)
         {
             var project = CaptureProcedureProject(request);
             if (project.Mode != 2) throw new InvalidOperationException("Class member refactoring requires native design mode.");
@@ -102,7 +102,7 @@ private ClassMemberProjectSnapshot CaptureClassMemberProject(Request request)
         /// <param name="module">Nom du module de classe à exporter.</param>
         /// <param name="source">Source CodeModule capturée avant l’export.</param>
         /// <returns>Empreinte de l’export après vérification de son code et de ses attributs.</returns>
-private string InspectClassMemberExport(string project, string module, string source)
+        private string InspectClassMemberExport(string project, string module, string source)
         {
             var component = execute(new Request { Command = "component_properties", Project = project, Module = module });
             if (!component.Ok) throw new InvalidOperationException(component.Error);
@@ -134,7 +134,7 @@ private string InspectClassMemberExport(string project, string module, string so
         /// <param name="module">Nom attendu pour l’attribut VB_Name.</param>
         /// <param name="source">Source visible capturée par CodeModule.</param>
         /// <exception cref="InvalidOperationException">L’export n’a pas le format attendu ou le code/métadonnées diffère de l’instantané.</exception>
-internal static void ValidateClassMemberExport(string export, string module, string source)
+        internal static void ValidateClassMemberExport(string export, string module, string source)
         {
             if (export == null || source == null) throw new InvalidOperationException("The native class export is unreadable.");
             string[] lines = CodeRollback.Lines(export);

@@ -1,23 +1,23 @@
 namespace CodexVBE
 {
     /// <summary>Displays transcript details in a section that can expand or collapse.</summary>
-public sealed partial class ChatDisclosureView
+    public sealed partial class ChatDisclosureView
     {
         /// <summary>Container that owns the disposable components created by the WinForms Designer.</summary>
-private System.ComponentModel.IContainer components;
+        private System.ComponentModel.IContainer components;
         /// <summary>ToolTip component used to show full text for transcript controls.</summary>
-private System.Windows.Forms.ToolTip toolTips;
+        private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Flow layout panel that contains this transcript view&apos;s child controls.</summary>
-private System.Windows.Forms.TableLayoutPanel layout;
+        private System.Windows.Forms.TableLayoutPanel layout;
         /// <summary>Button that expands or collapses the section body.</summary>
-internal ChatActionButton toggle;
+        internal ChatActionButton toggle;
         /// <summary>Panel that contains the controls shown while the section is expanded.</summary>
-internal System.Windows.Forms.FlowLayoutPanel body;
+        internal System.Windows.Forms.FlowLayoutPanel body;
         /// <summary>Releases the Designer components.</summary>
         /// <param name="disposing">Whether to release managed resources.</param>
         protected override void Dispose(bool disposing) { if (disposing) components?.Dispose(); base.Dispose(disposing); }
         /// <summary>Creates and configures the chat disclosure view controls serialized by the WinForms Designer.</summary>
-private void InitializeComponent()
+        private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);

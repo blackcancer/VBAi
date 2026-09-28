@@ -1,22 +1,22 @@
 namespace CodexVBE
 {
     /// <summary>Designer-generated controls for creating and restoring local project checkpoints.</summary>
-public sealed partial class GitCheckpointsView
+    public sealed partial class GitCheckpointsView
     {
         /// <summary>Actions for checkpoint operations.</summary>
-internal System.Windows.Forms.FlowLayoutPanel checkpointActions;
+        internal System.Windows.Forms.FlowLayoutPanel checkpointActions;
         /// <summary>Saved local checkpoints.</summary>
-internal System.Windows.Forms.ListBox checkpointList;
+        internal System.Windows.Forms.ListBox checkpointList;
         /// <summary>New checkpoint name input.</summary>
-internal System.Windows.Forms.TextBox checkpointName;
+        internal System.Windows.Forms.TextBox checkpointName;
         /// <summary>Creates a checkpoint from the current project state.</summary>
-internal CodexVBE.ThemedButton checkpointCreate;
+        internal CodexVBE.ThemedButton checkpointCreate;
         /// <summary>Restores the selected checkpoint.</summary>
-internal CodexVBE.ThemedButton checkpointRestore;
+        internal CodexVBE.ThemedButton checkpointRestore;
         /// <summary>Container that owns Designer components.</summary>
-private System.ComponentModel.IContainer components;
+        private System.ComponentModel.IContainer components;
         /// <summary>Tooltips associated with checkpoint actions.</summary>
-private System.Windows.Forms.ToolTip toolTips;
+        private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)
@@ -26,7 +26,7 @@ private System.Windows.Forms.ToolTip toolTips;
         }
 
         /// <summary>Creates and arranges checkpoint controls.</summary>
-private void InitializeComponent()
+        private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);

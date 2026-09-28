@@ -7,22 +7,22 @@ using System.Windows.Forms;
 namespace CodexVBE
 {
     /// <summary>Fenêtre du chat et coordination des mises à jour de contexte VBE.</summary>
-internal sealed partial class ChatWindow
+    internal sealed partial class ChatWindow
     {
         /// <summary>Cadence les lectures incrémentales du contexte de projet.</summary>
-private Timer contextMonitorTimer;
+        private Timer contextMonitorTimer;
         /// <summary>Surveille les empreintes des projets, modules et références.</summary>
-private VbeContextMonitor contextMonitor;
+        private VbeContextMonitor contextMonitor;
         /// <summary>Indique qu’un événement ou un sondage impose de rafraîchir le contexte affiché.</summary>
-private bool contextDirty;
+        private bool contextDirty;
         /// <summary>Abonnement aux événements d’ajout et retrait de références.</summary>
-private VbeReferenceEvents referenceEvents;
+        private VbeReferenceEvents referenceEvents;
         /// <summary>Abonnements aux modifications de projets et de composants.</summary>
-private VbeCollectionEvents projectEvents, componentEvents;
+        private VbeCollectionEvents projectEvents, componentEvents;
 
         /// <summary>Installe les observateurs COM et le sondage périodique sur la session VBE.</summary>
         /// <param name="session">Session hôte dont les événements et requêtes sont surveillés.</param>
-private void InitializeContextMonitor(VbeSession session)
+        private void InitializeContextMonitor(VbeSession session)
         {
             projectEvents = new VbeCollectionEvents(() => contextDirty = true, false);
             componentEvents = new VbeCollectionEvents(() => contextDirty = true, true);
@@ -56,7 +56,7 @@ private void InitializeContextMonitor(VbeSession session)
 
         /// <summary>Actualise la collection COM observée et maintient le sondage si les événements natifs sont indisponibles.</summary>
         /// <param name="observer">Observateur à reconfigurer.</param><param name="source">Accès différé à la collection source.</param>
-private static void ObserveCollectionEvents(VbeCollectionEvents observer, Func<object> source)
+        private static void ObserveCollectionEvents(VbeCollectionEvents observer, Func<object> source)
         {
             try { observer.Observe(source()); }
             catch (Exception error)
@@ -68,7 +68,7 @@ private static void ObserveCollectionEvents(VbeCollectionEvents observer, Func<o
 
         /// <summary>Réconcilie le sélecteur de projet et invalide l’index des références lorsqu’un changement est en attente.</summary>
         /// <param name="session">Session VBE utilisée pour relire les projets.</param>
-private void RefreshDirtyContext(VbeSession session)
+        private void RefreshDirtyContext(VbeSession session)
         {
             if (!contextDirty) return;
             contextDirty = false;
@@ -84,7 +84,7 @@ private void RefreshDirtyContext(VbeSession session)
         /// <summary>Reconstruit les choix de projet à partir de l’hôte sans basculer implicitement la conversation.</summary>
         /// <param name="session">Session VBE interrogée.</param>
         /// <returns><see langword="true"/> si la liste a pu être relue et actualisée.</returns>
-private bool RefreshAvailableScopes(VbeSession session)
+        private bool RefreshAvailableScopes(VbeSession session)
         {
             Response response = ReadHost(session, new Request { Command = "list_projects" });
             if (!response.Ok) return false;

@@ -10,26 +10,26 @@ namespace CodexVBE
     internal sealed class UpdateInstallerRunner
     {
         /// <summary>Stores the start process used by UpdateInstallerRunner.</summary>
-internal static Func<ProcessStartInfo, Process> StartProcess = Process.Start;
+        internal static Func<ProcessStartInfo, Process> StartProcess = Process.Start;
         /// <summary>Stores the read process used by UpdateInstallerRunner.</summary>
-internal static Func<int, Process> ReadProcess = Process.GetProcessById;
+        internal static Func<int, Process> ReadProcess = Process.GetProcessById;
         /// <summary>Update root containing the pending job, staged package, and host leases.</summary>
-private readonly string root;
+        private readonly string root;
         /// <summary>Process-liveness check used to detect whether a registered host remains active.</summary>
-internal Func<UpdateHostLease, bool> IsAlive = IsAliveNative;
+        internal Func<UpdateHostLease, bool> IsAlive = IsAliveNative;
         /// <summary>Authenticode verification delegate for the staged installer.</summary>
-internal Func<string, bool> VerifySignature = VerifySignatureNative;
+        internal Func<string, bool> VerifySignature = VerifySignatureNative;
         /// <summary>Delegate that launches an installer and returns its process exit code.</summary>
-internal Func<string, int> Install = InstallNative;
+        internal Func<string, int> Install = InstallNative;
         /// <summary>Delegate that reads the installed product version from a directory.</summary>
-internal Func<string, string> InstalledVersion = directory => FileVersionInfo.GetVersionInfo(Path.Combine(directory, "CodexVBE.dll")).ProductVersion;
+        internal Func<string, string> InstalledVersion = directory => FileVersionInfo.GetVersionInfo(Path.Combine(directory, "CodexVBE.dll")).ProductVersion;
         /// <summary>Gets whether the installer process is currently running.</summary><value>True while Install is executing.</value>
-internal bool Installing { get; private set; }
+        internal bool Installing { get; private set; }
         /// <summary>Creates a runner bound to one normalized update root.</summary><param name="root">Update cache root path.</param>
-internal UpdateInstallerRunner(string root) { this.root = Path.GetFullPath(root); }
+        internal UpdateInstallerRunner(string root) { this.root = Path.GetFullPath(root); }
         /// <summary>Checks host leases and treats malformed leases as potentially active hosts.</summary>
         /// <param name="job">Job whose installation directory must be free of loaded hosts.</param><returns>Whether a matching or unverifiable host may still be open.</returns>
-internal bool HostsOpen(UpdateInstallJob job)
+        internal bool HostsOpen(UpdateInstallJob job)
         {
             string hosts = Path.Combine(root, "hosts");
             if (!Directory.Exists(hosts)) return false;
@@ -51,7 +51,7 @@ internal bool HostsOpen(UpdateInstallJob job)
         }
         /// <summary>Advances the job after host closure and revalidates package integrity and trust before installation.</summary>
         /// <param name="job">Job to validate and process.</param><returns>True when complete or superseded; false while a host or another worker remains active.</returns>
-internal bool Tick(UpdateInstallJob job)
+        internal bool Tick(UpdateInstallJob job)
         {
             job.Validate(root);
             if (job.Completed) return true;
@@ -86,7 +86,7 @@ internal bool Tick(UpdateInstallJob job)
         }
         /// <summary>Checks process identity using PID and UTC start time to avoid PID reuse.</summary>
         /// <param name="lease">Persisted host lease.</param><returns>Whether the same process instance is alive.</returns>
-private static bool IsAliveNative(UpdateHostLease lease)
+        private static bool IsAliveNative(UpdateHostLease lease)
         {
             try { using (var process = ReadProcess(lease.Pid)) return !process.HasExited && process.StartTime.ToUniversalTime().Ticks == lease.StartTimeUtcTicks; }
             catch (ArgumentException) { return false; }
@@ -96,7 +96,7 @@ private static bool IsAliveNative(UpdateHostLease lease)
         /// <summary>Runs an MSI through msiexec or starts the setup executable with quiet update flags.</summary>
         /// <param name="path">Verified installer path.</param><returns>Installer process exit code.</returns>
         /// <exception cref="InvalidOperationException">The installer process could not start.</exception>
-private static int InstallNative(string path)
+        private static int InstallNative(string path)
         {
             bool msi = path.EndsWith(".msi", StringComparison.OrdinalIgnoreCase);
             var start = new ProcessStartInfo(msi ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "msiexec.exe") : path,
@@ -109,7 +109,7 @@ private static int InstallNative(string path)
         }
         /// <summary>Uses WinVerifyTrust to verify the installer without UI and then releases trust state.</summary>
         /// <param name="path">Installer file to verify.</param><returns>Whether WinTrust accepts the file.</returns>
-internal static bool VerifySignatureNative(string path)
+        internal static bool VerifySignatureNative(string path)
         {
             var file = new TrustFile { Size = (uint)Marshal.SizeOf(typeof(TrustFile)), Path = path };
             IntPtr pointer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(TrustFile)));
@@ -120,21 +120,21 @@ internal static bool VerifySignatureNative(string path)
             finally { data.StateAction = 2; WinVerifyTrust(new IntPtr(-1), ref action, ref data); Marshal.DestroyStructure(pointer, typeof(TrustFile)); Marshal.FreeHGlobal(pointer); }
         }
         /// <summary>WINTRUST_FILE_INFO-compatible data identifying the file to verify.</summary>
-[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         private struct TrustFile { /// <summary>Structure size, file path, optional file handle, and subject pointer.</summary>
 internal uint Size; /// <summary>Unicode path of the installer file being verified.</summary>
 [MarshalAs(UnmanagedType.LPWStr)] internal string Path; /// <summary>Optional open file handle and subject pointer, unused by this caller.</summary>
 internal IntPtr File, Subject; }
         /// <summary>WINTRUST_DATA-compatible policy, file choice, and trust-state data.</summary>
-[StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential)]
         private struct TrustData
         {
             /// <summary>Structure size in bytes.</summary>
-internal uint Size; /// <summary>Optional policy and SIP provider data pointers.</summary>
+            internal uint Size; /// <summary>Optional policy and SIP provider data pointers.</summary>
 internal IntPtr Policy, Sip; /// <summary>UI mode, revocation-check setting, and selected union member.</summary>
 internal uint UiChoice, RevocationChecks, UnionChoice;
             /// <summary>Pointer to the selected trust file description.</summary>
-internal IntPtr File; /// <summary>Trust state action used to open or close provider state.</summary>
+            internal IntPtr File; /// <summary>Trust state action used to open or close provider state.</summary>
 internal uint StateAction; /// <summary>Provider state, optional URL, flags, and caller context.</summary>
 internal IntPtr StateData, Url; /// <summary>Trust-provider behavior flags and caller context pointer.</summary>
 internal uint Flags, Context;
@@ -142,7 +142,7 @@ internal uint Flags, Context;
         /// <summary>Verifies a file's Authenticode trust state using the Windows trust provider.</summary>
         /// <param name="window">Window handle for trust-provider UI, unused with no-UI policy.</param><param name="action">Trust action GUID.</param>
         /// <param name="data">Trust policy and file data.</param><returns>Zero when the file is trusted.</returns>
-[DllImport("wintrust.dll", ExactSpelling = true, CharSet = CharSet.Unicode)]
+        [DllImport("wintrust.dll", ExactSpelling = true, CharSet = CharSet.Unicode)]
         private static extern int WinVerifyTrust(IntPtr window, ref Guid action, ref TrustData data);
     }
 }

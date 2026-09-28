@@ -16,18 +16,18 @@ namespace CodexVBE
         {
                         /// <summary>Nom exact du composant.</summary>
             /// <value>Nom utilisé pour associer les edits au module.</value>
-internal string Name { get; }
+            internal string Name { get; }
                         /// <summary>Type VBIDE du composant; 1 désigne un module standard.</summary>
             /// <value>Valeur numérique VBComponent.Type.</value>
-internal int Type { get; }
+            internal int Type { get; }
                         /// <summary>Source entière observée.</summary>
             /// <value>Contenu du CodeModule au moment du snapshot.</value>
-internal string Source { get; }
+            internal string Source { get; }
                         /// <summary>Construit une observation sans conserver de collection mutable de l'appelant.</summary>
             /// <param name="name">Nom du composant.</param>
             /// <param name="type">Type numérique VBIDE.</param>
             /// <param name="source">Source complète du module.</param>
-internal ModuleSnapshot(string name, int type, string source)
+            internal ModuleSnapshot(string name, int type, string source)
             { Name = name; Type = type; Source = source; }
         }
 
@@ -36,25 +36,25 @@ internal ModuleSnapshot(string name, int type, string source)
         {
                         /// <summary>Identité du composant.</summary>
             /// <value>Nom du module à écrire.</value>
-public string Module { get; }
+            public string Module { get; }
                         /// <summary>Source avant toute mutation.</summary>
             /// <value>Texte source dont l’empreinte est ExpectedSha256.</value>
-public string Before { get; }
+            public string Before { get; }
                         /// <summary>Source après remplacement des seules références résolues.</summary>
             /// <value>Texte source proposé pour le module.</value>
-public string After { get; }
+            public string After { get; }
                         /// <summary>SHA256 de Before.</summary>
             /// <value>Empreinte exigée avant d’appliquer cette édition.</value>
-public string ExpectedSha256 { get; }
+            public string ExpectedSha256 { get; }
                         /// <summary>Nombre de positions remplacées, déclaration incluse.</summary>
             /// <value>Nombre de jetons substitués dans le module.</value>
-public int Replacements { get; }
+            public int Replacements { get; }
                         /// <summary>Construit une édition immutable.</summary>
             /// <param name="module">Nom du module concerné.</param>
             /// <param name="before">Source avant renommage.</param>
             /// <param name="after">Source après renommage.</param>
             /// <param name="count">Nombre de références remplacées.</param>
-internal ModuleEdit(string module, string before, string after, int count)
+            internal ModuleEdit(string module, string before, string after, int count)
             { Module = module; Before = before; After = after; Replacements = count; ExpectedSha256 = Digest(before); }
         }
 
@@ -63,14 +63,14 @@ internal ModuleEdit(string module, string before, string after, int count)
         {
                         /// <summary>Version du catalogue complet, des types et de toutes les sources.</summary>
             /// <value>Empreinte de l’instantané complet utilisé pour préparer le plan.</value>
-public string SourceVersion { get; }
+            public string SourceVersion { get; }
                         /// <summary>Éditions calculées; les modules inchangés sont absents.</summary>
             /// <value>Collection en lecture seule des modifications à appliquer.</value>
-public ReadOnlyCollection<ModuleEdit> Edits { get; }
+            public ReadOnlyCollection<ModuleEdit> Edits { get; }
                         /// <summary>Construit le plan en copiant sa collection d'éditions.</summary>
             /// <param name="version">Empreinte de l’instantané source.</param>
             /// <param name="edits">Éditions calculées.</param>
-internal Plan(string version, IList<ModuleEdit> edits)
+            internal Plan(string version, IList<ModuleEdit> edits)
             { SourceVersion = version; Edits = new ReadOnlyCollection<ModuleEdit>(edits.ToArray()); }
         }
 
@@ -78,18 +78,18 @@ internal Plan(string version, IList<ModuleEdit> edits)
         private sealed class Signature
         {
             /// <summary>Nom et catégorie d’une déclaration de procédure.</summary>
-internal string Name, Kind, Access;
+            internal string Name, Kind, Access;
             /// <summary>Jeton portant le nom dans la source.</summary>
-internal VbaDeclarationIndex.Token NameToken;
+            internal VbaDeclarationIndex.Token NameToken;
             /// <summary>Dernière ligne de la procédure complète.</summary>
-internal int EndLine;
+            internal int EndLine;
         }
 
                 /// <summary>Versionne toutes les sources, même les composants sans édition, indépendamment de l'ordre de collecte.</summary>
         /// <param name="project">Nom canonique du projet.</param>
         /// <param name="modules">Composants triés logiquement avant calcul de l’empreinte.</param>
         /// <returns>SHA-256 du nom de projet et de toutes les identités/types/sources.</returns>
-internal static string Version(string project, IEnumerable<ModuleSnapshot> modules)
+        internal static string Version(string project, IEnumerable<ModuleSnapshot> modules)
         {
             var text = new StringBuilder(); Append(text, project ?? "");
             foreach (var module in modules.OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase))
@@ -196,7 +196,7 @@ internal static string Version(string project, IEnumerable<ModuleSnapshot> modul
         /// <param name="request">Ancien nom et nom demandé.</param>
         /// <param name="project">Nom du projet dont les références sont résolues.</param>
         /// <exception cref="InvalidOperationException">Le code contient des consommateurs implicites, dynamiques ou ambigus.</exception>
-private static void GuardModule(ModuleSnapshot module, IList<List<VbaDeclarationIndex.Token>> statements, IList<int> offsets, Request request, string project)
+        private static void GuardModule(ModuleSnapshot module, IList<List<VbaDeclarationIndex.Token>> statements, IList<int> offsets, Request request, string project)
         {
             if (statements.All(x => x.Count == 0)) return;
             if (!statements.Any(x => x.Count == 2 && Same(x[0].Text, "Option") && Same(x[1].Text, "Explicit")))
@@ -217,7 +217,7 @@ private static void GuardModule(ModuleSnapshot module, IList<List<VbaDeclaration
         /// <param name="statements">Instructions lexicales du composant.</param>
         /// <returns>Signatures Sub, Function et Property avec positions et accès.</returns>
         /// <exception cref="InvalidOperationException">Une signature est imbriquée, incomplète ou sans terminateur correspondant.</exception>
-private static Signature[] Signatures(IList<List<VbaDeclarationIndex.Token>> statements)
+        private static Signature[] Signatures(IList<List<VbaDeclarationIndex.Token>> statements)
         {
             var signatures = new List<Signature>(); Signature active = null;
             foreach (var tokens in statements)
@@ -249,7 +249,7 @@ private static Signature[] Signatures(IList<List<VbaDeclarationIndex.Token>> sta
         /// <param name="source">Source entière permettant de lire le caractère suivant.</param>
         /// <param name="position">Offset physique du jeton dans la source.</param>
         /// <returns><see langword="true"/> si le jeton est un usage exclu du renommage.</returns>
-private static bool Excluded(IList<VbaDeclarationIndex.Token> tokens, int index, string source, int position)
+        private static bool Excluded(IList<VbaDeclarationIndex.Token> tokens, int index, string source, int position)
         {
             string previous = index == 0 ? "" : tokens[index - 1].Text;
             if (new[] { "as", "new", "goto", "gosub", "resume" }.Contains(previous.ToLowerInvariant())) return true;
@@ -262,30 +262,30 @@ private static bool Excluded(IList<VbaDeclarationIndex.Token> tokens, int index,
         /// <param name="tokens">Jetons de l’instruction.</param>
         /// <param name="index">Index du nom candidat.</param>
         /// <returns><see langword="true"/> si le nom est qualifié comme membre.</returns>
-private static bool IsMember(IList<VbaDeclarationIndex.Token> tokens, int index) => index > 0 &&
+        private static bool IsMember(IList<VbaDeclarationIndex.Token> tokens, int index) => index > 0 &&
             (tokens[index - 1].Text == "." || tokens[index - 1].Text.EndsWith("!", StringComparison.Ordinal));
                 /// <summary>Retire uniquement les suffixes de type de nom VBA.</summary>
         /// <param name="name">Nom lexical potentiellement suffixé.</param>
         /// <returns>Nom sans suffixe final de type.</returns>
-private static string Bare(string name) => name.TrimEnd('$', '%', '&', '!', '#', '@', '^');
+        private static string Bare(string name) => name.TrimEnd('$', '%', '&', '!', '#', '@', '^');
                 /// <summary>Compare les identités VBA sans distinction de casse.</summary>
         /// <param name="left">Première identité.</param>
         /// <param name="right">Seconde identité.</param>
         /// <returns><see langword="true"/> si elles sont identiques sans sensibilité à la casse.</returns>
-private static bool Same(string left, string right) => string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+        private static bool Same(string left, string right) => string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
                 /// <summary>Calcule les offsets physiques des débuts de lignes.</summary>
         /// <param name="source">Texte source avec fins de ligne intactes.</param>
         /// <returns>Offsets de début de chaque ligne dans le texte.</returns>
-private static List<int> LineOffsets(string source)
+        private static List<int> LineOffsets(string source)
         { var offsets = new List<int> { 0 }; for (int i = 0; i < source.Length; i++) if (source[i] == '\n') offsets.Add(i + 1); return offsets; }
                 /// <summary>Encode une chaîne avec longueur pour éviter une concaténation de version ambiguë.</summary>
         /// <param name="output">Tampon recevant la valeur encadrée par sa longueur.</param>
         /// <param name="value">Texte à ajouter.</param>
-private static void Append(StringBuilder output, string value) => output.Append(value.Length).Append(':').Append(value);
+        private static void Append(StringBuilder output, string value) => output.Append(value.Length).Append(':').Append(value);
                 /// <summary>SHA256 du texte UTF8 exact, sans normalisation des lignes.</summary>
         /// <param name="source">Texte source dont les octets UTF-8 exacts sont empreintés.</param>
         /// <returns>SHA-256 hexadécimal minuscule.</returns>
-internal static string Digest(string source)
+        internal static string Digest(string source)
         { using (var sha = SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(source))).Replace("-", "").ToLowerInvariant(); }
     }
 }

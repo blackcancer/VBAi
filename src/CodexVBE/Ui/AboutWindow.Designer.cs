@@ -1,67 +1,67 @@
 namespace CodexVBE
 {
     /// <summary>Designer-generated controls and layout for the About dialog.</summary>
-internal sealed partial class AboutWindow
+    internal sealed partial class AboutWindow
     {
         /// <summary>Designer container that owns nonvisual components.</summary>
-private System.ComponentModel.IContainer components;
+        private System.ComponentModel.IContainer components;
         /// <summary>Root table layout for the dialog.</summary>
-private System.Windows.Forms.TableLayoutPanel rootLayout;
+        private System.Windows.Forms.TableLayoutPanel rootLayout;
         /// <summary>Header layout containing the brand and introductory text.</summary>
-private System.Windows.Forms.TableLayoutPanel headerLayout;
+        private System.Windows.Forms.TableLayoutPanel headerLayout;
         /// <summary>Product brand image shown at the top of the dialog.</summary>
-private System.Windows.Forms.PictureBox brandImage;
+        private System.Windows.Forms.PictureBox brandImage;
         /// <summary>Product name label.</summary>
-private System.Windows.Forms.Label productName;
+        private System.Windows.Forms.Label productName;
         /// <summary>Short product tagline.</summary>
-private System.Windows.Forms.Label tagline;
+        private System.Windows.Forms.Label tagline;
         /// <summary>Product description text.</summary>
-private System.Windows.Forms.Label description;
+        private System.Windows.Forms.Label description;
         /// <summary>Layout panel for version, host, platform, and language metadata.</summary>
-private CodexVBE.ChatComposerPanel detailsLayout;
+        private CodexVBE.ChatComposerPanel detailsLayout;
         /// <summary>Version metadata caption.</summary>
-private System.Windows.Forms.Label versionLabel;
+        private System.Windows.Forms.Label versionLabel;
         /// <summary>Displayed add-in version.</summary>
-private System.Windows.Forms.Label versionValue;
+        private System.Windows.Forms.Label versionValue;
         /// <summary>Host metadata caption.</summary>
-private System.Windows.Forms.Label hostLabel;
+        private System.Windows.Forms.Label hostLabel;
         /// <summary>Displayed host description.</summary>
-private System.Windows.Forms.Label hostValue;
+        private System.Windows.Forms.Label hostValue;
         /// <summary>Platform metadata caption.</summary>
-private System.Windows.Forms.Label platformLabel;
+        private System.Windows.Forms.Label platformLabel;
         /// <summary>Displayed operating system, process architecture, and runtime.</summary>
-private System.Windows.Forms.Label platformValue;
+        private System.Windows.Forms.Label platformValue;
         /// <summary>Language metadata caption.</summary>
-private System.Windows.Forms.Label languageLabel;
+        private System.Windows.Forms.Label languageLabel;
         /// <summary>Displayed interface language.</summary>
-private System.Windows.Forms.Label languageValue;
+        private System.Windows.Forms.Label languageValue;
         /// <summary>Flow layout containing external project and support links.</summary>
-private System.Windows.Forms.FlowLayoutPanel resourceLinks;
+        private System.Windows.Forms.FlowLayoutPanel resourceLinks;
         /// <summary>Project repository link.</summary>
-private System.Windows.Forms.LinkLabel projectLink;
+        private System.Windows.Forms.LinkLabel projectLink;
         /// <summary>Product documentation link.</summary>
-private System.Windows.Forms.LinkLabel documentationLink;
+        private System.Windows.Forms.LinkLabel documentationLink;
         /// <summary>Issue tracker link.</summary>
-private System.Windows.Forms.LinkLabel issuesLink;
+        private System.Windows.Forms.LinkLabel issuesLink;
         /// <summary>Footer layout containing status and actions.</summary>
-private System.Windows.Forms.TableLayoutPanel footerLayout;
+        private System.Windows.Forms.TableLayoutPanel footerLayout;
         /// <summary>Copy and link error feedback label.</summary>
-private System.Windows.Forms.Label status;
+        private System.Windows.Forms.Label status;
         /// <summary>Flow layout containing dialog action buttons.</summary>
-private System.Windows.Forms.FlowLayoutPanel buttonLayout;
+        private System.Windows.Forms.FlowLayoutPanel buttonLayout;
         /// <summary>Button that copies technical details.</summary>
-private CodexVBE.ChatActionButton copyDetails;
+        private CodexVBE.ChatActionButton copyDetails;
         /// <summary>Button that closes the dialog.</summary>
-private CodexVBE.ChatActionButton closeButton;
+        private CodexVBE.ChatActionButton closeButton;
                 /// <summary>Releases runtime subscriptions and Designer-owned components.</summary>
         /// <param name="disposing">Whether managed components should be disposed.</param>
-protected override void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (disposing) { DisposeRuntime(); if (brandImage.Image != null) { brandImage.Image.Dispose(); brandImage.Image = null; } components?.Dispose(); }
             base.Dispose(disposing);
         }
         /// <summary>Creates and arranges the controls in the About dialog.</summary>
-private void InitializeComponent()
+        private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AboutWindow));
@@ -412,8 +412,8 @@ private void InitializeComponent()
             this.PerformLayout();
         }
         /// <summary>ToolTip component associated with About dialog controls.</summary>
-private System.Windows.Forms.ToolTip toolTips;
+        private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Button that opens the update window.</summary>
-private System.Windows.Forms.Button updates;
+        private System.Windows.Forms.Button updates;
     }
 }

@@ -26,11 +26,11 @@ namespace CodexVBE
         /// <summary>Colonnes des positions et du texte avant et après le changement.</summary>
         private System.Windows.Forms.DataGridViewTextBoxColumn oldLineColumn;
         /// <summary>Column containing the original code line text.</summary>
-private System.Windows.Forms.DataGridViewTextBoxColumn beforeColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn beforeColumn;
         /// <summary>Column containing the updated code line number.</summary>
-private System.Windows.Forms.DataGridViewTextBoxColumn newLineColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn newLineColumn;
         /// <summary>Column containing the updated code line text.</summary>
-private System.Windows.Forms.DataGridViewTextBoxColumn afterColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn afterColumn;
         /// <summary>Crée et configure la barre d’outils, la grille et leurs gestionnaires d’événements.</summary>
         private void InitializeComponent()
         {

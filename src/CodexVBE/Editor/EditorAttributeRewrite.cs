@@ -6,24 +6,24 @@ using System.Text.RegularExpressions;
 namespace CodexVBE
 {
     /// <summary>Préserve les attributs de procédure masqués dans un export lorsque le code VBA est réécrit.</summary>
-internal static class EditorAttributeRewrite
+    internal static class EditorAttributeRewrite
     {
         /// <summary>Procédure extraite du code, avec les lignes source et attributs associés.</summary>
-private sealed class Procedure
+        private sealed class Procedure
         {
             /// <summary>Stores the name,kind used by Procedure.</summary>
-internal string Name, Kind;
+            internal string Name, Kind;
             /// <summary>Stores the first,last used by Procedure.</summary>
-internal int First, Last;
+            internal int First, Last;
             /// <summary>Stores the attributes used by Procedure.</summary>
-internal readonly List<string> Attributes = new List<string>();
+            internal readonly List<string> Attributes = new List<string>();
         }
         /// <summary>Reconnaît le préfixe des lignes Attribute dans les exports VBIDE.</summary>
-private static readonly Regex Attribute = new Regex(@"^\s*Attribute\s+", RegexOptions.IgnoreCase);
+        private static readonly Regex Attribute = new Regex(@"^\s*Attribute\s+", RegexOptions.IgnoreCase);
         /// <summary>Extrait les signatures de procédure d’un texte et leurs étendues de lignes.</summary>
         /// <param name="source">Code VBA visible à analyser.</param>
         /// <returns>Procédures trouvées, ou <see langword="null"/> si les signatures sont ambiguës.</returns>
-private static List<Procedure> Procedures(string source)
+        private static List<Procedure> Procedures(string source)
         {
             var result = new List<Procedure>();
             foreach (var tokens in VbaDeclarationIndex.Statements(source))
@@ -46,7 +46,7 @@ private static List<Procedure> Procedures(string source)
         /// <summary>Retire l’en-tête du concepteur en conservant la section commençant par Attribute VB_Name.</summary>
         /// <param name="exported">Contenu complet exporté par VBIDE.</param>
         /// <returns>Section de code à recharger dans le CodeModule.</returns>
-internal static string CodeSection(string exported)
+        internal static string CodeSection(string exported)
         {
             string text = EditorDocument.Normalize(exported);
             var start = Regex.Match(text, @"(?im)^Attribute VB_Name\s*=");
@@ -57,7 +57,7 @@ internal static string CodeSection(string exported)
         /// <param name="before">Code visible avant le diff.</param>
         /// <param name="patch">Ligne de départ, nombre de lignes supprimées et texte de remplacement.</param>
         /// <returns>Section exportée mise à jour, ou <see langword="null"/> si l’association ne peut pas être préservée sans ambiguïté.</returns>
-internal static string Prepare(string exported, string before, Tuple<int, int, string> patch)
+        internal static string Prepare(string exported, string before, Tuple<int, int, string> patch)
         {
             before = EditorDocument.Normalize(before);
             var code = CodeSection(exported).Split('\n');
@@ -120,7 +120,7 @@ internal static string Prepare(string exported, string before, Tuple<int, int, s
         /// <summary>Détecte les attributs associés à une déclaration répartie sur plusieurs lignes.</summary>
         /// <param name="exported">Export complet du composant.</param>
         /// <returns><see langword="true"/> si la réécriture par CodeModule ne peut pas conserver sûrement les métadonnées.</returns>
-internal static bool HasMultilineAttributes(string exported)
+        internal static bool HasMultilineAttributes(string exported)
         {
             string code = CodeSection(exported);
             var procedures = Procedures(string.Join("\n", code.Split('\n').Where(line => !Attribute.IsMatch(line))));
@@ -130,7 +130,7 @@ internal static bool HasMultilineAttributes(string exported)
         /// <param name="original">Export source contenant les informations de composant.</param>
         /// <param name="code">Section de code modifiée.</param>
         /// <returns>Export complet préparé pour réimportation.</returns>
-internal static string FullExport(string original, string code)
+        internal static string FullExport(string original, string code)
         {
             string normalized = EditorDocument.Normalize(original);
             var start = Regex.Match(normalized, @"(?im)^Attribute VB_Name\s*=");
@@ -139,10 +139,10 @@ internal static string FullExport(string original, string code)
         /// <summary>Extrait les attributs de membre en excluant l’attribut d’identité du composant.</summary>
         /// <param name="source">Texte d’export à analyser.</param>
         /// <returns>Lignes de métadonnées propres aux membres.</returns>
-internal static string MemberMetadata(string source) => string.Join("\n", Metadata(source).Split('\n').Where(line => !Regex.IsMatch(line, @"^Attribute VB_Name\s*=", RegexOptions.IgnoreCase)));
+        internal static string MemberMetadata(string source) => string.Join("\n", Metadata(source).Split('\n').Where(line => !Regex.IsMatch(line, @"^Attribute VB_Name\s*=", RegexOptions.IgnoreCase)));
         /// <summary>Extrait toutes les lignes Attribute d’un texte normalisé.</summary>
         /// <param name="source">Code ou export source.</param>
         /// <returns>Lignes d’attributs séparées par LF.</returns>
-internal static string Metadata(string source) => string.Join("\n", EditorDocument.Normalize(source).Split('\n').Where(line => Attribute.IsMatch(line)));
+        internal static string Metadata(string source) => string.Join("\n", EditorDocument.Normalize(source).Split('\n').Where(line => Attribute.IsMatch(line)));
     }
 }

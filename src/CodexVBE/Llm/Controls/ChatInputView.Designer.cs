@@ -1,25 +1,25 @@
 namespace CodexVBE
 {
     /// <summary>Contrôles générés pour l’hôte WPF et l’aperçu WinForms de la saisie.</summary>
-public sealed partial class ChatInputView
+    public sealed partial class ChatInputView
     {
         /// <summary>Container that owns the disposable components created by the WinForms Designer.</summary>
-private System.ComponentModel.IContainer components;
+        private System.ComponentModel.IContainer components;
         /// <summary>Hôte WinForms destiné au moteur de saisie WPF.</summary>
-private CodexVBE.ChatContentHost host;
+        private CodexVBE.ChatContentHost host;
         /// <summary>Panneau d’aperçu visible dans le concepteur Visual Studio.</summary>
-private System.Windows.Forms.Panel previewPanel;
+        private System.Windows.Forms.Panel previewPanel;
         /// <summary>Représentation WinForms statique destinée au concepteur.</summary>
-private System.Windows.Forms.TextBox previewEditor;
+        private System.Windows.Forms.TextBox previewEditor;
                 /// <summary>Libère les composants du modèle Designer.</summary>
         /// <param name="disposing">Indique si les composants gérés doivent également être libérés.</param>
-protected override void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (disposing) { if (components != null) components.Dispose(); }
             base.Dispose(disposing);
         }
         /// <summary>Creates and configures the chat input view controls serialized by the WinForms Designer.</summary>
-private void InitializeComponent()
+        private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.host = new CodexVBE.ChatContentHost();

@@ -1,22 +1,22 @@
 namespace CodexVBE
 {
     /// <summary>Contrôles générés pour le thème et l’habillage natif du VBE.</summary>
-public sealed partial class AppearanceSettingsView
+    public sealed partial class AppearanceSettingsView
     {
         /// <summary>Disposition des préférences d’apparence.</summary>
-internal System.Windows.Forms.FlowLayoutPanel themePanel;
+        internal System.Windows.Forms.FlowLayoutPanel themePanel;
         /// <summary>Libellé du sélecteur de thème.</summary>
-internal System.Windows.Forms.Label themeLabel;
+        internal System.Windows.Forms.Label themeLabel;
         /// <summary>Sélecteur du thème de l’interface.</summary>
-internal CodexVBE.ThemedComboBox themePicker;
+        internal CodexVBE.ThemedComboBox themePicker;
         /// <summary>Option d’habillage sombre des fenêtres natives du VBE.</summary>
-internal System.Windows.Forms.CheckBox nativeVbeDark;
+        internal System.Windows.Forms.CheckBox nativeVbeDark;
         /// <summary>Note décrivant la portée de l’habillage natif.</summary>
-internal System.Windows.Forms.Label nativeVbeDarkNote;
+        internal System.Windows.Forms.Label nativeVbeDarkNote;
         /// <summary>Conteneur des composants WinForms non visuels.</summary>
-private System.ComponentModel.IContainer components;
+        private System.ComponentModel.IContainer components;
         /// <summary>Info-bulles de la vue.</summary>
-private System.Windows.Forms.ToolTip toolTips;
+        private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)
@@ -26,7 +26,7 @@ private System.Windows.Forms.ToolTip toolTips;
         }
 
         /// <summary>Crée les contrôles de la vue et applique leurs propriétés Designer.</summary>
-private void InitializeComponent()
+        private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);

@@ -5,14 +5,14 @@ using System.Linq;
 namespace CodexVBE
 {
     /// <summary>Restaure et persiste les profils explicites de barres d’outils VBAi.</summary>
-internal sealed partial class VbeEditorWindows
+    internal sealed partial class VbeEditorWindows
     {
         /// <summary>Préfixe distinguant les commandes conservées dans un profil persistant.</summary>
-private const string PersistentCommandTag = "VBAi.ToolbarCommand.Persistent.";
+        private const string PersistentCommandTag = "VBAi.ToolbarCommand.Persistent.";
         /// <summary>Stockage facultatif des profils de barres d’outils.</summary>
-internal VbeToolbarProfiles ToolbarProfiles;
+        internal VbeToolbarProfiles ToolbarProfiles;
         /// <summary>Erreurs rencontrées lors de la restauration des profils de barres d’outils.</summary>
-internal readonly List<string> ToolbarProfileErrors = new List<string>();
+        internal readonly List<string> ToolbarProfileErrors = new List<string>();
         /// <summary>Restaure les commandes natives exactes des seules barres VBAi enregistrées explicitement.</summary>
         internal void RestoreToolbarProfiles()
         {
@@ -64,7 +64,7 @@ internal readonly List<string> ToolbarProfileErrors = new List<string>();
         /// <summary>Enregistre l’état et les commandes persistantes d’une barre si son profil est suivi.</summary>
         /// <param name="bar">Barre native à capturer.</param>
         /// <param name="create">Indique si un nouveau profil peut être créé.</param>
-private void SaveToolbarProfile(dynamic bar, bool create)
+        private void SaveToolbarProfile(dynamic bar, bool create)
         {
             if (ToolbarProfiles == null) return;
             string name = (string)bar.Name;
@@ -79,7 +79,7 @@ private void SaveToolbarProfile(dynamic bar, bool create)
         }
         /// <summary>Exige un profil existant avant l’ajout de commandes persistantes à une barre.</summary>
         /// <param name="bar">Barre native sur laquelle une commande persistante doit être ajoutée.</param>
-private void RequirePersistentToolbar(dynamic bar)
+        private void RequirePersistentToolbar(dynamic bar)
         {
             if (ToolbarProfiles != null && !ToolbarProfiles.Read().Any(x => x.Name.Equals((string)bar.Name, StringComparison.OrdinalIgnoreCase)))
                 throw new InvalidOperationException("Persistent buttons require a custom VBAi toolbar created with Temporary=false.");

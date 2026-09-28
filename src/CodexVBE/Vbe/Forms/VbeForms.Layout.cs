@@ -6,7 +6,7 @@ using System.Linq;
 namespace CodexVBE
 {
     /// <summary>Aligne, espace et ordonne les contrôles directs d’un conteneur UserForm.</summary>
-internal sealed partial class VbeForms
+    internal sealed partial class VbeForms
     {
         /// <summary>Calcule ou applique un plan de géométrie pour des contrôles sélectionnés dans un même conteneur.</summary>
         /// <param name="request">Chemins canoniques, action, taille de pas et version d’arbre attendue.</param>
@@ -14,7 +14,7 @@ internal sealed partial class VbeForms
         /// <returns>Plan de disposition en prévisualisation ou état vérifié après application.</returns>
         /// <exception cref="ArgumentException">Les contrôles ne sont pas uniques, canoniques ou dans un même conteneur.</exception>
         /// <exception cref="InvalidOperationException">L’arbre a changé ou le résultat ne peut pas être appliqué sûrement.</exception>
-public object LayoutControls(Request request, bool preview)
+        public object LayoutControls(Request request, bool preview)
         {
             if (request.Items == null || request.Items.Length < 2 || request.Items.Length > 64 ||
                 request.Items.Distinct(StringComparer.OrdinalIgnoreCase).Count() != request.Items.Length ||
@@ -60,13 +60,13 @@ public object LayoutControls(Request request, bool preview)
         /// <summary>Écrit la taille puis la position prévues sur un contrôle Designer.</summary>
         /// <param name="control">Contrôle natif à déplacer et redimensionner.</param>
         /// <param name="box">Géométrie cible.</param>
-private static void ApplyBox(dynamic control, FormLayoutBox box)
+        private static void ApplyBox(dynamic control, FormLayoutBox box)
         { control.Width = box.Width; control.Height = box.Height; control.Left = box.Left; control.Top = box.Top; }
         /// <summary>Relit la géométrie native et vérifie qu’elle correspond à la boîte demandée.</summary>
         /// <param name="control">Contrôle à vérifier.</param>
         /// <param name="box">Géométrie attendue.</param>
         /// <exception cref="InvalidOperationException">Le Designer n’a pas conservé les dimensions ou coordonnées.</exception>
-private static void VerifyBox(dynamic control, FormLayoutBox box)
+        private static void VerifyBox(dynamic control, FormLayoutBox box)
         {
             if (new[] { (double)control.Left, (double)control.Top, (double)control.Width, (double)control.Height }.Any(x => double.IsNaN(x) || double.IsInfinity(x)) || Math.Abs((double)control.Left - box.Left) > 0.1 || Math.Abs((double)control.Top - box.Top) > 0.1 || Math.Abs((double)control.Width - box.Width) > 0.1 || Math.Abs((double)control.Height - box.Height) > 0.1)
                 throw new InvalidOperationException("The designer did not retain the requested geometry for " + box.Path);
@@ -77,7 +77,7 @@ private static void VerifyBox(dynamic control, FormLayoutBox box)
         /// <returns>Arbre relu après application et vérification de l’ordre.</returns>
         /// <exception cref="ArgumentException">La liste n’énumère pas tous les contrôles directs exactement une fois.</exception>
         /// <exception cref="InvalidOperationException">L’arbre a changé ou l’application et son retour arrière ont échoué.</exception>
-public object SetTabOrder(Request request)
+        public object SetTabOrder(Request request)
         {
             if (request.Items == null || request.Items.Length == 0 || request.Items.Length > 64 ||
                 request.Items.Distinct(StringComparer.OrdinalIgnoreCase).Count() != request.Items.Length)

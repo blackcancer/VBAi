@@ -8,14 +8,14 @@ using System.Windows.Automation;
 namespace CodexVBE
 {
     /// <summary>Lit et sélectionne les éléments de l’Explorateur d’objets par UI Automation native.</summary>
-internal static partial class VbeDebugWindows
+    internal static partial class VbeDebugWindows
     {
         /// <summary>Native UIA element acquisition, isolated without replacing browser orchestration.</summary>
         internal static Func<IntPtr, AutomationElement> ObjectBrowserElement = AutomationElement.FromHandle;
         // Accessibility must run on a worker thread, never the VBE dispatcher.
         /// <summary>Capture les listes, sélections et descriptions accessibles de l’Explorateur d’objets.</summary>
         /// <returns>État UI Automation disponible, ou motif d’indisponibilité.</returns>
-internal static object ReadObjectBrowser()
+        internal static object ReadObjectBrowser()
         {
             IntPtr root = FindVbeRoot();
             if (root == IntPtr.Zero) return new { Available = false, Reason = "VBE window unavailable." };
@@ -58,7 +58,7 @@ internal static object ReadObjectBrowser()
         /// <summary>Énumère les seuls HWND exposant une liste, une combo ou une zone Document reconnue.</summary>
         /// <param name="pane">Handle du volet Explorateur d’objets.</param>
         /// <returns>Éléments UI Automation des contrôles pris en charge.</returns>
-private static List<AutomationElement> ObjectBrowserControls(IntPtr pane)
+        private static List<AutomationElement> ObjectBrowserControls(IntPtr pane)
         {
             // Enumerate HWNDs rather than every accessible list item: COM libraries
             // can expose thousands of classes and members beneath these controls.
@@ -81,24 +81,24 @@ private static List<AutomationElement> ObjectBrowserControls(IntPtr pane)
         /// <summary>Obtient le parent natif d’un contrôle de l’Explorateur d’objets.</summary>
         /// <param name="handle">Handle du contrôle.</param>
         /// <returns>Handle parent, ou zéro.</returns>
-[DllImport("user32.dll", EntryPoint = "GetParent")]
+        [DllImport("user32.dll", EntryPoint = "GetParent")]
         private static extern IntPtr NativeObjectBrowserParent(IntPtr handle);
 
         /// <summary>Lit l’état d’activation natif d’une fenêtre.</summary>
         /// <param name="handle">Handle de fenêtre à tester.</param>
         /// <returns><see langword="true"/> si Windows indique que la fenêtre est activée.</returns>
-[DllImport("user32.dll", EntryPoint = "IsWindowEnabled")]
+        [DllImport("user32.dll", EntryPoint = "IsWindowEnabled")]
         private static extern bool NativeObjectBrowserEnabled(IntPtr handle);
 
         /// <summary>Native ancestry and enabled-state boundaries shared by the browser and code view.</summary>
         internal static Func<IntPtr, IntPtr> ObjectBrowserParent = NativeObjectBrowserParent;
         /// <summary>Vérificateur de disponibilité native des ancêtres des contrôles.</summary>
-internal static Func<IntPtr, bool> ObjectBrowserEnabled = NativeObjectBrowserEnabled;
+        internal static Func<IntPtr, bool> ObjectBrowserEnabled = NativeObjectBrowserEnabled;
 
         /// <summary>Sélectionne une bibliothèque, une classe ou un membre dans le navigateur déjà ouvert.</summary>
         /// <param name="request">Bibliothèque facultative, nom de classe et nom de membre éventuel.</param>
         /// <returns>État de sélection relu et instantané du navigateur.</returns>
-internal static object SelectObjectBrowser(Request request)
+        internal static object SelectObjectBrowser(Request request)
         {
             if ((request.ObjectName == null && request.Context == null) ||
                 (request.ObjectName != null && (string.IsNullOrWhiteSpace(request.ObjectName) || request.ObjectName.Length > 255)) ||
@@ -153,7 +153,7 @@ internal static object SelectObjectBrowser(Request request)
         /// <summary>Liste par pages les bibliothèques, classes ou membres exposés par le navigateur natif.</summary>
         /// <param name="request">Type de volet, filtre éventuel, décalage et taille de page.</param>
         /// <returns>Éléments accessibles et informations de pagination.</returns>
-internal static object ListObjectBrowser(Request request)
+        internal static object ListObjectBrowser(Request request)
         {
             if (request.Pane != "classes" && request.Pane != "members" && request.Pane != "libraries")
                 throw new ArgumentException("Pane must be classes, members or libraries.");
@@ -202,7 +202,7 @@ internal static object ListObjectBrowser(Request request)
         /// <summary>Sélectionne une bibliothèque exacte puis vérifie l’état de la combo native.</summary>
         /// <param name="controls">Contrôles UI Automation du navigateur courant.</param>
         /// <param name="library">Nom exact de la bibliothèque à sélectionner.</param>
-private static void SelectBrowserLibrary(IEnumerable<AutomationElement> controls, string library)
+        private static void SelectBrowserLibrary(IEnumerable<AutomationElement> controls, string library)
         {
             var combos = controls.Where(control => control.Current.ControlType == ControlType.ComboBox &&
                 (control.Current.Name == "Bibliothèques" || control.Current.Name == "Libraries")).ToArray();
@@ -238,7 +238,7 @@ private static void SelectBrowserLibrary(IEnumerable<AutomationElement> controls
         /// <param name="labels">Légendes de langue ou de classe acceptées.</param>
         /// <param name="allowMissing">Autorise le retour faux lorsqu’aucun élément n’est encore apparu.</param>
         /// <returns><see langword="true"/> si l’élément unique a été sélectionné et notifié.</returns>
-private static bool SelectBrowserLabel(IEnumerable<AutomationElement> controls, string[] labels, bool allowMissing = false)
+        private static bool SelectBrowserLabel(IEnumerable<AutomationElement> controls, string[] labels, bool allowMissing = false)
         {
             var matches = new List<Tuple<AutomationElement, AutomationElement>>();
             foreach (AutomationElement control in controls)

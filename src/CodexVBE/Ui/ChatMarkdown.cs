@@ -6,8 +6,8 @@ namespace CodexVBE
     internal static class ChatMarkdown
     {
         /// <summary>Action utilisée pour copier un bloc de code dans le presse-papiers.</summary>
-internal static Action<string> CopyText = System.Windows.Clipboard.SetText;
+        internal static Action<string> CopyText = System.Windows.Clipboard.SetText;
         /// <summary>Action utilisée pour ouvrir un lien HTTP(S) validé.</summary>
-internal static Action<string> OpenLink = SafeLinks.Open;
+        internal static Action<string> OpenLink = SafeLinks.Open;
     }
 }

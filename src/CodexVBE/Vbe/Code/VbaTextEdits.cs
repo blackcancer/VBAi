@@ -8,14 +8,14 @@ namespace CodexVBE
     // Text transformations are explicit about scope. Identifier replacement is lexical,
     // not a claim of semantic binding across VBA/COM projects.
     /// <summary>Applique des transformations explicites à des lignes de code VBA sans revendiquer de résolution sémantique.</summary>
-internal static class VbaTextEdits
+    internal static class VbaTextEdits
     {
         /// <summary>Transforme la plage de lignes sélectionnée selon l’action de remplacement, commentaire ou indentation demandée.</summary>
         /// <param name="source">Source VBA complète avant modification.</param>
         /// <param name="request">Action, plage, texte et options de correspondance.</param>
         /// <returns>Source complète contenant la plage transformée.</returns>
         /// <exception cref="ArgumentException">La plage, la taille ou les paramètres de l’action sont invalides.</exception>
-internal static string Transform(string source, Request request)
+        internal static string Transform(string source, Request request)
         {
             string[] lines = CodeRollback.Lines(source);
             if (request.StartLine < 1 || request.Count < 1 || request.StartLine > lines.Length ||
@@ -61,7 +61,7 @@ internal static string Transform(string source, Request request)
         /// <summary>Vérifie qu’un nom respecte la forme d’identifiant VBA admise et n’est pas un mot réservé.</summary>
         /// <param name="value">Nom à valider.</param>
         /// <exception cref="ArgumentException">Le nom n’est pas un identifiant autorisé.</exception>
-internal static void ValidateIdentifier(string value)
+        internal static void ValidateIdentifier(string value)
         {
             if (!Regex.IsMatch(value ?? "", @"^[A-Za-z][A-Za-z0-9_]{0,254}$"))
                 throw new ArgumentException("A VBA identifier is required.");
@@ -74,7 +74,7 @@ internal static void ValidateIdentifier(string value)
         /// <param name="oldName">Identifiant à remplacer, comparé sans tenir compte de la casse.</param>
         /// <param name="newName">Identifiant de remplacement.</param>
         /// <returns>Texte transformé sans modification des régions opaques.</returns>
-internal static string ReplaceIdentifier(string text, string oldName, string newName)
+        internal static string ReplaceIdentifier(string text, string oldName, string newName)
         {
             var output = new StringBuilder();
 

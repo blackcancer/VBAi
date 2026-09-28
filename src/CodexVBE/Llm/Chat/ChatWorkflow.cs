@@ -85,7 +85,7 @@ namespace CodexVBE
         public string Sha256 { get; set; }
                 /// <summary>Document Monaco source pour contrôler la fraîcheur du brouillon.</summary>
 /// <value>The current value represented by this member.</value>
-public string EditorDocumentId { get; set; }
+        public string EditorDocumentId { get; set; }
         /// <summary>Première ligne source de l’extrait.</summary>
         /// <value>Numéro de la première ligne, selon l’indexation de la source.</value>
         public int StartLine { get; set; }

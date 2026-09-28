@@ -7,17 +7,17 @@ using System.Text;
 namespace CodexVBE
 {
     /// <summary>Provides the llm vbe tools implementation.</summary>
-internal sealed partial class LlmVbeTools
+    internal sealed partial class LlmVbeTools
     {
         /// <summary>Stores the read project grants used by LlmVbeTools.</summary>
-private readonly HashSet<string> readProjectGrants = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> readProjectGrants = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         /// <summary>Stores the shared context read allowed used by LlmVbeTools.</summary>
-private bool sharedContextReadAllowed;
+        private bool sharedContextReadAllowed;
 
         // These commands do not return source, project inventories or native context.
         // New tools without a Project argument fail closed until classified here.
         /// <summary>Stores the independent tools used by LlmVbeTools.</summary>
-private static readonly HashSet<string> IndependentTools = new HashSet<string>(StringComparer.Ordinal)
+        private static readonly HashSet<string> IndependentTools = new HashSet<string>(StringComparer.Ordinal)
         {
             "status", "list_projects", "discover_tools", "invoke_tool", "read_user_file", "inspect_code_file",
             "certificate_trust", "verify_vba_signature_file", "list_signing_certificates",
@@ -26,7 +26,7 @@ private static readonly HashSet<string> IndependentTools = new HashSet<string>(S
         };
         // These have a Project argument but native results/effects also span the VBE.
         /// <summary>Stores the shared project tools used by LlmVbeTools.</summary>
-private static readonly HashSet<string> SharedProjectTools = new HashSet<string>(StringComparer.Ordinal)
+        private static readonly HashSet<string> SharedProjectTools = new HashSet<string>(StringComparer.Ordinal)
         {
             "debug_global", "immediate_execute", "run_procedure", "procedure_run_status",
             "run_procedure_values", "procedure_values_status", "edit_watch", "remove_watch",
@@ -36,7 +36,7 @@ private static readonly HashSet<string> SharedProjectTools = new HashSet<string>
         /// <summary>Performs the set read access operation for LlmVbeTools.</summary>
 /// <param name="projects">The projects used by this operation.</param>
 /// <param name="sharedContext">Indicates whether shared context is enabled.</param>
-internal void SetReadAccess(IEnumerable<string> projects, bool sharedContext)
+        internal void SetReadAccess(IEnumerable<string> projects, bool sharedContext)
         {
             readProjectGrants.Clear();
             foreach (string project in projects ?? Enumerable.Empty<string>())
@@ -46,7 +46,7 @@ internal void SetReadAccess(IEnumerable<string> projects, bool sharedContext)
 
         /// <summary>Performs the require project read operation for LlmVbeTools.</summary>
 /// <param name="project">Text containing the project.</param>
-internal void RequireProjectRead(string project)
+        internal void RequireProjectRead(string project)
         {
             if (string.IsNullOrEmpty(BoundProject)) return; // Unbound internal callers retain their contract.
             if (!SameProject(project, BoundProject) && !readProjectGrants.Contains(project ?? "") && !IsAuthorizedAlias(project))
@@ -58,7 +58,7 @@ internal void RequireProjectRead(string project)
         /// <summary>Performs the is authorized alias operation for LlmVbeTools.</summary>
 /// <param name="selector">Text containing the selector.</param>
 /// <returns>The result produced by this operation.</returns>
-private bool IsAuthorizedAlias(string selector)
+        private bool IsAuthorizedAlias(string selector)
         {
             if (string.IsNullOrWhiteSpace(selector)) return false;
             try
@@ -82,13 +82,13 @@ private bool IsAuthorizedAlias(string selector)
 /// <param name="first">Text containing the first.</param>
 /// <param name="second">Text containing the second.</param>
 /// <returns>The result produced by this operation.</returns>
-private static bool SameProject(string first, string second) =>
+        private static bool SameProject(string first, string second) =>
             string.Equals(first, second, StringComparison.OrdinalIgnoreCase);
 
         /// <summary>Performs the guard project privacy operation for LlmVbeTools.</summary>
 /// <param name="name">Text containing the name.</param>
 /// <param name="arguments">Text containing the arguments.</param>
-private void GuardProjectPrivacy(string name, string arguments)
+        private void GuardProjectPrivacy(string name, string arguments)
         {
             if (string.IsNullOrEmpty(BoundProject)) return;
             var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
@@ -114,13 +114,13 @@ private void GuardProjectPrivacy(string name, string arguments)
         /// <summary>Performs the fields operation for LlmVbeTools.</summary>
 /// <param name="data">The data used by this operation.</param>
 /// <returns>The result produced by this operation.</returns>
-private IDictionary<string, object> Fields(object data) =>
+        private IDictionary<string, object> Fields(object data) =>
             json.DeserializeObject(json.Serialize(data)) as IDictionary<string, object>;
 
         /// <summary>Performs the filter projects operation for LlmVbeTools.</summary>
 /// <param name="data">The data used by this operation.</param>
 /// <returns>The result produced by this operation.</returns>
-private object FilterProjects(object data)
+        private object FilterProjects(object data)
         {
             if (string.IsNullOrEmpty(BoundProject)) return data;
             var projects = json.DeserializeObject(json.Serialize(data)) as object[] ?? new object[0];
@@ -141,7 +141,7 @@ private object FilterProjects(object data)
 /// <param name="response">The response used by this operation.</param>
 /// <param name="requestedProject">Text containing the requested project.</param>
 /// <returns>The result produced by this operation.</returns>
-private Response FilterProjectResponse(string name, Response response, string requestedProject)
+        private Response FilterProjectResponse(string name, Response response, string requestedProject)
         {
             if (!response.Ok || string.IsNullOrEmpty(BoundProject)) return response;
             if (name == "list_projects") return Response.Success(FilterProjects(response.Data));
@@ -163,7 +163,7 @@ private Response FilterProjectResponse(string name, Response response, string re
 
         /// <summary>Performs the scoped live snapshot operation for LlmVbeTools.</summary>
 /// <returns>The result produced by this operation.</returns>
-private object ScopedLiveSnapshot()
+        private object ScopedLiveSnapshot()
         {
             Response projects;
             try { projects = Execute(new Request { Command = "list_projects" }); }

@@ -1,33 +1,33 @@
 namespace CodexVBE
 {
     /// <summary>Collects the projects and shared context that the chat assistant may read.</summary>
-partial class ProjectAccessWindow
+    partial class ProjectAccessWindow
     {
         /// <summary>Stores the components used by ProjectAccessWindow.</summary>
-private System.ComponentModel.IContainer components;
+        private System.ComponentModel.IContainer components;
         /// <summary>Stores the explanation used by ProjectAccessWindow.</summary>
-private System.Windows.Forms.Label explanation;
+        private System.Windows.Forms.Label explanation;
         /// <summary>Stores the project list used by ProjectAccessWindow.</summary>
-private System.Windows.Forms.CheckedListBox projectList;
+        private System.Windows.Forms.CheckedListBox projectList;
         /// <summary>Stores the shared context used by ProjectAccessWindow.</summary>
-private System.Windows.Forms.CheckBox sharedContext;
+        private System.Windows.Forms.CheckBox sharedContext;
         /// <summary>Stores the shared explanation used by ProjectAccessWindow.</summary>
-private System.Windows.Forms.Label sharedExplanation;
+        private System.Windows.Forms.Label sharedExplanation;
         /// <summary>Stores the apply button used by ProjectAccessWindow.</summary>
-private System.Windows.Forms.Button applyButton;
+        private System.Windows.Forms.Button applyButton;
         /// <summary>Stores the cancel button used by ProjectAccessWindow.</summary>
-private System.Windows.Forms.Button cancelButton;
+        private System.Windows.Forms.Button cancelButton;
         /// <summary>Stores the tool tip used by ProjectAccessWindow.</summary>
-private System.Windows.Forms.ToolTip toolTip;
+        private System.Windows.Forms.ToolTip toolTip;
         /// <summary>Performs the dispose operation for ProjectAccessWindow.</summary>
 /// <param name="disposing">Indicates whether disposing is enabled.</param>
-protected override void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (disposing) { UiTheme.Changed -= ApplyAppearance; components?.Dispose(); }
             base.Dispose(disposing);
         }
         /// <summary>Performs the initialize component operation for ProjectAccessWindow.</summary>
-private void InitializeComponent()
+        private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.explanation = new System.Windows.Forms.Label();

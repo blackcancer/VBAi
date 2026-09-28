@@ -92,13 +92,13 @@ namespace CodexVBE
         public string ExpectedToolbarLayoutVersion { get; set; }
                 /// <summary>Version attendue des commandes d’une barre avant personnalisation.</summary>
         /// <value>Empreinte à comparer aux contrôles natifs actuellement lus.</value>
-public string ExpectedToolbarControlsVersion { get; set; }
+        public string ExpectedToolbarControlsVersion { get; set; }
                 /// <summary>Version attendue de la collection des barres avant création ou suppression.</summary>
         /// <value>Empreinte de la collection de barres lue avant la mutation.</value>
-public string ExpectedToolbarCollectionVersion { get; set; }
+        public string ExpectedToolbarCollectionVersion { get; set; }
                 /// <summary>Version des options natives relues avant une écriture de préférence.</summary>
         /// <value>Empreinte des onglets et contrôles observés du dialogue Options.</value>
-public string ExpectedOptionsVersion { get; set; }
+        public string ExpectedOptionsVersion { get; set; }
         /// <summary>Version attendue de la fenêtre source.</summary>
         /// <value>Empreinte de l’état de fenêtre.</value>
         public string ExpectedWindowVersion { get; set; }

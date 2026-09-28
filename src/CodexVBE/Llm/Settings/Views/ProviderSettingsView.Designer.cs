@@ -1,60 +1,60 @@
 namespace CodexVBE
 {
     /// <summary>Contrôles générés pour les fournisseurs, modèles et stratégies d’approbation.</summary>
-public sealed partial class ProviderSettingsView
+    public sealed partial class ProviderSettingsView
     {
         /// <summary>Grille des paramètres du fournisseur.</summary>
-internal System.Windows.Forms.TableLayoutPanel grid;
+        internal System.Windows.Forms.TableLayoutPanel grid;
         /// <summary>Disposition des actions CLI Codex.</summary>
-internal System.Windows.Forms.FlowLayoutPanel codexActions;
+        internal System.Windows.Forms.FlowLayoutPanel codexActions;
         /// <summary>Sélecteur du fournisseur LLM.</summary>
-internal CodexVBE.ThemedComboBox provider;
+        internal CodexVBE.ThemedComboBox provider;
         /// <summary>État de la connexion Codex ou Copilot.</summary>
-internal System.Windows.Forms.Label codexStatus;
+        internal System.Windows.Forms.Label codexStatus;
         /// <summary>Action de connexion du CLI sélectionné.</summary>
-internal CodexVBE.ThemedButton codexLogin;
+        internal CodexVBE.ThemedButton codexLogin;
         /// <summary>Action de relecture du statut CLI.</summary>
-internal CodexVBE.ThemedButton codexRefresh;
+        internal CodexVBE.ThemedButton codexRefresh;
         /// <summary>Champ de point de terminaison OpenAI.</summary>
-internal System.Windows.Forms.TextBox openAiEndpoint;
+        internal System.Windows.Forms.TextBox openAiEndpoint;
         /// <summary>Champ de point de terminaison Ollama.</summary>
-internal System.Windows.Forms.TextBox ollamaEndpoint;
+        internal System.Windows.Forms.TextBox ollamaEndpoint;
         /// <summary>Champ de clé du fournisseur.</summary>
-internal System.Windows.Forms.TextBox openAiKey;
+        internal System.Windows.Forms.TextBox openAiKey;
         /// <summary>Option de suppression de la clé enregistrée.</summary>
-internal System.Windows.Forms.CheckBox clearKey;
+        internal System.Windows.Forms.CheckBox clearKey;
         /// <summary>Libellé du sélecteur de fournisseur.</summary>
-internal System.Windows.Forms.Label providerLabel;
+        internal System.Windows.Forms.Label providerLabel;
         /// <summary>Libellé du compte fournisseur.</summary>
-internal System.Windows.Forms.Label accountLabel;
+        internal System.Windows.Forms.Label accountLabel;
         /// <summary>Libellé de la section d’authentification.</summary>
-internal System.Windows.Forms.Label authenticationLabel;
+        internal System.Windows.Forms.Label authenticationLabel;
         /// <summary>Libellé de l’adresse OpenAI.</summary>
-internal System.Windows.Forms.Label openAiEndpointLabel;
+        internal System.Windows.Forms.Label openAiEndpointLabel;
         /// <summary>Libellé de l’adresse Ollama.</summary>
-internal System.Windows.Forms.Label ollamaEndpointLabel;
+        internal System.Windows.Forms.Label ollamaEndpointLabel;
         /// <summary>Libellé du champ de clé.</summary>
-internal System.Windows.Forms.Label keyLabel;
+        internal System.Windows.Forms.Label keyLabel;
         /// <summary>Note de configuration de la clé fournisseur.</summary>
-internal System.Windows.Forms.Label keyNote;
+        internal System.Windows.Forms.Label keyNote;
         /// <summary>Libellé de la stratégie d’approbation VBE.</summary>
-internal System.Windows.Forms.Label approvalLabel;
+        internal System.Windows.Forms.Label approvalLabel;
         /// <summary>Sélecteur de la stratégie d’approbation.</summary>
-internal CodexVBE.ThemedComboBox approvalPicker;
+        internal CodexVBE.ThemedComboBox approvalPicker;
         /// <summary>Libellé de la liste de modèles manuelle.</summary>
-internal System.Windows.Forms.Label manualModelsLabel;
+        internal System.Windows.Forms.Label manualModelsLabel;
         /// <summary>Champ des modèles saisis manuellement.</summary>
-internal System.Windows.Forms.TextBox manualModels;
+        internal System.Windows.Forms.TextBox manualModels;
         /// <summary>Libellé du fournisseur personnalisé.</summary>
-internal System.Windows.Forms.Label customNameLabel;
+        internal System.Windows.Forms.Label customNameLabel;
         /// <summary>Champ du nom personnalisé.</summary>
-internal System.Windows.Forms.TextBox customName;
+        internal System.Windows.Forms.TextBox customName;
         /// <summary>Option d’authentification Azure par Entra.</summary>
-internal System.Windows.Forms.CheckBox azureEntra;
+        internal System.Windows.Forms.CheckBox azureEntra;
         /// <summary>Conteneur des composants WinForms non visuels.</summary>
-private System.ComponentModel.IContainer components;
+        private System.ComponentModel.IContainer components;
         /// <summary>Info-bulles appartenant à la vue.</summary>
-private System.Windows.Forms.ToolTip toolTips;
+        private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)
@@ -64,7 +64,7 @@ private System.Windows.Forms.ToolTip toolTips;
         }
 
         /// <summary>Crée les contrôles des paramètres fournisseur et applique leurs propriétés Designer.</summary>
-private void InitializeComponent()
+        private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);

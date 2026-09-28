@@ -122,7 +122,7 @@ namespace CodexVBE
         }
                 /// <summary>Libère récursivement les ressources WPF détenues par une entrée et ses enfants visuels/logiques.</summary>
         /// <param name="view">Racine de l’élément de transcript à nettoyer.</param>
-private static void DisposeEntryView(FrameworkElement view)
+        private static void DisposeEntryView(FrameworkElement view)
         {
 
             if (view is ChatDesignerHost card) { card.Dispose(); return; }

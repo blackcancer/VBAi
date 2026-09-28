@@ -7,33 +7,33 @@ using System.Windows.Forms;
 namespace CodexVBE
 {
     /// <summary>Expose les outils du chat qui inspectent ou modifient le code VBA.</summary>
-internal sealed partial class LlmVbeTools
+    internal sealed partial class LlmVbeTools
     {
         /// <summary>Fabrique la fenêtre d’éditeur moderne, avec possibilité de la créer.</summary>
-internal Func<bool, ModernEditorWindow> MonacoWindow;
+        internal Func<bool, ModernEditorWindow> MonacoWindow;
         /// <summary>Résout un module dans l’éditeur moderne pour un projet et un module précis.</summary>
-internal Func<string, string, IEditorModule> MonacoModule;
+        internal Func<string, string, IEditorModule> MonacoModule;
         /// <summary>Retourne la fenêtre moderne injectée ou celle portée par la session.</summary>
         /// <param name="create">Autorise la création de la fenêtre si elle n’existe pas.</param>
         /// <returns>Fenêtre associée à cette session, ou <see langword="null"/> si aucune n’est disponible.</returns>
-private ModernEditorWindow EditorWindow(bool create) => MonacoWindow != null ? MonacoWindow(create) : session?.ModernEditor?.Invoke(create);
+        private ModernEditorWindow EditorWindow(bool create) => MonacoWindow != null ? MonacoWindow(create) : session?.ModernEditor?.Invoke(create);
         /// <summary>Résout le module dans le résolveur injecté ou dans la session VBE.</summary>
         /// <param name="project">Clé du projet à résoudre.</param><param name="module">Nom du module exact.</param>
         /// <returns>Adaptateur du module dans l’éditeur moderne.</returns>
-private IEditorModule EditorModule(string project, string module) => MonacoModule != null ? MonacoModule(project, module) : session.ResolveEditorModule(project, module);
+        private IEditorModule EditorModule(string project, string module) => MonacoModule != null ? MonacoModule(project, module) : session.ResolveEditorModule(project, module);
 
         /// <summary>Construit la définition JSON d’un outil Monaco avec les champs Project et Module.</summary>
         /// <param name="name">Nom de l’outil exposé au modèle.</param><param name="description">Comportement et limites de l’opération.</param>
         /// <param name="extra">Champs supplémentaires requis.</param>
         /// <returns>Définition JSON avec champs requis et propriétés de paramètres.</returns>
-private static object MonacoDefinition(string name, string description, params string[] extra)
+        private static object MonacoDefinition(string name, string description, params string[] extra)
         {
             var fields = new[] { "Project", "Module" }.Concat(extra).ToArray();
             return Definition(name, description, fields, fields);
         }
         /// <summary>Définitions des outils d’ouverture, lecture, navigation, édition et synchronisation Monaco.</summary>
         /// <value>Définitions JSON offertes au modèle.</value>
-private static object[] MonacoDefinitions => new[] {
+        private static object[] MonacoDefinitions => new[] {
             MonacoDefinition("monaco_open", "Open the exact live module in the modern Monaco editor. If loading, retry monaco_read. Never opens the active module by assumption."),
             MonacoDefinition("monaco_read", "Read Monaco draft, baseline, current native source, draft Version, normalized-LF NativeSha256, selection, conflict and automatic synchronization state. read_module continues to read native VBA only. This snapshot does not report compiler diagnostics or breakpoint state: use compile_project/debug_dialog/debug_state; project_symbols inspects native symbols, not unsynchronized drafts."),
             MonacoDefinition("monaco_navigate", "Select an exact range in the current Monaco draft using the Version returned by monaco_read. Does not edit VBA.", "ExpectedVersion", "StartLine", "StartColumn", "EndLine", "EndColumn"),
@@ -44,11 +44,11 @@ private static object[] MonacoDefinitions => new[] {
         /// <summary>Détermine si l’outil dépend de la synchronisation entre l’éditeur et le code natif.</summary>
         /// <param name="name">Nom de l’outil à classer.</param>
         /// <returns><see langword="true"/> pour les opérations incompatibles avec un brouillon non synchronisé.</returns>
-private static bool NeedsSynchronizedEditor(string name) => name == "compile_project" || !ReadOnlyTools.Contains(name);
+        private static bool NeedsSynchronizedEditor(string name) => name == "compile_project" || !ReadOnlyTools.Contains(name);
 
         /// <summary>Refuse une mutation native lorsque le brouillon Monaco contient des changements non synchronisés.</summary>
         /// <param name="name">Nom de l’outil dont la mutation est envisagée.</param>
-private void GuardLegacyEditorMutation(string name)
+        private void GuardLegacyEditorMutation(string name)
         {
             if (!NeedsSynchronizedEditor(name) || name.StartsWith("monaco_", StringComparison.Ordinal)) return;
             var window = EditorWindow(false);
@@ -59,7 +59,7 @@ private void GuardLegacyEditorMutation(string name)
         /// <summary>Capture l’état Monaco, restaure les changements demandés puis réconcilie les documents ouverts.</summary>
         /// <param name="changes">Changements de code issus du transcript.</param><param name="hunk">Index facultatif du bloc à restaurer.</param>
         /// <returns>Réponse de restauration ou échec converti en réponse.</returns>
-internal async Task<Response> RestoreChangesAsync(CodeChange[] changes, int? hunk)
+        internal async Task<Response> RestoreChangesAsync(CodeChange[] changes, int? hunk)
         {
             try
             {
@@ -77,7 +77,7 @@ internal async Task<Response> RestoreChangesAsync(CodeChange[] changes, int? hun
         /// <summary>Valide et exécute un outil Monaco, en appliquant les gardes de projet, d’édition et de thread UI.</summary>
         /// <param name="name">Nom exact de l’outil à appeler.</param><param name="arguments">Objet JSON contenant ses paramètres.</param>
         /// <returns>Réponse JSON de l’outil ou message d’échec sérialisé.</returns>
-private async Task<string> InvokeMonacoAsync(string name, string arguments)
+        private async Task<string> InvokeMonacoAsync(string name, string arguments)
         {
             try
             {
