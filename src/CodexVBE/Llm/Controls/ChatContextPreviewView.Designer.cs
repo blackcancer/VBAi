@@ -10,7 +10,7 @@ namespace CodexVBE
         /// <summary>Zone multiligne en lecture seule du contenu.</summary>
         private System.Windows.Forms.TextBox content;
                 /// <summary>Libère les composants du modèle Designer.</summary>
-        /// <param name="disposing">Indique si les composants gérés doivent également être libérés.</param>
+                /// <param name="disposing">Indique si les composants gérés doivent également être libérés.</param>
         protected override void Dispose(bool disposing) { if (disposing && components != null) components.Dispose(); base.Dispose(disposing); }
         /// <summary>Creates and configures the chat context preview view controls serialized by the WinForms Designer.</summary>
         private void InitializeComponent()

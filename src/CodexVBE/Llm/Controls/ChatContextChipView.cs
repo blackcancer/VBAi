@@ -14,10 +14,10 @@ namespace CodexVBE
         /// <summary>Crée le modèle et ses commandes Designer.</summary>
         public ChatContextChipView() { InitializeComponent(); }
                 /// <summary>Configure les données et les actions disponibles pour un élément du contexte.</summary>
-        /// <param name="text">Texte présenté dans la vignette.</param>
-        /// <param name="canOpen">Indique si l’action principale ouvre l’élément ou le retire.</param>
-        /// <param name="openTip">Info-bulle associée à l’action principale lorsqu’elle ouvre l’élément.</param>
-        /// <param name="removeTip">Info-bulle associée à l’action de retrait.</param>
+                /// <param name="text">Texte présenté dans la vignette.</param>
+                /// <param name="canOpen">Indique si l’action principale ouvre l’élément ou le retire.</param>
+                /// <param name="openTip">Info-bulle associée à l’action principale lorsqu’elle ouvre l’élément.</param>
+                /// <param name="removeTip">Info-bulle associée à l’action de retrait.</param>
         public void ShowItem(string text, bool canOpen, string openTip, string removeTip)
         {
             this.canOpen = canOpen;

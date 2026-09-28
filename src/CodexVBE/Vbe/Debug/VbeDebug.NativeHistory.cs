@@ -74,13 +74,13 @@ namespace CodexVBE
         private sealed class HistoryModule
         {
             /// <summary>Gets or sets the module.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public string Module { get; set; }
             /// <summary>Gets or sets the code.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public string Code { get; set; }
             /// <summary>Gets or sets the sha256.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public string Sha256 { get; set; }
         }
         /// <summary>Instantané du projet utilisé pour vérifier une opération d’historique native.</summary>

@@ -176,39 +176,39 @@ namespace CodexVBE
         [DllImport("ntdll.dll", ExactSpelling = true)] private static extern int RtlGetVersion(ref NativeOsVersion version);
 
         /// <summary>Defines the read client callback.</summary>
-/// <param name="window">The window used by this operation.</param>
-/// <param name="rectangle">The rectangle used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="window">The window used by this operation.</param>
+        /// <param name="rectangle">The rectangle used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal delegate bool ReadClient(IntPtr window, out NativeRect rectangle);
         /// <summary>Defines the read window thread callback.</summary>
-/// <param name="window">The window used by this operation.</param>
-/// <param name="process">The process used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="window">The window used by this operation.</param>
+        /// <param name="process">The process used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal delegate uint ReadWindowThread(IntPtr window, out uint process);
         /// <summary>Defines the window attribute callback.</summary>
-/// <param name="window">The window used by this operation.</param>
-/// <param name="attribute">The attribute used by this operation.</param>
-/// <param name="value">The value used by this operation.</param>
-/// <param name="size">The size used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="window">The window used by this operation.</param>
+        /// <param name="attribute">The attribute used by this operation.</param>
+        /// <param name="value">The value used by this operation.</param>
+        /// <param name="size">The size used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal delegate int WindowAttribute(IntPtr window, int attribute, ref int value, int size);
         /// <summary>Defines the read os version callback.</summary>
-/// <param name="version">The version used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="version">The version used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal delegate int ReadOsVersion(ref NativeOsVersion version);
         /// <summary>Defines the paint region callback.</summary>
-/// <param name="dc">The dc used by this operation.</param>
-/// <param name="rectangle">The rectangle used by this operation.</param>
-/// <param name="brush">The brush used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="dc">The dc used by this operation.</param>
+        /// <param name="rectangle">The rectangle used by this operation.</param>
+        /// <param name="brush">The brush used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal delegate int PaintRegion(IntPtr dc, ref NativeRect rectangle, IntPtr brush);
         /// <summary>Defines the paint surface callback.</summary>
-/// <param name="window">The window used by this operation.</param>
-/// <param name="client">Indicates whether client is enabled.</param>
-/// <param name="dc">The dc used by this operation.</param>
-/// <param name="hosted">Indicates whether hosted is enabled.</param>
-/// <param name="preserve">Indicates whether preserve is enabled.</param>
-/// <param name="code">Indicates whether code is enabled.</param>
+        /// <param name="window">The window used by this operation.</param>
+        /// <param name="client">Indicates whether client is enabled.</param>
+        /// <param name="dc">The dc used by this operation.</param>
+        /// <param name="hosted">Indicates whether hosted is enabled.</param>
+        /// <param name="preserve">Indicates whether preserve is enabled.</param>
+        /// <param name="code">Indicates whether code is enabled.</param>
         internal delegate void PaintSurface(IntPtr window, bool client, IntPtr dc, bool hosted, bool preserve, bool code);
         /// <summary>Stores the enumerate children used by VbeNativeTheme.</summary>
         internal static Func<IntPtr, EnumWindowCallback, IntPtr, bool> EnumerateChildren = EnumChildWindows;
@@ -366,7 +366,7 @@ internal int Left, Top, Right, Bottom; }
         private static string immediateCaption;
 
                 /// <summary>Returns whether the explicitly gated experiment is enabled for this host process.</summary>
-        /// <returns><see langword="true"/> when the process environment variable equals <c>1</c>.</returns>
+                /// <returns><see langword="true"/> when the process environment variable equals <c>1</c>.</returns>
         internal static bool ExperimentEnabled()
         {
             return string.Equals(Environment.GetEnvironmentVariable(ExperimentVariable), "1", StringComparison.Ordinal);
@@ -378,8 +378,8 @@ internal int Left, Top, Right, Bottom; }
         internal static Func<object, IntPtr, VbeNativePalette> CreatePalette = (vbe, editor) => new VbeNativePalette(vbe, editor);
 
                 /// <summary>Stores the VBE owner and applies the persisted or explicitly gated preference.</summary>
-        /// <param name="editor">VBE main-window handle.</param><param name="enabled">Persisted preference for native styling.</param>
-        /// <param name="vbe">Optional VBE automation object used for Immediate-window detection and palette recovery.</param>
+                /// <param name="editor">VBE main-window handle.</param><param name="enabled">Persisted preference for native styling.</param>
+                /// <param name="vbe">Optional VBE automation object used for Immediate-window detection and palette recovery.</param>
         internal static void Initialize(IntPtr editor, bool enabled, object vbe = null)
         {
             if (editor == IntPtr.Zero) throw new ArgumentException("The VBE main window handle is required.", nameof(editor));
@@ -408,7 +408,7 @@ internal int Left, Top, Right, Bottom; }
         }
 
                 /// <summary>Applies or removes native dark styling in the current VBE process.</summary>
-        /// <param name="enabled">Whether to apply the dark style or restore the tracked native state.</param>
+                /// <param name="enabled">Whether to apply the dark style or restore the tracked native state.</param>
         internal static void SetEnabled(bool enabled)
         {
             if (!enabled)
@@ -469,7 +469,7 @@ internal int Left, Top, Right, Bottom; }
         }
 
                 /// <summary>Removes installed native hooks and restores tracked windows and process theme preferences.</summary>
-        /// <returns><see langword="true"/> when the renderer stopped and managed state was reset; otherwise <see langword="false"/>.</returns>
+                /// <returns><see langword="true"/> when the renderer stopped and managed state was reset; otherwise <see langword="false"/>.</returns>
         internal static bool Reset()
         {
             lock (Sync)
@@ -517,7 +517,7 @@ internal int Left, Top, Right, Bottom; }
         }
 
                 /// <summary>Disconnects the experiment while preserving state if native hooks cannot be stopped safely.</summary>
-        /// <returns><see langword="true"/> when disconnection completed; otherwise <see langword="false"/>.</returns>
+                /// <returns><see langword="true"/> when disconnection completed; otherwise <see langword="false"/>.</returns>
         internal static bool Disconnect()
         {
             if (!Reset()) return false;

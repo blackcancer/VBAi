@@ -51,10 +51,10 @@ internal string Project, Module, Before, After; }
             return Write(request.Project, request.Module, before, after);
         }
                 /// <summary>Prévisualise ou applique un renommage local lié à une déclaration et à la plage VBIDE.</summary>
-        /// <param name="request">Module, procédure, déclaration exacte, nouveau nom et versions attendues.</param>
-        /// <param name="preview">Si true, retourne le plan sans écrire le module.</param>
-        /// <returns>Plan avant/après ou résultat vérifié de l’écriture.</returns>
-        /// <exception cref="InvalidOperationException">La procédure ou déclaration est ambiguë, absente ou a changé.</exception>
+                /// <param name="request">Module, procédure, déclaration exacte, nouveau nom et versions attendues.</param>
+                /// <param name="preview">Si true, retourne le plan sans écrire le module.</param>
+                /// <returns>Plan avant/après ou résultat vérifié de l’écriture.</returns>
+                /// <exception cref="InvalidOperationException">La procédure ou déclaration est ambiguë, absente ou a changé.</exception>
         internal object RenameLocal(Request request, bool preview)
         {
             string before = Read(request.Project, request.Module); Check(before, request.ExpectedSha256);

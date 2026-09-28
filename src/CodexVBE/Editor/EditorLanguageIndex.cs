@@ -49,7 +49,7 @@ namespace CodexVBE
         /// <value>Valeur fournie par l’index qui construit le symbole.</value>
         public bool External { get; set; }
         /// <summary>Gets or sets the library.</summary>
-/// <value>The current value represented by this member.</value>
+        /// <value>The current value represented by this member.</value>
         public string Library { get; set; }
         /// <summary>Première ligne de la déclaration.</summary>
         /// <value>Numéro de ligne indexé à partir de un.</value>

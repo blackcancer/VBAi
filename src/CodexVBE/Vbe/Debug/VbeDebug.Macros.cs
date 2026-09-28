@@ -9,8 +9,8 @@ namespace CodexVBE
     internal sealed partial class VbeDebug
     {
                 /// <summary>Catalogue syntaxique des macros et procédures publiques standard, sans exécuter de code.</summary>
-        /// <param name="request">Projet, filtre textuel facultatif, décalage et taille de page.</param>
-        /// <returns>Procédures visibles dans les modules standard et métadonnées de couverture syntaxique.</returns>
+                /// <param name="request">Projet, filtre textuel facultatif, décalage et taille de page.</param>
+                /// <returns>Procédures visibles dans les modules standard et métadonnées de couverture syntaxique.</returns>
         public object ListMacros(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project) || request.Offset < 0 || request.Offset > 100000 ||

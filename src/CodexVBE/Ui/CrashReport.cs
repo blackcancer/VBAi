@@ -17,19 +17,19 @@ namespace CodexVBE
         /// <summary>Stores the runtime version used by CrashReport.</summary>
         internal static Func<Version> RuntimeVersion = ReadRuntimeVersion;
         /// <summary>Performs the read runtime version operation for CrashReport.</summary>
-/// <returns>The result produced by this operation.</returns>
+        /// <returns>The result produced by this operation.</returns>
         private static Version ReadRuntimeVersion() => Environment.Version;
         /// <summary>Stores the frame snapshot used by CrashReport.</summary>
         internal static Func<Exception, StackFrame[]> FrameSnapshot = ReadFrames;
         /// <summary>Performs the read metadata assembly operation for CrashReport.</summary>
-/// <returns>The result produced by this operation.</returns>
+        /// <returns>The result produced by this operation.</returns>
         private static Assembly ReadMetadataAssembly() => typeof(CrashReport).Assembly;
         /// <summary>Performs the read process is64 bit operation for CrashReport.</summary>
-/// <returns>The result produced by this operation.</returns>
+        /// <returns>The result produced by this operation.</returns>
         private static bool ReadProcessIs64Bit() => Environment.Is64BitProcess;
         /// <summary>Performs the read frames operation for CrashReport.</summary>
-/// <param name="error">The error used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="error">The error used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         private static StackFrame[] ReadFrames(Exception error) => new StackTrace(error, false).GetFrames();
         /// <summary>GitHub repository used as the destination for product issue reports.</summary>
         internal const string Repository = "https://github.com/blackcancer/CodexVBE";
@@ -40,7 +40,7 @@ namespace CodexVBE
         /// <summary>Stores the report directory used by CrashReport.</summary>
         internal static Func<string> ReportDirectory = NativeReportDirectory;
         /// <summary>Performs the native report directory operation for CrashReport.</summary>
-/// <returns>The result produced by this operation.</returns>
+        /// <returns>The result produced by this operation.</returns>
         private static string NativeReportDirectory() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexVBE", "CrashReports");
         /// <summary>Gets the per-user directory used to save crash reports.</summary><value>Local application-data CrashReports directory.</value>
         internal static string DirectoryPath => ReportDirectory();

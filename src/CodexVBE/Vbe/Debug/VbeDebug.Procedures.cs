@@ -152,14 +152,14 @@ namespace CodexVBE
             throw new ArgumentException("Procedure arguments must be strings, finite numbers, booleans or null.");
         }
                 /// <summary>Refuse toute syntaxe autre qu’un identifiant VBA qualifiable.</summary>
-        /// <param name="name">Nom de projet, module ou procédure à vérifier.</param>
+                /// <param name="name">Nom de projet, module ou procédure à vérifier.</param>
         private static void ValidateProcedureIdentifier(string name)
         {
             if (!Regex.IsMatch(name ?? "", @"^\p{L}[\p{L}\p{N}_]{0,254}$")) throw new ArgumentException("An exact VBA identifier is required.");
         }
                 /// <summary>Sérialise le suivi sans assimiler transmission et succès runtime.</summary>
-        /// <param name="operation">Opération d’appel enregistrée en mémoire.</param>
-        /// <returns>État de transmission, sortie observée et limites de vérification runtime.</returns>
+                /// <param name="operation">Opération d’appel enregistrée en mémoire.</param>
+                /// <returns>État de transmission, sortie observée et limites de vérification runtime.</returns>
         private static object ProcedureResult(ProcedureOperation operation) => new { operation.Project, operation.Module,
             operation.Procedure, Query = operation.Id, operation.State, operation.Command, operation.Output, operation.Error,
             Pending = operation.State == "Queued" || operation.State == "Delivering", RuntimeSuccessVerified = false,

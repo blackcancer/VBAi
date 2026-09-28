@@ -121,7 +121,7 @@ namespace CodexVBE
             foreach (var view in visibleEntries.OfType<ChatDesignerHost>().ToArray()) view.Dispose();
         }
                 /// <summary>Libère récursivement les ressources WPF détenues par une entrée et ses enfants visuels/logiques.</summary>
-        /// <param name="view">Racine de l’élément de transcript à nettoyer.</param>
+                /// <param name="view">Racine de l’élément de transcript à nettoyer.</param>
         private static void DisposeEntryView(FrameworkElement view)
         {
 

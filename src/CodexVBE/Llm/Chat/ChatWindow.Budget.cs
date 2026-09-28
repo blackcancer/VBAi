@@ -11,9 +11,9 @@ namespace CodexVBE
         /// <summary>Stores the provider stream id used by ChatWindow.</summary>
         private string providerStreamId;
         /// <summary>Performs the execute budget tool operation for ChatWindow.</summary>
-/// <param name="name">Text containing the name.</param>
-/// <param name="arguments">Text containing the arguments.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="name">Text containing the name.</param>
+        /// <param name="arguments">Text containing the arguments.</param>
+        /// <returns>The result produced by this operation.</returns>
         private async Task<string> ExecuteBudgetTool(string name, string arguments)
         {
             string label = name;
@@ -39,8 +39,8 @@ namespace CodexVBE
             }
         }
         /// <summary>Performs the pause budget operation for ChatWindow.</summary>
-/// <param name="provider">The provider used by this operation.</param>
-/// <param name="model">Text containing the model.</param>
+        /// <param name="provider">The provider used by this operation.</param>
+        /// <param name="model">Text containing the model.</param>
         private void PauseBudget(LlmProvider provider, string model)
         {
             currentSession.BudgetPaused = true;
@@ -68,7 +68,7 @@ namespace CodexVBE
             send.Enabled = !busy || !stopRequested || hasText;
         }
         /// <summary>Performs the resume budget async operation for ChatWindow.</summary>
-/// <returns>The result produced by this operation.</returns>
+        /// <returns>The result produced by this operation.</returns>
         private async Task ResumeBudgetAsync()
         {
             if (busy || currentSession?.BudgetPaused != true) return;
@@ -122,9 +122,9 @@ namespace CodexVBE
             }
         }
         /// <summary>Performs the run http budget async operation for ChatWindow.</summary>
-/// <param name="provider">The provider used by this operation.</param>
-/// <param name="model">Text containing the model.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="provider">The provider used by this operation.</param>
+        /// <param name="model">Text containing the model.</param>
+        /// <returns>The result produced by this operation.</returns>
         private async Task<bool> RunHttpBudgetAsync(LlmProvider provider, string model)
         {
                 using (var client = new LlmChatClient(provider, settings,

@@ -174,7 +174,7 @@ namespace CodexVBE
         }
         /// <summary>Affiche le corps du commentaire actuellement sélectionné.</summary>
         /// <param name="sender">Contrôle à l’origine de l’événement.</param>
-                /// <param name="e">Données de l’événement de sélection.</param>
+        /// <param name="e">Données de l’événement de sélection.</param>
 private void CommentChanged(object sender, EventArgs e) { commentBody.Text = (comments.SelectedItem as GitHubComment)?.body ?? ""; }
         /// <summary>Remplit le formulaire avec le brouillon préparé pour la branche.</summary>
         /// <param name="sender">Contrôle à l’origine de l’événement.</param>
@@ -190,10 +190,10 @@ private void CommentChanged(object sender, EventArgs e) { commentBody.Text = (co
         }
         /// <summary>Demande l’annulation de l’opération GitHub en cours.</summary>
         /// <param name="sender">Contrôle à l’origine de l’événement.</param>
-                /// <param name="e">Données de l’événement de clic.</param>
+        /// <param name="e">Données de l’événement de clic.</param>
 private void Cancel_Click(object sender, EventArgs e) { cancellation?.Cancel(); }
         /// <summary>Annule l’opération en cours et libère les composants du panneau.</summary>
-                /// <param name="disposing">Indique si les ressources gérées doivent être libérées.</param>
+        /// <param name="disposing">Indique si les ressources gérées doivent être libérées.</param>
 protected override void Dispose(bool disposing) { if (disposing) { cancellation?.Cancel(); components?.Dispose(); } base.Dispose(disposing); }
     }
 }

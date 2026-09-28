@@ -110,11 +110,11 @@ namespace CodexVBE
                 () => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)) { }
 
                 /// <summary>Injecte uniquement l'identité du processus et la racine locale avant la restauration native des barres.</summary>
-        /// <param name="vbe">Objet COM du VBE utilisé par les services de session.</param>
-        /// <param name="host">Sonde facultative de l’hôte Excel.</param>
-        /// <param name="bookmarkDatabase">Chemin SQLite des signets, ou nul pour le stockage par défaut.</param>
-        /// <param name="toolbarProcessName">Fournit le nom de processus utilisé pour choisir le profil natif.</param>
-        /// <param name="localApplicationData">Fournit le dossier de données locales pour le profil des barres.</param>
+                /// <param name="vbe">Objet COM du VBE utilisé par les services de session.</param>
+                /// <param name="host">Sonde facultative de l’hôte Excel.</param>
+                /// <param name="bookmarkDatabase">Chemin SQLite des signets, ou nul pour le stockage par défaut.</param>
+                /// <param name="toolbarProcessName">Fournit le nom de processus utilisé pour choisir le profil natif.</param>
+                /// <param name="localApplicationData">Fournit le dossier de données locales pour le profil des barres.</param>
         internal VbeSession(object vbe, VbeProjectComponents.IExcelHostProbe host, string bookmarkDatabase,
             Func<string> toolbarProcessName, Func<string> localApplicationData) { this.vbe = vbe; debugger = new VbeDebug(vbe);
             forms = new VbeForms(vbe); components = host == null
@@ -675,25 +675,25 @@ namespace CodexVBE
         private sealed class ReferenceInfo
         {
         /// <summary>Nom de la référence lorsqu’il est accessible.</summary>
-            /// <value>Nom lu depuis la référence VBE.</value>
+        /// <value>Nom lu depuis la référence VBE.</value>
             public string Name { get; set; }
         /// <summary>Identifiant GUID de la bibliothèque référencée.</summary>
-            /// <value>GUID de la bibliothèque référencée.</value>
+        /// <value>GUID de la bibliothèque référencée.</value>
             public string Guid { get; set; }
         /// <summary>Version majeure de la référence.</summary>
-            /// <value>Numéro de version majeure déclaré par le VBE.</value>
+        /// <value>Numéro de version majeure déclaré par le VBE.</value>
             public int Major { get; set; }
         /// <summary>Version mineure de la référence.</summary>
-            /// <value>Numéro de version mineure déclaré par le VBE.</value>
+        /// <value>Numéro de version mineure déclaré par le VBE.</value>
             public int Minor { get; set; }
         /// <summary>Indique si le VBE signale une référence manquante.</summary>
-            /// <value>État de résolution de la référence indiqué par le VBE.</value>
+        /// <value>État de résolution de la référence indiqué par le VBE.</value>
             public bool IsBroken { get; set; }
         /// <summary>Indique si la référence est intégrée au projet hôte.</summary>
-            /// <value>Indique si le VBE classe la référence comme intégrée.</value>
+        /// <value>Indique si le VBE classe la référence comme intégrée.</value>
             public bool BuiltIn { get; set; }
         /// <summary>Chemin du fichier de bibliothèque lorsqu’il est disponible.</summary>
-            /// <value>Chemin de la bibliothèque lorsqu’il est résolu.</value>
+        /// <value>Chemin de la bibliothèque lorsqu’il est résolu.</value>
             public string FullPath { get; set; }
         }
 

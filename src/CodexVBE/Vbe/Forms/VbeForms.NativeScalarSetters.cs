@@ -10,9 +10,9 @@ namespace CodexVBE
         /// <summary>Identifie les objets COM natifs sans remplacer le dispatch des propriétés.</summary>
         internal static Func<object, bool> NativeDesignerObject = Marshal.IsComObject;
                 /// <summary>Utilise le dispatch typé pour les propriétés MSForms usuelles ; les doubles .NET conservent leurs descripteurs.</summary>
-        /// <param name="target">Contrôle MSForms ou objet .NET à mettre à jour.</param>
-        /// <param name="descriptor">Descripteur de la propriété à écrire.</param>
-        /// <param name="value">Valeur convertie vers le type attendu par la propriété native.</param>
+                /// <param name="target">Contrôle MSForms ou objet .NET à mettre à jour.</param>
+                /// <param name="descriptor">Descripteur de la propriété à écrire.</param>
+                /// <param name="value">Valeur convertie vers le type attendu par la propriété native.</param>
         private static void SetDesignerScalar(object target, PropertyDescriptor descriptor, object value)
         {
             if (!NativeDesignerObject(target)) { descriptor.SetValue(target, value); return; }

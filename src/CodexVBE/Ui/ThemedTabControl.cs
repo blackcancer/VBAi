@@ -6,18 +6,18 @@ namespace CodexVBE
     public sealed class ThemedTabControl : TabControl
     {
                 /// <summary>Affiche une croix de fermeture sur chaque onglet.</summary>
-/// <value>The current value represented by this member.</value>
+                /// <value>The current value represented by this member.</value>
         [System.ComponentModel.DefaultValue(false)]
         public bool ShowCloseButtons { get; set; }
         /// <summary>Demande la fermeture de l'onglet désigné.</summary>
         public event System.EventHandler<TabControlEventArgs> CloseRequested;
         /// <summary>Performs the close bounds operation for ThemedTabControl.</summary>
-/// <param name="index">The index used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="index">The index used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         private Rectangle CloseBounds(int index)
         { var r = GetTabRect(index); return new Rectangle(r.Right - 21, r.Top + (r.Height - 16) / 2, 16, 16); }
                 /// <summary>Route le clic de fermeture sans changer les autres onglets.</summary>
-/// <param name="e">The e used by this operation.</param>
+                /// <param name="e">The e used by this operation.</param>
         protected override void OnMouseDown(MouseEventArgs e)
         {
             if (ShowCloseButtons && e.Button == MouseButtons.Left)

@@ -30,10 +30,10 @@ namespace CodexVBE
         }
 
         /// <summary>Combines the selected files and captured memory into the request attachment payload.</summary>
-/// <param name="question">Text containing the question.</param>
-/// <param name="references">The references used by this operation.</param>
-/// <param name="drafts">The drafts used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="question">Text containing the question.</param>
+        /// <param name="references">The references used by this operation.</param>
+        /// <param name="drafts">The drafts used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         private ChatAttachment[] PrepareRequestAttachments(string question, IEnumerable<VbeChatReference> references, IEnumerable<ChatAttachment> drafts)
         {
             var attachments = new List<ChatAttachment>();
@@ -159,8 +159,8 @@ namespace CodexVBE
         }
 
         /// <summary>Performs the prepare monaco action operation for ChatWindow.</summary>
-/// <param name="command">Text containing the command.</param>
-/// <param name="attachment">The attachment used by this operation.</param>
+        /// <param name="command">Text containing the command.</param>
+        /// <param name="attachment">The attachment used by this operation.</param>
         internal void PrepareMonacoAction(string command, ChatAttachment attachment)
         {
             if (busy) { SetStatus(UiText.Get("Wait for the response to finish before preparing an action.")); return; }

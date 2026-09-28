@@ -10,8 +10,8 @@ namespace CodexVBE
     internal sealed partial class VbeProjectComponents
     {
                 /// <summary>Renomme un projet Excel enregistré, non protégé et identifié par son chemin stable.</summary>
-        /// <param name="request">Requête contenant le chemin exact du classeur, la nouvelle valeur et la version attendue.</param>
-        /// <returns>Les propriétés relues et les résultats de vérification du nom, du chemin et des sources.</returns>
+                /// <param name="request">Requête contenant le chemin exact du classeur, la nouvelle valeur et la version attendue.</param>
+                /// <returns>Les propriétés relues et les résultats de vérification du nom, du chemin et des sources.</returns>
         private object RenameSavedExcelProject(Request request)
         {
             if (!host.IsExcel || string.IsNullOrWhiteSpace(request.Project) || !Path.IsPathRooted(request.Project))
@@ -49,8 +49,8 @@ namespace CodexVBE
                 Limit = "Project metadata only; qualified source references and external callers are not refactored. Save/reopen separately. Protected, unsaved and other-host projects remain refused." };
         }
                 /// <summary>Empreintes des modules utilisées pour détecter une mutation inattendue du code durant le renommage.</summary>
-        /// <param name="project">Projet dont les modules de code sont lus.</param>
-        /// <returns>Une table nom de composant vers empreinte du texte source.</returns>
+                /// <param name="project">Projet dont les modules de code sont lus.</param>
+                /// <returns>Une table nom de composant vers empreinte du texte source.</returns>
         private static Dictionary<string, string> ProjectSourceVersions(dynamic project)
         {
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

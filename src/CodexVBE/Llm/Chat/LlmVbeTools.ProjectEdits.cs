@@ -8,8 +8,8 @@ namespace CodexVBE
     internal sealed partial class LlmVbeTools
     {
                 /// <summary>Capture les sources du plan de renommage avant approbation et toute première écriture.</summary>
-        /// <param name="request">Requête d’application contenant le projet et la version attendue.</param>
-        /// <returns>Instantanés du code indexés par nom de module.</returns>
+                /// <param name="request">Requête d’application contenant le projet et la version attendue.</param>
+                /// <returns>Instantanés du code indexés par nom de module.</returns>
         private Dictionary<string, CodeSnapshot> ReadProcedureRenameBefore(Request request)
         {
             var previewRequest = new JavaScriptSerializer().Deserialize<Request>(json.Serialize(request));
@@ -31,8 +31,8 @@ namespace CodexVBE
         }
 
                 /// <summary>Relit les modules même après une erreur partielle et publie seulement les différences observées.</summary>
-        /// <param name="project">Projet dont les modules ont été inspectés.</param>
-        /// <param name="before">Instantanés préalables indexés par module.</param>
+                /// <param name="project">Projet dont les modules ont été inspectés.</param>
+                /// <param name="before">Instantanés préalables indexés par module.</param>
         private void PublishProcedureRenameChanges(string project, Dictionary<string, CodeSnapshot> before)
         {
             foreach (var entry in before)

@@ -189,13 +189,13 @@ namespace CodexVBE
             return "/repos/" + path;
         }
                 /// <summary>Crée une issue avec un titre et un rapport explicites, sans étiquette nécessitant des droits supplémentaires.</summary>
-        /// <param name="url">URL distante du dépôt cible.</param>
-        /// <param name="title">Titre non vide de l’issue, limité à 180 caractères.</param>
-        /// <param name="body">Rapport facultatif, limité à 60 000 caractères.</param>
-        /// <param name="ct">Jeton d’annulation de la requête.</param>
-        /// <returns>Issue créée avec son numéro et son URL.</returns>
-        /// <exception cref="ArgumentException">Le titre est invalide ou le rapport dépasse la limite.</exception>
-        /// <exception cref="InvalidOperationException">GitHub refuse la création ou est indisponible.</exception>
+                /// <param name="url">URL distante du dépôt cible.</param>
+                /// <param name="title">Titre non vide de l’issue, limité à 180 caractères.</param>
+                /// <param name="body">Rapport facultatif, limité à 60 000 caractères.</param>
+                /// <param name="ct">Jeton d’annulation de la requête.</param>
+                /// <returns>Issue créée avec son numéro et son URL.</returns>
+                /// <exception cref="ArgumentException">Le titre est invalide ou le rapport dépasse la limite.</exception>
+                /// <exception cref="InvalidOperationException">GitHub refuse la création ou est indisponible.</exception>
         internal Task<GitHubIssue> CreateIssue(string url, string title, string body, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(title) || title.Length > 180 || (body?.Length ?? 0) > 60000)

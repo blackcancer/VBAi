@@ -20,15 +20,15 @@ namespace CodexVBE
         /// <summary>Stores the create client used by WebViewRuntimePrerequisite.</summary>
         internal static Func<HttpClient> CreateClient = NewClient;
         /// <summary>Performs the new client operation for WebViewRuntimePrerequisite.</summary>
-/// <returns>The result produced by this operation.</returns>
+        /// <returns>The result produced by this operation.</returns>
         private static HttpClient NewClient() => new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
         /// <summary>Stores the verify trust used by WebViewRuntimePrerequisite.</summary>
         internal static Func<string, bool> VerifyTrust = UpdateInstallerRunner.VerifySignatureNative;
         /// <summary>Stores the load certificate used by WebViewRuntimePrerequisite.</summary>
         internal static Func<string, X509Certificate2> LoadCertificate = NativeCertificate;
         /// <summary>Performs the native certificate operation for WebViewRuntimePrerequisite.</summary>
-/// <param name="path">Text containing the path.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="path">Text containing the path.</param>
+        /// <returns>The result produced by this operation.</returns>
         private static X509Certificate2 NativeCertificate(string path) => new X509Certificate2(X509Certificate.CreateFromSignedFile(path));
         /// <summary>Stores the start process used by WebViewRuntimePrerequisite.</summary>
         internal static Func<ProcessStartInfo, Process> StartProcess = Process.Start;

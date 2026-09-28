@@ -48,9 +48,9 @@ namespace CodexVBE
                 Errors = errors, Scope = "Live VBIDE modules/procedures and syntactic VBA declarations (variables, constants, parameters, types and enum members). Conditional branches are marked; implicit variables, semantic binding and COM members are not inferred. Use list_reference_types/list_type_members for references." };
         }
                 /// <summary>Associe une déclaration locale à l’accesseur ou à la procédure VBIDE qui la contient.</summary>
-        /// <param name="procedures">Procédures analysées du module.</param>
-        /// <param name="declaration">Déclaration VBA dont la portée doit être résolue.</param>
-        /// <returns>Type de procédure VBIDE correspondant, ou <see langword="null"/> hors procédure.</returns>
+                /// <param name="procedures">Procédures analysées du module.</param>
+                /// <param name="declaration">Déclaration VBA dont la portée doit être résolue.</param>
+                /// <returns>Type de procédure VBIDE correspondant, ou <see langword="null"/> hors procédure.</returns>
         private static int? DeclarationProcedureKind(System.Collections.IEnumerable procedures, VbaDeclarationIndex.Declaration declaration)
         {
             foreach (dynamic procedure in procedures)

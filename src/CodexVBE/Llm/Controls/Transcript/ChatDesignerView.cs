@@ -15,7 +15,7 @@ namespace CodexVBE
             base.OnControlAdded(e); Watch(e.Control);
         }
         /// <summary>Registers a control whose preferred height should trigger row remeasurement.</summary>
-/// <param name="parent">The parent used by this operation.</param>
+        /// <param name="parent">The parent used by this operation.</param>
         private void Watch(Control parent)
         {
             if (parent is FlowLayoutPanel flow && flow.FlowDirection == FlowDirection.TopDown && watched.Add(flow)) {
@@ -29,7 +29,7 @@ namespace CodexVBE
             foreach (Control child in parent.Controls) Watch(child);
         }
         /// <summary>Resizes the designer host rows to fit their current transcript controls.</summary>
-/// <param name="flow">The flow used by this operation.</param>
+        /// <param name="flow">The flow used by this operation.</param>
         private static void ResizeRows(FlowLayoutPanel flow)
         {
             if (flow.ClientSize.Width <= 0) return;

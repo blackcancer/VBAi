@@ -21,18 +21,18 @@ namespace CodexVBE
         /// <summary>Stores the runtime version used by AboutWindow.</summary>
         internal static Func<Version> RuntimeVersion = ReadRuntimeVersion;
         /// <summary>Performs the read runtime version operation for AboutWindow.</summary>
-/// <returns>The result produced by this operation.</returns>
+        /// <returns>The result produced by this operation.</returns>
         private static Version ReadRuntimeVersion() => Environment.Version;
         /// <summary>Performs the read metadata assembly operation for AboutWindow.</summary>
-/// <returns>The result produced by this operation.</returns>
+        /// <returns>The result produced by this operation.</returns>
         private static Assembly ReadMetadataAssembly() => typeof(AboutWindow).Assembly;
         /// <summary>Performs the read process is64 bit operation for AboutWindow.</summary>
-/// <returns>The result produced by this operation.</returns>
+        /// <returns>The result produced by this operation.</returns>
         private static bool ReadProcessIs64Bit() => Environment.Is64BitProcess;
         /// <summary>Performs the resolve image reader operation for AboutWindow.</summary>
-/// <param name="sender">The sender used by this operation.</param>
-/// <param name="request">The request used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="sender">The sender used by this operation.</param>
+        /// <param name="request">The request used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal static Assembly ResolveImageReader(object sender, ResolveEventArgs request) =>
             request.Name == "System.Resources.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51"
                 ? typeof(System.Resources.Extensions.DeserializingResourceReader).Assembly : null;
@@ -67,7 +67,7 @@ namespace CodexVBE
         }
 
                 /// <summary>Informations techniques copiables, sans chemins, identifiants ou contenu de projet.</summary>
-        /// <value>Version, host, platform, CLR, interface language, and theme details.</value>
+                /// <value>Version, host, platform, CLR, interface language, and theme details.</value>
         internal string TechnicalDetails => "VBAi " + versionValue.Text + Environment.NewLine +
             "Host: " + hostProcess + Environment.NewLine +
             "Platform: " + platformValue.Text + Environment.NewLine +
@@ -76,8 +76,8 @@ namespace CodexVBE
             "Theme: " + UiTheme.Choice;
 
                 /// <summary>Décrit les hôtes connus et conserve le nom de processus pour les autres hôtes.</summary>
-        /// <param name="processName">Host process name, such as EXCEL or SLDWORKS.</param>
-        /// <returns>A friendly description for recognized hosts, or the supplied process name.</returns>
+                /// <param name="processName">Host process name, such as EXCEL or SLDWORKS.</param>
+                /// <returns>A friendly description for recognized hosts, or the supplied process name.</returns>
         internal static string HostDescription(string processName)
         {
             if (string.Equals(processName, "EXCEL", StringComparison.OrdinalIgnoreCase)) return "Microsoft Excel · Visual Basic Editor";
@@ -132,7 +132,7 @@ namespace CodexVBE
         }
 
                 /// <summary>Ouvre À propos depuis le VBE, même si le chat est fermé.</summary>
-        /// <param name="vbe">VBE automation object used to obtain the native owner handle.</param>
+                /// <param name="vbe">VBE automation object used to obtain the native owner handle.</param>
         internal static void ShowForVbe(object vbe)
         {
             IWin32Window owner = null;

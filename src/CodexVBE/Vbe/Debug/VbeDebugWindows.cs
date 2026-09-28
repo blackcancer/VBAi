@@ -602,11 +602,11 @@ namespace CodexVBE
                 return controls;
             }
                         /// <summary>Écrit un contrôle unique de l’onglet par son interface native accessible.</summary>
-            /// <param name="dialog">Handle du dialogue Options.</param>
-            /// <param name="tabIndex">Index de l’onglet qui contient le contrôle.</param>
-            /// <param name="name">Nom exact du contrôle.</param>
-            /// <param name="type">Type UI Automation du contrôle.</param>
-            /// <param name="value">Valeur validée à écrire par son pattern natif.</param>
+                        /// <param name="dialog">Handle du dialogue Options.</param>
+                        /// <param name="tabIndex">Index de l’onglet qui contient le contrôle.</param>
+                        /// <param name="name">Nom exact du contrôle.</param>
+                        /// <param name="type">Type UI Automation du contrôle.</param>
+                        /// <param name="value">Valeur validée à écrire par son pattern natif.</param>
             public void Write(IntPtr dialog, int tabIndex, string name, string type, object value)
             {
                 Controls(dialog, tabIndex);
@@ -645,7 +645,7 @@ namespace CodexVBE
                 PauseNative(100);
             }
                         /// <summary>Demande la validation par le bouton natif IDOK, sans raccourci clavier.</summary>
-            /// <param name="dialog">Handle du dialogue Options.</param>
+                        /// <param name="dialog">Handle du dialogue Options.</param>
             public void Accept(IntPtr dialog)
             {
                 IntPtr ok = GetDlgItem(dialog, 1);
@@ -885,8 +885,8 @@ namespace CodexVBE
         // The Compile command can open a modal native diagnostic. Its UI-thread
         // Execute call cannot be awaited with Control.Invoke in that case.
                 /// <summary>Vérifie qu’aucun dialogue d’erreur de compilation n’est encore ouvert.</summary>
-        /// <param name="processId">PID de l’instance hôte à contrôler.</param>
-        /// <exception cref="InvalidOperationException">Un dialogue de compilation reste visible.</exception>
+                /// <param name="processId">PID de l’instance hôte à contrôler.</param>
+                /// <exception cref="InvalidOperationException">Un dialogue de compilation reste visible.</exception>
         internal static void EnsureNoCompileDialog(int processId) { EnsureNoCompileDialog(new NativeProbe(processId)); }
         /// <summary>Attend la commande de compilation et lit tout dialogue natif dans le processus indiqué.</summary>
         /// <param name="completed">Signal de fin de compilation.</param>
@@ -1943,9 +1943,9 @@ namespace CodexVBE
         }
 
                 /// <summary>Identifie une observation complète, en conservant le contexte et chaque segment du chemin.</summary>
-        /// <param name="raw">Texte brut de la ligne accessible.</param>
-        /// <param name="path">Segments du chemin UI Automation de la ligne.</param>
-        /// <returns>Clé JSON stable de la ligne et de son contexte.</returns>
+                /// <param name="raw">Texte brut de la ligne accessible.</param>
+                /// <param name="path">Segments du chemin UI Automation de la ligne.</param>
+                /// <returns>Clé JSON stable de la ligne et de son contexte.</returns>
         internal static string DebugRowIdentity(string raw, string[] path) =>
             new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(new { Raw = raw, PathSegments = path ?? new string[0] });
 

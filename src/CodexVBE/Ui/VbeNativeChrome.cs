@@ -52,23 +52,23 @@ internal int X, Y; }
         /// <summary>Copies a rectangular pixel area between device contexts.</summary><param name="destination">Destination context.</param><param name="x">Destination x coordinate.</param><param name="y">Destination y coordinate.</param><param name="width">Copy width.</param><param name="height">Copy height.</param><param name="source">Source context.</param><param name="sourceX">Source x coordinate.</param><param name="sourceY">Source y coordinate.</param><param name="operation">Raster operation code.</param><returns>Whether the copy succeeded.</returns>
         [DllImport("gdi32.dll")] private static extern bool BitBlt(IntPtr destination, int x, int y, int width, int height, IntPtr source, int sourceX, int sourceY, uint operation);
         /// <summary>Defines the read rectangle callback.</summary>
-/// <param name="window">The window used by this operation.</param>
-/// <param name="rectangle">The rectangle used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="window">The window used by this operation.</param>
+        /// <param name="rectangle">The rectangle used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal delegate bool ReadRectangle(IntPtr window, out Rect rectangle);
         /// <summary>Defines the convert point callback.</summary>
-/// <param name="window">The window used by this operation.</param>
-/// <param name="point">The point used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="window">The window used by this operation.</param>
+        /// <param name="point">The point used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal delegate bool ConvertPoint(IntPtr window, ref Point point);
         /// <summary>Defines the read pointer callback.</summary>
-/// <param name="point">The point used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="point">The point used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal delegate bool ReadPointer(out Point point);
         /// <summary>Defines the read combo callback.</summary>
-/// <param name="window">The window used by this operation.</param>
-/// <param name="information">The information used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="window">The window used by this operation.</param>
+        /// <param name="information">The information used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal delegate bool ReadCombo(IntPtr window, ref ComboInfo information);
         /// <summary>Stores the window bounds,client bounds used by VbeNativeChrome.</summary>
         internal static ReadRectangle WindowBounds = GetWindowRect, ClientBounds = GetClientRect;

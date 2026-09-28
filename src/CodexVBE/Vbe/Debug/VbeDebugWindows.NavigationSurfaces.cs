@@ -56,14 +56,14 @@ namespace CodexVBE
         }
 
                 /// <summary>Lit l'explorateur de projets, la boîte à outils ou le sélecteur de macros déjà visible.</summary>
-        /// <param name="request">Surface et paramètres de pagination ou de filtre.</param>
-        /// <returns>Instantané paginé des seuls nœuds exposés par le fournisseur natif.</returns>
+                /// <param name="request">Surface et paramètres de pagination ou de filtre.</param>
+                /// <returns>Instantané paginé des seuls nœuds exposés par le fournisseur natif.</returns>
         internal static object ReadNavigationSurface(Request request) => ReadNavigationSurface(request, new NativeNavigationSurfaceProbe());
 
                 /// <summary>Filtre un instantané complet sans utiliser le libellé comme identité de nœud.</summary>
-        /// <param name="request">Surface, filtre, pagination et éventuel contrôle cible.</param>
-        /// <param name="probe">Fournisseur de lecture UIA/MSAA.</param>
-        /// <returns>Nœuds correspondants et version de la surface observée.</returns>
+                /// <param name="request">Surface, filtre, pagination et éventuel contrôle cible.</param>
+                /// <param name="probe">Fournisseur de lecture UIA/MSAA.</param>
+                /// <returns>Nœuds correspondants et version de la surface observée.</returns>
         internal static object ReadNavigationSurface(Request request, INavigationSurfaceProbe probe)
         {
             ValidateNavigationRequest(request, false);
@@ -82,14 +82,14 @@ namespace CodexVBE
         }
 
                 /// <summary>Sélectionne, développe ou replie un nœud exact après contrôle de l'ensemble de la surface.</summary>
-        /// <param name="request">Surface, jeton, action et version attendue.</param>
-        /// <returns>État du nœud et vérification après relecture native.</returns>
+                /// <param name="request">Surface, jeton, action et version attendue.</param>
+                /// <returns>État du nœud et vérification après relecture native.</returns>
         internal static object ChangeNavigationSurface(Request request) => ChangeNavigationSurface(request, new NativeNavigationSurfaceProbe());
 
                 /// <summary>Vérifie l'effet accessible d'une action ; une exception de livraison interdit une relance automatique.</summary>
-        /// <param name="request">Action demandée avec l’empreinte de la surface inspectée.</param>
-        /// <param name="probe">Fournisseur natif de lecture et d’action.</param>
-        /// <returns>État avant/après, résultat observé et erreurs éventuelles.</returns>
+                /// <param name="request">Action demandée avec l’empreinte de la surface inspectée.</param>
+                /// <param name="probe">Fournisseur natif de lecture et d’action.</param>
+                /// <returns>État avant/après, résultat observé et erreurs éventuelles.</returns>
         internal static object ChangeNavigationSurface(Request request, INavigationSurfaceProbe probe)
         {
             ValidateNavigationRequest(request, true);
@@ -126,8 +126,8 @@ namespace CodexVBE
         }
 
                 /// <summary>Valide les actions de navigation et les limites de pagination.</summary>
-        /// <param name="request">Requête à contrôler.</param>
-        /// <param name="mutation">Exige les informations supplémentaires de mutation si vrai.</param>
+                /// <param name="request">Requête à contrôler.</param>
+                /// <param name="mutation">Exige les informations supplémentaires de mutation si vrai.</param>
         private static void ValidateNavigationRequest(Request request, bool mutation)
         {
             if (request == null || (request.Pane != "project" && request.Pane != "toolbox" && request.Pane != "macros") ||
@@ -140,7 +140,7 @@ namespace CodexVBE
         }
 
                 /// <summary>Refuse un fournisseur incomplet plutôt que présenter un arbre vide comme preuve.</summary>
-        /// <param name="state">Instantané de surface à vérifier.</param>
+                /// <param name="state">Instantané de surface à vérifier.</param>
         private static void ValidateNavigationSnapshot(NavigationSurface state)
         {
             if (state == null || state.Nodes == null || state.Nodes.Length > 4096 || state.Nodes.Any(n => n == null || string.IsNullOrEmpty(n.Token)))
@@ -150,8 +150,8 @@ namespace CodexVBE
         }
 
                 /// <summary>Empreinte des identités, états et erreurs de tous les nœuds observés.</summary>
-        /// <param name="state">Surface native capturée.</param>
-        /// <returns>Empreinte SHA-256 de l’instantané sérialisé.</returns>
+                /// <param name="state">Surface native capturée.</param>
+                /// <returns>Empreinte SHA-256 de l’instantané sérialisé.</returns>
         private static string NavigationRevision(NavigationSurface state)
         {
             using (var sha = SHA256.Create())
@@ -159,9 +159,9 @@ namespace CodexVBE
         }
 
                 /// <summary>Compare seulement l'état effectivement accessible correspondant à l'action.</summary>
-        /// <param name="node">État lu d’un nœud.</param>
-        /// <param name="action">Action dont l’effet est attendu.</param>
-        /// <returns><see langword="true"/> si l’état observable correspond à l’action.</returns>
+                /// <param name="node">État lu d’un nœud.</param>
+                /// <param name="action">Action dont l’effet est attendu.</param>
+                /// <returns><see langword="true"/> si l’état observable correspond à l’action.</returns>
         private static bool NavigationDesired(NavigationNode node, string action) => action == "select" ? node.Selected == true :
             node.Expansion == (action == "expand" ? "Expanded" : "Collapsed");
 
@@ -278,8 +278,8 @@ namespace CodexVBE
             }
 
                         /// <summary>Identité de session du fournisseur UIA ; aucun nom seul n'identifie un nœud.</summary>
-            /// <param name="element">Élément UI Automation à identifier.</param>
-            /// <returns>Jeton construit à partir de l’identifiant d’exécution UIA.</returns>
+                        /// <param name="element">Élément UI Automation à identifier.</param>
+                        /// <returns>Jeton construit à partir de l’identifiant d’exécution UIA.</returns>
             private static string Token(AutomationElement element) => string.Join(".", element.GetRuntimeId());
         }
     }

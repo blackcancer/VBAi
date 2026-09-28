@@ -36,8 +36,8 @@ namespace CodexVBE
         /// <summary>Stores the read attributes used by EditorDraftStore.</summary>
         internal Func<FileSystemInfo, FileAttributes> ReadAttributes = NativeAttributes;
         /// <summary>Performs the native attributes operation for EditorDraftStore.</summary>
-/// <param name="item">The item used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="item">The item used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         private static FileAttributes NativeAttributes(FileSystemInfo item) => item.Attributes;
         /// <summary>Sérialiseur JSON des instantanés de brouillon.</summary>
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 16 * 1024 * 1024 };

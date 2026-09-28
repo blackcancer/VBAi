@@ -20,8 +20,8 @@ namespace CodexVBE
         /// <summary>Stores the last execution line,last execution version used by ModernEditorWindow.</summary>
         private int lastExecutionLine, lastExecutionVersion;
         /// <summary>Performs the debug position operation for ModernEditorWindow.</summary>
-/// <param name="native">The native used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="native">The native used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         private string DebugPosition(EditorVbeModule native)
         {
             dynamic pane = ((dynamic)native.Vbe).ActiveCodePane;

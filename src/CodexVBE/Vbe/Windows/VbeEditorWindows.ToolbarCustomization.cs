@@ -15,12 +15,12 @@ namespace CodexVBE
         /// <summary>Préfixe commun aux identifiants des commandes ajoutées par VBAi.</summary>
         private const string CustomCommandTag = "VBAi.ToolbarCommand.";
                 /// <summary>Retourne les commandes directes d’une barre et une version de personnalisation.</summary>
-        /// <param name="request">Requête contenant le nom de barre issu de l’inventaire.</param>
-        /// <returns>Les contrôles observés et leur version de personnalisation.</returns>
+                /// <param name="request">Requête contenant le nom de barre issu de l’inventaire.</param>
+                /// <returns>Les contrôles observés et leur version de personnalisation.</returns>
         public object ToolbarControls(Request request) => ReadToolbarCommands(FindNormalToolbar(request.ObjectName));
                 /// <summary>Crée une barre personnalisée sans écraser une barre existante.</summary>
-        /// <param name="request">Nom de barre et version attendue de la collection.</param>
-        /// <returns>Résultat de création, état relu et version de collection mise à jour.</returns>
+                /// <param name="request">Nom de barre et version attendue de la collection.</param>
+                /// <returns>Résultat de création, état relu et version de collection mise à jour.</returns>
         public object CreateToolbar(Request request)
         {
             CheckToolbarCollection(request.ExpectedToolbarCollectionVersion);
@@ -40,8 +40,8 @@ namespace CodexVBE
                 NextRead = "list_toolbars, toolbar_controls" };
         }
                 /// <summary>Supprime uniquement une barre VBAi personnalisée vide et inchangée.</summary>
-        /// <param name="request">Nom de barre et versions attendues de collection et de contrôles.</param>
-        /// <returns>Indique si la barre a été supprimée et si son absence a été relue.</returns>
+                /// <param name="request">Nom de barre et versions attendues de collection et de contrôles.</param>
+                /// <returns>Indique si la barre a été supprimée et si son absence a été relue.</returns>
         public object RemoveToolbar(Request request)
         {
             CheckToolbarCollection(request.ExpectedToolbarCollectionVersion);
@@ -59,8 +59,8 @@ namespace CodexVBE
             return new { Removed = absent, Verified = absent, ToolbarCollectionVersion = ToolbarCollectionVersion() };
         }
                 /// <summary>Ajoute une commande native existante, sans OnAction arbitraire.</summary>
-        /// <param name="request">Barre, commande native exacte, index éventuel et version attendue des contrôles.</param>
-        /// <returns>État de l’ajout et contrôles relus après l’appel natif.</returns>
+                /// <param name="request">Barre, commande native exacte, index éventuel et version attendue des contrôles.</param>
+                /// <returns>État de l’ajout et contrôles relus après l’appel natif.</returns>
         public object AddToolbarCommand(Request request)
         {
             dynamic bar = FindNormalToolbar(request.ObjectName);
@@ -90,8 +90,8 @@ namespace CodexVBE
                 NextRead = "toolbar_controls", Limit = "Inspect partial results; no automatic retry. Restart persistence must be qualified separately." };
         }
                 /// <summary>Retire uniquement un bouton ajouté par VBAi après vérification de son identité et de son index.</summary>
-        /// <param name="request">Barre, identité de commande, index et version attendue des contrôles.</param>
-        /// <returns>Indique si la commande marquée VBAi a été retirée et relue comme absente.</returns>
+                /// <param name="request">Barre, identité de commande, index et version attendue des contrôles.</param>
+                /// <returns>Indique si la commande marquée VBAi a été retirée et relue comme absente.</returns>
         public object RemoveToolbarCommand(Request request)
         {
             dynamic bar = FindNormalToolbar(request.ObjectName);
@@ -143,38 +143,38 @@ namespace CodexVBE
         private sealed class ToolbarCommandState
         {
             /// <summary>Gets or sets the index.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public int Index { get; set; }
             /// <summary>Gets or sets the id.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public int Id { get; set; }
             /// <summary>Gets or sets the type.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public int Type { get; set; }
             /// <summary>Gets or sets the caption.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public string Caption { get; set; }
             /// <summary>Gets or sets the tag.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public string Tag { get; set; }
             /// <summary>Gets or sets the built in.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public bool BuiltIn { get; set; }
             /// <summary>Gets or sets the visible.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public bool Visible { get; set; }
         }
         /// <summary>Instantané sérialisable des contrôles d’une barre et de leur version.</summary>
         private sealed class ToolbarCommandsState
         {
             /// <summary>Gets or sets the object name.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public string ObjectName { get; set; }
             /// <summary>Gets or sets the toolbar controls version.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public string ToolbarControlsVersion { get; set; }
             /// <summary>Gets or sets the controls.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public ToolbarCommandState[] Controls { get; set; }
         }
         /// <summary>Lit les contrôles directs d’une barre et calcule la version vérifiable de leur état.</summary>

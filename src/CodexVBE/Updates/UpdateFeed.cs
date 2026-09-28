@@ -21,8 +21,8 @@ namespace CodexVBE
         /// <summary>Stores the read credential used by UpdateFeed.</summary>
         internal static Func<string, CancellationToken, Task<string>> ReadCredential = GitHubApi.ReadCredential;
         /// <summary>Performs the default credential operation for UpdateFeed.</summary>
-/// <param name="ct">Token used to cancel the operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="ct">Token used to cancel the operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         private static Task<string> DefaultCredential(CancellationToken ct) => ReadCredential(LoadCredentialSettings().GitHubAccount, ct);
         /// <summary>HTTP client used for release metadata and asset downloads.</summary>
         private readonly HttpClient client;

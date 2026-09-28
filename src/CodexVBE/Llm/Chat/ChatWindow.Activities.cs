@@ -106,8 +106,8 @@ namespace CodexVBE
         /// <returns>Étape de la chronologie.</returns>
         private FrameworkElement RenderActivityStep(ChatEntry entry) => new ChatDesignerHost(CreateActivityStep(entry));
         /// <summary>Creates a transcript row for a tool activity and its displayed state.</summary>
-/// <param name="entry">The entry used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="entry">The entry used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         private ChatActivityStepView CreateActivityStep(ChatEntry entry)
         {
             var activity = entry.Activity;

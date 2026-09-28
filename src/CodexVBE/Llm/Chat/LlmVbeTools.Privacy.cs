@@ -34,8 +34,8 @@ namespace CodexVBE
         };
 
         /// <summary>Performs the set read access operation for LlmVbeTools.</summary>
-/// <param name="projects">The projects used by this operation.</param>
-/// <param name="sharedContext">Indicates whether shared context is enabled.</param>
+        /// <param name="projects">The projects used by this operation.</param>
+        /// <param name="sharedContext">Indicates whether shared context is enabled.</param>
         internal void SetReadAccess(IEnumerable<string> projects, bool sharedContext)
         {
             readProjectGrants.Clear();
@@ -45,7 +45,7 @@ namespace CodexVBE
         }
 
         /// <summary>Performs the require project read operation for LlmVbeTools.</summary>
-/// <param name="project">Text containing the project.</param>
+        /// <param name="project">Text containing the project.</param>
         internal void RequireProjectRead(string project)
         {
             if (string.IsNullOrEmpty(BoundProject)) return; // Unbound internal callers retain their contract.
@@ -56,8 +56,8 @@ namespace CodexVBE
         // Reference tokens use project names, while saved chat scopes use absolute paths.
         // Resolve that alias only against one live project; duplicate names fail closed.
         /// <summary>Performs the is authorized alias operation for LlmVbeTools.</summary>
-/// <param name="selector">Text containing the selector.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="selector">Text containing the selector.</param>
+        /// <returns>The result produced by this operation.</returns>
         private bool IsAuthorizedAlias(string selector)
         {
             if (string.IsNullOrWhiteSpace(selector)) return false;
@@ -79,15 +79,15 @@ namespace CodexVBE
         }
 
         /// <summary>Performs the same project operation for LlmVbeTools.</summary>
-/// <param name="first">Text containing the first.</param>
-/// <param name="second">Text containing the second.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="first">Text containing the first.</param>
+        /// <param name="second">Text containing the second.</param>
+        /// <returns>The result produced by this operation.</returns>
         private static bool SameProject(string first, string second) =>
             string.Equals(first, second, StringComparison.OrdinalIgnoreCase);
 
         /// <summary>Performs the guard project privacy operation for LlmVbeTools.</summary>
-/// <param name="name">Text containing the name.</param>
-/// <param name="arguments">Text containing the arguments.</param>
+        /// <param name="name">Text containing the name.</param>
+        /// <param name="arguments">Text containing the arguments.</param>
         private void GuardProjectPrivacy(string name, string arguments)
         {
             if (string.IsNullOrEmpty(BoundProject)) return;
@@ -112,14 +112,14 @@ namespace CodexVBE
         }
 
         /// <summary>Performs the fields operation for LlmVbeTools.</summary>
-/// <param name="data">The data used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="data">The data used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         private IDictionary<string, object> Fields(object data) =>
             json.DeserializeObject(json.Serialize(data)) as IDictionary<string, object>;
 
         /// <summary>Performs the filter projects operation for LlmVbeTools.</summary>
-/// <param name="data">The data used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="data">The data used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         private object FilterProjects(object data)
         {
             if (string.IsNullOrEmpty(BoundProject)) return data;
@@ -137,10 +137,10 @@ namespace CodexVBE
         }
 
         /// <summary>Performs the filter project response operation for LlmVbeTools.</summary>
-/// <param name="name">Text containing the name.</param>
-/// <param name="response">The response used by this operation.</param>
-/// <param name="requestedProject">Text containing the requested project.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="name">Text containing the name.</param>
+        /// <param name="response">The response used by this operation.</param>
+        /// <param name="requestedProject">Text containing the requested project.</param>
+        /// <returns>The result produced by this operation.</returns>
         private Response FilterProjectResponse(string name, Response response, string requestedProject)
         {
             if (!response.Ok || string.IsNullOrEmpty(BoundProject)) return response;
@@ -162,7 +162,7 @@ namespace CodexVBE
         }
 
         /// <summary>Performs the scoped live snapshot operation for LlmVbeTools.</summary>
-/// <returns>The result produced by this operation.</returns>
+        /// <returns>The result produced by this operation.</returns>
         private object ScopedLiveSnapshot()
         {
             Response projects;

@@ -24,11 +24,11 @@ namespace CodexVBE
         /// <summary>Stores the create timer used by UpdateCoordinator.</summary>
         internal static Func<TimerCallback, object, TimeSpan, TimeSpan, Timer> CreateTimer = NewTimer;
         /// <summary>Performs the new timer operation for UpdateCoordinator.</summary>
-/// <param name="callback">The callback used by this operation.</param>
-/// <param name="state">The state used by this operation.</param>
-/// <param name="due">The due used by this operation.</param>
-/// <param name="period">The period used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="callback">The callback used by this operation.</param>
+        /// <param name="state">The state used by this operation.</param>
+        /// <param name="due">The due used by this operation.</param>
+        /// <param name="period">The period used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         private static Timer NewTimer(TimerCallback callback, object state, TimeSpan due, TimeSpan period) => new Timer(callback, state, due, period);
         /// <summary>Serializes release checks, optionally downloads the package, and may schedule installation.</summary>
         /// <param name="automatic">Whether automatic-check preferences and skipped-version settings apply.</param>

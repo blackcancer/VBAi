@@ -25,11 +25,11 @@ namespace CodexVBE
         public object ApplyFitFormContent(Request request) { return FitFormContent(request, false); }
 
                 /// <summary>Valide une capture d’arbre, mesure les enfants, calcule les dimensions requises et peut les appliquer puis les relire.</summary>
-        /// <param name="request">Conteneur, action, révision attendue et padding demandé.</param>
-        /// <param name="preview">Si true, renvoie uniquement le plan sans écrire les dimensions.</param>
-        /// <returns>Plan en prévisualisation ou résultat de mutation avec mesures relues et incertitude explicite.</returns>
-        /// <exception cref="ArgumentException">La requête, l’action, le padding ou le chemin du conteneur est invalide.</exception>
-        /// <exception cref="InvalidOperationException">L’arbre a changé ou les mesures natives et géométries ne permettent pas un ajustement sûr.</exception>
+                /// <param name="request">Conteneur, action, révision attendue et padding demandé.</param>
+                /// <param name="preview">Si true, renvoie uniquement le plan sans écrire les dimensions.</param>
+                /// <returns>Plan en prévisualisation ou résultat de mutation avec mesures relues et incertitude explicite.</returns>
+                /// <exception cref="ArgumentException">La requête, l’action, le padding ou le chemin du conteneur est invalide.</exception>
+                /// <exception cref="InvalidOperationException">L’arbre a changé ou les mesures natives et géométries ne permettent pas un ajustement sûr.</exception>
         private object FitFormContent(Request request, bool preview)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.ExpectedTreeVersion))
@@ -123,12 +123,12 @@ namespace CodexVBE
         }
 
                 /// <summary>Exige une propriété scalaire numérique native avant toute écriture.</summary>
-        /// <param name="target">Conteneur dont la propriété doit être lue.</param>
-        /// <param name="name">Nom de la propriété numérique recherchée.</param>
-        /// <param name="write">Indique si le descripteur doit être modifiable.</param>
-        /// <param name="component">VBComponent facultatif, source des dimensions Width/Height du formulaire racine.</param>
-        /// <returns>Descripteur de propriété validé.</returns>
-        /// <exception cref="InvalidOperationException">La propriété n’existe pas, n’est pas numérique ou ne permet pas l’écriture demandée.</exception>
+                /// <param name="target">Conteneur dont la propriété doit être lue.</param>
+                /// <param name="name">Nom de la propriété numérique recherchée.</param>
+                /// <param name="write">Indique si le descripteur doit être modifiable.</param>
+                /// <param name="component">VBComponent facultatif, source des dimensions Width/Height du formulaire racine.</param>
+                /// <returns>Descripteur de propriété validé.</returns>
+                /// <exception cref="InvalidOperationException">La propriété n’existe pas, n’est pas numérique ou ne permet pas l’écriture demandée.</exception>
         private static PropertyDescriptor RequireFitProperty(object target, string name, bool write, object component = null)
         {
             var descriptor = TypeDescriptor.GetProperties(target).Find(name, false);
@@ -152,8 +152,8 @@ namespace CodexVBE
         }
 
                 /// <summary>Lit le DPI propre à la fenêtre VBE pour la quantification des dimensions natives.</summary>
-        /// <param name="window">Handle de la fenêtre hôte.</param>
-        /// <returns>DPI effectif de cette fenêtre.</returns>
+                /// <param name="window">Handle de la fenêtre hôte.</param>
+                /// <returns>DPI effectif de cette fenêtre.</returns>
         [DllImport("user32.dll", EntryPoint = "GetDpiForWindow")]
         private static extern uint FitWindowDpi(IntPtr window);
 
@@ -202,10 +202,10 @@ namespace CodexVBE
         }
 
                 /// <summary>Lit une mesure native et refuse les valeurs non finies ou négatives.</summary>
-        /// <param name="target">Objet qui possède la propriété.</param>
-        /// <param name="property">Descripteur de la mesure à lire.</param>
-        /// <returns>Valeur convertie en points, bornée à 32767.</returns>
-        /// <exception cref="InvalidOperationException">La valeur est nulle, non numérique, négative ou hors bornes.</exception>
+                /// <param name="target">Objet qui possède la propriété.</param>
+                /// <param name="property">Descripteur de la mesure à lire.</param>
+                /// <returns>Valeur convertie en points, bornée à 32767.</returns>
+                /// <exception cref="InvalidOperationException">La valeur est nulle, non numérique, négative ou hors bornes.</exception>
         private static double ReadFitNumber(object target, PropertyDescriptor property)
         {
             object value = property.GetValue(target);
@@ -217,10 +217,10 @@ namespace CodexVBE
         }
 
                 /// <summary>Capture la géométrie des seuls enfants directs dont le type natif est connu.</summary>
-        /// <param name="container">Conteneur dont la collection Controls sera énumérée.</param>
-        /// <param name="formName">Nom du formulaire utilisé pour vérifier le parent de chaque contrôle.</param>
-        /// <returns>Boîtes des contrôles directs avec leurs chemins et dimensions observées.</returns>
-        /// <exception cref="InvalidOperationException">Le conteneur, un type de contrôle, son nom ou sa géométrie ne peut pas être vérifié.</exception>
+                /// <param name="container">Conteneur dont la collection Controls sera énumérée.</param>
+                /// <param name="formName">Nom du formulaire utilisé pour vérifier le parent de chaque contrôle.</param>
+                /// <returns>Boîtes des contrôles directs avec leurs chemins et dimensions observées.</returns>
+                /// <exception cref="InvalidOperationException">Le conteneur, un type de contrôle, son nom ou sa géométrie ne peut pas être vérifié.</exception>
         private static List<FormLayoutBox> ReadFitChildren(object container, string formName)
         {
             var controls = TypeDescriptor.GetProperties(container).Find("Controls", false);

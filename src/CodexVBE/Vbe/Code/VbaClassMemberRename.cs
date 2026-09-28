@@ -21,12 +21,12 @@ namespace CodexVBE
         }
 
                 /// <summary>Prépare un plan limité aux liaisons privées directes ou Me, sans déduire un type de receveur.</summary>
-        /// <param name="project">Nom canonique du projet inspecté.</param>
-        /// <param name="modules">Snapshots complets des composants et de leurs sources.</param>
-        /// <param name="request">Classe, déclaration exacte, ancien nom, nouveau nom et empreinte attendue.</param>
-        /// <returns>Plan sans mutation avec les positions privées résolues.</returns>
-        /// <exception cref="ArgumentException">Le projet, les snapshots ou les identifiants de nom sont invalides.</exception>
-        /// <exception cref="InvalidOperationException">La liaison est publique, ambiguë, masquée ou sort du périmètre privé pris en charge.</exception>
+                /// <param name="project">Nom canonique du projet inspecté.</param>
+                /// <param name="modules">Snapshots complets des composants et de leurs sources.</param>
+                /// <param name="request">Classe, déclaration exacte, ancien nom, nouveau nom et empreinte attendue.</param>
+                /// <returns>Plan sans mutation avec les positions privées résolues.</returns>
+                /// <exception cref="ArgumentException">Le projet, les snapshots ou les identifiants de nom sont invalides.</exception>
+                /// <exception cref="InvalidOperationException">La liaison est publique, ambiguë, masquée ou sort du périmètre privé pris en charge.</exception>
         internal static VbaProcedureRename.Plan Prepare(string project, IEnumerable<VbaProcedureRename.ModuleSnapshot> modules, Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(project) || modules == null)
@@ -112,9 +112,9 @@ namespace CodexVBE
         }
 
                 /// <summary>Refuse toute construction qui peut cacher une liaison ou un consommateur dynamique.</summary>
-        /// <param name="module">Module de classe analysé.</param>
-        /// <param name="statements">Instructions lexicales du module.</param>
-        /// <exception cref="InvalidOperationException">Une déclaration implicite, conditionnelle, dynamique ou non résolue empêche le renommage sûr.</exception>
+                /// <param name="module">Module de classe analysé.</param>
+                /// <param name="statements">Instructions lexicales du module.</param>
+                /// <exception cref="InvalidOperationException">Une déclaration implicite, conditionnelle, dynamique ou non résolue empêche le renommage sûr.</exception>
         private static void Guard(VbaProcedureRename.ModuleSnapshot module, IList<List<VbaDeclarationIndex.Token>> statements)
         {
             if (statements.All(x => x.Count == 0)) return;
@@ -131,9 +131,9 @@ namespace CodexVBE
         }
 
                 /// <summary>Lit les signatures explicites et chaque accesseur avec son terminateur exact.</summary>
-        /// <param name="statements">Instructions lexicales du module de classe.</param>
-        /// <returns>Membres fermés avec visibilité, type et jeton du nom.</returns>
-        /// <exception cref="InvalidOperationException">Une signature est illisible, imbriquée ou sans terminateur correspondant.</exception>
+                /// <param name="statements">Instructions lexicales du module de classe.</param>
+                /// <returns>Membres fermés avec visibilité, type et jeton du nom.</returns>
+                /// <exception cref="InvalidOperationException">Une signature est illisible, imbriquée ou sans terminateur correspondant.</exception>
         private static Member[] ReadMembers(IList<List<VbaDeclarationIndex.Token>> statements)
         {
             var result = new List<Member>(); Member active = null;
@@ -167,11 +167,11 @@ namespace CodexVBE
         }
 
                 /// <summary>Exclut types, labels, sauts et noms des arguments nommés.</summary>
-        /// <param name="tokens">Jetons de l’instruction.</param>
-        /// <param name="i">Index du jeton candidat.</param>
-        /// <param name="source">Source exacte du module.</param>
-        /// <param name="offset">Offset de début du jeton candidat.</param>
-        /// <returns><see langword="true"/> si le jeton doit être exclu des usages de membre.</returns>
+                /// <param name="tokens">Jetons de l’instruction.</param>
+                /// <param name="i">Index du jeton candidat.</param>
+                /// <param name="source">Source exacte du module.</param>
+                /// <param name="offset">Offset de début du jeton candidat.</param>
+                /// <returns><see langword="true"/> si le jeton doit être exclu des usages de membre.</returns>
         private static bool Excluded(IList<VbaDeclarationIndex.Token> tokens, int i, string source, int offset)
         {
             if (i > 0 && new[] { "as", "new", "goto", "gosub", "resume" }.Contains(tokens[i - 1].Text.ToLowerInvariant())) return true;
@@ -180,22 +180,22 @@ namespace CodexVBE
             return next < source.Length && source[next] == ':' && (i == 0 && tokens.Count == 1 || next + 1 < source.Length && source[next + 1] == '=');
         }
                 /// <summary>Reconnaît point, leading-dot et notation bang sans inventer le receveur.</summary>
-        /// <param name="tokens">Jetons de l’instruction.</param>
-        /// <param name="i">Index du nom candidat.</param>
-        /// <returns><see langword="true"/> si le nom est utilisé comme membre qualifié.</returns>
+                /// <param name="tokens">Jetons de l’instruction.</param>
+                /// <param name="i">Index du nom candidat.</param>
+                /// <returns><see langword="true"/> si le nom est utilisé comme membre qualifié.</returns>
         private static bool IsMember(IList<VbaDeclarationIndex.Token> tokens, int i) => i > 0 && (tokens[i - 1].Text == "." || tokens[i - 1].Text.EndsWith("!", StringComparison.Ordinal));
                 /// <summary>Compare les noms VBA indépendamment de leur casse.</summary>
-        /// <param name="left">Premier nom.</param>
-        /// <param name="right">Second nom.</param>
-        /// <returns><see langword="true"/> si les identifiants sont égaux sans sensibilité à la casse.</returns>
+                /// <param name="left">Premier nom.</param>
+                /// <param name="right">Second nom.</param>
+                /// <returns><see langword="true"/> si les identifiants sont égaux sans sensibilité à la casse.</returns>
         private static bool Same(string left, string right) => string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
                 /// <summary>Permet de repérer puis refuser les suffixes non qualifiés.</summary>
-        /// <param name="text">Nom lexical d’un jeton.</param>
-        /// <returns>Nom débarrassé de son suffixe de type éventuel.</returns>
+                /// <param name="text">Nom lexical d’un jeton.</param>
+                /// <returns>Nom débarrassé de son suffixe de type éventuel.</returns>
         private static string Bare(string text) => text.TrimEnd('$', '%', '&', '!', '#', '@', '^');
                 /// <summary>Offsets physiques sans normalisation de la source.</summary>
-        /// <param name="source">Source avec ses fins de ligne d’origine.</param>
-        /// <returns>Offsets absolus de chaque début de ligne.</returns>
+                /// <param name="source">Source avec ses fins de ligne d’origine.</param>
+                /// <returns>Offsets absolus de chaque début de ligne.</returns>
         private static List<int> Offsets(string source)
         { var result = new List<int> { 0 }; for (int i = 0; i < source.Length; i++) if (source[i] == '\n') result.Add(i + 1); return result; }
     }

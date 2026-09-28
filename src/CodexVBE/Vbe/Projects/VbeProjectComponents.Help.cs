@@ -23,8 +23,8 @@ namespace CodexVBE
         internal static Func<IntPtr, string, uint, UIntPtr, IntPtr> NativeHelp = HtmlHelp;
 
                 /// <summary>Ouvre le fichier CHM et le contexte configurés dans le projet après contrôle de version.</summary>
-        /// <param name="request">Requête contenant le projet et la version attendue de ses propriétés.</param>
-        /// <returns>Le chemin et le contexte invoqués, ainsi que l’indication de création d’une fenêtre.</returns>
+                /// <param name="request">Requête contenant le projet et la version attendue de ses propriétés.</param>
+                /// <returns>Le chemin et le contexte invoqués, ainsi que l’indication de création d’une fenêtre.</returns>
         public object OpenProjectHelp(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project) || string.IsNullOrWhiteSpace(request.ExpectedProjectVersion))

@@ -19,23 +19,23 @@ namespace CodexVBE
             => TransformCore(source, request, first, last, false);
 
                 /// <summary>Renomme le paramètre et ses utilisations dans la procédure ; les appelants sont traités séparément.</summary>
-        /// <param name="source">Source VBA complète de la procédure et du module.</param>
-        /// <param name="request">Déclaration de paramètre et nouveau nom demandé.</param>
-        /// <param name="first">Première ligne de la procédure telle que fournie par VBIDE.</param>
-        /// <param name="last">Dernière ligne de la plage VBIDE.</param>
-        /// <returns>Source où la déclaration et les usages locaux du paramètre sont renommés.</returns>
+                /// <param name="source">Source VBA complète de la procédure et du module.</param>
+                /// <param name="request">Déclaration de paramètre et nouveau nom demandé.</param>
+                /// <param name="first">Première ligne de la procédure telle que fournie par VBIDE.</param>
+                /// <param name="last">Dernière ligne de la plage VBIDE.</param>
+                /// <returns>Source où la déclaration et les usages locaux du paramètre sont renommés.</returns>
         internal static string TransformParameter(string source, Request request, int first, int last)
             => TransformCore(source, request, first, last, true);
 
                 /// <summary>Applique les contrôles lexicaux partagés à une déclaration locale ou de paramètre.</summary>
-        /// <param name="source">Code VBA complet contenant la procédure.</param>
-        /// <param name="request">Déclaration précise, ancien nom et nom de remplacement.</param>
-        /// <param name="first">Première ligne de la procédure.</param>
-        /// <param name="last">Dernière ligne de la plage VBIDE.</param>
-        /// <param name="parameter">Indique si la cible attendue est un paramètre.</param>
-        /// <returns>Source modifiée après substitution des références résolues localement.</returns>
-        /// <exception cref="ArgumentException">Le nom ou la plage de déclaration est invalide.</exception>
-        /// <exception cref="InvalidOperationException">La liaison est ambiguë ou la déclaration ne peut pas être renommée sûrement.</exception>
+                /// <param name="source">Code VBA complet contenant la procédure.</param>
+                /// <param name="request">Déclaration précise, ancien nom et nom de remplacement.</param>
+                /// <param name="first">Première ligne de la procédure.</param>
+                /// <param name="last">Dernière ligne de la plage VBIDE.</param>
+                /// <param name="parameter">Indique si la cible attendue est un paramètre.</param>
+                /// <returns>Source modifiée après substitution des références résolues localement.</returns>
+                /// <exception cref="ArgumentException">Le nom ou la plage de déclaration est invalide.</exception>
+                /// <exception cref="InvalidOperationException">La liaison est ambiguë ou la déclaration ne peut pas être renommée sûrement.</exception>
         private static string TransformCore(string source, Request request, int first, int last, bool parameter)
         {
             VbaTextEdits.ValidateIdentifier(request.NewName);

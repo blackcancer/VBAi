@@ -73,8 +73,8 @@ namespace CodexVBE
         }
 
                 /// <summary>Collecte toutes les sources et vérifie la stabilité du catalogue et des références pendant cette lecture.</summary>
-        /// <param name="request">Projet et module cible pour lequel capturer l’état complet.</param>
-        /// <returns>Snapshot cohérent des métadonnées, mode, composants et sources VBA.</returns>
+                /// <param name="request">Projet et module cible pour lequel capturer l’état complet.</param>
+                /// <returns>Snapshot cohérent des métadonnées, mode, composants et sources VBA.</returns>
         private ProcedureProjectSnapshot CaptureProcedureProject(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project) || string.IsNullOrWhiteSpace(request.Module))
@@ -107,9 +107,9 @@ namespace CodexVBE
         }
 
                 /// <summary>Lit la version VBIDE des propriétés, références, types et identités de composants.</summary>
-        /// <param name="project">Sélecteur du projet VBA.</param>
-        /// <param name="serializer">Sérialiseur utilisé pour normaliser le résultat du transport.</param>
-        /// <returns>Champs de métadonnées du projet, dont nom, mode et version.</returns>
+                /// <param name="project">Sélecteur du projet VBA.</param>
+                /// <param name="serializer">Sérialiseur utilisé pour normaliser le résultat du transport.</param>
+                /// <returns>Champs de métadonnées du projet, dont nom, mode et version.</returns>
         private IDictionary<string, object> ProcedureMetadata(string project, JavaScriptSerializer serializer)
         {
             var response = execute(new Request { Command = "project_properties", Project = project });

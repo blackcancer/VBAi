@@ -16,13 +16,13 @@ namespace CodexVBE
         internal sealed class OptionsNativeChoice
         {
                         /// <summary>Index Win32 observé, à partir de zéro.</summary>
-            /// <value>Position dans la liste native.</value>
+                        /// <value>Position dans la liste native.</value>
             public int Index { get; set; }
                         /// <summary>Libellé natif, éventuellement vide pour une palette dessinée par VBE.</summary>
-            /// <value>Texte observé, chaîne vide lorsque l’entrée n’a pas de libellé.</value>
+                        /// <value>Texte observé, chaîne vide lorsque l’entrée n’a pas de libellé.</value>
             public string Label { get; set; }
                         /// <summary>Valeur à transmettre : libellé exact ou NativeIndex:index pour une entrée sans libellé.</summary>
-            /// <value>Identifiant exact permettant de resélectionner l’entrée observée.</value>
+                        /// <value>Identifiant exact permettant de resélectionner l’entrée observée.</value>
             public string SelectionValue { get; set; }
         }
 
@@ -30,10 +30,10 @@ namespace CodexVBE
         internal sealed class OptionsFormatCategory
         {
                         /// <summary>Libellé exact de la catégorie Couleurs du code.</summary>
-            /// <value>Nom natif de la catégorie sélectionnable.</value>
+                        /// <value>Nom natif de la catégorie sélectionnable.</value>
             public string Category { get; set; }
                         /// <summary>Valeurs et catalogues réels de ses trois palettes, sans interprétation RGB.</summary>
-            /// <value>Palettes Premier plan, Arrière-plan et Indicateur observées.</value>
+                        /// <value>Palettes Premier plan, Arrière-plan et Indicateur observées.</value>
             public IList<OptionsControl> Palettes { get; set; }
         }
 
@@ -41,14 +41,14 @@ namespace CodexVBE
         internal interface IFormatCategoriesOptionsProbe
         {
                         /// <summary>Lit toutes les catégories et restaure la sélection initiale avant de retourner.</summary>
-            /// <param name="dialog">Handle du dialogue Options déjà ouvert.</param>
-            /// <param name="tabIndex">Index de l’onglet Couleurs du code.</param>
-            /// <returns>Palettes observées par catégorie, après restauration de la sélection initiale.</returns>
+                        /// <param name="dialog">Handle du dialogue Options déjà ouvert.</param>
+                        /// <param name="tabIndex">Index de l’onglet Couleurs du code.</param>
+                        /// <returns>Palettes observées par catégorie, après restauration de la sélection initiale.</returns>
             IList<OptionsFormatCategory> FormatCategories(IntPtr dialog, int tabIndex);
                         /// <summary>Sélectionne une catégorie exacte dans le dialogue déjà ouvert.</summary>
-            /// <param name="dialog">Handle du dialogue Options.</param>
-            /// <param name="tabIndex">Index de son onglet Couleurs du code.</param>
-            /// <param name="category">Nom exact de catégorie issu de l’inventaire.</param>
+                        /// <param name="dialog">Handle du dialogue Options.</param>
+                        /// <param name="tabIndex">Index de son onglet Couleurs du code.</param>
+                        /// <param name="category">Nom exact de catégorie issu de l’inventaire.</param>
             void SelectFormatCategory(IntPtr dialog, int tabIndex, string category);
         }
 
@@ -56,9 +56,9 @@ namespace CodexVBE
         private sealed partial class NativeOptionsProbe : IFormatCategoriesOptionsProbe
         {
                         /// <summary>Énumère chaque palette avec une restauration garantie de la catégorie initiale.</summary>
-            /// <param name="dialog">Handle du dialogue Options.</param>
-            /// <param name="tabIndex">Index de l’onglet cible.</param>
-            /// <returns>Palettes natives observées pour chaque catégorie disponible.</returns>
+                        /// <param name="dialog">Handle du dialogue Options.</param>
+                        /// <param name="tabIndex">Index de l’onglet cible.</param>
+                        /// <returns>Palettes natives observées pour chaque catégorie disponible.</returns>
             public IList<OptionsFormatCategory> FormatCategories(IntPtr dialog, int tabIndex)
             {
                 SelectOptionsTab(dialog, tabIndex);
@@ -82,9 +82,9 @@ namespace CodexVBE
             }
 
                         /// <summary>Sélectionne un choix de catégorie unique et vérifie sa sélection accessible.</summary>
-            /// <param name="dialog">Handle du dialogue Options.</param>
-            /// <param name="tabIndex">Index de l’onglet cible.</param>
-            /// <param name="category">Libellé exact de catégorie.</param>
+                        /// <param name="dialog">Handle du dialogue Options.</param>
+                        /// <param name="tabIndex">Index de l’onglet cible.</param>
+                        /// <param name="category">Libellé exact de catégorie.</param>
             public void SelectFormatCategory(IntPtr dialog, int tabIndex, string category)
             {
                 SelectOptionsTab(dialog, tabIndex);
@@ -94,8 +94,8 @@ namespace CodexVBE
             }
 
                         /// <summary>Sélectionne seulement l'onglet demandé; un onglet déjà sélectionné n'est pas réactivé.</summary>
-            /// <param name="dialog">Handle du dialogue Options.</param>
-            /// <param name="index">Index de l’onglet sélectionné.</param>
+                        /// <param name="dialog">Handle du dialogue Options.</param>
+                        /// <param name="index">Index de l’onglet sélectionné.</param>
             private void SelectOptionsTab(IntPtr dialog, int index)
             {
                 GuardOptionsOwnedWindow(dialog, dialog, "#32770");
@@ -109,8 +109,8 @@ namespace CodexVBE
             }
 
                         /// <summary>Repère uniquement la liste des catégories sans inventorier les descendants de la police.</summary>
-            /// <param name="dialog">Handle du dialogue propriétaire.</param>
-            /// <returns>Liste native unique, ou nul si aucune liste prise en charge n’est visible.</returns>
+                        /// <param name="dialog">Handle du dialogue propriétaire.</param>
+                        /// <returns>Liste native unique, ou nul si aucune liste prise en charge n’est visible.</returns>
             private AutomationElement FormatCategoryList(IntPtr dialog)
             {
                 var lists = root.FindAll(TreeScope.Descendants,
@@ -123,9 +123,9 @@ namespace CodexVBE
             }
 
                         /// <summary>Lit le petit catalogue de catégories et sa sélection réelle avec contrôles d'identité.</summary>
-            /// <param name="dialog">Handle du dialogue Options.</param>
-            /// <param name="list">Liste des catégories obtenue dans ce dialogue.</param>
-            /// <returns>Catalogue borné et catégorie actuellement sélectionnée.</returns>
+                        /// <param name="dialog">Handle du dialogue Options.</param>
+                        /// <param name="list">Liste des catégories obtenue dans ce dialogue.</param>
+                        /// <returns>Catalogue borné et catégorie actuellement sélectionnée.</returns>
             private OptionsControl ReadFormatCategoryList(IntPtr dialog, AutomationElement list)
             {
                 GuardOptionsOwnedWindow(dialog, new IntPtr(list.Current.NativeWindowHandle), "ListBox");
@@ -149,9 +149,9 @@ namespace CodexVBE
             }
 
                         /// <summary>Sélectionne et relit uniquement la liste des catégories, avec catalogue exact validé à chaque action.</summary>
-            /// <param name="dialog">Handle du dialogue Options.</param>
-            /// <param name="list">Liste des catégories identifiée.</param>
-            /// <param name="category">Catégorie exacte à sélectionner.</param>
+                        /// <param name="dialog">Handle du dialogue Options.</param>
+                        /// <param name="list">Liste des catégories identifiée.</param>
+                        /// <param name="category">Catégorie exacte à sélectionner.</param>
             private void SelectFormatCategoryList(IntPtr dialog, AutomationElement list, string category)
             {
                 var before = ReadFormatCategoryList(dialog, list);
@@ -180,11 +180,11 @@ namespace CodexVBE
             }
 
                         /// <summary>Relit une seule palette par son identité Win32, y compris si elle est désactivée pour cette catégorie.</summary>
-            /// <param name="dialog">Handle du dialogue Options propriétaire.</param>
-            /// <param name="element">Élément UI Automation de la palette.</param>
-            /// <param name="name">Nom UI Automation attendu.</param>
-            /// <param name="handle">Handle ComboBox exact capturé avant inspection.</param>
-            /// <returns>Valeurs observées de la palette native.</returns>
+                        /// <param name="dialog">Handle du dialogue Options propriétaire.</param>
+                        /// <param name="element">Élément UI Automation de la palette.</param>
+                        /// <param name="name">Nom UI Automation attendu.</param>
+                        /// <param name="handle">Handle ComboBox exact capturé avant inspection.</param>
+                        /// <returns>Valeurs observées de la palette native.</returns>
             private OptionsControl ReadFormatPalette(IntPtr dialog, AutomationElement element, string name, IntPtr handle)
             {
                 GuardOptionsOwnedWindow(dialog, handle, "ComboBox");
@@ -198,10 +198,10 @@ namespace CodexVBE
         }
 
                 /// <summary>Émet LBN_SELCHANGE vers le parent déjà qualifié; la sélection UIA seule ne garantit pas sa notification.</summary>
-        /// <param name="list">Handle de la liste native.</param>
-        /// <param name="identifier">Identifiant de contrôle dans le dialogue.</param>
-        /// <param name="parent">Handle du dialogue parent vérifié.</param>
-        /// <param name="send">Frontière d’émission de message native.</param>
+                /// <param name="list">Handle de la liste native.</param>
+                /// <param name="identifier">Identifiant de contrôle dans le dialogue.</param>
+                /// <param name="parent">Handle du dialogue parent vérifié.</param>
+                /// <param name="send">Frontière d’émission de message native.</param>
         internal static void NotifyOptionsListSelection(IntPtr list, int identifier, IntPtr parent, Action<IntPtr, int, IntPtr, IntPtr> send)
         {
             if (list == IntPtr.Zero || parent == IntPtr.Zero || list == parent || identifier < 0 || identifier > ushort.MaxValue || send == null)
@@ -210,10 +210,10 @@ namespace CodexVBE
         }
 
                 /// <summary>Capture seulement les palettes de chaque catégorie et restaure la sélection même en cas de lecture échouée.</summary>
-        /// <param name="list">Catalogue validé de catégories et sélection initiale.</param>
-        /// <param name="select">Action de sélection d’une catégorie exacte.</param>
-        /// <param name="readPalettes">Lecture des palettes de la catégorie sélectionnée.</param>
-        /// <returns>Palettes capturées pour chaque catégorie après restauration de la sélection initiale.</returns>
+                /// <param name="list">Catalogue validé de catégories et sélection initiale.</param>
+                /// <param name="select">Action de sélection d’une catégorie exacte.</param>
+                /// <param name="readPalettes">Lecture des palettes de la catégorie sélectionnée.</param>
+                /// <returns>Palettes capturées pour chaque catégorie après restauration de la sélection initiale.</returns>
         internal static IList<OptionsFormatCategory> CaptureOptionsFormatCategories(OptionsControl list, Action<string> select, Func<IList<OptionsControl>> readPalettes)
         {
             if (list == null || !string.IsNullOrEmpty(list.Error) || !(list.Value is string original) || list.Choices == null ||
@@ -245,9 +245,9 @@ namespace CodexVBE
         [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "IsChild")]
         private static extern bool OptionsContainsWindow(IntPtr parent, IntPtr child);
                 /// <summary>Vérifie classe, PID courant et appartenance réelle au dialogue avant chaque accès ciblé.</summary>
-        /// <param name="dialog">Dialogue Options qui doit contenir la fenêtre.</param>
-        /// <param name="window">Handle du contrôle à vérifier.</param>
-        /// <param name="kind">Classe Win32 attendue.</param>
+                /// <param name="dialog">Dialogue Options qui doit contenir la fenêtre.</param>
+                /// <param name="window">Handle du contrôle à vérifier.</param>
+                /// <param name="kind">Classe Win32 attendue.</param>
         private static void GuardOptionsOwnedWindow(IntPtr dialog, IntPtr window, string kind)
         {
             GetWindowThreadProcessId(dialog, out uint dialogPid); GetWindowThreadProcessId(window, out uint pid);
@@ -258,23 +258,23 @@ namespace CodexVBE
         }
 
                 /// <summary>Reconnaît uniquement les libellés natifs documentés de la liste de catégories.</summary>
-        /// <param name="name">Libellé UI Automation du contrôle.</param>
-        /// <returns><see langword="true"/> si le nom correspond à une liste Code Colors prise en charge.</returns>
+                /// <param name="name">Libellé UI Automation du contrôle.</param>
+                /// <returns><see langword="true"/> si le nom correspond à une liste Code Colors prise en charge.</returns>
         private static bool IsCodeColorList(string name) => new[] { "code colors", "couleurs du code", "color text", "texte couleur" }.Contains(NormalizeOptionName(name));
                 /// <summary>Reconnaît uniquement les libellés des trois palettes de catégorie.</summary>
-        /// <param name="name">Libellé UI Automation du contrôle.</param>
-        /// <returns><see langword="true"/> si le nom correspond à une palette de couleur prise en charge.</returns>
+                /// <param name="name">Libellé UI Automation du contrôle.</param>
+                /// <returns><see langword="true"/> si le nom correspond à une palette de couleur prise en charge.</returns>
         private static bool IsColorPalette(string name) => new[] { "foreground", "premier plan", "background", "arrière-plan", "indicator", "indicateur" }.Contains(NormalizeOptionName(name));
                 /// <summary>Normalise un libellé pour reconnaître sa fonction sans modifier le choix exact transmis.</summary>
-        /// <param name="name">Libellé d’origine.</param>
-        /// <returns>Version minuscule nettoyée pour les comparaisons de noms supportés.</returns>
+                /// <param name="name">Libellé d’origine.</param>
+                /// <returns>Version minuscule nettoyée pour les comparaisons de noms supportés.</returns>
         private static string NormalizeOptionName(string name) => (name ?? "").Replace("&", "").Trim().TrimEnd(':').Trim().ToLowerInvariant();
 
                 /// <summary>Décrit une liste native bornée sans attribuer un nom/RGB aux entrées non libellées.</summary>
-        /// <param name="control">État de contrôle à compléter.</param>
-        /// <param name="labels">Libellés lus dans l’ordre natif.</param>
-        /// <param name="selectedIndex">Index sélectionné, ou -1 pour une valeur éditable.</param>
-        /// <param name="editValue">Texte saisi si aucune entrée n’est sélectionnée.</param>
+                /// <param name="control">État de contrôle à compléter.</param>
+                /// <param name="labels">Libellés lus dans l’ordre natif.</param>
+                /// <param name="selectedIndex">Index sélectionné, ou -1 pour une valeur éditable.</param>
+                /// <param name="editValue">Texte saisi si aucune entrée n’est sélectionnée.</param>
         internal static void DescribeOptionsNativeChoices(OptionsControl control, IList<string> labels, int selectedIndex, string editValue)
         {
             if (labels == null || labels.Count > 2000 || selectedIndex < -1 || selectedIndex >= labels.Count)
@@ -315,7 +315,7 @@ namespace CodexVBE
         private static extern IntPtr OptionsComboReadText(IntPtr window, int message, IntPtr index, StringBuilder text);
 
                 /// <summary>Refuse toute utilisation de messages ComboBox sur un autre processus ou une autre classe.</summary>
-        /// <param name="window">Handle de la ComboBox à vérifier.</param>
+                /// <param name="window">Handle de la ComboBox à vérifier.</param>
         private static void GuardOptionsCombo(IntPtr window)
         {
             GetWindowThreadProcessId(window, out uint pid);
@@ -326,8 +326,8 @@ namespace CodexVBE
         }
 
                 /// <summary>Lit le catalogue Win32 complet et le texte éditable, puis referme toute liste dépliée pour lecture.</summary>
-        /// <param name="window">Handle de la ComboBox qualifiée.</param>
-        /// <param name="control">État de sortie qui recevra choix, sélection et valeur éditable.</param>
+                /// <param name="window">Handle de la ComboBox qualifiée.</param>
+                /// <param name="control">État de sortie qui recevra choix, sélection et valeur éditable.</param>
         private static void ReadOptionsCombo(IntPtr window, OptionsControl control)
         {
             GuardOptionsCombo(window);
@@ -363,8 +363,8 @@ namespace CodexVBE
         }
 
                 /// <summary>Sélectionne une entrée exacte et notifie le parent comme une sélection native, sans frappe ni coordonnées.</summary>
-        /// <param name="window">Handle de la ComboBox qualifiée.</param>
-        /// <param name="choice">Valeur exacte d’un choix observé.</param>
+                /// <param name="window">Handle de la ComboBox qualifiée.</param>
+                /// <param name="choice">Valeur exacte d’un choix observé.</param>
         private static void WriteOptionsCombo(IntPtr window, string choice)
         {
             var observed = new OptionsControl(); ReadOptionsCombo(window, observed);
@@ -403,13 +403,13 @@ namespace CodexVBE
             void Accept(IntPtr dialog);
         }
                 /// <summary>Écrit une préférence reconnue d’édition/débogage, puis ferme par validation native.</summary>
-        /// <param name="request">Onglet, propriété, valeur et version attendue des options.</param>
-        /// <returns>Valeurs avant/après et indication de validation/fermeture du dialogue.</returns>
+                /// <param name="request">Onglet, propriété, valeur et version attendue des options.</param>
+                /// <returns>Valeurs avant/après et indication de validation/fermeture du dialogue.</returns>
         public static object SetVbeOption(Request request) => SetVbeOption(request, new NativeOptionsProbe());
                 /// <summary>Orchestration injectable, sans modification des préférences tant que la version ne correspond pas.</summary>
-        /// <param name="request">Onglet, propriété, valeur et version attendue des options.</param>
-        /// <param name="native">Sonde utilisée pour lire, écrire, valider ou fermer le dialogue natif.</param>
-        /// <returns>Résultat de l’écriture et de la relecture du contrôle avant validation.</returns>
+                /// <param name="request">Onglet, propriété, valeur et version attendue des options.</param>
+                /// <param name="native">Sonde utilisée pour lire, écrire, valider ou fermer le dialogue natif.</param>
+                /// <returns>Résultat de l’écriture et de la relecture du contrôle avant validation.</returns>
         internal static object SetVbeOption(Request request, IWritableOptionsProbe native)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Pane) || string.IsNullOrWhiteSpace(request.Property) || string.IsNullOrWhiteSpace(request.ExpectedOptionsVersion))
@@ -462,10 +462,10 @@ namespace CodexVBE
             }
         }
                 /// <summary>Valide une préférence reconnue; les listes exigent un choix natif exact et unique.</summary>
-        /// <param name="tab">Nom natif de l’onglet.</param>
-        /// <param name="control">État lu du contrôle cible.</param>
-        /// <param name="value">Valeur proposée par l’appelant.</param>
-        /// <returns>Valeur normalisée acceptée pour le contrôle.</returns>
+                /// <param name="tab">Nom natif de l’onglet.</param>
+                /// <param name="control">État lu du contrôle cible.</param>
+                /// <param name="value">Valeur proposée par l’appelant.</param>
+                /// <returns>Valeur normalisée acceptée pour le contrôle.</returns>
         internal static object ValidateEditableOption(string tab, OptionsControl control, object value)
         {
             string normalized = (control.Name ?? "").Replace("&", "").Trim().TrimEnd(':').Trim().ToLowerInvariant();
@@ -512,9 +512,9 @@ namespace CodexVBE
             throw new InvalidOperationException("This native option is not in the supported preference list.");
         }
                 /// <summary>Capture bornée commune à la lecture et au contrôle de version avant écriture.</summary>
-        /// <param name="native">Sonde qui lit les onglets et contrôles visibles.</param>
-        /// <param name="dialog">Handle du dialogue Options ouvert.</param>
-        /// <returns>Contenu des onglets et contrôles pertinents dans des limites bornées.</returns>
+                /// <param name="native">Sonde qui lit les onglets et contrôles visibles.</param>
+                /// <param name="dialog">Handle du dialogue Options ouvert.</param>
+                /// <returns>Contenu des onglets et contrôles pertinents dans des limites bornées.</returns>
         private static List<object> CaptureOptionsTabs(IOptionsProbe native, IntPtr dialog)
         {
             var tabs = new List<object>(); var names = native.Tabs(dialog);
@@ -532,8 +532,8 @@ namespace CodexVBE
             return tabs;
         }
                 /// <summary>Version du contenu visible des options, indépendante des handles transitoires.</summary>
-        /// <param name="tabs">Instantané des onglets et contrôles capturés.</param>
-        /// <returns>Empreinte SHA-256 de l’instantané sérialisé.</returns>
+                /// <param name="tabs">Instantané des onglets et contrôles capturés.</param>
+                /// <returns>Empreinte SHA-256 de l’instantané sérialisé.</returns>
         private static string OptionsRevision(List<object> tabs)
         {
             using (var sha = SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(new JavaScriptSerializer().Serialize(tabs)))).Replace("-", "").ToLowerInvariant();

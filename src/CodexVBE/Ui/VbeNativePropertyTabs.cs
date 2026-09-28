@@ -171,47 +171,47 @@ internal int X, Y; }
         [DllImport("user32.dll")] private static extern bool DrawFocusRect(IntPtr dc, ref Rect bounds);
 
         /// <summary>Defines the window thread reader callback.</summary>
-/// <param name="window">The window used by this operation.</param>
-/// <param name="process">The process used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="window">The window used by this operation.</param>
+        /// <param name="process">The process used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal delegate uint WindowThreadReader(IntPtr window, out uint process);
         /// <summary>Defines the rect reader callback.</summary>
-/// <param name="window">The window used by this operation.</param>
-/// <param name="rectangle">The rectangle used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="window">The window used by this operation.</param>
+        /// <param name="rectangle">The rectangle used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal delegate bool RectReader(IntPtr window, out Rect rectangle);
         /// <summary>Defines the screen point reader callback.</summary>
-/// <param name="window">The window used by this operation.</param>
-/// <param name="point">The point used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="window">The window used by this operation.</param>
+        /// <param name="point">The point used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal delegate bool ScreenPointReader(IntPtr window, ref Point point);
         /// <summary>Defines the item reader callback.</summary>
-/// <param name="window">The window used by this operation.</param>
-/// <param name="message">The message used by this operation.</param>
-/// <param name="index">The index used by this operation.</param>
-/// <param name="item">The item used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="window">The window used by this operation.</param>
+        /// <param name="message">The message used by this operation.</param>
+        /// <param name="index">The index used by this operation.</param>
+        /// <param name="item">The item used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal delegate IntPtr ItemReader(IntPtr window, uint message, IntPtr index, ref TabItem item);
         /// <summary>Defines the item rect reader callback.</summary>
-/// <param name="window">The window used by this operation.</param>
-/// <param name="message">The message used by this operation.</param>
-/// <param name="index">The index used by this operation.</param>
-/// <param name="rectangle">The rectangle used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="window">The window used by this operation.</param>
+        /// <param name="message">The message used by this operation.</param>
+        /// <param name="index">The index used by this operation.</param>
+        /// <param name="rectangle">The rectangle used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal delegate IntPtr ItemRectReader(IntPtr window, uint message, IntPtr index, out Rect rectangle);
         /// <summary>Defines the paint beginner callback.</summary>
-/// <param name="window">The window used by this operation.</param>
-/// <param name="state">The state used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="window">The window used by this operation.</param>
+        /// <param name="state">The state used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal delegate IntPtr PaintBeginner(IntPtr window, out PaintState state);
         /// <summary>Defines the paint ender callback.</summary>
-/// <param name="window">The window used by this operation.</param>
-/// <param name="state">The state used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="window">The window used by this operation.</param>
+        /// <param name="state">The state used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal delegate bool PaintEnder(IntPtr window, ref PaintState state);
         /// <summary>Defines the mouse tracker callback.</summary>
-/// <param name="state">The state used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="state">The state used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal delegate bool MouseTracker(ref TrackMouse state);
         /// <summary>Stores the class name used by VbeNativePropertyTabs.</summary>
         internal static Func<IntPtr, StringBuilder, int, int> ClassName = GetClassName;
@@ -256,8 +256,8 @@ internal int X, Y; }
         }
 
                 /// <summary>Accepts only two text-only horizontal native tabs on their owning thread.</summary>
-        /// <param name="window">Candidate native tab-control handle.</param>
-        /// <returns><see langword="true"/> when its styles, geometry, and thread meet the renderer contract.</returns>
+                /// <param name="window">Candidate native tab-control handle.</param>
+                /// <returns><see langword="true"/> when its styles, geometry, and thread meet the renderer contract.</returns>
         internal static bool CanRender(IntPtr window)
         {
             if (window == IntPtr.Zero || !ValidWindow(window) || WindowThread(window, out _) != CurrentThread()) return false;
@@ -278,8 +278,8 @@ internal int X, Y; }
         }
 
                 /// <summary>Creates a renderer without changing styles, selection, focus, or fonts.</summary>
-        /// <param name="window">Candidate native tab-control handle.</param><param name="renderer">Receives the renderer when supported; otherwise null.</param>
-        /// <returns><see langword="true"/> when the handle is supported and a renderer was created.</returns>
+                /// <param name="window">Candidate native tab-control handle.</param><param name="renderer">Receives the renderer when supported; otherwise null.</param>
+                /// <returns><see langword="true"/> when the handle is supported and a renderer was created.</returns>
         internal static bool TryCreate(IntPtr window, out VbeNativePropertyTabs renderer)
         {
             renderer = CanRender(window) ? new VbeNativePropertyTabs(window) : null;
@@ -287,9 +287,9 @@ internal int X, Y; }
         }
 
                 /// <summary>Handles painting before the original window procedure; other messages remain native.</summary>
-        /// <param name="message">Windows message identifier.</param><param name="wParam">First message value, including the print device context.</param>
-        /// <param name="lParam">Second message value, including WM_PRINT flags.</param><param name="result">Receives the handled message result.</param>
-        /// <returns><see langword="true"/> when the renderer handled the message.</returns>
+                /// <param name="message">Windows message identifier.</param><param name="wParam">First message value, including the print device context.</param>
+                /// <param name="lParam">Second message value, including WM_PRINT flags.</param><param name="result">Receives the handled message result.</param>
+                /// <returns><see langword="true"/> when the renderer handled the message.</returns>
         internal bool TryHandleMessage(uint message, IntPtr wParam, IntPtr lParam, out IntPtr result)
         {
             result = IntPtr.Zero;
@@ -325,8 +325,8 @@ internal int X, Y; }
         }
 
                 /// <summary>Repaints only this control after native state transitions or pointer changes.</summary>
-        /// <param name="message">Native message that has just completed.</param><param name="wParam">Message-specific first value.</param>
-        /// <param name="lParam">Message-specific second value; mouse coordinates for pointer messages.</param>
+                /// <param name="message">Native message that has just completed.</param><param name="wParam">Message-specific first value.</param>
+                /// <param name="lParam">Message-specific second value; mouse coordinates for pointer messages.</param>
         internal void AfterNativeMessage(uint message, IntPtr wParam, IntPtr lParam)
         {
             if (disposed || ownerThread != CurrentThread()) return;

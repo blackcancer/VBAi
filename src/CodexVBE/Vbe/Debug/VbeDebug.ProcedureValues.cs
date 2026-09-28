@@ -15,16 +15,16 @@ namespace CodexVBE
         internal interface IProcedureValuesHost
         {
                         /// <summary>Résout un classeur ouvert par identité COM du VBProject et vérifie son PID et son chemin.</summary>
-            /// <param name="project">Projet VBIDE dont le classeur propriétaire doit être trouvé.</param>
-            /// <param name="expectedHostPath">Chemin absolu du classeur attendu lors de l’inspection.</param>
-            /// <returns>Cible détenue qui associe l’application Excel et le classeur ouvert correspondant.</returns>
+                        /// <param name="project">Projet VBIDE dont le classeur propriétaire doit être trouvé.</param>
+                        /// <param name="expectedHostPath">Chemin absolu du classeur attendu lors de l’inspection.</param>
+                        /// <returns>Cible détenue qui associe l’application Excel et le classeur ouvert correspondant.</returns>
             object ResolveTarget(object project, string expectedHostPath);
                         /// <summary>Invoque la procédure standard résolue exactement une fois.</summary>
-            /// <param name="target">Cible Excel détenue retournée par <see cref="ResolveTarget"/>.</param>
-            /// <param name="module">Nom du module standard relu.</param>
-            /// <param name="procedure">Nom de la procédure relue.</param>
-            /// <param name="arguments">Arguments convertis dans l’ordre d’appel.</param>
-            /// <returns>Valeur native retournée par Excel.Run.</returns>
+                        /// <param name="target">Cible Excel détenue retournée par <see cref="ResolveTarget"/>.</param>
+                        /// <param name="module">Nom du module standard relu.</param>
+                        /// <param name="procedure">Nom de la procédure relue.</param>
+                        /// <param name="arguments">Arguments convertis dans l’ordre d’appel.</param>
+                        /// <returns>Valeur native retournée par Excel.Run.</returns>
             object Invoke(object target, string module, string procedure, object[] arguments);
         }
 
@@ -38,7 +38,7 @@ namespace CodexVBE
             /// <summary>Reads an already registered application without starting a process.</summary>
             internal Func<string, object> ReadActiveApplication = Marshal.GetActiveObject;
             /// <summary>Performs the current process name operation for NativeProcedureValuesHost.</summary>
-/// <returns>The result produced by this operation.</returns>
+            /// <returns>The result produced by this operation.</returns>
             private static string CurrentProcessName()
             { using (var process = System.Diagnostics.Process.GetCurrentProcess()) return process.ProcessName; }
             /// <summary>Application/classeur COM détenus pour le seul appel préparé.</summary>
@@ -50,9 +50,9 @@ namespace CodexVBE
                 internal string Path;
             }
                         /// <summary>Obtient Excel déjà ouvert dans le PID de l'add-in et associe un seul classeur au VBProject.</summary>
-            /// <param name="project">Projet VBIDE dont l’identité COM est comparée.</param>
-            /// <param name="expectedHostPath">Chemin complet attendu du classeur enregistré.</param>
-            /// <returns>Cible détenue associant Excel, le classeur et le chemin vérifié.</returns>
+                        /// <param name="project">Projet VBIDE dont l’identité COM est comparée.</param>
+                        /// <param name="expectedHostPath">Chemin complet attendu du classeur enregistré.</param>
+                        /// <returns>Cible détenue associant Excel, le classeur et le chemin vérifié.</returns>
             public object ResolveTarget(object project, string expectedHostPath)
             {
                 using (var process = System.Diagnostics.Process.GetCurrentProcess())
@@ -77,11 +77,11 @@ namespace CodexVBE
                 }
             }
                         /// <summary>Envoie les paramètres par position à Excel.Run; les tableaux sont marshalisés comme SAFEARRAY de VARIANT.</summary>
-            /// <param name="target">Cible détenue obtenue avant l’appel.</param>
-            /// <param name="module">Nom du module standard cible.</param>
-            /// <param name="procedure">Nom de la procédure à exécuter.</param>
-            /// <param name="arguments">Arguments validés par la liaison de signature.</param>
-            /// <returns>Objet natif que la procédure retourne, avant sa normalisation JSON.</returns>
+                        /// <param name="target">Cible détenue obtenue avant l’appel.</param>
+                        /// <param name="module">Nom du module standard cible.</param>
+                        /// <param name="procedure">Nom de la procédure à exécuter.</param>
+                        /// <param name="arguments">Arguments validés par la liaison de signature.</param>
+                        /// <returns>Objet natif que la procédure retourne, avant sa normalisation JSON.</returns>
             public object Invoke(object target, string module, string procedure, object[] arguments)
             {
                 var owned = target as OwnedTarget;
@@ -95,9 +95,9 @@ namespace CodexVBE
                     null, owned.Application, invokeArguments, System.Globalization.CultureInfo.InvariantCulture);
             }
                         /// <summary>Compare IUnknown sans utiliser les noms de projet ou de classeur.</summary>
-            /// <param name="first">Première référence COM.</param>
-            /// <param name="second">Seconde référence COM.</param>
-            /// <returns><see langword="true"/> si les deux références désignent le même IUnknown.</returns>
+                        /// <param name="first">Première référence COM.</param>
+                        /// <param name="second">Seconde référence COM.</param>
+                        /// <returns><see langword="true"/> si les deux références désignent le même IUnknown.</returns>
             internal static bool SameComIdentity(object first, object second)
             {
                 if (first == null || second == null || !Marshal.IsComObject(first) || !Marshal.IsComObject(second)) return false;
@@ -170,8 +170,8 @@ namespace CodexVBE
         }
 
                 /// <summary>Lit le résultat d'une invocation sans réévaluer la procédure.</summary>
-        /// <param name="request">Requête de statut portant le projet et l’identifiant de l’invocation.</param>
-        /// <returns>État courant de l’unique invocation et valeur normalisée si elle a été retournée.</returns>
+                /// <param name="request">Requête de statut portant le projet et l’identifiant de l’invocation.</param>
+                /// <returns>État courant de l’unique invocation et valeur normalisée si elle a été retournée.</returns>
         public object ProcedureValuesStatus(Request request)
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
@@ -182,8 +182,8 @@ namespace CodexVBE
         }
 
                 /// <summary>Relit mode, identité, chemin complet, signature et SHA avant chaque tentative native.</summary>
-        /// <param name="request">Requête déjà capturée avec chemin, mode et SHA attendus.</param>
-        /// <returns>Plan validé contenant l’identité, la cible détenue et les arguments convertis.</returns>
+                /// <param name="request">Requête déjà capturée avec chemin, mode et SHA attendus.</param>
+                /// <returns>Plan validé contenant l’identité, la cible détenue et les arguments convertis.</returns>
         private ValuesCall PrepareProcedureValues(Request request)
         {
             if (request.ExpectedMode != 2) throw new ArgumentException("ExpectedMode=2 is required.");
@@ -216,8 +216,8 @@ namespace CodexVBE
         }
 
                 /// <summary>Décrit la preuve du retour, distincte de la correction de la macro et de ses effets de bord.</summary>
-        /// <param name="operation">État suivi de l’invocation.</param>
-        /// <returns>Résultat sérialisable avec statut, sortie, erreur et limites de vérification.</returns>
+                /// <param name="operation">État suivi de l’invocation.</param>
+                /// <returns>Résultat sérialisable avec statut, sortie, erreur et limites de vérification.</returns>
         private object ProcedureValuesResult(ProcedureOperation operation) => new { operation.Project, operation.Module, operation.Procedure,
             Query = operation.Id, operation.State, operation.Output, operation.Error,
             Pending = operation.State == "Queued" || operation.State == "Delivering", InvocationInvoked = procedureValueInvocations[operation.Id],
@@ -227,8 +227,8 @@ namespace CodexVBE
             Limit = "Excel owned-process Application.Run only. Fixed ByVal scalar/Variant parameters, positional/named binding; ParamArray Variant accepts positional values only and no Optional prefix, up to 30 total arguments. Rectangular zero-based JSON inputs rank 1/2; scalar-array returns preserve native bounds. No ByRef mutation contract, class/object/Date values or injected helper. Native calls can block on modal/runtime code. One invocation; never retry automatically." };
 
                 /// <summary>Exige un chemin Windows absolu de fichier macro Excel déjà associé au projet.</summary>
-        /// <param name="path">Chemin reçu dans la requête.</param>
-        /// <returns>Chemin absolu normalisé vers un format de classeur macro pris en charge.</returns>
+                /// <param name="path">Chemin reçu dans la requête.</param>
+                /// <returns>Chemin absolu normalisé vers un format de classeur macro pris en charge.</returns>
         private static string RequireValuesPath(string path)
         {
             if (string.IsNullOrWhiteSpace(path) || !System.Text.RegularExpressions.Regex.IsMatch(path, @"^(?:[A-Za-z]:[\\/]|\\\\[^\\/]+[\\/][^\\/]+[\\/])"))
@@ -241,9 +241,9 @@ namespace CodexVBE
             return full;
         }
                 /// <summary>Compare un chemin natif au chemin absolu attendu.</summary>
-        /// <param name="first">Chemin lu depuis le projet ou le classeur.</param>
-        /// <param name="expected">Chemin absolu attendu.</param>
-        /// <returns><see langword="true"/> si le chemin natif est absolu et identique sans distinction de casse.</returns>
+                /// <param name="first">Chemin lu depuis le projet ou le classeur.</param>
+                /// <param name="expected">Chemin absolu attendu.</param>
+                /// <returns><see langword="true"/> si le chemin natif est absolu et identique sans distinction de casse.</returns>
         private static bool SameValuesPath(string first, string expected) => !string.IsNullOrWhiteSpace(first) && Path.IsPathRooted(first) &&
             string.Equals(Path.GetFullPath(first), expected, StringComparison.OrdinalIgnoreCase);
     }

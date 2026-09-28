@@ -21,9 +21,9 @@ namespace CodexVBE
         }
 
         /// <summary>Performs the populate operation for ProjectAccessWindow.</summary>
-/// <param name="projects">The projects used by this operation.</param>
-/// <param name="grants">The grants used by this operation.</param>
-/// <param name="shared">Indicates whether shared is enabled.</param>
+        /// <param name="projects">The projects used by this operation.</param>
+        /// <param name="grants">The grants used by this operation.</param>
+        /// <param name="shared">Indicates whether shared is enabled.</param>
         internal void Populate(IEnumerable<KeyValuePair<string, string>> projects, IEnumerable<string> grants, bool shared)
         {
             var selected = new HashSet<string>(grants ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
@@ -33,10 +33,10 @@ namespace CodexVBE
         }
 
         /// <summary>Gets the selected projects.</summary>
-/// <value>The current value represented by this member.</value>
+        /// <value>The current value represented by this member.</value>
         internal string[] SelectedProjects => projectList.CheckedItems.Cast<ProjectChoice>().Select(item => item.Selector).ToArray();
         /// <summary>Gets the shared context.</summary>
-/// <value>The current value represented by this member.</value>
+        /// <value>The current value represented by this member.</value>
         internal bool SharedContext => sharedContext.Checked;
         /// <summary>Provides the project choice implementation.</summary>
         private sealed class ProjectChoice
@@ -44,7 +44,7 @@ namespace CodexVBE
             /// <summary>Stores the selector,label used by ProjectChoice.</summary>
             internal string Selector, Label;
             /// <summary>Performs the to string operation for ProjectChoice.</summary>
-/// <returns>The result produced by this operation.</returns>
+            /// <returns>The result produced by this operation.</returns>
             public override string ToString() => Label;
         }
         /// <summary>Performs the apply appearance operation for ProjectAccessWindow.</summary>

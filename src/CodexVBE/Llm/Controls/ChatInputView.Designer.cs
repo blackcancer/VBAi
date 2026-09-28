@@ -12,7 +12,7 @@ namespace CodexVBE
         /// <summary>Représentation WinForms statique destinée au concepteur.</summary>
         private System.Windows.Forms.TextBox previewEditor;
                 /// <summary>Libère les composants du modèle Designer.</summary>
-        /// <param name="disposing">Indique si les composants gérés doivent également être libérés.</param>
+                /// <param name="disposing">Indique si les composants gérés doivent également être libérés.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing) { if (components != null) components.Dispose(); }

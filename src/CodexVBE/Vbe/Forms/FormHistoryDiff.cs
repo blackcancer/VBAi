@@ -12,32 +12,32 @@ namespace CodexVBE
         internal sealed class Change
         {
             /// <summary>Gets or sets the path.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public string Path { get; set; }
             /// <summary>Gets or sets the property.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public string Property { get; set; }
             /// <summary>Gets or sets the before.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public object Before { get; set; }
             /// <summary>Gets or sets the after.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public object After { get; set; }
         }
         /// <summary>Valeur sérialisée avec les données qui permettent de comparer une propriété Designer.</summary>
         private sealed class PropertyValue
         {
             /// <summary>Gets or sets the value.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public object Value { get; set; }
             /// <summary>Gets or sets the digest.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public object Digest { get; set; }
             /// <summary>Gets or sets the members.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public object Members { get; set; }
             /// <summary>Gets or sets the error.</summary>
-/// <value>The current value represented by this member.</value>
+            /// <value>The current value represented by this member.</value>
             public string Error { get; set; }
         }
         /// <summary>Indique si la valeur peut participer à une comparaison.</summary>

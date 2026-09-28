@@ -35,11 +35,11 @@ namespace CodexVBE
         private static int updateInProgress;
 
         /// <summary>Initializes a VbeNativePalette instance with the supplied state.</summary>
-/// <param name="vbe">The vbe used by this operation.</param>
-/// <param name="editor">The editor used by this operation.</param>
-/// <param name="recoveryPath">Text containing the recovery path.</param>
-/// <param name="change">The change used by this operation.</param>
-/// <param name="reportFailure">The report failure used by this operation.</param>
+        /// <param name="vbe">The vbe used by this operation.</param>
+        /// <param name="editor">The editor used by this operation.</param>
+        /// <param name="recoveryPath">Text containing the recovery path.</param>
+        /// <param name="change">The change used by this operation.</param>
+        /// <param name="reportFailure">The report failure used by this operation.</param>
         internal VbeNativePalette(object vbe, IntPtr editor, string recoveryPath = null,
             Action<object, bool, string> change = null, Action<Exception> reportFailure = null)
         {
@@ -95,7 +95,7 @@ namespace CodexVBE
         }
 
         /// <summary>Performs the show failure operation for VbeNativePalette.</summary>
-/// <param name="error">The error used by this operation.</param>
+        /// <param name="error">The error used by this operation.</param>
         private static void ShowFailure(Exception error)
         {
             MessageBox.Show(UiText.Get("Native editor colors could not be updated. See the log for details.") +
@@ -114,10 +114,10 @@ namespace CodexVBE
         }
 
         /// <summary>Performs the change operation for VbeNativePalette.</summary>
-/// <param name="version">Text containing the version.</param>
-/// <param name="enabled">Indicates whether enabled is enabled.</param>
-/// <param name="recoveryPath">Text containing the recovery path.</param>
-/// <param name="visit">The visit used by this operation.</param>
+        /// <param name="version">Text containing the version.</param>
+        /// <param name="enabled">Indicates whether enabled is enabled.</param>
+        /// <param name="recoveryPath">Text containing the recovery path.</param>
+        /// <param name="visit">The visit used by this operation.</param>
         internal static void Change(string version, bool enabled, string recoveryPath,
             Func<Func<VbeNativePaletteState.ColorRow[], VbeNativePaletteState.ColorRow[]>, VbeNativePaletteState.ColorRow[]> visit)
         {

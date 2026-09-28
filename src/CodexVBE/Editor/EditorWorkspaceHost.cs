@@ -23,8 +23,8 @@ namespace CodexVBE
         /// <summary>Changes the native parent; defaults to the Windows API.</summary>
         internal static Func<IntPtr, IntPtr, IntPtr> ChangeParent = SetParent;
         /// <summary>Initializes a EditorWorkspaceHost instance with the supplied state.</summary>
-/// <param name="vbe">The vbe used by this operation.</param>
-/// <param name="editor">The editor used by this operation.</param>
+        /// <param name="vbe">The vbe used by this operation.</param>
+        /// <param name="editor">The editor used by this operation.</param>
         internal EditorWorkspaceHost(object vbe, ModernEditorWindow editor)
         {
             this.editor = editor; this.vbe = vbe;
@@ -73,48 +73,48 @@ namespace CodexVBE
         [StructLayout(LayoutKind.Sequential)] private struct Rect { /// <summary>Stores the left,top,right,bottom used by Rect.</summary>
 public int Left, Top, Right, Bottom; }
         /// <summary>Defines the enum window callback.</summary>
-/// <param name="handle">The handle used by this operation.</param>
-/// <param name="parameter">The parameter used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="handle">The handle used by this operation.</param>
+        /// <param name="parameter">The parameter used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         private delegate bool EnumWindow(IntPtr handle, IntPtr parameter);
         /// <summary>Performs the set last error operation for EditorWorkspaceHost.</summary>
-/// <param name="error">The error used by this operation.</param>
+        /// <param name="error">The error used by this operation.</param>
         [DllImport("kernel32.dll")] private static extern void SetLastError(uint error);
         /// <summary>Performs the set parent operation for EditorWorkspaceHost.</summary>
-/// <param name="child">The child used by this operation.</param>
-/// <param name="parent">The parent used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="child">The child used by this operation.</param>
+        /// <param name="parent">The parent used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         [DllImport("user32.dll", SetLastError = true)] private static extern IntPtr SetParent(IntPtr child, IntPtr parent);
         /// <summary>Performs the enum child windows operation for EditorWorkspaceHost.</summary>
-/// <param name="parent">The parent used by this operation.</param>
-/// <param name="callback">The callback used by this operation.</param>
-/// <param name="parameter">The parameter used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="parent">The parent used by this operation.</param>
+        /// <param name="callback">The callback used by this operation.</param>
+        /// <param name="parameter">The parameter used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, EnumWindow callback, IntPtr parameter);
         /// <summary>Performs the get class name operation for EditorWorkspaceHost.</summary>
-/// <param name="window">The window used by this operation.</param>
-/// <param name="name">The name used by this operation.</param>
-/// <param name="count">The count used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="window">The window used by this operation.</param>
+        /// <param name="name">The name used by this operation.</param>
+        /// <param name="count">The count used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr window, StringBuilder name, int count);
         /// <summary>Performs the get client rect operation for EditorWorkspaceHost.</summary>
-/// <param name="window">The window used by this operation.</param>
-/// <param name="rectangle">The rectangle used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="window">The window used by this operation.</param>
+        /// <param name="rectangle">The rectangle used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         [DllImport("user32.dll")] private static extern bool GetClientRect(IntPtr window, out Rect rectangle);
         /// <summary>Performs the is window operation for EditorWorkspaceHost.</summary>
-/// <param name="window">The window used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="window">The window used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr window);
         /// <summary>Performs the set window pos operation for EditorWorkspaceHost.</summary>
-/// <param name="window">The window used by this operation.</param>
-/// <param name="after">The after used by this operation.</param>
-/// <param name="x">The x used by this operation.</param>
-/// <param name="y">The y used by this operation.</param>
-/// <param name="width">The width used by this operation.</param>
-/// <param name="height">The height used by this operation.</param>
-/// <param name="flags">The flags used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="window">The window used by this operation.</param>
+        /// <param name="after">The after used by this operation.</param>
+        /// <param name="x">The x used by this operation.</param>
+        /// <param name="y">The y used by this operation.</param>
+        /// <param name="width">The width used by this operation.</param>
+        /// <param name="height">The height used by this operation.</param>
+        /// <param name="flags">The flags used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr window, IntPtr after, int x, int y, int width, int height, uint flags);
     }
 }

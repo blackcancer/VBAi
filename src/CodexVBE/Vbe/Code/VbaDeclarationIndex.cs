@@ -13,25 +13,25 @@ namespace CodexVBE
         internal sealed class Declaration
         {
                         /// <summary>Nom déclaré, sans suffixe de type VBA.</summary>
-            /// <value>Identifiant nettoyé de son suffixe de type éventuel.</value>
+                        /// <value>Identifiant nettoyé de son suffixe de type éventuel.</value>
             public string Name { get; set; }
                         /// <summary>Catégorie syntaxique de la déclaration.</summary>
-            /// <value>Type de membre tel que Variable, Constant, Procedure ou Field.</value>
+                        /// <value>Type de membre tel que Variable, Constant, Procedure ou Field.</value>
             public string Kind { get; set; }
                         /// <summary>Nom de la procédure ou du type contenant la déclaration ; null au niveau module.</summary>
-            /// <value>Portée lexicale, ou <see langword="null"/> pour une déclaration de module.</value>
+                        /// <value>Portée lexicale, ou <see langword="null"/> pour une déclaration de module.</value>
             public string Scope { get; set; }
                         /// <summary>Type écrit dans la déclaration ou déduit de son suffixe.</summary>
-            /// <value>Nom du type VBA ou Variant par défaut.</value>
+                        /// <value>Nom du type VBA ou Variant par défaut.</value>
             public string TypeName { get; set; }
                         /// <summary>Ligne physique à base un du nom déclaré.</summary>
-            /// <value>Numéro de ligne dans le texte source d’origine.</value>
+                        /// <value>Numéro de ligne dans le texte source d’origine.</value>
             public int Line { get; set; }
                         /// <summary>Colonne physique à base un du nom déclaré.</summary>
-            /// <value>Position du premier caractère du nom.</value>
+                        /// <value>Position du premier caractère du nom.</value>
             public int Column { get; set; }
                         /// <summary>Indique une déclaration située dans une branche de compilation conditionnelle.</summary>
-            /// <value><see langword="true"/> lorsque la déclaration apparaît dans une branche #If.</value>
+                        /// <value><see langword="true"/> lorsque la déclaration apparaît dans une branche #If.</value>
             public bool Conditional { get; set; }
         }
         /// <summary>Jeton lexical hors commentaires et littéraux avec ses coordonnées physiques.</summary>
@@ -125,11 +125,11 @@ namespace CodexVBE
             return result.ToArray();
         }
                 /// <summary>Découpe les déclarateurs en respectant tableaux et expressions parenthésées.</summary>
-        /// <param name="tokens">Jetons formant la liste de déclarations.</param>
-        /// <param name="kind">Catégorie affectée aux noms extraits.</param>
-        /// <param name="scope">Portée qui contient ces noms.</param>
-        /// <param name="conditional">Indique si la liste est dans une compilation conditionnelle.</param>
-        /// <param name="result">Collection enrichie avec les déclarations trouvées.</param>
+                /// <param name="tokens">Jetons formant la liste de déclarations.</param>
+                /// <param name="kind">Catégorie affectée aux noms extraits.</param>
+                /// <param name="scope">Portée qui contient ces noms.</param>
+                /// <param name="conditional">Indique si la liste est dans une compilation conditionnelle.</param>
+                /// <param name="result">Collection enrichie avec les déclarations trouvées.</param>
         private static void AddList(List<Token> tokens, string kind, string scope, bool conditional, List<Declaration> result)
         {
             int start = 0, depth = 0;
@@ -183,8 +183,8 @@ namespace CodexVBE
                 case '!': return "Single"; case '#': return "Double"; case '@': return "Currency"; case '^': return "LongLong"; default: return "Variant"; }
         }
                 /// <summary>Lexeur de déclarations : conserve les positions, les continuations et les séparateurs.</summary>
-        /// <param name="source">Texte VBA à découper.</param>
-        /// <returns>Listes de jetons séparées par des fins de ligne ou des séparateurs d’instruction.</returns>
+                /// <param name="source">Texte VBA à découper.</param>
+                /// <returns>Listes de jetons séparées par des fins de ligne ou des séparateurs d’instruction.</returns>
         internal static IEnumerable<List<Token>> Statements(string source)
         {
             var statement = new List<Token>();

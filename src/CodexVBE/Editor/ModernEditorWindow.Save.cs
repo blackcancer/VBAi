@@ -17,8 +17,8 @@ namespace CodexVBE
         private string lastSaveError;
 
         /// <summary>Performs the read document host saved operation for ModernEditorWindow.</summary>
-/// <param name="document">The document used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="document">The document used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         private bool? ReadDocumentHostSaved(EditorDocument document)
         {
             try { return document.Module is EditorVbeModule native ? NativeHostSaved(native) : null; }
@@ -26,8 +26,8 @@ namespace CodexVBE
         }
 
         /// <summary>Performs the save document operation for ModernEditorWindow.</summary>
-/// <param name="id">Text containing the id.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="id">Text containing the id.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal async Task SaveDocument(string id)
         {
             while (busy && !closing && !IsDisposed) await Task.Delay(15);
@@ -67,8 +67,8 @@ namespace CodexVBE
         }
 
         /// <summary>Performs the read host saved operation for ModernEditorWindow.</summary>
-/// <param name="native">The native used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="native">The native used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         private static bool? ReadHostSaved(EditorVbeModule native)
         {
             dynamic state = new VbeProjectComponents(native.Vbe, null).PersistenceStatus(native.ProjectName);
@@ -76,7 +76,7 @@ namespace CodexVBE
         }
 
         /// <summary>Performs the save in vbe operation for ModernEditorWindow.</summary>
-/// <param name="native">The native used by this operation.</param>
+        /// <param name="native">The native used by this operation.</param>
         private static void SaveInVbe(EditorVbeModule native)
         {
             dynamic vbe = native.Vbe;

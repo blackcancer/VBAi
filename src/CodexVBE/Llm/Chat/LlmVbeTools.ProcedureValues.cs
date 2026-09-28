@@ -4,7 +4,7 @@ namespace CodexVBE
     internal sealed partial class LlmVbeTools
     {
                 /// <summary>Décrit les arguments JSON scalaires ou tableaux rectangulaires de rang un/deux.</summary>
-        /// <returns>Schéma acceptant jusqu’à 30 arguments scalaires, vecteurs ou matrices bornés.</returns>
+                /// <returns>Schéma acceptant jusqu’à 30 arguments scalaires, vecteurs ou matrices bornés.</returns>
         private static object ProcedureValuesArgumentSchema()
         {
             var scalars = new object[] { new { type = "string" }, new { type = "number" }, new { type = "boolean" }, new { type = "null" } };

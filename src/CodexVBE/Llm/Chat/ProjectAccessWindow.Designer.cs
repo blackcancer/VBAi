@@ -20,7 +20,7 @@ namespace CodexVBE
         /// <summary>Stores the tool tip used by ProjectAccessWindow.</summary>
         private System.Windows.Forms.ToolTip toolTip;
         /// <summary>Performs the dispose operation for ProjectAccessWindow.</summary>
-/// <param name="disposing">Indicates whether disposing is enabled.</param>
+        /// <param name="disposing">Indicates whether disposing is enabled.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing) { UiTheme.Changed -= ApplyAppearance; components?.Dispose(); }

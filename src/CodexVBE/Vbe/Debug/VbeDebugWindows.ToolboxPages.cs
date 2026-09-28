@@ -13,23 +13,23 @@ namespace CodexVBE
         internal interface IToolboxAccessibleNode : IDisposable
         {
                         /// <summary>Rôle du nœud lui-même (0) ou du childID exact.</summary>
-            /// <param name="child">Identifiant enfant MSAA, zéro pour le nœud.</param>
-            /// <returns>Rôle MSAA numérique.</returns>
+                        /// <param name="child">Identifiant enfant MSAA, zéro pour le nœud.</param>
+                        /// <returns>Rôle MSAA numérique.</returns>
             int Role(int child);
                         /// <summary>Flags natifs complets sans action.</summary>
-            /// <param name="child">Identifiant enfant MSAA.</param>
-            /// <returns>Flags d’état MSAA du nœud.</returns>
+                        /// <param name="child">Identifiant enfant MSAA.</param>
+                        /// <returns>Flags d’état MSAA du nœud.</returns>
             int State(int child);
                         /// <summary>Libellé observé ; ce texte ne sert pas à identifier le nœud.</summary>
-            /// <param name="child">Identifiant enfant MSAA.</param>
-            /// <returns>Nom accessible observé.</returns>
+                        /// <param name="child">Identifiant enfant MSAA.</param>
+                        /// <returns>Nom accessible observé.</returns>
             string Name(int child);
                         /// <summary>Nombre de descendants directs exposés par le fournisseur.</summary>
-            /// <value>Nombre de childID directs déclarés par MSAA.</value>
+                        /// <value>Nombre de childID directs déclarés par MSAA.</value>
             int Count { get; }
                         /// <summary>Interface enfant ou null pour un enfant simple ; chaque interface est libérée par le lecteur.</summary>
-            /// <param name="child">Identifiant de l’enfant MSAA à obtenir.</param>
-            /// <returns>Wrapper enfant, ou nul pour un enfant simple sans objet accessible.</returns>
+                        /// <param name="child">Identifiant de l’enfant MSAA à obtenir.</param>
+                        /// <returns>Wrapper enfant, ou nul pour un enfant simple sans objet accessible.</returns>
             IToolboxAccessibleNode Child(int child);
         }
 
@@ -71,8 +71,8 @@ namespace CodexVBE
         }
 
                 /// <summary>Ouvre seulement une interface MSAA ; aucune méthode d'action n'est exposée.</summary>
-        /// <param name="handle">Handle d’un HWND du fournisseur de boîte à outils.</param>
-        /// <returns>Wrapper MSAA qui possède sa référence COM.</returns>
+                /// <param name="handle">Handle d’un HWND du fournisseur de boîte à outils.</param>
+                /// <returns>Wrapper MSAA qui possède sa référence COM.</returns>
         private static IToolboxAccessibleNode OpenToolboxAccessibleNode(IntPtr handle)
         {
             object value;
@@ -87,9 +87,9 @@ namespace CodexVBE
         }
 
                 /// <summary>Lit un unique serveur groupant les pages, exclusivement dans le processus du VBE.</summary>
-        /// <param name="window">Handle de la fenêtre Boîte à outils.</param>
-        /// <param name="owner">PID propriétaire attendu.</param>
-        /// <returns>Pages MSAA observées ou état indisponible si leur fournisseur est absent ou ambigu.</returns>
+                /// <param name="window">Handle de la fenêtre Boîte à outils.</param>
+                /// <param name="owner">PID propriétaire attendu.</param>
+                /// <returns>Pages MSAA observées ou état indisponible si leur fournisseur est absent ou ambigu.</returns>
         private static NavigationSurface ReadNativeToolboxPages(IntPtr window, uint owner)
         {
             var result = new NavigationSurface { Provider = "MSAA", Caption = WindowText(window),
@@ -131,11 +131,11 @@ namespace CodexVBE
         }
 
                 /// <summary>Collecte exactement une liste de pages, sans déduire l'absence des boutons de palette.</summary>
-        /// <param name="window">Handle de la fenêtre Toolbox.</param>
-        /// <param name="server">Handle du serveur MSAA identifié dans cette fenêtre.</param>
-        /// <param name="caption">Titre natif observé de la fenêtre.</param>
-        /// <param name="root">Racine accessible du serveur.</param>
-        /// <returns>Instantané des pages exposées, sans action de sélection.</returns>
+                /// <param name="window">Handle de la fenêtre Toolbox.</param>
+                /// <param name="server">Handle du serveur MSAA identifié dans cette fenêtre.</param>
+                /// <param name="caption">Titre natif observé de la fenêtre.</param>
+                /// <param name="root">Racine accessible du serveur.</param>
+                /// <returns>Instantané des pages exposées, sans action de sélection.</returns>
         internal static NavigationSurface ReadToolboxPages(IntPtr window, IntPtr server, string caption, IToolboxAccessibleNode root)
         {
             var state = new NavigationSurface { Caption = caption, Provider = "MSAA", ButtonsExposed = false,
@@ -155,14 +155,14 @@ namespace CodexVBE
         }
 
                 /// <summary>Parcourt les childID en ordre natif, sans coordonnées ni noms utilisés comme identités.</summary>
-        /// <param name="node">Nœud MSAA courant.</param>
-        /// <param name="identity">Identité du serveur et de la fenêtre.</param>
-        /// <param name="path">Chemin childID du nœud dans l’arbre accessible.</param>
-        /// <param name="depth">Profondeur courante du parcours.</param>
-        /// <param name="visited">Compteur partagé de nœuds parcourus.</param>
-        /// <param name="lists">Compteur partagé des listes de pages découvertes.</param>
-        /// <param name="listState">État brut de l’unique liste de pages, s’il est lu.</param>
-        /// <param name="pages">Collection de pages produite par le parcours.</param>
+                /// <param name="node">Nœud MSAA courant.</param>
+                /// <param name="identity">Identité du serveur et de la fenêtre.</param>
+                /// <param name="path">Chemin childID du nœud dans l’arbre accessible.</param>
+                /// <param name="depth">Profondeur courante du parcours.</param>
+                /// <param name="visited">Compteur partagé de nœuds parcourus.</param>
+                /// <param name="lists">Compteur partagé des listes de pages découvertes.</param>
+                /// <param name="listState">État brut de l’unique liste de pages, s’il est lu.</param>
+                /// <param name="pages">Collection de pages produite par le parcours.</param>
         private static void ReadToolboxPageBranch(IToolboxAccessibleNode node, string identity, string path, int depth,
             ref int visited, ref int lists, ref int? listState, List<NavigationNode> pages)
         {

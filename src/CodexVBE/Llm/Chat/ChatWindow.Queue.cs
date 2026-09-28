@@ -8,19 +8,19 @@ namespace CodexVBE
     internal sealed class QueuedChatMessage
     {
         /// <summary>Gets or sets the id.</summary>
-/// <value>The current value represented by this member.</value>
+        /// <value>The current value represented by this member.</value>
         public string Id { get; set; } = Guid.NewGuid().ToString("N");
         /// <summary>Gets or sets the text.</summary>
-/// <value>The current value represented by this member.</value>
+        /// <value>The current value represented by this member.</value>
         public string Text { get; set; }
         /// <summary>Gets or sets the references.</summary>
-/// <value>The current value represented by this member.</value>
+        /// <value>The current value represented by this member.</value>
         public VbeChatReference[] References { get; set; }
         /// <summary>Gets or sets the attachments.</summary>
-/// <value>The current value represented by this member.</value>
+        /// <value>The current value represented by this member.</value>
         public ChatAttachment[] Attachments { get; set; }
         /// <summary>Gets or sets the memory.</summary>
-/// <value>The current value represented by this member.</value>
+        /// <value>The current value represented by this member.</value>
         public string Memory { get; set; }
     }
     /// <summary>Provides the chat window implementation.</summary>
@@ -29,7 +29,7 @@ namespace CodexVBE
         /// <summary>Identifies the queued message selected for dispatch immediately after the active response stops.</summary>
         private string immediateMessageId;
         /// <summary>Gets the current session&apos;s messages waiting for dispatch.</summary>
-/// <value>The current session&apos;s queued messages, or null when there is no active session.</value>
+        /// <value>The current session&apos;s queued messages, or null when there is no active session.</value>
         private List<QueuedChatMessage> PendingMessages
         {
             get
@@ -75,7 +75,7 @@ namespace CodexVBE
             finally { pendingMessagesPanel.ResumeLayout(true); }
         }
         /// <summary>Removes a queued message from the current session and persists the updated queue.</summary>
-/// <param name="item">Queued message to remove.</param>
+        /// <param name="item">Queued message to remove.</param>
         private void DeletePendingMessage(QueuedChatMessage item)
         {
             if (PendingMessages?.Remove(item) != true) return;
@@ -83,7 +83,7 @@ namespace CodexVBE
             RefreshPendingMessages(); SaveCurrentSession();
         }
         /// <summary>Moves a queued message back into the composer when the current draft is empty.</summary>
-/// <param name="item">Queued message to move back into the composer.</param>
+        /// <param name="item">Queued message to move back into the composer.</param>
         private void EditPendingMessage(QueuedChatMessage item)
         {
             if (PendingMessages?.Contains(item) != true) return;
@@ -101,8 +101,8 @@ namespace CodexVBE
             RefreshContextChips(); RefreshPendingMessages(); SaveCurrentSession();
         }
         /// <summary>Dispatches a selected queued message immediately, stopping the active response when needed.</summary>
-/// <param name="item">Queued message to dispatch ahead of other pending messages.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="item">Queued message to dispatch ahead of other pending messages.</param>
+        /// <returns>The result produced by this operation.</returns>
         private async Task SendPendingNowAsync(QueuedChatMessage item)
         {
             if (PendingMessages?.Contains(item) != true) return;
@@ -113,8 +113,8 @@ namespace CodexVBE
             if (busy && !stopRequested) immediateMessageId = null;
         }
         /// <summary>Sends the next queued message after a response completes, unless dispatch is paused or stopped.</summary>
-/// <param name="completed">Indicates whether completed is enabled.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="completed">Indicates whether completed is enabled.</param>
+        /// <returns>The result produced by this operation.</returns>
         private async Task DispatchPendingAsync(bool completed)
         {
             if (IsDisposed || busy || PendingMessages == null) return;

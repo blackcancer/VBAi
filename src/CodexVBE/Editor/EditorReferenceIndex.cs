@@ -73,9 +73,9 @@ namespace CodexVBE
             cacheValue = symbols.ToArray(); cacheKey = key; return cacheValue;
         }
         /// <summary>Performs the return type operation for EditorReferenceIndex.</summary>
-/// <param name="info">The info used by this operation.</param>
-/// <param name="description">The description used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="info">The info used by this operation.</param>
+        /// <param name="description">The description used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         private static string ReturnType(ITypeInfo info, TYPEDESC description)
         {
             var kind = (VarEnum)description.vt;

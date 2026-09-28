@@ -54,7 +54,7 @@ namespace CodexVBE
         /// <summary>Button that closes the dialog.</summary>
         private CodexVBE.ChatActionButton closeButton;
                 /// <summary>Releases runtime subscriptions and Designer-owned components.</summary>
-        /// <param name="disposing">Whether managed components should be disposed.</param>
+                /// <param name="disposing">Whether managed components should be disposed.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing) { DisposeRuntime(); if (brandImage.Image != null) { brandImage.Image.Dispose(); brandImage.Image = null; } components?.Dispose(); }

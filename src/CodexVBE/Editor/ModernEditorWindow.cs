@@ -40,16 +40,16 @@ namespace CodexVBE
         /// <summary>Stores the browser assets directory used by ModernEditorWindow.</summary>
         internal string BrowserAssetsDirectory;
         /// <summary>Performs the new browser operation for ModernEditorWindow.</summary>
-/// <returns>The result produced by this operation.</returns>
+        /// <returns>The result produced by this operation.</returns>
         private static WebView2 NewBrowser() => new WebView2 { Dock = DockStyle.Fill, DefaultBackgroundColor = UiTheme.Background };
         /// <summary>Performs the new browser environment operation for ModernEditorWindow.</summary>
-/// <param name="cache">Text containing the cache.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="cache">Text containing the cache.</param>
+        /// <returns>The result produced by this operation.</returns>
         private static Task<CoreWebView2Environment> NewBrowserEnvironment(string cache) => CoreWebView2Environment.CreateAsync(null, cache);
         /// <summary>Performs the ensure browser operation for ModernEditorWindow.</summary>
-/// <param name="browser">The browser used by this operation.</param>
-/// <param name="environment">The environment used by this operation.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="browser">The browser used by this operation.</param>
+        /// <param name="environment">The environment used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         private static Task EnsureBrowser(WebView2 browser, CoreWebView2Environment environment) => browser.EnsureCoreWebView2Async(environment);
         /// <summary>Indique que l’application Monaco a signalé être prête.</summary>
         /// <value><see langword="true"/> après la réception du message ready.</value>
@@ -65,7 +65,7 @@ namespace CodexVBE
                 /// <summary>Notifies subscribers when assistant action occurs.</summary>
                 internal event Action<string, ChatAttachment> AssistantAction;
         /// <summary>Gets or sets the workspace hosted.</summary>
-/// <value>The current value represented by this member.</value>
+        /// <value>The current value represented by this member.</value>
         internal bool WorkspaceHosted { get; set; }
         /// <summary>Identifiant du document sélectionné dans les onglets.</summary>
         private string selected, synchronizationError;
@@ -302,8 +302,8 @@ public int column { get; set; } }
             finally { busy = false; }
         }
         /// <summary>Performs the process documents core operation for ModernEditorWindow.</summary>
-/// <param name="synchronize">Indicates whether synchronize is enabled.</param>
-/// <returns>The result produced by this operation.</returns>
+        /// <param name="synchronize">Indicates whether synchronize is enabled.</param>
+        /// <returns>The result produced by this operation.</returns>
         private async Task ProcessDocumentsCore(bool synchronize)
         {
             await CaptureDocuments();
@@ -352,7 +352,7 @@ public int column { get; set; } }
             if (IsHandleCreated) BeginInvoke(new Action(() => { if (generation == statusGeneration) UpdateStatus(); })); else UpdateStatus();
         }
                 /// <summary>Publishes a result and invalidates older queued synchronization status updates.</summary>
-/// <param name="text">Text containing the text.</param>
+                /// <param name="text">Text containing the text.</param>
         private void SetResultStatus(string text) { statusGeneration++; status.Text = text; }
         /// <summary>Met à jour les boutons de conflit, les titres d’onglets et le statut du document actif.</summary>
         private void UpdateStatus()
@@ -379,8 +379,8 @@ public int column { get; set; } }
         /// <param name="error">Erreur à présenter et à journaliser.</param>
         private void Report(Exception error) { if (!IsDisposed && !Disposing && !closing) SetResultStatus(UiText.Get(error.Message)); LoadLog.Write("Monaco: " + error.GetType().Name); }
         /// <summary>Performs the close tab requested operation for ModernEditorWindow.</summary>
-/// <param name="sender">The sender used by this operation.</param>
-/// <param name="e">The e used by this operation.</param>
+        /// <param name="sender">The sender used by this operation.</param>
+        /// <param name="e">The e used by this operation.</param>
         private void CloseTabRequested(object sender, TabControlEventArgs e)
         {
             if (busy) return;

@@ -35,7 +35,7 @@ namespace CodexVBE
         }
 
                 /// <summary>Rapporte une erreur de programmation interceptée dans le complément ; les erreurs opérationnelles restent gérées par leur UI.</summary>
-        /// <param name="error">Exception intercepted by the add-in.</param>
+                /// <param name="error">Exception intercepted by the add-in.</param>
         internal void ReportUnexpected(Exception error)
         {
             if (error == null || error is ArgumentException || error is InvalidOperationException || error is COMException ||
@@ -60,7 +60,7 @@ namespace CodexVBE
             finally { Volatile.Write(ref reporting, 0); }
         }
                 /// <summary>Propose au démarrage suivant les rapports sauvegardés avant une terminaison fatale.</summary>
-        /// <param name="directory">Directory to scan, or null to use this reporter's configured directory.</param>
+                /// <param name="directory">Directory to scan, or null to use this reporter's configured directory.</param>
         internal void RecoverPending(string directory = null)
         {
             directory = directory ?? this.directory;

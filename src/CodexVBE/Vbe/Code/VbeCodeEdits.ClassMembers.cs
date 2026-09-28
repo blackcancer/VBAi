@@ -30,8 +30,8 @@ namespace CodexVBE
         }
 
                 /// <summary>Prévisualise un membre privé de classe et ses références internes réellement liées.</summary>
-        /// <param name="request">Projet, module, nom à rechercher et nouveau nom demandé.</param>
-        /// <returns>Plan de renommage, empreintes de précondition et description des limites de liaison.</returns>
+                /// <param name="request">Projet, module, nom à rechercher et nouveau nom demandé.</param>
+                /// <returns>Plan de renommage, empreintes de précondition et description des limites de liaison.</returns>
         internal object PreviewClassMemberRename(Request request)
         {
             var snapshot = CaptureClassMemberProject(request);
@@ -43,10 +43,10 @@ namespace CodexVBE
         }
 
                 /// <summary>Vérifie tout le projet et l'export caché avant écriture, puis relit code et attributs après mutation.</summary>
-        /// <param name="request">Requête correspondant à l’aperçu, avec mode et version attendus.</param>
-        /// <returns>Résultat vérifié par module, avec état non atomique et limites d’annulation.</returns>
-        /// <exception cref="ArgumentException">La requête ne porte pas le mode design ou la version d’aperçu attendue.</exception>
-        /// <exception cref="InvalidOperationException">Le projet a changé ou une écriture/readback a échoué.</exception>
+                /// <param name="request">Requête correspondant à l’aperçu, avec mode et version attendus.</param>
+                /// <returns>Résultat vérifié par module, avec état non atomique et limites d’annulation.</returns>
+                /// <exception cref="ArgumentException">La requête ne porte pas le mode design ou la version d’aperçu attendue.</exception>
+                /// <exception cref="InvalidOperationException">Le projet a changé ou une écriture/readback a échoué.</exception>
         internal object ApplyClassMemberRename(Request request)
         {
             if (request == null || request.ExpectedMode != 2 || string.IsNullOrWhiteSpace(request.ExpectedProjectVersion))
@@ -84,8 +84,8 @@ namespace CodexVBE
         }
 
                 /// <summary>Ajoute la version de l'export natif au catalogue et SHA de tous les composants.</summary>
-        /// <param name="request">Projet et module de classe sélectionné.</param>
-        /// <returns>Snapshot combiné du catalogue de projet et des métadonnées de l’export cible.</returns>
+                /// <param name="request">Projet et module de classe sélectionné.</param>
+                /// <returns>Snapshot combiné du catalogue de projet et des métadonnées de l’export cible.</returns>
         private ClassMemberProjectSnapshot CaptureClassMemberProject(Request request)
         {
             var project = CaptureProcedureProject(request);
@@ -98,10 +98,10 @@ namespace CodexVBE
         }
 
                 /// <summary>Exporte en lecture un seul fichier temporaire possédé pour inspecter les attributs omis par CodeModule.</summary>
-        /// <param name="project">Projet qui contient le module.</param>
-        /// <param name="module">Nom du module de classe à exporter.</param>
-        /// <param name="source">Source CodeModule capturée avant l’export.</param>
-        /// <returns>Empreinte de l’export après vérification de son code et de ses attributs.</returns>
+                /// <param name="project">Projet qui contient le module.</param>
+                /// <param name="module">Nom du module de classe à exporter.</param>
+                /// <param name="source">Source CodeModule capturée avant l’export.</param>
+                /// <returns>Empreinte de l’export après vérification de son code et de ses attributs.</returns>
         private string InspectClassMemberExport(string project, string module, string source)
         {
             var component = execute(new Request { Command = "component_properties", Project = project, Module = module });
@@ -130,10 +130,10 @@ namespace CodexVBE
         }
 
                 /// <summary>Refuse les attributs de membres et exige le préambule standard d'une classe non exposée.</summary>
-        /// <param name="export">Export natif de classe complet.</param>
-        /// <param name="module">Nom attendu pour l’attribut VB_Name.</param>
-        /// <param name="source">Source visible capturée par CodeModule.</param>
-        /// <exception cref="InvalidOperationException">L’export n’a pas le format attendu ou le code/métadonnées diffère de l’instantané.</exception>
+                /// <param name="export">Export natif de classe complet.</param>
+                /// <param name="module">Nom attendu pour l’attribut VB_Name.</param>
+                /// <param name="source">Source visible capturée par CodeModule.</param>
+                /// <exception cref="InvalidOperationException">L’export n’a pas le format attendu ou le code/métadonnées diffère de l’instantané.</exception>
         internal static void ValidateClassMemberExport(string export, string module, string source)
         {
             if (export == null || source == null) throw new InvalidOperationException("The native class export is unreadable.");

@@ -16,28 +16,28 @@ namespace CodexVBE
         internal interface IProjectProtectionProbe
         {
                         /// <summary>Recherche le dialogue exact du projet dans le processus courant.</summary>
-            /// <param name="projectName">Nom affiché exact du projet.</param>
-            /// <returns>Handle du dialogue unique, ou zéro s’il n’est pas présent.</returns>
+                        /// <param name="projectName">Nom affiché exact du projet.</param>
+                        /// <returns>Handle du dialogue unique, ou zéro s’il n’est pas présent.</returns>
             IntPtr Dialog(string projectName);
                         /// <summary>Capture le verrouillage, les présences de secrets et l'identité native.</summary>
-            /// <param name="dialog">Handle du dialogue natif identifié.</param>
-            /// <param name="projectName">Nom de projet utilisé pour revérifier le dialogue.</param>
-            /// <returns>État sans contenu des champs secret.</returns>
+                        /// <param name="dialog">Handle du dialogue natif identifié.</param>
+                        /// <param name="projectName">Nom de projet utilisé pour revérifier le dialogue.</param>
+                        /// <returns>État sans contenu des champs secret.</returns>
             ProjectProtectionState Capture(IntPtr dialog, string projectName);
                         /// <summary>Écrit la case et les deux secrets sans clavier ni coordonnées.</summary>
-            /// <param name="dialog">Handle du dialogue natif.</param>
-            /// <param name="projectName">Nom de projet à revalider avant écriture.</param>
-            /// <param name="locked">État demandé de la case de verrouillage.</param>
-            /// <param name="password">Secret local à écrire dans les champs protégés.</param>
+                        /// <param name="dialog">Handle du dialogue natif.</param>
+                        /// <param name="projectName">Nom de projet à revalider avant écriture.</param>
+                        /// <param name="locked">État demandé de la case de verrouillage.</param>
+                        /// <param name="password">Secret local à écrire dans les champs protégés.</param>
             void Write(IntPtr dialog, string projectName, bool locked, string password);
                         /// <summary>Demande la validation native.</summary>
-            /// <param name="dialog">Handle du dialogue à valider.</param>
+                        /// <param name="dialog">Handle du dialogue à valider.</param>
             void Accept(IntPtr dialog);
                         /// <summary>Demande l'annulation native.</summary>
-            /// <param name="dialog">Handle du dialogue à annuler.</param>
+                        /// <param name="dialog">Handle du dialogue à annuler.</param>
             void Cancel(IntPtr dialog);
                         /// <summary>Attend la matérialisation du dialogue.</summary>
-            /// <param name="milliseconds">Durée d’attente en millisecondes.</param>
+                        /// <param name="milliseconds">Durée d’attente en millisecondes.</param>
             void Pause(int milliseconds);
         }
 
@@ -62,9 +62,9 @@ namespace CodexVBE
         public static object ReadProjectProtection(Request request) { return ReadProjectProtection(request, new NativeProjectProtectionProbe()); }
 
                 /// <summary>Orchestration injectable de lecture avec annulation garantie autant que possible.</summary>
-        /// <param name="request">Sélecteur interne du projet.</param>
-        /// <param name="native">Sonde utilisée pour capturer puis annuler le dialogue.</param>
-        /// <returns>État sans secret ou indication d’indisponibilité.</returns>
+                /// <param name="request">Sélecteur interne du projet.</param>
+                /// <param name="native">Sonde utilisée pour capturer puis annuler le dialogue.</param>
+                /// <returns>État sans secret ou indication d’indisponibilité.</returns>
         internal static object ReadProjectProtection(Request request, IProjectProtectionProbe native)
         {
             RequireProtectionRequest(request);
@@ -98,9 +98,9 @@ namespace CodexVBE
         public static object SetProjectProtection(Request request) { return SetProjectProtection(request, new NativeProjectProtectionProbe()); }
 
                 /// <summary>Vérifie toutes les gardes avant écriture et ne transmet aucun secret dans les résultats ou erreurs.</summary>
-        /// <param name="request">Action, sélecteur de projet, chemin de secret et version attendue.</param>
-        /// <param name="native">Sonde du dialogue utilisée pour capturer, écrire, confirmer ou annuler.</param>
-        /// <returns>Résultat vérifié ou état incertain sans divulguer le secret.</returns>
+                /// <param name="request">Action, sélecteur de projet, chemin de secret et version attendue.</param>
+                /// <param name="native">Sonde du dialogue utilisée pour capturer, écrire, confirmer ou annuler.</param>
+                /// <returns>Résultat vérifié ou état incertain sans divulguer le secret.</returns>
         internal static object SetProjectProtection(Request request, IProjectProtectionProbe native)
         {
             RequireProtectionRequest(request);
@@ -151,7 +151,7 @@ namespace CodexVBE
         }
 
                 /// <summary>Valide les informations internes de sélection sans accepter de nom de dialogue implicite.</summary>
-        /// <param name="request">Requête devant porter le sélecteur et le nom de projet validé.</param>
+                /// <param name="request">Requête devant porter le sélecteur et le nom de projet validé.</param>
         private static void RequireProtectionRequest(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project) || string.IsNullOrWhiteSpace(request.Caption))
@@ -159,9 +159,9 @@ namespace CodexVBE
         }
 
                 /// <summary>Attend brièvement le dialogue exact sans ouvrir un autre projet.</summary>
-        /// <param name="native">Sonde qui localise le dialogue dans le processus.</param>
-        /// <param name="name">Nom affiché exact du projet.</param>
-        /// <returns>Handle observé du dialogue ou zéro à l’expiration.</returns>
+                /// <param name="native">Sonde qui localise le dialogue dans le processus.</param>
+                /// <param name="name">Nom affiché exact du projet.</param>
+                /// <returns>Handle observé du dialogue ou zéro à l’expiration.</returns>
         private static IntPtr AwaitProtectionDialog(IProjectProtectionProbe native, string name)
         {
             for (int attempt = 0; attempt < 60; attempt++)
@@ -175,7 +175,7 @@ namespace CodexVBE
         }
 
                 /// <summary>Retourne une indisponibilité sans détails natifs susceptibles de contenir un secret.</summary>
-        /// <returns>Résultat sérialisable indiquant l’absence de contrôles natifs fiables.</returns>
+                /// <returns>Résultat sérialisable indiquant l’absence de contrôles natifs fiables.</returns>
         private static object ProtectionUnavailable()
         {
             return new { Available = false, PersistenceVerified = false,
@@ -183,17 +183,17 @@ namespace CodexVBE
         }
 
                 /// <summary>Demande Cancel seulement si le dialogue exact reste ouvert, sans exposer les erreurs natives.</summary>
-        /// <param name="native">Sonde du dialogue à annuler.</param>
-        /// <param name="dialog">Handle de l’ouverture observée.</param>
-        /// <param name="name">Nom exact du projet à revérifier.</param>
+                /// <param name="native">Sonde du dialogue à annuler.</param>
+                /// <param name="dialog">Handle de l’ouverture observée.</param>
+                /// <param name="name">Nom exact du projet à revérifier.</param>
         private static void TryCancelProtection(IProjectProtectionProbe native, IntPtr dialog, string name)
         {
             try { if (native.Dialog(name) == dialog) native.Cancel(dialog); } catch { }
         }
 
                 /// <summary>Calcule une version à partir de l'identité et des présences de secrets, sans contenu ni longueur.</summary>
-        /// <param name="state">État observé sans texte de mot de passe.</param>
-        /// <returns>Empreinte SHA-256 des indicateurs non secrets.</returns>
+                /// <param name="state">État observé sans texte de mot de passe.</param>
+                /// <returns>Empreinte SHA-256 des indicateurs non secrets.</returns>
         private static string ProtectionVersion(ProjectProtectionState state)
         {
             string text = state.Identity + "|" + state.Locked + "|" +
@@ -203,8 +203,8 @@ namespace CodexVBE
         }
 
                 /// <summary>Lit un fichier UTF8 strict borné contenant exactement un secret d'une ligne.</summary>
-        /// <param name="path">Chemin absolu du fichier local contenant le secret.</param>
-        /// <returns>Secret décodé après vérification de l’encodage et des limites.</returns>
+                /// <param name="path">Chemin absolu du fichier local contenant le secret.</param>
+                /// <returns>Secret décodé après vérification de l’encodage et des limites.</returns>
         private static string ReadProtectionSecret(string path)
         {
             try
@@ -256,14 +256,14 @@ namespace CodexVBE
         }
 
                 /// <summary>Lit une valeur de style native d’une fenêtre x64.</summary>
-        /// <param name="window">Handle de la fenêtre.</param>
-        /// <param name="index">Index de style transmis à GetWindowLongPtrW.</param>
-        /// <returns>Valeur native du style.</returns>
+                /// <param name="window">Handle de la fenêtre.</param>
+                /// <param name="index">Index de style transmis à GetWindowLongPtrW.</param>
+                /// <returns>Valeur native du style.</returns>
         [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
         private static extern IntPtr NativeProtectionWindowLong(IntPtr window, int index);
                 /// <summary>Lit le parent natif d’une fenêtre.</summary>
-        /// <param name="window">Handle de la fenêtre.</param>
-        /// <returns>Handle parent, ou zéro.</returns>
+                /// <param name="window">Handle de la fenêtre.</param>
+                /// <returns>Handle parent, ou zéro.</returns>
         [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "GetParent")]
         private static extern IntPtr NativeProtectionWindowParent(IntPtr window);
         /// <summary>Frontière injectable de lecture des styles Win32.</summary>
@@ -280,7 +280,7 @@ namespace CodexVBE
         internal static Func<int, IntPtr> AllocateProtectionBuffer = System.Runtime.InteropServices.Marshal.AllocHGlobal;
 
                 /// <summary>Interdit toute opération sur une fenêtre d'un autre processus.</summary>
-        /// <param name="window">Handle dont le processus propriétaire doit être vérifié.</param>
+                /// <param name="window">Handle dont le processus propriétaire doit être vérifié.</param>
         private static void RequireProtectionOwner(IntPtr window)
         {
             uint pid;
@@ -290,9 +290,9 @@ namespace CodexVBE
         }
 
                 /// <summary>Lit TCITEMW avec buffers locaux après vérification du PID, sans accès à un Edit.</summary>
-        /// <param name="tab">Handle du contrôle d’onglets natif.</param>
-        /// <param name="index">Index de l’onglet à lire.</param>
-        /// <returns>Libellé Unicode exact de l’onglet.</returns>
+                /// <param name="tab">Handle du contrôle d’onglets natif.</param>
+                /// <param name="index">Index de l’onglet à lire.</param>
+                /// <returns>Libellé Unicode exact de l’onglet.</returns>
         private static string ReadProtectionTabText(IntPtr tab, int index)
         {
             RequireProtectionOwner(tab);
@@ -320,10 +320,10 @@ namespace CodexVBE
         }
 
                 /// <summary>PSM_SETCURSEL active la page et déclenche ses notifications natives PSN_KILLACTIVE/PSN_SETACTIVE.</summary>
-        /// <param name="dialog">Handle de la feuille de propriétés.</param>
-        /// <param name="tab">Handle de son contrôle d’onglets.</param>
-        /// <param name="index">Index de page à activer.</param>
-        /// <returns><see langword="true"/> si la sélection native a été confirmée.</returns>
+                /// <param name="dialog">Handle de la feuille de propriétés.</param>
+                /// <param name="tab">Handle de son contrôle d’onglets.</param>
+                /// <param name="index">Index de page à activer.</param>
+                /// <returns><see langword="true"/> si la sélection native a été confirmée.</returns>
         private static bool SelectProtectionTab(IntPtr dialog, IntPtr tab, int index)
         {
             RequireProtectionOwner(dialog); RequireProtectionOwner(tab);
@@ -338,8 +338,8 @@ namespace CodexVBE
             private string validatedProjectName;
 
                         /// <summary>Recherche exactement un dialogue du projet dans le processus hôte.</summary>
-        /// <param name="projectName">Nom du projet utilisé dans le titre du dialogue.</param>
-        /// <returns>Handle unique du dialogue ou zéro s’il est absent.</returns>
+                        /// <param name="projectName">Nom du projet utilisé dans le titre du dialogue.</param>
+                        /// <returns>Handle unique du dialogue ou zéro s’il est absent.</returns>
             public IntPtr Dialog(string projectName)
             {
                 var matches = new List<IntPtr>();
@@ -358,9 +358,9 @@ namespace CodexVBE
             }
 
                         /// <summary>Sélectionne l'onglet Protection et capture uniquement les longueurs et le verrouillage.</summary>
-        /// <param name="dialog">Handle du dialogue identifié.</param>
-        /// <param name="projectName">Nom du projet à vérifier avant lecture.</param>
-        /// <returns>Identités, état de verrouillage et longueurs sans valeur de secret.</returns>
+                        /// <param name="dialog">Handle du dialogue identifié.</param>
+                        /// <param name="projectName">Nom du projet à vérifier avant lecture.</param>
+                        /// <returns>Identités, état de verrouillage et longueurs sans valeur de secret.</returns>
             public ProjectProtectionState Capture(IntPtr dialog, string projectName)
             {
                 var controls = ProtectionControls(dialog, projectName);
@@ -373,10 +373,10 @@ namespace CodexVBE
             }
 
                         /// <summary>Configure la case par BM_CLICK et les deux secrets par EM_REPLACESEL, sans clavier.</summary>
-        /// <param name="dialog">Handle du dialogue natif.</param>
-        /// <param name="projectName">Nom du projet à revérifier.</param>
-        /// <param name="locked">État demandé de verrouillage pour affichage.</param>
-        /// <param name="password">Secret à écrire dans les champs Password et Confirmation.</param>
+                        /// <param name="dialog">Handle du dialogue natif.</param>
+                        /// <param name="projectName">Nom du projet à revérifier.</param>
+                        /// <param name="locked">État demandé de verrouillage pour affichage.</param>
+                        /// <param name="password">Secret à écrire dans les champs Password et Confirmation.</param>
             public void Write(IntPtr dialog, string projectName, bool locked, string password)
             {
                 var controls = ProtectionControls(dialog, projectName);
@@ -396,19 +396,19 @@ namespace CodexVBE
             }
 
                         /// <summary>Demande OK par le bouton natif visible et activé.</summary>
-            /// <param name="dialog">Handle du dialogue natif.</param>
+                        /// <param name="dialog">Handle du dialogue natif.</param>
             public void Accept(IntPtr dialog) { ProtectionButton(dialog, 1); }
                         /// <summary>Demande Cancel par le bouton natif visible et activé.</summary>
-            /// <param name="dialog">Handle du dialogue natif.</param>
+                        /// <param name="dialog">Handle du dialogue natif.</param>
             public void Cancel(IntPtr dialog) { ProtectionButton(dialog, 2); }
                         /// <summary>Attend le traitement des messages natifs.</summary>
-            /// <param name="milliseconds">Durée d’attente bornée en millisecondes.</param>
+                        /// <param name="milliseconds">Durée d’attente bornée en millisecondes.</param>
             public void Pause(int milliseconds) { PauseNative(milliseconds); }
 
                         /// <summary>Exige un titre de tab exact et les contrôles observés de la seule page Protection visible.</summary>
-            /// <param name="dialog">Handle de la feuille de propriétés.</param>
-            /// <param name="projectName">Nom exact du projet à revalider.</param>
-            /// <returns>Case de verrouillage puis champs mot de passe et confirmation.</returns>
+                        /// <param name="dialog">Handle de la feuille de propriétés.</param>
+                        /// <param name="projectName">Nom exact du projet à revalider.</param>
+                        /// <returns>Case de verrouillage puis champs mot de passe et confirmation.</returns>
             private IntPtr[] ProtectionControls(IntPtr dialog, string projectName)
             {
                 if (Dialog(projectName) != dialog) throw new InvalidOperationException();
@@ -459,8 +459,8 @@ namespace CodexVBE
             }
 
                         /// <summary>Énumère les vrais enfants Win32 du dialogue, distincts des volets VbaWindow.</summary>
-            /// <param name="dialog">Handle du dialogue parent.</param>
-            /// <returns>Handles de tous ses enfants, dans l’ordre d’énumération Windows.</returns>
+                        /// <param name="dialog">Handle du dialogue parent.</param>
+                        /// <returns>Handles de tous ses enfants, dans l’ordre d’énumération Windows.</returns>
             private static List<IntPtr> ProtectionChildren(IntPtr dialog)
             {
                 var result = new List<IntPtr>();
@@ -472,8 +472,8 @@ namespace CodexVBE
             }
 
                         /// <summary>Lit BM_GETCHECK et refuse l'état indéterminé ou une réponse inconnue.</summary>
-            /// <param name="checkbox">Case native qualifiée.</param>
-            /// <returns>État BM_GETCHECK, zéro ou un.</returns>
+                        /// <param name="checkbox">Case native qualifiée.</param>
+                        /// <returns>État BM_GETCHECK, zéro ou un.</returns>
             private static int ReadProtectionCheck(IntPtr checkbox)
             {
                 RequireProtectionOwner(checkbox);
@@ -483,8 +483,8 @@ namespace CodexVBE
             }
 
                         /// <summary>Lit seulement WM_GETTEXTLENGTH, jamais WM_GETTEXT sur un Edit.</summary>
-            /// <param name="password">Champ mot de passe natif.</param>
-            /// <returns>Longueur du texte sans lire son contenu.</returns>
+                        /// <param name="password">Champ mot de passe natif.</param>
+                        /// <returns>Longueur du texte sans lire son contenu.</returns>
             private static int PasswordLength(IntPtr password)
             {
                 RequireProtectionOwner(password);
@@ -494,8 +494,8 @@ namespace CodexVBE
             }
 
                         /// <summary>Remplace le secret dans un Edit ES_PASSWORD natif et relit exclusivement sa longueur.</summary>
-            /// <param name="window">Handle du champ secret.</param>
-            /// <param name="password">Secret à écrire, ou chaîne vide.</param>
+                        /// <param name="window">Handle du champ secret.</param>
+                        /// <param name="password">Secret à écrire, ou chaîne vide.</param>
             private static void SetPassword(IntPtr window, string password)
             {
                 RequireProtectionOwner(window);
@@ -512,8 +512,8 @@ namespace CodexVBE
             }
 
                         /// <summary>Valide le projet, le PID et l'identité native du bouton avant BM_CLICK.</summary>
-            /// <param name="dialog">Handle du dialogue du projet actif.</param>
-            /// <param name="id">Identifiant natif du bouton OK ou Cancel.</param>
+                        /// <param name="dialog">Handle du dialogue du projet actif.</param>
+                        /// <param name="id">Identifiant natif du bouton OK ou Cancel.</param>
             private void ProtectionButton(IntPtr dialog, int id)
             {
                 if (validatedProjectName == null || Dialog(validatedProjectName) != dialog)

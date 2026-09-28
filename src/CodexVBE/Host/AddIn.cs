@@ -68,7 +68,7 @@ namespace CodexVBE
         /// <summary>Stores the create modern editor used by AddIn.</summary>
         internal static Func<ModernEditorWindow> CreateModernEditor = CreateModernEditorNative;
         /// <summary>Performs the create modern editor native operation for AddIn.</summary>
-/// <returns>The result produced by this operation.</returns>
+        /// <returns>The result produced by this operation.</returns>
         private static ModernEditorWindow CreateModernEditorNative() => new ModernEditorWindow();
         /// <summary>Fenêtre d’éditeur moderne réutilisée par les commandes de l’add-in.</summary>
         private ModernEditorWindow modernEditor;
@@ -202,7 +202,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
         }
 
         /// <summary>Performs the prepare editor action operation for AddIn.</summary>
-/// <param name="command">Text containing the command.</param>
+        /// <param name="command">Text containing the command.</param>
         private async void PrepareEditorAction(string command)
         {
             try
@@ -301,7 +301,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
         }
 
         /// <summary>Journalise et affiche une erreur issue d’une commande du menu.</summary>
-                /// <param name="ex">Exception levée pendant une action de menu.</param>
+        /// <param name="ex">Exception levée pendant une action de menu.</param>
 private void ReportMenuError(Exception ex)
         {
             WriteLog("VBE menu action failed: " + ex.ToString());
@@ -388,13 +388,13 @@ public void OnDisconnection(int removeMode, ref object[] custom)
         }
 
         /// <summary>Point d’extension COM appelé après la mise à jour de la collection d’add-ins.</summary>
-                /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
+        /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
 public void OnAddInsUpdate(ref object[] custom) { }
         /// <summary>Point d’extension COM appelé à la fin du démarrage de l’hôte.</summary>
-                /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
+        /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
 public void OnStartupComplete(ref object[] custom) { }
         /// <summary>Libère les services lorsque l’hôte commence son arrêt.</summary>
-                /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
+        /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
 public void OnBeginShutdown(ref object[] custom) { CleanupTemporaryToolbarCommands(); Dispose(); }
 
         /// <summary>Nettoie les boutons de session avant que la référence VBE soit libérée.</summary>

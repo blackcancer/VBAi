@@ -16,7 +16,7 @@ namespace CodexVBE
         /// <summary>Initialise les contrôles et applique les libellés localisés.</summary>
         public CodeDiffView() { InitializeComponent(); UiText.Apply(this, components); }
                 /// <summary>Choisit l’affichage unifié ; la propriété reste éditable dans le Designer.</summary>
-        /// <value>True to display changes in a single column; otherwise use side-by-side columns.</value>
+                /// <value>True to display changes in a single column; otherwise use side-by-side columns.</value>
         [System.ComponentModel.DefaultValue(false), System.ComponentModel.Category("Appearance")]
         public bool UnifiedDiff { get => unified.Checked; set => unified.Checked = value; }
 

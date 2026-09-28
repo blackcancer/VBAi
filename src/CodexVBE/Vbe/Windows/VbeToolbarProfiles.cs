@@ -36,7 +36,7 @@ public Command[] Commands { get; set; } }
         /// <summary>Chemin absolu du stockage des profils.</summary>
         private readonly string path;
                 /// <summary>Utilise un fichier privé du complément ou un emplacement de test explicitement fourni.</summary>
-        /// <param name="path">Chemin du fichier de base de données qui contient les profils.</param>
+                /// <param name="path">Chemin du fichier de base de données qui contient les profils.</param>
         internal VbeToolbarProfiles(string path) { this.path = Path.GetFullPath(path); }
         /// <summary>Lit et valide les profils de barres stockés.</summary>
         /// <returns>Les profils validés, ou un tableau vide lorsque le stockage n’en contient aucun.</returns>
@@ -48,8 +48,8 @@ public Command[] Commands { get; set; } }
             }
         }
                 /// <summary>Fusionne une seule barre dans une transaction SQLite, sans remplacer le fichier de base.</summary>
-        /// <param name="name">Nom de barre dont l’entrée doit être créée, remplacée ou supprimée.</param>
-        /// <param name="state">Nouvel état, ou <see langword="null"/> pour supprimer le profil.</param>
+                /// <param name="name">Nom de barre dont l’entrée doit être créée, remplacée ou supprimée.</param>
+                /// <param name="state">Nouvel état, ou <see langword="null"/> pour supprimer le profil.</param>
         internal void Update(string name, Bar state)
         {
             using (var store = new ChatSessionStore(path)) store.UpdateToolbarProfile(name, state, Validate);
@@ -64,7 +64,7 @@ public Command[] Commands { get; set; } }
                 ValidateContents(bar);
         }
                 /// <summary>Valide également une entrée isolée avant toute utilisation de ses propriétés.</summary>
-        /// <param name="bar">Profil individuel à valider.</param>
+                /// <param name="bar">Profil individuel à valider.</param>
         private static void ValidateContents(Bar bar)
         {
             if (bar == null || string.IsNullOrEmpty(bar.Name) || !bar.Name.StartsWith("VBAi - ", StringComparison.Ordinal) || bar.Name.Length > 71 || bar.Name.Any(char.IsControl) ||
