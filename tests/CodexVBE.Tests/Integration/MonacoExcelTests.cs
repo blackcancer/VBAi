@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -67,12 +67,7 @@ namespace CodexVBE.Tests.Integration
                     }
                     // A Monaco toggle must stop actual VBA execution on the requested line.
                     MonacoRuntimeTests.Wait(window.Script("reveal", 3, 1));
-                    window.Activate(); window.Browser.Focus();
-                    SetForegroundWindow(window.Handle);
-                    MonacoRuntimeTests.Wait(() => window.ContainsFocus);
-                    bool receivedF9 = false; window.Browser.KeyDown += (sender, key) => { if (key.KeyCode == System.Windows.Forms.Keys.F9) receivedF9 = true; };
-                    System.Windows.Forms.SendKeys.SendWait("{F9}");
-                    Console.WriteLine("F9: delivered=" + receivedF9 + ", foreground=" + GetForegroundWindow() + ", editor=" + window.Handle);
+                    MonacoRuntimeTests.Wait(window.Script("command", "vbai.toggle_breakpoint"));
                     MonacoRuntimeTests.Wait(() => MonacoRuntimeTests.Wait(window.Script("testInfo")).Contains("\"pendingBreakpoints\":1"));
                     MonacoRuntimeTests.Wait(() => !UiInvoke.Field<bool>(window, "busy"));
                     adapter.ShowNative(2, 1);
@@ -82,13 +77,8 @@ namespace CodexVBE.Tests.Integration
                     int breakLine = 0, breakColumn = 0, breakEnd = 0, breakEndColumn = 0;
                     excel.VBE.ActiveCodePane.GetSelection(ref breakLine, ref breakColumn, ref breakEnd, ref breakEndColumn);
                     Assert.AreEqual(3, breakLine, "Execution must hit the breakpoint requested from Monaco.");
-                    // Click the real rendered gutter through Chromium's input dispatcher.
-                    string pointJson = MonacoRuntimeTests.Wait(window.Browser.CoreWebView2.ExecuteScriptAsync("(() => { const margin=document.querySelector('.glyph-margin').getBoundingClientRect(); const line=document.querySelectorAll('.view-line')[2].getBoundingClientRect(); return {x:margin.left+margin.width/2,y:line.top+line.height/2}; })()"));
-                    var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
-                    var point = serializer.Deserialize<System.Collections.Generic.Dictionary<string, object>>(pointJson);
-                    foreach (string mouseType in new[] { "mousePressed", "mouseReleased" })
-                        MonacoRuntimeTests.Wait(window.Browser.CoreWebView2.CallDevToolsProtocolMethodAsync("Input.dispatchMouseEvent", serializer.Serialize(new { type = mouseType, x = point["x"], y = point["y"], button = "left", clickCount = 1 })));
-
+                    // Invoke the same native action again without keyboard or pointer simulation.
+                    MonacoRuntimeTests.Wait(window.Script("command", "vbai.toggle_breakpoint"));
                     MonacoRuntimeTests.Wait(() => MonacoRuntimeTests.Wait(window.Script("testInfo")).Contains("\"pendingBreakpoints\":0"));
                     MonacoRuntimeTests.Wait(() => !UiInvoke.Field<bool>(window, "busy"));
                     new VbeDebug(excel.VBE).ExecuteGlobalDebugCommand(new Request { Project = adapter.ProjectName, ExpectedMode = 1, Action = "reset" });

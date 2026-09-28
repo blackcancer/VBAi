@@ -8,7 +8,7 @@ namespace CodexVBE
 {
     internal sealed partial class ProjectAccessWindow : Form
     {
-        internal ProjectAccessWindow()
+        public ProjectAccessWindow()
         {
             InitializeComponent();
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
