@@ -10,6 +10,28 @@ namespace CodexVBE.Tests.Unit
     public sealed class WritableOptionsTests
     {
         [TestMethod]
+        public void SameNamedLabelsAreIgnoredAndOnlyEditableControlsCanBeWritten()
+        {
+            foreach (string kind in new[] { "ControlType.Text", "ControlType.Button", null })
+            {
+                var probe = new WritableOptionsMatrixProbe();
+                var option = probe.Items[0];
+                probe.Items.Add(new VbeDebugWindows.OptionsControl { Name = option.Name, Type = kind,
+                    Visible = true, Enabled = true, Value = option.Value });
+                var request = probe.Request();
+                Assert.IsTrue((bool)((dynamic)VbeDebugWindows.SetVbeOption(request, probe)).ControlValueVerified);
+                Assert.AreEqual(1, probe.Writes);
+
+                var labelOnly = new WritableOptionsMatrixProbe();
+                labelOnly.Items[0].Type = kind;
+                var absent = labelOnly.Request();
+                Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.SetVbeOption(absent, labelOnly));
+                Assert.AreEqual(0, labelOnly.Writes);
+                Assert.AreEqual(1, labelOnly.Closes);
+            }
+        }
+
+        [TestMethod]
         public void WritableOptionsGuardEveryRequiredFieldTabCatalogueAndExactVisibleControl()
         {
             foreach(int scenario in Enumerable.Range(0,5))
