@@ -4,9 +4,11 @@ using CodexVBE;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
+    /// <summary>Vérifie la sélection de culture et la détection des menus localisés.</summary>
     [TestClass]
     public sealed class UiLanguagesTests
     {
+        /// <summary>Associe les cultures du catalogue et les alias chinois aux langues prises en charge.</summary>
         [TestMethod, TestCategory("Unit")]
         public void CultureSelectionSupportsEveryCatalogueAndAllTraditionalChineseAliases()
         {
@@ -22,6 +24,7 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual("en-US",UiLanguages.For(CultureInfo.GetCultureInfo("fi-FI")).CultureName);
             Assert.AreEqual("fr-FR",UiLanguages.For(CultureInfo.GetCultureInfo("fr-CA")).CultureName);
         }
+        /// <summary>Normalise les légendes de menu et détecte la langue à partir des menus de chaque catalogue.</summary>
         [TestMethod, TestCategory("Unit")]
         public void MenuDetectionNormalizesMnemonicsDirectionMarksAndEveryCatalogue()
         {
