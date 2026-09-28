@@ -12,8 +12,14 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Helpers partagés par les tests du serveur de pont IPC.</summary>
     public sealed partial class BridgeServerTests
     {
+        /// <summary>Envoie une requête au canal nommé en pompant la boucle WinForms du thread VBE.</summary>
+        /// <param name="processId">Identifiant utilisé pour nommer le canal serveur.</param>
+        /// <param name="request">Ligne JSON transmise au serveur.</param>
+        /// <returns>Réponse JSON désérialisée.</returns>
+        /// <exception cref="AssertFailedException">La réponse n’est pas reçue dans le délai de dix secondes.</exception>
         private static IDictionary<string, object> SendWithMessagePump(int processId, string request)
         {
             var pending = Task.Run(() =>
@@ -45,15 +51,25 @@ namespace CodexVBE.Tests.Unit
             return pending.GetAwaiter().GetResult();
         }
 
+        /// <summary>Hôte VBE simulé avec sa collection de projets.</summary>
         public sealed class FakeVbe
         {
+            /// <summary>Projets visibles par les tests du pont.</summary>
+            /// <value>Liste des projets factices du VBE.</value>
             public List<FakeProject> VBProjects { get; } = new List<FakeProject>();
         }
 
+        /// <summary>Projet VBE factice avec identité de document et mode courant.</summary>
         public sealed class FakeProject
         {
+            /// <summary>Nom affiché dans le VBE.</summary>
+            /// <value>Nom du projet.</value>
             public string Name { get; set; }
+            /// <summary>Chemin du document associé.</summary>
+            /// <value>Chemin du classeur ou chaîne vide pour un document non enregistré.</value>
             public string FileName { get; set; }
+            /// <summary>Mode du projet, initialisé au mode création.</summary>
+            /// <value>Valeur du mode VBE simulé.</value>
             public int Mode { get; set; } = 2;
         }
     }

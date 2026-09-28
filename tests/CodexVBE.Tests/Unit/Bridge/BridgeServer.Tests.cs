@@ -12,10 +12,12 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie le transport named-pipe du pont et la validation des commandes Immediate.</summary>
     [TestClass]
     [TestCategory("Unit")]
     public sealed partial class BridgeServerTests
     {
+        /// <summary>Vérifie les connexions successives, les erreurs de requête et la reprise après une erreur.</summary>
         [TestMethod]
         [STATestMethod]
         public void PipeProcessesSuccessValidationAndMalformedJsonAcrossConnections()
@@ -61,6 +63,7 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Refuse une exécution Immediate sans projet avant tout accès à une fenêtre native.</summary>
         [TestMethod]
         [STATestMethod]
         public void ImmediateCommandRejectsMissingProjectBeforeTouchingNativeWindow()
@@ -79,6 +82,7 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Refuse un mode invalide, un projet absent et un mode modifié avant l’exécution.</summary>
         [TestMethod]
         [STATestMethod]
         public void ImmediateCommandRejectsInvalidModeMissingProjectAndChangedModeWithoutExecuting()
