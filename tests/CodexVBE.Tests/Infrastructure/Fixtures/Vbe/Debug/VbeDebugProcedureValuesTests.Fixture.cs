@@ -20,8 +20,9 @@ namespace CodexVBE.Tests.Unit
             internal string Module, Procedure;
             internal object[] Received;
             internal Action OnInvoke;
+            internal Action OnResolve;
             public object ResolveTarget(object project, string expectedHostPath)
-            { Resolves++; if (RejectIdentity) throw new InvalidOperationException("Owned PID/COM identity unavailable"); return this; }
+            { Resolves++; if (RejectIdentity) throw new InvalidOperationException("Owned PID/COM identity unavailable"); OnResolve?.Invoke(); return this; }
             public object Invoke(object target, string module, string procedure, object[] arguments)
             { Invocations++; Module = module; Procedure = procedure; Received = arguments; OnInvoke?.Invoke(); return Return; }
         }

@@ -22,6 +22,14 @@ namespace CodexVBE
         /// <summary>Transport Excel.Application.Run dans le processus courant; autres hôtes non pris en charge.</summary>
         internal sealed class NativeProcedureValuesHost : IProcedureValuesHost
         {
+            /// <summary>Reads the process identity used to restrict the transport to an Excel host.</summary>
+            internal Func<string> ReadProcessName = CurrentProcessName;
+            /// <summary>Resolves only the application owned by the supplied process; replaceable for contract hosts.</summary>
+            internal Func<int, Func<object>, object> ResolveApplication = ExcelOwnedApplication.Resolve;
+            /// <summary>Reads an already registered application without starting a process.</summary>
+            internal Func<string, object> ReadActiveApplication = Marshal.GetActiveObject;
+            private static string CurrentProcessName()
+            { using (var process = System.Diagnostics.Process.GetCurrentProcess()) return process.ProcessName; }
             /// <summary>Application/classeur COM détenus pour le seul appel préparé.</summary>
             private sealed class OwnedTarget
             {
@@ -33,9 +41,9 @@ namespace CodexVBE
             {
                 using (var process = System.Diagnostics.Process.GetCurrentProcess())
                 {
-                    if (!string.Equals(process.ProcessName, "EXCEL", StringComparison.OrdinalIgnoreCase))
+                    if (!string.Equals(ReadProcessName(), "EXCEL", StringComparison.OrdinalIgnoreCase))
                         throw new InvalidOperationException("Returned procedure values currently require the in-process Excel host.");
-                    dynamic application = ExcelOwnedApplication.Resolve(process.Id, () => Marshal.GetActiveObject("Excel.Application"));
+                    dynamic application = ResolveApplication(process.Id, () => ReadActiveApplication("Excel.Application"));
                     uint owner; VbeDebugWindows.GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(application.Hwnd)), out owner);
                     if (owner != (uint)process.Id) throw new InvalidOperationException("The Excel application belongs to another PID.");
                     object match = null; int count = 0;
