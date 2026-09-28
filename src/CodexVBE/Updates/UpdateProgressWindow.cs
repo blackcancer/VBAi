@@ -12,7 +12,9 @@ namespace CodexVBE
         private UpdateInstallerRunner runner;
         private string root;
         private bool polling, background;
-        private bool prerequisite;
+        private bool prerequisite, closingInternally;
+        internal Func<WebViewRuntimePrerequisite> CreatePrerequisite = () => new WebViewRuntimePrerequisite();
+        internal Action<int> SetExitCode = code => Environment.ExitCode = code;
         internal void ConfigureWebView()
         {
             prerequisite = true; Text = heading.Text = "VBAi · WebView2";
@@ -47,10 +49,10 @@ namespace CodexVBE
             polling = true;
             try
             {
-                await new WebViewRuntimePrerequisite().Ensure(System.IO.Path.GetTempPath());
-                status.Text = UpdateText.Get("Update installed. Restart the VBA host."); Environment.ExitCode = 0;
+                await CreatePrerequisite().Ensure(System.IO.Path.GetTempPath());
+                status.Text = UpdateText.Get("Update installed. Restart the VBA host."); SetExitCode(0);
             }
-            catch (Exception) { status.Text = UpdateText.Get("Installation failed. Check the installer log."); Environment.ExitCode = 1; }
+            catch (Exception) { status.Text = UpdateText.Get("Installation failed. Check the installer log."); SetExitCode(1); }
             finally { polling = false; cancel.Enabled = true; progress.Visible = false; }
         }
         private async void Poll(object sender, EventArgs e)
@@ -66,10 +68,17 @@ namespace CodexVBE
                 bool completed = await Task.Run(() => runner.Tick(job));
                 if (IsDisposed) return;
                 status.Text = UpdateText.Get(job.Status); cancel.Enabled = true;
-                if (completed) { timer.Stop(); progress.Visible = false; cancel.Text = UpdateText.Get("Close"); if (background) Close(); }
+                if (completed) { timer.Stop(); progress.Visible = false; cancel.Text = UpdateText.Get("Close"); CloseBackground(); }
             }
-            catch (Exception) { timer.Stop(); status.Text = UpdateText.Get("Installation failed. Check the installer log."); if (background) Close(); }
+            catch (Exception) { timer.Stop(); status.Text = UpdateText.Get("Installation failed. Check the installer log."); CloseBackground(); }
             finally { polling = false; }
+        }
+        private void CloseBackground()
+        {
+            if (!background) return;
+            closingInternally = true;
+            try { Close(); }
+            finally { closingInternally = false; }
         }
         private void Close_Click(object sender, EventArgs e)
         {
@@ -79,6 +88,7 @@ namespace CodexVBE
         }
         private void WindowClosing(object sender, FormClosingEventArgs e)
         {
+            if (closingInternally) return;
             if (e.CloseReason == CloseReason.UserClosing && polling) { e.Cancel = true; return; }
             if (e.CloseReason == CloseReason.UserClosing && job != null && !job.Completed)
             { job.Completed = true; job.Status = "Update cancelled."; job.Save(root); }
