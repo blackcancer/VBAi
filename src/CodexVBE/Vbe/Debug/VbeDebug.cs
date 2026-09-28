@@ -290,7 +290,7 @@ namespace CodexVBE
                  ((entry.Caption ?? "").Replace("&", "").IndexOf("Compile ", StringComparison.OrdinalIgnoreCase) >= 0)));
             if (command == null)
                 throw new InvalidOperationException("The native Compile command is absent or disabled.");
-            string caption = (command.Caption ?? "").Replace("&", "");
+            string caption = command.Caption.Replace("&", "");
             if (caption.IndexOf((string)project.Name, StringComparison.OrdinalIgnoreCase) < 0)
                 throw new InvalidOperationException("The native Compile command targets a different project: " + caption);
             ((dynamic)command.Control).Execute();

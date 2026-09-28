@@ -12,6 +12,12 @@ namespace CodexVBE.Tests.Unit
 
     public sealed partial class VbeProcedureMutationTests
     {
+        public sealed class ControlNode
+        {
+            public string Kind { get; set; }
+            public string Name { get; set; }
+            public object[] Children { get; set; } = new object[0];
+        }
         private static string Hash(string source)
         {
             using (var sha = SHA256.Create())
@@ -24,6 +30,7 @@ namespace CodexVBE.Tests.Unit
             public readonly VbeCodeNavigation Navigation;
             public readonly VbeForms Forms;
             public readonly FakeComponent Component;
+            public readonly FakeProject Project;
             public Fixture(string code, int type = 1)
             {
                 var host = new FakeVbe();
@@ -32,6 +39,7 @@ namespace CodexVBE.Tests.Unit
                     Name = "Projet",
                     Mode = 2
                 };
+                Project = project;
                 Component = new FakeComponent
                 {
                     Name = "Module1",
@@ -98,6 +106,20 @@ namespace CodexVBE.Tests.Unit
             public dynamic ProcOfLine { get; }
             public bool FailNextInsert { get; set; }
             public bool PretendStillPresentAfterDelete { get; set; }
+            public int? BodyOverride { get; set; }
+            public int? EventBodyOverride { get; set; }
+            public int? StartOverride { get; set; }
+            public int? CountOverride { get; set; }
+            public string IdentityOverride { get; set; }
+            public int? KindOverride { get; set; }
+            public bool IgnoreInsert { get; set; }
+            public bool IgnoreDelete { get; set; }
+            public bool FailDelete { get; set; }
+            public bool FailEveryInsert { get; set; }
+            public bool CorruptRollback { get; set; }
+            public int InsertCalls { get; private set; }
+            public int DeleteCalls { get; private set; }
+            public Func<int, int, string, string> ReadLinesOverride { get; set; }
             public int CountOfLines => lines.Count;
             public int CountOfDeclarationLines => lines.Count > 0 && lines[0].StartsWith("Option ", StringComparison.Ordinal) ? 1 : 0;
             public string Code => string.Join("\r\n", lines);
@@ -115,18 +137,22 @@ namespace CodexVBE.Tests.Unit
 
             public void InsertLines(int start, string source)
             {
+                InsertCalls++;
+                if (FailEveryInsert) throw new InvalidOperationException("Insert unavailable");
                 if (FailNextInsert)
                 {
                     FailNextInsert = false;
                     throw new InvalidOperationException("Insert failed");
                 }
 
-                lines.InsertRange(start - 1, source.Split(new[] { "\r\n" }, StringSplitOptions.None));
+                if (!IgnoreInsert) lines.InsertRange(start - 1, (CorruptRollback && InsertCalls > 1 ? source + "\r\n'corrupt" : source).Split(new[] { "\r\n" }, StringSplitOptions.None));
             }
 
             public void DeleteLines(int start, int count)
             {
-                lines.RemoveRange(start - 1, count);
+                DeleteCalls++;
+                if (FailDelete) throw new InvalidOperationException("Delete unavailable");
+                if (!IgnoreDelete) lines.RemoveRange(start - 1, count);
             }
 
             public int CreateEventProc(string eventName, string objectName)
@@ -134,7 +160,7 @@ namespace CodexVBE.Tests.Unit
                 string stub = "Private Sub " + objectName + "_" + eventName + "()\r\nEnd Sub";
                 int first = lines.Count + (lines.Count == 0 ? 1 : 2);
                 InsertLines(lines.Count + 1, (lines.Count == 0 ? "" : "\r\n") + stub);
-                return first;
+                return EventBodyOverride ?? first;
             }
 
             private Procedure Find(string name, int kind)
@@ -167,10 +193,11 @@ namespace CodexVBE.Tests.Unit
             {
                 for (int i = 0; i < lines.Count; i++)
                 {
-                    var declaration = Regex.Match(lines[i], @"^\s*(?:(?:Public|Private|Friend|Static)\s+)*(?:Sub|Function)\s+([A-Za-z][A-Za-z0-9_]*)\s*\(", RegexOptions.IgnoreCase);
+                    var declaration = Regex.Match(lines[i], @"^\s*(?:(?:Public|Private|Friend|Static)\s+)*(Sub|Function|Property\s+(Let|Set|Get))\s+([A-Za-z][A-Za-z0-9_]*)\s*\(", RegexOptions.IgnoreCase);
                     if (!declaration.Success)
                         continue;
-                    var found = Find(declaration.Groups[1].Value, 0);
+                    int kind = declaration.Groups[2].Value.Equals("Let", StringComparison.OrdinalIgnoreCase) ? 1 : declaration.Groups[2].Value.Equals("Set", StringComparison.OrdinalIgnoreCase) ? 2 : declaration.Groups[2].Value.Equals("Get", StringComparison.OrdinalIgnoreCase) ? 3 : 0;
+                    var found = Find(declaration.Groups[3].Value, kind);
                     if (found != null && line >= found.Start && line < found.Start + found.Count)
                         return found;
                 }
@@ -194,7 +221,14 @@ namespace CodexVBE.Tests.Unit
                     this.module = module;
                 }
 
-                public string this[int start, int count] => string.Join("\r\n", module.lines.Skip(start - 1).Take(count));
+                public string this[int start, int count]
+                {
+                    get
+                    {
+                        string actual = string.Join("\r\n", module.lines.Skip(start - 1).Take(count));
+                        return module.ReadLinesOverride == null ? actual : module.ReadLinesOverride(start, count, actual);
+                    }
+                }
             }
 
             public sealed class FakeProcedureIndex
@@ -211,6 +245,8 @@ namespace CodexVBE.Tests.Unit
                 {
                     get
                     {
+                        int? overridden = selector == 1 ? module.CountOverride : ReferenceEquals(this, module.ProcStartLine) ? module.StartOverride : module.BodyOverride;
+                        if (overridden.HasValue) return overridden.Value;
                         if (module.PretendStillPresentAfterDelete && selector == 0 && module.Find(name, kind) == null)
                         {
                             module.PretendStillPresentAfterDelete = false;
@@ -236,7 +272,8 @@ namespace CodexVBE.Tests.Unit
                 public override bool TryGetIndex(GetIndexBinder binder, object[] indexes, out object result)
                 {
                     var procedure = module.AtLine(Convert.ToInt32(indexes[0]));
-                    result = procedure?.Name;
+                    indexes[1] = module.KindOverride ?? procedure?.Kind ?? 0;
+                    result = module.IdentityOverride ?? procedure?.Name;
                     return true;
                 }
             }

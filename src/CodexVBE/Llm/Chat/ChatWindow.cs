@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -63,11 +64,12 @@ namespace CodexVBE
             InitializeTranscript();
             foreach (var item in LlmProvider.All) providerPicker.Items.Add(item);
 
-            try { settings = LlmSettings.Load(); }
+            try { settings = ReadSettings(); }
             catch (Exception ex) { LoadLog.Write("LLM settings load failed: " + ex.Message); settings = new LlmSettings(); }
             tools = new LlmVbeTools(session, this, settings);
             tools.ValidateScope = EnsureCurrentScope;
-            tools.CodeEdited += change => {
+            tools.CodeEdited += change =>
+            {
                 change.TurnId = activeTurnId;
                 codeChanges.Add(change);
                 changes.Enabled = true;
@@ -76,12 +78,13 @@ namespace CodexVBE
                 RefreshCodeChangeCards();
             };
             changes.Click += (sender, args) => ShowCodeChanges();
-            providerPicker.SelectedIndexChanged += (sender, args) => {
+            providerPicker.SelectedIndexChanged += (sender, args) =>
+            {
                 if (loadingSession || busy) return;
                 var provider = providerPicker.SelectedItem as LlmProvider;
                 if (provider == null) return;
                 settings.ProviderName = provider.Name;
-                try { settings.Save(); } catch (Exception ex) { LoadLog.Write("Provider selection save failed: " + ex.Message); }
+                try { WriteSettings(settings); } catch (Exception ex) { LoadLog.Write("Provider selection save failed: " + ex.Message); }
                 if (scopePicker.SelectedItem == null)
                 {
                     ResetProviderConnection();
@@ -91,7 +94,8 @@ namespace CodexVBE
             };
             configure.Click += (sender, args) => ShowSettings();
             refreshModels.Click += async (sender, args) => await LoadModelsAsync();
-            modelPicker.SelectedIndexChanged += (sender, args) => {
+            modelPicker.SelectedIndexChanged += (sender, args) =>
+            {
                 var selectedModel = modelPicker.SelectedItem as LlmModelOption;
                 var selectedProvider = providerPicker.SelectedItem as LlmProvider;
                 if (selectedModel == null || selectedProvider == null) return;
@@ -104,9 +108,10 @@ namespace CodexVBE
                 UpdateEfforts(selectedProvider, selectedModel);
                 ScheduleSessionSave();
                 if (!restoringSelection)
-                    try { settings.Save(); } catch (Exception ex) { LoadLog.Write("Model selection save failed: " + ex.Message); }
+                    try { WriteSettings(settings); } catch (Exception ex) { LoadLog.Write("Model selection save failed: " + ex.Message); }
             };
-            effortPicker.SelectedIndexChanged += (sender, args) => {
+            effortPicker.SelectedIndexChanged += (sender, args) =>
+            {
                 var selectedProvider = providerPicker.SelectedItem as LlmProvider;
                 var selectedModel = modelPicker.SelectedItem as LlmModelOption;
                 var selectedEffort = effortPicker.SelectedItem as LlmEffortOption;
@@ -115,7 +120,7 @@ namespace CodexVBE
                 if (!restoringSelection) settings.SetReasoningEffort(selectedProvider, selectedModel.Id, selectedEffort.Id);
                 ScheduleSessionSave();
                 if (!restoringSelection)
-                    try { settings.Save(); } catch (Exception ex) { LoadLog.Write("Reasoning effort save failed: " + ex.Message); }
+                    try { WriteSettings(settings); } catch (Exception ex) { LoadLog.Write("Reasoning effort save failed: " + ex.Message); }
             };
             send.Click += async (sender, args) => { if (busy) await StopTurnAsync(); else await SendAsync(); };
             int defaultProvider = Array.FindIndex(LlmProvider.All, item => item.Name == settings.ProviderName);
@@ -150,7 +155,7 @@ namespace CodexVBE
             status.Text = ((LlmProvider)providerPicker.SelectedItem).Available ?
                 UiText.Get("Loading provider models…") : UiText.Get("This provider is not implemented yet.");
             settings.ProviderName = ((LlmProvider)providerPicker.SelectedItem).Name;
-            try { settings.Save(); }
+            try { WriteSettings(settings); }
             catch (Exception saveError) { LoadLog.Write("LLM settings save failed: " + saveError.Message); }
         }
 
@@ -177,7 +182,7 @@ namespace CodexVBE
                         codex = CreateCodexClient();
                     models = await codex.ListModelsAsync();
                 }
-                else models = await LlmChatClient.ListModelsAsync(provider, settings);
+                else models = await ReadModelCatalogue(provider, settings);
                 if (IsDisposed || version != catalogueVersion || provider != providerPicker.SelectedItem) return;
                 foreach (var item in models) modelPicker.Items.Add(item);
                 LoadLog.Write("Chat model catalogue: " + provider.Name + " count=" + models.Length);
@@ -197,7 +202,7 @@ namespace CodexVBE
             {
                 if (!IsDisposed && version == catalogueVersion)
                     SetStatus(UiText.Get("Model list unavailable: ") + ex.Message);
-                LoadLog.Write("Chat model catalogue failed: " + provider.Name + " " + ex);
+                LoadLog.Write("Chat model catalogue failed: " + provider.Name + " " + ex.ToString());
                 if (provider.IsCodex && version == catalogueVersion) { codex?.Dispose(); codex = null; }
             }
             finally
@@ -216,7 +221,7 @@ namespace CodexVBE
         {
             if (busy)
             {
-                MessageBox.Show(owner ?? this, UiText.Get("Wait for the response to finish or stop the agent before changing settings."),
+                ShowNotice(owner ?? this, UiText.Get("Wait for the response to finish or stop the agent before changing settings."),
                     "VBAi", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -227,7 +232,7 @@ namespace CodexVBE
             string previousProviders = json.Serialize(new { settings.ProviderEndpoints, settings.EncryptedProviderKeys, settings.AzureUseEntraToken, settings.ManualModelLists });
             using (var dialog = new LlmSettingsWindow(settings))
             {
-                if (dialog.ShowDialog(owner ?? this) != DialogResult.OK) return;
+                if (ShowModal(dialog, owner ?? this) != DialogResult.OK) return;
                 int selected = Array.FindIndex(LlmProvider.All, item => item.Name == settings.ProviderName);
                 if (selected >= 0 && providerPicker.SelectedIndex != selected) providerPicker.SelectedIndex = selected;
                 else
@@ -271,7 +276,8 @@ namespace CodexVBE
                 return;
             }
             var entry = transcriptEntries.Find(x => x.Change == selected);
-            if (entry != null) {
+            if (entry != null)
+            {
                 followConversation = false;
                 int index = transcriptEntries.IndexOf(entry);
                 if (index < firstLoadedEntry) RefreshTranscriptWindow(index);
@@ -295,11 +301,13 @@ namespace CodexVBE
         {
             var ownerSession = currentSession;
             var client = new CodexAppServerClient(SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext(),
-                tools, SetStatus, settings, currentSession?.CodexThreadId);
-            client.ChatUpdate += (kind, id, text, complete) => {
+                tools, SetStatus, settings, currentSession?.CodexThreadId, TransportFactory());
+            client.ChatUpdate += (kind, id, text, complete) =>
+            {
                 if (currentSession == ownerSession && !IsDisposed) ReceiveChatUpdate(kind, id, text, complete);
             };
-            client.ThreadReady += id => {
+            client.ThreadReady += id =>
+            {
                 if (currentSession == ownerSession && currentSession != null && !IsDisposed)
                 { currentSession.CodexThreadId = id; SaveCurrentSession(); }
             };
@@ -350,7 +358,8 @@ namespace CodexVBE
             if (selectedModel == null) { SetStatus(UiText.Get("Choose an available model before sending.")); return; }
             string requestText;
             ChatAttachment[] attachments;
-            try {
+            try
+            {
                 EnsureCurrentScope(); attachments = PrepareAttachments(question);
                 requestText = ChatCommand.Expand(question);
                 foreach (var attachment in attachments) requestText += "\n\n<context label=\"" + attachment.Label + "\">\n" + attachment.Text + "\n</context>";
@@ -414,10 +423,11 @@ namespace CodexVBE
                     selectedModel.Id, HttpHandlerOverride?.Invoke()))
                 {
                     activeHttpClient = client;
-                    client.ToolHandler = async (name, arguments) => {
+                    client.ToolHandler = async (name, arguments) =>
+                    {
                         if (stopRequested) throw new OperationCanceledException();
                         Append("Outil", name);
-                        return await tools.InvokeAsync(name, arguments);
+                        return await InvokeTool(tools, name, arguments);
                     };
                     SetStatus(client.DisplayName + UiText.Get(" — working"));
                     for (int turn = 0; turn < 8; turn++)
@@ -426,7 +436,8 @@ namespace CodexVBE
                         providerStreamId = "http-" + Guid.NewGuid().ToString("N");
                         string streamId = providerStreamId;
                         bool receivedText = false;
-                        client.TextDelta = fragment => {
+                        client.TextDelta = fragment =>
+                        {
                             if (stopRequested || IsDisposed) return;
                             receivedText = true;
                             ReceiveChatUpdate("final", streamId, fragment, false);
@@ -455,7 +466,7 @@ namespace CodexVBE
                             string name = Convert.ToString(function["name"]);
                             string arguments = Convert.ToString(function["arguments"]);
                             Append("Outil", name);
-                            string result = await tools.InvokeAsync(name, arguments);
+                            string result = await InvokeTool(tools, name, arguments);
                             messages.Add(new { role = "tool", tool_call_id = Convert.ToString(call["id"]), content = result });
                         }
                     }
@@ -487,10 +498,15 @@ namespace CodexVBE
             finally
             {
                 activeHttpClient = null;
-                if (!IsDisposed) {
+                if (!IsDisposed)
+                {
                     var intervention = codeChanges.FindAll(x => x.TurnId == activeTurnId);
-                    if (intervention.Count > 0) AddEntry(new ChatEntry { Speaker = "Intervention", TurnId = activeTurnId,
-                        Text = intervention.Count + UiText.Get(" change(s) applied. Review the files and undo this turn below.") });
+                    if (intervention.Count > 0) AddEntry(new ChatEntry
+                    {
+                        Speaker = "Intervention",
+                        TurnId = activeTurnId,
+                        Text = intervention.Count + UiText.Get(" change(s) applied. Review the files and undo this turn below.")
+                    });
                     if (verifyAfterEdit.Checked == true && codeChanges.Exists(x => x.TurnId == activeTurnId)) await VerifyProjectAsync();
                     activeTurnId = null; SetBusy(false); SaveCurrentSession();
                 }
@@ -506,5 +522,32 @@ namespace CodexVBE
             changes?.ContextMenuStrip?.Dispose();
             DisposeComposer();
         }
+    }
+}
+
+
+namespace CodexVBE
+{
+    internal sealed partial class ChatWindow
+    {
+        // Native defaults; tests may substitute only the external effects of a chat.
+        internal static Func<LlmSettings> ReadSettings = LlmSettings.Load;
+        internal static Action<LlmSettings> WriteSettings = (Action<LlmSettings>)Delegate.CreateDelegate(typeof(Action<LlmSettings>), typeof(LlmSettings).GetMethod("Save"));
+        internal static Func<string> HistoryPath = DefaultHistoryPath;
+        internal static Func<string, ChatSessionStore> OpenHistory = OpenHistoryNative;
+        internal static Func<Form, IWin32Window, DialogResult> ShowModal = (Func<Form, IWin32Window, DialogResult>)Delegate.CreateDelegate(typeof(Func<Form, IWin32Window, DialogResult>), typeof(Form).GetMethod("ShowDialog", new[] { typeof(IWin32Window) }));
+        internal static Func<CommonDialog, IWin32Window, DialogResult> ShowSaveDialog = (Func<CommonDialog, IWin32Window, DialogResult>)Delegate.CreateDelegate(typeof(Func<CommonDialog, IWin32Window, DialogResult>), typeof(CommonDialog).GetMethod("ShowDialog", new[] { typeof(IWin32Window) }));
+        internal static Func<IWin32Window, string, string, MessageBoxButtons, MessageBoxIcon, DialogResult> ShowNotice = MessageBox.Show;
+        internal static Func<System.Windows.Input.ModifierKeys> ReadModifiers = (Func<System.Windows.Input.ModifierKeys>)Delegate.CreateDelegate(typeof(Func<System.Windows.Input.ModifierKeys>), typeof(System.Windows.Input.Keyboard).GetProperty("Modifiers").GetGetMethod());
+        internal static Action<string> WriteClipboard = System.Windows.Clipboard.SetText;
+        internal static Func<ICodexAppServerTransport> TransportFactory = CreateNativeTransport;
+        internal static Func<LlmProvider, LlmSettings, Task<LlmModelOption[]>> ReadModelCatalogue = LlmChatClient.ListModelsAsync;
+        internal static Func<VbeSession, Request, Response> ReadHost = ReadHostNative;
+        internal static Func<LlmVbeTools, string, string, Task<string>> InvokeTool = InvokeToolNative;
+        private static string DefaultHistoryPath() { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CodexVBE", "chat.db"); }
+        private static ChatSessionStore OpenHistoryNative(string path) { return new ChatSessionStore(path); }
+        private static ICodexAppServerTransport CreateNativeTransport() { return new CodexProcessTransport(); }
+        private static Response ReadHostNative(VbeSession session, Request request) { return session.Execute(request); }
+        private static Task<string> InvokeToolNative(LlmVbeTools tools, string name, string arguments) { return tools.InvokeAsync(name, arguments); }
     }
 }

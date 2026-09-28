@@ -47,6 +47,7 @@ namespace CodexVBE.Tests.Unit
             public bool CloseAfterClick;
             public int PausesSinceReset;
             public string AccessibleMessage;
+            public Action<int> OnPause;
             public IntPtr VbeRoot()
             {
                 return Root;
@@ -122,6 +123,7 @@ namespace CodexVBE.Tests.Unit
             public void Pause(int milliseconds)
             {
                 PausesSinceReset++;
+                OnPause?.Invoke(PausesSinceReset);
             }
         }
     }

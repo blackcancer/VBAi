@@ -57,8 +57,7 @@ namespace CodexVBE
             saveTimer.Tick += (s, e) => { saveTimer.Stop(); SaveCurrentSession(); };
             try
             {
-                sessionStore = new ChatSessionStore(Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CodexVBE", "chat.db"));
+                sessionStore = OpenHistory(HistoryPath());
             }
             catch (Exception ex) { storageFailed = true; SetStatus(UiText.Get("History not saved: ") + ex.Message); }
             var projects = PopulateProjectScopes(session);
@@ -72,7 +71,7 @@ namespace CodexVBE
             {
                 int selected = 0;
                 var first = (MacroScope)scopePicker.Items[0];
-                var state = session.Execute(new Request { Command = "debug_state", Project = first.Project });
+                var state = ReadHost(session, new Request { Command = "debug_state", Project = first.Project });
                 if (state.Ok)
                 {
                     var data = json.DeserializeObject(json.Serialize(state.Data)) as IDictionary<string, object>;
@@ -113,7 +112,7 @@ namespace CodexVBE
         /// <returns>Réponse de la commande de découverte.</returns>
         private Response PopulateProjectScopes(VbeSession session)
         {
-            var projects = session.Execute(new Request { Command = "list_projects" });
+            var projects = ReadHost(session, new Request { Command = "list_projects" });
             if (!projects.Ok) return projects;
             var values = json.DeserializeObject(json.Serialize(projects.Data)) as object[];
             if (values == null) return projects;
@@ -220,7 +219,7 @@ namespace CodexVBE
             sessionList.BeginUpdate();
             try
             {
-                string query = historySearch.Text ?? "";
+                string query = historySearch.Text;
                 sessionList.Items.Clear();
                 sessionList.Items.AddRange(scopeSessions.Where(x => (!x.Archived || showArchived.Checked) &&
                     ChatHistory.Matches(x, query)).OrderByDescending(x => x.Pinned).ToArray());
@@ -320,7 +319,7 @@ namespace CodexVBE
             var scope = scopePicker.SelectedItem as MacroScope;
             if (scope == null || scopeSession == null) return;
             if (tools != null) tools.BoundProject = scope.Project;
-            var response = scopeSession.Execute(new Request { Command = "list_projects" });
+            var response = ReadHost(scopeSession, new Request { Command = "list_projects" });
             if (!response.Ok) throw new InvalidOperationException(response.Error);
             var projects = json.DeserializeObject(json.Serialize(response.Data)) as object[];
             var matches = (projects ?? new object[0]).OfType<IDictionary<string, object>>()

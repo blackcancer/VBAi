@@ -15,23 +15,41 @@ namespace CodexVBE
     // query native windows, not the VBIDE object model used by VbeDebug.
     internal static class VbeDebugWindows
     {
-        private delegate bool EnumWindowCallback(IntPtr handle, IntPtr parameter);
+        internal delegate bool EnumWindowCallback(IntPtr handle, IntPtr parameter);
 
-        [DllImport("user32.dll")] private static extern bool EnumWindows(EnumWindowCallback callback, IntPtr parameter);
-        [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, EnumWindowCallback callback, IntPtr parameter);
-        [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr handle, out uint processId);
-        [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr handle, StringBuilder text, int capacity);
-        [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr handle, StringBuilder text, int capacity);
-        [DllImport("user32.dll")] private static extern int GetDlgCtrlID(IntPtr handle);
-        [DllImport("user32.dll")] private static extern IntPtr GetDlgItem(IntPtr handle, int controlId);
-        [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr handle);
-        [DllImport("user32.dll")] private static extern bool PostMessage(IntPtr handle, int message, IntPtr wParam, IntPtr lParam);
+        [DllImport("user32.dll", EntryPoint = "EnumWindows")] private static extern bool NativeEnumWindows(EnumWindowCallback callback, IntPtr parameter);
+        [DllImport("user32.dll", EntryPoint = "EnumChildWindows")] private static extern bool NativeEnumChildWindows(IntPtr parent, EnumWindowCallback callback, IntPtr parameter);
+        [DllImport("user32.dll", EntryPoint = "GetWindowThreadProcessId")] private static extern uint NativeGetWindowThreadProcessId(IntPtr handle, out uint processId);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "GetClassName")] private static extern int NativeGetClassName(IntPtr handle, StringBuilder text, int capacity);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "GetWindowText")] private static extern int NativeGetWindowText(IntPtr handle, StringBuilder text, int capacity);
+        [DllImport("user32.dll", EntryPoint = "GetDlgCtrlID")] private static extern int NativeGetDlgCtrlID(IntPtr handle);
+        [DllImport("user32.dll", EntryPoint = "GetDlgItem")] private static extern IntPtr NativeGetDlgItem(IntPtr handle, int controlId);
+        [DllImport("user32.dll", EntryPoint = "IsWindowVisible")] private static extern bool NativeIsWindowVisible(IntPtr handle);
+        [DllImport("user32.dll", EntryPoint = "PostMessage")] private static extern bool NativePostMessage(IntPtr handle, int message, IntPtr wParam, IntPtr lParam);
         [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "SendMessageW")]
-        private static extern IntPtr SendMessageText(IntPtr handle, int message, IntPtr wParam, string text);
+        private static extern IntPtr NativeSendMessageText(IntPtr handle, int message, IntPtr wParam, string text);
         [DllImport("user32.dll", EntryPoint = "SendMessageW")]
-        private static extern IntPtr SendMessageInt(IntPtr handle, int message, IntPtr wParam, IntPtr lParam);
-        [DllImport("oleacc.dll")] private static extern int AccessibleObjectFromWindow(IntPtr handle, uint objectId,
+        private static extern IntPtr NativeSendMessageInt(IntPtr handle, int message, IntPtr wParam, IntPtr lParam);
+        [DllImport("oleacc.dll", EntryPoint = "AccessibleObjectFromWindow")] private static extern int NativeAccessibleObjectFromWindow(IntPtr handle, uint objectId,
             ref Guid interfaceId, [MarshalAs(UnmanagedType.Interface)] out object accessible);
+
+        internal delegate uint WindowProcessReader(IntPtr handle, out uint processId);
+        internal delegate int AccessibleClientReader(IntPtr handle, uint objectId, ref Guid interfaceId, out object accessible);
+
+        // These delegates isolate the operating-system boundary; dialog decisions stay in this class.
+        internal static Func<EnumWindowCallback, IntPtr, bool> EnumWindows = NativeEnumWindows;
+        internal static Func<IntPtr, EnumWindowCallback, IntPtr, bool> EnumChildWindows = NativeEnumChildWindows;
+        internal static WindowProcessReader GetWindowThreadProcessId = NativeGetWindowThreadProcessId;
+        internal static Func<IntPtr, StringBuilder, int, int> GetClassName = NativeGetClassName;
+        internal static Func<IntPtr, StringBuilder, int, int> GetWindowText = NativeGetWindowText;
+        internal static Func<IntPtr, int> GetDlgCtrlID = NativeGetDlgCtrlID;
+        internal static Func<IntPtr, int, IntPtr> GetDlgItem = NativeGetDlgItem;
+        internal static Func<IntPtr, bool> IsWindowVisible = NativeIsWindowVisible;
+        internal static Func<IntPtr, int, IntPtr, IntPtr, bool> PostMessage = NativePostMessage;
+        internal static Func<IntPtr, int, IntPtr, string, IntPtr> SendMessageText = NativeSendMessageText;
+        internal static Func<IntPtr, int, IntPtr, IntPtr, IntPtr> SendMessageInt = NativeSendMessageInt;
+        internal static AccessibleClientReader AccessibleObjectFromWindow = NativeAccessibleObjectFromWindow;
+        internal static Action<int> PauseNative = Thread.Sleep;
 
         private const int BmClick = 0x00F5;
         private const int WmChar = 0x0102;
@@ -99,7 +117,7 @@ namespace CodexVBE
                 SendMessageInt(handle, 0x00B1, IntPtr.Zero, new IntPtr(-1));
                 SendMessageText(handle, 0x00C2, new IntPtr(1), value);
             }
-            public void Pause(int milliseconds) { Thread.Sleep(milliseconds); }
+            public void Pause(int milliseconds) { PauseNative(milliseconds); }
             public string Message(IntPtr dialog) { return AccessibleDialogMessage(dialog); }
             public void Close(IntPtr dialog) { CloseDialog(dialog); }
             public IntPtr VbeRoot() { return FindVbeRoot(); }
@@ -158,7 +176,7 @@ namespace CodexVBE
             }
             public void Cancel(IntPtr dialog, int index) { accessible.accDoDefaultAction(index); }
             public void Close(IntPtr dialog) { PostMessage(dialog, 0x0010, IntPtr.Zero, IntPtr.Zero); }
-            public void Pause(int milliseconds) { Thread.Sleep(milliseconds); }
+            public void Pause(int milliseconds) { PauseNative(milliseconds); }
         }
 
         internal sealed class OptionsControl
@@ -206,7 +224,7 @@ namespace CodexVBE
                 if (!tabItems[tabIndex].TryGetCurrentPattern(SelectionItemPattern.Pattern, out tabPattern))
                     throw new InvalidOperationException("A native VBE Options tab is unreadable.");
                 ((SelectionItemPattern)tabPattern).Select();
-                Thread.Sleep(75);
+                PauseNative(75);
                 var descendants = root.FindAll(TreeScope.Descendants,
                     new OrCondition(
                         new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.CheckBox),
@@ -280,7 +298,7 @@ namespace CodexVBE
                 return result;
             }
             public void Close(IntPtr dialog) { CloseDialog(dialog); }
-            public void Pause(int milliseconds) { Thread.Sleep(milliseconds); }
+            public void Pause(int milliseconds) { PauseNative(milliseconds); }
         }
 
         internal interface IImmediateProbe
@@ -320,7 +338,7 @@ namespace CodexVBE
                 return PostMessage(pane, WmKeyDown, new IntPtr(VkReturn), IntPtr.Zero) &&
                     PostMessage(pane, WmKeyUp, new IntPtr(VkReturn), IntPtr.Zero);
             }
-            public void Pause(int milliseconds) { Thread.Sleep(milliseconds); }
+            public void Pause(int milliseconds) { PauseNative(milliseconds); }
         }
 
         private sealed class NativeProbe : INativeProbe
@@ -345,7 +363,7 @@ namespace CodexVBE
             public string DialogMessage(IntPtr dialog) { return AccessibleDialogMessage(dialog); }
             public bool Click(IntPtr handle) { return PostMessage(handle, BmClick, IntPtr.Zero, IntPtr.Zero); }
             public bool Visible(IntPtr handle) { return IsWindowVisible(handle); }
-            public void Pause(int milliseconds) { Thread.Sleep(milliseconds); }
+            public void Pause(int milliseconds) { PauseNative(milliseconds); }
         }
 
         public static object Capture(bool includeCallStack)
@@ -499,7 +517,7 @@ namespace CodexVBE
         {
             IntPtr dialog = IntPtr.Zero;
             for (int attempt = 0; attempt < 60 && dialog == IntPtr.Zero; attempt++)
-            { Thread.Sleep(50); dialog = FindSignatureDialog(); }
+            { PauseNative(50); dialog = FindSignatureDialog(); }
             if (dialog == IntPtr.Zero)
                 throw new InvalidOperationException("The native VBE Digital Signature dialog did not open.");
             bool completed = false;
@@ -520,7 +538,7 @@ namespace CodexVBE
                 if (!chosen) InvokeSignatureButton(root, "Choisir...", "Choose...");
                 for (int attempt = 0; !chosen && attempt < 2400; attempt++)
                 {
-                    Thread.Sleep(50);
+                    PauseNative(50);
                     if (FindSignatureDialog() != dialog)
                         throw new InvalidOperationException("The native VBE signature dialog closed during certificate selection.");
                     if (attempt % 4 != 0) continue;
@@ -536,7 +554,7 @@ namespace CodexVBE
                 for (int attempt = 0; attempt < 60; attempt++)
                 {
                     if (FindSignatureDialog() == IntPtr.Zero) { completed = true; break; }
-                    Thread.Sleep(50);
+                    PauseNative(50);
                 }
                 if (!completed) throw new InvalidOperationException("The native VBE signature dialog did not close after OK.");
                 return new { Project = project, CertificateThumbprint = thumbprint,
@@ -812,7 +830,7 @@ namespace CodexVBE
             var pattern = (ExpandCollapsePattern)rawPattern;
             if (request.Action == "expand") pattern.Expand();
             else pattern.Collapse();
-            Thread.Sleep(50);
+            PauseNative(50);
             int childCount = target.FindAll(TreeScope.Children, condition).Count;
             bool verified = request.Action == "expand" ? childCount > 0 : childCount == 0;
             return new { request.Pane, request.Action, request.PathSegments,
@@ -1175,7 +1193,7 @@ namespace CodexVBE
             var matches = new List<AutomationElement>();
             for (int index = 0; index < elements.Count; index++)
             {
-                string raw = elements[index].Current.Name ?? "";
+                string raw = elements[index].Current.Name;
                 Match parsed = Regex.Match(raw, @"^\s*(.*?)\s+(?:Valeur|Value)\s+.*?\s+Type\s+.*?\s+(?:Contexte|Context)\s+(.*?)\s*$",
                     RegexOptions.IgnoreCase | RegexOptions.Singleline);
                 if (parsed.Success && string.Equals(parsed.Groups[1].Value, expression, StringComparison.Ordinal) &&
@@ -1191,6 +1209,7 @@ namespace CodexVBE
             AutomationElementCollection elements = root.FindAll(TreeScope.Descendants, Condition.TrueCondition);
             for (int index = 0; index < elements.Count; index++)
             {
+                if (elements[index].Current.ControlType != ControlType.Text) continue;
                 string name = elements[index].Current.Name;
                 if (!string.IsNullOrWhiteSpace(name) && name != "OK" && name != "Aide" && name != "Help") return name;
             }
@@ -1271,7 +1290,7 @@ namespace CodexVBE
                     string raw = element.Current.Name;
                     object pattern;
                     if (element.TryGetCurrentPattern(ValuePattern.Pattern, out pattern))
-                        raw = ((ValuePattern)pattern).Current.Value ?? raw;
+                        raw = ((ValuePattern)pattern).Current.Value;
                     // Skip the native empty-list placeholder before querying its UIA ancestry.
                     if (ParseDebugRow(raw, null) == null) continue;
                     object parsed = ParseDebugRow(raw, ItemPath(element));
@@ -1403,7 +1422,7 @@ namespace CodexVBE
                 if (button == IntPtr.Zero || !PostMessage(button, BmClick, IntPtr.Zero, IntPtr.Zero))
                     return new { Available = false, Frames = new string[0], Error = "The native Call Stack button was not available." };
                 for (int attempt = 0; attempt < 30 && dialog == IntPtr.Zero; attempt++)
-                { Thread.Sleep(50); dialog = FindCallStackDialog(); }
+                { PauseNative(50); dialog = FindCallStackDialog(); }
             }
             if (dialog == IntPtr.Zero)
                 return new { Available = false, Frames = new string[0], Error = "Call Stack dialog did not open." };

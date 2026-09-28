@@ -106,9 +106,26 @@ namespace CodexVBE.Tests.Unit
         public sealed class FakeProject
         {
             public string Name { get; set; }
-            public string FileName { get; set; }
+            private string fileName;
+            public bool FailFileName { get; set; }
+            public string FileName { get { if (FailFileName) throw new InvalidOperationException("path unavailable"); return fileName; } set { fileName = value; } }
             public int Mode { get; set; }
-            public List<FakeComponent> VBComponents { get; } = new List<FakeComponent>();
+            public FakeComponents VBComponents { get; } = new FakeComponents();
+        }
+
+        public sealed class FakeComponents : List<FakeComponent>
+        {
+            public FakeComponent Item(string name) { return this.Single(item => item.Name == name); }
+        }
+
+        public sealed class BrowserSnapshot
+        {
+            public BrowserWindowSnapshot[] Windows { get; set; }
+        }
+
+        public sealed class BrowserWindowSnapshot
+        {
+            public IDictionary<string, object> Properties { get; set; }
         }
 
         public sealed class FakeComponent
@@ -124,8 +141,9 @@ namespace CodexVBE.Tests.Unit
             public FakePane CodePane { get; }
             public FakeLines Lines { get; }
             public FakeProcedureBody ProcBodyLine { get; } = new FakeProcedureBody();
+            public FakeProcedureLines ProcOfLine { get; } = new FakeProcedureLines();
             public string Code { get; set; }
-            public int CountOfLines => Code.Split(new[] { "\r\n" }, StringSplitOptions.None).Length;
+            public int CountOfLines => string.IsNullOrEmpty(Code) ? 0 : Code.Split(new[] { "\r\n" }, StringSplitOptions.None).Length;
 
             public FakeModule(FakeComponent parent, string code)
             {
@@ -162,12 +180,27 @@ namespace CodexVBE.Tests.Unit
             public int this[string procedure, int kind] => 1;
         }
 
+        public sealed class FakeProcedureLines : System.Dynamic.DynamicObject
+        {
+            public Func<int, string> NameAtLine { get; set; } = line => "TryMe";
+            public Func<int, int> KindAtLine { get; set; } = line => 0;
+            public override bool TryGetIndex(System.Dynamic.GetIndexBinder binder, object[] indexes, out object result)
+            {
+                int line = Convert.ToInt32(indexes[0]);
+                indexes[1] = KindAtLine(line);
+                result = NameAtLine(line);
+                return true;
+            }
+        }
+
         public sealed class FakePane
         {
             public FakeModule CodeModule { get; set; }
             public int ShowCount { get; private set; }
             public bool FailGetSelection { get; set; }
             public bool RetainSelection { get; set; } = true;
+            public Func<int[], int[]> SelectionReadback { get; set; }
+            public Action OnShow { get; set; }
             public int StartLine { get; private set; } = 1;
             public int StartColumn { get; private set; } = 1;
             public int EndLine { get; private set; } = 1;
@@ -176,6 +209,7 @@ namespace CodexVBE.Tests.Unit
             public void Show()
             {
                 ShowCount++;
+                OnShow?.Invoke();
             }
 
             public void SetSelection(int startLine, int startColumn, int endLine, int endColumn)
@@ -203,23 +237,34 @@ namespace CodexVBE.Tests.Unit
                 startColumn = StartColumn;
                 endLine = EndLine;
                 endColumn = EndColumn;
+                if (SelectionReadback != null)
+                {
+                    var actual = SelectionReadback(new[] { startLine, startColumn, endLine, endColumn });
+                    startLine = actual[0]; startColumn = actual[1]; endLine = actual[2]; endColumn = actual[3];
+                }
             }
         }
 
         public sealed class FakeBar
         {
-            public string Name { get; set; }
+            private string name;
+            public bool FailName { get; set; }
+            public string Name { get { if (FailName) throw new InvalidOperationException("bar unavailable"); return name; } set { name = value; } }
             public List<FakeControl> Controls { get; } = new List<FakeControl>();
         }
 
         public sealed class FakeControl
         {
-            public string Caption { get; set; }
+            private string caption;
+            public bool FailCaption { get; set; }
+            public string Caption { get { if (FailCaption) throw new InvalidOperationException("control unavailable"); return caption; } set { caption = value; } }
             public int Id { get; set; }
             public bool Enabled { get; set; } = true;
             public int ExecuteCount { get; private set; }
             public Action OnExecute { get; set; }
-            public List<FakeControl> Controls { get; } = new List<FakeControl>();
+            private readonly List<FakeControl> controls = new List<FakeControl>();
+            public bool FailChildren { get; set; }
+            public List<FakeControl> Controls { get { if (FailChildren) throw new InvalidOperationException("button has no children"); return controls; } }
 
             public void Execute()
             {

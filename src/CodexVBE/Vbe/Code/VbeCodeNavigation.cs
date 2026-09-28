@@ -12,6 +12,9 @@ namespace CodexVBE
     {
         private readonly dynamic vbe;
         private readonly VbeForms forms;
+        internal Func<string, byte[]> ReadSourceBytes = File.ReadAllBytes;
+        internal Func<int, Encoding> LegacySourceEncoding = codePage => Encoding.GetEncoding(codePage,
+            EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
 
         public VbeCodeNavigation(object vbe, VbeForms forms) { this.vbe = vbe; this.forms = forms; }
 
@@ -269,7 +272,7 @@ namespace CodexVBE
             if (!file.Exists) throw new FileNotFoundException("Code file not found.", path);
             if (file.Length == 0 || file.Length > 256 * 1024)
                 throw new ArgumentException("The code file must contain 1 to 262144 bytes.");
-            byte[] bytes = File.ReadAllBytes(path);
+            byte[] bytes = ReadSourceBytes(path);
             if (bytes.Length == 0 || bytes.Length > 256 * 1024)
                 throw new ArgumentException("The code file changed size while it was read.");
             string sourceHash;
@@ -338,7 +341,7 @@ namespace CodexVBE
             if (!file.Exists) throw new FileNotFoundException("Code file not found.", path);
             if (file.Length == 0 || file.Length > 256 * 1024)
                 throw new ArgumentException("The code file must contain 1 to 262144 bytes.");
-            byte[] bytes = File.ReadAllBytes(path);
+            byte[] bytes = ReadSourceBytes(path);
             if (bytes.Length == 0 || bytes.Length > 256 * 1024)
                 throw new ArgumentException("The code file changed size while it was read.");
             string bom = bytes.Length >= 4 &&
@@ -378,7 +381,7 @@ namespace CodexVBE
                 ContentIncluded = false };
         }
 
-        private static string DecodeCodeFile(byte[] bytes, string requested, out string name)
+        private string DecodeCodeFile(byte[] bytes, string requested, out string name)
         {
             string selected = string.IsNullOrWhiteSpace(requested) ? null : requested.Trim().ToLowerInvariant();
             if (selected != null && selected != "utf-8" && selected != "utf-16le" &&
@@ -405,8 +408,7 @@ namespace CodexVBE
             Encoding decoder = selected == "utf-8" ? (Encoding)new UTF8Encoding(false, true) :
                 selected == "utf-16le" ? new UnicodeEncoding(false, false, true) :
                 selected == "utf-16be" ? new UnicodeEncoding(true, false, true) :
-                Encoding.GetEncoding(selected == "windows-1252" ? 1252 : Encoding.Default.CodePage,
-                    EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
+                LegacySourceEncoding(selected == "windows-1252" ? 1252 : Encoding.Default.CodePage);
             string source;
             try { source = decoder.GetString(bytes, offset, bytes.Length - offset); }
             catch (DecoderFallbackException error)

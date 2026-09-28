@@ -165,7 +165,7 @@ namespace CodexVBE.Tests.Unit
                 Assert.IsFalse(invoked);
                 Assert.AreEqual(0, Get<List<ChatEntry>>(window, "transcriptEntries").Count);
                 modelPicker.SelectedIndex = 0;
-                Get<List<ChatAttachment>>(window, "draftAttachments").Add(new ChatAttachment { Label = "Très long", Text = new string ('x', 48001) });
+                Get<List<ChatAttachment>>(window, "draftAttachments").Add(new ChatAttachment { Label = "Très long", Text = new string('x', 48001) });
                 ((Task)Call(window, "SendAsync")).GetAwaiter().GetResult();
                 Assert.IsFalse(invoked);
                 Assert.AreEqual("Question", Get<object>(window, "prompt").GetType().GetProperty("Text").GetValue(Get<object>(window, "prompt"), null));
@@ -256,6 +256,207 @@ namespace CodexVBE.Tests.Unit
                 Assert.AreEqual("Réessaie ensuite", session.Draft);
                 Assert.IsFalse(Get<bool>(window, "busy"));
                 Set(window, "currentSession", null);
+            }
+        }
+    }
+}
+namespace CodexVBE.Tests.Unit
+{
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Reflection;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using System.Web.Script.Serialization;
+    using System.Windows.Forms;
+    using CodexVBE;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    public sealed partial class ChatWindowStateTests
+    {
+        [STATestMethod, TestCategory("Unit")]
+        public void RuntimeConstructorProviderModelEffortEventsAndSettingsDialogsUseNativeContracts()
+        {
+            Assert.AreEqual("Save", ChatWindow.WriteSettings.Method.Name); Assert.AreEqual("ShowDialog", ChatWindow.ShowModal.Method.Name); Assert.IsTrue(ChatWindow.HistoryPath().EndsWith("chat.db")); using (var native = ChatWindow.TransportFactory()) Assert.IsFalse(native.IsRunning);
+            using (var runtime = new RuntimeScope())
+            using (var window = new ChatWindow(runtime.Session))
+            {
+                CompleteOnSta((Task)Call(window, "LoadModelsAsync")); var provider = Get<ComboBox>(window, "providerPicker"); var model = Get<ComboBox>(window, "modelPicker"); var effort = Get<ComboBox>(window, "effortPicker"); var current = Get<ChatSessionState>(window, "currentSession");
+                var change = new CodeChange(@"C:\Temp\P.xlsm", "M", "old", "before", "new", "after", 1); var tool = Get<LlmVbeTools>(window, "tools"); ((Action<CodeChange>)typeof(LlmVbeTools).GetField("CodeEdited", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(tool))(change); Assert.AreEqual(1, Get<List<CodeChange>>(window, "codeChanges").Count); Click(Get<Button>(window, "changes")); Get<Button>(window, "changes").ContextMenuStrip.Close();
+                Set(window, "busy", true); provider.SelectedIndex = 1; Set(window, "busy", false); provider.SelectedIndex = 0; Set(window, "loadingSession", true); provider.SelectedIndex = 1; Set(window, "loadingSession", false); provider.SelectedIndex = -1; provider.SelectedIndex = 0;
+                CompleteOnSta((Task)Call(window, "LoadModelsAsync")); current = Get<ChatSessionState>(window, "currentSession"); model.Items.Add(new LlmModelOption("other", "Other", false, "missing", new[] { new LlmEffortOption("low", "Low"), new LlmEffortOption("high", "High") })); current.Effort = "high"; model.SelectedIndex = model.Items.Count - 1; Assert.AreEqual("other", current.Model); effort.SelectedIndex = 0; Assert.AreEqual("low", current.Effort);
+                ChatWindow.WriteSettings = s => { throw new InvalidOperationException("settings save failed"); }; model.SelectedIndex = 0; provider.SelectedIndex = 1; provider.SelectedIndex = 0;
+                Set(window, "restoringSelection", true); model.SelectedIndex = 0; effort.SelectedIndex = 0; Set(window, "restoringSelection", false);
+                current.Effort = "missing"; Call(window, "UpdateEfforts", LlmProvider.All[0], new LlmModelOption("x", "X", false, "missing", new[] { new LlmEffortOption("low", "Low") })); Assert.AreEqual(0, effort.SelectedIndex); Call(window, "UpdateEfforts", LlmProvider.All[0], new LlmModelOption("x", "X")); Assert.IsFalse(effort.Enabled);
+                Set(window, "busy", true); window.ShowSettings(); Set(window, "busy", false); window.ShowSettings();
+                foreach (var mutation in new Action<LlmSettings>[] { s => { }, s => s.OpenAiEndpoint += "/changed", s => s.OllamaEndpoint += "/changed", s => s.EncryptedOpenAiKey = "changed", s => s.ManualModelLists["Ollama"] = "manual", s => s.ProviderName = "Ollama", s => s.ProviderName = "Unknown" }) { ChatWindow.ShowModal = (d, o) => { mutation(runtime.Settings); return DialogResult.OK; }; window.ShowSettings(window); }
+                ChatWindow.WriteSettings = s => runtime.Saves++; Call(window, "ResetProviderConnection");
+                var handle = window.Handle; var thread = new Thread(() => Call(window, "SetStatus", "worker update")); thread.Start(); Assert.IsTrue(thread.Join(5000)); Application.DoEvents(); Assert.AreEqual("worker update", Get<Label>(window, "status").Text); Set(window, "storageFailed", true); Call(window, "SetStatus", "storage"); StringAssert.Contains(Get<Label>(window, "status").Text, UiText.Get("History not saved"));
+            }
+            using (var runtime = new RuntimeScope()) { ChatWindow.ReadSettings = () => { throw new InvalidOperationException("settings load failed"); }; runtime.Host = r => Response.Success(new object[0]); using (var window = new ChatWindow(runtime.Session)) { Assert.AreEqual(0, Get<ComboBox>(window, "providerPicker").SelectedIndex); } }
+        }
+        [STATestMethod, TestCategory("Unit")]
+        public void RuntimeModelCatalogueHandlesMissingEmptyDefaultsFallbacksAndLateDisposedRequests()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = new ChatWindow(runtime.Session))
+            {
+                var picker = Get<ComboBox>(window, "providerPicker"); var model = Get<ComboBox>(window, "modelPicker");
+                picker.SelectedIndex = -1; CompleteOnSta((Task)Call(window, "LoadModelsAsync")); Assert.AreEqual(0, model.Items.Count);
+                foreach (var provider in LlmProvider.All) { picker.SelectedItem = provider; CompleteOnSta((Task)Call(window, "LoadModelsAsync")); Assert.AreEqual(provider.Available, model.Items.Count > 0); }
+                picker.SelectedIndex = 0;
+                foreach (var catalogue in new[] { new LlmModelOption[0], new[] { new LlmModelOption("first", "First") }, new[] { new LlmModelOption("first", "First"), new LlmModelOption("default", "Default", true) } }) { window.ModelCatalogueOverride = p => Task.FromResult(catalogue); CompleteOnSta((Task)Call(window, "LoadModelsAsync")); Assert.AreEqual(catalogue.Length, model.Items.Count); }
+                var pending = new TaskCompletionSource<LlmModelOption[]>(); window.ModelCatalogueOverride = p => pending.Task; var load = (Task)Call(window, "LoadModelsAsync"); picker.SelectedIndex = 1; pending.TrySetResult(new LlmModelOption[0]); CompleteOnSta(load);
+                window.ModelCatalogueOverride = p => Task.FromException<LlmModelOption[]>(new InvalidOperationException("failed")); CompleteOnSta((Task)Call(window, "LoadModelsAsync"));
+                var disposed = new TaskCompletionSource<LlmModelOption[]>(); window.ModelCatalogueOverride = p => disposed.Task; var last = (Task)Call(window, "LoadModelsAsync"); window.Dispose(); disposed.SetResult(new LlmModelOption[0]); CompleteOnSta(last);
+            }
+        }
+        [STATestMethod, TestCategory("Unit")]
+        public void RuntimeCodexTransportSendsStreamsThreadReadyAndInterruptionWithoutAProcess()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = new ChatWindow(runtime.Session))
+            {
+                CompleteOnSta((Task)Call(window, "LoadModelsAsync"));
+                runtime.Transport.BeforeComplete = () => { var change = new CodeChange(@"C:\Temp\P.xlsm", "M", "old", "before", "new", "after", 1); var tools = Get<LlmVbeTools>(window, "tools"); ((Action<CodeChange>)typeof(LlmVbeTools).GetField("CodeEdited", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(tools))(change); }; Get<CheckBox>(window, "verifyAfterEdit").Checked = true; Question(window, "request"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.AreEqual("thread", Get<ChatSessionState>(window, "currentSession").CodexThreadId); Assert.IsFalse(Get<bool>(window, "busy"));
+                window.Show(); System.Threading.SynchronizationContext.SetSynchronizationContext(new System.Windows.Forms.WindowsFormsSynchronizationContext()); runtime.Transport.Complete = false; Question(window, "stop request"); var task = (Task)Call(window, "SendAsync"); CompleteOnSta((Task)Call(window, "StopTurnAsync")); CompleteOnSta(task); Assert.IsTrue(Get<bool>(window, "stopRequested")); CompleteOnSta((Task)Call(window, "StopTurnAsync"));
+                System.Threading.SynchronizationContext.SetSynchronizationContext(new System.Windows.Threading.DispatcherSynchronizationContext()); runtime.Transport.Complete = true; runtime.Transport.FailTurn = true; Question(window, "failure"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.AreEqual("failure", Get<System.Windows.Controls.TextBox>(window, "prompt").Text);
+                window.CodexTurnOverride = (t, m, e) => Task.FromResult("override"); Get<ChatSessionState>(window, "currentSession").Mode = ChatMode.Discussion; Set(window, "projectMemory", "notes"); Get<CheckBox>(window, "attachMemory").Checked = true; Question(window, "analysis"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.AreEqual("notes", Get<List<ChatEntry>>(window, "transcriptEntries").Last(x => x.Speaker == "Vous").AttachedMemory);
+                Question(window, ""); CompleteOnSta((Task)Call(window, "SendAsync")); Call(window, "SetBusy", true); Question(window, "busy"); CompleteOnSta((Task)Call(window, "SendAsync")); Call(window, "SetBusy", false);
+            }
+        }
+        [STATestMethod, TestCategory("Unit")]
+        public void RuntimeHttpResponsesValidateToolsRepairFailuresAndRespectCallLimit()
+        {
+            foreach (var response in new[] { "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"\"}}]}", "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"tool_calls\":[]}}]}", "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"tool_calls\":[null]}}]}", "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"tool_calls\":[{\"id\":\"bad\"}]}}]}", "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"tool_calls\":[{\"function\":{\"name\":\"status\",\"arguments\":\"{}\"}}]}}]}" })
+                using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
+                { window.HttpHandlerOverride = () => new ChatResponseHandler(response); Question(window, "request"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.IsFalse(Get<bool>(window, "busy")); Set(window, "currentSession", null); }
+            using (var runtime = new RuntimeScope())
+            using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
+            {
+                var response = "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"id\":\"call\",\"function\":{\"name\":\"status\",\"arguments\":\"{}\"}}]}}]}";
+                var handler = new ChatResponseHandler(Enumerable.Repeat(response, 8).ToArray()); window.HttpHandlerOverride = () => handler; Question(window, "limit"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.AreEqual(8, handler.Requests.Count); StringAssert.Contains(Get<List<ChatEntry>>(window, "transcriptEntries").Last().Text, "limit"); Set(window, "currentSession", null);
+            }
+        }
+        [STATestMethod, TestCategory("Unit")]
+        public void RuntimeProviderCallbacksAndLateClientNotificationsRespectCurrentSession()
+        {
+            using (var runtime = new RuntimeScope())
+            {
+                runtime.Host = r => Response.Success(new object[0]);
+                using (var window = new ChatWindow(runtime.Session))
+                {
+                    var providers = Get<ComboBox>(window, "providerPicker"); providers.SelectedIndex = 2; providers.SelectedIndex = 0; CompleteOnSta((Task)Call(window, "LoadModelsAsync"));
+                    var model = Get<ComboBox>(window, "modelPicker"); var effort = Get<ComboBox>(window, "effortPicker"); providers.SelectedIndex = -1; model.Items.Add(new LlmModelOption("other", "Other")); model.SelectedIndex = model.Items.Count - 1; effort.Items.Add(new LlmEffortOption("other", "Other")); effort.SelectedIndex = effort.Items.Count - 1; providers.SelectedIndex = 0; CompleteOnSta((Task)Call(window, "LoadModelsAsync"));
+                    model.SelectedIndex = -1; effort.Items.Add(new LlmEffortOption("extra", "Extra")); effort.SelectedIndex = effort.Items.Count - 1; model.SelectedIndex = 0; effort.SelectedIndex = -1;
+                    var client = Get<CodexAppServerClient>(window, "codex"); var chat = (Action<string, string, string, bool>)typeof(CodexAppServerClient).GetField("ChatUpdate", Fields).GetValue(client); var ready = (Action<string>)typeof(CodexAppServerClient).GetField("ThreadReady", Fields).GetValue(client); ready("no-session"); Assert.IsNull(Get<ChatSessionState>(window, "currentSession")); chat("final", "late", "pending", true);
+                    var state = new ChatSessionState { Scope = "temporary:P" }; Set(window, "currentSession", state); chat("final", "old", "old session", true); ready("old thread"); Assert.IsNull(state.CodexThreadId); Set(window, "currentSession", null); window.Dispose(); chat("final", "disposed", "ignored", true); ready("disposed");
+                }
+                using (var design = new ChatWindow()) { Call(design, "SetBusy", true); design.PrepareEditorAction("/corriger"); Assert.IsTrue(Get<bool>(design, "busy")); }
+            }
+        }
+        [STATestMethod, TestCategory("Unit")]
+        public void RuntimeModelFailuresStaleExceptionsAndChangeMenusPreserveUiState()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = new ChatWindow(runtime.Session))
+            {
+                window.Show(); CompleteOnSta((Task)Call(window, "LoadModelsAsync")); runtime.Transport.FailModels = true; CompleteOnSta((Task)Call(window, "LoadModelsAsync")); Assert.IsNull(Get<CodexAppServerClient>(window, "codex")); runtime.Transport.FailModels = false;
+                var pending = new TaskCompletionSource<LlmModelOption[]>(); window.ModelCatalogueOverride = p => pending.Task; var stale = (Task)Call(window, "LoadModelsAsync"); window.ModelCatalogueOverride = p => Task.FromResult(new[] { new LlmModelOption("fresh", "Fresh") }); CompleteOnSta((Task)Call(window, "LoadModelsAsync")); pending.SetException(new InvalidOperationException("stale failure")); CompleteOnSta(stale); Assert.AreEqual("fresh", ((LlmModelOption)Get<ComboBox>(window, "modelPicker").SelectedItem).Id);
+                var change = new CodeChange(@"C:\Temp\P.xlsm", "M", "old", "a", "new", "b", 1); Call(window, "AddEntry", new ChatEntry { Speaker = "Code", Change = change }); Get<List<CodeChange>>(window, "codeChanges").Add(change); for (int i = 0; i < 90; i++) Call(window, "AddEntry", new ChatEntry { Speaker = "Assistant", Text = "line " + i }); Call(window, "RefreshTranscriptWindow", 80); Call(window, "ShowCodeChanges", change); Assert.IsFalse(Get<bool>(window, "followConversation")); Assert.AreEqual(0, Get<int>(window, "firstLoadedEntry"));
+                Call(window, "ShowCodeChanges", new object[] { null }); Call(window, "ShowCodeChanges", new object[] { null }); var item = Get<Button>(window, "changes").ContextMenuStrip.Items[0]; item.PerformClick(); Call(window, "NewSession", (object)null); item.PerformClick(); Assert.AreEqual(0, Get<List<CodeChange>>(window, "codeChanges").Count);
+                ChatWindow.WriteSettings = s => { throw new InvalidOperationException("reset persistence failure"); }; Call(window, "ResetProviderConnection");
+            }
+        }
+        [STATestMethod, TestCategory("Unit")]
+        public void RuntimeHttpStreamingAndCancellationCallbacksUseOnlyMemoryTransport()
+        {
+            foreach (bool stop in new[] { false, true })
+                using (var runtime = new RuntimeScope())
+                using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
+                {
+                    var handler = new RuntimeHttpHandler { Streaming = true, Body = "data: {\"choices\":[{\"delta\":{\"content\":\"streamed\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n" }; window.CodexInterruptOverride = () => Task.CompletedTask; handler.BeforeResponse = () => { if (stop) CompleteOnSta((Task)Call(window, "StopTurnAsync")); }; window.HttpHandlerOverride = () => handler; Question(window, "request"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.IsFalse(Get<bool>(window, "busy")); Assert.IsTrue(Get<List<ChatEntry>>(window, "transcriptEntries").Any(x => x.Text.Contains(stop ? UiText.Get("Response interrupted") : "streamed"))); Set(window, "currentSession", null);
+                }
+            using (var runtime = new RuntimeScope())
+            using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
+            {
+                var handler = new RuntimeHttpHandler(); handler.BeforeResponse = () => { var client = Get<LlmChatClient>(window, "activeHttpClient"); Assert.AreEqual("tool result", client.ToolHandler("status", "{}").GetAwaiter().GetResult()); window.CodexInterruptOverride = () => Task.CompletedTask; CompleteOnSta((Task)Call(window, "StopTurnAsync")); Assert.ThrowsException<OperationCanceledException>(() => client.ToolHandler("status", "{}").GetAwaiter().GetResult()); client.TextDelta("late fragment"); }; ChatWindow.InvokeTool = (t, n, a) => Task.FromResult("tool result"); window.HttpHandlerOverride = () => handler; Question(window, "request"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.IsTrue(Get<bool>(window, "stopRequested")); Set(window, "currentSession", null);
+            }
+        }
+        [STATestMethod, TestCategory("Unit")]
+        public void RuntimeLateFailuresDisposedCallbacksAndPartialCleanupRemainSafe()
+        {
+            using (var runtime = new RuntimeScope())
+            {
+                using (var window = new ChatWindow(runtime.Session))
+                {
+                    CompleteOnSta((Task)Call(window, "LoadModelsAsync")); var effort = Get<ComboBox>(window, "effortPicker"); effort.Items.Add(new LlmEffortOption("high", "High")); ChatWindow.WriteSettings = s => { throw new IOException("effort persistence unavailable"); }; effort.SelectedIndex = effort.Items.Count - 1; ChatWindow.WriteSettings = s => runtime.Saves++;
+                    Call(window, "ResetProviderConnection"); effort.SelectedIndex = -1; Question(window, "reconnect without effort"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.AreEqual("thread", Get<ChatSessionState>(window, "currentSession").CodexThreadId);
+                    var context = SynchronizationContext.Current; CodexAppServerClient fallback; try { SynchronizationContext.SetSynchronizationContext(null); fallback = (CodexAppServerClient)Call(window, "CreateCodexClient"); } finally { SynchronizationContext.SetSynchronizationContext(context); }
+                    fallback.Dispose();
+                    var client = Get<CodexAppServerClient>(window, "codex"); var chat = (Action<string, string, string, bool>)typeof(CodexAppServerClient).GetField("ChatUpdate", Fields).GetValue(client); var ready = (Action<string>)typeof(CodexAppServerClient).GetField("ThreadReady", Fields).GetValue(client);
+                    var pending = new TaskCompletionSource<LlmModelOption[]>(); window.ModelCatalogueOverride = p => pending.Task; var load = (Task)Call(window, "LoadModelsAsync"); window.Dispose(); pending.SetException(new InvalidOperationException("late disposed catalogue failure")); CompleteOnSta(load); var count = Get<List<ChatEntry>>(window, "transcriptEntries").Count; chat("final", "late", "ignored", true); ready("ignored"); Assert.AreEqual(count, Get<List<ChatEntry>>(window, "transcriptEntries").Count);
+                }
+                using (var design = new ChatWindow())
+                {
+                    var changes = Get<Button>(design, "changes"); try { Set(design, "changes", null); Call(design, "DisposeRuntime"); Assert.IsNull(Get<CodexAppServerClient>(design, "codex")); } finally { Set(design, "changes", changes); }
+                    Call(design, "SetBusy", true); CompleteOnSta((Task)Call(design, "StopTurnAsync")); Assert.IsTrue(Get<bool>(design, "stopRequested")); Call(design, "SetBusy", false);
+                }
+                runtime.Host = r => Response.Success(new object[0]); using (var window = new ChatWindow(runtime.Session))
+                {
+                    var unavailable = (LlmProvider)Activator.CreateInstance(typeof(LlmProvider), BindingFlags.Instance | BindingFlags.NonPublic, null, new object[] { "Future provider", false, false, null, null, null }, null); var providers = Get<ComboBox>(window, "providerPicker"); providers.Items.Add(unavailable); providers.SelectedItem = unavailable; Call(window, "ResetProviderConnection"); StringAssert.Contains(Get<Label>(window, "status").Text, UiText.Get("not implemented yet"));
+                    var pending = new TaskCompletionSource<LlmModelOption[]>(); providers.SelectedIndex = 0; window.ModelCatalogueOverride = p => pending.Task; var stale = (Task)Call(window, "LoadModelsAsync"); window.ModelCatalogueOverride = p => Task.FromResult(new LlmModelOption[0]); CompleteOnSta((Task)Call(window, "LoadModelsAsync")); pending.SetException(new InvalidOperationException("stale codex failure")); CompleteOnSta(stale);
+                    Click(Get<Button>(window, "send")); Call(window, "SetBusy", true); window.CodexInterruptOverride = () => Task.CompletedTask; Set(window, "stopRequested", false); Click(Get<Button>(window, "send")); Assert.IsTrue(Get<bool>(window, "stopRequested")); Call(window, "SetBusy", false);
+                }
+            }
+        }
+        [STATestMethod, TestCategory("Unit")]
+        public void RuntimeHttpStreamErrorsAndConcurrentToolStopRetainUndoHistory()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
+            {
+                window.HttpHandlerOverride = () => new RuntimeHttpHandler { Streaming = true, Body = "data: {\"choices\":[{\"delta\":{\"content\":\"partial\"}}]}\n\ndata: {\"error\":{\"message\":\"failed\"}}\n\n" }; Question(window, "request"); CompleteOnSta((Task)Call(window, "SendAsync")); var live = Get<Dictionary<string, ChatEntry>>(window, "liveEntries"); Assert.AreEqual(1, live.Count); Assert.IsTrue(Get<HashSet<string>>(window, "completedStreams").Contains(live.Keys.Single())); Assert.AreEqual("partial", live.Values.Single().Text);
+                string call = "{\"id\":\"one\",\"function\":{\"name\":\"status\",\"arguments\":\"{}\"}}"; window.CodexInterruptOverride = () => Task.CompletedTask; window.HttpHandlerOverride = () => new RuntimeHttpHandler { Body = "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"tool_calls\":[" + call + "," + call.Replace("one", "two") + "]}}]}" }; ChatWindow.InvokeTool = (t, n, a) => { CompleteOnSta((Task)Call(window, "StopTurnAsync")); return Task.FromResult("stopped after first tool"); }; Question(window, "tools"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.IsTrue(Get<bool>(window, "stopRequested"));
+                window.HttpHandlerOverride = () => { CompleteOnSta((Task)Call(window, "StopTurnAsync")); return new RuntimeHttpHandler(); }; Question(window, "stop before HTTP loop"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.IsFalse(Get<bool>(window, "busy")); Set(window, "currentSession", null);
+            }
+        }
+        [STATestMethod, TestCategory("Unit")]
+        public void RuntimeDisposalDuringHttpAndDeferredVerificationCompleteWithoutExternalEffects()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
+            {
+                var handler = new RuntimeHttpHandler(); handler.BeforeResponse = () => { var client = Get<LlmChatClient>(window, "activeHttpClient"); window.Dispose(); client.TextDelta("queued late fragment"); }; window.HttpHandlerOverride = () => handler; Question(window, "dispose during request"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.IsTrue(window.IsDisposed); Set(window, "currentSession", null);
+            }
+            using (var runtime = new RuntimeScope())
+            using (var window = new ChatWindow(runtime.Session))
+            {
+                CompleteOnSta((Task)Call(window, "LoadModelsAsync")); var pending = new TaskCompletionSource<string>(); bool verifying = false; ChatWindow.InvokeTool = (t, n, a) => { verifying = true; return pending.Task; }; Get<CheckBox>(window, "verifyAfterEdit").Checked = true; runtime.Transport.BeforeComplete = () => { var change = new CodeChange(@"C:\Temp\P.xlsm", "M", "old", "before", "new", "after", 1); var tools = Get<LlmVbeTools>(window, "tools"); ((Action<CodeChange>)typeof(LlmVbeTools).GetField("CodeEdited", Fields).GetValue(tools))(change); }; Question(window, "edit and verify"); var send = (Task)Call(window, "SendAsync"); var deadline = DateTime.UtcNow.AddSeconds(5); while (!verifying && DateTime.UtcNow < deadline) { Application.DoEvents(); Thread.Sleep(1); }
+                Assert.IsTrue(verifying); Assert.IsFalse(send.IsCompleted); pending.SetResult(new JavaScriptSerializer().Serialize(Response.Success(new { Compiled = true }))); CompleteOnSta(send); Assert.IsFalse(Get<bool>(window, "busy")); Assert.IsTrue(Get<List<ChatEntry>>(window, "transcriptEntries").Any(x => x.Speaker == "Vérification"));
+            }
+            using (var runtime = new RuntimeScope())
+            using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
+            {
+                var handler = new RuntimeHttpHandler(); handler.BeforeResponse = () => CompleteOnSta((Task)Call(window, "StopTurnAsync")); window.HttpHandlerOverride = () => handler; Question(window, "native HTTP cancellation"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.IsTrue(Get<bool>(window, "stopRequested")); Assert.IsFalse(Get<bool>(window, "busy")); Set(window, "currentSession", null);
+            }
+        }
+        [STATestMethod, TestCategory("Unit")]
+        public void RuntimeUnknownProviderInvalidNativeEndpointAndSubscriberFailureAreSafe()
+        {
+            using (var runtime = new RuntimeScope()) { runtime.Settings.ProviderName = "Unknown provider"; using (var window = new ChatWindow(runtime.Session)) { Assert.AreEqual("Codex", ((LlmProvider)Get<ComboBox>(window, "providerPicker").SelectedItem).Name); } }
+            using (var runtime = new RuntimeScope())
+            using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
+            {
+                Get<LlmSettings>(window, "settings").OllamaEndpoint = "file:///invalid-chat-endpoint"; window.HttpHandlerOverride = null; Get<CheckBox>(window,"verifyAfterEdit").Checked=false; Question(window, "invalid endpoint"); CompleteOnSta((Task)Call(window, "SendAsync")); StringAssert.Contains(Get<List<ChatEntry>>(window, "transcriptEntries").Last().Text, "HTTPS"); Set(window, "currentSession", null);
+            }
+            using (var runtime = new RuntimeScope())
+            using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
+            {
+                window.HttpHandlerOverride = () => new ChatResponseHandler(); Question(window, "request"); var prompt = Get<System.Windows.Controls.TextBox>(window, "prompt"); System.Windows.Controls.TextChangedEventHandler failedView = (s, e) => { if (prompt.Text == "request" && Get<bool>(window, "busy")) throw new IOException("view subscriber failed while restoring draft"); }; prompt.TextChanged += failedView;
+                try { Assert.ThrowsException<IOException>(() => CompleteOnSta((Task)Call(window, "SendAsync"))); Assert.IsFalse(Get<bool>(window, "busy")); Assert.AreEqual("request", Get<ChatSessionState>(window, "currentSession").Draft); }
+                finally { prompt.TextChanged -= failedView; Set(window, "currentSession", null); }
             }
         }
     }

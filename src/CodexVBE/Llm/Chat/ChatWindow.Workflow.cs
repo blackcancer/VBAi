@@ -38,7 +38,7 @@ namespace CodexVBE
 
         private void RefreshContextPreview()
         {
-            if (contextPreview == null || prompt == null) return;
+            if (prompt == null) return;
             while (contextPreview.Controls.Count > 0) contextPreview.Controls[0].Dispose();
             try
             {
@@ -67,7 +67,7 @@ namespace CodexVBE
         private IDictionary<string, object> ReadWorkflow(string command, string project = null, string module = null)
         {
             if (scopeSession == null) throw new InvalidOperationException(UiText.Get("No VBE host connected."));
-            var result = scopeSession.Execute(new Request { Command = command, Project = project, Module = module });
+            var result = ReadHost(scopeSession, new Request { Command = command, Project = project, Module = module });
             if (!result.Ok) throw new InvalidOperationException(result.Error);
             return json.DeserializeObject(json.Serialize(result.Data)) as IDictionary<string, object> ?? throw new InvalidOperationException(UiText.Get("Unexpected VBE response."));
         }
@@ -125,7 +125,7 @@ namespace CodexVBE
                 var scope = scopePicker.SelectedItem as MacroScope;
                 if (scope == null || tools == null) throw new InvalidOperationException(UiText.Get("No connected project."));
                 SetStatus(UiText.Get("Compiling VBA…"));
-                var response = json.Deserialize<Response>(await tools.InvokeAsync("compile_project", json.Serialize(new { Project = scope.Project, ExpectedMode = 2 })));
+                var response = json.Deserialize<Response>(await InvokeTool(tools, "compile_project", json.Serialize(new { Project = scope.Project, ExpectedMode = 2 })));
                 if (response == null || !response.Ok) throw new InvalidOperationException(response?.Error ?? UiText.Get("Empty response."));
                 var data = json.DeserializeObject(json.Serialize(response.Data)) as IDictionary<string, object>;
                 bool compiled = data != null && data.ContainsKey("Compiled") && Convert.ToBoolean(data["Compiled"]);
@@ -160,7 +160,7 @@ namespace CodexVBE
             SaveCurrentSession();
             using (var dialog = new System.Windows.Forms.SaveFileDialog { Filter = "Markdown (*.md)|*.md", FileName = "conversation-vba.md" })
             {
-                if (dialog.ShowDialog(this) != System.Windows.Forms.DialogResult.OK) return;
+                if (ShowSaveDialog(dialog,this) != System.Windows.Forms.DialogResult.OK) return;
                 try { System.IO.File.WriteAllText(dialog.FileName, ChatHistory.Export(currentSession), new UTF8Encoding(false)); SetStatus(UiText.Get("Conversation exported")); }
                 catch (Exception ex) { SetStatus(UiText.Get("Unable to export: ") + ex.Message); }
             }
@@ -190,7 +190,7 @@ namespace CodexVBE
             try
             {
                 EnsureCurrentScope();
-                var result = scopeSession.Execute(new Request { Command = "select_code", Project = attachment.Project,
+                var result = ReadHost(scopeSession, new Request { Command = "select_code", Project = attachment.Project,
                     Module = attachment.Module, StartLine = Math.Max(1, attachment.StartLine), ExpectedSha256 = attachment.Sha256 });
                 if (!result.Ok) SetStatus(result.Error);
             }

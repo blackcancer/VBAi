@@ -71,7 +71,7 @@ namespace CodexVBE
             }));
             AutomationProperties.SetName(conversationItems, UiText.Get("Conversation"));
             transcriptHost.Child = conversationItems;
-            Action themeChanged = () => { if (!IsDisposed && IsHandleCreated) BeginInvoke(new Action(() => { conversationItems.Background = Ink("#F8FAFC"); if (prompt != null) prompt.Foreground = Ink("#1E293B"); if (referenceList != null) referenceList.Background = Ink("#FFFFFF"); if (referencePopup?.Child is Border border) border.Background = Ink("#FFFFFF"); RefreshTranscriptWindow(firstLoadedEntry); ShowWelcome(); })); };
+            Action themeChanged = () => { if (!IsDisposed && IsHandleCreated) BeginInvoke(new Action(() => { conversationItems.Background = Ink("#F8FAFC"); prompt.Foreground = Ink("#1E293B"); referenceList.Background = Ink("#FFFFFF"); ((Border)referencePopup.Child).Background = Ink("#FFFFFF"); RefreshTranscriptWindow(firstLoadedEntry); ShowWelcome(); })); };
             UiTheme.Changed += themeChanged;
             Disposed += (s, e) => UiTheme.Changed -= themeChanged;
         }
@@ -240,7 +240,7 @@ namespace CodexVBE
         /// <param name="text">Texte à copier.</param>
         private void CopyText(string text)
         {
-            try { Clipboard.SetText(text ?? ""); }
+            try { WriteClipboard(text ?? ""); }
             catch (Exception ex) { SetStatus(UiText.Get("Unable to copy: ") + ex.Message); }
         }
 
