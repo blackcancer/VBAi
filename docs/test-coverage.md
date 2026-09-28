@@ -1,5 +1,28 @@
 # Couverture automatisée du complément
 
+## Mesure globale à 100 % après extension IntelliSense Monaco
+
+Mesure du **29 septembre 2026**, source `611f882`, après les références dynamiques, les métadonnées COM enrichies, les alias VBA et l’édition automatique. Un passage global final VSTest instrumenté, sans exclusion de production, fournit :
+
+| Mesure | Résultat |
+| --- | --- |
+| Suite globale VSTest | **1 834 réussis, 0 échec, 20 ignorés**, 9 min 27 s |
+| Lignes du complément C# | **29 712 / 29 712 — 100 %** |
+| Branches du complément C# | **30 845 / 30 845 — 100 %** |
+| Qualification ciblée finale | **10 réussis, 0 échec, 0 ignoré**, renderer WebView2, matrice JavaScript et parcours Excel réel |
+| Matrice JavaScript | **57 scénarios réussis**, références, survols, signatures, blocs et formatage |
+| Build de la solution | **0 erreur, 0 avertissement** |
+| Concepteurs WinForms | **46 surfaces validées** |
+| Métadonnées Visual Studio | **27 contrôles réussis** |
+| Organisation miroir | **237 miroirs pour 294 sources**, scénarios complémentaires séparés |
+| Documentation IntelliSense | **5 216 / 5 216 déclarations**, aucune erreur syntaxique |
+
+Preuves : `artifacts/monaco-language/global-final-results/global.trx`, `36b2284b-9307-4796-9f94-028820a3b402/coverage.cobertura.xml` et `coverage.json` dans le même répertoire. Toutes les classes instrumentées atteignent 100 % en lignes et branches. La qualification ciblée est sous `artifacts/monaco-language/native-final-results/native.trx` ; les contrôles de structure et documentation sont sous `artifacts/monaco-language/`.
+
+Deux passages antérieurs comportaient chacun un échec et ne servent pas de preuve de suite verte : chemin de cache Git trop long sous `global-build`, puis lecture du marqueur de connexion avant fermeture du fichier dans la fixture Copilot. La sortie courte et la publication atomique du marqueur corrigent ces causes. La mesure finale utilise ces corrections.
+
+Les 20 scénarios conditionnels d’hôtes et de comptes restent désactivés dans cette mesure. Le parcours Excel séparé vérifie les références Excel/VBA, l’ajout/retrait Office et Scripting, les chaînes et collections, les survols, les blocs, le formatage et l’annulation, avec le module natif inchangé ; voir [le bilan natif](reference/native-qualification.md). Les compteurs globaux concernent l’assembly C# `CodexVBE` ; les 57 scénarios JavaScript constituent une qualification fonctionnelle distincte, sans prétendre mesurer ses lignes ou branches. Le moteur C++ et les combinaisons d’hôtes non exécutées conservent leur qualification propre.
+
 ## Mesure globale à 100 % après PR #11
 
 Mesure du **29 septembre 2026**, source `b20b46f`, après fusion de la PR #11 et qualification de la file de messages ainsi que des vues WinForms du transcript. Le commit `0642e1c` suivant ne change que l’indentation des commentaires XML ; Roslyn confirme l’équivalence du code. Un seul passage global final VSTest instrumenté, sans exclusion de production, fournit les compteurs suivants :
