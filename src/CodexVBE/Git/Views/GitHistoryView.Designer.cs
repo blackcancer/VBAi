@@ -1,0 +1,51 @@
+namespace CodexVBE
+{
+    public sealed partial class GitHistoryView
+    {
+        internal System.Windows.Forms.ListBox history;
+        internal System.Windows.Forms.TextBox historyDetails;
+        internal System.Windows.Forms.Button historyCompare;
+        private System.ComponentModel.IContainer components;
+        private System.Windows.Forms.ToolTip toolTips;
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) components?.Dispose();
+            base.Dispose(disposing);
+        }
+
+        private void InitializeComponent()
+        {
+            this.components = new System.ComponentModel.Container();
+            this.toolTips = new System.Windows.Forms.ToolTip(this.components);
+            this.history = new System.Windows.Forms.ListBox();
+            this.historyDetails = new System.Windows.Forms.TextBox();
+            this.historyCompare = new CodexVBE.ThemedButton();
+            this.SuspendLayout();
+            this.history.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.history.HorizontalScrollbar = true;
+            this.history.Name = "history";
+            this.historyDetails.Name = "historyDetails";
+            this.history.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
+            this.historyDetails.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.historyDetails.Height = 100;
+            this.historyDetails.Multiline = true;
+            this.historyDetails.ReadOnly = true;
+            this.historyDetails.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.toolTips.SetToolTip(this.history, "Select one commit for details, or two commits to compare their VBA sources.");
+            this.historyCompare.Name = "historyCompare";
+            this.historyCompare.Text = "Compare revisions";
+            this.historyCompare.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.historyCompare.AutoSize = true;
+            this.Controls.Add(this.history);
+            this.Controls.Add(this.historyDetails);
+            this.Controls.Add(this.historyCompare);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.Name = "GitHistoryView";
+            this.Size = new System.Drawing.Size(860, 500);
+            this.ResumeLayout(false);
+            this.PerformLayout();
+        }
+    }
+}

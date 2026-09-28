@@ -9,6 +9,36 @@ namespace CodexVBE.Tests.Integration
     [TestCategory("LocalIntegration")]
     public sealed class SessionStoreTests
     {
+        public sealed class BookmarkCodeSnapshot { public string Code { get; set; } public string Sha256 { get; set; } }
+        [TestMethod]
+        public void BookmarksPersistByMacroAndRefuseStaleSourceAfterNewSession()
+        {
+            string root = Path.Combine(Path.GetTempPath(), "CodexVBE-VSTest", Guid.NewGuid().ToString("N"));
+            string database = Path.Combine(root, "bookmarks.sqlite"), macro = Path.Combine(root, "été.xlsm"), other = Path.Combine(root, "other.xlsm");
+            string sha = "original"; Request selected = null;
+            Func<Request, Response> execute = r => {
+                if (r.Command == "read_module") return Response.Success(new BookmarkCodeSnapshot { Code = "abc", Sha256 = sha });
+                selected = r; return Response.Success(new { Selected = true });
+            };
+            try
+            {
+                var first = new VbeNavigationHistory(null, execute, database);
+                first.Bookmark(new Request { Project = macro, Action = "add", Query = "L'été", Module = "Main", ExpectedSha256 = sha, StartLine = 1, StartColumn = 2 });
+                var second = new VbeNavigationHistory(null, execute, database);
+                dynamic list = second.Bookmark(new Request { Project = macro.ToUpperInvariant(), Action = "list" });
+                Assert.AreEqual(1, list.Bookmarks.Count); Assert.AreEqual("L'été", (string)list.Bookmarks[0].Name);
+                Assert.AreEqual(0, ((dynamic)second.Bookmark(new Request { Project = other, Action = "list" })).Bookmarks.Count);
+                second.Bookmark(new Request { Project = macro, Action = "go", Query = "L'ÉTÉ" });
+                Assert.AreEqual(macro, selected.Project); Assert.AreEqual(2, selected.StartColumn);
+                sha = "changed"; selected = null;
+                Assert.ThrowsException<InvalidOperationException>(() => second.Bookmark(new Request { Project = macro, Action = "go", Query = "L'été" }));
+                Assert.IsNull(selected);
+                Assert.IsTrue((bool)((dynamic)second.Bookmark(new Request { Project = macro, Action = "remove", Query = "L'été" })).Removed);
+                Assert.IsFalse((bool)((dynamic)second.Bookmark(new Request { Project = macro, Action = "remove", Query = "L'été" })).Removed);
+            }
+            finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
+        }
+
         [TestMethod]
         public void SqlitePersistsUnicodeAndSeparatesScopesAcrossReopen()
         {

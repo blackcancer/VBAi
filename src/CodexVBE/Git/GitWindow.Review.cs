@@ -17,33 +17,13 @@ namespace CodexVBE
         }
         private void InitializeReview()
         {
-            tabs.SelectedIndexChanged += (s, e) => AdjustReviewLayout();
-            Resize += (s, e) => AdjustReviewLayout();
-            AdjustReviewLayout();
             githubPane.RepositorySelected = (url, selectedBranch) => {
                 if (repository != null) { status.Text = UiText.Get("This document is already linked. Reopen GitHub to choose another repository."); return; }
-                remote.Text = url; branch.Text = selectedBranch; tabs.SelectedTab = changesTab;
+                remote.Text = url; branch.Text = selectedBranch; tabs.SelectedTab = connectionTab;
                 status.Text = UiText.Get("Repository selected. Click Link repository to connect this document.");
             };
             githubPane.LoadDraft = () => repository?.PullDraft();
             githubPane.OpenModule = (name, line) => project?.OpenModule(name, line);
-        }
-        private void AdjustReviewLayout()
-        {
-            bool online = tabs.SelectedTab == githubTab;
-            float scale = DeviceDpi / 96F;
-            bool binding = !online && repository == null;
-            remote.Visible = remoteLabel.Visible = branch.Visible = branchLabel.Visible = connect.Visible = binding;
-            help.Visible = binding && ClientSize.Height >= 650 * scale;
-            layout.RowStyles[1].SizeType = help.Visible ? SizeType.AutoSize : SizeType.Absolute; layout.RowStyles[1].Height = 0;
-            layout.RowStyles[2].Height = layout.RowStyles[3].Height = binding ? 34 * scale : 0;
-            layout.RowStyles[4].Height = binding ? 36 * scale : 0;
-            bool editing = !online && repository != null && tabs.SelectedTab == changesTab;
-            commitMessage.Visible = messageLabel.Visible = editing; layout.RowStyles[5].Height = editing ? 54 * scale : 0;
-            syncStatus.Visible = actions.Visible = !online;
-            layout.RowStyles[6].Height = online ? 0 : 28 * scale;
-            layout.RowStyles[7].SizeType = online ? SizeType.Absolute : SizeType.AutoSize; layout.RowStyles[7].Height = 0;
-            layout.RowStyles[9].Height = 64 * scale;
         }
         private static string Source(VbaGitSnapshot snapshot, string name)
         {

@@ -1,0 +1,104 @@
+namespace CodexVBE
+{
+    public sealed partial class GitHubPane
+    {
+        private System.Windows.Forms.TableLayoutPanel repoLayout;
+        private System.Windows.Forms.FlowLayoutPanel repoActions;
+        private System.Windows.Forms.FlowLayoutPanel createActions;
+        private System.Windows.Forms.TextBox repositorySearch;
+        private System.Windows.Forms.ListBox repositoryList;
+        private System.Windows.Forms.ComboBox repositoryBranch;
+        private System.Windows.Forms.ComboBox organization;
+        private System.Windows.Forms.TextBox repositoryName;
+        private System.Windows.Forms.CheckBox privateRepository;
+        private System.Windows.Forms.Button loadRepositories;
+        private System.Windows.Forms.Button useRepository;
+        private System.Windows.Forms.Button createRepository;
+        private System.Windows.Forms.Label searchLabel;
+        private System.Windows.Forms.TableLayoutPanel pullLayout;
+        private System.Windows.Forms.FlowLayoutPanel pullActions;
+        private System.Windows.Forms.TabControl pullTabs;
+        private System.Windows.Forms.TabPage composeTab;
+        private System.Windows.Forms.TabPage detailTab;
+        private System.Windows.Forms.TabPage filesTab;
+        private System.Windows.Forms.TabPage commentsTab;
+        private System.Windows.Forms.TabPage checksTab;
+        private System.Windows.Forms.ListBox pulls;
+        private System.Windows.Forms.Button loadPulls;
+        private System.Windows.Forms.Button openPull;
+        private System.Windows.Forms.Button loadDraft;
+        private System.Windows.Forms.TableLayoutPanel composeLayout;
+        private System.Windows.Forms.ComboBox targetBranch;
+        private System.Windows.Forms.Label sourceLabel;
+        private System.Windows.Forms.TextBox pullTitle;
+        private System.Windows.Forms.TextBox pullBody;
+        private System.Windows.Forms.CheckBox draft;
+        private System.Windows.Forms.Button createPull;
+        private System.Windows.Forms.Label targetLabel;
+        private System.Windows.Forms.Label titleLabel;
+        private System.Windows.Forms.Label bodyLabel;
+        private System.Windows.Forms.TextBox pullDetails;
+        private System.Windows.Forms.ListBox files;
+        private System.Windows.Forms.TableLayoutPanel commentLayout;
+        private System.Windows.Forms.ListBox comments;
+        private System.Windows.Forms.TextBox commentBody;
+        private System.Windows.Forms.TextBox checks;
+        private void BindViews()
+        {
+            repoLayout = gitHubRepositoriesView.repoLayout;
+            repoActions = gitHubRepositoriesView.repoActions;
+            createActions = gitHubRepositoriesView.createActions;
+            repositorySearch = gitHubRepositoriesView.repositorySearch;
+            repositoryList = gitHubRepositoriesView.repositoryList;
+            repositoryBranch = gitHubRepositoriesView.repositoryBranch;
+            organization = gitHubRepositoriesView.organization;
+            repositoryName = gitHubRepositoriesView.repositoryName;
+            privateRepository = gitHubRepositoriesView.privateRepository;
+            loadRepositories = gitHubRepositoriesView.loadRepositories;
+            useRepository = gitHubRepositoriesView.useRepository;
+            createRepository = gitHubRepositoriesView.createRepository;
+            searchLabel = gitHubRepositoriesView.searchLabel;
+            pullLayout = gitHubPullRequestsView.pullLayout;
+            pullActions = gitHubPullRequestsView.pullActions;
+            pullTabs = gitHubPullRequestsView.pullTabs;
+            composeTab = gitHubPullRequestsView.composeTab;
+            detailTab = gitHubPullRequestsView.detailTab;
+            filesTab = gitHubPullRequestsView.filesTab;
+            commentsTab = gitHubPullRequestsView.commentsTab;
+            checksTab = gitHubPullRequestsView.checksTab;
+            pulls = gitHubPullRequestsView.pulls;
+            loadPulls = gitHubPullRequestsView.loadPulls;
+            openPull = gitHubPullRequestsView.openPull;
+            loadDraft = gitHubPullRequestsView.loadDraft;
+            composeLayout = gitHubPullRequestsView.gitHubPullComposeView.composeLayout;
+            targetBranch = gitHubPullRequestsView.gitHubPullComposeView.targetBranch;
+            sourceLabel = gitHubPullRequestsView.gitHubPullComposeView.sourceLabel;
+            pullTitle = gitHubPullRequestsView.gitHubPullComposeView.pullTitle;
+            pullBody = gitHubPullRequestsView.gitHubPullComposeView.pullBody;
+            draft = gitHubPullRequestsView.gitHubPullComposeView.draft;
+            createPull = gitHubPullRequestsView.gitHubPullComposeView.createPull;
+            targetLabel = gitHubPullRequestsView.gitHubPullComposeView.targetLabel;
+            titleLabel = gitHubPullRequestsView.gitHubPullComposeView.titleLabel;
+            bodyLabel = gitHubPullRequestsView.gitHubPullComposeView.bodyLabel;
+            pullDetails = gitHubPullRequestsView.gitHubPullDetailsView.pullDetails;
+            files = gitHubPullRequestsView.gitHubPullFilesView.files;
+            commentLayout = gitHubPullRequestsView.gitHubPullCommentsView.commentLayout;
+            comments = gitHubPullRequestsView.gitHubPullCommentsView.comments;
+            commentBody = gitHubPullRequestsView.gitHubPullCommentsView.commentBody;
+            checks = gitHubPullRequestsView.gitHubPullChecksView.checks;
+            this.loadDraft.Click += new System.EventHandler(this.LoadDraft_Click);
+            this.repositorySearch.TextChanged += new System.EventHandler(this.FilterRepositories);
+            this.loadRepositories.Click += new System.EventHandler(this.LoadRepositories_Click);
+            this.useRepository.Click += new System.EventHandler(this.UseRepository_Click);
+            this.repositoryList.SelectedIndexChanged += new System.EventHandler(this.RepositoryChanged);
+            this.createRepository.Click += new System.EventHandler(this.CreateRepository_Click);
+            this.loadPulls.Click += new System.EventHandler(this.LoadPulls_Click);
+            this.openPull.Click += new System.EventHandler(this.OpenPull_Click);
+            this.pulls.SelectedIndexChanged += new System.EventHandler(this.PullChanged);
+            this.createPull.Click += new System.EventHandler(this.CreatePull_Click);
+            this.comments.SelectedIndexChanged += new System.EventHandler(this.CommentChanged);
+            this.comments.DoubleClick += new System.EventHandler(this.OpenFile_Click);
+            this.files.DoubleClick += new System.EventHandler(this.OpenFile_Click);
+        }
+    }
+}

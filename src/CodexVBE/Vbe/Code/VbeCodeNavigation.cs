@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections;
 using System.IO;
@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace CodexVBE
 {
-    internal sealed class VbeCodeNavigation
+    internal sealed partial class VbeCodeNavigation
     {
         private readonly dynamic vbe;
         private readonly VbeForms forms;

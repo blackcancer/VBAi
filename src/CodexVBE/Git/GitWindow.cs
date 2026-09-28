@@ -18,7 +18,7 @@ namespace CodexVBE
         private VbaGitSnapshot displayedLive;
         private VbaGitSnapshot displayedBaseline;
         private string displayedBranch;
-        public GitWindow() { InitializeComponent(); Icon = VbeWindowIcons.Icon("github"); UiText.Apply(this, components); InitializeReview(); }
+        public GitWindow() { InitializeComponent(); BindViews(); Icon = VbeWindowIcons.Icon("github"); UiText.Apply(this, components); InitializeReview(); }
 
         internal GitWindow(VbaGitProject project, string scope, string label, string account = null) : this()
         {
@@ -60,6 +60,7 @@ namespace CodexVBE
                 else File.Move(temporaryBinding, bindingFile);
                 githubPane.Configure(account, remote.Text, repository.Branch);
                 await Compare();
+                tabs.SelectedTab = changesTab;
             });
         }
 
@@ -184,7 +185,6 @@ namespace CodexVBE
         }
         private void UpdateButtons()
         {
-            AdjustReviewLayout();
             connect.Enabled = !running && repository == null;
             remote.ReadOnly = branch.ReadOnly = repository != null || running;
             compare.Enabled = commit.Enabled = fetch.Enabled = push.Enabled = pull.Enabled = restore.Enabled = !running && repository != null;

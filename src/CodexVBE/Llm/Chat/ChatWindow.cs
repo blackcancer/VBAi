@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
@@ -48,6 +48,7 @@ namespace CodexVBE
             catch (Exception ex) { LoadLog.Write("LLM settings load failed: " + ex.Message); settings = new LlmSettings(); }
             tools = new LlmVbeTools(session, this, settings);
             tools.ValidateScope = EnsureCurrentScope;
+            tools.FormCut += change => AddEntry(new ChatEntry { Speaker = "Designer", FormCut = change });
             tools.CodeEdited += change => {
                 change.TurnId = activeTurnId;
                 codeChanges.Add(change);
@@ -457,6 +458,7 @@ namespace CodexVBE
 
         private void DisposeRuntime()
         {
+            contextMonitorTimer?.Stop(); referenceEvents?.Dispose(); projectEvents?.Dispose(); componentEvents?.Dispose();
             SaveCurrentSession(); saveTimer?.Stop(); projectRetryTimer?.Stop();
             sessionStore?.Dispose(); sessionStore = null;
             activeHttpClient?.Dispose(); codex?.Dispose(); codex = null;

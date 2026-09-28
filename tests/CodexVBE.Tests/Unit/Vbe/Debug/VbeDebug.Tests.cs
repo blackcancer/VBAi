@@ -1,4 +1,4 @@
-namespace CodexVBE.Tests.Unit
+﻿namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
@@ -25,6 +25,20 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual(0, ((object[])commands.ListCommands("missing", 0, 10)).Length);
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => commands.ListCommands(null, -1, 1));
             Assert.ThrowsException<ArgumentOutOfRangeException>(() => commands.ListCommands(null, 0, -1));
+        }
+
+        [TestMethod]
+        public void CommandSearchIgnoresMenuAcceleratorsInsideWords()
+        {
+            var host = Host();
+            host.CommandBars[0].Name = "Fe&nêtre";
+            host.CommandBars[0].Controls.Add(new FakeControl { Caption = "Fr&actionner", Id = 302, Enabled = true });
+            var commands = new VbeDebug(host);
+            dynamic result = commands.ListCommands("Fractionner", 0, 10);
+            Assert.AreEqual(1, ((object[])result).Length);
+            Assert.AreEqual(302, (int)result[0].Id);
+            Assert.AreEqual("Fr&actionner", (string)result[0].Caption);
+            Assert.AreEqual(6, ((object[])commands.ListCommands("Fenêtre", 0, 10)).Length);
         }
 
         [TestMethod]

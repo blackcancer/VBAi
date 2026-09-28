@@ -1,4 +1,4 @@
-namespace CodexVBE.Tests.Unit
+﻿namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
@@ -211,6 +211,30 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual("Alpha\r\nGamma", f.Project.VBComponents.Items[0].CodeModule.Code);
             Assert.AreEqual(Sha("Alpha\r\nGamma"), (string)((dynamic)response.Data).Sha256);
             Assert.AreEqual(2, (int)((dynamic)response.Data).Lines);
+        }
+
+        [TestMethod]
+        public void ReplaceLinesRestoresDeletedSourceAfterInsertFailure()
+        {
+            var f = Create();
+            var module = f.Project.VBComponents.Items[0].CodeModule;
+            module.InsertFailuresRemaining = 1;
+            var response = f.Session.Execute(new Request { Command = "replace_lines", Project = f.Project.Name, Module = "Module1", StartLine = 1, Count = 2, Text = "Changed", ExpectedSha256 = Sha(module.Code) });
+            Assert.IsFalse(response.Ok);
+            StringAssert.Contains(response.Error, "original source restored");
+            Assert.AreEqual("Alpha\r\nBeta", module.Code);
+        }
+
+        [TestMethod]
+        public void ReplaceLinesReportsFailedRollbackWithoutClaimingSuccess()
+        {
+            var f = Create();
+            var module = f.Project.VBComponents.Items[0].CodeModule;
+            module.InsertFailuresRemaining = 2;
+            var response = f.Session.Execute(new Request { Command = "replace_lines", Project = f.Project.Name, Module = "Module1", StartLine = 1, Count = 2, Text = "Changed", ExpectedSha256 = Sha(module.Code) });
+            Assert.IsFalse(response.Ok);
+            StringAssert.Contains(response.Error, "Rollback failed");
+            Assert.AreEqual("", module.Code);
         }
 
         [TestMethod]

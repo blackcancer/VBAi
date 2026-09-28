@@ -1779,4 +1779,12 @@ Git Credential Manager로 로그인하며 커밋 작성자 정보는 Git에서 �
   <data name="GitHub sign-in completed. " xml:space="preserve">
     <value>GitHub 로그인이 완료되었습니다. </value>
   </data>
+  <data name="Controls cut" xml:space="preserve"><value>잘라낸 컨트롤</value></data>
+  <data name="Restore cut controls" xml:space="preserve"><value>잘라낸 컨트롤 복원</value></data>
+  <data name="Restore names, position, size and tab order. Replaces the clipboard. Refuses intervening changes." xml:space="preserve"><value>이름, 위치, 크기 및 탭 순서를 복원합니다. 클립보드를 교체합니다. 중간에 변경된 내용이 있으면 거부합니다.</value></data>
+  <data name="Controls restored; some properties could not be verified." xml:space="preserve"><value>컨트롤이 복원되었습니다. 일부 속성은 확인할 수 없습니다.</value></data>
+  <data name="Recovery incomplete. Inspect the Designer before another action." xml:space="preserve"><value>복원이 완료되지 않았습니다. 다른 작업 전에 디자이너를 확인하세요.</value></data>
+  <data name="Controls restored" xml:space="preserve"><value>컨트롤 복원됨</value></data>
+  <data name="Recovery attempted" xml:space="preserve"><value>복원 시도됨</value></data>
+  <data name="Recovery unavailable" xml:space="preserve"><value>복원할 수 없음</value></data>
 </root>

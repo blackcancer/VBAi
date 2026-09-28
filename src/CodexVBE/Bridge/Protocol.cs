@@ -1,4 +1,4 @@
-namespace CodexVBE
+﻿namespace CodexVBE
 {
     public sealed class Request
     {
@@ -10,14 +10,27 @@ namespace CodexVBE
         public int EndLine { get; set; }
         public int EndColumn { get; set; }
         public int Count { get; set; }
+        public string ExpectedClipboardVersion { get; set; }
         public string ExpectedSha256 { get; set; }
         public string Text { get; set; }
         public string[] Items { get; set; }
+        public string[][] Rows { get; set; }
         public string Query { get; set; }
+        public string ProgId { get; set; }
+        public string ExpectedAddInVersion { get; set; }
         public string Action { get; set; }
         public int ControlId { get; set; }
         public string ControlCaption { get; set; }
         public string WindowCaption { get; set; }
+        public string TargetWindowCaption { get; set; }
+        public int TargetWindowType { get; set; }
+        public int? ToolbarLeft { get; set; }
+        public int? ToolbarTop { get; set; }
+        public string DesignerClipboardRecoveryId { get; set; }
+        public string ExpectedDesignerSelectionVersion { get; set; }
+        public string ExpectedToolbarLayoutVersion { get; set; }
+        public string ExpectedWindowVersion { get; set; }
+        public string ExpectedTargetWindowVersion { get; set; }
         public int WindowType { get; set; }
         public int ExpectedMode { get; set; }
         public string Form { get; set; }
@@ -48,6 +61,8 @@ namespace CodexVBE
         public string ControlPath { get; set; }
         public string ExpectedProjectVersion { get; set; }
         public string ExpectedHostPath { get; set; }
+        public string SheetName { get; set; }
+        public string RangeAddress { get; set; }
         public string CertificateThumbprint { get; set; }
         public string ExpectedComponentVersion { get; set; }
         public string NewName { get; set; }

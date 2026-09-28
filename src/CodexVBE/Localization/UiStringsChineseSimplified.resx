@@ -1779,4 +1779,12 @@ QQ 附加内存
   <data name="GitHub sign-in completed. " xml:space="preserve">
     <value>GitHub 登录已完成。 </value>
   </data>
+  <data name="Controls cut" xml:space="preserve"><value>已剪切的控件</value></data>
+  <data name="Restore cut controls" xml:space="preserve"><value>恢复已剪切的控件</value></data>
+  <data name="Restore names, position, size and tab order. Replaces the clipboard. Refuses intervening changes." xml:space="preserve"><value>恢复名称、位置、大小和 Tab 键顺序。替换剪贴板内容。拒绝期间发生的更改。</value></data>
+  <data name="Controls restored; some properties could not be verified." xml:space="preserve"><value>控件已恢复；部分属性无法验证。</value></data>
+  <data name="Recovery incomplete. Inspect the Designer before another action." xml:space="preserve"><value>恢复不完整。执行其他操作前请检查设计器。</value></data>
+  <data name="Controls restored" xml:space="preserve"><value>控件已恢复</value></data>
+  <data name="Recovery attempted" xml:space="preserve"><value>已尝试恢复</value></data>
+  <data name="Recovery unavailable" xml:space="preserve"><value>恢复不可用</value></data>
 </root>

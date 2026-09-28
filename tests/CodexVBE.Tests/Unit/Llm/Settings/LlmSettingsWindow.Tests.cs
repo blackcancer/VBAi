@@ -141,7 +141,7 @@ namespace CodexVBE.Tests.Unit
                 var picker = Field<ComboBox>(window, "provider");
                 var grid = Field<TableLayoutPanel>(window, "grid");
                 picker.SelectedItem = Array.Find(LlmProvider.All, item => item.Name == "Ollama");
-                Assert.AreEqual(SizeType.Absolute, grid.RowStyles[3].SizeType);
+                Assert.AreEqual(SizeType.AutoSize, grid.RowStyles[3].SizeType);
                 Assert.AreEqual(SizeType.AutoSize, grid.RowStyles[4].SizeType);
                 picker.SelectedItem = Array.Find(LlmProvider.All, item => item.IsCustom);
                 Assert.AreEqual(SizeType.AutoSize, grid.RowStyles[9].SizeType);

@@ -13,6 +13,7 @@ namespace CodexVBE
         public string Text { get; set; }
         public string StreamId { get; set; }
         public CodeChange Change { get; set; }
+        public FormCutChange FormCut { get; set; }
         public VbeChatReference[] References { get; set; }
         public string AttachedMemory { get; set; }
         public ChatAttachment[] Attachments { get; set; }
@@ -43,7 +44,7 @@ namespace CodexVBE
     }
 
     // Uses the SQLite runtime shipped with Windows. SQL values are always bound parameters.
-    internal sealed class ChatSessionStore : IDisposable
+    internal sealed partial class ChatSessionStore : IDisposable
     {
         private IntPtr database;
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 32 * 1024 * 1024 };
@@ -57,6 +58,7 @@ namespace CodexVBE
                 Native.sqlite3_busy_timeout(database, 1500);
                 Execute("CREATE TABLE IF NOT EXISTS chat_sessions (id TEXT PRIMARY KEY, scope TEXT NOT NULL, title TEXT NOT NULL, updated TEXT NOT NULL, payload TEXT NOT NULL)");
                 Execute("CREATE INDEX IF NOT EXISTS chat_sessions_scope ON chat_sessions(scope, updated)");
+                Execute("CREATE TABLE IF NOT EXISTS code_bookmarks (scope TEXT NOT NULL, name_key TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(scope, name_key))");
                 Execute("CREATE TABLE IF NOT EXISTS project_memory (scope TEXT PRIMARY KEY, content TEXT NOT NULL)");
             }
             catch { Dispose(); throw; }

@@ -1779,4 +1779,12 @@ Git Credential Manager से साइन-इन करें; कमिट ल
   <data name="GitHub sign-in completed. " xml:space="preserve">
     <value>GitHub साइन-इन पूरा हो गया। </value>
   </data>
+  <data name="Controls cut" xml:space="preserve"><value>काटे गए नियंत्रण</value></data>
+  <data name="Restore cut controls" xml:space="preserve"><value>काटे गए नियंत्रण पुनर्स्थापित करें</value></data>
+  <data name="Restore names, position, size and tab order. Replaces the clipboard. Refuses intervening changes." xml:space="preserve"><value>नाम, स्थिति, आकार और टैब क्रम पुनर्स्थापित करता है। क्लिपबोर्ड बदलता है। बीच में किए गए बदलावों को अस्वीकार करता है।</value></data>
+  <data name="Controls restored; some properties could not be verified." xml:space="preserve"><value>नियंत्रण पुनर्स्थापित हुए; कुछ गुणों का सत्यापन नहीं हो सका।</value></data>
+  <data name="Recovery incomplete. Inspect the Designer before another action." xml:space="preserve"><value>पुनर्प्राप्ति अधूरी है। अगली कार्रवाई से पहले डिज़ाइनर जाँचें।</value></data>
+  <data name="Controls restored" xml:space="preserve"><value>नियंत्रण पुनर्स्थापित हुए</value></data>
+  <data name="Recovery attempted" xml:space="preserve"><value>पुनर्प्राप्ति का प्रयास किया गया</value></data>
+  <data name="Recovery unavailable" xml:space="preserve"><value>पुनर्प्राप्ति उपलब्ध नहीं</value></data>
 </root>

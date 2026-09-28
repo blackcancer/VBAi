@@ -1779,4 +1779,12 @@ Inicio de sesión mediante Git Credential Manager; la identidad de los commits s
   <data name="GitHub sign-in completed. " xml:space="preserve">
     <value>Inicio de sesión en GitHub completado. </value>
   </data>
+  <data name="Controls cut" xml:space="preserve"><value>Controles cortados</value></data>
+  <data name="Restore cut controls" xml:space="preserve"><value>Restaurar controles cortados</value></data>
+  <data name="Restore names, position, size and tab order. Replaces the clipboard. Refuses intervening changes." xml:space="preserve"><value>Restaura nombres, posición, tamaño y orden de tabulación. Reemplaza el portapapeles. Rechaza cambios intermedios.</value></data>
+  <data name="Controls restored; some properties could not be verified." xml:space="preserve"><value>Controles restaurados; no se pudieron verificar algunas propiedades.</value></data>
+  <data name="Recovery incomplete. Inspect the Designer before another action." xml:space="preserve"><value>Recuperación incompleta. Revise el diseñador antes de otra acción.</value></data>
+  <data name="Controls restored" xml:space="preserve"><value>Controles restaurados</value></data>
+  <data name="Recovery attempted" xml:space="preserve"><value>Recuperación intentada</value></data>
+  <data name="Recovery unavailable" xml:space="preserve"><value>Recuperación no disponible</value></data>
 </root>

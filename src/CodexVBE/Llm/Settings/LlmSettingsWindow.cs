@@ -7,7 +7,6 @@ namespace CodexVBE
     internal sealed partial class LlmSettingsWindow : Form
     {
         private readonly LlmSettings settings;
-        private bool fittingContent;
         private readonly System.Threading.CancellationTokenSource githubCancellation = new System.Threading.CancellationTokenSource();
         private bool githubBusy;
         private bool githubLoaded;
@@ -22,48 +21,30 @@ namespace CodexVBE
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
-            FitContentHeight();
             if (settings != null && !githubLoaded) { githubLoaded = true; _ = RefreshGitHubAsync(false); }
-        }
-
-        private void FitContentHeight()
-        {
-            if (fittingContent || IsDisposed) return;
-            fittingContent = true;
-            try
-            {
-                // Measure at the current width so wrapped descriptions and authentication
-                // buttons contribute their actual height, including the current DPI/font.
-                int width = ClientSize.Width;
-                int height = grid.GetPreferredSize(new Size(width, 0)).Height +
-                    buttons.GetPreferredSize(new Size(width, 0)).Height + themePanel.GetPreferredSize(new Size(width, 0)).Height;
-                int frameHeight = Height - ClientSize.Height;
-                int available = Screen.FromControl(this).WorkingArea.Height - frameHeight;
-                MinimumSize = new Size(MinimumSize.Width, 0);
-                ClientSize = new Size(width, Math.Min(height, available));
-                MinimumSize = new Size(MinimumSize.Width, Height);
-                PerformLayout();
-            }
-            finally { fittingContent = false; }
         }
 
         public LlmSettingsWindow()
         {
             InitializeComponent();
+            BindViews();
             Icon = VbeWindowIcons.Icon("settings");
             UiText.Apply(this, null, githubToolTips);
             themePicker.SelectedIndex = (int)UiTheme.Choice;
-            themePicker.SelectedIndexChanged += (s, e) => { try { if (themePicker.SelectedIndex >= 0) UiTheme.Select((ThemeChoice)themePicker.SelectedIndex); } catch (Exception ex) { MessageBox.Show(this, ex.Message); } };
+            if (System.ComponentModel.LicenseManager.UsageMode != System.ComponentModel.LicenseUsageMode.Designtime)
+                themePicker.SelectedIndexChanged += (s, e) => { try { if (themePicker.SelectedIndex >= 0) UiTheme.Select((ThemeChoice)themePicker.SelectedIndex); } catch (Exception ex) { MessageBox.Show(this, ex.Message); } };
         }
 
         public LlmSettingsWindow(LlmSettings settings)
         {
             this.settings = settings;
             InitializeComponent();
+            BindViews();
             Icon = VbeWindowIcons.Icon("settings");
             UiText.Apply(this, null, githubToolTips);
             themePicker.SelectedIndex = (int)UiTheme.Choice;
-            themePicker.SelectedIndexChanged += (s, e) => { try { if (themePicker.SelectedIndex >= 0) UiTheme.Select((ThemeChoice)themePicker.SelectedIndex); } catch (Exception ex) { MessageBox.Show(this, ex.Message); } };
+            if (System.ComponentModel.LicenseManager.UsageMode != System.ComponentModel.LicenseUsageMode.Designtime)
+                themePicker.SelectedIndexChanged += (s, e) => { try { if (themePicker.SelectedIndex >= 0) UiTheme.Select((ThemeChoice)themePicker.SelectedIndex); } catch (Exception ex) { MessageBox.Show(this, ex.Message); } };
             githubAccount.Items.Add(UiText.Get("Automatic Git selection"));
             githubAccount.SelectedIndex = 0;
             customName.Text = settings.CustomProviderName ?? "";
@@ -116,18 +97,12 @@ namespace CodexVBE
             codexLogin.Text = selected.IsCopilot ? UiText.Get("Sign in to GitHub") : UiText.Get("Sign in to ChatGPT");
             codexLogin.Enabled = true;
             grid.SuspendLayout();
-            for (int i = 0; i < visible.Length; i++)
-            {
-                grid.RowStyles[i].SizeType = visible[i] ? SizeType.AutoSize : SizeType.Absolute;
-                grid.RowStyles[i].Height = 0;
-            }
             foreach (Control control in grid.Controls)
             {
                 int row = grid.GetRow(control);
                 control.Visible = row >= visible.Length || visible[row];
             }
             grid.ResumeLayout(true);
-            if (Visible) FitContentHeight();
             if (cli) _ = RefreshCodexStatusAsync();
         }
 
@@ -174,7 +149,6 @@ namespace CodexVBE
                 if (!IsDisposed)
                 {
                     githubLogin.Enabled = githubRefresh.Enabled = githubAccount.Enabled = saveButton.Enabled = true;
-                    if (Visible) FitContentHeight();
                 }
             }
         }
@@ -195,7 +169,6 @@ namespace CodexVBE
                 codexStatus.Text = UiText.Get("Checking GitHub Copilot…");
                 try { string status = await CopilotClient.ReadStatusAsync(); if (!IsDisposed && ((LlmProvider)provider.SelectedItem).IsCopilot) codexStatus.Text = status; }
                 catch (Exception ex) { if (!IsDisposed && ((LlmProvider)provider.SelectedItem).IsCopilot) codexStatus.Text = ex.Message; }
-                if (!IsDisposed && Visible) FitContentHeight();
                 return;
             }
             codexStatus.Text = UiText.Get("Checking ChatGPT connection…");
@@ -216,7 +189,6 @@ namespace CodexVBE
                     codexLogin.Enabled = true;
                 }
             }
-            if (!IsDisposed && Visible) FitContentHeight();
         }
 
         private void Save()

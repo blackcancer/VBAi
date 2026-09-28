@@ -1779,4 +1779,12 @@
   <data name="GitHub sign-in completed. " xml:space="preserve">
     <value>اكتمل تسجيل الدخول إلى GitHub. </value>
   </data>
+  <data name="Controls cut" xml:space="preserve"><value>عناصر التحكم المقصوصة</value></data>
+  <data name="Restore cut controls" xml:space="preserve"><value>استعادة عناصر التحكم المقصوصة</value></data>
+  <data name="Restore names, position, size and tab order. Replaces the clipboard. Refuses intervening changes." xml:space="preserve"><value>يستعيد الأسماء والموضع والحجم وترتيب التنقل. يستبدل الحافظة. يرفض التغييرات اللاحقة.</value></data>
+  <data name="Controls restored; some properties could not be verified." xml:space="preserve"><value>تمت استعادة عناصر التحكم؛ تعذر التحقق من بعض الخصائص.</value></data>
+  <data name="Recovery incomplete. Inspect the Designer before another action." xml:space="preserve"><value>الاستعادة غير مكتملة. افحص المصمم قبل إجراء آخر.</value></data>
+  <data name="Controls restored" xml:space="preserve"><value>تمت استعادة عناصر التحكم</value></data>
+  <data name="Recovery attempted" xml:space="preserve"><value>جرت محاولة الاستعادة</value></data>
+  <data name="Recovery unavailable" xml:space="preserve"><value>الاستعادة غير متاحة</value></data>
 </root>

@@ -12,6 +12,10 @@ namespace CodexVBE
         private System.Windows.Forms.Button find;
         private System.Windows.Forms.DataGridView grid;
         private System.Windows.Forms.ToolTip tips;
+        private System.Windows.Forms.DataGridViewTextBoxColumn oldLineColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn beforeColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn newLineColumn;
+        private System.Windows.Forms.DataGridViewTextBoxColumn afterColumn;
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
@@ -24,6 +28,32 @@ namespace CodexVBE
             this.find = new CodexVBE.ThemedButton();
             this.grid = new System.Windows.Forms.DataGridView();
             this.tips = new System.Windows.Forms.ToolTip(this.components);
+            this.oldLineColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.beforeColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.newLineColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.afterColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
+
+            this.oldLineColumn.Name = "oldLineColumn";
+            this.oldLineColumn.HeaderText = "−";
+            this.oldLineColumn.Width = 52;
+            this.oldLineColumn.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.beforeColumn.Name = "beforeColumn";
+            this.beforeColumn.HeaderText = "Before";
+            this.beforeColumn.MinimumWidth = 120;
+            this.beforeColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.beforeColumn.FillWeight = 100F;
+            this.beforeColumn.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.newLineColumn.Name = "newLineColumn";
+            this.newLineColumn.HeaderText = "+";
+            this.newLineColumn.Width = 52;
+            this.newLineColumn.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.afterColumn.Name = "afterColumn";
+            this.afterColumn.HeaderText = "After";
+            this.afterColumn.MinimumWidth = 120;
+            this.afterColumn.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
+            this.afterColumn.FillWeight = 100F;
+            this.afterColumn.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
+            this.grid.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] { this.oldLineColumn, this.beforeColumn, this.newLineColumn, this.afterColumn });
             this.SuspendLayout();
             this.toolbar.Dock = System.Windows.Forms.DockStyle.Top;
             this.toolbar.AutoSize = true;

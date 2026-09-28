@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -18,11 +18,29 @@ namespace CodexVBE
         private readonly VbeEditorWindows editorWindows;
         private readonly VbeCodeNavigation codeNavigation;
         private readonly VbeReferenceTypes referenceTypes;
+        private readonly VbeCodeEdits codeEdits;
+        private readonly VbeCodeClipboard codeClipboard;
+        private readonly VbeNavigationHistory navigationHistory;
 
-        public VbeSession(object vbe) { this.vbe = vbe; debugger = new VbeDebug(vbe);
+        public VbeSession(object vbe) : this(vbe, null) { }
+        public VbeSession(object vbe, string bookmarkDatabase) { this.vbe = vbe; debugger = new VbeDebug(vbe);
             forms = new VbeForms(vbe); components = new VbeProjectComponents(vbe, forms);
             editorWindows = new VbeEditorWindows(vbe); codeNavigation = new VbeCodeNavigation(vbe, forms);
-            referenceTypes = new VbeReferenceTypes(vbe); }
+            referenceTypes = new VbeReferenceTypes(vbe); codeEdits = new VbeCodeEdits(Execute); codeClipboard = new VbeCodeClipboard(Execute, new WindowsCodeClipboard()); navigationHistory = new VbeNavigationHistory(vbe, Execute, bookmarkDatabase); }
+
+        internal bool CanRecoverFormCut(Request request) { return forms.CanRecoverCut(request); }
+        internal object ProjectsEventSource() { return vbe.VBProjects; }
+        internal object ComponentsEventSource(string project)
+        {
+            if (string.IsNullOrEmpty(project)) return null;
+            return VbeProjectResolver.Resolve(vbe, project).VBComponents;
+        }
+
+        internal object ReferenceEventSource(string project)
+        {
+            if (string.IsNullOrEmpty(project)) return null;
+            return vbe.Events.ReferencesEvents[VbeProjectResolver.Resolve(vbe, project)];
+        }
 
         public Response Execute(Request request)
         {
@@ -32,7 +50,11 @@ namespace CodexVBE
             switch (request.Command)
             {
                 case "status":
-                    return Response.Success(new { Version = "0.1.0", Connected = true });
+                    return Response.Success(new { Version = "0.1.0", Connected = true,
+                        AssemblyPath = typeof(VbeSession).Assembly.Location,
+                        AssemblyModuleVersionId = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
+                        HostProcessId = System.Diagnostics.Process.GetCurrentProcess().Id,
+                        ProcessBitness = IntPtr.Size * 8 });
                 case "list_projects":
                     return Response.Success(ListProjects());
                 case "list_modules":
@@ -41,20 +63,35 @@ namespace CodexVBE
                     return Response.Success(editorWindows.Windows());
                 case "vbe_environment":
                     return Response.Success(editorWindows.Environment());
+                case "set_addin_connection": return Response.Success(editorWindows.SetAddInConnection(request));
                 case "list_addins":
                     return Response.Success(editorWindows.AddIns());
                 case "focus_vbe_window":
                     return Response.Success(editorWindows.FocusWindow(request.WindowCaption, request.WindowType));
                 case "show_vbe_window":
                     return Response.Success(editorWindows.ShowWindow(request.WindowCaption, request.WindowType));
+                case "window_layout": return Response.Success(editorWindows.WindowLayout(request.WindowCaption, request.WindowType));
+                case "set_window_state": return Response.Success(editorWindows.SetWindowState(request));
+                case "set_window_bounds": return Response.Success(editorWindows.SetWindowBounds(request));
+                case "link_vbe_window": return Response.Success(editorWindows.LinkWindow(request));
                 case "window_linkage":
                     return Response.Success(editorWindows.WindowLinkage(request.WindowCaption, request.WindowType));
                 case "close_vbe_window":
                     return Response.Success(editorWindows.CloseWindow(request.WindowCaption, request.WindowType));
+                case "set_code_view": return Response.Success(debugger.SetCodePaneView(request));
+                case "code_pane_layout": return Response.Success(debugger.CodePaneLayout(request));
+                case "scroll_code_pane": return Response.Success(debugger.ScrollCodePane(request));
+                case "editor_layout": return Response.Success(debugger.EditorLayout());
+                case "arrange_editor_windows": return Response.Success(debugger.ArrangeEditorWindows(request));
+                case "native_code_navigation": return Response.Success(debugger.NativeNavigation(request));
+                case "set_code_split": return Response.Success(debugger.SetCodeSplit(request));
                 case "code_panes":
                     return Response.Success(editorWindows.CodePanes());
                 case "open_object_browser":
                     return Response.Success(debugger.OpenObjectBrowser(editorWindows));
+                case "project_symbols": return Response.Success(codeNavigation.ProjectSymbols(request));
+                case "navigate_code": return Response.Success(navigationHistory.Go(request));
+                case "code_bookmark": return Response.Success(navigationHistory.Bookmark(request));
                 case "list_procedures":
                     return Response.Success(codeNavigation.Procedures(request.Project, request.Module));
                 case "find_code":
@@ -129,10 +166,34 @@ namespace CodexVBE
                     return Response.Success(CreateComponent(request, 1));
                 case "create_class":
                     return Response.Success(CreateComponent(request, 2));
+                case "preview_code_edit": return Response.Success(codeEdits.Edit(request, true));
+                case "apply_code_edit": return Response.Success(codeEdits.Edit(request, false));
+                case "list_toolbars": return Response.Success(editorWindows.Toolbars());
+                case "set_toolbar_placement": return Response.Success(editorWindows.SetToolbarPlacement(request));
+                case "set_toolbar_position": return Response.Success(editorWindows.SetToolbarPosition(request));
+                case "set_toolbar_visibility": return Response.Success(editorWindows.SetToolbarVisibility(request));
+                case "read_code_clipboard": return Response.Success(codeClipboard.Read());
+                case "copy_code": return Response.Success(codeClipboard.Edit(request, "copy"));
+                case "cut_code": return Response.Success(codeClipboard.Edit(request, "cut"));
+                case "paste_code": return Response.Success(codeClipboard.Edit(request, "paste"));
+                case "form_clipboard_state": return Response.Success(forms.ClipboardState(request.Project, request.Form, request.ParentPath));
+                case "recover_form_cut": return Response.Success(forms.RecoverDesignerCut(request));
+                case "restore_form_clipboard": return Response.Success(forms.RestoreDesignerClipboard(request));
+                case "select_form_controls": return Response.Success(forms.SelectDesignerControls(request));
+                case "native_form_clipboard": return Response.Success(forms.NativeClipboard(request));
+                case "native_form_history": return Response.Success(forms.NativeHistory(request));
+                case "native_code_history_state": return Response.Success(debugger.NativeCodeHistoryState(request));
+                case "native_code_history": return Response.Success(debugger.NativeCodeHistory(request));
+                case "undo_code_edit": return Response.Success(codeEdits.Replay(request, false));
+                case "redo_code_edit": return Response.Success(codeEdits.Replay(request, true));
                 case "replace_lines":
                     return ReplaceLines(request);
                 case "debug_state":
                     return Response.Success(debugger.State(request.Project));
+                case "run_form":
+                    return Response.Success(forms.RunForm(request));
+                case "form_run_status":
+                    return Response.Success(forms.FormRunStatus(request));
                 case "run_sub":
                     return Response.Success(debugger.RunSub(request));
                 case "compile_project":
@@ -167,10 +228,14 @@ namespace CodexVBE
                     return Response.Success(forms.ControlTypes());
                 case "form_state":
                     return Response.Success(forms.State(request.Project, request.Form));
+                case "preview_form_layout": return Response.Success(forms.LayoutControls(request, true));
+                case "apply_form_layout": return Response.Success(forms.LayoutControls(request, false));
+                case "set_form_tab_order": return Response.Success(forms.SetTabOrder(request));
                 case "form_tree":
                     return Response.Success(forms.Tree(request.Project, request.Form));
                 case "form_list_items":
                     return Response.Success(forms.ListItems(request));
+                case "set_form_list_binding": return Response.Success(forms.SetListBinding(request));
                 case "set_form_list_initializer":
                     return Response.Success(forms.SetListInitializer(request));
                 case "probe_append_form_list_item":
@@ -560,9 +625,33 @@ namespace CodexVBE
             if (request.StartLine > lineCount + 1 || request.Count > lineCount - request.StartLine + 1)
                 return Response.Failure("The requested line range is outside the module.");
 
-            if (request.Count > 0) module.DeleteLines(request.StartLine, request.Count);
-            if (request.Text.Length > 0) module.InsertLines(request.StartLine, request.Text);
-            string after = GetCode(module);
+            string after;
+            try
+            {
+                if (request.Count > 0) module.DeleteLines(request.StartLine, request.Count);
+                if (request.Text.Length > 0) module.InsertLines(request.StartLine, request.Text);
+                after = GetCode(module);
+            }
+            catch (Exception error)
+            {
+                try
+                {
+                    if (!string.Equals(GetCode(module), before, StringComparison.Ordinal))
+                    {
+                        int remaining = (int)module.CountOfLines;
+                        if (remaining > 0) module.DeleteLines(1, remaining);
+                        if (before.Length > 0) module.InsertLines(1, before);
+                    }
+                    if (!string.Equals(GetCode(module), before, StringComparison.Ordinal))
+                        throw new InvalidOperationException("Restored source does not match the original revision.");
+                }
+                catch (Exception rollback)
+                {
+                    return Response.Failure("Code edit failed: " + error.Message + ". Rollback failed: " + rollback.Message + ". Read the module before continuing.");
+                }
+                return Response.Failure("Code edit failed; original source restored: " + error.Message);
+            }
+            codeEdits.Record(request.Project, request.Module, before, after);
             return Response.Success(new { Sha256 = Hash(after), Lines = (int)module.CountOfLines });
         }
 

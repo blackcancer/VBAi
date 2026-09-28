@@ -9,20 +9,17 @@ namespace CodexVBE
     [Guid("0F4D723B-97D8-42E5-9B31-70646B97C8D2")]
     [ProgId("CodexVBE.ChatToolWindow")]
     [ClassInterface(ClassInterfaceType.AutoDispatch)]
-    public sealed class ChatToolWindow : UserControl
+    public sealed partial class ChatToolWindow : UserControl
     {
-        private readonly Timer siteResizeTimer;
 
         public ChatToolWindow()
         {
-            Dock = DockStyle.Fill;
-            Size = new System.Drawing.Size(520, 760);
-            siteResizeTimer = new Timer { Interval = 300 };
-            siteResizeTimer.Tick += (sender, args) => FitNativeSite();
+            InitializeComponent();
         }
 
         internal void Attach(ChatWindow chat)
         {
+            Dock = DockStyle.Fill;
             chat.Hide(); chat.TopLevel = false; chat.FormBorderStyle = FormBorderStyle.None;
             chat.Dock = DockStyle.Fill; Controls.Add(chat); chat.Show();
             siteResizeTimer.Start();
@@ -34,6 +31,8 @@ namespace CodexVBE
             chat.Hide(); Controls.Remove(chat); chat.Dock = DockStyle.None;
             chat.TopLevel = true; chat.FormBorderStyle = FormBorderStyle.Sizable;
         }
+
+        private void SiteResizeTimer_Tick(object sender, EventArgs e) { FitNativeSite(); }
 
         private void FitNativeSite()
         {
@@ -54,7 +53,7 @@ namespace CodexVBE
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing) siteResizeTimer.Dispose();
+            if (disposing) components?.Dispose();
             base.Dispose(disposing);
         }
 

@@ -17,7 +17,7 @@ namespace CodexVBE
         internal Func<GitPullDraft> LoadDraft;
         private GitHubPull selectedPull;
         internal bool Busy { get { return cancellation != null; } }
-        public GitHubPane() { InitializeComponent(); UiText.Apply(this, components); }
+        public GitHubPane() { InitializeComponent(); BindViews(); UiText.Apply(this, components); }
         internal void Configure(string selectedAccount, string url, string activeBranch)
         { account = selectedAccount; remote = url; branch = activeBranch; sourceLabel.Text = UiText.Get("Source branch") + ": " + branch; }
         private async Task Run(Func<GitHubApi, CancellationToken, Task> action, bool cancelable = true)

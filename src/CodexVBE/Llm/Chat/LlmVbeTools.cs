@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,8 +19,9 @@ namespace CodexVBE
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
         private readonly List<string> userRequests = new List<string>();
         public event Action<CodeChange> CodeEdited;
+        public event Action<FormCutChange> FormCut;
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
-            "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "read_vbe_options", "compile_project", "open_debug_pane", "list_commands", "select_code", "select_code_range",
+            "form_clipboard_state", "list_toolbars", "read_runtime_forms", "read_code_clipboard", "native_code_history_state", "form_run_status", "list_object_browser", "select_object_browser", "read_object_browser", "code_pane_layout", "editor_layout", "window_layout", "project_symbols", "navigate_code", "code_bookmark", "preview_form_layout", "preview_code_edit", "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "read_vbe_options", "compile_project", "open_debug_pane", "list_commands", "select_code", "select_code_range",
             "project_properties", "project_persistence_status", "project_signature_status", "read_project_signature_dialog", "list_signing_certificates", "component_properties", "component_property_value", "vbe_windows", "vbe_environment", "list_addins", "focus_vbe_window", "window_linkage", "code_panes", "open_object_browser", "list_procedures", "find_code", "inspect_code_file", "select_procedure", "list_forms",
             "git_status", "git_history", "git_branches", "git_checkpoints", "git_conflicts", "git_conflict_read", "git_commit_read", "git_pull_requests",
             "form_state", "form_tree", "form_list_items", "form_properties", "form_control_properties", "form_event_catalog",
@@ -62,9 +63,10 @@ namespace CodexVBE
                 properties[field] = field == "Value" ? (object)new { anyOf = new object[] {
                     new { type = "string" }, new { type = "number" }, new { type = "boolean" } } } :
                     field == "PathSegments" ? (object)new { type = "array", items = new { type = "string" }, minItems = 1, maxItems = 16 } :
+                    field == "Rows" ? (object)new { type = "array", items = new { type = "array", items = new { type = "string", maxLength = 256 }, minItems = 1, maxItems = 10 }, minItems = 0, maxItems = 64 } :
                     field == "Items" ? (object)new { type = "array", items = new { type = "string", maxLength = 256 }, minItems = 0, maxItems = 64 } :
-                    new { type = field == "StartLine" || field == "StartColumn" || field == "EndLine" || field == "EndColumn" || field == "Count" || field == "ExpectedMode" || field == "ControlId" || field == "WindowType" || field == "ProcKind" || field == "InsertIndex" ||
-                        field == "Offset" || field == "Limit" || field == "RowIndex" || field == "TypeIndex" || field == "ZPosition" ||
+                    new { type = field == "StartLine" || field == "StartColumn" || field == "EndLine" || field == "EndColumn" || field == "Count" || field == "ExpectedMode" || field == "ControlId" || field == "WindowType" || field == "TargetWindowType" || field == "ProcKind" || field == "InsertIndex" ||
+                        field == "ToolbarLeft" || field == "ToolbarTop" || field == "Offset" || field == "Limit" || field == "RowIndex" || field == "TypeIndex" || field == "ZPosition" ||
                         field == "Major" || field == "Minor" ? "integer" :
                     field == "Left" || field == "Top" || field == "Width" || field == "Height" || field == "FontSize" ? "number" :
                     field == "FontBold" || field == "WholeWord" || field == "MatchCase" || field == "PatternSearch" || field == "IncludeCallStack" ? "boolean" : "string" };
@@ -93,7 +95,7 @@ namespace CodexVBE
                 new[] { "Diagnostic", "Button" }, "Diagnostic", "Button"),
             Definition("open_debug_pane", "Open the native Locals, Watches or Immediate pane. Action is locals, watches or immediate. The effect may be asynchronous; verify with debug_windows in a separate request.",
                 new[] { "Action" }, "Action"),
-            Definition("debug_state", "Read design/run/break mode and the active code location for one project. Mode 1 is break; mode 2 is design.",
+            Definition("debug_state", "Read design/run/break mode and the active code location for one project. Mode 1 is break; mode 2 is design. A modeless UserForm can remain visible while mode is 2; this state does not prove that every runtime form is closed.",
                 new[] { "Project" }, "Project"),
             Definition("read_debug_options", "Read the VBE-wide error trapping setting from Tools > Options > General through the native dialog, then close with Cancel. No preference is changed. Returns the exact selected radio label and available choices; no shortcuts or coordinates.",
                 new string[0]),
@@ -237,9 +239,9 @@ namespace CodexVBE
                 new[] { "Project", "Form" }, "Project", "Form"),
             Definition("form_list_items", "Read a bounded page of live indexed items from a design-time MSForms ComboBox or ListBox selected by canonical form_tree ControlPath. Offset is a zero-based row index; Limit defaults to 20 and is capped so at most 128 cells are read. Returns item values and per-cell errors. The list contents are not saved with the UserForm in the tested Excel VBE; this is a live-state read, not a persistence guarantee.",
                 new[] { "Project", "Form", "ControlPath" }, "Project", "Form", "ControlPath", "Offset", "Limit"),
-            Definition("set_form_list_initializer", "Generate or replace only the marked list block in UserForm_Initialize for a top-level, unbound, one-column native ComboBox or ListBox. Items is an array of at most 64 single-line strings of at most 256 characters each; an empty array clears the list at runtime. Requires current form_tree TreeVersion and read_module SHA-256, design mode and VBE edit policy. Existing user code is preserved; edited managed blocks are refused. VBA code persists with the workbook, but this command does not populate the designer's live List. Verify the returned code with read_module; runtime execution remains a separate check.",
-                new[] { "Project", "Form", "ControlPath", "Items", "ExpectedTreeVersion", "ExpectedSha256" },
-                "Project", "Form", "ControlPath", "Items", "ExpectedTreeVersion", "ExpectedSha256"),
+            Definition("set_form_list_initializer", "Generate or replace only the marked list block in UserForm_Initialize for an unbound native ComboBox or ListBox, including canonical paths nested in Frames and MultiPage Pages. Supply exactly one of Items (one column) or Rows (rectangular string matrix matching the existing ColumnCount, 1-10 columns), at most 64 rows and 256 characters per single-line cell. An empty array clears the list at runtime. Designer properties are not changed. Requires current form_tree TreeVersion and read_module SHA-256, design mode and VBE edit policy. Existing user code is preserved; edited managed blocks are refused. VBA code persists with the workbook, but this command does not populate the designer's live List. Verify the returned code with read_module; runtime execution remains a separate check.",
+                new[] { "Project", "Form", "ControlPath", "ExpectedTreeVersion", "ExpectedSha256" },
+                "Project", "Form", "ControlPath", "Items", "Rows", "ExpectedTreeVersion", "ExpectedSha256"),
             Definition("form_event_catalog", "Read the COM source-interface event names for a UserForm or a control selected by canonical form_tree ControlPath. This is only the COM source catalog: VBA/VBE events such as UserForm.Initialize can be absent. SourceInterfacesComplete does not mean all usable VBE events are listed; CreateEventProc validates a requested event name.",
                 new[] { "Project", "Form" }, "Project", "Form", "ControlPath"),
             Definition("form_properties", "Read the designer properties of a UserForm.", new[] { "Project", "Form" }, "Project", "Form"),
@@ -296,7 +298,7 @@ namespace CodexVBE
             Definition("set_form_control_geometry", "Place and size a UserForm control; requires form revision and VBE edit policy.",
                 new[] { "Project", "Form", "ExpectedFormVersion", "Control", "Left", "Top", "Width", "Height" },
                 "Project", "Form", "ExpectedFormVersion", "Control", "Left", "Top", "Width", "Height")
-        }.Concat(GitDefinitions).ToArray(); } }
+        }.Concat(GitDefinitions).Concat(EditorDefinitions).ToArray(); } }
 
         public string Invoke(string name, string arguments)
         {
@@ -360,12 +362,14 @@ namespace CodexVBE
                 if (edit && settings.VbeEditApproval != "Automatic" && settings.VbeEditApproval != "AskEachTime")
                     return json.Serialize(Response.Failure(UiText.Get("Unknown VBE edit policy; action refused.")));
                 CodeSnapshot beforeCode = null;
-                if (name == "replace_lines")
+                bool formCodeEdit = name == "set_form_list_initializer" || name == "set_form_list_binding";
+                string editedModule = formCodeEdit ? request.Form : request.Module;
+                if (formCodeEdit || name == "cut_code" || name == "paste_code" || name == "replace_lines" || name == "apply_code_edit" || name == "undo_code_edit" || name == "redo_code_edit")
                 {
-                    beforeCode = ReadCode(request.Project, request.Module);
+                    beforeCode = ReadCode(request.Project, editedModule);
                     if (!string.Equals(beforeCode.Sha256, request.ExpectedSha256, StringComparison.OrdinalIgnoreCase))
                         return json.Serialize(Response.Failure(UiText.Get("The module changed since the model read it.")));
-                    CodeChange.PreviewRows(beforeCode.Code, request);
+                    if (name == "replace_lines") CodeChange.PreviewRows(beforeCode.Code, request);
                 }
                 if (edit && settings.VbeEditApproval == "AskEachTime" && name != "replace_lines")
                 {
@@ -376,18 +380,40 @@ namespace CodexVBE
                             return json.Serialize(Response.Failure("User rejected the edit."));
                     }
                 }
-                Response result = name == "status"
-                    ? Response.Success(LlmVbeContext.LiveSnapshot(session))
-                    : session.Execute(request);
-                if (result.Ok && beforeCode != null && !restoring)
+                Response result;
+                try
+                {
+                    result = name == "status"
+                        ? Response.Success(LlmVbeContext.LiveSnapshot(session))
+                        : session.Execute(request);
+                }
+                catch (Exception error) when (name == "cut_code" || name == "paste_code")
+                {
+                    // An edit can fail after a partial native mutation. Still read back
+                    // below so the user receives a diff and a recovery opportunity.
+                    result = Response.Failure(error.Message);
+                }
+                if (result.Ok && name == "native_form_clipboard" && request.Action == "cut")
+                {
+                    dynamic cut = result.Data;
+                    if (!string.IsNullOrEmpty((string)cut.DesignerClipboardRecoveryId) && (bool)cut.DesignerChangeObserved)
+                        FormCut?.Invoke(new FormCutChange { Project = request.Project, Form = request.Form, ParentPath = request.ParentPath,
+                            RecoveryId = (string)cut.DesignerClipboardRecoveryId, ControlCount = ((System.Collections.ICollection)cut.Before.Selected).Count, Owner = this });
+                }
+                if (result.Ok && name == "native_code_history" && !restoring)
+                {
+                    dynamic history = result.Data;
+                    foreach (CodeChange change in history.Changes) CodeEdited?.Invoke(change);
+                }
+                if ((result.Ok || name == "cut_code" || name == "paste_code") && beforeCode != null && !restoring)
                 {
                     try
                     {
-                        CodeSnapshot afterCode = ReadCode(request.Project, request.Module);
+                        CodeSnapshot afterCode = ReadCode(request.Project, editedModule);
                         if (!string.Equals(beforeCode.Sha256, afterCode.Sha256, StringComparison.OrdinalIgnoreCase))
                         {
-                            int lineCount = Convert.ToInt32(((dynamic)result.Data).Lines);
-                            CodeEdited?.Invoke(new CodeChange(request.Project, request.Module,
+                            int lineCount = CodeRollback.Lines(afterCode.Code).Length;
+                            CodeEdited?.Invoke(new CodeChange(request.Project, editedModule,
                                 beforeCode.Code, beforeCode.Sha256, afterCode.Code, afterCode.Sha256, lineCount));
                         }
                     }
@@ -695,6 +721,40 @@ namespace CodexVBE
                     Request request = json.Deserialize<Request>(json.Serialize(requestValues));
                     object result = await Task.Run(() => VbeDebugWindows.CompleteAddWatch(request));
                     return json.Serialize(Response.Success(result));
+                }
+                catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+            }
+            if (name == "list_object_browser")
+            {
+                try
+                {
+                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
+                    if (values == null || !values.ContainsKey("Pane") || values.Keys.Any(key => key != "Pane" && key != "Query" && key != "Offset" && key != "Limit") ||
+                        values.Any(pair => (pair.Key == "Pane" || pair.Key == "Query") ? !(pair.Value is string) : !(pair.Value is int)))
+                        throw new ArgumentException("Pane is required; Query is an optional string; Offset and Limit must be integers.");
+                    return json.Serialize(Response.Success(await Task.Run(() => VbeDebugWindows.ListObjectBrowser(json.Deserialize<Request>(arguments)))));
+                }
+                catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+            }
+            if (name == "select_object_browser")
+            {
+                try
+                {
+                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
+                    if (values == null || (!values.ContainsKey("ObjectName") && !values.ContainsKey("Context")) || values.Keys.Any(key => key != "ObjectName" && key != "Procedure" && key != "Context") || values.Values.Any(value => !(value is string)))
+                        throw new ArgumentException("ObjectName or library Context is required; Procedure requires ObjectName. All values must be strings.");
+                    var request = json.Deserialize<Request>(arguments);
+                    return json.Serialize(Response.Success(await Task.Run(() => VbeDebugWindows.SelectObjectBrowser(request))));
+                }
+                catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+            }
+            if (name == "read_object_browser" || name == "read_runtime_forms")
+            {
+                try
+                {
+                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
+                    if (values == null || values.Count != 0) throw new ArgumentException("This tool takes an empty argument object.");
+                    return json.Serialize(Response.Success(await Task.Run(() => name == "read_runtime_forms" ? VbeDebugWindows.ReadRuntimeForms() : VbeDebugWindows.ReadObjectBrowser())));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             }

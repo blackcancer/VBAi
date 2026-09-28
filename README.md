@@ -70,3 +70,7 @@ Le 26 septembre, une trace des accès au registre a montré que SOLIDWORKS lisai
 ## Suite
 
 Le cycle de point d'arrêt a été vérifié dans Excel avec les identifiants et intitulés natifs relevés dans cette version française du VBE. Le prochain essai pourra porter sur `test.swp` dans SOLIDWORKS une fois son IDE ouvert par l'utilisateur. L'API VBIDE ne fournit pas encore d'inventaire des points d'arrêt ; l'effet de la commande est prouvé par le comportement du débogueur.
+
+## Édition des interfaces
+
+Les onglets Git et les paramètres disposent de vues WinForms indépendantes, éditables avec **Afficher le concepteur** dans Visual Studio. Voir [le guide du Designer](docs/winforms-designer.md).

@@ -13,6 +13,31 @@ namespace CodexVBE.Tests.Unit
     {
         [TestMethod]
         [STATestMethod]
+        public void SwitchingDiffModePreservesDesignerColumnsAndLineNumberWidth()
+        {
+            using (var view = new CodeDiffView())
+            {
+                var grid = DiffGrid(view);
+                var oldLine = grid.Columns[0];
+                var after = grid.Columns[3];
+                var unified = (CheckBox)typeof(CodeDiffView).GetField("unified", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(view);
+                oldLine.Width = 73;
+                view.ShowDiff("same\nremoved", "same\nadded");
+                unified.Checked = true;
+                Assert.AreSame(oldLine, grid.Columns[0]);
+                Assert.AreSame(after, grid.Columns[3]);
+                Assert.AreEqual(73, oldLine.Width);
+                Assert.IsFalse(grid.Columns[1].Visible);
+                Assert.AreEqual("removed", grid.Rows[1].Cells[3].Value);
+                Assert.AreEqual("added", grid.Rows[2].Cells[3].Value);
+                unified.Checked = false;
+                Assert.IsTrue(grid.Columns[1].Visible);
+                Assert.AreEqual(73, oldLine.Width);
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
         public void DiffRowsUseOneBasedLineNumbersAndMarkOnlyChangedSides()
         {
             using (var window = new GitWindow())
