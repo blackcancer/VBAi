@@ -42,7 +42,7 @@ Les clés API ne sont pas enregistrées dans cette base. Les contenus de convers
 
 ## Vérification
 
-Le passage global `fa61565` compte **1 067 tests verts**, **100 % lignes et branches**, avec deux essais Excel réussis ; SOLIDWORKS fermé est ignoré. Les **24 concepteurs WinForms** ont été validés dans le passage précédent. Voir [le bilan courant](test-coverage.md). Les captures et essais d’interface ci-dessous sont des validations antérieures datées, avec leur propre périmètre.
+Le passage global `9eac920` compte **1 069 tests verts**, **100 % lignes et branches**, avec deux essais Excel réussis ; SOLIDWORKS fermé est ignoré. Les **24 concepteurs WinForms** ont été validés dans le passage précédent. Voir [le bilan courant](test-coverage.md). Les captures et essais d’interface ci-dessous sont des validations antérieures datées, avec leur propre périmètre.
 
 Depuis le worktree :
 

@@ -1,6 +1,6 @@
 # VBAi : objectif et état du projet
 
-État du code **`fa61565`**, vérifié le **28 septembre 2026**.
+État du code **`9eac920`**, vérifié le **28 septembre 2026**.
 
 ## Objectif
 
@@ -34,7 +34,7 @@ Le [catalogue des 166 outils LLM](reference/vbe-tools.md) fournit les noms et pa
 
 | Vérification | Résultat |
 | --- | --- |
-| Suite globale VSTest avec hôtes activés | **1 067 réussis, 0 échec, 1 ignoré (SOLIDWORKS fermé)** |
+| Suite globale VSTest avec hôtes activés | **1 069 réussis, 0 échec, 1 ignoré (SOLIDWORKS fermé)** |
 | Couverture des lignes / branches | **100 % / 100 %** |
 | Compilation | **0 erreur, 0 avertissement** |
 | Concepteurs WinForms | Validation précédente : **24 chargements et modifications de taille réussis** |
