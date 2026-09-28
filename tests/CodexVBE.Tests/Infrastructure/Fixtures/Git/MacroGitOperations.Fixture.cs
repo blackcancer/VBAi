@@ -8,7 +8,7 @@ namespace CodexVBE.Tests.Unit
 
     public sealed partial class MacroGitOperationsTests
     {
-        private sealed class Fixture : IDisposable
+        internal sealed class Fixture : IDisposable
         {
             internal readonly string Root = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "git-branches", Guid.NewGuid().ToString("N"));
             internal readonly string Cache, Remote;
