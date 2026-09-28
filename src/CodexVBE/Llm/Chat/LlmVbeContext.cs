@@ -55,7 +55,9 @@ namespace CodexVBE
         public static object LiveSnapshot(VbeSession session)
         {
             var process = Process.GetCurrentProcess();
-            var projects = session.Execute(new Request { Command = "list_projects" });
+            Response projects;
+            try { projects = session.Execute(new Request { Command = "list_projects" }); }
+            catch (Exception error) { projects = Response.Failure(error.Message); }
             return new {
                 HostProcess = process.ProcessName,
                 HostProcessId = process.Id,

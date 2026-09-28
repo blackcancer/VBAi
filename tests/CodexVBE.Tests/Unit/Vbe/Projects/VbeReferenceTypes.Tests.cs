@@ -478,5 +478,24 @@ namespace CodexVBE.Tests.Unit
             Assert.IsTrue(Convert.ToInt32(Prop(members, "TotalMembers")) > 0);
             Assert.AreEqual(request.TypeIdentity, Prop(Prop(members, "Type"), "Identity"));
         }
+
+        [TestMethod]
+        public void NativeRegisteredLibraryFallbackUsesTheSelectedReferenceIdentity()
+        {
+            Assert.IsTrue(File.Exists(StdOlePath));
+            var reference = ReferenceFor(StdOlePath);
+            reference.FullPath = Path.Combine(Path.GetTempPath(), "CodexVBE-registered-library-" + Guid.NewGuid().ToString("N") + ".tlb");
+            File.WriteAllText(reference.FullPath, "Not a type library.");
+            try
+            {
+            var project = new FakeProject { Name = "RegisteredMetadata" }; project.References.Add(reference);
+            var host = new FakeVbe(); host.VBProjects.Add(project);
+            var request = new Request { Project = project.Name, Guid = reference.GUID, Major = reference.Major, Minor = reference.Minor, Limit = 1 };
+            var page = new VbeReferenceTypes(host).ListTypes(request);
+            Assert.AreEqual("RegisteredTypeLibrary: LoadRegTypeLib", Prop(page, "Source"));
+            Assert.IsNotNull(Prop(page, "FallbackError")); Assert.IsTrue(Convert.ToInt32(Prop(page, "TotalTypes")) > 0);
+            }
+            finally { File.Delete(reference.FullPath); }
+        }
     }
 }

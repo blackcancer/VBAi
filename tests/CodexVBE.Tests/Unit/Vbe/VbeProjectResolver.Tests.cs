@@ -54,5 +54,17 @@ namespace CodexVBE.Tests.Unit
             };
             Assert.AreSame(project, (object)VbeProjectResolver.Resolve(host, "ÉTÉ"));
         }
+
+        [TestMethod]
+        public void SavedPathLookupSkipsUnsavedAndMalformedComFileNames()
+        {
+            var host = new HeterogeneousVbe();
+            host.VBProjects.Add(new UnsavedProject());
+            foreach (string name in new[] { null, " ", "invalid\0file", "bad:filename", @"C:\" + new string('x', 40000) })
+                host.VBProjects.Add(new FakeProject { Name = "Other", FileName = name });
+            var selected = new FakeProject { Name = "Selected", FileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "disposable-selector.xlsm") };
+            host.VBProjects.Add(selected);
+            Assert.AreSame(selected, (object)VbeProjectResolver.Resolve(host, selected.FileName));
+        }
     }
 }
