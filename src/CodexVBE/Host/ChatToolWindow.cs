@@ -12,12 +12,25 @@ namespace CodexVBE
     [ClassInterface(ClassInterfaceType.AutoDispatch)]
     public sealed class ChatToolWindow : UserControl
     {
+        /// <summary>Lit un rectangle Win32 associé à une fenêtre.</summary>
+        /// <param name="handle">Handle de la fenêtre source.</param>
+        /// <param name="rect">Rectangle obtenu.</param>
+        /// <returns><see langword="true"/> lorsque le rectangle a été lu.</returns>
         internal delegate bool RectReader(IntPtr handle, out NativeRect rect);
+        /// <summary>Convertit un point entre les coordonnées écran et client.</summary>
+        /// <param name="handle">Handle de la fenêtre dont le repère client est utilisé.</param>
+        /// <param name="point">Point à convertir, remplacé par ses coordonnées converties.</param>
+        /// <returns><see langword="true"/> lorsque la conversion a réussi.</returns>
         internal delegate bool PointConverter(IntPtr handle, ref NativePoint point);
+        /// <summary>Lit le parent natif du contrôle.</summary>
         internal Func<IntPtr, IntPtr> ParentReader = GetParent;
+        /// <summary>Lit la zone client de la fenêtre hôte.</summary>
         internal RectReader ClientReader = GetClientRect;
+        /// <summary>Lit le rectangle écran du contrôle.</summary>
         internal RectReader WindowReader = GetWindowRect;
+        /// <summary>Convertit l’origine du contrôle en coordonnées client de l’hôte.</summary>
         internal PointConverter CoordinateConverter = ScreenToClient;
+        /// <summary>Redimensionne et repositionne le contrôle dans la fenêtre native.</summary>
         internal Func<IntPtr, IntPtr, int, int, int, int, uint, bool> PositionWindow = SetWindowPos;
         /// <summary>Minuteur qui recalcule la taille du contrôle dans son site natif.</summary>
         private readonly Timer siteResizeTimer;
