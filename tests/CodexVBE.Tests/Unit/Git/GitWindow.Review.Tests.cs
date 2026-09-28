@@ -9,10 +9,12 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie l’état de prévisualisation de la revue dans GitWindow.</summary>
     [TestClass]
     [TestCategory("Unit")]
     public sealed partial class GitWindowStateTests
     {
+        /// <summary>Efface l’aperçu précédent lorsqu’un changement est sélectionné sans snapshot disponible.</summary>
         [TestMethod]
         [STATestMethod]
         public void SelectingChangeWithoutSnapshotClearsPreviousPreview()

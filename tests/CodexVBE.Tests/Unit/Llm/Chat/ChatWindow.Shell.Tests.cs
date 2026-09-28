@@ -14,8 +14,10 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie les actions d’édition et le changement de mode dans la fenêtre de discussion.</summary>
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Vérifie que l’action d’éditeur prépare une commande uniquement lorsque la fenêtre est inactive.</summary>
         [TestMethod]
         [STATestMethod]
         public void EditorActionSeedsCommandWhileBusyStateBlocksIt()
@@ -33,6 +35,7 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Vérifie que le mode de session suit la sélection uniquement lorsque la fenêtre est inactive.</summary>
         [TestMethod]
         [STATestMethod]
         public void ModeSelectionUpdatesSessionOnlyWhenIdle()
@@ -66,8 +69,10 @@ namespace CodexVBE.Tests.Unit
     using System.Windows.Input;
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    /// <summary>Vérifie les commandes de shell, les garde-fous du concepteur et l’ouverture Git locale.</summary>
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Exerce les panneaux, modes, sessions et actions de shell ainsi que leur blocage pendant une opération.</summary>
         [STATestMethod, TestCategory("Unit")]
         public void ShellActionsTogglePanelsModeArchivePinMemoryAndDockOnlyWhenIdle()
         {
@@ -89,6 +94,7 @@ namespace CodexVBE.Tests.Unit
                 var args = new object[] { System.Windows.Forms.Message.Create(window.Handle, 0, IntPtr.Zero, IntPtr.Zero), System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.N }; Assert.IsTrue((bool)Call(window, "ProcessCmdKey", args)); args[1] = System.Windows.Forms.Keys.Escape; Call(window, "ProcessCmdKey", args);
             }
         }
+        /// <summary>Vérifie les garde-fous sans hôte et l’ouverture Git après sauvegarde du document.</summary>
         [STATestMethod, TestCategory("Unit")]
         public void ShellDesignerGuardsAndSavedDocumentDialogUseOnlyLocalUi()
         {

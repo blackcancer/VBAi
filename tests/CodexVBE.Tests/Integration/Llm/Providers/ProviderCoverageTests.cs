@@ -4,10 +4,12 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CodexVBE.Tests.Integration
 {
+    /// <summary>Intègre le fixture protocolaire fournisseur à la suite de tests locale.</summary>
     [TestClass]
     [TestCategory("LocalIntegration")]
     public sealed class ProviderCoverageTests
     {
+        /// <summary>Exécute les scénarios de protocole du binaire fixture et réinitialise son chemin après usage.</summary>
         [TestMethod]
         [STATestMethod]
         public void ProviderProtocolsUseTheProductionAssembly()

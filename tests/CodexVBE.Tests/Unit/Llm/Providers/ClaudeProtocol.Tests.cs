@@ -6,8 +6,10 @@ namespace CodexVBE.Tests.Unit
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using CodexVBE;
 
+    /// <summary>Vérifie les requêtes, réponses et métadonnées natives du protocole Claude.</summary>
     public sealed partial class ProviderProtocolTests
     {
+        /// <summary>Préserve l’ordre des résultats d’outils et les données opaques de continuation.</summary>
         [TestMethod]
         public void ClaudeRequestPreservesToolResultOrderAndOpaqueContinuation()
         {
@@ -61,6 +63,7 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual("two", Obj(results[1])["tool_use_id"]);
         }
 
+        /// <summary>Refuse les réponses limitées par quota de jetons et conserve l’entrée d’outil reçue.</summary>
         [TestMethod]
         public void ClaudeResponseRejectsTokenLimitAndRetainsToolInput()
         {
@@ -96,8 +99,10 @@ namespace CodexVBE.Tests.Unit
 }
 namespace CodexVBE.Tests.Unit
 {
+    /// <summary>Vérifie les helpers de lecture JSON et les groupes de résultats d’outils Claude.</summary>
     public sealed partial class ProviderProtocolTests
     {
+        /// <summary>Traite les valeurs nulles, clés absentes et valeurs qui ne sont pas des tableaux.</summary>
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
         public void ClaudeHelpersHandleNullMissingAndNonArrayValues()
         {
@@ -116,6 +121,7 @@ namespace CodexVBE.Tests.Unit
             Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreSame(values["array"], ClaudeProtocol.Array(values, "array"));
         }
 
+        /// <summary>Construit les outils natifs, omet les contenus vides et sépare les groupes de résultats.</summary>
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
         public void ClaudeRequestBuildsNativeToolsSkipsEmptyAndSeparatesResultGroups()
         {

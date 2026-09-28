@@ -14,8 +14,10 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie la conservation des entrées du transcript et de l’aperçu de contexte.</summary>
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Ajoute une entrée Markdown et vérifie l’affichage structuré du transcript et des pièces jointes.</summary>
         [TestMethod]
         [STATestMethod]
         public void MarkdownTranscriptAndContextPreviewRetainStructuredEntries()

@@ -13,10 +13,13 @@ namespace CodexVBE.Tests.Unit
     using System.IO;
     using System.Reflection;
 
+    /// <summary>Vérifie le client app-server Codex avec un transport RPC simulé et sans processus externe.</summary>
     [TestClass]
     [TestCategory("Unit")]
     public sealed partial class CodexAppServerClientTests
     {
+        /// <summary>Refuse les fournisseurs, catalogues et transports qui ne respectent pas le contrat requis.</summary>
+        /// <returns>Tâche terminée après les vérifications asynchrones.</returns>
         [TestMethod]
         public async Task ConstructorCatalogueAndTransportGuardsRejectIncompleteContracts()
         {
@@ -40,6 +43,8 @@ namespace CodexVBE.Tests.Unit
             transport = new FakeTransport(); using (var client = Client(transport)) { await client.ListModelsAsync(); transport.Intercept = m => { if (Method(m) != "model/list") return false; transport.Emit(new { id = m["id"], error = new { } }); return true; }; var error = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => client.ListModelsAsync()); Assert.AreEqual("Codex request failed.", error.Message); }
         }
 
+        /// <summary>Respecte les deux frontières d’annulation durant l’initialisation et le démarrage d’un tour.</summary>
+        /// <returns>Tâche terminée après vérification de l’annulation.</returns>
         [TestMethod]
         public async Task InterruptedInitializationAndTurnStartRespectBothCancellationBoundaries()
         {
@@ -51,6 +56,8 @@ namespace CodexVBE.Tests.Unit
             var alternate = new FakeTransport(); alternate.Intercept = m => { if (Method(m) != "turn/start") return false; alternate.Emit(new { method = "turn/started", @params = new { threadId = "thread-1", turn = new { id = "event-turn" } } }); alternate.Emit(new { id = m["id"], result = new { } }); alternate.EmitTurnCompleted("completed", null); return true; }; using (var client = Client(alternate)) Assert.IsFalse(string.IsNullOrWhiteSpace(await client.TurnAsync("request", null, null)));
         }
 
+        /// <summary>Traite les notifications et ignore les mises à jour en attente après libération.</summary>
+        /// <returns>Tâche terminée après traitement des notifications.</returns>
         [TestMethod]
         public async Task AllNotificationShapesAndQueuedDisposalKeepUpdatesWithinTheActiveTurn()
         {
@@ -68,6 +75,8 @@ namespace CodexVBE.Tests.Unit
             transport = new FakeTransport(); using (var client = Client(transport)) { var turn = client.TurnAsync("request", null, null); await transport.TurnStarted.Task; transport.Emit(new { method = "item/reasoning/summaryPartAdded", @params = new { threadId = "thread-1", summaryIndex = "invalid" } }); await Assert.ThrowsExceptionAsync<FormatException>(() => turn); }
         }
 
+        /// <summary>Transforme les résultats ou exceptions d’outils sans appeler un véritable hôte VBE.</summary>
+        /// <returns>Tâche terminée après les appels d’outil simulés.</returns>
         [TestMethod]
         public async Task ToolBoundaryResponsesExceptionsAndLateCallbacksNeverCallARealHost()
         {
@@ -80,6 +89,8 @@ namespace CodexVBE.Tests.Unit
             var pending = new FakeTransport(); using (var client = Client(pending)) { await client.ListModelsAsync(); pending.Intercept = m => Method(m) == "model/list"; var request = client.ListModelsAsync(); client.Dispose(); await Assert.ThrowsExceptionAsync<ObjectDisposedException>(() => request); }
         }
 
+        /// <summary>Vérifie le transport de processus avec flux UTF-8, entrée protocolaire et vidage de stderr.</summary>
+        /// <returns>Tâche terminée après arrêt du processus fixture.</returns>
         [TestMethod]
         public async Task NativeProcessTransportUsesDisposableUtf8ChildAndDrainsOnlyProtocolOutput()
         {
@@ -99,6 +110,8 @@ namespace CodexVBE.Tests.Unit
                 using (var transport = new CodexProcessTransport()) { transport.StartProcess = p => fixture.Start(p, "echo"); transport.Start(); transport.Dispose(); }
             }
         }
+        /// <summary>Initialise une session ChatGPT après validation du compte et des outils en lecture seule.</summary>
+        /// <returns>Tâche terminée après l’initialisation.</returns>
         [TestMethod]
         public async Task InitializeChecksChatGptAndStartsReadOnlyThread()
         {
@@ -121,6 +134,8 @@ namespace CodexVBE.Tests.Unit
             Assert.IsTrue(transport.Disposed);
         }
 
+        /// <summary>Reprend un fil existant en conservant exactement son identifiant.</summary>
+        /// <returns>Tâche terminée après la reprise du fil.</returns>
         [TestMethod]
         public async Task ExistingThreadIsResumedWithItsExactIdentifier()
         {
@@ -137,6 +152,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Arrête l’initialisation d’un compte non ChatGPT avant l’ouverture d’un fil.</summary>
+        /// <returns>Tâche terminée après le refus d’accès.</returns>
         [TestMethod]
         public async Task NonChatGptAccountStopsBeforeOpeningThread()
         {
@@ -153,6 +170,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Refuse un fil serveur auquel manque son identité obligatoire.</summary>
+        /// <returns>Tâche terminée après la réponse d’échec.</returns>
         [TestMethod]
         public async Task MissingThreadIdentityFailsClosed()
         {
@@ -168,6 +187,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Parcourt les pages du catalogue et lit les métadonnées d’effort du modèle.</summary>
+        /// <returns>Tâche terminée après lecture du catalogue.</returns>
         [TestMethod]
         public async Task ModelCataloguePaginatesAndReadsEffortMetadata()
         {
@@ -191,6 +212,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Refuse un catalogue dépourvu des données de modèle requises.</summary>
+        /// <returns>Tâche terminée après validation du catalogue.</returns>
         [TestMethod]
         public async Task MissingCatalogueDataIsRejected()
         {
@@ -205,6 +228,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Propage l’erreur du serveur tout en gardant utilisable le fil déjà prêt.</summary>
+        /// <returns>Tâche terminée après la requête refusée.</returns>
         [TestMethod]
         public async Task RequestErrorPropagatesServerMessageWithoutKillingReadyThread()
         {
@@ -221,6 +246,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Libère le client si le transport échoue au démarrage sans envoyer initialize.</summary>
+        /// <returns>Tâche terminée après vérification du démarrage avorté.</returns>
         [TestMethod]
         public async Task TransportStartFailureDisposesClientAndDoesNotSendInitialize()
         {
@@ -237,6 +264,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Publie les mises à jour de texte en flux puis le texte final du tour.</summary>
+        /// <returns>Tâche terminée après réception du résultat.</returns>
         [TestMethod]
         public async Task TurnPublishesStreamingUpdatesAndFinalText()
         {
@@ -262,6 +291,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Expose une erreur native de tour et utilise le repli lorsque le texte final manque.</summary>
+        /// <returns>Tâche terminée après réception de la réponse.</returns>
         [TestMethod]
         public async Task FailedTurnSurfacesNativeErrorAndMissingFinalTextUsesFallback()
         {
@@ -281,6 +312,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Empêche les notifications reçues sur un autre thread de modifier la conversation.</summary>
+        /// <returns>Tâche terminée après vérification de la notification.</returns>
         [TestMethod]
         public async Task NotificationsFromAnotherThreadDoNotReachChatUpdate()
         {
@@ -300,6 +333,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Fait échouer le tour en attente lorsqu’une ligne serveur est mal formée.</summary>
+        /// <returns>Tâche terminée après traitement de la ligne.</returns>
         [TestMethod]
         public async Task MalformedServerLineFailsPendingTurn()
         {
@@ -323,6 +358,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Refuse le tour en attente et arrête le transport lors de la libération du client.</summary>
+        /// <returns>Tâche terminée après disposal.</returns>
         [TestMethod]
         public async Task DisposeRejectsPendingTurnAndStopsTransport()
         {
@@ -335,6 +372,8 @@ namespace CodexVBE.Tests.Unit
             Assert.IsTrue(transport.Disposed);
         }
 
+        /// <summary>Envoie l’identifiant exact du tour interrompu et termine sa tâche comme annulée.</summary>
+        /// <returns>Tâche terminée après l’annulation du tour.</returns>
         [TestMethod]
         public async Task InterruptedTurnSendsExactTurnIdAndCompletesAsCanceled()
         {
@@ -350,6 +389,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Fait échouer le tour lorsqu’un transport se termine puis le libère proprement.</summary>
+        /// <returns>Tâche terminée après l’arrêt du transport.</returns>
         [TestMethod]
         public async Task ServerExitFailsPendingTurnAndDisposalStopsTransport()
         {
@@ -371,6 +412,8 @@ namespace CodexVBE.Tests.Unit
             Assert.IsTrue(transport.Disposed);
         }
 
+        /// <summary>Répond method-not-found aux requêtes serveur non prises en charge sans fermer le fil.</summary>
+        /// <returns>Tâche terminée après le traitement de la requête.</returns>
         [TestMethod]
         public async Task UnsupportedServerRequestGetsMethodNotFoundWithoutEndingConversation()
         {
@@ -386,6 +429,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Refuse un appel d’outil étranger sans invoquer les outils VBE.</summary>
+        /// <returns>Tâche terminée après le refus de l’appel.</returns>
         [TestMethod]
         public async Task ForeignToolCallIsRejectedWithoutInvokingVbeTools()
         {
@@ -403,6 +448,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Refuse un prompt vide et un second tour lancé alors qu’un premier est actif.</summary>
+        /// <returns>Tâche terminée après les vérifications de précondition.</returns>
         [TestMethod]
         public async Task EmptyPromptAndOverlappingTurnAreRejected()
         {

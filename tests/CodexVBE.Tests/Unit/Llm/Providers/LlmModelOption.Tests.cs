@@ -1,10 +1,12 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
+    /// <summary>Vérifie la présentation des options de modèle et d’effort.</summary>
     [TestClass]
     [TestCategory("Unit")]
     public sealed class LlmModelOptionTests
     {
+        /// <summary>Préserve l’identité du modèle dans les libellés, valeurs par défaut et efforts.</summary>
         [TestMethod]
         public void LabelsDefaultsAndEffortsPreserveModelIdentity()
         {

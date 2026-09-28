@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using CodexVBE;
 
+/// <summary>Scénarios smoke de l’interface de sélection et de connexion GitHub.</summary>
 internal static partial class ProviderTests
 {
+    /// <summary>Vérifie liste GCM, connexion navigateur, choix de compte, annulation et persistance.</summary>
     private static void GitHubSettingsUi()
     {
         Assert(GitHubAccountService.ParseAccounts("alice\r\nbob\r\nalice\r\n").Length == 2, "Account listing deduplication");

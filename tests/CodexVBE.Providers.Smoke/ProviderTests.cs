@@ -11,24 +11,57 @@ using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using CodexVBE;
 
+/// <summary>Exécute les scénarios smoke des fournisseurs, du protocole et des paramètres LLM.</summary>
 internal static partial class ProviderTests
 {
+    /// <summary>Chemin du programme fixture Copilot utilisé pour isoler le protocole CLI.</summary>
+    /// <value>Chemin de l’exécutable fixture ou <see langword="null"/> pour l’assembly courant.</value>
     internal static string CopilotFixtureExecutable { get; set; }
+    /// <summary>Sérialiseur JSON partagé par les scénarios smoke.</summary>
     private static readonly JavaScriptSerializer Json = new JavaScriptSerializer();
+    /// <summary>Échoue le scénario lorsque la condition attendue n’est pas satisfaite.</summary>
+    /// <param name="condition">Condition à vérifier.</param>
+    /// <param name="message">Message associé à l’échec.</param>
     private static void Assert(bool condition, string message) { if (!condition) throw new Exception(message); }
+    /// <summary>Convertit un objet du protocole Claude vers un dictionnaire.</summary>
+    /// <param name="x">Objet à convertir.</param>
+    /// <returns>Dictionnaire des propriétés de l’objet.</returns>
     private static IDictionary<string, object> Obj(object x) { return ClaudeProtocol.Object(x); }
+    /// <summary>Lit une chaîne d’un objet de protocole.</summary>
+    /// <param name="x">Objet contenant la propriété.</param>
+    /// <param name="key">Nom de propriété à lire.</param>
+    /// <returns>Valeur texte de la propriété, ou <see langword="null"/> si absente.</returns>
     private static string Text(IDictionary<string, object> x, string key) { return ClaudeProtocol.Text(x, key); }
+    /// <summary>Recherche un fournisseur par son nom affiché.</summary>
+    /// <param name="name">Nom du fournisseur.</param>
+    /// <returns>Configuration correspondante.</returns>
     private static LlmProvider Provider(string name) { return LlmProvider.All.Single(x => x.Name == name); }
+    /// <summary>Outil de lecture de module transmis dans les requêtes fictives.</summary>
     private static readonly object[] Tools = { new { type = "function", function = new { name = "read_module", description = "Read VBA", parameters = new { type = "object", properties = new { } } } } };
+    /// <summary>Historique minimal contenant un message système et une question UTF-8.</summary>
+    /// <returns>Messages de conversation utilisés par les scénarios.</returns>
     private static List<object> History() { return new List<object> { new { role = "system", content = "Read before editing." }, new { role = "user", content = "Explique la procédure été." } }; }
+    /// <summary>Handler HTTP de test qui délègue chaque requête à une fonction fixture.</summary>
     private sealed class Handler : HttpMessageHandler
     {
+        /// <summary>Fonction qui inspecte une requête et fabrique sa réponse HTTP.</summary>
         internal Func<HttpRequestMessage, Task<HttpResponseMessage>> Handle;
+        /// <summary>Transmet la requête au gestionnaire de réponse configuré.</summary>
+        /// <param name="request">Requête HTTP reçue.</param>
+        /// <param name="cancellation">Jeton d’annulation de la requête.</param>
+        /// <returns>Réponse produite par le fixture.</returns>
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellation) { return Handle(request); }
     }
+    /// <summary>Crée une réponse JSON avec le code HTTP demandé.</summary>
+    /// <param name="payload">Objet à sérialiser.</param>
+    /// <param name="code">Code HTTP, OK par défaut.</param>
+    /// <returns>Réponse contenant le JSON UTF-8.</returns>
     private static HttpResponseMessage Response(object payload, HttpStatusCode code = HttpStatusCode.OK)
     { return new HttpResponseMessage(code) { Content = new StringContent(Json.Serialize(payload), Encoding.UTF8, "application/json") }; }
 
+    /// <summary>Point d’entrée du smoke et sélectionne les scénarios selon les arguments.</summary>
+    /// <param name="args">Options de scénario, dont les modes headless et live.</param>
+    /// <returns>Zéro si le scénario choisi réussit, sinon un.</returns>
     [STAThread]
     public static int Main(string[] args)
     {
@@ -39,10 +72,12 @@ internal static partial class ProviderTests
             SettingsUi(); GitHubSettingsUi(); Run().GetAwaiter().GetResult(); Extended().GetAwaiter().GetResult(); return 0;
         } catch (Exception ex) { Console.Error.WriteLine(ex); return 1; }
     }
+    /// <summary>Exécute les scénarios compatibles avec la suite de couverture automatisée.</summary>
     internal static void RunCoverageSuite()
     {
         SettingsUi(); GitHubSettingsUi(); Run().GetAwaiter().GetResult(); Extended().GetAwaiter().GetResult();
     }
+    /// <summary>Vérifie l’isolation des brouillons fournisseur et l’absence d’écriture lors de l’annulation.</summary>
     private static void SettingsUi()
     {
         var settings = new LlmSettings { ProviderName = "Claude" };
@@ -71,6 +106,8 @@ internal static partial class ProviderTests
         SynchronizationContext.SetSynchronizationContext(null);
         Console.WriteLine("PASS settings form provider switching, isolated drafts, local endpoint and cancellation");
     }
+    /// <summary>Vérifie les protocoles fournisseurs, clés, modèles, outils, flux et erreurs HTTP.</summary>
+    /// <returns>Tâche terminée après les scénarios asynchrones.</returns>
     private static async Task Run()
     {
         var settings = new LlmSettings();
@@ -183,12 +220,17 @@ internal static partial class ProviderTests
         Console.WriteLine("PASS Copilot framed subprocess protocol v2/v3, tool dispatch/deduplication, permission scoping, foreign sessions and unsupported version");
     }
 
+    /// <summary>Écrit une trame JSON Copilot encadrée par son en-tête Content-Length.</summary>
+    /// <param name="message">Message RPC à sérialiser.</param>
     private static void WriteFrame(object message)
     {
         byte[] data = Encoding.UTF8.GetBytes(Json.Serialize(message));
         var stream = Console.OpenStandardOutput(); byte[] header = Encoding.ASCII.GetBytes("Content-Length: " + data.Length + "\r\n\r\n");
         stream.Write(header, 0, header.Length); stream.Write(data, 0, data.Length); stream.Flush();
     }
+    /// <summary>Lit une trame Content-Length depuis le flux et désérialise son JSON.</summary>
+    /// <param name="stream">Flux de protocole à lire.</param>
+    /// <returns>Objet RPC décodé, ou <see langword="null"/> en fin de flux avant un en-tête.</returns>
     private static IDictionary<string, object> ReadFrame(Stream stream)
     {
         var header = new StringBuilder();
@@ -197,6 +239,7 @@ internal static partial class ProviderTests
         while (offset < length) { int n = stream.Read(data, offset, length - offset); if (n == 0) throw new EndOfStreamException(); offset += n; }
         return Obj(Json.DeserializeObject(Encoding.UTF8.GetString(data)));
     }
+    /// <summary>Implémente le sous-processus Copilot de test pour simuler les versions deux et trois du protocole.</summary>
     private static void FakeCopilot()
     {
         int version = int.Parse(Environment.GetEnvironmentVariable("CODEXVBE_TEST_COPILOT_VERSION") ?? "3");

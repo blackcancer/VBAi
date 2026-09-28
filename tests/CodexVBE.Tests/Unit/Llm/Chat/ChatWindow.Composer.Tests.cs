@@ -14,8 +14,10 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie le contexte sélectionné et les jetons de référence du compositeur.</summary>
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Ne conserve que la référence sélectionnée la plus récente pour un jeton exact.</summary>
         [TestMethod]
         [STATestMethod]
         public void CurrentReferencesKeepLatestExactTokenAndIgnoreEmbeddedMatches()
@@ -33,6 +35,7 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Affiche les pièces jointes et la mémoire active sous forme de puces supprimables.</summary>
         [TestMethod]
         [STATestMethod]
         public void ContextChipsRepresentMemoryAndDraftAttachmentsAndCanRemoveDraft()
@@ -65,8 +68,10 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using CodexVBE.Tests.Infrastructure;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    /// <summary>Vérifie les interactions clavier et la résolution des références dans le compositeur.</summary>
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Parcourt les commandes et références du catalogue avec la fenêtre contextuelle réelle.</summary>
         [STATestMethod, TestCategory("Unit")]
         public void ComposerCommandReferencePopupAndKeyboardNavigationUseRealReferenceCatalogue()
         {
@@ -88,6 +93,7 @@ namespace CodexVBE.Tests.Unit
                 var disconnected = Get<VbeChatReferences>(window, "referenceIndex"); disconnected.Entries.Clear(); prompt.Text = "@none"; prompt.CaretIndex = 5; Set(window, "referenceIndexReady", true); Call(window, "UpdateReferences"); Assert.AreEqual(Visibility.Collapsed, list.Visibility);
             }
         }
+        /// <summary>Vérifie les limites de résolution, la suppression des puces et la navigation vers une référence.</summary>
         [STATestMethod, TestCategory("Unit")]
         public void ComposerReferenceResolutionBoundariesChipsAndNavigationKeepLatestAttachments()
         {
@@ -116,8 +122,10 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using CodexVBE.Tests.Infrastructure;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    /// <summary>Vérifie les états du catalogue de références et les erreurs de navigation.</summary>
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Exerce les états chargement, résultat vide, erreur hôte et navigation du catalogue.</summary>
         [STATestMethod, TestCategory("Unit")]
         public void ComposerCatalogueStatusHandlesLoadingSuccessEmptyAndHostFailure()
         {

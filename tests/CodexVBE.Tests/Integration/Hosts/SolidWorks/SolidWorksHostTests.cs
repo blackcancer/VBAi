@@ -5,10 +5,12 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CodexVBE.Tests.Integration
 {
+    /// <summary>Vérifie une instance SolidWorks VBE fournie par l’environnement, sans en lancer une nouvelle.</summary>
     [TestClass]
     [TestCategory("SolidWorks")]
     public sealed class SolidWorksHostTests
     {
+        /// <summary>Confirme que le PID fourni est un processus SLDWORKS vivant avec CodexVBE connecté.</summary>
         [TestMethod]
         public void ExistingSolidWorksVbeHasConnectedCodexAddIn()
         {

@@ -13,9 +13,12 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE.Tests.Infrastructure;
     using System.IO;
 
+    /// <summary>Vérifie les appels GitHub avec handlers mémoire et fixtures de processus sans accès réseau réel.</summary>
     [TestClass, TestCategory("Unit")]
     public sealed partial class GitReviewTests
     {
+        /// <summary>Teste la validation des chemins, statuts HTTP, entrées, annulation et corps de création.</summary>
+        /// <returns>Tâche asynchrone du scénario.</returns>
         [TestMethod]
         public async Task EveryGitHubPathAndHttpErrorGuardRunsOnlyAgainstMemoryHandlers()
         {
@@ -33,6 +36,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Vérifie que les modèles de dépôt, pull request, vérifications et commentaires conservent leurs champs.</summary>
+        /// <returns>Tâche asynchrone du scénario.</returns>
         [TestMethod]
         public async Task GitHubListsChecksAndDisplayModelsPreserveAllNativeShapes()
         {
@@ -44,6 +49,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Vérifie l’entrée GCM non interactive du processus natif, ses erreurs et son annulation.</summary>
+        /// <returns>Tâche asynchrone du scénario.</returns>
         [TestMethod]
         public async Task NativeCredentialChildReceivesNoninteractiveInputAndNeverLaunchesGcm()
         {
@@ -65,6 +72,8 @@ namespace CodexVBE.Tests.Unit
                 finally { GitHubApi.StartCredentialProcess = original; }
             }
         }
+        /// <summary>Vérifie la pagination des dépôts et l’usage exclusif de l’hôte API GitHub.</summary>
+        /// <returns>Tâche asynchrone du scénario.</returns>
         [TestMethod]
         public async Task GitHubPaginatesRepositoriesAndUsesOnlyTheApiHost()
         {
@@ -88,6 +97,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Vérifie le corps structuré d’une pull request et l’absence de tentative répétée.</summary>
+        /// <returns>Tâche asynchrone du scénario.</returns>
         [TestMethod]
         public async Task PullCreationUsesStructuredBodyAndDoesNotRetry()
         {
@@ -118,6 +129,8 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual(1, calls);
         }
 
+        /// <summary>Vérifie que les erreurs ne révèlent ni corps sensibles ni identifiants et filtre les liens dangereux.</summary>
+        /// <returns>Tâche asynchrone du scénario.</returns>
         [TestMethod]
         public async Task GitHubErrorsDoNotExposeResponseBodiesOrCredentials()
         {

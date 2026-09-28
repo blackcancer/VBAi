@@ -8,12 +8,24 @@ using System.Web.Script.Serialization;
 
 namespace CodexVBE
 {
+    /// <summary>Composant VBA inclus dans un snapshot Git.</summary>
     internal sealed class VbaGitComponent
     {
+        /// <summary>Nom du composant dans le projet VBA.</summary>
+        /// <value>Nom du composant dans le projet VBA.</value>
         public string Name { get; set; }
+        /// <summary>Type de composant selon les constantes VBE.</summary>
+        /// <value>Type de composant selon les constantes VBE.</value>
         public int Type { get; set; }
+        /// <summary>Indique si le UserForm possède un fichier de ressources FRX.</summary>
+        /// <value>Indique si le UserForm possède un fichier de ressources FRX.</value>
         public bool HasResources { get; set; }
+        /// <summary>Nom de fichier produit pour ce type de composant.</summary>
+        /// <value>Nom de fichier produit pour ce type de composant.</value>
         public string FileName { get { return Name + Extension(Type); } }
+        /// <summary>Retourne l’extension correspondant au type de composant VBA.</summary>
+        /// <param name="type">Type du composant d’après les constantes VBE.</param>
+        /// <returns>Extension de fichier associée au type, précédée d’un point.</returns>
         internal static string Extension(int type)
         {
             switch (type) { case 1: return ".bas"; case 2: return ".cls"; case 3: return ".frm"; case 100: return ".vba"; }
@@ -21,21 +33,36 @@ namespace CodexVBE
         }
     }
 
+    /// <summary>Manifeste versionné du contenu VBA du dépôt.</summary>
     internal sealed class VbaGitManifest
     {
+        /// <summary>Version du format de manifeste.</summary>
+        /// <value>Version du format de manifeste.</value>
         public int Format { get; set; } = 1;
+        /// <summary>Empreinte des références requises par le projet.</summary>
+        /// <value>Empreinte des références requises par le projet.</value>
         public string References { get; set; }
+        /// <summary>Composants et ressources décrits dans le snapshot.</summary>
+        /// <value>Composants et ressources décrits dans le snapshot.</value>
         public VbaGitComponent[] Components { get; set; }
     }
 
     // A snapshot is independent of the host file format and contains no local paths.
+    /// <summary>Normalise les fins de ligne et valide le manifeste ainsi que les fichiers.</summary>
     internal sealed class VbaGitSnapshot
     {
+        /// <summary>Encodage UTF-8 strict, sans marqueur BOM.</summary>
         internal static readonly Encoding Utf8 = new UTF8Encoding(false, true);
+        /// <summary>Manifeste des composants VBA et des références.</summary>
         internal readonly VbaGitManifest Manifest;
+        /// <summary>Fichiers du snapshot, rangés par nom ordinal.</summary>
         internal readonly SortedDictionary<string, byte[]> Files;
+        /// <summary>Taille maximale cumulée des fichiers du snapshot, en octets.</summary>
         internal const int MaxBytes = 32 * 1024 * 1024;
 
+        /// <summary>Construit un snapshot, normalise ses sources textuelles et valide son contenu.</summary>
+        /// <param name="manifest">Manifeste des composants à valider.</param>
+        /// <param name="files">Fichiers nommés inclus dans le snapshot.</param>
         internal VbaGitSnapshot(VbaGitManifest manifest, IDictionary<string, byte[]> files)
         {
             Manifest = manifest;
@@ -46,6 +73,9 @@ namespace CodexVBE
             Validate();
         }
 
+        /// <summary>Charge le manifeste puis construit un snapshot validé à partir des autres fichiers.</summary>
+        /// <param name="files">Fichiers nommés inclus dans le snapshot.</param>
+        /// <returns>Snapshot créé après validation des fichiers et du manifeste.</returns>
         internal static VbaGitSnapshot Read(IDictionary<string, byte[]> files)
         {
             if (!files.ContainsKey("manifest.json")) throw new InvalidOperationException(UiText.Get("No CodexVBA manifest in this repository."));
@@ -55,6 +85,8 @@ namespace CodexVBE
             return new VbaGitSnapshot(manifest, content);
         }
 
+        /// <summary>Sérialise les composants et le manifeste dans un dictionnaire trié.</summary>
+        /// <returns>Dictionnaire contenant les fichiers VBA et manifest.json.</returns>
         internal SortedDictionary<string, byte[]> Serialize()
         {
             var result = new SortedDictionary<string, byte[]>(Files, StringComparer.Ordinal);
@@ -62,6 +94,9 @@ namespace CodexVBE
             return result;
         }
 
+        /// <summary>Compare les manifestes et tous les octets des fichiers sérialisés.</summary>
+        /// <param name="other">Snapshot comparé à l’instance courante.</param>
+        /// <returns>true si les deux snapshots sérialisent les mêmes fichiers.</returns>
         internal bool SameAs(VbaGitSnapshot other)
         {
             if (other == null) return false;
@@ -69,6 +104,9 @@ namespace CodexVBE
             return left.Count == right.Count && left.All(x => right.ContainsKey(x.Key) && x.Value.SequenceEqual(right[x.Key]));
         }
 
+        /// <summary>Liste les fichiers ajoutés, supprimés ou modifiés par rapport au snapshot précédent.</summary>
+        /// <param name="previous">État de référence utilisé pour calculer les modifications.</param>
+        /// <returns>Libellés préfixés par +, − ou ~ pour chaque différence.</returns>
         internal string[] Changes(VbaGitSnapshot previous)
         {
             var before = previous?.Serialize() ?? new SortedDictionary<string, byte[]>();
@@ -79,6 +117,12 @@ namespace CodexVBE
         }
 
         // Components, including their form resources, are the smallest commit/import unit.
+        /// <summary>Construit un snapshot avec les seuls composants sélectionnés et leurs ressources.</summary>
+        /// <param name="baseline">Snapshot local servant de base aux composants non sélectionnés.</param>
+        /// <param name="source">Snapshot source fournissant les composants choisis.</param>
+        /// <param name="names">Noms exacts des composants à inclure depuis la source.</param>
+        /// <param name="references">Indique si les références doivent également venir de la source.</param>
+        /// <returns>Snapshot contenant les composants choisis et références retenues.</returns>
         internal static VbaGitSnapshot Select(VbaGitSnapshot baseline, VbaGitSnapshot source, IEnumerable<string> names, bool references = false)
         {
             if (source == null) throw new ArgumentException(UiText.Get("The target contains no VBA sources."));
@@ -98,6 +142,9 @@ namespace CodexVBE
                 References = references || baseline == null ? source.Manifest.References : baseline.Manifest.References }, files);
         }
 
+        /// <summary>Produit le résumé des changements et des références avant import.</summary>
+        /// <param name="previous">État de référence utilisé pour calculer les modifications.</param>
+        /// <returns>Résumé textuel des différences et des références à aligner.</returns>
         internal string ImportSummary(VbaGitSnapshot previous)
         {
             return string.Join(Environment.NewLine, Changes(previous)) + Environment.NewLine +
@@ -105,6 +152,8 @@ namespace CodexVBE
                 (previous != null && previous.Manifest.References != Manifest.References ? UiText.Get("References differ: align them in the VBE before importing.") : UiText.Get("A checkpoint protects this import."));
         }
 
+        /// <summary>Vérifie qu’un nom de composant peut être exporté comme fichier.</summary>
+        /// <param name="name">Nom de composant à vérifier.</param>
         internal static void ValidateName(string name)
         {
             if (!Regex.IsMatch(name ?? "", @"^[\p{L}][\p{L}\p{N}_]{0,39}$") ||
@@ -112,6 +161,7 @@ namespace CodexVBE
                 throw new InvalidOperationException("Nom de composant non exportable : " + name);
         }
 
+        /// <summary>Vérifie l’intégrité du manifeste, des noms, tailles, encodages et contenus exportés.</summary>
         private void Validate()
         {
             if (Manifest == null || Manifest.Format != 1 || Manifest.Components == null || Manifest.Components.Length > 1024 || Manifest.References == null)

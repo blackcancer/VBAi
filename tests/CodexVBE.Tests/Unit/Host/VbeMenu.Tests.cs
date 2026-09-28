@@ -6,8 +6,10 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie la découverte des menus VBE et le traitement des barres COM.</summary>
     public sealed partial class HostSettingsCoverageTests
     {
+        /// <summary>Ignore les barres et contrôles COM invalides et normalise les légendes localisées.</summary>
         [TestMethod]
         public void MenuLookupSkipsInvalidBarsAndNormalizesLocalizedCaptions()
         {
@@ -53,6 +55,7 @@ namespace CodexVBE.Tests.Unit
             StringAssert.Contains(missing.InnerException.Message, "VBE menu not found: Tools");
         }
 
+        /// <summary>Signale l’absence du menu Tools lors de la création des commandes principales.</summary>
         [TestMethod]
         public void MenuConstructionReportsMissingHostMenu()
         {
@@ -96,8 +99,10 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie la recherche des menus selon le type de barre et la légende normalisée.</summary>
     public sealed partial class HostSettingsWindowTests
     {
+        /// <summary>Ignore les accélérateurs et les barres qui ne représentent pas des menus.</summary>
         [TestMethod]
         public void MenuDiscoveryIgnoresAcceleratorsAndNonMenuBars()
         {
@@ -135,6 +140,7 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie les abonnements, actions et nettoyages des menus VBE.</summary>
     [TestClass]
     [TestCategory("Unit")]
     public sealed partial class VbeMenuLifecycleTests
@@ -169,6 +175,7 @@ namespace CodexVBE.Tests.Unit
                 Assert.AreSame(original, field.GetValue(menu));
             }
         }
+        /// <summary>Associe chaque bouton à sa propre action et retire toutes les commandes au Dispose.</summary>
         [TestMethod]
         public void MenuActionsUseTheirOwnCallbacksAndDisposeRemovesEveryCreatedButton()
         {
@@ -237,6 +244,7 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual(6, removed, "Disposal must be idempotent.");
         }
 
+        /// <summary>Supprime les boutons déjà créés lorsque la création du bouton Git échoue.</summary>
         [TestMethod]
         public void FailedGitButtonCreationRemovesAssistantAndSettingsButtons()
         {
@@ -261,6 +269,7 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual(1, tools.Items[0].DeleteCount);
         }
 
+        /// <summary>Préserve les commandes principales lorsque la barre de commandes éditeur manque.</summary>
         [TestMethod]
         public void MissingEditorCommandBarDoesNotAffectMainMenuActions()
         {
@@ -283,6 +292,7 @@ namespace CodexVBE.Tests.Unit
                 Assert.AreEqual(3, subscribed);
         }
 
+        /// <summary>Nettoie le bouton éditeur partiel sans retirer les commandes principales après échec d’abonnement.</summary>
         [TestMethod]
         public void EditorSubscriptionFailureKeepsMainMenuAndCleansPartialEditorButton()
         {

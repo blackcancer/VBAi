@@ -12,9 +12,11 @@ using CodexVBE.Tests.Infrastructure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
+    /// <summary>Vérifie l’affichage des différences de code et des options de navigation.</summary>
     [TestClass]
     public sealed class ChatDiffViewTests
     {
+        /// <summary>Préserve les changements pendant recherche, navigation, expansion et réglage du layout.</summary>
         [STATestMethod,TestCategory("Unit")]
         public void NavigationSearchExpansionAndLayoutOptionsPreserveChanges()
         {
@@ -42,6 +44,7 @@ namespace CodexVBE.Tests.Unit
                 var one=new ChatDiffView("old","new"); UiInvoke.Call(typeof(ChatDiffView),"Move",one,1); var single=UiInvoke.Field<DataGrid>(one,"grid"); var prior=single.SelectedItem; UiInvoke.Call(typeof(ChatDiffView),"Move",one,1); Assert.AreSame(prior,single.SelectedItem);
             }
         }
+        /// <summary>Colorie chaque côté du diff et traite les lignes nulles ou les sources absentes.</summary>
         [STATestMethod,TestCategory("Unit")]
         public void SyntaxConverterColorsEachSideAndHandlesNullRowsAndMissingSources()
         {

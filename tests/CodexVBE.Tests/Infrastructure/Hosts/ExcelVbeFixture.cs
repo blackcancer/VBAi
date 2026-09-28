@@ -8,21 +8,38 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CodexVBE.Tests.Integration
 {
+    /// <summary>Démarre et nettoie une instance Excel isolée pour les tests d’intégration du pont VBE.</summary>
     internal sealed class ExcelVbeFixture : IDisposable
     {
+        /// <summary>Récupère l’identifiant du processus propriétaire d’une fenêtre Win32.</summary>
+        /// <param name="window">Handle de la fenêtre à examiner.</param>
+        /// <param name="processId">Reçoit l’identifiant du processus propriétaire.</param>
+        /// <returns>L’identifiant du thread qui possède la fenêtre.</returns>
         [DllImport("user32.dll")]
         private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
 
+        /// <summary>Instance COM Excel démarrée par la fixture.</summary>
         private object application;
+        /// <summary>Collection COM des classeurs Excel.</summary>
         private object workbooks;
+        /// <summary>Classeur temporaire créé pour isoler les commandes VBE.</summary>
         private object workbook;
+        /// <summary>Indique si cette fixture a créé le processus et peut le fermer.</summary>
         private bool owned;
 
+        /// <summary>Crée une fixture avant son initialisation par <see cref="Start"/>.</summary>
         private ExcelVbeFixture() { }
 
+        /// <summary>Identifiant du processus Excel isolé.</summary>
+        /// <value>Identifiant du processus créé pour le test.</value>
         internal int ProcessId { get; private set; }
+        /// <summary>Répertoire temporaire réservé aux fichiers du test.</summary>
+        /// <value>Chemin racine des fichiers temporaires de la fixture.</value>
         internal string Root { get; private set; }
 
+        /// <summary>Démarre Excel de façon isolée et vérifie la disponibilité du pont VBE.</summary>
+        /// <returns>La fixture prête à envoyer des commandes au pont.</returns>
+        /// <exception cref="AssertInconclusiveException">Les tests Excel sont désactivés, Excel est absent ou une session existante a été détectée.</exception>
         internal static ExcelVbeFixture Start()
         {
             if (Environment.GetEnvironmentVariable("CODEXVBE_RUN_EXCEL_TESTS") != "1")
@@ -62,18 +79,28 @@ namespace CodexVBE.Tests.Integration
             }
         }
 
+        /// <summary>Envoie une commande nommée au pont du processus Excel.</summary>
+        /// <param name="name">Nom de la commande à exécuter.</param>
+        /// <returns>La réponse reçue, ou <see langword="null"/> si le canal ne répond pas.</returns>
         internal IDictionary<string, object> Command(string name)
         {
             return VbeBridgeClient.Read(ProcessId, name);
         }
 
+        /// <summary>Envoie un objet de requête au pont du processus Excel.</summary>
+        /// <param name="request">Requête sérialisable à envoyer.</param>
+        /// <returns>La réponse reçue, ou <see langword="null"/> si le canal ne répond pas.</returns>
         internal IDictionary<string, object> Command(object request)
         {
             return VbeBridgeClient.Read(ProcessId, request);
         }
 
+        /// <summary>Construit un chemin dans le répertoire temporaire de la fixture.</summary>
+        /// <param name="name">Nom ou chemin relatif du fichier.</param>
+        /// <returns>Chemin absolu du fichier dans le répertoire temporaire.</returns>
         internal string File(string name) { return Path.Combine(Root, name); }
 
+        /// <summary>Ferme les ressources COM et fichiers temporaires appartenant à cette fixture.</summary>
         public void Dispose()
         {
             if (owned && workbook != null)
@@ -104,6 +131,8 @@ namespace CodexVBE.Tests.Integration
             catch (UnauthorizedAccessException) { }
         }
 
+        /// <summary>Libère une référence COM sans propager une erreur de nettoyage.</summary>
+        /// <param name="value">Objet COM à libérer, ou <see langword="null"/>.</param>
         private static void Release(object value)
         {
             try { if (value != null && Marshal.IsComObject(value)) Marshal.FinalReleaseComObject(value); }

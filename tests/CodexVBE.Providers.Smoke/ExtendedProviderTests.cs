@@ -8,10 +8,19 @@ using System.Threading;
 using System.Threading.Tasks;
 using CodexVBE;
 
+/// <summary>Scénarios smoke supplémentaires pour Azure, Bedrock et les réponses en flux.</summary>
 internal static partial class ProviderTests
 {
+    /// <summary>Formate un événement Server-Sent Events contenant un objet JSON.</summary>
+    /// <param name="value">Valeur de l’événement.</param>
+    /// <returns>Bloc SSE terminé par une ligne vide.</returns>
     private static string Event(object value) { return "data: " + Json.Serialize(value) + "\n\n"; }
+    /// <summary>Crée une réponse HTTP de type event-stream avec le contenu fourni.</summary>
+    /// <param name="data">Flux SSE simulé.</param>
+    /// <returns>Réponse HTTP 200 contenant le flux.</returns>
     private static HttpResponseMessage Sse(string data) { return new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StringContent(data, Encoding.UTF8, "text/event-stream") }; }
+    /// <summary>Vérifie les modèles manuels, l’authentification Azure, Bedrock Converse et le décodage des flux.</summary>
+    /// <returns>Tâche terminée après les scénarios asynchrones.</returns>
     private static async Task Extended()
     {
         var settings = new LlmSettings();
@@ -90,6 +99,8 @@ internal static partial class ProviderTests
         Console.WriteLine("PASS compatible/Claude streaming, partial tool reconstruction, signatures, interrupted streams and cancellation");
     }
 
+    /// <summary>Exécute un test live synthétique du catalogue et du flux OpenRouter si une clé est disponible.</summary>
+    /// <returns>Tâche terminée après le test live, ou immédiatement s’il est ignoré.</returns>
     private static async Task LiveOpenRouter()
     {
         // Only a synthetic prompt is transmitted. No project, user settings file or VBA source is read.
@@ -106,6 +117,8 @@ internal static partial class ProviderTests
             Console.WriteLine("PASS live OpenRouter streamed synthetic response: " + fragments + " fragments");
         }
     }
+    /// <summary>Vérifie en live un appel d’outil synthétique OpenRouter et l’envoi de son résultat.</summary>
+    /// <returns>Tâche terminée après le test live, ou immédiatement s’il est ignoré.</returns>
     private static async Task LiveOpenRouterTools()
     {
         var settings = new LlmSettings(); var provider = Provider("OpenRouter");

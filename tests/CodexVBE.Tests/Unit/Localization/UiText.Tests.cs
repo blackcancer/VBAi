@@ -8,8 +8,10 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie la traduction des contrôles et la détection de culture de l’interface.</summary>
     public sealed partial class UiLocalizationTests
     {
+        /// <summary>Donne priorité aux menus du VBE sans modifier la culture du thread hôte.</summary>
         [TestMethod]
         public void VbeMenuLanguageOverridesWindowsWithoutChangingTheHostCulture()
         {
@@ -39,6 +41,7 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Traduit récursivement les contrôles fixes, menus, noms accessibles et infobulles.</summary>
         [TestMethod]
         [STATestMethod]
         public void FixedControlsMenusAndTooltipsTranslateRecursively()
@@ -83,6 +86,7 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Applique le sens de lecture arabe tout en conservant les champs techniques de gauche à droite.</summary>
         [TestMethod]
         [STATestMethod]
         public void ArabicMirrorsTheFormButPreservesTechnicalFields()
@@ -137,9 +141,11 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using CodexVBE.Tests.Infrastructure;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    /// <summary>Vérifie les chemins de repli, détection et application de la localisation.</summary>
     [TestClass]
     public sealed class UiTextCoverageTests
     {
+        /// <summary>Ignore les barres qui ne sont pas des menus et traite les hôtes vides ou indisponibles.</summary>
         [TestMethod, TestCategory("Unit")]
         public void DetectionSkipsNonMenuBarsAndHandlesEmptyAndUnavailableHosts()
         {
@@ -153,6 +159,7 @@ namespace CodexVBE.Tests.Unit
                 UiText.Initialize(host); Assert.AreEqual(UiText.Supported(CultureInfo.CurrentUICulture).Name,UiText.Culture.Name);
             }
         }
+        /// <summary>Vérifie les ressources de repli et les jetons de locuteur sans altérer le texte inconnu.</summary>
         [TestMethod, TestCategory("Unit")]
         public void ResourceFallbackAndAllSpeakerTokensPreserveUnknownText()
         {
@@ -170,6 +177,7 @@ namespace CodexVBE.Tests.Unit
                 foreach(var language in UiLanguages.All) {LocalizationScope.Set(language.CultureName); Assert.IsFalse(string.IsNullOrEmpty(UiText.Get("Save")));}
             }
         }
+        /// <summary>Traduit menus imbriqués et infobulles dans les deux sens sans modifier les champs techniques.</summary>
         [STATestMethod, TestCategory("Unit")]
         public void ControlsTooltipsNestedMenusAndTechnicalFieldsTranslateInBothDirections()
         {

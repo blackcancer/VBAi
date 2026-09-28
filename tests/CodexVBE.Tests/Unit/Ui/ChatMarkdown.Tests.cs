@@ -11,9 +11,11 @@ using Markdig.Syntax.Inlines;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
+    /// <summary>Vérifie le rendu Markdown de la conversation et ses actions de lien.</summary>
     [TestClass]
     public sealed class ChatMarkdownTests
     {
+        /// <summary>Préserve blocs de code, tableaux, citations, listes et direction du texte.</summary>
         [STATestMethod,TestCategory("Unit")]
         public void MarkdownBlocksPreserveCodeTableQuoteListsAndDirection()
         {
@@ -37,6 +39,7 @@ namespace CodexVBE.Tests.Unit
                 Assert.AreEqual(4,document.Blocks.Count);
             }
         }
+        /// <summary>Traite liens de références, liens Web et erreurs de copie sans effet externe.</summary>
         [STATestMethod,TestCategory("Unit")]
         public void ReferenceLinksWebLinksAndCopyActionsReportErrorsWithoutExternalEffects()
         {
