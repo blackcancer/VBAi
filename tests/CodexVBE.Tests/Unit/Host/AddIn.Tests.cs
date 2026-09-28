@@ -375,6 +375,27 @@ namespace CodexVBE.Tests.Unit
     public sealed class AddInModernEditorTests
     {
         [STATestMethod]
+        public void ConnectionAutomaticallyShowsBorderlessEditorAcrossTheOwnedWorkspace()
+        {
+            using (var fixture = new AddInModernEditorFixture(true))
+            {
+                var editor = fixture.Get(false);
+                Assert.IsNotNull(editor);
+                Assert.IsTrue(editor.Visible);
+                Assert.IsFalse(editor.TopLevel);
+                Assert.IsTrue(editor.WorkspaceHosted);
+                Assert.AreEqual(System.Windows.Forms.FormBorderStyle.None, editor.FormBorderStyle);
+                var mdi = fixture.Scope.Host.Owner.Controls.OfType<System.Windows.Forms.MdiClient>().Single();
+                Assert.AreEqual(mdi.Handle, OwnedMdiWorkspace.GetParent(editor.Handle));
+                Assert.AreEqual(System.Drawing.Point.Empty, editor.Location);
+                Assert.AreEqual(mdi.ClientSize, editor.Size);
+                fixture.Scope.Host.Owner.ClientSize = new System.Drawing.Size(1250, 880);
+                LlmBoundaryScope.Call(LlmBoundaryScope.Get<EditorWorkspaceHost>(fixture.Instance, "editorWorkspace"), "Resize");
+                Assert.AreEqual(mdi.ClientSize, editor.Size);
+                Assert.AreEqual(1, fixture.Editors.Count);
+            }
+        }
+        [STATestMethod]
         public void ActiveEditorFollowsOnlyCodePanesInDesignModeAndRetainsComponentIdentity()
         {
             using (var fixture = new AddInModernEditorFixture())

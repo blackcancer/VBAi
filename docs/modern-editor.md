@@ -1,4 +1,4 @@
-﻿# Éditeur Monaco
+# Éditeur Monaco
 
 ## Utilisation
 
@@ -9,6 +9,8 @@ Monaco occupe toute la zone centrale des documents VBE, sans bordure, commandes 
 La synchronisation automatique est continue après une pause de saisie. **Elle ne sauvegarde pas le classeur ou la macro sur disque**. Ctrl+S synchronise les modifications puis déclenche la commande Enregistrer native pour le projet de l’onglet. Un conflit fait apparaître les actions de comparaison, rechargement et résolution. Une nouvelle modification native après comparaison interdit l’écrasement.
 
 ## Assistance VBA
+
+Monaco s’ouvre automatiquement au chargement du complément. Sa fenêtre WinForms sans bordure est attachée au `MDIClient` du VBE et remplit toute la zone des documents ; elle suit son redimensionnement. Le module natif actif est ouvert lorsqu’un panneau de code est disponible. Les concepteurs UserForm et l’explorateur d’objets restent accessibles dans cette même zone.
 
 - Suggestions des procédures, propriétés, variables, paramètres, constantes, types et champs déclarés dans le projet.
 - Résolution des portées locales, des déclarations privées et des récepteurs typés et chaînes de propriétés/appels (`objet.Methode(...).Membre`), y compris les blocs `With` imbriqués. Les brouillons ouverts remplacent les snapshots natifs dans l’index.

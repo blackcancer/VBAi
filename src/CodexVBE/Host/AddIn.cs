@@ -117,6 +117,13 @@ public void OnConnection(object application, int connectMode, object addInInstan
                 editorNavigation = new EditorProjectNavigation(vbe, dispatcher, OpenModernModule);
                 try { ShowChat(); ToggleDock(); }
                 catch (Exception uiError) { WriteLog("Assistant window failed: " + uiError.ToString()); crashReporter.ReportUnexpected(uiError); }
+                try
+                {
+                    GetModernEditor(true);
+                    var module = ActiveEditorModule(false);
+                    if (module != null) OpenModernModule(module);
+                }
+                catch (Exception editorError) { WriteLog("Modern editor startup failed: " + editorError.ToString()); }
                 crashReporter.RecoverPending();
             }
             catch (Exception ex)
