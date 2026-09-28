@@ -561,5 +561,35 @@ namespace CodexVBE.Tests.Unit
                 Set(window, "currentSession", null);
             }
         }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void SendFinalizationReleasesTheTurnWhenTheSessionDisappearsAtTheProviderFailureBoundary()
+        {
+            foreach (string state in new[] { "absent", "paused", "unpaused" })
+            using (var runtime = new RuntimeScope())
+            using (var window = ReadyHttpWindow(new ChatSessionState()))
+            {
+                var session = Get<ChatSessionState>(window, "currentSession");
+                int replies = 0, compilations = 0;
+                Get<CheckBox>(window, "verifyAfterEdit").Checked = true;
+                ChatWindow.InvokeTool = (tools, name, arguments) => { compilations++; throw new AssertFailedException("A turn without applied changes must not compile."); };
+                window.HttpHandlerOverride = () => new RuntimeHttpHandler { BeforeResponse = () => {
+                    replies++;
+                    if (state == "absent") Set(window, "currentSession", null);
+                    else session.BudgetPaused = state == "paused";
+                    throw new System.IO.IOException("owned provider reply failed");
+                } };
+                Question(window, "owned retry request");
+                CompleteOnSta((Task)Call(window, "SendAsync"));
+                Assert.AreEqual(1, replies); Assert.AreEqual(0, compilations);
+                Assert.IsFalse(window.IsDisposed); Assert.IsFalse(Get<bool>(window, "busy"));
+                Assert.IsNull(Get<LlmChatClient>(window, "activeHttpClient")); Assert.IsNull(Get<string>(window, "activeTurnId"));
+                Assert.AreEqual("owned retry request", Get<System.Windows.Controls.TextBox>(window, "prompt").Text);
+                Assert.IsTrue(Get<List<ChatEntry>>(window, "transcriptEntries").Exists(entry => entry.Speaker == "Erreur" && entry.Text == "owned provider reply failed"));
+                if (state == "absent") Assert.IsNull(Get<ChatSessionState>(window, "currentSession"));
+                else { Assert.AreSame(session, Get<ChatSessionState>(window, "currentSession")); Assert.AreEqual(state == "paused", session.BudgetPaused); }
+                Set(window, "currentSession", null);
+            }
+        }
     }
 }
