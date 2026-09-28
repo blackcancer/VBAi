@@ -29,17 +29,15 @@ namespace CodexVBE
         internal static Func<Process, int, bool> WaitForExit = (process, milliseconds) => process.WaitForExit(milliseconds);
         /// <summary>Vérifie la présence du client à son emplacement installé.</summary>
         internal static Func<string, bool> FileExists = File.Exists;
+        internal static Func<string, string[]> GetDirectories = Directory.GetDirectories;
+        internal static Func<string, DateTime> GetLastWriteTimeUtc = File.GetLastWriteTimeUtc;
         /// <summary>Résout le chemin du client Codex depuis sa configuration ou son emplacement usuel.</summary>
         /// <value>Chemin configuré, chemin installé, ou « codex.exe » si aucun fichier connu ne le confirme.</value>
         public static string Executable
         {
             get
             {
-                string configured = Environment.GetEnvironmentVariable("CODEXVBE_CODEX_CLI");
-                if (!string.IsNullOrWhiteSpace(configured)) return configured;
-                string installed = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "Programs", "OpenAI", "Codex", "bin", "codex.exe");
-                return FileExists(installed) ? installed : "codex.exe";
+                return CodexCliLocator.Resolve(FileExists, GetDirectories, GetLastWriteTimeUtc);
             }
         }
 

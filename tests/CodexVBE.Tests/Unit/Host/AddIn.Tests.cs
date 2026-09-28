@@ -115,7 +115,7 @@ namespace CodexVBE.Tests.Unit
             {
                 Action chatAction = null, settingsAction = null, githubAction = null; Action<string> editor = null;
                 AddIn.CreateMenu = (host, chat, settings, github, action) => { chatAction = chat; settingsAction = settings; githubAction = github; editor = action; return new VbeMenu(host, chat, settings, github, action, (b, i, d, h) => { }, (b, i, d, h) => { }, (b, t) => { }); };
-                var instance = scope.Connected(); try { chatAction(); settingsAction(); githubAction(); editor("/expliquer"); Assert.AreEqual(2, scope.Dialogs.Count); Assert.AreEqual(typeof(LlmSettingsWindow), scope.Dialogs[0]); Assert.AreEqual(typeof(GitWindow), scope.Dialogs[1]); Assert.AreEqual("/expliquer ", LlmBoundaryScope.Get<System.Windows.Controls.TextBox>(Chat(instance), "prompt").Text); }
+                var instance = scope.Connected(); try { chatAction(); settingsAction(); System.IO.File.WriteAllText(scope.Host.Project.FileName, string.Empty); githubAction(); editor("/expliquer"); Assert.AreEqual(2, scope.Dialogs.Count); Assert.AreEqual(typeof(LlmSettingsWindow), scope.Dialogs[0]); Assert.AreEqual(typeof(GitWindow), scope.Dialogs[1]); Assert.AreEqual("/expliquer ", LlmBoundaryScope.Get<System.Windows.Controls.TextBox>(Chat(instance), "prompt").Text); }
                 finally { scope.Close(instance); }
             }
         }
@@ -154,7 +154,9 @@ namespace CodexVBE.Tests.Unit
                 var instance = new AddIn(); LlmBoundaryScope.Set(instance, "vbe", scope.Host); AddIn.ReadSettings = LlmSettings.Load; Call(instance, "ShowSettings"); Assert.AreEqual(typeof(LlmSettingsWindow), scope.Dialogs.Single());
                 scope.Host.ActiveVBProject = null; Call(instance, "ShowGitHub"); scope.Host.ActiveVBProject = scope.Host.Project; foreach (var path in new[] { null, " ", "relative.xlsm" }) { scope.Host.Project.FileName = path; Call(instance, "ShowGitHub"); }
                 Assert.AreEqual(4, scope.Notices.Count);
-                scope.Host.Project.FileName = Path.Combine(Path.GetTempPath(), "missing-selector-" + Guid.NewGuid() + ".xlsm"); scope.Host.VBProjects.Clear(); Call(instance, "ShowGitHub"); Assert.AreEqual(5, scope.Notices.Count);
+                scope.Host.Project.ThrowDirectoryNotFound = true; Call(instance, "ShowGitHub"); scope.Host.Project.ThrowDirectoryNotFound = false;
+                StringAssert.Contains(scope.Notices.Last(), "Save the macro");
+                scope.Host.Project.FileName = Path.Combine(Path.GetTempPath(), "missing-selector-" + Guid.NewGuid() + ".xlsm"); scope.Host.VBProjects.Clear(); Call(instance, "ShowGitHub"); Assert.AreEqual(6, scope.Notices.Count);
                 AddIn.ReadSettings = () => throw new IOException("settings unavailable"); Call(instance, "ShowSettings"); Assert.AreEqual("settings unavailable", scope.Notices.Last()); scope.Host.MainWindow.RejectHandle = true; Call(instance, "ShowSettings"); Assert.IsTrue(scope.Notices.Count >= 7); scope.Close(instance);
             }
             using (var scope = new HostUiScope()) { var instance = scope.Connected(); var disposed = Chat(instance); disposed.Dispose(); LlmBoundaryScope.Set(instance, "chat", disposed); Call(instance, "ShowSettings"); Assert.AreEqual(typeof(LlmSettingsWindow), scope.Dialogs.Single()); scope.Close(instance); }

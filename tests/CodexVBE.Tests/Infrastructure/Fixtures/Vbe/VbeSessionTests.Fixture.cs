@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Unit
+namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections;
@@ -57,6 +57,7 @@
             public int Mode { get; set; }
             public bool Saved { get; set; } = true;
             public bool ThrowFileName { get; set; }
+            public bool ThrowDirectoryNotFound { get; set; }
 
             public string FileName
             {
@@ -64,6 +65,8 @@
                 {
                     if (ThrowFileName)
                         throw new InvalidOperationException("Unsaved");
+                    if (ThrowDirectoryNotFound)
+                        throw new DirectoryNotFoundException("Host document is unavailable");
                     return fileName;
                 }
 

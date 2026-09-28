@@ -49,9 +49,16 @@ namespace CodexVBE.Tests.Unit
             {
                 Assert.AreEqual(scope.Executable,CodexAccount.Executable);
                 Environment.SetEnvironmentVariable("CODEXVBE_CODEX_CLI",null);
+                CodexAccount.GetDirectories=path=>new string[0];
                 CodexAccount.FileExists=path=>false;Assert.AreEqual("codex.exe",CodexAccount.Executable);
                 string installed=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Programs","OpenAI","Codex","bin","codex.exe");
                 CodexAccount.FileExists=path=> {Assert.AreEqual(installed,path);return true;};Assert.AreEqual(installed,CodexAccount.Executable);
+                string desktop=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"OpenAI","Codex","bin");
+                string older=Path.Combine(desktop,"older");string newer=Path.Combine(desktop,"newer");
+                CodexAccount.GetDirectories=path=> {Assert.AreEqual(desktop,path);return new[] {older,newer};};
+                CodexAccount.FileExists=path=>path==Path.Combine(older,"codex.exe")||path==Path.Combine(newer,"codex.exe");
+                CodexAccount.GetLastWriteTimeUtc=path=>path==Path.Combine(newer,"codex.exe")?new DateTime(2026,9,28):new DateTime(2026,9,27);
+                Assert.AreEqual(Path.Combine(newer,"codex.exe"),CodexAccount.Executable);
                 Environment.SetEnvironmentVariable("CODEXVBE_CODEX_CLI",scope.Executable);
                 CodexAccount.StartProcess=scope.StartLogin;CodexAccount.StartLogin();scope.AssertLoginFinished();
             }
