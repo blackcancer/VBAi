@@ -1,5 +1,13 @@
 # Thème sombre natif du VBE
 
+## Récupération des couleurs modifiées — 29 septembre 2026
+
+Le message « Native editor colors were changed after the theme was applied » pouvait bloquer le chargement avec un fichier de récupération valide : les couleurs courantes différaient de la palette enregistrée. Le complément réconcilie désormais chaque couleur de texte, de fond et d’indicateur. Une valeur encore imposée par le thème retrouve sa valeur initiale ; une valeur modifiée depuis est conservée comme nouvelle préférence.
+
+Avant tout changement dans le VBE, le nouvel état remplace atomiquement le fichier de récupération et conserve son contenu précédent dans une archive `palette-{version}.json.previous-{identifiant}` du même dossier. Un échec de remplacement conserve l’ancien fichier. La suppression de la récupération active reste conditionnée à une restauration relue et vérifiée dans Options. Les fichiers invalides et les catégories incompatibles restent refusés.
+
+Qualification : **36 tests ciblés réussis** et **1 parcours Excel natif réussi**, avec application, relecture, archivage et restauration complète des couleurs initiales. Le parcours utilise une récupération temporaire, refuse les hôtes déjà ouverts et ferme son propre classeur sans enregistrer ni exécuter de macro. Preuves : `artifacts/palette-diagnostic/contracts-accepted/palette.trx` et `artifacts/palette-diagnostic/native/native.trx`. Les sections suivantes conservent l’historique des qualifications précédentes.
+
 ## Intégration de la PR #8 dans main
 
 Le 28 septembre 2026, l'intégration conserve Monaco issu de la PR #7 et ajoute le thème natif jusqu'au commit `264e432`. L'option reste **expérimentale et désactivée par défaut**. Les captures et essais Office décrits ci-dessous viennent de la branche auteur ; ils n'ont pas été répétés pendant cette intégration, car une autre session utilise Excel.

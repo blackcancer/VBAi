@@ -125,8 +125,10 @@ namespace CodexVBE.Tests.Unit
                 Assert.IsTrue(VbeNativePaletteState.Equal(NativePaletteFixture.Rows(), fixture.Current));
                 fixture.RejectCommit = false;
                 fixture.Current[0].Foreground = 12;
-                Assert.ThrowsException<InvalidOperationException>(() => fixture.Change(true));
-                Assert.AreEqual(originalRecovery, File.ReadAllText(fixture.PathName));
+                fixture.Change(true);
+                Assert.AreEqual(12, VbeNativePaletteState.Load(fixture.PathName, "7.1").Original[0].Foreground);
+                Assert.AreEqual(originalRecovery, File.ReadAllText(Directory.GetFiles(fixture.DirectoryPath, "*.previous-*").Single()));
+                fixture.Change(false);
                 Assert.AreEqual(12, fixture.Current[0].Foreground);
                 using (File.Open(fixture.PathName + ".lock", FileMode.Open, FileAccess.ReadWrite, FileShare.None)) { }
             }

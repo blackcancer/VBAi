@@ -89,6 +89,16 @@ dotnet test tests/CodexVBE.Tests/CodexVBE.Tests.csproj --filter FullyQualifiedNa
 Remove-Item Env:VBAI_EDITOR_LANGUAGE_EXCEL_TEST
 ```
 
+### Palette native Excel
+
+`VbePaletteExcelTests` vérifie dans les véritables dialogues Options la réconciliation des couleurs modifiées, l’archive exacte de la récupération précédente, l’application puis la restauration relue de la palette initiale. Il utilise un fichier de récupération temporaire et désactive le service automatique de palette pour isoler le fichier utilisateur. Il refuse de démarrer si Excel ou SOLIDWORKS est ouvert, car les couleurs sont des préférences partagées. Son instance Excel est visible puis fermée, sans sauvegarde ni exécution de macro.
+
+```powershell
+$env:VBAI_NATIVE_PALETTE_EXCEL_TEST = '1'
+dotnet test tests/CodexVBE.Tests/CodexVBE.Tests.csproj --filter TestCategory=NativePaletteExcel
+Remove-Item Env:VBAI_NATIVE_PALETTE_EXCEL_TEST
+```
+
 ## SOLIDWORKS préchargé
 
 ```powershell

@@ -1,6 +1,12 @@
 # Qualification native des fonctions VBE
 
-État du 29 septembre 2026. Les preuves ci-dessous portent sur des scénarios précis ; elles ne transforment pas les fonctions absentes ou bornées de [functional-extensions.md](functional-extensions.md) en une couverture universelle. Le thème natif VBE reste exclu.
+État du 29 septembre 2026. Les preuves ci-dessous portent sur des scénarios précis ; elles ne transforment pas les fonctions absentes ou bornées de [functional-extensions.md](functional-extensions.md) en une couverture universelle. Le rendu global du thème natif VBE reste hors de cette qualification.
+
+## Palette native : récupération après modification manuelle
+
+`artifacts/palette-diagnostic/native/native.trx` fournit **1 réussite, 0 échec, 0 ignoré** dans Excel visible. Le scénario crée un état de récupération incompatible avec les couleurs courantes, applique le thème par les véritables dialogues Options, relit la palette appliquée, vérifie l’archive exacte du fichier précédent et restaure toutes les couleurs natives initiales. Le fichier actif est supprimé uniquement après vérification de la restauration.
+
+Le parcours utilise une récupération temporaire et ne consomme pas le fichier de récupération utilisateur. Il refuse les hôtes déjà ouverts, restaure les préférences même en cas d’échec et ferme uniquement son propre classeur et son instance Excel. Aucune macro n’est exécutée ou enregistrée ; aucune coordonnée souris ni raccourci global n’est utilisé. Ce résultat qualifie la transaction de palette, sans constituer une validation du rendu global ou du parcours SOLIDWORKS.
 
 ## Monaco : références dynamiques, IntelliSense et édition automatique
 

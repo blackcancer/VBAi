@@ -134,7 +134,12 @@ namespace CodexVBE
                         state = new VbeNativePaletteState { VbeVersion = version, Original = current, Applied = VbeNativePaletteState.Dark(current) };
                         state.SaveNew(recoveryPath);
                     }
-                    state.RequireUnchanged(current);
+                    if (!VbeNativePaletteState.Equal(current, state.Original) && !VbeNativePaletteState.Equal(current, state.Applied))
+                    {
+                        state = state.Rebase(current);
+                        string archive = state.SaveReplacing(recoveryPath);
+                        LoadLog.Write("Native editor palette reconciled with manual changes; previous recovery archived: " + archive);
+                    }
                     expected = enabled ? state.Applied : state.Original;
                     return VbeNativePaletteState.Equal(current, expected) ? null : expected;
                 });

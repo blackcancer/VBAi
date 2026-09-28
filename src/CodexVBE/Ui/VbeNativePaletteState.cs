@@ -95,6 +95,48 @@ namespace CodexVBE
                 throw new InvalidOperationException("Native editor colors were changed after the theme was applied. The original palette is retained; current colors were not overwritten.");
         }
 
+        /// <summary>Builds a recoverable baseline that retains manual changes and removes only still-applied theme values.</summary>
+        /// <param name="current">Current native categories, in the saved category order.</param>
+        /// <returns>A new original and dark palette without mutating the previous snapshot.</returns>
+        /// <exception cref="InvalidDataException">The current palette is invalid.</exception>
+        /// <exception cref="InvalidOperationException">Native categories no longer match the saved categories.</exception>
+        internal VbeNativePaletteState Rebase(ColorRow[] current)
+        {
+            Validate(VbeVersion);
+            ValidateRows(current);
+            if (!Original.Select(row => row.Name).SequenceEqual(current.Select(row => row.Name)))
+                throw new InvalidOperationException("The native color categories changed; the saved palette cannot be reconciled.");
+            var baseline = current.Select((row, index) => new ColorRow {
+                Name = row.Name,
+                Foreground = row.Foreground == Applied[index].Foreground ? Original[index].Foreground : row.Foreground,
+                Background = row.Background == Applied[index].Background ? Original[index].Background : row.Background,
+                Indicator = row.Indicator == Applied[index].Indicator ? Original[index].Indicator : row.Indicator
+            }).ToArray();
+            return new VbeNativePaletteState { VbeVersion = VbeVersion, Original = baseline, Applied = Dark(baseline) };
+        }
+
+        /// <summary>Atomically replaces recovery state while archiving the complete previous snapshot.</summary>
+        /// <param name="path">Existing recovery file whose original values must remain recoverable.</param>
+        /// <returns>Path to the archive created by the atomic replacement.</returns>
+        /// <exception cref="InvalidDataException">This state is invalid.</exception>
+        /// <exception cref="IOException">The existing state cannot be replaced and archived.</exception>
+        internal string SaveReplacing(string path)
+        {
+            Validate(VbeVersion);
+            string suffix = Guid.NewGuid().ToString("N");
+            string temporary = path + "." + suffix + ".tmp";
+            string archive = path + ".previous-" + suffix;
+            try
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(new JavaScriptSerializer().Serialize(this));
+                using (var file = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                { file.Write(bytes, 0, bytes.Length); file.Flush(true); }
+                File.Replace(temporary, path, archive);
+                return archive;
+            }
+            finally { if (File.Exists(temporary)) File.Delete(temporary); }
+        }
+
         /// <summary>Loads and validates a saved palette state, returning <see langword="null"/> when absent.</summary>
         /// <param name="path">Path to the recovery file.</param>
         /// <param name="version">VBE version that must match the saved state.</param>

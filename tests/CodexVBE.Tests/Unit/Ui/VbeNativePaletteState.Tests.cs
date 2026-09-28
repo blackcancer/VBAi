@@ -11,6 +11,60 @@ namespace CodexVBE.Tests.Unit
     public sealed class VbeNativePaletteStateTests
     {
         [TestMethod]
+        public void RebasePreservesEveryManualFieldAndRestoresOnlyOwnedAppliedValues()
+        {
+            foreach (bool startApplied in new[] { false, true })
+            foreach (string field in new[] { "Foreground", "Background", "Indicator" })
+            for (int index = 0; index < 10; index++)
+            {
+                var state = NativePaletteFixture.State();
+                var current = (startApplied ? state.Applied : state.Original).Select(r => new Row { Name=r.Name, Foreground=r.Foreground, Background=r.Background, Indicator=r.Indicator }).ToArray();
+                var property = typeof(Row).GetProperty(field);
+                int original = (int)property.GetValue(state.Original[index]);
+                int applied = (int)property.GetValue(state.Applied[index]);
+                int manual = Enumerable.Range(0, 17).First(value => value != original && value != applied);
+                property.SetValue(current[index], manual);
+                var rebased = state.Rebase(current);
+                Assert.AreEqual(manual, property.GetValue(rebased.Original[index]));
+                for (int row = 0; row < 10; row++)
+                foreach (string component in new[] { "Foreground", "Background", "Indicator" })
+                {
+                    var value = typeof(Row).GetProperty(component);
+                    Assert.AreEqual(row == index && component == field ? manual : (int)value.GetValue(state.Original[row]), value.GetValue(rebased.Original[row]));
+                }
+                rebased.Validate("7.1");
+                Assert.IsTrue(VbeNativePaletteState.Equal(NativePaletteFixture.Rows(), state.Original));
+            }
+            var invalid = NativePaletteFixture.State();
+            Assert.ThrowsException<InvalidDataException>(() => invalid.Rebase(null));
+            var renamed = NativePaletteFixture.Rows(); renamed[0].Name = "Different category";
+            Assert.ThrowsException<InvalidOperationException>(() => invalid.Rebase(renamed));
+        }
+
+        [TestMethod]
+        public void AtomicReplacementArchivesOriginalAndPreservesItOnFailure()
+        {
+            using (var fixture = new NativePaletteFixture())
+            {
+                var state = NativePaletteFixture.State(); state.SaveNew(fixture.PathName);
+                string original = File.ReadAllText(fixture.PathName);
+                var current = NativePaletteFixture.Rows(); current[0].Foreground = 12;
+                var replacement = state.Rebase(current);
+                using (File.Open(fixture.PathName, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                    Assert.ThrowsException<IOException>(() => replacement.SaveReplacing(fixture.PathName));
+                Assert.AreEqual(original, File.ReadAllText(fixture.PathName));
+                Assert.AreEqual(0, Directory.GetFiles(fixture.DirectoryPath, "*.tmp").Length);
+                string archive = replacement.SaveReplacing(fixture.PathName);
+                Assert.AreEqual(original, File.ReadAllText(archive));
+                Assert.AreEqual(12, VbeNativePaletteState.Load(fixture.PathName, "7.1").Original[0].Foreground);
+                Assert.AreEqual(0, Directory.GetFiles(fixture.DirectoryPath, "*.tmp").Length);
+                Assert.ThrowsException<FileNotFoundException>(() => replacement.SaveReplacing(Path.Combine(fixture.DirectoryPath, "missing.json")));
+                Assert.AreEqual(0, Directory.GetFiles(fixture.DirectoryPath, "*.tmp").Length);
+                replacement.Applied = null;
+                Assert.ThrowsException<InvalidDataException>(() => replacement.SaveReplacing(fixture.PathName));
+            }
+        }
+        [TestMethod]
         public void EveryInvalidRowBoundaryIsRejectedBeforeDarkMapping()
         {
             Assert.ThrowsException<InvalidDataException>(() => VbeNativePaletteState.ValidateRows(null));
