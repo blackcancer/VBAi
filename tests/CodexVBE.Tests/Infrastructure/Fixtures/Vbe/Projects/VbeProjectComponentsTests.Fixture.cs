@@ -24,11 +24,11 @@ namespace CodexVBE.Tests.Unit
 
         public class FakeProject
         {
-            public string Name { get; set; } = "VBAProject";
+            public virtual string Name { get; set; } = "VBAProject";
             public string Description { get; set; } = "Original";
             private string fileName = @"C:\fixture\Book.xlsm";
             public bool FailFileName { get; set; }
-            public string FileName { get { if (FailFileName) throw new InvalidOperationException("Project filename unavailable"); return fileName; } set { fileName = value; } }
+            public virtual string FileName { get { if (FailFileName) throw new InvalidOperationException("Project filename unavailable"); return fileName; } set { fileName = value; } }
             public int Mode { get; set; } = 2;
             public bool Saved { get; set; } = true;
             public FakeComponentCollection VBComponents { get; } = new FakeComponentCollection();
@@ -165,6 +165,7 @@ namespace CodexVBE.Tests.Unit
 
         public sealed class FakeCodeModule
         {
+            public string Source { get; set; } = "Option Explicit";
             public int LineCount { get; set; } = 1;
             public bool FailRead { get; set; }
             public int CountOfLines
@@ -178,7 +179,7 @@ namespace CodexVBE.Tests.Unit
 
             public string Lines(int start, int count)
             {
-                return "Option Explicit";
+                return Source;
             }
         }
     }

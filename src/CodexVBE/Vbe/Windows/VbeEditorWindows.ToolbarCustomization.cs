@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -83,7 +83,7 @@ namespace CodexVBE
             int position = request.InsertIndex ?? 0;
             if (position < 1 || position > (int)bar.Controls.Count) throw new ArgumentOutOfRangeException(nameof(request.InsertIndex));
             dynamic control = bar.Controls[position];
-            string tag = (string)control.Tag;
+            string tag = (string)control.Tag ?? "";
             if (!tag.StartsWith(CustomCommandTag, StringComparison.Ordinal) || (int)control.Id != request.ControlId || (string)control.Caption != request.ControlCaption)
                 throw new InvalidOperationException("Only the exact VBAi-added command can be removed.");
             string error = null;

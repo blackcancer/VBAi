@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Unit
+namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.IO;
@@ -7,6 +7,54 @@
 
     public sealed partial class VbeProjectComponentsTests
     {
+        [TestMethod]
+        public void StandaloneDetectionAndPersistenceDistinguishUnsavedRelativeMissingAndReadOnlyFiles()
+        {
+            string root=Path.Combine(Path.GetTempPath(),"StandaloneMatrix-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);string path=Path.Combine(root,"macro.swp");
+            try
+            {
+                var project=new FaultedStandaloneProject();var service=Service(project);
+                foreach(string value in new[]{null,"","relative.swp",path})
+                {project.FileName=value;dynamic state=service.PersistenceStatus(project.Name);Assert.IsFalse((bool)state.FileExists);Assert.AreEqual(value==path,(bool)state.HostHasPath);Assert.IsNull(state.HostSaved);Assert.IsNull(state.HostReadOnly);}
+                File.WriteAllText(path,"x");project.FileName=path;File.SetAttributes(path,FileAttributes.ReadOnly);dynamic present=service.PersistenceStatus(project.Name);Assert.IsTrue((bool)present.HostReadOnly);File.SetAttributes(path,FileAttributes.Normal);
+                project.FailFileName=true;Assert.AreEqual(false,typeof(VbeProjectComponents).GetMethod("SupportsStandaloneMacro",System.Reflection.BindingFlags.Static|System.Reflection.BindingFlags.NonPublic).Invoke(null,new object[]{project}));
+                project.FailFileName=false;project.FileName="macro.xlsm";dynamic metadata=service.ProjectProperties(project.Name);Assert.ThrowsException<InvalidOperationException>(()=>service.SaveHostDocument(new Request{Project=project.Name,ExpectedHostPath=path,ExpectedProjectVersion=metadata.Version}));
+            }
+            finally{if(File.Exists(path))File.SetAttributes(path,FileAttributes.Normal);Directory.Delete(root,true);}
+        }
+        [TestMethod]
+        public void StandaloneSaveValidationAndNativeReadbackCoverEveryIndependentBoundary()
+        {
+            string root=Path.Combine(Path.GetTempPath(),"StandaloneMatrix-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
+            try
+            {
+                for(int scenario=0;scenario<16;scenario++)
+                {
+                    string path=Path.Combine(root,"macro"+scenario+".swp");File.WriteAllText(path,"before");
+                    var p=new FaultedStandaloneProject{FileName=path,Saved=false};var service=Service(p);dynamic metadata=service.ProjectProperties(p.Name);
+                    var r=new Request{Project=p.Name,ExpectedProjectVersion=metadata.Version,ExpectedHostPath=path,Path=Path.Combine(root,"new"+scenario+".swp")};
+                    bool saveAs=scenario>=5;
+                    if(scenario==0)p.FileName="";if(scenario==1)p.FileName="relative.swp";if(scenario==2)r.ExpectedHostPath=null;if(scenario==3)r.ExpectedHostPath="relative.swp";if(scenario==4)File.Delete(path);
+                    if(scenario==5)r.Path=null;if(scenario==6)r.Path="relative.swp";if(scenario==7)r.Path=Path.Combine(root,"missing","new.swp");
+                    if(scenario>=8)p.Saving=destination=>{
+                        p.FileName=destination;p.Saved=true;File.WriteAllText(destination,"native");
+                        if(scenario==8)p.FileName=null;if(scenario==9)p.FileName="relative.swp";if(scenario==10)p.FileName=path;
+                        if(scenario==11)p.Saved=false;if(scenario==12)File.Delete(destination);if(scenario==13)File.WriteAllText(destination,"");
+                        if(scenario==14)throw new IOException("native save rejected");
+                    };
+                    // Refresh expected version after changing native preflight identity.
+                    metadata=service.ProjectProperties(p.Name);r.ExpectedProjectVersion=metadata.Version;
+                    if(scenario==15){dynamic result=service.SaveHostDocumentAs(r);Assert.IsTrue((bool)result.SaveInvoked);Assert.IsTrue(File.Exists(r.Path));}
+                    else
+                    {
+                        Exception failure=null;try{if(saveAs)service.SaveHostDocumentAs(r);else service.SaveHostDocument(r);}catch(Exception error){failure=error;}
+                        Assert.IsNotNull(failure,"Boundary "+scenario);Assert.IsTrue(failure is InvalidOperationException||failure is ArgumentException||failure is IOException);
+                        Assert.AreEqual(scenario>=8?1:0,p.Saves,"Native save must follow preflight only.");
+                    }
+                }
+            }
+            finally{Directory.Delete(root,true);}
+        }
         [TestMethod]
         public void StandaloneMacroSaveUsesNativeApiAndChecksExpectedVersionAndPath()
         {
