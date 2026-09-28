@@ -11,7 +11,9 @@ namespace CodexVBE
         private static extern IntPtr HtmlHelp(IntPtr owner, string file, uint command, UIntPtr data);
 
         /// <summary>Frontière de l'aide CHM native ; un handle n'atteste pas la lecture de la rubrique.</summary>
-        internal Func<string, uint, IntPtr> HelpLauncher = (path, context) => HtmlHelp(IntPtr.Zero, path, context == 0 ? 0U : 15U, new UIntPtr(context));
+        internal Func<string, uint, IntPtr> HelpLauncher = (path, context) => NativeHelp(IntPtr.Zero, path, context == 0 ? 0U : 15U, new UIntPtr(context));
+        /// <summary>Invokes HtmlHelp by default; permits owned boundary checks without opening a help window.</summary>
+        internal static Func<IntPtr, string, uint, UIntPtr, IntPtr> NativeHelp = HtmlHelp;
 
         /// <summary>Ouvre le fichier CHM et le contexte configurés dans le projet après contrôle de version.</summary>
         public object OpenProjectHelp(Request request)

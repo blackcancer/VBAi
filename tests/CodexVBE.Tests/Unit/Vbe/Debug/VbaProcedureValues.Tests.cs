@@ -66,3 +66,106 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    [Microsoft.VisualStudio.TestTools.UnitTesting.TestClass, Microsoft.VisualStudio.TestTools.UnitTesting.TestCategory("Unit")]
+    public sealed partial class VbaProcedureValuesBoundaryTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void ExactLiveSignaturesRejectEveryMalformedHeaderParameterAndReturnSuffix()
+        {
+            var empty = VbaProcedureValues.Bind("\nStatic Public Sub F()\n\nEnd Sub\n", 2, "F", new object[0], null);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, empty.Length);
+            foreach (string source in new[] {
+                "DefLng A-Z\nPublic Sub F()\nEnd Sub", "Public\nPublic Sub F()\nEnd Sub",
+                "Private Sub F()\nEnd Sub", "Public Function G()\nPublic Sub F()\nEnd Sub",
+                "Sub F a\nEnd Sub", "Public Sub F\nEnd Sub", "Public Sub F(ByVal x As Long\nEnd Sub",
+                "Public Function F() As\nEnd Function", "Public Function F() Long Variant\nEnd Function",
+                "Public Function F() As Object\nEnd Function", "Public Function F() As Long(]\nEnd Function",
+                "Public Function F() As Long x y\nEnd Function", "Public Function F() As Long extra\nEnd Function",
+                "Public Sub F(ByVal x As Long,)\nEnd Sub", "Public Sub F(Optional)\nEnd Sub",
+                "Public Sub F(ByVal)\nEnd Sub", "Public Sub F(ByVal _x As Long)\nEnd Sub",
+                "Public Sub F(ByVal x As)\nEnd Sub", "Public Sub F(ByVal x For Long)\nEnd Sub",
+                "Public Sub F(ByVal x As Long())\nEnd Sub", "Public Sub F(ByVal x As Long = 1)\nEnd Sub",
+                "Public Sub F(ByVal x As Long, ByVal X As Long)\nEnd Sub",
+                "Public Sub F()\nEnd Sub\nPrivate Sub F()\nEnd Sub"
+            })
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.InvalidOperationException>(() => VbaProcedureValues.Bind(source, 1, "F", new object[0], null), source);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.InvalidOperationException>(() => VbaProcedureValues.Bind("\nPublic Sub F()\nEnd Sub", 1, "F", new object[0], null));
+            var parameters = string.Join(",", System.Linq.Enumerable.Select(System.Linq.Enumerable.Range(0, 31), i => "ByVal x" + i + " As Variant"));
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.InvalidOperationException>(() => VbaProcedureValues.Bind("Public Sub F(" + parameters + ")\nEnd Sub", 1, "F", new object[0], null));
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, VbaProcedureValues.Bind("Public Function F() As Long()\nEnd Function", 1, "F", new object[0], null).Length);
+        }
+
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void FixedArgumentNamesArityAndOptionalDefaultsHaveExactBindingContracts()
+        {
+            const string source = "Public Sub F(Optional ByVal x As Variant = 0)\nEnd Sub";
+            foreach (var values in new object[][] { null, new object[31], new object[] { 1, 2 } })
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.ArgumentException>(() => VbaProcedureValues.Bind(source, 1, "F", values, null));
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.ArgumentException>(() => VbaProcedureValues.Bind(source, 1, "F", new object[] { 1 }, new string[0]));
+            var bound = VbaProcedureValues.Bind(source, 1, "F", new object[0], new string[0]);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreSame(System.Type.Missing, bound[0]);
+        }
+
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void ExplicitScalarTypesPreserveValuesAndRejectEveryLossyNumericConversion()
+        {
+            foreach (var pair in new[] {
+                new ScalarCase("Variant", null, null), new ScalarCase("String", "text", "text"),
+                new ScalarCase("Boolean", true, true), new ScalarCase("Double", 12, 12d),
+                new ScalarCase("Single", 12, 12f), new ScalarCase("Byte", 255, (byte)255),
+                new ScalarCase("Integer", -32768, (short)-32768), new ScalarCase("Long", 2147483647, 2147483647)
+            })
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(pair.Expected, BindScalar(pair.Type, pair.Value));
+            var currency = (System.Runtime.InteropServices.CurrencyWrapper)BindScalar("Currency", 922337203685477.5807m);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(922337203685477.5807m, currency.WrappedObject);
+            currency = (System.Runtime.InteropServices.CurrencyWrapper)BindScalar("Currency", -922337203685477.5808m);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(-922337203685477.5808m, currency.WrappedObject);
+            foreach (var pair in new[] {
+                new ScalarCase("Long", null, null), new ScalarCase("Boolean", 1, null),
+                new ScalarCase("String", 1, null), new ScalarCase("Single", double.MaxValue, null),
+                new ScalarCase("Currency", -922337203685477.5809m, null), new ScalarCase("Currency", 922337203685477.5808m, null),
+                new ScalarCase("Currency", 1.00001m, null), new ScalarCase("Byte", -1, null), new ScalarCase("Byte", 256, null),
+                new ScalarCase("Integer", -32769, null), new ScalarCase("Integer", 32768, null),
+                new ScalarCase("Long", -2147483649m, null), new ScalarCase("Long", 2147483648m, null),
+                new ScalarCase("Long", double.MaxValue, null), new ScalarCase("Long", System.DateTime.MinValue, null)
+            })
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.ArgumentException>(() => BindScalar(pair.Type, pair.Value), pair.Type);
+            foreach (System.Exception error in new System.Exception[] { new System.OverflowException("overflow"), new System.InvalidCastException("cast"), new System.FormatException("format") })
+            {
+                var value = new ConversionFailureValue(error);
+                if (error is System.FormatException)
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreSame(error, Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.FormatException>(() => BindScalar("Long", value)));
+                else
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreSame(error, Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.ArgumentException>(() => BindScalar("Long", value)).InnerException);
+            }
+        }
+
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void CapturedAndReturnedArraysRejectInvalidRanksBoundsAndNativeObjects()
+        {
+            foreach (object bad in new object[] {
+                new object[] { new int[1, 1] }, new object[] { System.Array.CreateInstance(typeof(object), new[] { 1 }, new[] { 1 }) },
+                double.NegativeInfinity, float.PositiveInfinity,
+                new object[] { new string('x', 16384), new string('x', 16384), new string('x', 16384), new string('x', 16384), "x" }
+            })
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.ArgumentException>(() => VbaProcedureValues.Capture(new[] { bad }));
+            var finite = VbaProcedureValues.Capture(new object[] { 1.5d, 1.25f });
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(1.5d, finite[0]);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(1.25d, finite[1]);
+            var negative = VbaProcedureValues.Capture(new object[] { -2147483649m });
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(-2147483649m, negative[0]);
+            var returned = (object[])VbaProcedureValues.NormalizeReturn(new object[] { null, System.DBNull.Value }).Value;
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsNull(returned[0]); Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsNull(returned[1]);
+            object com = System.Activator.CreateInstance(System.Type.GetTypeFromProgID("Scripting.Dictionary", true));
+            try
+            {
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsTrue(System.Runtime.InteropServices.Marshal.IsComObject(com));
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.InvalidOperationException>(() => VbaProcedureValues.NormalizeReturn(com));
+            }
+            finally { System.Runtime.InteropServices.Marshal.FinalReleaseComObject(com); }
+        }
+    }
+}

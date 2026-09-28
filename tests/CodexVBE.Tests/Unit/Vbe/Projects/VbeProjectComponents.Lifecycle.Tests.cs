@@ -160,3 +160,68 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    public sealed partial class VbeProjectLifecycleTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod, Microsoft.VisualStudio.TestTools.UnitTesting.TestCategory("Unit")]
+        public void CollectionFingerprintIncludesNativeReferenceFlagsVersionsAndSource()
+        {
+            var f = Create(); var project = f.Vbe.VBProjects.Items[0];
+            project.VBComponents.Add(new VbeProjectComponentsTests.FakeComponent("M", 1));
+            var reference = new LifecycleReference { GUID = "owned-guid", Major = 1, Minor = 0, BuiltIn = true };
+            project.References.Add(reference);
+            dynamic before = f.Service.ProjectCollectionState();
+            foreach (int change in new[] { 0, 1, 2, 3, 4 })
+            {
+                if (change == 0) reference.GUID = "changed-guid";
+                if (change == 1) reference.Major++;
+                if (change == 2) reference.Minor++;
+                if (change == 3) reference.IsBroken = true;
+                if (change == 4) reference.BuiltIn = false;
+                dynamic after = f.Service.ProjectCollectionState();
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreNotEqual((string)before.Version, (string)after.Version);
+                before = after;
+            }
+            foreach (var component in project.VBComponents) { component.CodeModule.Source = ""; component.CodeModule.LineCount = 0; }
+            dynamic emptySource = f.Service.ProjectCollectionState();
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreNotEqual((string)before.Version, (string)emptySource.Version);
+            before = emptySource;
+            project.Protection = 1;
+            dynamic protectedState = f.Service.ProjectCollectionState();
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreNotEqual((string)before.Version, (string)protectedState.Version);
+        }
+
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod, Microsoft.VisualStudio.TestTools.UnitTesting.TestCategory("Unit")]
+        public void CloseSelectsTheExactPathAmongProjectsWithTheSameDisplayName()
+        {
+            var f = Create(); var project = f.Vbe.VBProjects.Items[0];
+            project.FileName = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "selected.swp");
+            var other = new LifecycleProject { Name = project.Name, FileName = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "other.swp") };
+            f.Vbe.VBProjects.Items.Insert(0, other);
+            dynamic metadata = f.Service.ProjectProperties(project.FileName);
+            dynamic result = f.Service.CloseStandaloneProject(new Request { Project = project.FileName, ExpectedHostPath = project.FileName, ExpectedProjectVersion = metadata.Version });
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsTrue((bool)result.Verified);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(1, f.Vbe.VBProjects.Attempts);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(1, f.Vbe.VBProjects.Items.Count);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreSame(other, f.Vbe.VBProjects.Items[0]);
+        }
+    }
+}
+namespace CodexVBE.Tests.Unit
+{
+    public sealed partial class VbeProjectLifecycleTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod, Microsoft.VisualStudio.TestTools.UnitTesting.TestCategory("Unit")]
+        public void CloseRejectsAStandaloneTypeWhoseNativePathIsNotASwpMacro()
+        {
+            var f = Create(); var project = f.Vbe.VBProjects.Items[0];
+            project.FileName = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "host-document.xlsm");
+            var request = f.CloseRequest(project);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.InvalidOperationException>(() => f.Service.CloseStandaloneProject(request));
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, f.Vbe.VBProjects.Attempts);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreSame(project, f.Vbe.VBProjects.Items[0]);
+        }
+    }
+}
