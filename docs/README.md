@@ -1,6 +1,6 @@
 # Documentation VBAi
 
-État vérifié le **28 septembre 2026**, après intégration de `codex/chat-ux` dans `main` (`9eac920`). Le produit s’appelle VBAi ; la solution, l’assembly, le namespace et les identifiants COM conservent le nom CodexVBE.
+État vérifié le **28 septembre 2026**, après intégration de `codex/chat-ux` dans `main` (`611dcb5`). Le produit s’appelle VBAi ; la solution, l’assembly, le namespace et les identifiants COM conservent le nom CodexVBE.
 
 ## Utiliser le complément
 
@@ -20,6 +20,7 @@
 | [Concepteurs WinForms](winforms-designer.md) | Vues éditables et séparation entre disposition et données |
 | [Localisation](localization.md) | Langues, ressources et maintenance des traductions |
 | [Outils LLM](reference/vbe-tools.md) | Catalogue extrait du code : permissions et paramètres requis |
+| [Extensions IDE](reference/functional-extensions.md) | Nouveaux contrats et qualifications natives |
 | [Concepteur VBE](reference/designer.md) | Propriétés MSForms, conteneurs, listes et récupération |
 | [Couverture des tests](test-coverage.md) | Dernière mesure globale et preuves Excel/SOLIDWORKS |
 | [Travaux restants](roadmap.md) | Lacunes de tests et de qualification native |
