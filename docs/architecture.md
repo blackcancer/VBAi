@@ -32,8 +32,10 @@ Les chemins suivants sont relatifs à `src/CodexVBE/`.
 | `Llm/Chat` | Conversations, contexte VBE et outils utilisables par les modèles. |
 | `Llm/Providers` | Protocoles, authentification et catalogues de modèles. |
 | `Llm/Settings` | Persistance des paramètres et formulaire de configuration. |
+| `Llm/Settings/Views` | Vues WinForms Fournisseur, Compte GitHub et Apparence. |
 | `Llm/Controls` | Contrôles nécessaires au concepteur du chat. |
 | `Git` | Dépôts VBA, snapshots, synchronisation et interface GitHub. |
+| `Git/Views` | Vues WinForms des onglets Git et GitHub. |
 | `Ui` | Contrôles partagés, thèmes, Markdown et comparaison de code. |
 | `Localization` | Catalogues de traduction et résolution des textes. |
 | `Properties` | Identité de l’assembly et visibilité accordée aux tests. |

@@ -1,5 +1,7 @@
 # VbeForms duplication test inventory
 
+> Archive conservée le 28 septembre 2026. Ce document contient des observations et des décisions de sa période de rédaction ; ses états « à faire » et ses anciens chiffres ne constituent pas le bilan actuel. Voir [la documentation actuelle](../../README.md) et [les travaux restants](../../roadmap.md).
+
 Status: **NOT_RUN**. `VbeFormsFrameDuplicationTests` uses in-memory VBIDE/MSForms
 fakes and is included in the MSTest project. No build, test or coverage run was
 performed for this lot.

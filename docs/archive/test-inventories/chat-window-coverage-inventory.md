@@ -1,5 +1,7 @@
 # Couverture ChatWindow
 
+> Archive conservée le 28 septembre 2026. Ce document contient des observations et des décisions de sa période de rédaction ; ses états « à faire » et ses anciens chiffres ne constituent pas le bilan actuel. Voir [la documentation actuelle](../../README.md) et [les travaux restants](../../roadmap.md).
+
 Le lot global du 27 septembre 2026 a été exécuté : 219 tests réussis, 2 ignorés. Son rapport est `artifacts/coverage/batch-comprehensive-final/9bf3adb1-a9d7-4eac-bc7c-3913122c6063/coverage.cobertura.xml`. Les scénarios ci-dessous font partie de cette campagne ; les limites indiquées restent à couvrir.
 
 | Fichier | Scénarios apportés par `ChatWindowStateTests` | Branches dépendantes d'un environnement actif |

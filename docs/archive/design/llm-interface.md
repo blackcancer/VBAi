@@ -1,5 +1,7 @@
 # Interface LLM du VBE
 
+> Archive conservée le 28 septembre 2026. Ce document contient des observations et des décisions de sa période de rédaction ; ses états « à faire » et ses anciens chiffres ne constituent pas le bilan actuel. Voir [la documentation actuelle](../../README.md) et [les travaux restants](../../roadmap.md).
+
 Référence d'interaction : GitHub Copilot Chat dans Visual Studio. Son sélecteur de modèles se trouve dans la fenêtre de conversation ; la gestion des modèles et des fournisseurs s'ouvre depuis ce sélecteur. CodexVBE conserve aussi une entrée `Outils > Configuration CodexVBE…`, demandée pour rendre ces réglages accessibles depuis VBE.
 
 ## Configuration du fournisseur
@@ -8,7 +10,7 @@ Référence d'interaction : GitHub Copilot Chat dans Visual Studio. Son sélecte
 - **Codex** : état du compte ChatGPT utilisé par `codex app-server`, action de connexion si nécessaire. Aucune clé OpenAI API n'est demandée pour ce mode.
 - **OpenAI API** : clé API et, si l'implémentation le permet, URL d'API personnalisée. L'absence de crédit API n'empêche pas d'utiliser Codex avec ChatGPT.
 - **Ollama** : adresse de l'instance locale et état de connexion ; aucune clé API par défaut.
-- **Autres fournisseurs** : afficher uniquement les paramètres nécessaires au fournisseur sélectionné. Les intégrations et leurs limites sont décrites dans [providers.md](providers.md). Les contrôles fixes restent construits dans le designer WinForms.
+- **Autres fournisseurs** : afficher uniquement les paramètres nécessaires au fournisseur sélectionné. Les intégrations et leurs limites sont décrites dans [providers.md](../../providers.md). Les contrôles fixes restent construits dans le designer WinForms.
 - Les secrets sont conservés pour le compte Windows courant et ne sont jamais affichés après enregistrement. Une erreur de connexion doit rester visible dans la configuration.
 
 ## Choix du modèle dans la conversation

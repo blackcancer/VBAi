@@ -1,5 +1,7 @@
 # Revue du code et GitHub
 
+> Archive conservée le 28 septembre 2026. Ce document contient des observations et des décisions de sa période de rédaction ; ses états « à faire » et ses anciens chiffres ne constituent pas le bilan actuel. Voir [la documentation actuelle](../../README.md) et [les travaux restants](../../roadmap.md).
+
 La fenêtre GitHub conserve le dépôt dans le cache privé du document. Aucun dossier
 de travail n’est ajouté à côté du classeur ou de la macro SOLIDWORKS.
 

@@ -1,5 +1,7 @@
 # VbeForms core branch coverage lot
 
+> Archive conservée le 28 septembre 2026. Ce document contient des observations et des décisions de sa période de rédaction ; ses états « à faire » et ses anciens chiffres ne constituent pas le bilan actuel. Voir [la documentation actuelle](../../README.md) et [les travaux restants](../../roadmap.md).
+
 Status: VSTest **NOT_RUN** until the grouped suite is executed. The tests use an
 in-memory VBIDE/MSForms fake. The isolated Release build succeeded with zero
 warnings and zero errors; compilation does not prove COM runtime behavior.

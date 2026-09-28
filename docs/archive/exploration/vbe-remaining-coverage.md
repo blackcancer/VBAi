@@ -1,5 +1,7 @@
 ﻿# Couverture VBE restante
 
+> Archive conservée le 28 septembre 2026. Ce document contient des observations et des décisions de sa période de rédaction ; ses états « à faire » et ses anciens chiffres ne constituent pas le bilan actuel. Voir [la documentation actuelle](../../README.md) et [les travaux restants](../../roadmap.md).
+
 Inventaire au 27 septembre 2026 sur `main`. « Présent » désigne une commande du complément, « prouvé » un essai dans le VBE Excel visible. La présence d'un descripteur COM modifiable ne prouve pas que son écriture est sûre ni durable.
 
 Le périmètre inclut les onze familles de [menus intégrés du VBE](https://learn.microsoft.com/en-us/office/vba/language/reference/menus-commands), les menus contextuels, les fenêtres et l'[objet VBE](https://learn.microsoft.com/en-us/office/vba/language/reference/visual-basic-add-in-model/objects-visual-basic-add-in-model) (projets, composants, code, références, compléments, événements et barres de commandes). Les menus documentés par Microsoft varient selon l'hôte et la version ; ce tableau relève les fonctions, sans assimiler chaque action visuelle à une commande LLM nécessaire.

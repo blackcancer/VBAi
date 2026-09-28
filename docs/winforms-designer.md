@@ -44,7 +44,8 @@ Les vues de `src/CodexVBE/Llm/Settings/Views/` sont :
 - `AppearanceSettingsView` : thème de VBAi.
 
 `LlmSettingsWindow` contient ces trois onglets et Enregistrer / Annuler. Sa taille
-se règle dans le Designer ; les réponses d’authentification ne redimensionnent plus
+initiale se règle dans le Designer ; changer de fournisseur ajuste la hauteur au
+contenu des vues, tandis que les réponses d’authentification ne redimensionnent plus
 la fenêtre. Les champs incompatibles avec le fournisseur sélectionné restent
 masqués à l’exécution, dans des lignes AutoSize définies par le Designer.
 

@@ -1,5 +1,7 @@
 # Duplication des contrôles du concepteur VBE
 
+> Archive conservée le 28 septembre 2026. Ce document contient des observations et des décisions de sa période de rédaction ; ses états « à faire » et ses anciens chiffres ne constituent pas le bilan actuel. Voir [la documentation actuelle](../../README.md) et [les travaux restants](../../roadmap.md).
+
 Cette matrice suit une capacité précise : créer une copie d'un contrôle existant dans son conteneur. `form_tree`, `set_form_node_property` et les opérations de collection couvrent d'autres aspects du concepteur ; une copie partielle ne signifie pas que les propriétés omises sont inaccessibles.
 
 | Type natif | Copie | Propriétés copiées | Preuve Excel | Limite actuelle |

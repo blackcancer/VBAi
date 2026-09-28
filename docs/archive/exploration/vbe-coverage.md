@@ -1,5 +1,7 @@
 # Couverture du VBE — état exploratoire
 
+> Archive conservée le 28 septembre 2026. Ce document contient des observations et des décisions de sa période de rédaction ; ses états « à faire » et ses anciens chiffres ne constituent pas le bilan actuel. Voir [la documentation actuelle](../../README.md) et [les travaux restants](../../roadmap.md).
+
 État relevé les 26 et 27 septembre 2026 sur le VBE 64 bits d'Excel, dans plusieurs `Classeur1` jetables. Les commandes du complément passent par l'objet VBE du processus hôte. Les sondes de fenêtres utilisent Win32/UI Automation ; aucun raccourci clavier ni clic à coordonnées n'est requis. Les sections chronologiques plus bas conservent les anciens échecs puis leurs correctifs : le tableau suivant résume l'état courant de la branche `feat/llm-commands`.
 
 L'[inventaire des éléments encore à couvrir](vbe-remaining-coverage.md) distingue les commandes présentes des effets prouvés et des surfaces encore absentes.
@@ -45,7 +47,7 @@ Le 27 septembre, le contrôle `CodexVBE.ChatToolWindow` a été créé dans Exce
 
 ## Inventaire des propriétés de contrôle
 
-Un nouvel essai Excel visible (PID 40240) a placé les 14 contrôles standard sur `CodexAllControlProperties` et exporté **771 descripteurs** dans [excel-control-properties.csv](excel-control-properties.csv). La sonde reproductible est `tools/probes/Export-ControlProperties.ps1`. Chaque ligne contient le type de contrôle, son ProgID, le nom et le type de la propriété, `ReadOnly`, la valeur lisible et une éventuelle erreur. Les nombres de propriétés par type vont de 36 (SpinButton) à 86 (ComboBox). Les onze erreurs de lecture portent toutes sur `_Font_Reserved` (`0x80020003`). Cet export est un inventaire de lecture sur cet hôte Excel ; `ReadOnly=False` n'établit pas encore qu'une écriture soit acceptée par le VBE. La boîte à outils peut aussi accueillir des contrôles ActiveX supplémentaires, qui devront être découverts et inspectés dynamiquement.
+Un nouvel essai Excel visible (PID 40240) a placé les 14 contrôles standard sur `CodexAllControlProperties` et exporté **771 descripteurs** dans [excel-control-properties.csv](../../reference/excel-control-properties.csv). La sonde reproductible est `tools/probes/Export-ControlProperties.ps1`. Chaque ligne contient le type de contrôle, son ProgID, le nom et le type de la propriété, `ReadOnly`, la valeur lisible et une éventuelle erreur. Les nombres de propriétés par type vont de 36 (SpinButton) à 86 (ComboBox). Les onze erreurs de lecture portent toutes sur `_Font_Reserved` (`0x80020003`). Cet export est un inventaire de lecture sur cet hôte Excel ; `ReadOnly=False` n'établit pas encore qu'une écriture soit acceptée par le VBE. La boîte à outils peut aussi accueillir des contrôles ActiveX supplémentaires, qui devront être découverts et inspectés dynamiquement.
 
 La catégorie COM x64 `CATID_Control` a révélé trois autres ProgID enregistrés sur ce poste (`WindowsMail.MimeEdit.1`, `TDCCtl.TDCCtl.1`, `MSVidCtl.MSVidCtl.1`). Ils sont seulement des **candidats** : le registre ne prouve ni leur présence effective dans la boîte à outils VBE ni leur compatibilité avec son conteneur. Les 14 `Forms.*` ne figurent pas dans ce relevé de catégorie ; la découverte devra combiner les contrôles Microsoft Forms et les ActiveX installés, puis vérifier leur comportement dans l'hôte.
 

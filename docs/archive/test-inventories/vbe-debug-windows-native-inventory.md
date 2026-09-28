@@ -1,5 +1,7 @@
 # VbeDebugWindows native coverage inventory
 
+> Archive conservée le 28 septembre 2026. Ce document contient des observations et des décisions de sa période de rédaction ; ses états « à faire » et ses anciens chiffres ne constituent pas le bilan actuel. Voir [la documentation actuelle](../../README.md) et [les travaux restants](../../roadmap.md).
+
 Status: **219 passed, 2 skipped in the global VSTest run on 27 September 2026**. The tests in `VbeDebugWindowsNativeTests` use an internal
 `INativeProbe` fake. Public entry points still use the same Win32, UIA and MSAA
 operations through `NativeProbe`.

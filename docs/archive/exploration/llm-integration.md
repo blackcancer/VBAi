@@ -1,5 +1,7 @@
 # Assistant LLM intégré au VBE
 
+> Archive conservée le 28 septembre 2026. Ce document contient des observations et des décisions de sa période de rédaction ; ses états « à faire » et ses anciens chiffres ne constituent pas le bilan actuel. Voir [la documentation actuelle](../../README.md) et [les travaux restants](../../roadmap.md).
+
 Cette première tranche ajoute une fenêtre de conversation WinForms au complément COM. Elle s'ouvre avec le VBE et tente d'être possédée par sa fenêtre principale via `MainWindow.HWnd`. L'assistant appelle directement `VbeSession`, sur le thread UI du VBE, sans serveur MCP, raccourci clavier ni coordonnées de fenêtre. Le menu natif **Affichage > Assistant CodexVBE** permet de rouvrir cette fenêtre ; **Outils > Configuration CodexVBE** ouvre les réglages.
 
 ## Fournisseurs
@@ -22,7 +24,7 @@ Cette première tranche ajoute une fenêtre de conversation WinForms au complém
 | Groq | Adaptateur Chat Completions | `GROQ_API_KEY` ou clé enregistrée. |
 | Amazon Bedrock | API native Converse | URL Runtime régionale, modèle/profil et clé API Bedrock Bearer. |
 
-Voir [Configuration et validation des fournisseurs](providers.md) pour les endpoints, l’authentification, les essais locaux et les limites de validation des nouveaux adaptateurs.
+Voir [Configuration et validation des fournisseurs](../../providers.md) pour les endpoints, l’authentification, les essais locaux et les limites de validation des nouveaux adaptateurs.
 
 Les URL distantes doivent utiliser HTTPS ; seul HTTP sur une adresse de boucle locale est accepté. Les réglages non secrets sont enregistrés pour l'utilisateur Windows dans `%APPDATA%\CodexVBE\settings.json`. Une éventuelle clé OpenAI API y est stockée uniquement sous forme chiffrée DPAPI `CurrentUser`, jamais dans le dépôt. Codex ne lit, ne copie et ne stocke aucun jeton OAuth : seul le processus `codex app-server` gère la connexion ChatGPT existante. La liste des modèles vient du fournisseur actif (`model/list`, `/v1/models` ou `/api/tags`) ; le choix persiste par fournisseur et s'applique au prochain message. Codex affiche aussi les niveaux de raisonnement annoncés pour le modèle choisi ; le niveau retenu est transmis comme `effort` au prochain `turn/start` et mémorisé par modèle. Changer de fournisseur efface l'historique affiché et le contexte transmis au modèle. Un modèle Ollama doit lui-même prendre en charge les appels d'outils pour piloter le VBE. Le catalogue OpenAI peut inclure des modèles qui ne prennent pas en charge Chat Completions ou les outils ; l'API signale ce cas lors de l'envoi.
 

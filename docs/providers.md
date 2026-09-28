@@ -4,6 +4,8 @@ Le catalogue comporte Codex, OpenAI API, Ollama, Claude, GitHub Copilot, Gemini,
 
 ## Configuration
 
+La fenêtre comporte trois onglets : **Fournisseur**, **Compte GitHub** et **Apparence**. Le compte GitHub des dépôts est indépendant de l’authentification du fournisseur IA. Les modèles et le niveau de raisonnement se choisissent dans la conversation, et non dans cette fenêtre.
+
 Dans **Paramètres du fournisseur**, sélectionner le fournisseur et renseigner sa clé et, si nécessaire, son URL complète. Enregistrer, puis choisir un modèle dans le chat. Changer de fournisseur dans les paramètres conserve les brouillons séparément jusqu’à Enregistrer ; Annuler les abandonne. Une clé vide conserve la valeur enregistrée ; la case de suppression retire la clé enregistrée et réactive le repli éventuel sur la variable d’environnement.
 
 | Fournisseur | URL par défaut | Variable de clé |
@@ -35,6 +37,14 @@ Azure utilise l’API v1 et les **noms de déploiement** saisis, plutôt qu’un
 Bedrock utilise l’API native **Converse**, l’URL Runtime de la région choisie et l’ID ou ARN du modèle/profil d’inférence. Les définitions d’outils, résultats et contenus signés sont convertis et conservés entre les tours. L’authentification implémentée est la **clé API Bedrock Bearer**, distincte d’une paire IAM access key/secret key ; la signature SigV4 et les profils AWS ne sont pas implémentés. La clé doit permettre d’invoquer le modèle ou profil choisi dans cette région.
 
 Les clés sont chiffrées avec DPAPI pour le compte Windows courant. Elles restent dans les paramètres locaux, séparées par fournisseur ; elles ne sont pas enregistrées dans SQLite. Les anciennes propriétés OpenAI/Ollama restent lisibles. Les URL distantes exigent HTTPS ; HTTP est accepté uniquement sur une adresse de boucle locale. Les redirections HTTP automatiques sont désactivées. Les erreurs affichent le fournisseur et le statut HTTP, sans recopier le corps de la réponse susceptible de contenir des données sensibles.
+
+## Codex : fournisseur prioritaire
+
+Codex est le fournisseur par défaut. Le complément utilise le processus `codex app-server` et le compte ChatGPT authentifié par le CLI, sans clé OpenAI API. La configuration propose l’état du compte, la connexion et l’actualisation ; les champs de clé et d’endpoint des transports HTTP sont masqués pour ce mode.
+
+Le catalogue provient de `model/list`. Les niveaux de raisonnement disponibles et la valeur initiale proviennent des métadonnées du modèle. Le chat transmet le modèle et l’effort au prochain tour, conserve l’identifiant du thread par session et reprend celui-ci avec `thread/resume`.
+
+Le changement de fournisseur actualise son catalogue. Les réglages par défaut et ceux de chaque conversation sont persistés séparément : voir [Conversation et sessions](chat-ui.md). Un abonnement ChatGPT et des crédits OpenAI API sont des moyens d’accès distincts.
 
 ## Claude et fournisseurs HTTP
 

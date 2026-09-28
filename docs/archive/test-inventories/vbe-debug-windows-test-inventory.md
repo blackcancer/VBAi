@@ -1,5 +1,7 @@
 # VbeDebugWindows : inventaire de couverture
 
+> Archive conservée le 28 septembre 2026. Ce document contient des observations et des décisions de sa période de rédaction ; ses états « à faire » et ses anciens chiffres ne constituent pas le bilan actuel. Voir [la documentation actuelle](../../README.md) et [les travaux restants](../../roadmap.md).
+
 État avant exécution de la suite groupée : **NOT_RUN** pour le présent lot. Les tests unitaires ne créent aucune fenêtre native. Le smoke Excel opt-in lance sa propre instance et lit `debug_windows` par le pont du même PID.
 
 | Méthodes | Issues et branches | Preuve prévue ou limite |

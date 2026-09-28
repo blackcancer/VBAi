@@ -20,6 +20,8 @@ Le document doit être enregistré, son projet déverrouillé et le VBE en mode 
 6. **Pull et importer** télécharge, vérifie puis importe les sources avec sauvegarde préalable.
 7. **Restaurer VBA** restaure l’état précédant le dernier import si le code n’a pas changé depuis sa relecture.
 
+La liaison est dans l’onglet **Connexion** ; le message de commit et les actions de revue sont dans **Modifications Git**. Les vues Dépôts et Pull requests permettent aussi de rechercher/créer un dépôt et de consulter ou créer une PR, puis lire fichiers, commentaires et contrôles. Ces opérations GitHub utilisent le compte configuré ; elles ne sont pas toutes exposées au modèle comme outils.
+
 ### Checkpoints, branches et fusions
 
 - **Checkpoints** : nommer une sauvegarde du VBA vivant, retrouver les sauvegardes manuelles et automatiques,
@@ -79,7 +81,7 @@ L’authentification du fournisseur IA Copilot reste distincte.
 - Git for Windows (`git.exe` dans PATH), identité `user.name` / `user.email` configurée.
 - Authentification HTTPS via le gestionnaire d’identifiants Git déjà configuré, par exemple Git Credential Manager.
 - Aucun jeton dans le formulaire, les sources, le manifeste ou les paramètres de CodexVBA.
-- La création du dépôt GitHub s’effectue actuellement sur GitHub. Les URL SSH et GitHub Enterprise ne sont pas encore proposées.
+- La vue Dépôts peut créer un dépôt sur le compte personnel ou une organisation accessible, avec le choix privé/public. Les URL SSH et GitHub Enterprise ne sont pas proposées.
 
 ## Stockage privé
 

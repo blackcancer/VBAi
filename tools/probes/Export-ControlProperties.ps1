@@ -3,7 +3,7 @@ param([Parameter(Mandatory = $true)] [int] $HostProcessId)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $client = Join-Path $repo 'tools/Invoke-CodexVBE.ps1'
-$output = Join-Path $repo 'docs/excel-control-properties.csv'
+$output = Join-Path $repo 'docs/reference/excel-control-properties.csv'
 
 function Invoke-Vbe([hashtable] $request) {
     $raw = & $client -HostProcessId $HostProcessId -RequestJson (ConvertTo-Json -InputObject $request -Depth 8 -Compress)

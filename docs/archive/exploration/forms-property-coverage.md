@@ -1,6 +1,8 @@
 # Propriétés du concepteur MSForms : état de couverture
 
-L'inventaire source [excel-control-properties.csv](excel-control-properties.csv) contient 771 descripteurs réels relevés sur les 14 contrôles natifs dans Excel. `form_tree` lit les propriétés des contrôles, Frames, Pages et Tabs par chemin canonique ; `form_control_properties` lit les contrôles du premier niveau. Les descripteurs n'établissent pas à eux seuls qu'un setter COM fonctionne.
+> Archive conservée le 28 septembre 2026. Ce document contient des observations et des décisions de sa période de rédaction ; ses états « à faire » et ses anciens chiffres ne constituent pas le bilan actuel. Voir [la documentation actuelle](../../README.md) et [les travaux restants](../../roadmap.md).
+
+L'inventaire source [excel-control-properties.csv](../../reference/excel-control-properties.csv) contient 771 descripteurs réels relevés sur les 14 contrôles natifs dans Excel. `form_tree` lit les propriétés des contrôles, Frames, Pages et Tabs par chemin canonique ; `form_control_properties` lit les contrôles du premier niveau. Les descripteurs n'établissent pas à eux seuls qu'un setter COM fonctionne.
 
 | Type | Descripteurs | Getters en erreur | Lecture seule déclarée | Descripteur modifiable hors erreur |
 | --- | ---: | ---: | ---: | ---: |

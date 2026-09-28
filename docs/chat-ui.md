@@ -8,7 +8,7 @@ La structure fixe du chat est construite dans ChatWindow.Designer.cs et reste é
 - `#` recherche les projets et modules ; `@` recherche les Sub, Function et Property Get/Let/Set. La liste est filtrée au curseur. Les puces montrent le contexte joint et permettent de le retirer.
 - Les références sélectionnées sont cliquables dans les messages et les puces. La navigation relit le module et sélectionne la cible dans le VBE. Un projet ouvre la recherche de ses modules.
 - Les réponses Codex arrivent progressivement. Les résumés de réflexion fournis par le serveur sont dépliables dans le fil, tout comme l'activité des outils. Les événements de raisonnement brut ne sont pas affichés.
-- Les éditions `replace_lines` s'appliquent sans dialogue, puis apparaissent sous forme de diff inline avec numéros de lignes, couleurs et bouton d'annulation. Le contrôle SHA empêche de remplacer des changements plus récents. Lecture seule interdit toujours l'écriture.
+- Avec la politique Automatique, les éditions s’appliquent sans dialogue répétitif, puis apparaissent sous forme de diff inline avec numéros de lignes, couleurs et bouton d’annulation. Le contrôle SHA empêche de remplacer des changements plus récents. Lecture seule interdit l’écriture ; Demander à chaque action conserve la validation configurée.
 - Le bouton Modifications permet de rejoindre une carte de diff dans la conversation. Il n'ouvre pas de fenêtre d'approbation.
 - Le bouton Arrêter interrompt le tour Codex ou la requête HTTP en cours. Une action VBE déjà exécutée reste dans l'historique et conserve son rollback.
 - Le défilement suit les nouveaux messages tant que l'utilisateur reste en bas ; Dernier message ramène au fil actif.
@@ -41,6 +41,8 @@ La mémoire du document est une collection de notes éditables dans le panneau C
 Les clés API ne sont pas enregistrées dans cette base. Les contenus de conversation et les snapshots de code y sont stockés localement. En cas d'échec du stockage, l'interface indique que l'historique n'est pas enregistré.
 
 ## Vérification
+
+Le dernier passage global après fusion `2197c43` compte **910 tests verts**, avec les essais Excel et SOLIDWORKS activés, et **24 concepteurs WinForms** validés. Voir [le bilan courant](test-coverage.md). Les captures et essais d’interface ci-dessous sont des validations antérieures datées, avec leur propre périmètre.
 
 Depuis le worktree :
 
@@ -75,4 +77,16 @@ les sauvegardes, la restauration et les limites de validation.
 - [OpenClaw Control UI](https://docs.openclaw.ai/web/control-ui) : organisation des contrôles de conversation.
 - [VBIDE CreateToolWindow](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/createtoolwindow-method) : contrat de création de la fenêtre native.
 
-Cette interface n’annonce pas une parité complète avec ces produits. Les images jointes et la complétion dans l’éditeur restent des travaux distincts. L'hébergement natif du contrôle dans le VBE reste à corriger.
+Cette interface n’annonce pas une parité complète avec ces produits. Les images jointes et la complétion dans l’éditeur restent des travaux distincts. L’hébergement natif est présent ; le premier placement à droite sur une disposition vierge et les variantes d’hôtes/DPI restent à qualifier.
+
+## Configuration, contexte et approbations
+
+**Outils → Configuration VBAi…** ouvre les onglets Fournisseur, Compte GitHub et Apparence, même lorsque le chat est fermé. Les champs sont contextuels au fournisseur ; le choix des modèles et du raisonnement reste dans le chat. **Affichage → Assistant VBAi** rouvre le panneau.
+
+La configuration propose Lecture seule, Demander à chaque action et Automatique. Les nouveaux paramètres ont Automatique comme valeur initiale ; une migration d’anciens paramètres sans politique explicite utilise Demander à chaque action. Les gardes de mode et de révision restent actives dans tous les cas. Discussion et Plan autorisent les inspections et la compilation, mais refusent les actions d’édition et d’exécution.
+
+Le contexte système décrit l’hôte VBE, les projets, le mode, la sélection et les contraintes d’encodage relevées. Les notifications des projets, composants et références rafraîchissent le contexte ; les identités sont encore relues avant les actions. Une conversation dont le projet est fermé ou ambigu refuse les actions correspondantes.
+
+Un chemin de fichier fourni par l’utilisateur peut être lu par un outil dédié, avec confirmation avant transmission au fournisseur. Cette lecture ne remplace pas le code vivant du VBE et ne dépend pas du niveau de raisonnement.
+
+Les coupes de contrôles peuvent produire une carte de récupération dans le chat. La capture est conservée dans la session native ; elle ne doit pas être présentée comme récupérable après redémarrage sur la seule persistance du message.

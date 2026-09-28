@@ -1,5 +1,7 @@
 # Couverture du client Codex app-server
 
+> Archive conservée le 28 septembre 2026. Ce document contient des observations et des décisions de sa période de rédaction ; ses états « à faire » et ses anciens chiffres ne constituent pas le bilan actuel. Voir [la documentation actuelle](../../README.md) et [les travaux restants](../../roadmap.md).
+
 Le lot global du 27 septembre 2026 est passé : 219 tests réussis, 2 ignorés. Son rapport est `artifacts/coverage/batch-comprehensive-final/9bf3adb1-a9d7-4eac-bc7c-3913122c6063/coverage.cobertura.xml`. Les tests du client emploient un faux transport ; aucun processus Codex authentifié n'a été lancé pour ces scénarios.
 
 Le transport JSONL est injecté par `ICodexAppServerTransport`. En production, `CodexProcessTransport` garde le lancement `codex app-server`, la sortie/erreur redirigées et l'écriture UTF-8 sans BOM. Les tests utilisent uniquement un faux en mémoire.
