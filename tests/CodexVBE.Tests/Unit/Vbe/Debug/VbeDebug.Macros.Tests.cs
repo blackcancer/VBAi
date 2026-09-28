@@ -46,5 +46,21 @@ namespace CodexVBE.Tests.Unit
                 Assert.ThrowsException<ArgumentException>(() => service.ListMacros(r));
             }
         }
+
+        [TestMethod]
+        public void MacroCatalogueBoundsSourceAndEntriesAndPreservesIncompleteDirectiveSemantics()
+        {
+            var vbe = new IdeSurfaceFixture.Vbe(); var project = new IdeSurfaceFixture.Project(); vbe.VBProjects.Add(project);
+            var module = new IdeSurfaceFixture.Component(); project.VBComponents.Add(module); var service = new VbeDebug(vbe);
+            dynamic empty = service.ListMacros(new Request { Project = "P" }); Assert.AreEqual(0, (int)empty.Total);
+            module.CodeModule.Source = new string('\n', 200000);
+            StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => service.ListMacros(new Request { Project = "P" })).Message, "source limit");
+            module.CodeModule.Source = "#\r\n#End\r\nPublic\r\nSub Visible()\r\nEnd Sub";
+            dynamic incomplete = service.ListMacros(new Request { Project = "P" }); Assert.AreEqual(1, (int)incomplete.Total);
+            dynamic row = new JavaScriptSerializer().Deserialize<dynamic>(new JavaScriptSerializer().Serialize(((object[])incomplete.Macros)[0]));
+            Assert.AreEqual("Visible", (string)row["Procedure"]); Assert.IsTrue((bool)row["NativeMacroCandidate"]);
+            module.CodeModule.Source = string.Join("\r\n", Enumerable.Range(0, 10001).Select(i => "Sub Entry" + i + "()\r\nEnd Sub"));
+            StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => service.ListMacros(new Request { Project = "P" })).Message, "10000 procedures");
+        }
     }
 }
