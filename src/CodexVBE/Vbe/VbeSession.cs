@@ -155,6 +155,8 @@ namespace CodexVBE
                         ProcessBitness = IntPtr.Size * 8 });
                 case "preview_procedure_rename": return Response.Success(codeEdits.PreviewProcedureRename(request));
                 case "apply_procedure_rename": return Response.Success(codeEdits.ApplyProcedureRename(request));
+                case "preview_class_member_rename": return Response.Success(codeEdits.PreviewClassMemberRename(request));
+                case "apply_class_member_rename": return Response.Success(codeEdits.ApplyClassMemberRename(request));
                 case "open_native_ide_dialog": return Response.Success(debugger.QueueNativeIdeDialog(request));
                 case "read_project_protection":
                 case "set_project_protection":

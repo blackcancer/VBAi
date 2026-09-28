@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 namespace CodexVBE
 {
     /// <summary>Liaison bornée de valeurs JSON aux paramètres ByVal et normalisation des retours scalaires/SAFEARRAY.</summary>
-    internal static class VbaProcedureValues
+    internal static partial class VbaProcedureValues
     {
         /// <summary>Résultat sérialisable conservant les bornes natives des tableaux retournés.</summary>
         internal sealed class Result
@@ -30,7 +30,7 @@ namespace CodexVBE
         private sealed class Parameter
         {
             internal string Name, Type;
-            internal bool Optional;
+            internal bool Optional, ParamArray;
         }
 
         /// <summary>Copie profonde des arguments pour empêcher toute mutation de la requête après mise en file.</summary>
@@ -82,9 +82,16 @@ namespace CodexVBE
                 if (i < closing && (header[i].Text != "," || depth != 0)) continue;
                 var tokens = header.Skip(start).Take(i - start).Select(x => x.Text).ToArray(); start = i + 1;
                 if (tokens.Length == 0) { if (i != opening + 1) throw new InvalidOperationException("An empty parameter is unreadable."); continue; }
+                if (Same(tokens[0], "ParamArray"))
+                {
+                    if (i != closing || parameters.Any(x => x.Optional))
+                        throw new InvalidOperationException("ParamArray must be last and cannot share a signature with Optional parameters.");
+                    parameters.Add(ReadParamArrayParameter(tokens));
+                    continue;
+                }
                 int at = 0; bool optional = Same(tokens[at], "Optional"); if (optional) at++;
                 if (at >= tokens.Length || !Same(tokens[at++], "ByVal") || at >= tokens.Length)
-                    throw new InvalidOperationException("Every supplied signature parameter must be explicitly ByVal; ByRef/default-ByRef and ParamArray are unsupported.");
+                    throw new InvalidOperationException("Every fixed signature parameter must be explicitly ByVal; ByRef/default-ByRef are unsupported.");
                 string name = tokens[at++];
                 if (!Regex.IsMatch(name, @"^\p{L}[\p{L}\p{N}_]*$") || at + 1 >= tokens.Length || !Same(tokens[at++], "As") || !ScalarType(tokens[at]))
                     throw new InvalidOperationException("Typed array parameters, objects/classes/UDTs and implicit parameter types are unsupported; JSON arrays require ByVal As Variant.");
@@ -93,10 +100,13 @@ namespace CodexVBE
                 if (at < tokens.Length && !optional) throw new InvalidOperationException("Only Optional parameters can declare defaults.");
                 parameters.Add(new Parameter { Name = name, Type = type, Optional = optional });
             }
-            if (parameters.Count > 30 || parameters.GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase).Any(x => x.Count() != 1))
+            int fixedParameterCount = parameters.Count - (parameters.Count > 0 && parameters[parameters.Count - 1].ParamArray ? 1 : 0);
+            if (fixedParameterCount > 30 || parameters.GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase).Any(x => x.Count() != 1))
                 throw new InvalidOperationException("The signature has too many or duplicate parameters.");
             if (values == null || values.Length > 30 || (names != null && (names.Length != values.Length || names.Distinct(StringComparer.OrdinalIgnoreCase).Count() != names.Length)))
                 throw new ArgumentException("ArgumentNames must match Arguments and be distinct.");
+            if (parameters.Count > 0 && parameters[parameters.Count - 1].ParamArray)
+                return BindParamArrayValues(parameters, values, names);
             var bound = Enumerable.Repeat<object>(Type.Missing, parameters.Count).ToArray();
             for (int i = 0; i < values.Length; i++)
             {

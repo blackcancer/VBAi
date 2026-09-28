@@ -22,7 +22,7 @@ namespace CodexVBE.Tests.Unit
                     if (scenario == "implicit ByRef") signature = signature.Replace("ByVal ", "");
                     if (scenario == "typed array") signature = signature.Replace("values As Variant", "values() As Variant");
                     if (scenario == "object") signature = signature.Replace("values As Variant", "values As Object");
-                    if (scenario == "ParamArray") signature = signature.Replace("ByVal values As Variant", "ParamArray values() As Variant");
+                    if (scenario == "invalid ParamArray") signature = signature.Replace("ByVal values As Variant", "ParamArray values() As Long");
                     if (scenario == "private") signature = signature.Replace("Public", "Private");
                     if (scenario == "property") signature = signature.Replace("Function", "Property Get");
                     if (scenario == "return object") signature = signature.Replace(") As Variant", ") As Object");

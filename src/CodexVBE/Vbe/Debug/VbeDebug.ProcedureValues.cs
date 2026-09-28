@@ -183,7 +183,7 @@ namespace CodexVBE
             ReturnValueVerified = operation.State == "Returned", RuntimeSuccessVerified = false,
             Uncertain = procedureValueInvocations[operation.Id] && operation.State == "Failed", Transport = "OwnedExcelApplicationRun",
             NextRead = "procedure_values_status, debug_state, debug_dialog",
-            Limit = "Excel owned-process Application.Run only. Explicit ByVal scalar/Variant parameters, positional/named binding, rectangular zero-based JSON inputs rank 1/2; scalar-array returns preserve native bounds. No ByRef mutation contract, ParamArray, class/object/Date values or injected helper. Native calls can block on modal/runtime code. One invocation; never retry automatically." };
+            Limit = "Excel owned-process Application.Run only. Fixed ByVal scalar/Variant parameters, positional/named binding; ParamArray Variant accepts positional values only and no Optional prefix, up to 30 total arguments. Rectangular zero-based JSON inputs rank 1/2; scalar-array returns preserve native bounds. No ByRef mutation contract, class/object/Date values or injected helper. Native calls can block on modal/runtime code. One invocation; never retry automatically." };
 
         /// <summary>Exige un chemin Windows absolu de fichier macro Excel déjà associé au projet.</summary>
         private static string RequireValuesPath(string path)

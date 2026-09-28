@@ -41,6 +41,8 @@ namespace CodexVBE.Tests.Unit
             public double Number = 25;
             public IntPtr Window;
             public int? NativeHandle;
+            /// <summary>PID réellement propriétaire du provider, avec surcharge explicite pour les scénarios d'identité refusée.</summary>
+            public int? ProcessId;
             public Action SelectedAction;
 
             public AutomationNode Add(AutomationNode child) { child.Parent = this; Children.Add(child); return child; }
@@ -59,6 +61,7 @@ namespace CodexVBE.Tests.Unit
                 if (propertyId == AutomationElementIdentifiers.IsControlElementProperty.Id || propertyId == AutomationElementIdentifiers.IsContentElementProperty.Id) return true;
                 if (propertyId == AutomationElementIdentifiers.IsKeyboardFocusableProperty.Id) return true;
                 if (propertyId == AutomationElementIdentifiers.NativeWindowHandleProperty.Id) return NativeHandle ?? (Parent == null ? Window.ToInt32() : 0);
+                if (propertyId == AutomationElementIdentifiers.ProcessIdProperty.Id) return ProcessId ?? System.Diagnostics.Process.GetCurrentProcess().Id;
                 return null;
             }
             public IRawElementProviderFragment Navigate(NavigateDirection direction)
@@ -136,20 +139,43 @@ namespace CodexVBE.Tests.Unit
 
         private sealed class AutomationHost : IDisposable
         {
+            [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "CreateWindowExW")]
+            private static extern IntPtr CreateOwnedDialog(uint extended, string kind, string text, uint style,
+                int x, int y, int width, int height, IntPtr parent, IntPtr identifier, IntPtr instance, IntPtr parameter);
+            [DllImport("user32.dll", EntryPoint = "DestroyWindow")]
+            private static extern bool DestroyOwnedDialog(IntPtr window);
             private readonly Thread thread;
             private readonly ManualResetEvent ready = new ManualResetEvent(false);
             private ProviderForm form;
+            private ProviderDialog dialog;
+            private Control dispatcher;
             private Exception startupError;
             public readonly AutomationNode Root;
             public IntPtr Handle;
-            public AutomationHost(AutomationNode root)
+            public AutomationHost(AutomationNode root, bool optionsDialog = false, Action<AutomationHost> configure = null)
             {
                 Root = root;
                 thread = new Thread(() => {
                     try {
-                        form = new ProviderForm { Provider = root, Text = "CodexVBE isolated UIA fixture", ShowInTaskbar = false };
-                        form.Shown += (sender, args) => { Handle = form.Handle; root.Window = Handle; ready.Set(); };
-                        System.Windows.Forms.Application.Run(form);
+                        if (optionsDialog)
+                        {
+                            dispatcher = new Control();
+                            if (dispatcher.Handle == IntPtr.Zero) throw new InvalidOperationException("Owned UIA dispatcher creation failed.");
+                            Handle = CreateOwnedDialog(0x80, "#32770", "CodexVBE isolated Options fixture", 0x10cf0000,
+                                20, 20, 400, 300, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                            if (Handle == IntPtr.Zero) throw new InvalidOperationException("Owned native #32770 dialog creation failed.");
+                            root.Window = Handle;
+                            dialog = new ProviderDialog(root, Handle);
+                            configure?.Invoke(this);
+                            ready.Set();
+                            System.Windows.Forms.Application.Run(new ApplicationContext());
+                        }
+                        else
+                        {
+                            form = new ProviderForm { Provider = root, Text = "CodexVBE isolated UIA fixture", ShowInTaskbar = false };
+                            form.Shown += (sender, args) => { Handle = form.Handle; root.Window = Handle; configure?.Invoke(this); ready.Set(); };
+                            System.Windows.Forms.Application.Run(form);
+                        }
                     }
                     catch (Exception error) { startupError = error; ready.Set(); }
                 }) { IsBackground = true };
@@ -157,14 +183,47 @@ namespace CodexVBE.Tests.Unit
                 if (!ready.WaitOne(TimeSpan.FromSeconds(10))) throw new TimeoutException("Isolated UIA provider did not start.");
                 if (startupError != null) throw new InvalidOperationException("Isolated UIA provider failed.", startupError);
             }
-            public void Dispose() { form.BeginInvoke(new Action(form.Close)); thread.Join(TimeSpan.FromSeconds(5)); ready.Dispose(); }
+            public void Dispose()
+            {
+                if (dialog != null)
+                    dispatcher.BeginInvoke(new Action(() => { dialog.Release(); DestroyOwnedDialog(Handle); dispatcher.Dispose(); System.Windows.Forms.Application.ExitThread(); }));
+                else form.BeginInvoke(new Action(form.Close));
+                thread.Join(TimeSpan.FromSeconds(5)); ready.Dispose();
+            }
+            /// <summary>Exécute une action sur le thread du vrai dialogue détenu par la fixture.</summary>
+            public void Invoke(Action<IntPtr> action) { (dispatcher ?? (Control)form).Invoke(new Action(() => action(Handle))); }
+            /// <summary>Observe les notifications du vrai HWND parent détenu par ce provider.</summary>
+            public Action<Message> NativeMessage { set { if (dialog != null) dialog.NativeMessage = value; else form.NativeMessage = value; } }
+        }
+
+        /// <summary>Subclass UIA d'un dialogue créé directement par Win32; sa classe reste réellement #32770.</summary>
+        private sealed class ProviderDialog : NativeWindow
+        {
+            private readonly AutomationNode provider;
+            internal Action<Message> NativeMessage;
+            internal ProviderDialog(AutomationNode node, IntPtr window) { provider = node; AssignHandle(window); }
+            internal void Release() { if (Handle != IntPtr.Zero) ReleaseHandle(); }
+            protected override void WndProc(ref Message message)
+            {
+                NativeMessage?.Invoke(message);
+                if (message.Msg == 0x003D && message.LParam.ToInt32() == AutomationInteropProvider.RootObjectId)
+                {
+                    provider.Window = Handle;
+                    message.Result = AutomationInteropProvider.ReturnRawElementProvider(Handle, message.WParam, message.LParam, provider);
+                    return;
+                }
+                base.WndProc(ref message);
+            }
         }
 
         private sealed class ProviderForm : Form
         {
             public AutomationNode Provider;
+            /// <summary>Observe uniquement les notifications du parent natif détenu pour simuler les effets documentés de son propriétaire.</summary>
+            public Action<Message> NativeMessage;
             protected override void WndProc(ref Message message)
             {
+                NativeMessage?.Invoke(message);
                 if (message.Msg == 0x003D && message.LParam.ToInt32() == AutomationInteropProvider.RootObjectId)
                 {
                     Provider.Window = Handle;

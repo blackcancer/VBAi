@@ -70,6 +70,9 @@ namespace CodexVBE.Tests.Integration
                 var status = fixture.Command("status");
                 Assert.IsNotNull(status, "The isolated Excel VBE has no CodexVBE bridge.");
                 Assert.AreEqual(true, status["Ok"]);
+                var state = VbeBridgeClient.Object(status["Data"]);
+                Assert.AreEqual(typeof(CodexVBE.VbeSession).Module.ModuleVersionId.ToString("D"), state["AssemblyModuleVersionId"],
+                    "Excel loaded another build of the shared COM add-in; native tests must qualify this assembly.");
                 return fixture;
             }
             catch

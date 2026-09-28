@@ -7,7 +7,7 @@ namespace CodexVBE.Tests.Unit
     public sealed partial class VbeDebugTests
     {
         /// <summary>Matrice établie avant tests: scalar/vector/matrix/null, copies, binding, bornes, rejets et unique invocation.</summary>
-        private static readonly string[] ValueSignatureFailures = { "ByRef", "implicit ByRef", "typed array", "object", "ParamArray", "conditional", "private", "property", "missing required", "unknown named", "duplicate named", "return object" };
+        private static readonly string[] ValueSignatureFailures = { "ByRef", "implicit ByRef", "typed array", "object", "invalid ParamArray", "conditional", "private", "property", "missing required", "unknown named", "duplicate named", "return object" };
         /// <summary>Gardes indépendantes avant mise en file ou livraison native.</summary>
         private static readonly string[] ValueQueueFailures = { "stale source", "wrong path", "missing path", "runtime mode", "class target", "host identity", "changed source", "changed path", "changed mode" };
 

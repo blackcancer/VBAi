@@ -55,7 +55,7 @@ namespace CodexVBE.Tests.Unit
             var values = VbaProcedureValues.Capture(new object[] { "value", 7 });
             var bound = VbaProcedureValues.Bind(signature, 1, "F", values, new[] { "THIRD", "first" });
             Assert.AreEqual(7, bound[0]); Assert.AreSame(Type.Missing, bound[1]); Assert.AreEqual("value", bound[2]);
-            foreach (string declaration in new[] { "ByRef first As Long", "first As Long", "ByVal first() As Long", "ByVal first As Object", "ParamArray first() As Variant" })
+            foreach (string declaration in new[] { "ByRef first As Long", "first As Long", "ByVal first() As Long", "ByVal first As Object", "ParamArray first() As Long" })
                 Assert.ThrowsException<InvalidOperationException>(() => VbaProcedureValues.Bind("Public Sub F(" + declaration + ")\nEnd Sub", 1, "F", new object[] { 7 }, null));
             foreach (object value in new object[] { 7.5, 2147483648m, DBNull.Value, true, "7", new object[] { 1 } })
                 Assert.ThrowsException<ArgumentException>(() => VbaProcedureValues.Bind(signature, 1, "F", new[] { value }, null));

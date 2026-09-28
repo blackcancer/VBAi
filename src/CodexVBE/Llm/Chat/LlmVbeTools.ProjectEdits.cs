@@ -10,13 +10,13 @@ namespace CodexVBE
         private Dictionary<string, CodeSnapshot> ReadProcedureRenameBefore(Request request)
         {
             var previewRequest = new JavaScriptSerializer().Deserialize<Request>(json.Serialize(request));
-            previewRequest.Command = "preview_procedure_rename";
+            previewRequest.Command = request.Command == "apply_class_member_rename" ? "preview_class_member_rename" : "preview_procedure_rename";
             var response = Execute(previewRequest);
             if (!response.Ok) throw new InvalidOperationException(response.Error);
             var data = json.DeserializeObject(json.Serialize(response.Data)) as IDictionary<string, object>;
             if (data == null || !data.ContainsKey("ExpectedProjectVersion") ||
                 !string.Equals(Convert.ToString(data["ExpectedProjectVersion"]), request.ExpectedProjectVersion, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("The project changed since the procedure rename preview.");
+                throw new InvalidOperationException("The project changed since the rename preview.");
             var before = new Dictionary<string, CodeSnapshot>(StringComparer.OrdinalIgnoreCase);
             foreach (object item in (object[])data["Edits"])
             {

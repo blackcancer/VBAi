@@ -1,5 +1,13 @@
 # Couverture automatisée du complément
 
+## Lot complémentaire en qualification
+
+Les contrats ParamArray, renommage de membres privés de classe et options natives ajoutent du code après la mesure ci-dessous. Le build du projet de tests passe avec **0 erreur et 0 avertissement**. Après correction des fixtures pour utiliser un véritable dialogue Win32 #32770, leur matrice locale donne **127 réussis, 0 échec, 0 ignoré** (`artifacts/vbe-next/contracts-qualified-final/contracts.trx`). Les gardes de production restent inchangées. Ce lot ciblé ne constitue pas un bilan global. La structure conserve **174 miroirs pour 231 fichiers de production**.
+
+Le passage global local final donne **1 318 réussis, 0 échec, 14 ignorés**, en 5 min 48 s (`artifacts/vbe-next/qualified-local-final/global.trx`). Couverture du complément : **24 303 / 24 960 lignes — 97,36 %**, **25 316 / 26 377 branches — 95,97 %**. Aucun code de production n'est exclu. Les 13 scénarios Excel sont désactivés pour éviter les fermetures concurrentes ; SOLIDWORKS reste NOT_RUN. Il manque **657 lignes et 1 061 branches**. Les trois nouveaux fichiers de classes et ParamArray sont à **100 % lignes et branches** ; quatre méthodes du fichier des options restent incomplètes.
+
+Preuves : `2e065eb0-4302-43c8-b049-14f8fb397b11/coverage.cobertura.xml`, `coverage-summary.json` et `coverage-inventory.csv` dans le même répertoire final. Les passages exploratoires échoués ne remplacent pas ce résultat. Les nouveaux scénarios Excel et leurs interruptions sont décrits dans la [qualification native](reference/native-qualification.md). La couverture actuelle n'est pas annoncée à 100 % et la mesure après PR #6 reste un résultat historique.
+
 ## Mesure après intégration de la PR #6 et complétion IDE
 
 Mesure du **28 septembre 2026**, après la fusion `c5f64eb` et le lot IDE décrit dans l'[inventaire](reference/vbe-capability-inventory.md). Compilation : **0 erreur, 0 avertissement**.

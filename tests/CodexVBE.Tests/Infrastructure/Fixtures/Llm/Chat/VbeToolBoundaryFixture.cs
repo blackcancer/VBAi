@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Infrastructure
+namespace CodexVBE.Tests.Infrastructure
 {
     using System;
     using System.Threading;
@@ -84,7 +84,7 @@
             if (request.Command == "debug_state") return Response.Success(new VbeToolMode { Mode = 2 });
             if (request.Command == "sign_project") return Response.Success(new VbeToolSignature { CertificateName = "Disposable", UnsignedVerified = true });
             if (request.Command == "read_module" || request.Command == "native_code_history") return Response.Success(new VbeToolCodeResult());
-            if (request.Command == "preview_procedure_rename") return Response.Success(new {
+            if (request.Command == "preview_procedure_rename" || request.Command == "preview_class_member_rename") return Response.Success(new {
                 ExpectedProjectVersion = "value", Edits = new object[0] });
             if (request.Command == "read_project_protection" || request.Command == "set_project_protection")
                 return Response.Success(new { ProjectName = request.Project });
