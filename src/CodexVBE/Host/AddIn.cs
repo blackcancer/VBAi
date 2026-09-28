@@ -78,6 +78,16 @@ public void OnConnection(object application, int connectMode, object addInInstan
                 WriteLog("OnConnection: " + process.ProcessName + " PID=" + process.Id);
                 vbe = application;
                 UiText.Initialize(vbe);
+                var editor = new IntPtr(Convert.ToInt64(((dynamic)vbe).MainWindow.HWnd));
+                bool nativeDark = false;
+                try { nativeDark = ReadSettings().NativeVbeDarkTheme; }
+                catch (Exception settingsError) { WriteLog("Native VBE theme setting unavailable: " + settingsError.Message); }
+                try
+                {
+                    VbeNativeTheme.Initialize(editor, nativeDark, vbe);
+                    if (nativeDark || VbeNativeTheme.ExperimentEnabled()) WriteLog("Native VBE dark mode enabled.");
+                }
+                catch (Exception themeError) { WriteLog("Native VBE dark mode unavailable: " + themeError); }
                 addIn = addInInstance;
                 WriteLog("AddInInst: " + (addIn == null ? "null" : addIn.GetType().FullName)
                     + ", COM=" + (addIn != null && Marshal.IsComObject(addIn)));
@@ -88,7 +98,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
                 server = new BridgeServer(dispatcher, new VbeSession(vbe), process.Id);
                 StartBridge(server);
                 WriteLog("Bridge started: CodexVBE." + process.Id);
-                try { menu = CreateMenu(vbe, ShowChat, ShowSettings, ShowGitHub, command => { ShowChat(); chat.PrepareEditorAction(command); }); }
+                try { menu = CreateMenu(vbe, ShowChat, ShowSettings, ShowGitHub, command => { if (command == "/modern-editor") { ShowModernEditor(); return; } ShowChat(); chat.PrepareEditorAction(command); }); }
                 catch (Exception menuError) { WriteLog("VBE menu failed: " + menuError.ToString()); }
                 try { ShowChat(); ToggleDock(); }
                 catch (Exception uiError) { WriteLog("Assistant window failed: " + uiError.ToString()); }
@@ -149,6 +159,36 @@ public void OnConnection(object application, int connectMode, object addInInstan
         }
 
         /// <summary>Ouvre les paramètres depuis la fenêtre de conversation ou directement.</summary>
+        private ModernEditorWindow modernEditor;
+        private object nativeEditorWindow;
+        private ChatToolWindow nativeEditorControl;
+
+        private void ShowModernEditor()
+        {
+            try
+            {
+                if (modernEditor == null || modernEditor.IsDisposed || nativeEditorControl == null || nativeEditorControl.IsDisposed)
+                {
+                    modernEditor?.Dispose();
+                    modernEditor = new ModernEditorWindow(vbe);
+                    object document = null;
+                    object owner = ((dynamic)vbe).AddIns.Item("CodexVBE.AddIn");
+                    nativeEditorWindow = ((IVbeWindows)((dynamic)vbe).Windows).CreateToolWindow((IVbeAddIn)owner,
+                        "CodexVBE.ChatToolWindow", UiText.Get("VBAi Editor (prototype)"), "{1D999675-C6D3-44AF-812B-72C5D27F1802}", ref document);
+                    nativeEditorControl = document as ChatToolWindow;
+                    if (nativeEditorControl == null) throw new InvalidOperationException("The editor COM container was not created.");
+                    ((dynamic)nativeEditorWindow).Visible = true;
+                    nativeEditorControl.Attach(modernEditor);
+                    ((dynamic)nativeEditorWindow).Width = 900;
+                    ((dynamic)nativeEditorWindow).Height = 650;
+                    modernEditor.OpenActive();
+                }
+                ((dynamic)nativeEditorWindow).Visible = true;
+                ((dynamic)nativeEditorWindow).SetFocus();
+            }
+            catch (Exception error) { ReportMenuError(error); }
+        }
+
         private void ShowSettings()
         {
             try
@@ -298,8 +338,14 @@ public void OnBeginShutdown(ref object[] custom) { CleanupTemporaryToolbarComman
         /// <summary>Détache et ferme les fenêtres, menus, serveur et contrôle de synchronisation.</summary>
         private void Dispose()
         {
+            VbeNativeTheme.Disconnect();
             menu?.Dispose();
             menu = null;
+            modernEditor?.Dispose();
+            modernEditor = null;
+            try { if (nativeEditorWindow != null) ((dynamic)nativeEditorWindow).Close(); } catch { }
+            nativeEditorWindow = null;
+            nativeEditorControl = null;
             if (nativeChatControl != null && chat != null && !chat.IsDisposed && docked) nativeChatControl.Detach(chat);
             docked = false;
             chat?.Dispose();

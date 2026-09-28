@@ -32,6 +32,7 @@ Les fonctions et les limites exactes sont détaillées dans [Extensions fonction
 | Fenêtres/barres d’outils | Persistance des barres Excel qualifiée via SQLite ; géométries/DPI/ancrage natifs au-delà du profil mesuré ; premier ancrage du chat à droite sur un profil vierge |
 | Explorateur d’objets | Lecture/sélection/pagination implémentées ; qualification SOLIDWORKS et variantes UI natives |
 | Options/boîte à outils | 13 essais de mutation Éditeur/Général qualifiés après réouverture et restauration ; autres langues natives à qualifier. Personnalisation de la boîte à outils absente ; neuf MSComctl installés refusés par la politique native de confiance |
+| Thème natif | Onglets Propriétés dessinés directement. Moteur natif intégré et installé pour les barres enfants ; seconde recoloration retirée, libellés nets sur le scénario Excel et 203 captures Standard sans retour général au clair. Finaliser les autres barres/popups, rendu du code avant rasterisation, netteté, cycle de thème, DPI et qualification SOLIDWORKS ; voir le [bilan](native-theme-renderer-pilot.md) |
 
 Les journaux anciens peuvent indiquer « manquant » pour des fonctions implémentées depuis : signets, navigation, mise en page, presse-papiers, historique, lancement UserForm, barres d’outils et lecture de l’Explorateur sont désormais dans le code.
 

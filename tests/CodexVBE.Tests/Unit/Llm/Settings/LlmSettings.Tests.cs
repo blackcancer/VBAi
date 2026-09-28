@@ -26,10 +26,10 @@ namespace CodexVBE.Tests.Unit
                 {
                     LlmSettings.StoragePathOverride = Path.Combine(scope.Root, "nested", "settings.json");
                     Assert.AreEqual("Automatic", LlmSettings.Load().VbeEditApproval);
-                    var settings = new LlmSettings { CustomProviderName = "équipe", GitHubAccount = "fixture", VbeEditApproval = "Never" };
+                    var settings = new LlmSettings { CustomProviderName = "équipe", GitHubAccount = "fixture", VbeEditApproval = "Never", NativeVbeDarkTheme = true };
                     settings.Save();
                     var bytes = File.ReadAllBytes(LlmSettings.StoragePathOverride); Assert.IsFalse(bytes.Take(3).SequenceEqual(new byte[] { 239, 187, 191 }));
-                    var loaded = LlmSettings.Load(); Assert.AreEqual("Never", loaded.VbeEditApproval); Assert.AreEqual("équipe", custom.CustomDisplayName); Assert.AreEqual("fixture", loaded.GitHubAccount);
+                    var loaded = LlmSettings.Load(); Assert.AreEqual("Never", loaded.VbeEditApproval); Assert.AreEqual("équipe", custom.CustomDisplayName); Assert.AreEqual("fixture", loaded.GitHubAccount); Assert.IsTrue(loaded.NativeVbeDarkTheme);
                     foreach (var json in new[] { "{}", "null" }) { File.WriteAllText(LlmSettings.StoragePathOverride, json, Encoding.UTF8); Assert.AreEqual("AskEachTime", LlmSettings.Load().VbeEditApproval); }
                     File.WriteAllText(LlmSettings.StoragePathOverride, "{broken"); Assert.ThrowsException<ArgumentException>(() => LlmSettings.Load());
                 }

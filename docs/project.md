@@ -17,6 +17,7 @@ Le complément cible **VBE 64 bits, .NET Framework 4.8 et Windows**. Le chat, le
 | UserForms | Arbre des conteneurs, contrôles, propriétés typées, police/images, disposition, sélection, duplication bornée, listes, événements et récupération après coupe |
 | Exécution et débogage | Compilation, lancement, breakpoint natif, pas à pas, reprise/reset, fenêtres de diagnostic, Exécution et espions |
 | Fenêtres de l’éditeur | Volets de code, vues, fenêtres, disposition, barres d’outils, compléments et Explorateur d’objets |
+| Apparence native | Thème sombre VBE expérimental, explicite et réversible pour le cadre, l’espace MDI, les volets standards et les barres de défilement ; limites documentées pour le rendu Office personnalisé |
 | Conversation | Contexte VBE dynamique, références `#`/`@`, modes Discussion/Plan/Agent, sessions SQLite, choix persistants, résumé de réflexion et rollback |
 | Git et GitHub | Compte indépendant du fournisseur IA, export versionné, commits, push/fetch/pull, checkpoints, branches, fusions et PR |
 
@@ -35,6 +36,10 @@ Le [catalogue des 177 outils LLM](reference/vbe-tools.md) fournit les noms et pa
 Voir [Extensions fonctionnelles VBE](reference/functional-extensions.md) pour les contrats et limites : appel paramétré, index de déclarations, renommage local/projet, sauvegarde SWP, barres personnalisées, options et confiance locale de certificat. Les mesures des nouvelles extensions sont détaillées dans le [bilan courant](test-coverage.md).
 
 Voir également le [bilan des qualifications natives](reference/native-qualification.md) : exécution paramétrée, options et barres Excel, UserForms, grand tableau du débogueur, langues et écrans. Les limites SOLIDWORKS, ActiveX et DPI y restent explicites.
+
+Le [thème sombre natif du VBE](native-dark-theme.md) décrit l’option expérimentale, son retour arrière, les APIs Windows utilisées et les surfaces encore contrôlées par l’ancien moteur Office/VBA.
+
+Le [bilan du pilote de rendu](native-theme-renderer-pilot.md) détaille les onglets Propriétés désormais dessinés directement, la trace graphique réelle du code et le moteur natif intégré des barres. Les libellés ont été stabilisés en retirant leur seconde recoloration ; les contrôles ciblés Excel et au repos sous SOLIDWORKS sont consignés. Les autres surfaces et les parcours complets restent à qualifier.
 
 ## Dernière validation
 

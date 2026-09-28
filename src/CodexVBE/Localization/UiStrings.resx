@@ -1789,4 +1789,8 @@ Sign in through Git Credential Manager; commit identity is configured in Git.</v
   <data name="Controls restored" xml:space="preserve"><value>Controls restored</value></data>
   <data name="Recovery attempted" xml:space="preserve"><value>Recovery attempted</value></data>
   <data name="Recovery unavailable" xml:space="preserve"><value>Recovery unavailable</value></data>
+  <data name="Native dark VBE (experimental)" xml:space="preserve"><value>Native dark VBE (experimental)</value></data>
+  <data name="Styles the VBE title bar, workspace, native panes and scrollbars. Menus and toolbars remain controlled by the legacy Office renderer." xml:space="preserve"><value>Styles the VBE title bar, workspace, native panes and scrollbars. Menus and toolbars remain controlled by the legacy Office renderer.</value></data>
+  <data name="Native editor colors could not be updated. See the log for details." xml:space="preserve"><value>Native editor colors could not be updated. See the log for details.</value></data>
+  <data name="Applies dark native surfaces and editor colors after Settings closes. Original editor colors are saved and restored when disabled. Some legacy controls remain experimental." xml:space="preserve"><value>Applies dark native surfaces and editor colors after Settings closes. Original editor colors are saved and restored when disabled. Some legacy controls remain experimental.</value></data>
 </root>

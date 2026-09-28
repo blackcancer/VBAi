@@ -21,6 +21,9 @@ namespace CodexVBE
         /// <summary>Obtient ou définit la stratégie de confirmation des modifications VBE.</summary>
         /// <value>Identifiant de stratégie persisté.</value>
         public string VbeEditApproval { get; set; } = "Automatic";
+        /// <summary>Obtient ou définit l’habillage sombre expérimental des fenêtres natives du VBE.</summary>
+        /// <value><see langword="true"/> pour activer l’habillage natif dans le processus hôte.</value>
+        public bool NativeVbeDarkTheme { get; set; }
         /// <summary>Obtient ou définit le modèle Codex choisi.</summary>
         /// <value>Identifiant du modèle Codex.</value>
         public string CodexModel { get; set; }
