@@ -110,12 +110,8 @@ namespace CodexVBE.Tests.Unit
             /// <summary>Indique si le transport est démarré.</summary>
             /// <value>État modifié par <see cref="Start"/> et <see cref="Dispose"/>.</value>
             public bool IsRunning { get; private set; }
-            /// <summary>Force l’échec de la requête de modèles.</summary>
-            internal bool FailModels;
-            /// <summary>Force l’échec du tour complété.</summary>
-            internal bool FailTurn;
-            /// <summary>Indique si un tour démarre automatiquement après turn/start.</summary>
-            internal bool Complete = true;
+            /// <summary>Configure les échecs de liste de modèles et de tour, ainsi que la complétion automatique du tour.</summary>
+            internal bool FailModels, FailTurn, Complete = true;
             /// <summary>Action appelée avant les événements de fin du tour.</summary>
             internal Action BeforeComplete;
             /// <summary>Modèles renvoyés par la requête de liste.</summary>

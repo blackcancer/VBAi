@@ -134,10 +134,8 @@ namespace CodexVBE.Tests.Infrastructure
         /// <summary>Décrit le contenu, le type MIME et le statut d’une réponse de fixture.</summary>
         internal sealed class Reply
         {
-            /// <summary>Corps retourné par la réponse.</summary>
-            internal string Body;
-            /// <summary>Type MIME attribué au contenu.</summary>
-            internal string MediaType = "application/json";
+            /// <summary>Corps retourné et type MIME attribué au contenu de la réponse.</summary>
+            internal string Body, MediaType = "application/json";
             /// <summary>Indique si l’en-tête Content-Type doit être omis.</summary>
             internal bool OmitContentType;
             /// <summary>Code HTTP de la réponse.</summary>
