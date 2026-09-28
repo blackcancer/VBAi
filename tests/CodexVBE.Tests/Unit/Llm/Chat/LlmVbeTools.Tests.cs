@@ -1,5 +1,41 @@
 namespace CodexVBE.Tests.Unit
 {
+    using System;
+    using CodexVBE;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    public sealed partial class LlmVbeToolsBoundaryTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public async System.Threading.Tasks.Task ProtectionAndNavigationAsyncRoutesPreserveSchedulingAndNativeResults()
+        {
+            foreach (string command in new[] { "read_project_protection", "set_project_protection" })
+            {
+                var tools = Create();
+                string arguments = Json.Serialize(new { Project = "P", ExpectedProjectVersion = "version", ExpectedOptionsVersion = "options", ExpectedMode = 2, ControlCaption = "Properties", Action = "clear" });
+                if (command == "read_project_protection") arguments = Json.Serialize(new { Project = "P", ExpectedProjectVersion = "version", ExpectedMode = 2, ControlCaption = "Properties" });
+                string captured = null;
+                tools.Native.ReadProjectProtection = request => { captured = request.Caption; return new { Available = true }; };
+                tools.Native.SetProjectProtection = request => { captured = request.Caption; return new { CommittedRequested = true }; };
+                Success(await tools.InvokeAsync(command, arguments), command); Assert.AreEqual("P", captured);
+                tools.Execute = request => Response.Failure("schedule declined"); Failed(await tools.InvokeAsync(command, arguments), "declined");
+                tools.Native.EnsureNoProjectPropertiesDialog = () => { throw new InvalidOperationException("existing dialog"); };
+                Failed(await tools.InvokeAsync(command, arguments), "preexisting dialog");
+            }
+            foreach (string command in new[] { "read_navigation_surface", "change_navigation_surface" })
+            {
+                var tools = Create(); string arguments = command == "read_navigation_surface" ? Json.Serialize(new { Pane = "project", Query = "Module", Offset = 0, Limit = 5 }) : Json.Serialize(new { Pane = "project", Control = "token", Action = "select", ExpectedWindowVersion = "version" });
+                Success(await tools.InvokeAsync(command, arguments), command);
+                tools.Native.ReadNavigationSurface = request => { throw new InvalidOperationException("provider unavailable"); }; tools.Native.ChangeNavigationSurface = request => { throw new InvalidOperationException("provider unavailable"); };
+                Failed(await tools.InvokeAsync(command, arguments), "native failure");
+                foreach (string invalid in new[] { "null", "[]", "{}", "{\"Pane\":\"project\",\"Extra\":1}", "{\"Pane\":1}", "{\"Pane\":\"project\",\"Offset\":\"0\"}" }) Failed(await tools.InvokeAsync(command, invalid), invalid);
+            }
+        }
+    }
+
+}
+
+namespace CodexVBE.Tests.Unit
+{
 using System;
     using System.Collections.Generic;
     using System.Threading;

@@ -87,8 +87,13 @@ namespace CodexVBE.Tests.Infrastructure
             if (request.Command == "preview_procedure_rename" || request.Command == "preview_class_member_rename") return Response.Success(new {
                 ExpectedProjectVersion = "value", Edits = new object[0] });
             if (request.Command == "read_project_protection" || request.Command == "set_project_protection")
-                return Response.Success(new { ProjectName = request.Project });
+                return Response.Success(new VbeToolProjectIdentity { ProjectName = request.Project });
             return Response.Success(new { Command = request.Command });
         }
+    }
+
+    public sealed class VbeToolProjectIdentity
+    {
+        public string ProjectName { get; set; }
     }
 }

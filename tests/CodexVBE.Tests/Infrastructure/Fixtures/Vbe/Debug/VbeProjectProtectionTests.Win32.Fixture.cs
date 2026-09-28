@@ -23,6 +23,10 @@ namespace CodexVBE.Tests.Unit
             private readonly Func<IntPtr, int, IntPtr, IntPtr, bool> post = VbeDebugWindows.PostMessage;
             private readonly Func<IntPtr, long> styles = VbeDebugWindows.ProtectionWindowStyle;
             private readonly Func<IntPtr, IntPtr> parents = VbeDebugWindows.ProtectionWindowParent;
+            private readonly Func<IntPtr, int, string> tabText = VbeDebugWindows.ProtectionTabText;
+            private readonly Func<IntPtr, IntPtr, int, bool> selectTab = VbeDebugWindows.ProtectionSelectTab;
+            private readonly Func<int, IntPtr> allocate = VbeDebugWindows.AllocateProtectionBuffer;
+            private readonly Action<int> pause = VbeDebugWindows.PauseNative;
             internal readonly VbeDebugWindows.IProjectProtectionProbe Native;
             internal int Selected, Locked, Writes, Posts, TabReads;
             internal bool DuplicateTab, FailTabRead, FailSelect, WrongCheckbox, MissingPassword, WrongOwner, WrongStyle, IgnoreClick, IgnorePassword;
@@ -87,6 +91,8 @@ namespace CodexVBE.Tests.Unit
                 VbeDebugWindows.GetDlgCtrlID = ids; VbeDebugWindows.GetDlgItem = items;
                 VbeDebugWindows.SendMessageInt = messages; VbeDebugWindows.SendMessageText = text; VbeDebugWindows.PostMessage = post;
                 VbeDebugWindows.ProtectionWindowStyle = styles; VbeDebugWindows.ProtectionWindowParent = parents;
+                VbeDebugWindows.ProtectionTabText = tabText; VbeDebugWindows.ProtectionSelectTab = selectTab;
+                VbeDebugWindows.AllocateProtectionBuffer = allocate; VbeDebugWindows.PauseNative = pause;
             }
         }
     }

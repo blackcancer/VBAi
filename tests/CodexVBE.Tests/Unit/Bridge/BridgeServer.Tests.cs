@@ -128,14 +128,14 @@ namespace CodexVBE.Tests.Unit
                     var json = new JavaScriptSerializer();
                     foreach (string command in new[] { "debug_windows", "debug_dialog", "debug_item", "respond_debug_dialog",
                         "immediate_execute", "add_watch", "edit_watch", "quick_watch", "read_debug_options", "read_vbe_options",
-                        "read_project_signature_dialog", "remove_watch", "status" })
+                        "read_project_signature_dialog", "remove_watch", "status", "read_navigation_surface", "change_navigation_surface", "read_project_protection", "set_project_protection" })
                     {
                         var response = SendWithMessagePump(id, json.Serialize(new { Command = command, Project = "P", ExpectedMode = 2, Text = "Debug.Print 1" }));
                         Assert.AreEqual(true, response["Ok"], command);
                         Assert.IsNotNull(response["Data"], command);
                     }
                     foreach (string command in new[] { "add_watch", "edit_watch", "quick_watch", "read_debug_options", "read_vbe_options",
-                        "read_project_signature_dialog", "remove_watch", "sign_project", "immediate_execute" })
+                        "read_project_signature_dialog", "remove_watch", "sign_project", "immediate_execute", "read_project_protection", "set_project_protection" })
                     {
                         server.Execute = request => Response.Failure("host rejected " + request.Command);
                         var response = SendWithMessagePump(id, json.Serialize(new { Command = command, Project = "P", ExpectedMode = 2 }));

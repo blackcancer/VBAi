@@ -18,6 +18,160 @@ namespace CodexVBE.Tests.Unit
     public sealed partial class VbeProjectProtectionTests
     {
         [TestMethod]
+        public void ProtectionRequestDialogAndReadbackTransitionMatrixIsComplete()
+        {
+            foreach (Request invalid in new[] { null, new Request { Caption = "ExactProject" }, new Request { Project = "P" } })
+                Assert.ThrowsException<ArgumentException>(() => VbeDebugWindows.ReadProjectProtection(invalid, new Probe()));
+            var readRequest = new Request { Project = "P", Caption = "ExactProject" };
+            var pending = new Probe { KeepCancelOpen = true }; dynamic read = VbeDebugWindows.ReadProjectProtection(readRequest, pending);
+            Assert.IsTrue((bool)read.Available); Assert.IsFalse((bool)read.DialogClosed);
+            Assert.IsFalse((bool)((dynamic)VbeDebugWindows.ReadProjectProtection(readRequest, new Probe { FailDialog = true })).Available);
+            Assert.IsFalse((bool)((dynamic)VbeDebugWindows.SetProjectProtection(readRequest, new Probe { Open = false })).Available);
+            foreach (string fault in new[] { "action", "version", "native identity", "confirmation" })
+            {
+                var native = new Probe(); var request = Request(native);
+                if (fault == "action") request.Action = "unknown";
+                if (fault == "version") request.ExpectedOptionsVersion = null;
+                if (fault == "native identity") native.ChangeNativeIdentity = true;
+                if (fault == "confirmation") native.MismatchConfirmation = true;
+                dynamic result = VbeDebugWindows.SetProjectProtection(request, native);
+                Assert.IsFalse((bool)result.Available, fault); Assert.AreEqual(0, native.Accepts, fault);
+            }
+        }
+
+        private sealed class TruncatedSecretStream : MemoryStream
+        {
+            internal TruncatedSecretStream() : base(new byte[] { 65 }) { }
+            public override long Length => 2;
+        }
+
+        [TestMethod]
+        public void ProtectionSecretReadRefusesTruncatedStreamAndBomOnlyContent()
+        {
+            var open = VbeDebugWindows.OpenProtectionSecret;
+            try
+            {
+                foreach (bool truncated in new[] { true, false })
+                {
+                    VbeDebugWindows.OpenProtectionSecret = p => truncated ? (Stream)new TruncatedSecretStream() : new MemoryStream(new byte[] { 0xef, 0xbb, 0xbf });
+                    var probe = new Probe(); var request = Request(probe); request.Action = "lock"; request.Path = @"C:\fixture\secret.txt";
+                    dynamic result = VbeDebugWindows.SetProjectProtection(request, probe);
+                    Assert.IsFalse((bool)result.Available); Assert.AreEqual(0, probe.Writes);
+                }
+            }
+            finally { VbeDebugWindows.OpenProtectionSecret = open; }
+        }
+
+        [TestMethod]
+        public void NativeProtectionRejectsEveryControlPageOwnerAndBoundFault()
+        {
+            foreach (string fault in new[] { "tab hidden", "tab disabled", "tab parent", "tab absent", "tab duplicate", "tab count zero", "tab count large", "no protection tab", "selection readback", "check hidden", "check disabled", "check style", "page class", "page hidden", "page parent", "password parent", "password duplicate", "password ids", "password owner", "negative length", "children bound" })
+            using (var f = new Win32ProtectionScope())
+            {
+                var visible = VbeDebugWindows.IsWindowVisible; var enabled = VbeDebugWindows.OptionsWindowEnabled; var parent = VbeDebugWindows.ProtectionWindowParent;
+                var message = VbeDebugWindows.SendMessageInt; var enumerate = VbeDebugWindows.EnumChildWindows; var ids = VbeDebugWindows.GetDlgCtrlID; var styles = VbeDebugWindows.ProtectionWindowStyle; var classes = VbeDebugWindows.GetClassName; var owners = VbeDebugWindows.GetWindowThreadProcessId;
+                if (fault == "tab hidden" || fault == "check hidden" || fault == "page hidden") VbeDebugWindows.IsWindowVisible = h => h.ToInt32() != (fault == "tab hidden" ? 73 : fault == "check hidden" ? 74 : 72) && visible(h);
+                if (fault == "tab disabled" || fault == "check disabled") VbeDebugWindows.OptionsWindowEnabled = h => h.ToInt32() != (fault == "tab disabled" ? 73 : 74) && enabled(h);
+                if (fault == "tab parent" || fault == "page parent" || fault == "password parent") VbeDebugWindows.ProtectionWindowParent = h => h.ToInt32() == (fault == "tab parent" ? 73 : fault == "page parent" ? 72 : 75) ? IntPtr.Zero : parent(h);
+                if (fault == "tab absent" || fault == "tab duplicate" || fault == "password duplicate" || fault == "children bound") VbeDebugWindows.EnumChildWindows = (h, callback, p) => {
+                    if (fault == "children bound") { for (int i = 0; i < 257; i++) callback(new IntPtr(1000 + i), p); return true; }
+                    bool result = enumerate(h, (child, arg) => fault == "tab absent" && child.ToInt32() == 73 ? true : callback(fault == "password duplicate" && child.ToInt32() == 76 ? new IntPtr(75) : child, arg), p);
+                    if (fault == "tab duplicate") callback(new IntPtr(73), p); return result;
+                };
+                if (fault == "tab count zero" || fault == "tab count large") VbeDebugWindows.SendMessageInt = (h, m, w, l) => m == 0x1304 ? new IntPtr(fault == "tab count zero" ? 0 : 17) : message(h, m, w, l);
+                if (fault == "no protection tab") VbeDebugWindows.ProtectionTabText = (h, i) => "General";
+                if (fault == "selection readback") VbeDebugWindows.ProtectionSelectTab = (d, t, i) => true;
+                if (fault == "check style") VbeDebugWindows.ProtectionWindowStyle = h => h.ToInt32() == 74 ? 4 : styles(h);
+                if (fault == "page class") VbeDebugWindows.GetClassName = (h, b, c) => { if (h.ToInt32() != 72) return classes(h, b, c); b.Append("wrong page"); return b.Length; };
+                if (fault == "password ids") VbeDebugWindows.GetDlgCtrlID = h => h.ToInt32() == 75 || h.ToInt32() == 76 ? 5469 : ids(h);
+                if (fault == "password owner") VbeDebugWindows.GetWindowThreadProcessId = (IntPtr h, out uint pid) => { uint result = owners(h, out pid); if (h.ToInt32() == 75) pid++; return result; };
+                if (fault == "negative length") f.Length1 = -1;
+                Assert.ThrowsException<InvalidOperationException>(() => f.Native.Capture(new IntPtr(71), "ExactProject"), fault); Assert.AreEqual(0, f.Writes, fault);
+            }
+        }
+
+        [TestMethod]
+        public void NativeProtectionButtonsAndDisabledSecretsKeepEveryDeliveryGuard()
+        {
+            foreach (string fault in new[] { "not validated", "dialog replaced", "missing button", "button class", "button parent", "button id", "button hidden", "button disabled", "post refused" })
+            using (var f = new Win32ProtectionScope())
+            {
+                if (fault != "not validated") f.Native.Dialog("ExactProject");
+                if (fault == "dialog replaced") VbeDebugWindows.EnumWindows = (c, p) => true;
+                if (fault == "missing button") VbeDebugWindows.GetDlgItem = (h, i) => IntPtr.Zero;
+                if (fault == "button class") { var read = VbeDebugWindows.GetClassName; VbeDebugWindows.GetClassName = (h, b, c) => { if (h.ToInt32() != 77) return read(h, b, c); b.Append("Edit"); return b.Length; }; }
+                if (fault == "button parent") VbeDebugWindows.ProtectionWindowParent = h => IntPtr.Zero;
+                if (fault == "button id") VbeDebugWindows.GetDlgCtrlID = h => 999;
+                if (fault == "button hidden") VbeDebugWindows.IsWindowVisible = h => h.ToInt32() != 77;
+                if (fault == "button disabled") VbeDebugWindows.OptionsWindowEnabled = h => h.ToInt32() != 77;
+                if (fault == "post refused") VbeDebugWindows.PostMessage = (h, m, w, l) => false;
+                Assert.ThrowsException<InvalidOperationException>(() => f.Native.Accept(new IntPtr(71)), fault);
+            }
+            foreach (string fault in new[] { "class", "style", "disabled nonempty", "disabled old secret", "disabled empty", "owner reader" })
+            using (var f = new Win32ProtectionScope())
+            {
+                var type = typeof(VbeDebugWindows).GetNestedType("NativeProjectProtectionProbe", System.Reflection.BindingFlags.NonPublic);
+                var set = type.GetMethod("SetPassword", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+                if (fault == "class") VbeDebugWindows.GetClassName = (h, b, c) => { b.Append("Button"); return b.Length; };
+                if (fault == "style") VbeDebugWindows.ProtectionWindowStyle = h => 0;
+                if (fault.StartsWith("disabled", StringComparison.Ordinal)) VbeDebugWindows.OptionsWindowEnabled = h => false;
+                if (fault == "disabled old secret") f.Length1 = 1;
+                if (fault == "owner reader") VbeDebugWindows.GetWindowThreadProcessId = (IntPtr h, out uint pid) => { pid = 0; return 0; };
+                string password = fault == "disabled nonempty" ? "value" : "";
+                if (fault == "disabled empty") { set.Invoke(null, new object[] { new IntPtr(75), password }); Assert.AreEqual(0, f.Writes); }
+                else { var error = Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => set.Invoke(null, new object[] { new IntPtr(75), password })); Assert.IsInstanceOfType(error.InnerException, typeof(InvalidOperationException)); }
+            }
+        }
+
+        [TestMethod]
+        public void ProtectionBufferFailuresReleaseEarlierAllocationAndDefaultWrappersRetainTheirNativePaths()
+        {
+            foreach (int failedAllocation in new[] { 1, 2 }) using (var f = new Win32ProtectionScope())
+            {
+                int calls = 0; VbeDebugWindows.AllocateProtectionBuffer = size => { if (++calls == failedAllocation) throw new OutOfMemoryException("owned allocation fault"); return System.Runtime.InteropServices.Marshal.AllocHGlobal(size); };
+                Assert.ThrowsException<OutOfMemoryException>(() => VbeDebugWindows.ProtectionTabText(new IntPtr(73), 0));
+                Assert.AreEqual(failedAllocation, calls);
+            }
+            using (var f = new Win32ProtectionScope())
+            {
+                VbeDebugWindows.PauseNative = milliseconds => { };
+                var request = new Request { Project = "P", Caption = "ExactProject" };
+                dynamic read = VbeDebugWindows.ReadProjectProtection(request); Assert.IsTrue((bool)read.Available); Assert.IsFalse((bool)read.DialogClosed);
+                request.Action = "clear"; request.ExpectedOptionsVersion = read.OptionsVersion;
+                dynamic changed = VbeDebugWindows.SetProjectProtection(request); Assert.IsTrue((bool)changed.ControlValueVerified);
+                f.Selected = 1; f.Locked = 1; f.Native.Write(new IntPtr(71), "ExactProject", true, ""); Assert.AreEqual(1, f.Locked);
+            }
+        }
+
+        [TestMethod]
+        public void ProtectionNativeReadbackRejectsIgnoredClearWrongDialogAndOversizedTabCaption()
+        {
+            using (var f = new Win32ProtectionScope())
+            {
+                f.Locked = 1; f.IgnoreClick = true;
+                Assert.ThrowsException<InvalidOperationException>(() => f.Native.Write(new IntPtr(71), "ExactProject", false, ""));
+                Assert.ThrowsException<InvalidOperationException>(() => f.Native.Capture(new IntPtr(72), "ExactProject"));
+            }
+            foreach (bool oversized in new[] { false, true }) using (var f = new Win32ProtectionScope())
+            {
+                IntPtr replacement = oversized ? System.Runtime.InteropServices.Marshal.StringToHGlobalUni(new string('x', 256)) : IntPtr.Zero;
+                try
+                {
+                    VbeDebugWindows.SendMessageInt = (h, m, w, l) => {
+                        Assert.AreEqual(0x133c, m);
+                        var type = typeof(VbeDebugWindows).GetNestedType("ProtectionTabItem", System.Reflection.BindingFlags.NonPublic);
+                        object descriptor = System.Runtime.InteropServices.Marshal.PtrToStructure(l, type);
+                        type.GetField("Text").SetValue(descriptor, replacement);
+                        System.Runtime.InteropServices.Marshal.StructureToPtr(descriptor, l, false); return new IntPtr(1);
+                    };
+                    if (oversized) Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ProtectionTabText(new IntPtr(73), 0));
+                    else Assert.AreEqual("", VbeDebugWindows.ProtectionTabText(new IntPtr(73), 0));
+                }
+                finally { if (replacement != IntPtr.Zero) System.Runtime.InteropServices.Marshal.FreeHGlobal(replacement); }
+            }
+        }
+
+        [TestMethod]
         public void ReadProtectionReturnsOnlyPresenceAndVersionThenCancels()
         {
             var native = new Probe { Locked = true, PasswordLength = 8, ConfirmationLength = 8, Secret = "TOPSECRET" };

@@ -12,12 +12,13 @@ namespace CodexVBE.Tests.Unit
             internal bool Open = true, Locked, FailCapture, FailWrite, FailAccept, IgnoreWrite, ChangeIdentity, KeepOpen;
             internal int PasswordLength, ConfirmationLength, Writes, Cancels, Accepts;
             internal string Secret;
-            public IntPtr Dialog(string projectName) { return Open ? new IntPtr(71) : IntPtr.Zero; }
+            internal bool KeepCancelOpen, FailDialog, ChangeNativeIdentity, MismatchConfirmation;
+            public IntPtr Dialog(string projectName) { if (FailDialog) throw new InvalidOperationException("dialog unavailable"); return Open ? new IntPtr(71) : IntPtr.Zero; }
             public VbeDebugWindows.ProjectProtectionState Capture(IntPtr dialog, string projectName)
             {
                 if (FailCapture) throw new InvalidOperationException(Secret);
                 return new VbeDebugWindows.ProjectProtectionState { Identity = ChangeIdentity && Writes > 0 ? "other" : "exact",
-                    Locked = Locked, PasswordLength = PasswordLength, ConfirmationLength = ConfirmationLength };
+                    NativeIdentity = ChangeNativeIdentity && Writes > 0 ? "changed" : "native", Locked = Locked, PasswordLength = PasswordLength, ConfirmationLength = MismatchConfirmation && Writes > 0 ? ConfirmationLength + 1 : ConfirmationLength };
             }
             public void Write(IntPtr dialog, string projectName, bool locked, string password)
             {
@@ -32,7 +33,7 @@ namespace CodexVBE.Tests.Unit
                 if (FailAccept) throw new InvalidOperationException(Secret);
                 if (!KeepOpen) Open = false;
             }
-            public void Cancel(IntPtr dialog) { Cancels++; Open = false; }
+            public void Cancel(IntPtr dialog) { Cancels++; if (!KeepCancelOpen) Open = false; }
             public void Pause(int milliseconds) { }
         }
         private static Request Request(Probe native)
