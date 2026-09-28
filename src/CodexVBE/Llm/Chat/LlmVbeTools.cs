@@ -30,7 +30,7 @@ namespace CodexVBE
         public event Action<FormCutChange> FormCut;
         /// <summary>Noms des outils dont les opérations sont en lecture seule.</summary>
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
-            "form_clipboard_state", "list_toolbars", "read_runtime_forms", "read_code_clipboard", "native_code_history_state", "form_run_status", "list_object_browser", "select_object_browser", "read_object_browser", "code_pane_layout", "editor_layout", "window_layout", "project_symbols", "navigate_code", "code_bookmark", "preview_form_layout", "preview_code_edit", "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "read_vbe_options", "compile_project", "open_debug_pane", "list_commands", "select_code", "select_code_range",
+            "certificate_trust", "preview_local_rename", "toolbar_controls", "procedure_run_status", "form_clipboard_state", "list_toolbars", "read_runtime_forms", "read_code_clipboard", "native_code_history_state", "form_run_status", "list_object_browser", "select_object_browser", "read_object_browser", "code_pane_layout", "editor_layout", "window_layout", "project_symbols", "navigate_code", "code_bookmark", "preview_form_layout", "preview_code_edit", "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "read_vbe_options", "compile_project", "open_debug_pane", "list_commands", "select_code", "select_code_range",
             "project_properties", "project_persistence_status", "project_signature_status", "read_project_signature_dialog", "list_signing_certificates", "component_properties", "component_property_value", "vbe_windows", "vbe_environment", "list_addins", "focus_vbe_window", "window_linkage", "code_panes", "open_object_browser", "list_procedures", "find_code", "inspect_code_file", "select_procedure", "list_forms",
             "git_status", "git_history", "git_branches", "git_checkpoints", "git_conflicts", "git_conflict_read", "git_commit_read", "git_pull_requests",
             "form_state", "form_tree", "form_list_items", "form_properties", "form_control_properties", "form_event_catalog",
@@ -114,8 +114,9 @@ namespace CodexVBE
         {
             var properties = new Dictionary<string, object>();
             foreach (string field in fields)
-                properties[field] = field == "Value" ? (object)new { anyOf = new object[] {
+                properties[field] = field == "Temporary" ? (object)new { type = "boolean" } : field == "Value" ? (object)new { anyOf = new object[] {
                     new { type = "string" }, new { type = "number" }, new { type = "boolean" } } } :
+                    field == "Arguments" ? (object)new { type = "array", maxItems = 30, items = new { anyOf = new object[] { new { type = "string" }, new { type = "number" }, new { type = "boolean" }, new { type = "null" } } } } :
                     field == "PathSegments" ? (object)new { type = "array", items = new { type = "string" }, minItems = 1, maxItems = 16 } :
                     field == "Rows" ? (object)new { type = "array", items = new { type = "array", items = new { type = "string", maxLength = 256 }, minItems = 1, maxItems = 10 }, minItems = 0, maxItems = 64 } :
                     field == "Items" ? (object)new { type = "array", items = new { type = "string", maxLength = 256 }, minItems = 0, maxItems = 64 } :
@@ -155,10 +156,17 @@ namespace CodexVBE
                 new[] { "Project" }, "Project"),
             Definition("read_debug_options", "Read the VBE-wide error trapping setting from Tools > Options > General through the native dialog, then close with Cancel. No preference is changed. Returns the exact selected radio label and available choices; no shortcuts or coordinates.",
                 new string[0]),
+            Definition("certificate_trust", "Inspect the exact CertificateThumbprint in CurrentUser/My using Windows code-signing chain and Authenticode policy, cached URLs and cached revocation only. No downloads, private-key access or trust-store changes. Missing cached revocation produces an indeterminate result, not trust. This does not verify any VBA signature, digest, signer binding or timestamp.", new[] { "CertificateThumbprint" }, "CertificateThumbprint"),
+            Definition("set_vbe_option", "Set one recognized native Editor or General preference from read_vbe_options using its exact Pane tab, Property control label and ExpectedOptionsVersion. Boolean Value for supported checkboxes, true for error-trapping radios, integer 1-32 for tab width. Native French/English labels are currently supported. Formatting/theme, docking, security and arbitrary controls are excluded. InvokeAsync is required; normal VBE edit approval applies. Reopen read_vbe_options to verify persistence.", new[] { "Pane", "Property", "Value", "ExpectedOptionsVersion" }, "Pane", "Property", "Value", "ExpectedOptionsVersion"),
             Definition("read_vbe_options", "Read visible controls and values on every tab of the native VBE Tools > Options dialog, then close with Cancel. Returns native labels and read errors; no preference is changed, no shortcut or coordinates are used. This is a UI observation, not proof of persistence or of unavailable controls.",
                 new string[0]),
             Definition("compile_project", "Compile the named VBA project using the native VBE command in design mode. Captures and dismisses a native compile error dialog; on failure read debug_state to locate the selected token. A successful response means no native diagnostic was observed. ExpectedMode must be 2.",
                 new[] { "Project", "ExpectedMode" }, "Project", "ExpectedMode"),
+            Definition("run_procedure", "Schedule one public Sub or Function in a standard module with up to 30 scalar JSON Arguments (string, finite number, boolean or null for VBA Null). Requires current SHA and ExpectedMode=2. Uses a fully qualified native Immediate call, without generating source code. Functions print their result to Immediate. Poll procedure_run_status using the returned Query; command delivery is not proof of runtime success. Do not retry a pending or failed operation automatically.",
+                new[] { "Project", "Module", "Procedure", "ExpectedSha256", "ExpectedMode", "Arguments" },
+                "Project", "Module", "Procedure", "ExpectedSha256", "ExpectedMode", "Arguments"),
+            Definition("procedure_run_status", "Read a previously scheduled procedure call by exact Project and Query operation identifier. Includes native Immediate output or delivery error; inspect debug_dialog and debug_state separately for runtime diagnostics.",
+                new[] { "Project", "Query" }, "Project", "Query"),
             Definition("run_sub", "Run one parameterless Sub in a standard module by exact project, module and procedure name through the native VBE Run command. Requires the current module SHA-256 and ExpectedMode=2. Selects its declaration in the code pane; read debug_state separately for asynchronous effects. VBE edit policy applies.",
                 new[] { "Project", "Module", "Procedure", "ExpectedSha256", "ExpectedMode" },
                 "Project", "Module", "Procedure", "ExpectedSha256", "ExpectedMode"),
@@ -225,12 +233,12 @@ namespace CodexVBE
                 "Project", "Module", "Path", "StartLine", "ExpectedSha256", "SourceEncoding"),
             Definition("project_properties", "Read all exposed VBProject properties, component identities and a project revision.",
                 new[] { "Project" }, "Project"),
-            Definition("project_persistence_status", "Read VBProject.Saved and, for the exact Excel workbook owning the project, Workbook.Saved, path and read-only state. Available=false outside Excel or when the workbook cannot be matched. This does not write to disk.",
+            Definition("project_persistence_status", "Read VBProject.Saved and the exact Excel workbook state, or path/read-only/file state of a native standalone SWP project (Type=101). Other host projects remain unavailable. This does not write to disk.",
                 new[] { "Project" }, "Project"),
-            Definition("save_host_document", "Save only the already-named, writable Excel workbook owning the exact design-mode VBE project. Requires the current ExpectedProjectVersion and the ExpectedHostPath returned by project_persistence_status. Returns both VBProject.Saved and Workbook.Saved after Workbook.Save. Unsaved workbooks and other hosts are refused; SaveAs is a separate operation.",
+            Definition("save_host_document", "Save the already-named writable Excel workbook or native standalone SWP project (Type=101) owning the exact design-mode VBE project. Requires ExpectedProjectVersion and ExpectedHostPath from project_persistence_status. Excel uses Workbook.Save; standalone SWP uses VBProject.SaveAs on the same path. Other host projects and unsaved paths are refused. Native SWP runtime/reload qualification is pending; never treat saved flags as reload proof.",
                 new[] { "Project", "ExpectedProjectVersion", "ExpectedHostPath" },
                 "Project", "ExpectedProjectVersion", "ExpectedHostPath"),
-            Definition("save_host_document_as", "Perform the first save of an unsaved Excel VBA project to a new absolute .xlsm Path explicitly supplied by the user. Refuses overwrite and checks ExpectedProjectVersion, design mode, workbook identity and saved paths. Other hosts are unsupported; reopen the file to prove edit persistence. VBE edit policy applies.",
+            Definition("save_host_document_as", "Save an unsaved Excel VBA project to a new .xlsm Path, or a native standalone VBA project (Type=101) to a new .swp Path explicitly supplied by the user. Refuses overwrite and checks ExpectedProjectVersion, design mode, native identity and saved paths. Unsupported host projects are refused. SWP runtime/reload remains unqualified; reopen the file to prove persistence. VBE edit policy applies.",
                 new[] { "Project", "ExpectedProjectVersion", "Path" },
                 "Project", "ExpectedProjectVersion", "Path"),
             Definition("project_signature_status", "Read whether the exact Excel workbook owning this VBE project has a signed VBA project. Returns Available=false when the host is not Excel, the registered Excel instance differs from this VBE, or its project cannot be matched. This does not sign, validate the certificate, or inspect pending edits.",
@@ -246,7 +254,7 @@ namespace CodexVBE
                 new[] { "Project", "Module" }, "Project", "Module"),
             Definition("component_property_value", "Read one named VBComponent host property on demand. Type 100 document properties belong to the host object, not the common VBE editor; Excel MailEnvelope returns an explicit error because its getter blocks COM inspection.",
                 new[] { "Project", "Module", "Property" }, "Project", "Module", "Property"),
-            Definition("set_project_property", "Set a writable scalar VBProject property other than Name by its live descriptor and ExpectedProjectVersion in design mode; VBE edit policy applies. Project rename is disabled after a process crash during validation.",
+            Definition("set_project_property", "Set a writable scalar VBProject property using ExpectedProjectVersion in design mode. Name uses a verified typed setter only for an unprotected, saved, writable Excel workbook targeted by its exact rooted path; source text is preserved, qualified references are not renamed. Other hosts and protected projects refuse Name. VBE edit policy applies.",
                 new[] { "Project", "ExpectedProjectVersion", "Property", "Value" },
                 "Project", "ExpectedProjectVersion", "Property", "Value"),
             Definition("set_component_property", "Set a writable scalar VBComponent property by its live descriptor and ExpectedComponentVersion in design mode; VBE edit policy applies.",
@@ -389,6 +397,13 @@ namespace CodexVBE
                             throw new ArgumentException("Value must be a string, number or boolean.");
                         continue;
                     }
+                    if (field == "Arguments")
+                    {
+                        var scalars = value as object[];
+                        if (scalars == null || scalars.Length > 30) throw new ArgumentException("Arguments must contain at most 30 scalar values.");
+                        foreach (object scalar in scalars) VbeDebug.ProcedureLiteral(scalar);
+                        continue;
+                    }
                     if (field == "Items")
                     {
                         var items = value as object[];
@@ -436,7 +451,7 @@ namespace CodexVBE
                 CodeSnapshot beforeCode = null;
                 bool formCodeEdit = name == "set_form_list_initializer" || name == "set_form_list_binding";
                 string editedModule = formCodeEdit ? request.Form : request.Module;
-                if (formCodeEdit || name == "cut_code" || name == "paste_code" || name == "replace_lines" || name == "apply_code_edit" || name == "undo_code_edit" || name == "redo_code_edit")
+                if (formCodeEdit || name == "cut_code" || name == "paste_code" || name == "replace_lines" || name == "apply_code_edit" || name == "apply_local_rename" || name == "undo_code_edit" || name == "redo_code_edit")
                 {
                     beforeCode = ReadCode(request.Project, editedModule);
                     if (!string.Equals(beforeCode.Sha256, request.ExpectedSha256, StringComparison.OrdinalIgnoreCase))
@@ -637,7 +652,7 @@ namespace CodexVBE
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             }
-            if (name == "read_debug_options" || name == "read_vbe_options")
+            if (name == "read_debug_options" || name == "read_vbe_options" || name == "set_vbe_option")
             {
                 try
                 {
@@ -645,7 +660,9 @@ namespace CodexVBE
                     string scheduled = Invoke(name, arguments);
                     Response initial = ReadToolResponse(scheduled);
                     if (!initial.Ok) return scheduled;
-                    return json.Serialize(Response.Success(await Task.Run(() => name == "read_vbe_options"
+                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
+                    Request optionRequest = name == "set_vbe_option" ? json.Deserialize<Request>(json.Serialize(values)) : null;
+                    return json.Serialize(Response.Success(await Task.Run(() => name == "set_vbe_option" ? Native.SetVbeOption(optionRequest) : name == "read_vbe_options"
                         ? Native.ReadVbeOptions() : Native.ReadDebugOptions())));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }

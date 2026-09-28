@@ -20,7 +20,7 @@ Le complément cible **VBE 64 bits, .NET Framework 4.8 et Windows**. Le chat, le
 | Conversation | Contexte VBE dynamique, références `#`/`@`, modes Discussion/Plan/Agent, sessions SQLite, choix persistants, résumé de réflexion et rollback |
 | Git et GitHub | Compte indépendant du fournisseur IA, export versionné, commits, push/fetch/pull, checkpoints, branches, fusions et PR |
 
-Le [catalogue des 166 outils LLM](reference/vbe-tools.md) fournit les noms et paramètres requis. Les fonctions du pont et les outils du modèle ont des périmètres distincts.
+Le [catalogue des 177 outils LLM](reference/vbe-tools.md) fournit les noms et paramètres requis. Les fonctions du pont et les outils du modèle ont des périmètres distincts.
 
 ## Gardes et limites
 
@@ -30,7 +30,11 @@ Le [catalogue des 166 outils LLM](reference/vbe-tools.md) fournit les noms et pa
 - Une sauvegarde Excel est qualifiée séparément d’une modification en mémoire. Une modification réussie dans SOLIDWORKS ne prouve pas sa persistance dans le `.swp`.
 - Les propriétés COM recensées, les contrôles tiers et les retours asynchrones ne constituent pas une couverture native universelle.
 
-## Dernière validation
+## Extensions du 28 septembre
+
+Voir [Extensions fonctionnelles VBE](reference/functional-extensions.md) pour les contrats et limites : appel paramétré, index de déclarations, renommage local/projet, sauvegarde SWP, barres personnalisées, options et confiance locale de certificat. Les résultats de couverture ci-dessous appartiennent au bilan précédent ; ils ne mesurent pas ces ajouts.
+
+## Dernière validation antérieure aux extensions
 
 | Vérification | Résultat |
 | --- | --- |

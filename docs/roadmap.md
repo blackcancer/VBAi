@@ -1,33 +1,37 @@
 # Travaux restants
 
-État consolidé après `9eac920`, le **28 septembre 2026**. Ce document distingue les fonctions présentes des preuves de qualification manquantes. Le [catalogue LLM](reference/vbe-tools.md) décrit l’exposition actuelle ; les [archives](archive/README.md) conservent les expériences détaillées.
+État consolidé le **28 septembre 2026**, après intégration de `5aed4f3`. Le bilan à 100 % de `9eac920` précède ces nouvelles extensions ; une nouvelle mesure est nécessaire. Ce document distingue les fonctions présentes des preuves de qualification manquantes. Le [catalogue LLM](reference/vbe-tools.md) décrit l’exposition actuelle ; les [archives](archive/README.md) conservent les expériences détaillées.
 
 ## Couverture et documentation
 
 | Travail | État actuel | Critère de fin |
 | --- | --- | --- |
-| Couverture du code de production | 100 % lignes, 100 % branches ; aucune classe instrumentée incomplète | 100 % lignes et branches mesurées sur toute l’assembly, sans masquer du code ; suite globale verte |
+| Couverture du code de production | Bilan précédent : 100 % lignes et branches ; nouvelles extensions en cours de mesure | 100 % lignes et branches mesurées sur toute l’assembly, sans masquer du code ; suite globale verte |
 | Organisation des tests | 120 miroirs pour 169 sources ; scénarios et fixtures complémentaires | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
 | Documentation IntelliSense | Nouvelles déclarations apportées par chat-ux ; agent documentaire en cours | Audit final des déclarations privées/publiques, propriétés et tests, sans lacune |
 | Concepteurs WinForms | 24 DesignSurface validées | Préserver cette accessibilité après chaque changement de structure ; qualifier aussi le rendu réel |
 
 Compléter chaque branche de couverture identifiée avant de passer à la suivante. Construire le lot de scénarios cohérent avant de le lancer, puis mesurer la suite globale. Les pourcentages actuels sont détaillés dans [le bilan de tests](test-coverage.md).
 
+## Extensions fonctionnelles du 28 septembre
+
+Les fonctions et les limites exactes sont détaillées dans [Extensions fonctionnelles VBE](reference/functional-extensions.md). Ce lot ajoute 11 outils (177 au total) : exécution paramétrée, renommage local, personnalisation des barres, mutation bornée des options et confiance de certificat. Il étend aussi les déclarations/références, le renommage de projet Excel et la sauvegarde standalone `.swp`. Les tests SOLIDWORKS restent différés.
+
 ## Qualification de l’éditeur
 
 | Surface | Ce qui reste à qualifier ou développer |
 | --- | --- |
 | Modules/classes | Cas d’erreur, encodages/imports et persistance dans les différents hôtes ; ne pas confondre catalogue de commandes et validation de toutes leurs combinaisons |
-| Projets | Renommage du projet protégé après un échec natif ; sauvegarde propre aux hôtes autres qu’Excel ; projets verrouillés et composants spécifiques |
-| Signature | Première sélection du certificat dans Sécurité Windows, confiance cryptographique et persistance SOLIDWORKS ; l’état signé ne prouve pas la confiance du certificat |
+| Projets | Renommage de projet Excel enregistré/non protégé disponible ; autres périmètres refusés. Sauvegarde standalone `.swp` implémentée mais non qualifiée dans SOLIDWORKS ; autres hôtes non implémentés |
+| Signature | Première sélection du certificat dans Sécurité Windows, digest de la signature VBA et persistance SOLIDWORKS ; confiance de certificat disponible hors ligne ; l’état signé ne prouve pas la confiance du certificat |
 | Breakpoints | Inventaire indépendant des marqueurs et pointeur d’exécution ; la commande de basculement et l’arrêt effectif sont qualifiés, pas un inventaire exhaustif |
 | Variables/espions | Lecture des valeurs SOLIDWORKS, grands arbres, types particuliers et variantes de langues ; dernier essai SOLIDWORKS : zéro ligne exposée |
-| Exécution | Procédures avec paramètres, diagnostics particuliers et variantes d’hôtes ; les statuts asynchrones ne prouvent pas la réussite runtime |
+| Exécution | Appel paramétré implémenté, à qualifier depuis le complément installé ; diagnostics particuliers et variantes d’hôtes ; les statuts asynchrones ne prouvent pas la réussite runtime |
 | UserForms | Propriétés réellement modifiables par type, persistance et effet runtime ; contrôles tiers ; fidélité des images, copies et récupérations ; événements et conteneurs complexes |
 | Listes | Initialisation multicolonne et liaisons implémentées ; qualifier les combinaisons de contrôles/conteneurs et les autres hôtes |
 | Fenêtres/barres d’outils | Persistance, géométries et DPI/écrans ; premier ancrage du chat à droite sur un profil vierge |
 | Explorateur d’objets | Lecture/sélection/pagination implémentées ; qualification SOLIDWORKS et variantes UI natives |
-| Options/boîte à outils | Écritures natives non entièrement qualifiées, personnalisation et contrôles ActiveX effectivement hébergés |
+| Options/boîte à outils | Mutation bornée Éditeur/Général implémentée, persistance à qualifier ; personnalisation de la boîte à outils absente et contrôles ActiveX tiers à qualifier |
 
 Les journaux anciens peuvent indiquer « manquant » pour des fonctions implémentées depuis : signets, navigation, mise en page, presse-papiers, historique, lancement UserForm, barres d’outils et lecture de l’Explorateur sont désormais dans le code.
 

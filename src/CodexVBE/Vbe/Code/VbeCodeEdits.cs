@@ -32,6 +32,29 @@ namespace CodexVBE
                 Scope = "Explicit module line range; identifier replacements are lexical, not semantic refactoring." };
             return Write(request.Project, request.Module, before, after);
         }
+        /// <summary>Prévisualise ou applique un renommage local lié à une déclaration et à la plage VBIDE.</summary>
+        internal object RenameLocal(Request request, bool preview)
+        {
+            string before = Read(request.Project, request.Module); Check(before, request.ExpectedSha256);
+            Response catalog = execute(new Request { Command = "list_procedures", Project = request.Project, Module = request.Module });
+            if (!catalog.Ok) throw new InvalidOperationException(catalog.Error);
+            dynamic data = catalog.Data;
+            if (!string.Equals((string)data.Sha256, request.ExpectedSha256, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The module changed before resolving the procedure.");
+            dynamic selected = null;
+            foreach (dynamic procedure in data.Procedures)
+                if ((int)procedure.Kind == request.ProcKind && string.Equals((string)procedure.Name, request.Procedure, StringComparison.OrdinalIgnoreCase))
+                { if (selected != null) throw new InvalidOperationException("The procedure is ambiguous."); selected = procedure; }
+            if (selected == null) throw new InvalidOperationException("The exact procedure is absent.");
+            string after = VbaLocalRename.Transform(before, request, (int)selected.BodyLine, (int)selected.EndLine);
+            if (preview) return new { request.Project, request.Module, request.Procedure, Before = before, After = after,
+                ExpectedSha256 = Hash(before), Changed = before != after,
+                Scope = "One explicit local variable/constant in its VBIDE procedure range; members/types/labels/named arguments are excluded. Parameters, conditional code and project-wide refactoring are refused." };
+            if (request.ExpectedMode != 2) throw new ArgumentException("ExpectedMode=2 is required to rename a local declaration.");
+            Response state = execute(new Request { Command = "debug_state", Project = request.Project });
+            if (!state.Ok || (int)((dynamic)state.Data).Mode != 2) throw new InvalidOperationException("Renaming requires design mode.");
+            return Write(request.Project, request.Module, before, after);
+        }
         internal object Replay(Request request, bool forward)
         {
             var source = forward ? redo : undo; var destination = forward ? undo : redo;

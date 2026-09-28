@@ -14,6 +14,10 @@ namespace CodexVBE
         public string Module;
         /// <summary>Nom de la procédure, nul pour une référence au module ou au projet.</summary>
         public string Name;
+        /// <summary>Portée d’une déclaration, nulle pour les procédures et les symboles de module.</summary>
+        public string DeclarationScope;
+        /// <summary>Colonne de déclaration, indexée à partir de un.</summary>
+        public int DeclarationColumn;
         /// <summary>Obtient ou définit la catégorie affichée de la référence.</summary>
         /// <value>Catégorie de référence.</value>
         public string Kind { get; set; }
@@ -40,7 +44,9 @@ namespace CodexVBE
             {
                 string path = (Name == null ? "#" : "@") + Project;
                 if (Module != null) path += "." + Module;
+                if (!string.IsNullOrEmpty(DeclarationScope)) path += "." + DeclarationScope;
                 if (Name != null) path += "." + Name;
+                if (DeclarationColumn > 0) path += ":L" + StartLine;
                 if (Kind == "Property") path += ":" + new[] { "", "Let", "Set", "Get" }[ProcKind];
                 return path;
             }
@@ -150,6 +156,17 @@ namespace CodexVBE
                             ProcKind = kind, StartLine = Convert.ToInt32(procedure["StartLine"]),
                             EndLine = Convert.ToInt32(procedure["EndLine"]), Sha256 = module.Sha256 });
                     }
+                // Read declarations once per module; physical positions retain their own source SHA.
+                Response sourceResponse = Execute(new Request { Command = "read_module", Project = module.Project, Module = module.Module });
+                if (!sourceResponse.Ok) throw new InvalidOperationException(sourceResponse.Error);
+                var sourceData = json.DeserializeObject(json.Serialize(sourceResponse.Data)) as IDictionary<string, object>;
+                string code = Field(sourceData, "Code"), sourceSha = Field(sourceData, "Sha256");
+                foreach (var declaration in VbaDeclarationIndex.Read(code))
+                    entries.Add(new VbeChatReference { Project = module.Project, Module = module.Module,
+                        Name = declaration.Name, Kind = declaration.Kind,
+                        DeclarationScope = declaration.Scope == "Module" ? null : declaration.Scope,
+                        DeclarationColumn = declaration.Column, StartLine = declaration.Line, EndLine = declaration.Line,
+                        Sha256 = sourceSha });
             }
             catch (Exception ex) { Error = module.Token + " : " + ex.Message; }
             Changed?.Invoke();
@@ -186,6 +203,15 @@ namespace CodexVBE
             Response response = Execute(new Request { Command = "read_module", Project = item.Project, Module = item.Module });
             if (!response.Ok) return response;
             var data = json.DeserializeObject(json.Serialize(response.Data)) as IDictionary<string, object>;
+            if (item.DeclarationColumn > 0)
+            {
+                if (!string.Equals(item.Sha256, Field(data, "Sha256"), StringComparison.OrdinalIgnoreCase))
+                    return Response.Failure("The declaration changed since discovery; refresh its reference before navigating.");
+                return Execute(new Request { Command = "select_code", Project = item.Project, Module = item.Module,
+                    StartLine = item.StartLine, StartColumn = item.DeclarationColumn,
+                    EndColumn = item.DeclarationColumn + item.Name.Length,
+                    Expression = item.Name, ExpectedSha256 = item.Sha256 });
+            }
             return Execute(new Request {
                 Command = item.Name == null ? "select_code" : "select_procedure",
                 Project = item.Project, Module = item.Module, Procedure = item.Name,
