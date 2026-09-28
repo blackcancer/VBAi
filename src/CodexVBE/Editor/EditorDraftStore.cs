@@ -20,6 +20,9 @@ namespace CodexVBE
         private readonly object gate = new object();
         private readonly string owner = System.Diagnostics.Process.GetCurrentProcess().Id + "-" + Guid.NewGuid().ToString("N");
         private DateTime lastCleanup;
+        internal Func<int, System.Diagnostics.Process> ReadProcess = System.Diagnostics.Process.GetProcessById;
+        internal Func<FileSystemInfo, FileAttributes> ReadAttributes = NativeAttributes;
+        private static FileAttributes NativeAttributes(FileSystemInfo item) => item.Attributes;
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 16 * 1024 * 1024 };
         internal EditorDraftStore(string root = null) { Root = root ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexVBE", "EditorDrafts"); }
         private string DirectoryFor(string key) => Path.Combine(Root, EditorDocument.Hash(key));
@@ -67,14 +70,14 @@ namespace CodexVBE
                 if (!Directory.Exists(Root) || (File.GetAttributes(Root) & FileAttributes.ReparsePoint) != 0) return;
                 foreach (var directory in new DirectoryInfo(Root).GetDirectories())
                 {
-                    if ((directory.Attributes & FileAttributes.ReparsePoint) != 0) continue;
+                    if ((ReadAttributes(directory) & FileAttributes.ReparsePoint) != 0) continue;
                     // Keep the newest recovery file for each module, even beyond retention.
                     var files = directory.GetFiles("*.draft").OrderByDescending(f => f.LastWriteTimeUtc).ToArray();
                     foreach (var file in files.Skip(1))
                     {
-                        if (file.LastWriteTimeUtc >= now.AddDays(-30) || (file.Attributes & FileAttributes.ReparsePoint) != 0) continue;
+                        if (file.LastWriteTimeUtc >= now.AddDays(-30) || (ReadAttributes(file) & FileAttributes.ReparsePoint) != 0) continue;
                         if (!int.TryParse(file.Name.Split('-')[0], out int pid)) continue;
-                        try { using (var process = System.Diagnostics.Process.GetProcessById(pid)) { if (!process.HasExited) continue; } }
+                        try { using (var process = ReadProcess(pid)) { if (!process.HasExited) continue; } }
                         catch (ArgumentException) { }
                         try { file.Delete(); } catch (IOException) { } catch (UnauthorizedAccessException) { }
                     }

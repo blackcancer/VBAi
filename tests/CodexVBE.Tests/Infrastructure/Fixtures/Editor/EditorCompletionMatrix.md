@@ -17,3 +17,12 @@ All tests use owned forms, temporary files, in-memory source modules or syntheti
 | Debug commands | busy wait releases into closing/disposed/normal; initial closing/disposed; null/missing/managed identity; version mismatch; dirty/conflict after synchronization; wrong compile mode; preflight/native/observer failures; clean/dirty/conflicted/changed/foreign diagnostic; every paginated command including breakpoint ID51 and focus; optional browser focus |
 | Save | busy wait and initial readiness/closing/disposed/null/missing/managed; project grouping; late closing/disposed; pending dirty/conflict; native save failure; file name failure/null/whitespace/missing/existing; Saved false/true; host false/null/true; warning/error persistence and reset; native focus/identity/missing/disabled/executed command; host status unavailable/available/error |
 | PR10 Window | keyboard F9/CtrlS/unhandled modifiers; owned workspace UserClosing; sync/save and valid/invalid assistant action dispatch; selected text/version/native module validation; document status precedence and change resets |
+## Editor leaves matrix (prepared before batch)
+
+| Leaf | Complete cases |
+| --- | --- |
+| AttributeRewrite | all patch bounds; incomplete declaration/name/parentheses; property get/let/set; old/next invalid/count; member ownership missing/wrong/between declarations; multiline insert versus replacement overlap; duplicate/renamed/changed-kind matching; parameter signature unchanged versus changed; missing export header and multiline/no-attribute detection |
+| ReferenceIndex | installed read-only type libraries; identical thread cache; missing/corrupt library; pointer and safe-array return metadata; requested and indexed type traversal |
+| DraftStore | encrypted owned snapshots update/move/failed replace cleanup; clean document no save; oversized/wrong-key/invalid draft recovery; retention recent/unparseable/live/dead/locked/read-only; root and child reparse points |
+| Document | clean sync, native already equals draft, old and new plan guards, readonly conflict resolution, null/max/invalid text and equal prefix/suffix differences |
+| DesignerSnapshot | missing/wrong collections; optional image failures versus real failures; object digest/members/empty/error cases; root and nested properties |

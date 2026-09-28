@@ -82,5 +82,24 @@ namespace CodexVBE.Tests.Unit
             Assert.ThrowsException<InvalidOperationException>(() => EditorDocument.Validate("a\0b"));
             Assert.ThrowsException<InvalidOperationException>(() => EditorDocument.Validate(new string('a', EditorDocument.MaxLength + 1)));
         }
+        [TestMethod]
+        public void CleanEquivalentAndStalePlannedDraftsKeepTheirExactNativeRevision()
+        {
+            using (var host = new EditorFixture())
+            {
+                var doc = new EditorDocument(host); Assert.AreEqual(doc.Text, doc.Synchronize()); Assert.AreEqual(0, host.Writes);
+                doc.Edit(doc.Text + "\n' already native"); host.Code = doc.Text; Assert.AreEqual(doc.Text, doc.Synchronize()); Assert.IsFalse(doc.Dirty); Assert.AreEqual(0, host.Writes);
+                string baseline = doc.Baseline; doc.Edit(doc.Text + "\n' new draft");
+                Assert.ThrowsException<InvalidOperationException>(() => doc.Synchronize(new EditorSyncPlan("stale", doc.Text)));
+                Assert.ThrowsException<InvalidOperationException>(() => doc.Synchronize(new EditorSyncPlan(baseline, "stale")));
+                host.CanWrite = false; Assert.ThrowsException<InvalidOperationException>(() => doc.ResolveWithDraft(host.Code)); Assert.AreEqual(0, host.Writes);
+            }
+            using (var host = new EditorFixture())
+            { var doc = new EditorDocument(host); doc.Restore(doc.Baseline, doc.Text + "\n\'recovery"); Assert.IsTrue(doc.Dirty); doc.AcceptRemote(host.Code); Assert.IsFalse(doc.Dirty); }
+            using (var f = new ModernEditorDebugFixture())
+            { f.Document.Edit(f.Document.Text + "\n\'native draft"); string expected = f.Document.Text; Assert.AreEqual(expected, f.Document.Synchronize(new EditorSyncPlan(f.Document.Baseline, expected))); Assert.AreEqual(expected, EditorDocument.Normalize(f.Native.Adapter.Read())); }
+            Assert.AreEqual("", EditorDocument.Normalize(null)); Assert.ThrowsException<InvalidOperationException>(() => EditorDocument.Validate(null));
+            var equal = EditorDocument.Difference("same", "same"); Assert.AreEqual(0, equal.Item2); Assert.AreEqual("", equal.Item3);
+        }
     }
 }
