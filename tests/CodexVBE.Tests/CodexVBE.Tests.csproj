@@ -28,6 +28,9 @@
     <Reference Include="PresentationFramework" />
     <Reference Include="PresentationCore" />
     <Reference Include="WindowsBase" />
+    <Reference Include="UIAutomationClient" />
+    <Reference Include="UIAutomationTypes" />
+    <Reference Include="UIAutomationProvider" />
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
