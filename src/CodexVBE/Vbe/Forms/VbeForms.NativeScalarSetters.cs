@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 
@@ -6,10 +6,12 @@ namespace CodexVBE
 {
     internal sealed partial class VbeForms
     {
+        /// <summary>Identifie les objets COM natifs sans remplacer le dispatch des propriétés.</summary>
+        internal static Func<object, bool> NativeDesignerObject = Marshal.IsComObject;
         /// <summary>Utilise le dispatch typé pour les propriétés MSForms usuelles ; les doubles .NET conservent leurs descripteurs.</summary>
         private static void SetDesignerScalar(object target, PropertyDescriptor descriptor, object value)
         {
-            if (!Marshal.IsComObject(target)) { descriptor.SetValue(target, value); return; }
+            if (!NativeDesignerObject(target)) { descriptor.SetValue(target, value); return; }
             dynamic native = target;
             switch (descriptor.Name.ToLowerInvariant())
             {

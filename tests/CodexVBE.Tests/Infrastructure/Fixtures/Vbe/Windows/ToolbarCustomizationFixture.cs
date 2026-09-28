@@ -27,11 +27,11 @@ namespace CodexVBE.Tests.Unit
             public bool Enabled { get; set; } = true;
             public int Protection { get; set; }
             public int Position { get; set; }
-            public int Left => 0;
-            public int Top => 0;
+            public int Left { get; set; }
+            public int Top { get; set; }
             public int Width => 200;
             public int Height => 20;
-            public int RowIndex => 1;
+            public int RowIndex { get; set; } = 1;
             public Buttons Controls { get; } = new Buttons();
             public void Delete() {if(!IgnoreDelete)Owner.Remove(this);}
         }
