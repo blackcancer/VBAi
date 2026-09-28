@@ -4,12 +4,12 @@ namespace CodexVBE
     {
         internal System.Windows.Forms.FlowLayoutPanel branchActions;
         internal System.Windows.Forms.ListBox branchList;
-        internal System.Windows.Forms.ComboBox branchName;
-        internal System.Windows.Forms.Button branchRemote;
-        internal System.Windows.Forms.Button branchCreate;
-        internal System.Windows.Forms.Button branchTrack;
-        internal System.Windows.Forms.Button branchSwitch;
-        internal System.Windows.Forms.Button mergeBegin;
+        internal CodexVBE.ThemedComboBox branchName;
+        internal CodexVBE.ThemedButton branchRemote;
+        internal CodexVBE.ThemedButton branchCreate;
+        internal CodexVBE.ThemedButton branchTrack;
+        internal CodexVBE.ThemedButton branchSwitch;
+        internal CodexVBE.ThemedButton mergeBegin;
         private System.ComponentModel.IContainer components;
         private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
@@ -32,6 +32,7 @@ namespace CodexVBE
             this.branchTrack = new CodexVBE.ThemedButton();
             this.branchSwitch = new CodexVBE.ThemedButton();
             this.mergeBegin = new CodexVBE.ThemedButton();
+            this.branchActions.SuspendLayout();
             this.SuspendLayout();
             this.branchActions.Name = "branchActions";
             this.branchCreate.Name = "branchCreate";
@@ -74,6 +75,32 @@ namespace CodexVBE
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.Name = "GitBranchesView";
             this.Size = new System.Drawing.Size(860, 500);
+            this.branchActions.Location = new System.Drawing.Point(0, 0);
+            this.branchActions.Size = new System.Drawing.Size(860, 34);
+            this.branchActions.TabIndex = 1;
+            this.branchList.Location = new System.Drawing.Point(0, 34);
+            this.branchList.Size = new System.Drawing.Size(860, 466);
+            this.branchList.TabIndex = 0;
+            this.branchName.Location = new System.Drawing.Point(3, 3);
+            this.branchName.Size = new System.Drawing.Size(170, 21);
+            this.branchName.TabIndex = 0;
+            this.branchRemote.Location = new System.Drawing.Point(260, 3);
+            this.branchRemote.Size = new System.Drawing.Size(110, 28);
+            this.branchRemote.TabIndex = 2;
+            this.branchCreate.Location = new System.Drawing.Point(179, 3);
+            this.branchCreate.Size = new System.Drawing.Size(75, 28);
+            this.branchCreate.TabIndex = 1;
+            this.branchTrack.Location = new System.Drawing.Point(376, 3);
+            this.branchTrack.Size = new System.Drawing.Size(86, 28);
+            this.branchTrack.TabIndex = 3;
+            this.branchSwitch.Location = new System.Drawing.Point(468, 3);
+            this.branchSwitch.Size = new System.Drawing.Size(75, 28);
+            this.branchSwitch.TabIndex = 4;
+            this.mergeBegin.Location = new System.Drawing.Point(549, 3);
+            this.mergeBegin.Size = new System.Drawing.Size(75, 28);
+            this.mergeBegin.TabIndex = 5;
+            this.branchActions.ResumeLayout(false);
+            this.branchActions.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
         }

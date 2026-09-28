@@ -70,7 +70,14 @@ namespace CodexVBE
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "VBAi — approve edit";
+            this.details.Location = new System.Drawing.Point(0, 0);
+            this.details.Size = new System.Drawing.Size(740, 486);
+            this.actions.Location = new System.Drawing.Point(0, 486);
+            this.actions.Size = new System.Drawing.Size(740, 44);
+            this.approve.Location = new System.Drawing.Point(637, 3);
+            this.reject.Location = new System.Drawing.Point(531, 3);
             this.actions.ResumeLayout(false);
+            this.actions.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
         }

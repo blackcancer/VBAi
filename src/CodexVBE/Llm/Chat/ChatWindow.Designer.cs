@@ -88,7 +88,7 @@ namespace CodexVBE
         /// <summary>Libellé affiché avant la création de la vue du transcript.</summary>
         private System.Windows.Forms.Label transcriptPlaceholder;
         /// <summary>Hôte WinForms du transcript WPF.</summary>
-        private System.Windows.Forms.Integration.ElementHost transcriptHost;
+        private CodexVBE.ChatContentHost transcriptHost;
         /// <summary>Conteneur de composition du message et de ses commandes.</summary>
         private CodexVBE.ChatComposerPanel composerLayout;
         /// <summary>Disposition des références et pièces jointes sélectionnées.</summary>
@@ -98,7 +98,7 @@ namespace CodexVBE
         /// <summary>Libellé indicatif du champ de saisie.</summary>
         private System.Windows.Forms.Label promptPlaceholder;
         /// <summary>Hôte WinForms du compositeur WPF.</summary>
-        private System.Windows.Forms.Integration.ElementHost promptHost;
+        private CodexVBE.ChatInputView promptHost;
         /// <summary>Disposition des commandes du compositeur.</summary>
         private System.Windows.Forms.TableLayoutPanel composerActions;
         /// <summary>Commande d’ajout ou de sélection d’un module.</summary>
@@ -158,7 +158,7 @@ namespace CodexVBE
             this.modules = new CodexVBE.ChatActionButton();
             this.methods = new CodexVBE.ChatActionButton();
             this.modePicker = new CodexVBE.ChatChoiceBox();
-            this.promptHost = new System.Windows.Forms.Integration.ElementHost();
+            this.promptHost = new CodexVBE.ChatInputView();
             this.optionsMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.github = new System.Windows.Forms.ToolStripMenuItem();
             this.configure = new System.Windows.Forms.ToolStripMenuItem();
@@ -179,7 +179,7 @@ namespace CodexVBE
             this.conversationPanel = new System.Windows.Forms.Panel();
             this.transcriptPanel = new System.Windows.Forms.Panel();
             this.transcriptPlaceholder = new System.Windows.Forms.Label();
-            this.transcriptHost = new System.Windows.Forms.Integration.ElementHost();
+            this.transcriptHost = new CodexVBE.ChatContentHost();
             this.historyPanel = new System.Windows.Forms.Panel();
             this.historyLayout = new System.Windows.Forms.TableLayoutPanel();
             this.historyLabel = new System.Windows.Forms.Label();
@@ -222,14 +222,15 @@ namespace CodexVBE
             this.scopeLayout.SuspendLayout();
             this.workflowLayout.SuspendLayout();
             this.conversationPanel.SuspendLayout();
-            this.transcriptPanel.SuspendLayout();
             this.historyPanel.SuspendLayout();
             this.historyLayout.SuspendLayout();
             this.historyActions.SuspendLayout();
             this.memoryPanel.SuspendLayout();
             this.memoryLayout.SuspendLayout();
+            this.transcriptPanel.SuspendLayout();
             this.composerLayout.SuspendLayout();
             this.promptPanel.SuspendLayout();
+            this.promptHost.SuspendLayout();
             this.composerActions.SuspendLayout();
             this.contextPanel.SuspendLayout();
             this.providerLayout.SuspendLayout();
@@ -327,7 +328,7 @@ namespace CodexVBE
             this.promptHost.Size = new System.Drawing.Size(552, 88);
             this.promptHost.TabIndex = 45;
             this.toolTips.SetToolTip(this.promptHost, "Message with spell checking");
-            this.promptHost.Child = null;
+            this.promptHost.Font = new System.Drawing.Font("Segoe UI", 10.5F);
             //
             // optionsMenu
             //
@@ -1196,32 +1197,51 @@ namespace CodexVBE
             this.Name = "ChatWindow";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "VBAi — Your AI agent for VBA";
+
+            this.optionsMenu.Location = new System.Drawing.Point(0, 0);
+            this.optionsMenu.TabIndex = 0;
             this.optionsMenu.ResumeLayout(false);
+            this.optionsMenu.PerformLayout();
             this.rootLayout.ResumeLayout(false);
             this.rootLayout.PerformLayout();
             this.headingLayout.ResumeLayout(false);
+            this.headingLayout.PerformLayout();
             this.scopeLayout.ResumeLayout(false);
+            this.scopeLayout.PerformLayout();
             this.workflowLayout.ResumeLayout(false);
+            this.workflowLayout.PerformLayout();
             this.conversationPanel.ResumeLayout(false);
-            this.transcriptPanel.ResumeLayout(false);
+            this.conversationPanel.PerformLayout();
             this.historyPanel.ResumeLayout(false);
             this.historyPanel.PerformLayout();
             this.historyLayout.ResumeLayout(false);
             this.historyLayout.PerformLayout();
             this.historyActions.ResumeLayout(false);
+            this.historyActions.PerformLayout();
             this.memoryPanel.ResumeLayout(false);
+            this.memoryPanel.PerformLayout();
             this.memoryLayout.ResumeLayout(false);
             this.memoryLayout.PerformLayout();
+            this.transcriptPanel.ResumeLayout(false);
+            this.transcriptPanel.PerformLayout();
             this.composerLayout.ResumeLayout(false);
             this.composerLayout.PerformLayout();
             this.promptPanel.ResumeLayout(false);
+            this.promptPanel.PerformLayout();
+            this.promptHost.ResumeLayout(false);
+            this.promptHost.PerformLayout();
             this.composerActions.ResumeLayout(false);
+            this.composerActions.PerformLayout();
             this.contextPanel.ResumeLayout(false);
+            this.contextPanel.PerformLayout();
             this.providerLayout.ResumeLayout(false);
+            this.providerLayout.PerformLayout();
             this.footerLayout.ResumeLayout(false);
+            this.footerLayout.PerformLayout();
             this.statusLayout.ResumeLayout(false);
+            this.statusLayout.PerformLayout();
             this.ResumeLayout(false);
-
+            this.PerformLayout();
         }
 
         #endregion

@@ -44,18 +44,10 @@ namespace CodexVBE
         /// <param name="session">Session VBE qui fournit l’index des références du projet.</param>
         private void InitializeComposer(VbeSession session)
         {
-            prompt = new WpfTextBox {
-                AcceptsReturn = true, TextWrapping = TextWrapping.Wrap,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                BorderThickness = new Thickness(0), FontFamily = new FontFamily("Segoe UI"),
-                FontSize = 14, Foreground = Ink("#1E293B"),
-                Padding = new Thickness(12), Background = Brushes.Transparent,
-                Language = XmlLanguage.GetLanguage(UiText.Culture.Name),
-                FlowDirection = UiText.Culture.TextInfo.IsRightToLeft ? FlowDirection.RightToLeft : FlowDirection.LeftToRight
-            };
-            prompt.SpellCheck.IsEnabled = true;
+            prompt = promptHost.Editor;
+            prompt.Language = XmlLanguage.GetLanguage(UiText.Culture.Name);
+            prompt.FlowDirection = UiText.Culture.TextInfo.IsRightToLeft ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
             AutomationProperties.SetName(prompt, UiText.Get("Your request; Enter to send, Shift+Enter for a new line"));
-            promptHost.Child = prompt;
 
             referenceList = new ListBox { Width = 350, MaxHeight = 240,
                 BorderThickness = new Thickness(0), Background = Ink("#FFFFFF") };
@@ -267,17 +259,6 @@ namespace CodexVBE
                 .GroupBy(item => item.Token, StringComparer.Ordinal).Select(group => group.Last()).ToArray();
         }
 
-        /// <summary>Crée un bouton de contexte compact pour une référence ou pièce jointe.</summary>
-        /// <param name="text">Texte dans lequel rechercher les références sélectionnées.</param>
-        /// <returns>Bouton WinForms stylé pour afficher le contexte.</returns>
-        private static Forms.Button ContextButton(string text)
-        {
-            return new Forms.Button { Text = text, AutoSize = true, Height = 27,
-                FlatStyle = Forms.FlatStyle.Flat, BackColor = System.Drawing.Color.FromArgb(239, 246, 255),
-                ForeColor = System.Drawing.Color.FromArgb(29, 78, 216), Margin = new Forms.Padding(2),
-                Padding = new Forms.Padding(4, 0, 4, 0), Cursor = Forms.Cursors.Hand };
-        }
-
         /// <summary>Reconstruit les boutons de mémoire, références et pièces jointes.</summary>
         private void RefreshContextChips()
         {
@@ -288,27 +269,27 @@ namespace CodexVBE
                 while (contextChips.Controls.Count > 0) contextChips.Controls[0].Dispose();
                 if (attachMemory.Checked && !string.IsNullOrWhiteSpace(projectMemory))
                 {
-                    var memory = ContextButton(UiText.Get("Attached memory · ×"));
-                    toolTips.SetToolTip(memory, UiText.Get("Remove notes from the next message"));
-                    memory.Click += (s, e) => attachMemory.Checked = false;
+                    var memory = new ChatContextChipView();
+                    memory.ShowItem(UiText.Get("Attached memory · ×"), false, null, UiText.Get("Remove notes from the next message"));
+                    memory.RemoveRequested += (s, e) => attachMemory.Checked = false;
+                    UiTheme.Apply(memory);
                     contextChips.Controls.Add(memory);
                 }
                 foreach (var item in CurrentReferences(prompt.Text))
                 {
-                    var row = new Forms.FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Forms.Padding(0) };
-                    var link = ContextButton(item.Token);
-                    toolTips.SetToolTip(link, UiText.Get("Open in the VBE"));
-                    link.Click += (s, e) => NavigateReference(item); row.Controls.Add(link);
-                    var remove = ContextButton("×");
-                    toolTips.SetToolTip(remove, UiText.Get("Remove this reference from the context"));
-                    remove.Click += (s, e) => { selectedReferences.RemoveAll(value => value.Token == item.Token); RefreshContextChips(); ScheduleSessionSave(); };
-                    row.Controls.Add(remove); contextChips.Controls.Add(row);
+                    var chip = new ChatContextChipView();
+                    chip.ShowItem(item.Token, true, UiText.Get("Open in the VBE"), UiText.Get("Remove this reference from the context"));
+                    chip.OpenRequested += (s, e) => NavigateReference(item);
+                    chip.RemoveRequested += (s, e) => { selectedReferences.RemoveAll(value => value.Token == item.Token); RefreshContextChips(); ScheduleSessionSave(); };
+                    UiTheme.Apply(chip);
+                    contextChips.Controls.Add(chip);
                 }
                 foreach (var attachment in draftAttachments.ToArray())
                 {
-                    var chip = ContextButton(attachment.Label + " · ×");
-                    toolTips.SetToolTip(chip, UiText.Get("Remove this selection"));
-                    chip.Click += (s, e) => { draftAttachments.Remove(attachment); RefreshContextChips(); ScheduleSessionSave(); };
+                    var chip = new ChatContextChipView();
+                    chip.ShowItem(attachment.Label + " · ×", false, null, UiText.Get("Remove this selection"));
+                    chip.RemoveRequested += (s, e) => { draftAttachments.Remove(attachment); RefreshContextChips(); ScheduleSessionSave(); };
+                    UiTheme.Apply(chip);
                     contextChips.Controls.Add(chip);
                 }
                 contextChips.Visible = contextChips.Controls.Count > 0;

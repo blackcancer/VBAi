@@ -3,12 +3,12 @@ namespace CodexVBE
     public sealed partial class GitHubPullComposeView
     {
         internal System.Windows.Forms.TableLayoutPanel composeLayout;
-        internal System.Windows.Forms.ComboBox targetBranch;
+        internal CodexVBE.ThemedComboBox targetBranch;
         internal System.Windows.Forms.Label sourceLabel;
         internal System.Windows.Forms.TextBox pullTitle;
         internal System.Windows.Forms.TextBox pullBody;
         internal System.Windows.Forms.CheckBox draft;
-        internal System.Windows.Forms.Button createPull;
+        internal CodexVBE.ThemedButton createPull;
         internal System.Windows.Forms.Label targetLabel;
         internal System.Windows.Forms.Label titleLabel;
         internal System.Windows.Forms.Label bodyLabel;
@@ -36,6 +36,7 @@ namespace CodexVBE
             this.targetLabel = new System.Windows.Forms.Label();
             this.titleLabel = new System.Windows.Forms.Label();
             this.bodyLabel = new System.Windows.Forms.Label();
+            this.composeLayout.SuspendLayout();
             this.SuspendLayout();
             this.composeLayout.Name = "composeLayout";
             this.targetBranch.Name = "targetBranch";
@@ -99,6 +100,41 @@ namespace CodexVBE
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.Name = "GitHubPullComposeView";
             this.Size = new System.Drawing.Size(860, 500);
+            this.composeLayout.Location = new System.Drawing.Point(0, 0);
+            this.composeLayout.Size = new System.Drawing.Size(860, 500);
+            this.composeLayout.TabIndex = 0;
+            this.targetBranch.Location = new System.Drawing.Point(153, 26);
+            this.targetBranch.Size = new System.Drawing.Size(704, 23);
+            this.targetBranch.TabIndex = 1;
+            this.sourceLabel.Location = new System.Drawing.Point(3, 0);
+            this.sourceLabel.Size = new System.Drawing.Size(854, 23);
+            this.sourceLabel.TabIndex = 0;
+            this.pullTitle.Location = new System.Drawing.Point(153, 56);
+            this.pullTitle.Size = new System.Drawing.Size(704, 23);
+            this.pullTitle.TabIndex = 2;
+            this.pullBody.Location = new System.Drawing.Point(153, 86);
+            this.pullBody.Size = new System.Drawing.Size(704, 349);
+            this.pullBody.TabIndex = 3;
+            this.draft.Location = new System.Drawing.Point(3, 441);
+            this.draft.Size = new System.Drawing.Size(144, 22);
+            this.draft.TabIndex = 4;
+            this.createPull.Location = new System.Drawing.Point(3, 469);
+            this.createPull.Size = new System.Drawing.Size(854, 28);
+            this.createPull.TabIndex = 5;
+            this.targetLabel.Name = "targetLabel";
+            this.targetLabel.Location = new System.Drawing.Point(3, 23);
+            this.targetLabel.Size = new System.Drawing.Size(80, 21);
+            this.targetLabel.TabIndex = 6;
+            this.titleLabel.Name = "titleLabel";
+            this.titleLabel.Location = new System.Drawing.Point(3, 53);
+            this.titleLabel.Size = new System.Drawing.Size(93, 21);
+            this.titleLabel.TabIndex = 7;
+            this.bodyLabel.Name = "bodyLabel";
+            this.bodyLabel.Location = new System.Drawing.Point(3, 83);
+            this.bodyLabel.Size = new System.Drawing.Size(133, 21);
+            this.bodyLabel.TabIndex = 8;
+            this.composeLayout.ResumeLayout(false);
+            this.composeLayout.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
         }

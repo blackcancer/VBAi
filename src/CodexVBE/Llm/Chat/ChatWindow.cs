@@ -524,6 +524,7 @@ namespace CodexVBE
             sessionStore?.Dispose(); sessionStore = null;
             activeHttpClient?.Dispose(); codex?.Dispose(); codex = null;
             changes?.ContextMenuStrip?.Dispose();
+            DisposeEntryViews();
             DisposeComposer();
         }
     }

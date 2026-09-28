@@ -3,6 +3,7 @@ namespace CodexVBE.Tests.Unit
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
     using System.IO;
     using System.Net;
     using System.Net.Http;
@@ -49,7 +50,7 @@ namespace CodexVBE.Tests.Unit
                 Call(window, "RefreshContextChips");
                 var chips = Get<FlowLayoutPanel>(window, "contextChips");
                 Assert.AreEqual(2, chips.Controls.Count);
-                typeof(Control).GetMethod("OnClick", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(chips.Controls[1], new object[] { EventArgs.Empty });
+                typeof(Control).GetMethod("OnClick", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(chips.Controls[1].Controls.Find("open", true).Single(), new object[] { EventArgs.Empty });
                 Assert.AreEqual(0, attachments.Count);
                 Assert.AreEqual(1, chips.Controls.Count);
             }
@@ -104,8 +105,8 @@ namespace CodexVBE.Tests.Unit
                 foreach (var text in new[] { "#P.M", " #P.M!", "#P.M suffix", "prefix#P.M", "#P.Msuffix", "prefix#P.M #P.M", "missing" }) { var found = (VbeChatReference[])Call(window, "CurrentReferences", text); Assert.AreEqual(text == "missing" || text == "prefix#P.M" || text == "#P.Msuffix" ? 0 : 1, found.Length); }
                 Assert.AreEqual("unchanged", Call(window, "ResolveReferences", "unchanged")); StringAssert.Contains((string)Call(window, "ResolveReferences", "#P.M"), "<references-vbe>");
                 Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => Call(window, "ResolveReferences", new string('x', 48001) + " #P.M")); runtime.Module.DeleteLines(1, runtime.Module.CountOfLines); runtime.Module.InsertLines(1, new string('x', 48001)); Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => Call(window, "ResolveReferences", "#P.M"));
-                Get<TextBox>(window, "prompt").Text = "#P.M"; Set(window, "projectMemory", "note"); Get<System.Windows.Forms.CheckBox>(window, "attachMemory").Checked = true; Call(window, "RefreshContextChips"); var chips = Get<System.Windows.Forms.FlowLayoutPanel>(window, "contextChips"); Click(chips.Controls[0]); Assert.IsFalse(Get<System.Windows.Forms.CheckBox>(window, "attachMemory").Checked);
-                var row = chips.Controls.OfType<System.Windows.Forms.FlowLayoutPanel>().Single(); Click(row.Controls[0]); Click(row.Controls[1]); Assert.AreEqual(0, refs.Count);
+                Get<TextBox>(window, "prompt").Text = "#P.M"; Set(window, "projectMemory", "note"); Get<System.Windows.Forms.CheckBox>(window, "attachMemory").Checked = true; Call(window, "RefreshContextChips"); var chips = Get<System.Windows.Forms.FlowLayoutPanel>(window, "contextChips"); Click(chips.Controls[0].Controls.Find("open", true).Single()); Assert.IsFalse(Get<System.Windows.Forms.CheckBox>(window, "attachMemory").Checked);
+                var row = chips.Controls.OfType<ChatContextChipView>().Single(); Click(row.Controls.Find("open", true).Single()); Click(row.Controls.Find("remove", true).Single()); Assert.AreEqual(0, refs.Count);
                 Call(window, "NavigateReference", new VbeChatReference { Project = "P" }); Assert.AreEqual("#P.", Get<TextBox>(window, "prompt").Text);
                 Call(window, "NavigateReference", new VbeChatReference { Project = "P", Module = "missing" }); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, "missing");
             }

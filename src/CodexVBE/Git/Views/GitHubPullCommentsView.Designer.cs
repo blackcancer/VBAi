@@ -22,6 +22,7 @@ namespace CodexVBE
             this.commentLayout = new System.Windows.Forms.TableLayoutPanel();
             this.comments = new System.Windows.Forms.ListBox();
             this.commentBody = new System.Windows.Forms.TextBox();
+            this.commentLayout.SuspendLayout();
             this.SuspendLayout();
             this.commentLayout.Name = "commentLayout";
             this.comments.Name = "comments";
@@ -46,6 +47,17 @@ namespace CodexVBE
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.Name = "GitHubPullCommentsView";
             this.Size = new System.Drawing.Size(860, 500);
+            this.commentLayout.Location = new System.Drawing.Point(0, 0);
+            this.commentLayout.Size = new System.Drawing.Size(860, 500);
+            this.commentLayout.TabIndex = 0;
+            this.comments.Location = new System.Drawing.Point(3, 3);
+            this.comments.Size = new System.Drawing.Size(854, 219);
+            this.comments.TabIndex = 0;
+            this.commentBody.Location = new System.Drawing.Point(3, 228);
+            this.commentBody.Size = new System.Drawing.Size(854, 269);
+            this.commentBody.TabIndex = 1;
+            this.commentLayout.ResumeLayout(false);
+            this.commentLayout.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
         }

@@ -21,7 +21,11 @@ try {
     foreach ($name in @('scopePicker','providerPicker','modelPicker','effortPicker','modePicker')) {
         Assert ((Field $form $name) -is [Windows.Forms.ComboBox]) "$name is not a designer-editable WinForms picker."
     }
-    Assert ((Field $form transcriptHost).Child -eq $null -and (Field $form promptHost).Child -eq $null) 'Parameterless constructor started WPF runtime content.'
+    Assert ((Field $form transcriptHost).Child -eq $null) 'Parameterless constructor started the transcript engine.'
+    $input = Field $form promptHost
+    Assert ($input.GetType().Name -eq 'ChatInputView' -and $input.Controls.Find('previewEditor', $true).Count -eq 1) 'Designer input representation is missing.'
+    $editorField = $input.GetType().GetField('editor', $flags)
+    Assert ($editorField.GetValue($input) -eq $null) 'Designer constructor started the input engine.'
     Assert ((Field $form settings) -eq $null -and (Field $form tools) -eq $null -and (Field $form sessionStore) -eq $null) 'Designer constructor started runtime services.'
     $button = Field $form send
     Assert ($button.Parent -ne $null -and (Field $form historyPanel).Parent -ne $null) 'Designer control hierarchy is incomplete.'

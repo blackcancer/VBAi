@@ -4,7 +4,7 @@ namespace CodexVBE
     {
         internal System.Windows.Forms.ListBox history;
         internal System.Windows.Forms.TextBox historyDetails;
-        internal System.Windows.Forms.Button historyCompare;
+        internal CodexVBE.ThemedButton historyCompare;
         private System.ComponentModel.IContainer components;
         private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
@@ -46,6 +46,15 @@ namespace CodexVBE
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.Name = "GitHistoryView";
             this.Size = new System.Drawing.Size(860, 500);
+            this.history.Location = new System.Drawing.Point(0, 0);
+            this.history.Size = new System.Drawing.Size(860, 372);
+            this.history.TabIndex = 0;
+            this.historyDetails.Location = new System.Drawing.Point(0, 372);
+            this.historyDetails.Size = new System.Drawing.Size(860, 100);
+            this.historyDetails.TabIndex = 1;
+            this.historyCompare.Location = new System.Drawing.Point(0, 472);
+            this.historyCompare.Size = new System.Drawing.Size(860, 28);
+            this.historyCompare.TabIndex = 2;
             this.ResumeLayout(false);
             this.PerformLayout();
         }
