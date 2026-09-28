@@ -12,7 +12,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
     /// <summary>Vérifie la sélection, la propagation et la présentation des thèmes de l’interface.</summary>
-    [TestClass]
+    [TestClass, TestCategory("Unit")]
     public sealed class UiThemeTests
     {
         /// <summary>Choisit la palette selon préférences système, contraste et thème explicitement sélectionné.</summary>
@@ -181,5 +181,17 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        [STATestMethod]
+        public void NativeTranscriptTextPreservesBorderOnlyForReadOnlyBorderlessRichText()
+        {
+            using(var theme=new ThemeScope())
+            foreach(var readOnly in new[]{false,true})
+            foreach(var border in new[]{BorderStyle.None,BorderStyle.FixedSingle})
+            using(var rich=new RichTextBox { ReadOnly=readOnly, BorderStyle=border }) {
+                UiTheme.Apply(rich); bool transcript=readOnly&&border==BorderStyle.None;
+                Assert.AreEqual(transcript?BorderStyle.None:BorderStyle.FixedSingle,rich.BorderStyle);
+                Assert.AreEqual(transcript?UiTheme.Background:UiTheme.Surface,rich.BackColor);
+            }
+        }
     }
 }
