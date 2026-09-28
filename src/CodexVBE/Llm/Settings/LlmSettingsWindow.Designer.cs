@@ -3,49 +3,91 @@ using System.Windows.Forms;
 
 namespace CodexVBE
 {
+    /// <summary>Fenêtre de configuration des fournisseurs et comptes LLM.</summary>
     internal sealed partial class LlmSettingsWindow
     {
+        /// <summary>Grille racine qui organise les réglages et les actions de compte.</summary>
         private TableLayoutPanel grid;
+        /// <summary>Libellé de la section de compte GitHub.</summary>
         private Label githubLabel;
+        /// <summary>État de connexion du compte GitHub.</summary>
         private Label githubStatus;
+        /// <summary>Libellé de la liste des comptes GitHub.</summary>
         private Label githubAccountLabel;
+        /// <summary>Note explicative sur le compte GitHub.</summary>
         private Label githubNote;
+        /// <summary>Liste des comptes GitHub disponibles.</summary>
         private ComboBox githubAccount;
+        /// <summary>Conteneur des actions de compte GitHub.</summary>
         private FlowLayoutPanel githubActions;
+        /// <summary>Bouton de connexion à GitHub.</summary>
         private Button githubLogin;
+        /// <summary>Bouton d’actualisation du compte GitHub.</summary>
         private Button githubRefresh;
+        /// <summary>Infobulles des commandes GitHub.</summary>
         private ToolTip githubToolTips;
+        /// <summary>Disposition du contenu des paramètres du fournisseur.</summary>
         private TableLayoutPanel contentLayout;
+        /// <summary>Conteneur des actions du compte Codex.</summary>
         private FlowLayoutPanel codexActions;
+        /// <summary>Conteneur des commandes de validation et d’annulation.</summary>
         private FlowLayoutPanel buttons;
+        /// <summary>Fournisseur de modèle sélectionné.</summary>
         private ComboBox provider;
+        /// <summary>État de connexion du compte Codex.</summary>
         private Label codexStatus;
+        /// <summary>Bouton de connexion au compte Codex.</summary>
         private Button codexLogin;
+        /// <summary>Bouton d’actualisation du compte Codex.</summary>
         private Button codexRefresh;
+        /// <summary>Adresse du point de terminaison OpenAI.</summary>
         private TextBox openAiEndpoint;
+        /// <summary>Adresse du serveur Ollama.</summary>
         private TextBox ollamaEndpoint;
+        /// <summary>Champ de saisie de la clé API OpenAI.</summary>
         private TextBox openAiKey;
+        /// <summary>Option de suppression de la clé API enregistrée.</summary>
         private CheckBox clearKey;
+        /// <summary>Bouton d’enregistrement des paramètres.</summary>
         private Button saveButton;
+        /// <summary>Bouton de fermeture sans enregistrer les changements.</summary>
         private Button cancelButton;
+        /// <summary>Libellé du choix du fournisseur.</summary>
         private Label providerLabel;
+        /// <summary>Libellé du compte Codex.</summary>
         private Label accountLabel;
+        /// <summary>Libellé des commandes d’authentification.</summary>
         private Label authenticationLabel;
+        /// <summary>Libellé de l’adresse du point de terminaison OpenAI.</summary>
         private Label openAiEndpointLabel;
+        /// <summary>Libellé de l’adresse du serveur Ollama.</summary>
         private Label ollamaEndpointLabel;
+        /// <summary>Libellé de la clé API.</summary>
         private Label keyLabel;
+        /// <summary>Indication relative à la conservation de la clé API.</summary>
         private Label keyNote;
+        /// <summary>Libellé du mode d’approbation des outils.</summary>
         private Label approvalLabel;
+        /// <summary>Choix du mode d’approbation des outils.</summary>
         private ComboBox approvalPicker;
+        /// <summary>Libellé des identifiants de modèles personnalisés.</summary>
         private Label manualModelsLabel;
+        /// <summary>Champ des identifiants de modèles personnalisés.</summary>
         private TextBox manualModels;
+        /// <summary>Libellé du nom personnalisé du fournisseur.</summary>
         private Label customNameLabel;
+        /// <summary>Champ du nom personnalisé du fournisseur.</summary>
         private TextBox customName;
+        /// <summary>Option d’authentification Azure Entra.</summary>
         private CheckBox azureEntra;
 
+        /// <summary>Conteneur des réglages de thème.</summary>
         private System.Windows.Forms.FlowLayoutPanel themePanel;
+        /// <summary>Libellé du choix du thème.</summary>
         private System.Windows.Forms.Label themeLabel;
+        /// <summary>Choix du thème de l’interface.</summary>
         private System.Windows.Forms.ComboBox themePicker;
+        /// <summary>Crée et dispose les contrôles de la fenêtre.</summary>
         private void InitializeComponent()
         {
             this.grid = new System.Windows.Forms.TableLayoutPanel();

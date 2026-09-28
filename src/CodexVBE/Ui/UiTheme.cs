@@ -7,22 +7,53 @@ using Microsoft.Win32;
 
 namespace CodexVBE
 {
-    internal enum ThemeChoice { System, Light, Dark }
+    /// <summary>Mode de thème choisi pour l’interface.</summary>
+    internal enum ThemeChoice
+    {
+        /// <summary>Suit la préférence d’apparence de Windows.</summary>
+        System,
+        /// <summary>Force les couleurs claires.</summary>
+        Light,
+        /// <summary>Force les couleurs sombres.</summary>
+        Dark
+    }
+        /// <summary>Résout les couleurs de l’interface et applique le thème aux contrôles WinForms.</summary>
     internal static class UiTheme
     {
+        /// <summary>Applique un thème visuel natif à une fenêtre donnée.</summary>
+        /// <param name="window">Poignée Win32 de la fenêtre à styliser.</param>
+        /// <param name="app">Nom du thème natif à appliquer, ou null pour le thème par défaut.</param>
+        /// <param name="ids">Identifiant de sous-style natif, ou null.</param>
+        /// <returns>Code de résultat HRESULT retourné par uxtheme.</returns>
         [System.Runtime.InteropServices.DllImport("uxtheme.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
         private static extern int SetWindowTheme(IntPtr window, string app, string ids);
+        /// <summary>Configure un attribut DWM sur une fenêtre donnée.</summary>
+        /// <param name="window">Poignée Win32 de la fenêtre à styliser.</param>
+        /// <param name="attribute">Identifiant de l’attribut DWM à configurer.</param>
+        /// <param name="value">Valeur de l’attribut DWM transmis par référence.</param>
+        /// <param name="size">Taille en octets de la valeur fournie.</param>
+        /// <returns>Code de résultat HRESULT retourné par DWM.</returns>
         [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr window, int attribute, ref int value, int size);
         // Environment reads and storage can be substituted without changing Windows preferences.
+        /// <summary>Chemin du fichier qui conserve le choix de thème utilisateur.</summary>
         internal static string FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexVBE", "theme.txt");
+        /// <summary>Fournit l’état de contraste élevé du système.</summary>
         internal static Func<bool> HighContrast = () => SystemInformation.HighContrast;
+        /// <summary>Fournit la couleur de fenêtre système pour le contraste élevé.</summary>
         internal static Func<Color> WindowColor = () => SystemColors.Window;
+        /// <summary>Lit la préférence Windows AppsUseLightTheme.</summary>
         internal static Func<object> ReadSystemTheme = () => Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 1);
+        /// <summary>Lit le choix de thème stocké.</summary>
         internal static Func<string, string> ReadTheme = File.ReadAllText;
+        /// <summary>Enregistre le choix de thème sélectionné.</summary>
         internal static Action<string, string> WriteTheme = File.WriteAllText;
+        /// <summary>Choix persistant du thème, initialisé au chargement du fichier.</summary>
+        /// <value>Choix courant du thème.</value>
         internal static ThemeChoice Choice { get; private set; } = Load();
         internal static event Action Changed;
+        /// <summary>Indique si le thème effectivement résolu est sombre.</summary>
+        /// <value>Valeur déterminée selon le contraste élevé, le choix et la préférence Windows.</value>
         internal static bool Dark
         {
             get {
@@ -31,19 +62,39 @@ namespace CodexVBE
                 try { return (int?)ReadSystemTheme() == 0; } catch { return false; }
             }
         }
+        /// <summary>Couleur de surface des champs, listes et grilles.</summary>
+        /// <value>Couleur utilisée par les surfaces de saisie et les listes.</value>
         internal static Color Surface { get { return HighContrast() ? SystemColors.Window : Dark ? Color.FromArgb(30, 34, 42) : Color.White; } }
+        /// <summary>Couleur de fond des conteneurs.</summary>
+        /// <value>Couleur de fond utilisée pour les autres contrôles.</value>
         internal static Color Background { get { return HighContrast() ? SystemColors.Control : Dark ? Color.FromArgb(22, 26, 33) : Color.FromArgb(248, 250, 252); } }
+        /// <summary>Couleur du texte au premier plan.</summary>
+        /// <value>Couleur du texte selon le thème actif.</value>
         internal static Color Foreground { get { return HighContrast() ? SystemColors.WindowText : Dark ? Color.FromArgb(226, 232, 240) : Color.FromArgb(30, 41, 59); } }
+        /// <summary>Couleur de fond d’un changement VBA ajouté.</summary>
+        /// <value>Couleur de fond des changements ajoutés.</value>
         internal static Color Added { get { return Dark ? Color.FromArgb(24, 64, 42) : Color.FromArgb(232, 247, 237); } }
+        /// <summary>Couleur de fond d’un changement VBA supprimé.</summary>
+        /// <value>Couleur de fond des changements supprimés.</value>
         internal static Color Removed { get { return Dark ? Color.FromArgb(78, 35, 40) : Color.FromArgb(255, 240, 240); } }
+        /// <summary>Abonne le thème aux changements de préférences Windows.</summary>
         static UiTheme() { SystemEvents.UserPreferenceChanged += PreferencesChanged; }
+        /// <summary>Propage un changement de préférence visuelle du système.</summary>
+        /// <param name="sender">Objet système ou contrôle à l’origine de l’événement.</param>
+        /// <param name="e">Données de la préférence Windows modifiée.</param>
         private static void PreferencesChanged(object sender, UserPreferenceChangedEventArgs e) { Changed?.Invoke(); }
+        /// <summary>Charge le thème enregistré ou retourne le suivi du système si le fichier est absent ou invalide.</summary>
+        /// <returns>Choix valide enregistré, ou suivi des préférences système.</returns>
         private static ThemeChoice Load() { try { ThemeChoice value; if (Enum.TryParse(ReadTheme(FileName), out value) && Enum.IsDefined(typeof(ThemeChoice), value)) return value; } catch { } return ThemeChoice.System; }
+        /// <summary>Enregistre le choix fourni et notifie les vues abonnées.</summary>
+        /// <param name="choice">Mode de thème à enregistrer.</param>
         internal static void Select(ThemeChoice choice)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FileName)); WriteTheme(FileName, choice.ToString());
             Choice = choice; Changed?.Invoke();
         }
+        /// <summary>Lie l’application du thème et les désabonnements au cycle de vie de la fenêtre.</summary>
+        /// <param name="form">Fenêtre dont le cycle de vie pilote l’application du thème.</param>
         internal static void Attach(Form form)
         {
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
@@ -52,6 +103,8 @@ namespace CodexVBE
             form.Disposed += (s, e) => { Changed -= update; };
             Apply(form);
         }
+        /// <summary>Applique les couleurs, styles et gestionnaires de dessin au contrôle et à ses enfants.</summary>
+        /// <param name="control">Contrôle dont les propriétés visuelles sont mises à jour.</param>
         internal static void Apply(Control control)
         {
             control.HandleCreated -= ApplyNativeTheme;
@@ -71,6 +124,9 @@ namespace CodexVBE
             foreach (Control child in control.Controls) Apply(child);
             control.Invalidate();
         }
+        /// <summary>Applique le thème natif à la poignée du contrôle sans modifier la préférence du processus hôte.</summary>
+        /// <param name="sender">Objet système ou contrôle à l’origine de l’événement.</param>
+        /// <param name="e">Données de l’événement associé.</param>
         private static void ApplyNativeTheme(object sender, EventArgs e)
         {
             var control = (Control)sender;
@@ -81,6 +137,9 @@ namespace CodexVBE
                 SetWindowTheme(control.Handle, dark ? (control is ComboBox ? "DarkMode_CFD" : "DarkMode_Explorer") : null, null);
             if (control is Form) { int value = dark ? 1 : 0; DwmSetWindowAttribute(control.Handle, 20, ref value, sizeof(int)); }
         }
+        /// <summary>Dessine une entrée de ComboBox avec les couleurs et le texte du thème.</summary>
+        /// <param name="sender">Objet système ou contrôle à l’origine de l’événement.</param>
+        /// <param name="e">Données de l’événement associé.</param>
         private static void DrawCombo(object sender, DrawItemEventArgs e)
         {
             var combo = (ComboBox)sender;
@@ -90,6 +149,9 @@ namespace CodexVBE
             TextRenderer.DrawText(e.Graphics, text, e.Font, e.Bounds, selected ? SystemColors.HighlightText : Foreground, TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
             e.DrawFocusRectangle();
         }
+        /// <summary>Colore les cellules de grille marquées comme lignes VBA ajoutées ou supprimées.</summary>
+        /// <param name="sender">Objet système ou contrôle à l’origine de l’événement.</param>
+        /// <param name="e">Données de l’événement associé.</param>
         private static void FormatDiffCell(object sender, DataGridViewCellFormattingEventArgs e)
         {
             var grid = (DataGridView)sender;
@@ -98,6 +160,9 @@ namespace CodexVBE
             string kind = grid.Rows[e.RowIndex].Cells[e.ColumnIndex].Tag as string;
             if (kind == "vba-added" || kind == "vba-removed") { e.CellStyle.BackColor = kind == "vba-added" ? Added : Removed; e.CellStyle.ForeColor = Foreground; }
         }
+        /// <summary>Convertit certaines couleurs claires connues vers leurs équivalents du thème sombre.</summary>
+        /// <param name="hex">Couleur hexadécimale à convertir.</param>
+        /// <returns>Couleur hexadécimale mappée, ou valeur d’origine si aucun remplacement ne s’applique.</returns>
         internal static string Map(string hex)
         {
             if (!Dark) return hex;

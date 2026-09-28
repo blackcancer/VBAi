@@ -1,54 +1,108 @@
-namespace CodexVBE { public sealed partial class GitHubPane {
-private System.ComponentModel.IContainer components;
-private System.Windows.Forms.TabControl pages;
-private System.Windows.Forms.TabPage repositoriesPage;
-private System.Windows.Forms.TabPage pullsPage;
-private System.Windows.Forms.TableLayoutPanel repoLayout;
-private System.Windows.Forms.FlowLayoutPanel repoActions;
-private System.Windows.Forms.FlowLayoutPanel createActions;
-private System.Windows.Forms.TableLayoutPanel pullLayout;
-private System.Windows.Forms.FlowLayoutPanel pullActions;
-private System.Windows.Forms.TabControl pullTabs;
-private System.Windows.Forms.TabPage composeTab;
-private System.Windows.Forms.TabPage detailTab;
-private System.Windows.Forms.TabPage filesTab;
-private System.Windows.Forms.TabPage commentsTab;
-private System.Windows.Forms.TabPage checksTab;
-private System.Windows.Forms.TableLayoutPanel composeLayout;
-private System.Windows.Forms.TableLayoutPanel commentLayout;
-private System.Windows.Forms.TextBox repositorySearch;
-private System.Windows.Forms.ListBox repositoryList;
-private System.Windows.Forms.ComboBox repositoryBranch;
-private System.Windows.Forms.ComboBox organization;
-private System.Windows.Forms.TextBox repositoryName;
-private System.Windows.Forms.CheckBox privateRepository;
-private System.Windows.Forms.Button loadRepositories;
-private System.Windows.Forms.Button useRepository;
-private System.Windows.Forms.Button createRepository;
-private System.Windows.Forms.ListBox pulls;
-private System.Windows.Forms.Button loadPulls;
-private System.Windows.Forms.ComboBox targetBranch;
-private System.Windows.Forms.Label sourceLabel;
-private System.Windows.Forms.TextBox pullTitle;
-private System.Windows.Forms.TextBox pullBody;
-private System.Windows.Forms.CheckBox draft;
-private System.Windows.Forms.Button createPull;
-private System.Windows.Forms.Button openPull;
-private System.Windows.Forms.TextBox pullDetails;
-private System.Windows.Forms.ListBox files;
-private System.Windows.Forms.ListBox comments;
-private System.Windows.Forms.TextBox commentBody;
-private System.Windows.Forms.TextBox checks;
-private System.Windows.Forms.Label status;
-private System.Windows.Forms.Button cancel;
-private System.Windows.Forms.FlowLayoutPanel footer;
-private System.Windows.Forms.ToolTip tips;
-private System.Windows.Forms.Button loadDraft;
-private System.Windows.Forms.Label targetLabel;
-private System.Windows.Forms.Label titleLabel;
-private System.Windows.Forms.Label bodyLabel;
-private System.Windows.Forms.Label searchLabel;
-private void InitializeComponent() {
+namespace CodexVBE
+{
+    /// <summary>Panneau de recherche de dépôts et de gestion des pull requests GitHub.</summary>
+    public sealed partial class GitHubPane
+    {
+        /// <summary>Conteneur des composants du panneau.</summary>
+        private System.ComponentModel.IContainer components;
+        /// <summary>Onglets des pages de dépôt et de pull request.</summary>
+        private System.Windows.Forms.TabControl pages;
+        /// <summary>Page de recherche et sélection des dépôts.</summary>
+        private System.Windows.Forms.TabPage repositoriesPage;
+        /// <summary>Page de création et consultation des pull requests.</summary>
+        private System.Windows.Forms.TabPage pullsPage;
+        /// <summary>Disposition de la page des dépôts.</summary>
+        private System.Windows.Forms.TableLayoutPanel repoLayout;
+        /// <summary>Disposition des commandes de dépôt.</summary>
+        private System.Windows.Forms.FlowLayoutPanel repoActions;
+        /// <summary>Disposition des champs de création de dépôt.</summary>
+        private System.Windows.Forms.FlowLayoutPanel createActions;
+        /// <summary>Disposition principale des pull requests.</summary>
+        private System.Windows.Forms.TableLayoutPanel pullLayout;
+        /// <summary>Disposition des actions de pull request.</summary>
+        private System.Windows.Forms.FlowLayoutPanel pullActions;
+        /// <summary>Onglets de composition et de détail de pull request.</summary>
+        private System.Windows.Forms.TabControl pullTabs;
+        /// <summary>Onglet de création d’une pull request.</summary>
+        private System.Windows.Forms.TabPage composeTab;
+        /// <summary>Onglet des détails d’une pull request.</summary>
+        private System.Windows.Forms.TabPage detailTab;
+        /// <summary>Onglet des fichiers modifiés.</summary>
+        private System.Windows.Forms.TabPage filesTab;
+        /// <summary>Onglet des commentaires.</summary>
+        private System.Windows.Forms.TabPage commentsTab;
+        /// <summary>Onglet des vérifications.</summary>
+        private System.Windows.Forms.TabPage checksTab;
+        /// <summary>Disposition du formulaire de création.</summary>
+        private System.Windows.Forms.TableLayoutPanel composeLayout;
+        /// <summary>Disposition du commentaire et des détails.</summary>
+        private System.Windows.Forms.TableLayoutPanel commentLayout;
+        /// <summary>Champ de recherche des dépôts GitHub.</summary>
+        private System.Windows.Forms.TextBox repositorySearch;
+        /// <summary>Liste des dépôts accessibles.</summary>
+        private System.Windows.Forms.ListBox repositoryList;
+        /// <summary>Sélecteur de branche du dépôt sélectionné.</summary>
+        private System.Windows.Forms.ComboBox repositoryBranch;
+        /// <summary>Champ facultatif du compte d’organisation.</summary>
+        private System.Windows.Forms.ComboBox organization;
+        /// <summary>Champ du nom de dépôt à créer.</summary>
+        private System.Windows.Forms.TextBox repositoryName;
+        /// <summary>Option de création d’un dépôt privé.</summary>
+        private System.Windows.Forms.CheckBox privateRepository;
+        /// <summary>Commande de chargement des dépôts.</summary>
+        private System.Windows.Forms.Button loadRepositories;
+        /// <summary>Commande d’utilisation du dépôt choisi.</summary>
+        private System.Windows.Forms.Button useRepository;
+        /// <summary>Commande de création du dépôt renseigné.</summary>
+        private System.Windows.Forms.Button createRepository;
+        /// <summary>Liste des pull requests du dépôt.</summary>
+        private System.Windows.Forms.ListBox pulls;
+        /// <summary>Commande de chargement des pull requests.</summary>
+        private System.Windows.Forms.Button loadPulls;
+        /// <summary>Sélecteur de branche cible.</summary>
+        private System.Windows.Forms.ComboBox targetBranch;
+        /// <summary>Libellé de la branche source courante.</summary>
+        private System.Windows.Forms.Label sourceLabel;
+        /// <summary>Champ du titre de pull request.</summary>
+        private System.Windows.Forms.TextBox pullTitle;
+        /// <summary>Champ de description de pull request.</summary>
+        private System.Windows.Forms.TextBox pullBody;
+        /// <summary>Option de création en brouillon.</summary>
+        private System.Windows.Forms.CheckBox draft;
+        /// <summary>Commande de création de pull request.</summary>
+        private System.Windows.Forms.Button createPull;
+        /// <summary>Commande d’ouverture de la pull request sélectionnée.</summary>
+        private System.Windows.Forms.Button openPull;
+        /// <summary>Champ des détails de pull request.</summary>
+        private System.Windows.Forms.TextBox pullDetails;
+        /// <summary>Liste des fichiers de la pull request.</summary>
+        private System.Windows.Forms.ListBox files;
+        /// <summary>Liste des commentaires de revue.</summary>
+        private System.Windows.Forms.ListBox comments;
+        /// <summary>Champ du corps de commentaire.</summary>
+        private System.Windows.Forms.TextBox commentBody;
+        /// <summary>Liste des vérifications du commit.</summary>
+        private System.Windows.Forms.TextBox checks;
+        /// <summary>Libellé de statut du panneau.</summary>
+        private System.Windows.Forms.Label status;
+        /// <summary>Commande d’annulation de l’opération.</summary>
+        private System.Windows.Forms.Button cancel;
+        /// <summary>Disposition du pied et des informations d’état.</summary>
+        private System.Windows.Forms.FlowLayoutPanel footer;
+        /// <summary>Instructions de création et de revue.</summary>
+        private System.Windows.Forms.ToolTip tips;
+        /// <summary>Commande de chargement des brouillons.</summary>
+        private System.Windows.Forms.Button loadDraft;
+        /// <summary>Libellé de la branche cible.</summary>
+        private System.Windows.Forms.Label targetLabel;
+        /// <summary>Libellé du titre.</summary>
+        private System.Windows.Forms.Label titleLabel;
+        /// <summary>Libellé de la description.</summary>
+        private System.Windows.Forms.Label bodyLabel;
+        /// <summary>Libellé de recherche des dépôts.</summary>
+        private System.Windows.Forms.Label searchLabel;
+        /// <summary>Crée les contrôles et configure les pages du panneau GitHub.</summary>
+        private void InitializeComponent() {
 this.components = new System.ComponentModel.Container();
 this.pages = new CodexVBE.ThemedTabControl();
 this.repositoriesPage = new System.Windows.Forms.TabPage();
