@@ -1,3 +1,4 @@
+using System.Linq;
 namespace CodexVBE.Tests.Unit
 {
     using System;
@@ -201,6 +202,36 @@ namespace CodexVBE.Tests.Unit
             addin.OnAddInsUpdate(ref custom);
             addin.OnStartupComplete(ref custom);
             addin.OnBeginShutdown(ref custom);
+        }
+
+    }
+}
+
+namespace CodexVBE.Tests.Unit
+{
+    using System;
+    using System.IO;
+    using System.Runtime.InteropServices;
+    using CodexVBE;
+    using CodexVBE.Tests.Infrastructure;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    public sealed partial class AddInCoverageTests
+    {
+        [STATestMethod]
+        public void GitHubLaunchHandlesComAndUnavailableDocumentErrorsAtBothIdentityStages()
+        {
+            foreach (Exception error in new Exception[] { new DirectoryNotFoundException("missing document"), new COMException("unavailable project") })
+            using (var scope = new HostUiScope())
+            {
+                var instance = new AddIn(); var host = new GitHubLaunchHost { ProjectError = error };
+                LlmBoundaryScope.Set(instance, "vbe", host);
+                Call(instance, "ShowGitHub"); Assert.AreEqual(1, scope.Notices.Count);
+                StringAssert.Contains(scope.Notices.Last(), "Select a saved VBA project");
+                host.ProjectError = null; host.Project = new GitHubUnavailableProject { PathError = error };
+                Call(instance, "ShowGitHub"); Assert.AreEqual(2, scope.Notices.Count);
+                StringAssert.Contains(scope.Notices.Last(), "Save the macro");
+                Assert.AreEqual(0, scope.Dialogs.Count); scope.Close(instance);
+            }
         }
     }
 }

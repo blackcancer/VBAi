@@ -99,5 +99,21 @@ namespace CodexVBE.Tests.Unit
                 StringAssert.Contains(actual, "Const VALUE"); StringAssert.Contains(actual, "Other(value:=VALUE)");
             }
         }
+
+        [TestMethod]
+        public void PhysicalBoundariesAndMalformedNamedDeclarationsFailWithoutGuessingBinding()
+        {
+            string source = "Dim moduleValue As Long\nSub Run()\nDim value As Long\nDebug.Print value \t\nEnd Sub:value:";
+            var request = Rename(); request.StartLine = 3;
+            string result = VbaLocalRename.Transform(source, request, 2, 5);
+            StringAssert.Contains(result, "Dim moduleValue"); StringAssert.Contains(result, "Dim amount");
+            StringAssert.Contains(result, "End Sub:value:");
+            source = source.TrimEnd(':');
+            result = VbaLocalRename.Transform(source, request, 2, 5);
+            StringAssert.Contains(result, "End Sub:amount");
+            result = VbaLocalRename.Transform(source.Replace("End Sub:value", "End Sub:Debug.Print value:"), request, 2, 5);
+            StringAssert.Contains(result, "End Sub:Debug.Print amount:");
+            Assert.ThrowsException<InvalidOperationException>(() => VbaLocalRename.Transform("Sub Run()\nDim value:=0\nEnd Sub", Rename(), 1, 3));
+        }
     }
 }

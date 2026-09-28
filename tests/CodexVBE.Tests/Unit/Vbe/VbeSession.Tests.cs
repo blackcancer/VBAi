@@ -1,4 +1,5 @@
-﻿namespace CodexVBE.Tests.Unit
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
@@ -1090,6 +1091,51 @@ namespace CodexVBE.Tests.Unit
                         StringAssert.Contains(response.Error, command == "rename_project" ? "rename is disabled" : "ExpectedSha256 is required");
                         Assert.AreEqual("SigningProject", fixture.Project.Name);
                     }
+        }
+    }
+}
+
+namespace CodexVBE.Tests.Unit
+{
+    public sealed partial class VbeProcedureMutationTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void SessionRoutesLocalRenameThroughLiveCatalogAndVerifiedMutation()
+        {
+            var fixture = new Fixture("Sub Run()\r\nDim value As Long\r\nDebug.Print value\r\nEnd Sub");
+            var host = new FakeVbe(); host.VBProjects.Add(fixture.Project);
+            var session = new CodexVBE.VbeSession(host);
+            var request = fixture.Request(null); request.Query = "value"; request.NewName = "amount";
+            request.StartLine = 2; request.StartColumn = 5; request.ExpectedMode = 2;
+            request.Command = "preview_local_rename";
+            dynamic preview = session.Execute(request).Data;
+            Assert.IsTrue((bool)preview.Changed); StringAssert.Contains(fixture.Module.Code, "Dim value");
+            request.Command = "apply_local_rename";
+            Assert.IsTrue(session.Execute(request).Ok); StringAssert.Contains(fixture.Module.Code, "Dim amount");
+        }
+    }
+
+    public sealed partial class VbeDebugTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void SessionRoutesProcedureQueueAndStatusThroughBoundDebugger()
+        {
+            var previous = System.Threading.SynchronizationContext.Current;
+            var context = new NativeNavigationContext(); System.Threading.SynchronizationContext.SetSynchronizationContext(context);
+            try
+            {
+                var fixture = Create(2); var request = ProcedureRequest(fixture);
+                fixture.Service.ShowProcedureImmediate = () => { };
+                fixture.Service.ExecuteProcedureCall = command => System.Threading.Tasks.Task.FromResult<object>("delivered");
+                var session = new CodexVBE.VbeSession(fixture.Vbe);
+                typeof(CodexVBE.VbeSession).GetField("debugger", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(session, fixture.Service);
+                request.Command = "run_procedure"; dynamic queued = session.Execute(request).Data;
+                context.RunAll();
+                request.Command = "procedure_run_status"; request.Query = queued.Query;
+                dynamic status = session.Execute(request).Data;
+                Assert.AreEqual("Delivered", (string)status.State); Assert.IsFalse((bool)status.Pending);
+            }
+            finally { System.Threading.SynchronizationContext.SetSynchronizationContext(previous); }
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Unit
+namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Linq;
@@ -211,5 +211,27 @@
             }
         }
 
+
+        [TestMethod]
+        public void DeclarationDiscoveryMarksModuleScopeAndReportsSourceFailures()
+        {
+            foreach (bool fail in new[] { false, true })
+            {
+                var references = new VbeChatReferences(null);
+                references.Execute = request => {
+                    switch (request.Command)
+                    {
+                        case "list_projects": return Response.Success(new[] { new { Name = "P" } });
+                        case "list_modules": return Response.Success(new[] { new { Name = "M" } });
+                        case "list_procedures": return Response.Success(new { Sha256 = "version", Procedures = new object[0] });
+                        case "read_module": return fail ? Response.Failure("source unavailable") : Response.Success(new { Sha256 = "version", Code = "Dim moduleValue As Long" });
+                        default: throw new InvalidOperationException(request.Command);
+                    }
+                };
+                references.Refresh(); while (references.IsLoading) references.Step();
+                if (fail) StringAssert.Contains(references.Error, "source unavailable");
+                else { var declaration = references.Entries.Single(x => x.Name == "moduleValue"); Assert.IsNull(declaration.DeclarationScope); Assert.AreEqual("version", declaration.Sha256); }
+            }
+        }
     }
 }

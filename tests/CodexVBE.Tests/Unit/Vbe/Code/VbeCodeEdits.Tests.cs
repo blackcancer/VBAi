@@ -10,7 +10,7 @@ namespace CodexVBE.Tests.Unit
 {
     /// <summary>Vérifie le budget, les versions et les échecs de l’historique de code géré.</summary>
     [TestClass, TestCategory("Unit")]
-    public sealed class VbeCodeEditsTests
+    public sealed partial class VbeCodeEditsTests
     {
         /// <summary>Contenu public lisible par la frontière dynamique de production.</summary>
         public sealed class Snapshot
@@ -63,6 +63,41 @@ namespace CodexVBE.Tests.Unit
             request.ExpectedSha256 = Hash(code); edits.Replay(request, true); Assert.AreEqual("two", code);
             Assert.AreEqual(0, Stack(edits, "redo").Count);
             request.Module = "missing"; Assert.ThrowsException<InvalidOperationException>(() => edits.Replay(request, false));
+        }
+
+        [TestMethod]
+        public void LocalRenameResolvesExactProcedureRevisionAndRequiresLiveDesignModeBeforeWriting()
+        {
+            const string source = "Sub Run()\nDim value As Long\nDebug.Print value\nEnd Sub";
+            string current = source; bool catalogFailure = false, stateFailure = false; int writes = 0, mode = 2;
+            var match = new ProcedureRow { Name = "Run", Kind = 0, BodyLine = 1, EndLine = 4 };
+            var catalog = new ProcedureCatalog { Sha256 = Hash(source), Procedures = new[] { match } };
+            var edits = new VbeCodeEdits(command => {
+                switch (command.Command)
+                {
+                    case "read_module": return Response.Success(new Snapshot { Code = current });
+                    case "list_procedures": return catalogFailure ? Response.Failure("catalog unavailable") : Response.Success(catalog);
+                    case "debug_state": return stateFailure ? Response.Failure("state unavailable") : Response.Success(new DesignState { Mode = mode });
+                    case "replace_lines": current = command.Text; writes++; return Response.Success("written");
+                    default: throw new InvalidOperationException(command.Command);
+                }
+            });
+            var request = new Request { Project = "P", Module = "M", Procedure = "Run", ProcKind = 0,
+                Query = "value", NewName = "amount", StartLine = 2, StartColumn = 5, ExpectedSha256 = Hash(source), ExpectedMode = 2 };
+            catalogFailure = true; StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => edits.RenameLocal(request, true)).Message, "catalog unavailable"); catalogFailure = false;
+            catalog.Sha256 = "stale"; Assert.ThrowsException<InvalidOperationException>(() => edits.RenameLocal(request, true)); catalog.Sha256 = Hash(source).ToUpperInvariant();
+            catalog.Procedures = new[] { new ProcedureRow { Name = "Run", Kind = 1 }, new ProcedureRow { Name = "Other", Kind = 0 } };
+            StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => edits.RenameLocal(request, true)).Message, "absent");
+            catalog.Procedures = new[] { match, match };
+            StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => edits.RenameLocal(request, true)).Message, "ambiguous");
+            catalog.Procedures = new[] { new ProcedureRow { Name = "Other", Kind = 0 }, match, new ProcedureRow { Name = "Run", Kind = 1 } };
+            dynamic preview = edits.RenameLocal(request, true);
+            Assert.AreEqual(source, (string)preview.Before); StringAssert.Contains((string)preview.After, "Dim amount"); Assert.IsTrue((bool)preview.Changed);
+            Assert.AreEqual(0, writes); Assert.AreEqual(source, current);
+            request.ExpectedMode = 1; Assert.ThrowsException<ArgumentException>(() => edits.RenameLocal(request, false)); request.ExpectedMode = 2;
+            stateFailure = true; Assert.ThrowsException<InvalidOperationException>(() => edits.RenameLocal(request, false)); stateFailure = false;
+            mode = 1; Assert.ThrowsException<InvalidOperationException>(() => edits.RenameLocal(request, false)); mode = 2;
+            Assert.AreEqual("written", edits.RenameLocal(request, false)); Assert.AreEqual(1, writes); StringAssert.Contains(current, "Debug.Print amount");
         }
     }
 }

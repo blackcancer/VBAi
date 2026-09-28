@@ -59,8 +59,8 @@ namespace CodexVBE.Tests.Unit
                 "Function F(ByRef a As Long)\nEnd Function\nProperty Get P(Optional b As String)\nEnd Property\n" +
                 "Event\nEvent 1\nEvent Changed()\nDeclare\nDeclare PtrSafe Other\nDeclare Sub External Lib \"x\" ()\nDeclare Function Fn Lib \"x\" ()\nDeclare Sub 1\n" +
                 "Type\nType 1\nType T\n1 Invalid\nField As Long\nEnd Type\nEnum\nEnum 1\nEnum E\nFirst = 1\nEnd Enum\n" +
-                "Friend Global Static counter As Long\nWithEvents listener As Object\nPrivate WithEvents notifier As Object\n" +
-                "Dim\nDim , invalid As, other As New, broken As Long = 1, , _bad\n" +
+                "Friend Global Static counter As Long\nDim WithEvents otherListener As Object\nWithEvents listener As Object\nPrivate WithEvents notifier As Object\n" +
+                "Dim\nDim Optional, invalid As, other As New, broken As Long = 1, , _bad\n" +
                 "Dim s$, i%, l&, f!, d#, c@, ll^\n";
             var symbols = VbaDeclarationIndex.Read(source);
             Assert.IsTrue(symbols.Any(x => x.Name == "Changed" && x.Kind == "Event"));

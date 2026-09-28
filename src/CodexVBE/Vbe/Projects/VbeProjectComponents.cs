@@ -53,7 +53,8 @@ namespace CodexVBE
             public int CurrentProcessId => Process.GetCurrentProcess().Id;
             /// <summary>Obtient l’application Excel active via ROT.</summary>
             /// <returns>Objet COM Excel.Application.</returns>
-            public object ExcelApplication() { return Marshal.GetActiveObject("Excel.Application"); }
+            public object ExcelApplication() { return ExcelOwnedApplication.Resolve(CurrentProcessId, RegisteredExcel); }
+            private static object RegisteredExcel() { return Marshal.GetActiveObject("Excel.Application"); }
             /// <summary>Retourne le PID propriétaire de la fenêtre native.</summary>
             /// <param name="window">Handle de la fenêtre Excel.</param>
             /// <returns>Identifiant du processus associé à la fenêtre.</returns>
@@ -139,7 +140,7 @@ namespace CodexVBE
                 uint excelProcessId = host.WindowProcessId(new IntPtr(Convert.ToInt64(excel.Hwnd)));
                 if (excelProcessId != (uint)host.CurrentProcessId)
                     return new { Project = projectName, Available = false, Signed = (bool?)null,
-                        Source = "Excel.Workbook.VBASigned", Reason = "The registered Excel instance is not this VBE host." };
+                        Source = "Excel.Workbook.VBASigned", Reason = "The registered Excel instance is not this VBE host. Registered PID=" + excelProcessId + ", VBE PID=" + host.CurrentProcessId };
                 string projectPath = null;
                 try { projectPath = (string)project.FileName; }
                 catch { /* An unsaved workbook may have no project path. */ }
@@ -286,7 +287,7 @@ namespace CodexVBE
             dynamic excel = host.ExcelApplication();
             uint excelProcessId = host.WindowProcessId(new IntPtr(Convert.ToInt64(excel.Hwnd)));
             if (excelProcessId != (uint)host.CurrentProcessId)
-                throw new InvalidOperationException("The registered Excel instance is not this VBE host.");
+                throw new InvalidOperationException("The registered Excel instance is not this VBE host. Registered PID=" + excelProcessId + ", VBE PID=" + host.CurrentProcessId);
             string projectPath = null;
             try { projectPath = (string)project.FileName; }
             catch { }
@@ -323,7 +324,7 @@ namespace CodexVBE
             dynamic excel = host.ExcelApplication();
             uint excelProcessId = host.WindowProcessId(new IntPtr(Convert.ToInt64(excel.Hwnd)));
             if (excelProcessId != (uint)host.CurrentProcessId)
-                throw new InvalidOperationException("The registered Excel instance is not this VBE host.");
+                throw new InvalidOperationException("The registered Excel instance is not this VBE host. Registered PID=" + excelProcessId + ", VBE PID=" + host.CurrentProcessId);
             dynamic match = null;
             foreach (dynamic workbook in excel.Workbooks)
             {

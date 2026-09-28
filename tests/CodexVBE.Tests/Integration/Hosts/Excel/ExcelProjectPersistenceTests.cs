@@ -15,8 +15,10 @@ namespace CodexVBE.Tests.Integration
         [STATestMethod]
         public void IsolatedExcelCanSaveMacroProjectThroughItsOwnVbeBridge()
         {
+            using (var other = ExcelVbeFixture.Start())
             using (var host = ExcelVbeFixture.Start())
             {
+                Assert.AreNotEqual(other.ProcessId, host.ProcessId, "The ownership test requires two distinct disposable Excel processes.");
                 var projectsResponse = host.Command("list_projects");
                 Assert.AreEqual(true, projectsResponse["Ok"]);
                 var projects = (object[])projectsResponse["Data"];
@@ -53,6 +55,11 @@ namespace CodexVBE.Tests.Integration
                     ExpectedProjectVersion = version, ExpectedHostPath = path });
                 Assert.AreEqual(true, saveResponse["Ok"], Convert.ToString(saveResponse["Error"]));
                 Assert.AreEqual(true, VbeBridgeClient.Object(saveResponse["Data"])["SaveInvoked"]);
+                var otherProjects = (object[])other.Command("list_projects")["Data"];
+                string otherProject = Convert.ToString(VbeBridgeClient.Object(otherProjects.Single())["Name"]);
+                var otherState = VbeBridgeClient.Object(other.Command(new { Command = "project_persistence_status", Project = otherProject })["Data"]);
+                Assert.AreEqual(true, otherState["HostAvailable"]);
+                Assert.AreEqual(false, otherState["HostHasPath"], "Saving one VBE project must leave the other disposable workbook unsaved.");
             }
         }
     }

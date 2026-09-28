@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Unit
+namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
@@ -700,5 +700,24 @@ namespace CodexVBE.Tests.Unit
             Assert.ThrowsException<ArgumentException>(()=>tools.ReadToolResponse("{invalid}"));
         }
 
+
+        [TestMethod]
+        public async Task OptionMutationAndProcedureArgumentsExerciseValidatedAsyncBoundaries()
+        {
+            var tools = new ToolFixture().Tools; int calls = 0;
+            tools.Native.SetVbeOption = request => { calls++; Assert.AreEqual("editor", request.Pane); return new { Changed = true }; };
+            var option = Arguments("set_vbe_option"); option["Pane"] = "editor";
+            Success(await tools.InvokeAsync("set_vbe_option", Json.Serialize(option)), "set option"); Assert.AreEqual(1, calls);
+            tools.Native.SetVbeOption = request => throw new InvalidOperationException("native option rejected");
+            Failed(await tools.InvokeAsync("set_vbe_option", Json.Serialize(option)), "native option rejected");
+            tools.Execute = request => Response.Failure("schedule rejected");
+            Failed(await tools.InvokeAsync("set_vbe_option", Json.Serialize(option)), "schedule rejected");
+            tools.Execute = Infrastructure.VbeToolBoundaryFixture.Execute;
+            var run = Arguments("run_procedure");
+            foreach (object arguments in new object[] { null, "not an array", new object[31] })
+            { run["Arguments"] = arguments; Failed(tools.Invoke("run_procedure", Json.Serialize(run)), "invalid arguments"); }
+            run["Arguments"] = new object[] { "literal", true, 2, 1.5 }; Success(tools.Invoke("run_procedure", Json.Serialize(run)), "scalars");
+            run["Arguments"] = new object[] { new { Nested = true } }; Failed(tools.Invoke("run_procedure", Json.Serialize(run)), "non scalar");
+        }
     }
 }

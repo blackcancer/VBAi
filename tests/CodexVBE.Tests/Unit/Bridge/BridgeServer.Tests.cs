@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Unit
+namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
@@ -290,5 +290,31 @@
             }
         }
 
+
+        [STATestMethod]
+        public void OptionMutationDispatchUsesNativeResultOnlyAfterSuccessfulScheduling()
+        {
+            using (var dispatcher = new Control())
+            {
+                var handle = dispatcher.Handle; int id = Guid.NewGuid().GetHashCode() & int.MaxValue;
+                using (var server = new BridgeServer(dispatcher, null, id))
+                {
+                    Infrastructure.VbeToolBoundaryFixture.Configure(server.Native);
+                    server.Execute = Infrastructure.VbeToolBoundaryFixture.Execute;
+                    int calls = 0;
+                    server.Native.SetVbeOption = request => { calls++; Assert.AreEqual("editor", request.Pane); return new { Changed = true }; };
+                    server.Start();
+                    var response = SendWithMessagePump(id, "{\"Command\":\"set_vbe_option\",\"Pane\":\"editor\"}");
+                    Assert.AreEqual(true, response["Ok"]); Assert.AreEqual(1, calls);
+                    server.Execute = request => Response.Failure("schedule rejected");
+                    response = SendWithMessagePump(id, "{\"Command\":\"set_vbe_option\"}");
+                    Assert.AreEqual(false, response["Ok"]); Assert.AreEqual(1, calls);
+                    server.Execute = Infrastructure.VbeToolBoundaryFixture.Execute;
+                    server.Native.SetVbeOption = request => throw new InvalidOperationException("native rejected");
+                    response = SendWithMessagePump(id, "{\"Command\":\"set_vbe_option\"}");
+                    Assert.AreEqual(false, response["Ok"]); Assert.AreEqual("native rejected", response["Error"]);
+                }
+            }
+        }
     }
 }
