@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Unit
+namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.IO;
@@ -48,8 +48,9 @@
             {
                 var start = new ProcessStartInfo("git.exe",string.Join(" ",Array.ConvertAll(arguments,a=>"\""+a.Replace("\"","\\\"")+"\"")))
                 { WorkingDirectory=Root,UseShellExecute=false,CreateNoWindow=true,RedirectStandardError=true,RedirectStandardOutput=true,RedirectStandardInput=true };
-                using(var process=Process.Start(start))
+                using(var process=new Process { StartInfo=start })
                 {
+                    ProcessInput.StartWithoutPreamble(process);
                     process.StandardInput.Close();
                     var output=process.StandardOutput.ReadToEndAsync(); var error=process.StandardError.ReadToEndAsync();
                     if(!process.WaitForExit(30000)) { process.Kill(); throw new TimeoutException("Fixture git timeout"); }
