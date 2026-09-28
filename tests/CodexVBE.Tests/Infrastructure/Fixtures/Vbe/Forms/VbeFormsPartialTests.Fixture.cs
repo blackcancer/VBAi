@@ -125,6 +125,7 @@ namespace CodexVBE.Tests.Unit
             internal Action<FakeControl> ConfigureAdded;
             internal bool FailAdd;
             internal bool HideAdded;
+            internal bool IgnoreRemove;
             public bool FailNextCaption { get; set; }
             public bool FailNextValue { get; set; }
             public bool FailNextListWidth { get; set; }
@@ -169,7 +170,7 @@ namespace CodexVBE.Tests.Unit
                     throw new InvalidOperationException("Native Remove failed");
                 }
 
-                items.Remove(Item(name));
+                if (!IgnoreRemove) items.Remove(Item(name));
             }
 
             public IEnumerator<FakeControl> GetEnumerator()
@@ -268,6 +269,8 @@ namespace CodexVBE.Tests.Unit
             public int ScrollBars { get; set; }
             public int Min { get; set; }
             public bool Cancel { get; set; }
+            public Action AfterZOrder { get; set; }
+            public void ZOrder(int position) { AfterZOrder?.Invoke(); }
             public List<string> Items { get; } = new List<string>();
             public int ListCount => Items.Count;
 
@@ -283,6 +286,13 @@ namespace CodexVBE.Tests.Unit
             private readonly List<FakePageTab> items = new List<FakePageTab>();
             public bool FailAfterAdd { get; set; }
             public bool FailRemove { get; set; }
+            public bool IgnoreRemove { get; set; }
+            public bool HideAdd { get; set; }
+            public int EnumerationCalls { get; private set; }
+            public Action BeforeEnumeration { get; set; }
+            public int AddCalls { get; private set; }
+            public Action<FakePageTab> AfterAdd { get; set; }
+            public int RemoveCalls { get; private set; }
             public int Count => items.Count;
 
             public FakePageTabCollection(FakeControl owner)
@@ -297,8 +307,10 @@ namespace CodexVBE.Tests.Unit
 
             public FakePageTab Add(string name, string caption, int index)
             {
+                AddCalls++;
                 var item = new FakePageTab(name, caption, owner);
-                items.Insert(index, item);
+                if (!HideAdd) items.Insert(index, item);
+                AfterAdd?.Invoke(item);
                 if (FailAfterAdd)
                     throw new InvalidOperationException("Native collection failed after Add");
                 return item;
@@ -306,13 +318,17 @@ namespace CodexVBE.Tests.Unit
 
             public void Remove(int index)
             {
+                RemoveCalls++;
                 if (FailRemove)
                     throw new InvalidOperationException("Native collection Remove failed");
-                items.RemoveAt(index);
+                if (!IgnoreRemove) items.RemoveAt(index);
             }
+
+            public void Clear() { items.Clear(); }
 
             public IEnumerator<FakePageTab> GetEnumerator()
             {
+                EnumerationCalls++; BeforeEnumeration?.Invoke();
                 return items.GetEnumerator();
             }
 

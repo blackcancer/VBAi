@@ -6,6 +6,674 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    [TestClass]
+    [TestCategory("Unit")]
+    [DoNotParallelize]
+    public sealed partial class VbeFormsCoverageTests
+    {
+        [TestMethod]
+        public void FormCreationReportsRollbackAbsentRetainedOrUninspectableComponents()
+        {
+            for (int fault = 0; fault < 6; fault++)
+            {
+                var project = new VbeFormsTests.FakeProject(); var host = new VbeFormsTests.FakeVbe(); host.VBProjects.Add(project); var service = new VbeForms(host);
+                project.VBComponents.RejectedCreatedName = "NewForm";
+                if (fault == 0) project.VBComponents.BeforeAdd = () => { throw new InvalidOperationException("Add unavailable"); };
+                if (fault == 1) project.VBComponents.IgnoreRemove = true;
+                if (fault == 2 || fault == 4) project.VBComponents.BeforeRemove = () => { throw new InvalidOperationException("Remove unavailable"); };
+                if (fault == 3 || fault == 4) project.VBComponents.BeforeEnumeration = () => { if (project.VBComponents.AddCalls > 0) throw new InvalidOperationException("Inspection unavailable"); };
+                if (fault == 5)
+                {
+                    project.VBComponents.RejectedCreatedName = null; project.VBComponents.IgnoreRemove = true;
+                    project.VBComponents.ConfigureAdded = created => created.FailDesignerWindow = true;
+                }
+                var error = Assert.ThrowsException<InvalidOperationException>(() => service.Create(new Request { Project = project.Name, Form = "NewForm" }));
+                if (fault == 0) StringAssert.Contains(error.Message, "absent after rollback");
+                else StringAssert.Contains(error.Message, "rollback could not be verified");
+                Assert.IsNotNull(error.InnerException);
+            }
+        }
+
+        [TestMethod]
+        public void DirectControlCreationVerifiesRollbackAfterEveryNativeBoundaryFailure()
+        {
+            for (int fault = 0; fault < 6; fault++)
+            {
+                var form = new VbeFormsTests.FakeForm("Form1"); var project = new VbeFormsTests.FakeProject(); project.VBComponents.Add(form);
+                var host = new VbeFormsTests.FakeVbe(); host.VBProjects.Add(project); var service = new VbeForms(host);
+                var controls = form.Designer.Controls;
+                var request = new Request { Project = project.Name, Form = form.Name, Control = "Label1", ControlType = "Forms.Label.1", Caption = "Label", Width = 20, Height = 10, ExpectedFormVersion = (string)((dynamic)service.State(project.Name, form.Name)).Version };
+                controls.FailNextCaption = true;
+                if (fault == 0) controls.FailAdd = true;
+                if (fault == 1) controls.HideAdd = true;
+                if (fault == 2) controls.IgnoreRemove = true;
+                if (fault == 3 || fault == 5) controls.BeforeRemove = () => { throw new InvalidOperationException("Remove unavailable"); };
+                if (fault == 4 || fault == 5) controls.BeforeEnumeration = () => { if (controls.AddCalls > 0) throw new InvalidOperationException("Inspection unavailable"); };
+                var error = Assert.ThrowsException<InvalidOperationException>(() => service.AddControl(request));
+                if (fault <= 1) StringAssert.Contains(error.Message, "no control with the requested name remains");
+                else StringAssert.Contains(error.Message, "rollback could not be verified");
+                Assert.IsNotNull(error.InnerException);
+            }
+        }
+
+        [TestMethod]
+        public void ControlDescriptionsReportFailedGettersAndNullTypesWithoutBlockingInspection()
+        {
+            var form = new Form(); var node = new Node { Name = "Label1", ClassName = "Label" };
+            node.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[]
+            {
+                new VbeProjectComponentsTests.MetadataProperty("NullType", null),
+                new VbeProjectComponentsTests.MetadataProperty("Failed", typeof(string)) { FailRead = true },
+                new VbeProjectComponentsTests.MetadataProperty("_Font_Reserved", typeof(object))
+            });
+            form.Designer.Controls = new object[] { node }; var service = Service(form);
+            dynamic result = service.ControlProperties("VBAProject", form.Name, node.Name);
+            Assert.AreEqual(3, result.Count);
+            Assert.IsNull((string)result[0].Type); Assert.IsNotNull((string)result[1].Error); Assert.AreEqual("GetterUnavailable", (string)result[2].SetterStatus);
+            using (var font = new System.Drawing.Font("Arial", 10))
+            {
+                node.FailFont = true;
+                node.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[] { new VbeProjectComponentsTests.MetadataProperty("Font", typeof(System.Drawing.Font), font) });
+                var properties = (List<VbePropertyInfo>)Call("ReadObjectProperties", node);
+                StringAssert.Contains(properties[0].Error, "Font unavailable");
+            }
+        }
+
+        [TestMethod]
+        public void FormLookupAndPropertyNamesRequireValidIdentityAndFreshVersions()
+        {
+            var project = new VbeFormsTests.FakeProject(); project.VBComponents.Add(new VbeFormsTests.FakeModule("Module1"));
+            Assert.ThrowsException<ArgumentException>(() => Call("GetForm", project, null));
+            Assert.ThrowsException<InvalidOperationException>(() => Call("GetForm", project, "Module1"));
+            Assert.ThrowsException<InvalidOperationException>(() => Call("GetForm", project, "Absent"));
+            foreach (string name in new[] { null, "0invalid" }) Assert.ThrowsException<ArgumentException>(() => Call("ValidateName", name, "Control"));
+            var form = new Form(); var service = Service(form);
+            var request = PropertyRequest(service, form, "Caption", "new"); request.ExpectedFormVersion = null;
+            Assert.ThrowsException<ArgumentException>(() => service.SetProperty(request));
+            foreach (object value in new object[] { null, 1, " ", "0invalid" })
+                Assert.ThrowsException<ArgumentException>(() => service.SetProperty(PropertyRequest(service, form, "Name", value)));
+            form.Designer.ClassName = "";
+            Assert.IsNull(Call("ContainerIdentity", form.Designer, form.Name));
+            form.Properties.Add(new Property { Name = "Custom", Stored = "string" });
+            form.Designer.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[] { new VbeProjectComponentsTests.MetadataProperty("Custom", null, "string") });
+            var props = (List<VbePropertyInfo>)service.Properties("VBAProject", form.Name);
+            Assert.AreEqual(typeof(string).FullName, props.Single(p => p.Name == "Custom").Type);
+            service = Service(form, new VbeFormsTests.FakeModule("Other"));
+            Assert.ThrowsException<InvalidOperationException>(() => service.SetProperty(PropertyRequest(service, form, "Name", "Other")));
+            object com = Activator.CreateInstance(Type.GetTypeFromProgID("Scripting.Dictionary", true));
+            try
+            {
+                form.Properties.Add(new Property { Name = "Native", Stored = com });
+                Assert.ThrowsException<InvalidOperationException>(() => service.SetProperty(PropertyRequest(service, form, "Native", "new")));
+            }
+            finally { System.Runtime.InteropServices.Marshal.FinalReleaseComObject(com); }
+        }
+
+        [TestMethod]
+        public void SnapshotToleratesFontReadFailuresAndControlCreationValidatesItsArguments()
+        {
+            var form = new VbeFormsTests.FakeForm("Form1"); var project = new VbeFormsTests.FakeProject(); project.VBComponents.Add(form);
+            var host = new VbeFormsTests.FakeVbe(); host.VBProjects.Add(project); var service = new VbeForms(host);
+            form.Designer.Controls.AddExisting("Label1").FailFontRead = true;
+            dynamic state = service.State(project.Name, form.Name); Assert.IsNull((string)state.Controls[0].FontName);
+            Assert.ThrowsException<ArgumentException>(() => service.Create(new Request { Form = null }));
+            foreach (string type in new[] { null, "Definitely.NotInstalled.1" })
+                Assert.ThrowsException<ArgumentException>(() => service.AddControl(new Request { Project = project.Name, Form = form.Name, Control = "Child", ControlType = type, Width = 20, Height = 10, ExpectedFormVersion = state.Version }));
+            Assert.ThrowsException<InvalidOperationException>(() => service.AddControl(new Request { Project = project.Name, Form = form.Name, Control = "Label1", ControlType = "Forms.Label.1", Width = 20, Height = 10, ExpectedFormVersion = state.Version }));
+            var controls = form.Designer.Controls; controls.FailNextCaption = true;
+            controls.BeforeEnumeration = () => { if (controls.RemoveCalls > 0) throw new InvalidOperationException("Inspection unavailable after removal"); };
+            Assert.ThrowsException<InvalidOperationException>(() => service.AddControl(new Request { Project = project.Name, Form = form.Name, Control = "Child", Caption = "Child", ControlType = "Forms.Label.1", Width = 20, Height = 10, ExpectedFormVersion = state.Version }));
+        }
+
+        [TestMethod]
+        public void NodePictureRejectsReadOnlyImageMetadataAndHierarchyCollectionsCanDisappear()
+        {
+            var node = new Node();
+            node.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[] { new LiveProperty("Picture", typeof(System.Drawing.Bitmap), () => null) });
+            Form form; var service = NodeService(node, out form);
+            Assert.ThrowsException<InvalidOperationException>(() => service.SetNodePicture(NodeRequest(service, form, node, "Picture", "unused")));
+            var request = NodeRequest(service, form, node, "Caption", "unused");
+            int reads = 0; var metadata = form.Designer.Metadata;
+            form.Designer.MetadataReader = () => ++reads >= 2 ? new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[0]) : metadata;
+            Assert.ThrowsException<InvalidOperationException>(() => service.RemoveControl(request));
+            Assert.AreEqual(1, ((object[])form.Designer.Controls).Length);
+            var root = new Node(); var child = new Node { Name = "Child" };
+            root.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[] { new LiveProperty("Controls", typeof(object[]), () => new object[] { child }) });
+            Assert.ThrowsException<InvalidOperationException>(() => Call("ResolveNestedControls", root, "Controls/Child/Controls/Grandchild"));
+        }
+
+        [TestMethod]
+        public void PageCollectionDescriptorDisappearingAfterInspectionPreventsRemoval()
+        {
+            var node = new Node { Name = "MultiPage1", ClassName = "MultiPage" };
+            var page = new Node { Name = "Page1", Parent = node, ClassName = "Page" };
+            var pages = new List<Node> { page };
+            node.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[] { new LiveProperty("Pages", typeof(List<Node>), () => pages) });
+            Form form; var service = NodeService(node, out form);
+            var request = NodeRequest(service, form, node, null, null); request.ControlPath += "/Pages/Page1";
+            var metadata = node.Metadata; int reads = 0;
+            node.MetadataReader = () => ++reads >= 3 ? new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[0]) : metadata;
+            StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => service.RemovePageOrTab(request)).Message, "has no Pages collection");
+            Assert.AreEqual(1, pages.Count);
+        }
+
+        [TestMethod]
+        public void ScalarConversionsCoverEverySupportedTypeAndRejectUnsafeValues()
+        {
+            foreach (Type unsupported in new[] { null, typeof(object), typeof(int[]), typeof(Uri) })
+                Assert.ThrowsException<InvalidOperationException>(() => Call("ConvertScalar", 1, unsupported));
+            Assert.AreEqual(VbeProjectComponentsTests.Choice.Second, Call("ConvertScalar", "Second", typeof(VbeProjectComponentsTests.Choice)));
+            Assert.AreEqual(VbeProjectComponentsTests.Choice.First, Call("ConvertScalar", 1, typeof(VbeProjectComponentsTests.Choice)));
+            Assert.AreEqual(true, Call("ConvertScalar", "true", typeof(bool)));
+            Assert.AreEqual(false, Call("ConvertScalar", false, typeof(bool)));
+            Assert.ThrowsException<ArgumentException>(() => Call("ConvertScalar", "invalid", typeof(bool)));
+            Assert.AreEqual("value", Call("ConvertScalar", "value", typeof(string)));
+            Assert.ThrowsException<ArgumentException>(() => Call("ConvertScalar", 1, typeof(string)));
+            foreach (Type type in new[] { typeof(float), typeof(double), typeof(decimal) })
+            {
+                Assert.AreEqual(Convert.ChangeType(2, type), Call("ConvertScalar", 2, type));
+                foreach (double value in new[] { double.NaN, double.PositiveInfinity, double.NegativeInfinity })
+                    Assert.ThrowsException<ArgumentException>(() => Call("ConvertScalar", value, type));
+            }
+            foreach (object value in new object[] { null, "text", true, (byte)1, (sbyte)-1, (short)2, (ushort)3, 4, 5u, 6L, 7UL, 8f, 9d, 10m })
+                Assert.AreEqual(value, Call("NormalizeScalar", value));
+            Assert.AreEqual("x", Call("NormalizeScalar", 'x'));
+        }
+
+        [TestMethod]
+        public void DescriptorConversionAndComparisonRespectColorsVariantsAndNulls()
+        {
+            Assert.AreEqual(2, Call("ConvertDescriptorValue", 2, typeof(object), 1));
+            Assert.AreEqual("text", Call("ConvertDescriptorValue", "text", null, null));
+            Assert.AreEqual(System.Drawing.ColorTranslator.FromHtml("#112233"), Call("ConvertDescriptorValue", "#112233", typeof(System.Drawing.Color), null));
+            Assert.AreEqual(System.Drawing.ColorTranslator.FromOle(255), Call("ConvertDescriptorValue", 255, typeof(System.Drawing.Color), null));
+            Assert.AreEqual(System.Drawing.ColorTranslator.FromOle(255), Call("ConvertDescriptorValue", "255", typeof(System.Drawing.Color), null));
+            Assert.IsTrue((bool)Call("SameDescriptorValue", 1, 1));
+            Assert.IsFalse((bool)Call("SameDescriptorValue", null, 1));
+            Assert.IsFalse((bool)Call("SameDescriptorValue", 1, null));
+            Assert.IsTrue((bool)Call("SameDescriptorValue", System.Drawing.Color.Red, System.Drawing.Color.FromArgb(System.Drawing.Color.Red.ToArgb())));
+            Assert.IsFalse((bool)Call("SameDescriptorValue", System.Drawing.Color.Red, System.Drawing.Color.Blue));
+            Assert.IsTrue((bool)Call("SameDescriptorValue", "TEXT", "text"));
+            Assert.IsFalse((bool)Call("SameDescriptorValue", 1, 2));
+            Assert.IsFalse((bool)Call("SameDescriptorValue", new object(), 1));
+            Assert.IsFalse((bool)Call("SameDescriptorValue", 1, new object()));
+            Assert.IsFalse((bool)Call("SameDescriptorValue", System.Drawing.Color.Red, "red"));
+        }
+
+        [TestMethod]
+        public void FontMemberWritesVerifyEverySetterAndRejectEveryInvalidSize()
+        {
+            var font = new FaultFont(); var designer = new Node { Font = font };
+            foreach (string member in new[] { "Name", "Size", "Bold", "Italic", "Underline", "Strikethrough" })
+            {
+                object value = member == "Name" ? (object)"Calibri" : member == "Size" ? 11d : (object)true;
+                Call("SetFormFontMember", designer, member, value);
+                font.Ignore = member;
+                value = member == "Name" ? (object)"Arial" : member == "Size" ? 15d : (object)false;
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => Call("SetFormFontMember", designer, member, value)).Message, "did not retain");
+                font.Ignore = null;
+            }
+            foreach (object name in new object[] { null, " ", 1 }) Assert.ThrowsException<ArgumentException>(() => Call("SetFormFontMember", designer, "Name", name));
+            foreach (double size in new[] { double.NaN, double.PositiveInfinity, -1, 0, 201 }) Assert.ThrowsException<ArgumentException>(() => Call("SetFormFontMember", designer, "Size", size));
+            Assert.ThrowsException<InvalidOperationException>(() => Call("SetFormFontMember", designer, "Unsupported", true));
+        }
+
+        [TestMethod]
+        public void ContainerIdentityHandlesFallbackNamesMissingParentsAndHierarchyBounds()
+        {
+            var form = new Node { Name = null, ClassName = "UserForm" };
+            Assert.AreEqual("UserForm:Form1", Call("ContainerIdentity", form, "Form1"));
+            Assert.IsNull(Call("ContainerIdentity", null, "Form1"));
+            Assert.IsNull(Call("ContainerIdentity", new Node { ClassName = null }, "Form1"));
+            Assert.IsNull(Call("ContainerIdentity", new Node { Name = null }, "Form1"));
+            Assert.IsNull(Call("ContainerIdentity", new Node { FailParent = true }, "Form1"));
+            var loop = new Node(); loop.Parent = loop;
+            Assert.IsNull(Call("ContainerIdentity", loop, "Form1"));
+            Assert.IsNull(Call("ContainerIdentity", new Node(), "Form1"));
+            Assert.IsNull(Call("SafeComName", new object()));
+            Assert.IsFalse((bool)Call("SameContainer", new Node(), new Node(), "Form1"));
+            Assert.IsTrue((bool)Call("SameContainer", new Node { ClassName = "UserForm" }, new Node { ClassName = "UserForm" }, "Form1"));
+        }
+
+        [TestMethod]
+        public void NativeIdentityComparisonReleasesPointersAndRejectsInvalidComObjects()
+        {
+            object left = Activator.CreateInstance(Type.GetTypeFromProgID("Scripting.Dictionary", true));
+            object right = Activator.CreateInstance(Type.GetTypeFromProgID("Scripting.Dictionary", true));
+            object released = Activator.CreateInstance(Type.GetTypeFromProgID("Scripting.Dictionary", true));
+            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(released);
+            try
+            {
+                Assert.IsFalse((bool)Call("SameComIdentity", null, left));
+                Assert.IsFalse((bool)Call("SameComIdentity", left, null));
+                Assert.IsFalse((bool)Call("SameComIdentity", left, new object()));
+                Assert.IsFalse((bool)Call("SameComIdentity", new object(), left));
+                Assert.IsTrue((bool)Call("SameComIdentity", left, left));
+                Assert.IsFalse((bool)Call("SameComIdentity", left, right));
+                Assert.ThrowsException<System.Runtime.InteropServices.InvalidComObjectException>(() => Call("SameComIdentity", released, left));
+                Assert.ThrowsException<System.Runtime.InteropServices.InvalidComObjectException>(() => Call("SameComIdentity", left, released));
+            }
+            finally { System.Runtime.InteropServices.Marshal.FinalReleaseComObject(left); System.Runtime.InteropServices.Marshal.FinalReleaseComObject(right); }
+        }
+
+        [TestMethod]
+        public void MemberInspectionBoundsItsResultAndHandlesNullTypesUnreadableAndNativeValues()
+        {
+            object com = Activator.CreateInstance(Type.GetTypeFromProgID("Scripting.Dictionary", true));
+            try
+            {
+                var node = new Node();
+                node.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[]
+                {
+                    new VbeProjectComponentsTests.MetadataProperty("Null", null),
+                    new VbeProjectComponentsTests.MetadataProperty("Native", typeof(object), com),
+                    new VbeProjectComponentsTests.MetadataProperty("Unreadable", typeof(string)) { FailRead = true },
+                    new VbeProjectComponentsTests.MetadataProperty("Enum", typeof(VbeProjectComponentsTests.Choice), VbeProjectComponentsTests.Choice.First)
+                });
+                var members = (List<VbePropertyInfo>)Call("DescribeObjectMembers", node);
+                Assert.AreEqual(4, members.Count); Assert.AreEqual("object", members[1].Kind); Assert.IsNotNull(members[2].Error);
+                Assert.AreEqual(2, members[3].AllowedValues.Length);
+                node.Metadata = new System.ComponentModel.PropertyDescriptorCollection(Enumerable.Range(0, 70).Select(i => (System.ComponentModel.PropertyDescriptor)new VbeProjectComponentsTests.MetadataProperty("P" + i, typeof(int), i)).ToArray());
+                Assert.AreEqual(64, ((List<VbePropertyInfo>)Call("DescribeObjectMembers", node)).Count);
+                using (var image = new System.Drawing.Bitmap(2, 2)) Assert.AreEqual(64, ((string)Call("ImageDigest", image)).Length);
+                var disposed = new System.Drawing.Bitmap(1, 1); disposed.Dispose(); Assert.IsNull(Call("ImageDigest", disposed));
+            }
+            finally { System.Runtime.InteropServices.Marshal.FinalReleaseComObject(com); }
+        }
+
+        [TestMethod]
+        public void FormPropertyMutationRejectsIndexedReadOnlyUnreadableAndUnknownScalarTypes()
+        {
+            foreach (int fault in new[] { 0, 1, 2, 3, 4 })
+            {
+                var form = new Form(); var property = new Property { Name = "Custom", Stored = "old" }; form.Properties.Add(property);
+                var descriptor = new VbeProjectComponentsTests.MetadataProperty("Custom", typeof(string), "old");
+                if (fault == 0) property.Indices = 1;
+                if (fault == 1) descriptor.ReadOnly = true;
+                if (fault == 2) property.FailRead = true;
+                if (fault == 3) { property.Stored = null; descriptor = new VbeProjectComponentsTests.MetadataProperty("Custom", typeof(object)); }
+                if (fault == 4) { property.Stored = null; descriptor = null; }
+                form.Designer.Metadata = new System.ComponentModel.PropertyDescriptorCollection(descriptor == null ? new System.ComponentModel.PropertyDescriptor[0] : new System.ComponentModel.PropertyDescriptor[] { descriptor });
+                var service = Service(form); var request = PropertyRequest(service, form, "Custom", "new");
+                Assert.ThrowsException<InvalidOperationException>(() => service.SetProperty(request));
+            }
+            var tagForm = new Form(); var tag = new Property { Name = "Tag" }; tagForm.Properties.Add(tag); var tagService = Service(tagForm);
+            tagService.SetProperty(PropertyRequest(tagService, tagForm, "Tag", "new tag")); Assert.AreEqual("new tag", tag.Stored);
+            var nullTypedForm = new Form(); var nullTyped = new Property { Name = "Custom" }; nullTypedForm.Properties.Add(nullTyped);
+            nullTypedForm.Designer.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[] { new VbeProjectComponentsTests.MetadataProperty("Custom", typeof(string)) });
+            var nullTypedService = Service(nullTypedForm); nullTypedService.SetProperty(PropertyRequest(nullTypedService, nullTypedForm, "Custom", "text")); Assert.AreEqual("text", nullTyped.Stored);
+        }
+
+        [TestMethod]
+        public void FormPropertyDescriptionsHandleAllValueKindsAndIndependentGetterErrors()
+        {
+            object com = Activator.CreateInstance(Type.GetTypeFromProgID("Scripting.Dictionary", true));
+            using (var image = new System.Drawing.Bitmap(2, 2))
+            using (var font = new System.Drawing.Font("Arial", 10))
+                try
+                {
+                    var form = new Form();
+                    form.Properties.AddRange(new[]
+                    {
+                        new Property { Name = "Indexed", Stored = "value", Indices = 1 },
+                        new Property { Name = "IndicesFailure", FailIndices = true },
+                        new Property { Name = "RawFailure", FailRead = true },
+                        new Property { Name = "ManagedFailure", Stored = "raw" },
+                        new Property { Name = "BothFailure", FailRead = true },
+                        new Property { Name = "Image", Stored = image },
+                        new Property { Name = "Font", Stored = font },
+                        new Property { Name = "Enumerable", Stored = new[] { "a", "b" } },
+                        new Property { Name = "Com", Stored = com },
+                        new Property { Name = "Color", Stored = System.Drawing.Color.Red },
+                        new Property { Name = "Picture" }
+                    });
+                    form.Designer.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[]
+                    {
+                        new VbeProjectComponentsTests.MetadataProperty("ManagedFailure", typeof(string)) { FailRead = true },
+                        new VbeProjectComponentsTests.MetadataProperty("BothFailure", typeof(string)) { FailRead = true },
+                        new VbeProjectComponentsTests.MetadataProperty("Color", typeof(System.Drawing.Color), System.Drawing.Color.Red)
+                    });
+                    var properties = (List<VbePropertyInfo>)Service(form).Properties("VBAProject", form.Name);
+                    Assert.AreEqual("indexed", properties.Single(p => p.Name == "Indexed").Kind);
+                    foreach (string name in new[] { "IndicesFailure", "RawFailure", "ManagedFailure", "BothFailure" }) Assert.IsNotNull(properties.Single(p => p.Name == name).Error);
+                    foreach (string name in new[] { "Image", "Font", "Enumerable", "Com" }) Assert.AreEqual("object", properties.Single(p => p.Name == name).Kind);
+                    Assert.IsNotNull(properties.Single(p => p.Name == "Image").Digest);
+                    Assert.IsNotNull(properties.Single(p => p.Name == "Font").Members);
+                    Assert.AreEqual("Red", properties.Single(p => p.Name == "Color").Display);
+                    Assert.AreEqual("(empty)", properties.Single(p => p.Name == "Picture").Display);
+                    form.Designer.FailPictureRead = true;
+                    properties = (List<VbePropertyInfo>)Service(form).Properties("VBAProject", form.Name);
+                    Assert.IsNotNull(properties.Single(p => p.Name == "Picture").Error);
+                }
+                finally { System.Runtime.InteropServices.Marshal.FinalReleaseComObject(com); }
+        }
+
+        [TestMethod]
+        public void TreePropertyInspectionReadsImagesFontsScalarsAndNullableMetadata()
+        {
+            using (var image = new System.Drawing.Bitmap(2, 2))
+            using (var font = new System.Drawing.Font("Arial", 10))
+            {
+                var node = new Node { Font = font };
+                node.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[]
+                {
+                    new VbeProjectComponentsTests.MetadataProperty("Null", null),
+                    new VbeProjectComponentsTests.MetadataProperty("Image", typeof(System.Drawing.Image), image),
+                    new VbeProjectComponentsTests.MetadataProperty("Font", typeof(System.Drawing.Font), font),
+                    new VbeProjectComponentsTests.MetadataProperty("Unreadable", typeof(string)) { FailRead = true }
+                });
+                var properties = (List<VbePropertyInfo>)Call("ReadObjectProperties", node);
+                Assert.IsNull(properties[0].Value); Assert.IsNotNull(properties[1].Digest); Assert.IsNotNull(properties[2].Members); Assert.IsNotNull(properties[3].Error);
+            }
+        }
+
+        [TestMethod]
+        public void FormPictureWriteUsesOleReadbackAndRejectsAnIgnoredSetter()
+        {
+            string path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "CodexVBE-picture-" + Guid.NewGuid().ToString("N") + ".bmp");
+            using (var image = new System.Drawing.Bitmap(2, 2)) image.Save(path, System.Drawing.Imaging.ImageFormat.Bmp);
+            var form = new Form(); form.Properties.Add(new Property { Name = "Picture" }); var service = Service(form);
+            try
+            {
+                var request = PropertyRequest(service, form, "Picture", "unused"); request.Path = path;
+                dynamic result = service.SetPicture(request); Assert.IsNotNull((string)result.Picture);
+                var props = (List<VbePropertyInfo>)service.Properties("VBAProject", form.Name); Assert.IsNotNull(props.Single(p => p.Name == "Picture").Digest);
+                object installed = form.Designer.Picture; form.Designer.Picture = null;
+                System.Runtime.InteropServices.Marshal.FinalReleaseComObject(installed);
+                form.Designer.IgnorePicture = true;
+                request = PropertyRequest(service, form, "Picture", "unused"); request.Path = path;
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => service.SetPicture(request)).Message, "did not retain");
+            }
+            finally { System.IO.File.Delete(path); }
+        }
+
+        [TestMethod]
+        public void EnumAndWritableDescriptorChecksHandleUnfinishedTypesAndReadOnlyMembers()
+        {
+            Assert.IsNull(Call("EnumChoices", new object[] { null }));
+            Assert.IsNull(Call("EnumChoices", typeof(int)));
+            var assembly = AppDomain.CurrentDomain.DefineDynamicAssembly(new System.Reflection.AssemblyName("CodexVBE-Enum-" + Guid.NewGuid().ToString("N")), System.Reflection.Emit.AssemblyBuilderAccess.Run);
+            var unfinished = assembly.DefineDynamicModule("Types").DefineEnum("Unfinished", System.Reflection.TypeAttributes.Public, typeof(int));
+            Assert.IsNull(Call("EnumChoices", unfinished));
+            var node = new Node(); var prop = new VbeProjectComponentsTests.MetadataProperty("Left", typeof(double), 1d) { ReadOnly = true };
+            node.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[] { prop });
+            Assert.ThrowsException<InvalidOperationException>(() => Call("RequireWritableControlProperty", node, "Width"));
+            Assert.ThrowsException<InvalidOperationException>(() => Call("RequireWritableControlProperty", node, "Left"));
+            prop.ReadOnly = false; Call("RequireWritableControlProperty", node, "Left");
+        }
+
+        [TestMethod]
+        public void PathResolutionRejectsEveryInvalidCollectionOrHierarchyShape()
+        {
+            var root = new Node(); var child = new Node { Name = "Child" };
+            root.Controls = new object[] { child };
+            root.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[]
+            {
+                new VbeProjectComponentsTests.MetadataProperty("Controls", typeof(object[]), root.Controls),
+                new VbeProjectComponentsTests.MetadataProperty("Other", typeof(object[]), root.Controls)
+            });
+            foreach (string path in new[] { "Controls", "Controls/Child/Controls", string.Join("/", Enumerable.Repeat("Controls/Child", 9)) })
+                Assert.ThrowsException<ArgumentException>(() => Call("ResolveTreeItem", root, path));
+            foreach (string path in new[] { "Missing/Child", "Other/Child", "Controls/Absent" })
+                Assert.ThrowsException<InvalidOperationException>(() => Call("ResolveTreeItem", root, path));
+            Assert.AreSame(child, Call("ResolveTreeItem", root, "Controls/Child"));
+            foreach (string path in new[] { null, " ", "Controls", "Controls/Child/Pages", "Pages/Child", string.Join("/", Enumerable.Repeat("Controls/Child", 7)), "Controls/Child/Tabs/Tab", "Controls/0Child" })
+                Assert.ThrowsException<ArgumentException>(() => Call("ResolveNestedControls", root, path));
+            Assert.ThrowsException<InvalidOperationException>(() => Call("ResolveNestedControls", root, "Controls/Absent"));
+            Assert.ThrowsException<InvalidOperationException>(() => Call("ResolveNestedControls", root, "Controls/Child"));
+            root.Controls = new object[] { child, new Node { Name = "child" } };
+            root.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[] { new VbeProjectComponentsTests.MetadataProperty("Controls", typeof(object[]), root.Controls) });
+            Assert.ThrowsException<InvalidOperationException>(() => Call("ResolveNestedControls", root, "Controls/Child"));
+        }
+
+        [TestMethod]
+        public void TreeInspectionEnforcesDepthAndNodeLimitsAndAcceptsNullableNestedCollections()
+        {
+            var node = new Node(); node.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[] { new VbeProjectComponentsTests.MetadataProperty("Controls", typeof(object[])) });
+            var result = Call("ReadTreeNode", node, "Control", "Form1", "Controls", 0, 0); Assert.IsNotNull(result);
+            Assert.ThrowsException<InvalidOperationException>(() => Call("ReadTreeNode", node, "Control", "Form1", "Controls", 0, 512));
+            Assert.ThrowsException<InvalidOperationException>(() => Call("ReadTreeNode", node, "Control", "Form1", "Controls", 17, 0));
+            node.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[0]);
+            Assert.IsNotNull(Call("ReadTreeNode", node, "Page", "Form1", "Controls", 0, 0));
+        }
+
+        [TestMethod]
+        public void NodePropertyMutationValidatesInputsMetadataAndPostWriteState()
+        {
+            var node = new Node(); var property = new VbeProjectComponentsTests.MetadataProperty("Caption", typeof(string), "old");
+            node.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[] { property });
+            Form form; var service = NodeService(node, out form);
+            for (int fault = 0; fault < 4; fault++)
+            {
+                var request = NodeRequest(service, form, node, "Caption", "new");
+                if (fault == 0) request.ControlPath = null;
+                if (fault == 1) request.Property = null;
+                if (fault == 2) request.Value = null;
+                if (fault == 3) request.ExpectedTreeVersion = null;
+                Assert.ThrowsException<ArgumentException>(() => service.SetNodeProperty(request));
+            }
+            foreach (string name in new[] { "Caption.X.Y", ".Caption", "Caption." }) Assert.ThrowsException<ArgumentException>(() => service.SetNodeProperty(NodeRequest(service, form, node, name, "new")));
+            Assert.ThrowsException<InvalidOperationException>(() => service.SetNodeProperty(NodeRequest(service, form, node, "Missing", "new")));
+            var stale = NodeRequest(service, form, node, "Caption", "new"); stale.ExpectedTreeVersion = "stale";
+            Assert.ThrowsException<InvalidOperationException>(() => service.SetNodeProperty(stale));
+            stale = NodeRequest(service, form, node, "Caption", "new"); stale.ControlPath = "Controls/Absent";
+            Assert.ThrowsException<InvalidOperationException>(() => service.SetNodeProperty(stale));
+            property.ReadOnly = true; Assert.ThrowsException<InvalidOperationException>(() => service.SetNodeProperty(NodeRequest(service, form, node, "Caption", "new")));
+            property.ReadOnly = false; property.IgnoreWrite = true;
+            StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => service.SetNodeProperty(NodeRequest(service, form, node, "Caption", "new"))).Message, "did not retain");
+            node.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[] { new VbeProjectComponentsTests.MetadataProperty("_Font_Reserved", typeof(object)) });
+            Assert.ThrowsException<InvalidOperationException>(() => service.SetNodeProperty(NodeRequest(service, form, node, "_Font_Reserved", "new")));
+        }
+
+        [TestMethod]
+        public void NodeObjectMembersUseNativeComDescriptorsAndRejectUnsafeOwners()
+        {
+            object dictionary = Activator.CreateInstance(Type.GetTypeFromProgID("Scripting.Dictionary", true));
+            try
+            {
+                var node = new Node { Font = dictionary };
+                node.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[] { new LiveProperty("Font", typeof(object), () => dictionary), new LiveProperty("Dictionary", typeof(object), () => dictionary), new LiveProperty("Null", typeof(object), () => null) });
+                Form form; var service = NodeService(node, out form);
+                Assert.ThrowsException<InvalidOperationException>(() => service.SetNodeProperty(NodeRequest(service, form, node, "Null.Name", "new")));
+                Assert.ThrowsException<InvalidOperationException>(() => service.SetNodeProperty(NodeRequest(service, form, node, "Font.Missing", "new")));
+                Assert.ThrowsException<InvalidOperationException>(() => service.SetNodeProperty(NodeRequest(service, form, node, "Dictionary.Count", 2)));
+                service.SetNodeProperty(NodeRequest(service, form, node, "Dictionary.CompareMode", 1));
+                Assert.AreEqual(1, (int)((dynamic)dictionary).CompareMode);
+                var metadata = new Node();
+                metadata.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[] { new VbeProjectComponentsTests.MetadataProperty("CompareMode", typeof(int), 1) { IgnoreWrite = true } });
+                var provider = new FixedProvider(metadata); System.ComponentModel.TypeDescriptor.AddProvider(provider, dictionary);
+                try { StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => service.SetNodeProperty(NodeRequest(service, form, node, "Dictionary.CompareMode", 2))).Message, "did not retain"); }
+                finally { System.ComponentModel.TypeDescriptor.RemoveProvider(provider, dictionary); }
+            }
+            finally { System.Runtime.InteropServices.Marshal.FinalReleaseComObject(dictionary); }
+        }
+
+        [TestMethod]
+        public void NodePictureWritesVerifyNativeReadbackForBitmapAndIconDescriptors()
+        {
+            string path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "CodexVBE-node-picture-" + Guid.NewGuid().ToString("N") + ".bmp");
+            using (var image = new System.Drawing.Bitmap(2, 2)) image.Save(path, System.Drawing.Imaging.ImageFormat.Bmp);
+            try
+            {
+                foreach (Type type in new[] { typeof(System.Drawing.Bitmap), typeof(System.Drawing.Icon) })
+                {
+                    var node = new Node { Name = "Image1", ClassName = "Image" };
+                    node.Metadata = new System.ComponentModel.PropertyDescriptorCollection(new System.ComponentModel.PropertyDescriptor[] { new LiveProperty("Picture", type, () => node.Picture, value => node.Picture = value) });
+                    Form form; var service = NodeService(node, out form); var request = NodeRequest(service, form, node, "Picture", "unused"); request.Path = path;
+                    dynamic result = service.SetNodePicture(request); Assert.AreEqual("Picture", (string)result.Property); Assert.IsNotNull(node.Picture);
+                    object installed = node.Picture; node.Picture = null; System.Runtime.InteropServices.Marshal.FinalReleaseComObject(installed);
+                    node.IgnorePicture = true; request = NodeRequest(service, form, node, "Picture", "unused"); request.Path = path;
+                    Assert.ThrowsException<InvalidOperationException>(() => service.SetNodePicture(request));
+                }
+            }
+            finally { System.IO.File.Delete(path); }
+        }
+
+    }
+
+    public sealed partial class VbeFormsCoreBranchTests
+    {
+        [TestMethod]
+        public void PageCreationReportsInspectionFailureAfterSuccessfulNativeRollback()
+        {
+            var f = Create("MultiPage"); var pages = f.Control.Pages;
+            var r = f.Request("Controls/MultiPage1"); r.ParentPath = r.ControlPath; r.NewName = "Page1";
+            pages.FailAfterAdd = true;
+            pages.BeforeEnumeration = () => { if (pages.RemoveCalls > 0) throw new InvalidOperationException("Inspection unavailable after removal"); };
+            StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => f.Service.AddPageOrTab(r, "Pages")).Message, "rollback could not be verified");
+            Assert.AreEqual(0, pages.Count); Assert.AreEqual(1, pages.RemoveCalls);
+        }
+        [TestMethod]
+        public void PageReadbackDetectsUnexpectedNameAndConcurrentRemovalBeforeTheMutation()
+        {
+            var f = Create("MultiPage"); var r = f.Request("Controls/MultiPage1"); r.ParentPath = r.ControlPath; r.NewName = "Page1";
+            f.Control.Pages.AfterAdd = item => item.Name = "Unexpected";
+            StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => f.Service.AddPageOrTab(r, "Pages")).Message, "rollback could not be verified");
+            Assert.AreEqual("Unexpected", f.Control.Pages.Single().Name);
+            f = Create("MultiPage"); f.Control.Pages.Add("Page1", "Page");
+            var remove = f.Request("Controls/MultiPage1/Pages/Page1"); int reads = 0; var pages = f.Control.Pages;
+            pages.BeforeEnumeration = () => { if (++reads >= 2) pages.Clear(); };
+            StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => f.Service.RemovePageOrTab(remove)).Message, "no longer exists");
+            f = Create("Frame"); var children = f.Control.Controls;
+            r = f.Request("Controls/Frame1"); r.ParentPath = r.ControlPath; r.Control = "Child"; r.ControlType = "Forms.Label.1"; r.Caption = "Label"; r.Width = 20; r.Height = 10;
+            children.FailNextCaption = true;
+            children.BeforeEnumeration = () => { if (children.RemoveCount > 0) throw new InvalidOperationException("Inspection unavailable after removal"); };
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.AddNestedControl(r));
+        }
+        [TestMethod]
+        [DoNotParallelize]
+        public void MutationsKeepTheIndependentVersionGuardEvenWhenTheHasherCollides()
+        {
+            using (var scope = new VbeFormsCoverageTests.TreeHashScope())
+            {
+                var f = Create("Frame");
+                Assert.ThrowsException<InvalidOperationException>(() => f.Service.RemoveControl(f.Request("Controls/Frame1")));
+                Assert.AreEqual(0, f.Form.Designer.Controls.Count);
+                f = Create("MultiPage"); var add = f.Request("Controls/MultiPage1"); add.ParentPath = add.ControlPath; add.NewName = "Page1";
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => f.Service.AddPageOrTab(add, "Pages")).Message, "absent after rollback");
+                Assert.AreEqual(0, f.Control.Pages.Count);
+                f.Control.Pages.Add("Page1", "Page");
+                Assert.ThrowsException<InvalidOperationException>(() => f.Service.RemovePageOrTab(f.Request("Controls/MultiPage1/Pages/Page1")));
+                Assert.AreEqual(0, f.Control.Pages.Count);
+            }
+        }
+
+        [TestMethod]
+        public void PageCreationVerifiesRollbackAfterInspectionFailureOrIgnoredNativeAdd()
+        {
+            for (int fault = 0; fault < 5; fault++)
+            {
+                var f = Create("MultiPage"); var pages = f.Control.Pages;
+                var r = f.Request("Controls/MultiPage1"); r.ParentPath = r.ControlPath; r.NewName = "Page1";
+                if (fault == 0) pages.HideAdd = true;
+                if (fault == 1) { pages.FailAfterAdd = true; pages.IgnoreRemove = true; }
+                if (fault >= 2)
+                {
+                    pages.FailAfterAdd = true; if (fault == 3) pages.FailRemove = true;
+                    int failures = 0;
+                    pages.BeforeEnumeration = () => { if (pages.AddCalls > 0 && (fault != 4 || failures++ == 0)) throw new InvalidOperationException("Inspection unavailable"); };
+                }
+                var error = Assert.ThrowsException<InvalidOperationException>(() => f.Service.AddPageOrTab(r, "Pages"));
+                if (fault == 0) StringAssert.Contains(error.Message, "absent after rollback");
+                else StringAssert.Contains(error.Message, "rollback could not be verified");
+            }
+        }
+
+        [TestMethod]
+        public void HierarchyMutationsRejectEveryMissingVersionStalePathAndInvalidShape()
+        {
+            var f = Create("MultiPage"); f.Control.Pages.Add("Page1", "Page");
+            for (int operation = 0; operation < 5; operation++)
+                for (int fault = 0; fault < 4; fault++)
+                {
+                    var r = f.Request(operation == 3 ? "Controls/MultiPage1/Pages/Page1" : "Controls/MultiPage1"); r.ParentPath = r.ControlPath; r.NewName = "NewPage"; r.Property = "Picture";
+                    if (fault == 0) { r.ControlPath = null; r.ParentPath = null; }
+                    if (fault == 1) r.ExpectedTreeVersion = null;
+                    if (fault == 2) r.ExpectedTreeVersion = "stale";
+                    if (fault == 3) { r.ControlPath = operation == 3 ? "Controls/Absent/Pages/Page1" : "Controls/Absent"; r.ParentPath = r.ControlPath; }
+                    Action execute = () =>
+                    {
+                        if (operation == 0) f.Service.RemoveControl(r);
+                        if (operation == 1) f.Service.ZOrderControl(r);
+                        if (operation == 2) f.Service.AddPageOrTab(r, "Pages");
+                        if (operation == 3) f.Service.RemovePageOrTab(r);
+                        if (operation == 4) f.Service.SetNodePicture(r);
+                    };
+                    if (fault <= 1) Assert.ThrowsException<ArgumentException>(execute);
+                    else Assert.ThrowsException<InvalidOperationException>(execute);
+                }
+            foreach (string path in new[] { "Controls", "Controls/MultiPage1/Controls", "Controls/MultiPage1/Pages/Page1" })
+            {
+                var r = f.Request(path); Assert.ThrowsException<ArgumentException>(() => f.Service.RemoveControl(r));
+            }
+            foreach (string path in new[] { "Controls", "Controls/MultiPage1/Pages/Page1" }) Assert.ThrowsException<ArgumentException>(() => f.Service.ZOrderControl(f.Request(path)));
+            foreach (string path in new[] { "Controls/MultiPage1", "Controls/MultiPage1/Pages", "Controls/MultiPage1/Controls/Child" }) Assert.ThrowsException<ArgumentException>(() => f.Service.RemovePageOrTab(f.Request(path)));
+            var picture = f.Request("Controls/MultiPage1"); picture.Property = null;
+            Assert.ThrowsException<ArgumentException>(() => f.Service.SetNodePicture(picture));
+            var pagesRequest = f.Request("Controls/MultiPage1"); pagesRequest.ParentPath = pagesRequest.ControlPath; pagesRequest.NewName = "Page2";
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.AddPageOrTab(pagesRequest, "Missing"));
+            pagesRequest.InsertIndex = -1; Assert.ThrowsException<ArgumentOutOfRangeException>(() => f.Service.AddPageOrTab(pagesRequest, "Pages"));
+        }
+
+        [TestMethod]
+        public void RemovalAndZOrderDetectIgnoredDeletesAndDisappearingControls()
+        {
+            var f = Create("Frame"); f.Form.Designer.Controls.IgnoreRemove = true;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.RemoveControl(f.Request("Controls/Frame1")));
+            f.Form.Designer.Controls.IgnoreRemove = false;
+            f.Control.AfterZOrder = () => f.Form.Designer.Controls.Remove(f.Control.Name);
+            var r = f.Request("Controls/Frame1");
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.ZOrderControl(r));
+            f = Create("MultiPage"); f.Control.Pages.Add("Page1", "Page"); f.Control.Pages.IgnoreRemove = true;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.RemovePageOrTab(f.Request("Controls/MultiPage1/Pages/Page1")));
+            f = Create("MultiPage"); f.Control.Pages.Add("Page1", "Page"); f.Control.Pages.Add("Page1", "Duplicate");
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.RemovePageOrTab(f.Request("Controls/MultiPage1/Pages/Page1")));
+            f = Create("MultiPage"); f.Control.Pages.Add("Other", "Other"); f.Control.Pages.Add("Page1", "Page");
+            f.Service.RemovePageOrTab(f.Request("Controls/MultiPage1/Pages/Page1")); Assert.AreEqual("Other", f.Control.Pages.Single().Name);
+        }
+        [TestMethod]
+        public void NestedControlCreationChecksRollbackAtEveryNativeCollectionBoundary()
+        {
+            for (int fault = 0; fault < 7; fault++)
+            {
+                var f = Create("Frame"); var controls = f.Control.Controls;
+                var r = f.Request("Controls/Frame1"); r.ParentPath = r.ControlPath; r.Control = "Child"; r.ControlType = "Forms.Label.1"; r.Width = 20; r.Height = 10; r.Caption = "Label";
+                if (fault == 0) controls.FailAdd = true;
+                if (fault >= 1 && fault <= 5) controls.FailNextCaption = true;
+                if (fault == 2) controls.FailNextRemove = true;
+                if (fault == 3) controls.IgnoreRemove = true;
+                if (fault == 4 || fault == 5)
+                {
+                    int failures = 0;
+                    controls.BeforeEnumeration = () => { if (controls.Count > 0 && (fault == 4 || failures++ == 0)) throw new InvalidOperationException("Inspection unavailable"); };
+                }
+                if (fault == 6) { controls.HideAdded = true; r.Caption = null; }
+                var error = Assert.ThrowsException<InvalidOperationException>(() => f.Service.AddNestedControl(r));
+                if (fault == 0 || fault == 1 || fault == 6) StringAssert.Contains(error.Message, "no control with the requested name remains");
+                else StringAssert.Contains(error.Message, "rollback could not be verified");
+            }
+        }
+
+        [TestMethod]
+        public void NestedCreationRejectsMissingVersionsUnknownParentsAndDuplicateChildren()
+        {
+            var f = Create("Frame");
+            for (int fault = 0; fault < 4; fault++)
+            {
+                var r = f.Request("Controls/Frame1"); r.ParentPath = r.ControlPath; r.Control = "Child"; r.ControlType = "Forms.Label.1"; r.Width = 20; r.Height = 10;
+                if (fault == 0) r.ControlType = null;
+                if (fault == 1) r.ExpectedTreeVersion = null;
+                if (fault == 2) r.ExpectedTreeVersion = "stale";
+                if (fault == 3) r.ParentPath = "Controls/Absent";
+                if (fault <= 1) Assert.ThrowsException<ArgumentException>(() => f.Service.AddNestedControl(r));
+                else Assert.ThrowsException<InvalidOperationException>(() => f.Service.AddNestedControl(r));
+            }
+            f.Control.Controls.AddExisting("Label", "Existing");
+            var duplicate = f.Request("Controls/Frame1"); duplicate.ParentPath = duplicate.ControlPath; duplicate.Control = "Existing"; duplicate.ControlType = "Forms.Label.1"; duplicate.Width = 20; duplicate.Height = 10;
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.AddNestedControl(duplicate));
+        }
+    }
+
     public sealed partial class VbeFormsContractTests
     {
         [TestMethod]

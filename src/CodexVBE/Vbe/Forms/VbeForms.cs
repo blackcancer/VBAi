@@ -19,6 +19,10 @@ namespace CodexVBE
     internal sealed partial class VbeForms
     {
         private readonly dynamic vbe;
+        internal static Func<byte[], byte[]> HashTree = bytes =>
+        {
+            using (var sha = SHA256.Create()) return sha.ComputeHash(bytes);
+        };
         private static readonly HashSet<string> BuiltInControls = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "Forms.CheckBox.1", "Forms.ComboBox.1", "Forms.CommandButton.1", "Forms.Frame.1",
@@ -91,9 +95,8 @@ namespace CodexVBE
             properties = DescribeProperties(form);
             string json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 }
                 .Serialize(new { Form = (string)form.Name, Properties = properties, Controls = nodes });
-            using (var sha = SHA256.Create())
-                return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(json)))
-                    .Replace("-", "").ToLowerInvariant();
+            return BitConverter.ToString(HashTree(Encoding.UTF8.GetBytes(json)))
+                .Replace("-", "").ToLowerInvariant();
         }
 
         public object ParentProbe(string projectName, string formName)
@@ -1025,6 +1028,10 @@ namespace CodexVBE
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||
                 string.IsNullOrWhiteSpace(request.ExpectedTreeVersion))
                 throw new ArgumentException("ControlPath and ExpectedTreeVersion are required.");
+            string[] parts = request.ControlPath.Split('/');
+            if (parts.Length < 2 || parts.Length % 2 != 0 ||
+                !string.Equals(parts[parts.Length - 2], "Controls", StringComparison.Ordinal))
+                throw new ArgumentException("ControlPath must identify a control, not a Page or Tab.");
             dynamic form = GetForm(GetDesignProject(request.Project), request.Form);
             dynamic before = Tree(request.Project, request.Form);
             if (!string.Equals((string)before.TreeVersion, request.ExpectedTreeVersion,
@@ -1032,10 +1039,6 @@ namespace CodexVBE
                 throw new InvalidOperationException("The UserForm hierarchy changed since it was read.");
             if (!TreeContainsPath((IEnumerable)before.Controls, request.ControlPath))
                 throw new InvalidOperationException("ControlPath is not a canonical path in form_tree.");
-            string[] parts = request.ControlPath.Split('/');
-            if (parts.Length < 2 || parts.Length % 2 != 0 ||
-                !string.Equals(parts[parts.Length - 2], "Controls", StringComparison.Ordinal))
-                throw new ArgumentException("ControlPath must identify a control, not a Page or Tab.");
             string name = parts[parts.Length - 1];
             object owner = parts.Length == 2 ? (object)form.Designer :
                 ResolveTreeItem(form.Designer, string.Join("/", parts.Take(parts.Length - 2)));
@@ -1059,6 +1062,9 @@ namespace CodexVBE
                 throw new ArgumentException("ControlPath and ExpectedTreeVersion are required.");
             if (request.ZPosition != 0 && request.ZPosition != 1)
                 throw new ArgumentOutOfRangeException("ZPosition", "Use 0 for front or 1 for back.");
+            string[] parts = request.ControlPath.Split('/');
+            if (parts.Length < 2 || parts[parts.Length - 2] != "Controls")
+                throw new ArgumentException("ControlPath must identify a control, not a Page or Tab.");
             dynamic form = GetForm(GetDesignProject(request.Project), request.Form);
             dynamic before = Tree(request.Project, request.Form);
             if (!string.Equals((string)before.TreeVersion, request.ExpectedTreeVersion,
@@ -1066,9 +1072,6 @@ namespace CodexVBE
                 throw new InvalidOperationException("The UserForm hierarchy changed since it was read.");
             if (!TreeContainsPath((IEnumerable)before.Controls, request.ControlPath))
                 throw new InvalidOperationException("ControlPath is not a canonical path in form_tree.");
-            string[] parts = request.ControlPath.Split('/');
-            if (parts.Length < 2 || parts[parts.Length - 2] != "Controls")
-                throw new ArgumentException("ControlPath must identify a control, not a Page or Tab.");
             object control = ResolveTreeItem(form.Designer, request.ControlPath);
             ((dynamic)control).ZOrder(request.ZPosition);
             dynamic after = Tree(request.Project, request.Form);
@@ -1168,6 +1171,10 @@ namespace CodexVBE
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||
                 string.IsNullOrWhiteSpace(request.ExpectedTreeVersion))
                 throw new ArgumentException("ControlPath and ExpectedTreeVersion are required.");
+            string[] parts = request.ControlPath.Split('/');
+            if (parts.Length < 4 || parts.Length % 2 != 0 ||
+                (parts[parts.Length - 2] != "Pages" && parts[parts.Length - 2] != "Tabs"))
+                throw new ArgumentException("ControlPath must identify a Page or Tab.");
             dynamic form = GetForm(GetDesignProject(request.Project), request.Form);
             dynamic before = Tree(request.Project, request.Form);
             if (!string.Equals((string)before.TreeVersion, request.ExpectedTreeVersion,
@@ -1175,10 +1182,6 @@ namespace CodexVBE
                 throw new InvalidOperationException("The UserForm hierarchy changed since it was read.");
             if (!TreeContainsPath((IEnumerable)before.Controls, request.ControlPath))
                 throw new InvalidOperationException("ControlPath is not a canonical path in form_tree.");
-            string[] parts = request.ControlPath.Split('/');
-            if (parts.Length < 4 || parts.Length % 2 != 0 ||
-                (parts[parts.Length - 2] != "Pages" && parts[parts.Length - 2] != "Tabs"))
-                throw new ArgumentException("ControlPath must identify a Page or Tab.");
             string collectionName = parts[parts.Length - 2];
             string name = parts[parts.Length - 1];
             string parentPath = string.Join("/", parts.Take(parts.Length - 2));
