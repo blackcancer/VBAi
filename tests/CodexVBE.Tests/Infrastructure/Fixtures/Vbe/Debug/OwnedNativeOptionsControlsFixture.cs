@@ -18,6 +18,7 @@ namespace CodexVBE.Tests.Unit
         {
             internal bool Armed;
             internal IntPtr PreviousParent;
+            private int previousStyle;
             internal ParentLostOnComboSelection(IntPtr handle) { AssignHandle(handle); }
             protected override void WndProc(ref Message message)
             {
@@ -26,12 +27,18 @@ namespace CodexVBE.Tests.Unit
                 if (detachAfterSelection)
                 {
                     Armed = false;
+                    previousStyle = OptionsFixtureGetStyle(Handle, -16);
                     PreviousParent = OptionsFixtureSetParent(Handle, IntPtr.Zero);
+                    OptionsFixtureSetStyle(Handle, -16, previousStyle & ~unchecked((int)0x40000000));
                 }
             }
             public void Dispose()
             {
-                if (PreviousParent != IntPtr.Zero) OptionsFixtureSetParent(Handle, PreviousParent);
+                if (PreviousParent != IntPtr.Zero)
+                {
+                    OptionsFixtureSetStyle(Handle, -16, previousStyle);
+                    OptionsFixtureSetParent(Handle, PreviousParent);
+                }
                 ReleaseHandle();
             }
         }
