@@ -5,8 +5,10 @@ namespace CodexVBE.Tests.Unit
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using CodexVBE;
 
+    /// <summary>Vérifie les plages de modification et les numéros de lignes des diff.</summary>
     public sealed partial class HistoryAndCodeTests
     {
+        /// <summary>Refuse une plage invalide avant qu’une modification de l’hôte puisse être faite.</summary>
         [TestMethod]
         public void PreviewRejectsInvalidRangeBeforeAnyHostEdit()
         {
@@ -22,6 +24,7 @@ namespace CodexVBE.Tests.Unit
             Assert.ThrowsException<ArgumentException>(() => CodeChange.Preview("A\nB", request));
         }
 
+        /// <summary>Conserve les numéros de lignes séparés des versions ancienne et nouvelle du diff.</summary>
         [TestMethod]
         public void DiffRowsPreserveOldAndNewLineNumbers()
         {

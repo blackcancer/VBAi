@@ -5,10 +5,12 @@ namespace CodexVBE.Tests.Unit
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using CodexVBE;
 
+    /// <summary>Vérifie les commandes, recherches et exports de l’historique de conversation.</summary>
     [TestClass]
     [TestCategory("Unit")]
     public sealed partial class HistoryAndCodeTests
     {
+        /// <summary>Développe uniquement les jetons de commande complets et refuse les commandes inconnues.</summary>
         [TestMethod]
         public void CommandsExpandOnlyCompleteTokensAndRejectUnknownCommands()
         {
@@ -19,6 +21,7 @@ namespace CodexVBE.Tests.Unit
             Assert.ThrowsException<InvalidOperationException>(() => ChatCommand.Expand("/planifier"));
         }
 
+        /// <summary>Recherche dans le titre, les messages et le code modifié sans ignorer les caractères Unicode.</summary>
         [TestMethod]
         public void HistorySearchFindsUnicodeTextAndChangedCode()
         {
@@ -36,6 +39,7 @@ namespace CodexVBE.Tests.Unit
             Assert.IsFalse(ChatHistory.Matches(session, "introuvable"));
         }
 
+        /// <summary>Choisit une clôture Markdown plus longue lorsque le code joint contient déjà une clôture.</summary>
         [TestMethod]
         public void ExportUsesLongerFenceWhenAttachmentContainsMarkdownFence()
         {

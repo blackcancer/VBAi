@@ -5,8 +5,10 @@ namespace CodexVBE.Tests.Unit
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using CodexVBE;
 
+    /// <summary>Vérifie la restauration des changements de code et le refus des contextes ambigus.</summary>
     public sealed partial class HistoryAndCodeTests
     {
+        /// <summary>Restaure exactement le texte précédent et refuse si son contexte n’est plus unique.</summary>
         [TestMethod]
         public void RollbackRestoresExactChangeAndRefusesAmbiguousContext()
         {
