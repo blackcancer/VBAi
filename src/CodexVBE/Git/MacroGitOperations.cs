@@ -15,11 +15,12 @@ namespace CodexVBE
         private readonly VbaGitProject project;
         private FileStream cacheLock;
         internal Action<string> ImportPreview;
+        internal static Func<string, string> CacheDirectory = MacroGitRepository.ScopeDirectory;
         internal MacroGitOperations(VbaGitProject project, MacroGitRepository repository) { this.project = project; Repository = repository; }
 
         internal static MacroGitOperations Open(VbaGitProject project, string scope, string account)
         {
-            string cache = MacroGitRepository.ScopeDirectory(scope);
+            string cache = CacheDirectory(scope);
             if (!File.Exists(Path.Combine(cache, "binding.json"))) throw new InvalidOperationException(UiText.Get("Link this document to GitHub through the interface first. The agent does not choose a repository for you."));
             var held = new FileStream(Path.Combine(cache, "session.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             try
