@@ -206,3 +206,41 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    using System.Collections.Generic;
+    using System.Windows.Controls;
+    using CodexVBE;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    public sealed partial class ChatWindowStateTests
+    {
+        [STATestMethod, TestCategory("Unit")]
+        public void RecursiveViewDisposalReleasesBothNativeHostsAndIgnoresOrdinaryLeaves()
+        {
+            using(var window=Surfaces()) {
+                var card=new ChatMessageView(); var native=new ChatDesignerHost(card);
+                var diff=new ChatDiffView("before","after"); var diffChild=diff.Child;
+                var nested=new StackPanel(); nested.Children.Add(native); nested.Children.Add(diff); nested.Children.Add(new TextBlock { Text="ordinary" });
+                var body=new StackPanel(); body.Children.Add(nested);
+                Call(window,"DisposeEntryView",body);
+                Assert.IsTrue(card.IsDisposed); Assert.IsTrue(card.message.content.IsDisposed); Assert.IsTrue(diffChild.IsDisposed);
+                Assert.AreEqual(1,body.Children.Count); Assert.AreEqual(3,nested.Children.Count);
+            }
+        }
+        [STATestMethod, TestCategory("Unit")]
+        public void InterventionUndoCallbackHandlesEmptyTargetsAndRetainsUnrestoredTargetsWhileBusy()
+        {
+            using(var window=Surfaces()) {
+                var changes=Get<List<CodeChange>>(window,"codeChanges");
+                var change=new CodeChange("P","M","old","oldsha","new","newsha",1) { TurnId="assigned" }; changes.Add(change);
+                Set(window,"busy",true);
+                foreach(var turn in new[]{"unrelated","assigned"})
+                using(var host=(ChatDesignerHost)Call(window,"RenderEntry",new ChatEntry { Speaker="Intervention",TurnId=turn,Text="result" })) {
+                    var card=(ChatMessageView)host.View; Assert.AreEqual(turn=="assigned"?1:0,card.targets.Controls.Count);
+                    Click(card.undoTurn); Assert.IsFalse(change.Restored); Assert.AreEqual(1,changes.Count);
+                }
+            }
+        }
+    }
+}

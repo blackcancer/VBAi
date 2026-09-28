@@ -150,3 +150,36 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    using System;
+    using System.Drawing;
+    using System.Reflection;
+    using System.Windows.Forms;
+    using CodexVBE;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    public sealed partial class ChatWindowStateTests
+    {
+        [STATestMethod, TestCategory("Unit")]
+        public void SuggestionDrawCallbackRejectsBothIndexBoundsAndDrawsReferencesAndCommands()
+        {
+            using(var window=Surfaces())
+            using(var bitmap=new Bitmap(300,35))
+            using(var graphics=Graphics.FromImage(bitmap)) {
+                Call(window,"SetSuggestionTargets",new object[]{new object[]{new VbeChatReference {Project="P",Module="M"},ChatCommand.All[0]}});
+                var list=Get<ListBox>(window,"referenceList");
+                foreach(var index in new[]{-1,list.Items.Count,0,1}) {
+                    graphics.Clear(Color.Magenta);
+                    var args=new DrawItemEventArgs(graphics,list.Font,new Rectangle(0,0,300,35),index,DrawItemState.None,Color.Black,Color.White);
+                    typeof(ListBox).GetMethod("OnDrawItem",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(list,new object[]{args});
+                    Assert.AreEqual(index<0||index>=list.Items.Count?Color.Magenta.ToArgb():Color.White.ToArgb(),bitmap.GetPixel(299,34).ToArgb());
+                    if(index>=0&&index<list.Items.Count) {
+                        bool textDrawn=false; for(int y=0;y<35&&!textDrawn;y++) for(int x=8;x<150;x++) if(bitmap.GetPixel(x,y).ToArgb()!=Color.White.ToArgb()) { textDrawn=true; break; }
+                        Assert.IsTrue(textDrawn,"The valid suggestion must draw its token and kind.");
+                    }
+                }
+            }
+        }
+    }
+}

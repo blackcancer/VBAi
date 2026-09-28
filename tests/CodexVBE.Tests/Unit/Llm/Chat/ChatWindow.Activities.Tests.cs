@@ -173,3 +173,33 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+namespace CodexVBE.Tests.Unit
+{
+    using System.Collections.Generic;
+    using CodexVBE;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    public sealed partial class ChatWindowStateTests
+    {
+        [STATestMethod, TestCategory("Unit")]
+        public void CollapsingNativeActivityGroupAndStepRemovesTheirPersistedExpansion()
+        {
+            using(var window=Surfaces()) {
+                var entry=new ChatEntry { Speaker="Outil", Activity=new CodexAgentActivity { Kind="commandExecution",Title="command",Detail="details",Status="completed" } };
+                using(var host=(ChatDesignerHost)Call(window,"RenderActivityGroup",entry,new List<ChatEntry>{entry})) {
+                    var group=((ChatActivityGroupView)host.View).section;
+                    var step=(ChatActivityStepView)group.body.Controls[0];
+                    group.Expanded=true; step.section.Expanded=true;
+                    Assert.IsTrue(Get<HashSet<ChatEntry>>(window,"expandedActivityGroups").Contains(entry));
+                    Assert.IsTrue(Get<HashSet<ChatEntry>>(window,"expandedActivitySteps").Contains(entry));
+                    group.Expanded=false; step.section.Expanded=false;
+                    Assert.IsFalse(Get<HashSet<ChatEntry>>(window,"expandedActivityGroups").Contains(entry));
+                    Assert.IsFalse(Get<HashSet<ChatEntry>>(window,"expandedActivitySteps").Contains(entry));
+                }
+                using(var recreated=(ChatDesignerHost)Call(window,"RenderActivityGroup",entry,new List<ChatEntry>{entry})) {
+                    var group=((ChatActivityGroupView)recreated.View).section;
+                    Assert.IsFalse(group.Expanded); Assert.IsFalse(((ChatActivityStepView)group.body.Controls[0]).section.Expanded);
+                }
+            }
+        }
+    }
+}

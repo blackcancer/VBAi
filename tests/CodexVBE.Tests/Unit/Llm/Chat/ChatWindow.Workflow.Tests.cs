@@ -257,3 +257,32 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+namespace CodexVBE.Tests.Unit
+{
+    using System.Linq;
+    using System.Windows.Forms;
+    using CodexVBE;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    public sealed partial class ChatWindowStateTests
+    {
+        [STATestMethod, TestCategory("Unit")]
+        public void ContextPreviewCountsAbsentEmptyProjectAndQueuedMemoryOnlyWhenAttached()
+        {
+            using(var window=Surfaces()) {
+                var attach=Get<CheckBox>(window,"attachMemory"); var preview=Get<FlowLayoutPanel>(window,"contextPreview");
+                foreach(var memory in new[]{null,"","notes"})
+                foreach(var enabled in new[]{false,true}) {
+                    Set(window,"projectMemory",memory); Set(window,"queuedDraftMemory",null); attach.Checked=enabled;
+                    Call(window,"RefreshContextPreview"); int size=enabled?(memory?.Length??0):0;
+                    Assert.AreEqual(size>0?2:1,preview.Controls.Count);
+                    var summary=preview.Controls.OfType<ChatContextPreviewView>().Last();
+                    StringAssert.StartsWith(summary.Controls.Find("content",true).Single().Text,size.ToString());
+                }
+                Set(window,"projectMemory","project notes"); Set(window,"queuedDraftMemory","queued"); attach.Checked=true; Call(window,"RefreshContextPreview");
+                Assert.AreEqual(2,preview.Controls.Count);
+                Assert.AreEqual("queued",preview.Controls[0].Controls.Find("content",true).Single().Text);
+                StringAssert.StartsWith(preview.Controls[1].Controls.Find("content",true).Single().Text,"6");
+            }
+        }
+    }
+}
