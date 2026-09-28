@@ -11,6 +11,21 @@ namespace CodexVBE.Tests.Unit
 [TestClass, TestCategory("Unit")]
     public sealed class ChatToolWindowCoverageTests
     {
+        /// <summary>Les coordonnées inversées ou dégénérées ne produisent jamais une taille négative.</summary>
+        [STATestMethod]
+        public void NativeSiteSizeClampsBothDimensionsWithoutUsingTheControlBounds()
+        {
+            using(var tool=new ChatToolWindow())
+            {
+                var handle=tool.Handle;tool.ParentReader=h=>new IntPtr(123);
+                foreach(var rect in new[] {new ChatToolWindow.NativeRect {Left=10,Top=20,Right=210,Bottom=320},new ChatToolWindow.NativeRect {Left=10,Top=20,Right=5,Bottom=3},new ChatToolWindow.NativeRect()})
+                {
+                    tool.ClientReader=(IntPtr h,out ChatToolWindow.NativeRect result)=>{Assert.AreEqual(new IntPtr(123),h);result=rect;return true;};
+                    Size size;Assert.IsTrue(tool.TryGetNativeSiteSize(out size));
+                    Assert.AreEqual(new Size(Math.Max(0,rect.Right-rect.Left),Math.Max(0,rect.Bottom-rect.Top)),size);
+                }
+            }
+        }
         [STATestMethod]
         public void NativeSiteSizeUsesParentClientAreaAndRefusesUnavailableHandles()
         {

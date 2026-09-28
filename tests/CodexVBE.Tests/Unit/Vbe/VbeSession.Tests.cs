@@ -1,6 +1,50 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
+    public sealed partial class ToolbarProfilesTests
+    {
+        [TestMethod]
+        public void SessionRestoresOnlyKnownHostProfilesFromTheirOwnTemporaryDatabase()
+        {
+            using(var scope=new ProfileScope())
+            {
+                foreach(string hostName in new[] {"excel","sLdWoRkS"})
+                {
+                    string path=System.IO.Path.Combine(scope.Root,"VBAi","VbeToolbars",hostName.ToUpperInvariant()+".sqlite");
+                    var profile=ProfileBar();var profiles=new CodexVBE.VbeToolbarProfiles(path);profiles.Update(profile.Name,profile);
+                    var host=NativeHost();int paths=0;
+                    var session=new CodexVBE.VbeSession(host,null,null,()=>hostName,()=>{paths++;return scope.Root;});
+                    Assert.AreEqual(1,paths);Assert.AreEqual(2,host.CommandBars.Count);Assert.AreEqual(profile.Name,host.CommandBars[1].Name);
+                    Assert.AreEqual(profile.Commands[0].Tag,host.CommandBars[1].Controls[1].Tag);
+                    var response=session.Execute(new CodexVBE.Request {Command="list_toolbars"});Assert.IsTrue(response.Ok,response.Error);
+                    Assert.AreEqual(0,((System.Collections.IList)Data(response.Data)["ProfileErrors"]).Count);
+                }
+                var unknownHost=NativeHost();
+                var unknown=new CodexVBE.VbeSession(unknownHost,null,null,()=>"OTHER",()=>{Assert.Fail("Other processes must not read profile storage.");return scope.Root;});
+                Assert.AreEqual(1,unknownHost.CommandBars.Count);Assert.IsTrue(unknown.Execute(new CodexVBE.Request {Command="list_toolbars"}).Ok);
+                Assert.AreEqual(2,System.IO.Directory.GetFiles(System.IO.Path.Combine(scope.Root,"VBAi","VbeToolbars"),"*.sqlite").Length);
+            }
+        }
+
+        [TestMethod]
+        public void SessionStartsWithEmptyProfilesAndReportsCorruptionWithoutDroppingServices()
+        {
+            using(var scope=new ProfileScope())
+            {
+                var host=NativeHost();var empty=new CodexVBE.VbeSession(host,null,null,()=>"EXCEL",()=>scope.Root);
+                Assert.AreEqual(1,host.CommandBars.Count);Assert.IsTrue(empty.Execute(new CodexVBE.Request {Command="list_toolbars"}).Ok);
+                string path=System.IO.Path.Combine(scope.Root,"VBAi","VbeToolbars","EXCEL.sqlite");
+                using(var store=new CodexVBE.ChatSessionStore(path))store.UpdateToolbarProfile("Invalid",new CodexVBE.VbeToolbarProfiles.Bar {Name="Invalid",Commands=new CodexVBE.VbeToolbarProfiles.Command[0]},bars=>{});
+                var corrupt=new CodexVBE.VbeSession(host,null,null,()=>"EXCEL",()=>scope.Root);
+                var response=corrupt.Execute(new CodexVBE.Request {Command="list_toolbars"});Assert.IsTrue(response.Ok,response.Error);
+                var errors=(System.Collections.IList)Data(response.Data)["ProfileErrors"];Assert.AreEqual(1,errors.Count);
+                StringAssert.Contains((string)errors[0],"Invalid toolbar profile contents.");Assert.AreEqual(1,host.CommandBars.Count);
+            }
+        }
+    }
+}
+namespace CodexVBE.Tests.Unit
+{
     using System;
     using System.Collections.Generic;
     using System.Linq;

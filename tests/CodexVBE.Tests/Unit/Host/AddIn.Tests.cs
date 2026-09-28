@@ -79,6 +79,58 @@ namespace CodexVBE.Tests.Unit
 [TestClass, TestCategory("Unit")]
     public sealed partial class AddInCoverageTests
     {
+        /// <summary>Conserve les sites illisibles et les dimensions minimales, puis répare uniquement les sites inutilisables.</summary>
+        [STATestMethod]
+        public void PlacementChecksNativeSiteAvailabilityAndEachMinimumDimension()
+        {
+            using(var scope=new HostUiScope())
+            {
+                var instance=scope.Connected();try
+                {
+                    var control=LlmBoundaryScope.Get<ChatToolWindow>(instance,"nativeChatControl");var window=scope.Host.Windows.Window;var before=window.Form.Bounds;
+                    try { LlmBoundaryScope.Set(instance,"nativeChatControl",null);Call(instance,"EnsureUsableChatPlacement");Assert.AreEqual(before,window.Form.Bounds); }
+                    finally { LlmBoundaryScope.Set(instance,"nativeChatControl",control); }
+                    var parent=control.ParentReader;var reader=control.ClientReader;
+                    try
+                    {
+                        control.ParentReader=h=>IntPtr.Zero;Call(instance,"EnsureUsableChatPlacement");Assert.AreEqual(before,window.Form.Bounds);
+                        control.ParentReader=parent;control.ClientReader=(IntPtr h,out ChatToolWindow.NativeRect rect)=>{rect=default(ChatToolWindow.NativeRect);return false;};
+                        Call(instance,"EnsureUsableChatPlacement");Assert.AreEqual(before,window.Form.Bounds);
+                        var minimum=Chat(instance).MinimumSize;
+                        foreach(var size in new[] {minimum,new System.Drawing.Size(minimum.Width-1,minimum.Height),new System.Drawing.Size(minimum.Width,minimum.Height-1)})
+                        {
+                            control.ClientReader=(IntPtr h,out ChatToolWindow.NativeRect rect)=>{rect=new ChatToolWindow.NativeRect {Right=size.Width,Bottom=size.Height};return true;};
+                            window.LinkedWindowFrame=null;Call(instance,"EnsureUsableChatPlacement");
+                            if(size==minimum)Assert.AreEqual(before,window.Form.Bounds);
+                            else {var area=Screen.FromHandle(new IntPtr(scope.Host.MainWindow.HWnd)).WorkingArea;Assert.AreEqual(Math.Min(600,area.Width),window.Width);Assert.AreEqual(Math.Min(820,area.Height),window.Height);Assert.IsTrue(scope.Logs.Any(x=>x.Contains("Recovered unusable chat pane")));}
+                        }
+                        Assert.AreEqual(0,scope.Host.MainWindow.LinkedWindows.Removes);
+                    }
+                    finally {control.ParentReader=parent;control.ClientReader=reader;}
+                }
+                finally {scope.Close(instance);}
+            }
+        }
+
+        /// <summary>Les deux points d'arrêt nettoient les copies temporaires, conservent les autres et continuent après refus natif.</summary>
+        [STATestMethod]
+        public void HostShutdownCleansOnlyTemporaryCommandsAndLogsNativeFailureBeforeDisposal()
+        {
+            foreach(bool shutdown in new[] {false,true})
+            foreach(bool failDelete in new[] {false,true})
+            using(var scope=new HostUiScope())
+            {
+                var host=new ToolbarCustomizationTests.Host();var bar=host.CommandBars.Add("Standard",1,false,true);
+                var temp=bar.Controls.Add(1,42,Type.Missing,1,true);temp.Tag="VBAi.ToolbarCommand."+new string('a',32);temp.FailDelete=failDelete;
+                var persistent=bar.Controls.Add(1,42,Type.Missing,2,true);persistent.Tag="VBAi.ToolbarCommand.Persistent.owned";
+                var foreign=bar.Controls.Add(1,42,Type.Missing,3,true);foreign.Tag="ThirdParty";
+                var instance=new AddIn();LlmBoundaryScope.Set(instance,"vbe",host);var dispatcher=new Control();LlmBoundaryScope.Set(instance,"dispatcher",dispatcher);
+                object[] custom=null;if(shutdown)instance.OnBeginShutdown(ref custom);else instance.OnDisconnection(0,ref custom);
+                Assert.AreEqual(failDelete?3:2,bar.Controls.Count);Assert.IsTrue(bar.Controls.Contains(persistent));Assert.IsTrue(bar.Controls.Contains(foreign));
+                Assert.AreEqual(failDelete,scope.Logs.Any(x=>x.Contains("Temporary toolbar cleanup failed: native delete rejected")));
+                Assert.IsTrue(dispatcher.IsDisposed);Assert.IsNull(LlmBoundaryScope.Get<object>(instance,"vbe"));
+            }
+        }
                 /// <summary>Vérifie les garde-fous d’attachement lors de la réouverture d’une fenêtre native partiellement libérée.</summary>
 [STATestMethod]
         public void ReopeningAChatWithinALiveOrPartiallyReleasedNativeSiteKeepsAttachGuards()
