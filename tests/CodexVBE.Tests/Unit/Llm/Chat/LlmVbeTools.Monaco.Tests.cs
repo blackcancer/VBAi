@@ -160,5 +160,109 @@ namespace CodexVBE.Tests.Unit
             tools = Tools(); tools.ValidateScope = () => throw new InvalidOperationException("expired scope");
             StringAssert.Contains(await tools.InvokeAsync("monaco_read", "{\"Project\":\"P\",\"Module\":\"M\"}"), "expired scope");
         }
+        [STATestMethod]
+        public void MonacoDefenseGuardsRejectNonObjectsUnknownNamesAndMissingEditors()
+        {
+            var tools = Tools(); var json = new JavaScriptSerializer();
+            var method = typeof(LlmVbeTools).GetMethod("InvokeMonacoAsync", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            foreach (string invalid in new[] { "null", "[]" })
+            {
+                string result = CodexVBE.Tests.Infrastructure.ModernEditorDebugFixture.Wait((Task<string>)method.Invoke(tools, new object[] { "monaco_read", invalid }));
+                StringAssert.Contains(json.Deserialize<Response>(result).Error, "Tool arguments must be an object");
+            }
+            StringAssert.Contains(json.Deserialize<Response>(CodexVBE.Tests.Infrastructure.ModernEditorDebugFixture.Wait(tools.InvokeAsync("monaco_missing", "{}"))).Error, "Unknown Monaco tool");
+            using (var fixture = new CodexVBE.Tests.Infrastructure.ModernEditorDebugFixture())
+            {
+                tools.MonacoModule = (project, module) => fixture.Native.Adapter; tools.MonacoWindow = create => null;
+                StringAssert.Contains(json.Deserialize<Response>(CodexVBE.Tests.Infrastructure.ModernEditorDebugFixture.Wait(tools.InvokeAsync("monaco_read", "{\"Project\":\"P\",\"Module\":\"M\"}"))).Error, "monaco_open first");
+            }
+        }
+
+        [STATestMethod]
+        public void SuccessfulRollbackPreservesNativeShaAndHandlesAbsentLiveOrJustDisposedEditor()
+        {
+            foreach (string state in new[] { "absent", "live", "disposed-during-write" })
+            using (var fixture = new CodexVBE.Tests.Infrastructure.ModernEditorDebugFixture())
+            {
+                fixture.Ready(true); string code = "after"; int writes = 0;
+                var tools = new LlmVbeTools(null, null, new LlmSettings { VbeEditApproval = "Automatic" }) { MonacoWindow = create => state == "absent" ? null : fixture.Window };
+                tools.Execute = request =>
+                {
+                    if (request.Command == "read_module") return Response.Success(new CodexVBE.Tests.Infrastructure.VbeToolCodeResult { Code = code, Sha256 = EditorDocument.Hash(code) });
+                    Assert.AreEqual("replace_lines", request.Command); Assert.AreEqual(EditorDocument.Hash(code), request.ExpectedSha256); writes++; code = request.Text;
+                    if (state == "disposed-during-write") fixture.Window.Dispose();
+                    return Response.Success(new { Replaced = true });
+                };
+                var change = new CodeChange("P", "M", "before", EditorDocument.Hash("before"), "after", EditorDocument.Hash("after"), 1);
+                var result = CodexVBE.Tests.Infrastructure.ModernEditorDebugFixture.Wait(tools.RestoreChangesAsync(new[] { change }, null));
+                Assert.IsTrue(result.Ok, result.Error); Assert.AreEqual("before", code); Assert.AreEqual(1, writes); Assert.IsTrue(change.Restored);
+                Assert.AreEqual(state == "disposed-during-write", fixture.Window.IsDisposed);
+            }
+        }
+        [STATestMethod]
+        public void LegacyMutationsCaptureOwnedDraftAndRejectBeforeAnyNativeDispatch()
+        {
+            foreach (string state in new[] { "dirty", "capture-error", "disposed", "empty" })
+            using (var fixture = new CodexVBE.Tests.Unit.Editor.ModernEditorToolFixture())
+            using (var empty = new ModernEditorWindow())
+            {
+                int writes = 0;
+                var tools = new LlmVbeTools(null, null, new LlmSettings { VbeEditApproval = "Automatic" })
+                {
+                    MonacoWindow = create => state == "empty" ? empty : fixture.Window,
+                    Execute = request => { writes++; return Response.Failure("owned dispatch reached"); }
+                };
+                tools.Native.EnsureNoCompileDialog = () => { throw new InvalidOperationException("owned compilation reached"); };
+                if (state == "disposed") fixture.Window.Dispose();
+                if (state == "dirty") fixture.Document.Edit(fixture.Document.Text + "\n' unsynchronized owned draft");
+                if (state == "capture-error") fixture.Override = (method, values) => { if (method == "snapshots") throw new InvalidOperationException("owned capture failed"); return null; };
+                var json = new JavaScriptSerializer();
+                if (state == "dirty")
+                {
+                    StringAssert.Contains(json.Deserialize<Response>(tools.Invoke("compile_project", "{\"Project\":\"P\",\"ExpectedMode\":2}")).Error, "unsynchronized");
+                    var restored = CodexVBE.Tests.Infrastructure.ModernEditorDebugFixture.Wait(tools.RestoreChangesAsync(null, null));
+                    Assert.IsFalse(restored.Ok); StringAssert.Contains(restored.Error, "unsynchronized");
+                }
+                var result = json.Deserialize<Response>(CodexVBE.Tests.Infrastructure.ModernEditorDebugFixture.Wait(tools.InvokeAsync("compile_project", "{\"Project\":\"P\",\"ExpectedMode\":2}")));
+                Assert.IsFalse(result.Ok);
+                StringAssert.Contains(result.Error, state == "dirty" ? "unsynchronized" : state == "capture-error" ? "owned capture failed" : "owned compilation reached");
+                Assert.AreEqual(0, writes); Assert.AreEqual(state == "dirty" ? 2 : state == "capture-error" ? 1 : 0, fixture.Captures);
+            }
+        }
+
+        [STATestMethod]
+        public void InnerMonacoScopeGuardPreservesItsOwnExactProjectDefense()
+        {
+            const string arguments = "{\"Project\":\"P\",\"Module\":\"M\",\"ExpectedVersion\":1,\"Text\":\"\"}";
+            var method = typeof(LlmVbeTools).GetMethod("InvokeMonacoAsync", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            foreach (string project in new[] { "P", "Foreign" })
+            {
+                var tools = Tools(); tools.BoundProject = project;
+                var response = new JavaScriptSerializer().Deserialize<Response>(CodexVBE.Tests.Infrastructure.ModernEditorDebugFixture.Wait((Task<string>)method.Invoke(tools, new object[] { "monaco_edit", arguments })));
+                Assert.IsFalse(response.Ok); StringAssert.Contains(response.Error, project == "P" ? "HOST WAS ACCESSED" : "autre projet");
+            }
+        }
+
+        [STATestMethod]
+        public void MonacoNavigationAndSynchronizationUseOwnedRevisionAndNativeSha()
+        {
+            foreach (string operation in new[] { "monaco_navigate", "monaco_sync" })
+            using (var fixture = new CodexVBE.Tests.Unit.Editor.ModernEditorToolFixture())
+            {
+                var tools = new LlmVbeTools(null, null, new LlmSettings { VbeEditApproval = "Automatic" }) { MonacoWindow = create => fixture.Window, MonacoModule = (p, m) => fixture.Module };
+                tools.Execute = request => { Assert.AreEqual("read_module", request.Command); return Response.Success(new CodexVBE.Tests.Infrastructure.VbeToolCodeResult { Code = fixture.Module.Code, Sha256 = EditorDocument.Hash(fixture.Module.Code) }); };
+                fixture.Override = (method, values) => method == "selectRange" ? "true" : null;
+                var json = new JavaScriptSerializer();
+                if (operation == "monaco_sync") fixture.Document.Edit(fixture.Document.Text + "\n' owned synchronized draft");
+                string draft = fixture.Document.Text;
+                string arguments = operation == "monaco_navigate"
+                    ? json.Serialize(new { Project = "P", Module = "M", ExpectedVersion = 1, StartLine = 1, StartColumn = 1, EndLine = 1, EndColumn = 1 })
+                    : json.Serialize(new { Project = "P", Module = "M", ExpectedVersion = 1, ExpectedSha256 = EditorDocument.Hash(fixture.Module.Code) });
+                var result = json.Deserialize<Response>(CodexVBE.Tests.Infrastructure.ModernEditorDebugFixture.Wait(tools.InvokeAsync(operation, arguments)));
+                Assert.IsTrue(result.Ok, result.Error); Assert.IsTrue(fixture.Captures > 0);
+                if (operation == "monaco_navigate") Assert.AreEqual(1, fixture.Base.Scripts.FindAll(call => call.Item1 == "selectRange").Count);
+                else { Assert.AreEqual(draft, fixture.Module.Code); Assert.AreEqual(1, fixture.Module.Writes); Assert.IsFalse(fixture.Document.Dirty); }
+            }
+        }
     }
 }

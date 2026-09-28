@@ -818,3 +818,18 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    public sealed partial class LlmVbeToolsBoundaryTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void SynchronousCatalogueGatewaysRefuseBeforeAnyHostDispatch()
+        {
+            var tools = Create(); int requests = 0;
+            tools.Execute = request => { requests++; throw new Microsoft.VisualStudio.TestTools.UnitTesting.AssertFailedException("Catalogue requires async dispatch"); };
+            foreach (string name in new[] { "discover_tools", "invoke_tool" }) Failed(tools.Invoke(name, "{}"), "InvokeAsync");
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, requests);
+        }
+    }
+}

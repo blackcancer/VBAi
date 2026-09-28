@@ -316,5 +316,23 @@ namespace CodexVBE.Tests.Unit
                 }
             }
         }
+        [STATestMethod]
+        public void StopRequestedBeforeListenerPublicationExitsAfterOwnedConnectionWithoutDispatch()
+        {
+            using (var dispatcher = new Control())
+            using (var created = new ManualResetEventSlim())
+            {
+                int id = Guid.NewGuid().GetHashCode() & int.MaxValue; int requests = 0;
+                using (var server = new BridgeServer(dispatcher, null, id))
+                {
+                    var open = server.OpenPipe; server.Execute = request => { requests++; throw new AssertFailedException("A stopped listener must not dispatch"); };
+                    server.OpenPipe = security => { var pipe = open(security); server.Dispose(); created.Set(); return pipe; };
+                    server.Start(); Assert.IsTrue(created.Wait(5000));
+                    using (var client = new NamedPipeClientStream(".", "CodexVBE." + id, PipeDirection.InOut)) client.Connect(5000);
+                    var worker = (Thread)typeof(BridgeServer).GetField("worker", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(server);
+                    Assert.IsTrue(worker.Join(5000)); Assert.AreEqual(0, requests);
+                }
+            }
+        }
     }
 }
