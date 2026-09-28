@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -103,7 +103,7 @@ namespace CodexVBE
         { return WritePrepared(expected, text, null); }
         internal string WritePrepared(string expected, string text, EditorSyncPlan plan)
         {
-            Validate(); if (!CanWrite) throw new InvalidOperationException("VBA is running, paused or unavailable. Your draft is preserved.");
+            Validate(); if (!CanWrite) throw new InvalidOperationException("VBA is running or unavailable. Your draft is preserved.");
             string before = Read();
             if (EditorDocument.Normalize(before) != expected) throw new InvalidOperationException("The module changed in VBA. Resolve the conflict first.");
             // Preserve host encoding rather than letting unsupported characters silently become '?'.
@@ -177,7 +177,7 @@ namespace CodexVBE
                 File.WriteAllText(restore, EditorAttributeRewrite.CodeSection(original), System.Text.Encoding.Default);
                 dynamic code = ((dynamic)component).CodeModule;
                 Action<string> load = path => { int count = code.CountOfLines; if (count > 0) code.DeleteLines(1, count); code.AddFromFile(path); };
-                if (!CanWrite || EditorDocument.Normalize(Read()) != before) throw new InvalidOperationException("The module changed before attribute restoration.");
+                if ((int)((dynamic)project).Mode != 2 || !CanWrite || EditorDocument.Normalize(Read()) != before) throw new InvalidOperationException("The module changed before attribute restoration.");
                 try
                 {
                     load(changed);
@@ -257,7 +257,7 @@ namespace CodexVBE
                 candidate = components.Import(staged);
                 Inspect(candidate, after, replacement);
                 AttributeRewriteCheckpoint?.Invoke("prepared");
-                if (!CanWrite || EditorDocument.Normalize(Read()) != before ||
+                if ((int)((dynamic)project).Mode != 2 || !CanWrite || EditorDocument.Normalize(Read()) != before ||
                     !string.Equals((string)((dynamic)originalComponent).Name, name, StringComparison.Ordinal))
                     throw new InvalidOperationException("The original component changed during staging.");
                 // Free the logical name before deletion: a loaded UserForm Designer can keep
@@ -266,7 +266,7 @@ namespace CodexVBE
                 ((dynamic)originalComponent).Name = retiredName;
                 ((dynamic)candidate).Name = name;
                 string actual = Inspect(candidate, after, replacement);
-                if (!CanWrite || EditorDocument.Normalize(Read()) != before ||
+                if ((int)((dynamic)project).Mode != 2 || !CanWrite || EditorDocument.Normalize(Read()) != before ||
                     !string.Equals((string)((dynamic)originalComponent).Name, retiredName, StringComparison.Ordinal) ||
                     !string.Equals((string)((dynamic)candidate).Name, name, StringComparison.Ordinal))
                     throw new InvalidOperationException("The component identity changed before replacement.");

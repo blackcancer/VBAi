@@ -105,7 +105,7 @@ namespace CodexVBE.Tests.Unit.Editor
             foreach (var mode in new[] { 0, 1, 2 }) foreach (var protection in new[] { 0, 1 })
             {
                 var f = new EditorVbeContract(); f.Project.Mode = mode; f.Project.Protection = protection;
-                Assert.AreEqual(mode == 2 && protection == 0, f.Adapter.CanWrite);
+                Assert.AreEqual((mode == 1 || mode == 2) && protection == 0, f.Adapter.CanWrite);
                 if (!f.Adapter.CanWrite) Assert.ThrowsException<InvalidOperationException>(() => f.Adapter.Write(Read(f), "new"));
             }
             foreach (var shape in new[] { "same", "replace", "insert", "delete", "many", "empty" })
@@ -119,6 +119,32 @@ namespace CodexVBE.Tests.Unit.Editor
             foreach (var plan in new[] { new EditorSyncPlan("wrong", "next"), new EditorSyncPlan(expected, "wrong") })
                 Assert.ThrowsException<InvalidOperationException>(() => guarded.Adapter.WritePrepared(expected, "next", plan));
             if (Encoding.Default.CodePage != 65001) Assert.ThrowsException<EncoderFallbackException>(() => guarded.Adapter.Write(expected, expected + "\n' 😀"));
+        }
+
+        [TestMethod]
+        public void BreakModeAcceptsOnlyOneBodyLineAndKeepsStructuralEditsPending()
+        {
+            foreach (string shape in new[] { "body", "insert", "multiline", "delete", "declaration" })
+            {
+                var f = new EditorVbeContract(); string before = Read(f);
+                f.Project.Mode = 1;
+                string after = shape == "body" ? before.Replace("Print 1", "Print 2") :
+                    shape == "insert" ? "' header\n" + before :
+                    shape == "multiline" ? before.Replace("Print 1", "Print 2\n    Debug.Print 3") :
+                    shape == "delete" ? before.Replace("    Debug.Print 1\n", "") : before.Replace("Hello()", "Changed()");
+                if (shape == "body")
+                {
+                    Assert.AreEqual(after, EditorDocument.Normalize(f.Adapter.Write(before, after)));
+                    Assert.AreSame(f.Original, f.Adapter.Component);
+                    Assert.AreEqual(1, f.Project.Mode);
+                }
+                else
+                {
+                    Assert.ThrowsException<InvalidOperationException>(() => f.Adapter.Write(before, after), shape);
+                    Assert.AreEqual(before, Read(f));
+                    Assert.AreSame(f.Original, f.Adapter.Component);
+                }
+            }
         }
 
         [TestMethod]
