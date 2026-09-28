@@ -18,7 +18,7 @@ namespace CodexVBE
             }
             string collectionVersion = null;
             try { collectionVersion = ToolbarCollectionVersion(); } catch (Exception ex) { errors.Add(ex.Message); }
-            return new { Toolbars = bars, Errors = errors, ToolbarCollectionVersion = collectionVersion,
+            return new { Toolbars = bars, Errors = errors, ProfileErrors = ToolbarProfileErrors.ToArray(), ToolbarCollectionVersion = collectionVersion,
                 Scope = "Normal VBE command bars only; menu bars and shortcut menus are excluded." };
         }
         private static object ToolbarSnapshot(dynamic bar)
@@ -64,7 +64,7 @@ namespace CodexVBE
             if (!desired && (((int)selected.Protection & 8) != 0)) throw new InvalidOperationException("The toolbar is protected against hiding.");
             if (desired && !(bool)selected.Enabled) throw new InvalidOperationException("The toolbar is disabled; showing it would require enabling it first.");
             string error = null; object after = null; bool? actual = null;
-            try { selected.Visible = desired; }
+            try { selected.Visible = desired; SaveToolbarProfile(selected, false); }
             catch (Exception ex) { error = ex.Message; }
             try { after = ToolbarSnapshot(target); actual = (bool)selected.Visible; }
             catch (Exception ex) { error = error ?? ex.Message; }
@@ -112,6 +112,7 @@ namespace CodexVBE
             {
                 if (floating) { bar.Left = request.ToolbarLeft.Value; bar.Top = request.ToolbarTop.Value; }
                 else bar.RowIndex = request.RowIndex.Value;
+                SaveToolbarProfile(bar, false);
             }
             catch (Exception ex) { error = ex.Message; }
             try
@@ -157,7 +158,7 @@ namespace CodexVBE
                 ((desired == 1 || desired == 3) && (protection & 64) != 0))
                 throw new InvalidOperationException("The toolbar protection forbids the requested movement or docking.");
             string error = null; object after = null; int? actual = null; bool? visible = null;
-            try { selected.Position = desired; }
+            try { selected.Position = desired; SaveToolbarProfile(selected, false); }
             catch (Exception ex) { error = ex.Message; }
             try { after = ToolbarSnapshot(target); actual = (int)selected.Position; visible = (bool)selected.Visible; }
             catch (Exception ex) { error = error ?? ex.Message; }

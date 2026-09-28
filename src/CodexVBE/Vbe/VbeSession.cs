@@ -90,7 +90,14 @@ namespace CodexVBE
         private VbeSession(object vbe, VbeProjectComponents.IExcelHostProbe host, string bookmarkDatabase) { this.vbe = vbe; debugger = new VbeDebug(vbe);
             forms = new VbeForms(vbe); components = host == null
                 ? new VbeProjectComponents(vbe, forms) : new VbeProjectComponents(vbe, forms, host);
-            editorWindows = new VbeEditorWindows(vbe); codeNavigation = new VbeCodeNavigation(vbe, forms);
+            editorWindows = new VbeEditorWindows(vbe);
+            string toolbarHost = System.Diagnostics.Process.GetCurrentProcess().ProcessName.ToUpperInvariant();
+            if (toolbarHost == "EXCEL" || toolbarHost == "SLDWORKS")
+            {
+                editorWindows.ToolbarProfiles = new VbeToolbarProfiles(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VBAi", "VbeToolbars", toolbarHost + ".sqlite"));
+                editorWindows.RestoreToolbarProfiles();
+            }
+            codeNavigation = new VbeCodeNavigation(vbe, forms);
             referenceTypes = new VbeReferenceTypes(vbe);
             codeEdits = new VbeCodeEdits(Execute);
             codeClipboard = new VbeCodeClipboard(Execute, new WindowsCodeClipboard());

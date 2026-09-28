@@ -38,7 +38,7 @@
             request.ControlCaption = "Native command"; request.Temporary = false;
             var persistent = Data(service.AddToolbarCommand(request));
             Assert.IsTrue((bool)persistent["Verified"]); Assert.IsFalse((bool)persistent["Temporary"]);
-            Assert.IsFalse(bar.Controls[1].Temporary); Assert.IsFalse((bool)persistent["PersistenceVerified"]);
+            Assert.IsTrue(bar.Controls[1].CopiedFromSource); Assert.IsFalse((bool)persistent["PersistenceVerified"]);
         }
         [TestMethod]
         public void EmptyCustomToolbarCreationDeletionAndProtectedBarsAreVerified()
@@ -77,11 +77,11 @@
             public bool Enabled { get; set; } = true;
             public int Protection { get; set; }
             public int Position { get; set; }
-            public int Left => 0;
-            public int Top => 0;
+            public int Left { get; set; }
+            public int Top { get; set; }
             public int Width => 200;
             public int Height => 20;
-            public int RowIndex => 1;
+            public int RowIndex { get; set; } = 1;
             public Buttons Controls { get; } = new Buttons();
             public void Delete() => Owner.Remove(this);
         }
@@ -105,6 +105,12 @@
             public bool BuiltIn { get; set; }
             public bool Visible => true;
             public bool Temporary { get; set; }
+            public bool CopiedFromSource { get; set; }
+            public Button Copy(object target, int before)
+            {
+                var copied = ((Bar)target).Controls.Add(Type, Id, System.Type.Missing, before, true);
+                copied.Caption = Caption; copied.BuiltIn = BuiltIn; copied.CopiedFromSource = true; return copied;
+            }
             public void Delete() => Owner.Remove(this);
         }
     }

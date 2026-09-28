@@ -1,0 +1,39 @@
+﻿using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+
+namespace CodexVBE
+{
+    internal sealed partial class VbeForms
+    {
+        /// <summary>Utilise le dispatch typé pour les propriétés MSForms usuelles ; les doubles .NET conservent leurs descripteurs.</summary>
+        private static void SetDesignerScalar(object target, PropertyDescriptor descriptor, object value)
+        {
+            if (!Marshal.IsComObject(target)) { descriptor.SetValue(target, value); return; }
+            dynamic native = target;
+            switch (descriptor.Name.ToLowerInvariant())
+            {
+                case "left": native.Left = Convert.ToSingle(value); return;
+                case "top": native.Top = Convert.ToSingle(value); return;
+                case "width": native.Width = Convert.ToSingle(value); return;
+                case "height": native.Height = Convert.ToSingle(value); return;
+                case "caption": native.Caption = Convert.ToString(value); return;
+                case "name": native.Name = Convert.ToString(value); return;
+                case "text": native.Text = Convert.ToString(value); return;
+                case "tag": native.Tag = Convert.ToString(value); return;
+                case "controltiptext": native.ControlTipText = Convert.ToString(value); return;
+                case "enabled": native.Enabled = Convert.ToBoolean(value); return;
+                case "visible": native.Visible = Convert.ToBoolean(value); return;
+                case "locked": native.Locked = Convert.ToBoolean(value); return;
+                case "tabstop": native.TabStop = Convert.ToBoolean(value); return;
+                case "wordwrap": native.WordWrap = Convert.ToBoolean(value); return;
+                case "autosize": native.AutoSize = Convert.ToBoolean(value); return;
+                case "bold": native.Bold = Convert.ToBoolean(value); return;
+                case "italic": native.Italic = Convert.ToBoolean(value); return;
+                case "underline": native.Underline = Convert.ToBoolean(value); return;
+                case "strikethrough": native.Strikethrough = Convert.ToBoolean(value); return;
+                default: descriptor.SetValue(target, value); return;
+            }
+        }
+    }
+}
