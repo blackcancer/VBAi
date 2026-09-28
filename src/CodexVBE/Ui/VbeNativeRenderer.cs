@@ -31,6 +31,13 @@ namespace CodexVBE
         private static StatusCall query;
         private static bool active;
         internal static bool Active => active;
+        internal static Func<bool> SupportsLoaderHost = () => Environment.Is64BitProcess;
+        internal static Func<Stream> OpenPayload = () => typeof(VbeNativeRenderer).Assembly.GetManifestResourceStream(ResourceName);
+        internal static string CacheRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexVBE", "native-renderer");
+        internal static Action<string, string> MovePayload = File.Move;
+        internal static Func<string, IntPtr, uint, IntPtr> LoadModule = LoadLibraryEx;
+        internal static Func<IntPtr, string, IntPtr> FindExport = GetProcAddress;
+        internal static Func<IntPtr, bool> ReleaseModule = FreeLibrary;
 
         internal static void Start(IntPtr editor)
         {
@@ -107,15 +114,15 @@ namespace CodexVBE
         private static void EnsureLoaded()
         {
             if (module != IntPtr.Zero) return;
-            if (!Environment.Is64BitProcess) throw new PlatformNotSupportedException("The native VBE renderer requires an x64 host.");
+            if (!SupportsLoaderHost()) throw new PlatformNotSupportedException("The native VBE renderer requires an x64 host.");
             byte[] bytes;
-            using (Stream resource = typeof(VbeNativeRenderer).Assembly.GetManifestResourceStream(ResourceName))
+            using (Stream resource = OpenPayload())
             {
                 if (resource == null) throw new FileNotFoundException("The embedded native renderer is missing. Rebuild the complete add-in.");
                 using (var buffer = new MemoryStream()) { resource.CopyTo(buffer); bytes = buffer.ToArray(); }
             }
             string hash = Hash(bytes);
-            string directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexVBE", "native-renderer", hash);
+            string directory = Path.Combine(CacheRoot, hash);
             Directory.CreateDirectory(directory);
             string path = Path.Combine(directory, "CodexVBE.Native.dll");
             if (!File.Exists(path))
@@ -124,14 +131,14 @@ namespace CodexVBE
                 try
                 {
                     File.WriteAllBytes(temporary, bytes);
-                    try { File.Move(temporary, path); }
+                    try { MovePayload(temporary, path); }
                     catch (IOException) { if (!File.Exists(path)) throw; }
                 }
                 finally { if (File.Exists(temporary)) File.Delete(temporary); }
             }
             if (!string.Equals(Hash(File.ReadAllBytes(path)), hash, StringComparison.Ordinal))
                 throw new InvalidDataException("The cached native renderer differs from the embedded payload.");
-            IntPtr loaded = LoadLibraryEx(path, IntPtr.Zero, 0x00000100 | 0x00001000);
+            IntPtr loaded = LoadModule(path, IntPtr.Zero, 0x00000100 | 0x00001000);
             if (loaded == IntPtr.Zero) throw new Win32Exception(Marshal.GetLastWin32Error());
             try
             {
@@ -153,13 +160,13 @@ namespace CodexVBE
             catch
             {
                 // Start has not run: no hooks or subclasses can reference this module.
-                FreeLibrary(loaded);
+                ReleaseModule(loaded);
                 throw;
             }
         }
         private static T Resolve<T>(IntPtr library, string name) where T : class
         {
-            IntPtr address = GetProcAddress(library, name);
+            IntPtr address = FindExport(library, name);
             if (address == IntPtr.Zero) throw new EntryPointNotFoundException(name);
             return (T)(object)Marshal.GetDelegateForFunctionPointer(address, typeof(T));
         }

@@ -187,3 +187,137 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    [TestClass, TestCategory("Unit"), DoNotParallelize]
+    public sealed class VbeNativeRendererLoaderTests
+    {
+        private static void AssertUnassigned(NativeRendererLoaderFixture fixture)
+        {
+            Assert.AreEqual(IntPtr.Zero, fixture.Read("module")); Assert.IsFalse(VbeNativeRenderer.Active);
+            foreach (string name in new[] { "start", "register", "stop", "refresh", "query" }) Assert.IsNull(fixture.Read(name));
+        }
+
+        [TestMethod]
+        public void ValidEmbeddedPayloadLoadsFromIsolatedHashCacheWithoutStartingHooks()
+        {
+            using (var fixture = new NativeRendererLoaderFixture())
+            {
+                Assert.IsTrue(fixture.Bytes.Length > 1024); Assert.AreEqual((byte)'M', fixture.Bytes[0]); Assert.AreEqual((byte)'Z', fixture.Bytes[1]);
+                fixture.EnsureLoaded(); Assert.AreNotEqual(IntPtr.Zero, fixture.Read("module")); Assert.IsFalse(VbeNativeRenderer.Active);
+                CollectionAssert.AreEqual(fixture.Bytes, System.IO.File.ReadAllBytes(fixture.CachedPayload));
+                Assert.AreEqual(1, fixture.ResourceReads); Assert.AreEqual(1, fixture.Loads); Assert.AreEqual(1, fixture.Moves);
+                StringAssert.Contains(fixture.Describe(), "active=0, windows=0, imports=0");
+                fixture.EnsureLoaded(); Assert.AreEqual(1, fixture.ResourceReads); Assert.AreEqual(1, fixture.Loads);
+                fixture.AssertNoTemporaryFiles(); Assert.AreEqual(0, fixture.Released.Count);
+            }
+        }
+
+        [TestMethod]
+        public void UnsupportedHostAndMissingEmbeddedResourceFailBeforeCacheCreation()
+        {
+            using (var fixture = new NativeRendererLoaderFixture())
+            {
+                VbeNativeRenderer.SupportsLoaderHost = () => false;
+                Assert.ThrowsException<PlatformNotSupportedException>(() => fixture.EnsureLoaded());
+                Assert.AreEqual(0, fixture.ResourceReads); Assert.AreEqual(0, fixture.Loads);
+                Assert.IsFalse(System.IO.Directory.Exists(fixture.DirectoryPath)); AssertUnassigned(fixture);
+            }
+            using (var fixture = new NativeRendererLoaderFixture())
+            {
+                VbeNativeRenderer.OpenPayload = () => null;
+                Assert.ThrowsException<System.IO.FileNotFoundException>(() => fixture.EnsureLoaded());
+                Assert.AreEqual(0, fixture.Loads); Assert.IsFalse(System.IO.Directory.Exists(fixture.DirectoryPath)); AssertUnassigned(fixture);
+            }
+        }
+
+        [TestMethod]
+        public void MatchingCacheIsReusedAndCorruptCacheIsRejectedBeforeNativeLoad()
+        {
+            using (var fixture = new NativeRendererLoaderFixture())
+            {
+                fixture.Seed(fixture.Bytes); fixture.EnsureLoaded(); Assert.AreEqual(0, fixture.Moves); Assert.AreEqual(1, fixture.Loads);
+                CollectionAssert.AreEqual(fixture.Bytes, System.IO.File.ReadAllBytes(fixture.CachedPayload));
+            }
+            using (var fixture = new NativeRendererLoaderFixture())
+            {
+                byte[] damaged = (byte[])fixture.Bytes.Clone(); damaged[0] ^= 1; fixture.Seed(damaged);
+                Assert.ThrowsException<System.IO.InvalidDataException>(() => fixture.EnsureLoaded());
+                Assert.AreEqual(0, fixture.Loads); Assert.AreEqual(0, fixture.Moves); AssertUnassigned(fixture);
+                CollectionAssert.AreEqual(damaged, System.IO.File.ReadAllBytes(fixture.CachedPayload));
+            }
+        }
+
+        [TestMethod]
+        public void ConcurrentCacheWinnerIsPreservedAndTemporaryPayloadIsDeleted()
+        {
+            using (var fixture = new NativeRendererLoaderFixture())
+            {
+                int races = 0;
+                VbeNativeRenderer.MovePayload = (from, to) =>
+                {
+                    Assert.IsTrue(System.IO.File.Exists(from)); Assert.AreEqual(fixture.CachedPayload, to);
+                    System.IO.File.WriteAllBytes(to, fixture.Bytes); races++;
+                    throw new System.IO.IOException("synthetic competing extraction already published");
+                };
+                fixture.EnsureLoaded(); Assert.AreEqual(1, races); Assert.AreEqual(1, fixture.Loads);
+                fixture.AssertNoTemporaryFiles(); CollectionAssert.AreEqual(fixture.Bytes, System.IO.File.ReadAllBytes(fixture.CachedPayload));
+            }
+        }
+
+        [TestMethod]
+        public void CacheMoveFailureWithoutWinnerPropagatesAndDeletesTemporaryPayload()
+        {
+            using (var fixture = new NativeRendererLoaderFixture())
+            {
+                var expected = new System.IO.IOException("synthetic rename denied");
+                VbeNativeRenderer.MovePayload = (from, to) => { Assert.IsTrue(System.IO.File.Exists(from)); throw expected; };
+                Assert.AreSame(expected, Assert.ThrowsException<System.IO.IOException>(() => fixture.EnsureLoaded()));
+                fixture.AssertNoTemporaryFiles(); Assert.IsFalse(System.IO.File.Exists(fixture.CachedPayload)); Assert.AreEqual(0, fixture.Loads); AssertUnassigned(fixture);
+            }
+        }
+
+        [TestMethod]
+        public void NativeLoadFailureRetainsNoModuleOrPartialExports()
+        {
+            using (var fixture = new NativeRendererLoaderFixture())
+            {
+                int calls = 0;
+                VbeNativeRenderer.LoadModule = (path, file, flags) =>
+                { Assert.AreEqual(fixture.CachedPayload, path); Assert.AreEqual((uint)0x1100, flags); calls++; return IntPtr.Zero; };
+                Assert.ThrowsException<System.ComponentModel.Win32Exception>(() => fixture.EnsureLoaded());
+                Assert.AreEqual(1, calls); Assert.AreEqual(0, fixture.Released.Count); AssertUnassigned(fixture); fixture.AssertNoTemporaryFiles();
+            }
+        }
+
+        [TestMethod]
+        public void MissingNativeExportReleasesLoadedModuleWithoutPublishingDelegates()
+        {
+            using (var fixture = new NativeRendererLoaderFixture())
+            {
+                fixture.MissingExport = "CodexVbeThemeRefresh";
+                var actual = Assert.ThrowsException<EntryPointNotFoundException>(() => fixture.EnsureLoaded());
+                Assert.AreEqual("CodexVbeThemeRefresh", actual.Message); Assert.AreEqual(1, fixture.Loads); Assert.AreEqual(1, fixture.Released.Count);
+                AssertUnassigned(fixture); fixture.AssertNoTemporaryFiles();
+            }
+        }
+
+        [TestMethod]
+        public void NativeAbiStatusFailureOrMismatchReleasesModuleAndValidStatusPublishesIt()
+        {
+            foreach (bool queryFailed in new[] { true, false })
+                using (var fixture = new NativeRendererLoaderFixture())
+                {
+                    fixture.OverrideStatus = true; fixture.StatusError = queryFailed ? 5u : 0u; fixture.StatusAbi = queryFailed ? 1u : 2u;
+                    Assert.ThrowsException<System.IO.InvalidDataException>(() => fixture.EnsureLoaded());
+                    Assert.AreEqual(1, fixture.Loads); Assert.AreEqual(1, fixture.Released.Count); AssertUnassigned(fixture);
+                }
+            using (var fixture = new NativeRendererLoaderFixture())
+            {
+                fixture.OverrideStatus = true; fixture.EnsureLoaded(); Assert.AreNotEqual(IntPtr.Zero, fixture.Read("module"));
+                Assert.AreEqual(0, fixture.Released.Count); Assert.IsFalse(VbeNativeRenderer.Active);
+            }
+        }
+    }
+}
