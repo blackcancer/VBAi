@@ -1,6 +1,7 @@
 import * as monaco from '../../../artifacts/monaco-dependencies/monaco/package/esm/vs/editor/editor.api.js';
 import '../../../artifacts/monaco-dependencies/monaco/package/esm/vs/editor/editor.all.js';
 import { installLanguage } from './language.js';
+import { installEditing } from './editing.js';
 
 self.MonacoEnvironment = { getWorker: () => new Worker('./editor.worker.js', { type: 'module' }) };
 const keywords = 'Option Explicit Private Public Friend Static Dim Const Sub Function Property Get Let Set End If Then Else ElseIf Select Case For Each Next Do Loop While Wend With New Nothing As ByVal ByRef Optional ParamArray ReDim Preserve Return Exit On Error Resume GoTo GoSub Declare PtrSafe Lib Alias Type Enum Implements WithEvents Call Me And Or Not Xor Mod Is Like True False Null Empty Boolean Byte Integer Long LongLong LongPtr Single Double Currency Date String Object Variant Debug Stop'.split(' ');
@@ -17,12 +18,14 @@ monaco.languages.setMonarchTokensProvider('vba', {
 });
 monaco.languages.setLanguageConfiguration('vba', {
   comments: { lineComment: "'" }, brackets: [['(', ')']],
-  autoClosingPairs: [{ open: '(', close: ')' }, { open: '"', close: '"', notIn: ['string', 'comment'] }],
+  wordPattern: /[\p{L}_][\p{L}\p{N}_]*\$?/u,
+  autoClosingPairs: [{ open: '(', close: ')', notIn: ['string', 'comment'] }, { open: '"', close: '"', notIn: ['string', 'comment'] }],
   surroundingPairs: [{ open: '(', close: ')' }, { open: '"', close: '"' }]
 });
 monaco.languages.registerCompletionItemProvider('vba', {
   provideCompletionItems(model, position) {
     const word = model.getWordUntilPosition(position);
+    if (/\.\s*[\p{L}\p{N}_]*$/u.test(model.getLineContent(position.lineNumber).slice(0, position.column - 1))) return { suggestions: [] };
     return { suggestions: keywords.map(label => ({ label, kind: monaco.languages.CompletionItemKind.Keyword, insertText: label,
       range: { startLineNumber: position.lineNumber, endLineNumber: position.lineNumber, startColumn: word.startColumn, endColumn: word.endColumn } })) };
   }
@@ -36,11 +39,12 @@ const models = new Map();
 let active = null, suppress = false, diff = null;
 const editor = monaco.editor.create(document.getElementById('editor'), {
   theme: 'vbai-dark', language: 'vba', automaticLayout: true, fontFamily: 'Cascadia Code, Consolas, monospace', fontSize: 14,
-  minimap: { enabled: false }, scrollBeyondLastLine: false, renderWhitespace: 'selection', wordBasedSuggestions: 'currentDocument',
-  tabSize: 4, insertSpaces: true, readOnly: false, glyphMargin: true
+  minimap: { enabled: false }, scrollBeyondLastLine: false, renderWhitespace: 'selection', wordBasedSuggestions: 'off',
+  tabSize: 4, insertSpaces: true, readOnly: false, glyphMargin: true, formatOnPaste: true, autoIndent: 'full'
 });
 function send(value) { window.chrome.webview.postMessage(value); }
 const language = installLanguage(monaco, editor, models, send);
+installEditing(monaco, editor);
 let commandLabels = {}, nativeActions = [];
 function snapshot(entry) { return { id: entry.id, text: entry.model.getValue(), version: entry.model.getVersionId() }; }
 function select(id) {
@@ -57,6 +61,7 @@ window.vbai = {
   languageReply: language.reply,
   labels(value) { commandLabels = value; installNativeActions(); installAssistantActions(); },
   languageInspect(id, line, column) { return language.inspect(models.get(id).model, { lineNumber: line, column }); },
+  languageHover(id, line, column) { return language.hover(models.get(id).model, { lineNumber: line, column }); },
   diagnostics(id, version, markers) { const entry = models.get(id); if (entry && entry.model.getVersionId() === version) monaco.editor.setModelMarkers(entry.model, 'VBA compiler', markers); },
   execution(id, line, reveal = true) { const entry = models.get(id); if (!entry) return; entry.execution = entry.model.deltaDecorations(entry.execution || [], line > 0 ? [{ range: new monaco.Range(line, 1, line, 1), options: { isWholeLine: true, className: 'vbai-execution-line', glyphMarginClassName: 'vbai-execution', glyphMarginHoverMessage: { value: 'VBE: Show Next Statement' } } }] : []); if (line > 0 && reveal && active === id) editor.revealLineInCenter(line); },
   breakpointRequested(id, line) { const entry = models.get(id); if (!entry) return; entry.breakpoints ||= new Map(); if (entry.breakpoints.has(line)) { entry.model.deltaDecorations(entry.breakpoints.get(line), []); entry.breakpoints.delete(line); return; } entry.breakpoints.set(line, entry.model.deltaDecorations([], [{ range: new monaco.Range(line, 1, line, 1), options: { glyphMarginClassName: 'vbai-breakpoint-pending', glyphMarginHoverMessage: { value: commandLabels['Breakpoint request sent; verify in VBE.'] || 'Breakpoint request sent; verify in VBE.' } } }])); },
@@ -100,6 +105,8 @@ window.vbai = {
   reveal(line, column) { editor.setPosition({ lineNumber: line, column }); editor.revealLineInCenter(line); editor.focus(); },
   command(name) { const action = editor.getAction(name); if (action) action.run(); else editor.trigger('vbai', name, {}); },
   insert(text) { editor.trigger('vbai', 'type', { text }); },
+  // Monaco's source tag enables typing contributions; this does not send OS keystrokes.
+  type(text) { editor.trigger('keyboard', 'type', { text }); },
   testInfo() { return { language: editor.getModel()?.getLanguageId(), models: models.size, theme: document.body.style.background, version: monaco.editor?.getModels().length, diff: !!diff, pendingBreakpoints: models.get(active)?.breakpoints?.size || 0, executionMarkers: models.get(active)?.execution?.length || 0, markers: editor.getModel() ? monaco.editor.getModelMarkers({ resource: editor.getModel().uri }).length : 0 }; }
 };
 editor.addAction({ id: 'vbai.save', label: 'VBA: Save', keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
