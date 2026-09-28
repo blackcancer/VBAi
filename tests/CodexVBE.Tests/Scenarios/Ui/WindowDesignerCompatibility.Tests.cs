@@ -6,11 +6,31 @@ using System.Linq;
 using System.Windows.Forms;
 using CodexVBE;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-namespace CodexVBE.Tests.Unit
+namespace CodexVBE.Tests.Scenarios.Ui
 {
     [TestClass, TestCategory("Unit")]
     public sealed class WindowDesignerCompatibilityTests
     {
+        [STATestMethod]
+        public void UnsitedDesignerPreviewHonorsTheActiveDesignTimeLicenseContext()
+        {
+            var previous = LicenseManager.CurrentContext;
+            try
+            {
+                LicenseManager.CurrentContext = new DesigntimeLicenseContext();
+                foreach (var type in new[] { typeof(ModernEditorWindow), typeof(UpdateWindow), typeof(UpdateProgressWindow) })
+                using (var form = (Form)Activator.CreateInstance(type))
+                {
+                    Assert.IsNull(form.Site, "This case exercises the license guard rather than a Designer site.");
+                    if (form is UpdateWindow updates) updates.ReadPreferences = () => { Assert.Fail("Preview read update preferences"); return null; };
+                    type.GetMethod("OnShown", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                        .Invoke(form, new object[] { EventArgs.Empty });
+                    if (form is ModernEditorWindow editor) Assert.IsNull(editor.Browser);
+                }
+            }
+            finally { LicenseManager.CurrentContext = previous; }
+        }
+
         [STATestMethod]
         public void EditorUpdatesGitAndSettingsHaveEditableSerializableDesignerControls()
         {
