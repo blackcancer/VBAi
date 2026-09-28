@@ -16,10 +16,12 @@ namespace CodexVBE.Tests.Unit
         public long HWnd { get; set; }
         public string Caption { get; set; }
     }
+    public sealed class NativeThemeMainWindow { public long HWnd { get; set; } }
     public sealed class NativeThemeVbe
     {
         public string Version { get; set; } = "7.1";
         public object[] Windows { get; set; } = new object[0];
+        public NativeThemeMainWindow MainWindow { get; set; } = new NativeThemeMainWindow();
     }
     public sealed class NativeThemeBrokenVbe
     {

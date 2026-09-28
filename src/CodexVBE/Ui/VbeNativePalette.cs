@@ -15,15 +15,20 @@ namespace CodexVBE
         private readonly IntPtr editor;
         private readonly System.Windows.Forms.Timer timer;
         private readonly string path;
+        private readonly Action<object, bool, string> change;
+        private readonly Action<Exception> reportFailure;
         private bool requested;
         private bool? applied;
         private bool disposed;
         private static int updateInProgress;
 
-        internal VbeNativePalette(object vbe, IntPtr editor, string recoveryPath = null)
+        internal VbeNativePalette(object vbe, IntPtr editor, string recoveryPath = null,
+            Action<object, bool, string> change = null, Action<Exception> reportFailure = null)
         {
             this.vbe = vbe;
             this.editor = editor;
+            this.change = change ?? Change;
+            this.reportFailure = reportFailure ?? ShowFailure;
             string version = Convert.ToString(((dynamic)vbe).Version);
             if (string.IsNullOrEmpty(version) || version.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
                 throw new InvalidOperationException("The VBE version cannot be used for palette recovery.");
@@ -51,21 +56,26 @@ namespace CodexVBE
             bool target = requested;
             try
             {
-                Change(vbe, target, path);
+                change(vbe, target, path);
                 applied = target;
                 LoadLog.Write("Native editor palette " + (target ? "applied" : "restored") + " and verified.");
             }
             catch (Exception error)
             {
-                LoadLog.Write("Native editor palette failed: " + error);
-                MessageBox.Show(UiText.Get("Native editor colors could not be updated. See the log for details.") +
-                    Environment.NewLine + error.GetBaseException().Message, UiText.Get("VBAi settings"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                LoadLog.Write("Native editor palette failed: " + error.ToString());
+                reportFailure(error);
             }
             finally
             {
                 Interlocked.Exchange(ref updateInProgress, 0);
                 if (!disposed && requested != target) timer.Start();
             }
+        }
+
+        private static void ShowFailure(Exception error)
+        {
+            MessageBox.Show(UiText.Get("Native editor colors could not be updated. See the log for details.") +
+                Environment.NewLine + error.GetBaseException().Message, UiText.Get("VBAi settings"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
         internal static void Change(object vbe, bool enabled, string recoveryPath)
