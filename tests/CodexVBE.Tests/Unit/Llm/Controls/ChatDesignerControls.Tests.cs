@@ -11,6 +11,26 @@ namespace CodexVBE.Tests.Unit
     public sealed class ChatDesignerControlsTests
     {
         [STATestMethod, TestCategory("Unit")]
+        public void SelectedChoiceUsesSystemSelectionTextRatherThanTheDarkThemeWhiteForeground()
+        {
+            using (var combo = new ChatChoiceBox { ForeColor = Color.White, BackColor = Color.FromArgb(30, 30, 30) })
+            using (var bitmap = new Bitmap(240, 32))
+            using (var graphics = Graphics.FromImage(bitmap))
+            {
+                combo.Items.Add("Selected model");
+                UiInvoke.Call(typeof(ChatChoiceBox), "OnDrawItem", combo,
+                    new DrawItemEventArgs(graphics, combo.Font, new Rectangle(0, 0, 240, 32), 0, DrawItemState.Selected));
+                Assert.AreEqual(SystemColors.Highlight.ToArgb(), bitmap.GetPixel(230, 16).ToArgb());
+                int textPixels = 0;
+                for (int y = 5; y < 27; y++) for (int x = 7; x < 110; x++)
+                {
+                    var pixel = bitmap.GetPixel(x, y); var expected = SystemColors.HighlightText;
+                    if (Math.Abs(pixel.R - expected.R) + Math.Abs(pixel.G - expected.G) + Math.Abs(pixel.B - expected.B) < 45) textPixels++;
+                }
+                Assert.IsTrue(textPixels > 5, "The selection foreground must actually be drawn.");
+            }
+        }
+        [STATestMethod, TestCategory("Unit")]
         public void RoundedButtonsAndPanelsPaintSizingParentHoverPressAndFocusStates()
         {
             using (var bitmap = new Bitmap(240, 100))
@@ -45,7 +65,7 @@ namespace CodexVBE.Tests.Unit
             using (var graphics = Graphics.FromImage(bitmap))
             {
                 combo.Items.Add("Choice");
-                foreach (var index in new[] { -1, 0 }) foreach (var selected in new[] { false, true }) { UiInvoke.Call(typeof(ChatChoiceBox), "OnDrawItem", combo, new DrawItemEventArgs(graphics, combo.Font, new Rectangle(0, 0, 180, 30), index, selected ? DrawItemState.Selected : DrawItemState.None)); if (index == 0) Assert.AreEqual((selected ? Color.FromArgb(239, 246, 255) : combo.BackColor).ToArgb(), bitmap.GetPixel(175, 15).ToArgb()); }
+                foreach (var index in new[] { -1, 0 }) foreach (var selected in new[] { false, true }) { UiInvoke.Call(typeof(ChatChoiceBox), "OnDrawItem", combo, new DrawItemEventArgs(graphics, combo.Font, new Rectangle(0, 0, 180, 30), index, selected ? DrawItemState.Selected : DrawItemState.None)); if (index == 0) Assert.AreEqual((selected ? SystemColors.Highlight : combo.BackColor).ToArgb(), bitmap.GetPixel(175, 15).ToArgb()); }
                 foreach (var parent in new[] { false, true })
                 {
                     if (parent) { form.Controls.Add(combo); form.Show(); combo.Focus(); } else { var handle = combo.Handle; }
