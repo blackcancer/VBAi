@@ -37,7 +37,10 @@ namespace CodexVBE.Tests.Integration
                 string savedPath = host.File("named-arguments.xlsm");
                 var saved = host.Command(new { Command = "save_host_document_as", Project = project, Path = savedPath, ExpectedProjectVersion = properties["Version"] });
                 Assert.AreEqual(true, saved["Ok"], Convert.ToString(saved["Error"]));
-                var verified = host.Command(new { Command = "verify_vba_signature_file", Path = savedPath });
+                // Excel keeps its document open for writing; verify an isolated saved snapshot without weakening the verifier's read lock.
+                string signatureSnapshot = host.File("signature-snapshot.xlsm");
+                System.IO.File.Copy(savedPath, signatureSnapshot);
+                var verified = host.Command(new { Command = "verify_vba_signature_file", Path = signatureSnapshot });
                 Assert.AreEqual(true, verified["Ok"], Convert.ToString(verified["Error"]));
                 var signature = VbeBridgeClient.Object(verified["Data"]);
                 Assert.AreEqual(Convert.ToBoolean(signature["Available"]) ? "NoSignature" : "VerifierUnavailable", signature["Status"]);
