@@ -48,3 +48,14 @@ exclusion `[ProviderTests]*`, aucune exclusion de production.
 
 Rapport du worktree :
 `artifacts/coverage/debug-complete-validated/322f81ab-0bb1-4fbd-b8eb-8959ac228321/coverage.cobertura.xml`.
+
+## Procedures et options natives (lot après ab67e7b)
+
+Matrices ajoutées avant première exécution : Procedures couvre les scalaires .NET, culture, identité/projet/module/déclaration/SHA, body hors bornes, plafond 2048, contexte absent/Post rejeté, requête capturée, queued/delivering/delivered/failed, rétention20 et transport natif validant commande absente avant lookup hôte. Options couvre champs requis, catalogue vide/9tabs/nom vide/2001controls, version, tab absent/ambigu, contrôle absent/ambigu/illisible, chaque type et allowlist localisée, readback absent/ambigu/error/type/visible/enabled et annulation après OK échoué ou dialogue resté ouvert. NativeOptionsProbe utilise vrais fournisseurs UIA jetables pour checkbox/radio/edit, patterns absents, indeterminate/read-only/password, candidats filtrés et ambigus, bouton OK absent/classe/disabled/Post refusé et click réussi. Seule frontière production ajoutée : IsWindowEnabled du bouton Options, défaut PInvoke inchangé ; tous delegates/contextes restaurés en finally/Dispose.
+
+Validation finale : **92 tests verts, zéro ignoré**, build sans warning ni erreur.
+- VbeDebug.Procedures.cs : 100/100 lignes, 162/162 branches.
+- VbeDebugWindows.Options.cs : 78/78 lignes, 118/118 branches.
+- NativeOptionsProbe dans VbeDebugWindows.cs : 112/112 lignes, 74/74 branches.
+Rapport worktree : artifacts/coverage/procedures-options-validated/ce5b8900-658f-4bd6-9ce1-3041af3822f7/coverage.cobertura.xml.
+Le contrôle de nom projet unique est exercé via sélecteur FileName exact : deux projets peuvent partager un Name tout en ayant des paths différents ; aucune garde retirée. Le contexte déterministe est retiré avant l'await du test de validation du transport pour éviter une continuation pendante de fixture. Exclusion collector unique [ProviderTests]*, aucune exclusion de production, aucune instance Excel/SOLIDWORKS contactée.

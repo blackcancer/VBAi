@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -11,7 +11,9 @@ namespace CodexVBE
     internal static partial class VbeDebugWindows
     {
         [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint="IsWindowEnabled")]
-        private static extern bool OptionsWindowEnabled(IntPtr window);
+        private static extern bool NativeOptionsWindowEnabled(IntPtr window);
+        /// <summary>Native enabled-state boundary, preserving the Options button validation.</summary>
+        internal static Func<IntPtr, bool> OptionsWindowEnabled = NativeOptionsWindowEnabled;
         /// <summary>Sonde d’options limitée aux contrôles accessibles du dialogue courant.</summary>
         internal interface IWritableOptionsProbe : IOptionsProbe
         {

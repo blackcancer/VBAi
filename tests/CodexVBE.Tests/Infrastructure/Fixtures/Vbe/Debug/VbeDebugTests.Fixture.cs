@@ -177,7 +177,8 @@ namespace CodexVBE.Tests.Unit
 
         public sealed class FakeProcedureBody
         {
-            public int this[string procedure, int kind] => 1;
+            public int Body = 1;
+            public int this[string procedure, int kind] => Body;
         }
 
         public sealed class FakeProcedureLines : System.Dynamic.DynamicObject

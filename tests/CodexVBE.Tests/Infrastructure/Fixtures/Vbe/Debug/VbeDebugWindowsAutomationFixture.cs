@@ -34,6 +34,7 @@ namespace CodexVBE.Tests.Unit
             public bool HideCollapsedChildren;
             public bool FailName;
             public bool FailValue;
+            public bool ReadOnly;
             public int FocusCount;
             public int SelectionCount;
             public ToggleState ToggleState;
@@ -86,7 +87,7 @@ namespace CodexVBE.Tests.Unit
             public bool CanSelectMultiple => false;
             public bool IsSelectionRequired => false;
             string IValueProvider.Value { get { if (FailValue) throw new InvalidOperationException("value unreadable"); return Text; } }
-            bool IValueProvider.IsReadOnly => false;
+            bool IValueProvider.IsReadOnly => ReadOnly;
             public void SetValue(string value) { Text = value; }
             public void Toggle() { ToggleState = ToggleState == ToggleState.On ? ToggleState.Off : ToggleState.On; }
             ToggleState IToggleProvider.ToggleState { get { if (FailValue) throw new InvalidOperationException("toggle unreadable"); return ToggleState; } }
