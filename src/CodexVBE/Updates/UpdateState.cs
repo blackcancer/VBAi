@@ -37,7 +37,8 @@ namespace CodexVBE
     {
         internal static string InstallationDirectoryOverride;
         internal static string InstallationDirectory => InstallationDirectoryOverride ?? Path.GetDirectoryName(typeof(UpdateState).Assembly.Location);
-        internal static string ProductVersion => typeof(UpdateState).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? typeof(UpdateState).Assembly.GetName().Version.ToString();
+        internal static Func<Assembly> ReadProductAssembly = () => typeof(UpdateState).Assembly;
+        internal static string ProductVersion { get { var assembly = ReadProductAssembly(); return assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? assembly.GetName().Version.ToString(); } }
         internal static UpdatePreferences Load(string root = null)
         {
             try { return new JavaScriptSerializer().Deserialize<UpdatePreferences>(File.ReadAllText(Path.Combine(root ?? UpdatePaths.Root, "preferences.json"))) ?? new UpdatePreferences(); }
