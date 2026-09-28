@@ -513,3 +513,38 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    public sealed partial class CodexAppServerClientTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod, Microsoft.VisualStudio.TestTools.UnitTesting.TestCategory("Unit")]
+        public async System.Threading.Tasks.Task AnonymousReasoningIsIgnoredAndTerminalTurnsCloseOnlyTheirRunningActivities()
+        {
+            foreach (var terminal in new[] { "completed", "failed" })
+            {
+                var transport = new FakeTransport();
+                using (var client = Client(transport))
+                {
+                    var activities = new System.Collections.Generic.List<CodexAgentActivity>();
+                    client.ActivityUpdate += activities.Add;
+                    var turn = client.TurnAsync("inspect", null, null);
+                    await transport.TurnStarted.Task;
+                    transport.Emit(new { method = "item/reasoning/summaryTextDelta", @params = new { threadId = "thread-1", delta = "anonymous" } });
+                    transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", item = new { id = "", type = "reasoning", summary = new object[] { "anonymous" } } } });
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, activities.Count);
+                    transport.Emit(new { method = "item/reasoning/summaryTextDelta", @params = new { threadId = "thread-1", itemId = "reason", delta = "checking" } });
+                    transport.Emit(new { method = "item/started", @params = new { threadId = "thread-1", item = new { id = "command", type = "commandExecution", command = "verify" } } });
+                    transport.EmitTurnCompleted(terminal, terminal == "failed" ? "native failure" : null);
+                    if (terminal == "failed") await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.InvalidOperationException>(() => turn);
+                    else await turn;
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(4, activities.Count);
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(terminal, activities.FindLast(a => a.Id == "reason:summary:0").Status);
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(terminal == "failed" ? "failed" : "interrupted", activities.FindLast(a => a.Id == "command").Status);
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsTrue(activities[2].Append);
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsTrue(activities[3].Append);
+                }
+            }
+        }
+    }
+}

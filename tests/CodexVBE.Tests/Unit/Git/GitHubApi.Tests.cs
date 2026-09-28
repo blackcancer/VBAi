@@ -152,3 +152,54 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    public sealed partial class GitReviewTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod, Microsoft.VisualStudio.TestTools.UnitTesting.TestCategory("Unit")]
+        public async System.Threading.Tasks.Task IssueTitleOverTheLimitIsRejectedBeforeCredentialsOrTransport()
+        {
+            int credentials = 0;
+            var handler = new CodexVBE.Tests.Infrastructure.LlmHttpFixture();
+            using (var api = new GitHubApi(null, handler, ct => { credentials++; return System.Threading.Tasks.Task.FromResult("unused"); }))
+            {
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.ArgumentException>(() => api.CreateIssue("https://github.com/owner/repo", new string('t', 181), "report", System.Threading.CancellationToken.None));
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, credentials);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, handler.Uris.Count);
+                await System.Threading.Tasks.Task.CompletedTask;
+            }
+        }
+    }
+}
+namespace CodexVBE.Tests.Unit
+{
+    public sealed partial class GitReviewTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod, Microsoft.VisualStudio.TestTools.UnitTesting.TestCategory("Unit")]
+        public async System.Threading.Tasks.Task IssueAcceptsOptionalBodyAndExactLimitsWhileRejectingOversizedReports()
+        {
+            var handler = new CodexVBE.Tests.Infrastructure.LlmHttpFixture("{\"number\":7,\"html_url\":\"https://github.com/owner/repo/issues/7\"}", "{\"number\":8,\"html_url\":\"https://github.com/owner/repo/issues/8\"}");
+            int credentials = 0;
+            using (var api = new GitHubApi(null, handler, ct => { credentials++; return System.Threading.Tasks.Task.FromResult("owned-token"); }))
+            {
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.ArgumentException>(() => api.CreateIssue("https://github.com/owner/repo", "Title", new string('b', 60001), System.Threading.CancellationToken.None));
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, credentials);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, handler.Uris.Count);
+                var issue = await api.CreateIssue("https://github.com/owner/repo", "Title", null, System.Threading.CancellationToken.None);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(7, issue.number);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("https://github.com/owner/repo/issues/7", issue.html_url);
+                var json = new System.Web.Script.Serialization.JavaScriptSerializer();
+                var payload = (System.Collections.Generic.IDictionary<string, object>)json.DeserializeObject(handler.Bodies[0]);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsNull(payload["body"]);
+                issue = await api.CreateIssue("https://github.com/owner/repo", new string('t', 180), new string('b', 60000), System.Threading.CancellationToken.None);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(8, issue.number);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(2, credentials);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(2, handler.Uris.Count);
+                payload = (System.Collections.Generic.IDictionary<string, object>)json.DeserializeObject(handler.Bodies[1]);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(180, ((string)payload["title"]).Length);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(60000, ((string)payload["body"]).Length);
+            }
+        }
+    }
+}

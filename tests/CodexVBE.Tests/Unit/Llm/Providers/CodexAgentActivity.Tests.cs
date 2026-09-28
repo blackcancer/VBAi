@@ -43,3 +43,25 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    [Microsoft.VisualStudio.TestTools.UnitTesting.TestClass, Microsoft.VisualStudio.TestTools.UnitTesting.TestCategory("Unit")]
+    public sealed class CodexAgentActivityBoundaryTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void FileChangeWithoutAnArrayRetainsItsIdentityAndActualOutcome()
+        {
+            foreach (bool missing in new[] { true, false })
+            {
+                var item = new System.Collections.Generic.Dictionary<string, object> { ["type"] = "fileChange", ["id"] = "files", ["status"] = "declined" };
+                if (!missing) item["changes"] = "unstructured";
+                var activity = CodexAgentActivity.FromItem(item, true);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("files", activity.Id);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(UiText.Get("Files"), activity.Title);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("", activity.Detail);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("declined", activity.Status);
+            }
+        }
+    }
+}

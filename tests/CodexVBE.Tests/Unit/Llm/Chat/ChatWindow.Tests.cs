@@ -461,3 +461,105 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using System.Windows.Forms;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+    public sealed partial class ChatWindowStateTests
+    {
+        [STATestMethod, TestCategory("Unit")]
+        public void AssistantIdentityIsEmbeddedAndPartialCleanupToleratesAMissingAboutControl()
+        {
+            using (var resource = typeof(ChatWindow).Assembly.GetManifestResourceStream("CodexVBE.Icons.assistant.ico"))
+            {
+                Assert.IsNotNull(resource);
+                Assert.IsTrue(resource.Length > 0);
+            }
+            using (var window = new ChatWindow())
+            {
+                var about = Get<ToolStripMenuItem>(window, "about");
+                Assert.IsNotNull(about.Image);
+                Assert.IsTrue(about.Image.Width > 0);
+                try
+                {
+                    Set(window, "about", null);
+                    Call(window, "DisposeRuntime");
+                    Assert.IsNotNull(about.Image);
+                }
+                finally { Set(window, "about", about); }
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void NativeActivitiesAreDeliveredOnlyToTheOwningLiveConversation()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = ReadyCodexWindow(new ChatSessionState()))
+            using (var client = (CodexAppServerClient)Call(window, "CreateCodexClient"))
+            {
+                var owner = Get<ChatSessionState>(window, "currentSession");
+                var update = (Action<CodexAgentActivity>)typeof(CodexAppServerClient).GetField("ActivityUpdate", Fields).GetValue(client);
+                update(new CodexAgentActivity { Id = "owned", Kind = "dynamicToolCall", Title = "read_module", Status = "inProgress" });
+                var entries = Get<List<ChatEntry>>(window, "transcriptEntries");
+                Assert.AreEqual(1, entries.Count);
+                Assert.AreEqual("owned", entries[0].Activity.Id);
+                Set(window, "currentSession", new ChatSessionState());
+                update(new CodexAgentActivity { Id = "foreign", Kind = "dynamicToolCall", Status = "completed" });
+                Assert.AreEqual(1, entries.Count);
+                Set(window, "currentSession", owner);
+                window.Dispose();
+                update(new CodexAgentActivity { Id = "late", Kind = "dynamicToolCall", Status = "completed" });
+                Assert.AreEqual(1, entries.Count);
+                Set(window, "currentSession", null);
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void EmptySendResumesThePausedHttpBudgetWithoutCreatingANewQuestion()
+        {
+            var state = new ChatSessionState { BudgetPaused = true, PausedProvider = "Ollama", PausedModel = "local-test", PausedMode = ChatMode.Agent, Mode = ChatMode.Agent, PausedTurnId = "paused" };
+            using (var runtime = new RuntimeScope())
+            using (var window = ReadyHttpWindow(state))
+            {
+                var handler = new ChatResponseHandler("{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"resumed answer\"}}]}");
+                window.HttpHandlerOverride = () => handler;
+                CompleteOnSta((Task)Call(window, "SendAsync"));
+                Assert.AreEqual(1, handler.Requests.Count);
+                Assert.IsFalse(state.BudgetPaused);
+                Assert.IsFalse(Get<bool>(window, "busy"));
+                var entries = Get<List<ChatEntry>>(window, "transcriptEntries");
+                Assert.IsFalse(entries.Exists(entry => entry.Speaker == "Vous"));
+                Assert.IsTrue(entries.Exists(entry => entry.Text == "resumed answer"));
+                Set(window, "currentSession", null);
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void SendRepropagatesARecoveryFailureAfterTheWindowClosesDuringTheProviderReply()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = ReadyHttpWindow(new ChatSessionState()))
+            {
+                var messages = Get<List<object>>(window, "messages");
+                window.HttpHandlerOverride = () => new RuntimeHttpHandler { BeforeResponse = () => {
+                    window.Dispose();
+                    messages.Add(new { role = "assistant", content = new string('x', 10 * 1024 * 1024 + 1) });
+                    throw new System.IO.IOException("reply interrupted after closure");
+                } };
+                Question(window, "continue");
+                var task = (Task)Call(window, "SendAsync");
+                var error = Assert.ThrowsException<InvalidOperationException>(() => CompleteOnSta(task));
+                StringAssert.Contains(error.StackTrace, "CompletePendingToolResponses");
+                Assert.IsTrue(task.IsFaulted);
+                Assert.IsTrue(window.IsDisposed);
+                Assert.IsNull(Get<LlmChatClient>(window, "activeHttpClient"));
+                Set(window, "currentSession", null);
+            }
+        }
+    }
+}
