@@ -7,7 +7,7 @@ namespace CodexVBE
         internal System.Windows.Forms.Label help;
         internal System.Windows.Forms.TextBox remote;
         internal System.Windows.Forms.TextBox branch;
-        internal System.Windows.Forms.Button connect;
+        internal CodexVBE.ThemedButton connect;
         internal System.Windows.Forms.TableLayoutPanel connectionLayout;
         private System.ComponentModel.IContainer components;
         private System.Windows.Forms.ToolTip toolTips;
@@ -30,6 +30,7 @@ namespace CodexVBE
             this.remote = new System.Windows.Forms.TextBox();
             this.branch = new System.Windows.Forms.TextBox();
             this.connect = new CodexVBE.ThemedButton();
+            this.connectionLayout.SuspendLayout();
             this.SuspendLayout();
             this.help.Text = "VBA changes become source files in the repository. No folder next to the macro.\r\nThe first pull replaces VBA with a restorable backup.\r\nSign in through Git Credential Manager; commit identity is configured in Git.";
             this.help.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -77,6 +78,27 @@ namespace CodexVBE
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.Name = "GitConnectionView";
             this.Size = new System.Drawing.Size(860, 500);
+            this.remoteLabel.Location = new System.Drawing.Point(3, 53);
+            this.remoteLabel.Size = new System.Drawing.Size(102, 21);
+            this.remoteLabel.TabIndex = 1;
+            this.branchLabel.Location = new System.Drawing.Point(3, 89);
+            this.branchLabel.Size = new System.Drawing.Size(42, 21);
+            this.branchLabel.TabIndex = 2;
+            this.help.Location = new System.Drawing.Point(3, 0);
+            this.help.Size = new System.Drawing.Size(854, 53);
+            this.help.TabIndex = 0;
+            this.remote.Location = new System.Drawing.Point(143, 56);
+            this.remote.Size = new System.Drawing.Size(714, 23);
+            this.branch.Location = new System.Drawing.Point(143, 92);
+            this.branch.Size = new System.Drawing.Size(714, 23);
+            this.connect.Location = new System.Drawing.Point(143, 128);
+            this.connect.Size = new System.Drawing.Size(95, 28);
+            this.connectionLayout.Name = "connectionLayout";
+            this.connectionLayout.Location = new System.Drawing.Point(0, 0);
+            this.connectionLayout.Size = new System.Drawing.Size(860, 500);
+            this.connectionLayout.TabIndex = 0;
+            this.connectionLayout.ResumeLayout(false);
+            this.connectionLayout.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
         }

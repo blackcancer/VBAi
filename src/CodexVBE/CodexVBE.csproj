@@ -22,6 +22,9 @@
     <Compile Update="Git\Views\*.cs"><SubType>UserControl</SubType></Compile>
     <Compile Update="Git\Views\*.Designer.cs"><SubType>Code</SubType><DependentUpon>$([System.String]::Copy('%(Filename)').Replace('.Designer', '')).cs</DependentUpon></Compile>
     <EmbeddedResource Update="Git\Views\*.resx"><DependentUpon>%(Filename).cs</DependentUpon></EmbeddedResource>
+    <Compile Update="Llm\Controls\*View.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Llm\Controls\*View.Designer.cs"><SubType>Code</SubType><DependentUpon>$([System.String]::Copy('%(Filename)').Replace('.Designer', '')).cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Llm\Controls\*View.resx"><DependentUpon>%(Filename).cs</DependentUpon></EmbeddedResource>
     <Compile Update="Host\ChatToolWindow.cs"><SubType>UserControl</SubType></Compile>
     <Compile Update="Host\ChatToolWindow.Designer.cs"><DependentUpon>ChatToolWindow.cs</DependentUpon></Compile>
     <EmbeddedResource Update="Host\ChatToolWindow.resx"><DependentUpon>ChatToolWindow.cs</DependentUpon></EmbeddedResource>

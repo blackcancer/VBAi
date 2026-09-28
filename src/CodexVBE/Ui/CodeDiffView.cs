@@ -15,6 +15,10 @@ namespace CodexVBE
         private string before = "", after = "";
         /// <summary>Initialise les contrôles et applique les libellés localisés.</summary>
         public CodeDiffView() { InitializeComponent(); UiText.Apply(this, components); }
+        /// <summary>Choisit l’affichage unifié ; la propriété reste éditable dans le Designer.</summary>
+        [System.ComponentModel.DefaultValue(false), System.ComponentModel.Category("Appearance")]
+        public bool UnifiedDiff { get => unified.Checked; set => unified.Checked = value; }
+
         /// <summary>Affiche la comparaison entre deux contenus et remplace les entrées précédentes.</summary>
         /// <param name="oldCode">Contenu initial ; une valeur nulle est traitée comme une chaîne vide.</param>
         /// <param name="newCode">Contenu modifié ; une valeur nulle est traitée comme une chaîne vide.</param>

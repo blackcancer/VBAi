@@ -97,6 +97,7 @@ namespace CodexVBE
         /// <param name="item">Élément du transcript libéré.</param>
         private void ReleaseEntry(TranscriptItem item)
         {
+            if (item.RenderedContext is ChatEntry && item.Content is FrameworkElement content) DisposeEntryView(content);
             if (item.RenderedContext is ChatEntry entry && entryViews.TryGetValue(entry, out var view) && ReferenceEquals(view, item.Content)) {
                 entryViews.Remove(entry);
                 if (entry.StreamId != null) liveTexts.Remove(entry.StreamId);
@@ -104,10 +105,22 @@ namespace CodexVBE
                 if (entry.Change != null) { rollbackButtons.Remove(entry.Change); changeStates.Remove(entry.Change); }
             }
         }
+        /// <summary>Libère les hôtes natifs avant de remplacer les vues matérialisées.</summary>
+        private void DisposeEntryViews()
+        {
+            foreach (var view in entryViews.Values.ToArray()) DisposeEntryView(view);
+        }
+        /// <summary>Les cartes riches restent dynamiques ; leurs composants natifs suivent leur cycle de vie.</summary>
+        private static void DisposeEntryView(FrameworkElement view)
+        {
+            if (view is ChatDiffView diff) { diff.Dispose(); return; }
+            foreach (var child in LogicalTreeHelper.GetChildren(view).OfType<FrameworkElement>()) DisposeEntryView(child);
+        }
         /// <summary>Remplace la fenêtre virtualisée par les entrées commençant à l’index demandé.</summary>
         /// <param name="start">Index de départ dans le transcript complet.</param>
         private void RefreshTranscriptWindow(int start)
         {
+            DisposeEntryViews();
             firstLoadedEntry = start;
             visibleEntries.Clear(); entryViews.Clear(); liveTexts.Clear(); rollbackButtons.Clear(); changeStates.Clear(); formCutButtons.Clear();
             if (start > 0) visibleEntries.Add(earlierEntries);
@@ -116,6 +129,7 @@ namespace CodexVBE
         /// <summary>Efface le transcript complet et réinitialise les contrôles matérialisés et le suivi du défilement.</summary>
         private void ClearTranscript()
         {
+            DisposeEntryViews();
             visibleEntries.Clear(); firstLoadedEntry = 0;
             transcriptEntries.Clear(); entryViews.Clear(); liveEntries.Clear(); liveTexts.Clear();
             rollbackButtons.Clear(); changeStates.Clear(); formCutButtons.Clear(); followConversation = true;

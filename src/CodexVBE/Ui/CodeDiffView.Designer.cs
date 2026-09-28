@@ -12,13 +12,13 @@ namespace CodexVBE
         /// <summary>Option qui replie le contexte éloigné des changements.</summary>
         private System.Windows.Forms.CheckBox collapse;
         /// <summary>Bouton de navigation vers le changement précédent.</summary>
-        private System.Windows.Forms.Button previous;
+        private CodexVBE.ThemedButton previous;
         /// <summary>Bouton de navigation vers le changement suivant.</summary>
-        private System.Windows.Forms.Button next;
+        private CodexVBE.ThemedButton next;
         /// <summary>Champ de recherche dans le contenu du diff.</summary>
         private System.Windows.Forms.TextBox search;
         /// <summary>Bouton qui lance la recherche courante.</summary>
-        private System.Windows.Forms.Button find;
+        private CodexVBE.ThemedButton find;
         /// <summary>Grille virtuelle en lecture seule qui affiche les lignes du diff.</summary>
         private System.Windows.Forms.DataGridView grid;
         /// <summary>Composant qui affiche les explications des commandes de la barre d’outils.</summary>
@@ -40,6 +40,10 @@ namespace CodexVBE
             this.search = new System.Windows.Forms.TextBox();
             this.find = new CodexVBE.ThemedButton();
             this.grid = new System.Windows.Forms.DataGridView();
+            ((System.ComponentModel.ISupportInitialize)(this.grid)).BeginInit();
+            this.toolbar.SuspendLayout();
+            this.grid.SuspendLayout();
+            this.SuspendLayout();
             this.tips = new System.Windows.Forms.ToolTip(this.components);
             this.oldLineColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.beforeColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
@@ -67,7 +71,6 @@ namespace CodexVBE
             this.afterColumn.FillWeight = 100F;
             this.afterColumn.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.NotSortable;
             this.grid.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] { this.oldLineColumn, this.beforeColumn, this.newLineColumn, this.afterColumn });
-            this.SuspendLayout();
             this.toolbar.Dock = System.Windows.Forms.DockStyle.Top;
             this.toolbar.AutoSize = true;
             this.toolbar.Controls.AddRange(new System.Windows.Forms.Control[] { this.unified, this.collapse, this.previous, this.next, this.search, this.find });
@@ -111,6 +114,43 @@ namespace CodexVBE
             this.Name = "CodeDiffView";
             this.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.Size = new System.Drawing.Size(700, 350);
+            this.toolbar.Name = "toolbar";
+            this.toolbar.Location = new System.Drawing.Point(0, 0);
+            this.toolbar.Size = new System.Drawing.Size(700, 30);
+            this.toolbar.TabIndex = 1;
+            this.unified.Name = "unified";
+            this.unified.Location = new System.Drawing.Point(3, 3);
+            this.unified.Size = new System.Drawing.Size(59, 18);
+            this.unified.TabIndex = 0;
+            this.collapse.Name = "collapse";
+            this.collapse.Location = new System.Drawing.Point(68, 3);
+            this.collapse.Size = new System.Drawing.Size(85, 18);
+            this.collapse.TabIndex = 1;
+            this.previous.Name = "previous";
+            this.previous.Location = new System.Drawing.Point(159, 3);
+            this.previous.Size = new System.Drawing.Size(32, 23);
+            this.previous.TabIndex = 2;
+            this.next.Name = "next";
+            this.next.Location = new System.Drawing.Point(197, 3);
+            this.next.Size = new System.Drawing.Size(32, 23);
+            this.next.TabIndex = 3;
+            this.search.Name = "search";
+            this.search.Location = new System.Drawing.Point(235, 3);
+            this.search.Size = new System.Drawing.Size(120, 20);
+            this.search.TabIndex = 4;
+            this.find.Name = "find";
+            this.find.Location = new System.Drawing.Point(361, 3);
+            this.find.Size = new System.Drawing.Size(75, 24);
+            this.find.TabIndex = 5;
+            this.grid.Name = "grid";
+            this.grid.Location = new System.Drawing.Point(0, 30);
+            this.grid.Size = new System.Drawing.Size(700, 320);
+            this.grid.TabIndex = 0;
+            ((System.ComponentModel.ISupportInitialize)(this.grid)).EndInit();
+            this.toolbar.ResumeLayout(false);
+            this.toolbar.PerformLayout();
+            this.grid.ResumeLayout(false);
+            this.grid.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
         }

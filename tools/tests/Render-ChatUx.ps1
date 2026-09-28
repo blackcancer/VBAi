@@ -2,6 +2,9 @@
     [ValidateSet('Conversation', 'History', 'Reference', 'Command', 'Welcome')][string]$Mode = 'Conversation',
     [int]$Width = 720,
     [int]$Height = 950,
+    [switch]$ScrollToTop,
+    [ValidateSet('System', 'Light', 'Dark')][string]$Theme = 'System',
+    [string]$OutputDirectory = 'artifacts/chat-build',
     [string]$AssemblyPath = 'artifacts/chat-build/CodexVBE/Debug/net48/CodexVBE.dll'
 )
 $ErrorActionPreference = 'Stop'
@@ -11,6 +14,10 @@ public class RenderVbe { public object[] VBProjects { get { return new object[0]
 '@
 $assembly = [Reflection.Assembly]::LoadFrom((Resolve-Path $AssemblyPath))
 $flags = [Reflection.BindingFlags]'Instance,NonPublic,Public'
+# Process-local theme only: leave the user's stored preference unchanged.
+$themeType = $assembly.GetType('CodexVBE.UiTheme')
+$choice = [Enum]::Parse($assembly.GetType('CodexVBE.ThemeChoice'), $Theme)
+$themeType.GetField('<Choice>k__BackingField', [Reflection.BindingFlags]'Static,NonPublic').SetValue($null, $choice)
 function New-Internal([string]$Name) { [Activator]::CreateInstance($assembly.GetType("CodexVBE.$Name"), $true) }
 function Field($object, [string]$name) { ,$object.GetType().GetField($name, $flags).GetValue($object) }
 function Call($object, [string]$name, [object[]]$arguments) { $object.GetType().GetMethod($name, $flags).Invoke($object, $arguments) }
@@ -90,45 +97,25 @@ try {
     [Windows.Forms.Application]::DoEvents()
     Start-Sleep -Milliseconds 300
     [Windows.Forms.Application]::DoEvents()
+    if ($ScrollToTop) {
+        $window.GetType().GetField('followConversation', $flags).SetValue($window, $false)
+        $scroll = Field $window conversationScroll
+        if ($scroll) { $scroll.ScrollToTop() }
+        [Windows.Forms.Application]::DoEvents()
+        Start-Sleep -Milliseconds 150
+        [Windows.Forms.Application]::DoEvents()
+    }
     $bitmap = [Drawing.Bitmap]::new($window.Width, $window.Height)
     try {
-        $window.DrawToBitmap($bitmap, [Drawing.Rectangle]::new(0, 0, $window.Width, $window.Height))
+        # Copy the displayed window: bitmap rendering misses native HWND content
+        # inside WindowsFormsHost (the Designer-backed inline diff).
         $graphics = [Drawing.Graphics]::FromImage($bitmap)
         try {
-            $drawer = Field $window historyPanel
-            if ($drawer.Visible) {
-                $drawerLocation = $drawer.PointToScreen([Drawing.Point]::Empty)
-                $graphics.ExcludeClip([Drawing.Rectangle]::new($drawerLocation.X - $window.Left, $drawerLocation.Y - $window.Top, $drawer.Width, $drawer.Height))
-            }
-            foreach ($hostName in @('transcriptHost','promptHost')) {
-                $hostControl = Field $window $hostName
-                $surface = $hostControl.Child
-                if (-not $surface -or -not $hostControl.Visible -or $surface.ActualWidth -le 0 -or $surface.ActualHeight -le 0) { continue }
-                $target = [Windows.Media.Imaging.RenderTargetBitmap]::new([int][Math]::Ceiling($surface.ActualWidth), [int][Math]::Ceiling($surface.ActualHeight), 96, 96, [Windows.Media.PixelFormats]::Pbgra32)
-                $target.Render($surface)
-                $encoder = [Windows.Media.Imaging.PngBitmapEncoder]::new()
-                $encoder.Frames.Add([Windows.Media.Imaging.BitmapFrame]::Create($target))
-                $stream = [IO.MemoryStream]::new()
-                try {
-                    $encoder.Save($stream); $stream.Position = 0
-                    $island = [Drawing.Image]::FromStream($stream)
-                    try {
-                        $location = $hostControl.PointToScreen([Drawing.Point]::Empty)
-                        $graphics.DrawImage($island, [Drawing.Rectangle]::new($location.X - $window.Left, $location.Y - $window.Top, $hostControl.Width, $hostControl.Height))
-                    } finally { $island.Dispose() }
-                } finally { $stream.Dispose() }
-            }
-            if ($Mode -eq 'History') {
-                $graphics.ResetClip()
-                $drawerBitmap = [Drawing.Bitmap]::new($drawer.Width, $drawer.Height)
-                try {
-                    $drawer.DrawToBitmap($drawerBitmap, [Drawing.Rectangle]::new(0, 0, $drawer.Width, $drawer.Height))
-                    $drawerLocation = $drawer.PointToScreen([Drawing.Point]::Empty)
-                    $graphics.DrawImageUnscaled($drawerBitmap, $drawerLocation.X - $window.Left, $drawerLocation.Y - $window.Top)
-                } finally { $drawerBitmap.Dispose() }
-            }
+            $graphics.CopyFromScreen($window.Location, [Drawing.Point]::Empty, $window.Size)
         } finally { $graphics.Dispose() }
-        $path = Join-Path (Get-Location) "artifacts/chat-build/modern-$Mode-$Width.png"
+        $directory = [IO.Path]::GetFullPath((Join-Path (Get-Location) $OutputDirectory))
+        [IO.Directory]::CreateDirectory($directory) | Out-Null
+        $path = Join-Path $directory "modern-$Mode-$Theme-$Width.png"
         $bitmap.Save($path, [Drawing.Imaging.ImageFormat]::Png)
         Write-Output $path
     }

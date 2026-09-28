@@ -4,10 +4,10 @@ namespace CodexVBE
     {
         internal System.Windows.Forms.TableLayoutPanel grid;
         internal System.Windows.Forms.FlowLayoutPanel codexActions;
-        internal System.Windows.Forms.ComboBox provider;
+        internal CodexVBE.ThemedComboBox provider;
         internal System.Windows.Forms.Label codexStatus;
-        internal System.Windows.Forms.Button codexLogin;
-        internal System.Windows.Forms.Button codexRefresh;
+        internal CodexVBE.ThemedButton codexLogin;
+        internal CodexVBE.ThemedButton codexRefresh;
         internal System.Windows.Forms.TextBox openAiEndpoint;
         internal System.Windows.Forms.TextBox ollamaEndpoint;
         internal System.Windows.Forms.TextBox openAiKey;
@@ -20,7 +20,7 @@ namespace CodexVBE
         internal System.Windows.Forms.Label keyLabel;
         internal System.Windows.Forms.Label keyNote;
         internal System.Windows.Forms.Label approvalLabel;
-        internal System.Windows.Forms.ComboBox approvalPicker;
+        internal CodexVBE.ThemedComboBox approvalPicker;
         internal System.Windows.Forms.Label manualModelsLabel;
         internal System.Windows.Forms.TextBox manualModels;
         internal System.Windows.Forms.Label customNameLabel;
@@ -64,6 +64,8 @@ namespace CodexVBE
             this.customNameLabel = new System.Windows.Forms.Label();
             this.customName = new System.Windows.Forms.TextBox();
             this.azureEntra = new System.Windows.Forms.CheckBox();
+            this.grid.SuspendLayout();
+            this.codexActions.SuspendLayout();
             this.SuspendLayout();
             this.grid.AutoSize = true;
             this.grid.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
@@ -310,6 +312,21 @@ namespace CodexVBE
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.Name = "ProviderSettingsView";
             this.Size = new System.Drawing.Size(860, 500);
+            this.manualModelsLabel.Location = new System.Drawing.Point(12, 345);
+            this.manualModelsLabel.Size = new System.Drawing.Size(156, 70);
+            this.manualModelsLabel.TabIndex = 16;
+            this.manualModels.Location = new System.Drawing.Point(180, 345);
+            this.customNameLabel.Location = new System.Drawing.Point(12, 427);
+            this.customNameLabel.Size = new System.Drawing.Size(156, 23);
+            this.customNameLabel.TabIndex = 18;
+            this.customName.Location = new System.Drawing.Point(180, 427);
+            this.customName.Size = new System.Drawing.Size(656, 23);
+            this.azureEntra.Location = new System.Drawing.Point(180, 462);
+            this.azureEntra.Size = new System.Drawing.Size(656, 22);
+            this.grid.ResumeLayout(false);
+            this.grid.PerformLayout();
+            this.codexActions.ResumeLayout(false);
+            this.codexActions.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
         }

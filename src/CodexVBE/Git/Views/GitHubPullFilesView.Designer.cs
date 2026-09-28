@@ -28,6 +28,9 @@ namespace CodexVBE
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.Name = "GitHubPullFilesView";
             this.Size = new System.Drawing.Size(860, 500);
+            this.files.Location = new System.Drawing.Point(0, 0);
+            this.files.Size = new System.Drawing.Size(860, 500);
+            this.files.TabIndex = 0;
             this.ResumeLayout(false);
             this.PerformLayout();
         }

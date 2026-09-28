@@ -69,12 +69,11 @@ namespace CodexVBE
         /// <param name="text">Texte de lecture seule à afficher.</param>
         private void AddContextPreview(string title, string text)
         {
-            var group = new System.Windows.Forms.GroupBox { Text = title, Height = 110,
-                Width = Math.Max(200, contextPreview.ClientSize.Width - 26), Padding = new System.Windows.Forms.Padding(6) };
-            group.Controls.Add(new System.Windows.Forms.TextBox { Text = text, ReadOnly = true, Multiline = true,
-                Dock = System.Windows.Forms.DockStyle.Fill, ScrollBars = System.Windows.Forms.ScrollBars.Vertical,
-                BackColor = System.Drawing.Color.White, BorderStyle = System.Windows.Forms.BorderStyle.None });
-            contextPreview.Controls.Add(group);
+            var preview = new ChatContextPreviewView();
+            preview.Width = Math.Max(200, contextPreview.ClientSize.Width - 26);
+            preview.ShowContent(title, text);
+            UiTheme.Apply(preview);
+            contextPreview.Controls.Add(preview);
         }
 
         /// <summary>Exécute une commande VBE dans le périmètre de la conversation et désérialise son résultat.</summary>

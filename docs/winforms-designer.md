@@ -53,15 +53,49 @@ masqués à l’exécution, dans des lignes AutoSize définies par le Designer.
 également un fichier Designer et un fichier de ressources. Les quatre colonnes
 du diff sont créées dans le Designer ; le mode unifié adapte leur présentation.
 
+## Éléments réutilisables du chat
+
+Les vues suivantes sont dans `src/CodexVBE/Llm/Controls/`. Ouvrir chacune avec
+**Afficher le concepteur** pour modifier ses contrôles internes.
+
+| Vue | Contenu éditable |
+| --- | --- |
+| `ChatInputView` | Emplacement de saisie, aperçu WinForms, police, marges du texte et activation du correcteur |
+| `ChatContextChipView` | Puce de référence ou pièce jointe, boutons ouvrir / retirer et tooltips |
+| `ChatContextPreviewView` | Groupe et champ de lecture du contexte joint |
+
+Le moteur WPF de saisie est créé à la première utilisation à l’exécution pour
+conserver le correcteur orthographique et les interactions clavier. Le constructeur
+Designer montre un champ WinForms et ne démarre pas ce moteur. `Font`, `ForeColor`,
+`InputPadding` et `SpellCheckEnabled` sont transmis au moteur.
+
+Le diff inline réutilise `src/CodexVBE/Ui/CodeDiffView.cs` : grille, colonnes,
+recherche, navigation et options sont construits dans son Designer. `ChatDiffView`
+est seulement un adaptateur `WindowsFormsHost` pour le transcript WPF. Le mode
+unifié se règle via `UnifiedDiff`. Les hôtes de diff sont libérés lorsqu’une carte
+est retirée, virtualisée ou lorsque la fenêtre est fermée.
+
+`ChatContentHost` utilise le concepteur WinForms standard pour l’emplacement du
+contenu WPF. Le Designer n’a pas besoin de créer un transcript ou une session
+pour éditer cet emplacement.
+
 ## Répartition entre Designer et exécution
 
 - Disposition, contrôles fixes, ancrage, tailles, marges et tooltips : `.Designer.cs`.
 - Chargement des données, activation des boutons, sélection et opérations : `.cs`.
-- Messages du chat, Markdown, cartes de diff et suggestions : contenu dynamique WPF
-  dans les emplacements WinForms du `ChatWindow`.
+- Messages du chat, Markdown, actions propres aux messages et suggestions au curseur :
+  contenu dynamique WPF dans les emplacements WinForms du `ChatWindow`.
+- Puces et aperçus : instances des vues Designer selon les données ; leurs contrôles
+  internes ne sont pas reconstruits par le contrôleur.
+- Lignes du diff : données virtuelles de la grille Designer partagée par Git et le chat.
+- Saisie : moteur WPF interopérable pour le correcteur, dans un hôte fixe Designer.
 - Thème et traduction : appliqués à l’exécution ; le Designer conserve ses libellés
   anglais éditables.
-- Les constructeurs des vues ne se connectent ni au VBE ni à GitHub.
+- Les constructeurs sans paramètre des vues ne se connectent ni au VBE ni à GitHub.
+- `InitializeComponent` déclare et configure explicitement les composants, sans
+  boucle ni fabrique de disposition. Les noms, tailles, positions et TabIndex sont
+  présents ; les conteneurs suspendent/reprennent leur disposition, et les grilles
+  et SplitContainer respectent `ISupportInitialize`.
 
 Modifier une sous-vue en ouvrant directement son fichier : la fenêtre parente ne
 sert pas à éditer les contrôles internes d’un UserControl. Ne pas supprimer les
@@ -70,10 +104,30 @@ contrôles nommés utilisés par le contrôleur sans adapter leurs références.
 ## Vérification
 
 `tools/tests/Test-WinFormsDesigners.ps1 -AssemblyPath <chemin de CodexVBE.dll>`
-charge les 24 surfaces avec le moteur `System.ComponentModel.Design.DesignSurface`
-et vérifie l’édition de leur taille. `Test-ChatDesigner.ps1` vérifie aussi les
-hiérarchies et la sélection de contrôles. Ce contrôle automatisé ne constitue pas
-un essai manuel d’enregistrement de chaque Designer dans Visual Studio.
+valide **27 surfaces et 258 contrôles enfants** avec le moteur
+`System.ComponentModel.Design.DesignSurface` : chargement, redimensionnement,
+édition d’une propriété puis sérialisation et rechargement avec
+`CodeDomComponentSerializationService`.
+
+Le test place les contrôles déclarés par le Designer sur une racine WinForms
+éditable. Charger directement la classe compilée modélise un formulaire hérité
+et verrouille ses champs privés ; ce second cas ne prouve pas l’édition du source.
+`Test-ChatDesigner.ps1` vérifie en plus les hiérarchies, les constructeurs inertes
+et la sélection des contrôles. Ces contrôles locaux ne constituent pas un essai
+manuel d’ouverture puis d’enregistrement des 27 sources dans Visual Studio.
+
+`Render-ChatUx.ps1` capture la fenêtre affichée sur le second écran disponible.
+La copie écran inclut les HWND des diff natifs, absents d’un rendu bitmap WPF.
+Le paramètre `-Theme Light` ou `-Theme Dark` ne change le thème que dans le
+processus de démonstration ; la préférence enregistrée reste intacte.
+
+Preuves locales de cette refonte :
+`artifacts/designer-refactor/designers/designers.json`, captures sous `screens/`
+et résultats unitaires sous `tests/`. Compilation solution : **0 erreur,
+0 avertissement**. Suite unitaire complète : **1 115 réussites** ; les **73 tests
+chat/diff** ont été rejoués avec succès après les derniers ajustements de thème
+et de métriques de police. Aucune macro n’est exécutée par ces essais. La couverture
+instrumentée n’a pas été remesurée pour cette refonte.
 
 ## Mise à jour ultérieure
 

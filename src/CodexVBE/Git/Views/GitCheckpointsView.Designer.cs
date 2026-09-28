@@ -5,8 +5,8 @@ namespace CodexVBE
         internal System.Windows.Forms.FlowLayoutPanel checkpointActions;
         internal System.Windows.Forms.ListBox checkpointList;
         internal System.Windows.Forms.TextBox checkpointName;
-        internal System.Windows.Forms.Button checkpointCreate;
-        internal System.Windows.Forms.Button checkpointRestore;
+        internal CodexVBE.ThemedButton checkpointCreate;
+        internal CodexVBE.ThemedButton checkpointRestore;
         private System.ComponentModel.IContainer components;
         private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
@@ -26,6 +26,7 @@ namespace CodexVBE
             this.checkpointName = new System.Windows.Forms.TextBox();
             this.checkpointCreate = new CodexVBE.ThemedButton();
             this.checkpointRestore = new CodexVBE.ThemedButton();
+            this.checkpointActions.SuspendLayout();
             this.SuspendLayout();
             this.checkpointActions.Name = "checkpointActions";
             this.checkpointCreate.Name = "checkpointCreate";
@@ -54,6 +55,23 @@ namespace CodexVBE
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.Name = "GitCheckpointsView";
             this.Size = new System.Drawing.Size(860, 500);
+            this.checkpointActions.Location = new System.Drawing.Point(0, 0);
+            this.checkpointActions.Size = new System.Drawing.Size(860, 34);
+            this.checkpointActions.TabIndex = 1;
+            this.checkpointList.Location = new System.Drawing.Point(0, 34);
+            this.checkpointList.Size = new System.Drawing.Size(860, 466);
+            this.checkpointList.TabIndex = 0;
+            this.checkpointName.Location = new System.Drawing.Point(3, 3);
+            this.checkpointName.Size = new System.Drawing.Size(240, 23);
+            this.checkpointName.TabIndex = 0;
+            this.checkpointCreate.Location = new System.Drawing.Point(249, 3);
+            this.checkpointCreate.Size = new System.Drawing.Size(113, 28);
+            this.checkpointCreate.TabIndex = 1;
+            this.checkpointRestore.Location = new System.Drawing.Point(368, 3);
+            this.checkpointRestore.Size = new System.Drawing.Size(107, 28);
+            this.checkpointRestore.TabIndex = 2;
+            this.checkpointActions.ResumeLayout(false);
+            this.checkpointActions.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
         }

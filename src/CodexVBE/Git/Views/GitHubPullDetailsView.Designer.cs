@@ -30,6 +30,9 @@ namespace CodexVBE
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.Name = "GitHubPullDetailsView";
             this.Size = new System.Drawing.Size(860, 500);
+            this.pullDetails.Location = new System.Drawing.Point(0, 0);
+            this.pullDetails.Size = new System.Drawing.Size(860, 500);
+            this.pullDetails.TabIndex = 0;
             this.ResumeLayout(false);
             this.PerformLayout();
         }

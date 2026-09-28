@@ -30,6 +30,9 @@ namespace CodexVBE
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.Name = "GitImportView";
             this.Size = new System.Drawing.Size(860, 500);
+            this.importSummary.Location = new System.Drawing.Point(0, 0);
+            this.importSummary.Size = new System.Drawing.Size(860, 500);
+            this.importSummary.TabIndex = 0;
             this.ResumeLayout(false);
             this.PerformLayout();
         }

@@ -2,11 +2,11 @@ namespace CodexVBE
 {
     public sealed partial class GitHubPane
     {
-        private System.Windows.Forms.TabControl pages;
+        private CodexVBE.ThemedTabControl pages;
         private System.Windows.Forms.TabPage repositoriesPage;
         private System.Windows.Forms.TabPage pullsPage;
         private System.Windows.Forms.Label status;
-        private System.Windows.Forms.Button cancel;
+        private CodexVBE.ThemedButton cancel;
         private System.Windows.Forms.FlowLayoutPanel footer;
         private System.Windows.Forms.ToolTip tips;
         private System.ComponentModel.IContainer components;
@@ -23,6 +23,13 @@ namespace CodexVBE
             this.status = new System.Windows.Forms.Label();
             this.cancel = new CodexVBE.ThemedButton();
             this.footer = new System.Windows.Forms.FlowLayoutPanel();
+            this.pages.SuspendLayout();
+            this.repositoriesPage.SuspendLayout();
+            this.pullsPage.SuspendLayout();
+            this.footer.SuspendLayout();
+            this.gitHubRepositoriesView.SuspendLayout();
+            this.gitHubPullRequestsView.SuspendLayout();
+            this.SuspendLayout();
             this.tips = new System.Windows.Forms.ToolTip(this.components);
             this.pages.Name = "pages";
             this.repositoriesPage.Name = "repositoriesPage";
@@ -54,6 +61,46 @@ namespace CodexVBE
             this.Controls.Add(this.footer);
             this.Name = "GitHubPane";
             this.Size = new System.Drawing.Size(860, 500);
+            this.pages.Location = new System.Drawing.Point(0, 0);
+            this.pages.Size = new System.Drawing.Size(860, 470);
+            this.pages.TabIndex = 0;
+            this.repositoriesPage.Location = new System.Drawing.Point(0, 0);
+            this.repositoriesPage.Size = new System.Drawing.Size(200, 100);
+            this.repositoriesPage.TabIndex = 0;
+            this.pullsPage.Location = new System.Drawing.Point(0, 0);
+            this.pullsPage.Size = new System.Drawing.Size(200, 100);
+            this.pullsPage.TabIndex = 1;
+            this.status.Location = new System.Drawing.Point(3, 0);
+            this.status.Size = new System.Drawing.Size(0, 16);
+            this.status.TabIndex = 0;
+            this.cancel.Location = new System.Drawing.Point(9, 3);
+            this.cancel.Size = new System.Drawing.Size(75, 24);
+            this.cancel.TabIndex = 1;
+            this.footer.Location = new System.Drawing.Point(0, 470);
+            this.footer.Size = new System.Drawing.Size(860, 30);
+            this.footer.TabIndex = 1;
+            this.gitHubRepositoriesView.Name = "gitHubRepositoriesView";
+            this.gitHubRepositoriesView.Location = new System.Drawing.Point(0, 0);
+            this.gitHubRepositoriesView.Size = new System.Drawing.Size(200, 100);
+            this.gitHubRepositoriesView.TabIndex = 0;
+            this.gitHubPullRequestsView.Name = "gitHubPullRequestsView";
+            this.gitHubPullRequestsView.Location = new System.Drawing.Point(0, 0);
+            this.gitHubPullRequestsView.Size = new System.Drawing.Size(200, 100);
+            this.gitHubPullRequestsView.TabIndex = 0;
+            this.pages.ResumeLayout(false);
+            this.pages.PerformLayout();
+            this.repositoriesPage.ResumeLayout(false);
+            this.repositoriesPage.PerformLayout();
+            this.pullsPage.ResumeLayout(false);
+            this.pullsPage.PerformLayout();
+            this.footer.ResumeLayout(false);
+            this.footer.PerformLayout();
+            this.gitHubRepositoriesView.ResumeLayout(false);
+            this.gitHubRepositoriesView.PerformLayout();
+            this.gitHubPullRequestsView.ResumeLayout(false);
+            this.gitHubPullRequestsView.PerformLayout();
+            this.ResumeLayout(false);
+            this.PerformLayout();
         }
     }
 }
