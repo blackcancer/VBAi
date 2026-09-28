@@ -6,14 +6,25 @@ using System.Windows.Forms;
 
 namespace CodexVBE
 {
+    /// <summary>Expose au modèle les opérations Git limitées au document de conversation.</summary>
     internal sealed partial class LlmVbeTools
     {
+        /// <summary>Fabrique injectable des opérations Git pour un projet VBA.</summary>
+        /// <value>Résolve une opération pour le nom de projet, ou null pour l’ouverture standard.</value>
         internal Func<string, MacroGitOperations> GitOperationsFactory { get; set; }
+        /// <summary>Construit la définition d’outil Git et ses champs requis.</summary>
+        /// <param name="action">Nom d’action utilisé pour construire le nom de l’outil.</param>
+        /// <param name="description">Description affichée au modèle pour l’opération.</param>
+        /// <param name="read">Indique si l’opération est en lecture seule.</param>
+        /// <param name="fields">Noms des arguments propres à cette opération.</param>
+        /// <returns>Définition sérialisable de l’outil et de son schéma.</returns>
         private static object GitDefinition(string action, string description, bool read, params string[] fields)
         {
             var names = new[] { "Project" }.Concat(read ? new string[0] : new[] { "ExpectedState" }).Concat(fields).ToArray();
             return Definition("git_" + action, description, names, names);
         }
+        /// <summary>Définitions des opérations Git exposées au modèle.</summary>
+        /// <value>Définitions des opérations Git exposées au modèle.</value>
         private static object[] GitDefinitions { get { return new[] {
             GitDefinition("status", "Read the conversation document's configured Git binding, branch, local changes and State revision. Never invent a remote or bind a repository. Call before every mutation.", true),
             GitDefinition("history", "Read local commit history for the bound macro.", true),
@@ -43,6 +54,10 @@ namespace CodexVBE
             GitDefinition("rollback", "Restore the backup before the latest import only if live VBA still matches its readback. Does not rewrite remote history.", false)
         }; } }
 
+        /// <summary>Valide les arguments et autorisations avant d’exécuter une opération Git.</summary>
+        /// <param name="name">Nom de l’outil Git à invoquer.</param>
+        /// <param name="arguments">Objet JSON contenant les arguments validés.</param>
+        /// <returns>Réponse JSON de succès ou d’échec de l’opération.</returns>
         private async Task<string> InvokeGitAsync(string name, string arguments)
         {
             try
@@ -83,6 +98,9 @@ namespace CodexVBE
             }
             catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
         }
+        /// <summary>Ouvre les opérations Git pour le projet de conversation lié.</summary>
+        /// <param name="project">Nom du projet VBA lié à la conversation.</param>
+        /// <returns>Opérations Git rattachées au projet et à sa portée.</returns>
         private MacroGitOperations OpenGit(string project)
         {
             string scope = session.GitScope(project);

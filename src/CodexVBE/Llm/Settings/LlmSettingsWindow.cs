@@ -4,29 +4,51 @@ using System.Windows.Forms;
 
 namespace CodexVBE
 {
+    /// <summary>Fenêtre de configuration des fournisseurs, comptes et préférences de conversation.</summary>
     internal sealed partial class LlmSettingsWindow : Form
     {
+        /// <summary>Paramètres persistants modifiés par cette fenêtre.</summary>
         private readonly LlmSettings settings;
         // Keep authentication, persistence and notices at replaceable native boundaries.
+        /// <summary>Enregistre les paramètres avec le stockage natif.</summary>
         internal static Action<LlmSettings> WriteSettings = (Action<LlmSettings>)Delegate.CreateDelegate(typeof(Action<LlmSettings>), typeof(LlmSettings).GetMethod("Save"));
+        /// <summary>Ouvre l’authentification native Copilot.</summary>
         internal static Action StartCopilotLogin = CopilotClient.StartLogin;
+        /// <summary>Ouvre l’authentification native Codex.</summary>
         internal static Action StartCodexLogin = CodexAccount.StartLogin;
+        /// <summary>Lit l’état de connexion du CLI Copilot.</summary>
         internal static Func<System.Threading.Tasks.Task<string>> ReadCopilotStatus = CopilotClient.ReadStatusAsync;
+        /// <summary>Lit l’état du compte Codex.</summary>
         internal static Func<System.Threading.Tasks.Task<CodexAccountStatus>> ReadCodexStatus = CodexAccount.ReadStatusAsync;
+        /// <summary>Applique le thème sélectionné à l’interface.</summary>
         internal static Action<ThemeChoice> SelectTheme = UiTheme.Select;
+        /// <summary>Affiche un message natif appartenant à la fenêtre de configuration.</summary>
         internal static Func<IWin32Window, string, string, MessageBoxButtons, MessageBoxIcon, DialogResult> ShowNotice = MessageBox.Show;
+        /// <summary>Empêche les recalculs imbriqués de hauteur de contenu.</summary>
         private bool fittingContent;
+        /// <summary>Annulation des opérations d’authentification et de lecture GitHub.</summary>
         private readonly System.Threading.CancellationTokenSource githubCancellation = new System.Threading.CancellationTokenSource();
+        /// <summary>Indique si une opération GitHub est en cours.</summary>
         private bool githubBusy;
+        /// <summary>Indique si la première lecture GitHub a été déclenchée.</summary>
         private bool githubLoaded;
+        /// <summary>Empêche la libération répétée des ressources appartenant à la fenêtre.</summary>
         private bool resourcesDisposed;
+        /// <summary>Service Git Credential Manager utilisé pour l’authentification GitHub.</summary>
         private GitHubAccountService githubService = new GitHubAccountService();
+        /// <summary>Fournisseur affiché dont les saisies sont actuellement éditées.</summary>
         private LlmProvider displayedProvider;
+        /// <summary>Adresses d’API en cours de modification, indexées par fournisseur.</summary>
         private readonly System.Collections.Generic.Dictionary<string, string> endpointDrafts = new System.Collections.Generic.Dictionary<string, string>();
+        /// <summary>Clés API en cours de modification, indexées par fournisseur.</summary>
         private readonly System.Collections.Generic.Dictionary<string, string> keyDrafts = new System.Collections.Generic.Dictionary<string, string>();
+        /// <summary>Fournisseurs dont la clé enregistrée doit être supprimée.</summary>
         private readonly System.Collections.Generic.HashSet<string> clearedKeys = new System.Collections.Generic.HashSet<string>();
+        /// <summary>Identifiants de modèles en cours de modification, indexés par fournisseur.</summary>
         private readonly System.Collections.Generic.Dictionary<string, string> modelDrafts = new System.Collections.Generic.Dictionary<string, string>();
 
+        /// <summary>Ajuste la hauteur du contenu et déclenche le premier chargement GitHub.</summary>
+        /// <param name="e">Données de l’événement WinForms.</param>
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
@@ -34,6 +56,7 @@ namespace CodexVBE
             if (settings != null && !githubLoaded) { githubLoaded = true; _ = RefreshGitHubAsync(false); }
         }
 
+        /// <summary>Mesure le contenu à la largeur courante et ajuste la hauteur à l’espace disponible.</summary>
         private void FitContentHeight()
         {
             if (fittingContent || IsDisposed) return;
@@ -55,6 +78,7 @@ namespace CodexVBE
             finally { fittingContent = false; }
         }
 
+        /// <summary>Crée et initialise la fenêtre sans paramètres persistants.</summary>
         public LlmSettingsWindow()
         {
             InitializeComponent();
@@ -64,6 +88,8 @@ namespace CodexVBE
             themePicker.SelectedIndexChanged += (s, e) => { try { if (themePicker.SelectedIndex >= 0) SelectTheme((ThemeChoice)themePicker.SelectedIndex); } catch (Exception ex) { ShowNotice(this, ex.Message, "", MessageBoxButtons.OK, MessageBoxIcon.None); } };
         }
 
+        /// <summary>Crée la fenêtre et initialise ses contrôles avec les paramètres fournis.</summary>
+        /// <param name="settings">Paramètres persistants du fournisseur à éditer.</param>
         public LlmSettingsWindow(LlmSettings settings)
         {
             this.settings = settings;
@@ -93,6 +119,7 @@ namespace CodexVBE
             UpdateRows();
         }
 
+        /// <summary>Met à jour valeurs, libellés et visibilité selon le fournisseur sélectionné.</summary>
         private void UpdateRows()
         {
             var selected = provider.SelectedItem as LlmProvider;
@@ -139,6 +166,7 @@ namespace CodexVBE
             if (cli) _ = RefreshCodexStatusAsync();
         }
 
+        /// <summary>Conserve les saisies non enregistrées du fournisseur affiché.</summary>
         private void CaptureDraft()
         {
             if (displayedProvider == null || displayedProvider.IsCodex || displayedProvider.IsCopilot) return;
@@ -148,9 +176,18 @@ namespace CodexVBE
             if (clearKey.Checked) clearedKeys.Add(displayedProvider.Name); else clearedKeys.Remove(displayedProvider.Name);
         }
 
+        /// <summary>Démarre l’authentification GitHub puis actualise les comptes.</summary>
+        /// <param name="e">Données de l’événement WinForms.</param>
+        /// <param name="sender">Contrôle à l’origine de l’événement.</param>
         private async void GitHubLogin_Click(object sender, EventArgs e) { await RefreshGitHubAsync(true); }
+        /// <summary>Actualise la liste des comptes GitHub sauvegardés.</summary>
+        /// <param name="e">Données de l’événement WinForms.</param>
+        /// <param name="sender">Contrôle à l’origine de l’événement.</param>
         private async void GitHubRefresh_Click(object sender, EventArgs e) { await RefreshGitHubAsync(false); }
 
+        /// <summary>Authentifie si demandé puis charge les comptes GitHub en préservant la sélection.</summary>
+        /// <param name="login">Indique si la lecture doit être précédée d’une authentification interactive.</param>
+        /// <returns>Tâche terminée après la lecture du compte et la mise à jour de l’interface.</returns>
         private async System.Threading.Tasks.Task RefreshGitHubAsync(bool login)
         {
             if (githubBusy || settings == null) return;
@@ -187,6 +224,8 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Annule les requêtes et libère les ressources détenues par la fenêtre.</summary>
+        /// <param name="disposing">Indique si les ressources gérées doivent être libérées.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing && !resourcesDisposed)
@@ -197,6 +236,8 @@ namespace CodexVBE
             base.Dispose(disposing);
         }
 
+        /// <summary>Lit l’état du compte Copilot ou Codex correspondant au fournisseur courant.</summary>
+        /// <returns>Tâche terminée après la lecture de l’état du compte courant.</returns>
         private async System.Threading.Tasks.Task RefreshCodexStatusAsync()
         {
             if (((LlmProvider)provider.SelectedItem).IsCopilot) {
@@ -227,6 +268,7 @@ namespace CodexVBE
             if (!IsDisposed && Visible) FitContentHeight();
         }
 
+        /// <summary>Valide puis enregistre les réglages et ferme la fenêtre en cas de succès.</summary>
         private void Save()
         {
             try
@@ -257,6 +299,8 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Accepte HTTPS et HTTP uniquement pour une adresse locale.</summary>
+        /// <param name="raw">URL de point de terminaison à valider.</param>
         private static void ValidateEndpoint(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw)) return;

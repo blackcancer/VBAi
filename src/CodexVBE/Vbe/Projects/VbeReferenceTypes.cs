@@ -430,18 +430,25 @@ namespace CodexVBE
         private sealed class ReferenceSource
         {
             /// <summary>Obtient ou définit le nom de la référence.</summary>
+            /// <value>le nom de la référence.</value>
             public string Name { get; set; }
             /// <summary>Obtient ou définit le GUID au format avec accolades.</summary>
+            /// <value>le GUID au format avec accolades.</value>
             public string Guid { get; set; }
             /// <summary>Obtient ou définit la version majeure.</summary>
+            /// <value>la version majeure.</value>
             public int Major { get; set; }
             /// <summary>Obtient ou définit la version mineure.</summary>
+            /// <value>la version mineure.</value>
             public int Minor { get; set; }
             /// <summary>Obtient ou définit le chemin complet du fichier.</summary>
+            /// <value>le chemin complet du fichier.</value>
             public string FullPath { get; set; }
             /// <summary>Obtient ou définit la taille du fichier en octets.</summary>
+            /// <value>la taille du fichier en octets.</value>
             public long FileLength { get; set; }
             /// <summary>Obtient ou définit la date de modification UTC au format rond.</summary>
+            /// <value>la date de modification UTC au format rond.</value>
             public string FileLastWriteUtc { get; set; }
         }
 
@@ -449,10 +456,13 @@ namespace CodexVBE
         private sealed class LoadedLibrary
         {
             /// <summary>Obtient ou définit la bibliothèque COM chargée.</summary>
+            /// <value>la bibliothèque COM chargée.</value>
             public ITypeLib Library { get; set; }
             /// <summary>Obtient ou définit le mécanisme de chargement utilisé.</summary>
+            /// <value>le mécanisme de chargement utilisé.</value>
             public string Source { get; set; }
             /// <summary>Obtient ou définit l’erreur du chargement fichier si le repli registre a réussi.</summary>
+            /// <value>l’erreur du chargement fichier si le repli registre a réussi.</value>
             public object FallbackError { get; set; }
         }
 
@@ -460,20 +470,28 @@ namespace CodexVBE
         private sealed class TypeMetadata
         {
             /// <summary>Obtient ou définit l’index du type dans sa bibliothèque.</summary>
+            /// <value>l’index du type dans sa bibliothèque.</value>
             public int TypeIndex { get; set; }
             /// <summary>Obtient ou définit le nom du type.</summary>
+            /// <value>le nom du type.</value>
             public string Name { get; set; }
             /// <summary>Obtient ou définit le GUID du type.</summary>
+            /// <value>le GUID du type.</value>
             public string Guid { get; set; }
             /// <summary>Obtient ou définit la catégorie COM du type.</summary>
+            /// <value>la catégorie COM du type.</value>
             public string Kind { get; set; }
             /// <summary>Obtient ou définit le nombre de fonctions exposées.</summary>
+            /// <value>le nombre de fonctions exposées.</value>
             public int FunctionCount { get; set; }
             /// <summary>Obtient ou définit le nombre de variables exposées.</summary>
+            /// <value>le nombre de variables exposées.</value>
             public int VariableCount { get; set; }
             /// <summary>Obtient ou définit le nombre d’interfaces implémentées.</summary>
+            /// <value>le nombre d’interfaces implémentées.</value>
             public int ImplementedInterfaceCount { get; set; }
             /// <summary>Obtient ou définit l’empreinte d’identité utilisée pour vérifier que le type n’a pas changé.</summary>
+            /// <value>l’empreinte d’identité utilisée pour vérifier que le type n’a pas changé.</value>
             public string Identity { get; set; }
         }
     }

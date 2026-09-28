@@ -7,17 +7,30 @@ using System.Text;
 namespace CodexVBE
 {
     // All methods run on the VBE UI thread. Never send COM objects to the Git worker.
+    /// <summary>Associe un résolveur de projet et son chemin hôte attendu.</summary>
     internal sealed class VbaGitProject
     {
+        /// <summary>Fournit le projet COM courant sans déplacer les appels hors du thread VBE.</summary>
         private readonly Func<object> resolve;
+        /// <summary>Chemin absolu du document hôte auquel le cache Git est lié.</summary>
         private readonly string hostPath;
+        /// <summary>Retourne la page de codes ANSI du système Windows.</summary>
+        /// <returns>Identifiant numérique de la page de codes ANSI active.</returns>
         [System.Runtime.InteropServices.DllImport("kernel32.dll")]
         private static extern uint GetACP();
+        /// <summary>Encodage natif strict utilisé pour lire et écrire les exports COM.</summary>
+        /// <value>Encodage natif strict utilisé pour lire et écrire les exports COM.</value>
         private static Encoding NativeEncoding { get { return Encoding.GetEncoding(
             (int)GetACP(), EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback); } }
 
+        /// <summary>Crée l’adaptateur associé au résolveur et au chemin hôte attendus.</summary>
+        /// <param name="resolve">Fonction qui résout le projet COM au moment de l’opération.</param>
+        /// <param name="hostPath">Chemin absolu attendu du document hôte.</param>
         internal VbaGitProject(Func<object> resolve, string hostPath) { this.resolve = resolve; this.hostPath = hostPath; }
 
+        /// <summary>Ouvre un module VBA au point fourni.</summary>
+        /// <param name="name">Nom de l’outil Git à invoquer.</param>
+        /// <param name="line">Numéro de ligne initial, ramené au minimum à 1.</param>
         internal void OpenModule(string name, int line = 1)
         {
             VbaGitSnapshot.ValidateName(name);
@@ -27,6 +40,8 @@ namespace CodexVBE
             pane.SetSelection(Math.Max(1, line), 1, Math.Max(1, line), 1);
         }
 
+        /// <summary>Résout le projet et vérifie son chemin, son déverrouillage et le mode conception.</summary>
+        /// <returns>Projet COM correspondant au document toujours lié et modifiable.</returns>
         private object CheckedProject()
         {
             dynamic project = resolve();
@@ -37,6 +52,8 @@ namespace CodexVBE
             return project;
         }
 
+        /// <summary>Exporte les composants et références en snapshot validé sans envoyer d’objets COM au worker Git.</summary>
+        /// <returns>Snapshot validé des composants, ressources et références.</returns>
         internal VbaGitSnapshot Capture()
         {
             dynamic project = CheckedProject();
@@ -75,6 +92,10 @@ namespace CodexVBE
             }, files);
         }
 
+        /// <summary>Applique le snapshot si l’état avant mutation correspond à expected.</summary>
+        /// <param name="target">Snapshot à importer.</param>
+        /// <param name="expected">Snapshot attendu avant mutation.</param>
+        /// <param name="beforeMutation">Action facultative exécutée après validation et avant la première modification.</param>
         internal void Apply(VbaGitSnapshot target, VbaGitSnapshot expected, Action beforeMutation = null)
         {
             if (!Capture().SameAs(expected)) throw new InvalidOperationException(UiText.Get("VBA changed during synchronization. No import performed."));
@@ -127,18 +148,28 @@ namespace CodexVBE
             if (!Capture().SameAs(target)) throw new InvalidOperationException(UiText.Get("The VBE did not preserve the imported sources exactly. Use Restore or check the project."));
         }
 
+        /// <summary>Lit le texte visible d’un module et normalise ses fins de ligne.</summary>
+        /// <param name="module">Module de code dont les lignes sont lues.</param>
+        /// <returns>Code source normalisé avec LF.</returns>
         private static string Code(dynamic module)
         {
             int count = (int)module.CountOfLines;
             return count == 0 ? "" : Normalize((string)module.Lines[1, count]);
         }
+        /// <summary>Remplace CRLF et CR par LF.</summary>
+        /// <param name="text">Texte source dont les fins de ligne sont normalisées.</param>
+        /// <returns>Texte dont les séparateurs de ligne sont des LF.</returns>
         private static string Normalize(string text) { return text.Replace("\r\n", "\n").Replace("\r", "\n"); }
 
+        /// <summary>Répertoire temporaire privé utilisé pour un transfert de fichiers.</summary>
         private sealed class Scratch : IDisposable
         {
+        /// <summary>Chemin unique du répertoire temporaire de l’opération.</summary>
             internal readonly string Path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "CodexVBE", "GitTemporary", Guid.NewGuid().ToString("N"));
+            /// <summary>Crée le répertoire temporaire unique.</summary>
             internal Scratch() { Directory.CreateDirectory(Path); }
+        /// <summary>Supprime les fichiers générés dans le répertoire temporaire.</summary>
             public void Dispose()
             {
                 // Only our freshly generated, private flat directory is cleaned up.

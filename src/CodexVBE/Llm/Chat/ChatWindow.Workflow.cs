@@ -8,13 +8,22 @@ using System.Windows.Controls;
 
 namespace CodexVBE
 {
+    /// <summary>Gère la collecte, vérification, prévisualisation et restauration du contexte de conversation.</summary>
     internal sealed partial class ChatWindow
     {
+        /// <summary>Pièces jointes sélectionnées et en attente du prochain message.</summary>
         private readonly List<ChatAttachment> draftAttachments = new List<ChatAttachment>();
+        /// <summary>Identifiant du tour de conversation courant.</summary>
         private string activeTurnId;
+        /// <summary>Notifie l’hôte qu’un changement d’attachement de la fenêtre est demandé.</summary>
         public event Action DockRequested;
+        /// <summary>Affiche une explication lorsque le VBE ne peut pas attacher la fenêtre.</summary>
+        /// <param name="reason">Raison technique de l’échec de l’attachement.</param>
         public void ReportDockFailure(string reason) { SetStatus(UiText.Get("Docking unavailable: ") + reason + UiText.Get(" · check the COM control installation.")); }
 
+        /// <summary>Résout les références actuelles, valide les sélections épinglées et la taille totale.</summary>
+        /// <param name="question">Message dont les références et pièces jointes doivent être assemblées.</param>
+        /// <returns>Pièces jointes valides et présentes dans le contexte du message.</returns>
         private ChatAttachment[] PrepareAttachments(string question)
         {
             var attachments = new List<ChatAttachment>();
@@ -36,6 +45,7 @@ namespace CodexVBE
             return attachments.ToArray();
         }
 
+        /// <summary>Actualise l’aperçu des références et de la mémoire qui partiront au prochain envoi.</summary>
         private void RefreshContextPreview()
         {
             if (prompt == null) return;
@@ -54,6 +64,9 @@ namespace CodexVBE
             catch (Exception ex) { AddContextPreview(UiText.Get("Context unavailable"), ex.Message); }
         }
 
+        /// <summary>Ajoute un groupe de lecture seule pour un segment de contexte.</summary>
+        /// <param name="title">Titre du segment d’aperçu.</param>
+        /// <param name="text">Texte de lecture seule à afficher.</param>
         private void AddContextPreview(string title, string text)
         {
             var group = new System.Windows.Forms.GroupBox { Text = title, Height = 110,
@@ -64,6 +77,11 @@ namespace CodexVBE
             contextPreview.Controls.Add(group);
         }
 
+        /// <summary>Exécute une commande VBE dans le périmètre de la conversation et désérialise son résultat.</summary>
+        /// <param name="command">Nom de la commande protocole VBE.</param>
+        /// <param name="project">Projet VBA ciblé, si nécessaire à la commande.</param>
+        /// <param name="module">Module VBA ciblé, si nécessaire à la commande.</param>
+        /// <returns>Dictionnaire de la réponse VBE sérialisée.</returns>
         private IDictionary<string, object> ReadWorkflow(string command, string project = null, string module = null)
         {
             if (scopeSession == null) throw new InvalidOperationException(UiText.Get("No VBE host connected."));
@@ -72,6 +90,7 @@ namespace CodexVBE
             return json.DeserializeObject(json.Serialize(result.Data)) as IDictionary<string, object> ?? throw new InvalidOperationException(UiText.Get("Unexpected VBE response."));
         }
 
+        /// <summary>Capture la sélection du volet actif si elle appartient au projet lié.</summary>
         private void CaptureSelection()
         {
             if (busy) return;
@@ -108,6 +127,8 @@ namespace CodexVBE
             catch (Exception ex) { SetStatus(UiText.Get("Selection: ") + ex.Message); }
         }
 
+        /// <summary>Prépare un message rapide depuis une commande lancée dans l’éditeur.</summary>
+        /// <param name="command">Nom de commande VBE à exécuter.</param>
         public void PrepareEditorAction(string command)
         {
             if (busy) { SetStatus(UiText.Get("Wait for the response to finish before preparing an action.")); return; }
@@ -117,6 +138,8 @@ namespace CodexVBE
             prompt.Text = command + " "; prompt.CaretIndex = prompt.Text.Length; prompt.Focus();
         }
 
+        /// <summary>Compile le projet pour recueillir un diagnostic, sans exécuter les macros.</summary>
+        /// <returns>Tâche terminée après ajout du résultat de vérification au transcript.</returns>
         private async Task VerifyProjectAsync()
         {
             try
@@ -154,6 +177,7 @@ namespace CodexVBE
             catch (Exception ex) { AddEntry(new ChatEntry { Speaker = "Vérification", Text = UiText.Get("Compilation not verified: ") + ex.Message }); SetStatus(UiText.Get("Compilation not verified")); }
         }
 
+        /// <summary>Enregistre la session courante dans un fichier Markdown.</summary>
         private void ExportCurrentChat()
         {
             if (currentSession == null || busy) return;
@@ -166,6 +190,8 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Crée une branche de conversation sans partager les actions de rollback.</summary>
+        /// <param name="lastEntry">Dernière entrée de transcript qui définit le point de branchement.</param>
         private void ForkChat(ChatEntry lastEntry)
         {
             if (busy || currentSession == null) return;
@@ -185,6 +211,8 @@ namespace CodexVBE
             scopeSessions.Insert(0, fork); ActivateSession(fork, false); SaveCurrentSession();
         }
 
+        /// <summary>Sélectionne le code source correspondant à une pièce jointe dans le VBE.</summary>
+        /// <param name="attachment">Référence ou sélection à ouvrir dans le VBE.</param>
         private void NavigateAttachment(ChatAttachment attachment)
         {
             try
@@ -197,6 +225,10 @@ namespace CodexVBE
             catch (Exception ex) { SetStatus(ex.Message); }
         }
 
+        /// <summary>Restaure un changement ou les changements du tour après vérification du périmètre.</summary>
+        /// <param name="change">Changement enregistré à restaurer.</param>
+        /// <param name="hunk">Index facultatif du bloc de diff à restaurer.</param>
+        /// <param name="entireTurn">Indique si les changements du même tour doivent être restaurés ensemble.</param>
         private void RollbackIntervention(CodeChange change, int? hunk, bool entireTurn)
         {
             if (busy || tools == null) return;

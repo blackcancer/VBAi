@@ -528,26 +528,56 @@ namespace CodexVBE
 
 namespace CodexVBE
 {
+    /// <summary>Fenêtre de conversation avec adaptateurs substituables pour les effets externes.</summary>
     internal sealed partial class ChatWindow
     {
         // Native defaults; tests may substitute only the external effects of a chat.
+        /// <summary>Charge les paramètres persistants des fournisseurs.</summary>
         internal static Func<LlmSettings> ReadSettings = LlmSettings.Load;
+        /// <summary>Enregistre les paramètres persistants des fournisseurs.</summary>
         internal static Action<LlmSettings> WriteSettings = (Action<LlmSettings>)Delegate.CreateDelegate(typeof(Action<LlmSettings>), typeof(LlmSettings).GetMethod("Save"));
+        /// <summary>Retourne le chemin de la base de sessions.</summary>
         internal static Func<string> HistoryPath = DefaultHistoryPath;
+        /// <summary>Ouvre le stockage des sessions au chemin donné.</summary>
         internal static Func<string, ChatSessionStore> OpenHistory = OpenHistoryNative;
+        /// <summary>Affiche un formulaire modal avec son propriétaire.</summary>
         internal static Func<Form, IWin32Window, DialogResult> ShowModal = (Func<Form, IWin32Window, DialogResult>)Delegate.CreateDelegate(typeof(Func<Form, IWin32Window, DialogResult>), typeof(Form).GetMethod("ShowDialog", new[] { typeof(IWin32Window) }));
+        /// <summary>Affiche une boîte de dialogue d’enregistrement avec son propriétaire.</summary>
         internal static Func<CommonDialog, IWin32Window, DialogResult> ShowSaveDialog = (Func<CommonDialog, IWin32Window, DialogResult>)Delegate.CreateDelegate(typeof(Func<CommonDialog, IWin32Window, DialogResult>), typeof(CommonDialog).GetMethod("ShowDialog", new[] { typeof(IWin32Window) }));
+        /// <summary>Affiche une notification à l’utilisateur.</summary>
         internal static Func<IWin32Window, string, string, MessageBoxButtons, MessageBoxIcon, DialogResult> ShowNotice = MessageBox.Show;
+        /// <summary>Lit les touches de modification courantes du clavier.</summary>
         internal static Func<System.Windows.Input.ModifierKeys> ReadModifiers = (Func<System.Windows.Input.ModifierKeys>)Delegate.CreateDelegate(typeof(Func<System.Windows.Input.ModifierKeys>), typeof(System.Windows.Input.Keyboard).GetProperty("Modifiers").GetGetMethod());
+        /// <summary>Copie du texte dans le presse-papiers Windows.</summary>
         internal static Action<string> WriteClipboard = System.Windows.Clipboard.SetText;
+        /// <summary>Crée le transport natif vers Codex App Server.</summary>
         internal static Func<ICodexAppServerTransport> TransportFactory = CreateNativeTransport;
+        /// <summary>Charge le catalogue des modèles d’un fournisseur.</summary>
         internal static Func<LlmProvider, LlmSettings, Task<LlmModelOption[]>> ReadModelCatalogue = LlmChatClient.ListModelsAsync;
+        /// <summary>Exécute une commande protocole dans la session VBE.</summary>
         internal static Func<VbeSession, Request, Response> ReadHost = ReadHostNative;
+        /// <summary>Exécute un outil VBE par son nom et ses arguments JSON.</summary>
         internal static Func<LlmVbeTools, string, string, Task<string>> InvokeTool = InvokeToolNative;
+        /// <summary>Calcule l’emplacement par défaut de la base de sessions.</summary>
+        /// <returns>Chemin local par défaut de chat.db.</returns>
         private static string DefaultHistoryPath() { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CodexVBE", "chat.db"); }
+        /// <summary>Ouvre une instance native du stockage de sessions.</summary>
+        /// <param name="path">Chemin du fichier de stockage des sessions.</param>
+        /// <returns>Stockage natif associé au chemin fourni.</returns>
         private static ChatSessionStore OpenHistoryNative(string path) { return new ChatSessionStore(path); }
+        /// <summary>Crée le transport processus vers Codex App Server.</summary>
+        /// <returns>Transport Codex App Server démarré à la demande.</returns>
         private static ICodexAppServerTransport CreateNativeTransport() { return new CodexProcessTransport(); }
+        /// <summary>Délègue l’exécution à la session VBE.</summary>
+        /// <param name="session">Session VBE qui exécute la commande.</param>
+        /// <param name="request">Commande reçue par le pont local.</param>
+        /// <returns>Réponse du traitement de commande VBE.</returns>
         private static Response ReadHostNative(VbeSession session, Request request) { return session.Execute(request); }
+        /// <summary>Délègue l’appel au service d’outils VBE.</summary>
+        /// <param name="tools">Service d’outils à invoquer.</param>
+        /// <param name="name">Nom stable de l’outil.</param>
+        /// <param name="arguments">Arguments de l’outil sérialisés en JSON.</param>
+        /// <returns>Tâche produisant le résultat sérialisé de l’outil.</returns>
         private static Task<string> InvokeToolNative(LlmVbeTools tools, string name, string arguments) { return tools.InvokeAsync(name, arguments); }
     }
 }

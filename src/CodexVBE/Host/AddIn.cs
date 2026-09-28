@@ -5,30 +5,46 @@ using System.Windows.Forms;
 
 namespace CodexVBE
 {
+    /// <summary>Point d’entrée COM qui démarre le serveur de commandes et les fenêtres VBAi.</summary>
     [ComVisible(true)]
     [Guid("8E854243-087F-4D6C-9E0E-8622B0E50883")]
     [ProgId("CodexVBE.AddIn")]
     [ClassInterface(ClassInterfaceType.None)]
     [ComDefaultInterface(typeof(IDTExtensibility2))]
-    public sealed class AddIn : IDTExtensibility2
+        public sealed class AddIn : IDTExtensibility2
     {
+        /// <summary>Contrôle WinForms fournissant un contexte de synchronisation pour le serveur local.</summary>
         private Control dispatcher;
+        /// <summary>Serveur de commandes local rattaché à l’instance du VBE.</summary>
         private BridgeServer server;
+        /// <summary>Fenêtre de conversation actuellement ouverte.</summary>
         private ChatWindow chat;
+        /// <summary>Commandes ajoutées aux barres du VBE.</summary>
         private VbeMenu menu;
+        /// <summary>Instance VBE fournie par l’hôte COM.</summary>
         private object vbe;
+        /// <summary>Instance COM de l’add-in enregistrée dans l’hôte.</summary>
         private object addIn;
+        /// <summary>Fenêtre native du VBE qui héberge le contrôle de conversation.</summary>
         private object nativeChatWindow;
+        /// <summary>Contrôle utilisateur contenu dans la fenêtre native du VBE.</summary>
         private ChatToolWindow nativeChatControl;
+        /// <summary>Indique si la fenêtre de conversation est attachée au cadre VBE.</summary>
         private bool docked;
 
+        /// <summary>Crée l’instance COM et journalise le processus hôte.</summary>
         public AddIn()
         {
             var process = Process.GetCurrentProcess();
             LoadLog.Write("Constructed: " + process.ProcessName + " PID=" + process.Id);
         }
 
-        public void OnConnection(object application, int connectMode, object addInInstance, ref object[] custom)
+        /// <summary>Initialise la session, démarre le pont local et ajoute les commandes de menu.</summary>
+        /// <param name="application">Objet dont les barres de commande sont recherchées.</param>
+        /// <param name="connectMode">Mode de connexion communiqué par l’hôte.</param>
+        /// <param name="addInInstance">Instance COM de l’add-in hôte.</param>
+        /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
+public void OnConnection(object application, int connectMode, object addInInstance, ref object[] custom)
         {
             try
             {
@@ -59,12 +75,18 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Wrapper de poignée HWND utilisé comme propriétaire WinForms.</summary>
         private sealed class VbeWindowOwner : IWin32Window
         {
+        /// <summary>Wrapper de poignée HWND utilisé comme propriétaire WinForms.</summary>
+        /// <param name="handle">Poignée HWND de la fenêtre propriétaire.</param>
             public VbeWindowOwner(IntPtr handle) { Handle = handle; }
+        /// <summary>Poignée HWND du propriétaire VBE.</summary>
+        /// <value>Poignée HWND du propriétaire VBE.</value>
             public IntPtr Handle { get; private set; }
         }
 
+        /// <summary>Affiche ou réactive la fenêtre de conversation, intégrée si elle est attachée.</summary>
         private void ShowChat()
         {
             if (nativeChatControl != null && nativeChatControl.IsDisposed)
@@ -99,6 +121,7 @@ namespace CodexVBE
             LoadLog.Write("Assistant window shown.");
         }
 
+        /// <summary>Ouvre les paramètres depuis la fenêtre de conversation ou directement.</summary>
         private void ShowSettings()
         {
             try
@@ -110,11 +133,14 @@ namespace CodexVBE
             catch (Exception ex) { ReportMenuError(ex); }
         }
 
+        /// <summary>Construit le propriétaire WinForms à partir de la fenêtre principale du VBE.</summary>
+        /// <returns>Fenêtre propriétaire WinForms ancrée sur la fenêtre principale du VBE.</returns>
         private IWin32Window VbeOwner()
         {
             return new VbeWindowOwner(new IntPtr(Convert.ToInt64(((dynamic)vbe).MainWindow.HWnd)));
         }
 
+        /// <summary>Ouvre l’interface GitHub pour le projet actif enregistré.</summary>
         private void ShowGitHub()
         {
             try
@@ -133,12 +159,15 @@ namespace CodexVBE
             catch (Exception ex) { ReportMenuError(ex); }
         }
 
-        private void ReportMenuError(Exception ex)
+        /// <summary>Journalise et affiche une erreur issue d’une commande du menu.</summary>
+                /// <param name="ex">Exception levée pendant une action de menu.</param>
+private void ReportMenuError(Exception ex)
         {
             LoadLog.Write("VBE menu action failed: " + ex);
             MessageBox.Show(ex.Message, "VBAi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
+        /// <summary>Attache ou détache la fenêtre de conversation au cadre principal du VBE.</summary>
         private void ToggleDock()
         {
             try
@@ -182,16 +211,26 @@ namespace CodexVBE
             }
         }
 
-        public void OnDisconnection(int removeMode, ref object[] custom)
+        /// <summary>Libère les services et fenêtres quand l’hôte déconnecte l’add-in.</summary>
+        /// <param name="removeMode">Mode de suppression transmis par l’hôte COM.</param>
+        /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
+public void OnDisconnection(int removeMode, ref object[] custom)
         {
             LoadLog.Write("OnDisconnection: " + removeMode);
             Dispose();
         }
 
-        public void OnAddInsUpdate(ref object[] custom) { }
-        public void OnStartupComplete(ref object[] custom) { }
-        public void OnBeginShutdown(ref object[] custom) { Dispose(); }
+        /// <summary>Point d’extension COM appelé après la mise à jour de la collection d’add-ins.</summary>
+                /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
+public void OnAddInsUpdate(ref object[] custom) { }
+        /// <summary>Point d’extension COM appelé à la fin du démarrage de l’hôte.</summary>
+                /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
+public void OnStartupComplete(ref object[] custom) { }
+        /// <summary>Libère les services lorsque l’hôte commence son arrêt.</summary>
+                /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
+public void OnBeginShutdown(ref object[] custom) { Dispose(); }
 
+        /// <summary>Détache et ferme les fenêtres, menus, serveur et contrôle de synchronisation.</summary>
         private void Dispose()
         {
             menu?.Dispose();

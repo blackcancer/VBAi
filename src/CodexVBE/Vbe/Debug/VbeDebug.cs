@@ -9,12 +9,19 @@ using System.Threading;
 
 namespace CodexVBE
 {
+    /// <summary>Expose les commandes de débogage, navigation et inspection du VBE.</summary>
     internal sealed class VbeDebug
     {
+        /// <summary>Instance VBE utilisée pour résoudre les projets et exécuter les commandes IDE.</summary>
         private readonly dynamic vbe;
 
+        /// <summary>Crée le service de débogage associé à l’instance VBE.</summary>
+        /// <param name="vbe">Instance VBIDE active.</param>
         public VbeDebug(object vbe) { this.vbe = vbe; }
 
+        /// <summary>Lit le mode du projet et son emplacement de code actif.</summary>
+        /// <param name="projectName">Nom ou chemin du projet à inspecter.</param>
+        /// <returns>État du projet, mode IDE et contexte de sélection.</returns>
         public object State(string projectName)
         {
             dynamic project = GetProject(projectName);
@@ -45,6 +52,11 @@ namespace CodexVBE
                 ActiveModule = activeModule, Selection = selection };
         }
 
+        /// <summary>Retourne une page de contrôles CommandBars correspondant éventuellement au texte recherché.</summary>
+        /// <param name="query">Filtre facultatif sur les légendes et chemins de commande.</param>
+        /// <param name="offset">Décalage de départ indexé à partir de zéro.</param>
+        /// <param name="limit">Nombre maximal à retourner, plafonné par l’implémentation.</param>
+        /// <returns>Page de commandes et informations de pagination.</returns>
         public object ListCommands(string query, int offset, int limit)
         {
             if (offset < 0 || limit < 0)
@@ -56,6 +68,9 @@ namespace CodexVBE
             return entries.Skip(offset).Take(pageSize).Select(e => new { e.Path, e.Caption, e.Id, e.Enabled }).ToArray();
         }
 
+        /// <summary>Ouvre ou met au premier plan l’Explorateur d’objets VBE et vérifie sa présence dans l’état des fenêtres.</summary>
+        /// <param name="windows">Service de lecture des fenêtres de l’éditeur.</param>
+        /// <returns>État du navigateur observé après la commande.</returns>
         public object OpenObjectBrowser(VbeEditorWindows windows)
         {
             if (windows == null) throw new ArgumentNullException(nameof(windows));
@@ -80,6 +95,11 @@ namespace CodexVBE
                 WindowsBefore = before, WindowsAfter = after };
         }
 
+        /// <summary>Ouvre le volet natif Locals, Watches ou Immediate et lit les fenêtres ensuite.</summary>
+        /// <param name="paneName">Nom du volet à ouvrir.</param>
+        /// <param name="windows">Service de lecture des fenêtres VBE.</param>
+        /// <returns>Résultat de la commande et état des fenêtres observé.</returns>
+        /// <exception cref="ArgumentException">Le nom du volet n’est pas pris en charge.</exception>
         public object OpenDebugPane(string paneName, VbeEditorWindows windows)
         {
             int id;
@@ -100,6 +120,9 @@ namespace CodexVBE
                 VerificationPending = true, NextRead = "Call vbe_windows or debug_windows in a separate request to confirm the pane is visible." };
         }
 
+        /// <summary>Prépare l’ouverture native de la boîte d’ajout d’une expression surveillée.</summary>
+        /// <param name="request">Requête contenant le projet, le module et l’expression.</param>
+        /// <returns>Résultat de mise en file et informations de sélection.</returns>
         public object QueueAddWatchDialog(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project) ||
@@ -130,6 +153,9 @@ namespace CodexVBE
                 NextRead = "Complete the native Add Watch dialog after this command returns." };
         }
 
+        /// <summary>Prépare l’édition d’une expression de surveillance sélectionnée.</summary>
+        /// <param name="request">Requête identifiant l’expression de surveillance.</param>
+        /// <returns>Résultat de mise en file de l’édition.</returns>
         public object QueueEditWatchDialog(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project) ||
@@ -155,6 +181,9 @@ namespace CodexVBE
             return new { Scheduled = true, ControlId = command.Id, request.Expression, request.Context };
         }
 
+        /// <summary>Prépare Quick Watch pour évaluer l’expression sélectionnée dans le contexte de débogage courant.</summary>
+        /// <param name="request">Requête contenant l’expression et l’emplacement de code attendu.</param>
+        /// <returns>Résultat de la préparation de Quick Watch.</returns>
         public object QueueQuickWatchDialog(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Expression) ||
@@ -179,6 +208,8 @@ namespace CodexVBE
                 request.Expression, request.StartLine, request.StartColumn, request.EndColumn };
         }
 
+        /// <summary>Lit la boîte native des options de débogage sans enregistrer de préférence.</summary>
+        /// <returns>Valeur et choix affichés dans les options de débogage.</returns>
         public object QueueDebugOptionsDialog()
         {
             var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 522 && entry.Enabled &&
@@ -194,6 +225,9 @@ namespace CodexVBE
             return new { Scheduled = true, ControlId = command.Id, Control = command.Path };
         }
 
+        /// <summary>Supprime la surveillance sélectionnée après validation de l’expression et de son contexte.</summary>
+        /// <param name="request">Requête identifiant l’expression ou la surveillance active.</param>
+        /// <returns>Résultat de suppression et vérification du volet Watches.</returns>
         public object RemoveSelectedWatch(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project) ||
@@ -211,6 +245,10 @@ namespace CodexVBE
                 VerificationPending = true, NextRead = "Read debug_windows in a separate request to verify the selected watch is absent." };
         }
 
+        /// <summary>Exécute une commande de débogage globale après contrôle du mode et du libellé exact.</summary>
+        /// <param name="request">Commande, projet et état attendu.</param>
+        /// <returns>Commande reconnue et état observé après exécution.</returns>
+        /// <exception cref="InvalidOperationException">Le mode ou l’état de la commande ne permet pas son exécution.</exception>
         public object ExecuteGlobalDebugCommand(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project))
@@ -278,6 +316,10 @@ namespace CodexVBE
                     : "Run a disposable procedure or inspect the native editor to verify breakpoint behavior." };
         }
 
+        /// <summary>Compile le projet dans le VBE en mode conception et observe les diagnostics natifs.</summary>
+        /// <param name="request">Requête identifiant le projet et son mode attendu.</param>
+        /// <returns>Résultat de compilation et diagnostic natif éventuel.</returns>
+        /// <exception cref="InvalidOperationException">Le projet n’est pas en mode conception ou le VBE signale une erreur de compilation.</exception>
         public object CompileProject(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project))
@@ -297,6 +339,9 @@ namespace CodexVBE
             return new { Executed = true, Project = request.Project, ControlId = command.Id, Control = command.Path };
         }
 
+        /// <summary>Reconnaît une légende localisée de l’Explorateur d’objets.</summary>
+        /// <param name="caption">Légende du contrôle VBE.</param>
+        /// <returns><see langword="true"/> si la légende correspond au navigateur.</returns>
         private static bool IsObjectBrowserCaption(string caption)
         {
             string name = (caption ?? "").Replace("&", "").Trim();
@@ -305,6 +350,9 @@ namespace CodexVBE
                 name.IndexOf("Object Browser", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
+        /// <summary>Recherche dans un instantané de fenêtres la présence visible de l’Explorateur d’objets.</summary>
+        /// <param name="windowState">Objet d’état retourné par le service de fenêtres.</param>
+        /// <returns><see langword="true"/> si une fenêtre du navigateur est déclarée visible.</returns>
         private static bool HasVisibleObjectBrowser(object windowState)
         {
             foreach (dynamic item in ((dynamic)windowState).Windows)
@@ -318,6 +366,9 @@ namespace CodexVBE
             return false;
         }
 
+        /// <summary>Active un volet de code et sélectionne la plage demandée après validation de l’empreinte.</summary>
+        /// <param name="request">Requête contenant le projet, module, position et SHA-256 attendu.</param>
+        /// <returns>Position et sélection de code observées après navigation.</returns>
         public object SelectCode(Request request)
         {
             dynamic project = GetProject(request.Project);
@@ -350,6 +401,9 @@ namespace CodexVBE
                 State = State(request.Project) };
         }
 
+        /// <summary>Exécute une commande VBE listée précédemment après vérification de son identifiant et de son état.</summary>
+        /// <param name="request">Requête portant la commande transitoire sélectionnée.</param>
+        /// <returns>État de commande et résultat d’invocation.</returns>
         public object InvokeCommand(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.Action))
@@ -409,6 +463,9 @@ namespace CodexVBE
                 StateBefore = before, StateAfter = after, StateAfterError = afterError };
         }
 
+        /// <summary>Sélectionne une plage multi-ligne exacte dans un volet de code en contrôlant l’empreinte source.</summary>
+        /// <param name="request">Requête avec bornes de sélection et SHA-256 attendu.</param>
+        /// <returns>Plage relue dans le volet de code après sélection.</returns>
         public object SelectCodeRange(Request request)
         {
             if (request == null || request.StartColumn < 1 || request.EndColumn < 1 ||
@@ -437,6 +494,9 @@ namespace CodexVBE
                 Verified = true, Mode = (int)project.Mode };
         }
 
+        /// <summary>Ouvre ou inspecte la boîte de signature du projet sélectionné.</summary>
+        /// <param name="request">Requête identifiant le projet et l’opération de signature.</param>
+        /// <returns>État observé du dialogue natif de signature.</returns>
         public object QueueSignatureDialog(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project) || request.ExpectedMode != 2)
@@ -478,6 +538,8 @@ namespace CodexVBE
                 Control = command.Path };
         }
 
+        /// <summary>Indique si la commande VBE de suppression de surveillance est disponible.</summary>
+        /// <returns><see langword="true"/> si le contrôle identifié est activé.</returns>
         private bool HasEnabledRemove746()
         {
             return EnumerateCommands().Any(entry => entry.Id == 746 && entry.Enabled &&
@@ -485,6 +547,10 @@ namespace CodexVBE
                  (entry.Caption ?? "").Replace("&", "").TrimStart().StartsWith("Remove ", StringComparison.OrdinalIgnoreCase)));
         }
 
+        /// <summary>Exécute une procédure Sub sans paramètre en mode conception après contrôle du code et du mode attendu.</summary>
+        /// <param name="request">Requête identifiant projet, module, procédure, SHA-256 et mode attendu.</param>
+        /// <returns>Informations de lancement et effet observé par le service de débogage.</returns>
+        /// <exception cref="InvalidOperationException">La procédure, le projet ou le mode ne permet pas l’exécution.</exception>
         public object RunSub(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Procedure) ||
@@ -528,6 +594,10 @@ namespace CodexVBE
             return InvokeCommand(request);
         }
 
+        /// <summary>Vérifie que la position cible de l’instruction suivante appartient à la procédure demandée.</summary>
+        /// <param name="request">Requête de déplacement contenant les coordonnées cibles.</param>
+        /// <param name="module">Module actuellement sélectionné.</param>
+        /// <exception cref="InvalidOperationException">La position n’appartient pas à la procédure attendue.</exception>
         private void ValidateSetNextStatementProcedure(Request request, dynamic module)
         {
             dynamic activePane = vbe.ActiveCodePane;
@@ -545,6 +615,11 @@ namespace CodexVBE
                 throw new InvalidOperationException("Set Next Statement requires a target in the currently selected procedure. Use Show Next Statement first.");
         }
 
+        /// <summary>Décrit l’effet observé par comparaison des états avant et après une commande.</summary>
+        /// <param name="action">Action de débogage effectuée.</param>
+        /// <param name="before">État observé avant l’action.</param>
+        /// <param name="after">État observé après l’action.</param>
+        /// <returns>Description de l’effet correspondant au changement détecté.</returns>
         private static string DebugEffect(string action, object before, object after)
         {
             if (after == null || action == "toggle_breakpoint") return null;
@@ -573,6 +648,11 @@ namespace CodexVBE
             return null;
         }
 
+        /// <summary>Vérifie qu’une commande est autorisée dans le mode VBE courant selon son identifiant ou sa légende.</summary>
+        /// <param name="action">Action demandée.</param>
+        /// <param name="caption">Légende du contrôle.</param>
+        /// <param name="mode">Mode courant du projet.</param>
+        /// <returns><see langword="true"/> si la commande est permise.</returns>
         private static bool IsAllowed(string action, string caption, int mode)
         {
             string label = caption.Replace("&", "").Trim();
@@ -619,6 +699,11 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Vérifie l’emplacement demandé dans le code et retourne le nom de procédure résolu.</summary>
+        /// <param name="request">Requête portant la ligne et les coordonnées souhaitées.</param>
+        /// <param name="module">Module contenant le code.</param>
+        /// <returns>Nom de procédure active à l’emplacement.</returns>
+        /// <exception cref="InvalidOperationException">La ligne ne correspond pas à l’emplacement de procédure demandé.</exception>
         private static string ValidateLocation(Request request, dynamic module)
         {
             if (string.IsNullOrWhiteSpace(request.ExpectedSha256))
@@ -632,6 +717,9 @@ namespace CodexVBE
             return (string)module.Lines[request.StartLine, 1];
         }
 
+        /// <summary>Calcule le SHA-256 hexadécimal minuscule du code source.</summary>
+        /// <param name="code">Code à hacher.</param>
+        /// <returns>Empreinte du code en hexadécimal.</returns>
         private static string Hash(string code)
         {
             using (var sha = SHA256.Create())
@@ -639,6 +727,10 @@ namespace CodexVBE
                     .Replace("-", "").ToLowerInvariant();
         }
 
+        /// <summary>Compare deux références COM par identité IUnknown.</summary>
+        /// <param name="first">Première référence.</param>
+        /// <param name="second">Seconde référence.</param>
+        /// <returns><see langword="true"/> si les références désignent le même objet COM.</returns>
         private static bool SameComObject(object first, object second)
         {
             IntPtr firstUnknown = IntPtr.Zero, secondUnknown = IntPtr.Zero;
@@ -655,11 +747,19 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Résout un projet dans l’instance VBE.</summary>
+        /// <param name="name">Nom ou chemin du projet.</param>
+        /// <returns>Projet VBIDE correspondant.</returns>
         private dynamic GetProject(string name)
         {
             return VbeProjectResolver.Resolve(vbe, name);
         }
 
+        /// <summary>Résout un module dans un projet en comparant son nom sans tenir compte de la casse.</summary>
+        /// <param name="project">Projet contenant le module.</param>
+        /// <param name="moduleName">Nom du module.</param>
+        /// <returns>Composant VBIDE correspondant.</returns>
+        /// <exception cref="InvalidOperationException">Le module n’existe pas ou son nom est ambigu.</exception>
         private static dynamic GetModule(dynamic project, string moduleName)
         {
             if (string.IsNullOrWhiteSpace(moduleName)) throw new ArgumentException("Module is required.");
@@ -669,15 +769,23 @@ namespace CodexVBE
             throw new InvalidOperationException("Module not found: " + moduleName);
         }
 
+        /// <summary>Représente un contrôle CommandBars et ses informations de recherche.</summary>
         private sealed class CommandEntry
         {
+            /// <summary>Référence du contrôle COM à invoquer.</summary>
             public object Control;
+            /// <summary>Chemin hiérarchique de menu jusqu’au contrôle.</summary>
             public string Path;
+            /// <summary>Légende du contrôle.</summary>
             public string Caption;
+            /// <summary>Identifiant numérique temporaire du contrôle.</summary>
             public int Id;
+            /// <summary>Indique si le contrôle peut être invoqué actuellement.</summary>
             public bool Enabled;
         }
 
+        /// <summary>Énumère les barres de commandes et leurs contrôles imbriqués.</summary>
+        /// <returns>Contrôles découverts dans les limites de profondeur et de quantité.</returns>
         private List<CommandEntry> EnumerateCommands()
         {
             var entries = new List<CommandEntry>();
@@ -691,6 +799,11 @@ namespace CodexVBE
             return entries;
         }
 
+        /// <summary>Ajoute récursivement les contrôles d’une collection CommandBars en conservant leur chemin.</summary>
+        /// <param name="entries">Liste à enrichir.</param>
+        /// <param name="controls">Collection COM à parcourir.</param>
+        /// <param name="path">Chemin du parent dans le menu.</param>
+        /// <param name="depth">Profondeur actuelle de récursion.</param>
         private static void AddControls(List<CommandEntry> entries, dynamic controls, string path, int depth)
         {
             if (depth > 4 || entries.Count >= 2000) return;

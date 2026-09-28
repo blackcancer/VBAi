@@ -11,20 +11,28 @@ namespace CodexVBE
     internal sealed class ChatEntry
     {
         /// <summary>Obtient ou définit l’identifiant du locuteur, par exemple utilisateur ou assistant.</summary>
+        /// <value>Nom du locuteur.</value>
         public string Speaker { get; set; }
         /// <summary>Obtient ou définit le texte du message.</summary>
+        /// <value>Texte brut du message.</value>
         public string Text { get; set; }
         /// <summary>Obtient ou définit l’identifiant du flux auquel le message appartient, s’il est diffusé.</summary>
+        /// <value>Identifiant du flux ou nul.</value>
         public string StreamId { get; set; }
         /// <summary>Obtient ou définit le changement de code associé au message, le cas échéant.</summary>
+        /// <value>Changement de code ou nul.</value>
         public CodeChange Change { get; set; }
         /// <summary>Obtient ou définit les références VBE citées par le message.</summary>
+        /// <value>Références du message.</value>
         public VbeChatReference[] References { get; set; }
         /// <summary>Obtient ou définit la mémoire de projet jointe au message.</summary>
+        /// <value>Texte de mémoire ou nul.</value>
         public string AttachedMemory { get; set; }
         /// <summary>Obtient ou définit les pièces jointes du message.</summary>
+        /// <value>Pièces jointes de l’entrée.</value>
         public ChatAttachment[] Attachments { get; set; }
         /// <summary>Obtient ou définit l’identifiant du tour de conversation associé.</summary>
+        /// <value>Identifiant du tour courant.</value>
         public string TurnId { get; set; }
     }
 
@@ -32,38 +40,55 @@ namespace CodexVBE
     internal sealed class ChatSessionState
     {
         /// <summary>Obtient ou définit l’identifiant stable de la session.</summary>
+        /// <value>Identifiant texte au format GUID compact.</value>
         public string Id { get; set; } = Guid.NewGuid().ToString("N");
         /// <summary>Obtient ou définit la portée de projet à laquelle appartient la session.</summary>
+        /// <value>Clé de portée du projet.</value>
         public string Scope { get; set; }
         /// <summary>Obtient ou définit le titre persistant de la session.</summary>
+        /// <value>Titre stocké.</value>
         public string Title { get; set; } = "Nouvelle conversation";
         /// <summary>Obtient ou définit l’état archivé de la session.</summary>
+        /// <value><see langword="true"/> si la session est archivée.</value>
         public bool Archived { get; set; }
         /// <summary>Obtient ou définit l’état épinglé de la session.</summary>
+        /// <value><see langword="true"/> si la session est épinglée.</value>
         public bool Pinned { get; set; }
         /// <summary>Obtient ou définit le mode de conversation.</summary>
+        /// <value>Mode choisi.</value>
         public ChatMode Mode { get; set; } = ChatMode.Agent;
         /// <summary>Obtient ou définit les pièces jointes du brouillon.</summary>
+        /// <value>Pièces jointes en attente du prochain message.</value>
         public ChatAttachment[] DraftAttachments { get; set; }
         /// <summary>Obtient ou définit le fournisseur utilisé pour la session.</summary>
+        /// <value>Nom du fournisseur.</value>
         public string Provider { get; set; } = "Codex";
         /// <summary>Obtient ou définit l’identifiant du modèle choisi.</summary>
+        /// <value>Identifiant de modèle ou nul.</value>
         public string Model { get; set; }
         /// <summary>Obtient ou définit le niveau d’effort choisi pour le modèle.</summary>
+        /// <value>Identifiant d’effort ou nul.</value>
         public string Effort { get; set; }
         /// <summary>Obtient ou définit l’identifiant de fil de conversation Codex associé.</summary>
+        /// <value>Identifiant de fil, ou nul si non applicable.</value>
         public string CodexThreadId { get; set; }
         /// <summary>Obtient ou définit le contexte nécessaire pour reprendre la conversation.</summary>
+        /// <value>Contexte de reprise ou nul.</value>
         public string ResumeContext { get; set; }
         /// <summary>Obtient ou définit la représentation JSON des messages conservée pour compatibilité.</summary>
+        /// <value>Messages sérialisés, ou nul.</value>
         public string MessagesJson { get; set; }
         /// <summary>Obtient ou définit le texte du brouillon courant.</summary>
+        /// <value>Texte du compositeur.</value>
         public string Draft { get; set; }
         /// <summary>Obtient ou définit les références VBE du brouillon.</summary>
+        /// <value>Références sélectionnées pour le prochain message.</value>
         public VbeChatReference[] DraftReferences { get; set; }
         /// <summary>Obtient ou définit les entrées de la session.</summary>
+        /// <value>Messages et changements ordonnés de la conversation.</value>
         public List<ChatEntry> Entries { get; set; } = new List<ChatEntry>();
         /// <summary>Obtient le titre destiné à l’affichage, traduit lorsque le titre est celui par défaut.</summary>
+        /// <value>Titre localisé ou titre personnalisé.</value>
         [ScriptIgnore]
         public string DisplayTitle { get { return Title == "Nouvelle conversation" ? UiText.Get("New conversation") : Title; } }
         /// <summary>Retourne le titre d’affichage précédé d’une étoile lorsque la session est épinglée.</summary>
@@ -205,6 +230,7 @@ namespace CodexVBE
             /// <summary>Base propriétaire utilisée pour vérifier les erreurs d’exécution.</summary>
             private readonly ChatSessionStore owner;
             /// <summary>Obtient le handle de l’instruction native préparée.</summary>
+            /// <value>Handle SQLite de l’instruction, remis à zéro après finalisation.</value>
             public IntPtr Handle { get; private set; }
             /// <summary>Associe le handle d’instruction à son magasin propriétaire.</summary>
             /// <param name="owner">Magasin qui fournit la vérification des erreurs SQLite.</param>

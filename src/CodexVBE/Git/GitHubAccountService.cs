@@ -27,6 +27,7 @@ namespace CodexVBE
         }
         /// <summary>Lance la connexion GitHub dans le navigateur au moyen de GCM.</summary>
         /// <param name="cancellation">Jeton d’annulation transmis à la commande.</param>
+        /// <returns>Tâche terminée lorsque GCM a fini le processus de connexion.</returns>
         internal async Task LoginAsync(CancellationToken cancellation)
         {
             await execute("credential-manager github login --url https://github.com --browser", cancellation);

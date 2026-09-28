@@ -5,12 +5,18 @@ namespace CodexVBE
 {
     // Reads the VBIDE collections directly. In particular, do not use
     // VBComponent.CodePane for inspection: its getter opens and activates a pane.
+    /// <summary>Crée le lecteur pour l’instance VBE fournie.</summary>
     internal sealed class VbeEditorWindows
     {
+        /// <summary>Instance VBE dont les collections sont inspectées.</summary>
         private readonly dynamic vbe;
 
+        /// <summary>Crée le lecteur pour l’instance VBE fournie.</summary>
+        /// <param name="vbe">Instance VBE dont les collections seront lues.</param>
         public VbeEditorWindows(object vbe) { this.vbe = vbe; }
 
+        /// <summary>Retourne les fenêtres VBE et la fenêtre active, en isolant les erreurs de lecture.</summary>
+        /// <returns>Liste des fenêtres avec l’état de la fenêtre active et les erreurs de lecture.</returns>
         public object Windows()
         {
             var windows = new List<object>();
@@ -27,6 +33,8 @@ namespace CodexVBE
             return new { Windows = windows, ActiveWindow = active };
         }
 
+        /// <summary>Retourne les volets de code VBE et le volet actif sans en ouvrir de nouveau.</summary>
+        /// <returns>Liste des volets de code et du volet actif avec leurs erreurs de lecture.</returns>
         public object CodePanes()
         {
             var panes = new List<object>();
@@ -43,6 +51,8 @@ namespace CodexVBE
             return new { CodePanes = panes, ActiveCodePane = active };
         }
 
+        /// <summary>Lit les propriétés principales de l’instance et collecte les erreurs par propriété.</summary>
+        /// <returns>Propriétés d’environnement accessibles et erreurs par propriété.</returns>
         public object Environment()
         {
             var fields = new Dictionary<string, object>();
@@ -56,6 +66,8 @@ namespace CodexVBE
             return new { Properties = fields, Errors = errors };
         }
 
+        /// <summary>Liste les add-ins enregistrés dans la collection VBE.AddIns.</summary>
+        /// <returns>Add-ins VBE, nombre total et périmètre de la collection inspectée.</returns>
         public object AddIns()
         {
             var addIns = new List<object>();
@@ -74,6 +86,10 @@ namespace CodexVBE
                 Scope = "VBE.AddIns contains VBE-registered add-ins, not the host application's COMAddIns." };
         }
 
+        /// <summary>Active une fenêtre exacte déjà visible et rapporte le résultat de vérification.</summary>
+        /// <param name="caption">Légende exacte de la fenêtre telle que renvoyée par vbe_windows.</param>
+        /// <param name="type">Type exact de la fenêtre telle que renvoyée par vbe_windows.</param>
+        /// <returns>Résultat d’activation et état de vérification de la fenêtre active.</returns>
         public object FocusWindow(string caption, int type)
         {
             dynamic target = FindExactWindow(caption, type);
@@ -89,6 +105,10 @@ namespace CodexVBE
                 ActiveWindow = active == null ? null : WindowSnapshot(active, null) };
         }
 
+        /// <summary>Rend visible puis active une fenêtre VBE exacte.</summary>
+        /// <param name="caption">Légende exacte de la fenêtre telle que renvoyée par vbe_windows.</param>
+        /// <param name="type">Type exact de la fenêtre telle que renvoyée par vbe_windows.</param>
+        /// <returns>Visibilité avant/après et état de vérification de la fenêtre active.</returns>
         public object ShowWindow(string caption, int type)
         {
             dynamic target = FindExactWindow(caption, type);
@@ -107,6 +127,10 @@ namespace CodexVBE
                 ActiveWindow = active == null ? null : WindowSnapshot(active, null) };
         }
 
+        /// <summary>Retourne l’état de visibilité et les fenêtres liées au cadre de la cible.</summary>
+        /// <param name="caption">Légende exacte de la fenêtre telle que renvoyée par vbe_windows.</param>
+        /// <param name="type">Type exact de la fenêtre telle que renvoyée par vbe_windows.</param>
+        /// <returns>Visibilité, cadre parent et fenêtres liées, avec les erreurs rencontrées.</returns>
         public object WindowLinkage(string caption, int type)
         {
             dynamic target = FindExactWindow(caption, type);
@@ -131,6 +155,10 @@ namespace CodexVBE
                 Properties = fields, Errors = errors };
         }
 
+        /// <summary>Ferme une fenêtre VBE exacte et vérifie si elle a disparu ou est cachée.</summary>
+        /// <param name="caption">Légende exacte de la fenêtre telle que renvoyée par vbe_windows.</param>
+        /// <param name="type">Type exact de la fenêtre telle que renvoyée par vbe_windows.</param>
+        /// <returns>État de fermeture vérifié et occurrences encore présentes.</returns>
         public object CloseWindow(string caption, int type)
         {
             if (string.Equals(caption, "CodexVBE", StringComparison.OrdinalIgnoreCase))
@@ -151,6 +179,10 @@ namespace CodexVBE
                 RemainingMatches = matches, RemainingVisible = visible };
         }
 
+        /// <summary>Résout une fenêtre selon sa légende et son type, en refusant les doublons.</summary>
+        /// <param name="caption">Légende exacte de la fenêtre telle que renvoyée par vbe_windows.</param>
+        /// <param name="type">Type exact de la fenêtre telle que renvoyée par vbe_windows.</param>
+        /// <returns>Objet fenêtre qui correspond à la légende et au type uniques.</returns>
         private dynamic FindExactWindow(string caption, int type)
         {
             if (string.IsNullOrWhiteSpace(caption) || type < 0)
@@ -168,6 +200,10 @@ namespace CodexVBE
             return target;
         }
 
+        /// <summary>Lit les propriétés d’une fenêtre, en enregistrant séparément les erreurs de COM.</summary>
+        /// <param name="window">Fenêtre COM à inspecter.</param>
+        /// <param name="index">Index de la fenêtre dans la collection, ou null pour la fenêtre active.</param>
+        /// <returns>Dictionnaires des propriétés lues et des erreurs COM rencontrées.</returns>
         private static object WindowSnapshot(dynamic window, int? index)
         {
             var fields = new Dictionary<string, object>();
@@ -183,6 +219,10 @@ namespace CodexVBE
             return new { Index = index, Properties = fields, Errors = errors };
         }
 
+        /// <summary>Lit les informations du volet de code et sa sélection courante.</summary>
+        /// <param name="pane">Volet de code COM à inspecter.</param>
+        /// <param name="index">Index de la fenêtre dans la collection, ou null pour la fenêtre active.</param>
+        /// <returns>Dictionnaires des propriétés lues, de la sélection et des erreurs COM.</returns>
         private static object PaneSnapshot(dynamic pane, int? index)
         {
             var fields = new Dictionary<string, object>();
@@ -205,6 +245,11 @@ namespace CodexVBE
             return new { Index = index, Properties = fields, Errors = errors };
         }
 
+        /// <param name="fields">Dictionnaire des valeurs lues avec succès.</param>
+        /// <param name="errors">Dictionnaire recevant les erreurs indexées par propriété.</param>
+        /// <param name="name">Nom de la propriété à lire.</param>
+        /// <param name="getter">Accès COM à exécuter pour lire la valeur.</param>
+        /// <summary>Lit une propriété COM et conserve séparément l’exception éventuelle.</summary>
         private static void Read(IDictionary<string, object> fields,
             IDictionary<string, string> errors, string name, Func<object> getter)
         {

@@ -6,31 +6,64 @@ using System.Runtime.InteropServices;
 namespace CodexVBE
 {
     // Uses the host VBE's own CommandBars and Office CommandBarButton COM event.
+        /// <summary>Ajoute les boutons principaux et, si demandé, les commandes de l’éditeur.</summary>
     internal sealed class VbeMenu : IDisposable
     {
+        /// <summary>IID de l’interface Office utilisée pour recevoir les clics de CommandBarButton.</summary>
         private static readonly Guid ClickInterface = new Guid("000C0351-0000-0000-C000-000000000046");
+        /// <summary>Bouton VBAi ajouté au menu View du VBE.</summary>
         private readonly object viewButton;
+        /// <summary>Bouton VBAi ajouté au menu Tools du VBE.</summary>
         private readonly object settingsButton;
+        /// <summary>Gestionnaire COM du bouton assistant.</summary>
         private readonly ClickHandler viewHandler;
+        /// <summary>Gestionnaire COM du bouton de paramètres.</summary>
         private readonly ClickHandler settingsHandler;
+        /// <summary>Boutons GitHub et commandes ajoutés aux menus contextuels de l’éditeur.</summary>
         private readonly List<Tuple<object, ClickHandler>> editorButtons = new List<Tuple<object, ClickHandler>>();
+        /// <summary>Images OLE et masques détenus pendant la durée de vie du menu.</summary>
         private readonly List<System.Drawing.Bitmap> menuImages = new List<System.Drawing.Bitmap>();
+        /// <summary>Fonction d’abonnement aux événements COM des boutons.</summary>
         private readonly Action<object, Guid, int, Delegate> subscribe;
+        /// <summary>Fonction d’abonnement aux événements COM des boutons.</summary>
         private readonly Action<object, Guid, int, Delegate> unsubscribe;
+        /// <summary>Fonction appliquant l’icône associée à la fenêtre.</summary>
         private readonly Action<object, Type> applyIcon;
+        /// <summary>Empêche la suppression répétée des commandes et images.</summary>
         private bool disposed;
 
+        /// <summary>Signature du gestionnaire de clic Office avec indicateur d’annulation par défaut.</summary>
+        /// <param name="control">Bouton Office qui a déclenché l’événement.</param>
+        /// <param name="cancelDefault">Indique si l’action Office standard doit être annulée.</param>
         private delegate void ClickHandler(object control, ref bool cancelDefault);
 
+        /// <summary>Ajoute les boutons principaux et, si demandé, les commandes de l’éditeur.</summary>
+        /// <param name="vbe">Instance VBE dont les barres de commande sont modifiées.</param>
+        /// <param name="showAssistant">Action qui affiche l’assistant.</param>
+        /// <param name="showSettings">Action qui ouvre les paramètres.</param>
+        /// <param name="showGitHub">Action qui ouvre l’interface GitHub.</param>
+        /// <param name="editorAction">Action facultative appelée depuis un menu contextuel de l’éditeur.</param>
         public VbeMenu(object vbe, Action showAssistant, Action showSettings, Action showGitHub, Action<string> editorAction = null)
             : this(vbe, showAssistant, showSettings, showGitHub, editorAction, null, null, null)
         {
         }
 
+        /// <summary>Crée les commandes et utilise les fonctions COM injectées si elles sont fournies.</summary>
+        /// <param name="vbe">Instance VBE dont les barres de commande sont modifiées.</param>
+        /// <param name="showAssistant">Action qui affiche l’assistant.</param>
+        /// <param name="showSettings">Action qui ouvre les paramètres.</param>
+        /// <param name="showGitHub">Action qui ouvre l’interface GitHub.</param>
+        /// <param name="editorAction">Action facultative appelée depuis un menu d’éditeur.</param>
+        /// <param name="subscribe">Fonction d’abonnement COM, ou valeur par défaut si null.</param>
+        /// <param name="unsubscribe">Fonction de désabonnement COM, ou valeur par défaut si null.</param>
+        /// <param name="applyIcon">Fonction d’application d’icône, ou valeur par défaut si null.</param>
         internal VbeMenu(object vbe, Action showAssistant, Action showSettings, Action showGitHub,
+        /// <summary>Fonction d’abonnement aux événements COM des boutons.</summary>
             Action<string> editorAction, Action<object, Guid, int, Delegate> subscribe,
+        /// <summary>Fonction d’abonnement aux événements COM des boutons.</summary>
             Action<object, Guid, int, Delegate> unsubscribe, Action<object, Type> applyIcon)
         {
+        /// <summary>Fonction d’abonnement aux événements COM des boutons.</summary>
             this.subscribe = subscribe ?? new Action<object, Guid, int, Delegate>(ComEventsHelper.Combine);
             this.unsubscribe = unsubscribe ?? ((button, iid, dispid, handler) =>
                 ComEventsHelper.Remove(button, iid, dispid, handler));
@@ -95,6 +128,9 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Convertit l’icône de la fenêtre en image et masque OLE pour le bouton Office.</summary>
+        /// <param name="button">Bouton de barre de commande auquel appliquer l’image.</param>
+        /// <param name="windowType">Type de formulaire fournissant la ressource d’icône.</param>
         private void SetIcon(object button, Type windowType)
         {
             try
@@ -125,13 +161,22 @@ namespace CodexVBE
             catch (Exception ex) { LoadLog.Write("VBE menu icon unavailable: " + ex.Message); }
         }
 
+        /// <summary>Expose la conversion d’une image WinForms vers IPictureDisp.</summary>
         private sealed class MenuPicture : System.Windows.Forms.AxHost
         {
+        /// <summary>Expose la conversion d’une image WinForms vers IPictureDisp.</summary>
             private MenuPicture() : base("") { }
-            internal static object ToOle(System.Drawing.Image image) { return GetIPictureDispFromPicture(image); }
+        /// <summary>Convertit une image .NET en représentation OLE IPictureDisp.</summary>
+        /// <param name="image">Image .NET à convertir en image OLE.</param>
+        /// <returns>Objet IPictureDisp utilisable par CommandBarButton.</returns>
+internal static object ToOle(System.Drawing.Image image) { return GetIPictureDispFromPicture(image); }
         }
 
-        private static dynamic FindMenu(object application, bool view)
+        /// <summary>Recherche le menu VBE View ou Tools en tenant compte de la langue de l’hôte.</summary>
+        /// <param name="application">Objet dont les barres de commande sont recherchées.</param>
+        /// <param name="view">Indique si le menu recherché est View plutôt que Tools.</param>
+        /// <returns>Menu VBE correspondant à la langue et au type demandés.</returns>
+private static dynamic FindMenu(object application, bool view)
         {
             foreach (dynamic bar in ((dynamic)application).CommandBars)
             {
@@ -148,11 +193,15 @@ namespace CodexVBE
             throw new InvalidOperationException("VBE menu not found: " + (view ? "View" : "Tools"));
         }
 
-        private static string Normalize(string caption)
+        /// <summary>Normalise une légende de menu pour comparaison sans casse ni esperluette.</summary>
+        /// <param name="caption">Légende de menu à normaliser.</param>
+        /// <returns>Légende sans esperluette, espaces périphériques ni différence de casse.</returns>
+private static string Normalize(string caption)
         {
             return (caption ?? "").Replace("&", "").Trim().ToLowerInvariant();
         }
 
+        /// <summary>Désabonne et supprime les boutons, puis libère les images associées.</summary>
         public void Dispose()
         {
             if (disposed) return;

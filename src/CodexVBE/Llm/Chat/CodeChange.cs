@@ -21,14 +21,19 @@ namespace CodexVBE
     internal sealed class CodeDiffLine
     {
         /// <summary>Obtient ou définit la catégorie de la ligne.</summary>
+        /// <value>Catégorie de la ligne de comparaison.</value>
         public CodeDiffKind Kind { get; set; }
         /// <summary>Obtient ou définit le numéro de ligne dans la version initiale, ou nul si absent.</summary>
+        /// <value>Numéro de ligne source initiale, ou null si absente.</value>
         public int? OldLine { get; set; }
         /// <summary>Obtient ou définit le numéro de ligne dans la version modifiée, ou nul si absent.</summary>
+        /// <value>Numéro de ligne source modifiée, ou null si absente.</value>
         public int? NewLine { get; set; }
         /// <summary>Obtient ou définit le texte de la ligne sans son préfixe d’affichage.</summary>
+        /// <value>Contenu de la ligne sans marqueur de diff.</value>
         public string Text { get; set; }
         /// <summary>Obtient le signe « + » pour une ligne ajoutée, « − » pour une ligne supprimée, ou une chaîne vide sinon.</summary>
+        /// <value>Marqueur de présentation correspondant à la catégorie.</value>
         public string Sign { get { return Kind == CodeDiffKind.Added ? "+" : Kind == CodeDiffKind.Removed ? "−" : ""; } }
     }
 
@@ -36,32 +41,46 @@ namespace CodexVBE
     internal sealed class CodeChange
     {
         /// <summary>Obtient ou définit le nom du projet modifié.</summary>
+        /// <value>Nom du projet VBA modifié.</value>
         public string Project { get; set; }
         /// <summary>Obtient ou définit le nom du module modifié.</summary>
+        /// <value>Nom du module VBA modifié.</value>
         public string Module { get; set; }
         /// <summary>Obtient ou définit le code avant la modification.</summary>
+        /// <value>Code source avant modification.</value>
         public string Before { get; set; }
         /// <summary>Obtient ou définit le code après la modification.</summary>
+        /// <value>Code source après modification.</value>
         public string After { get; set; }
         /// <summary>Obtient ou définit le SHA-256 du code initial.</summary>
+        /// <value>Empreinte SHA-256 du code initial.</value>
         public string BeforeSha256 { get; set; }
         /// <summary>Obtient ou définit le SHA-256 du code modifié.</summary>
+        /// <value>Empreinte SHA-256 du code résultant.</value>
         public string AfterSha256 { get; set; }
         /// <summary>Obtient ou définit le nombre de lignes après modification.</summary>
+        /// <value>Nombre de lignes du code résultant.</value>
         public int AfterLineCount { get; set; }
         /// <summary>Obtient ou définit la date et l’heure locale de la modification.</summary>
+        /// <value>Heure locale à laquelle la modification a été enregistrée.</value>
         public DateTime Time { get; set; }
         /// <summary>Obtient ou définit si l’intégralité de la modification a été restaurée.</summary>
+        /// <value>Indique si le changement complet a été restauré.</value>
         public bool Restored { get; set; }
         /// <summary>Obtient ou définit l’identifiant du tour ayant effectué la modification.</summary>
+        /// <value>Identifiant du tour de conversation ayant produit la modification.</value>
         public string TurnId { get; set; }
         /// <summary>Obtient ou définit les index des blocs déjà restaurés partiellement.</summary>
+        /// <value>Index des blocs de diff déjà restaurés partiellement.</value>
         public System.Collections.Generic.List<int> RestoredHunks { get; set; } = new System.Collections.Generic.List<int>();
         /// <summary>Obtient le diff textuel formaté à partir des versions conservées.</summary>
+        /// <value>Diff textuel recalculé à partir des deux versions.</value>
         [System.Web.Script.Serialization.ScriptIgnore] public string Diff { get { return FormatDiff(Before, After); } }
         /// <summary>Obtient les lignes structurées du diff.</summary>
+        /// <value>Lignes structurées recalculées à partir des deux versions.</value>
         [System.Web.Script.Serialization.ScriptIgnore] public CodeDiffLine[] Rows { get { return BuildRows(Before, After); } }
         /// <summary>Obtient le libellé horodaté du changement, avec le projet et le module.</summary>
+        /// <value>Libellé horodaté avec projet, module et état de restauration.</value>
         [System.Web.Script.Serialization.ScriptIgnore] public string Label { get { return Time.ToString("HH:mm:ss") + "  " + Project + "." + Module +
             (Restored ? UiText.Get("  (restored)") : ""); } }
         /// <summary>Retourne le libellé d’affichage du changement.</summary>

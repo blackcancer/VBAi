@@ -9,39 +9,70 @@ using System.Text.RegularExpressions;
 
 namespace CodexVBE
 {
+        /// <summary>Route les commandes du protocole vers les services VBE et Excel.</summary>
     internal sealed class VbeSession
     {
+        /// <summary>Instance VBE cible utilisée pour résoudre projets et modules.</summary>
         private readonly dynamic vbe;
+        /// <summary>Service des opérations de débogage et des boîtes de dialogue natives.</summary>
         private readonly VbeDebug debugger;
+        /// <summary>Service de lecture et de modification des UserForms.</summary>
         private readonly VbeForms forms;
+        /// <summary>Service des propriétés, composants et références des projets VBA.</summary>
         private readonly VbeProjectComponents components;
+        /// <summary>Service d’inspection et de contrôle des fenêtres de l’éditeur VBE.</summary>
         private readonly VbeEditorWindows editorWindows;
+        /// <summary>Service de recherche et de modification des procédures et fichiers de code.</summary>
         private readonly VbeCodeNavigation codeNavigation;
+        /// <summary>Service d’inspection des bibliothèques et types exposés par les références.</summary>
         private readonly VbeReferenceTypes referenceTypes;
 
+        /// <summary>Abstraction du magasin de certificats utilisée pour lire les certificats de signature.</summary>
         internal interface ISigningStore : IDisposable
         {
+            /// <summary>Certificats présents dans le magasin ouvert.</summary>
+            /// <value>Collection fournie par le magasin actuellement ouvert.</value>
             X509Certificate2Collection Certificates { get; }
+            /// <summary>Ouvre le magasin selon les droits indiqués.</summary>
+            /// <param name="flags">Options d’ouverture du magasin de certificats.</param>
             void Open(OpenFlags flags);
         }
 
+        /// <summary>Adaptateur vers le magasin de certificats Windows.</summary>
         private sealed class NativeSigningStore : ISigningStore
         {
+        /// <summary>Magasin Windows encapsulé.</summary>
             private readonly X509Store store;
+            /// <summary>Crée un accès au magasin personnel de l’emplacement indiqué.</summary>
+            /// <param name="location">Emplacement Windows du magasin personnel à ouvrir.</param>
             public NativeSigningStore(StoreLocation location) { store = new X509Store(StoreName.My, location); }
+            /// <summary>Expose les certificats du magasin natif.</summary>
+            /// <value>Collection de certificats exposée par le magasin Windows.</value>
             public X509Certificate2Collection Certificates => store.Certificates;
+        /// <summary>Ouvre le magasin natif avec les options demandées.</summary>
+        /// <param name="flags">Options d’ouverture du magasin de certificats.</param>
             public void Open(OpenFlags flags) { store.Open(flags); }
+        /// <summary>Libère le magasin natif.</summary>
             public void Dispose() { store.Dispose(); }
         }
 
         // Keep OS reads and native scheduling injectable without changing the signing checks.
+        /// <summary>Fabrique injectable de magasins de certificats, initialisée avec l’implémentation Windows.</summary>
         internal Func<StoreLocation, ISigningStore> SigningStore = location => new NativeSigningStore(location);
+        /// <summary>Fournit le nom du processus hôte pour appliquer les validations Excel.</summary>
         internal Func<string> SigningProcessName = () => System.Diagnostics.Process.GetCurrentProcess().ProcessName;
+        /// <summary>Horloge utilisée pour vérifier la période de validité du certificat.</summary>
         internal Func<DateTime> SigningClock = () => DateTime.Now;
+        /// <summary>Planifie l’affichage de la boîte de signature native pour une requête validée.</summary>
         internal Func<Request, object> SignatureScheduler;
 
+        /// <summary>Crée une session pour le VBE fourni.</summary>
+        /// <param name="vbe">Objet VBE auquel rattacher la session.</param>
         public VbeSession(object vbe) : this(vbe, null) { }
 
+        /// <summary>Crée les services de session et permet d’injecter la sonde d’hôte Excel.</summary>
+        /// <param name="vbe">Objet VBE auquel rattacher la session.</param>
+        /// <param name="host">Sonde utilisée pour distinguer les hôtes Excel lors des opérations concernées.</param>
         internal VbeSession(object vbe, VbeProjectComponents.IExcelHostProbe host) { this.vbe = vbe; debugger = new VbeDebug(vbe);
             forms = new VbeForms(vbe); components = host == null
                 ? new VbeProjectComponents(vbe, forms) : new VbeProjectComponents(vbe, forms, host);
@@ -49,6 +80,9 @@ namespace CodexVBE
             referenceTypes = new VbeReferenceTypes(vbe);
             SignatureScheduler = request => debugger.QueueSignatureDialog(request); }
 
+        /// <summary>Exécute la commande demandée et encapsule son résultat dans une réponse.</summary>
+        /// <param name="request">Paramètres de la commande à exécuter.</param>
+        /// <returns>Réponse contenant le résultat de la commande ou son erreur de validation.</returns>
         public Response Execute(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Command))
@@ -281,6 +315,9 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Valide le projet et le certificat, puis planifie la première signature VBA.</summary>
+        /// <param name="request">Paramètres de la commande à exécuter.</param>
+        /// <returns>Informations sur la signature planifiée et le certificat retenu.</returns>
         private object BeginSignProject(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project) ||
@@ -359,6 +396,8 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Retourne les certificats personnels admissibles à la signature de code.</summary>
+        /// <returns>Certificats admissibles à la signature de code dans le magasin personnel.</returns>
         private object ListSigningCertificates()
         {
             using (var store = SigningStore(StoreLocation.CurrentUser))
@@ -380,11 +419,18 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Crée l’accès Git au projet VBA résolu.</summary>
+        /// <param name="projectName">Nom du projet VBE ciblé.</param>
+        /// <param name="hostPath">Chemin du document hôte associé au projet Git.</param>
+        /// <returns>Adaptateur Git associé au projet VBE.</returns>
         internal VbaGitProject GitProject(string projectName, string hostPath)
         {
             return new VbaGitProject(() => (object)GetProject(projectName), hostPath);
         }
 
+        /// <summary>Retourne le chemin absolu du document hôte enregistré utilisé comme périmètre Git.</summary>
+        /// <param name="projectName">Nom du projet VBE ciblé.</param>
+        /// <returns>Chemin absolu du document hôte enregistré.</returns>
         internal string GitScope(string projectName)
         {
             dynamic project = GetProject(projectName);
@@ -393,11 +439,16 @@ namespace CodexVBE
             return Path.GetFullPath(path);
         }
 
+        /// <summary>Demande la persistance de la signature Excel du projet.</summary>
+        /// <param name="projectName">Nom du projet VBE ciblé.</param>
+        /// <returns>Résultat de la persistance de la signature Excel.</returns>
         internal object PersistProjectSignature(string projectName)
         {
             return components.PersistExcelSignature(projectName);
         }
 
+        /// <summary>Énumère les projets VBE et leurs noms de fichier accessibles.</summary>
+        /// <returns>Projets visibles avec nom, chemin accessible et mode.</returns>
         private object ListProjects()
         {
             var result = new List<object>();
@@ -411,6 +462,9 @@ namespace CodexVBE
             return result;
         }
 
+        /// <summary>Énumère les composants du projet avec leur type et leur nombre de lignes.</summary>
+        /// <param name="projectName">Nom du projet VBE ciblé.</param>
+        /// <returns>Composants du projet avec type et nombre de lignes.</returns>
         private object ListModules(string projectName)
         {
             dynamic project = GetProject(projectName);
@@ -421,6 +475,10 @@ namespace CodexVBE
             return result;
         }
 
+        /// <summary>Retourne le code du module et son empreinte SHA-256.</summary>
+        /// <param name="projectName">Nom du projet VBE ciblé.</param>
+        /// <param name="moduleName">Nom du module VBA ciblé.</param>
+        /// <returns>Code du module et empreinte SHA-256.</returns>
         private object ReadModule(string projectName, string moduleName)
         {
             dynamic module = GetModule(projectName, moduleName);
@@ -428,17 +486,35 @@ namespace CodexVBE
             return new { Project = projectName, Module = moduleName, Code = code, Sha256 = Hash(code) };
         }
 
+        /// <summary>Données sérialisables d’une référence de projet VBA.</summary>
         private sealed class ReferenceInfo
         {
+        /// <summary>Nom de la référence lorsqu’il est accessible.</summary>
+            /// <value>Nom lu depuis la référence VBE.</value>
             public string Name { get; set; }
+        /// <summary>Identifiant GUID de la bibliothèque référencée.</summary>
+            /// <value>GUID de la bibliothèque référencée.</value>
             public string Guid { get; set; }
+        /// <summary>Version majeure de la référence.</summary>
+            /// <value>Numéro de version majeure déclaré par le VBE.</value>
             public int Major { get; set; }
+        /// <summary>Version mineure de la référence.</summary>
+            /// <value>Numéro de version mineure déclaré par le VBE.</value>
             public int Minor { get; set; }
+        /// <summary>Indique si le VBE signale une référence manquante.</summary>
+            /// <value>État de résolution de la référence indiqué par le VBE.</value>
             public bool IsBroken { get; set; }
+        /// <summary>Indique si la référence est intégrée au projet hôte.</summary>
+            /// <value>Indique si le VBE classe la référence comme intégrée.</value>
             public bool BuiltIn { get; set; }
+        /// <summary>Chemin du fichier de bibliothèque lorsqu’il est disponible.</summary>
+            /// <value>Chemin de la bibliothèque lorsqu’il est résolu.</value>
             public string FullPath { get; set; }
         }
 
+        /// <summary>Retourne les références du projet et leur empreinte de version.</summary>
+        /// <param name="projectName">Nom du projet VBE ciblé.</param>
+        /// <returns>Références du projet et empreinte de leur état.</returns>
         private object ListReferences(string projectName)
         {
             dynamic project = GetProject(projectName);
@@ -446,6 +522,9 @@ namespace CodexVBE
             return new { Project = projectName, Version = ReferencesVersion(result), References = result };
         }
 
+        /// <summary>Lit les identités et états disponibles des références d’un projet.</summary>
+        /// <param name="project">Projet VBE dont les références sont lues.</param>
+        /// <returns>Références accessibles sous forme sérialisable.</returns>
         private static List<ReferenceInfo> ReadReferences(dynamic project)
         {
             var result = new List<ReferenceInfo>();
@@ -466,6 +545,9 @@ namespace CodexVBE
             return result;
         }
 
+        /// <summary>Calcule une empreinte stable des informations de références lues.</summary>
+        /// <param name="references">Références à inclure dans l’empreinte.</param>
+        /// <returns>Empreinte SHA-256 des informations de référence.</returns>
         private static string ReferencesVersion(List<ReferenceInfo> references)
         {
             var text = new StringBuilder();
@@ -479,6 +561,9 @@ namespace CodexVBE
             return Hash(text.ToString());
         }
 
+        /// <summary>Vérifie la version des références et le mode conception avant modification.</summary>
+        /// <param name="request">Paramètres de la commande à exécuter.</param>
+        /// <returns>Projet en mode conception dont la version des références correspond.</returns>
         private dynamic CheckedReferenceProject(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ExpectedReferencesVersion))
@@ -492,6 +577,9 @@ namespace CodexVBE
             return project;
         }
 
+        /// <summary>Ajoute une référence par GUID et versions demandées après validation anti-concurrence.</summary>
+        /// <param name="request">Paramètres de la commande à exécuter.</param>
+        /// <returns>État des références après l’ajout par GUID.</returns>
         private object AddReferenceGuid(Request request)
         {
             System.Guid parsed;
@@ -505,6 +593,9 @@ namespace CodexVBE
             return ListReferences(request.Project);
         }
 
+        /// <summary>Ajoute au projet une bibliothèque depuis un chemin absolu existant.</summary>
+        /// <param name="request">Paramètres de la commande à exécuter.</param>
+        /// <returns>État des références après l’ajout du fichier.</returns>
         private object AddReferenceFile(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.Path) ||
@@ -517,6 +608,9 @@ namespace CodexVBE
             return ListReferences(request.Project);
         }
 
+        /// <summary>Retire la référence correspondant exactement au GUID et aux versions spécifiés.</summary>
+        /// <param name="request">Paramètres de la commande à exécuter.</param>
+        /// <returns>État des références après le retrait exact.</returns>
         private object RemoveReference(Request request)
         {
             System.Guid parsed;
@@ -535,6 +629,10 @@ namespace CodexVBE
             return ListReferences(request.Project);
         }
 
+        /// <summary>Crée un composant VBA du type demandé et vérifie son identité effective.</summary>
+        /// <param name="request">Paramètres de la commande à exécuter.</param>
+        /// <param name="componentType">Type VBE du composant à créer.</param>
+        /// <returns>Identité, code et empreinte du composant créé.</returns>
         private object CreateComponent(Request request, int componentType)
         {
             if (string.IsNullOrWhiteSpace(request.Module) ||
@@ -567,6 +665,9 @@ namespace CodexVBE
                 Lines = (int)module.CountOfLines, Code = code, Sha256 = Hash(code) };
         }
 
+        /// <summary>Remplace une plage de lignes après vérification du mode, de l’empreinte et des bornes.</summary>
+        /// <param name="request">Paramètres de la commande à exécuter.</param>
+        /// <returns>Réponse décrivant l’empreinte et le nombre de lignes après remplacement.</returns>
         private Response ReplaceLines(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ExpectedSha256))
@@ -591,11 +692,18 @@ namespace CodexVBE
             return Response.Success(new { Sha256 = Hash(after), Lines = (int)module.CountOfLines });
         }
 
+        /// <summary>Résout un projet VBE à partir de son nom.</summary>
+        /// <param name="name">Nom de projet à résoudre.</param>
+        /// <returns>Projet résolu par le résolveur VBE.</returns>
         private dynamic GetProject(string name)
         {
             return VbeProjectResolver.Resolve(vbe, name);
         }
 
+        /// <summary>Résout le module nommé sans tenir compte de la casse.</summary>
+        /// <param name="projectName">Nom du projet VBE ciblé.</param>
+        /// <param name="moduleName">Nom du module VBA ciblé.</param>
+        /// <returns>Module de code correspondant au nom fourni.</returns>
         private dynamic GetModule(string projectName, string moduleName)
         {
             if (string.IsNullOrWhiteSpace(moduleName)) throw new ArgumentException("Module is required.");
@@ -606,12 +714,18 @@ namespace CodexVBE
             throw new InvalidOperationException("Module not found: " + moduleName);
         }
 
+        /// <summary>Lit toutes les lignes du module, ou retourne une chaîne vide si celui-ci est vide.</summary>
+        /// <param name="module">Module VBE à lire.</param>
+        /// <returns>Texte complet du module, ou chaîne vide.</returns>
         private static string GetCode(dynamic module)
         {
             int count = (int)module.CountOfLines;
             return count == 0 ? string.Empty : (string)module.Lines[1, count];
         }
 
+        /// <summary>Calcule l’empreinte SHA-256 UTF-8 du code fourni.</summary>
+        /// <param name="code">Code source à hacher.</param>
+        /// <returns>Empreinte SHA-256 hexadécimale en minuscules.</returns>
         private static string Hash(string code)
         {
             using (var sha = SHA256.Create())

@@ -8,16 +8,29 @@ using System.Text.RegularExpressions;
 
 namespace CodexVBE
 {
+    /// <summary>Inspecte, navigue et modifie le code des projets VBA en vérifiant les versions attendues.</summary>
     internal sealed class VbeCodeNavigation
     {
+        /// <summary>Instance VBIDE contenant les projets et modules.</summary>
         private readonly dynamic vbe;
+        /// <summary>Service de lecture de l’arbre des formulaires UserForm.</summary>
         private readonly VbeForms forms;
+        /// <summary>Lecteur injectable des octets des fichiers de code fournis.</summary>
         internal Func<string, byte[]> ReadSourceBytes = File.ReadAllBytes;
+        /// <summary>Résolveur injectable des pages de code historiques sans remplacement silencieux des caractères invalides.</summary>
         internal Func<int, Encoding> LegacySourceEncoding = codePage => Encoding.GetEncoding(codePage,
             EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
 
+        /// <summary>Crée le service de navigation et de modification pour l’instance VBE et les formulaires donnés.</summary>
+        /// <param name="vbe">Instance VBIDE.</param>
+        /// <param name="forms">Service de gestion des formulaires.</param>
         public VbeCodeNavigation(object vbe, VbeForms forms) { this.vbe = vbe; this.forms = forms; }
 
+        /// <summary>Crée une procédure événementielle de UserForm après validation de l’arbre, du nom d’objet et de l’empreinte du code.</summary>
+        /// <param name="request">Requête contenant le formulaire, l’objet, l’événement et les versions attendues.</param>
+        /// <returns>Procédure reconnue par VBIDE, sa ligne de corps et le nouveau code avec son SHA-256.</returns>
+        /// <exception cref="ArgumentException">Un nom ou une version attendue est invalide ou absent.</exception>
+        /// <exception cref="InvalidOperationException">Le projet, formulaire, arbre ou code ne respecte pas les préconditions, ou la création n’est pas vérifiable.</exception>
         public object CreateEventProcedure(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.EventName) ||
@@ -63,6 +76,11 @@ namespace CodexVBE
                 BodyLine = bodyLine, Sha256 = Hash(after), Code = after };
         }
 
+        /// <summary>Insère une procédure validée dans un module standard ou de classe en mode conception.</summary>
+        /// <param name="request">Requête contenant le texte de procédure et l’empreinte actuelle du module.</param>
+        /// <returns>Emplacement, type et nouveau contenu du module après reconnaissance par VBIDE.</returns>
+        /// <exception cref="ArgumentException">Le texte de procédure ou la requête est invalide.</exception>
+        /// <exception cref="InvalidOperationException">Le projet est dans un autre mode, le module ou la version ne convient pas, ou la procédure existe déjà.</exception>
         public object CreateProcedure(Request request)
         {
             string text = ValidateProcedureText(request);
@@ -110,6 +128,11 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Remplace le corps d’une procédure existante après vérification de son identité et de l’empreinte du module.</summary>
+        /// <param name="request">Requête contenant le texte et la procédure cible.</param>
+        /// <returns>État du module après remplacement vérifié.</returns>
+        /// <exception cref="ArgumentException">La procédure ou son texte est invalide.</exception>
+        /// <exception cref="InvalidOperationException">Le projet ou la procédure ne respecte pas les préconditions de mutation.</exception>
         public object ReplaceProcedure(Request request)
         {
             string text = ValidateProcedureText(request);
@@ -184,6 +207,11 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Supprime une procédure après confirmation de son empreinte et de sa plage dans le module.</summary>
+        /// <param name="request">Requête identifiant la procédure et la version attendue.</param>
+        /// <returns>État du module après suppression vérifiée.</returns>
+        /// <exception cref="ArgumentException">L’identification ou la version requise est absente.</exception>
+        /// <exception cref="InvalidOperationException">La procédure ou le module a changé ou ne peut pas être supprimé en mode courant.</exception>
         public object RemoveProcedure(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Procedure) ||
@@ -261,6 +289,11 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Insère dans le module le contenu d’un fichier de code après validation du chemin, de l’encodage et de la version.</summary>
+        /// <param name="request">Requête avec chemin fourni, cible et empreinte attendue.</param>
+        /// <returns>État après insertion et métadonnées du fichier source décodé.</returns>
+        /// <exception cref="ArgumentException">Le chemin ou les paramètres fournis ne sont pas valides.</exception>
+        /// <exception cref="InvalidOperationException">Le projet ou le module n’est pas modifiable ou l’encodage du fichier est indéterminé.</exception>
         public object InsertCodeFile(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.ExpectedSha256) ||
@@ -331,6 +364,11 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Lit et décrit un fichier source fourni explicitement, sans l’insérer dans un module.</summary>
+        /// <param name="suppliedPath">Chemin du fichier source.</param>
+        /// <returns>Métadonnées, encodage détecté et contenu décodé.</returns>
+        /// <exception cref="IOException">La lecture du fichier échoue.</exception>
+        /// <exception cref="InvalidOperationException">L’encodage ne peut pas être déterminé sans perte.</exception>
         public object InspectCodeFile(string suppliedPath)
         {
             if (string.IsNullOrWhiteSpace(suppliedPath) ||
@@ -381,6 +419,12 @@ namespace CodexVBE
                 ContentIncluded = false };
         }
 
+        /// <summary>Décode les octets selon le BOM ou l’encodage demandé, en refusant les séquences invalides.</summary>
+        /// <param name="bytes">Octets du fichier.</param>
+        /// <param name="requested">Encodage explicitement demandé, s’il existe.</param>
+        /// <param name="name">Reçoit le nom d’encodage effectivement utilisé.</param>
+        /// <returns>Contenu texte décodé sans normaliser le texte source.</returns>
+        /// <exception cref="InvalidOperationException">L’encodage ne peut pas être établi ou les octets ne sont pas valides pour celui-ci.</exception>
         private string DecodeCodeFile(byte[] bytes, string requested, out string name)
         {
             string selected = string.IsNullOrWhiteSpace(requested) ? null : requested.Trim().ToLowerInvariant();
@@ -426,6 +470,9 @@ namespace CodexVBE
             return source;
         }
 
+        /// <summary>Extrait les caractères non ASCII distincts d’un texte et les retourne dans l’ordre de première apparition.</summary>
+        /// <param name="source">Texte analysé.</param>
+        /// <returns>Chaîne de caractères non ASCII distincts.</returns>
         private static string NonAsciiCharacters(string source)
         {
             var result = new StringBuilder();
@@ -434,6 +481,10 @@ namespace CodexVBE
             return result.ToString();
         }
 
+        /// <summary>Valide le nom, la déclaration et le texte d’une procédure avant toute insertion.</summary>
+        /// <param name="request">Requête de création ou remplacement.</param>
+        /// <returns>Texte de procédure validé et normalisé.</returns>
+        /// <exception cref="ArgumentException">La requête ne contient pas une procédure VBA valide.</exception>
         private static string ValidateProcedureText(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Procedure) ||
@@ -462,6 +513,10 @@ namespace CodexVBE
             return text;
         }
 
+        /// <summary>Compte récursivement les contrôles de formulaire portant le nom demandé.</summary>
+        /// <param name="nodes">Nœuds de formulaire à parcourir.</param>
+        /// <param name="name">Nom recherché, sans tenir compte de la casse.</param>
+        /// <returns>Nombre de contrôles correspondants.</returns>
         private static int CountControls(IEnumerable nodes, string name)
         {
             int count = 0;
@@ -474,6 +529,10 @@ namespace CodexVBE
             return count;
         }
 
+        /// <summary>Énumère les procédures reconnues par VBIDE dans le module demandé.</summary>
+        /// <param name="projectName">Nom ou chemin du projet.</param>
+        /// <param name="moduleName">Nom du module.</param>
+        /// <returns>Informations de procédure et empreinte du code du module.</returns>
         public object Procedures(string projectName, string moduleName)
         {
             dynamic module = GetModule(GetProject(projectName), moduleName);
@@ -502,6 +561,10 @@ namespace CodexVBE
                 Procedures = result };
         }
 
+        /// <summary>Recherche du texte ou un motif dans les modules d’un projet et retourne les correspondances paginées.</summary>
+        /// <param name="request">Requête décrivant le projet, le texte ou motif et les options de recherche.</param>
+        /// <returns>Correspondances avec positions, contexte et métadonnées de pagination.</returns>
+        /// <exception cref="ArgumentException">La requête de recherche ou ses bornes sont invalides.</exception>
         public object Find(Request request)
         {
             if (string.IsNullOrEmpty(request.Query) || request.Query.Length > 200)
@@ -589,11 +652,19 @@ namespace CodexVBE
                 Truncated = truncated };
         }
 
+        /// <summary>Indique si un caractère peut appartenir à un identifiant VBA.</summary>
+        /// <param name="value">Caractère examiné.</param>
+        /// <returns><see langword="true"/> pour une lettre, un chiffre ou un soulignement.</returns>
         private static bool IdentifierChar(char value)
         {
             return char.IsLetterOrDigit(value) || value == '_';
         }
 
+        /// <summary>Sélectionne une procédure après vérification de l’empreinte, du type de procédure et de sa plage courante.</summary>
+        /// <param name="request">Requête de sélection avec la version du module.</param>
+        /// <param name="debugger">Service de navigation VBE qui active le code.</param>
+        /// <returns>Résultat de sélection et emplacement effectivement résolu.</returns>
+        /// <exception cref="InvalidOperationException">Le module a changé ou la procédure n’est plus identifiable.</exception>
         public object SelectProcedure(Request request, VbeDebug debugger)
         {
             if (string.IsNullOrWhiteSpace(request.Procedure) ||
@@ -610,11 +681,19 @@ namespace CodexVBE
             return debugger.SelectCode(request);
         }
 
+        /// <summary>Résout un projet dans l’instance VBIDE.</summary>
+        /// <param name="name">Nom ou chemin du projet.</param>
+        /// <returns>Projet VBIDE résolu.</returns>
         private dynamic GetProject(string name)
         {
             return VbeProjectResolver.Resolve(vbe, name);
         }
 
+        /// <summary>Résout un module du projet sans tenir compte de la casse du nom.</summary>
+        /// <param name="project">Projet contenant le module.</param>
+        /// <param name="name">Nom du module demandé.</param>
+        /// <returns>Module correspondant.</returns>
+        /// <exception cref="InvalidOperationException">Le module est absent ou ambigu.</exception>
         private static dynamic GetModule(dynamic project, string name)
         {
             if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Module is required.");
@@ -624,11 +703,18 @@ namespace CodexVBE
             throw new InvalidOperationException("Module not found: " + name);
         }
 
+        /// <summary>Lit l’intégralité du code d’un module VBIDE, en retournant une chaîne vide si aucune ligne n’existe.</summary>
+        /// <param name="module">Module à lire.</param>
+        /// <param name="count">Nombre de lignes indiqué par VBIDE.</param>
+        /// <returns>Texte source du module.</returns>
         private static string Code(dynamic module, int count)
         {
             return count == 0 ? string.Empty : (string)module.Lines[1, count];
         }
 
+        /// <summary>Calcule le SHA-256 hexadécimal minuscule du code UTF-8.</summary>
+        /// <param name="code">Code source.</param>
+        /// <returns>Empreinte hexadécimale du code.</returns>
         private static string Hash(string code)
         {
             using (var sha = SHA256.Create())
