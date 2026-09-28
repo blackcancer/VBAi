@@ -32,5 +32,6 @@ Ces intentions sont à confronter aux guides actuels [Conversation](../chat-ui.m
 - [Formulaires : duplication](test-inventories/vbe-forms-duplication-inventory.md)
 - [Dispatch de session](test-inventories/vbe-session-dispatch-inventory.md)
 - [Mesure à 100 % avant chat-ux](test-coverage-pre-chat-ux.md)
+- [Validation initiale de la fusion chat-ux](test-coverage-chat-ux-integration.md)
 
 La [mesure globale courante](../test-coverage.md) prend en compte les sources ajoutées par `chat-ux` ; les inventaires archivés ne la remplacent pas.

@@ -1,13 +1,13 @@
 # Travaux restants
 
-État consolidé après `2197c43`, le **28 septembre 2026**. Ce document distingue les fonctions présentes des preuves de qualification manquantes. Le [catalogue LLM](reference/vbe-tools.md) décrit l’exposition actuelle ; les [archives](archive/README.md) conservent les expériences détaillées.
+État consolidé après `fa61565`, le **28 septembre 2026**. Ce document distingue les fonctions présentes des preuves de qualification manquantes. Le [catalogue LLM](reference/vbe-tools.md) décrit l’exposition actuelle ; les [archives](archive/README.md) conservent les expériences détaillées.
 
 ## Couverture et documentation
 
 | Travail | État actuel | Critère de fin |
 | --- | --- | --- |
-| Couverture du code de production | 92,94 % lignes, 87,79 % branches ; 63 classes instrumentées incomplètes après chat-ux | 100 % lignes et branches mesurées sur toute l’assembly, sans masquer du code ; suite globale verte |
-| Organisation des tests | 99 miroirs pour 168 sources ; scénarios et fixtures complémentaires | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
+| Couverture du code de production | 100 % lignes, 100 % branches ; aucune classe instrumentée incomplète | 100 % lignes et branches mesurées sur toute l’assembly, sans masquer du code ; suite globale verte |
+| Organisation des tests | 119 miroirs pour 168 sources ; scénarios et fixtures complémentaires | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
 | Documentation IntelliSense | Nouvelles déclarations apportées par chat-ux ; agent documentaire en cours | Audit final des déclarations privées/publiques, propriétés et tests, sans lacune |
 | Concepteurs WinForms | 24 DesignSurface validées | Préserver cette accessibilité après chaque changement de structure ; qualifier aussi le rendu réel |
 

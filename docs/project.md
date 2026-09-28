@@ -1,6 +1,6 @@
 # VBAi : objectif et état du projet
 
-État du code **`2197c43`**, vérifié le **28 septembre 2026**.
+État du code **`fa61565`**, vérifié le **28 septembre 2026**.
 
 ## Objectif
 
@@ -34,12 +34,12 @@ Le [catalogue des 166 outils LLM](reference/vbe-tools.md) fournit les noms et pa
 
 | Vérification | Résultat |
 | --- | --- |
-| Suite globale VSTest avec hôtes activés | **910 réussis, 0 échec, 0 ignoré** |
-| Couverture des lignes / branches | **92,94 % / 87,79 %** |
+| Suite globale VSTest avec hôtes activés | **1 067 réussis, 0 échec, 1 ignoré (SOLIDWORKS fermé)** |
+| Couverture des lignes / branches | **100 % / 100 %** |
 | Compilation | **0 erreur, 0 avertissement** |
-| Concepteurs WinForms | **24 chargements et modifications de taille réussis** |
+| Concepteurs WinForms | Validation précédente : **24 chargements et modifications de taille réussis** |
 | Excel | Chargement, pont, inspection et sauvegarde/relecture d’un classeur macro jetable |
-| SOLIDWORKS 2019 SP5 | Chargement, compilation/exécution, breakpoint, pas à pas et reprise sur `test.swp` ; inventaire et SHA initiaux restaurés |
+| SOLIDWORKS 2019 SP5 | NOT_RUN dans ce passage ; validation précédente : chargement, compilation/exécution, breakpoint, pas à pas et reprise sur `test.swp` ; inventaire et SHA initiaux restaurés |
 
 La capture des variables locales de SOLIDWORKS expose un panneau accessible mais aucune ligne dans ce dernier essai. La lecture de leurs valeurs n’est donc pas validée. Le dernier passage global ne qualifie pas chaque commande dans les deux hôtes.
 

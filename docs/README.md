@@ -1,6 +1,6 @@
 # Documentation VBAi
 
-État vérifié le **28 septembre 2026**, après intégration de `codex/chat-ux` dans `main` (`2197c43`). Le produit s’appelle VBAi ; la solution, l’assembly, le namespace et les identifiants COM conservent le nom CodexVBE.
+État vérifié le **28 septembre 2026**, après intégration de `codex/chat-ux` dans `main` (`fa61565`). Le produit s’appelle VBAi ; la solution, l’assembly, le namespace et les identifiants COM conservent le nom CodexVBE.
 
 ## Utiliser le complément
 
