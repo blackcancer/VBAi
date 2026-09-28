@@ -80,7 +80,11 @@ namespace CodexVBE.Tests.Unit
                     collections[field] = items.ToArray(); field.FieldType.GetMethod("Clear").Invoke(value, null);
                 }
             }
-            foreach (var field in fields.Keys) field.SetValue(null, field.FieldType.IsValueType ? Activator.CreateInstance(field.FieldType) : null);
+            var stateNames = new HashSet<string> { "toolbarPaintCount", "toolbarDeferredPaintCount", "localChromeRefresh",
+                "allowDarkMode", "setPreferredMode", "flushMenuThemes", "backgroundBrush", "editorWindow", "previousPreferredMode",
+                "windowEventHook", "preferredModeChanged", "nativePalette", "immediateWindow", "immediateCaption" };
+            foreach (var field in fields.Keys) if (stateNames.Contains(field.Name))
+                field.SetValue(null, field.FieldType.IsValueType ? Activator.CreateInstance(field.FieldType) : null);
             Environment.SetEnvironmentVariable(VbeNativeTheme.ExperimentVariable, null);
             LoadLog.AppendText = (path, message) => Messages.Add(message);
             VbeNativeTheme.ApplyNativeTheme = window =>
