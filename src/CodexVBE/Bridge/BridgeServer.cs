@@ -94,6 +94,10 @@ namespace CodexVBE
         private volatile bool stopping;
         /// <summary>Connexion actuellement acceptée, fermée lors de l’arrêt.</summary>
         private NamedPipeServerStream listener;
+        /// <summary>Budget de réception d'une requête complète, indépendant de la durée d'exécution VBE.</summary>
+        internal TimeSpan RequestReadTimeout = TimeSpan.FromSeconds(10);
+        /// <summary>Limite UTF-8 appliquée avant l'allocation de la ligne JSON complète.</summary>
+        internal int MaxRequestBytes = 10 * 1024 * 1024;
 
         /// <summary>Crée le serveur IPC et prépare son thread d’écoute.</summary>
         /// <param name="dispatcher">Contrôle WinForms propriétaire du thread VBE.</param>
@@ -107,7 +111,7 @@ namespace CodexVBE
             PersistSignature = project => session.PersistProjectSignature(project);
             pipeName = "CodexVBE." + processId;
             OpenPipe = security => new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1,
-                PipeTransmissionMode.Byte, PipeOptions.None, 4096, 4096, security);
+                PipeTransmissionMode.Byte, PipeOptions.Asynchronous, 4096, 4096, security);
             worker = new Thread(Run) { IsBackground = true, Name = "CodexVBE pipe" };
         }
 
@@ -129,10 +133,8 @@ namespace CodexVBE
                         listener = pipe;
                         pipe.WaitForConnection();
                         if (stopping) break;
-                        using (var reader = new StreamReader(pipe, new UTF8Encoding(false), false, 4096, true))
-                        using (var writer = new StreamWriter(pipe, new UTF8Encoding(false), 4096, true) { AutoFlush = true })
                         {
-                            string line = reader.ReadLine();
+                            string line = BridgeRequestReader.ReadAsync(pipe, MaxRequestBytes, RequestReadTimeout).GetAwaiter().GetResult();
                             var json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
                             Response response;
                             try
@@ -290,7 +292,8 @@ namespace CodexVBE
                             {
                                 response = Response.Failure(ex.Message);
                             }
-                            writer.WriteLine(json.Serialize(response));
+                            using (var writer = new StreamWriter(pipe, new UTF8Encoding(false), 4096, true) { AutoFlush = true })
+                                writer.WriteLine(json.Serialize(response));
                         }
                     }
                 }

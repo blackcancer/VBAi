@@ -6,7 +6,7 @@ Double-cliquer un module dans l’explorateur de projet du VBE ouvre son onglet 
 
 Monaco occupe toute la zone centrale des documents VBE, sans bordure, commandes de fenêtre ni bouton ancrer/détacher. Les Designers UserForm et l’explorateur d’objets gardent leur place native ; sélectionner leur panneau Propriétés ne réaffiche pas Monaco par-dessus. La disposition fixe reste dans `ModernEditorWindow.Designer.cs`. Le WebView et les onglets de documents sont les éléments dynamiques. Le Designer ne démarre ni navigateur, ni worker, ni COM.
 
-La synchronisation est continue après une pause de saisie. **Elle ne sauvegarde pas le classeur ou la macro sur disque** : enregistrer dans l’application hôte. Ctrl+S déclenche une synchronisation immédiate. Un conflit fait apparaître les actions de comparaison, rechargement et résolution. Une nouvelle modification native après comparaison interdit l’écrasement.
+La synchronisation automatique est continue après une pause de saisie. **Elle ne sauvegarde pas le classeur ou la macro sur disque**. Ctrl+S synchronise les modifications puis déclenche la commande Enregistrer native pour le projet de l’onglet. Un conflit fait apparaître les actions de comparaison, rechargement et résolution. Une nouvelle modification native après comparaison interdit l’écrasement.
 
 ## Assistance VBA
 
@@ -94,7 +94,29 @@ L'intégration conserve les **204 outils LLM** et compte **190 miroirs pour 254 
 
 Le scénario Excel final est **PASS** (`artifacts/pr9-integration/native-final/excel.trx`) : diagnostic réel, marqueur, correction, pas à pas, attributs standards/classes/formulaires, restauration après retrait et conservation des changements concurrents. Le correctif de fusion protège aussi le nom du composant lors d'un refus : seul le nom temporaire créé par l'opération peut être restauré. Voir [la qualification native](reference/native-qualification.md) et [le remplacement contrôlé](monaco-attribute-replacement-proposal.md) pour les limites.
 
+## Enregistrement depuis Monaco
+
+`Ctrl+S` déclenche une action d'enregistrement distincte de la synchronisation automatique.
+Les brouillons ouverts sont d'abord synchronisés ; si un module du projet cible reste en conflit
+ou non synchronisé, l'enregistrement est refusé avec un état explicite. La commande Enregistrer
+native du VBE cible ensuite le projet de l'onglet, même si un autre classeur est actif.
+Un document jamais enregistré conserve le dialogue Enregistrer sous de son hôte.
+L'annulation ou l'échec ne supprime aucun onglet ni texte ; le statut reste visible jusqu'à une
+nouvelle modification ou un enregistrement réussi. Un succès exige un chemin existant,
+l'état `VBProject.Saved` et l'état enregistré du document hôte (`HostSaved`), sans assimiler
+la seule synchronisation au stockage sur disque. Si l'hôte ne permet pas de lire ce dernier
+état, le statut précise que l'enregistrement natif a été demandé mais ne peut pas être vérifié ;
+il n'affiche pas une confirmation « Saved ».
+
+Qualification Excel : `MonacoSaveExcelTests` envoie réellement `Ctrl+S` à WebView2,
+contrôle le bon classeur malgré un second classeur actif, ferme puis rouvre le `.xlsm`
+et retrouve le changement sur disque (1 test réussi, aucun ignoré ;
+`artifacts/editor-save/results/editor-save-final.trx`). L'annulation d'un premier
+enregistrement et l'erreur de sauvegarde sont simulées à la frontière de commande native ;
+le dialogue Enregistrer sous n'a pas été automatisé dans cette qualification.
+
 ## Sources techniques
+
 
 - [API publique Monaco](https://github.com/microsoft/monaco-editor) : contrats de fournisseurs de langage.
 - [Modèle d’objets VBIDE](https://learn.microsoft.com/en-us/office/vba/language/reference/visual-basic-add-in-model/objects-visual-basic-add-in-model) : code, volets et événements exposés.

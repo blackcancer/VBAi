@@ -28,10 +28,14 @@ namespace CodexVBE
         {
             var attachments = new List<ChatAttachment>();
             foreach (var reference in CurrentReferences(question))
+            {
+                tools?.RequireProjectRead(reference.Project);
                 attachments.Add(new ChatAttachment { Label = reference.Token, Text = referenceIndex.Resolve(reference),
                     Project = reference.Project, Module = reference.Module, Sha256 = reference.Sha256, StartLine = reference.StartLine });
+            }
             foreach (var attachment in draftAttachments)
             {
+                if (!string.IsNullOrEmpty(attachment.Project)) tools?.RequireProjectRead(attachment.Project);
                 if (!string.IsNullOrEmpty(attachment.EditorDocumentId))
                 {
                     var document = scopeSession?.ModernEditor?.Invoke(false)?.Documents.FirstOrDefault(d => d.Id == attachment.EditorDocumentId);
@@ -215,12 +219,16 @@ namespace CodexVBE
             if (busy || currentSession == null) return;
             int index = transcriptEntries.IndexOf(lastEntry);
             if (index < 0) return;
+            int start = Math.Max(0, currentSession.ProviderHistoryStartIndex);
+            if (index < start)
+            { SetStatus(UiText.Get("This message predates the project privacy upgrade. Use current authorized references in a new conversation.")); return; }
             SaveCurrentSession();
-            var entries = json.Deserialize<List<ChatEntry>>(json.Serialize(transcriptEntries.Take(index + 1)));
+            var entries = json.Deserialize<List<ChatEntry>>(json.Serialize(transcriptEntries.Skip(start).Take(index + 1 - start)));
             // A branch is conversational context, never a second owner of rollback controls.
             foreach (var entry in entries) if (entry.Change != null) { entry.Text = entry.Change.Label + "\n" + entry.Change.Diff; entry.Change = null; }
             var fork = new ChatSessionState { Scope = currentSession.Scope, Title = currentSession.Title + UiText.Get(" · branch"),
-                Provider = currentSession.Provider, Model = currentSession.Model, Effort = currentSession.Effort, Mode = currentSession.Mode, Entries = entries };
+                Provider = currentSession.Provider, Model = currentSession.Model, Effort = currentSession.Effort, Mode = currentSession.Mode, Entries = entries,
+                ReadProjectGrants = currentSession.ReadProjectGrants?.ToArray(), SharedContextReadAllowed = currentSession.SharedContextReadAllowed };
             var history = new List<object> { new { role = "system", content = LlmVbeContext.DeveloperInstructions } };
             foreach (var entry in entries.Where(x => x.Speaker == "Vous" || x.Speaker == "Assistant"))
                 history.Add(new { role = entry.Speaker == "Vous" ? "user" : "assistant", content = entry.Text });

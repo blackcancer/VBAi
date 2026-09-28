@@ -75,6 +75,9 @@
     <Compile Update="Llm\Chat\ChatWindow.cs"><SubType>Form</SubType></Compile>
     <Compile Update="Llm\Chat\ChatWindow.Designer.cs"><DependentUpon>ChatWindow.cs</DependentUpon></Compile>
     <Compile Update="Llm\Chat\VbeApprovalDialog.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="Llm\Chat\ProjectAccessWindow.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="Llm\Chat\ProjectAccessWindow.Designer.cs"><DependentUpon>ProjectAccessWindow.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Llm\Chat\ProjectAccessWindow.resx"><DependentUpon>ProjectAccessWindow.cs</DependentUpon></EmbeddedResource>
     <Compile Update="Llm\Chat\VbeApprovalDialog.Designer.cs"><DependentUpon>VbeApprovalDialog.cs</DependentUpon></Compile>
     <Compile Update="Llm\Settings\LlmSettingsWindow.cs"><SubType>Form</SubType></Compile>
     <Compile Update="Llm\Settings\LlmSettingsWindow.Designer.cs"><DependentUpon>LlmSettingsWindow.cs</DependentUpon></Compile>

@@ -63,6 +63,17 @@ namespace CodexVBE
         /// <summary>Obtient ou définit le mode de conversation.</summary>
         /// <value>Mode choisi.</value>
         public ChatMode Mode { get; set; } = ChatMode.Agent;
+        public string[] ReadProjectGrants { get; set; } = new string[0];
+        public bool SharedContextReadAllowed { get; set; }
+        public int ReadAccessPolicyVersion { get; set; } = 1;
+        public int ProviderHistoryStartIndex { get; set; }
+        public bool BudgetPaused { get; set; }
+        public string PausedTurnId { get; set; }
+        public string PausedProvider { get; set; }
+        public string PausedModel { get; set; }
+        public string PausedEffort { get; set; }
+        public ChatMode PausedMode { get; set; }
+        public List<string> CompletedToolActions { get; set; } = new List<string>();
         /// <summary>Obtient ou définit les pièces jointes du brouillon.</summary>
         /// <value>Pièces jointes en attente du prochain message.</value>
         public ChatAttachment[] DraftAttachments { get; set; }
@@ -150,11 +161,21 @@ namespace CodexVBE
             {
                 while (statement.Step() == 100)
                 {
-                    var session = json.Deserialize<ChatSessionState>(ReadText(Native.sqlite3_column_text(statement.Handle, 0)));
+                    var session = DecodeSession(ReadText(Native.sqlite3_column_text(statement.Handle, 0)));
                     if (session != null && session.Scope == scope) result.Add(session);
                 }
             }
             return result;
+        }
+
+        internal static ChatSessionState DecodeSession(string payload)
+        {
+            var serializer = new JavaScriptSerializer { MaxJsonLength = 32 * 1024 * 1024 };
+            var fields = serializer.DeserializeObject(payload) as Dictionary<string, object>;
+            if (fields == null) return null;
+            var session = serializer.ConvertToType<ChatSessionState>(fields);
+            if (!fields.ContainsKey(nameof(ChatSessionState.ReadAccessPolicyVersion))) session.ReadAccessPolicyVersion = 0;
+            return session;
         }
 
         /// <summary>Prépare, exécute une instruction paramétrée puis libère son état natif.</summary>

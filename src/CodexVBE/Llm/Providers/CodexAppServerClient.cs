@@ -271,7 +271,7 @@ namespace CodexVBE
                 if (GetString(accountInfo, "type") != "chatgpt")
                     throw new InvalidOperationException(UiText.Get("Codex must be signed in through ChatGPT. No API key is used here."));
 
-                var definitions = LlmVbeTools.Definitions.Select(raw => {
+                var definitions = tools.CatalogForProvider(true).Select(raw => {
                     dynamic function = ((dynamic)raw).function;
                     return (object)new { type = "function", name = (string)function.name,
                         description = (string)function.description, inputSchema = function.parameters };

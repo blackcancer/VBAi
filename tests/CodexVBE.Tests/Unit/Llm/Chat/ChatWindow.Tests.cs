@@ -336,7 +336,7 @@ namespace CodexVBE.Tests.Unit
             using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
             {
                 var response = "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":null,\"tool_calls\":[{\"id\":\"call\",\"function\":{\"name\":\"status\",\"arguments\":\"{}\"}}]}}]}";
-                var handler = new ChatResponseHandler(Enumerable.Repeat(response, 8).ToArray()); window.HttpHandlerOverride = () => handler; Question(window, "limit"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.AreEqual(8, handler.Requests.Count); StringAssert.Contains(Get<List<ChatEntry>>(window, "transcriptEntries").Last().Text, "limit"); Set(window, "currentSession", null);
+                var handler = new ChatResponseHandler(Enumerable.Range(0, 8).Select(i => response.Replace("\"call\"", "\"call-" + i + "\"")).ToArray()); window.HttpHandlerOverride = () => handler; Question(window, "limit"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.AreEqual(8, handler.Requests.Count); Assert.IsTrue(Get<ChatSessionState>(window, "currentSession").BudgetPaused); Assert.AreEqual(8, Get<ChatSessionState>(window, "currentSession").CompletedToolActions.Count); Set(window, "currentSession", null);
             }
         }
         [STATestMethod, TestCategory("Unit")]

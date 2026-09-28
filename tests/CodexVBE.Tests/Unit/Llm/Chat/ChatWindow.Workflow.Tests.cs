@@ -24,6 +24,8 @@ namespace CodexVBE.Tests.Unit
             {
                 window.ModelCatalogueOverride = provider => Task.FromResult(new LlmModelOption[0]);
                 var original = Get<ChatSessionState>(window, "currentSession");
+                original.ReadProjectGrants = new[] { "C:\\Authorized.xlsm" };
+                original.SharedContextReadAllowed = true;
                 Get<List<ChatSessionState>>(window, "scopeSessions").Add(original);
                 var first = new ChatEntry
                 {
@@ -41,6 +43,9 @@ namespace CodexVBE.Tests.Unit
                 Call(window, "ForkChat", reply);
                 var fork = Get<ChatSessionState>(window, "currentSession");
                 Assert.AreNotSame(original, fork);
+                CollectionAssert.AreEqual(original.ReadProjectGrants, fork.ReadProjectGrants);
+                Assert.AreNotSame(original.ReadProjectGrants, fork.ReadProjectGrants);
+                Assert.IsTrue(fork.SharedContextReadAllowed);
                 Assert.AreEqual(2, fork.Entries.Count);
                 StringAssert.Contains(fork.MessagesJson, "Question initiale");
                 Assert.IsFalse(fork.MessagesJson.Contains("Suite exclue"));

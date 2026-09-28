@@ -84,9 +84,11 @@ namespace CodexVBE
                 };
                 Browser.KeyDown += (sender, key) =>
                 {
-                    if (key.KeyCode != Keys.F9 || key.Modifiers != Keys.None) return;
+                    string action = key.KeyCode == Keys.F9 && key.Modifiers == Keys.None ? "vbai.toggle_breakpoint" :
+                        key.KeyCode == Keys.S && key.Modifiers == Keys.Control ? "vbai.save" : null;
+                    if (action == null) return;
                     key.Handled = true; key.SuppressKeyPress = true;
-                    BeginInvoke(new Action(async () => { try { await Script("command", "vbai.toggle_breakpoint"); } catch (Exception error) { Report(error); } }));
+                    BeginInvoke(new Action(async () => { try { await Script("command", action); } catch (Exception error) { Report(error); } }));
                 };
                 core.WebMessageReceived += MessageReceived;
                 core.ProcessFailed += (s, e) => { if (IsDisposed || Disposing || closing) return; Ready = false; timer.Stop(); PreserveDrafts(); status.Text = UiText.Get("The editor stopped. Drafts are preserved; reopen the editor."); };
@@ -115,8 +117,9 @@ namespace CodexVBE
                     if (!closing && !IsDisposed && !Disposing) { timer.Start(); SetStatus(); }
                 }
                 else if (message.type == "change" && documents.TryGetValue(message.id ?? "", out var doc) && message.version > versions[doc.Id])
-                { doc.Edit(message.text); versions[doc.Id] = message.version; lastEdit = DateTime.UtcNow; synchronizationError = null; SetStatus(); }
+                { doc.Edit(message.text); versions[doc.Id] = message.version; lastEdit = DateTime.UtcNow; synchronizationError = null; lastSaveError = null; SetStatus(); }
                 else if (message.type == "command" && message.name == "sync") await ProcessDocuments(true);
+                else if (message.type == "command" && message.name == "save") await SaveDocument(message.id);
                 else if (message.type == "language") await LanguageRequest(message);
                 else if (message.type == "definition") await OpenDefinition(message);
                 else if (message.type == "assistantAction" && documents.TryGetValue(message.id ?? "", out var actionDoc) && actionDoc.Module is EditorVbeModule actionModule)
@@ -239,7 +242,7 @@ namespace CodexVBE
             restore.Enabled = Current != null && recovered.ContainsKey(Current.Id);
             foreach (TabPage tab in tabs.TabPages)
             { var doc = documents[(string)tab.Tag]; try { tab.Text = doc.Module.Name + (doc.Dirty ? " *" : ""); } catch { } }
-            status.Text = UiText.Get(synchronizationError ?? (Current == null ? "Open a VBA module to start editing." : Current.Conflict ? "The module changed in VBA. Resolve the conflict first." : Current.Dirty ? "Changes pending synchronization with VBA." : "Synchronized with VBA. Save the macro in its host application."));
+            status.Text = UiText.Get(lastSaveError ?? synchronizationError ?? (Current == null ? "Open a VBA module to start editing." : Current.Conflict ? "The module changed in VBA. Resolve the conflict first." : Current.Dirty ? "Changes pending synchronization with VBA." : "Synchronized with VBA. Save the macro in its host application."));
             }
             finally { activeStatusLayouts--; }
         }

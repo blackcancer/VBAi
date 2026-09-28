@@ -11,6 +11,8 @@ namespace CodexVBE
         private System.Windows.Forms.ContextMenuStrip optionsMenu;
         /// <summary>Commande qui ouvre les paramètres de l’application.</summary>
         private System.Windows.Forms.ToolStripMenuItem configure;
+        private System.Windows.Forms.ToolStripMenuItem projectAccess;
+        private System.Windows.Forms.ToolStripMenuItem resumeTurn;
         private System.Windows.Forms.ToolStripMenuItem about;
         private System.Windows.Forms.ToolStripSeparator aboutSeparator;
         /// <summary>Commande qui actualise les modèles du fournisseur sélectionné.</summary>
@@ -164,6 +166,8 @@ namespace CodexVBE
             this.optionsMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.github = new System.Windows.Forms.ToolStripMenuItem();
             this.configure = new System.Windows.Forms.ToolStripMenuItem();
+            this.projectAccess = new System.Windows.Forms.ToolStripMenuItem();
+            this.resumeTurn = new System.Windows.Forms.ToolStripMenuItem();
             this.about = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutSeparator = new System.Windows.Forms.ToolStripSeparator();
             this.refreshModels = new System.Windows.Forms.ToolStripMenuItem();
@@ -338,6 +342,8 @@ namespace CodexVBE
             //
             this.optionsMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.configure,
+            this.projectAccess,
+            this.resumeTurn,
             this.refreshModels,
             this.docking,
             this.github,
@@ -360,6 +366,12 @@ namespace CodexVBE
             this.configure.Name = "configure";
             this.configure.Size = new System.Drawing.Size(221, 22);
             this.configure.Text = "Settings…";
+            this.projectAccess.Name = "projectAccess";
+            this.projectAccess.Text = "Project access…";
+            this.projectAccess.ToolTipText = "Choose which other projects this conversation may read.";
+            this.resumeTurn.Name = "resumeTurn";
+            this.resumeTurn.Text = "Resume paused turn";
+            this.resumeTurn.ToolTipText = "Continue from saved tool results without repeating completed actions.";
             //
             // refreshModels
             //

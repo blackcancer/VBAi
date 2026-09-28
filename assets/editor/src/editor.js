@@ -102,7 +102,8 @@ window.vbai = {
   insert(text) { editor.trigger('vbai', 'type', { text }); },
   testInfo() { return { language: editor.getModel()?.getLanguageId(), models: models.size, theme: document.body.style.background, version: monaco.editor?.getModels().length, diff: !!diff, pendingBreakpoints: models.get(active)?.breakpoints?.size || 0, executionMarkers: models.get(active)?.execution?.length || 0, markers: editor.getModel() ? monaco.editor.getModelMarkers({ resource: editor.getModel().uri }).length : 0 }; }
 };
-editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => send({ type: 'command', name: 'sync' }));
+editor.addAction({ id: 'vbai.save', label: 'VBA: Save', keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
+  run: () => { if (active) send({ type: 'command', name: 'save', id: active }); } });
 function nativeCommand(name) { if (!active) return; const entry = models.get(active); send({ type: 'editorCommand', name, id: active, version: entry.model.getVersionId(), line: editor.getPosition()?.lineNumber || 1 }); }
 function installNativeActions() {
   for (const action of nativeActions) action.dispose(); nativeActions = [];

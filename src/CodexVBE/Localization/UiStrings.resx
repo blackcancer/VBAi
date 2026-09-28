@@ -1997,4 +1997,28 @@ Sign in through Git Credential Manager; commit identity is configured in Git.</v
   <data name="Declined" xml:space="preserve">
     <value>Declined</value>
   </data>
+  <data name="Restore the paused provider, model, effort and mode before resuming." xml:space="preserve"><value>Restore the paused provider, model, effort and mode before resuming.</value></data>
+  <data name=" — interrupted; verify live state before retrying" xml:space="preserve"><value> — interrupted; verify live state before retrying</value></data>
+  <data name="Resume paused turn" xml:space="preserve"><value>Resume paused turn</value></data>
+  <data name="Continue from saved tool results without repeating completed actions." xml:space="preserve"><value>Continue from saved tool results without repeating completed actions.</value></data>
+  <data name="Pending: automatic verification and final response." xml:space="preserve"><value>Pending: automatic verification and final response.</value></data>
+  <data name="Continuation interrupted. Completed results were kept; verify live state before retrying." xml:space="preserve"><value>Continuation interrupted. Completed results were kept; verify live state before retrying.</value></data>
+  <data name="Choose which other projects this conversation may read." xml:space="preserve"><value>Choose which other projects this conversation may read.</value></data>
+  <data name=" — completed" xml:space="preserve"><value> — completed</value></data>
+  <data name="Resume ▶" xml:space="preserve"><value>Resume ▶</value></data>
+  <data name=" — refused or failed" xml:space="preserve"><value> — refused or failed</value></data>
+  <data name="Paused — resume when ready" xml:space="preserve"><value>Paused — resume when ready</value></data>
+  <data name="Pending: final response." xml:space="preserve"><value>Pending: final response.</value></data>
+  <data name="Paused after 8 model rounds. Resume to continue from the saved results; completed actions will not be replayed." xml:space="preserve"><value>Paused after 8 model rounds. Resume to continue from the saved results; completed actions will not be replayed.</value></data>
+  <data name=" — response received; inspect returned state" xml:space="preserve"><value> — response received; inspect returned state</value></data>
+  <data name="This document has no native host to save." xml:space="preserve"><value>This document has no native host to save.</value></data>
+  <data name="The native save target changed. Select the module and retry." xml:space="preserve"><value>The native save target changed. Select the module and retry.</value></data>
+  <data name="The native Save command is unavailable." xml:space="preserve"><value>The native Save command is unavailable.</value></data>
+  <data name="Saved." xml:space="preserve"><value>Saved.</value></data>
+  <data name="Saving was cancelled or not completed. Your code remains in the editor and host document." xml:space="preserve"><value>Saving was cancelled or not completed. Your code remains in the editor and host document.</value></data>
+  <data name="The host document was not saved. Your code remains in the editor and host document." xml:space="preserve"><value>The host document was not saved. Your code remains in the editor and host document.</value></data>
+  <data name="The native Save command finished, but the host document&apos;s saved state could not be verified." xml:space="preserve"><value>The native Save command finished, but the host document&apos;s saved state could not be verified.</value></data>
+  <data name="The document was not saved because some edits are still pending synchronization." xml:space="preserve"><value>The document was not saved because some edits are still pending synchronization.</value></data>
+  <data name="Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data." xml:space="preserve"><value>Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data.</value></data>
+  <data name="This message predates the project privacy upgrade. Use current authorized references in a new conversation." xml:space="preserve"><value>This message predates the project privacy upgrade. Use current authorized references in a new conversation.</value></data>
 </root>

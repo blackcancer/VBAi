@@ -90,6 +90,8 @@ namespace CodexVBE.Tests.Unit
             fixture.Tools.Mode = ChatMode.Agent; fixture.Tools.BoundProject = "OtherProject";
             Failed(fixture.Tools.Invoke("run_procedure_values", run), "another project");
             fixture.Tools.BoundProject = "P"; fixture.Settings.VbeEditApproval = "ReadOnly";
+            Failed(fixture.Tools.Invoke("procedure_values_status", status), "shared context not authorized");
+            fixture.Tools.SetReadAccess(new string[0], true);
             Failed(fixture.Tools.Invoke("run_procedure_values", run), "read-only execution");
             Success(fixture.Tools.Invoke("procedure_values_status", status), "read-only inspection");
             fixture.Settings.VbeEditApproval = "Unknown";

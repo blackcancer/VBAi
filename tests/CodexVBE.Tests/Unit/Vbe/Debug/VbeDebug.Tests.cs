@@ -67,11 +67,26 @@
             Assert.IsNull((object)idle.Selection);
             host.ActiveVBProject = host.VBProjects.Single();
             host.ActiveCodePane = new FakeCodePane();
+            host.VBProjects.Single().VBComponents.Add(new FakeComponent { CodeModule = host.ActiveCodePane.CodeModule });
             dynamic selected = commands.State("Projet");
             Assert.AreEqual("Projet", (string)selected.SelectedProject);
             Assert.AreEqual("Module1", (string)selected.ActiveModule);
             Assert.AreEqual(4, (int)selected.Selection.StartLine);
             Assert.AreEqual(9, (int)selected.Selection.EndColumn);
+        }
+
+        [TestMethod]
+        public void DebugStateDoesNotRevealAPaneFromAnotherProjectEvenIfTheProjectTreeSelectionMatches()
+        {
+            var host = Host();
+            host.ActiveVBProject = host.VBProjects.Single();
+            host.ActiveCodePane = new FakeCodePane();
+            // The tree points at Projet, but its components do not own this pane.
+            dynamic state = new VbeDebug(host).State("Projet");
+            Assert.IsNull((object)state.SelectedProject);
+            Assert.IsNull((object)state.SelectedProjectPath);
+            Assert.IsNull((object)state.ActiveModule);
+            Assert.IsNull((object)state.Selection);
         }
     }
 }

@@ -95,6 +95,9 @@ namespace CodexVBE
                 else NewSession(provider.Name);
             };
             configure.Click += (sender, args) => ShowSettings();
+            projectAccess.Click += (sender, args) => ConfigureProjectAccess();
+            resumeTurn.Click += async (sender, args) => await ResumeBudgetAsync();
+            prompt.TextChanged += (sender, args) => UpdateBudgetControls();
             refreshModels.Click += async (sender, args) => await LoadModelsAsync();
             modelPicker.SelectedIndexChanged += (sender, args) =>
             {
@@ -328,11 +331,12 @@ namespace CodexVBE
             toolTips.SetToolTip(send, value ? UiText.Get("Stop the current response. Changes already applied can still be undone in the chat.") : UiText.Get("Send the message and its context to the agent."));
             send.Enabled = true;
             newChat.Enabled = scopePicker.Enabled = sessionList.Enabled =
-                providerPicker.Enabled = refreshModels.Enabled = configure.Enabled = !value;
+                providerPicker.Enabled = refreshModels.Enabled = configure.Enabled = projectAccess.Enabled = !value;
             modelPicker.Enabled = !value && modelPicker.Items.Count > 0;
             effortPicker.Enabled = !value && effortPicker.Items.Count > 0;
             activityBar.Visible = value;
             RefreshCodeChangeCards();
+            UpdateBudgetControls();
         }
 
         /// <summary>Demande l’interruption du tour actif et désactive temporairement la commande d’arrêt.</summary>
@@ -357,6 +361,7 @@ namespace CodexVBE
         private async Task SendAsync()
         {
             string question = prompt.Text.Trim();
+            if (!busy && question.Length == 0 && currentSession?.BudgetPaused == true) { await ResumeBudgetAsync(); return; }
             if (busy || question.Length == 0) return;
             var selectedModel = modelPicker.SelectedItem as LlmModelOption;
             if (selectedModel == null) { SetStatus(UiText.Get("Choose an available model before sending.")); return; }
@@ -380,6 +385,8 @@ namespace CodexVBE
             var pendingDraftAttachments = draftAttachments.ToArray();
             stopRequested = false;
             activeTurnId = Guid.NewGuid().ToString("N");
+            currentSession.BudgetPaused = false;
+            currentSession.CompletedToolActions = new List<string>();
             tools.Mode = currentSession.Mode;
             requestText = UiText.Get("Mode for this request: ") + currentSession.Mode + (currentSession.Mode == ChatMode.Agent ? ".\n" : UiText.Get(". Analysis only; no edits or macro execution.\n")) + requestText;
             requestText = "<vbe-encoding-context>\n" + LlmVbeContext.EncodingInstructions +
@@ -404,12 +411,11 @@ namespace CodexVBE
                 string.Equals(Convert.ToString(firstMessage["role"]), "system", StringComparison.OrdinalIgnoreCase))
                 messages.RemoveAt(0);
             messages.Insert(0, new { role = "system", content = LlmVbeContext.DeveloperInstructions });
-            int checkpoint = messages.Count;
             var provider = (LlmProvider)providerPicker.SelectedItem;
             tools.CurrentProviderName = provider.Name;
             if (!provider.IsCodex) messages.Add(new { role = "user", content = requestText });
             SaveCurrentSession();
-            string providerStreamId = null;
+            providerStreamId = null;
             try
             {
                 if (provider.IsCodex)
@@ -424,69 +430,16 @@ namespace CodexVBE
                     SetStatus(UiText.Get("Codex — ready"));
                     return;
                 }
-                using (var client = new LlmChatClient((LlmProvider)providerPicker.SelectedItem, settings,
-                    selectedModel.Id, HttpHandlerOverride?.Invoke()))
-                {
-                    activeHttpClient = client;
-                    client.ToolHandler = async (name, arguments) =>
-                    {
-                        if (stopRequested) throw new OperationCanceledException();
-                        Append("Outil", name);
-                        return await InvokeTool(tools, name, arguments);
-                    };
-                    SetStatus(client.DisplayName + UiText.Get(" — working"));
-                    for (int turn = 0; turn < 8; turn++)
-                    {
-                        if (stopRequested) throw new OperationCanceledException();
-                        providerStreamId = "http-" + Guid.NewGuid().ToString("N");
-                        string streamId = providerStreamId;
-                        bool receivedText = false;
-                        client.TextDelta = fragment =>
-                        {
-                            if (stopRequested || IsDisposed) return;
-                            receivedText = true;
-                            ReceiveChatUpdate("final", streamId, fragment, false);
-                        };
-                        var message = await client.CompleteAsync(messages, LlmVbeTools.Definitions);
-                        if (stopRequested) throw new OperationCanceledException();
-                        if (receivedText) ReceiveChatUpdate("final", streamId, Convert.ToString(message["content"]), true);
-                        providerStreamId = null;
-                        messages.Add(message);
-                        object rawCalls;
-                        var calls = message.TryGetValue("tool_calls", out rawCalls) ? rawCalls as object[] : null;
-                        if (calls == null || calls.Length == 0)
-                        {
-                            string answer = message.ContainsKey("content") ? Convert.ToString(message["content"]) : "";
-                            CompleteAssistantResponse(string.IsNullOrWhiteSpace(answer) ? UiText.Get("No text response.") : answer);
-                            currentSession.ResumeContext = null;
-                            SetStatus(client.DisplayName + UiText.Get(" — ready"));
-                            return;
-                        }
-                        foreach (object rawCall in calls)
-                        {
-                            if (stopRequested) throw new OperationCanceledException();
-                            var call = rawCall as IDictionary<string, object>;
-                            var function = call != null && call.ContainsKey("function") ? call["function"] as IDictionary<string, object> : null;
-                            if (function == null || !call.ContainsKey("id")) throw new InvalidOperationException("Invalid tool call.");
-                            string name = Convert.ToString(function["name"]);
-                            string arguments = Convert.ToString(function["arguments"]);
-                            Append("Outil", name);
-                            string result = await InvokeTool(tools, name, arguments);
-                            messages.Add(new { role = "tool", tool_call_id = Convert.ToString(call["id"]), content = result });
-                        }
-                    }
-                    throw new InvalidOperationException("The assistant exceeded the tool-call limit.");
-                }
+                await RunHttpBudgetAsync(provider, selectedModel.Id);
             }
             catch (Exception ex)
             {
                 if (providerStreamId != null && liveEntries.ContainsKey(providerStreamId)) ReceiveChatUpdate("tool", providerStreamId, null, true);
                 if (provider.IsCodex && !stopRequested) { codex?.Dispose(); codex = null; }
-                // A failed request must not leave an orphaned tool call in the next API request.
-                messages.RemoveRange(checkpoint, messages.Count - checkpoint);
+                // Preserve recorded results. Complete missing responses without replaying any call.
+                CompletePendingToolResponses();
                 if (!provider.IsCodex)
                 {
-                    messages.Add(new { role = "user", content = requestText });
                     messages.Add(new { role = "assistant", content = UiText.Get("The response did not complete. Actions may already have been applied; read the live code again before continuing.") });
                 }
                 Append(stopRequested ? "Assistant" : "Erreur", stopRequested ? UiText.Get("Response interrupted. Changes already applied can still be undone in the chat.") : ex.Message);
@@ -512,7 +465,7 @@ namespace CodexVBE
                         TurnId = activeTurnId,
                         Text = intervention.Count + UiText.Get(" change(s) applied. Review the files and undo this turn below.")
                     });
-                    if (verifyAfterEdit.Checked == true && codeChanges.Exists(x => x.TurnId == activeTurnId)) await VerifyProjectAsync();
+                    if (currentSession?.BudgetPaused != true && verifyAfterEdit.Checked == true && codeChanges.Exists(x => x.TurnId == activeTurnId)) await VerifyProjectAsync();
                     activeTurnId = null; SetBusy(false); SaveCurrentSession();
                 }
             }

@@ -73,6 +73,7 @@ namespace CodexVBE.Tests.Unit
 
         public sealed class FakeProject
         {
+            public List<FakeComponent> VBComponents { get; } = new List<FakeComponent>();
             public string Name { get; set; }
             public string FileName { get; set; }
             public int Mode { get; set; }
@@ -118,6 +119,7 @@ namespace CodexVBE.Tests.Unit
 
         public sealed class FakeComponent
         {
+            public FakeCodeModule CodeModule { get; set; }
             public string Name { get; } = "Module1";
         }
     }

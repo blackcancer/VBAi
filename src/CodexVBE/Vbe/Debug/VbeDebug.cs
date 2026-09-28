@@ -32,11 +32,16 @@ namespace CodexVBE
             try
             {
                 dynamic pane = vbe.ActiveCodePane;
+                bool belongsToProject = false;
                 if (pane != null)
+                    foreach (dynamic component in project.VBComponents)
+                        if (SameComObject((object)component.CodeModule, (object)pane.CodeModule))
+                        { belongsToProject = true; break; }
+                if (belongsToProject)
                 {
                     activeModule = (string)pane.CodeModule.Parent.Name;
-                    selectedProject = (string)vbe.ActiveVBProject.Name;
-                    try { selectedProjectPath = (string)vbe.ActiveVBProject.FileName; } catch { }
+                    selectedProject = (string)project.Name;
+                    try { selectedProjectPath = (string)project.FileName; } catch { }
                     int startLine = 0, startColumn = 0, endLine = 0, endColumn = 0;
                     pane.GetSelection(ref startLine, ref startColumn, ref endLine, ref endColumn);
                     selection = new { StartLine = startLine, StartColumn = startColumn,
