@@ -59,6 +59,8 @@ namespace CodexVBE.Tests.Unit
             }
 
             public int CountOfLines => lines.Length;
+            public bool AppendTerminator { get; set; }
+            public bool TruncateAggregate { get; set; }
             public FakeLines Lines { get; }
 
             public sealed class FakeLines
@@ -69,7 +71,7 @@ namespace CodexVBE.Tests.Unit
                     this.module = module;
                 }
 
-                public string this[int start, int count] => string.Join("\r\n", module.lines.Skip(start - 1).Take(count));
+                public string this[int start, int count] => module.TruncateAggregate && count > 1 ? module.lines[start - 1] : string.Join("\r\n", module.lines.Skip(start - 1).Take(count)) + (module.AppendTerminator && count > 1 ? "\r\n" : "");
             }
         }
     }
