@@ -27,6 +27,12 @@ namespace CodexVBE
     /// <summary>Charge des fichiers d’image comme objets OLE pris en charge par le concepteur.</summary>
     internal static class OlePictureLoader
     {
+        /// <summary>Contrat du chargeur natif d’une image OLE Automation.</summary>
+        /// <param name="fileName">Chemin du fichier image à lire.</param>
+        /// <param name="picture">Objet image OLE retourné.</param>
+        internal delegate void PictureReader(object fileName, out object picture);
+        /// <summary>Charge l’image avec OleAut par défaut.</summary>
+        internal static PictureReader ReadPicture = OleLoadPictureFile;
         /// <summary>Charge une image avec l’API OleAut et retourne son objet IDispatch.</summary>
         /// <param name="fileName">Chemin absolu du fichier image à charger.</param>
         /// <param name="picture">Objet image COM fourni par oleaut32.</param>
@@ -45,7 +51,7 @@ namespace CodexVBE
                 throw new ArgumentException("Picture path must be a fully qualified local or UNC path.");
             string fullPath = System.IO.Path.GetFullPath(path);
             if (!File.Exists(fullPath)) throw new FileNotFoundException("Picture file not found.", fullPath);
-            OleLoadPictureFile(fullPath, out object picture);
+            ReadPicture(fullPath, out object picture);
             if (picture == null || !Marshal.IsComObject(picture))
                 throw new InvalidOperationException("Windows did not load an OLE picture from the supplied file.");
             return picture;

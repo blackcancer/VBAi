@@ -10,6 +10,8 @@ namespace CodexVBE
     {
         /// <summary>CATID_Control recherchée dans les catégories COM implémentées.</summary>
         private const string ControlCategory = "{40FC6ED4-2438-11CF-A3DB-080036F12502}";
+        /// <summary>Ouvre le catalogue COM 64 bits natif dont la lecture reste sans mutation.</summary>
+        internal static Func<RegistryKey> OpenClasses = () => RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, RegistryView.Registry64);
 
         /// <summary>Retourne les contrôles natifs puis les candidats installés, sans dupliquer les ProgID natifs.</summary>
         /// <param name="nativeProgIds">ProgID des contrôles MSForms connus comme natifs.</param>
@@ -41,7 +43,7 @@ namespace CodexVBE
         private static IEnumerable<string> InstalledControls()
         {
             var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            using (RegistryKey classes = RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, RegistryView.Registry64))
+            using (RegistryKey classes = OpenClasses())
             using (RegistryKey clsids = classes.OpenSubKey("CLSID"))
             {
                 if (clsids == null) return result;

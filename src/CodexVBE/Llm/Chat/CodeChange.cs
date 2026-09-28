@@ -154,7 +154,7 @@ namespace CodexVBE
         public static string FormatDiff(string before, string after)
         {
             var rows = BuildRows(before, after);
-            if (rows.Length == 1 && rows[0].Kind == CodeDiffKind.Notice) return rows[0].Text;
+            if (rows.Length == 1) return rows[0].Text;
             var diff = new StringBuilder();
             foreach (var row in rows)
                 diff.Append(row.Kind == CodeDiffKind.Added ? '+' :
@@ -194,7 +194,7 @@ namespace CodexVBE
         {
             if (string.IsNullOrEmpty(code)) return new string[0];
             string[] lines = code.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
-            if (lines.Length > 0 && lines[lines.Length - 1].Length == 0)
+            if (lines[lines.Length - 1].Length == 0)
                 Array.Resize(ref lines, lines.Length - 1);
             return lines;
         }
