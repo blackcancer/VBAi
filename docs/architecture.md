@@ -35,6 +35,7 @@ Les chemins suivants sont relatifs à `src/CodexVBE/`.
 | `Llm/Settings` | Persistance des paramètres et formulaire de configuration. |
 | `Llm/Settings/Views` | Vues WinForms Fournisseur, Compte GitHub et Apparence. |
 | `Llm/Controls` | Contrôles nécessaires au concepteur du chat. |
+| `Llm/Controls/Transcript` | Vues WinForms éditables des messages, activités, cartes, suggestions et contenu Markdown. |
 | `Git` | Dépôts VBA, snapshots, synchronisation et interface GitHub. |
 | `Git/Views` | Vues WinForms des onglets Git et GitHub. |
 | `Editor` | Éditeur Monaco, synchronisation des modules, brouillons et navigation. |
@@ -87,3 +88,15 @@ sources nécessaires et les catalogues ; il ne référence pas `CodexVBE.dll`, a
 que l’installeur puisse remplacer le complément après fermeture des hôtes.
 La compilation du complément copie `VBAi.Updater.exe` et sa configuration dans
 son dossier de sortie. Le protocole complet figure dans [updates.md](updates.md).
+
+## Documentation IntelliSense
+
+Les commentaires XML couvrent les déclarations publiques et privées du complément : classes, fonctions, constructeurs, propriétés, champs, événements, délégués et valeurs d’énumération. Le 29 septembre 2026, l’audit des 294 sources compte **5 208 déclarations documentées sur 5 208**, sans commentaire invalide ni erreur syntaxique. Une comparaison Roslyn avec le code précédant le lot documentaire constate zéro différence hors commentaires et espaces.
+
+Pour conserver ce contrôle après une modification :
+
+```powershell
+dotnet run --project tools/XmlDocumentationAudit -- src/CodexVBE
+```
+
+Le mode `--compare <dossier-source-de-référence>` vérifie aussi l’équivalence syntaxique. Ces compteurs concernent le complément ; ils ne mesurent ni la couverture des tests ni la documentation de leurs fixtures.

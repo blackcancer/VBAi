@@ -1,5 +1,27 @@
 # Couverture automatisée du complément
 
+## Mesure globale à 100 % après PR #11
+
+Mesure du **29 septembre 2026**, source `b20b46f`, après fusion de la PR #11 et qualification de la file de messages ainsi que des vues WinForms du transcript. Le commit `0642e1c` suivant ne change que l’indentation des commentaires XML ; Roslyn confirme l’équivalence du code. Un seul passage global final VSTest instrumenté, sans exclusion de production, fournit les compteurs suivants :
+
+| Mesure | Résultat |
+| --- | --- |
+| Suite globale VSTest | **1 828 réussis, 0 échec, 19 ignorés**, 9 min |
+| Lignes du complément C# | **29 663 / 29 663 — 100 %** |
+| Branches du complément C# | **30 793 / 30 793 — 100 %** |
+| Build de la solution | **0 erreur, 0 avertissement** |
+| Concepteurs WinForms | **46 surfaces et 409 contrôles enfants validés** |
+| Métadonnées Visual Studio | **27 contrôles réussis** |
+| Organisation miroir | **237 miroirs pour 294 sources**, scénarios complémentaires séparés |
+| Documentation IntelliSense | **5 208 / 5 208 déclarations**, aucune erreur syntaxique ni différence de code Roslyn |
+| Catalogues de langue | **14 catalogues, 763 textes obligatoires chacun**, aucune clé absente, vide ou dupliquée |
+
+Preuves : `artifacts/pr11/global-final-results/global.trx`, `badef2be-8c80-465f-85be-c7ccdd1201a3/coverage.cobertura.xml` et `coverage.json` dans le même répertoire. Toutes les classes instrumentées atteignent 100 % en lignes et branches. Les autres preuves sont sous `artifacts/pr11/designers-qualified/`, `metadata-qualified/`, `layout.json` et `intellisense-audit.txt`.
+
+La qualification a corrigé deux menus Designer sans nom et les onze catalogues auxquels manquaient les nouveaux libellés de la file. La surcharge `ChatTextContentView.Append` conserve ses appels existants tout en évitant le paramètre enum optionnel qui empêchait l’instrumentation Coverlet. Aucun filtre d’exclusion ni package de substitution n’a été ajouté. Le passage antérieur `global-qualified-results` comportait deux échecs et ne sert pas de preuve de suite verte.
+
+Les 19 scénarios conditionnels d’hôtes et de comptes restent désactivés dans cette mesure. Aucun hôte utilisateur n’a été fermé ni sa DLL chargée remplacée pour cette intégration ; les constructions utilisent des sorties isolées. Les qualifications natives antérieures restent datées dans [le bilan natif](reference/native-qualification.md). La mesure concerne l’assembly C# `CodexVBE` ; le moteur C++ et toutes les combinaisons d’hôtes, de DPI et de contrôles tiers nécessitent leur propre qualification.
+
 ## Mesure globale à 100 % après PR #10
 
 Mesure du **28 septembre 2026**, source `48dfa88`, après intégration de la PR #10 et des matrices complémentaires. Un seul passage global VSTest instrumenté, sans exclusion de production, fournit les deux compteurs exacts :

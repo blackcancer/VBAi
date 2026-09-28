@@ -125,17 +125,19 @@ contrôles nommés utilisés par le contrôleur sans adapter leurs références.
 ## Vérification
 
 `tools/tests/Test-WinFormsDesigners.ps1 -AssemblyPath <chemin de CodexVBE.dll>`
-valide **28 surfaces et 282 contrôles enfants** avec le moteur
+valide **46 surfaces et 409 contrôles enfants** avec le moteur
 `System.ComponentModel.Design.DesignSurface` : chargement, redimensionnement,
 édition d’une propriété puis sérialisation et rechargement avec
 `CodeDomComponentSerializationService`.
+
+La mesure du 29 septembre 2026 après PR #11 est conservée dans `artifacts/pr11/designers-qualified/designers.json`. La base `ChatDesignerView` n’a aucun contrôle fixe : son chargement et son redimensionnement sont vérifiés, tandis que ses vues concrètes portent les composants éditables.
 
 Le test place les contrôles déclarés par le Designer sur une racine WinForms
 éditable. Charger directement la classe compilée modélise un formulaire hérité
 et verrouille ses champs privés ; ce second cas ne prouve pas l’édition du source.
 `Test-ChatDesigner.ps1` vérifie en plus les hiérarchies, les constructeurs inertes
 et la sélection des contrôles. Ces contrôles locaux ne constituent pas un essai
-manuel d’ouverture puis d’enregistrement des 28 sources dans Visual Studio.
+manuel d’ouverture puis d’enregistrement des sources dans Visual Studio.
 
 `Render-ChatUx.ps1` capture la fenêtre affichée sur le second écran disponible.
 La copie écran inclut les HWND des diff natifs, absents d’un rendu bitmap WPF.

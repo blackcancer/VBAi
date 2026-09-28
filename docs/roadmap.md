@@ -1,15 +1,15 @@
 # Travaux restants
 
-État consolidé le **28 septembre 2026**, après les PR #7 Monaco et #8 thème natif expérimental. Les anciens passages à 100 % ne constituent pas la mesure du code actuel : voir [le bilan de tests](test-coverage.md). Ce document distingue les contrats présents de la qualification native manquante. Le [catalogue LLM](reference/vbe-tools.md) expose 204 outils ; les [archives](archive/README.md) conservent les expériences détaillées.
+Couverture et documentation actualisées le **29 septembre 2026**, après intégration de la PR #11. La mesure actuelle et les anciens passages datés sont distingués dans [le bilan de tests](test-coverage.md). Ce document distingue les contrats présents de la qualification native manquante. Le [catalogue LLM](reference/vbe-tools.md) expose 204 outils ; les [archives](archive/README.md) conservent les expériences détaillées.
 
 ## Couverture et documentation
 
 | Travail | État actuel | Critère de fin |
 | --- | --- | --- |
-| Couverture du code de production | Suite globale verte ; 93,03 % lignes et 90,37 % branches ; 1932 lignes et 2813 branches restantes | 100 % lignes et branches mesurées sur toute l’assembly, sans masquer du code ; suite globale verte |
-| Organisation des tests | 189 miroirs pour 253 sources ; scénarios et fixtures complémentaires | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
-| Documentation IntelliSense | Travail Luna conservé séparément, intégration et conflits encore à traiter | Audit final des déclarations privées/publiques, propriétés et tests, sans lacune |
-| Concepteurs WinForms | 32 DesignSurface validées | Préserver cette accessibilité après chaque changement de structure ; qualifier aussi le rendu réel |
+| Couverture du code de production | Suite globale : 1 828 réussis, 0 échec, 19 ignorés ; 100 % lignes et branches (29 663 / 30 793), sans exclusion | 100 % lignes et branches mesurées sur toute l’assembly, sans masquer du code ; suite globale verte |
+| Organisation des tests | 237 miroirs pour 294 sources ; scénarios et fixtures complémentaires | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
+| Documentation IntelliSense | Complément : 5 208/5 208 déclarations documentées, audit intégré, zéro différence syntaxique | Préserver les commentaires privés/publics et leurs paramètres ; documentation des tests distincte |
+| Concepteurs WinForms | 46 surfaces WinForms et 409 contrôles enfants validés | Préserver cette accessibilité après chaque changement de structure ; qualifier aussi le rendu réel |
 
 Compléter chaque branche de couverture identifiée avant de passer à la suivante. Construire le lot de scénarios cohérent avant de le lancer, puis mesurer la suite globale. Les pourcentages actuels sont détaillés dans [le bilan de tests](test-coverage.md).
 
