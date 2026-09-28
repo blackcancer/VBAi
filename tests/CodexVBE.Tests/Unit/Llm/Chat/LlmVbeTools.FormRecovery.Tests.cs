@@ -22,6 +22,7 @@ namespace CodexVBE.Tests.Unit
         public void RecoveryValidatesLiveOwnershipScopeAndSingleAttemptBeforeNativeAccess()
         {
             var tools = new LlmVbeTools(new VbeSession(new object()), null, new LlmSettings()) { BoundProject = "P" };
+            Assert.IsFalse(tools.CanRecoverFormCut(new FormCutChange { Owner = tools, Project = "P", RecoveryId = "absent" }));
             int native = 0;
             tools.CanRecoverDesignerCut = r => { native++; return true; };
             Func<FormCutChange> valid = () => new FormCutChange { Owner = tools, Project = "p", Form = "F", ParentPath = "Frame", RecoveryId = "token" };

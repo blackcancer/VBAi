@@ -822,7 +822,7 @@ namespace CodexVBE
                     if (values == null || !values.ContainsKey("Pane") || values.Keys.Any(key => key != "Pane" && key != "Query" && key != "Offset" && key != "Limit") ||
                         values.Any(pair => (pair.Key == "Pane" || pair.Key == "Query") ? !(pair.Value is string) : !(pair.Value is int)))
                         throw new ArgumentException("Pane is required; Query is an optional string; Offset and Limit must be integers.");
-                    return json.Serialize(Response.Success(await Task.Run(() => VbeDebugWindows.ListObjectBrowser(json.Deserialize<Request>(arguments)))));
+                    return json.Serialize(Response.Success(await Task.Run(() => Native.ListObjectBrowser(json.Deserialize<Request>(arguments)))));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             }
@@ -834,7 +834,7 @@ namespace CodexVBE
                     if (values == null || (!values.ContainsKey("ObjectName") && !values.ContainsKey("Context")) || values.Keys.Any(key => key != "ObjectName" && key != "Procedure" && key != "Context") || values.Values.Any(value => !(value is string)))
                         throw new ArgumentException("ObjectName or library Context is required; Procedure requires ObjectName. All values must be strings.");
                     var request = json.Deserialize<Request>(arguments);
-                    return json.Serialize(Response.Success(await Task.Run(() => VbeDebugWindows.SelectObjectBrowser(request))));
+                    return json.Serialize(Response.Success(await Task.Run(() => Native.SelectObjectBrowser(request))));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             }
@@ -844,7 +844,7 @@ namespace CodexVBE
                 {
                     var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
                     if (values == null || values.Count != 0) throw new ArgumentException("This tool takes an empty argument object.");
-                    return json.Serialize(Response.Success(await Task.Run(() => name == "read_runtime_forms" ? VbeDebugWindows.ReadRuntimeForms() : VbeDebugWindows.ReadObjectBrowser())));
+                    return json.Serialize(Response.Success(await Task.Run(() => name == "read_runtime_forms" ? Native.ReadRuntimeForms() : Native.ReadObjectBrowser())));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             }

@@ -243,7 +243,7 @@ namespace CodexVBE
             public Statement(ChatSessionStore owner, IntPtr handle) { this.owner = owner; Handle = handle; }
             /// <summary>Exécute une étape de l’instruction et vérifie son code de retour.</summary>
             /// <returns>Code SQLite de l’étape, notamment ligne disponible ou fin des résultats.</returns>
-            public int Step() { int result = Native.sqlite3_step(Handle); owner.Check(result); return result; }
+            public int Step() { int result = owner.StepNative(Handle); owner.Check(result); return result; }
             /// <summary>Finalise l’instruction native une seule fois.</summary>
             public void Dispose() { if (Handle != IntPtr.Zero) { Native.sqlite3_finalize(Handle); Handle = IntPtr.Zero; } }
         }
