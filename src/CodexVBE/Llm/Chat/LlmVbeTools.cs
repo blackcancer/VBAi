@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -30,7 +30,7 @@ namespace CodexVBE
         public event Action<FormCutChange> FormCut;
         /// <summary>Noms des outils dont les opérations sont en lecture seule.</summary>
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
-            "certificate_trust", "preview_local_rename", "toolbar_controls", "procedure_run_status", "form_clipboard_state", "list_toolbars", "read_runtime_forms", "read_code_clipboard", "native_code_history_state", "form_run_status", "list_object_browser", "select_object_browser", "read_object_browser", "code_pane_layout", "editor_layout", "window_layout", "project_symbols", "navigate_code", "code_bookmark", "preview_form_layout", "preview_code_edit", "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "read_vbe_options", "compile_project", "open_debug_pane", "list_commands", "select_code", "select_code_range",
+            "certificate_trust", "verify_vba_signature_file", "preview_parameter_rename", "preview_local_rename", "toolbar_controls", "procedure_run_status", "form_clipboard_state", "list_toolbars", "read_runtime_forms", "read_code_clipboard", "native_code_history_state", "form_run_status", "list_object_browser", "select_object_browser", "read_object_browser", "code_pane_layout", "editor_layout", "window_layout", "project_symbols", "navigate_code", "code_bookmark", "preview_form_layout", "preview_code_edit", "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "read_vbe_options", "compile_project", "open_debug_pane", "list_commands", "select_code", "select_code_range",
             "project_properties", "project_persistence_status", "project_signature_status", "read_project_signature_dialog", "list_signing_certificates", "component_properties", "component_property_value", "vbe_windows", "vbe_environment", "list_addins", "focus_vbe_window", "window_linkage", "code_panes", "open_object_browser", "list_procedures", "find_code", "inspect_code_file", "select_procedure", "list_forms",
             "git_status", "git_history", "git_branches", "git_checkpoints", "git_conflicts", "git_conflict_read", "git_commit_read", "git_pull_requests",
             "form_state", "form_tree", "form_list_items", "form_properties", "form_control_properties", "form_event_catalog",
@@ -119,6 +119,7 @@ namespace CodexVBE
                     field == "Arguments" ? (object)new { type = "array", maxItems = 30, items = new { anyOf = new object[] { new { type = "string" }, new { type = "number" }, new { type = "boolean" }, new { type = "null" } } } } :
                     field == "PathSegments" ? (object)new { type = "array", items = new { type = "string" }, minItems = 1, maxItems = 16 } :
                     field == "Rows" ? (object)new { type = "array", items = new { type = "array", items = new { type = "string", maxLength = 256 }, minItems = 1, maxItems = 10 }, minItems = 0, maxItems = 64 } :
+                    field == "ArgumentNames" ? (object)new { type = "array", items = new { type = "string", maxLength = 255 }, minItems = 0, maxItems = 30 } :
                     field == "Items" ? (object)new { type = "array", items = new { type = "string", maxLength = 256 }, minItems = 0, maxItems = 64 } :
                     new { type = field == "StartLine" || field == "StartColumn" || field == "EndLine" || field == "EndColumn" || field == "Count" || field == "ExpectedMode" || field == "ControlId" || field == "WindowType" || field == "TargetWindowType" || field == "ProcKind" || field == "InsertIndex" ||
                         field == "ToolbarLeft" || field == "ToolbarTop" || field == "Offset" || field == "Limit" || field == "RowIndex" || field == "TypeIndex" || field == "ZPosition" ||
@@ -162,9 +163,9 @@ namespace CodexVBE
                 new string[0]),
             Definition("compile_project", "Compile the named VBA project using the native VBE command in design mode. Captures and dismisses a native compile error dialog; on failure read debug_state to locate the selected token. A successful response means no native diagnostic was observed. ExpectedMode must be 2.",
                 new[] { "Project", "ExpectedMode" }, "Project", "ExpectedMode"),
-            Definition("run_procedure", "Schedule one public Sub or Function in a standard module with up to 30 scalar JSON Arguments (string, finite number, boolean or null for VBA Null). Requires current SHA and ExpectedMode=2. Uses a fully qualified native Immediate call, without generating source code. Functions print their result to Immediate. Poll procedure_run_status using the returned Query; command delivery is not proof of runtime success. Do not retry a pending or failed operation automatically.",
+            Definition("run_procedure", "Schedule one public Sub or Function in a standard module with up to 30 scalar JSON Arguments (string, finite number, boolean or null for VBA Null). Optional ArgumentNames pairs every value with a distinct parameter in the inspected signature, permitting omission of optional parameters and reordered named arguments; conditional/ParamArray named calls are refused. Requires current SHA and ExpectedMode=2. Uses a fully qualified native Immediate call, without generating source code. Functions print their result to Immediate. Poll procedure_run_status using Project and returned Query; delivery is not proof of runtime success. Do not retry automatically.",
                 new[] { "Project", "Module", "Procedure", "ExpectedSha256", "ExpectedMode", "Arguments" },
-                "Project", "Module", "Procedure", "ExpectedSha256", "ExpectedMode", "Arguments"),
+                "Project", "Module", "Procedure", "ExpectedSha256", "ExpectedMode", "Arguments", "ArgumentNames"),
             Definition("procedure_run_status", "Read a previously scheduled procedure call by exact Project and Query operation identifier. Includes native Immediate output or delivery error; inspect debug_dialog and debug_state separately for runtime diagnostics.",
                 new[] { "Project", "Query" }, "Project", "Query"),
             Definition("run_sub", "Run one parameterless Sub in a standard module by exact project, module and procedure name through the native VBE Run command. Requires the current module SHA-256 and ExpectedMode=2. Selects its declaration in the code pane; read debug_state separately for asynchronous effects. VBE edit policy applies.",
@@ -451,7 +452,7 @@ namespace CodexVBE
                 CodeSnapshot beforeCode = null;
                 bool formCodeEdit = name == "set_form_list_initializer" || name == "set_form_list_binding";
                 string editedModule = formCodeEdit ? request.Form : request.Module;
-                if (formCodeEdit || name == "cut_code" || name == "paste_code" || name == "replace_lines" || name == "apply_code_edit" || name == "apply_local_rename" || name == "undo_code_edit" || name == "redo_code_edit")
+                if (formCodeEdit || name == "cut_code" || name == "paste_code" || name == "replace_lines" || name == "apply_code_edit" || name == "apply_local_rename" || name == "apply_parameter_rename" || name == "undo_code_edit" || name == "redo_code_edit")
                 {
                     beforeCode = ReadCode(request.Project, editedModule);
                     if (!string.Equals(beforeCode.Sha256, request.ExpectedSha256, StringComparison.OrdinalIgnoreCase))

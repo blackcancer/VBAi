@@ -95,7 +95,7 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
-        public sealed class FakeModule
+        public sealed class FakeModule : DynamicObject
         {
             private readonly List<string> lines;
             public FakeComponent Parent { get; }
@@ -121,6 +121,12 @@ namespace CodexVBE.Tests.Unit
             public int DeleteCalls { get; private set; }
             public Func<int, int, string, string> ReadLinesOverride { get; set; }
             public int CountOfLines => lines.Count;
+            /// <summary>Reproduit l'appel à la propriété COM Lines avec ses deux arguments.</summary>
+            public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
+            {
+                result = Lines[Convert.ToInt32(args[0]), Convert.ToInt32(args[1])];
+                return true;
+            }
             public int CountOfDeclarationLines => lines.Count > 0 && lines[0].StartsWith("Option ", StringComparison.Ordinal) ? 1 : 0;
             public string Code => string.Join("\r\n", lines);
 
@@ -220,6 +226,7 @@ namespace CodexVBE.Tests.Unit
                 {
                     this.module = module;
                 }
+
 
                 public string this[int start, int count]
                 {

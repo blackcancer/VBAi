@@ -1,6 +1,6 @@
 # Catalogue des outils LLM
 
-Catalogue vérifié le 28 septembre 2026 contre le code `fb166a4` : **177 outils**. Cet inventaire est extrait de `LlmVbeTools.Definitions`, y compris les catalogues Git et Editor. Il décrit les outils exposés au modèle, et ne prétend pas inventorier toutes les commandes du pont.
+Catalogue vérifié le 28 septembre 2026 contre le lot IDE courant : **180 outils**. Cet inventaire est extrait de `LlmVbeTools.Definitions`, y compris les catalogues Git et Editor. Il décrit les outils exposés au modèle, et ne prétend pas inventorier toutes les commandes du pont.
 
 ## Contrat
 
@@ -28,12 +28,13 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `apply_code_edit` | Action | `Project`, `Module`, `ExpectedSha256`, `StartLine`, `Count`, `Action` |
 | `apply_form_layout` | Action | `Project`, `Form`, `ExpectedTreeVersion`, `Items`, `Action` |
 | `apply_local_rename` | Action | `Project`, `Module`, `Procedure`, `ProcKind`, `ExpectedSha256`, `ExpectedMode`, `StartLine`, `StartColumn`, `Query`, `NewName` |
+| `apply_parameter_rename` | Action | `Project`, `Module`, `Procedure`, `ProcKind`, `ExpectedSha256`, `ExpectedMode`, `StartLine`, `StartColumn`, `Query`, `NewName` |
 | `arrange_editor_windows` | Action | `Action`, `ExpectedWindowVersion`, `ControlCaption` |
 | `certificate_trust` | Inspection | `CertificateThumbprint` |
 | `close_vbe_window` | Action | `WindowCaption`, `WindowType` |
 | `code_bookmark` | Inspection | `Project`, `Action` |
 | `code_pane_layout` | Inspection | `Project`, `Module` |
-| `code_panes` | Inspection | Aucun |
+| `code_panes` | Inspection | — |
 | `compile_project` | Inspection | `Project`, `ExpectedMode` |
 | `component_properties` | Inspection | `Project`, `Module` |
 | `component_property_value` | Inspection | `Project`, `Module`, `Property` |
@@ -45,13 +46,13 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `create_procedure` | Action | `Project`, `Module`, `Procedure`, `ProcKind`, `Text`, `ExpectedSha256` |
 | `create_toolbar` | Action | `ObjectName`, `ExpectedToolbarCollectionVersion` |
 | `cut_code` | Action | `Project`, `Module`, `ExpectedSha256`, `StartLine`, `StartColumn`, `EndLine`, `EndColumn` |
-| `debug_dialog` | Inspection | Aucun |
+| `debug_dialog` | Inspection | — |
 | `debug_global` | Action | `Project`, `ExpectedMode`, `Action` |
 | `debug_item` | Inspection | `Pane`, `Action`, `PathSegments` |
 | `debug_state` | Inspection | `Project` |
-| `debug_windows` | Inspection | Aucun |
+| `debug_windows` | Inspection | — |
 | `edit_watch` | Action | `Project`, `ExpectedMode`, `Expression`, `Context`, `NewExpression` |
-| `editor_layout` | Inspection | Aucun |
+| `editor_layout` | Inspection | — |
 | `export_component` | Action | `Project`, `Module`, `ExpectedComponentVersion`, `Path` |
 | `find_code` | Inspection | `Project`, `Query` |
 | `focus_vbe_window` | Inspection | `WindowCaption`, `WindowType` |
@@ -95,18 +96,18 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `inspect_code_file` | Inspection | `Path` |
 | `invoke_debug` | Action | `Project`, `Module`, `ExpectedSha256`, `StartLine`, `ExpectedMode`, `Action`, `ControlId`, `ControlCaption` |
 | `link_vbe_window` | Action | `WindowCaption`, `WindowType`, `ExpectedWindowVersion`, `Action` |
-| `list_addins` | Inspection | Aucun |
-| `list_commands` | Inspection | Aucun |
-| `list_form_control_types` | Inspection | Aucun |
+| `list_addins` | Inspection | — |
+| `list_commands` | Inspection | — |
+| `list_form_control_types` | Inspection | — |
 | `list_forms` | Inspection | `Project` |
 | `list_modules` | Inspection | `Project` |
 | `list_object_browser` | Inspection | `Pane` |
 | `list_procedures` | Inspection | `Project`, `Module` |
-| `list_projects` | Inspection | Aucun |
+| `list_projects` | Inspection | — |
 | `list_reference_types` | Inspection | `Project`, `Guid`, `Major`, `Minor` |
 | `list_references` | Inspection | `Project` |
-| `list_signing_certificates` | Inspection | Aucun |
-| `list_toolbars` | Inspection | Aucun |
+| `list_signing_certificates` | Inspection | — |
+| `list_toolbars` | Inspection | — |
 | `list_type_members` | Inspection | `Project`, `Guid`, `Major`, `Minor`, `TypeIndex`, `TypeIdentity` |
 | `native_code_history` | Action | `Project`, `Action`, `ExpectedMode`, `ExpectedProjectVersion`, `ControlCaption` |
 | `native_code_history_state` | Inspection | `Project` |
@@ -116,25 +117,26 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `navigate_code` | Inspection | `Project`, `Action` |
 | `open_debug_pane` | Inspection | `Action` |
 | `open_form` | Inspection | `Project`, `Form` |
-| `open_object_browser` | Inspection | Aucun |
+| `open_object_browser` | Inspection | — |
 | `paste_code` | Action | `Project`, `Module`, `ExpectedSha256`, `ExpectedClipboardVersion`, `StartLine`, `StartColumn`, `EndLine`, `EndColumn` |
 | `preview_code_edit` | Inspection | `Project`, `Module`, `ExpectedSha256`, `StartLine`, `Count`, `Action` |
 | `preview_form_layout` | Inspection | `Project`, `Form`, `ExpectedTreeVersion`, `Items`, `Action` |
 | `preview_local_rename` | Inspection | `Project`, `Module`, `Procedure`, `ProcKind`, `ExpectedSha256`, `StartLine`, `StartColumn`, `Query`, `NewName` |
+| `preview_parameter_rename` | Inspection | `Project`, `Module`, `Procedure`, `ProcKind`, `ExpectedSha256`, `StartLine`, `StartColumn`, `Query`, `NewName` |
 | `procedure_run_status` | Inspection | `Project`, `Query` |
 | `project_persistence_status` | Inspection | `Project` |
 | `project_properties` | Inspection | `Project` |
 | `project_signature_status` | Inspection | `Project` |
 | `project_symbols` | Inspection | `Project` |
 | `quick_watch` | Action | `Project`, `Module`, `ExpectedSha256`, `ExpectedMode`, `StartLine`, `StartColumn`, `EndColumn`, `Expression` |
-| `read_code_clipboard` | Inspection | Aucun |
-| `read_debug_options` | Inspection | Aucun |
+| `read_code_clipboard` | Inspection | — |
+| `read_debug_options` | Inspection | — |
 | `read_module` | Inspection | `Project`, `Module` |
-| `read_object_browser` | Inspection | Aucun |
+| `read_object_browser` | Inspection | — |
 | `read_project_signature_dialog` | Inspection | `Project`, `ExpectedMode` |
-| `read_runtime_forms` | Inspection | Aucun |
+| `read_runtime_forms` | Inspection | — |
 | `read_user_file` | Inspection | `Path` |
-| `read_vbe_options` | Inspection | Aucun |
+| `read_vbe_options` | Inspection | — |
 | `recover_form_cut` | Action | `Project`, `Form`, `DesignerClipboardRecoveryId`, `ExpectedDesignerSelectionVersion`, `ExpectedClipboardVersion` |
 | `redo_code_edit` | Action | `Project`, `Module`, `ExpectedSha256` |
 | `remove_component` | Action | `Project`, `Module`, `ExpectedProjectVersion`, `ExpectedComponentVersion` |
@@ -160,7 +162,7 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `select_code` | Inspection | `Project`, `Module`, `ExpectedSha256`, `StartLine` |
 | `select_code_range` | Inspection | `Project`, `Module`, `ExpectedSha256`, `StartLine`, `StartColumn`, `EndLine`, `EndColumn` |
 | `select_form_controls` | Action | `Project`, `Form`, `Items`, `ExpectedDesignerSelectionVersion` |
-| `select_object_browser` | Inspection | Aucun |
+| `select_object_browser` | Inspection | — |
 | `select_procedure` | Inspection | `Project`, `Module`, `Procedure`, `ProcKind`, `ExpectedSha256` |
 | `set_addin_connection` | Action | `ProgId`, `ExpectedAddInVersion`, `Action` |
 | `set_class_instancing` | Action | `Project`, `Module`, `ExpectedComponentVersion`, `Value` |
@@ -186,11 +188,12 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `set_window_state` | Action | `WindowCaption`, `WindowType`, `ExpectedWindowVersion`, `Action` |
 | `show_vbe_window` | Action | `WindowCaption`, `WindowType` |
 | `sign_project` | Action | `Project`, `ExpectedProjectVersion`, `ExpectedMode`, `CertificateThumbprint` |
-| `status` | Inspection | Aucun |
+| `status` | Inspection | — |
 | `toolbar_controls` | Inspection | `ObjectName` |
 | `undo_code_edit` | Action | `Project`, `Module`, `ExpectedSha256` |
-| `vbe_environment` | Inspection | Aucun |
-| `vbe_windows` | Inspection | Aucun |
+| `vbe_environment` | Inspection | — |
+| `vbe_windows` | Inspection | — |
+| `verify_vba_signature_file` | Inspection | `Path` |
 | `window_layout` | Inspection | `WindowCaption`, `WindowType` |
 | `window_linkage` | Inspection | `WindowCaption`, `WindowType` |
 | `z_order_form_control` | Action | `Project`, `Form`, `ControlPath`, `ExpectedTreeVersion`, `ZPosition` |

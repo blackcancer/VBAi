@@ -100,6 +100,22 @@ namespace CodexVBE.Tests.Integration
         /// <returns>Chemin absolu du fichier dans le répertoire temporaire.</returns>
         internal string File(string name) { return Path.Combine(Root, name); }
 
+        /// <summary>Relit une cellule du classeur possédé, indépendamment des réponses du pont VBE.</summary>
+        /// <param name="address">Adresse A1 de la cellule attendue.</param>
+        /// <returns>Valeur native Excel après l'exécution de la macro de test.</returns>
+        internal object ReadCell(string address)
+        {
+            object sheets = null, sheet = null, cell = null;
+            try
+            {
+                sheets = ((dynamic)workbook).Worksheets;
+                sheet = ((dynamic)sheets)[1];
+                cell = ((dynamic)sheet).Range[address];
+                return ((dynamic)cell).Value2;
+            }
+            finally { Release(cell); Release(sheet); Release(sheets); }
+        }
+
         /// <summary>Ferme les ressources COM et fichiers temporaires appartenant à cette fixture.</summary>
         public void Dispose()
         {

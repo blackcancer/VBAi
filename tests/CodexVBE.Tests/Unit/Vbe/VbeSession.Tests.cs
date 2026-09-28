@@ -1158,6 +1158,27 @@ namespace CodexVBE.Tests.Unit
             request.Command = "apply_local_rename";
             Assert.IsTrue(session.Execute(request).Ok); StringAssert.Contains(fixture.Module.Code, "Dim amount");
         }
+
+        /// <summary>Traverse le répartiteur réel, le catalogue VBIDE et l'historique lors du renommage d'un paramètre privé.</summary>
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void SessionRoutesPrivateParameterRenameAndItsManagedUndo()
+        {
+            const string original = "Private Sub Run(ByVal value As Long)\r\nDebug.Print value\r\nEnd Sub\r\nPublic Sub Caller()\r\nRun value:=7\r\nEnd Sub";
+            var fixture = new Fixture(original);
+            var host = new FakeVbe(); host.VBProjects.Add(fixture.Project);
+            var session = new CodexVBE.VbeSession(host);
+            var request = fixture.Request(null); request.Query = "value"; request.NewName = "amount";
+            request.StartLine = 1; request.StartColumn = original.IndexOf("value", System.StringComparison.Ordinal) + 1; request.ExpectedMode = 2;
+            request.Command = "preview_parameter_rename";
+            dynamic preview = session.Execute(request).Data;
+            Assert.IsTrue((bool)preview.Changed); Assert.AreEqual(original, fixture.Module.Code);
+            request.Command = "apply_parameter_rename";
+            Assert.IsTrue(session.Execute(request).Ok); StringAssert.Contains(fixture.Module.Code, "Run amount:=7");
+            request.Command = "undo_code_edit"; request.ExpectedSha256 = Hash(fixture.Module.Code);
+            Assert.IsTrue(session.Execute(request).Ok); Assert.AreEqual(original, fixture.Module.Code);
+            Assert.ThrowsException<System.IO.FileNotFoundException>(() => session.Execute(new CodexVBE.Request {
+                Command = "verify_vba_signature_file", Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), System.Guid.NewGuid() + ".xlsm") }));
+        }
     }
 
     public sealed partial class VbeDebugTests

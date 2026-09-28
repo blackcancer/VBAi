@@ -15,6 +15,53 @@ namespace CodexVBE.Tests.Unit
             f.Module.Code = "Public Sub TryMe()\r\nEnd Sub";
             var r = Location(f); r.ExpectedSha256 = Sha(f.Module.Code); r.Procedure = "TryMe"; r.Arguments = new object[0]; return r;
         }
+        /// <summary>Vérifie l'association des noms à la signature, les omissions et toutes les gardes avant livraison.</summary>
+        [TestMethod]
+        public void NamedArgumentsBindOnlyToUniqueParametersInTheInspectedSignature()
+        {
+            var fixture = Create(2); var request = ProcedureRequest(fixture);
+            const string source = "\r\nPublic Sub TryMe(ByVal first As Long, _\r\nOptional ByVal second As String = \"default\")\r\nDim local As Long\r\nEnd Sub\r\nSub Other(ByVal first As Long)\r\nEnd Sub";
+            fixture.Module.Code = source; fixture.Module.ProcBodyLine.Body = 2; request.ExpectedSha256 = Sha(source);
+            request.Arguments = new object[] { "literal", 7 }; request.ArgumentNames = new[] { "SECOND", "first" };
+            Assert.AreEqual("Call VBAProject.Module1.TryMe(second:=\"literal\", first:=7)", fixture.Service.PrepareProcedureCall(request));
+            request.Arguments = new object[] { 7 }; request.ArgumentNames = new[] { "first" };
+            Assert.AreEqual("Call VBAProject.Module1.TryMe(first:=7)", fixture.Service.PrepareProcedureCall(request));
+            foreach (string[] names in new[] { new string[0], new[] { "first", "second" }, new[] { "" }, new[] { (string)null },
+                new[] { "unknown" }, new[] { "local" }, new[] { "first):End" } })
+            { request.ArgumentNames = names; Assert.ThrowsException<ArgumentException>(() => fixture.Service.PrepareProcedureCall(request)); }
+            request.Arguments = new object[] { 1, 2 }; request.ArgumentNames = new[] { "first", "FIRST" };
+            Assert.ThrowsException<ArgumentException>(() => fixture.Service.PrepareProcedureCall(request));
+            request.Arguments = new object[0]; request.ArgumentNames = new string[0];
+            Assert.AreEqual("Call VBAProject.Module1.TryMe()", fixture.Service.PrepareProcedureCall(request));
+            fixture.Module.Code = "Public Sub TryMe(ParamArray values() As Variant)\r\nEnd Sub"; fixture.Module.ProcBodyLine.Body = 1;
+            request.ExpectedSha256 = Sha(fixture.Module.Code); request.Arguments = new object[] { 1 }; request.ArgumentNames = new[] { "values" };
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.PrepareProcedureCall(request));
+            fixture.Module.Code = "#If VBA7 Then\r\nPublic Sub TryMe(ByVal first As Long)\r\nEnd Sub\r\n#End If"; fixture.Module.ProcBodyLine.Body = 2;
+            request.ExpectedSha256 = Sha(fixture.Module.Code); request.ArgumentNames = new[] { "first" };
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.PrepareProcedureCall(request));
+        }
+
+        /// <summary>Capture les tableaux de noms et de valeurs avant le retour de l'appel asynchrone.</summary>
+        [TestMethod]
+        public void QueuedNamedArgumentsCannotBeChangedByMutatingTheOriginalRequest()
+        {
+            var previous = SynchronizationContext.Current; var context = new NativeNavigationContext();
+            SynchronizationContext.SetSynchronizationContext(context);
+            try
+            {
+                var fixture = Create(2); var request = ProcedureRequest(fixture);
+                fixture.Module.Code = "Public Sub TryMe(Optional ByVal first As Long = 4)\r\nEnd Sub"; request.ExpectedSha256 = Sha(fixture.Module.Code);
+                request.Arguments = new object[] { 7 }; request.ArgumentNames = new[] { "first" };
+                string delivered = null; fixture.Service.ShowProcedureImmediate = () => { };
+                fixture.Service.ExecuteProcedureCall = command => { delivered = command; return Task.FromResult<object>(null); };
+                dynamic queued = fixture.Service.RunProcedure(request);
+                request.ArgumentNames[0] = "injected"; request.Arguments[0] = 99; context.RunAll();
+                Assert.AreEqual("Call VBAProject.Module1.TryMe(first:=7)", delivered);
+                Assert.AreEqual("Delivered", (string)((dynamic)fixture.Service.ProcedureRunStatus(new Request { Project = fixture.Project.Name, Query = queued.Query })).State);
+            }
+            finally { SynchronizationContext.SetSynchronizationContext(previous); }
+        }
+
         [TestMethod]
         public void ProcedurePreflightCoversAllIndependentIdentityAndRevisionBoundaries()
         {

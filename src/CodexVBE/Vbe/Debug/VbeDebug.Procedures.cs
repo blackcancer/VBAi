@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -29,7 +29,8 @@ namespace CodexVBE
                 throw new InvalidOperationException("A procedure call is still pending; inspect its status instead of retrying.");
             var captured = new Request { Project = request.Project, Module = request.Module, Procedure = request.Procedure,
                 ExpectedSha256 = request.ExpectedSha256, ExpectedMode = request.ExpectedMode,
-                Arguments = request.Arguments == null ? null : (object[])request.Arguments.Clone() };
+                Arguments = request.Arguments == null ? null : (object[])request.Arguments.Clone(),
+                ArgumentNames = request.ArgumentNames == null ? null : (string[])request.ArgumentNames.Clone() };
             string command = PrepareProcedureCall(captured);
             var operation = new ProcedureOperation { Id = Guid.NewGuid().ToString("N"), Project = captured.Project,
                 Module = captured.Module, Procedure = captured.Procedure, State = "Queued", Command = command };
@@ -100,7 +101,28 @@ namespace CodexVBE
             string declaration = (string)module.Lines[body, 1];
             var match = Regex.Match(declaration, @"^\s*(?:(?:Public|Static)\s+)*(Sub|Function)\s+(" + Regex.Escape(request.Procedure) + @")(?![\p{L}\p{N}_])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
             if (!match.Success) throw new InvalidOperationException("Only public Sub and Function declarations are callable; private, property and external declarations are refused.");
-            string arguments = string.Join(", ", request.Arguments.Select(ProcedureLiteral));
+            string[] literals = request.Arguments.Select(ProcedureLiteral).ToArray();
+            if (request.ArgumentNames != null)
+            {
+                if (request.ArgumentNames.Length != literals.Length || request.ArgumentNames.Distinct(StringComparer.OrdinalIgnoreCase).Count() != literals.Length)
+                    throw new ArgumentException("ArgumentNames must match Arguments and contain distinct parameter names.");
+                var signature = VbaDeclarationIndex.Statements(code).First(s => s.Count > 0 && s[0].Line == body);
+                int end = signature.Last().Line;
+                var declared = VbaDeclarationIndex.Read(code).Where(d => d.Kind == "Parameter" && d.Line >= body && d.Line <= end &&
+                    string.Equals(d.Scope, request.Procedure, StringComparison.OrdinalIgnoreCase)).ToArray();
+                if (declared.Any(d => d.Conditional))
+                    throw new InvalidOperationException("Named calls to conditional signatures require a resolved binding plan.");
+                if (signature.Any(token => token.Text.Equals("ParamArray", StringComparison.OrdinalIgnoreCase)))
+                    throw new InvalidOperationException("Named calls to ParamArray signatures are not supported.");
+                for (int i = 0; i < literals.Length; i++)
+                {
+                    ValidateProcedureIdentifier(request.ArgumentNames[i]);
+                    var parameter = declared.SingleOrDefault(d => string.Equals(d.Name, request.ArgumentNames[i], StringComparison.OrdinalIgnoreCase));
+                    if (parameter == null) throw new ArgumentException("Unknown parameter in the live signature: " + request.ArgumentNames[i]);
+                    literals[i] = parameter.Name + ":=" + literals[i];
+                }
+            }
+            string arguments = string.Join(", ", literals);
             string call = projectName + "." + moduleName + "." + match.Groups[2].Value + "(" + arguments + ")";
             string command = match.Groups[1].Value.Equals("Function", StringComparison.OrdinalIgnoreCase) ? "? " + call : "Call " + call;
             if (command.Length > 2048) throw new ArgumentException("The complete procedure call exceeds the native 2048-character limit.");
@@ -138,7 +160,7 @@ namespace CodexVBE
             operation.Procedure, Query = operation.Id, operation.State, operation.Command, operation.Output, operation.Error,
             Pending = operation.State == "Queued" || operation.State == "Delivering", RuntimeSuccessVerified = false,
             NextRead = "procedure_run_status, debug_state, debug_dialog",
-            Limit = "Scalar arguments only; no object/array arguments or returned COM values. Runtime errors and modal code can outlive delivery; do not retry automatically." };
+            Limit = "Scalar arguments only; optional ArgumentNames must match the inspected live signature. No named ParamArray/conditional calls, object/array arguments or returned COM values. Runtime errors and modal code can outlive delivery; do not retry automatically." };
         /// <summary>État borné en mémoire d’une seule tentative d’appel.</summary>
         private sealed class ProcedureOperation
         {

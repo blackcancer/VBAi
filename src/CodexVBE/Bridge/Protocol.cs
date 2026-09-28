@@ -1,4 +1,4 @@
-﻿namespace CodexVBE
+namespace CodexVBE
 {
     /// <summary>Arguments sérialisés en JSON pour une commande du pont entre le complément et son client.</summary>
     public sealed class Request
@@ -42,6 +42,9 @@
         /// <summary>Arguments scalaires JSON d’une procédure VBA, dans leur ordre de déclaration.</summary>
         /// <value>Chaînes, nombres, booléens ou null (VBA Null), au maximum trente.</value>
         public object[] Arguments { get; set; }
+        /// <summary>Noms optionnels des paramètres, associés dans le même ordre aux valeurs Arguments.</summary>
+        /// <value>Null pour l'appel positionnel ; sinon noms exacts, uniques et vérifiés dans la signature vivante.</value>
+        public string[] ArgumentNames { get; set; }
         /// <summary>Matrice des lignes d’une liste de formulaire.</summary>
         /// <value>Cellules de chaque ligne.</value>
         public string[][] Rows { get; set; }

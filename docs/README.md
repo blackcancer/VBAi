@@ -21,6 +21,7 @@
 | [Localisation](localization.md) | Langues, ressources et maintenance des traductions |
 | [Outils LLM](reference/vbe-tools.md) | Catalogue extrait du code : permissions et paramètres requis |
 | [Extensions IDE](reference/functional-extensions.md) | Nouveaux contrats et qualifications natives |
+| [Inventaire VBE complet](reference/vbe-capability-inventory.md) | Surfaces de l'éditeur, contrats présents et lacunes précises |
 | [Concepteur VBE](reference/designer.md) | Propriétés MSForms, conteneurs, listes et récupération |
 | [Couverture des tests](test-coverage.md) | Dernière mesure globale et preuves Excel/SOLIDWORKS |
 | [Travaux restants](roadmap.md) | Lacunes de tests et de qualification native |

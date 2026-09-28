@@ -6,7 +6,7 @@ using System.Text;
 
 namespace CodexVBE
 {
-    internal sealed class VbeCodeEdits
+    internal sealed partial class VbeCodeEdits
     {
         private readonly Func<Request, Response> execute;
         private readonly List<Entry> undo = new List<Entry>();

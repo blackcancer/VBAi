@@ -218,6 +218,8 @@ namespace CodexVBE
                     return Response.Success(components.SaveHostDocumentAs(request));
                 case "project_signature_status":
                     return Response.Success(components.SignatureStatus(request.Project));
+                case "verify_vba_signature_file":
+                    return Response.Success(new VbeSignatureVerifier().Verify(request.Path));
                 case "certificate_trust": return Response.Success(CertificateTrust(request));
                 case "list_signing_certificates":
                     return Response.Success(ListSigningCertificates());
@@ -267,6 +269,8 @@ namespace CodexVBE
                     return Response.Success(CreateComponent(request, 2));
                 case "preview_local_rename": return Response.Success(codeEdits.RenameLocal(request, true));
                 case "apply_local_rename": return Response.Success(codeEdits.RenameLocal(request, false));
+                case "preview_parameter_rename": return Response.Success(codeEdits.RenameParameter(request, true));
+                case "apply_parameter_rename": return Response.Success(codeEdits.RenameParameter(request, false));
                 case "preview_code_edit": return Response.Success(codeEdits.Edit(request, true));
                 case "apply_code_edit": return Response.Success(codeEdits.Edit(request, false));
                 case "toolbar_controls": return Response.Success(editorWindows.ToolbarControls(request));

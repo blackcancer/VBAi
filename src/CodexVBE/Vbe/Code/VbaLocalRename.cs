@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,6 +16,14 @@ namespace CodexVBE
         /// <param name="last">Dernière ligne de sa plage VBIDE.</param>
         /// <returns>Texte du module après substitution des seules utilisations locales identifiées.</returns>
         internal static string Transform(string source, Request request, int first, int last)
+            => TransformCore(source, request, first, last, false);
+
+        /// <summary>Renomme le paramètre et ses utilisations dans la procédure ; les appelants sont traités séparément.</summary>
+        internal static string TransformParameter(string source, Request request, int first, int last)
+            => TransformCore(source, request, first, last, true);
+
+        /// <summary>Applique les contrôles lexicaux partagés à une déclaration locale ou de paramètre.</summary>
+        private static string TransformCore(string source, Request request, int first, int last, bool parameter)
         {
             VbaTextEdits.ValidateIdentifier(request.NewName);
             if (Regex.IsMatch(request.NewName, @"^(?:Boolean|Byte|Integer|Long|LongLong|LongPtr|Single|Double|Currency|Date|String|Variant|Object|Type|Enum|Declare|PtrSafe|Optional|ParamArray|WithEvents|ReDim|Preserve|Erase|Stop|Debug|Print|GoTo|GoSub|Resume|Error|On|Until|Wend|To|Step|Each|And|Or|Xor|Not|Is|Like|Mod|Implements|RaiseEvent|Event|AddressOf|DefBool|DefByte|DefInt|DefLng|DefLngLng|DefLngPtr|DefSng|DefDbl|DefCur|DefDate|DefStr|DefObj|DefVar)$", RegexOptions.IgnoreCase))
@@ -25,7 +33,7 @@ namespace CodexVBE
             var declarations = VbaDeclarationIndex.Read(source);
             var matches = declarations.Where(x => x.Line == request.StartLine && x.Column == request.StartColumn &&
                 x.Name.Equals(request.Query ?? "", StringComparison.OrdinalIgnoreCase)).ToArray();
-            if (matches.Length != 1 || (matches[0].Kind != "Variable" && matches[0].Kind != "Constant") ||
+            if (matches.Length != 1 || (parameter ? matches[0].Kind != "Parameter" : matches[0].Kind != "Variable" && matches[0].Kind != "Constant") ||
                 !matches[0].Scope.Equals(request.Procedure ?? "", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("Select one explicit local variable/constant declaration; parameters and project symbols require a wider refactoring plan.");
             var target = matches[0];

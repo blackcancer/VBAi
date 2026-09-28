@@ -1,6 +1,6 @@
 namespace CodexVBE.Tests.Unit
 {
-    using System;
+using System;
     using System.Collections.Generic;
     using System.Threading;
     using System.Web.Script.Serialization;
@@ -718,6 +718,57 @@ namespace CodexVBE.Tests.Unit
             { run["Arguments"] = arguments; Failed(tools.Invoke("run_procedure", Json.Serialize(run)), "invalid arguments"); }
             run["Arguments"] = new object[] { "literal", true, 2, 1.5 }; Success(tools.Invoke("run_procedure", Json.Serialize(run)), "scalars");
             run["Arguments"] = new object[] { new { Nested = true } }; Failed(tools.Invoke("run_procedure", Json.Serialize(run)), "non scalar");
+        }
+    }
+}
+
+namespace CodexVBE.Tests.Unit
+{
+    using System;
+    using System.Web.Script.Serialization;
+    using CodexVBE;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+    public sealed partial class VbeProcedureMutationTests
+    {
+        /// <summary>Vérifie le routage LLM, les modes, la portée, le diff et la restauration du renommage privé.</summary>
+        [TestMethod]
+        public void ParameterRenameToolsRespectReadOnlyAndProjectScopeThenPublishRestorableDiff()
+        {
+            const string original = "Private Sub Run(ByVal value As Long)\r\nDebug.Print value\r\nEnd Sub\r\nPublic Sub Caller()\r\nRun value:=7\r\nEnd Sub";
+            var fixture = new Fixture(original);
+            var host = new FakeVbe(); host.VBProjects.Add(fixture.Project);
+            var session = new VbeSession(host);
+            var json = new JavaScriptSerializer();
+            var request = fixture.Request(null); request.Query = "value"; request.NewName = "amount";
+            request.StartLine = 1; request.StartColumn = original.IndexOf("value", StringComparison.Ordinal) + 1; request.ExpectedMode = 2;
+            var arguments = json.Serialize(new { request.Project, request.Module, request.Procedure, request.ProcKind,
+                request.Query, request.NewName, request.StartLine, request.StartColumn, request.ExpectedMode, request.ExpectedSha256 });
+            var tools = new LlmVbeTools(session, null, new LlmSettings { VbeEditApproval = "Automatic" }) {
+                Mode = ChatMode.Plan, BoundProject = fixture.Project.Name };
+            string previewArguments = json.Serialize(new { request.Project, request.Module, request.Procedure, request.ProcKind,
+                request.Query, request.NewName, request.StartLine, request.StartColumn, request.ExpectedSha256 });
+            var preview = json.Deserialize<Response>(tools.Invoke("preview_parameter_rename", previewArguments));
+            Assert.IsTrue(preview.Ok, preview.Error); Assert.AreEqual(original, fixture.Module.Code);
+            var forbidden = json.Deserialize<Response>(tools.Invoke("apply_parameter_rename", arguments));
+            Assert.IsFalse(forbidden.Ok); Assert.AreEqual(original, fixture.Module.Code);
+            tools.Mode = ChatMode.Agent; tools.BoundProject = "AnotherProject";
+            forbidden = json.Deserialize<Response>(tools.Invoke("apply_parameter_rename", arguments));
+            Assert.IsFalse(forbidden.Ok); Assert.AreEqual(original, fixture.Module.Code);
+            tools.BoundProject = fixture.Project.Name;
+            var readOnly = new LlmVbeTools(session, null, new LlmSettings { VbeEditApproval = "ReadOnly" });
+            Assert.IsFalse(json.Deserialize<Response>(readOnly.Invoke("apply_parameter_rename", arguments)).Ok);
+            CodeChange observed = null; tools.CodeEdited += change => observed = change;
+            var applied = json.Deserialize<Response>(tools.Invoke("apply_parameter_rename", arguments));
+            Assert.IsTrue(applied.Ok, applied.Error); Assert.IsNotNull(observed);
+            Assert.AreEqual(original, observed.Before); Assert.AreEqual(fixture.Module.Code, observed.After);
+            StringAssert.Contains(observed.After, "Run amount:=7");
+            Assert.IsTrue(tools.RestoreCodeChange(observed).Ok); Assert.AreEqual(original, fixture.Module.Code);
+            tools.Mode = ChatMode.Plan;
+            string received = null;
+            tools.Execute = input => { received = input.Command; return Response.Success(new { Status = "VerifierUnavailable" }); };
+            Assert.IsTrue(json.Deserialize<Response>(tools.Invoke("verify_vba_signature_file", json.Serialize(new { Path = @"C:\Temp\Example.xlsm" }))).Ok);
+            Assert.AreEqual("verify_vba_signature_file", received);
         }
     }
 }

@@ -15,6 +15,8 @@ namespace CodexVBE.Tests.Unit
             public int EndLine { get; set; }
         }
         public sealed class DesignState { public int Mode { get; set; } }
+        /// <summary>Type VBIDE du composant relu avant le renommage de paramètre.</summary>
+        public sealed class ComponentKind { public int Type { get; set; } }
 
     }
 }
