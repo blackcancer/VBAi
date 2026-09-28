@@ -15,10 +15,13 @@ namespace CodexVBE
     internal sealed class GitHubRepositoryInfo
     {
         /// <summary>Obtient ou définit le nom complet propriétaire/dépôt.</summary>
+        /// <value>le nom complet propriétaire/dépôt.</value>
         public string full_name { get; set; }
         /// <summary>Obtient ou définit l’URL de clonage HTTPS.</summary>
+        /// <value>l’URL de clonage HTTPS.</value>
         public string clone_url { get; set; }
         /// <summary>Obtient ou définit le nom de la branche par défaut.</summary>
+        /// <value>le nom de la branche par défaut.</value>
         public string default_branch { get; set; }
         /// <summary>Retourne le nom complet du dépôt.</summary>
         /// <returns>Valeur de <see cref="full_name"/>.</returns>
@@ -28,20 +31,28 @@ namespace CodexVBE
     internal sealed class GitHubPull
     {
         /// <summary>Obtient ou définit le numéro de la pull request.</summary>
+        /// <value>le numéro de la pull request.</value>
         public int number { get; set; }
         /// <summary>Obtient ou définit son titre.</summary>
+        /// <value>son titre.</value>
         public string title { get; set; }
         /// <summary>Obtient ou définit sa description.</summary>
+        /// <value>sa description.</value>
         public string body { get; set; }
         /// <summary>Obtient ou définit son état GitHub.</summary>
+        /// <value>son état GitHub.</value>
         public string state { get; set; }
         /// <summary>Obtient ou définit si la pull request est un brouillon.</summary>
+        /// <value>si la pull request est un brouillon.</value>
         public bool draft { get; set; }
         /// <summary>Obtient ou définit si elle a été fusionnée.</summary>
+        /// <value>si elle a été fusionnée.</value>
         public bool merged { get; set; }
         /// <summary>Obtient ou définit son URL Web.</summary>
+        /// <value>son URL Web.</value>
         public string html_url { get; set; }
         /// <summary>Obtient ou définit les informations de la tête de branche.</summary>
+        /// <value>les informations de la tête de branche.</value>
         public GitHubHead head { get; set; }
         /// <summary>Retourne un libellé compact avec numéro, état et titre, en signalant les brouillons.</summary>
         /// <returns>Libellé localisé de la pull request.</returns>
@@ -51,14 +62,17 @@ namespace CodexVBE
     internal sealed class GitHubHead
     {
         /// <summary>Obtient ou définit le SHA de la révision.</summary>
+        /// <value>le SHA de la révision.</value>
         public string sha { get; set; }
     }
     /// <summary>Fichier modifié associé à une pull request.</summary>
     internal sealed class GitHubFile
     {
         /// <summary>Obtient ou définit le chemin du fichier.</summary>
+        /// <value>le chemin du fichier.</value>
         public string filename { get; set; }
         /// <summary>Obtient ou définit l’état de modification du fichier.</summary>
+        /// <value>l’état de modification du fichier.</value>
         public string status { get; set; }
         /// <summary>Retourne l’état suivi du chemin.</summary>
         /// <returns>Libellé compact du fichier.</returns>
@@ -68,10 +82,13 @@ namespace CodexVBE
     internal sealed class GitHubComment
     {
         /// <summary>Obtient ou définit le contenu du commentaire.</summary>
+        /// <value>le contenu du commentaire.</value>
         public string body { get; set; }
         /// <summary>Obtient ou définit le chemin du fichier commenté.</summary>
+        /// <value>le chemin du fichier commenté.</value>
         public string path { get; set; }
         /// <summary>Obtient ou définit le numéro de ligne, s’il est fourni.</summary>
+        /// <value>le numéro de ligne, s’il est fourni.</value>
         public int? line { get; set; }
         /// <summary>Retourne le contenu précédé de l’emplacement lorsqu’un chemin est fourni.</summary>
         /// <returns>Libellé du commentaire.</returns>
@@ -81,34 +98,41 @@ namespace CodexVBE
     internal sealed class GitHubCheck
     {
         /// <summary>Obtient ou définit le nom de la vérification.</summary>
+        /// <value>le nom de la vérification.</value>
         public string name { get; set; }
         /// <summary>Obtient ou définit son état courant.</summary>
+        /// <value>son état courant.</value>
         public string status { get; set; }
         /// <summary>Obtient ou définit sa conclusion éventuelle.</summary>
+        /// <value>sa conclusion éventuelle.</value>
         public string conclusion { get; set; }
     }
     /// <summary>Enveloppe de la liste d’exécutions de vérification d’une révision.</summary>
     internal sealed class GitHubChecks
     {
         /// <summary>Obtient ou définit les vérifications renvoyées par l’API.</summary>
+        /// <value>les vérifications renvoyées par l’API.</value>
         public GitHubCheck[] check_runs { get; set; }
     }
     /// <summary>État global de statut d’une révision.</summary>
     internal sealed class GitHubStatus
     {
         /// <summary>Obtient ou définit l’état agrégé.</summary>
+        /// <value>l’état agrégé.</value>
         public string state { get; set; }
     }
     /// <summary>Organisation GitHub associée au compte.</summary>
     internal sealed class GitHubOrganization
     {
         /// <summary>Obtient ou définit le nom de connexion.</summary>
+        /// <value>le nom de connexion.</value>
         public string login { get; set; }
     }
     /// <summary>Branche d’un dépôt GitHub.</summary>
     internal sealed class GitHubBranch
     {
         /// <summary>Obtient ou définit le nom de branche.</summary>
+        /// <value>le nom de branche.</value>
         public string name { get; set; }
     }
 

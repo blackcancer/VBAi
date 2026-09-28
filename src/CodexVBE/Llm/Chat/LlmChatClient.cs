@@ -11,23 +11,47 @@ using System.Web.Script.Serialization;
 namespace CodexVBE
 {
     // This client speaks the Chat Completions function-call format. No credential is persisted.
+    /// <summary>Client HTTP compatible avec les fournisseurs LLM et leur protocole de conversation.</summary>
     internal sealed class LlmChatClient : IDisposable
     {
+        /// <summary>Client HTTP utilisé pour appeler le fournisseur courant.</summary>
         private readonly HttpClient http;
+        /// <summary>Sérialiseur JSON des requêtes et réponses fournisseur.</summary>
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
+        /// <summary>URL validée du point de terminaison de conversation.</summary>
         private readonly Uri endpoint;
+        /// <summary>Identifiant du modèle sélectionné.</summary>
         private readonly string model;
+        /// <summary>Clé fournisseur en mémoire pour cette session.</summary>
         private readonly string key;
+        /// <summary>Fournisseur et protocole associés au client.</summary>
         private readonly LlmProvider provider;
+        /// <summary>Client Copilot utilisé lorsque ce fournisseur est sélectionné.</summary>
         private readonly CopilotClient copilot;
+        /// <summary>Indique si l’authentification Azure Entra est activée.</summary>
         private readonly bool azureEntra;
+        /// <summary>Source d’annulation liée à la durée de vie du client.</summary>
         private readonly CancellationTokenSource lifetime = new CancellationTokenSource();
+        /// <summary>Empêche la libération répétée des clients et jetons.</summary>
         private bool disposed;
+        /// <summary>Reçoit les fragments de texte émis pendant une réponse en flux.</summary>
+        /// <value>Action appelée pour chaque fragment de texte reçu en flux, ou null si le flux est désactivé.</value>
         public Action<string> TextDelta { get; set; }
+        /// <summary>Traite un appel d’outil retourné par le fournisseur.</summary>
+        /// <value>Délégué qui reçoit le nom et les arguments JSON d’un outil, ou null si aucun outil n’est disponible.</value>
         public Func<string, string, Task<string>> ToolHandler { get; set; }
 
+        /// <summary>Crée un client pour le fournisseur, ses réglages et le modèle choisi.</summary>
+        /// <param name="provider">Fournisseur LLM sélectionné.</param>
+        /// <param name="settings">Paramètres contenant les adresses, clés et options d’authentification.</param>
+        /// <param name="selectedModel">Identifiant du modèle demandé.</param>
         public LlmChatClient(LlmProvider provider, LlmSettings settings, string selectedModel) : this(provider, settings, selectedModel, null) { }
 
+        /// <summary>Crée un client et permet d’injecter le transport HTTP.</summary>
+        /// <param name="provider">Fournisseur LLM sélectionné.</param>
+        /// <param name="settings">Paramètres contenant les adresses, clés et options d’authentification.</param>
+        /// <param name="selectedModel">Identifiant du modèle demandé.</param>
+        /// <param name="handler">Gestionnaire HTTP facultatif fourni pour le transport.</param>
         internal LlmChatClient(LlmProvider provider, LlmSettings settings, string selectedModel, HttpMessageHandler handler)
         {
             if (provider == null || !provider.Available || provider.IsCodex || settings == null)
@@ -51,11 +75,22 @@ namespace CodexVBE
             http.Timeout = TimeSpan.FromSeconds(120);
         }
 
+        /// <summary>Nom du modèle accompagné de l’hôte ou du fournisseur.</summary>
+        /// <value>Identifiant du modèle suivi de GitHub Copilot ou de l’hôte du point de terminaison.</value>
         public string DisplayName { get { return model + " @ " + (provider.IsCopilot ? "GitHub Copilot" : endpoint.Host); } }
 
+        /// <summary>Liste les modèles accessibles ou les identifiants manuels configurés.</summary>
+        /// <param name="provider">Fournisseur LLM sélectionné.</param>
+        /// <param name="settings">Paramètres contenant les adresses, clés et options d’authentification.</param>
+        /// <returns>Options de modèles disponibles pour ce fournisseur.</returns>
         public static async Task<LlmModelOption[]> ListModelsAsync(LlmProvider provider, LlmSettings settings)
         { return await ListModelsAsync(provider, settings, null); }
 
+        /// <summary>Liste les modèles accessibles ou les identifiants manuels configurés.</summary>
+        /// <param name="provider">Fournisseur LLM sélectionné.</param>
+        /// <param name="settings">Paramètres contenant les adresses, clés et options d’authentification.</param>
+        /// <param name="handler">Gestionnaire HTTP facultatif fourni pour le transport.</param>
+        /// <returns>Options de modèles disponibles pour ce fournisseur.</returns>
         internal static async Task<LlmModelOption[]> ListModelsAsync(LlmProvider provider, LlmSettings settings, HttpMessageHandler handler)
         {
             if (provider == null || !provider.Available || provider.IsCodex)
@@ -114,6 +149,10 @@ namespace CodexVBE
             throw new InvalidOperationException(UiText.Get("The model list exceeds the pagination limit."));
         }
 
+        /// <summary>Envoie la conversation au fournisseur, gère le flux de texte et normalise sa réponse.</summary>
+        /// <param name="messages">Historique des messages de la conversation.</param>
+        /// <param name="tools">Définitions des outils disponibles pour le modèle.</param>
+        /// <returns>Message JSON normalisé produit par le fournisseur, avec les appels d’outil éventuels.</returns>
         public async Task<IDictionary<string, object>> CompleteAsync(IList<object> messages, object[] tools)
         {
             if (copilot != null) { copilot.TextDelta = TextDelta; return await copilot.CompleteAsync(model, messages, tools, ToolHandler); }
@@ -164,8 +203,14 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Annule la requête active et libère les clients détenus.</summary>
         public void Dispose() { if (disposed) return; disposed = true; lifetime.Cancel(); http?.Dispose(); copilot?.Dispose(); lifetime.Dispose(); }
 
+        /// <summary>Ajoute l’en-tête d’authentification adapté au fournisseur.</summary>
+        /// <param name="request">Requête HTTP à authentifier.</param>
+        /// <param name="provider">Fournisseur LLM sélectionné.</param>
+        /// <param name="key">Clé API, si le fournisseur en utilise une.</param>
+        /// <param name="azureEntra">Indique si un jeton Azure Entra doit être utilisé.</param>
         private static void Authenticate(HttpRequestMessage request, LlmProvider provider, string key, bool azureEntra)
         {
             if (provider.IsAzure && !azureEntra) { if (!string.IsNullOrWhiteSpace(key)) request.Headers.Add("api-key", key); }

@@ -10,10 +10,17 @@ using System.Text.RegularExpressions;
 
 namespace CodexVBE
 {
+    /// <summary>Gère la génération contrôlée des valeurs de listes dans le code des UserForms.</summary>
     internal sealed partial class VbeForms
     {
         // Persist list values through VBA code. Designer.List is intentionally
         // left untouched because live designer items do not survive SaveAs.
+        /// <summary>Insère ou actualise un bloc protégé qui initialise une ComboBox ou ListBox à l’ouverture.</summary>
+        /// <param name="request">Requête contenant le formulaire, le contrôle, les valeurs et les empreintes attendues.</param>
+        /// <returns>État de l’application et de sa vérification, avec les empreintes du code avant et après.</returns>
+        /// <exception cref="ArgumentException">Une donnée requise, une valeur ou le chemin du contrôle est invalide.</exception>
+        /// <exception cref="InvalidOperationException">La hiérarchie, le code ou le bloc géré a changé, ou le contrôle n’est pas compatible.</exception>
+        /// <remarks>Après le début d’une mutation COM, une erreur est retournée comme vérification en attente afin de permettre une relecture.</remarks>
         public object SetListInitializer(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.Project) ||
@@ -140,6 +147,12 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Construit le bloc VBA encadré de marqueurs et contenant les commandes de remplissage.</summary>
+        /// <param name="name">Nom du contrôle cible.</param>
+        /// <param name="items">Valeurs à ajouter dans la liste.</param>
+        /// <param name="beginPrefix">Préfixe du marqueur de début, suivi de l’empreinte calculée.</param>
+        /// <param name="end">Marqueur de fin du bloc.</param>
+        /// <returns>Lignes du bloc, marqueurs inclus.</returns>
         private static string[] GenerateListBlock(string name, string[] items, string beginPrefix, string end)
         {
             var body = new List<string> { "    Me." + name + ".Clear" };
@@ -151,6 +164,13 @@ namespace CodexVBE
             return lines.ToArray();
         }
 
+        /// <summary>Vérifie la structure et l’empreinte d’un bloc généré avant de le remplacer.</summary>
+        /// <param name="lines">Lignes du module contenant le bloc.</param>
+        /// <param name="begin">Index de la ligne du marqueur de début.</param>
+        /// <param name="end">Index de la ligne du marqueur de fin.</param>
+        /// <param name="name">Nom du contrôle dont les instructions sont attendues.</param>
+        /// <param name="beginPrefix">Préfixe autorisé du marqueur de début.</param>
+        /// <exception cref="InvalidOperationException">Les marqueurs, instructions ou empreintes ne correspondent pas au bloc généré.</exception>
         private static void ValidateManagedBlock(string[] lines, int begin, int end,
             string name, string beginPrefix)
         {
@@ -167,12 +187,18 @@ namespace CodexVBE
                 throw new InvalidOperationException("The managed list block has been edited; user code will not be overwritten.");
         }
 
+        /// <summary>Lit toutes les lignes du module de code d’un formulaire.</summary>
+        /// <param name="module">Module COM exposant <c>CountOfLines</c> et <c>Lines</c>.</param>
+        /// <returns>Code du module, ou chaîne vide si celui-ci ne contient aucune ligne.</returns>
         private static string ReadFormCode(dynamic module)
         {
             int count = (int)module.CountOfLines;
             return count == 0 ? string.Empty : (string)module.Lines[1, count];
         }
 
+        /// <summary>Calcule l’empreinte SHA-256 du code encodé en UTF-8, sous forme hexadécimale minuscule.</summary>
+        /// <param name="code">Texte du module à empreinter.</param>
+        /// <returns>Empreinte SHA-256 de 64 caractères hexadécimaux.</returns>
         private static string FormCodeSha(string code)
         {
             using (var sha = SHA256.Create())
@@ -180,6 +206,9 @@ namespace CodexVBE
                     .Replace("-", "").ToLowerInvariant();
         }
 
+        /// <summary>Découpe le code selon les fins de ligne usuelles sans conserver le dernier élément vide.</summary>
+        /// <param name="code">Texte de code à découper.</param>
+        /// <returns>Lignes du code dans leur ordre d’origine.</returns>
         private static string[] CodeLines(string code)
         {
             if (code.Length == 0) return new string[0];
@@ -188,6 +217,11 @@ namespace CodexVBE
                 ? lines.Take(lines.Length - 1).ToArray() : lines;
         }
 
+        /// <summary>Recherche un marqueur exact après suppression des espaces périphériques.</summary>
+        /// <param name="lines">Lignes où chercher.</param>
+        /// <param name="marker">Texte exact du marqueur.</param>
+        /// <returns>Index du marqueur, ou -1 s’il est absent.</returns>
+        /// <exception cref="InvalidOperationException">Le marqueur apparaît plusieurs fois.</exception>
         private static int FindMarker(string[] lines, string marker)
         {
             int found = -1;
@@ -200,6 +234,11 @@ namespace CodexVBE
             return found;
         }
 
+        /// <summary>Recherche l’unique marqueur dont le texte commence par le préfixe indiqué.</summary>
+        /// <param name="lines">Lignes où chercher.</param>
+        /// <param name="prefix">Préfixe du marqueur.</param>
+        /// <returns>Index du marqueur, ou -1 s’il est absent.</returns>
+        /// <exception cref="InvalidOperationException">Plusieurs marqueurs commencent par ce préfixe.</exception>
         private static int FindMarkerPrefix(string[] lines, string prefix)
         {
             int found = -1;
@@ -212,12 +251,20 @@ namespace CodexVBE
             return found;
         }
 
+        /// <summary>Obtient la première ligne du corps de <c>UserForm_Initialize</c>.</summary>
+        /// <param name="module">Module de code COM du formulaire.</param>
+        /// <returns>Première ligne du corps, ou zéro si la procédure n’existe pas.</returns>
         private static int FindInitializeBody(dynamic module)
         {
             try { return (int)module.ProcBodyLine["UserForm_Initialize", 0]; }
             catch (System.Runtime.InteropServices.COMException) { return 0; }
         }
 
+        /// <summary>Localise la ligne de fermeture de la procédure d’initialisation.</summary>
+        /// <param name="module">Module de code COM du formulaire.</param>
+        /// <param name="bodyLine">Première ligne du corps de la procédure.</param>
+        /// <returns>Numéro de ligne de <c>End Sub</c>.</returns>
+        /// <exception cref="InvalidOperationException">Aucune ligne de fermeture unique n’est trouvée dans la procédure.</exception>
         private static int FindEndSubLine(dynamic module, int bodyLine)
         {
             int start = (int)module.ProcStartLine["UserForm_Initialize", 0];
@@ -228,6 +275,11 @@ namespace CodexVBE
             throw new InvalidOperationException("UserForm_Initialize has no unambiguous End Sub line.");
         }
 
+        /// <summary>Indique si les deux marqueurs sont strictement à l’intérieur de la procédure d’initialisation.</summary>
+        /// <param name="module">Module de code COM du formulaire.</param>
+        /// <param name="beginLine">Numéro de ligne du marqueur de début, indexé à partir de un.</param>
+        /// <param name="endLine">Numéro de ligne du marqueur de fin, indexé à partir de un.</param>
+        /// <returns><see langword="true"/> si les marqueurs sont dans les limites du corps de la procédure.</returns>
         private static bool MarkerWithinProcedure(dynamic module, int beginLine, int endLine)
         {
             int start = (int)module.ProcStartLine["UserForm_Initialize", 0];
@@ -235,6 +287,10 @@ namespace CodexVBE
             return beginLine > start && endLine < start + count;
         }
 
+        /// <summary>Vérifie que chaque ligne attendue apparaît dans le texte réel, dans le même ordre.</summary>
+        /// <param name="actual">Lignes du code résultant.</param>
+        /// <param name="expected">Lignes dont la préservation est vérifiée.</param>
+        /// <returns><see langword="true"/> si toutes les lignes attendues sont retrouvées dans l’ordre.</returns>
         private static bool ContainsOrderedLines(string[] actual, string[] expected)
         {
             int match = 0;
@@ -243,6 +299,11 @@ namespace CodexVBE
             return match == expected.Length;
         }
 
+        /// <summary>Retourne les lignes en excluant la plage du bloc géré lorsqu’elle est valide.</summary>
+        /// <param name="lines">Lignes d’origine.</param>
+        /// <param name="begin">Index de début inclus du bloc, ou valeur négative s’il est absent.</param>
+        /// <param name="end">Index de fin inclus du bloc.</param>
+        /// <returns>Lignes hors bloc, ou toutes les lignes si la plage est invalide.</returns>
         private static IEnumerable<string> StripBlock(string[] lines, int begin, int end)
         {
             if (begin < 0 || end < begin) return lines;

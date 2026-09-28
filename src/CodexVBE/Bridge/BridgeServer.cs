@@ -10,15 +10,26 @@ using System.Windows.Forms;
 
 namespace CodexVBE
 {
+    /// <summary>Expose les opérations de session VBE par un canal nommé propre au processus.</summary>
     internal sealed class BridgeServer : IDisposable
     {
+        /// <summary>Contrôle WinForms utilisé pour exécuter les appels COM sur le thread UI.</summary>
         private readonly Control dispatcher;
+        /// <summary>Session qui traite les requêtes destinées au VBE.</summary>
         private readonly VbeSession session;
+        /// <summary>Nom du canal nommé associé au processus hôte.</summary>
         private readonly string pipeName;
+        /// <summary>Thread d’arrière-plan qui accepte les connexions du client.</summary>
         private readonly Thread worker;
+        /// <summary>Indique que l’arrêt du serveur a été demandé.</summary>
         private volatile bool stopping;
+        /// <summary>Connexion actuellement acceptée, fermée lors de l’arrêt.</summary>
         private NamedPipeServerStream listener;
 
+        /// <summary>Crée le serveur IPC et prépare son thread d’écoute.</summary>
+        /// <param name="dispatcher">Contrôle WinForms propriétaire du thread VBE.</param>
+        /// <param name="session">Session utilisée pour exécuter les commandes.</param>
+        /// <param name="processId">Identifiant du processus qui distingue le canal.</param>
         public BridgeServer(Control dispatcher, VbeSession session, int processId)
         {
             this.dispatcher = dispatcher;
@@ -27,8 +38,10 @@ namespace CodexVBE
             worker = new Thread(Run) { IsBackground = true, Name = "CodexVBE pipe" };
         }
 
+        /// <summary>Démarre le thread qui accepte les requêtes du client local.</summary>
         public void Start() { worker.Start(); }
 
+        /// <summary>Accepte les requêtes, les distribue et renvoie une réponse JSON par connexion.</summary>
         private void Run()
         {
             while (!stopping)
@@ -191,6 +204,7 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Demande l’arrêt de l’écoute et ferme la connexion en cours pour débloquer l’attente.</summary>
         public void Dispose()
         {
             stopping = true;

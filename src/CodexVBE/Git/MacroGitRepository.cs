@@ -11,18 +11,36 @@ using System.Threading.Tasks;
 namespace CodexVBE
 {
     // Bare repository: no working tree, no checkout of remote files and no Git hooks.
+    /// <summary>Gère un dépôt Git bare par document VBA sans arbre de travail.</summary>
     internal sealed partial class MacroGitRepository
     {
+        /// <summary>Répertoire du dépôt bare utilisé comme cache du document.</summary>
         private readonly string directory;
+        /// <summary>Compte GitHub configuré pour l’authentification distante.</summary>
         private readonly string account;
+        /// <summary>Branche locale active.</summary>
+        /// <value>Branche locale active.</value>
         internal string Branch { get; private set; }
+        /// <summary>Référence privée du dernier état servant de base à une synchronisation.</summary>
         internal const string Baseline = "refs/codex/baseline";
+        /// <summary>Référence privée des sauvegardes avant import.</summary>
         internal const string Backup = "refs/codex/backup";
+        /// <summary>Référence privée de l’état VBA après import.</summary>
         internal const string AfterImport = "refs/codex/after-import";
+        /// <summary>Nom complet de la référence HEAD de la branche active.</summary>
+        /// <value>Nom complet de la référence HEAD de la branche active.</value>
         internal string Head { get { return "refs/heads/" + Branch; } }
+        /// <summary>Chemin du marqueur de récupération d’import.</summary>
+        /// <value>Chemin du marqueur de récupération d’import.</value>
         internal string RecoveryFile { get { return Path.Combine(directory, "codex-recovery"); } }
+        /// <summary>Indique si un marqueur de récupération est présent.</summary>
+        /// <value>Indique si un marqueur de récupération est présent.</value>
         internal bool RecoveryPending { get { return File.Exists(RecoveryFile); } }
 
+        /// <summary>Crée ou configure le dépôt bare pour la branche et le compte donnés.</summary>
+        /// <param name="directory">Répertoire du dépôt bare.</param>
+        /// <param name="branch">Nom de la branche source ou cible.</param>
+        /// <param name="account">Compte GitHub facultatif pour les identifiants.</param>
         internal MacroGitRepository(string directory, string branch, string account = null)
         {
             if (!Regex.IsMatch(branch ?? "", @"^[A-Za-z0-9][A-Za-z0-9_./-]{0,127}$") || branch.Contains("..") ||
@@ -33,6 +51,9 @@ namespace CodexVBE
             this.directory = Path.GetFullPath(directory); Branch = branch;
         }
 
+        /// <summary>Calcule le répertoire local isolé pour la portée fournie.</summary>
+        /// <param name="scope">Portée du document hôte servant à isoler son cache.</param>
+        /// <returns>Chemin du répertoire isolé.</returns>
         internal static string ScopeDirectory(string scope)
         {
             using (var sha = SHA256.Create())
@@ -40,6 +61,9 @@ namespace CodexVBE
                     BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(scope))).Replace("-", "").ToLowerInvariant());
         }
 
+        /// <summary>Valide et normalise une URL HTTPS GitHub sans identifiants.</summary>
+        /// <param name="remote">URL HTTPS du dépôt GitHub.</param>
+        /// <returns>URL HTTPS normalisée.</returns>
         internal static string ValidateRemote(string remote)
         {
             remote = (remote ?? "").Trim();
@@ -48,6 +72,8 @@ namespace CodexVBE
             return remote.TrimEnd('/');
         }
 
+        /// <summary>Initialise le dépôt bare et son remote, ou vérifie leur cohérence.</summary>
+        /// <param name="remote">URL HTTPS du dépôt GitHub.</param>
         internal void Initialize(string remote)
         {
             Directory.CreateDirectory(directory);
@@ -62,12 +88,17 @@ namespace CodexVBE
             if (active.ExitCode == 0) { string name = Encoding.UTF8.GetString(active.Bytes).Trim(); ValidateBranch(name); Branch = name; }
         }
 
+        /// <summary>Résout une référence Git ou retourne null si elle est absente.</summary>
+        /// <param name="reference">Référence Git à résoudre ou mettre à jour.</param>
+        /// <returns>Identifiant résolu ou null.</returns>
         internal string Resolve(string reference)
         {
             var result = Run(new[] { "rev-parse", "--verify", "--quiet", reference }, null, true, true);
             return result.ExitCode == 0 ? Encoding.UTF8.GetString(result.Bytes).Trim() : null;
         }
 
+        /// <summary>Récupère la branche active distante dans la référence de suivi privée.</summary>
+        /// <returns>Commit distant suivi, ou null si la branche est absente.</returns>
         internal string Fetch()
         {
             string target = "refs/heads/" + Branch;
@@ -82,6 +113,8 @@ namespace CodexVBE
             return Resolve("refs/remotes/origin/selected");
         }
 
+        /// <summary>Retourne jusqu’aux quarante derniers commits de la branche active.</summary>
+        /// <returns>Lignes de résumé des commits récents.</returns>
         internal string[] History()
         {
             string head = Resolve(Head);
@@ -89,6 +122,8 @@ namespace CodexVBE
                 .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
         }
 
+        /// <summary>Résume l’écart entre les commits locaux et distants connus.</summary>
+        /// <returns>Texte lisible du nombre de commits entrants et sortants.</returns>
         internal string SynchronizationStatus()
         {
             string head = Resolve(Head), remote = Resolve("refs/remotes/origin/selected");
@@ -98,6 +133,9 @@ namespace CodexVBE
             return "↑ " + counts[0] + " sortant(s)   ↓ " + counts[1] + " entrant(s) · dernier Fetch";
         }
 
+        /// <summary>Refuse une synchronisation qui n’est pas une avance rapide.</summary>
+        /// <param name="before">Commit local avant synchronisation.</param>
+        /// <param name="after">Commit distant proposé.</param>
         internal void RequireFastForward(string before, string after)
         {
             if (before == null || before == after) return;
@@ -105,6 +143,9 @@ namespace CodexVBE
                 throw new InvalidOperationException(UiText.Get("Histories diverge. Reconcile the branch before synchronizing; no forced push is performed."));
         }
 
+        /// <summary>Lit et valide le paquet VBA présent dans un commit.</summary>
+        /// <param name="commit">Commit dont le paquet VBA est lu ou poussé.</param>
+        /// <returns>Snapshot validé, ou null si le commit n’a pas de répertoire vba.</returns>
         internal VbaGitSnapshot Read(string commit)
         {
             if (commit == null) return null;
@@ -130,6 +171,11 @@ namespace CodexVBE
             return VbaGitSnapshot.Read(files);
         }
 
+        /// <summary>Crée un commit contenant le snapshot VBA et le reste de l’arbre parent.</summary>
+        /// <param name="snapshot">État sérialisé des fichiers VBA.</param>
+        /// <param name="parent">Commit parent du nouvel état, ou null pour une racine.</param>
+        /// <param name="message">Message du commit à créer.</param>
+        /// <returns>Identifiant du commit créé.</returns>
         internal string Commit(VbaGitSnapshot snapshot, string parent, string message)
         {
             if (string.IsNullOrWhiteSpace(message)) throw new ArgumentException(UiText.Get("A commit message is required."));
@@ -148,12 +194,17 @@ namespace CodexVBE
             return Encoding.UTF8.GetString(Run(args.ToArray(), VbaGitSnapshot.Utf8.GetBytes(message + "\n")).Bytes).Trim();
         }
 
+        /// <summary>Met à jour une référence Git avec contrôle de sa valeur précédente.</summary>
+        /// <param name="reference">Référence Git à résoudre ou mettre à jour.</param>
+        /// <param name="commit">Commit dont le paquet VBA est lu ou poussé.</param>
         internal void SetRef(string reference, string commit)
         {
             string previous = Resolve(reference);
             Text("update-ref", reference, commit, previous ?? new string('0', 40));
         }
 
+        /// <summary>Pousse uniquement la branche active vers origin.</summary>
+        /// <param name="commit">Commit dont le paquet VBA est lu ou poussé.</param>
         internal void Push(string commit)
         {
             // Push only the selected branch; private backups never leave the cache.
@@ -161,6 +212,8 @@ namespace CodexVBE
             SetRef("refs/remotes/origin/selected", commit);
         }
 
+        /// <summary>Enregistre une sauvegarde et un marqueur avant l’import VBA.</summary>
+        /// <param name="snapshot">État sérialisé des fichiers VBA.</param>
         internal void PrepareRecovery(VbaGitSnapshot snapshot)
         {
             string backup = Commit(snapshot, Resolve(Backup), UiText.Get("VBA backup before import"));
@@ -170,30 +223,58 @@ namespace CodexVBE
             File.WriteAllText(RecoveryFile, backup, Encoding.ASCII);
         }
 
+        /// <summary>Enregistre l’état obtenu après import dans une référence privée.</summary>
+        /// <param name="state">État VBA à enregistrer après import.</param>
         internal void RecordImportedState(VbaGitSnapshot state)
         {
             SetRef(AfterImport, Commit(state, null, UiText.Get("VBA state after import")));
         }
 
+        /// <summary>Supprime le marqueur après une récupération terminée.</summary>
         internal void CompleteRecovery() { if (File.Exists(RecoveryFile)) File.Delete(RecoveryFile); }
 
+        /// <summary>Retourne les entrées directes de l’arbre Git.</summary>
+        /// <param name="tree">Identifiant de commit ou arbre Git à lire.</param>
+        /// <returns>Entrées directes de l’arbre.</returns>
         private List<string> Tree(string tree)
         {
             return Encoding.UTF8.GetString(Run(new[] { "ls-tree", "-z", tree }).Bytes).Split(new[] { '\0' }, StringSplitOptions.RemoveEmptyEntries).ToList();
         }
+        /// <summary>Crée un arbre Git à partir des entrées fournies.</summary>
+        /// <param name="entries">Entrées de l’arbre à créer.</param>
+        /// <returns>Identifiant de l’arbre Git créé.</returns>
         private string MakeTree(IEnumerable<string> entries)
         {
             return Encoding.UTF8.GetString(Run(new[] { "mktree", "-z" }, VbaGitSnapshot.Utf8.GetBytes(string.Join("\0", entries) + "\0")).Bytes).Trim();
         }
+        /// <summary>Exécute Git et décode la sortie standard en texte UTF-8.</summary>
+        /// <returns>Sortie standard décodée et sans espaces terminaux.</returns>
+        /// <param name="args">Arguments Git à transmettre.</param>
         private string Text(params string[] args) { return Encoding.UTF8.GetString(Run(args).Bytes).Trim(); }
-        private sealed class Result { internal byte[] Bytes; internal int ExitCode; }
+        /// <summary>Sortie binaire et code de retour d’un processus Git.</summary>
+        private sealed class Result
+        {
+            /// <summary>Octets écrits sur la sortie standard du processus.</summary>
+            internal byte[] Bytes;
+            /// <summary>Code de sortie du processus Git.</summary>
+            internal int ExitCode;
+        }
 
         // Windows argv quoting. No shell, no command interpolation, no interactive terminal prompts.
+        /// <summary>Échappe un argument selon les règles de la ligne de commande Windows.</summary>
+        /// <param name="value">Argument à transmettre au processus Git.</param>
+        /// <returns>Argument protégé pour la ligne de commande Windows.</returns>
         private static string Quote(string value)
         {
             return "\"" + Regex.Replace(value, "(\\\\*)\"", "$1$1\\\"").TrimEnd('\\') +
                 new string('\\', value.Reverse().TakeWhile(x => x == '\\').Count() * 2) + "\"";
         }
+        /// <summary>Exécute Git sans shell, avec annulation, progression et contrôle des erreurs.</summary>
+        /// <param name="args">Arguments Git transmis sans interprétation par un shell.</param>
+        /// <param name="input">Octets envoyés à l’entrée standard de Git, le cas échéant.</param>
+        /// <param name="useRepository">Indique si Git reçoit le répertoire bare avec --git-dir.</param>
+        /// <param name="allowFailure">Autorise le retour d’un code non nul au lieu de lever une exception.</param>
+        /// <returns>Résultat contenant les octets de sortie et le code de sortie.</returns>
         private Result Run(string[] args, byte[] input = null, bool useRepository = true, bool allowFailure = false)
         {
             Cancellation.ThrowIfCancellationRequested();

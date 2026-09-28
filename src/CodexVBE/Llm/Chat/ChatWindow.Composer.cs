@@ -16,19 +16,32 @@ using WpfTextBox = System.Windows.Controls.TextBox;
 
 namespace CodexVBE
 {
+    /// <summary>Compose les messages et gère la recherche de références du projet dans l’éditeur.</summary>
     internal sealed partial class ChatWindow
     {
+        /// <summary>Zone de saisie WPF des demandes de conversation.</summary>
         private WpfTextBox prompt;
+        /// <summary>Fenêtre contextuelle des commandes et références trouvées.</summary>
         private Popup referencePopup;
+        /// <summary>Résultats sélectionnables de la recherche contextuelle.</summary>
         private ListBox referenceList;
+        /// <summary>État de la recherche ou instructions de sélection affichés sous la liste.</summary>
         private TextBlock referenceStatus;
+        /// <summary>Index des références du projet VBA courant.</summary>
         private VbeChatReferences referenceIndex;
+        /// <summary>Minuteur WinForms qui fait progresser la construction de l’index.</summary>
         private Forms.Timer referenceTimer;
+        /// <summary>Références insérées dans la saisie et disponibles pour le prochain message.</summary>
         private readonly List<VbeChatReference> selectedReferences = new List<VbeChatReference>();
+        /// <summary>Indique si l’index a été démarré pour la recherche courante.</summary>
         private bool referenceIndexReady;
+        /// <summary>Position du préfixe # ou @ de la référence actuellement recherchée.</summary>
         private int referenceStart = -1;
+        /// <summary>Position finale du jeton de référence inséré pour masquer les suggestions.</summary>
         private int acceptedTokenEnd = -1;
 
+        /// <summary>Construit la zone de saisie, ses suggestions et les abonnements associés.</summary>
+        /// <param name="session">Session VBE qui fournit l’index des références du projet.</param>
         private void InitializeComposer(VbeSession session)
         {
             prompt = new WpfTextBox {
@@ -107,6 +120,9 @@ namespace CodexVBE
             referenceIndex.Changed += UpdateReferences;
         }
 
+        /// <summary>Traite les touches de retour, navigation et validation des suggestions.</summary>
+        /// <param name="sender">Contrôle à l’origine de la touche reçue.</param>
+        /// <param name="e">Informations sur la touche et état de traitement.</param>
         private void PromptKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter &&
@@ -133,6 +149,7 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Met à jour les suggestions de commandes et références autour du curseur.</summary>
         private void UpdateReferences()
         {
             if (prompt == null) return;
@@ -168,6 +185,9 @@ namespace CodexVBE
             referencePopup.IsOpen = true;
         }
 
+        /// <summary>Affiche les commandes qui correspondent au préfixe saisi en début de message.</summary>
+        /// <param name="caret">Position du curseur dans la zone de saisie.</param>
+        /// <returns>true si une liste de commandes correspondantes est affichée.</returns>
         private bool TryShowCommands(int caret)
         {
             if (!prompt.Text.StartsWith("/") || caret < 1 || prompt.Text.Substring(0, caret).Any(char.IsWhiteSpace)) return false;
@@ -180,11 +200,15 @@ namespace CodexVBE
             referencePopup.IsOpen = true; return true;
         }
 
+        /// <summary>Indique si le caractère peut appartenir à un identifiant de référence.</summary>
+        /// <param name="value">Caractère à tester.</param>
+        /// <returns>true si le caractère est autorisé dans un jeton de référence.</returns>
         private static bool IsReferenceChar(char value)
         {
             return char.IsLetterOrDigit(value) || value == '_' || value == '.' || value == ':';
         }
 
+        /// <summary>Insère la commande ou référence sélectionnée dans le message.</summary>
         private void AcceptReference()
         {
             var command = referenceList.SelectedItem as ChatCommand;
@@ -207,6 +231,7 @@ namespace CodexVBE
             RefreshContextChips();
         }
 
+        /// <summary>Ferme les suggestions et réinitialise l’état de recherche.</summary>
         private void HideReferences()
         {
             if (referencePopup != null) referencePopup.IsOpen = false;
@@ -215,6 +240,9 @@ namespace CodexVBE
             referenceStart = -1;
         }
 
+        /// <summary>Remplace les jetons sélectionnés par le contexte source sous la limite de taille.</summary>
+        /// <param name="question">Texte saisi avant résolution des références sélectionnées.</param>
+        /// <returns>Texte avec le contexte source des références sélectionnées, si elles sont présentes.</returns>
         private string ResolveReferences(string question)
         {
             var selected = selectedReferences.Where(item => ContainsToken(question, item.Token))
@@ -230,12 +258,18 @@ namespace CodexVBE
             return context.Append("</references-vbe>").ToString();
         }
 
+        /// <summary>Retourne les références sélectionnées dont le jeton apparaît dans le texte.</summary>
+        /// <param name="text">Texte dans lequel rechercher les références sélectionnées.</param>
+        /// <returns>Références sélectionnées dont le jeton est présent, sans doublons.</returns>
         private VbeChatReference[] CurrentReferences(string text)
         {
             return selectedReferences.Where(item => ContainsToken(text, item.Token))
                 .GroupBy(item => item.Token, StringComparer.Ordinal).Select(group => group.Last()).ToArray();
         }
 
+        /// <summary>Crée un bouton de contexte compact pour une référence ou pièce jointe.</summary>
+        /// <param name="text">Texte dans lequel rechercher les références sélectionnées.</param>
+        /// <returns>Bouton WinForms stylé pour afficher le contexte.</returns>
         private static Forms.Button ContextButton(string text)
         {
             return new Forms.Button { Text = text, AutoSize = true, Height = 27,
@@ -244,6 +278,7 @@ namespace CodexVBE
                 Padding = new Forms.Padding(4, 0, 4, 0), Cursor = Forms.Cursors.Hand };
         }
 
+        /// <summary>Reconstruit les boutons de mémoire, références et pièces jointes.</summary>
         private void RefreshContextChips()
         {
             if (prompt == null) return;
@@ -281,6 +316,8 @@ namespace CodexVBE
             finally { contextChips.ResumeLayout(true); }
         }
 
+        /// <summary>Navigue vers le module référencé ou insère le nom du projet dans la saisie.</summary>
+        /// <param name="reference">Référence VBE à ouvrir ou insérer.</param>
         private void NavigateReference(VbeChatReference reference)
         {
             try
@@ -297,6 +334,10 @@ namespace CodexVBE
             catch (Exception ex) { SetStatus(UiText.Get("Unable to navigate: ") + ex.Message); }
         }
 
+        /// <summary>Indique si un jeton apparaît comme référence complète, délimité par des caractères non identifiants.</summary>
+        /// <param name="text">Texte dans lequel rechercher les références sélectionnées.</param>
+        /// <param name="token">Jeton dont la présence comme référence entière doit être vérifiée.</param>
+        /// <returns>true si le jeton est entouré de séparateurs ou de bornes de texte.</returns>
         private static bool ContainsToken(string text, string token)
         {
             int start = 0;
@@ -310,6 +351,7 @@ namespace CodexVBE
             return false;
         }
 
+        /// <summary>Arrête et libère les ressources de recherche de références.</summary>
         private void DisposeComposer()
         {
             referenceTimer?.Stop();
