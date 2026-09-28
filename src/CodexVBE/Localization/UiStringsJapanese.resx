@@ -1825,4 +1825,37 @@ Git Credential Manager でサインインします。コミットの作成者情
   <data name="Unable to save the report." xml:space="preserve"><value>レポートを保存できません。</value></data>
   <data name="Title" xml:space="preserve"><value>タイトル</value></data>
   <data name="Email" xml:space="preserve"><value>メール</value></data>
+  <data name="VBAi updates" xml:space="preserve"><value>VBAiの更新</value></data>
+  <data name="Check automatically once a day" xml:space="preserve"><value>毎日自動的に確認</value></data>
+  <data name="Download updates automatically" xml:space="preserve"><value>更新を自動ダウンロード</value></data>
+  <data name="Install automatically after closing VBA hosts" xml:space="preserve"><value>VBAホスト終了後に自動インストール</value></data>
+  <data name="Include prereleases" xml:space="preserve"><value>プレリリースを含める</value></data>
+  <data name="Install update" xml:space="preserve"><value>更新をインストール</value></data>
+  <data name="Check for updates" xml:space="preserve"><value>更新を確認</value></data>
+  <data name="Skip version" xml:space="preserve"><value>このバージョンをスキップ</value></data>
+  <data name="Waiting for VBA hosts to close." xml:space="preserve"><value>VBAホストの終了を待っています。</value></data>
+  <data name="Installing update…" xml:space="preserve"><value>更新をインストール中…</value></data>
+  <data name="Update installed. Restart the VBA host." xml:space="preserve"><value>更新をインストールしました。VBAホストを再起動してください。</value></data>
+  <data name="Installation failed. Check the installer log." xml:space="preserve"><value>インストールに失敗しました。インストーラーのログを確認してください。</value></data>
+  <data name="Update cancelled." xml:space="preserve"><value>更新をキャンセルしました。</value></data>
+  <data name="Installation status is uncertain. Check the installed version." xml:space="preserve"><value>インストール状態は不明です。インストール済みのバージョンを確認してください。</value></data>
+  <data name="Check for updates to get started." xml:space="preserve"><value>まず更新を確認してください。</value></data>
+  <data name="An installer-managed deployment is required." xml:space="preserve"><value>インストーラーで管理された配置が必要です。</value></data>
+  <data name="Unable to read the update state." xml:space="preserve"><value>更新状態を読み取れません。</value></data>
+  <data name="Update preferences saved." xml:space="preserve"><value>更新設定を保存しました。</value></data>
+  <data name="Unable to save update preferences." xml:space="preserve"><value>更新設定を保存できません。</value></data>
+  <data name="Checking for updates…" xml:space="preserve"><value>更新を確認中…</value></data>
+  <data name="VBAi is up to date." xml:space="preserve"><value>VBAiは最新です。</value></data>
+  <data name="This release has no compatible verified installer." xml:space="preserve"><value>このリリースには検証可能な互換インストーラーがありません。</value></data>
+  <data name="An update is available." xml:space="preserve"><value>更新が利用可能です。</value></data>
+  <data name="Downloading update…" xml:space="preserve"><value>更新をダウンロード中…</value></data>
+  <data name="Update downloaded and verified." xml:space="preserve"><value>更新をダウンロードし、検証しました。</value></data>
+  <data name="Unable to download or verify the installer." xml:space="preserve"><value>インストーラーをダウンロードまたは検証できません。</value></data>
+  <data name="Unable to schedule the update." xml:space="preserve"><value>更新を予約できません。</value></data>
+  <data name="This version will be skipped automatically." xml:space="preserve"><value>自動確認ではこのバージョンをスキップします。</value></data>
+  <data name="Unable to check for updates. Check the GitHub account or retry later." xml:space="preserve"><value>更新を確認できません。GitHubアカウントを確認するか、後で再試行してください。</value></data>
+  <data name="Cancel scheduled update" xml:space="preserve"><value>予約した更新をキャンセル</value></data>
+  <data name="Update installed. Restart Windows to finish." xml:space="preserve"><value>更新をインストールしました。完了するにはWindowsを再起動してください。</value></data>
+  <data name="Download" xml:space="preserve"><value>ダウンロード</value></data>
+  <data name="Release notes" xml:space="preserve"><value>リリースノート</value></data>
 </root>

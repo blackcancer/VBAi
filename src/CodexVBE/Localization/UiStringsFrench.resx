@@ -1827,4 +1827,37 @@ Connexion via Git Credential Manager ; identité de commit configurée dans Git.
   <data name="Unable to save the report." xml:space="preserve"><value>Impossible d’enregistrer le rapport.</value></data>
   <data name="Title" xml:space="preserve"><value>Titre</value></data>
   <data name="Email" xml:space="preserve"><value>E-mail</value></data>
+  <data name="VBAi updates" xml:space="preserve"><value>Mises à jour VBAi</value></data>
+  <data name="Check automatically once a day" xml:space="preserve"><value>Vérifier automatiquement chaque jour</value></data>
+  <data name="Download updates automatically" xml:space="preserve"><value>Télécharger automatiquement les mises à jour</value></data>
+  <data name="Install automatically after closing VBA hosts" xml:space="preserve"><value>Installer automatiquement après fermeture des hôtes VBA</value></data>
+  <data name="Include prereleases" xml:space="preserve"><value>Inclure les préversions</value></data>
+  <data name="Install update" xml:space="preserve"><value>Installer la mise à jour</value></data>
+  <data name="Check for updates" xml:space="preserve"><value>Vérifier les mises à jour</value></data>
+  <data name="Skip version" xml:space="preserve"><value>Ignorer cette version</value></data>
+  <data name="Waiting for VBA hosts to close." xml:space="preserve"><value>En attente de la fermeture des hôtes VBA.</value></data>
+  <data name="Installing update…" xml:space="preserve"><value>Installation de la mise à jour…</value></data>
+  <data name="Update installed. Restart the VBA host." xml:space="preserve"><value>Mise à jour installée. Redémarrez l’hôte VBA.</value></data>
+  <data name="Installation failed. Check the installer log." xml:space="preserve"><value>Échec de l’installation. Consultez le journal de l’installeur.</value></data>
+  <data name="Update cancelled." xml:space="preserve"><value>Mise à jour annulée.</value></data>
+  <data name="Installation status is uncertain. Check the installed version." xml:space="preserve"><value>État d’installation incertain. Vérifiez la version installée.</value></data>
+  <data name="Check for updates to get started." xml:space="preserve"><value>Lancez une vérification pour commencer.</value></data>
+  <data name="An installer-managed deployment is required." xml:space="preserve"><value>Un déploiement géré par l’installeur est nécessaire.</value></data>
+  <data name="Unable to read the update state." xml:space="preserve"><value>Impossible de lire l’état des mises à jour.</value></data>
+  <data name="Update preferences saved." xml:space="preserve"><value>Préférences de mise à jour enregistrées.</value></data>
+  <data name="Unable to save update preferences." xml:space="preserve"><value>Impossible d’enregistrer les préférences de mise à jour.</value></data>
+  <data name="Checking for updates…" xml:space="preserve"><value>Recherche de mises à jour…</value></data>
+  <data name="VBAi is up to date." xml:space="preserve"><value>VBAi est à jour.</value></data>
+  <data name="This release has no compatible verified installer." xml:space="preserve"><value>Cette release ne contient pas d’installeur compatible vérifiable.</value></data>
+  <data name="An update is available." xml:space="preserve"><value>Une mise à jour est disponible.</value></data>
+  <data name="Downloading update…" xml:space="preserve"><value>Téléchargement de la mise à jour…</value></data>
+  <data name="Update downloaded and verified." xml:space="preserve"><value>Mise à jour téléchargée et vérifiée.</value></data>
+  <data name="Unable to download or verify the installer." xml:space="preserve"><value>Impossible de télécharger ou vérifier l’installeur.</value></data>
+  <data name="Unable to schedule the update." xml:space="preserve"><value>Impossible de planifier la mise à jour.</value></data>
+  <data name="This version will be skipped automatically." xml:space="preserve"><value>Cette version sera ignorée lors des vérifications automatiques.</value></data>
+  <data name="Unable to check for updates. Check the GitHub account or retry later." xml:space="preserve"><value>Impossible de vérifier les mises à jour. Vérifiez le compte GitHub ou réessayez plus tard.</value></data>
+  <data name="Cancel scheduled update" xml:space="preserve"><value>Annuler la mise à jour planifiée</value></data>
+  <data name="Update installed. Restart Windows to finish." xml:space="preserve"><value>Mise à jour installée. Redémarrez Windows pour terminer.</value></data>
+  <data name="Download" xml:space="preserve"><value>Télécharger</value></data>
+  <data name="Release notes" xml:space="preserve"><value>Notes de version</value></data>
 </root>

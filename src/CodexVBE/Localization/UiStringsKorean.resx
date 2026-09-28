@@ -1825,4 +1825,37 @@ Git Credential Manager로 로그인하며 커밋 작성자 정보는 Git에서 �
   <data name="Unable to save the report." xml:space="preserve"><value>보고서를 저장하지 못했습니다.</value></data>
   <data name="Title" xml:space="preserve"><value>제목</value></data>
   <data name="Email" xml:space="preserve"><value>이메일</value></data>
+  <data name="VBAi updates" xml:space="preserve"><value>VBAi 업데이트</value></data>
+  <data name="Check automatically once a day" xml:space="preserve"><value>매일 자동 확인</value></data>
+  <data name="Download updates automatically" xml:space="preserve"><value>업데이트 자동 다운로드</value></data>
+  <data name="Install automatically after closing VBA hosts" xml:space="preserve"><value>VBA 호스트 종료 후 자동 설치</value></data>
+  <data name="Include prereleases" xml:space="preserve"><value>사전 릴리스 포함</value></data>
+  <data name="Install update" xml:space="preserve"><value>업데이트 설치</value></data>
+  <data name="Check for updates" xml:space="preserve"><value>업데이트 확인</value></data>
+  <data name="Skip version" xml:space="preserve"><value>이 버전 건너뛰기</value></data>
+  <data name="Waiting for VBA hosts to close." xml:space="preserve"><value>VBA 호스트가 종료되기를 기다리는 중입니다.</value></data>
+  <data name="Installing update…" xml:space="preserve"><value>업데이트 설치 중…</value></data>
+  <data name="Update installed. Restart the VBA host." xml:space="preserve"><value>업데이트가 설치되었습니다. VBA 호스트를 다시 시작하세요.</value></data>
+  <data name="Installation failed. Check the installer log." xml:space="preserve"><value>설치에 실패했습니다. 설치 프로그램 로그를 확인하세요.</value></data>
+  <data name="Update cancelled." xml:space="preserve"><value>업데이트가 취소되었습니다.</value></data>
+  <data name="Installation status is uncertain. Check the installed version." xml:space="preserve"><value>설치 상태가 불확실합니다. 설치된 버전을 확인하세요.</value></data>
+  <data name="Check for updates to get started." xml:space="preserve"><value>업데이트를 확인하여 시작하세요.</value></data>
+  <data name="An installer-managed deployment is required." xml:space="preserve"><value>설치 프로그램으로 관리되는 설치가 필요합니다.</value></data>
+  <data name="Unable to read the update state." xml:space="preserve"><value>업데이트 상태를 읽을 수 없습니다.</value></data>
+  <data name="Update preferences saved." xml:space="preserve"><value>업데이트 설정을 저장했습니다.</value></data>
+  <data name="Unable to save update preferences." xml:space="preserve"><value>업데이트 설정을 저장할 수 없습니다.</value></data>
+  <data name="Checking for updates…" xml:space="preserve"><value>업데이트 확인 중…</value></data>
+  <data name="VBAi is up to date." xml:space="preserve"><value>VBAi가 최신 상태입니다.</value></data>
+  <data name="This release has no compatible verified installer." xml:space="preserve"><value>이 릴리스에는 검증 가능한 호환 설치 프로그램이 없습니다.</value></data>
+  <data name="An update is available." xml:space="preserve"><value>업데이트를 사용할 수 있습니다.</value></data>
+  <data name="Downloading update…" xml:space="preserve"><value>업데이트 다운로드 중…</value></data>
+  <data name="Update downloaded and verified." xml:space="preserve"><value>업데이트를 다운로드하고 검증했습니다.</value></data>
+  <data name="Unable to download or verify the installer." xml:space="preserve"><value>설치 프로그램을 다운로드하거나 검증할 수 없습니다.</value></data>
+  <data name="Unable to schedule the update." xml:space="preserve"><value>업데이트를 예약할 수 없습니다.</value></data>
+  <data name="This version will be skipped automatically." xml:space="preserve"><value>자동 확인 시 이 버전을 건너뜁니다.</value></data>
+  <data name="Unable to check for updates. Check the GitHub account or retry later." xml:space="preserve"><value>업데이트를 확인할 수 없습니다. GitHub 계정을 확인하거나 나중에 다시 시도하세요.</value></data>
+  <data name="Cancel scheduled update" xml:space="preserve"><value>예약된 업데이트 취소</value></data>
+  <data name="Update installed. Restart Windows to finish." xml:space="preserve"><value>업데이트가 설치되었습니다. 완료하려면 Windows를 다시 시작하세요.</value></data>
+  <data name="Download" xml:space="preserve"><value>다운로드</value></data>
+  <data name="Release notes" xml:space="preserve"><value>릴리스 정보</value></data>
 </root>

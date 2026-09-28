@@ -340,6 +340,19 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
     public sealed partial class VbeMenuLifecycleTests
     {
         [TestMethod]
+        public void UpdatesHaveTheirOwnToolsCallbackAndCleanup()
+        {
+            var host = Host(); var subscriptions = new Dictionary<object, Delegate>(); int opened = 0, removed = 0;
+            var menu = new VbeMenu(host, () => { }, () => { }, () => { }, null,
+                (button, iid, dispid, callback) => subscriptions.Add(button, callback),
+                (button, iid, dispid, callback) => removed++, (button, type) => { }, null, null, () => opened++);
+            var updates = host.CommandBars[0].Controls.Items[1].Controls.Items.Single(x => x.Tag == "CodexVBE.Updates");
+            var args = new object[] { updates, false }; subscriptions[updates].DynamicInvoke(args);
+            Assert.AreEqual(true, args[1]); Assert.AreEqual(1, opened);
+            menu.Dispose(); Assert.AreEqual(4, removed); Assert.AreEqual(1, updates.DeleteCount);
+        }
+
+        [TestMethod]
         public void CrashReportHasItsOwnToolsCallbackIconAndCleanup()
         {
             var host = Host(); var subscriptions = new Dictionary<object, Delegate>();

@@ -152,3 +152,12 @@ instrumentée n’a pas été remesurée pour cette refonte.
 L’extension du thème au VBE natif est différée : palette de l’éditeur, sauvegarde
 et restauration des réglages, puis étude des fenêtres natives sous Excel et
 SOLIDWORKS. Cette refonte ne modifie pas le thème du VBE.
+
+## Mises à jour
+
+`Updates/UpdateWindow.cs` configure les mises à jour et affiche les notes de release.
+`Updates/UpdateProgressWindow.cs` est lié au projet `VBAi.Updater` pour l’application
+différée. Les deux formulaires possèdent leurs Designer et ressources. Le programme
+externe partage les sources et les catalogues, sans charger l’assembly COM. Les
+contrôles secondaires et principaux ont des zones distinctes ; la progression reste
+dans une ligne dédiée. Voir [Mises à jour](updates.md) pour le protocole installeur.

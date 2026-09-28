@@ -1825,4 +1825,37 @@ QQ 附加記憶體
   <data name="Unable to save the report." xml:space="preserve"><value>無法儲存報告。</value></data>
   <data name="Title" xml:space="preserve"><value>標題</value></data>
   <data name="Email" xml:space="preserve"><value>電子郵件</value></data>
+  <data name="VBAi updates" xml:space="preserve"><value>VBAi 更新</value></data>
+  <data name="Check automatically once a day" xml:space="preserve"><value>每天自動檢查</value></data>
+  <data name="Download updates automatically" xml:space="preserve"><value>自動下載更新</value></data>
+  <data name="Install automatically after closing VBA hosts" xml:space="preserve"><value>關閉 VBA 主程式後自動安裝</value></data>
+  <data name="Include prereleases" xml:space="preserve"><value>包含預先發行版本</value></data>
+  <data name="Install update" xml:space="preserve"><value>安裝更新</value></data>
+  <data name="Check for updates" xml:space="preserve"><value>檢查更新</value></data>
+  <data name="Skip version" xml:space="preserve"><value>略過此版本</value></data>
+  <data name="Waiting for VBA hosts to close." xml:space="preserve"><value>正在等待 VBA 主程式關閉。</value></data>
+  <data name="Installing update…" xml:space="preserve"><value>正在安裝更新…</value></data>
+  <data name="Update installed. Restart the VBA host." xml:space="preserve"><value>更新已安裝。請重新啟動 VBA 主程式。</value></data>
+  <data name="Installation failed. Check the installer log." xml:space="preserve"><value>安裝失敗。請檢查安裝程式記錄。</value></data>
+  <data name="Update cancelled." xml:space="preserve"><value>更新已取消。</value></data>
+  <data name="Installation status is uncertain. Check the installed version." xml:space="preserve"><value>安裝狀態不確定。請檢查已安裝版本。</value></data>
+  <data name="Check for updates to get started." xml:space="preserve"><value>請先檢查更新。</value></data>
+  <data name="An installer-managed deployment is required." xml:space="preserve"><value>需要由安裝程式管理的部署。</value></data>
+  <data name="Unable to read the update state." xml:space="preserve"><value>無法讀取更新狀態。</value></data>
+  <data name="Update preferences saved." xml:space="preserve"><value>更新偏好已儲存。</value></data>
+  <data name="Unable to save update preferences." xml:space="preserve"><value>無法儲存更新偏好。</value></data>
+  <data name="Checking for updates…" xml:space="preserve"><value>正在檢查更新…</value></data>
+  <data name="VBAi is up to date." xml:space="preserve"><value>VBAi 已是最新版本。</value></data>
+  <data name="This release has no compatible verified installer." xml:space="preserve"><value>此發行版本沒有可驗證的相容安裝程式。</value></data>
+  <data name="An update is available." xml:space="preserve"><value>有可用更新。</value></data>
+  <data name="Downloading update…" xml:space="preserve"><value>正在下載更新…</value></data>
+  <data name="Update downloaded and verified." xml:space="preserve"><value>更新已下載並驗證。</value></data>
+  <data name="Unable to download or verify the installer." xml:space="preserve"><value>無法下載或驗證安裝程式。</value></data>
+  <data name="Unable to schedule the update." xml:space="preserve"><value>無法排程更新。</value></data>
+  <data name="This version will be skipped automatically." xml:space="preserve"><value>自動檢查將略過此版本。</value></data>
+  <data name="Unable to check for updates. Check the GitHub account or retry later." xml:space="preserve"><value>無法檢查更新。請檢查 GitHub 帳戶或稍後重試。</value></data>
+  <data name="Cancel scheduled update" xml:space="preserve"><value>取消排程更新</value></data>
+  <data name="Update installed. Restart Windows to finish." xml:space="preserve"><value>更新已安裝。請重新啟動 Windows 以完成。</value></data>
+  <data name="Download" xml:space="preserve"><value>下載</value></data>
+  <data name="Release notes" xml:space="preserve"><value>版本資訊</value></data>
 </root>

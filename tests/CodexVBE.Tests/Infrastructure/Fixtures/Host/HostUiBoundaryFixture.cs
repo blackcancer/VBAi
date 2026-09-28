@@ -35,6 +35,8 @@ namespace CodexVBE.Tests.Infrastructure
             LlmSettings.StoragePathOverride = Path.Combine(boundaries.Root, "settings.json");
             AddIn.WriteLog = Logs.Add; AddIn.StartBridge = bridge => { };
             AddIn.ReadSettings = () => Settings;
+            AddIn.StartUpdateCheck = () => { };
+            AddIn.StopUpdateCheck = () => { };
             AddIn.CreateCrashReporter = show => new CrashReporter(show, directory: Path.Combine(boundaries.Root, "CrashReports"));
             AddIn.ShowNotice = (text, title, buttons, icon) => { Notices.Add(text); return DialogResult.OK; };
             AddIn.ShowModal = (form, owner) => { Dialogs.Add(form.GetType()); Assert.AreEqual(Host.MainWindow.HWnd, owner.Handle.ToInt64()); return DialogResult.Cancel; };

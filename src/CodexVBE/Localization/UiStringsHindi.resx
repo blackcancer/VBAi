@@ -1825,4 +1825,37 @@ Git Credential Manager से साइन-इन करें; कमिट ल
   <data name="Unable to save the report." xml:space="preserve"><value>रिपोर्ट सहेजी नहीं जा सकी।</value></data>
   <data name="Title" xml:space="preserve"><value>शीर्षक</value></data>
   <data name="Email" xml:space="preserve"><value>ईमेल</value></data>
+  <data name="VBAi updates" xml:space="preserve"><value>VBAi अपडेट</value></data>
+  <data name="Check automatically once a day" xml:space="preserve"><value>हर दिन अपने आप जाँचें</value></data>
+  <data name="Download updates automatically" xml:space="preserve"><value>अपडेट अपने आप डाउनलोड करें</value></data>
+  <data name="Install automatically after closing VBA hosts" xml:space="preserve"><value>VBA होस्ट बंद करने के बाद अपने आप इंस्टॉल करें</value></data>
+  <data name="Include prereleases" xml:space="preserve"><value>पूर्व-रिलीज़ शामिल करें</value></data>
+  <data name="Install update" xml:space="preserve"><value>अपडेट इंस्टॉल करें</value></data>
+  <data name="Check for updates" xml:space="preserve"><value>अपडेट जाँचें</value></data>
+  <data name="Skip version" xml:space="preserve"><value>यह संस्करण छोड़ें</value></data>
+  <data name="Waiting for VBA hosts to close." xml:space="preserve"><value>VBA होस्ट बंद होने की प्रतीक्षा है।</value></data>
+  <data name="Installing update…" xml:space="preserve"><value>अपडेट इंस्टॉल हो रहा है…</value></data>
+  <data name="Update installed. Restart the VBA host." xml:space="preserve"><value>अपडेट इंस्टॉल हो गया। VBA होस्ट फिर शुरू करें।</value></data>
+  <data name="Installation failed. Check the installer log." xml:space="preserve"><value>इंस्टॉल नहीं हुआ। इंस्टॉलर लॉग जाँचें।</value></data>
+  <data name="Update cancelled." xml:space="preserve"><value>अपडेट रद्द हुआ।</value></data>
+  <data name="Installation status is uncertain. Check the installed version." xml:space="preserve"><value>इंस्टॉल की स्थिति स्पष्ट नहीं है। इंस्टॉल किया संस्करण जाँचें।</value></data>
+  <data name="Check for updates to get started." xml:space="preserve"><value>शुरू करने के लिए अपडेट जाँचें।</value></data>
+  <data name="An installer-managed deployment is required." xml:space="preserve"><value>इंस्टॉलर द्वारा प्रबंधित स्थापना आवश्यक है।</value></data>
+  <data name="Unable to read the update state." xml:space="preserve"><value>अपडेट की स्थिति नहीं पढ़ी जा सकी।</value></data>
+  <data name="Update preferences saved." xml:space="preserve"><value>अपडेट प्राथमिकताएँ सहेजी गईं।</value></data>
+  <data name="Unable to save update preferences." xml:space="preserve"><value>अपडेट प्राथमिकताएँ नहीं सहेजी जा सकीं।</value></data>
+  <data name="Checking for updates…" xml:space="preserve"><value>अपडेट जाँचे जा रहे हैं…</value></data>
+  <data name="VBAi is up to date." xml:space="preserve"><value>VBAi अद्यतन है।</value></data>
+  <data name="This release has no compatible verified installer." xml:space="preserve"><value>इस रिलीज़ में संगत सत्यापन योग्य इंस्टॉलर नहीं है।</value></data>
+  <data name="An update is available." xml:space="preserve"><value>अपडेट उपलब्ध है।</value></data>
+  <data name="Downloading update…" xml:space="preserve"><value>अपडेट डाउनलोड हो रहा है…</value></data>
+  <data name="Update downloaded and verified." xml:space="preserve"><value>अपडेट डाउनलोड और सत्यापित हुआ।</value></data>
+  <data name="Unable to download or verify the installer." xml:space="preserve"><value>इंस्टॉलर डाउनलोड या सत्यापित नहीं हो सका।</value></data>
+  <data name="Unable to schedule the update." xml:space="preserve"><value>अपडेट निर्धारित नहीं हो सका।</value></data>
+  <data name="This version will be skipped automatically." xml:space="preserve"><value>यह संस्करण अपने आप छोड़ दिया जाएगा।</value></data>
+  <data name="Unable to check for updates. Check the GitHub account or retry later." xml:space="preserve"><value>अपडेट नहीं जाँचे जा सके। GitHub खाता जाँचें या बाद में फिर कोशिश करें।</value></data>
+  <data name="Cancel scheduled update" xml:space="preserve"><value>निर्धारित अपडेट रद्द करें</value></data>
+  <data name="Update installed. Restart Windows to finish." xml:space="preserve"><value>अपडेट इंस्टॉल हुआ। पूरा करने के लिए Windows फिर शुरू करें।</value></data>
+  <data name="Download" xml:space="preserve"><value>डाउनलोड</value></data>
+  <data name="Release notes" xml:space="preserve"><value>रिलीज़ नोट्स</value></data>
 </root>
