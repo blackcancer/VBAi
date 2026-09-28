@@ -27,6 +27,18 @@ namespace CodexVBE
         internal object Component => component;
         internal object Project => project;
         internal object Vbe => vbe;
+        [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
+        internal int HostProcessId
+        {
+            get
+            {
+                Validate();
+                var handle = new IntPtr((int)((dynamic)vbe).MainWindow.HWnd);
+                uint pid; if (handle == IntPtr.Zero || GetWindowThreadProcessId(handle, out pid) == 0 || pid == 0)
+                    throw new InvalidOperationException("The owning VBE process could not be identified.");
+                return checked((int)pid);
+            }
+        }
         internal string ModuleName => (string)((dynamic)component).Name;
         internal string ProjectName
         {
@@ -134,8 +146,8 @@ namespace CodexVBE
         private bool TryRewriteAttributedDeclaration(string before, string after, Tuple<int, int, string> patch, out string result)
         {
             result = null;
-            // Document modules and designers have extra host-owned metadata; never rebuild them here.
-            if ((int)((dynamic)component).Type != 1 || patch.Item2 != 1 || patch.Item3.Contains("\n")) return false;
+            // Reload only code; the original component and designer keep their identity.
+
             string directory = Path.Combine(Path.GetTempPath(), "VBAi-attributes-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory); bool preserveBackup = false;
             try
@@ -145,7 +157,11 @@ namespace CodexVBE
                 string original = File.ReadAllText(backup, System.Text.Encoding.Default);
                 string replacement = EditorAttributeRewrite.Prepare(original, before, patch);
                 if (replacement == null) return false;
+                if (EditorAttributeRewrite.HasMultilineAttributes(original) || EditorAttributeRewrite.HasMultilineAttributes(replacement))
+                    throw new InvalidOperationException("VBE AddFromFile cannot preserve multiline procedure attributes. The original component was not changed.");
                 File.WriteAllText(changed, replacement, System.Text.Encoding.Default);
+                string restore = Path.Combine(directory, "restore.bas");
+                File.WriteAllText(restore, EditorAttributeRewrite.CodeSection(original), System.Text.Encoding.Default);
                 dynamic code = ((dynamic)component).CodeModule;
                 Action<string> load = path => { int count = code.CountOfLines; if (count > 0) code.DeleteLines(1, count); code.AddFromFile(path); };
                 if (!CanWrite || EditorDocument.Normalize(Read()) != before) throw new InvalidOperationException("The module changed before attribute restoration.");
@@ -161,7 +177,7 @@ namespace CodexVBE
                 {
                     try
                     {
-                        load(backup);
+                        load(restore);
                         File.Delete(verify); ((dynamic)component).Export(verify);
                         if (EditorDocument.Normalize(Read()).TrimEnd('\n') != before.TrimEnd('\n') || EditorAttributeRewrite.Metadata(File.ReadAllText(verify, System.Text.Encoding.Default)) != EditorAttributeRewrite.Metadata(original))
                             throw new InvalidOperationException("Attribute restoration mismatch.");
@@ -199,6 +215,15 @@ namespace CodexVBE
             var names = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(exported, @"(?im)^\s*Attribute\s+([^\s.]+)\.")) names.Add(match.Groups[1].Value);
             if (names.Count == 0) return;
+            // Module variables can also carry hidden attributes; do not silently drop them.
+            foreach (var declaration in VbaDeclarationIndex.Read(before).Where(d => d.Scope == "Module" && names.Contains(d.Name)))
+            {
+                var statement = VbaDeclarationIndex.Statements(before).FirstOrDefault(s => s.Any(token => token.Line == declaration.Line && token.Column == declaration.Column));
+                if (statement == null) continue;
+                int first = statement[0].Line, last = statement[statement.Count - 1].Line;
+                if ((edit.Item2 > 0 && edit.Item1 <= last && edit.Item1 + edit.Item2 - 1 >= first) || (edit.Item2 == 0 && edit.Item1 > first && edit.Item1 <= last))
+                    throw new InvalidOperationException("This change replaces a declaration with hidden member attributes. The original metadata was preserved.");
+            }
             foreach (var statement in VbaDeclarationIndex.Statements(before))
             {
                 int p = 0;

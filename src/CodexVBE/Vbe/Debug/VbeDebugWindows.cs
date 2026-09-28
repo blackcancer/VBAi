@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -735,6 +735,9 @@ namespace CodexVBE
         /// <summary>Implémente la lecture des volets et dialogues par Win32, UI Automation et MSAA.</summary>
         private sealed class NativeProbe : INativeProbe
         {
+            private readonly int dialogProcessId;
+            internal NativeProbe() : this(Process.GetCurrentProcess().Id) { }
+            internal NativeProbe(int processId) { if (processId <= 0) throw new ArgumentOutOfRangeException(nameof(processId)); dialogProcessId = processId; }
             /// <summary>Recherche la fenêtre racine du VBE.</summary>
             /// <returns>Handle de la fenêtre, ou zéro.</returns>
             public IntPtr VbeRoot() { return FindVbeRoot(); }
@@ -762,7 +765,7 @@ namespace CodexVBE
             /// <summary>Recherche un dialogue par ses titres possibles.</summary>
             /// <param name="titles">Titres à rechercher.</param>
             /// <returns>Handle du dialogue ou zéro.</returns>
-            public IntPtr Dialog(params string[] titles) { return FindDialog(titles); }
+            public IntPtr Dialog(params string[] titles) { return FindDialogForProcess(dialogProcessId, titles); }
             /// <summary>Énumère les contrôles enfants d’un dialogue natif.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
             /// <returns>Contrôles avec handle, classe, texte et visibilité.</returns>
@@ -832,6 +835,8 @@ namespace CodexVBE
         // Execute call cannot be awaited with Control.Invoke in that case.
         /// <summary>Vérifie qu’aucun dialogue d’erreur de compilation n’est encore ouvert.</summary>
         /// <exception cref="InvalidOperationException">Un dialogue de compilation reste visible.</exception>
+        internal static void EnsureNoCompileDialog(int processId) { EnsureNoCompileDialog(new NativeProbe(processId)); }
+        internal static string AwaitCompileDialog(ManualResetEventSlim completed, int processId) { return AwaitCompileDialog(completed, new NativeProbe(processId)); }
         public static void EnsureNoCompileDialog()
         {
             EnsureNoCompileDialog(new NativeProbe());
@@ -1775,9 +1780,11 @@ namespace CodexVBE
         /// <param name="titles">Titres possibles, y compris leurs variantes localisées.</param>
         /// <returns>Handle du dialogue trouvé, ou zéro.</returns>
         private static IntPtr FindDialog(params string[] titles)
+        { return FindDialogForProcess(Process.GetCurrentProcess().Id, titles); }
+        private static IntPtr FindDialogForProcess(int processId, params string[] titles)
         {
             IntPtr result = IntPtr.Zero;
-            uint currentPid = (uint)Process.GetCurrentProcess().Id;
+            uint currentPid = checked((uint)processId);
             EnumWindows((handle, parameter) => {
                 uint pid;
                 GetWindowThreadProcessId(handle, out pid);

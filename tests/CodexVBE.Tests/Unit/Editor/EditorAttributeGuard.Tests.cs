@@ -7,6 +7,12 @@ namespace CodexVBE.Tests.Unit.Editor
     public sealed class EditorAttributeGuardTests
     {
         [TestMethod]
+        public void ModuleVariableAttributesAreNotDiscardedByReplacement()
+        {
+            const string source = "Public Value As Long";
+            Assert.ThrowsException<InvalidOperationException>(() => EditorVbeModule.EnsureAttributeDeclarationsUntouched("Attribute Value.VB_VarHelpID = 1", source, Tuple.Create(1, 1, "Public Other As Long")));
+        }
+        [TestMethod]
         public void BodyAndAdjacentInsertionsPreserveAttributedDeclarations()
         {
             string source = "Public Sub Special( _\n ByVal value As Long)\n Debug.Print value\nEnd Sub";
