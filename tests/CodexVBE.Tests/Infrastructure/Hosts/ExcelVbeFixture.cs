@@ -9,7 +9,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Integration
 {
     /// <summary>Démarre et nettoie une instance Excel isolée pour les tests d’intégration du pont VBE.</summary>
-    internal sealed class ExcelVbeFixture : IDisposable
+    internal sealed partial class ExcelVbeFixture : IDisposable
     {
         /// <summary>Récupère l’identifiant du processus propriétaire d’une fenêtre Win32.</summary>
         /// <param name="window">Handle de la fenêtre à examiner.</param>

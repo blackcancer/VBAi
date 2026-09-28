@@ -1,6 +1,36 @@
-# Qualification des cinq points VBE
+# Qualification native des fonctions VBE
 
-État du 28 septembre 2026, branche `codex/chat-ux`. Ce lot traite les cinq validations natives annoncées après les extensions fonctionnelles. Il ne transforme pas les huit fonctions absentes ou bornées de [functional-extensions.md](functional-extensions.md) en fonctions complètes. Le thème natif VBE reste exclu.
+État du 28 septembre 2026. Les preuves ci-dessous portent sur des scénarios précis ; elles ne transforment pas les fonctions absentes ou bornées de [functional-extensions.md](functional-extensions.md) en une couverture universelle. Le thème natif VBE reste exclu.
+
+## Lot de complétion IDE après PR #6
+
+Les tests vivent dans le projet VSTest, sous `Integration/Hosts/Excel`, avec leurs helpers sous `Infrastructure/Hosts`. Chaque fixture ouvre Excel et son VBE de façon visible, travaille sur son seul classeur jetable et le ferme.
+
+| Contrat | Preuve Excel obtenue | Limite restante |
+| --- | --- | --- |
+| Renommage public intermodules | Deux modules relus, appel qualifié modifié, exécution VBA donnant 42 dans une cellule, annulation exacte séparée des deux modules | Pas de liaison complète des membres de classe/interfaces/callbacks/clients externes ; pas d'atomicité globale |
+| Ajustement UserForm | Dimensions VBIDE/InsideWidth/InsideHeight relues indépendamment ; enfants inchangés ; étendue de défilement relue | Arrondi supérieur au pixel selon le DPI ; conteneurs imbriqués pas tous qualifiés |
+| Explorateur de projets | HWND SysTreeView32 réel, nœuds UIA lus avec leur identité | Variantes hôtes et manipulations expand/collapse à qualifier |
+| Boîte à outils | Page « Contrôles » relue via le fournisseur MSAA canonique ; identité/version stables ; refus de sélection sans mutation | Lecture des pages seulement ; mutations et boutons de palette non qualifiés |
+| Protection | Lecture avec Cancel ; verrouillage depuis fichier secret, confirmation des contrôles, sauvegarde XLSM puis fermeture/réouverture ; VBProject.Protection=1 relu indépendamment | Aucun déverrouillage de projet protégé ; Word/SOLIDWORKS NOT_RUN ; simple fermeture du dialogue ne prouve pas la persistance |
+| Options Format/Ancrage | Modifications de cases, réouverture et vérification ; restauration de la version complète des préférences | Choix de police/palettes et autres langues pas tous qualifiés |
+| Valeurs de procédure | SAFEARRAY vector/matrix, Null, paramètres optionnels, bornes retournées 1/-2 et 0/0 ; compteur Excel confirmait une invocation par appel et aucune invocation lors du polling ; code inchangé | Excel uniquement ; pas d'objets COM/classes/ByRef/tableaux typés/ParamArray |
+
+Preuves : `artifacts/vbe-completion/native-matrix/matrix.trx`, `fit-final/fit.trx`, `protection-qualified/protection.trx`. Les passages exploratoires échoués restent distincts du passage global final. Le premier rapport contient un échec de protection corrigé ensuite : il ne doit pas être présenté comme entièrement vert.
+
+L'exploration des couleurs du TextPattern sur un code comportant un point d'arrêt connu et en pause renvoie BackgroundColorAttribute=NotSupported. Cette voie ne prouve ni l'inventaire des points d'arrêt ni le pointeur d'exécution. La typelib MSForms inspectée expose Selected/InSelection et CanUndo/CanRedo, mais aucun identifiant/appartenance de groupe ; Group/Ungroup ne sont pas qualifiés par un arbre inchangé.
+
+Le cycle standalone `.swp`, les adaptateurs Word/PowerPoint et l'aide CHM ont des scénarios locaux mais restent **NOT_RUN** dans ces hôtes. Le SIP VBA Microsoft reste soumis à l'autorisation déjà demandée ; aucun enregistrement cryptographique n'a été effectué.
+
+### Boîte à outils : observation native sans mutation
+
+La fenêtre réelle utilise une classe `F3 MinFrame`, avec des enfants `F3 Server`. La sonde externe UI Automation ne livre aucun onglet ni bouton de palette. Dans l'add-in, UIA projette plusieurs représentations du même onglet, sans état de sélection, ainsi que le bouton de fermeture de la fenêtre. La lecture privilégie donc le fournisseur MSAA canonique, qui expose une liste d'onglets et la page « Contrôles », sélectionnée. `accSelect` et l'action par défaut « Passer à » retournent normalement ; la page unique étant déjà sélectionnée, cela ne qualifie pas un changement de page.
+
+`MSForms Toolbox.ShowPopup()` sans arguments affiche le menu exact, mais les commandes 2591 à 2596 restent désactivées : le menu visible ne fournit pas le contexte natif de l'onglet. Aucun onglet n'a été créé, renommé, supprimé ou déplacé. Les boutons de palette demeurent inaccessibles. Les sondes ont fermé leurs seules instances Excel possédées.
+
+Preuves exploratoires : `artifacts/vbe-completion/native/toolbox-survey.json`, `toolbox-msaa.json`, `toolbox-activation.json` et `toolbox-typelib.txt`. La matrice `artifacts/vbe-completion/toolbox-canonical/matrix.trx` contient 21 tests réussis, dont la lecture réelle, la stabilité de la version et le refus d'action sans changement. `read_navigation_surface` expose ces pages au LLM ; aucune commande de personnalisation n'est prétendue disponible.
+
+## Qualifications natives précédentes
 
 ## Résultats exacts
 

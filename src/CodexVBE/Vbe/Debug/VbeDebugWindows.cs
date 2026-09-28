@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -448,6 +448,8 @@ namespace CodexVBE
             public string Type;
             /// <summary>Valeur courante lue, si elle est disponible.</summary>
             public object Value;
+            /// <summary>Choix natifs observés, sans inventer de valeur pour les listes non accessibles.</summary>
+            public IList<string> Choices = new string[0];
             /// <summary>Erreur de lecture du contrôle, si présente.</summary>
             public string Error;
             /// <summary>Indique si le contrôle est visible.</summary>
@@ -557,7 +559,27 @@ namespace CodexVBE
                             else if ((kind == ControlType.RadioButton || kind == ControlType.ListItem) &&
                                 element.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object selection))
                                 control.Value = ((SelectionItemPattern)selection).Current.IsSelected;
-                            else if ((kind == ControlType.Edit || kind == ControlType.ComboBox) &&
+                            else if (kind == ControlType.ComboBox || kind == ControlType.List)
+                            {
+                                if (element.Current.IsPassword) throw new InvalidOperationException("A password list cannot be inspected.");
+                                var choices = element.FindAll(TreeScope.Descendants,
+                                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem))
+                                    .Cast<AutomationElement>().Where(x => x.Current.IsEnabled &&
+                                        !string.IsNullOrWhiteSpace(x.Current.Name) &&
+                                        x.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object itemPattern)).ToArray();
+                                control.Choices = choices.Select(x => x.Current.Name).ToArray();
+                                if (element.TryGetCurrentPattern(SelectionPattern.Pattern, out object listPattern))
+                                {
+                                    var selectedItems = ((SelectionPattern)listPattern).Current.GetSelection();
+                                    if (selectedItems.Length != 1 || string.IsNullOrWhiteSpace(selectedItems[0].Current.Name))
+                                        throw new InvalidOperationException("The native list selection is absent or ambiguous.");
+                                    control.Value = selectedItems[0].Current.Name;
+                                }
+                                else if (!element.Current.IsPassword && element.TryGetCurrentPattern(ValuePattern.Pattern, out object listValue))
+                                    control.Value = ((ValuePattern)listValue).Current.Value;
+                                else throw new InvalidOperationException("The native list selection cannot be read.");
+                            }
+                            else if (kind == ControlType.Edit &&
                                 !element.Current.IsPassword &&
                                 element.TryGetCurrentPattern(ValuePattern.Pattern, out object input))
                                 control.Value = ((ValuePattern)input).Current.Value;
@@ -594,6 +616,15 @@ namespace CodexVBE
                     var pattern = (ValuePattern)input;
                     if (pattern.Current.IsReadOnly) throw new InvalidOperationException("The option is read-only.");
                     pattern.SetValue(Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture));
+                }
+                else if ((type == "ControlType.ComboBox" || type == "ControlType.List") && !selected.Current.IsPassword)
+                {
+                    var choices = selected.FindAll(TreeScope.Descendants,
+                        new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem))
+                        .Cast<AutomationElement>().Where(x => x.Current.IsEnabled && x.Current.Name == (string)value &&
+                            x.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object itemPattern)).ToArray();
+                    if (choices.Length != 1) throw new InvalidOperationException("The exact native choice is absent or ambiguous.");
+                    ((SelectionItemPattern)choices[0].GetCurrentPattern(SelectionItemPattern.Pattern)).Select();
                 }
                 else throw new InvalidOperationException("The option has no supported writable pattern.");
                 PauseNative(100);

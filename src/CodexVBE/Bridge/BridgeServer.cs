@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.IO.Pipes;
 using System.Security.AccessControl;
@@ -15,6 +15,16 @@ namespace CodexVBE
     {
         /// <summary>Lit la liste native de l’explorateur d’objets pour les critères demandés.</summary>
         internal Func<Request, object> ListObjectBrowser = VbeDebugWindows.ListObjectBrowser;
+        /// <summary>Lit les nœuds de navigation natifs sur le worker d'accessibilité.</summary>
+        internal Func<Request, object> ReadNavigationSurface = VbeDebugWindows.ReadNavigationSurface;
+        /// <summary>Refuse de réutiliser un dialogue de propriétés déjà ouvert.</summary>
+        internal Action EnsureNoProjectPropertiesDialog = VbeDebugWindows.EnsureNoProjectPropertiesDialog;
+        /// <summary>Lit la protection native sans restituer de secret.</summary>
+        internal Func<Request, object> ReadProjectProtection = VbeDebugWindows.ReadProjectProtection;
+        /// <summary>Configure la protection via le dialogue natif exact.</summary>
+        internal Func<Request, object> SetProjectProtection = VbeDebugWindows.SetProjectProtection;
+        /// <summary>Sélectionne ou développe un nœud de navigation identifié.</summary>
+        internal Func<Request, object> ChangeNavigationSurface = VbeDebugWindows.ChangeNavigationSurface;
         /// <summary>Sélectionne une entrée native de l’explorateur d’objets.</summary>
         internal Func<Request, object> SelectObjectBrowser = VbeDebugWindows.SelectObjectBrowser;
         /// <summary>Inspecte l’explorateur d’objets par son fournisseur d’automatisation Windows.</summary>
@@ -130,6 +140,10 @@ namespace CodexVBE
                                 var request = json.Deserialize<Request>(line);
                                 if (request != null && request.Command == "debug_windows")
                                     response = Response.Success(Native.Capture(request.IncludeCallStack));
+                                else if (request != null && request.Command == "read_navigation_surface")
+                                    response = Response.Success(Native.ReadNavigationSurface(request));
+                                else if (request != null && request.Command == "change_navigation_surface")
+                                    response = Response.Success(Native.ChangeNavigationSurface(request));
                                 else if (request != null && request.Command == "list_object_browser")
                                     response = Response.Success(Native.ListObjectBrowser(request));
                                 else if (request != null && request.Command == "select_object_browser")
@@ -206,6 +220,18 @@ namespace CodexVBE
                                     response = (Response)dispatcher.Invoke(new Func<Response>(() => Execute(request)));
                                     if (response.Ok) response = Response.Success(request.Command == "set_vbe_option" ? Native.SetVbeOption(request) : request.Command == "read_vbe_options"
                                         ? Native.ReadVbeOptions() : Native.ReadDebugOptions());
+                                }
+                                else if (request != null && (request.Command == "read_project_protection" || request.Command == "set_project_protection"))
+                                {
+                                    Native.EnsureNoProjectPropertiesDialog();
+                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => Execute(request)));
+                                    if (response.Ok)
+                                    {
+                                        var captured = json.Deserialize<Request>(json.Serialize(request));
+                                        captured.Caption = (string)((dynamic)response.Data).ProjectName;
+                                        response = Response.Success(request.Command == "set_project_protection" ?
+                                            Native.SetProjectProtection(captured) : Native.ReadProjectProtection(captured));
+                                    }
                                 }
                                 else if (request != null && request.Command == "read_project_signature_dialog")
                                 {

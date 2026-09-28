@@ -1,6 +1,6 @@
 # Catalogue des outils LLM
 
-Catalogue vérifié le 28 septembre 2026 contre le code `27389a8` : **180 outils**. Cet inventaire est extrait de `LlmVbeTools.Definitions`, y compris les catalogues Git et Editor. Il décrit les outils exposés au modèle, et ne prétend pas inventorier toutes les commandes du pont.
+Catalogue extrait le 28 septembre 2026 de la DLL reconstruite, après PR #6 et lot IDE : **197 outils**. Les catalogues Git et Editor sont inclus ; ce tableau décrit les outils LLM et non toutes les commandes internes du pont.
 
 ## Contrat
 
@@ -26,11 +26,15 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `add_toolbar_command` | Action | `ObjectName`, `ExpectedToolbarControlsVersion`, `ControlId`, `ControlCaption` |
 | `add_watch` | Action | `Project`, `Module`, `ExpectedMode`, `Expression` |
 | `apply_code_edit` | Action | `Project`, `Module`, `ExpectedSha256`, `StartLine`, `Count`, `Action` |
+| `apply_fit_form_content` | Action | `Project`, `Form`, `ExpectedTreeVersion`, `Action`, `Left`, `Top` |
 | `apply_form_layout` | Action | `Project`, `Form`, `ExpectedTreeVersion`, `Items`, `Action` |
 | `apply_local_rename` | Action | `Project`, `Module`, `Procedure`, `ProcKind`, `ExpectedSha256`, `ExpectedMode`, `StartLine`, `StartColumn`, `Query`, `NewName` |
 | `apply_parameter_rename` | Action | `Project`, `Module`, `Procedure`, `ProcKind`, `ExpectedSha256`, `ExpectedMode`, `StartLine`, `StartColumn`, `Query`, `NewName` |
+| `apply_procedure_rename` | Action | `Project`, `Module`, `Query`, `NewName`, `ExpectedSha256`, `StartLine`, `StartColumn`, `ProcKind`, `ExpectedProjectVersion`, `ExpectedMode` |
 | `arrange_editor_windows` | Action | `Action`, `ExpectedWindowVersion`, `ControlCaption` |
 | `certificate_trust` | Inspection | `CertificateThumbprint` |
+| `change_navigation_surface` | Inspection | `Pane`, `Control`, `Action`, `ExpectedWindowVersion` |
+| `close_standalone_project` | Action | `Project`, `ExpectedProjectVersion`, `ExpectedHostPath` |
 | `close_vbe_window` | Action | `WindowCaption`, `WindowType` |
 | `code_bookmark` | Inspection | `Project`, `Action` |
 | `code_pane_layout` | Inspection | `Project`, `Module` |
@@ -44,6 +48,7 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `create_form` | Action | `Project`, `Form` |
 | `create_module` | Action | `Project`, `Module`, `ExpectedMode` |
 | `create_procedure` | Action | `Project`, `Module`, `Procedure`, `ProcKind`, `Text`, `ExpectedSha256` |
+| `create_standalone_project` | Action | `ExpectedProjectVersion` |
 | `create_toolbar` | Action | `ObjectName`, `ExpectedToolbarCollectionVersion` |
 | `cut_code` | Action | `Project`, `Module`, `ExpectedSha256`, `StartLine`, `StartColumn`, `EndLine`, `EndColumn` |
 | `debug_dialog` | Inspection | — |
@@ -100,6 +105,7 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `list_commands` | Inspection | — |
 | `list_form_control_types` | Inspection | — |
 | `list_forms` | Inspection | `Project` |
+| `list_macros` | Inspection | `Project` |
 | `list_modules` | Inspection | `Project` |
 | `list_object_browser` | Inspection | `Pane` |
 | `list_procedures` | Inspection | `Project`, `Module` |
@@ -117,13 +123,20 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `navigate_code` | Inspection | `Project`, `Action` |
 | `open_debug_pane` | Inspection | `Action` |
 | `open_form` | Inspection | `Project`, `Form` |
+| `open_native_ide_dialog` | Inspection | `Project`, `ExpectedMode`, `ControlCaption`, `Action` |
 | `open_object_browser` | Inspection | — |
+| `open_project_help` | Inspection | `Project`, `ExpectedProjectVersion` |
+| `open_standalone_project` | Action | `Path`, `ExpectedProjectVersion` |
 | `paste_code` | Action | `Project`, `Module`, `ExpectedSha256`, `ExpectedClipboardVersion`, `StartLine`, `StartColumn`, `EndLine`, `EndColumn` |
 | `preview_code_edit` | Inspection | `Project`, `Module`, `ExpectedSha256`, `StartLine`, `Count`, `Action` |
+| `preview_fit_form_content` | Inspection | `Project`, `Form`, `ExpectedTreeVersion`, `Action`, `Left`, `Top` |
 | `preview_form_layout` | Inspection | `Project`, `Form`, `ExpectedTreeVersion`, `Items`, `Action` |
 | `preview_local_rename` | Inspection | `Project`, `Module`, `Procedure`, `ProcKind`, `ExpectedSha256`, `StartLine`, `StartColumn`, `Query`, `NewName` |
 | `preview_parameter_rename` | Inspection | `Project`, `Module`, `Procedure`, `ProcKind`, `ExpectedSha256`, `StartLine`, `StartColumn`, `Query`, `NewName` |
+| `preview_procedure_rename` | Inspection | `Project`, `Module`, `Query`, `NewName`, `ExpectedSha256`, `StartLine`, `StartColumn`, `ProcKind` |
 | `procedure_run_status` | Inspection | `Project`, `Query` |
+| `procedure_values_status` | Inspection | `Project`, `Query` |
+| `project_collection_state` | Inspection | — |
 | `project_persistence_status` | Inspection | `Project` |
 | `project_properties` | Inspection | `Project` |
 | `project_signature_status` | Inspection | `Project` |
@@ -132,7 +145,9 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `read_code_clipboard` | Inspection | — |
 | `read_debug_options` | Inspection | — |
 | `read_module` | Inspection | `Project`, `Module` |
+| `read_navigation_surface` | Inspection | `Pane` |
 | `read_object_browser` | Inspection | — |
+| `read_project_protection` | Inspection | `Project`, `ExpectedProjectVersion`, `ExpectedMode`, `ControlCaption` |
 | `read_project_signature_dialog` | Inspection | `Project`, `ExpectedMode` |
 | `read_runtime_forms` | Inspection | — |
 | `read_user_file` | Inspection | `Path` |
@@ -155,6 +170,7 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `restore_form_clipboard` | Action | `Project`, `Form`, `DesignerClipboardRecoveryId`, `ExpectedDesignerSelectionVersion`, `ExpectedClipboardVersion` |
 | `run_form` | Action | `Project`, `Form`, `ExpectedMode`, `ExpectedSha256`, `ExpectedTreeVersion`, `ControlCaption` |
 | `run_procedure` | Action | `Project`, `Module`, `Procedure`, `ExpectedSha256`, `ExpectedMode`, `Arguments` |
+| `run_procedure_values` | Action | `Project`, `Module`, `Procedure`, `ExpectedSha256`, `ExpectedHostPath`, `ExpectedMode`, `Arguments` |
 | `run_sub` | Action | `Project`, `Module`, `Procedure`, `ExpectedSha256`, `ExpectedMode` |
 | `save_host_document` | Action | `Project`, `ExpectedProjectVersion`, `ExpectedHostPath` |
 | `save_host_document_as` | Action | `Project`, `ExpectedProjectVersion`, `Path` |
@@ -180,6 +196,7 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `set_form_property` | Action | `Project`, `Form`, `ExpectedFormVersion`, `Property`, `Value` |
 | `set_form_tab_order` | Action | `Project`, `Form`, `ExpectedTreeVersion`, `Items` |
 | `set_project_property` | Action | `Project`, `ExpectedProjectVersion`, `Property`, `Value` |
+| `set_project_protection` | Action | `Project`, `ExpectedProjectVersion`, `ExpectedOptionsVersion`, `ExpectedMode`, `ControlCaption`, `Action` |
 | `set_toolbar_placement` | Action | `ObjectName`, `ExpectedToolbarLayoutVersion`, `Action` |
 | `set_toolbar_position` | Action | `ObjectName`, `ExpectedToolbarLayoutVersion`, `Action` |
 | `set_toolbar_visibility` | Action | `ObjectName`, `ExpectedWindowVersion`, `Action` |

@@ -176,6 +176,7 @@ namespace CodexVBE
             dynamic project = GetProject(projectName);
             bool projectSaved = (bool)project.Saved;
             if (!host.IsExcel && SupportsStandaloneMacro((object)project)) return StandalonePersistence(projectName, (object)project);
+            if (!host.IsExcel && SupportsOtherHost) return OtherHostPersistence(projectName);
             if (!host.IsExcel)
                 return new { Project = projectName, ProjectSaved = projectSaved,
                     HostAvailable = false, HostPath = (string)null, HostSaved = (bool?)null,
@@ -210,7 +211,7 @@ namespace CodexVBE
             if (request == null || string.IsNullOrWhiteSpace(request.ExpectedHostPath) ||
                 !Path.IsPathRooted(request.ExpectedHostPath))
                 throw new ArgumentException("ExpectedHostPath must be the absolute path read from project_persistence_status.");
-            if (!host.IsExcel) return SaveStandaloneMacro(request, false);
+            if (!host.IsExcel) return SupportsOtherHost ? SaveOtherHost(request, false) : SaveStandaloneMacro(request, false);
             dynamic project = GetDesignProject(request.Project);
             AssertProjectVersion(request, project);
             string projectPath = (string)project.FileName;
@@ -247,7 +248,7 @@ namespace CodexVBE
             if (request == null || string.IsNullOrWhiteSpace(request.Path) ||
                 string.IsNullOrWhiteSpace(request.ExpectedProjectVersion))
                 throw new ArgumentException("Path and ExpectedProjectVersion are required.");
-            if (!host.IsExcel) return SaveStandaloneMacro(request, true);
+            if (!host.IsExcel) return SupportsOtherHost ? SaveOtherHost(request, true) : SaveStandaloneMacro(request, true);
             string path = RequireAbsolutePath(request.Path);
             if (!string.Equals(Path.GetExtension(path), ".xlsm", StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("The first Excel SaveAs supports only a macro-enabled .xlsm workbook.");

@@ -153,6 +153,22 @@ namespace CodexVBE
                         AssemblyModuleVersionId = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
                         HostProcessId = System.Diagnostics.Process.GetCurrentProcess().Id,
                         ProcessBitness = IntPtr.Size * 8 });
+                case "preview_procedure_rename": return Response.Success(codeEdits.PreviewProcedureRename(request));
+                case "apply_procedure_rename": return Response.Success(codeEdits.ApplyProcedureRename(request));
+                case "open_native_ide_dialog": return Response.Success(debugger.QueueNativeIdeDialog(request));
+                case "read_project_protection":
+                case "set_project_protection":
+                    if (request.ExpectedMode != 2) return Response.Failure("ExpectedMode=2 is required for project properties.");
+                    return Response.Success(debugger.QueueProjectPropertiesDialog(request, candidate =>
+                        string.Equals((string)((dynamic)components.ProjectProperties(candidate.Project)).Version, candidate.ExpectedProjectVersion, StringComparison.OrdinalIgnoreCase)));
+                case "project_collection_state": return Response.Success(components.ProjectCollectionState());
+                case "create_standalone_project": return Response.Success(components.CreateStandaloneProject(request));
+                case "open_standalone_project": return Response.Success(components.OpenStandaloneProject(request));
+                case "close_standalone_project": return Response.Success(components.CloseStandaloneProject(request));
+                case "open_project_help": return Response.Success(components.OpenProjectHelp(request));
+                case "list_macros": return Response.Success(debugger.ListMacros(request));
+                case "read_navigation_surface":
+                case "change_navigation_surface": return Response.Failure("This native navigation command requires InvokeAsync or the bridge worker.");
                 case "list_projects":
                     return Response.Success(ListProjects());
                 case "list_modules":
@@ -306,6 +322,10 @@ namespace CodexVBE
                     return Response.Success(forms.FormRunStatus(request));
                 case "run_procedure":
                     return Response.Success(debugger.RunProcedure(request));
+                case "run_procedure_values":
+                    return Response.Success(debugger.RunProcedureValues(request));
+                case "procedure_values_status":
+                    return Response.Success(debugger.ProcedureValuesStatus(request));
                 case "procedure_run_status":
                     return Response.Success(debugger.ProcedureRunStatus(request));
                 case "run_sub":
@@ -343,6 +363,8 @@ namespace CodexVBE
                     return Response.Success(forms.ControlTypes());
                 case "form_state":
                     return Response.Success(forms.State(request.Project, request.Form));
+                case "preview_fit_form_content": return Response.Success(forms.PreviewFitFormContent(request));
+                case "apply_fit_form_content": return Response.Success(forms.ApplyFitFormContent(request));
                 case "preview_form_layout": return Response.Success(forms.LayoutControls(request, true));
                 case "apply_form_layout": return Response.Success(forms.LayoutControls(request, false));
                 case "set_form_tab_order": return Response.Success(forms.SetTabOrder(request));

@@ -1,5 +1,26 @@
 # Couverture automatisée du complément
 
+## Mesure après intégration de la PR #6 et complétion IDE
+
+Mesure du **28 septembre 2026**, après la fusion `c5f64eb` et le lot IDE décrit dans l'[inventaire](reference/vbe-capability-inventory.md). Compilation : **0 erreur, 0 avertissement**.
+
+| Mesure | Résultat |
+| --- | --- |
+| Suite globale VSTest | **1 281 réussis, 0 échec, 1 ignoré**, 8 min 7 s |
+| Lignes du complément | **23 821 / 24 469 — 97,35 %** |
+| Branches du complément | **24 724 / 25 769 — 95,94 %** |
+| Excel automatisé | **Dix scénarios réussis** |
+| SOLIDWORKS | **NOT_RUN**, aucune instance préchargée |
+| Concepteurs WinForms | **31 surfaces validées** après intégration PR #6 |
+| Organisation miroir | **171 miroirs pour 228 fichiers de production** |
+| Catalogue LLM | **197 outils**, dont 17 nouveaux contrats IDE |
+
+Il reste **648 lignes et 1 045 branches** non exécutées. Les nouveaux adaptateurs natifs et les mises à jour GitHub ajoutent du code à couvrir ; les mesures historiques à 100 % ne décrivent pas le code actuel. Aucun code du complément n'a été exclu. La couverture mesure l'assembly `CodexVBE` dans VSTest ; les qualifications Excel sont indépendantes, et l'installation réelle par `VBAi.Updater` reste NOT_RUN faute de release signée de test.
+
+Les dix scénarios Excel incluent la protection sauvegardée/réouverte, le renommage public intermodules et son annulation, l'ajustement UserForm, l'explorateur, les options Format/Ancrage restaurées, les pages Toolbox MSAA et les valeurs/tableaux retournés par une invocation unique. La [qualification native](reference/native-qualification.md) précise leurs limites.
+
+Preuves : `artifacts/vbe-completion/qualified-global/global.trx` et `136ec1d1-d534-432d-918d-64b5d9210601/coverage.cobertura.xml` dans ce même répertoire. `coverage-summary.json` et `coverage-inventory.csv` contiennent les compteurs et méthodes encore incomplètes. Organisation : `artifacts/vbe-completion/test-layout.json`. Designers : `artifacts/pr6-integration/designers/designers.json`. Les passages exploratoires échoués sont conservés séparément et ne constituent pas la validation finale.
+
 ## Mesure après intégration de la PR #5
 
 Mesure du **28 septembre 2026**, code **`a151498`** : À propos et rapports de problème GitHub/Outlook intégrés avec les fonctionnalités IDE de main. Compilation : **0 erreur, 0 avertissement**.

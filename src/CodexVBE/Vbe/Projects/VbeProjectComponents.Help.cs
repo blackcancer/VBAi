@@ -1,0 +1,36 @@
+using System;
+using System.Globalization;
+using System.IO;
+using System.Runtime.InteropServices;
+
+namespace CodexVBE
+{
+    internal sealed partial class VbeProjectComponents
+    {
+        [DllImport("hhctrl.ocx", EntryPoint = "HtmlHelpW", CharSet = CharSet.Unicode)]
+        private static extern IntPtr HtmlHelp(IntPtr owner, string file, uint command, UIntPtr data);
+
+        /// <summary>Frontière de l'aide CHM native ; un handle n'atteste pas la lecture de la rubrique.</summary>
+        internal Func<string, uint, IntPtr> HelpLauncher = (path, context) => HtmlHelp(IntPtr.Zero, path, context == 0 ? 0U : 15U, new UIntPtr(context));
+
+        /// <summary>Ouvre le fichier CHM et le contexte configurés dans le projet après contrôle de version.</summary>
+        public object OpenProjectHelp(Request request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Project) || string.IsNullOrWhiteSpace(request.ExpectedProjectVersion))
+                throw new ArgumentException("Project and ExpectedProjectVersion are required.");
+            dynamic project = GetProject(request.Project);
+            AssertProjectVersion(request, project);
+            string file = (string)project.HelpFile;
+            if (string.IsNullOrWhiteSpace(file) || !Path.IsPathRooted(file) || !Path.GetExtension(file).Equals(".chm", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("The project must reference an absolute CHM help file. Legacy HLP and web help are not substituted.");
+            file = Path.GetFullPath(file);
+            if (!File.Exists(file)) throw new FileNotFoundException("The project help file is absent.", file);
+            if (!uint.TryParse(Convert.ToString(project.HelpContextID, CultureInfo.InvariantCulture), NumberStyles.None, CultureInfo.InvariantCulture, out uint context))
+                throw new InvalidOperationException("The project help context is not an unsigned integer.");
+            IntPtr window = HelpLauncher(file, context);
+            return new { request.Project, HelpFile = file, HelpContextID = context,
+                Invoked = true, HelpWindowCreated = window != IntPtr.Zero, TopicVerified = false,
+                Limit = "A help window handle does not verify that the requested context exists or that CHM security permits its content." };
+        }
+    }
+}

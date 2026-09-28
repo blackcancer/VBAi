@@ -48,6 +48,11 @@
         /// <param name="native">Frontière à configurer.</param>
         internal static void Configure(VbeToolNativeBoundary native)
         {
+            native.ReadNavigationSurface = request => new { Available = true };
+            native.ChangeNavigationSurface = request => new { Verified = true };
+            native.EnsureNoProjectPropertiesDialog = () => { };
+            native.ReadProjectProtection = request => new { Available = true };
+            native.SetProjectProtection = request => new { CommittedRequested = true };
             native.Capture = stack => new { Native = "capture", Stack = stack };
             native.ReadDebugDialog = () => new { Native = "dialog" };
             native.ChangeDebugItem = request => new { Native = "item", request.Action };
@@ -79,6 +84,10 @@
             if (request.Command == "debug_state") return Response.Success(new VbeToolMode { Mode = 2 });
             if (request.Command == "sign_project") return Response.Success(new VbeToolSignature { CertificateName = "Disposable", UnsignedVerified = true });
             if (request.Command == "read_module" || request.Command == "native_code_history") return Response.Success(new VbeToolCodeResult());
+            if (request.Command == "preview_procedure_rename") return Response.Success(new {
+                ExpectedProjectVersion = "value", Edits = new object[0] });
+            if (request.Command == "read_project_protection" || request.Command == "set_project_protection")
+                return Response.Success(new { ProjectName = request.Project });
             return Response.Success(new { Command = request.Command });
         }
     }

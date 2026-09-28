@@ -1,6 +1,7 @@
 ﻿namespace CodexVBE.Tests.Unit
 {
     using System;
+    using System.Collections.Generic;
     using System.Web.Script.Serialization;
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -26,7 +27,16 @@
             Assert.AreEqual(true,read.Value);Assert.AreEqual(1.5,read.Left);Assert.AreEqual(11.5,read.FontSize);Assert.IsTrue(read.FontBold);
             Assert.AreEqual("tree",read.ExpectedTreeVersion);Assert.AreEqual("host",read.ExpectedHostPath);Assert.AreEqual("thumbprint",read.CertificateThumbprint);
             Assert.IsTrue(read.IncludeCallStack);Assert.IsTrue(read.WholeWord);Assert.IsTrue(read.MatchCase);Assert.IsTrue(read.PatternSearch);
-            Assert.AreEqual(json.Serialize(original),json.Serialize(read));
+            // JSON object member order is not part of the bridge protocol.
+            // Coverage instrumentation can change reflection enumeration order.
+            var before = (IDictionary<string, object>)json.DeserializeObject(json.Serialize(original));
+            var after = (IDictionary<string, object>)json.DeserializeObject(json.Serialize(read));
+            Assert.AreEqual(before.Count, after.Count);
+            foreach (var member in before)
+            {
+                Assert.IsTrue(after.ContainsKey(member.Key), member.Key);
+                Assert.AreEqual(json.Serialize(member.Value), json.Serialize(after[member.Key]), member.Key);
+            }
         }
 
         [TestMethod]

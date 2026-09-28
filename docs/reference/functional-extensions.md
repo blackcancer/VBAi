@@ -4,6 +4,24 @@ Développement du 28 septembre 2026 sur `codex/chat-ux`, basé sur `b843972f`. L
 
 ## Fonctions ajoutées ou étendues
 
+### Lot de complétion IDE du 28 septembre
+
+- `preview_procedure_rename` / `apply_procedure_rename` : renommage standard intermodules, contrôle de tout le projet avant écriture, diff et historique séparés par module. Les erreurs partielles sont relues ; aucune transaction globale n'est prétendue.
+- `read_navigation_surface` / `change_navigation_surface` : explorateur de projets et sélecteur de macros accessibles ; fallback MSAA pour lire les pages Toolbox. Tokens natifs et version de la surface ; sélection Toolbox observée séparément des actions qualifiées, boutons non exposés explicitement signalés ; aucune action par coordonnées ou raccourcis.
+- `run_procedure_values` / `procedure_values_status` : invocation unique via Excel.Application.Run, arguments Variant/tableaux rang 1/2, retour JSON avec bornes et longueurs natives. Exige un classeur sauvegardé associé par identité COM/PID/chemin. Aucun helper VBA ni deuxième appel pour récupérer une valeur. Les tableaux typés/ByRef, classes, objets COM, dates et ParamArray sont refusés.
+- `list_macros` : catalogue syntaxique public des modules standard. Les candidats natifs sont distingués des fonctions, des arguments et des exclusions Option Private Module/compilation conditionnelle.
+- `project_collection_state`, `create_standalone_project`, `open_standalone_project`, `close_standalone_project` : API VBProjects Add/Open/Remove, gardes sur tous les projets, fermeture de SWP déjà sauvegardés seulement. Qualification SOLIDWORKS NOT_RUN.
+- `preview_fit_form_content` / `apply_fit_form_content` : enfants directs, conteneur ou étendue de défilement. Les dimensions de conception racine utilisent VBComponent.Properties, celles du viewport le Designer. Arrondi supérieur au pixel et relecture des dimensions/enfants ; toute dérive après écriture est signalée incertaine.
+- `read_project_protection` / `set_project_protection` : dialogue du projet exact, fichier secret UTF8 local pour verrouillage, aucune restitution du mot de passe. La persistance nécessite sauvegarde/réouverture et n'est pas affirmée par la fermeture du dialogue.
+- `open_native_ide_dialog` : ouverture seule de Macros, Impression, Aide ou Contrôles supplémentaires. Aucune soumission d'impression ni installation implicite de contrôle.
+- `open_project_help` : CHM local et HelpContextID natif ; le sujet affiché demeure non vérifié.
+- Sauvegarde Word/PowerPoint : identité du VBProject et PID du document ; formats DOCM/DOTM/PPTM/POTM/PPSM, sans écrasement lors de la première sauvegarde. Qualification réelle de ces hôtes NOT_RUN.
+- Options Éditeur/Format/Ancrage/Général : valeurs bornées et choix exacts accessibles ; les palettes non lisibles restent refusées.
+
+Les points d'arrêt et le pointeur d'exécution ne sont pas inventoriables par les attributs TextPattern testés dans Excel : BackgroundColorAttribute reste NotSupported avant/après un point connu et en pause. Le groupement du Designer n'expose pas son appartenance dans la typelib MSForms inspectée ; les booléens CanUndo/CanRedo ne prouvent pas quelle action serait annulée. Ces manques restent explicites.
+
+### Contrats précédents
+
 | Surface | Contrat disponible | Limite exacte |
 | --- | --- | --- |
 | Procédures paramétrées | `run_procedure` puis `procedure_run_status` ; Sub/Function publique de module standard, SHA et mode conception, jusqu’à 30 arguments JSON scalaires ; `ArgumentNames` facultatif associe chaque valeur à un paramètre vivant et permet d'omettre les optionnels | Transmission native asynchrone au volet Exécution ; aucun objet, expression arbitraire ni valeur de retour structurée. Appels nommés ParamArray/conditionnels refusés. Une livraison ne prouve pas la réussite runtime. Refus des noms de projets homonymes pour l’appel qualifié. |
@@ -32,11 +50,11 @@ Le diagnostic cryptographique utilise les drapeaux de chaîne et de révocation 
 
 ## Fonctions encore absentes ou bornées
 
-1. Renommage sémantique entre modules, paramètres, membres de classe et références COM : le nouveau renommage est local et conservateur.
+1. Renommage sémantique des membres de classe, interfaces et références COM/externes : les renommages local, paramètre privé et procédure standard intermodules demeurent conservateurs.
 2. Inventaire indépendant exhaustif des breakpoints et du pointeur d’exécution : les commandes natives et l’état de pause ne constituent pas cet inventaire.
 3. Historique natif partagé de code avec plusieurs projets ouverts ou des UserForms : gardes existantes conservées. Le journal VBAi et l’historique du Designer restent disponibles séparément.
 4. Personnalisation des onglets et catégories de la boîte à outils native : non implémentée. Catalogue ActiveX et ajout de contrôles existants ne la remplacent pas.
-5. Sauvegarde des projets hôtes autres qu’Excel et standalone `.swp`, dont documents Word/Access : non implémentée.
+5. Sauvegarde des autres hôtes : adaptateurs Word/PowerPoint implémentés mais non qualifiés nativement ; Access et les autres hôtes restent sans adaptateur.
 6. Lecture des valeurs du débogueur SOLIDWORKS lorsque l’hôte n’expose aucune ligne accessible : pas de solution native qualifiée ; dernier essai zéro ligne.
 7. Validation cryptographique de la signature VBA elle-même (digest, certificat signataire et timestamp) : le diagnostic de certificat ne la remplace pas.
 8. Renommage des projets protégés, non enregistrés et autres hôtes : refus explicite conservé ; aucun contournement de protection.

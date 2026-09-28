@@ -10,6 +10,99 @@ namespace CodexVBE.Tests.Unit
     public sealed class WritableOptionsTests
     {
         [TestMethod]
+        public void DocumentedOptionsCompleteTheWholeVersionWriteReadbackCommitWorkflow()
+        {
+            foreach (var row in OptionsCompletionMatrix.Supported())
+            {
+                var probe = new WritableOptionsMatrixProbe();
+                probe.Names[0] = row.Item1;
+                var control = probe.Items[0];
+                control.Name = row.Item2; control.Type = row.Item3;
+                control.Value = row.Item3 == "ControlType.CheckBox" ? "On" : "Original";
+                control.Choices = new[] { "Original", "Native choice" };
+                var request = probe.Request(); request.Value = row.Item4;
+                dynamic result = VbeDebugWindows.SetVbeOption(request, probe);
+                Assert.IsTrue((bool)result.ControlValueVerified, row.Item2);
+                Assert.IsTrue((bool)result.DialogClosed, row.Item2);
+                Assert.IsFalse((bool)result.PersistenceVerified, row.Item2);
+                Assert.AreEqual(1, probe.Writes); Assert.AreEqual(1, probe.Accepts);
+                Assert.AreEqual(0, probe.Closes);
+            }
+        }
+
+        [TestMethod]
+        public void GridDimensionsRejectInvalidValuesAndCancelBeforeWriting()
+        {
+            foreach (string name in new[] { "Width", "Height", "Largeur", "Hauteur" })
+                foreach (object value in OptionsCompletionMatrix.InvalidGridValues)
+                {
+                    var probe = new WritableOptionsMatrixProbe(); probe.Names[0] = "General";
+                    probe.Items[0].Name = name; probe.Items[0].Type = "ControlType.Edit"; probe.Items[0].Value = "6";
+                    var request = probe.Request(); request.Value = value;
+                    Assert.ThrowsException<ArgumentException>(() => VbeDebugWindows.SetVbeOption(request, probe));
+                    Assert.AreEqual(0, probe.Writes); Assert.AreEqual(0, probe.Accepts); Assert.AreEqual(1, probe.Closes);
+                }
+        }
+
+        [TestMethod]
+        public void FormatChoicesRejectUnknownAmbiguousUnreadableOrArbitraryValues()
+        {
+            foreach (string scenario in OptionsCompletionMatrix.InvalidChoiceScenarios)
+            {
+                var probe = new WritableOptionsMatrixProbe(); probe.Names[0] = "Editor Format";
+                var control = probe.Items[0]; control.Name = "Font"; control.Type = "ControlType.ComboBox";
+                control.Value = "Consolas"; control.Choices = new[] { "Consolas", "Courier New" };
+                object value = "Courier New";
+                if (scenario == "absent") value = "invented font";
+                if (scenario == "duplicate") control.Choices = new[] { "Courier New", "Courier New" };
+                if (scenario == "null catalogue") control.Choices = null;
+                if (scenario == "empty catalogue") control.Choices = new string[0];
+                if (scenario == "null value") value = null;
+                if (scenario == "numeric value") value = 12;
+                if (scenario == "wrong tab") probe.Names[0] = "General";
+                if (scenario == "unknown name") control.Name = "Unknown";
+                if (scenario == "wrong type") control.Type = "ControlType.Edit";
+                if (scenario == "unreadable") control.Error = "Selection unavailable";
+                var request = probe.Request(); request.Value = value;
+                if (scenario == "null value" || scenario == "numeric value")
+                    Assert.ThrowsException<ArgumentException>(() => VbeDebugWindows.SetVbeOption(request, probe));
+                else Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.SetVbeOption(request, probe));
+                Assert.AreEqual(0, probe.Writes); Assert.AreEqual(0, probe.Accepts); Assert.AreEqual(1, probe.Closes);
+            }
+        }
+
+        [TestMethod]
+        public void ChoiceCatalogueSelectionAndColorCategoryAreAllVersioned()
+        {
+            foreach (string scenario in OptionsCompletionMatrix.RevisionScenarios)
+            {
+                var probe = new WritableOptionsMatrixProbe(); probe.Names[0] = "Editor Format";
+                var color = probe.Items[0]; color.Name = "Foreground"; color.Type = "ControlType.ComboBox";
+                color.Value = "Black"; color.Choices = new[] { "Black", "Red" };
+                var category = new VbeDebugWindows.OptionsControl { Name = "Code Colors", Type = "ControlType.List",
+                    Value = "Normal Text", Choices = new[] { "Normal Text", "Comment Text" } };
+                probe.Items.Add(category);
+                var request = probe.Request(); request.Value = "Red";
+                if (scenario == "choices") color.Choices = new[] { "Black", "Blue" };
+                if (scenario == "selection") color.Value = "Red";
+                if (scenario == "category") category.Value = "Comment Text";
+                Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.SetVbeOption(request, probe));
+                Assert.AreEqual(0, probe.Writes); Assert.AreEqual(0, probe.Accepts); Assert.AreEqual(1, probe.Closes);
+            }
+        }
+
+        [TestMethod]
+        public void FormatChoiceReadbackFailureCancelsWithoutAccepting()
+        {
+            var probe = new WritableOptionsMatrixProbe { IgnoreWrite = true }; probe.Names[0] = "Editor Format";
+            probe.Items[0].Name = "Size"; probe.Items[0].Type = "ControlType.ComboBox";
+            probe.Items[0].Value = "10"; probe.Items[0].Choices = new[] { "10", "12" };
+            var request = probe.Request(); request.Value = "12";
+            Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.SetVbeOption(request, probe));
+            Assert.AreEqual(1, probe.Writes); Assert.AreEqual(0, probe.Accepts); Assert.AreEqual(1, probe.Closes);
+        }
+
+        [TestMethod]
         public void SameNamedLabelsAreIgnoredAndOnlyEditableControlsCanBeWritten()
         {
             foreach (string kind in new[] { "ControlType.Text", "ControlType.Button", null })
@@ -181,6 +274,54 @@ namespace CodexVBE.Tests.Unit
     }
     public sealed partial class VbeDebugWindowsSystemTests
     {
+        [TestMethod]
+        public void NativeOptionsEnumerateAndSelectExactChoicesWithoutTypingOrInventingColors()
+        {
+            var root = new AutomationNode { Name = "Options", Kind = System.Windows.Automation.ControlType.Window };
+            root.Add(new AutomationNode { Name = "Editor Format", Kind = System.Windows.Automation.ControlType.TabItem }
+                .With(System.Windows.Automation.SelectionItemPattern.Pattern));
+            var combo = root.Add(new AutomationNode { Name = "Font", Kind = System.Windows.Automation.ControlType.ComboBox }
+                .With(System.Windows.Automation.SelectionPattern.Pattern, System.Windows.Automation.ValuePattern.Pattern));
+            var original = combo.Add(new AutomationNode { Name = "Consolas", Selected = true }.With(System.Windows.Automation.SelectionItemPattern.Pattern));
+            var desired = combo.Add(new AutomationNode { Name = "Courier New", Offscreen = true }.With(System.Windows.Automation.SelectionItemPattern.Pattern));
+            desired.SelectedAction = () => original.Selected = false;
+            using (var host = new AutomationHost(root))
+            using (var scene = new SystemScene())
+            {
+                var native = Native<VbeDebugWindows.IWritableOptionsProbe>("NativeOptionsProbe"); native.Tabs(host.Handle);
+                var observed = native.Controls(host.Handle, 0).Single(x => x.Name == "Font");
+                Assert.AreEqual("Consolas", observed.Value);
+                CollectionAssert.AreEqual(new[] { "Consolas", "Courier New" }, observed.Choices.ToArray());
+                native.Write(host.Handle, 0, "Font", "ControlType.ComboBox", "Courier New");
+                Assert.AreEqual("Courier New", native.Controls(host.Handle, 0).Single(x => x.Name == "Font").Value);
+                Assert.AreEqual("", combo.Text); Assert.AreEqual(0, combo.FocusCount);
+                Assert.ThrowsException<InvalidOperationException>(() => native.Write(host.Handle, 0, "Font", "ControlType.ComboBox", "invented"));
+                desired.Enabled = false;
+                Assert.ThrowsException<InvalidOperationException>(() => native.Write(host.Handle, 0, "Font", "ControlType.ComboBox", "Courier New")); desired.Enabled = true;
+                desired.Patterns.Clear();
+                Assert.ThrowsException<InvalidOperationException>(() => native.Write(host.Handle, 0, "Font", "ControlType.ComboBox", "Courier New"));
+                desired.Patterns.Add(System.Windows.Automation.SelectionItemPattern.Pattern.Id);
+                var duplicate = combo.Add(new AutomationNode { Name = "Courier New" }.With(System.Windows.Automation.SelectionItemPattern.Pattern));
+                Assert.ThrowsException<InvalidOperationException>(() => native.Write(host.Handle, 0, "Font", "ControlType.ComboBox", "Courier New"));
+                combo.Children.Remove(duplicate);
+                combo.Password = true;
+                Assert.ThrowsException<InvalidOperationException>(() => native.Write(host.Handle, 0, "Font", "ControlType.ComboBox", "Courier New"));
+                Assert.IsFalse(string.IsNullOrEmpty(native.Controls(host.Handle, 0).Single(x => x.Name == "Font").Error)); combo.Password = false;
+                original.Selected = true;
+                Assert.IsFalse(string.IsNullOrEmpty(native.Controls(host.Handle, 0).Single(x => x.Name == "Font").Error)); original.Selected = false;
+                desired.Selected = false;
+                Assert.IsFalse(string.IsNullOrEmpty(native.Controls(host.Handle, 0).Single(x => x.Name == "Font").Error)); desired.Selected = true;
+                combo.Patterns.Remove(System.Windows.Automation.SelectionPattern.Pattern.Id); combo.Text = "Courier New";
+                Assert.AreEqual("Courier New", native.Controls(host.Handle, 0).Single(x => x.Name == "Font").Value);
+                combo.Patterns.Clear();
+                Assert.IsFalse(string.IsNullOrEmpty(native.Controls(host.Handle, 0).Single(x => x.Name == "Font").Error));
+                combo.Kind = System.Windows.Automation.ControlType.List;
+                combo.Patterns.Add(System.Windows.Automation.SelectionPattern.Pattern.Id);
+                native.Write(host.Handle, 0, "Font", "ControlType.List", "Courier New");
+                Assert.AreEqual("Courier New", native.Controls(host.Handle, 0).Single(x => x.Name == "Font").Value);
+            }
+        }
+
         [TestMethod]
         public void NativeOptionsWriteRealUiaPatternsAndRefuseMissingPatternsOrReadOnlyValues()
         {
