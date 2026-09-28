@@ -46,15 +46,18 @@ namespace CodexVBE.Tests.Unit
             /// <summary>PID réellement propriétaire du provider, avec surcharge explicite pour les scénarios d'identité refusée.</summary>
             public int? ProcessId;
             public Action SelectedAction;
+            public Action<int> OnPropertyRead;
+            public Action<int> OnPatternRead;
 
             public AutomationNode Add(AutomationNode child) { child.Parent = this; Children.Add(child); return child; }
             public AutomationNode With(params AutomationPattern[] patterns) { foreach (var pattern in patterns) Patterns.Add(pattern.Id); return this; }
             private AutomationNode Root { get { var root = this; while (root.Parent != null) root = root.Parent; return root; } }
             public ProviderOptions ProviderOptions => ProviderOptions.ServerSideProvider;
             public IRawElementProviderSimple HostRawElementProvider => Parent == null ? AutomationInteropProvider.HostProviderFromHandle(Window) : null;
-            public object GetPatternProvider(int patternId) { return Patterns.Contains(patternId) ? this : null; }
+            public object GetPatternProvider(int patternId) { OnPatternRead?.Invoke(patternId); return Patterns.Contains(patternId) ? this : null; }
             public object GetPropertyValue(int propertyId)
             {
+                OnPropertyRead?.Invoke(propertyId);
                 if (propertyId == AutomationElementIdentifiers.NameProperty.Id) { if (FailName) throw new ElementNotAvailableException(); return Name; }
                 if (propertyId == AutomationElementIdentifiers.ControlTypeProperty.Id) return Kind.Id;
                 if (propertyId == AutomationElementIdentifiers.IsEnabledProperty.Id) return Enabled;

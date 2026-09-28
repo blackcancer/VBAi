@@ -1,3 +1,5 @@
+using System.Windows.Automation;
+
 namespace CodexVBE.Tests.Unit
 {
     using System;
@@ -439,6 +441,86 @@ namespace CodexVBE.Tests.Unit
     }
     public sealed partial class VbeDebugWindowsSystemTests
     {
+        [TestMethod]
+        public void NativeOptionReadAndWriteCoverEmbeddedEditsAndNonNativeComboProviders()
+        {
+            using (var f = new OwnedNativeOptionsControls())
+            {
+                IntPtr edit = IntPtr.Zero;
+                f.Host.Invoke(owner => edit = OptionsFixtureCreate(0, "Edit", "", 0x50000000, 0, 0, 30, 15, f.Font, new IntPtr(519), IntPtr.Zero, IntPtr.Zero));
+                Assert.AreNotEqual(IntPtr.Zero, edit);
+                f.Root.Add(new AutomationNode { Name = "Embedded font edit", Kind = ControlType.Edit, NativeHandle = edit.ToInt32() }.With(ValuePattern.Pattern));
+                IntPtr standalone = IntPtr.Zero;
+                f.Host.Invoke(owner => standalone = OptionsFixtureCreate(0, "Edit", "text", 0x50000000, 0, 0, 30, 15, f.Host.Handle, new IntPtr(520), IntPtr.Zero, IntPtr.Zero));
+                Assert.AreNotEqual(IntPtr.Zero, standalone);
+                f.Root.Add(new AutomationNode { Name = "Standalone native edit", Kind = ControlType.Edit, NativeHandle = standalone.ToInt32(), Text = "text" }.With(ValuePattern.Pattern));
+                IntPtr nonCombo = IntPtr.Zero;
+                f.Host.Invoke(owner => nonCombo = OptionsFixtureCreate(0, "Static", "Provider", 0x50000000, 0, 0, 30, 15, f.Host.Handle, new IntPtr(521), IntPtr.Zero, IntPtr.Zero));
+                Assert.AreNotEqual(IntPtr.Zero, nonCombo);
+                foreach (int handle in new[] { 0, nonCombo.ToInt32() })
+                {
+                    var combo = f.Root.Add(new AutomationNode { Name = "Provider " + handle, Kind = ControlType.ComboBox, NativeHandle = handle }.With(SelectionPattern.Pattern));
+                    var choice = combo.Add(new AutomationNode { Name = "Choice", Selected = true }.With(SelectionItemPattern.Pattern));
+                    var probe = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe"); probe.Tabs(f.Host.Handle);
+                    var controls = probe.Controls(f.Host.Handle, 0);
+                    Assert.IsFalse(controls.Any(c => c.Name == "Embedded font edit"));
+                    Assert.IsTrue(controls.Any(c => c.Name == "Standalone native edit" && Equals(c.Value, "text")));
+                    ((VbeDebugWindows.IWritableOptionsProbe)probe).Write(f.Host.Handle, 0, combo.Name, "ControlType.ComboBox", "Choice");
+                    Assert.IsTrue(choice.Selected);
+                }
+                var racing = f.Root.Add(new AutomationNode { Name = "Password race", Kind = ControlType.ComboBox, Text = "must not read" }.With(ValuePattern.Pattern));
+                int reads = 0; racing.OnPropertyRead = id => { if (id == AutomationElement.IsPasswordProperty.Id && ++reads >= 2) racing.Password = true; };
+                var reader = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe"); reader.Tabs(f.Host.Handle);
+                var refused = reader.Controls(f.Host.Handle, 0).Single(c => c.Name == racing.Name);
+                Assert.IsNull(refused.Value); Assert.IsNotNull(refused.Error);
+            }
+            Assert.AreEqual("", InvokeOptionsMethod(null, "NormalizeOptionName", new object[] { null }));
+            var nativeType = typeof(VbeDebugWindows).GetNestedType("NativeProbe", System.Reflection.BindingFlags.NonPublic);
+            var ctor = nativeType.GetConstructor(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic, null, new[] { typeof(int) }, null);
+            var failure = Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => ctor.Invoke(new object[] { 0 }));
+            Assert.IsInstanceOfType(failure.InnerException, typeof(ArgumentOutOfRangeException));
+        }
+
+        [TestMethod]
+        public void NativeCategoryLateIdentityPatternAndReadbackChangesAreRefused()
+        {
+            foreach (string scenario in new[] { "pid", "pattern", "identifier", "uia-handle", "selection", "palette-selection" })
+            using (var f = new OwnedNativeOptionsControls())
+            {
+                var probe = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe"); probe.Tabs(f.Host.Handle);
+                var categories = (VbeDebugWindows.IFormatCategoriesOptionsProbe)probe;
+                var target = f.CategoryItems[1]; int reads = 0;
+                if (scenario == "pid") target.OnPropertyRead = id => { if (id == AutomationElement.ProcessIdProperty.Id && ++reads >= 2) target.ProcessId = System.Diagnostics.Process.GetCurrentProcess().Id + 1; };
+                if (scenario == "pattern") target.OnPatternRead = id => { if (id == SelectionItemPattern.Pattern.Id && ++reads >= 2) target.Patterns.Remove(id); };
+                var select = target.SelectedAction;
+                if (scenario == "identifier") target.SelectedAction = () => { select(); f.Host.Invoke(owner => OptionsFixtureSetStyle(f.List, -12, 999)); };
+                if (scenario == "uia-handle") target.SelectedAction = () => { select(); f.Categories.NativeHandle = f.Font.ToInt32(); };
+                if (scenario == "selection") target.SelectedAction = () => { target.Selected = false; f.CategoryItems[0].Selected = true; };
+                if (scenario == "palette-selection") f.Palettes[0].OnPropertyRead = id => { if (id == AutomationElement.NameProperty.Id && f.CurrentCategory == "Comment") { target.Selected = false; f.CategoryItems[0].Selected = true; } };
+                if (scenario == "palette-selection") Assert.ThrowsException<InvalidOperationException>(() => categories.FormatCategories(f.Host.Handle, 0), scenario);
+                else Assert.ThrowsException<InvalidOperationException>(() => categories.SelectFormatCategory(f.Host.Handle, 0, "Comment"), scenario);
+            }
+        }
+        [TestMethod]
+        public void NativeComboWriteUsesItsExactHandleAndRefusesLateParentLoss()
+        {
+            using (var f = new OwnedNativeOptionsControls())
+            {
+                f.Host.Invoke(owner => f.Root.Add(new AutomationNode { Name = "Font", Kind = ControlType.ComboBox, NativeHandle = f.Font.ToInt32() }));
+                var probe = Native<VbeDebugWindows.IWritableOptionsProbe>("NativeOptionsProbe");
+                probe.Tabs(f.Host.Handle);
+                probe.Write(f.Host.Handle, 0, "Font", "ControlType.ComboBox", "Courier New");
+                Assert.AreEqual(1, OptionsFixtureInteger(f.Font, 0x147, IntPtr.Zero, IntPtr.Zero).ToInt32());
+                ParentLostOnComboSelection lost = null;
+                f.Host.Invoke(owner => { lost = new ParentLostOnComboSelection(f.Font) { Armed = true }; });
+                try
+                {
+                    Assert.ThrowsException<InvalidOperationException>(() => InvokeOptionsMethod(null, "WriteOptionsCombo", f.Font, "Consolas"));
+                    Assert.AreEqual(f.Host.Handle, lost.PreviousParent);
+                }
+                finally { f.Host.Invoke(owner => lost.Dispose()); }
+            }
+        }
         [TestMethod]
         public void NativeOptionsEnumerateAndSelectExactChoicesWithoutTypingOrInventingColors()
         {

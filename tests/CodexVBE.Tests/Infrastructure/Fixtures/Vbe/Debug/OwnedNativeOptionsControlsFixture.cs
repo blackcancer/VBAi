@@ -11,6 +11,29 @@ namespace CodexVBE.Tests.Unit
 
     public sealed partial class VbeDebugWindowsSystemTests
     {
+        [DllImport("user32.dll", EntryPoint = "SetParent")]
+        private static extern IntPtr OptionsFixtureSetParent(IntPtr child, IntPtr parent);
+
+        private sealed class ParentLostOnComboSelection : NativeWindow, IDisposable
+        {
+            internal bool Armed;
+            internal IntPtr PreviousParent;
+            internal ParentLostOnComboSelection(IntPtr handle) { AssignHandle(handle); }
+            protected override void WndProc(ref Message message)
+            {
+                if (Armed && message.Msg == 0x14E)
+                {
+                    Armed = false;
+                    PreviousParent = OptionsFixtureSetParent(Handle, IntPtr.Zero);
+                }
+                base.WndProc(ref message);
+            }
+            public void Dispose()
+            {
+                if (PreviousParent != IntPtr.Zero) OptionsFixtureSetParent(Handle, PreviousParent);
+                ReleaseHandle();
+            }
+        }
         [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "CreateWindowExW")]
         private static extern IntPtr OptionsFixtureCreate(uint extended, string kind, string text, uint style,
             int x, int y, int width, int height, IntPtr parent, IntPtr identifier, IntPtr instance, IntPtr parameter);
