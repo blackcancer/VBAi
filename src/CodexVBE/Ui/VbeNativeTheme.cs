@@ -149,6 +149,9 @@ namespace CodexVBE
             return string.Equals(Environment.GetEnvironmentVariable(ExperimentVariable), "1", StringComparison.Ordinal);
         }
 
+        internal static Func<IntPtr, int> ApplyNativeTheme = Apply;
+        internal static Func<object, IntPtr, VbeNativePalette> CreatePalette = (vbe, editor) => new VbeNativePalette(vbe, editor);
+
         /// <summary>Stores the VBE owner and applies the persisted or explicitly gated preference.</summary>
         internal static void Initialize(IntPtr editor, bool enabled, object vbe = null)
         {
@@ -173,7 +176,7 @@ namespace CodexVBE
             nativePalette?.Dispose();
             // Disposable probes drive palette recovery explicitly in their own
             // artifact directory; they must not create a production recovery file.
-            nativePalette = vbe != null && !ExperimentEnabled() ? new VbeNativePalette(vbe, editor) : null;
+            nativePalette = vbe != null && !ExperimentEnabled() ? CreatePalette(vbe, editor) : null;
             SetEnabled(enabled || ExperimentEnabled());
         }
 
@@ -189,7 +192,7 @@ namespace CodexVBE
             if (editorWindow == IntPtr.Zero) throw new InvalidOperationException("The VBE window is not initialized.");
             if (themedWindows.Count == 0)
             {
-                try { Apply(editorWindow); }
+                try { ApplyNativeTheme(editorWindow); }
                 catch { Reset(); throw; }
             }
             nativePalette?.Request(true);

@@ -221,3 +221,210 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    [TestClass, TestCategory("Unit"), DoNotParallelize]
+    public sealed class VbeNativeThemeOrchestrationTests
+    {
+        [TestMethod]
+        public void InitializationAndApplyRejectMissingOwnerBeforeAnyNativeModeChange()
+        {
+            NativeThemeFixture.OnSta(() =>
+            {
+                using (var renderer = new NativeRendererStopFixture(false))
+                using (var fixture = new NativeThemeFixture())
+                {
+                    Assert.ThrowsException<ArgumentException>(() => VbeNativeTheme.Initialize(IntPtr.Zero, false));
+                    Assert.ThrowsException<InvalidOperationException>(() => VbeNativeTheme.SetEnabled(true));
+                    Assert.ThrowsException<ArgumentException>(() => VbeNativeTheme.Apply(IntPtr.Zero));
+                    Assert.ThrowsException<InvalidOperationException>(() => VbeNativeTheme.Apply(new IntPtr(-1)));
+                    Assert.AreEqual(0, fixture.Applies); Assert.AreEqual(0, fixture.PreferredModes.Count);
+                    Assert.AreEqual(IntPtr.Zero, fixture.Read("editorWindow"));
+                }
+            });
+        }
+
+        [TestMethod]
+        public void NullVbeInitializationClearsPaneAndRemainsDisabled()
+        {
+            NativeThemeFixture.OnSta(() =>
+            {
+                using (var renderer = new NativeRendererStopFixture(false))
+                using (var fixture = new NativeThemeFixture())
+                {
+                    fixture.Set("immediateWindow", new IntPtr(7)); fixture.Set("immediateCaption", "Old immediate");
+                    VbeNativeTheme.Initialize(fixture.Handle, false);
+                    Assert.AreEqual(fixture.Handle, fixture.Read("editorWindow"));
+                    Assert.AreEqual(IntPtr.Zero, fixture.Read("immediateWindow")); Assert.IsNull(fixture.Read("immediateCaption"));
+                    Assert.IsNull(fixture.Palette); Assert.AreEqual(0, fixture.Creates); Assert.AreEqual(0, fixture.Applies);
+                    Assert.IsTrue(VbeNativeTheme.Disconnect()); Assert.IsTrue(VbeNativeTheme.Disconnect());
+                }
+            });
+        }
+
+        [TestMethod]
+        public void PaneDiscoveryAndPaletteReplacementPreserveOnlyTheFirstImmediatePane()
+        {
+            NativeThemeFixture.OnSta(() =>
+            {
+                using (var renderer = new NativeRendererStopFixture(false))
+                using (var fixture = new NativeThemeFixture())
+                {
+                    var noImmediate = new NativeThemeVbe { Windows = new object[] { new NativeThemePane { Type = 1 } } };
+                    VbeNativeTheme.Initialize(fixture.Handle, false, noImmediate);
+                    var previous = fixture.Palette;
+                    Assert.IsFalse((bool)NativeThemeFixture.PaletteField(previous, "requested"));
+                    Assert.AreEqual(IntPtr.Zero, fixture.Read("immediateWindow"));
+                    var vbe = new NativeThemeVbe { Windows = new object[] {
+                        new NativeThemePane { Type = 1 }, new NativeThemePane { Type = 5, HWnd = 99, Caption = "Synthetic immediate" },
+                        new NativeThemePane { Type = 5, HWnd = 100, Caption = "Ignored immediate" } } };
+                    VbeNativeTheme.Initialize(fixture.Handle, true, vbe);
+                    Assert.IsTrue((bool)NativeThemeFixture.PaletteField(previous, "disposed"));
+                    Assert.AreEqual(new IntPtr(99), fixture.Read("immediateWindow"));
+                    Assert.AreEqual("Synthetic immediate", fixture.Read("immediateCaption"));
+                    Assert.AreEqual(2, fixture.Creates); Assert.AreEqual(1, fixture.Applies);
+                    Assert.IsTrue((bool)NativeThemeFixture.PaletteField(fixture.Palette, "requested"));
+                    VbeNativeTheme.SetEnabled(true);
+                    Assert.AreEqual(1, fixture.Applies, "Repeated activation must not reinstall resources.");
+                    VbeNativeTheme.SetEnabled(false);
+                    Assert.IsFalse((bool)NativeThemeFixture.PaletteField(fixture.Palette, "requested"));
+                    var activePalette = fixture.Palette;
+                    Assert.IsTrue(VbeNativeTheme.Disconnect());
+                    Assert.IsTrue((bool)NativeThemeFixture.PaletteField(activePalette, "disposed")); Assert.IsNull(fixture.Palette);
+                    Assert.AreEqual(IntPtr.Zero, fixture.Read("editorWindow"));
+                    Assert.AreEqual(IntPtr.Zero, fixture.Read("immediateWindow")); Assert.IsNull(fixture.Read("immediateCaption"));
+                }
+            });
+        }
+
+        [TestMethod]
+        public void ExplicitExperimentEnablesThemeAndSuppressesProductionPaletteService()
+        {
+            NativeThemeFixture.OnSta(() =>
+            {
+                using (var renderer = new NativeRendererStopFixture(false))
+                using (var fixture = new NativeThemeFixture())
+                {
+                    Environment.SetEnvironmentVariable(VbeNativeTheme.ExperimentVariable, "1");
+                    VbeNativeTheme.Initialize(fixture.Handle, false, new NativeThemeVbe());
+                    Assert.AreEqual(1, fixture.Applies); Assert.AreEqual(0, fixture.Creates); Assert.IsNull(fixture.Palette);
+                    Assert.AreEqual(1, fixture.Count("themedWindows"));
+                    Assert.IsTrue(VbeNativeTheme.Disconnect());
+                }
+            });
+        }
+
+        [TestMethod]
+        public void PaneDiscoveryFailureIsLoggedWhilePaletteInitializationContinues()
+        {
+            NativeThemeFixture.OnSta(() =>
+            {
+                using (var renderer = new NativeRendererStopFixture(false))
+                using (var fixture = new NativeThemeFixture())
+                {
+                    VbeNativeTheme.Initialize(fixture.Handle, false, new NativeThemeBrokenVbe());
+                    Assert.AreEqual(1, fixture.Creates); Assert.IsNotNull(fixture.Palette);
+                    Assert.IsTrue(fixture.Messages.Exists(message => message.Contains("Native Immediate pane identification failed: synthetic pane enumeration failure")));
+                    Assert.AreEqual(IntPtr.Zero, fixture.Read("immediateWindow"));
+                }
+            });
+        }
+
+        [TestMethod]
+        public void ApplicationFailureCleansPartialThemeAndPreservesOriginalException()
+        {
+            NativeThemeFixture.OnSta(() =>
+            {
+                using (var renderer = new NativeRendererStopFixture(false))
+                using (var fixture = new NativeThemeFixture())
+                {
+                    fixture.Set("editorWindow", fixture.Handle);
+                    var expected = new InvalidOperationException("synthetic partial apply failure"); fixture.ApplyFailure = expected;
+                    var actual = Assert.ThrowsException<InvalidOperationException>(() => VbeNativeTheme.SetEnabled(true));
+                    Assert.AreSame(expected, actual); Assert.AreEqual(1, fixture.Applies);
+                    Assert.AreEqual(1, renderer.Calls); Assert.AreEqual(0, fixture.Count("themedWindows"));
+                    Assert.AreEqual(fixture.Handle, fixture.Read("editorWindow"));
+                }
+            });
+        }
+
+        [TestMethod]
+        public void StopRefusalPreservesEveryOwnerResourceAndDoesNotRequestPaletteRestore()
+        {
+            NativeThemeFixture.OnSta(() =>
+            {
+                using (var renderer = new NativeRendererStopFixture())
+                using (var fixture = new NativeThemeFixture())
+                {
+                    VbeNativeTheme.Initialize(fixture.Handle, true, new NativeThemeVbe());
+                    IntPtr brush = fixture.AddBrush(), hook = fixture.AddEventHook();
+                    fixture.Add("pendingChrome", fixture.Handle); fixture.Add("pendingCaptions", fixture.Handle);
+                    fixture.Set("preferredModeChanged", true); fixture.Set("previousPreferredMode", 3);
+                    fixture.ConfigureCallbacks(); renderer.Result = 1444;
+                    var palette = fixture.Palette;
+                    Assert.IsFalse(VbeNativeTheme.Reset()); Assert.IsFalse(VbeNativeTheme.Disconnect());
+                    Assert.ThrowsException<InvalidOperationException>(() => VbeNativeTheme.SetEnabled(false));
+                    Assert.AreEqual(3, renderer.Calls); Assert.IsTrue(VbeNativeRenderer.Active);
+                    Assert.AreEqual(fixture.Handle, fixture.Read("editorWindow")); Assert.AreSame(palette, fixture.Palette);
+                    Assert.IsFalse((bool)NativeThemeFixture.PaletteField(palette, "disposed"));
+                    Assert.IsTrue((bool)NativeThemeFixture.PaletteField(palette, "requested"));
+                    Assert.AreEqual(brush, fixture.Read("backgroundBrush")); Assert.AreEqual((uint)2, NativeThemeFixture.GetObjectType(brush));
+                    Assert.AreEqual(hook, fixture.Read("windowEventHook")); Assert.AreEqual(1, fixture.Count("themedWindows"));
+                    Assert.AreEqual(1, fixture.Count("pendingChrome")); Assert.AreEqual(1, fixture.Count("pendingCaptions"));
+                    Assert.IsTrue((bool)fixture.Read("preferredModeChanged")); Assert.AreEqual(0, fixture.PreferredModes.Count);
+                    Assert.AreEqual(0, fixture.RestoredWindows.Count); Assert.AreEqual(0, fixture.Flushes);
+                }
+            });
+        }
+
+        [TestMethod]
+        public void ConfirmedResetRestoresPreferenceDeletesBrushAndRemovesWindowResources()
+        {
+            NativeThemeFixture.OnSta(() =>
+            {
+                using (var renderer = new NativeRendererStopFixture())
+                using (var fixture = new NativeThemeFixture())
+                {
+                    fixture.ConfigureCallbacks(); fixture.Set("editorWindow", fixture.Handle);
+                    IntPtr dialog = fixture.AddDialog(); fixture.Add("themedWindows", fixture.Handle); fixture.Add("themedWindows", dialog);
+                    fixture.AddSubclass(fixture.Handle); Assert.IsTrue(fixture.IsSubclassed(fixture.Handle));
+                    IntPtr brush = fixture.AddBrush(); fixture.AddEventHook();
+                    var propertyTabs = fixture.AddPropertyTabs();
+                    fixture.Add("pendingChrome", fixture.Handle); fixture.Add("pendingCaptions", fixture.Handle);
+                    fixture.Set("toolbarPaintCount", 7); fixture.Set("toolbarDeferredPaintCount", 8);
+                    fixture.Set("preferredModeChanged", true); fixture.Set("previousPreferredMode", 3);
+                    Assert.IsTrue(VbeNativeTheme.Reset()); Assert.IsFalse(VbeNativeRenderer.Active);
+                    Assert.AreEqual((uint)0, NativeThemeFixture.GetObjectType(brush)); Assert.AreEqual(IntPtr.Zero, fixture.Read("backgroundBrush"));
+                    Assert.AreEqual(IntPtr.Zero, fixture.Read("windowEventHook")); Assert.IsFalse(fixture.IsSubclassed(fixture.Handle));
+                    IntPtr result; Assert.IsFalse(propertyTabs.TryHandleMessage(0x14, IntPtr.Zero, IntPtr.Zero, out result));
+                    foreach (string name in new[] { "themedWindows", "subclassedWindows", "pendingChrome", "pendingCaptions", "propertyTabs", "originalControlColors" })
+                        Assert.AreEqual(0, fixture.Count(name));
+                    Assert.AreEqual(0, fixture.Read("toolbarPaintCount")); Assert.AreEqual(0, fixture.Read("toolbarDeferredPaintCount"));
+                    CollectionAssert.AreEqual(new[] { fixture.Handle, dialog }, fixture.RestoredWindows);
+                    CollectionAssert.AreEqual(new[] { 3 }, fixture.PreferredModes);
+                    Assert.AreEqual(1, fixture.Flushes); Assert.IsFalse((bool)fixture.Read("preferredModeChanged"));
+                    Assert.AreEqual(fixture.Handle, fixture.Read("editorWindow"));
+                    Assert.IsTrue(VbeNativeTheme.Reset()); Assert.AreEqual(1, fixture.PreferredModes.Count); Assert.AreEqual(2, fixture.Flushes);
+                }
+            });
+        }
+
+        [TestMethod]
+        public void MissingRestoreDelegatesStillClearConfirmedResourcesAndPreferenceFlag()
+        {
+            NativeThemeFixture.OnSta(() =>
+            {
+                using (var renderer = new NativeRendererStopFixture(false))
+                using (var fixture = new NativeThemeFixture())
+                {
+                    fixture.ConfigureCallbacks(false, false, false);
+                    fixture.Add("themedWindows", fixture.Handle); fixture.Set("preferredModeChanged", true);
+                    Assert.IsTrue(VbeNativeTheme.Reset()); Assert.AreEqual(0, fixture.Count("themedWindows"));
+                    Assert.IsFalse((bool)fixture.Read("preferredModeChanged")); Assert.AreEqual(0, fixture.Flushes);
+                    Assert.AreEqual(0, fixture.PreferredModes.Count); Assert.AreEqual(IntPtr.Zero, fixture.Read("editorWindow"));
+                }
+            });
+        }
+    }
+}

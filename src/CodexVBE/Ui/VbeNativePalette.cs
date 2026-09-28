@@ -20,14 +20,14 @@ namespace CodexVBE
         private bool disposed;
         private static int updateInProgress;
 
-        internal VbeNativePalette(object vbe, IntPtr editor)
+        internal VbeNativePalette(object vbe, IntPtr editor, string recoveryPath = null)
         {
             this.vbe = vbe;
             this.editor = editor;
             string version = Convert.ToString(((dynamic)vbe).Version);
             if (string.IsNullOrEmpty(version) || version.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
                 throw new InvalidOperationException("The VBE version cannot be used for palette recovery.");
-            path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexVBE", "native-theme", "palette-" + version + ".json");
+            path = recoveryPath ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexVBE", "native-theme", "palette-" + version + ".json");
             timer = new System.Windows.Forms.Timer { Interval = 250 };
             timer.Tick += ApplyPending;
         }
