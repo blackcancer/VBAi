@@ -1787,4 +1787,42 @@ Git Credential Manager でサインインします。コミットの作成者情
   <data name="Controls restored" xml:space="preserve"><value>コントロールを復元済み</value></data>
   <data name="Recovery attempted" xml:space="preserve"><value>復元を試行済み</value></data>
   <data name="Recovery unavailable" xml:space="preserve"><value>復元できません</value></data>
+  <data name="About VBAi" xml:space="preserve"><value>VBAi について</value></data>
+  <data name="Understand, edit and version your VBA projects with AI." xml:space="preserve"><value>AI を使って VBA プロジェクトを理解、編集し、バージョンを管理します。</value></data>
+  <data name="Version" xml:space="preserve"><value>バージョン</value></data>
+  <data name="Host" xml:space="preserve"><value>ホスト</value></data>
+  <data name="Platform" xml:space="preserve"><value>プラットフォーム</value></data>
+  <data name="Interface language" xml:space="preserve"><value>インターフェイスの言語</value></data>
+  <data name="Project on GitHub" xml:space="preserve"><value>GitHub のプロジェクト</value></data>
+  <data name="Documentation" xml:space="preserve"><value>ドキュメント</value></data>
+  <data name="Report an issue" xml:space="preserve"><value>問題を報告</value></data>
+  <data name="Copy technical details" xml:space="preserve"><value>技術情報をコピー</value></data>
+  <data name="Technical details copied." xml:space="preserve"><value>技術情報をコピーしました。</value></data>
+  <data name="Unable to copy technical details." xml:space="preserve"><value>技術情報をコピーできません。</value></data>
+  <data name="Unable to open the link." xml:space="preserve"><value>リンクを開けません。</value></data>
+  <data name="Copy the version and environment information for support." xml:space="preserve"><value>サポート用にバージョンと環境情報をコピーします。</value></data>
+  <data name="Version, technical details and project resources" xml:space="preserve"><value>バージョン、技術情報、プロジェクトのリソース</value></data>
+  <data name="Close" xml:space="preserve"><value>閉じる</value></data>
+  <data name="VBAi · Report an issue" xml:space="preserve"><value>VBAi · 問題を報告</value></data>
+  <data name="Review before sending. No VBA, chat, credentials or file paths are collected automatically." xml:space="preserve"><value>送信前に確認してください。VBAコード、チャット、認証情報、ファイルパスは自動収集されません。</value></data>
+  <data name="What happened?" xml:space="preserve"><value>何が起きましたか？</value></data>
+  <data name="Report preview" xml:space="preserve"><value>レポートのプレビュー</value></data>
+  <data name="Open GitHub issue" xml:space="preserve"><value>GitHubのIssueを開く</value></data>
+  <data name="Send report" xml:space="preserve"><value>レポートを送信</value></data>
+  <data name="Save report" xml:space="preserve"><value>レポートを保存</value></data>
+  <data name="GitHub first; Outlook if unavailable." xml:space="preserve"><value>まずGitHub、利用できない場合はOutlook。</value></data>
+  <data name="Send with Outlook, or open an email draft." xml:space="preserve"><value>Outlookで送信、またはメールの下書きを開く。</value></data>
+  <data name="Save the full report and copy its path." xml:space="preserve"><value>完全なレポートを保存し、パスをコピー。</value></data>
+  <data name="Do not include confidential information in your description." xml:space="preserve"><value>説明に機密情報を含めないでください。</value></data>
+  <data name="Attach the saved report to this email." xml:space="preserve"><value>保存したレポートをこのメールに添付してください。</value></data>
+  <data name="Sending report…" xml:space="preserve"><value>レポートを送信中…</value></data>
+  <data name="Report published on GitHub." xml:space="preserve"><value>GitHubにレポートを公開しました。</value></data>
+  <data name="Report handed to Outlook for sending." xml:space="preserve"><value>送信用レポートをOutlookに渡しました。</value></data>
+  <data name="Email draft opened. Attach the saved report, then send it." xml:space="preserve"><value>下書きを開きました。保存したレポートを添付して送信してください。</value></data>
+  <data name="Delivery is uncertain. Check GitHub or Outlook before trying again." xml:space="preserve"><value>送信結果は不明です。再試行前にGitHubまたはOutlookを確認してください。</value></data>
+  <data name="Unable to send the report. The local copy is available." xml:space="preserve"><value>レポートを送信できません。ローカルのコピーを利用できます。</value></data>
+  <data name="Local report saved. Its path has been copied." xml:space="preserve"><value>ローカルに保存し、パスをコピーしました。</value></data>
+  <data name="Unable to save the report." xml:space="preserve"><value>レポートを保存できません。</value></data>
+  <data name="Title" xml:space="preserve"><value>タイトル</value></data>
+  <data name="Email" xml:space="preserve"><value>メール</value></data>
 </root>

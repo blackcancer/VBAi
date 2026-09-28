@@ -328,3 +328,53 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using CodexVBE;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+    public sealed partial class VbeMenuLifecycleTests
+    {
+        [TestMethod]
+        public void CrashReportHasItsOwnToolsCallbackIconAndCleanup()
+        {
+            var host = Host(); var subscriptions = new Dictionary<object, Delegate>();
+            var icons = new Dictionary<object, Type>(); int opened = 0, removed = 0;
+            var menu = new VbeMenu(host, () => { }, () => { }, () => { }, null,
+                (button, iid, dispid, callback) => subscriptions.Add(button, callback),
+                (button, iid, dispid, callback) => removed++, (button, type) => icons.Add(button, type), null, () => opened++);
+            var report = host.CommandBars[0].Controls.Items[1].Controls.Items.Single(x => x.Tag == "CodexVBE.CrashReport");
+            Assert.AreEqual(typeof(CrashReportWindow), icons[report]);
+            var args = new object[] { report, false }; subscriptions[report].DynamicInvoke(args);
+            Assert.AreEqual(true, args[1]); Assert.AreEqual(1, opened);
+            menu.Dispose(); menu.Dispose(); Assert.AreEqual(4, removed); Assert.AreEqual(1, report.DeleteCount);
+        }
+
+        [TestMethod]
+        public void AboutHasItsOwnToolsCallbackIconAndCleanup()
+        {
+            var host = Host();
+            var subscriptions = new Dictionary<object, Delegate>();
+            var icons = new Dictionary<object, Type>();
+            int opened = 0, removed = 0;
+            var menu = new VbeMenu(host, () => { }, () => { }, () => { }, null,
+                (button, iid, dispid, callback) => subscriptions.Add(button, callback),
+                (button, iid, dispid, callback) => removed++,
+                (button, type) => icons.Add(button, type), () => opened++);
+            var about = host.CommandBars[0].Controls.Items[1].Controls.Items.Single(x => x.Tag == "CodexVBE.About");
+            Assert.AreEqual(UiText.Get("About VBAi"), about.Caption);
+            Assert.AreEqual(typeof(AboutWindow), icons[about]);
+            var args = new object[] { about, false };
+            subscriptions[about].DynamicInvoke(args);
+            Assert.AreEqual(true, args[1]);
+            Assert.AreEqual(1, opened);
+            menu.Dispose(); menu.Dispose();
+            Assert.AreEqual(4, removed);
+            Assert.AreEqual(1, about.DeleteCount);
+        }
+    }
+}

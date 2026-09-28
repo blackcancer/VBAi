@@ -1787,4 +1787,42 @@ QQ 附加記憶體
   <data name="Controls restored" xml:space="preserve"><value>控制項已還原</value></data>
   <data name="Recovery attempted" xml:space="preserve"><value>已嘗試還原</value></data>
   <data name="Recovery unavailable" xml:space="preserve"><value>無法還原</value></data>
+  <data name="About VBAi" xml:space="preserve"><value>關於 VBAi</value></data>
+  <data name="Understand, edit and version your VBA projects with AI." xml:space="preserve"><value>使用 AI 理解、編輯 VBA 專案並管理版本。</value></data>
+  <data name="Version" xml:space="preserve"><value>版本</value></data>
+  <data name="Host" xml:space="preserve"><value>宿主</value></data>
+  <data name="Platform" xml:space="preserve"><value>平台</value></data>
+  <data name="Interface language" xml:space="preserve"><value>介面語言</value></data>
+  <data name="Project on GitHub" xml:space="preserve"><value>GitHub 專案</value></data>
+  <data name="Documentation" xml:space="preserve"><value>文件</value></data>
+  <data name="Report an issue" xml:space="preserve"><value>回報問題</value></data>
+  <data name="Copy technical details" xml:space="preserve"><value>複製技術資訊</value></data>
+  <data name="Technical details copied." xml:space="preserve"><value>已複製技術資訊。</value></data>
+  <data name="Unable to copy technical details." xml:space="preserve"><value>無法複製技術資訊。</value></data>
+  <data name="Unable to open the link." xml:space="preserve"><value>無法開啟連結。</value></data>
+  <data name="Copy the version and environment information for support." xml:space="preserve"><value>複製版本和環境資訊以取得支援。</value></data>
+  <data name="Version, technical details and project resources" xml:space="preserve"><value>版本、技術資訊與專案資源</value></data>
+  <data name="Close" xml:space="preserve"><value>關閉</value></data>
+  <data name="VBAi · Report an issue" xml:space="preserve"><value>VBAi · 回報問題</value></data>
+  <data name="Review before sending. No VBA, chat, credentials or file paths are collected automatically." xml:space="preserve"><value>傳送前請檢查。不會自動收集 VBA 程式碼、聊天、認證資訊或檔案路徑。</value></data>
+  <data name="What happened?" xml:space="preserve"><value>發生了什麼？</value></data>
+  <data name="Report preview" xml:space="preserve"><value>報告預覽</value></data>
+  <data name="Open GitHub issue" xml:space="preserve"><value>開啟 GitHub 問題</value></data>
+  <data name="Send report" xml:space="preserve"><value>傳送報告</value></data>
+  <data name="Save report" xml:space="preserve"><value>儲存報告</value></data>
+  <data name="GitHub first; Outlook if unavailable." xml:space="preserve"><value>優先 GitHub；無法使用時改用 Outlook。</value></data>
+  <data name="Send with Outlook, or open an email draft." xml:space="preserve"><value>透過 Outlook 傳送，或開啟郵件草稿。</value></data>
+  <data name="Save the full report and copy its path." xml:space="preserve"><value>儲存完整報告並複製路徑。</value></data>
+  <data name="Do not include confidential information in your description." xml:space="preserve"><value>請勿在描述中包含機密資訊。</value></data>
+  <data name="Attach the saved report to this email." xml:space="preserve"><value>請將儲存的報告附加到此郵件。</value></data>
+  <data name="Sending report…" xml:space="preserve"><value>正在傳送報告…</value></data>
+  <data name="Report published on GitHub." xml:space="preserve"><value>報告已發佈至 GitHub。</value></data>
+  <data name="Report handed to Outlook for sending." xml:space="preserve"><value>報告已交給 Outlook 傳送。</value></data>
+  <data name="Email draft opened. Attach the saved report, then send it." xml:space="preserve"><value>郵件草稿已開啟。請附加儲存的報告後傳送。</value></data>
+  <data name="Delivery is uncertain. Check GitHub or Outlook before trying again." xml:space="preserve"><value>傳送結果不確定。重試前請檢查 GitHub 或 Outlook。</value></data>
+  <data name="Unable to send the report. The local copy is available." xml:space="preserve"><value>無法傳送報告。本機副本仍可用。</value></data>
+  <data name="Local report saved. Its path has been copied." xml:space="preserve"><value>報告已儲存至本機。路徑已複製。</value></data>
+  <data name="Unable to save the report." xml:space="preserve"><value>無法儲存報告。</value></data>
+  <data name="Title" xml:space="preserve"><value>標題</value></data>
+  <data name="Email" xml:space="preserve"><value>電子郵件</value></data>
 </root>

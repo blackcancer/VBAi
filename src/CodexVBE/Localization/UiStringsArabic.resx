@@ -1787,4 +1787,42 @@
   <data name="Controls restored" xml:space="preserve"><value>تمت استعادة عناصر التحكم</value></data>
   <data name="Recovery attempted" xml:space="preserve"><value>جرت محاولة الاستعادة</value></data>
   <data name="Recovery unavailable" xml:space="preserve"><value>الاستعادة غير متاحة</value></data>
+  <data name="About VBAi" xml:space="preserve"><value>حول VBAi</value></data>
+  <data name="Understand, edit and version your VBA projects with AI." xml:space="preserve"><value>افهم مشاريع VBA وحرّرها وأدِر إصداراتها باستخدام الذكاء الاصطناعي.</value></data>
+  <data name="Version" xml:space="preserve"><value>الإصدار</value></data>
+  <data name="Host" xml:space="preserve"><value>التطبيق المضيف</value></data>
+  <data name="Platform" xml:space="preserve"><value>المنصة</value></data>
+  <data name="Interface language" xml:space="preserve"><value>لغة الواجهة</value></data>
+  <data name="Project on GitHub" xml:space="preserve"><value>المشروع على GitHub</value></data>
+  <data name="Documentation" xml:space="preserve"><value>الوثائق</value></data>
+  <data name="Report an issue" xml:space="preserve"><value>الإبلاغ عن مشكلة</value></data>
+  <data name="Copy technical details" xml:space="preserve"><value>نسخ التفاصيل التقنية</value></data>
+  <data name="Technical details copied." xml:space="preserve"><value>تم نسخ التفاصيل التقنية.</value></data>
+  <data name="Unable to copy technical details." xml:space="preserve"><value>تعذّر نسخ التفاصيل التقنية.</value></data>
+  <data name="Unable to open the link." xml:space="preserve"><value>تعذّر فتح الرابط.</value></data>
+  <data name="Copy the version and environment information for support." xml:space="preserve"><value>نسخ الإصدار ومعلومات البيئة للدعم.</value></data>
+  <data name="Version, technical details and project resources" xml:space="preserve"><value>الإصدار والتفاصيل التقنية وموارد المشروع</value></data>
+  <data name="Close" xml:space="preserve"><value>إغلاق</value></data>
+  <data name="VBAi · Report an issue" xml:space="preserve"><value>VBAi · الإبلاغ عن مشكلة</value></data>
+  <data name="Review before sending. No VBA, chat, credentials or file paths are collected automatically." xml:space="preserve"><value>راجع قبل الإرسال. لا تُجمع شيفرة VBA أو المحادثات أو بيانات الاعتماد أو مسارات الملفات تلقائيًا.</value></data>
+  <data name="What happened?" xml:space="preserve"><value>ماذا حدث؟</value></data>
+  <data name="Report preview" xml:space="preserve"><value>معاينة التقرير</value></data>
+  <data name="Open GitHub issue" xml:space="preserve"><value>فتح مشكلة GitHub</value></data>
+  <data name="Send report" xml:space="preserve"><value>إرسال التقرير</value></data>
+  <data name="Save report" xml:space="preserve"><value>حفظ التقرير</value></data>
+  <data name="GitHub first; Outlook if unavailable." xml:space="preserve"><value>GitHub أولًا؛ ثم Outlook إن لم يتوفر.</value></data>
+  <data name="Send with Outlook, or open an email draft." xml:space="preserve"><value>الإرسال عبر Outlook أو فتح مسودة بريد.</value></data>
+  <data name="Save the full report and copy its path." xml:space="preserve"><value>حفظ التقرير كاملًا ونسخ مساره.</value></data>
+  <data name="Do not include confidential information in your description." xml:space="preserve"><value>لا تُدرج معلومات سرية في الوصف.</value></data>
+  <data name="Attach the saved report to this email." xml:space="preserve"><value>أرفق التقرير المحفوظ بهذا البريد.</value></data>
+  <data name="Sending report…" xml:space="preserve"><value>جارٍ إرسال التقرير…</value></data>
+  <data name="Report published on GitHub." xml:space="preserve"><value>نُشر التقرير على GitHub.</value></data>
+  <data name="Report handed to Outlook for sending." xml:space="preserve"><value>سُلّم التقرير إلى Outlook لإرساله.</value></data>
+  <data name="Email draft opened. Attach the saved report, then send it." xml:space="preserve"><value>فُتحت مسودة البريد. أرفق التقرير المحفوظ ثم أرسلها.</value></data>
+  <data name="Delivery is uncertain. Check GitHub or Outlook before trying again." xml:space="preserve"><value>نتيجة الإرسال غير مؤكدة. تحقق من GitHub أو Outlook قبل المحاولة مجددًا.</value></data>
+  <data name="Unable to send the report. The local copy is available." xml:space="preserve"><value>تعذر إرسال التقرير. النسخة المحلية متاحة.</value></data>
+  <data name="Local report saved. Its path has been copied." xml:space="preserve"><value>حُفظ التقرير محليًا ونُسخ مساره.</value></data>
+  <data name="Unable to save the report." xml:space="preserve"><value>تعذر حفظ التقرير.</value></data>
+  <data name="Title" xml:space="preserve"><value>العنوان</value></data>
+  <data name="Email" xml:space="preserve"><value>البريد</value></data>
 </root>

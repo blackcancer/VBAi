@@ -18,7 +18,7 @@ $typeLibPath = Join-Path $projectRoot 'bin\Debug\net48\CodexVBE.tlb'
 if (-not (Test-Path -LiteralPath $assemblyPath)) {
     throw "Build src/CodexVBE/CodexVBE.csproj first. Missing: $assemblyPath"
 }
-foreach ($dependency in @('Markdig.dll', 'System.Memory.dll', 'System.Buffers.dll', 'System.Numerics.Vectors.dll', 'System.Runtime.CompilerServices.Unsafe.dll')) {
+foreach ($dependency in @('Markdig.dll', 'System.Resources.Extensions.dll', 'System.Memory.dll', 'System.Buffers.dll', 'System.Numerics.Vectors.dll', 'System.Runtime.CompilerServices.Unsafe.dll')) {
     if (-not (Test-Path -LiteralPath (Join-Path (Split-Path -Parent $assemblyPath) $dependency))) {
         throw "Missing chat rendering dependency: $dependency. Rebuild and keep the complete output directory."
     }

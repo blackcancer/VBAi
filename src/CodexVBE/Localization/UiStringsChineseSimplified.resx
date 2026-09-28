@@ -1787,4 +1787,42 @@ QQ 附加内存
   <data name="Controls restored" xml:space="preserve"><value>控件已恢复</value></data>
   <data name="Recovery attempted" xml:space="preserve"><value>已尝试恢复</value></data>
   <data name="Recovery unavailable" xml:space="preserve"><value>恢复不可用</value></data>
+  <data name="About VBAi" xml:space="preserve"><value>关于 VBAi</value></data>
+  <data name="Understand, edit and version your VBA projects with AI." xml:space="preserve"><value>使用 AI 理解、编辑 VBA 项目并管理版本。</value></data>
+  <data name="Version" xml:space="preserve"><value>版本</value></data>
+  <data name="Host" xml:space="preserve"><value>宿主</value></data>
+  <data name="Platform" xml:space="preserve"><value>平台</value></data>
+  <data name="Interface language" xml:space="preserve"><value>界面语言</value></data>
+  <data name="Project on GitHub" xml:space="preserve"><value>GitHub 项目</value></data>
+  <data name="Documentation" xml:space="preserve"><value>文档</value></data>
+  <data name="Report an issue" xml:space="preserve"><value>报告问题</value></data>
+  <data name="Copy technical details" xml:space="preserve"><value>复制技术信息</value></data>
+  <data name="Technical details copied." xml:space="preserve"><value>技术信息已复制。</value></data>
+  <data name="Unable to copy technical details." xml:space="preserve"><value>无法复制技术信息。</value></data>
+  <data name="Unable to open the link." xml:space="preserve"><value>无法打开链接。</value></data>
+  <data name="Copy the version and environment information for support." xml:space="preserve"><value>复制版本和环境信息以便获得支持。</value></data>
+  <data name="Version, technical details and project resources" xml:space="preserve"><value>版本、技术信息和项目资源</value></data>
+  <data name="Close" xml:space="preserve"><value>关闭</value></data>
+  <data name="VBAi · Report an issue" xml:space="preserve"><value>VBAi · 报告问题</value></data>
+  <data name="Review before sending. No VBA, chat, credentials or file paths are collected automatically." xml:space="preserve"><value>发送前请检查。不会自动收集 VBA 代码、聊天、凭据或文件路径。</value></data>
+  <data name="What happened?" xml:space="preserve"><value>发生了什么？</value></data>
+  <data name="Report preview" xml:space="preserve"><value>报告预览</value></data>
+  <data name="Open GitHub issue" xml:space="preserve"><value>打开 GitHub 问题</value></data>
+  <data name="Send report" xml:space="preserve"><value>发送报告</value></data>
+  <data name="Save report" xml:space="preserve"><value>保存报告</value></data>
+  <data name="GitHub first; Outlook if unavailable." xml:space="preserve"><value>优先 GitHub；不可用时使用 Outlook。</value></data>
+  <data name="Send with Outlook, or open an email draft." xml:space="preserve"><value>通过 Outlook 发送，或打开邮件草稿。</value></data>
+  <data name="Save the full report and copy its path." xml:space="preserve"><value>保存完整报告并复制路径。</value></data>
+  <data name="Do not include confidential information in your description." xml:space="preserve"><value>请勿在描述中包含机密信息。</value></data>
+  <data name="Attach the saved report to this email." xml:space="preserve"><value>请将保存的报告附加到此邮件。</value></data>
+  <data name="Sending report…" xml:space="preserve"><value>正在发送报告…</value></data>
+  <data name="Report published on GitHub." xml:space="preserve"><value>报告已发布到 GitHub。</value></data>
+  <data name="Report handed to Outlook for sending." xml:space="preserve"><value>报告已交给 Outlook 发送。</value></data>
+  <data name="Email draft opened. Attach the saved report, then send it." xml:space="preserve"><value>邮件草稿已打开。请附加保存的报告后发送。</value></data>
+  <data name="Delivery is uncertain. Check GitHub or Outlook before trying again." xml:space="preserve"><value>发送结果不确定。重试前请检查 GitHub 或 Outlook。</value></data>
+  <data name="Unable to send the report. The local copy is available." xml:space="preserve"><value>无法发送报告。本地副本仍可用。</value></data>
+  <data name="Local report saved. Its path has been copied." xml:space="preserve"><value>报告已保存到本地。路径已复制。</value></data>
+  <data name="Unable to save the report." xml:space="preserve"><value>无法保存报告。</value></data>
+  <data name="Title" xml:space="preserve"><value>标题</value></data>
+  <data name="Email" xml:space="preserve"><value>电子邮件</value></data>
 </root>

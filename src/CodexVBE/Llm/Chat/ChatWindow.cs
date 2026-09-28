@@ -52,6 +52,7 @@ namespace CodexVBE
             Icon = VbeWindowIcons.Icon("assistant");
             github.Image = VbeWindowIcons.Image("github");
             configure.Image = VbeWindowIcons.Image("settings");
+            using (var identity = VbeWindowIcons.Icon("assistant")) about.Image = identity?.ToBitmap();
             UiText.Apply(this, components);
         }
 
@@ -524,6 +525,7 @@ namespace CodexVBE
             sessionStore?.Dispose(); sessionStore = null;
             activeHttpClient?.Dispose(); codex?.Dispose(); codex = null;
             changes?.ContextMenuStrip?.Dispose();
+            if (about?.Image != null) { about.Image.Dispose(); about.Image = null; }
             DisposeEntryViews();
             DisposeComposer();
         }

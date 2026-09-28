@@ -1789,4 +1789,42 @@ Connexion via Git Credential Manager ; identité de commit configurée dans Git.
   <data name="Controls restored" xml:space="preserve"><value>Contrôles restaurés</value></data>
   <data name="Recovery attempted" xml:space="preserve"><value>Récupération tentée</value></data>
   <data name="Recovery unavailable" xml:space="preserve"><value>Récupération indisponible</value></data>
+  <data name="About VBAi" xml:space="preserve"><value>À propos de VBAi</value></data>
+  <data name="Understand, edit and version your VBA projects with AI." xml:space="preserve"><value>Comprenez, modifiez et versionnez vos projets VBA avec l’IA.</value></data>
+  <data name="Version" xml:space="preserve"><value>Version</value></data>
+  <data name="Host" xml:space="preserve"><value>Hôte</value></data>
+  <data name="Platform" xml:space="preserve"><value>Plateforme</value></data>
+  <data name="Interface language" xml:space="preserve"><value>Langue de l’interface</value></data>
+  <data name="Project on GitHub" xml:space="preserve"><value>Projet sur GitHub</value></data>
+  <data name="Documentation" xml:space="preserve"><value>Documentation</value></data>
+  <data name="Report an issue" xml:space="preserve"><value>Signaler un problème</value></data>
+  <data name="Copy technical details" xml:space="preserve"><value>Copier les détails techniques</value></data>
+  <data name="Technical details copied." xml:space="preserve"><value>Détails techniques copiés.</value></data>
+  <data name="Unable to copy technical details." xml:space="preserve"><value>Impossible de copier les détails techniques.</value></data>
+  <data name="Unable to open the link." xml:space="preserve"><value>Impossible d’ouvrir le lien.</value></data>
+  <data name="Copy the version and environment information for support." xml:space="preserve"><value>Copier la version et les informations d’environnement pour le support.</value></data>
+  <data name="Version, technical details and project resources" xml:space="preserve"><value>Version, détails techniques et ressources du projet</value></data>
+  <data name="Close" xml:space="preserve"><value>Fermer</value></data>
+  <data name="VBAi · Report an issue" xml:space="preserve"><value>VBAi · Signaler un problème</value></data>
+  <data name="Review before sending. No VBA, chat, credentials or file paths are collected automatically." xml:space="preserve"><value>Vérifiez avant l’envoi. Aucun code VBA, conversation, identifiant ou chemin de fichier n’est collecté automatiquement.</value></data>
+  <data name="What happened?" xml:space="preserve"><value>Que s’est-il passé ?</value></data>
+  <data name="Report preview" xml:space="preserve"><value>Aperçu du rapport</value></data>
+  <data name="Open GitHub issue" xml:space="preserve"><value>Ouvrir l’issue GitHub</value></data>
+  <data name="Send report" xml:space="preserve"><value>Envoyer le rapport</value></data>
+  <data name="Save report" xml:space="preserve"><value>Enregistrer le rapport</value></data>
+  <data name="GitHub first; Outlook if unavailable." xml:space="preserve"><value>GitHub en priorité ; Outlook si indisponible.</value></data>
+  <data name="Send with Outlook, or open an email draft." xml:space="preserve"><value>Envoyer via Outlook ou ouvrir un brouillon d’e-mail.</value></data>
+  <data name="Save the full report and copy its path." xml:space="preserve"><value>Enregistrer le rapport complet et copier son chemin.</value></data>
+  <data name="Do not include confidential information in your description." xml:space="preserve"><value>N’incluez pas d’informations confidentielles dans votre description.</value></data>
+  <data name="Attach the saved report to this email." xml:space="preserve"><value>Joignez le rapport enregistré à cet e-mail.</value></data>
+  <data name="Sending report…" xml:space="preserve"><value>Envoi du rapport…</value></data>
+  <data name="Report published on GitHub." xml:space="preserve"><value>Rapport publié sur GitHub.</value></data>
+  <data name="Report handed to Outlook for sending." xml:space="preserve"><value>Rapport remis à Outlook pour envoi.</value></data>
+  <data name="Email draft opened. Attach the saved report, then send it." xml:space="preserve"><value>Brouillon ouvert. Joignez le rapport enregistré, puis envoyez l’e-mail.</value></data>
+  <data name="Delivery is uncertain. Check GitHub or Outlook before trying again." xml:space="preserve"><value>Envoi incertain. Vérifiez GitHub ou Outlook avant de réessayer.</value></data>
+  <data name="Unable to send the report. The local copy is available." xml:space="preserve"><value>Impossible d’envoyer le rapport. La copie locale est disponible.</value></data>
+  <data name="Local report saved. Its path has been copied." xml:space="preserve"><value>Rapport enregistré localement. Son chemin a été copié.</value></data>
+  <data name="Unable to save the report." xml:space="preserve"><value>Impossible d’enregistrer le rapport.</value></data>
+  <data name="Title" xml:space="preserve"><value>Titre</value></data>
+  <data name="Email" xml:space="preserve"><value>E-mail</value></data>
 </root>

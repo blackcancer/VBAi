@@ -2,7 +2,7 @@
 
 Ouvrir `CodexVBE.sln`, compiler la solution, puis ouvrir le fichier `.cs` voulu avec
 **Afficher le concepteur** (`Maj+F7`). Ouvrir le `.cs` principal, pas le
-`.Designer.cs`. Les vues ci-dessous sont des contrôles utilisateur WinForms ; les
+`.Designer.cs`. Les fenêtres et sous-vues sont des composants WinForms ; les
 onglets restent regroupés dans leurs fenêtres habituelles.
 
 ## Git
@@ -52,6 +52,24 @@ masqués à l’exécution, dans des lignes AutoSize définies par le Designer.
 `ChatWindow`, `VbeApprovalDialog`, `ChatToolWindow` et `CodeDiffView` conservent
 également un fichier Designer et un fichier de ressources. Les quatre colonnes
 du diff sont créées dans le Designer ; le mode unifié adapte leur présentation.
+
+## Fenêtre À propos
+
+`src/CodexVBE/Ui/AboutWindow.cs` est un formulaire indépendant. Son en-tête,
+logo, descriptif, tableau de métadonnées, liens, état et boutons sont déclarés
+explicitement dans `AboutWindow.Designer.cs`. Le logo est une ressource image
+WinForms éditable dans `AboutWindow.resx`. La version, l’hôte et la langue sont
+renseignés à l’exécution sans démarrer le chat ni charger de paramètres fournisseur.
+
+La fenêtre est accessible depuis **Outils → À propos de VBAi** et le menu du chat.
+Voir [À propos et support](about.md) pour les informations copiées et les liens.
+
+## Fenêtre de rapport de problème
+
+`src/CodexVBE/Ui/CrashReportWindow.cs` possède son `.Designer.cs` et son `.resx`.
+Ses 20 contrôles fixes (description, aperçu, destination, état, progression et boutons)
+sont éditables dans le concepteur. Le constructeur Designer ne charge aucun compte
+et n’appelle aucun transport. Voir [Rapports de problème](crash-report.md).
 
 ## Éléments réutilisables du chat
 
@@ -104,7 +122,7 @@ contrôles nommés utilisés par le contrôleur sans adapter leurs références.
 ## Vérification
 
 `tools/tests/Test-WinFormsDesigners.ps1 -AssemblyPath <chemin de CodexVBE.dll>`
-valide **27 surfaces et 258 contrôles enfants** avec le moteur
+valide **28 surfaces et 282 contrôles enfants** avec le moteur
 `System.ComponentModel.Design.DesignSurface` : chargement, redimensionnement,
 édition d’une propriété puis sérialisation et rechargement avec
 `CodeDomComponentSerializationService`.
@@ -114,7 +132,7 @@ Le test place les contrôles déclarés par le Designer sur une racine WinForms
 et verrouille ses champs privés ; ce second cas ne prouve pas l’édition du source.
 `Test-ChatDesigner.ps1` vérifie en plus les hiérarchies, les constructeurs inertes
 et la sélection des contrôles. Ces contrôles locaux ne constituent pas un essai
-manuel d’ouverture puis d’enregistrement des 27 sources dans Visual Studio.
+manuel d’ouverture puis d’enregistrement des 28 sources dans Visual Studio.
 
 `Render-ChatUx.ps1` capture la fenêtre affichée sur le second écran disponible.
 La copie écran inclut les HWND des diff natifs, absents d’un rendu bitmap WPF.

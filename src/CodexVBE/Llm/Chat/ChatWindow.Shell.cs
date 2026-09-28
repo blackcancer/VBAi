@@ -79,6 +79,11 @@ namespace CodexVBE
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
         private void Options_Click(object sender, EventArgs e) { optionsMenu.Show(options, 0, options.Height); }
+        /// <summary>Présente les informations produit depuis le menu de la conversation.</summary>
+        private void About_Click(object sender, EventArgs e)
+        {
+            using (var dialog = new AboutWindow()) ShowModal(dialog, this);
+        }
         /// <summary>Demande l’ancrage de la fenêtre si aucun tour n’est actif.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>

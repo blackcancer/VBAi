@@ -11,6 +11,18 @@ using System.Web.Script.Serialization;
 
 namespace CodexVBE
 {
+    /// <summary>Réponse HTTP refusée, sans corps distant ou secret dans le message.</summary>
+    internal sealed class GitHubApiFailure : InvalidOperationException
+    {
+        internal int Status { get; }
+        internal GitHubApiFailure(int status, string message) : base(message) { Status = status; }
+    }
+    /// <summary>Issue créée sur GitHub.</summary>
+    internal sealed class GitHubIssue
+    {
+        public int number { get; set; }
+        public string html_url { get; set; }
+    }
     /// <summary>Informations de dépôt renvoyées par l’API GitHub.</summary>
     internal sealed class GitHubRepositoryInfo
     {
@@ -167,6 +179,14 @@ namespace CodexVBE
             if (path.EndsWith(".git", StringComparison.OrdinalIgnoreCase)) path = path.Substring(0, path.Length - 4);
             return "/repos/" + path;
         }
+        /// <summary>Crée une issue avec un titre et un rapport explicites, sans étiquette nécessitant des droits supplémentaires.</summary>
+        internal Task<GitHubIssue> CreateIssue(string url, string title, string body, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(title) || title.Length > 180 || (body?.Length ?? 0) > 60000)
+                throw new ArgumentException("Invalid issue title or body.");
+            return Request<GitHubIssue>(HttpMethod.Post, RepositoryPath(url) + "/issues", new { title, body }, ct, true);
+        }
+
         /// <summary>Envoie une requête authentifiée et désérialise sa réponse JSON.</summary>
         /// <typeparam name="T">Type du contenu JSON attendu.</typeparam>
         /// <param name="method">Méthode HTTP.</param>
@@ -177,7 +197,8 @@ namespace CodexVBE
         /// <exception cref="ArgumentException">Le chemin ne respecte pas le format API relatif attendu.</exception>
         /// <exception cref="InvalidOperationException">GitHub refuse la requête ou est indisponible.</exception>
         /// <exception cref="OperationCanceledException">La requête a été annulée.</exception>
-        internal async Task<T> Request<T>(HttpMethod method, string path, object data, CancellationToken ct)
+        /// <param name="structuredFailure">Expose le statut HTTP pour la stratégie de repli des rapports.</param>
+        internal async Task<T> Request<T>(HttpMethod method, string path, object data, CancellationToken ct, bool structuredFailure = false)
         {
             if (!path.StartsWith("/", StringComparison.Ordinal) || path.StartsWith("//", StringComparison.Ordinal) || path.Contains("\\") || path.Contains("..")) throw new ArgumentException("Invalid GitHub API path.");
             using (var request = new HttpRequestMessage(method, "https://api.github.com" + path))
@@ -194,6 +215,7 @@ namespace CodexVBE
                         int code = (int)response.StatusCode;
                         string help = code == 401 ? "Sign in to GitHub again in Settings." : code == 403 || code == 429 ? "Check repository permissions or wait for the GitHub rate limit to reset." :
                             code == 404 ? "Check the repository name and account access." : code == 422 ? "Check the branch, title and repository name; a pull request may already exist." : "GitHub is unavailable. Try again later.";
+                        if (structuredFailure) throw new GitHubApiFailure(code, "GitHub " + code + " · " + UiText.Get(help));
                         throw new InvalidOperationException("GitHub " + code + " · " + UiText.Get(help));
                     }
                     string body = await response.Content.ReadAsStringAsync();
@@ -291,7 +313,7 @@ namespace CodexVBE
         /// <exception cref="ArgumentException">Le compte fourni est invalide.</exception>
         /// <exception cref="InvalidOperationException">GCM ne fournit pas de jeton utilisable.</exception>
         /// <exception cref="OperationCanceledException">L’opération est annulée ou dépasse son délai.</exception>
-        private static async Task<string> ReadCredential(string account, CancellationToken ct)
+        internal static async Task<string> ReadCredential(string account, CancellationToken ct)
         {
             if (!string.IsNullOrEmpty(account) && !GitHubAccountService.ValidAccount(account)) throw new ArgumentException(UiText.Get("Invalid GitHub account."));
             var start = new ProcessStartInfo("git.exe", "credential-manager get") { UseShellExecute = false, CreateNoWindow = true, RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true };
