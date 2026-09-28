@@ -205,6 +205,7 @@ namespace CodexVBE
                     return Response.Success(components.SaveHostDocumentAs(request));
                 case "project_signature_status":
                     return Response.Success(components.SignatureStatus(request.Project));
+                case "certificate_trust": return Response.Success(CertificateTrust(request));
                 case "list_signing_certificates":
                     return Response.Success(ListSigningCertificates());
                 case "read_project_signature_dialog":
@@ -251,8 +252,15 @@ namespace CodexVBE
                     return Response.Success(CreateComponent(request, 1));
                 case "create_class":
                     return Response.Success(CreateComponent(request, 2));
+                case "preview_local_rename": return Response.Success(codeEdits.RenameLocal(request, true));
+                case "apply_local_rename": return Response.Success(codeEdits.RenameLocal(request, false));
                 case "preview_code_edit": return Response.Success(codeEdits.Edit(request, true));
                 case "apply_code_edit": return Response.Success(codeEdits.Edit(request, false));
+                case "toolbar_controls": return Response.Success(editorWindows.ToolbarControls(request));
+                case "create_toolbar": return Response.Success(editorWindows.CreateToolbar(request));
+                case "remove_toolbar": return Response.Success(editorWindows.RemoveToolbar(request));
+                case "add_toolbar_command": return Response.Success(editorWindows.AddToolbarCommand(request));
+                case "remove_toolbar_command": return Response.Success(editorWindows.RemoveToolbarCommand(request));
                 case "list_toolbars": return Response.Success(editorWindows.Toolbars());
                 case "set_toolbar_placement": return Response.Success(editorWindows.SetToolbarPlacement(request));
                 case "set_toolbar_position": return Response.Success(editorWindows.SetToolbarPosition(request));
@@ -279,6 +287,10 @@ namespace CodexVBE
                     return Response.Success(forms.RunForm(request));
                 case "form_run_status":
                     return Response.Success(forms.FormRunStatus(request));
+                case "run_procedure":
+                    return Response.Success(debugger.RunProcedure(request));
+                case "procedure_run_status":
+                    return Response.Success(debugger.ProcedureRunStatus(request));
                 case "run_sub":
                     return Response.Success(debugger.RunSub(request));
                 case "compile_project":
@@ -293,6 +305,7 @@ namespace CodexVBE
                     return Response.Success(debugger.QueueQuickWatchDialog(request));
                 case "read_debug_options":
                     return Response.Success(debugger.QueueDebugOptionsDialog());
+                case "set_vbe_option":
                 case "read_vbe_options":
                     return Response.Success(debugger.QueueDebugOptionsDialog());
                 case "remove_watch":
@@ -484,6 +497,23 @@ namespace CodexVBE
                     CertificateThumbprint = thumbprint, CertificateName = displayName,
                     UnsignedVerified = unsignedVerified,
                     NativeCommand = scheduled };
+            }
+        }
+
+        /// <summary>Évalue hors ligne le certificat exact du magasin personnel sans utiliser la clé privée.</summary>
+        /// <param name="request">Empreinte publique SHA-1 du certificat Windows.</param>
+        /// <returns>Confiance de chaîne, distincte de la validité d’une signature de macro.</returns>
+        private object CertificateTrust(Request request)
+        {
+            string thumbprint = (request.CertificateThumbprint ?? "").Replace(" ", "").ToUpperInvariant();
+            if (thumbprint.Length != 40 || thumbprint.Any(c => !Uri.IsHexDigit(c)))
+                throw new ArgumentException("CertificateThumbprint must be an exact SHA-1 certificate thumbprint.");
+            using (var store = SigningStore(StoreLocation.CurrentUser))
+            {
+                store.Open(OpenFlags.ReadOnly);
+                var matches = store.Certificates.Cast<X509Certificate2>().Where(c => c.Thumbprint == thumbprint).ToArray();
+                if (matches.Length != 1) throw new InvalidOperationException("The exact certificate is absent or ambiguous in CurrentUser/My.");
+                return VbeCertificateTrust.Evaluate(matches[0]);
             }
         }
 

@@ -1,6 +1,6 @@
 # Catalogue des outils LLM
 
-État du code `2197c43`, vérifié le 28 septembre 2026 : **166 outils**. Cet inventaire est extrait de `LlmVbeTools.Definitions`, y compris les catalogues Git et Editor. Il décrit les outils exposés au modèle, et ne prétend pas inventorier toutes les commandes du pont.
+Catalogue actualisé le 28 septembre 2026 après synchronisation avec `main` (`b843972f`) : **177 outils**. Cet inventaire est extrait de `LlmVbeTools.Definitions`, y compris les catalogues Git et Editor. Il décrit les outils exposés au modèle, et ne prétend pas inventorier toutes les commandes du pont.
 
 ## Contrat
 
@@ -23,10 +23,13 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `add_nested_form_control` | Action | `Project`, `Form`, `ParentPath`, `ExpectedTreeVersion`, `ControlType`, `Control`, `Left`, `Top`, `Width`, `Height` |
 | `add_reference_file` | Action | `Project`, `ExpectedReferencesVersion`, `Path` |
 | `add_reference_guid` | Action | `Project`, `ExpectedReferencesVersion`, `Guid`, `Major`, `Minor` |
+| `add_toolbar_command` | Action | `ObjectName`, `ExpectedToolbarControlsVersion`, `ControlId`, `ControlCaption` |
 | `add_watch` | Action | `Project`, `Module`, `ExpectedMode`, `Expression` |
 | `apply_code_edit` | Action | `Project`, `Module`, `ExpectedSha256`, `StartLine`, `Count`, `Action` |
 | `apply_form_layout` | Action | `Project`, `Form`, `ExpectedTreeVersion`, `Items`, `Action` |
+| `apply_local_rename` | Action | `Project`, `Module`, `Procedure`, `ProcKind`, `ExpectedSha256`, `ExpectedMode`, `StartLine`, `StartColumn`, `Query`, `NewName` |
 | `arrange_editor_windows` | Action | `Action`, `ExpectedWindowVersion`, `ControlCaption` |
+| `certificate_trust` | Inspection | `CertificateThumbprint` |
 | `close_vbe_window` | Action | `WindowCaption`, `WindowType` |
 | `code_bookmark` | Inspection | `Project`, `Action` |
 | `code_pane_layout` | Inspection | `Project`, `Module` |
@@ -40,6 +43,7 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `create_form` | Action | `Project`, `Form` |
 | `create_module` | Action | `Project`, `Module`, `ExpectedMode` |
 | `create_procedure` | Action | `Project`, `Module`, `Procedure`, `ProcKind`, `Text`, `ExpectedSha256` |
+| `create_toolbar` | Action | `ObjectName`, `ExpectedToolbarCollectionVersion` |
 | `cut_code` | Action | `Project`, `Module`, `ExpectedSha256`, `StartLine`, `StartColumn`, `EndLine`, `EndColumn` |
 | `debug_dialog` | Inspection | Aucun |
 | `debug_global` | Action | `Project`, `ExpectedMode`, `Action` |
@@ -116,6 +120,8 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `paste_code` | Action | `Project`, `Module`, `ExpectedSha256`, `ExpectedClipboardVersion`, `StartLine`, `StartColumn`, `EndLine`, `EndColumn` |
 | `preview_code_edit` | Inspection | `Project`, `Module`, `ExpectedSha256`, `StartLine`, `Count`, `Action` |
 | `preview_form_layout` | Inspection | `Project`, `Form`, `ExpectedTreeVersion`, `Items`, `Action` |
+| `preview_local_rename` | Inspection | `Project`, `Module`, `Procedure`, `ProcKind`, `ExpectedSha256`, `StartLine`, `StartColumn`, `Query`, `NewName` |
+| `procedure_run_status` | Inspection | `Project`, `Query` |
 | `project_persistence_status` | Inspection | `Project` |
 | `project_properties` | Inspection | `Project` |
 | `project_signature_status` | Inspection | `Project` |
@@ -136,6 +142,8 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `remove_form_page_tab` | Action | `Project`, `Form`, `ControlPath`, `ExpectedTreeVersion` |
 | `remove_procedure` | Action | `Project`, `Module`, `Procedure`, `ProcKind`, `ExpectedSha256` |
 | `remove_reference` | Action | `Project`, `ExpectedReferencesVersion`, `Guid`, `Major`, `Minor` |
+| `remove_toolbar` | Action | `ObjectName`, `ExpectedToolbarCollectionVersion`, `ExpectedToolbarControlsVersion` |
+| `remove_toolbar_command` | Action | `ObjectName`, `ExpectedToolbarControlsVersion`, `ControlId`, `ControlCaption`, `InsertIndex` |
 | `remove_watch` | Action | `Project`, `ExpectedMode`, `Expression`, `Context` |
 | `rename_component` | Action | `Project`, `Module`, `ExpectedComponentVersion`, `NewName` |
 | `rename_form_control` | Action | `Project`, `Form`, `ExpectedFormVersion`, `Control`, `NewName` |
@@ -144,6 +152,7 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `respond_debug_dialog` | Action | `Diagnostic`, `Button` |
 | `restore_form_clipboard` | Action | `Project`, `Form`, `DesignerClipboardRecoveryId`, `ExpectedDesignerSelectionVersion`, `ExpectedClipboardVersion` |
 | `run_form` | Action | `Project`, `Form`, `ExpectedMode`, `ExpectedSha256`, `ExpectedTreeVersion`, `ControlCaption` |
+| `run_procedure` | Action | `Project`, `Module`, `Procedure`, `ExpectedSha256`, `ExpectedMode`, `Arguments` |
 | `run_sub` | Action | `Project`, `Module`, `Procedure`, `ExpectedSha256`, `ExpectedMode` |
 | `save_host_document` | Action | `Project`, `ExpectedProjectVersion`, `ExpectedHostPath` |
 | `save_host_document_as` | Action | `Project`, `ExpectedProjectVersion`, `Path` |
@@ -172,11 +181,13 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `set_toolbar_placement` | Action | `ObjectName`, `ExpectedToolbarLayoutVersion`, `Action` |
 | `set_toolbar_position` | Action | `ObjectName`, `ExpectedToolbarLayoutVersion`, `Action` |
 | `set_toolbar_visibility` | Action | `ObjectName`, `ExpectedWindowVersion`, `Action` |
+| `set_vbe_option` | Action | `Pane`, `Property`, `Value`, `ExpectedOptionsVersion` |
 | `set_window_bounds` | Action | `WindowCaption`, `WindowType`, `ExpectedWindowVersion`, `Left`, `Top`, `Width`, `Height` |
 | `set_window_state` | Action | `WindowCaption`, `WindowType`, `ExpectedWindowVersion`, `Action` |
 | `show_vbe_window` | Action | `WindowCaption`, `WindowType` |
 | `sign_project` | Action | `Project`, `ExpectedProjectVersion`, `ExpectedMode`, `CertificateThumbprint` |
 | `status` | Inspection | Aucun |
+| `toolbar_controls` | Inspection | `ObjectName` |
 | `undo_code_edit` | Action | `Project`, `Module`, `ExpectedSha256` |
 | `vbe_environment` | Inspection | Aucun |
 | `vbe_windows` | Inspection | Aucun |
@@ -187,3 +198,7 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 ## Limites et vérification
 
 Consulter [l’état du projet](../project.md), [les travaux restants](../roadmap.md), [le concepteur](designer.md) et [la couverture mesurée](../test-coverage.md). Un outil exposé n’est pas une preuve de qualification dans tous les hôtes.
+
+## Extensions fonctionnelles
+
+Voir [les contrats, preuves et limites des nouvelles fonctions](../reference/functional-extensions.md). La personnalisation des barres accepte `Temporary=false` pour demander la persistance native ; celle-ci doit être relue après redémarrage.

@@ -39,6 +39,9 @@
         /// <summary>Liste de chaînes transmise à la commande.</summary>
         /// <value>Liste de chaînes transmise à la commande.</value>
         public string[] Items { get; set; }
+        /// <summary>Arguments scalaires JSON d’une procédure VBA, dans leur ordre de déclaration.</summary>
+        /// <value>Chaînes, nombres, booléens ou null (VBA Null), au maximum trente.</value>
+        public object[] Arguments { get; set; }
         /// <summary>Matrice des lignes d’une liste de formulaire.</summary>
         /// <value>Cellules de chaque ligne.</value>
         public string[][] Rows { get; set; }
@@ -84,6 +87,12 @@
         /// <summary>Version attendue de la disposition d’une barre d’outils.</summary>
         /// <value>Empreinte de disposition.</value>
         public string ExpectedToolbarLayoutVersion { get; set; }
+        /// <summary>Version attendue des commandes d’une barre avant personnalisation.</summary>
+        public string ExpectedToolbarControlsVersion { get; set; }
+        /// <summary>Version attendue de la collection des barres avant création ou suppression.</summary>
+        public string ExpectedToolbarCollectionVersion { get; set; }
+        /// <summary>Version des options natives relues avant une écriture de préférence.</summary>
+        public string ExpectedOptionsVersion { get; set; }
         /// <summary>Version attendue de la fenêtre source.</summary>
         /// <value>Empreinte de l’état de fenêtre.</value>
         public string ExpectedWindowVersion { get; set; }
@@ -234,6 +243,9 @@
         /// <summary>Position à laquelle insérer l’élément, si elle est précisée.</summary>
         /// <value>Position à laquelle insérer l’élément, si elle est précisée.</value>
         public int? InsertIndex { get; set; }
+        /// <summary>Limite la personnalisation de barre à la session ; vrai par défaut.</summary>
+        /// <value>Vrai ou null : temporaire ; faux : demande de persistance native.</value>
+        public bool? Temporary { get; set; }
         /// <summary>Ordre d’empilement demandé pour le contrôle.</summary>
         /// <value>Ordre d’empilement demandé pour le contrôle.</value>
         public int ZPosition { get; set; }

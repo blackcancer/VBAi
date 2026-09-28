@@ -22,7 +22,7 @@ namespace CodexVBE.Tests.Unit
             public List<FakeProject> VBProjects { get; } = new List<FakeProject>();
         }
 
-        public sealed class FakeProject
+        public class FakeProject
         {
             public string Name { get; set; } = "VBAProject";
             public string Description { get; set; } = "Original";

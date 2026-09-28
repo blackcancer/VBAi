@@ -92,6 +92,30 @@
         }
 
         [TestMethod]
+        public void DeclarationReferencesKeepScopesAndRefuseStaleSourceBeforeNavigation()
+        {
+            var references = new VbeChatReferences(null);
+            Request selected = null;
+            references.Execute = request => {
+                if (request.Command == "list_projects") return Response.Success(new[] { new { Name = "P" } });
+                if (request.Command == "list_modules") return Response.Success(new[] { new { Name = "M" } });
+                if (request.Command == "list_procedures") return Response.Success(new { Sha256 = "fresh", Procedures = new object[0] });
+                if (request.Command == "read_module") return Response.Success(new { Sha256 = "fresh", Code = "Sub Run()\nDim local As Long\nEnd Sub" });
+                selected = request; return Response.Success(new { Selected = true });
+            };
+            references.Refresh(); while (references.IsLoading) references.Step();
+            var declaration = references.Entries.Single(x => x.Name == "local");
+            Assert.AreEqual("@P.M.Run.local:L2", declaration.Token);
+            Assert.AreEqual(1, references.MatchPrefix("local", '@').Count());
+            Assert.IsTrue(references.Navigate(declaration).Ok);
+            Assert.AreEqual("select_code", selected.Command); Assert.AreEqual(2, selected.StartLine);
+            Assert.AreEqual("local", selected.Expression);
+            StringAssert.Contains(references.Resolve(declaration), "Dim local As Long");
+            declaration.Sha256 = "stale"; selected = null;
+            Assert.IsFalse(references.Navigate(declaration).Ok); Assert.IsNull(selected);
+        }
+
+        [TestMethod]
         public void ProjectReferenceCannotNavigateDirectlyToCode()
         {
             var references = new VbeChatReferences(Session());

@@ -16,7 +16,9 @@ namespace CodexVBE
                 try { if ((int)bar.Type == 0) bars.Add(ToolbarSnapshot((object)bar)); }
                 catch (Exception error) { errors.Add(error.Message); }
             }
-            return new { Toolbars = bars, Errors = errors,
+            string collectionVersion = null;
+            try { collectionVersion = ToolbarCollectionVersion(); } catch (Exception ex) { errors.Add(ex.Message); }
+            return new { Toolbars = bars, Errors = errors, ToolbarCollectionVersion = collectionVersion,
                 Scope = "Normal VBE command bars only; menu bars and shortcut menus are excluded." };
         }
         private static object ToolbarSnapshot(dynamic bar)

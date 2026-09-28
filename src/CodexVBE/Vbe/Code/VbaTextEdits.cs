@@ -52,7 +52,7 @@ namespace CodexVBE
             return string.Join("\r\n", lines.Take(first).Concat(CodeRollback.Lines(replacement)).Concat(lines.Skip(first + request.Count)));
         }
 
-        private static void ValidateIdentifier(string value)
+        internal static void ValidateIdentifier(string value)
         {
             if (!Regex.IsMatch(value ?? "", @"^[A-Za-z][A-Za-z0-9_]{0,254}$"))
                 throw new ArgumentException("A VBA identifier is required.");

@@ -61,6 +61,7 @@
             native.CompleteQuickWatch = request => new { Native = "quick_watch" };
             native.EnsureNoDebugOptionsDialog = () => { };
             native.ReadVbeOptions = () => new { Native = "vbe_options" };
+            native.SetVbeOption = request => new { Native = "set_vbe_option" };
             native.ReadDebugOptions = () => new { Native = "debug_options" };
             native.EnsureNoSignatureDialog = () => { };
             native.ReadSignatureDialog = project => new { Native = "signature_dialog", Project = project };

@@ -495,7 +495,7 @@ namespace CodexVBE
         }
 
         /// <summary>Implémente la lecture du dialogue Options avec UI Automation.</summary>
-        private sealed class NativeOptionsProbe : IOptionsProbe
+        private sealed class NativeOptionsProbe : IWritableOptionsProbe
         {
             /// <summary>Racine UI Automation du dialogue.</summary>
             private AutomationElement root;
@@ -572,6 +572,40 @@ namespace CodexVBE
                 }
                 return controls;
             }
+            /// <summary>Écrit un contrôle unique de l’onglet par son interface native accessible.</summary>
+            public void Write(IntPtr dialog, int tabIndex, string name, string type, object value)
+            {
+                Controls(dialog, tabIndex);
+                var candidates = root.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.NameProperty, name))
+                    .Cast<AutomationElement>().Where(x => !x.Current.IsOffscreen && x.Current.IsEnabled && x.Current.ControlType.ProgrammaticName == type).ToArray();
+                if (candidates.Length != 1) throw new InvalidOperationException("The exact option control is absent or ambiguous.");
+                var selected = candidates[0];
+                if (type == "ControlType.CheckBox" && selected.TryGetCurrentPattern(TogglePattern.Pattern, out object toggle))
+                {
+                    var pattern = (TogglePattern)toggle;
+                    if (pattern.Current.ToggleState == ToggleState.Indeterminate) throw new InvalidOperationException("An indeterminate option is not writable.");
+                    bool desired = (bool)value;
+                    if ((pattern.Current.ToggleState == ToggleState.On) != desired) pattern.Toggle();
+                }
+                else if (type == "ControlType.RadioButton" && selected.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object selection))
+                    ((SelectionItemPattern)selection).Select();
+                else if (type == "ControlType.Edit" && !selected.Current.IsPassword && selected.TryGetCurrentPattern(ValuePattern.Pattern, out object input))
+                {
+                    var pattern = (ValuePattern)input;
+                    if (pattern.Current.IsReadOnly) throw new InvalidOperationException("The option is read-only.");
+                    pattern.SetValue(Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture));
+                }
+                else throw new InvalidOperationException("The option has no supported writable pattern.");
+                PauseNative(100);
+            }
+            /// <summary>Demande la validation par le bouton natif IDOK, sans raccourci clavier.</summary>
+            public void Accept(IntPtr dialog)
+            {
+                IntPtr ok = GetDlgItem(dialog, 1);
+                if (ok == IntPtr.Zero || ClassName(ok) != "Button" || !OptionsWindowEnabled(ok) || !PostMessage(ok, 0x00F5, IntPtr.Zero, IntPtr.Zero))
+                    throw new InvalidOperationException("The native Options OK button is unavailable.");
+            }
+
             /// <summary>Lit les choix disponibles pour le réglage de capture d’erreurs.</summary>
             /// <param name="dialog">Handle du dialogue Options.</param>
             /// <returns>Libellés, états de sélection et disponibilité de lecture.</returns>
@@ -1176,31 +1210,8 @@ namespace CodexVBE
             { native.Pause(50); dialog = native.Dialog(); }
             if (dialog == IntPtr.Zero)
                 throw new InvalidOperationException("The native VBE Options dialog did not open.");
-            var tabs = new List<object>();
-            try
-            {
-                IList<string> tabNames = native.Tabs(dialog);
-                if (tabNames.Count < 1 || tabNames.Count > 8)
-                    throw new InvalidOperationException("Unexpected native VBE Options tab count: " + tabNames.Count + ".");
-                for (int tabIndex = 0; tabIndex < tabNames.Count; tabIndex++)
-                {
-                    string tabName = tabNames[tabIndex];
-                    if (string.IsNullOrWhiteSpace(tabName))
-                        throw new InvalidOperationException("A native VBE Options tab is unreadable.");
-                    IList<OptionsControl> observed = native.Controls(dialog, tabIndex);
-                    if (observed.Count > 2000)
-                        throw new InvalidOperationException("The Options dialog has too many controls to inspect safely: " +
-                            observed.Count + ".");
-                    var controls = new List<object>();
-                    foreach (OptionsControl control in observed)
-                    {
-                        if (!control.Visible || !control.Enabled) continue;
-                        if (string.IsNullOrWhiteSpace(control.Name) && control.Type == "ControlType.Text") continue;
-                        controls.Add(new { control.Name, control.Type, control.Value, control.Error });
-                    }
-                    tabs.Add(new { Tab = tabName, Controls = controls, Count = controls.Count });
-                }
-            }
+            List<object> tabs;
+            try { tabs = CaptureOptionsTabs(native, dialog); }
             finally { native.Close(dialog); }
             bool closed = false;
             for (int attempt = 0; attempt < 20; attempt++)
@@ -1210,7 +1221,7 @@ namespace CodexVBE
             }
             if (!closed) throw new InvalidOperationException("The add-in read VBE Options but could not close its dialog.");
             return new { Scope = "VBE", Tabs = tabs, Count = tabs.Count,
-                DialogClosed = true, Verification = "NativeOptionsReadback",
+                OptionsVersion = OptionsRevision(tabs), DialogClosed = true, Verification = "NativeOptionsReadback",
                 Limit = "Only visible native controls were observed; no settings were changed." };
         }
         /// <summary>Exécute une ligne texte dans le volet Immediate visible en vérifiant le contenu avant et après.</summary>

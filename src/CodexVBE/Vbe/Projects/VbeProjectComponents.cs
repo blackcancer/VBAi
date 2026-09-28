@@ -14,7 +14,7 @@ using System.Web.Script.Serialization;
 namespace CodexVBE
 {
     /// <summary>Inspecte les projets VBIDE et applique les opérations de gestion de composants explicitement validées.</summary>
-    internal sealed class VbeProjectComponents
+    internal sealed partial class VbeProjectComponents
     {
         /// <summary>Obtient le PID du processus propriétaire d’une fenêtre Win32.</summary>
         /// <param name="window">Handle de la fenêtre.</param>
@@ -172,6 +172,7 @@ namespace CodexVBE
         {
             dynamic project = GetProject(projectName);
             bool projectSaved = (bool)project.Saved;
+            if (!host.IsExcel && SupportsStandaloneMacro((object)project)) return StandalonePersistence(projectName, (object)project);
             if (!host.IsExcel)
                 return new { Project = projectName, ProjectSaved = projectSaved,
                     HostAvailable = false, HostPath = (string)null, HostSaved = (bool?)null,
@@ -206,8 +207,7 @@ namespace CodexVBE
             if (request == null || string.IsNullOrWhiteSpace(request.ExpectedHostPath) ||
                 !Path.IsPathRooted(request.ExpectedHostPath))
                 throw new ArgumentException("ExpectedHostPath must be the absolute path read from project_persistence_status.");
-            if (!host.IsExcel)
-                throw new InvalidOperationException("This host has no supported document Save API in CodexVBE.");
+            if (!host.IsExcel) return SaveStandaloneMacro(request, false);
             dynamic project = GetDesignProject(request.Project);
             AssertProjectVersion(request, project);
             string projectPath = (string)project.FileName;
@@ -244,8 +244,7 @@ namespace CodexVBE
             if (request == null || string.IsNullOrWhiteSpace(request.Path) ||
                 string.IsNullOrWhiteSpace(request.ExpectedProjectVersion))
                 throw new ArgumentException("Path and ExpectedProjectVersion are required.");
-            if (!host.IsExcel)
-                throw new InvalidOperationException("This host has no supported SaveAs API in CodexVBE.");
+            if (!host.IsExcel) return SaveStandaloneMacro(request, true);
             string path = RequireAbsolutePath(request.Path);
             if (!string.Equals(Path.GetExtension(path), ".xlsm", StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("The first Excel SaveAs supports only a macro-enabled .xlsm workbook.");
@@ -466,12 +465,11 @@ namespace CodexVBE
         /// <exception cref="ArgumentException">La valeur ne peut pas être convertie dans le type scalaire attendu.</exception>
         public object SetProjectProperty(Request request)
         {
-            if (string.Equals(request.Property, "Name", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("Project rename is disabled: it correlated with an Excel process crash during validation.");
+            if (string.Equals(request.Property, "Name", StringComparison.OrdinalIgnoreCase)) return RenameSavedExcelProject(request);
             dynamic project = GetDesignProject(request.Project);
             AssertProjectVersion(request, project);
             SetScalar((object)project, request.Property, request.Value);
-            return ProjectProperties((string)project.Name);
+            return ProjectProperties(request.Project);
         }
 
         /// <summary>Modifie une propriété scalaire du composant après vérification de sa version.</summary>
@@ -692,7 +690,7 @@ namespace CodexVBE
         {
             if (string.IsNullOrWhiteSpace(request.ExpectedProjectVersion))
                 throw new ArgumentException("ExpectedProjectVersion is required.");
-            dynamic state = ProjectProperties((string)project.Name);
+            dynamic state = ProjectProperties(request.Project);
             if (!string.Equals((string)state.Version, request.ExpectedProjectVersion,
                 StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("The project changed since it was read.");

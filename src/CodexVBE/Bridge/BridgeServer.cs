@@ -39,6 +39,8 @@ namespace CodexVBE
         internal Action EnsureNoDebugOptionsDialog = VbeDebugWindows.EnsureNoDebugOptionsDialog;
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<object> ReadVbeOptions = VbeDebugWindows.ReadVbeOptions;
+        /// <summary>Écrit seulement les préférences natives d’édition/débogage reconnues.</summary>
+        internal Func<Request, object> SetVbeOption = VbeDebugWindows.SetVbeOption;
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<object> ReadDebugOptions = VbeDebugWindows.ReadDebugOptions;
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
@@ -190,11 +192,11 @@ namespace CodexVBE
                                     if (response.Ok) response = Response.Success(Native.CompleteQuickWatch(request));
                                 }
                                 else if (request != null &&
-                                    (request.Command == "read_debug_options" || request.Command == "read_vbe_options"))
+                                    (request.Command == "read_debug_options" || request.Command == "read_vbe_options" || request.Command == "set_vbe_option"))
                                 {
                                     Native.EnsureNoDebugOptionsDialog();
                                     response = (Response)dispatcher.Invoke(new Func<Response>(() => Execute(request)));
-                                    if (response.Ok) response = Response.Success(request.Command == "read_vbe_options"
+                                    if (response.Ok) response = Response.Success(request.Command == "set_vbe_option" ? Native.SetVbeOption(request) : request.Command == "read_vbe_options"
                                         ? Native.ReadVbeOptions() : Native.ReadDebugOptions());
                                 }
                                 else if (request != null && request.Command == "read_project_signature_dialog")
