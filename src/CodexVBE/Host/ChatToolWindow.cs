@@ -62,6 +62,18 @@ namespace CodexVBE
         /// <param name="sender">Minuteur déclencheur.</param>
         /// <param name="e">Événement du minuteur.</param>
         private void SiteResizeTimer_Tick(object sender, EventArgs e) { FitNativeSite(); }
+
+        /// <summary>Reads the actual native pane size; VBIDE bounds may describe its frame.</summary>
+        internal bool TryGetNativeSiteSize(out System.Drawing.Size size)
+        {
+            size = System.Drawing.Size.Empty;
+            if (!IsHandleCreated || IsDisposed) return false;
+            var site = ParentReader(Handle);
+            NativeRect client;
+            if (site == IntPtr.Zero || !ClientReader(site, out client)) return false;
+            size = new System.Drawing.Size(Math.Max(0, client.Right - client.Left), Math.Max(0, client.Bottom - client.Top));
+            return true;
+        }
         /// <summary>Ajuste la taille du contrôle à la zone client du site VBE.</summary>
         private void FitNativeSite()
         {

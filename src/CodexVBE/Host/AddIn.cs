@@ -127,6 +127,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
             if (docked && nativeChatWindow != null)
             {
                 ((dynamic)nativeChatWindow).Visible = true;
+                EnsureUsableChatPlacement();
                 ((dynamic)nativeChatWindow).SetFocus();
                 return;
             }
@@ -228,8 +229,9 @@ private void ReportMenuError(Exception ex)
                 }
                 ((dynamic)nativeChatWindow).Visible = true;
                 nativeChatControl.Attach(chat); docked = true;
-                try { ((dynamic)vbe).MainWindow.LinkedWindows.Add(nativeChatWindow); }
-                catch (Exception positionError) { WriteLog("Native chat main-frame docking unavailable: " + positionError.Message); }
+                // CreateToolWindow restores the saved layout. Forcing MainWindow linkage can
+                // collapse a new pane to a six-pixel strip at the bottom of the VBE.
+                EnsureUsableChatPlacement();
                 ((dynamic)nativeChatWindow).SetFocus();
             }
             catch (Exception ex)
@@ -242,6 +244,28 @@ private void ReportMenuError(Exception ex)
                 ShowChat();
                 chat.ReportDockFailure(ex.Message);
             }
+        }
+
+        private void EnsureUsableChatPlacement()
+        {
+            System.Drawing.Size siteSize;
+            if (nativeChatControl == null || !nativeChatControl.TryGetNativeSiteSize(out siteSize) ||
+                (siteSize.Width >= chat.MinimumSize.Width && siteSize.Height >= chat.MinimumSize.Height)) return;
+
+            dynamic window = nativeChatWindow;
+            dynamic frame = window.LinkedWindowFrame;
+            // Bounds on a docked pane describe its containing frame, not the actual site.
+            // Detach only the unusable pane before assigning a readable floating layout.
+            if (frame != null) frame.LinkedWindows.Remove(window);
+            var area = Screen.FromHandle(VbeOwner().Handle).WorkingArea;
+            int width = Math.Min(600, area.Width);
+            int height = Math.Min(820, area.Height);
+            window.Width = width;
+            window.Height = height;
+            window.Left = area.Right - width;
+            window.Top = area.Top + Math.Max(0, (area.Height - height) / 2);
+            WriteLog("Recovered unusable chat pane (" + siteSize.Width + "x" + siteSize.Height +
+                ") as a native dockable window (" + width + "x" + height + ").");
         }
 
         /// <summary>Libère les services et fenêtres quand l’hôte déconnecte l’add-in.</summary>

@@ -1,62 +1,81 @@
-# Persistance du panneau de discussion après fermeture du VBE
+# Disparition du panneau pendant l’initialisation du VBE
 
-## Objectif
+## Périmètre et conclusion — 28 septembre 2026
 
-Conserver le panneau VBAi lorsque l’éditeur VBA est fermé puis rouvert dans le même processus hôte. Le problème est signalé sur un poste, dans Excel et SOLIDWORKS ; selon l’utilisateur, le panneau persiste sur d’autres postes.
+Le symptôme précisé par l’utilisateur est une disparition **dès la première ouverture, après initialisation**, dans Excel et SOLIDWORKS sur ce poste. La réouverture n’est pas nécessaire pour le provoquer.
 
-## Reproduction sur le poste concerné
+Le diagnostic local dans Excel montre un problème de placement du panneau natif : le chat existe, le complément reste connecté, mais son conteneur peut être réduit à une bande de six pixels. Le passage automatique du formulaire flottant au panneau VBE explique le bref affichage initial.
 
-Le 28 septembre 2026, une instance Excel isolée a été lancée avec un classeur jetable. Le VBE a chargé `CodexVBE.AddIn` et `VBE.Windows` contenait la fenêtre visible `VBAi`. La fermeture native de la fenêtre principale du VBE a supprimé cette fenêtre. Après réouverture par `Excel.Application.VBE.MainWindow.Visible = true`, `VBAi` n’était plus présent.
+La correction part de `main` au commit `b52e5df`. Les changements de compatibilité Codex/GitHub de la PR #1 sont déjà intégrés à cette base.
 
-Le journal indique `OnDisconnection(0)` lors de la fermeture du VBE, sans nouvel `OnConnection` lors de sa réouverture dans le même processus Excel. Après réouverture, `VBE.AddIns.Count` vaut zéro. `VBE.AddIns.Update()` ne repeuple pas la collection. L’inscription reste présente sous `HKCU\Software\Microsoft\VBA\VBE\6.0\Addins64\CodexVBE.AddIn`, avec `LoadBehavior=3`.
+## Preuves natives
 
-L’utilisateur a reproduit la disparition du panneau dans SOLIDWORKS sur le même poste. SOLIDWORKS n’a pas été automatisé dans cette investigation.
+| Observation dans Excel | Résultat |
+|---|---|
+| Panneau avant correction | `GenericPane` « VBAi », 1920 × 6 pixels |
+| Contrôle enfant | 1 pixel de haut, situé sous la partie visible du panneau |
+| État VBIDE | `Visible=true`, malgré le contenu inaccessible |
+| `Window.HWnd` du panneau personnalisé | Zéro dans cet hôte ; inutilisable pour conclure à son absence |
+| `Window.Width/Height` quand ancré | Dimensions du cadre, pas de la surface réellement réservée au chat |
+| Autre disposition mémorisée observée | Largeur 321 pixels, inférieure au minimum du chat (440 × 560) |
+| Après récupération | Cadre flottant natif 600 × 820 ; panneau visible 584 × 781 |
 
-## Essais et limites
+Dans `AddIn.ToggleDock`, l’appel systématique à `MainWindow.LinkedWindows.Add(nativeChatWindow)` après `CreateToolWindow` imposait un nouveau rattachement au cadre principal. La disposition mémorisée n’était donc pas simplement restaurée. L’essai natif a montré qu’une affectation de hauteur sur le panneau encore ancré échoue ; après retrait de son `LinkedWindowFrame`, les dimensions flottantes sont applicables.
 
-Masquer puis réafficher le VBE avec `MainWindow.Visible` conserve le panneau : la transition pertinente est la fermeture native de l’éditeur. Une surveillance de visibilité dans le complément n’a pas restauré la fenêtre, car celui-ci reçoit `OnDisconnection` à la fermeture. Cette tentative a été retirée du code, puis la version stable a été recompilée et réinstallée.
+## Correction
 
-Une tentative de passer à `Connect=true` sur une ancienne référence COM après réouverture a bloqué puis fait planter l’instance Excel jetable. Cette méthode de reconnexion ne doit pas être utilisée sur une session de travail. Aucun classeur ni fichier macro n’a été modifié pendant l’essai.
+- Laisser `CreateToolWindow` restaurer la disposition associée au GUID stable du panneau.
+- Supprimer le rattachement systématique à `MainWindow.LinkedWindows`.
+- Mesurer la zone cliente du parent natif de `ChatToolWindow`, avec `GetParent` et `GetClientRect`.
+- Conserver la disposition lorsque cette zone respecte le minimum du chat.
+- Si elle est trop petite, retirer uniquement ce panneau de son cadre puis lui donner une fenêtre native flottante ancrable de 600 × 820, bornée à la zone de travail de l’écran du VBE.
+- Vérifier aussi la taille à la demande d’affichage du chat. Aucun raccourci clavier ni besoin de conserver le focus n’est ajouté.
+- En cas d’échec pendant l’attachement initial, conserver le repli existant vers le formulaire flottant avec son message d’erreur.
 
-Ces observations établissent le comportement local, mais n’expliquent pas encore sa différence avec les autres postes. Une correction future nécessitera un déclencheur de cycle de vie porté par l’application hôte, ou l’identification d’une différence de configuration. Elle devra être validée séparément dans des sessions jetables Excel et SOLIDWORKS avant déploiement.
+Le panneau récupéré peut ensuite être ancré manuellement à la position souhaitée. Une disposition utilisable reste inchangée.
 
-## État actuel
+## Rectification du diagnostic de fermeture précédent
 
-La surveillance expérimentale ne figure pas dans la version installée. Les tests ciblés du complément passent (14/14), la bibliothèque de types COM a été régénérée et les scripts officiels d’installation et de vérification ont réussi. La persistance du panneau après fermeture native du VBE reste non résolue sur ce poste.
+Les premiers essais utilisaient **`WM_CLOSE`** sur la fenêtre principale. Ils ont effectivement produit `OnDisconnection(0)`, une collection `AddIns` vide et une fenêtre absente après réouverture. Le relevé indépendant de la branche main (Excel PID 33208, 10:04–10:05) employait aussi `WM_CLOSE`.
 
-## Relevé indépendant après intégration de la PR #1
+Ces observations étaient réelles mais **ne reproduisaient pas la croix du VBE dans ce contexte**. La commande système `WM_SYSCOMMAND / SC_CLOSE` masque ici l’éditeur et son panneau tout en conservant le complément connecté. Elles ne justifient donc pas un nouveau mécanisme de reconnexion du complément.
 
-Le 28 septembre 2026, le diagnostic a été reproduit dans une seconde instance Excel jetable, PID `33208`. Aucun fichier de production ni valeur du registre n'a été modifié. Fermeture native par `WM_CLOSE`, puis réouverture par `CommandBars.ExecuteMso("VisualBasic")`, sans raccourci ni coordonnées souris.
+L’ancienne tentative `Connect=true` sur une référence COM périmée a fait planter une instance jetable. Elle n’est ni reprise ni introduite dans la correction.
 
-| Relevé | Poste observé, première ouverture | Poste observé, réouverture | Poste fonctionnel |
-|---|---|---|---|
-| Heure locale | 10:04:50.697 +02:00 | 10:05:05.428 +02:00 | Non relevé |
-| VBE visible | Oui | Oui | Non relevé |
-| Fenêtres VBE | 8 | 7 | Non relevé |
-| Fenêtre VBAi | Présente, visible | Absente | Non relevé |
-| Compléments `VBE.AddIns` | 1 | 0 | Non relevé |
-| `CodexVBE.AddIn.Connect` | `true` | Entrée absente | Non relevé |
-| Menu Assistant VBAi | Présent | Absent | Non relevé |
+## Validation
 
-Versions observées : Excel `16.0.20326.20158`, VBE7 `7.01.1135`, assembly et fichier CodexVBE `0.1.0.0`. Le SHA-256 de la DLL enregistrée est `53485764918F4507317D6E56E94422A489D947E6470630450E5E3DD546EF4528`, identique au fichier de sortie Debug présent au début du diagnostic. Cet essai porte sur cette DLL enregistrée ; le build isolé du merge de la PR n'a pas remplacé l'installation.
+Compilation Debug x64 réussie et **21 tests ciblés réussis sur 21** : attachement, conservation des dimensions utilisables, récupération des dispositions écrasées/trop étroites, garde-fous natifs et repli en cas d’erreur COM. La DLL et la bibliothèque de types ont été installées avec le script officiel, dont la vérification externe a réussi.
 
-L'inscription utilisateur `VBA\VBE\6.0\Addins64\CodexVBE.AddIn` est toujours présente : `FriendlyName=CodexVBE`, `LoadBehavior=3`. Elle est visible dans les lectures Registry64 et Registry32 ; cela ne prouve pas deux inscriptions distinctes. Aucune entrée correspondante dans `Addins`, ni inscription machine dans les emplacements inspectés.
+Essai réel Excel du 28 septembre 2026, PID 455836 :
 
-Lignes pertinentes du journal :
+| Étape | Heure locale | VBE | Panneau VBAi | Complément |
+|---|---|---|---|---|
+| Première ouverture | 10:31:31 | Visible | Visible, 584 × 781 | Connecté |
+| Croix / SC_CLOSE | 10:31:34 | Masqué | Masqué | Connecté |
+| Réouverture | 10:31:37 | Visible | Visible, mêmes dimensions | Connecté |
 
-```text
-2026-09-28T10:04:35.3265742+02:00 Constructed: EXCEL PID=33208
-2026-09-28T10:04:35.3405742+02:00 OnConnection: EXCEL PID=33208
-2026-09-28T10:04:35.3975752+02:00 Bridge started: CodexVBE.33208
-2026-09-28T10:04:50.8877951+02:00 OnDisconnection: 0
+Le journal confirme la récupération de la zone cliente trop étroite : `321x743 -> 600x820`. La capture montre le chat complet, y compris la saisie et les réglages. Le classeur jetable a été fermé sans sauvegarde et Excel a quitté par `Quit()`, sans arrêt forcé.
+
+Un second lancement complet d’Excel (PID 457240, 10:35:57–10:36:03) a retrouvé la même disposition utilisable dès l’ouverture, puis après SC_CLOSE/réouverture. Cette instance a aussi quitté normalement. Ses preuves sont dans `artifacts/chat-panel-placement-restart/`.
+
+La sonde reproductible est `tools/probes/Test-ChatPanelPlacementExcel.ps1`. Elle refuse une session Excel préexistante, crée son classeur jetable, vérifie présence/dimensions/connexion, capture le rendu, exécute SC_CLOSE puis rouvre le VBE. Elle ferme proprement son instance en `finally`. Elle peut modifier la disposition VBE mémorisée en déclenchant la récupération, mais ne modifie aucune macro.
+
+```powershell
+powershell.exe -Sta -NoProfile -ExecutionPolicy Bypass -File .\tools\probes\Test-ChatPanelPlacementExcel.ps1
 ```
 
-Aucun nouvel `OnConnection` pour ce PID dans l'intervalle de réouverture. Les tests unitaires écrivent aussi dans ce journal ; leurs autres événements ne sont pas attribués à Excel. L'énumération des modules natifs ne permet pas de conclure au déchargement de l'assembly managée CodexVBE.
+Les relevés JSON et captures sont enregistrés dans `artifacts/chat-panel-placement/` (ignoré par Git). Ces captures doivent être examinées : la seule propriété `Visible` ne prouve pas que le contenu est lisible.
 
-Les relevés avant/après sont sauvegardés sous `artifacts/panel-lifecycle-diagnostic/`. La finalisation du script est restée bloquée après les relevés ; seule l'instance Excel créée pour ce diagnostic et son processus PowerShell dédié ont été arrêtés. Aucun autre processus hôte n'a été fermé. SOLIDWORKS n'a pas été testé.
+## Limites
 
-### Conclusion et prochain essai réversible
+- Validation réelle effectuée dans Excel sur ce poste. SOLIDWORKS et un second poste restent à valider ; le code corrigé est commun aux hôtes VBE.
+- La mesure s’effectue à l’attachement et à la commande d’affichage. Elle n’impose pas en permanence une taille pendant les redimensionnements manuels.
+- Le message de connexion ChatGPT visible sur la capture est distinct du placement ; aucune authentification ni conversation n’a été exécutée par ce test.
+- Les anciens relevés basés sur WM_CLOSE restent des observations d’un scénario artificiel, pas une preuve du parcours utilisateur.
 
-La perte du panneau est reproduite indépendamment. Le complément est déconnecté à la fermeture du VBE, puis le VBE rouvert n'énumère aucun complément alors que l'inscription existe encore. La différence entre postes et la cause de cette collection vide restent inconnues : aucun relevé d'un poste fonctionnel n'est disponible.
+## Références
 
-Le plus petit essai comparatif suivant consiste à exécuter le même relevé sur le poste fonctionnel, en vérifiant d'abord une DLL identique par SHA-256. Si les DLL diffèrent, tester la même version dans une instance jetable sur les deux postes avant de changer le cycle de vie. Retour arrière : quitter l'instance jetable et rétablir la version initiale avec son installateur si une version d'essai a été installée. Aucune reconnexion via une ancienne référence COM, aucune modification du registre et aucune surveillance expérimentale n'ont été introduites ici.
+- [CreateToolWindow](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/createtoolwindow-method) : création de la fenêtre ancrable et identifiant de position.
+- [LinkedWindows.Add](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/add-method-vba-add-in-object-model) : déplacement entre cadres.
+- [WM_SYSCOMMAND](https://learn.microsoft.com/en-us/windows/win32/menurc/wm-syscommand) : commande SC_CLOSE de la barre de titre.
+- [WM_CLOSE](https://learn.microsoft.com/en-us/windows/win32/winmsg/wm-close) : demande de fermeture, distincte du scénario testé par la croix.
