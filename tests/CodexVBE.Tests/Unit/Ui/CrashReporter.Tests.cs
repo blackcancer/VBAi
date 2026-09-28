@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -13,6 +13,30 @@ namespace CodexVBE.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class CrashReporterTests
     {
+        [TestMethod]
+        public void ReporterHandlesSaveDisplayReviewDirectoryAndRuntimeEventFailuresWithoutRecursing()
+        {
+            string directory = Path.Combine(Path.GetTempPath(), "CodexVBE-crash-contract-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(directory);
+            try
+            {
+                var owned = new NullReferenceException("Synthetic failure", CrashReportTests.OwnedError());
+                using (var reporter = new CrashReporter(report => { throw new IOException("Owned display unavailable"); }, report => { throw new IOException("Owned save unavailable"); }, directory)) reporter.ReportUnexpected(owned);
+                int saved = 0;
+                using (var reporter = new CrashReporter(report => { }, report => { saved++; Directory.CreateDirectory(Path.Combine(directory, report.Id + ".pending")); }, directory)) reporter.Capture(owned, true);
+                Assert.AreEqual(1, saved);
+                using (var reporter = new CrashReporter(report => { }, report => { saved++; }, directory))
+                {
+                    reporter.ReadPendingFiles = path => { throw new DirectoryNotFoundException("Directory removed during listing"); };
+                    reporter.RecoverPending(directory);
+                    var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+                    typeof(CrashReporter).GetMethod("FatalError", flags).Invoke(reporter, new object[] { null, new UnhandledExceptionEventArgs(owned, true) });
+                    typeof(CrashReporter).GetMethod("FatalError", flags).Invoke(reporter, new object[] { null, new UnhandledExceptionEventArgs("nonexception", false) });
+                    typeof(CrashReporter).GetMethod("TaskError", flags).Invoke(reporter, new object[] { null, new UnobservedTaskExceptionEventArgs(new AggregateException(owned)) });
+                    Assert.AreEqual(3, saved);
+                }
+            }
+            finally { Directory.Delete(directory, true); }
+        }
         [TestMethod]
         public void CaptureKeepsIdentityPreventsRecursionAndIgnoresForeignErrorsAndDisposedReporter()
         {

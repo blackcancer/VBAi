@@ -1218,6 +1218,33 @@ namespace CodexVBE.Tests.Unit
     public sealed partial class VbeDebugTests
     {
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void SessionProjectPropertiesRouteChecksCapturedVersionBeforeAndDuringUiDelivery()
+        {
+            var previous = System.Threading.SynchronizationContext.Current;
+            try
+            {
+                foreach (string fault in new[] { "none", "stale initially", "changed while queued" })
+                {
+                    var host = new CodexVBE.Tests.Infrastructure.EditorVbeContract();
+                    var context = new NativeNavigationContext(); System.Threading.SynchronizationContext.SetSynchronizationContext(context);
+                    var bar = new FakeBar { Name = "Tools" }; var control = new FakeControl { Id = 2578, Caption = "Properties" }; bar.Controls.Add(control); host.Vbe.CommandBars.Add(bar);
+                    var session = new CodexVBE.VbeSession(host.Vbe);
+                    dynamic snapshot = session.Execute(new CodexVBE.Request { Command = "project_properties", Project = host.Project.Name }).Data;
+                    var request = new CodexVBE.Request { Command = "read_project_protection", Project = host.Project.Name, ExpectedMode = 2, ExpectedProjectVersion = fault == "stale initially" ? "stale" : snapshot.Version, ControlCaption = "Properties" };
+                    if (fault == "stale initially") Assert.ThrowsException<System.InvalidOperationException>(() => session.Execute(request));
+                    else
+                    {
+                        Assert.IsTrue(session.Execute(request).Ok);
+                        if (fault == "changed while queued") host.Original.Name = "ChangedModule";
+                        context.RunAll();
+                    }
+                    Assert.AreEqual(fault == "none" ? 1 : 0, control.ExecuteCount, fault);
+                }
+            }
+            finally { System.Threading.SynchronizationContext.SetSynchronizationContext(previous); }
+        }
+
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
         public void SessionRoutesProcedureQueueAndStatusThroughBoundDebugger()
         {
             var previous = System.Threading.SynchronizationContext.Current;
