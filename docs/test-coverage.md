@@ -1,5 +1,23 @@
 # Couverture automatisée du complément
 
+## Mesure après intégration de la PR #5
+
+Mesure du **28 septembre 2026**, code **`a151498`** : À propos et rapports de problème GitHub/Outlook intégrés avec les fonctionnalités IDE de main. Compilation : **0 erreur, 0 avertissement**.
+
+| Mesure | Résultat |
+| --- | --- |
+| Suite globale VSTest | **1 189 réussis, 0 échec, 1 ignoré**, 6 min 34 s |
+| Lignes | **21 578 / 21 658 — 99,63 %** |
+| Branches | **22 462 / 22 545 — 99,63 %** |
+| Excel automatisé | **Trois scénarios réussis** |
+| SOLIDWORKS | **NOT_RUN**, aucune instance préchargée |
+| Concepteurs WinForms | **29 surfaces validées** |
+| Organisation miroir | **146 miroirs pour 200 fichiers de production** |
+
+La PR ajoute du code dont la couverture reste à compléter : **80 lignes et 83 branches** non exécutées. Les 100 % du passage précédent ne sont pas la mesure actuelle. Aucun code de production n'a été exclu. Les publications GitHub et les livraisons Outlook sont simulées ; aucun rapport réel n'a été envoyé et ces parcours natifs ne sont pas qualifiés par cette suite.
+
+Preuves locales : `artifacts/pr5-integration/results/global.trx` et `artifacts/pr5-integration/results/9dc1e6ae-ad7b-4920-aac7-6046ca8aefd5/coverage.cobertura.xml`. Les contrôles Designer et miroir sont sous `artifacts/pr5-integration/`.
+
 ## Mesure globale après intégration de la PR #4 et du lot IDE
 
 Mesure du **28 septembre 2026**, code **`27389a8`**, comprenant la PR WinForms `codex/chat-ux`, le renommage de paramètres, les appels nommés et le vérificateur de signatures. Compilation de la solution : **0 erreur, 0 avertissement**.
