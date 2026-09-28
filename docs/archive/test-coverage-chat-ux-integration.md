@@ -34,6 +34,6 @@ Les matrices d’outils vérifient désormais `Rows` : types des cellules, dimen
 
 ## Reproduire la mesure
 
-Voir [le projet de tests](../tests/README.md) pour les commandes VSTest et les hôtes opt-in. Les artefacts sont générés localement et ignorés par Git. Le seul exécutable exclu du collecteur est `ProviderTests.exe`, la simulation CLI ; aucune source du complément n’est exclue.
+Voir [le projet de tests](../../tests/README.md) pour les commandes VSTest et les hôtes opt-in. Les artefacts sont générés localement et ignorés par Git. Le seul exécutable exclu du collecteur est `ProviderTests.exe`, la simulation CLI ; aucune source du complément n’est exclue.
 
-Le [bilan antérieur à 100 %](archive/test-coverage-pre-chat-ux.md) est archivé séparément. Il ne couvre pas les nouvelles sources intégrées.
+Le [bilan antérieur à 100 %](test-coverage-pre-chat-ux.md) est archivé séparément. Il ne couvre pas les nouvelles sources intégrées.
