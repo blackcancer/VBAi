@@ -88,7 +88,7 @@ namespace CodexVBE
                 if (scope == null || scope.Key.StartsWith("temporary:", StringComparison.Ordinal))
                     throw new InvalidOperationException(UiText.Get("Save the document before linking it to GitHub."));
                 using (var window = new GitWindow(scopeSession.GitProject(scope.Project, scope.Key), scope.Key, scope.Label, settings.GitHubAccount))
-                    window.ShowDialog(this);
+                    ShowModal(window,this);
             }
             catch (Exception ex) { SetStatus(UiText.Get("GitHub: ") + ex.Message); }
         }

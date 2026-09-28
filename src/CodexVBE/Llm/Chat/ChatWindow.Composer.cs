@@ -43,14 +43,6 @@ namespace CodexVBE
             prompt.SpellCheck.IsEnabled = true;
             AutomationProperties.SetName(prompt, UiText.Get("Your request; Enter to send, Shift+Enter for a new line"));
             promptHost.Child = prompt;
-            prompt.PreviewKeyDown += PromptKeyDown;
-            prompt.TextChanged += (sender, args) => {
-                acceptedTokenEnd = -1;
-                UpdateReferences();
-                RefreshContextChips();
-                ScheduleSessionSave();
-            };
-            prompt.SelectionChanged += (sender, args) => UpdateReferences();
 
             referenceList = new ListBox { Width = 350, MaxHeight = 240,
                 BorderThickness = new Thickness(0), Background = Ink("#FFFFFF") };
@@ -98,18 +90,27 @@ namespace CodexVBE
                     Effect = new DropShadowEffect { BlurRadius = 14, ShadowDepth = 3, Opacity = 0.18 } }
             };
             referenceIndex = new VbeChatReferences(session);
-            referenceIndex.Changed += UpdateReferences;
             referenceTimer = new Forms.Timer { Interval = 30 };
             referenceTimer.Tick += (sender, args) => {
                 referenceIndex.Step();
                 if (!referenceIndex.IsLoading) referenceTimer.Stop();
             };
+            // Event callbacks see a complete composer, including its popup and timer.
+            prompt.PreviewKeyDown += PromptKeyDown;
+            prompt.TextChanged += (sender, args) => {
+                acceptedTokenEnd = -1;
+                UpdateReferences();
+                RefreshContextChips();
+                ScheduleSessionSave();
+            };
+            prompt.SelectionChanged += (sender, args) => UpdateReferences();
+            referenceIndex.Changed += UpdateReferences;
         }
 
         private void PromptKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter &&
-                (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Shift) != 0)
+                (ReadModifiers() & System.Windows.Input.ModifierKeys.Shift) != 0)
             { HideReferences(); return; }
             if (referencePopup.IsOpen)
             {
@@ -125,7 +126,7 @@ namespace CodexVBE
                 if ((e.Key == Key.Enter || e.Key == Key.Tab) && referenceList.SelectedItem != null)
                 { AcceptReference(); e.Handled = true; return; }
             }
-            if (e.Key == Key.Enter && (System.Windows.Input.Keyboard.Modifiers & System.Windows.Input.ModifierKeys.Shift) == 0)
+            if (e.Key == Key.Enter && (ReadModifiers() & System.Windows.Input.ModifierKeys.Shift) == 0)
             {
                 e.Handled = true;
                 _ = SendAsync();
@@ -134,7 +135,7 @@ namespace CodexVBE
 
         private void UpdateReferences()
         {
-            if (prompt == null || referencePopup == null) return;
+            if (prompt == null) return;
             int caret = prompt.CaretIndex;
             if (caret == acceptedTokenEnd) { HideReferences(); return; }
             if (TryShowCommands(caret)) return;
@@ -245,7 +246,7 @@ namespace CodexVBE
 
         private void RefreshContextChips()
         {
-            if (contextChips == null || prompt == null) return;
+            if (prompt == null) return;
             contextChips.SuspendLayout();
             try
             {
@@ -291,8 +292,7 @@ namespace CodexVBE
                     prompt.Focus();
                     return;
                 }
-                Response result = referenceIndex.Navigate(reference);
-                if (!result.Ok) SetStatus(result.Error);
+                referenceIndex.Navigate(reference);
             }
             catch (Exception ex) { SetStatus(UiText.Get("Unable to navigate: ") + ex.Message); }
         }
