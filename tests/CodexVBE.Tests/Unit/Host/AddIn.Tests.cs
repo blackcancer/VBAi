@@ -107,6 +107,79 @@ namespace CodexVBE.Tests.Unit
                 Assert.IsNull(Chat(instance)); Assert.IsNull(LlmBoundaryScope.Get<object>(instance, "server"));
             }
         }
+
+        [STATestMethod]
+        public void StartupRepairsCollapsedOrDefaultTinyPaneWithoutForcingMainFrameDocking()
+        {
+            foreach (var size in new[] { new System.Drawing.Size(1920, 6), new System.Drawing.Size(200, 100), new System.Drawing.Size(321, 766) })
+            using (var scope = new HostUiScope())
+            {
+                scope.Host.Windows.AfterCreation = () => {
+                    scope.Host.Windows.Window.Form.ClientSize = size;
+                    scope.Host.Windows.Window.LinkedWindowFrame = scope.Host.MainWindow;
+                };
+                var instance = scope.Connected();
+                try
+                {
+                    var window = scope.Host.Windows.Window;
+                    var area = Screen.FromHandle(new IntPtr(scope.Host.MainWindow.HWnd)).WorkingArea;
+                    Assert.AreEqual(0, scope.Host.MainWindow.LinkedWindows.Adds);
+                    Assert.AreEqual(1, scope.Host.MainWindow.LinkedWindows.Removes);
+                    Assert.AreEqual(Math.Min(600, area.Width), window.Width);
+                    Assert.AreEqual(Math.Min(820, area.Height), window.Height);
+                    Assert.IsTrue(area.Contains(window.Form.Bounds));
+                    Assert.IsTrue(window.Visible);
+                    Assert.IsTrue(LlmBoundaryScope.Get<bool>(instance, "docked"));
+                }
+                finally { scope.Close(instance); }
+            }
+        }
+
+        [STATestMethod]
+        public void FailedPlacementRecoveryFallsBackToVisibleStandaloneChat()
+        {
+            using (var scope = new HostUiScope())
+            {
+                scope.Host.Windows.AfterCreation = () => {
+                    scope.Host.Windows.Window.Form.ClientSize = new System.Drawing.Size(1920, 6);
+                    scope.Host.Windows.Window.LinkedWindowFrame = scope.Host.MainWindow;
+                    scope.Host.MainWindow.LinkedWindows.Reject = true;
+                };
+                var instance = scope.Connected();
+                try
+                {
+                    Assert.IsFalse(LlmBoundaryScope.Get<bool>(instance, "docked"));
+                    Assert.IsTrue(Chat(instance).TopLevel);
+                    Assert.IsTrue(Chat(instance).Visible);
+                    Assert.IsTrue(scope.Logs.Any(x => x.Contains("Native chat docking failed")));
+                }
+                finally { scope.Close(instance); }
+            }
+        }
+
+        [STATestMethod]
+        public void OpeningUsablePanePreservesLayoutAndReopeningRepairsOnlyCollapsedPane()
+        {
+            using (var scope = new HostUiScope())
+            {
+                var instance = scope.Connected();
+                try
+                {
+                    var window = scope.Host.Windows.Window;
+                    var bounds = window.Form.Bounds;
+                    Call(instance, "ShowChat");
+                    Assert.AreEqual(bounds, window.Form.Bounds);
+                    Assert.AreEqual(0, scope.Host.MainWindow.LinkedWindows.Adds);
+                    Assert.AreEqual(0, scope.Host.MainWindow.LinkedWindows.Removes);
+                    window.LinkedWindowFrame = scope.Host.MainWindow;
+                    window.Form.ClientSize = new System.Drawing.Size(1000, 6);
+                    Call(instance, "ShowChat");
+                    Assert.AreEqual(1, scope.Host.MainWindow.LinkedWindows.Removes);
+                    Assert.IsTrue(window.Form.ClientSize.Height > 200);
+                }
+                finally { scope.Close(instance); }
+            }
+        }
                 /// <summary>Vérifie les menus, les dialogues possédés et les actions de préparation du compositeur.</summary>
 [STATestMethod]
         public void MenuCallbacksOpenOwnedDialogsAndPrepareActualComposerActions()

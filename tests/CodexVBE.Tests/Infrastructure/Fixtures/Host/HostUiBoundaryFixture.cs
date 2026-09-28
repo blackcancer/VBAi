@@ -90,7 +90,9 @@ namespace CodexVBE.Tests.Infrastructure
     {
         public bool Reject;
         public int Adds;
+        public int Removes;
         public void Add(object window) { if (Reject) throw new IOException("position rejected"); Adds++; }
+        public void Remove(object window) { if (Reject) throw new IOException("position rejected"); Removes++; }
     }
     public sealed class NativeAddIn : IVbeAddIn { public string ProgId { get; set; } = "CodexVBE.AddIn"; }
     public sealed class NativeAddIns
@@ -105,6 +107,11 @@ namespace CodexVBE.Tests.Infrastructure
         public Action Focusing;
         public bool RejectClose;
         public int FocusCount, CloseCount;
+        public object LinkedWindowFrame { get; set; }
+        public int Width { get { return Form.Width; } set { Form.Width = value; } }
+        public int Height { get { return Form.Height; } set { Form.Height = value; } }
+        public int Left { get { return Form.Left; } set { Form.Left = value; } }
+        public int Top { get { return Form.Top; } set { Form.Top = value; } }
         public bool Visible { get { return Form.Visible; } set { if (value) Form.Show(); else Form.Hide(); } }
         public void SetFocus() { FocusCount++; Focusing?.Invoke(); }
         public void Close() { CloseCount++; if (RejectClose) throw new IOException("close rejected"); Form.Close(); }

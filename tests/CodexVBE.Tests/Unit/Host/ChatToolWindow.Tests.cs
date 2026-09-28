@@ -11,6 +11,29 @@ namespace CodexVBE.Tests.Unit
 [TestClass, TestCategory("Unit")]
     public sealed class ChatToolWindowCoverageTests
     {
+        [STATestMethod]
+        public void NativeSiteSizeUsesParentClientAreaAndRefusesUnavailableHandles()
+        {
+            using (var tool = new ChatToolWindow())
+            using (var owner = new Form { Left = -10000, Top = -10000, ShowInTaskbar = false, ClientSize = new Size(600, 800) })
+            {
+                Size size;
+                Assert.IsFalse(tool.TryGetNativeSiteSize(out size));
+                var handle = tool.Handle;
+                var readParent = tool.ParentReader;
+                tool.ParentReader = h => IntPtr.Zero;
+                Assert.IsFalse(tool.TryGetNativeSiteSize(out size));
+                tool.ParentReader = readParent;
+                owner.Controls.Add(tool);
+                owner.Show();
+                Assert.IsTrue(tool.TryGetNativeSiteSize(out size));
+                Assert.AreEqual(owner.ClientSize, size);
+                tool.ClientReader = (IntPtr h, out ChatToolWindow.NativeRect r) => { r = default(ChatToolWindow.NativeRect); return false; };
+                Assert.IsFalse(tool.TryGetNativeSiteSize(out size));
+                tool.Dispose();
+                Assert.IsFalse(tool.TryGetNativeSiteSize(out size));
+            }
+        }
                 /// <summary>Utilise des handles WinForms réels pour vérifier le redimensionnement, l’attachement et la destruction.</summary>
 [STATestMethod]
         public void NativeSiteResizingAttachDetachTimerAndDisposeUseActualWinFormsHandles()

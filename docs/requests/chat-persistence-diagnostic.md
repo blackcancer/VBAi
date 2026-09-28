@@ -1,40 +1,33 @@
-# Demande de diagnostic — panneau VBAi absent après réouverture du VBE
+# Diagnostic comparatif : panneau VBAi invisible après initialisation
 
-## Objet
+## Symptôme à vérifier
 
-Comparer un poste où le panneau VBAi persiste à celui où il disparaît après fermeture puis réouverture de l’éditeur VBA, sans fermer l’application hôte. Le problème est observé sur le poste concerné dans Excel et SOLIDWORKS. Cette demande vise à identifier une différence de chargement ou de configuration avant de modifier le cycle de vie du complément.
+Sur le poste concerné, le panneau apparaît brièvement puis disparaît dès la première ouverture du VBE. Le problème est signalé dans Excel et SOLIDWORKS. Ne pas limiter le diagnostic à une fermeture/réouverture.
 
-## Constat déjà établi sur le poste concerné
+Le [diagnostic corrigé](../chat-persistence-investigation.md) identifie dans Excel un panneau natif réduit à six pixels par le rattachement automatique au cadre principal. Une correction préserve les dispositions utilisables et récupère les panneaux trop petits dans une fenêtre native flottante ancrable.
 
-Dans une instance Excel jetable, `VBE.Windows` contient une fenêtre `VBAi` visible à la première ouverture. La fermeture native du VBE déclenche `OnDisconnection(0)` et supprime cette fenêtre. À la réouverture dans le même processus Excel, aucun `OnConnection` n’est journalisé et `VBE.AddIns.Count` vaut zéro. `VBE.AddIns.Update()` ne change pas ce résultat. L’inscription utilisateur `HKCU\Software\Microsoft\VBA\VBE\6.0\Addins64\CodexVBE.AddIn` reste présente avec `LoadBehavior=3`.
+## Relevés attendus sur chaque poste
 
-Une tentative de remettre `Connect=true` sur une référence COM conservée avant la fermeture a bloqué puis fait planter l’instance Excel jetable. Ne pas reproduire cette manipulation.
+1. Relever l’hôte, sa version, l’architecture, la version de VBE et le SHA-256 de la DLL réellement enregistrée.
+2. À la première ouverture, attendre la fin de l’initialisation et capturer le VBE et le panneau. Vérifier l’accès au bas du chat (saisie, fournisseur, modèle), pas seulement sa présence dans `VBE.Windows`.
+3. Relever le rectangle natif de `GenericPane` « VBAi » et l’état `CodexVBE.AddIn.Connect`. Ne pas conclure à partir de `Window.Width/Height` quand il est ancré : ces valeurs peuvent décrire le cadre complet. `Window.HWnd` peut aussi valoir zéro pour le panneau personnalisé.
+4. Vérifier une disposition utilisable déjà mémorisée, puis une disposition trop étroite ou écrasée dans une session de test. La première doit être conservée ; la seconde récupérée.
+5. Fermer avec la croix du VBE, laisser l’hôte ouvert, puis rouvrir. Ne pas substituer `WM_CLOSE` à la croix : la sonde utilise `WM_SYSCOMMAND / SC_CLOSE`.
+6. Relever uniquement les lignes pertinentes de `%TEMP%/CodexVBE-load.log` (`OnConnection`, récupération du panneau, erreurs d’ancrage, `OnDisconnection`).
+7. Fermer normalement la session jetable. Ne pas forcer la reconnexion d’une ancienne référence COM.
 
-## Relevés demandés sur les deux postes
+## Sonde Excel
 
-Effectuer les relevés sous le même compte Windows que celui qui utilise le complément. Dans Excel, utiliser un classeur jetable ; dans SOLIDWORKS, ne modifier aucune macro de production. Ne pas réinstaller le complément, modifier le registre, forcer `Connect` ou fermer une session de travail pour ce diagnostic.
-
-1. Noter les versions d’Excel ou de SOLIDWORKS, de `VBE7.DLL` chargé par le processus et de `CodexVBE.dll` installé.
-2. Noter le PID de l’hôte. Ouvrir son VBE une première fois et relever : présence et visibilité de `VBAi`, nombre de fenêtres VBE, nombre de compléments dans `VBE.AddIns`, état `Connect` de `CodexVBE.AddIn` s’il figure dans la collection.
-3. Fermer uniquement le VBE par sa croix. Garder Excel ou SOLIDWORKS ouvert. Relever l’heure exacte et les nouvelles lignes `OnDisconnection` du journal `%TEMP%\CodexVBE-load.log`.
-4. Rouvrir le VBE depuis l’hôte, sans redémarrer l’hôte. Relever les mêmes quatre états et les éventuelles lignes `OnConnection` du journal. Noter si **Affichage → Assistant VBAi** est présent.
-5. Lire les valeurs `FriendlyName`, `LoadBehavior` et la présence de la clé `HKCU\Software\Microsoft\VBA\VBE\6.0\Addins64\CodexVBE.AddIn`. Indiquer séparément si une inscription existe aussi dans la vue machine 64 bits. Ne pas exporter de clés de registre complètes.
-6. Indiquer si la fermeture du VBE décharge `CodexVBE.dll` du processus hôte, si cela peut être observé sans outil intrusif.
-
-Pour Excel, les états du VBE peuvent être lus dans un PowerShell 64 bits, attaché à une session Excel **déjà ouverte** :
+Fermer ses sessions Excel avant de lancer :
 
 ```powershell
-$excel = [Runtime.InteropServices.Marshal]::GetActiveObject('Excel.Application')
-$vbe = $excel.VBE
-$chat = @($vbe.Windows | Where-Object { $_.Caption -eq 'VBAi' } | ForEach-Object { [pscustomobject]@{ Caption = $_.Caption; Visible = $_.Visible } })
-$addins = @($vbe.AddIns | ForEach-Object { [pscustomobject]@{ ProgId = $_.ProgId; Connect = $_.Connect } })
-[pscustomobject]@{ VbeVisible = $vbe.MainWindow.Visible; WindowCount = $vbe.Windows.Count; Chat = $chat; AddIns = $addins } | Format-List
+powershell.exe -Sta -NoProfile -ExecutionPolicy Bypass -File .\tools\probes\Test-ChatPanelPlacementExcel.ps1
 ```
 
-Exécuter le bloc une fois à la première ouverture, puis une fois après réouverture du VBE. Si plusieurs instances Excel tournent, ne pas utiliser `GetActiveObject` pour conclure sur une instance précise ; noter cette limite et relever les états dans une session isolée.
+La sonde crée un classeur vide, ne l’enregistre pas et quitte Excel proprement. Elle écrit les états et captures dans `artifacts/chat-panel-placement/`. Le panneau peut changer de position si la disposition enregistrée est trop petite.
 
-## Résultat attendu du diagnostic
+## Résultat attendu
 
-Fournir un tableau « poste concerné / poste fonctionnel » avec les états avant fermeture et après réouverture, les versions, les seules lignes pertinentes du journal et la différence constatée. Masquer les noms d’utilisateur, chemins personnels, identifiants de compte et données de macro. Conclure seulement sur les différences observées ; proposer ensuite le plus petit essai de correction réversible et son retour arrière.
+Fournir un tableau par hôte et par poste : DLL, première ouverture, dimensions natives, lisibilité du contenu, état connecté, fermeture/réouverture et sortie propre. Masquer chemins personnels, données de macro et identifiants dans les pièces partagées.
 
-Voir aussi [l’investigation sur ce poste](../chat-persistence-investigation.md).
+**État connu :** récupération et réouverture vérifiées dans Excel sur le poste concerné. SOLIDWORKS et le poste où le panneau fonctionnait auparavant restent à valider.
