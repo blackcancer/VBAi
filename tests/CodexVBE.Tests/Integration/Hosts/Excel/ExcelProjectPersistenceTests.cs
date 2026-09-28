@@ -5,10 +5,12 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CodexVBE.Tests.Integration
 {
+    /// <summary>Vérifie les commandes de sauvegarde de projet dans une instance Excel isolée.</summary>
     [TestClass]
     [TestCategory("Excel")]
     public sealed class ExcelProjectPersistenceTests
     {
+        /// <summary>Sauvegarde le classeur macro puis vérifie le chemin, l’état et le résultat relus par le pont.</summary>
         [TestMethod]
         [STATestMethod]
         public void IsolatedExcelCanSaveMacroProjectThroughItsOwnVbeBridge()

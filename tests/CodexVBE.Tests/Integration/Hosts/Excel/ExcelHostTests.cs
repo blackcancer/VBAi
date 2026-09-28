@@ -7,13 +7,19 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CodexVBE.Tests.Integration
 {
+    /// <summary>Vérifie l’automatisation Excel isolée et son pont VBE sans réutiliser une session utilisateur.</summary>
     [TestClass]
     [TestCategory("Excel")]
     public sealed class ExcelHostTests
     {
+        /// <summary>Résout l’identifiant de processus propriétaire d’une fenêtre Win32.</summary>
+        /// <param name="window">Handle de la fenêtre.</param>
+        /// <param name="processId">Reçoit l’identifiant du processus.</param>
+        /// <returns>Identifiant du thread propriétaire de la fenêtre.</returns>
         [DllImport("user32.dll")]
         private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
 
+        /// <summary>Démarre une instance Excel séparée, crée un classeur et vérifie le pont VBE connecté.</summary>
         [TestMethod]
         [STATestMethod]
         public void IsolatedExcelCanCreateAndReadWorkbookWithoutTouchingUserSession()
@@ -99,6 +105,8 @@ namespace CodexVBE.Tests.Integration
             }
         }
 
+        /// <summary>Libère une référence COM lorsqu’elle en est une et ignore une erreur de libération COM.</summary>
+        /// <param name="value">Objet COM éventuellement nul à libérer.</param>
         private static void ReleaseSafely(object value)
         {
             try { if (value != null && Marshal.IsComObject(value)) Marshal.FinalReleaseComObject(value); }

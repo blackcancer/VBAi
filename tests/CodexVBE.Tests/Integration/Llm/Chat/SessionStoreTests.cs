@@ -5,10 +5,12 @@ using CodexVBE;
 
 namespace CodexVBE.Tests.Integration
 {
+    /// <summary>Vérifie la persistance SQLite des conversations et mémoires de session.</summary>
     [TestClass]
     [TestCategory("LocalIntegration")]
     public sealed class SessionStoreTests
     {
+        /// <summary>Conserve les textes Unicode et isole les portées après fermeture puis réouverture du stockage.</summary>
         [TestMethod]
         public void SqlitePersistsUnicodeAndSeparatesScopesAcrossReopen()
         {

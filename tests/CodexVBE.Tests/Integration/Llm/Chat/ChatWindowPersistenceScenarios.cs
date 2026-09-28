@@ -14,10 +14,12 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie la persistance des conversations, brouillons et mémoires par portée.</summary>
     [TestClass]
     [TestCategory("Unit")]
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Enregistre puis relit le brouillon, les messages Unicode et les entrées de la session courante.</summary>
         [TestMethod]
         [STATestMethod]
         public void CurrentSessionPersistsDraftMessagesAndEntriesInIsolatedStore()
@@ -61,6 +63,7 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Charge la conversation et la mémoire d’une portée puis restaure la session mise en cache.</summary>
         [TestMethod]
         [STATestMethod]
         public void ScopeSwitchLoadsSavedConversationAndMemoryThenRestoresCachedScope()
