@@ -40,7 +40,10 @@ namespace CodexVBE
         /// <summary>Traite un appel d’outil retourné par le fournisseur.</summary>
         /// <value>Délégué qui reçoit le nom et les arguments JSON d’un outil, ou null si aucun outil n’est disponible.</value>
         public Func<string, string, Task<string>> ToolHandler { get; set; }
+        /// <summary>Crée le gestionnaire HTTP utilisé par défaut, remplaçable dans les tests.</summary>
         internal static Func<HttpMessageHandler> HttpHandlerFactory = CreateHttpHandler;
+        /// <summary>Crée un transport HTTP qui refuse les redirections automatiques.</summary>
+        /// <returns>Gestionnaire configuré pour ne pas suivre les redirections.</returns>
         private static HttpMessageHandler CreateHttpHandler() { return new HttpClientHandler { AllowAutoRedirect = false }; }
 
         /// <summary>Crée un client pour le fournisseur, ses réglages et le modèle choisi.</summary>
