@@ -42,7 +42,7 @@ Les clés API ne sont pas enregistrées dans cette base. Les contenus de convers
 
 ## Vérification
 
-La fusion `611dcb5` ajoute 11 outils IDE. Sa mesure est de **99,49 % lignes et 98,43 % branches** ; les tests locaux passent, mais le test de sauvegarde Excel échoue dans la suite globale et réussit isolément. Les 24 concepteurs WinForms ont été validés précédemment. Voir [le bilan courant](test-coverage.md). Les captures et essais d’interface ci-dessous sont des validations antérieures datées, avec leur propre périmètre.
+Les PR #2 et #3 sont intégrées. La mesure globale du code `fb166a4` atteint **100 % lignes et branches**, avec **1 151 tests réussis**, aucun échec et un scénario SOLIDWORKS non exécuté. Les deux essais Excel passent. Les 24 concepteurs WinForms ont été validés précédemment. Voir [le bilan courant](test-coverage.md). Les captures et essais d’interface ci-dessous sont des validations antérieures datées, avec leur propre périmètre.
 
 Depuis le worktree :
 

@@ -1,13 +1,13 @@
 # Travaux restants
 
-État consolidé le **28 septembre 2026**, après intégration de `5aed4f3`. Le bilan à 100 % de `9eac920` précède ces nouvelles extensions ; une nouvelle mesure est nécessaire. Ce document distingue les fonctions présentes des preuves de qualification manquantes. Le [catalogue LLM](reference/vbe-tools.md) décrit l’exposition actuelle ; les [archives](archive/README.md) conservent les expériences détaillées.
+État consolidé le **28 septembre 2026**, code `fb166a4`, après les PR #2 et #3. La mesure globale courante atteint 100 % lignes et branches. Ce document distingue les fonctions présentes des preuves de qualification manquantes. Le [catalogue LLM](reference/vbe-tools.md) décrit l’exposition actuelle ; les [archives](archive/README.md) conservent les expériences détaillées.
 
 ## Couverture et documentation
 
 | Travail | État actuel | Critère de fin |
 | --- | --- | --- |
-| Couverture du code de production | 99,49 % lignes, 98,43 % branches ; 19 classes incomplètes après extensions | 100 % lignes et branches mesurées sur toute l’assembly, sans masquer du code ; suite globale verte |
-| Organisation des tests | 128 miroirs pour 177 sources ; scénarios et fixtures complémentaires | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
+| Couverture du code de production | 100 % lignes et branches ; zéro classe incomplète ; 1 151 tests verts et 1 scénario SOLIDWORKS NOT_RUN | 100 % lignes et branches mesurées sur toute l’assembly, sans masquer du code ; suite globale verte |
+| Organisation des tests | 134 miroirs pour 183 sources ; scénarios et fixtures complémentaires | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
 | Documentation IntelliSense | Nouvelles déclarations apportées par chat-ux ; agent documentaire en cours | Audit final des déclarations privées/publiques, propriétés et tests, sans lacune |
 | Concepteurs WinForms | 24 DesignSurface validées | Préserver cette accessibilité après chaque changement de structure ; qualifier aussi le rendu réel |
 

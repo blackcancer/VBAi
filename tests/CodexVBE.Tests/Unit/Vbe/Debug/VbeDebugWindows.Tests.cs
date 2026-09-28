@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Unit
+namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections;
@@ -297,16 +297,24 @@
         {
             var root = new AutomationNode { Name = "Locals", Kind = System.Windows.Automation.ControlType.List };
             root.Add(new AutomationNode { Name = "Expression x Value 42 Type Long" });
+            root.Add(new AutomationNode { Name = "Expression x Value 42 Type Long" });
+            root.Add(new AutomationNode { Name = "Expression x Value 43 Type Long" });
             root.Add(new AutomationNode { Name = "Expression  Value No variables Type " });
             root.Add(new AutomationNode { Name = "unparsed native row" });
             root.Add(new AutomationNode { Name = "Expression display Value old Type String", Text = "Expression actual Value new Type String" }.With(System.Windows.Automation.ValuePattern.Pattern));
             var parent = root.Add(new AutomationNode { Name = "Expression container Value {...} Type Collection" });
             parent.Add(new AutomationNode { Name = "Expression child Value 1 Type Integer" });
+            parent.Add(new AutomationNode { Name = "Expression x Value 42 Type Long" });
             using (var host = new AutomationHost(root))
             {
                 dynamic result = Call("ReadList", host.Handle);
                 Assert.IsNull((string)result.Error);
-                var rows = ((IEnumerable)result.Items).Cast<object>().ToArray(); Assert.AreEqual(5, rows.Length);
+                var rows = ((IEnumerable)result.Items).Cast<object>().ToArray(); Assert.AreEqual(7, rows.Length);
+                Assert.AreEqual(1, (int)result.DuplicateRowsOmitted);
+                var xRows = rows.Where(row => (string)((dynamic)row).Expression == "x").ToArray();
+                Assert.AreEqual(3, xRows.Length, "Changed values and different ancestry must remain distinct observations.");
+                Assert.AreEqual(2, xRows.Count(row => (string)((dynamic)row).Value == "42"));
+                Assert.AreEqual(1, xRows.Count(row => (int)((dynamic)row).Depth == 1));
                 dynamic value = rows.Single(row => (string)((dynamic)row).Expression == "actual");
                 Assert.AreEqual("new", (string)value.Value);
                 dynamic child = rows.Single(row => (string)((dynamic)row).Expression == "child");
@@ -318,6 +326,19 @@
             {
                 dynamic failed = Call("ReadList", new IntPtr(999)); Assert.IsTrue((bool)failed.Available); Assert.IsNotNull((string)failed.Error);
             }
+        }
+
+        [TestMethod]
+        public void DebugRowIdentityPreservesRawValuesAndFullAncestryWithoutSeparatorCollisions()
+        {
+            Assert.AreEqual(VbeDebugWindows.DebugRowIdentity("row", null),
+                VbeDebugWindows.DebugRowIdentity("row", new string[0]));
+            Assert.AreNotEqual(VbeDebugWindows.DebugRowIdentity("row", new[] { "a", "b" }),
+                VbeDebugWindows.DebugRowIdentity("row", new[] { "a/b" }));
+            Assert.AreNotEqual(VbeDebugWindows.DebugRowIdentity("row", new[] { "parent", "child" }),
+                VbeDebugWindows.DebugRowIdentity("row", new[] { "other", "child" }));
+            Assert.AreNotEqual(VbeDebugWindows.DebugRowIdentity("row", new[] { "child" }),
+                VbeDebugWindows.DebugRowIdentity("changed", new[] { "child" }));
         }
 
         [TestMethod]

@@ -40,8 +40,8 @@ Voir également le [bilan des qualifications natives](reference/native-qualifica
 
 | Vérification | Résultat |
 | --- | --- |
-| Suite globale VSTest avec hôtes activés | **1 086 réussis, 1 échec Excel, 1 ignoré SOLIDWORKS** |
-| Couverture des lignes / branches | **99,49 % / 98,43 %** |
+| Suite globale VSTest avec hôtes activés | **1 151 réussis, aucun échec, 1 ignoré SOLIDWORKS** |
+| Couverture des lignes / branches | **100 % / 100 %** |
 | Compilation | **0 erreur, 0 avertissement** |
 | Concepteurs WinForms | Validation précédente : **24 chargements et modifications de taille réussis** |
 | Excel | Chargement, pont, inspection et sauvegarde/relecture d’un classeur macro jetable |

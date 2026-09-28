@@ -1,5 +1,10 @@
 # Matrice de couverture Debug après fusion chat-ux
 
+## Extensions de persistance native du 28 septembre
+
+- Options : les libellés Text, Button et sans type portant le même nom sont ignorés ; un contrôle éditable unique est modifié, un libellé seul est refusé sans écriture et le dialogue est annulé.
+- Liste UIA : deux observations identiques sont regroupées avec le compteur `DuplicateRowsOmitted` ; valeur brute et chaque segment d'ascendance font partie de l'identité. Les chemins nuls/vides sont équivalents et les séparateurs ne créent aucune collision.
+
 Les tests suivent les vrais chemins de navigation, lecture, validation et invocation.
 Les contrats VBIDE construits dans `EditorDebugFixture` représentent des projets,
 modules, fenêtres, commandes et volets dont les changements suivent les événements

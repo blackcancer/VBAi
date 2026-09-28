@@ -18,7 +18,7 @@ namespace CodexVBE.Tests.Unit
         public void Close(IntPtr dialog){Closes++;Open=false;}
         public void Pause(int milliseconds){}
         public void Write(IntPtr dialog,int index,string name,string type,object value)
-        {Writes++;OnWrite?.Invoke();if(!IgnoreWrite)Items.Single(x=>x.Name==name).Value=type=="ControlType.CheckBox"?((bool)value?"On":"Off"):type=="ControlType.RadioButton"?(object)true:Convert.ToString(value);}
+        {Writes++;OnWrite?.Invoke();if(!IgnoreWrite)Items.Single(x=>x.Name==name && x.Type==type).Value=type=="ControlType.CheckBox"?((bool)value?"On":"Off"):type=="ControlType.RadioButton"?(object)true:Convert.ToString(value);}
         public void Accept(IntPtr dialog){Accepts++;OnAccept?.Invoke();if(!KeepOpen)Open=false;}
         internal Request Request()
         {dynamic read=VbeDebugWindows.ReadVbeOptions(this);Open=true;Closes=0;return new Request{Pane=Names[0],Property=Items[0].Name,Value=false,ExpectedOptionsVersion=read.OptionsVersion};}

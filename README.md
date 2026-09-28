@@ -13,14 +13,14 @@ Anciennement CodexVBE : les noms de solution, d’assembly, les identifiants COM
 - [Conversation et sessions](docs/chat-ui.md)
 - [Fournisseurs](docs/providers.md) et [GitHub](docs/github-integration.md)
 - [Architecture](docs/architecture.md) et [concepteurs WinForms](docs/winforms-designer.md)
-- [Catalogue des 166 outils LLM](docs/reference/vbe-tools.md)
+- [Catalogue des 177 outils LLM](docs/reference/vbe-tools.md)
 - [Travaux restants](docs/roadmap.md) et [couverture des tests](docs/test-coverage.md)
 
 ## État vérifié
 
-Après intégration de `codex/chat-ux` (`2197c43`, 28 septembre 2026) : **910 tests réussis, aucun échec ni test ignoré**, **24 concepteurs WinForms validés**, couverture de **92,94 % des lignes / 87,79 % des branches**.
+Après intégration des PR #2 et #3, mesure globale du code `fb166a4` : **1 151 tests réussis, aucun échec, 1 test SOLIDWORKS ignoré**, couverture de **100 % des lignes et des branches**. Les deux tests Excel passent. Les **24 concepteurs WinForms** restent une validation antérieure.
 
-Les tests réels Excel vérifient le chargement, le pont et la sauvegarde/relecture d’un classeur macro jetable. Dans SOLIDWORKS 2019 SP5, les essais sur `test.swp` vérifient compilation, exécution, breakpoint, pas à pas et reprise, avec restauration du code initial. Ces scénarios ne qualifient pas chaque fonction dans chaque hôte ; les preuves et limites figurent dans [l’état du projet](docs/project.md).
+Les tests réels Excel vérifient le chargement, le pont et la sauvegarde/relecture d’un classeur macro jetable. Les essais historiques dans SOLIDWORKS 2019 SP5 sur `test.swp` vérifient compilation, exécution, breakpoint, pas à pas et reprise, avec restauration du code initial. Ces scénarios ne qualifient pas chaque fonction dans chaque hôte ; les preuves et limites figurent dans [l’état du projet](docs/project.md).
 
 ## Développement
 

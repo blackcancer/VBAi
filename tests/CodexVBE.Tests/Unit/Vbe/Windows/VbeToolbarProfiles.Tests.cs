@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Unit
+namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.IO;
@@ -7,7 +7,7 @@
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     [TestClass, TestCategory("Unit")]
-    public sealed class ToolbarProfilesTests
+    public sealed partial class ToolbarProfilesTests
     {
         private static Dictionary<string, object> Data(object value)
         { var json = new JavaScriptSerializer(); return json.Deserialize<Dictionary<string, object>>(json.Serialize(value)); }
@@ -60,6 +60,60 @@
         {
             var host = new ToolbarCustomizationTests.Host(); var bar = host.CommandBars.Add("Standard", 1, false, true); bar.BuiltIn = true;
             var button = bar.Controls.Add(1, 42, Type.Missing, 1, false); button.BuiltIn = true; return host;
+        }
+    }
+}
+namespace CodexVBE.Tests.Unit
+{
+    using System;
+    using System.Linq;
+    using CodexVBE;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+    public sealed partial class ToolbarProfilesTests
+    {
+        [TestMethod]
+        public void ProfileCollectionRejectsMissingExcessNullAndCaseDuplicateEntries()
+        {
+            var invalid = new[] { (VbeToolbarProfiles.Bar[])null, Enumerable.Range(0, 33).Select(i => new VbeToolbarProfiles.Bar { Name = "VBAi - " + i }).ToArray(),
+                new VbeToolbarProfiles.Bar[] { null }, new[] { ProfileBar(), new VbeToolbarProfiles.Bar { Name = "vbai - profile" } } };
+            foreach (var bars in invalid)
+                Assert.AreEqual("Invalid toolbar profile collection.", Assert.ThrowsException<InvalidOperationException>(() => ValidateProfile("Validate", bars)).Message);
+            ValidateProfile("Validate", new VbeToolbarProfiles.Bar[0]);
+            ValidateProfile("Validate", Enumerable.Range(0, 32).Select(i => new VbeToolbarProfiles.Bar { Name = "VBAi - " + i, Commands = new VbeToolbarProfiles.Command[0] }).ToArray());
+        }
+
+        [TestMethod]
+        public void ProfileContentsValidateEveryBoundAndCommandIdentityBeforeUse()
+        {
+            var mutations = new Action<VbeToolbarProfiles.Bar>[] {
+                b => b.Name = null, b => b.Name = "", b => b.Name = "vbai - Other", b => b.Name = "VBAi - " + new string('x',65), b => b.Name = "VBAi - \n",
+                b => b.Position = -1, b => b.Position = 5, b => b.Left = -32769, b => b.Left = 32768, b => b.Top = -32769, b => b.Top = 32768,
+                b => b.RowIndex = 0, b => b.Commands = null, b => b.Commands = Enumerable.Range(0,129).Select(i => ProfileCommand()).ToArray(),
+                b => b.Commands = new VbeToolbarProfiles.Command[] { null }, b => b.Commands[0].Id = 1,
+                b => b.Commands[0].Caption = null, b => b.Commands[0].Caption = "  ", b => b.Commands[0].Caption = new string('x',1025),
+                b => b.Commands[0].Tag = null, b => b.Commands[0].Tag = "", b => b.Commands[0].Tag = "Other", b => b.Commands[0].Tag = PersistentTag + new string('x',97),
+                b => b.Commands = new[] { ProfileCommand(), ProfileCommand() }
+            };
+            Assert.ThrowsException<InvalidOperationException>(() => ValidateProfile("ValidateContents", null));
+            foreach (var mutate in mutations)
+            {
+                var bar = ProfileBar(); mutate(bar);
+                Assert.AreEqual("Invalid toolbar profile contents.", Assert.ThrowsException<InvalidOperationException>(() => ValidateProfile("ValidateContents", bar)).Message);
+                using (var scope = new ProfileScope())
+                {
+                    Assert.ThrowsException<InvalidOperationException>(() => scope.Profiles.Update(bar.Name ?? "VBAi - Missing", bar));
+                    Assert.AreEqual(0, scope.Profiles.Read().Length, "Rejected state must not commit.");
+                }
+            }
+            foreach (var edge in new[] { -32768, 32767 })
+            {
+                var bar = ProfileBar(); bar.Name = "VBAi - " + new string('x',64); bar.Position = edge < 0 ? 0 : 4;
+                bar.Left = edge; bar.Top = edge; bar.RowIndex = 1; bar.Commands[0].Id = 2; bar.Commands[0].Caption = new string('x',1024);
+                bar.Commands[0].Tag = PersistentTag + new string('x',96-PersistentTag.Length); ValidateProfile("ValidateContents",bar);
+            }
+            var many = ProfileBar(); many.Commands = Enumerable.Range(0,128).Select(i => new VbeToolbarProfiles.Command { Id = i+2, Caption = "C", Tag = PersistentTag+i }).ToArray();
+            ValidateProfile("ValidateContents", many);
         }
     }
 }

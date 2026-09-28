@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -87,14 +87,20 @@ namespace CodexVBE
         /// <param name="vbe">Objet VBE de l’hôte.</param>
         /// <param name="host">Sonde d’hôte injectable.</param>
         /// <param name="bookmarkDatabase">Base SQLite des signets ou null pour le stockage par défaut.</param>
-        private VbeSession(object vbe, VbeProjectComponents.IExcelHostProbe host, string bookmarkDatabase) { this.vbe = vbe; debugger = new VbeDebug(vbe);
+        private VbeSession(object vbe, VbeProjectComponents.IExcelHostProbe host, string bookmarkDatabase)
+            : this(vbe, host, bookmarkDatabase, () => System.Diagnostics.Process.GetCurrentProcess().ProcessName,
+                () => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)) { }
+
+        /// <summary>Injecte uniquement l'identité du processus et la racine locale avant la restauration native des barres.</summary>
+        internal VbeSession(object vbe, VbeProjectComponents.IExcelHostProbe host, string bookmarkDatabase,
+            Func<string> toolbarProcessName, Func<string> localApplicationData) { this.vbe = vbe; debugger = new VbeDebug(vbe);
             forms = new VbeForms(vbe); components = host == null
                 ? new VbeProjectComponents(vbe, forms) : new VbeProjectComponents(vbe, forms, host);
             editorWindows = new VbeEditorWindows(vbe);
-            string toolbarHost = System.Diagnostics.Process.GetCurrentProcess().ProcessName.ToUpperInvariant();
+            string toolbarHost = toolbarProcessName().ToUpperInvariant();
             if (toolbarHost == "EXCEL" || toolbarHost == "SLDWORKS")
             {
-                editorWindows.ToolbarProfiles = new VbeToolbarProfiles(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VBAi", "VbeToolbars", toolbarHost + ".sqlite"));
+                editorWindows.ToolbarProfiles = new VbeToolbarProfiles(Path.Combine(localApplicationData(), "VBAi", "VbeToolbars", toolbarHost + ".sqlite"));
                 editorWindows.RestoreToolbarProfiles();
             }
             codeNavigation = new VbeCodeNavigation(vbe, forms);

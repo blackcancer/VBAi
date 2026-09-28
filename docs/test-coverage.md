@@ -1,36 +1,41 @@
 # Couverture automatisée du complément
 
-## Fusion des extensions `codex/chat-ux` du 28 septembre 2026
+## Mesure globale après intégration des PR #2 et #3
 
-Fusion locale `611dcb5`, intégrant `5aed4f3` dans main après l’isolation des sessions CLI. Compilation solution et complément : **0 erreur, 0 avertissement**. Les sources CLI privées sont conservées.
+Mesure du **28 septembre 2026**, code **`fb166a4`**, comprenant la persistance native de `codex/chat-ux`, la récupération du placement du panneau et les tests complémentaires. Compilation du complément : **0 erreur, 0 avertissement**.
 
 | Mesure | Résultat |
 | --- | --- |
-| Lignes | **19 201 / 19 299 — 99,49 %** |
-| Branches | **20 962 / 21 297 — 98,43 %** |
-| Classes instrumentées incomplètes | **19** |
-| Tests locaux, hors trois essais hôtes | **1 085 réussis** |
-| Suite globale avec hôtes | **1 086 réussis, 1 échec, 1 ignoré** |
-| Excel, lecture et pont | Réussi dans la suite globale |
-| Excel, sauvegarde | Échec dans la suite globale ; réussi dans le passage isolé |
-| SOLIDWORKS | NOT_RUN : instance utilisateur fermée |
-| Organisation | **128 miroirs pour 177 sources**, scénarios complémentaires |
+| Lignes exécutables | **19 546 / 19 546 — 100 %** |
+| Branches | **21 793 / 21 793 — 100 %** |
+| Classes instrumentées incomplètes | **0** |
+| Suite globale VSTest | **1 151 réussis, 0 échec, 1 ignoré** |
+| Excel automatisé | **Deux scénarios réussis** dans la suite globale |
+| SOLIDWORKS | **NOT_RUN** : aucune instance utilisateur préchargée |
+| Organisation | **134 miroirs pour 183 sources**, scénarios et fixtures complémentaires |
 
-### Diagnostic Excel
+## Scénarios ajoutés
 
-Le test de sauvegarde échoue avec « The registered Excel instance is not this VBE host. ». Le contrôle de PID de production empêche la sauvegarde dans une autre instance retournée par le registre COM. Le même test réussit séparément. La suite globale avec hôtes n’est donc pas entièrement verte : l’enchaînement/la cohabitation d’instances Excel utilisant ce registre reste à stabiliser. Aucun contrôle de sécurité ni assertion de sauvegarde n’a été retiré ; l’assertion rapporte maintenant la raison native.
+- Profils SQLite des barres d'outils : transactions, validation, restauration, commandes temporaires et persistantes, collisions et erreurs natives. Une suppression refusée conserve le profil.
+- Concepteur : dispatch typé des propriétés scalaires natives et repli sur les descripteurs, avec erreurs de conversion.
+- Options : sélection d'un contrôle éditable unique malgré des libellés homonymes, refus d'un libellé seul, vérification de relecture et annulation.
+- Débogueur : regroupement des observations UIA identiques ; valeurs et ascendants distincts restent séparés.
+- Hôte : initialisation des profils Excel/SOLIDWORKS, nettoyage à la déconnexion, dimensions utilisables préservées et récupération des panneaux trop petits.
 
-### Preuves
+Le test Excel de sauvegarde crée deux instances jetables distinctes. Il vérifie la sauvegarde du projet visé et confirme que l'autre classeur reste non enregistré. La résolution passe par le document natif `EXCEL7` du processus propriétaire, avec le repli ROT et les contrôles de PID conservés. Les tests ferment leurs propres instances uniquement.
 
-- Rapport global : `artifacts/merge-chat-ux-latest/final/541bf7ad-5bdd-41fc-a733-18611912a750/coverage.cobertura.xml`.
-- Inventaire : `coverage-summary.json`, à côté du rapport ; les nouvelles déclarations, mutations et frontières natives expliquent les lacunes.
-- Suite globale : `artifacts/merge-chat-ux-latest/final/global.trx`.
-- Sauvegarde Excel isolée : `artifacts/merge-chat-ux-latest/hosts-diagnostic/hosts.trx`.
-- Catalogue reconstruit : **177 outils**, documentation vérifiée sans divergence.
-- Convention miroir : `tools/tests/Test-TestLayout.ps1`.
+## Preuves et limites
 
-Les [extensions fonctionnelles](reference/functional-extensions.md) détaillent les nouveaux contrats et leurs qualifications natives. Le [bilan précédent à 100 % après isolation CLI](archive/test-coverage-session-isolation.md) ne couvre pas ces ajouts. Les 24 DesignSurface et les essais SOLIDWORKS précédents restent historiques, non réexécutés ici. L’audit IntelliSense continue dans sa branche dédiée.
+- Rapport global : `artifacts/coverage-post-prs/final/2bb21d21-b32f-445b-8d9d-47078092f9c2/coverage.cobertura.xml` ; inventaire `coverage-summary.json` adjacent.
+- Résultats globaux : `artifacts/coverage-post-prs/final/global.trx`.
+- Organisation miroir : `artifacts/coverage-post-prs/mirror-inventory.json`, produite par `tools/tests/Test-TestLayout.ps1`.
+- Catalogue vérifié contre l'assembly reconstruite : **177 outils LLM**.
+- [Mesure à 100 % avant la persistance native](archive/test-coverage-pre-native-persistence.md) : historique, distinct de ce passage.
+
+Aucune source du complément n'est exclue ; `ProviderTests.exe` est le seul exécutable de simulation exclu. Le collecteur mesure le processus VSTest, pas le code exécuté dans Excel ou SOLIDWORKS. Les doubles natifs permettent de vérifier les erreurs et frontières du code ; 100 % de couverture ne qualifie pas toutes les commandes dans chaque hôte.
+
+Les [qualifications natives](reference/native-qualification.md) et le [diagnostic du placement](chat-persistence-investigation.md) précisent leurs dates et périmètres. Les 24 DesignSurface validées précédemment et les anciens essais SOLIDWORKS restent historiques. L'audit IntelliSense continue avec Luna dans son worktree documentaire.
 
 ## Reproduire la mesure
 
-Voir [le projet de tests](../tests/README.md) pour VSTest, la couverture et les hôtes opt-in. Les artefacts sont locaux et ignorés par Git. `ProviderTests.exe` est le seul exécutable exclu ; aucune source du complément n’est exclue. Une couverture VSTest comprend les doubles natifs et ne qualifie pas toutes les commandes dans chaque hôte.
+Voir [le projet de tests](../tests/README.md) pour VSTest, la couverture et les hôtes opt-in. Les rapports détaillés restent locaux sous `artifacts/`, ignoré par Git.
