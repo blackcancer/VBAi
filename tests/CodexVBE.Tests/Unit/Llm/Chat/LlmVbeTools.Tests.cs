@@ -397,7 +397,8 @@ namespace CodexVBE.Tests.Unit
             {
                 var function = Dict(Dict(Json.DeserializeObject(Json.Serialize(definition)))["function"]);
                 string name = (string)function["name"];
-                if (name.StartsWith("git_") || name == "read_user_file" || name == "replace_lines") continue;
+                // Monaco has its own awaited contract matrix and real WebView2 dispatch test.
+                if (name.StartsWith("git_") || name.StartsWith("monaco_") || name == "read_user_file" || name == "replace_lines") continue;
                 var parameters = Dict(function["parameters"]);
                 var required = (object[])parameters["required"];
                 var fields = Dict(parameters["properties"]);

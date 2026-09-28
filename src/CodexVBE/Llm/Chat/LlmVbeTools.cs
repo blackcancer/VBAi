@@ -30,7 +30,7 @@ namespace CodexVBE
         public event Action<FormCutChange> FormCut;
         /// <summary>Noms des outils dont les opérations sont en lecture seule.</summary>
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
-            "certificate_trust", "verify_vba_signature_file", "preview_parameter_rename", "preview_local_rename", "toolbar_controls", "procedure_run_status", "form_clipboard_state", "list_toolbars", "read_runtime_forms", "read_code_clipboard", "native_code_history_state", "form_run_status", "list_object_browser", "select_object_browser", "read_object_browser", "code_pane_layout", "editor_layout", "window_layout", "project_symbols", "navigate_code", "code_bookmark", "preview_form_layout", "preview_code_edit", "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "read_vbe_options", "compile_project", "open_debug_pane", "list_commands", "select_code", "select_code_range",
+            "monaco_open", "monaco_read", "monaco_navigate", "certificate_trust", "verify_vba_signature_file", "preview_parameter_rename", "preview_local_rename", "toolbar_controls", "procedure_run_status", "form_clipboard_state", "list_toolbars", "read_runtime_forms", "read_code_clipboard", "native_code_history_state", "form_run_status", "list_object_browser", "select_object_browser", "read_object_browser", "code_pane_layout", "editor_layout", "window_layout", "project_symbols", "navigate_code", "code_bookmark", "preview_form_layout", "preview_code_edit", "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "read_vbe_options", "compile_project", "open_debug_pane", "list_commands", "select_code", "select_code_range",
             "project_properties", "project_persistence_status", "project_signature_status", "read_project_signature_dialog", "list_signing_certificates", "component_properties", "component_property_value", "vbe_windows", "vbe_environment", "list_addins", "focus_vbe_window", "window_linkage", "code_panes", "open_object_browser", "list_procedures", "find_code", "inspect_code_file", "select_procedure", "list_forms",
             "git_status", "git_history", "git_branches", "git_checkpoints", "git_conflicts", "git_conflict_read", "git_commit_read", "git_pull_requests",
             "form_state", "form_tree", "form_list_items", "form_properties", "form_control_properties", "form_event_catalog",
@@ -121,7 +121,7 @@ namespace CodexVBE
                     field == "Rows" ? (object)new { type = "array", items = new { type = "array", items = new { type = "string", maxLength = 256 }, minItems = 1, maxItems = 10 }, minItems = 0, maxItems = 64 } :
                     field == "ArgumentNames" ? (object)new { type = "array", items = new { type = "string", maxLength = 255 }, minItems = 0, maxItems = 30 } :
                     field == "Items" ? (object)new { type = "array", items = new { type = "string", maxLength = 256 }, minItems = 0, maxItems = 64 } :
-                    new { type = field == "StartLine" || field == "StartColumn" || field == "EndLine" || field == "EndColumn" || field == "Count" || field == "ExpectedMode" || field == "ControlId" || field == "WindowType" || field == "TargetWindowType" || field == "ProcKind" || field == "InsertIndex" ||
+                    new { type = field == "ExpectedVersion" || field == "StartLine" || field == "StartColumn" || field == "EndLine" || field == "EndColumn" || field == "Count" || field == "ExpectedMode" || field == "ControlId" || field == "WindowType" || field == "TargetWindowType" || field == "ProcKind" || field == "InsertIndex" ||
                         field == "ToolbarLeft" || field == "ToolbarTop" || field == "Offset" || field == "Limit" || field == "RowIndex" || field == "TypeIndex" || field == "ZPosition" ||
                         field == "Major" || field == "Minor" ? "integer" :
                     field == "Left" || field == "Top" || field == "Width" || field == "Height" || field == "FontSize" ? "number" :
@@ -363,7 +363,7 @@ namespace CodexVBE
             Definition("set_form_control_geometry", "Place and size a UserForm control; requires form revision and VBE edit policy.",
                 new[] { "Project", "Form", "ExpectedFormVersion", "Control", "Left", "Top", "Width", "Height" },
                 "Project", "Form", "ExpectedFormVersion", "Control", "Left", "Top", "Width", "Height")
-        }.Concat(GitDefinitions).Concat(EditorDefinitions).ToArray(); } }
+        }.Concat(GitDefinitions).Concat(EditorDefinitions).Concat(MonacoDefinitions).ToArray(); } }
 
         /// <summary>Valide les gardes puis exécute synchroniquement un outil et sérialise sa réponse.</summary>
         /// <param name="name">Nom de l’outil demandé.</param>
@@ -371,6 +371,9 @@ namespace CodexVBE
         /// <returns>JSON d’une réponse réussie ou d’erreur.</returns>
         public string Invoke(string name, string arguments)
         {
+            if (name.StartsWith("monaco_", StringComparison.Ordinal)) return json.Serialize(Response.Failure("Monaco tools require InvokeAsync."));
+            try { GuardLegacyEditorMutation(name); }
+            catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             if (name.StartsWith("git_", StringComparison.Ordinal)) return json.Serialize(Response.Failure("Git tools require InvokeAsync."));
             try { GuardMode(name); GuardProject(name, arguments); }
             catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
@@ -600,6 +603,15 @@ namespace CodexVBE
         public async Task<string> InvokeAsync(string name, string arguments)
         {
             try { GuardMode(name); GuardProject(name, arguments); }
+            catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+            if (name.StartsWith("monaco_", StringComparison.Ordinal)) return await InvokeMonacoAsync(name, arguments);
+            try
+            {
+                var editor = EditorWindow(false);
+                if (NeedsSynchronizedEditor(name) && editor != null && !editor.IsDisposed && editor.Documents.Any())
+                    await editor.CaptureForTool();
+                GuardLegacyEditorMutation(name);
+            }
             catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             if (name.StartsWith("git_", StringComparison.Ordinal)) return await InvokeGitAsync(name, arguments);
             if (name == "sign_project")

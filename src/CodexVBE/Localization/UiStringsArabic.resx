@@ -1858,4 +1858,122 @@
   <data name="Update installed. Restart Windows to finish." xml:space="preserve"><value>ثُبّت التحديث. أعد تشغيل Windows لإكماله.</value></data>
   <data name="Download" xml:space="preserve"><value>تنزيل</value></data>
   <data name="Release notes" xml:space="preserve"><value>ملاحظات الإصدار</value></data>
+  <data name="VBAi editor" xml:space="preserve">
+    <value>محرر VBAi</value>
+  </data>
+  <data name="Open active module" xml:space="preserve">
+    <value>فتح الوحدة النشطة</value>
+  </data>
+  <data name="Synchronize with VBA" xml:space="preserve">
+    <value>مزامنة مع VBA</value>
+  </data>
+  <data name="Compare with VBA" xml:space="preserve">
+    <value>مقارنة مع VBA</value>
+  </data>
+  <data name="Reload VBA version" xml:space="preserve">
+    <value>إعادة تحميل إصدار VBA</value>
+  </data>
+  <data name="Restore draft" xml:space="preserve">
+    <value>استعادة المسودة</value>
+  </data>
+  <data name="Use edited version" xml:space="preserve">
+    <value>استخدام النسخة المعدلة</value>
+  </data>
+  <data name="Close module" xml:space="preserve">
+    <value>إغلاق الوحدة</value>
+  </data>
+  <data name="Native editor" xml:space="preserve">
+    <value>المحرر الأصلي</value>
+  </data>
+  <data name="Dock / detach" xml:space="preserve">
+    <value>إرساء / فصل</value>
+  </data>
+  <data name="Automatic synchronization" xml:space="preserve">
+    <value>المزامنة التلقائية</value>
+  </data>
+  <data name="Follow native code windows" xml:space="preserve">
+    <value>متابعة نوافذ التعليمات البرمجية الأصلية</value>
+  </data>
+  <data name="Open a VBA module to start editing." xml:space="preserve">
+    <value>افتح وحدة VBA لبدء التحرير.</value>
+  </data>
+  <data name="Changes pending synchronization with VBA." xml:space="preserve">
+    <value>تغييرات في انتظار المزامنة مع VBA.</value>
+  </data>
+  <data name="Synchronized with VBA. Save the macro in its host application." xml:space="preserve">
+    <value>تمت المزامنة مع VBA. احفظ الماكرو في التطبيق المضيف.</value>
+  </data>
+  <data name="The module changed in VBA. Resolve the conflict first." xml:space="preserve">
+    <value>تغيرت الوحدة في VBA. حل التعارض أولاً.</value>
+  </data>
+  <data name="Loading editor…" xml:space="preserve">
+    <value>جارٍ تحميل المحرر…</value>
+  </data>
+  <data name="The editor stopped. Drafts are preserved; reopen the editor." xml:space="preserve">
+    <value>توقف المحرر. تم حفظ المسودات؛ أعد فتح المحرر.</value>
+  </data>
+  <data name="Editor unavailable. Install WebView2 Runtime or use the native editor." xml:space="preserve">
+    <value>المحرر غير متاح. ثبّت WebView2 Runtime أو استخدم المحرر الأصلي.</value>
+  </data>
+  <data name="VBA is running, paused or unavailable. Your draft is preserved." xml:space="preserve">
+    <value>VBA قيد التشغيل أو متوقف مؤقتًا أو غير متاح. تم حفظ مسودتك.</value>
+  </data>
+  <data name="The module changed again. Compare with VBA before resolving." xml:space="preserve">
+    <value>تغيرت الوحدة مجددًا. قارن مع VBA قبل حل التعارض.</value>
+  </data>
+  <data name="This module has hidden procedure attributes. Use the native editor to preserve them." xml:space="preserve">
+    <value>تحتوي هذه الوحدة على سمات إجراءات مخفية. استخدم المحرر الأصلي للحفاظ عليها.</value>
+  </data>
+  <data name="The VBA project is closed. Your draft is preserved." xml:space="preserve">
+    <value>مشروع VBA مغلق. تم حفظ مسودتك.</value>
+  </data>
+  <data name="The VBA module was removed. Your draft is preserved." xml:space="preserve">
+    <value>تمت إزالة وحدة VBA. تم حفظ مسودتك.</value>
+  </data>
+  <data name="Open the last active native code module in a new tab." xml:space="preserve">
+    <value>فتح آخر وحدة تعليمات برمجية أصلية نشطة في علامة تبويب جديدة.</value>
+  </data>
+  <data name="Write checked changes to VBA. Save the macro separately in its host." xml:space="preserve">
+    <value>تطبيق التغييرات المتحققة على VBA. احفظ الماكرو بشكل منفصل في التطبيق المضيف.</value>
+  </data>
+  <data name="Keep a recovery draft, then load the current VBA source." xml:space="preserve">
+    <value>الاحتفاظ بمسودة استرداد، ثم تحميل مصدر VBA الحالي.</value>
+  </data>
+  <data name="Show native source and the editor draft side by side." xml:space="preserve">
+    <value>عرض المصدر الأصلي ومسودة المحرر جنبًا إلى جنب.</value>
+  </data>
+  <data name="Restore a previous draft without overwriting changed VBA code." xml:space="preserve">
+    <value>استعادة مسودة سابقة دون استبدال تعليمات VBA المعدلة.</value>
+  </data>
+  <data name="Return to the native editor for debugging and designers." xml:space="preserve">
+    <value>العودة إلى المحرر الأصلي لتصحيح الأخطاء وأدوات التصميم.</value>
+  </data>
+  <data name="Follow activated code panes in design mode while this window is open." xml:space="preserve">
+    <value>متابعة نوافذ التعليمات البرمجية النشطة في وضع التصميم أثناء فتح هذه النافذة.</value>
+  </data>
+  <data name="Synchronize after typing pauses; conflicts and run mode suspend writes." xml:space="preserve">
+    <value>المزامنة بعد توقف الكتابة؛ تؤدي التعارضات ووضع التشغيل إلى تعليق الحفظ.</value>
+  </data>
+  <data name="Attach the editor to the VBE or move it to another screen." xml:space="preserve">
+    <value>إرساء المحرر في VBE أو نقله إلى شاشة أخرى.</value>
+  </data>
+  <data name="Find and replace in the current module." xml:space="preserve">
+    <value>البحث والاستبدال في الوحدة الحالية.</value>
+  </data>
+  <data name="Return from the comparison to editing." xml:space="preserve">
+    <value>العودة من المقارنة إلى التحرير.</value>
+  </data>
+  <data name="Apply your edited version after comparing; refuse if VBA changed again." xml:space="preserve">
+    <value>تطبيق النسخة المعدلة بعد المقارنة؛ الرفض إذا تغير VBA مجددًا.</value>
+  </data>
+  <data name="Close this tab and preserve unsynchronized changes as a recovery draft." xml:space="preserve">
+    <value>إغلاق علامة التبويب وحفظ التغييرات غير المتزامنة كمسودة استرداد.</value>
+  </data>
+  <data name="Compile project" xml:space="preserve"><value>ترجمة المشروع</value></data>
+  <data name="Toggle breakpoint" xml:space="preserve"><value>تبديل نقطة التوقف</value></data>
+  <data name="Show next statement" xml:space="preserve"><value>إظهار التعليمة التالية</value></data>
+  <data name="Step into" xml:space="preserve"><value>الدخول خطوة</value></data>
+  <data name="Step over" xml:space="preserve"><value>تخطي خطوة</value></data>
+  <data name="Step out" xml:space="preserve"><value>الخروج من الإجراء</value></data>
+  <data name="Breakpoint request sent; verify in VBE." xml:space="preserve"><value>تم إرسال طلب نقطة توقف؛ تحقق في VBE.</value></data>
 </root>

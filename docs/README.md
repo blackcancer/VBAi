@@ -9,6 +9,7 @@
 | [État du projet](project.md) | Objectif, fonctionnalités disponibles et validation par hôte |
 | [Mises à jour](updates.md) | Releases GitHub, préférences, application différée et contrat installeur |
 | [Installation](installation.md) | Compilation, bibliothèque COM, inscription et diagnostic |
+| [Éditeur Monaco](modern-editor.md) | Édition moderne, synchronisation VBA, conflits, récupération et limites |
 | [Conversation](chat-ui.md) | Sessions, contexte, modes, modèles, raisonnement et retour arrière |
 | [Fournisseurs](providers.md) | Configuration, authentification, catalogues et limites des transports |
 | [GitHub](github-integration.md) | Compte, dépôts, commits, branches, fusions et import VBA |

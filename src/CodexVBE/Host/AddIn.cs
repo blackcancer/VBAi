@@ -64,6 +64,11 @@ namespace CodexVBE
         private ChatToolWindow nativeChatControl;
         /// <summary>Indique si la fenêtre de conversation est attachée au cadre VBE.</summary>
         private bool docked;
+        private ModernEditorWindow modernEditor;
+        private object nativeEditorWindow;
+        private ChatToolWindow nativeEditorControl;
+        private bool editorDocked;
+        private EditorProjectNavigation editorNavigation;
 
         /// <summary>Crée l’instance COM et journalise le processus hôte.</summary>
         public AddIn()
@@ -94,11 +99,12 @@ public void OnConnection(object application, int connectMode, object addInInstan
                 var handle = dispatcher.Handle;
                 StartUpdateCheck();
                 crashReporter = CreateCrashReporter(report => CrashReportWindow.ShowReportForVbe(vbe, report));
-                server = new BridgeServer(dispatcher, new VbeSession(vbe), process.Id);
+                server = new BridgeServer(dispatcher, CreateEditorSession(), process.Id);
                 StartBridge(server);
                 WriteLog("Bridge started: CodexVBE." + process.Id);
-                try { menu = CreateMenu(vbe, ShowChat, ShowSettings, ShowGitHub, command => { ShowChat(); chat.PrepareEditorAction(command); }); }
+                try { menu = CreateMenu(vbe, ShowChat, ShowSettings, ShowGitHub, command => { if (command == "/editor") ShowModernEditor(); else { ShowChat(); chat.PrepareEditorAction(command); } }); }
                 catch (Exception menuError) { WriteLog("VBE menu failed: " + menuError.ToString()); crashReporter.ReportUnexpected(menuError); }
+                editorNavigation = new EditorProjectNavigation(vbe, dispatcher, OpenModernModule);
                 try { ShowChat(); ToggleDock(); }
                 catch (Exception uiError) { WriteLog("Assistant window failed: " + uiError.ToString()); crashReporter.ReportUnexpected(uiError); }
                 crashReporter.RecoverPending();
@@ -130,7 +136,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
             { nativeChatControl = null; nativeChatWindow = null; docked = false; }
             if (chat == null || chat.IsDisposed)
             {
-                chat = CreateChat(new VbeSession(vbe));
+                chat = CreateChat(CreateEditorSession());
                 chat.DockRequested += ToggleDock;
                 chat.FormClosed += (sender, args) => chat = null;
                 if (docked && nativeChatControl != null) nativeChatControl.Attach(chat);
@@ -171,6 +177,70 @@ public void OnConnection(object application, int connectMode, object addInInstan
             catch (Exception ex) { ReportMenuError(ex); }
         }
 
+        private IEditorModule ActiveEditorModule(bool followOnly)
+        {
+            dynamic host = vbe;
+            if (followOnly && (host.ActiveWindow == null || (int)host.ActiveWindow.Type != 0)) return null;
+            dynamic pane = host.ActiveCodePane;
+            if (pane == null) return null;
+            object component = pane.CodeModule.Parent;
+            object project = ((dynamic)component).Collection.Parent;
+            if (followOnly && (int)((dynamic)project).Mode != 2) return null;
+            return new EditorVbeModule(vbe, project, component);
+        }
+        private VbeSession CreateEditorSession() => new VbeSession(vbe) { ModernEditor = GetModernEditor };
+        private async void OpenModernModule(IEditorModule module)
+        {
+            try { await GetModernEditor(true).OpenModule(module); }
+            catch (Exception error) { ReportMenuError(error); }
+        }
+        private ModernEditorWindow GetModernEditor(bool show)
+        {
+            if (!show) return modernEditor != null && !modernEditor.IsDisposed ? modernEditor : null;
+            if (nativeEditorControl != null && nativeEditorControl.IsDisposed)
+            { nativeEditorControl = null; nativeEditorWindow = null; editorDocked = false; }
+            if (modernEditor == null || modernEditor.IsDisposed)
+            {
+                modernEditor = new ModernEditorWindow();
+                modernEditor.DockRequested += ToggleEditorDock;
+                if (editorDocked && nativeEditorControl != null) nativeEditorControl.Attach(modernEditor);
+            }
+            if (editorDocked) { ((dynamic)nativeEditorWindow).Visible = true; ((dynamic)nativeEditorWindow).SetFocus(); }
+            else if (!modernEditor.Visible) modernEditor.Show(VbeOwner()); else modernEditor.Activate();
+            return modernEditor;
+        }
+        private async void ShowModernEditor()
+        {
+            try
+            {
+                var module = ActiveEditorModule(false);
+                var editor = GetModernEditor(true);
+                if (module != null) await editor.OpenModule(module);
+            }
+            catch (Exception error) { ReportMenuError(error); }
+        }
+        private void ToggleEditorDock()
+        {
+            try
+            {
+                if (editorDocked)
+                { nativeEditorControl.Detach(modernEditor); editorDocked = false; ((dynamic)nativeEditorWindow).Visible = false; modernEditor.Show(VbeOwner()); return; }
+                if (nativeEditorWindow == null || nativeEditorControl == null || nativeEditorControl.IsDisposed)
+                {
+                    object control = null;
+                    nativeEditorWindow = ((IVbeWindows)((dynamic)vbe).Windows).CreateToolWindow((IVbeAddIn)addIn,
+                        "CodexVBE.ChatToolWindow", UiText.Get("VBAi editor"), "{CC57B0DE-06EC-4471-970A-FDAD2DD62660}", ref control);
+                    nativeEditorControl = control as ChatToolWindow;
+                    if (nativeEditorControl == null) throw new InvalidOperationException("The editor tool window could not be created.");
+                }
+                ((dynamic)nativeEditorWindow).Visible = true;
+                nativeEditorControl.Attach(modernEditor); editorDocked = true;
+                ((dynamic)nativeEditorWindow).Width = 900; ((dynamic)nativeEditorWindow).Height = 650;
+                ((dynamic)nativeEditorWindow).SetFocus();
+            }
+            catch (Exception error) { ReportMenuError(error); }
+        }
+
         /// <summary>Construit le propriétaire WinForms à partir de la fenêtre principale du VBE.</summary>
         /// <returns>Fenêtre propriétaire WinForms ancrée sur la fenêtre principale du VBE.</returns>
         private IWin32Window VbeOwner()
@@ -195,7 +265,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
                 if (string.IsNullOrWhiteSpace(path) || !System.IO.Path.IsPathRooted(path) ||
                     !System.IO.File.Exists(path))
                     throw new InvalidOperationException(UiText.Get("Save the macro before opening GitHub."));
-                var session = new VbeSession(vbe);
+                var session = CreateEditorSession();
                 string scope = System.IO.Path.GetFullPath(path);
                 using (var dialog = new GitWindow(session.GitProject(path, scope), scope,
                     (string)project.Name, ReadSettings().GitHubAccount))
@@ -310,6 +380,12 @@ public void OnBeginShutdown(ref object[] custom) { CleanupTemporaryToolbarComman
         /// <summary>Détache et ferme les fenêtres, menus, serveur et contrôle de synchronisation.</summary>
         private void Dispose()
         {
+            editorNavigation?.Dispose(); editorNavigation = null;
+            if (editorDocked && modernEditor != null && !modernEditor.IsDisposed) nativeEditorControl?.Detach(modernEditor);
+            editorDocked = false;
+            modernEditor?.Dispose(); modernEditor = null;
+            try { if (nativeEditorWindow != null) ((dynamic)nativeEditorWindow).Close(); } catch { }
+            nativeEditorWindow = null; nativeEditorControl = null;
             StopUpdateCheck();
             crashReporter?.Dispose();
             crashReporter = null;

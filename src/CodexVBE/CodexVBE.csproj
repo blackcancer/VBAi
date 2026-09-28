@@ -32,6 +32,8 @@
   </Target>
   <ItemGroup>
     <PackageReference Include="Markdig" Version="0.37.0" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
+    <Content Include="..\..\assets\editor\dist\**\*" Link="EditorAssets\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <PackageReference Include="System.Resources.Extensions" Version="8.0.0" />
     <EmbeddedResource Include="..\..\assets\icons\assistant.ico" Link="Resources\Icons\assistant.ico" LogicalName="CodexVBE.Icons.assistant.ico" />
     <EmbeddedResource Include="..\..\assets\icons\github.ico" Link="Resources\Icons\github.ico" LogicalName="CodexVBE.Icons.github.ico" />
@@ -39,6 +41,9 @@
     <EmbeddedResource Include="..\..\assets\icons\github.png" Link="Resources\Icons\github.png" LogicalName="CodexVBE.Icons.github.png" />
     <EmbeddedResource Include="..\..\assets\icons\settings.png" Link="Resources\Icons\settings.png" LogicalName="CodexVBE.Icons.settings.png" />
     <Compile Include="**\*.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
+    <Compile Update="Editor\ModernEditorWindow.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="Editor\ModernEditorWindow.Designer.cs"><DependentUpon>ModernEditorWindow.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Editor\ModernEditorWindow.resx"><DependentUpon>ModernEditorWindow.cs</DependentUpon></EmbeddedResource>
     <Compile Update="Llm\Settings\Views\*.cs"><SubType>UserControl</SubType></Compile>
     <Compile Update="Llm\Settings\Views\*.Designer.cs"><SubType>Code</SubType><DependentUpon>$([System.String]::Copy('%(Filename)').Replace('.Designer', '')).cs</DependentUpon></Compile>
     <EmbeddedResource Update="Llm\Settings\Views\*.resx"><DependentUpon>%(Filename).cs</DependentUpon></EmbeddedResource>

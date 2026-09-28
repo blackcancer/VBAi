@@ -653,7 +653,7 @@ namespace CodexVBE
         /// <param name="caption">Légende du contrôle.</param>
         /// <param name="mode">Mode courant du projet.</param>
         /// <returns><see langword="true"/> si la commande est permise.</returns>
-        private static bool IsAllowed(string action, string caption, int mode)
+        internal static bool IsAllowed(string action, string caption, int mode)
         {
             string label = caption.Replace("&", "").Trim();
             switch (action)

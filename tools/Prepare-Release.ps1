@@ -26,6 +26,10 @@ if ($LASTEXITCODE -ne 0) { throw 'Type library export failed.' }
 $package = Join-Path $output 'package'
 New-Item -ItemType Directory -Path $package | Out-Null
 Get-ChildItem -LiteralPath $binary -File | Where-Object { $_.Extension -in '.dll', '.exe', '.config', '.tlb' } | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $package }
+foreach ($payloadDirectory in @('EditorAssets', 'runtimes')) {
+    $sourceDirectory = Join-Path $binary $payloadDirectory
+    if (Test-Path -LiteralPath $sourceDirectory) { Copy-Item -LiteralPath $sourceDirectory -Destination $package -Recurse }
+}
 $marker = @{ Product = 'VBAi'; Architecture = 'win-x64'; UpdateProtocol = 1; InstallationId = [Guid]::NewGuid().ToString(); Version = $Version }
 [IO.File]::WriteAllText((Join-Path $package 'vbai-installation.json'), ($marker | ConvertTo-Json), (New-Object Text.UTF8Encoding($false)))
 # The setup author must preserve InstallationId on upgrades, register COM, and honor the documented update protocol.

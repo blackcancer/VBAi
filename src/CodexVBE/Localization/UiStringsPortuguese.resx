@@ -1858,4 +1858,122 @@ Conexão pelo Git Credential Manager; a identidade dos commits é configurada no
   <data name="Update installed. Restart Windows to finish." xml:space="preserve"><value>Atualização instalada. Reinicie o Windows para concluir.</value></data>
   <data name="Download" xml:space="preserve"><value>Baixar</value></data>
   <data name="Release notes" xml:space="preserve"><value>Notas da versão</value></data>
+  <data name="VBAi editor" xml:space="preserve">
+    <value>Editor VBAi</value>
+  </data>
+  <data name="Open active module" xml:space="preserve">
+    <value>Abrir módulo ativo</value>
+  </data>
+  <data name="Synchronize with VBA" xml:space="preserve">
+    <value>Sincronizar com VBA</value>
+  </data>
+  <data name="Compare with VBA" xml:space="preserve">
+    <value>Comparar com VBA</value>
+  </data>
+  <data name="Reload VBA version" xml:space="preserve">
+    <value>Recarregar versão VBA</value>
+  </data>
+  <data name="Restore draft" xml:space="preserve">
+    <value>Restaurar rascunho</value>
+  </data>
+  <data name="Use edited version" xml:space="preserve">
+    <value>Usar versão editada</value>
+  </data>
+  <data name="Close module" xml:space="preserve">
+    <value>Fechar módulo</value>
+  </data>
+  <data name="Native editor" xml:space="preserve">
+    <value>Editor nativo</value>
+  </data>
+  <data name="Dock / detach" xml:space="preserve">
+    <value>Encaixar / desencaixar</value>
+  </data>
+  <data name="Automatic synchronization" xml:space="preserve">
+    <value>Sincronização automática</value>
+  </data>
+  <data name="Follow native code windows" xml:space="preserve">
+    <value>Seguir janelas de código nativas</value>
+  </data>
+  <data name="Open a VBA module to start editing." xml:space="preserve">
+    <value>Abra um módulo VBA para começar.</value>
+  </data>
+  <data name="Changes pending synchronization with VBA." xml:space="preserve">
+    <value>Alterações pendentes de sincronização com VBA.</value>
+  </data>
+  <data name="Synchronized with VBA. Save the macro in its host application." xml:space="preserve">
+    <value>Sincronizado com VBA. Salve a macro no aplicativo de origem.</value>
+  </data>
+  <data name="The module changed in VBA. Resolve the conflict first." xml:space="preserve">
+    <value>O módulo mudou no VBA. Resolva o conflito primeiro.</value>
+  </data>
+  <data name="Loading editor…" xml:space="preserve">
+    <value>Carregando editor…</value>
+  </data>
+  <data name="The editor stopped. Drafts are preserved; reopen the editor." xml:space="preserve">
+    <value>O editor parou. Os rascunhos foram preservados; abra-o novamente.</value>
+  </data>
+  <data name="Editor unavailable. Install WebView2 Runtime or use the native editor." xml:space="preserve">
+    <value>Editor indisponível. Instale o WebView2 Runtime ou use o editor nativo.</value>
+  </data>
+  <data name="VBA is running, paused or unavailable. Your draft is preserved." xml:space="preserve">
+    <value>O VBA está em execução, pausado ou indisponível. Seu rascunho foi preservado.</value>
+  </data>
+  <data name="The module changed again. Compare with VBA before resolving." xml:space="preserve">
+    <value>O módulo mudou novamente. Compare com VBA antes de resolver.</value>
+  </data>
+  <data name="This module has hidden procedure attributes. Use the native editor to preserve them." xml:space="preserve">
+    <value>Este módulo tem atributos de procedimento ocultos. Use o editor nativo para preservá-los.</value>
+  </data>
+  <data name="The VBA project is closed. Your draft is preserved." xml:space="preserve">
+    <value>O projeto VBA está fechado. Seu rascunho foi preservado.</value>
+  </data>
+  <data name="The VBA module was removed. Your draft is preserved." xml:space="preserve">
+    <value>O módulo VBA foi removido. Seu rascunho foi preservado.</value>
+  </data>
+  <data name="Open the last active native code module in a new tab." xml:space="preserve">
+    <value>Abrir o último módulo de código nativo ativo em uma nova aba.</value>
+  </data>
+  <data name="Write checked changes to VBA. Save the macro separately in its host." xml:space="preserve">
+    <value>Aplicar alterações verificadas ao VBA. Salve a macro separadamente no aplicativo de origem.</value>
+  </data>
+  <data name="Keep a recovery draft, then load the current VBA source." xml:space="preserve">
+    <value>Manter um rascunho de recuperação e carregar o código VBA atual.</value>
+  </data>
+  <data name="Show native source and the editor draft side by side." xml:space="preserve">
+    <value>Mostrar o código nativo e o rascunho do editor lado a lado.</value>
+  </data>
+  <data name="Restore a previous draft without overwriting changed VBA code." xml:space="preserve">
+    <value>Restaurar um rascunho anterior sem sobrescrever código VBA alterado.</value>
+  </data>
+  <data name="Return to the native editor for debugging and designers." xml:space="preserve">
+    <value>Voltar ao editor nativo para depuração e designers.</value>
+  </data>
+  <data name="Follow activated code panes in design mode while this window is open." xml:space="preserve">
+    <value>Seguir as janelas de código ativadas no modo de design enquanto esta janela estiver aberta.</value>
+  </data>
+  <data name="Synchronize after typing pauses; conflicts and run mode suspend writes." xml:space="preserve">
+    <value>Sincronizar após uma pausa na digitação; conflitos e modo de execução suspendem as gravações.</value>
+  </data>
+  <data name="Attach the editor to the VBE or move it to another screen." xml:space="preserve">
+    <value>Encaixar o editor no VBE ou movê-lo para outra tela.</value>
+  </data>
+  <data name="Find and replace in the current module." xml:space="preserve">
+    <value>Localizar e substituir no módulo atual.</value>
+  </data>
+  <data name="Return from the comparison to editing." xml:space="preserve">
+    <value>Voltar da comparação para a edição.</value>
+  </data>
+  <data name="Apply your edited version after comparing; refuse if VBA changed again." xml:space="preserve">
+    <value>Aplicar a versão editada após comparar; recusar se VBA mudou novamente.</value>
+  </data>
+  <data name="Close this tab and preserve unsynchronized changes as a recovery draft." xml:space="preserve">
+    <value>Fechar esta aba e preservar alterações não sincronizadas como rascunho de recuperação.</value>
+  </data>
+  <data name="Compile project" xml:space="preserve"><value>Compilar projeto</value></data>
+  <data name="Toggle breakpoint" xml:space="preserve"><value>Alternar ponto de interrupção</value></data>
+  <data name="Show next statement" xml:space="preserve"><value>Mostrar próxima instrução</value></data>
+  <data name="Step into" xml:space="preserve"><value>Entrar na instrução</value></data>
+  <data name="Step over" xml:space="preserve"><value>Avançar procedimento</value></data>
+  <data name="Step out" xml:space="preserve"><value>Sair do procedimento</value></data>
+  <data name="Breakpoint request sent; verify in VBE." xml:space="preserve"><value>Solicitação de ponto de interrupção enviada; verificar no VBE.</value></data>
 </root>

@@ -1858,4 +1858,122 @@ Git Credential Manager でサインインします。コミットの作成者情
   <data name="Update installed. Restart Windows to finish." xml:space="preserve"><value>更新をインストールしました。完了するにはWindowsを再起動してください。</value></data>
   <data name="Download" xml:space="preserve"><value>ダウンロード</value></data>
   <data name="Release notes" xml:space="preserve"><value>リリースノート</value></data>
+  <data name="VBAi editor" xml:space="preserve">
+    <value>VBAi エディター</value>
+  </data>
+  <data name="Open active module" xml:space="preserve">
+    <value>アクティブなモジュールを開く</value>
+  </data>
+  <data name="Synchronize with VBA" xml:space="preserve">
+    <value>VBA と同期</value>
+  </data>
+  <data name="Compare with VBA" xml:space="preserve">
+    <value>VBA と比較</value>
+  </data>
+  <data name="Reload VBA version" xml:space="preserve">
+    <value>VBA のバージョンを再読み込み</value>
+  </data>
+  <data name="Restore draft" xml:space="preserve">
+    <value>下書きを復元</value>
+  </data>
+  <data name="Use edited version" xml:space="preserve">
+    <value>編集したバージョンを適用</value>
+  </data>
+  <data name="Close module" xml:space="preserve">
+    <value>モジュールを閉じる</value>
+  </data>
+  <data name="Native editor" xml:space="preserve">
+    <value>標準エディター</value>
+  </data>
+  <data name="Dock / detach" xml:space="preserve">
+    <value>ドッキング / 解除</value>
+  </data>
+  <data name="Automatic synchronization" xml:space="preserve">
+    <value>自動同期</value>
+  </data>
+  <data name="Follow native code windows" xml:space="preserve">
+    <value>標準コードウィンドウに追従</value>
+  </data>
+  <data name="Open a VBA module to start editing." xml:space="preserve">
+    <value>VBA モジュールを開いて編集を開始します。</value>
+  </data>
+  <data name="Changes pending synchronization with VBA." xml:space="preserve">
+    <value>変更は VBA との同期待ちです。</value>
+  </data>
+  <data name="Synchronized with VBA. Save the macro in its host application." xml:space="preserve">
+    <value>VBA と同期済みです。ホストアプリでマクロを保存してください。</value>
+  </data>
+  <data name="The module changed in VBA. Resolve the conflict first." xml:space="preserve">
+    <value>VBA でモジュールが変更されました。先に競合を解決してください。</value>
+  </data>
+  <data name="Loading editor…" xml:space="preserve">
+    <value>エディターを読み込み中…</value>
+  </data>
+  <data name="The editor stopped. Drafts are preserved; reopen the editor." xml:space="preserve">
+    <value>エディターが停止しました。下書きは保持されています。開き直してください。</value>
+  </data>
+  <data name="Editor unavailable. Install WebView2 Runtime or use the native editor." xml:space="preserve">
+    <value>エディターを使用できません。WebView2 Runtime をインストールするか標準エディターを使用してください。</value>
+  </data>
+  <data name="VBA is running, paused or unavailable. Your draft is preserved." xml:space="preserve">
+    <value>VBA が実行中、一時停止中、または使用できません。下書きは保持されます。</value>
+  </data>
+  <data name="The module changed again. Compare with VBA before resolving." xml:space="preserve">
+    <value>モジュールが再度変更されました。解決する前に VBA と比較してください。</value>
+  </data>
+  <data name="This module has hidden procedure attributes. Use the native editor to preserve them." xml:space="preserve">
+    <value>このモジュールには非表示のプロシージャ属性があります。保持するには標準エディターを使用してください。</value>
+  </data>
+  <data name="The VBA project is closed. Your draft is preserved." xml:space="preserve">
+    <value>VBA プロジェクトは閉じられています。下書きは保持されます。</value>
+  </data>
+  <data name="The VBA module was removed. Your draft is preserved." xml:space="preserve">
+    <value>VBA モジュールは削除されました。下書きは保持されます。</value>
+  </data>
+  <data name="Open the last active native code module in a new tab." xml:space="preserve">
+    <value>最後にアクティブだった標準コードモジュールを新しいタブで開きます。</value>
+  </data>
+  <data name="Write checked changes to VBA. Save the macro separately in its host." xml:space="preserve">
+    <value>確認済みの変更を VBA に適用します。マクロはホストアプリで別途保存してください。</value>
+  </data>
+  <data name="Keep a recovery draft, then load the current VBA source." xml:space="preserve">
+    <value>復元用の下書きを保持してから現在の VBA ソースを読み込みます。</value>
+  </data>
+  <data name="Show native source and the editor draft side by side." xml:space="preserve">
+    <value>標準のソースとエディターの下書きを並べて表示します。</value>
+  </data>
+  <data name="Restore a previous draft without overwriting changed VBA code." xml:space="preserve">
+    <value>変更された VBA コードを上書きせずに以前の下書きを復元します。</value>
+  </data>
+  <data name="Return to the native editor for debugging and designers." xml:space="preserve">
+    <value>デバッグとデザイナーを使用するため標準エディターに戻ります。</value>
+  </data>
+  <data name="Follow activated code panes in design mode while this window is open." xml:space="preserve">
+    <value>このウィンドウが開いている間、デザインモードでアクティブなコードペインに追従します。</value>
+  </data>
+  <data name="Synchronize after typing pauses; conflicts and run mode suspend writes." xml:space="preserve">
+    <value>入力が止まったら同期します。競合と実行モードでは書き込みを停止します。</value>
+  </data>
+  <data name="Attach the editor to the VBE or move it to another screen." xml:space="preserve">
+    <value>エディターを VBE にドッキングするか別の画面に移動します。</value>
+  </data>
+  <data name="Find and replace in the current module." xml:space="preserve">
+    <value>現在のモジュール内で検索して置換します。</value>
+  </data>
+  <data name="Return from the comparison to editing." xml:space="preserve">
+    <value>比較から編集に戻ります。</value>
+  </data>
+  <data name="Apply your edited version after comparing; refuse if VBA changed again." xml:space="preserve">
+    <value>比較後に編集したバージョンを適用します。VBA が再度変更された場合は拒否します。</value>
+  </data>
+  <data name="Close this tab and preserve unsynchronized changes as a recovery draft." xml:space="preserve">
+    <value>このタブを閉じ、未同期の変更を復元用の下書きとして保持します。</value>
+  </data>
+  <data name="Compile project" xml:space="preserve"><value>プロジェクトのコンパイル</value></data>
+  <data name="Toggle breakpoint" xml:space="preserve"><value>ブレークポイントの切り替え</value></data>
+  <data name="Show next statement" xml:space="preserve"><value>次のステートメントを表示</value></data>
+  <data name="Step into" xml:space="preserve"><value>ステップ イン</value></data>
+  <data name="Step over" xml:space="preserve"><value>ステップ オーバー</value></data>
+  <data name="Step out" xml:space="preserve"><value>ステップ アウト</value></data>
+  <data name="Breakpoint request sent; verify in VBE." xml:space="preserve"><value>ブレークポイントを要求しました。VBE で確認してください。</value></data>
 </root>

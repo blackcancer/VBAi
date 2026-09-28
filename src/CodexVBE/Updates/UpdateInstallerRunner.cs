@@ -87,7 +87,7 @@ namespace CodexVBE
                 process.WaitForExit(); return process.ExitCode;
             }
         }
-        private static bool VerifySignatureNative(string path)
+        internal static bool VerifySignatureNative(string path)
         {
             var file = new TrustFile { Size = (uint)Marshal.SizeOf(typeof(TrustFile)), Path = path };
             IntPtr pointer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(TrustFile)));

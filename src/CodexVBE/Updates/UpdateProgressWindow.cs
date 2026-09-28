@@ -12,6 +12,14 @@ namespace CodexVBE
         private UpdateInstallerRunner runner;
         private string root;
         private bool polling, background;
+        private bool prerequisite;
+        internal void ConfigureWebView()
+        {
+            prerequisite = true; Text = heading.Text = "VBAi · WebView2";
+            version.Text = "Microsoft Edge WebView2 Runtime";
+            status.Text = UpdateText.Get("Installing update…");
+            cancel.Text = UpdateText.Get("Close"); cancel.Enabled = false;
+        }
         public UpdateProgressWindow()
         {
             InitializeComponent();
@@ -32,7 +40,19 @@ namespace CodexVBE
             version.Text = "VBAi " + job.TargetVersion;
             timer.Start();
         }
-        protected override void OnShown(EventArgs e) { base.OnShown(e); if (background) Hide(); }
+        protected override async void OnShown(EventArgs e)
+        {
+            base.OnShown(e); if (background) Hide();
+            if (!prerequisite) return;
+            polling = true;
+            try
+            {
+                await new WebViewRuntimePrerequisite().Ensure(System.IO.Path.GetTempPath());
+                status.Text = UpdateText.Get("Update installed. Restart the VBA host."); Environment.ExitCode = 0;
+            }
+            catch (Exception) { status.Text = UpdateText.Get("Installation failed. Check the installer log."); Environment.ExitCode = 1; }
+            finally { polling = false; cancel.Enabled = true; progress.Visible = false; }
+        }
         private async void Poll(object sender, EventArgs e)
         {
             if (job != null) status.Text = UpdateText.Get(job.Status);

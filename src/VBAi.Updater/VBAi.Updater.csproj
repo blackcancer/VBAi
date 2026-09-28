@@ -6,6 +6,8 @@
     <OutputPath Condition="'$(BuildOutputRoot)' == ''">$(RepositoryRoot)bin/$(Configuration)/updater/</OutputPath>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../CodexVBE/Updates/WebViewRuntimePrerequisite.cs" Link="WebViewRuntimePrerequisite.cs" />
+    <Reference Include="System.Net.Http" />
     <Compile Include="../CodexVBE/Updates/UpdatePaths.cs" Link="UpdatePaths.cs" />
     <Compile Include="../CodexVBE/Updates/UpdateRelease.cs" Link="UpdateRelease.cs" />
     <Compile Include="../CodexVBE/Updates/UpdateInstallJob.cs" Link="UpdateInstallJob.cs" />

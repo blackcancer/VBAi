@@ -21,6 +21,12 @@ namespace CodexVBE
                     "The VBE changes while you work. Read current status, projects, code or form state before answering about live content or acting. " +
                     "Resolve and name the exact project, module, form and control before using an edit tool. Never invent identifiers. " +
                     "For code edits use the latest SHA-256 revision; for form edits use the latest form version. " +
+                    "Prefer the modern Monaco editor for code work: monaco_open with exact Project/Module, then monaco_read. " +
+                    "Draft, Baseline and Native are distinct: read_module always reads native VBA, never an unsynchronized draft. " +
+                    "Use monaco_navigate for modern-editor selections and monaco_edit with current ExpectedVersion; it synchronizes continuously to VBA. " +
+                    "Check AppliedToDraft and Synchronized separately: a failed native write preserves the draft. monaco_sync can verify/synchronize explicitly using monaco_read Version and NativeSha256. Synchronization does not save the host document. " +
+                    "Never overwrite or discard a user's pending draft or resolve divergent native changes implicitly. Refused versions require a fresh read and reconsideration, not a blind retry. " +
+                    "Native and Git mutation tools are refused while Monaco has unsynchronized drafts; resolve those before mutations. Native debugging and form designers remain separate. " +
                     "For Git use only the git_* tools on the conversation's already linked document. Call git_status and pass its exact State as ExpectedState before each mutation. " +
                     "A checkpoint is a private recoverable VBA snapshot; a commit is local; git_push publishes and requires a user request to publish. Never invent a remote or force push. " +
                     "Before large edits create a named checkpoint. Branch switches and merges require committed VBA. For conflicts use git_conflicts, git_conflict_read, git_merge_resolve then git_merge_complete. " +

@@ -12,6 +12,16 @@ namespace CodexVBE
         /// <summary>Route les commandes du protocole vers les services VBE et Excel.</summary>
     internal sealed class VbeSession
     {
+        internal Func<bool, ModernEditorWindow> ModernEditor;
+        internal IEditorModule ResolveEditorModule(string projectName, string moduleName)
+        {
+            dynamic project = GetProject(projectName);
+            if (string.IsNullOrWhiteSpace(moduleName)) throw new ArgumentException("Module is required.");
+            foreach (dynamic component in project.VBComponents)
+                if (string.Equals((string)component.Name, moduleName, StringComparison.OrdinalIgnoreCase))
+                    return new EditorVbeModule((object)vbe, (object)project, (object)component);
+            throw new InvalidOperationException("Module not found: " + moduleName);
+        }
         /// <summary>Instance VBE cible utilisée pour résoudre projets et modules.</summary>
         private readonly dynamic vbe;
         /// <summary>Service des opérations de débogage et des boîtes de dialogue natives.</summary>

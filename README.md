@@ -10,10 +10,11 @@ Anciennement CodexVBE : les noms de solution, d’assembly, les identifiants COM
 
 - [Index de la documentation](docs/README.md)
 - [Installation et diagnostic](docs/installation.md)
+- [Éditeur Monaco](docs/modern-editor.md)
 - [Conversation et sessions](docs/chat-ui.md)
 - [Fournisseurs](docs/providers.md) et [GitHub](docs/github-integration.md)
 - [Architecture](docs/architecture.md) et [concepteurs WinForms](docs/winforms-designer.md)
-- [Catalogue des 180 outils LLM](docs/reference/vbe-tools.md)
+- [Catalogue des outils LLM](docs/reference/vbe-tools.md)
 - [Travaux restants](docs/roadmap.md) et [couverture des tests](docs/test-coverage.md)
 
 ## État vérifié
