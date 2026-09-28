@@ -49,6 +49,13 @@ namespace CodexVBE.Tests.Unit
         {
             private readonly List<object> items = new List<object>();
             public string RejectedCreatedName { get; set; }
+            public Action BeforeAdd { get; set; }
+            public Action BeforeRemove { get; set; }
+            public Action BeforeEnumeration { get; set; }
+            public bool IgnoreRemove { get; set; }
+            public int AddCalls { get; private set; }
+            public int RemoveCalls { get; private set; }
+            public Action<FakeForm> ConfigureAdded { get; set; }
             public int Count => items.Count;
 
             public void Add(object component)
@@ -58,21 +65,27 @@ namespace CodexVBE.Tests.Unit
 
             public FakeForm Add(int type)
             {
+                AddCalls++;
+                BeforeAdd?.Invoke();
                 var form = new FakeForm("Temporary")
                 {
                     RejectedName = RejectedCreatedName
                 };
                 items.Add(form);
+                ConfigureAdded?.Invoke(form);
                 return form;
             }
 
             public void Remove(object component)
             {
-                items.Remove(component);
+                RemoveCalls++;
+                BeforeRemove?.Invoke();
+                if (!IgnoreRemove) items.Remove(component);
             }
 
             public IEnumerator<object> GetEnumerator()
             {
+                BeforeEnumeration?.Invoke();
                 return items.GetEnumerator();
             }
 
@@ -112,6 +125,7 @@ namespace CodexVBE.Tests.Unit
             }
 
             public string RejectedName { get; set; }
+            public bool FailDesignerWindow { get; set; }
 
             public string Name
             {
@@ -149,6 +163,7 @@ namespace CodexVBE.Tests.Unit
 
             public FakeWindow DesignerWindow()
             {
+                if (FailDesignerWindow) throw new InvalidOperationException("Designer window unavailable");
                 return window;
             }
         }
@@ -247,6 +262,13 @@ namespace CodexVBE.Tests.Unit
             }
 
             public bool FailNextCaption { get; set; }
+            public bool FailAdd { get; set; }
+            public bool HideAdd { get; set; }
+            public bool IgnoreRemove { get; set; }
+            public Action BeforeRemove { get; set; }
+            public Action BeforeEnumeration { get; set; }
+            public int AddCalls { get; private set; }
+            public int RemoveCalls { get; private set; }
 
             public int Count
             {
@@ -258,12 +280,14 @@ namespace CodexVBE.Tests.Unit
 
             public FakeControl Add(string type, string name, bool visible)
             {
+                AddCalls++;
+                if (FailAdd) throw new InvalidOperationException("Add unavailable");
                 var control = new FakeControl(name, owner)
                 {
                     FailCaption = FailNextCaption
                 };
                 FailNextCaption = false;
-                items.Add(control);
+                if (!HideAdd) items.Add(control);
                 return control;
             }
 
@@ -281,11 +305,14 @@ namespace CodexVBE.Tests.Unit
 
             public void Remove(string name)
             {
-                items.Remove(Item(name));
+                RemoveCalls++;
+                BeforeRemove?.Invoke();
+                if (!IgnoreRemove) items.Remove(Item(name));
             }
 
             public IEnumerator<FakeControl> GetEnumerator()
             {
+                BeforeEnumeration?.Invoke();
                 return items.GetEnumerator();
             }
 
@@ -308,7 +335,9 @@ namespace CodexVBE.Tests.Unit
             public string Name { get; set; }
             public object Parent { get; }
             public FakeControls Controls { get; }
-            public FakeFont Font { get; } = new FakeFont();
+            private readonly FakeFont font = new FakeFont();
+            public bool FailFontRead { get; set; }
+            public FakeFont Font { get { if (FailFontRead) throw new InvalidOperationException("Font unavailable"); return font; } }
             public List<object[]> ListRows { get; } = new List<object[]>();
 
             public int ListCount
