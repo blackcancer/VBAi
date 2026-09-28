@@ -2,6 +2,16 @@
 
 État du 28 septembre 2026. Les preuves ci-dessous portent sur des scénarios précis ; elles ne transforment pas les fonctions absentes ou bornées de [functional-extensions.md](functional-extensions.md) en une couverture universelle. Le thème natif VBE reste exclu.
 
+## PR #10 : démarrage Monaco, SOLIDWORKS et comptes connectés
+
+Monaco s'ouvre automatiquement au chargement du complément et remplit le `MDIClient` du VBE Excel. Le scénario `MonacoStartup` vérifie le MVID de la DLL réellement chargée, le parent natif, les dimensions initiales, le redimensionnement puis la restauration. Aucun menu, raccourci ni clic simulé n'est utilisé. Preuve : `artifacts/pr10-start/native/monaco-startup.json` ; l'instance Excel jetable est fermée et les valeurs COM temporaires restaurées.
+
+Sur l'instance SOLIDWORKS 2019 déjà ouverte, PID **47352**, le projet autorisé `E:\Développement\AddIn\CodexVBA\test.swp` passe les cinq scénarios suivants : import/export de module, import/export de classe, création/conception/import/export de UserForm avec label et police, compilation/exécution, breakpoint/pas à pas/reprise. Chaque scénario vérifie le hash du module initial et l'inventaire restauré des composants. Le test VSTest `ExistingSolidWorksVbeHasConnectedCodexAddIn` passe également (**1/1**). Preuves : `artifacts/solidworks-20260928/` et `vstest/solidworks.trx`.
+
+Le panneau Variables locales est accessible, mais expose **zéro ligne UIA** dans ce scénario SOLIDWORKS. Aucune valeur locale n'est donc prétendue relue. Les scénarios de sauvegarde SWP, signature persistée et remplacement d'attributs Monaco restent distincts et ne sont pas qualifiés par ces cinq essais.
+
+Après autorisation explicite de transmettre le seul module jetable `test/test1` et de lire le dépôt privé, `ConnectedProviderTests` passe **2/2**. Codex utilise le stockage privé du complément, l'authentification ChatGPT, un catalogue réel de **7 modèles**, puis `gpt-6-luna` avec effort `low` : un appel natif `read_module`, une réponse correcte, quatre événements d'activité et le hash du module inchangé. GitHub utilise GCM et le compte configuré : identité authentifiée, accès à `blackcancer/CodexVBE` privé et lecture de la PR #10 fusionnée, par requêtes GET exclusivement. Preuve : `artifacts/connected-providers/results/connected.trx`. Les tests exigent les opt-in `CODEXVBE_CONNECTED_PROVIDER_TESTS=1` et `CODEXVBE_CONNECTED_SOURCE_TESTS=1`, ainsi que le PID SOLIDWORKS pour le test Codex. Ces résultats ne mesurent pas la couverture globale et n'autorisent aucune publication distante.
+
 ## Diagnostics Monaco et attributs après PR #9
 
 Le scénario `MonacoExcel` a été exécuté sur la fusion corrigée : **1 réussi, 0 échec, 0 ignoré** (`artifacts/pr9-integration/native-final/excel.trx`). Excel et le VBE sont visibles ; la fixture ferme son propre classeur et sa propre instance.
