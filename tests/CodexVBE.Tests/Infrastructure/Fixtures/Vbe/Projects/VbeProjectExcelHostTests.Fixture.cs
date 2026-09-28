@@ -32,6 +32,7 @@ namespace CodexVBE.Tests.Unit
                 Workbook = workbook,
                 Excel = excel,
                 Host = host,
+                Vbe = vbe,
                 Service = new VbeProjectComponents(vbe, new VbeForms(vbe), host)
             };
         }
@@ -43,6 +44,7 @@ namespace CodexVBE.Tests.Unit
             public FakeExcel Excel;
             public FakeHost Host;
             public VbeProjectComponents Service;
+            public VbeProjectComponentsTests.FakeVbe Vbe;
         }
 
         public sealed class FakeHost : VbeProjectComponents.IExcelHostProbe
@@ -81,6 +83,7 @@ namespace CodexVBE.Tests.Unit
             {
                 items.Add(workbook);
             }
+            public void Clear() { items.Clear(); }
 
             public FakeWorkbook Item(int index)
             {
@@ -116,6 +119,7 @@ namespace CodexVBE.Tests.Unit
             public int SaveAttempts { get; private set; }
             public int SaveAsAttempts { get; private set; }
             public int LastSaveAsFormat { get; private set; }
+            public Action AfterSaveAs { get; set; }
 
             public void Save()
             {
@@ -140,6 +144,7 @@ namespace CodexVBE.Tests.Unit
                 project.FileName = path;
                 Saved = true;
                 project.Saved = true;
+                AfterSaveAs?.Invoke();
             }
         }
     }

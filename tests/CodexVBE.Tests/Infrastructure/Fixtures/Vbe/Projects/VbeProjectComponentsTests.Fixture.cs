@@ -26,7 +26,9 @@ namespace CodexVBE.Tests.Unit
         {
             public string Name { get; set; } = "VBAProject";
             public string Description { get; set; } = "Original";
-            public string FileName { get; set; } = @"C:\fixture\Book.xlsm";
+            private string fileName = @"C:\fixture\Book.xlsm";
+            public bool FailFileName { get; set; }
+            public string FileName { get { if (FailFileName) throw new InvalidOperationException("Project filename unavailable"); return fileName; } set { fileName = value; } }
             public int Mode { get; set; } = 2;
             public bool Saved { get; set; } = true;
             public FakeComponentCollection VBComponents { get; } = new FakeComponentCollection();
@@ -40,6 +42,9 @@ namespace CodexVBE.Tests.Unit
             public int ImportAttempts { get; private set; }
             public bool ImportThenThrow { get; set; }
             public int ImportAddedCount { get; set; } = 1;
+            public bool FailImportedEnumeration { get; set; }
+            public bool FailImportedCodeReadback { get; set; }
+            public bool FailImportedProjectReadback { get; set; }
 
             public void Add(FakeComponent component)
             {
@@ -56,13 +61,19 @@ namespace CodexVBE.Tests.Unit
             {
                 ImportAttempts++;
                 for (int index = 0; index < ImportAddedCount; index++)
-                    items.Add(new FakeComponent(index == 0 ? "ImportedModule" : "ImportedModule" + index, 1));
+                {
+                    var imported = new FakeComponent(index == 0 ? "ImportedModule" : "ImportedModule" + index, 1);
+                    imported.CodeModule.FailRead = FailImportedCodeReadback;
+                    imported.FailName = FailImportedProjectReadback;
+                    items.Add(imported);
+                }
                 if (ImportThenThrow)
                     throw new InvalidOperationException("COM error after add");
             }
 
             public IEnumerator<FakeComponent> GetEnumerator()
             {
+                if (FailImportedEnumeration && ImportAttempts > 0) throw new InvalidOperationException("Enumeration unavailable after import");
                 return items.GetEnumerator();
             }
 
@@ -72,7 +83,7 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
-        public sealed class FakeComponent
+        public class FakeComponent
         {
             public FakeComponent(string name, int type)
             {
@@ -87,7 +98,10 @@ namespace CodexVBE.Tests.Unit
                 }
             }
 
-            public string Name { get; set; }
+            private string name;
+            public bool IgnoreRename { get; set; }
+            public bool FailName { get; set; }
+            public string Name { get { if (FailName) throw new InvalidOperationException("Name unavailable"); return name; } set { if (!IgnoreRename) name = value; } }
             public string Description { get; set; } = "Original";
             public int Type { get; set; }
             public FakePropertyCollection Properties { get; } = new FakePropertyCollection();
@@ -143,16 +157,22 @@ namespace CodexVBE.Tests.Unit
         public sealed class FakeProperty
         {
             public string Name { get; set; }
-            public object Value { get; set; }
+            private object value;
+            public bool IgnoreSet { get; set; }
+            public bool FailRead { get; set; }
+            public object Value { get { if (FailRead) throw new InvalidOperationException("Property unavailable"); return value; } set { if (!IgnoreSet) this.value = value; } }
         }
 
         public sealed class FakeCodeModule
         {
+            public int LineCount { get; set; } = 1;
+            public bool FailRead { get; set; }
             public int CountOfLines
             {
                 get
                 {
-                    return 1;
+                    if (FailRead) throw new InvalidOperationException("Code unavailable");
+                    return LineCount;
                 }
             }
 
