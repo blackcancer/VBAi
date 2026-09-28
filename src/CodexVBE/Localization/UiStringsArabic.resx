@@ -1995,4 +1995,39 @@
   <data name="Declined" xml:space="preserve">
     <value>مرفوضة</value>
   </data>
+  <data name="Project access" xml:space="preserve"><value>الوصول إلى المشاريع</value></data>
+  <data name="Project access…" xml:space="preserve"><value>الوصول إلى المشاريع…</value></data>
+  <data name="The bound project is always readable. Select additional projects for read access only. Changing access starts a new conversation; previously transmitted data cannot be recalled." xml:space="preserve"><value>يبقى المشروع المرتبط متاحًا للقراءة دائمًا. اختر مشاريع إضافية للقراءة فقط. يؤدي تغيير صلاحيات الوصول إلى بدء محادثة جديدة؛ ولا يمكن استرجاع البيانات التي أُرسلت سابقًا.</value></data>
+  <data name="Allow shared VBE and clipboard context" xml:space="preserve"><value>السماح بسياق VBE المشترك وسياق الحافظة</value></data>
+  <data name="Shared tools may transmit data from any open project, debugger windows, native inventories and the system clipboard. This permission does not authorize edits in other projects." xml:space="preserve"><value>قد تنقل الأدوات المشتركة بيانات من أي مشروع مفتوح، ومن نوافذ مصحح الأخطاء وقوائم العناصر الأصلية وحافظة النظام. لا يسمح هذا الإذن بتعديل المشاريع الأخرى.</value></data>
+  <data name="Apply to new chat" xml:space="preserve"><value>التطبيق على محادثة جديدة</value></data>
+  <data name="Additional projects can be read, but only the bound project can be edited." xml:space="preserve"><value>يمكن قراءة المشاريع الإضافية، لكن لا يمكن تعديل سوى المشروع المرتبط.</value></data>
+  <data name="Authorize unfiltered native debugger, window and clipboard data for this chat." xml:space="preserve"><value>السماح لهذه المحادثة ببيانات مصحح الأخطاء الأصلي والنوافذ والحافظة دون تصفية.</value></data>
+  <data name="Project access configured for the new conversation." xml:space="preserve"><value>تم إعداد صلاحيات الوصول إلى المشاريع للمحادثة الجديدة.</value></data>
+  <data name="Read access to another project is not authorized for this conversation." xml:space="preserve"><value>قراءة مشروع آخر غير مسموح بها في هذه المحادثة.</value></data>
+  <data name="This tool uses shared VBE context. Authorize shared context in Project access before using it." xml:space="preserve"><value>تستخدم هذه الأداة سياق VBE المشترك. اسمح بالسياق المشترك في «الوصول إلى المشاريع» قبل استخدامها.</value></data>
+  <data name="Restore the paused provider, model, effort and mode before resuming." xml:space="preserve"><value>أعد موفر الخدمة والنموذج ومستوى الجهد والوضع المستخدمين قبل الإيقاف المؤقت، ثم استأنف.</value></data>
+  <data name=" — interrupted; verify live state before retrying" xml:space="preserve"><value> — تمت المقاطعة؛ تحقّق من الحالة الحالية قبل إعادة المحاولة</value></data>
+  <data name="Resume paused turn" xml:space="preserve"><value>استئناف الدور المتوقف مؤقتًا</value></data>
+  <data name="Continue from saved tool results without repeating completed actions." xml:space="preserve"><value>تابع من نتائج الأدوات المحفوظة دون تكرار الإجراءات المكتملة.</value></data>
+  <data name="Pending: automatic verification and final response." xml:space="preserve"><value>متبقٍ: التحقق التلقائي والرد النهائي.</value></data>
+  <data name="Continuation interrupted. Completed results were kept; verify live state before retrying." xml:space="preserve"><value>تمت مقاطعة المتابعة. حُفظت النتائج المكتملة؛ تحقّق من الحالة الحالية قبل إعادة المحاولة.</value></data>
+  <data name="Choose which other projects this conversation may read." xml:space="preserve"><value>اختر المشاريع الأخرى التي يمكن لهذه المحادثة قراءتها.</value></data>
+  <data name=" — completed" xml:space="preserve"><value> — اكتمل</value></data>
+  <data name="Resume ▶" xml:space="preserve"><value>استئناف ▶</value></data>
+  <data name=" — refused or failed" xml:space="preserve"><value> — رُفض أو فشل</value></data>
+  <data name="Paused — resume when ready" xml:space="preserve"><value>متوقف مؤقتًا — استأنف عندما تكون جاهزًا</value></data>
+  <data name="Pending: final response." xml:space="preserve"><value>متبقٍ: الرد النهائي.</value></data>
+  <data name="Paused after 8 model rounds. Resume to continue from the saved results; completed actions will not be replayed." xml:space="preserve"><value>توقف التنفيذ مؤقتًا بعد 8 جولات مع النموذج. استأنف للمتابعة من النتائج المحفوظة؛ ولن تُعاد الإجراءات المكتملة.</value></data>
+  <data name=" — response received; inspect returned state" xml:space="preserve"><value> — تم استلام الرد؛ افحص الحالة المُعادة</value></data>
+  <data name="This document has no native host to save." xml:space="preserve"><value>لا يوجد تطبيق مضيف أصلي لحفظ هذا المستند.</value></data>
+  <data name="The native save target changed. Select the module and retry." xml:space="preserve"><value>تغيّرت وجهة الحفظ الأصلي. اختر الوحدة وأعد المحاولة.</value></data>
+  <data name="The native Save command is unavailable." xml:space="preserve"><value>أمر الحفظ الأصلي غير متاح.</value></data>
+  <data name="Saved." xml:space="preserve"><value>تم الحفظ.</value></data>
+  <data name="Saving was cancelled or not completed. Your code remains in the editor and host document." xml:space="preserve"><value>أُلغي الحفظ أو لم يكتمل. يبقى الكود في المحرر والمستند داخل التطبيق المضيف.</value></data>
+  <data name="The host document was not saved. Your code remains in the editor and host document." xml:space="preserve"><value>لم يُحفظ المستند داخل التطبيق المضيف. يبقى الكود في المحرر والمستند داخل التطبيق المضيف.</value></data>
+  <data name="The native Save command finished, but the host document&apos;s saved state could not be verified." xml:space="preserve"><value>انتهى أمر الحفظ الأصلي، لكن تعذّر التحقق من حالة حفظ المستند داخل التطبيق المضيف.</value></data>
+  <data name="The document was not saved because some edits are still pending synchronization." xml:space="preserve"><value>لم يُحفظ المستند لأن بعض التعديلات لا تزال تنتظر المزامنة.</value></data>
+  <data name="Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data." xml:space="preserve"><value>تم تعزيز خصوصية المشاريع. يبقى السجل السابق متاحًا محليًا؛ ويبدأ سياق موفر الخدمة من جديد لتجنب إعادة إرسال بيانات المشاريع التي تمت مشاركتها سابقًا.</value></data>
+  <data name="This message predates the project privacy upgrade. Use current authorized references in a new conversation." xml:space="preserve"><value>هذه الرسالة سابقة لتعزيز خصوصية المشاريع. استخدم مراجع حالية مسموحًا بها في محادثة جديدة.</value></data>
 </root>

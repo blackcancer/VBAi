@@ -1995,4 +1995,39 @@ Git Credential Manager でサインインします。コミットの作成者情
   <data name="Declined" xml:space="preserve">
     <value>拒否</value>
   </data>
+  <data name="Project access" xml:space="preserve"><value>プロジェクトへのアクセス</value></data>
+  <data name="Project access…" xml:space="preserve"><value>プロジェクトへのアクセス…</value></data>
+  <data name="The bound project is always readable. Select additional projects for read access only. Changing access starts a new conversation; previously transmitted data cannot be recalled." xml:space="preserve"><value>紐付けられたプロジェクトは常に読み取り可能です。読み取り専用でアクセスする追加のプロジェクトを選択してください。アクセス権を変更すると新しい会話が始まり、送信済みのデータは取り消せません。</value></data>
+  <data name="Allow shared VBE and clipboard context" xml:space="preserve"><value>共有 VBE とクリップボードのコンテキストを許可</value></data>
+  <data name="Shared tools may transmit data from any open project, debugger windows, native inventories and the system clipboard. This permission does not authorize edits in other projects." xml:space="preserve"><value>共有ツールは、開いている任意のプロジェクト、デバッガーウィンドウ、ネイティブ要素の一覧、システムのクリップボードからデータを送信する場合があります。この許可では他のプロジェクトを編集できません。</value></data>
+  <data name="Apply to new chat" xml:space="preserve"><value>新しい会話に適用</value></data>
+  <data name="Additional projects can be read, but only the bound project can be edited." xml:space="preserve"><value>追加のプロジェクトは読み取り可能ですが、編集できるのは紐付けられたプロジェクトのみです。</value></data>
+  <data name="Authorize unfiltered native debugger, window and clipboard data for this chat." xml:space="preserve"><value>この会話で、ネイティブデバッガー、ウィンドウ、クリップボードの未フィルターのデータを使用することを許可します。</value></data>
+  <data name="Project access configured for the new conversation." xml:space="preserve"><value>新しい会話のプロジェクトアクセス権を設定しました。</value></data>
+  <data name="Read access to another project is not authorized for this conversation." xml:space="preserve"><value>この会話では、他のプロジェクトを読み取ることは許可されていません。</value></data>
+  <data name="This tool uses shared VBE context. Authorize shared context in Project access before using it." xml:space="preserve"><value>このツールは共有 VBE コンテキストを使用します。使用前に「プロジェクトへのアクセス」で共有コンテキストを許可してください。</value></data>
+  <data name="Restore the paused provider, model, effort and mode before resuming." xml:space="preserve"><value>再開する前に、一時停止時のプロバイダー、モデル、推論の強度、モードに戻してください。</value></data>
+  <data name=" — interrupted; verify live state before retrying" xml:space="preserve"><value> — 中断されました。再試行前に現在の状態を確認してください</value></data>
+  <data name="Resume paused turn" xml:space="preserve"><value>一時停止したターンを再開</value></data>
+  <data name="Continue from saved tool results without repeating completed actions." xml:space="preserve"><value>完了した操作を繰り返さずに、保存済みのツール結果から続行します。</value></data>
+  <data name="Pending: automatic verification and final response." xml:space="preserve"><value>未完了：自動検証と最終回答。</value></data>
+  <data name="Continuation interrupted. Completed results were kept; verify live state before retrying." xml:space="preserve"><value>続行が中断されました。完了した結果は保持されています。再試行前に現在の状態を確認してください。</value></data>
+  <data name="Choose which other projects this conversation may read." xml:space="preserve"><value>この会話で読み取りを許可する他のプロジェクトを選択してください。</value></data>
+  <data name=" — completed" xml:space="preserve"><value> — 完了</value></data>
+  <data name="Resume ▶" xml:space="preserve"><value>再開 ▶</value></data>
+  <data name=" — refused or failed" xml:space="preserve"><value> — 拒否または失敗</value></data>
+  <data name="Paused — resume when ready" xml:space="preserve"><value>一時停止中 — 準備ができたら再開してください</value></data>
+  <data name="Pending: final response." xml:space="preserve"><value>未完了：最終回答。</value></data>
+  <data name="Paused after 8 model rounds. Resume to continue from the saved results; completed actions will not be replayed." xml:space="preserve"><value>モデルとのやり取りを 8 回行った後に一時停止しました。再開すると保存済みの結果から続行し、完了した操作は繰り返しません。</value></data>
+  <data name=" — response received; inspect returned state" xml:space="preserve"><value> — 応答を受信しました。返された状態を確認してください</value></data>
+  <data name="This document has no native host to save." xml:space="preserve"><value>このドキュメントには、保存に使用できるネイティブのホストアプリケーションがありません。</value></data>
+  <data name="The native save target changed. Select the module and retry." xml:space="preserve"><value>ネイティブの保存先が変更されました。モジュールを選択して再試行してください。</value></data>
+  <data name="The native Save command is unavailable." xml:space="preserve"><value>ネイティブの保存コマンドを使用できません。</value></data>
+  <data name="Saved." xml:space="preserve"><value>保存しました。</value></data>
+  <data name="Saving was cancelled or not completed. Your code remains in the editor and host document." xml:space="preserve"><value>保存がキャンセルされたか、完了しませんでした。コードはエディターとホストのドキュメントに残っています。</value></data>
+  <data name="The host document was not saved. Your code remains in the editor and host document." xml:space="preserve"><value>ホストのドキュメントは保存されませんでした。コードはエディターとホストのドキュメントに残っています。</value></data>
+  <data name="The native Save command finished, but the host document&apos;s saved state could not be verified." xml:space="preserve"><value>ネイティブの保存コマンドは終了しましたが、ホストのドキュメントの保存状態を確認できませんでした。</value></data>
+  <data name="The document was not saved because some edits are still pending synchronization." xml:space="preserve"><value>一部の編集がまだ同期を待っているため、ドキュメントは保存されませんでした。</value></data>
+  <data name="Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data." xml:space="preserve"><value>プロジェクトのプライバシー保護が強化されました。以前の履歴はローカルで引き続き参照できます。過去に共有したプロジェクトのデータを再送信しないよう、プロバイダーのコンテキストは新しく始まります。</value></data>
+  <data name="This message predates the project privacy upgrade. Use current authorized references in a new conversation." xml:space="preserve"><value>このメッセージは、プロジェクトのプライバシー保護が強化される前のものです。新しい会話で、現在許可されている参照を使用してください。</value></data>
 </root>

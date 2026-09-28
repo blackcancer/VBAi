@@ -1995,4 +1995,39 @@ Inicio de sesión mediante Git Credential Manager; la identidad de los commits s
   <data name="Declined" xml:space="preserve">
     <value>Rechazada</value>
   </data>
+  <data name="Project access" xml:space="preserve"><value>Acceso a proyectos</value></data>
+  <data name="Project access…" xml:space="preserve"><value>Acceso a proyectos…</value></data>
+  <data name="The bound project is always readable. Select additional projects for read access only. Changing access starts a new conversation; previously transmitted data cannot be recalled." xml:space="preserve"><value>El proyecto vinculado siempre puede leerse. Seleccione proyectos adicionales solo para lectura. Cambiar el acceso inicia una nueva conversación; los datos ya transmitidos no pueden retirarse.</value></data>
+  <data name="Allow shared VBE and clipboard context" xml:space="preserve"><value>Permitir el contexto compartido de VBE y del portapapeles</value></data>
+  <data name="Shared tools may transmit data from any open project, debugger windows, native inventories and the system clipboard. This permission does not authorize edits in other projects." xml:space="preserve"><value>Las herramientas compartidas pueden transmitir datos de cualquier proyecto abierto, de las ventanas del depurador, de los inventarios nativos y del portapapeles del sistema. Este permiso no autoriza cambios en otros proyectos.</value></data>
+  <data name="Apply to new chat" xml:space="preserve"><value>Aplicar a la nueva conversación</value></data>
+  <data name="Additional projects can be read, but only the bound project can be edited." xml:space="preserve"><value>Los proyectos adicionales pueden leerse, pero solo el proyecto vinculado puede editarse.</value></data>
+  <data name="Authorize unfiltered native debugger, window and clipboard data for this chat." xml:space="preserve"><value>Autorizar para esta conversación los datos sin filtrar del depurador nativo, las ventanas y el portapapeles.</value></data>
+  <data name="Project access configured for the new conversation." xml:space="preserve"><value>Acceso a proyectos configurado para la nueva conversación.</value></data>
+  <data name="Read access to another project is not authorized for this conversation." xml:space="preserve"><value>La lectura de otro proyecto no está autorizada para esta conversación.</value></data>
+  <data name="This tool uses shared VBE context. Authorize shared context in Project access before using it." xml:space="preserve"><value>Esta herramienta usa el contexto compartido de VBE. Autorice el contexto compartido en Acceso a proyectos antes de usarla.</value></data>
+  <data name="Restore the paused provider, model, effort and mode before resuming." xml:space="preserve"><value>Antes de reanudar, restablezca el proveedor, el modelo, el nivel de razonamiento y el modo utilizados al pausar.</value></data>
+  <data name=" — interrupted; verify live state before retrying" xml:space="preserve"><value> — interrumpido; compruebe el estado actual antes de reintentar</value></data>
+  <data name="Resume paused turn" xml:space="preserve"><value>Reanudar el turno pausado</value></data>
+  <data name="Continue from saved tool results without repeating completed actions." xml:space="preserve"><value>Continuar desde los resultados guardados de las herramientas sin repetir las acciones completadas.</value></data>
+  <data name="Pending: automatic verification and final response." xml:space="preserve"><value>Pendiente: verificación automática y respuesta final.</value></data>
+  <data name="Continuation interrupted. Completed results were kept; verify live state before retrying." xml:space="preserve"><value>La continuación se ha interrumpido. Se han conservado los resultados completados; compruebe el estado actual antes de reintentar.</value></data>
+  <data name="Choose which other projects this conversation may read." xml:space="preserve"><value>Elija qué otros proyectos puede leer esta conversación.</value></data>
+  <data name=" — completed" xml:space="preserve"><value> — completado</value></data>
+  <data name="Resume ▶" xml:space="preserve"><value>Reanudar ▶</value></data>
+  <data name=" — refused or failed" xml:space="preserve"><value> — rechazado o fallido</value></data>
+  <data name="Paused — resume when ready" xml:space="preserve"><value>En pausa — reanude cuando esté listo</value></data>
+  <data name="Pending: final response." xml:space="preserve"><value>Pendiente: respuesta final.</value></data>
+  <data name="Paused after 8 model rounds. Resume to continue from the saved results; completed actions will not be replayed." xml:space="preserve"><value>En pausa después de 8 rondas con el modelo. Reanude desde los resultados guardados; las acciones completadas no se repetirán.</value></data>
+  <data name=" — response received; inspect returned state" xml:space="preserve"><value> — respuesta recibida; revise el estado devuelto</value></data>
+  <data name="This document has no native host to save." xml:space="preserve"><value>Este documento no tiene una aplicación anfitriona nativa para guardarlo.</value></data>
+  <data name="The native save target changed. Select the module and retry." xml:space="preserve"><value>El destino del guardado nativo ha cambiado. Seleccione el módulo y reintente.</value></data>
+  <data name="The native Save command is unavailable." xml:space="preserve"><value>El comando Guardar nativo no está disponible.</value></data>
+  <data name="Saved." xml:space="preserve"><value>Guardado.</value></data>
+  <data name="Saving was cancelled or not completed. Your code remains in the editor and host document." xml:space="preserve"><value>El guardado se ha cancelado o no se ha completado. El código permanece en el editor y en el documento de la aplicación anfitriona.</value></data>
+  <data name="The host document was not saved. Your code remains in the editor and host document." xml:space="preserve"><value>El documento de la aplicación anfitriona no se ha guardado. El código permanece en el editor y en el documento de la aplicación anfitriona.</value></data>
+  <data name="The native Save command finished, but the host document&apos;s saved state could not be verified." xml:space="preserve"><value>El comando Guardar nativo ha finalizado, pero no se ha podido verificar el estado de guardado del documento de la aplicación anfitriona.</value></data>
+  <data name="The document was not saved because some edits are still pending synchronization." xml:space="preserve"><value>El documento no se ha guardado porque algunas modificaciones aún están pendientes de sincronización.</value></data>
+  <data name="Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data." xml:space="preserve"><value>Se ha reforzado la privacidad de los proyectos. El historial anterior sigue disponible localmente; el contexto del proveedor comienza de nuevo para evitar retransmitir datos de proyectos compartidos anteriormente.</value></data>
+  <data name="This message predates the project privacy upgrade. Use current authorized references in a new conversation." xml:space="preserve"><value>Este mensaje es anterior al refuerzo de la privacidad de los proyectos. Use referencias actuales autorizadas en una nueva conversación.</value></data>
 </root>
