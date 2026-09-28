@@ -155,16 +155,19 @@ namespace CodexVBE.Tests.Unit
                 Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "legacy", Kind = "dynamicToolCall", Title = new string('t', 120), Detail = " continuation", Append = true, Status = "inProgress", DurationMs = 1234 });
                 Assert.AreEqual("native detail continuation", entry.Activity.Detail);
                 Assert.AreEqual(1234L, entry.Activity.DurationMs);
-                var group = (Expander)Call(window, "RenderActivityGroup", entry, new List<ChatEntry> { entry });
-                StringAssert.EndsWith((string)group.Header, "…");
+                var group = (ChatDesignerHost)Call(window, "RenderActivityGroup", entry, new List<ChatEntry> { entry });
+                StringAssert.EndsWith(((ChatActivityGroupView)group.View).section.Title, "…");
+                group.Dispose();
                 foreach (var state in new[] { "inProgress", "failed", "declined", "completed", "interrupted" })
                 {
                     entry.Activity.Status = state;
-                    var step = (Expander)Call(window, "RenderActivityStep", entry);
-                    var label = ((DockPanel)step.Header).Children.OfType<TextBlock>().First().Text;
-                    StringAssert.StartsWith(label, state == "inProgress" ? "● " : state == "failed" ? "× " : state == "completed" ? "✓ " : "— ");
+                    var step = (ChatDesignerHost)Call(window, "RenderActivityStep", entry);
+                    var card = (ChatActivityStepView)step.View;
+                    var label = card.state.Text;
+                    StringAssert.StartsWith(label, UiText.Get(state == "inProgress" ? "In progress" : state == "failed" ? "Failed" : state == "declined" ? "Declined" : state == "completed" ? "Completed" : "Cancelled"));
                     StringAssert.Contains(label, " s");
-                    Assert.AreEqual("native detail continuation", ((TextBox)step.Content).Text);
+                    Assert.AreEqual("native detail continuation", card.detail.content.Text);
+                    step.Dispose();
                 }
             }
         }
