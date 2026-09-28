@@ -10,6 +10,25 @@ namespace CodexVBE.Tests.Unit
     public sealed partial class ChatWindowStateTests
     {
         [STATestMethod, TestCategory("Unit")]
+        public void HttpSafetyPauseCountsIdenticalResultsNullAndMalformedResponsesAsStalledRounds()
+        {
+            foreach (string result in new[] { "null", "malformed", "{\"Ok\":true,\"Data\":\"same\"}" })
+            using (var runtime = new RuntimeScope())
+            using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
+            {
+                int count = result.Contains("same") ? 9 : 8; int calls = 0; var json = new JavaScriptSerializer();
+                var replies = Enumerable.Range(0, count).Select(i => json.Serialize(new { choices = new[] { new { message = new { role = "assistant", tool_calls = new[] { new { id = "stall-" + i, type = "function", function = new { name = "status", arguments = "{}" } } } } } } })).ToArray();
+                var handler = new ChatResponseHandler(replies); window.HttpHandlerOverride = () => handler;
+                ChatWindow.InvokeTool = (tools, name, args) => { calls++; return Task.FromResult(result); };
+                Question(window, "bounded repeated work"); CompleteOnSta((Task)Call(window, "SendAsync"));
+                var state = Get<ChatSessionState>(window, "currentSession");
+                Assert.AreEqual(count, calls); Assert.AreEqual(count, handler.Requests.Count);
+                Assert.IsTrue(state.BudgetPaused); Assert.IsFalse(Get<bool>(window, "busy"));
+                Assert.AreEqual(count, state.CompletedToolActions.Count); Set(window, "currentSession", null);
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
         public void EightRoundsWithoutProgressPauseAndResumeKeepsResultsWithoutReplayingActions()
         {
             using (var runtime = new RuntimeScope())

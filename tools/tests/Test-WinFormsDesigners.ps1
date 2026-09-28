@@ -43,8 +43,14 @@ foreach ($type in $types) {
         $property.SetValue($root, $original)
         if ($wasAutoSize) { $autoSize.SetValue($root, $true) }
         $children = 0
-        if (-not $designerSources.ContainsKey($type.Name)) { throw "$($type.Name): no Designer source" }
-        foreach ($match in [regex]::Matches($designerSources[$type.Name], 'this\.(\w+) = new [\w.]+\(')) {
+        $designerSource = $designerSources[$type.Name]
+        if (-not $designerSources.ContainsKey($type.Name)) {
+            # This layout base owns no fixed components; its concrete views have Designers.
+            $declaredControls = @($type.GetFields([Reflection.BindingFlags]'DeclaredOnly,Instance,NonPublic,Public') | Where-Object { [Windows.Forms.Control].IsAssignableFrom($_.FieldType) })
+            if ($type.FullName -ne 'CodexVBE.ChatDesignerView' -or $subject.Controls.Count -ne 0 -or $declaredControls.Count -ne 0) { throw "$($type.Name): no Designer source" }
+            $designerSource = ''
+        }
+        foreach ($match in [regex]::Matches($designerSource, 'this\.(\w+) = new [\w.]+\(')) {
             $field = $type.GetField($match.Groups[1].Value, [Reflection.BindingFlags]'Instance,NonPublic,Public')
             if ($null -eq $field) { continue }
             $child = $field.GetValue($subject)
