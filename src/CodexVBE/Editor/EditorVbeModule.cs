@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -92,7 +92,7 @@ namespace CodexVBE
             if (!found) throw new InvalidOperationException("The VBA module was removed. Your draft is preserved.");
         }
         public bool CanWrite
-        { get { Validate(); return (int)((dynamic)project).Mode == 2 && (int)((dynamic)project).Protection == 0; } }
+        { get { Validate(); return ((int)((dynamic)project).Mode == 2 || (int)((dynamic)project).Mode == 1) && (int)((dynamic)project).Protection == 0; } }
         public string Read()
         {
             Validate(); dynamic module = ((dynamic)component).CodeModule;
@@ -113,7 +113,18 @@ namespace CodexVBE
             dynamic module = ((dynamic)component).CodeModule;
             if (plan != null && (plan.Before != expected || plan.After != text)) throw new InvalidOperationException("Stale synchronization plan.");
             var edit = plan?.Patch ?? EditorDocument.Difference(expected, text);
-            if (TryRewriteAttributedDeclaration(expected, text, edit, out string rewritten)) return rewritten;
+            if ((int)((dynamic)project).Mode == 1)
+            {
+                // Edit-and-continue must not rebuild procedures or replace COM components.
+                // Broader changes remain drafts until the user returns to design mode.
+                if (edit.Item2 != 1 || edit.Item3.IndexOf('\n') >= 0 || edit.Item3.Length == 0)
+                    throw new InvalidOperationException("This edit will synchronize when VBA returns to design mode.");
+                var beforeDeclarations = EditorLanguageIndex.Build(new[] { new EditorSource { Module = ModuleName, Text = expected } });
+                var afterDeclarations = EditorLanguageIndex.Build(new[] { new EditorSource { Module = ModuleName, Text = text } });
+                if (!beforeDeclarations.Select(s => s.Declaration).SequenceEqual(afterDeclarations.Select(s => s.Declaration)))
+                    throw new InvalidOperationException("Declaration changes will synchronize when VBA returns to design mode.");
+            }
+            else if (TryRewriteAttributedDeclaration(expected, text, edit, out string rewritten)) return rewritten;
             GuardProcedureAttributes(expected, edit);
             try
             {

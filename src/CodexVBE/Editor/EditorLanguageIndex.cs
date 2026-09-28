@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -22,6 +22,7 @@ namespace CodexVBE
         public bool Private { get; set; }
         public bool Conditional { get; set; }
         public bool External { get; set; }
+        public string Library { get; set; }
         public int Line { get; set; }
         public int EndLine { get; set; }
         public int Column { get; set; }

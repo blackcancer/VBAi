@@ -1,4 +1,4 @@
-namespace CodexVBE.Tests.Unit
+﻿namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections;
@@ -194,8 +194,10 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        public sealed class FakeCodeWindow { public int FocusCount { get; private set; } public void SetFocus() { FocusCount++; } }
         public sealed class FakePane
         {
+            public FakeCodeWindow Window { get; } = new FakeCodeWindow();
             public FakeModule CodeModule { get; set; }
             public int ShowCount { get; private set; }
             public bool FailGetSelection { get; set; }

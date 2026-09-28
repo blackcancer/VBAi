@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Linq;
 using System.Threading;
@@ -9,29 +9,50 @@ namespace CodexVBE
     internal sealed partial class ModernEditorWindow
     {
         private int lastDebugMode = -1;
-        private string lastDebugDocument;
+        private string lastDebugDocument, lastDebugPosition;
+        private int lastExecutionLine, lastExecutionVersion;
+        private string DebugPosition(EditorVbeModule native)
+        {
+            dynamic pane = ((dynamic)native.Vbe).ActiveCodePane;
+            if (pane == null) return "";
+            int a = 0, b = 0, c = 0, d = 0; pane.GetSelection(ref a, ref b, ref c, ref d);
+            return (string)pane.CodeModule.Parent.Name + ":" + a + ":" + b + ":" + c + ":" + d;
+        }
         private async Task ObserveDebugMode()
         {
             if (busy || Current == null || !(Current.Module is EditorVbeModule native)) return;
             int mode = (int)((dynamic)native.Project).Mode;
-            if (lastDebugMode == mode && lastDebugDocument == Current.Id) return;
-            lastDebugMode = mode; lastDebugDocument = Current.Id;
             if (mode != 1)
-            { foreach (var doc in documents.Values.ToArray()) await Script("execution", doc.Id, 0); return; }
-            if (!Current.Dirty && !Current.Conflict)
-                await EditorCommand(new EditorMessage { id = Current.Id, version = versions[Current.Id], name = "show_next_statement" });
+            {
+                if (lastDebugMode != mode) foreach (var doc in documents.Values.ToArray()) await Script("execution", doc.Id, 0, false);
+                lastDebugMode = mode; lastDebugPosition = null; return;
+            }
+            string position = DebugPosition(native);
+            if (lastDebugMode == mode && lastDebugPosition == position)
+            {
+                if (lastDebugDocument != null && documents.TryGetValue(lastDebugDocument, out var doc) &&
+                    !doc.Dirty && !doc.Conflict && lastExecutionVersion != versions[doc.Id])
+                { await Script("execution", doc.Id, lastExecutionLine, false); lastExecutionVersion = versions[doc.Id]; }
+                return;
+            }
+            await EditorCommand(new EditorMessage { id = Current.Id, version = versions[Current.Id], name = "show_next_statement" });
+            lastDebugMode = mode; lastDebugPosition = DebugPosition(native);
         }
         private async Task EditorCommand(EditorMessage message)
         {
-            if (busy || !documents.TryGetValue(message.id ?? "", out var document) || !(document.Module is EditorVbeModule native)) return;
-            await CaptureDocuments();
-            if (versions[document.Id] != message.version) throw new InvalidOperationException("The editor changed before the command. Retry at the current location.");
-            await ProcessDocuments(true);
-            if (document.Dirty || document.Conflict) throw new InvalidOperationException("Synchronize or resolve the draft before compiling or debugging.");
-            if (message.name != "compile" && versions[document.Id] != message.version) throw new InvalidOperationException("VBA reformatted the source. Retry the command at its current position.");
+            while (busy && !closing && !IsDisposed) await Task.Delay(15);
+            if (closing || IsDisposed || !documents.TryGetValue(message.id ?? "", out var document) || !(document.Module is EditorVbeModule native)) return;
             busy = true;
             try
             {
+                bool observation = message.name == "show_next_statement";
+                await CaptureDocuments();
+                if (!observation)
+                {
+                    if (versions[document.Id] != message.version) throw new InvalidOperationException("The editor changed before the command. Retry at the current location.");
+                    await ProcessDocumentsCore(true);
+                    if (document.Dirty || document.Conflict) throw new InvalidOperationException("Synchronize or resolve the draft before compiling or debugging.");
+                }
                 await Task.Yield(); // Native commands must never execute inside a WebView callback.
                 var debugger = new VbeDebug(native.Vbe);
                 int mode = (int)((dynamic)native.Project).Mode;
@@ -77,19 +98,23 @@ namespace CodexVBE
                     pane.GetSelection(ref line, ref column, ref endLine, ref endColumn);
                     var target = native.Sibling((string)pane.CodeModule.Parent.Name);
                     if (!target.IsComponent((object)pane.CodeModule.Parent)) throw new InvalidOperationException("The execution selection belongs to a different project.");
-                    var doc = await OpenModule(target);
-                    foreach (var item in documents.Values) await Script("execution", item.Id, item == doc ? line : 0);
+                    var doc = documents.Values.FirstOrDefault(item => item.Module is EditorVbeModule module && module.IsComponent(target.Component));
+                    if (doc == null || doc != Current) doc = await OpenModule(target);
+                    lastDebugDocument = doc.Id; lastExecutionLine = line; lastExecutionVersion = versions[doc.Id];
+                    foreach (var item in documents.Values.ToArray()) await Script("execution", item.Id, item == doc && !doc.Dirty && !doc.Conflict ? line : 0);
                 }
                 else
                 {
                     if (!new[] { "toggle_breakpoint", "step_into", "step_over", "step_out" }.Contains(message.name)) throw new ArgumentException("Unknown editor command.");
                     object control = null;
+                    native.ShowNative(Math.Max(1, message.line), 1);
+                    ((dynamic)native.Vbe).ActiveCodePane.Window.SetFocus();
                     // Search the native command inventory, never emit global keyboard shortcuts.
                     for (int offset = 0; offset < 2000 && control == null; offset += 200)
                     {
                         var page = ((IEnumerable)debugger.ListCommands(null, offset, 200)).Cast<object>().ToArray();
                         foreach (dynamic item in page)
-                            if ((bool)item.Enabled && VbeDebug.IsAllowed(message.name, (string)item.Caption, mode)) { control = item; break; }
+                            if ((bool)item.Enabled && (message.name != "toggle_breakpoint" || (int)item.Id == 51) && VbeDebug.IsAllowed(message.name, (string)item.Caption, mode)) { control = item; break; }
                         if (page.Length < 200) break;
                     }
                     if (control == null) throw new InvalidOperationException("The native debug command is unavailable in the current mode.");
@@ -100,7 +125,7 @@ namespace CodexVBE
                     if (message.name == "toggle_breakpoint") await Script("breakpointRequested", document.Id, message.line);
                     else { lastDebugMode = -1; foreach (var item in documents.Values) await Script("execution", item.Id, 0); }
                 }
-                Activate();
+                if (!observation) { BringToFront(); Browser?.Focus(); }
             }
             finally { busy = false; }
         }

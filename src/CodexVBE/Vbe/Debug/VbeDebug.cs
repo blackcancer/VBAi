@@ -427,6 +427,7 @@ namespace CodexVBE
             dynamic pane = module.CodePane;
             pane.Show();
             pane.SetSelection(request.StartLine, 1, request.StartLine, 1);
+            pane.Window.SetFocus();
             dynamic activePane = vbe.ActiveCodePane;
             if (activePane == null || !SameComObject(pane, activePane))
                 throw new InvalidOperationException("The requested code pane is not active in the VBE.");
@@ -660,9 +661,11 @@ namespace CodexVBE
             {
                 case "toggle_breakpoint":
                     return (mode == 1 || mode == 2) &&
-                        (label.IndexOf("breakpoint", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                         label.IndexOf("point d'arr", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                         label.IndexOf("point d’arrêt", StringComparison.OrdinalIgnoreCase) >= 0);
+                        (label.Equals("Toggle Breakpoint", StringComparison.OrdinalIgnoreCase) ||
+                         label.Equals("Basculer le point d'arrêt", StringComparison.OrdinalIgnoreCase) ||
+                         label.Equals("Basculer le point d’arrêt", StringComparison.OrdinalIgnoreCase) ||
+                         label.Equals("Point d'arrêt", StringComparison.OrdinalIgnoreCase) ||
+                         label.Equals("Point d’arrêt", StringComparison.OrdinalIgnoreCase));
                 case "run":
                     return mode == 2 &&
                         (label.StartsWith("Run Sub", StringComparison.OrdinalIgnoreCase) ||

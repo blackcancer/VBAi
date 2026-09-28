@@ -1,4 +1,4 @@
-namespace CodexVBE.Tests.Unit
+﻿namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections;
@@ -32,6 +32,34 @@ namespace CodexVBE.Tests.Unit
                 window.PrepareEditorAction("/corriger");
                 Assert.AreEqual("/corriger ", prompt.GetType().GetProperty("Text").GetValue(prompt, null));
                 Assert.AreEqual(ChatMode.Agent, Get<ComboBox>(window, "modePicker").SelectedItem);
+            }
+        }
+
+        [STATestMethod]
+        public void MonacoActionsAttachDraftAndChooseDiscussionOrAgentMode()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var fixture = new CodexVBE.Tests.Infrastructure.EditorFixture())
+            using (var editor = new ModernEditorWindow())
+            {
+                var document = editor.OpenModule(fixture).GetAwaiter().GetResult();
+                runtime.Session.ModernEditor = show => editor;
+                using (var window = new ChatWindow(runtime.Session))
+                {
+                    foreach (string action in new[] { "/expliquer", "/corriger", "/refactoriser" })
+                    {
+                        window.PrepareMonacoAction(action, new ChatAttachment { Project = @"C:\Temp\P.xlsm", Module = "M", Label = "Monaco selection", Text = "Debug.Print 1",
+                            EditorDocumentId = document.Id, Sha256 = EditorDocument.Hash(document.Text), StartLine = 3 });
+                        Assert.AreEqual(action + " ", Get<System.Windows.Controls.TextBox>(window, "prompt").Text);
+                        Assert.AreEqual(action == "/expliquer" ? ChatMode.Discussion : ChatMode.Agent, Get<ComboBox>(window, "modePicker").SelectedItem);
+                        var attachments = (ChatAttachment[])Call(window, "PrepareAttachments", action);
+                        Assert.AreEqual(1, attachments.Length);
+                        Assert.AreEqual(document.Id, attachments[0].EditorDocumentId);
+                        Assert.AreEqual("Debug.Print 1", attachments[0].Text);
+                    }
+                    window.PrepareMonacoAction("/corriger", new ChatAttachment { Project = "Other", Text = "wrong", Label = "wrong" });
+                    Assert.AreEqual("/refactoriser ", Get<System.Windows.Controls.TextBox>(window, "prompt").Text);
+                }
             }
         }
 

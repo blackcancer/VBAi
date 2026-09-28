@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -10,6 +10,8 @@ namespace CodexVBE.Tests.Integration
     [TestClass, TestCategory("MonacoExcel")]
     public sealed class MonacoExcelTests
     {
+        [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr window);
+        [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
         [STATestMethod]
         public void DisposableExcelModuleRoundTripsRealMonacoChangesAndDetectsConcurrentNativeEdits()
         {
@@ -51,6 +53,46 @@ namespace CodexVBE.Tests.Integration
                     MonacoRuntimeTests.Wait(window.Script("command", "vbai.compile"));
                     MonacoRuntimeTests.Wait(() => UiInvoke.Field<System.Windows.Forms.Label>(window, "status").Text == UiText.Get("Compilation finished: no native diagnostics observed. Macros were not executed."));
                     Assert.AreEqual(2, (int)((dynamic)project).Mode, "Compilation must leave the project in design mode.");
+                    string assistantCommand = null; ChatAttachment assistantAttachment = null;
+                    window.AssistantAction += (command, attachment) => { assistantCommand = command; assistantAttachment = attachment; };
+                    foreach (string action in new[] { "expliquer", "corriger", "refactoriser" })
+                    {
+                        assistantCommand = null;
+                        MonacoRuntimeTests.Wait(window.Script("command", "vbai." + action));
+                        MonacoRuntimeTests.Wait(() => assistantCommand != null);
+                        Assert.AreEqual("/" + action, assistantCommand);
+                        Assert.AreEqual(doc.Id, assistantAttachment.EditorDocumentId);
+                        Assert.AreEqual(adapter.ProjectName, assistantAttachment.Project);
+                        StringAssert.Contains(assistantAttachment.Text, "Debug.Print 1");
+                    }
+                    // A Monaco toggle must stop actual VBA execution on the requested line.
+                    MonacoRuntimeTests.Wait(window.Script("reveal", 3, 1));
+                    window.Activate(); window.Browser.Focus();
+                    SetForegroundWindow(window.Handle);
+                    MonacoRuntimeTests.Wait(() => window.ContainsFocus);
+                    bool receivedF9 = false; window.Browser.KeyDown += (sender, key) => { if (key.KeyCode == System.Windows.Forms.Keys.F9) receivedF9 = true; };
+                    System.Windows.Forms.SendKeys.SendWait("{F9}");
+                    Console.WriteLine("F9: delivered=" + receivedF9 + ", foreground=" + GetForegroundWindow() + ", editor=" + window.Handle);
+                    MonacoRuntimeTests.Wait(() => MonacoRuntimeTests.Wait(window.Script("testInfo")).Contains("\"pendingBreakpoints\":1"));
+                    MonacoRuntimeTests.Wait(() => !UiInvoke.Field<bool>(window, "busy"));
+                    adapter.ShowNative(2, 1);
+                    excel.VBE.ActiveCodePane.Window.SetFocus();
+                    excel.VBE.CommandBars.FindControl(1, 186).Execute();
+                    MonacoRuntimeTests.Wait(() => (int)((dynamic)project).Mode == 1);
+                    int breakLine = 0, breakColumn = 0, breakEnd = 0, breakEndColumn = 0;
+                    excel.VBE.ActiveCodePane.GetSelection(ref breakLine, ref breakColumn, ref breakEnd, ref breakEndColumn);
+                    Assert.AreEqual(3, breakLine, "Execution must hit the breakpoint requested from Monaco.");
+                    // Click the real rendered gutter through Chromium's input dispatcher.
+                    string pointJson = MonacoRuntimeTests.Wait(window.Browser.CoreWebView2.ExecuteScriptAsync("(() => { const margin=document.querySelector('.glyph-margin').getBoundingClientRect(); const line=document.querySelectorAll('.view-line')[2].getBoundingClientRect(); return {x:margin.left+margin.width/2,y:line.top+line.height/2}; })()"));
+                    var serializer = new System.Web.Script.Serialization.JavaScriptSerializer();
+                    var point = serializer.Deserialize<System.Collections.Generic.Dictionary<string, object>>(pointJson);
+                    foreach (string mouseType in new[] { "mousePressed", "mouseReleased" })
+                        MonacoRuntimeTests.Wait(window.Browser.CoreWebView2.CallDevToolsProtocolMethodAsync("Input.dispatchMouseEvent", serializer.Serialize(new { type = mouseType, x = point["x"], y = point["y"], button = "left", clickCount = 1 })));
+
+                    MonacoRuntimeTests.Wait(() => MonacoRuntimeTests.Wait(window.Script("testInfo")).Contains("\"pendingBreakpoints\":0"));
+                    MonacoRuntimeTests.Wait(() => !UiInvoke.Field<bool>(window, "busy"));
+                    new VbeDebug(excel.VBE).ExecuteGlobalDebugCommand(new Request { Project = adapter.ProjectName, ExpectedMode = 1, Action = "reset" });
+                    MonacoRuntimeTests.Wait(() => (int)((dynamic)project).Mode == 2);
                     // Enter only our disposable Debug.Print fixture, then drive the Monaco debug actions.
                     adapter.ShowNative(3, 1);
                     dynamic step = null;
@@ -62,6 +104,13 @@ namespace CodexVBE.Tests.Integration
                     MonacoRuntimeTests.Wait(window.Script("command", "vbai.show_next_statement"));
                     MonacoRuntimeTests.Wait(() => MonacoRuntimeTests.Wait(window.Script("testInfo")).Contains("\"executionMarkers\":1"));
                     MonacoRuntimeTests.Wait(() => !UiInvoke.Field<bool>(window, "busy"));
+                    // A simple correction is propagated while paused, without resetting execution.
+                    var versions = UiInvoke.Field<System.Collections.Generic.Dictionary<string, int>>(window, "versions");
+                    MonacoRuntimeTests.Wait(window.Script("apply", doc.Id, versions[doc.Id], doc.Text.Replace("Debug.Print 1", "Debug.Print 2")));
+                    MonacoRuntimeTests.Wait(window.ProcessDocuments(true));
+                    StringAssert.Contains(adapter.Read(), "Debug.Print 2");
+                    Assert.IsFalse(doc.Dirty);
+                    Assert.AreEqual(1, (int)((dynamic)project).Mode);
                     Func<int> nativeLine = () => { int a = 0, b = 0, c = 0, d = 0; excel.VBE.ActiveCodePane.GetSelection(ref a, ref b, ref c, ref d); return a; };
                     foreach (string action in new[] { "vbai.step_into", "vbai.step_over" })
                     {
@@ -110,7 +159,7 @@ namespace CodexVBE.Tests.Integration
                     MonacoRuntimeTests.Wait(window.ProcessDocuments(false));
                     Assert.AreSame(attributedDocument, MonacoRuntimeTests.Wait(window.OpenModule(new EditorVbeModule(excel.VBE, project, special))));
                     StringAssert.Contains(attributedDocument.Text, "Optional ByVal count As Long = 1");
-                    UiInvoke.Field<System.Windows.Forms.Button>(window, "closeModule").PerformClick();
+                    UiInvoke.Call(typeof(ModernEditorWindow), "CloseModuleClick", window, window, EventArgs.Empty);
                     MonacoRuntimeTests.Wait(() => !System.Linq.Enumerable.Any(window.Documents, item => item.Id == attributedDocument.Id));
                     MonacoRuntimeTests.Wait(window.OpenModule(adapter));
                     File.Delete(verifyExport); special.Export(verifyExport);
