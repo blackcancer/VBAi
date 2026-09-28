@@ -25,7 +25,7 @@ namespace CodexVBE
         private readonly List<System.Drawing.Bitmap> menuImages = new List<System.Drawing.Bitmap>();
         /// <summary>Fonction d’abonnement aux événements COM des boutons.</summary>
         private readonly Action<object, Guid, int, Delegate> subscribe;
-        /// <summary>Fonction d’abonnement aux événements COM des boutons.</summary>
+        /// <summary>Fonction de désabonnement des événements COM des boutons.</summary>
         private readonly Action<object, Guid, int, Delegate> unsubscribe;
         /// <summary>Fonction appliquant l’icône associée à la fenêtre.</summary>
         private readonly Action<object, Type> applyIcon;
@@ -58,12 +58,9 @@ namespace CodexVBE
         /// <param name="unsubscribe">Fonction de désabonnement COM, ou valeur par défaut si null.</param>
         /// <param name="applyIcon">Fonction d’application d’icône, ou valeur par défaut si null.</param>
         internal VbeMenu(object vbe, Action showAssistant, Action showSettings, Action showGitHub,
-        /// <summary>Fonction d’abonnement aux événements COM des boutons.</summary>
             Action<string> editorAction, Action<object, Guid, int, Delegate> subscribe,
-        /// <summary>Fonction d’abonnement aux événements COM des boutons.</summary>
             Action<object, Guid, int, Delegate> unsubscribe, Action<object, Type> applyIcon)
         {
-        /// <summary>Fonction d’abonnement aux événements COM des boutons.</summary>
             this.subscribe = subscribe ?? new Action<object, Guid, int, Delegate>(ComEventsHelper.Combine);
             this.unsubscribe = unsubscribe ?? ((button, iid, dispid, handler) =>
                 ComEventsHelper.Remove(button, iid, dispid, handler));

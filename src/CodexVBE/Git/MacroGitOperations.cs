@@ -9,15 +9,31 @@ using System.Web.Script.Serialization;
 
 namespace CodexVBE
 {
+    /// <summary>Coordonne les opérations Git avec l’état courant du projet VBA et son dépôt local.</summary>
     internal sealed class MacroGitOperations : IDisposable
     {
+        /// <summary>Dépôt Git associé à la portée du document.</summary>
         internal readonly MacroGitRepository Repository;
+        /// <summary>Accès au projet VBE utilisé pour capturer et appliquer les sources.</summary>
         private readonly VbaGitProject project;
+        /// <summary>Verrou exclusif conservé pendant la session d’opérations.</summary>
         private FileStream cacheLock;
+        /// <summary>Callback facultatif appelé avant l’import pour présenter son résumé.</summary>
         internal Action<string> ImportPreview;
+        /// <summary>Résout le répertoire de cache de la portée, notamment pour isoler les tests.</summary>
         internal static Func<string, string> CacheDirectory = MacroGitRepository.ScopeDirectory;
+        /// <summary>Crée un coordinateur pour le projet et le dépôt fournis.</summary>
+        /// <param name="project">Projet VBA à lire ou modifier.</param>
+        /// <param name="repository">Dépôt associé à ce projet.</param>
         internal MacroGitOperations(VbaGitProject project, MacroGitRepository repository) { this.project = project; Repository = repository; }
 
+        /// <summary>Ouvre le dépôt lié à la portée et conserve son verrou de session.</summary>
+        /// <param name="project">Projet VBA concerné.</param>
+        /// <param name="scope">Identifiant de portée du document.</param>
+        /// <param name="account">Compte GitHub à utiliser pour les opérations distantes.</param>
+        /// <returns>Coordinateur prêt à exécuter des opérations sur le dépôt lié.</returns>
+        /// <exception cref="InvalidOperationException">Aucun lien de dépôt valide n’existe pour cette portée.</exception>
+        /// <exception cref="IOException">Le verrou de session ne peut pas être acquis.</exception>
         internal static MacroGitOperations Open(VbaGitProject project, string scope, string account)
         {
             string cache = CacheDirectory(scope);
@@ -35,8 +51,12 @@ namespace CodexVBE
             }
             catch { held.Dispose(); throw; }
         }
+        /// <summary>Libère le verrou de session détenu par ce coordinateur.</summary>
         public void Dispose() { cacheLock?.Dispose(); }
 
+        /// <summary>Calcule une empreinte combinant les sources capturées et les références Git en cours.</summary>
+        /// <param name="snapshot">État des sources du projet utilisé pour calculer la révision.</param>
+        /// <returns>Empreinte SHA-256 hexadécimale de l’état combiné.</returns>
         internal string Revision(VbaGitSnapshot snapshot)
         {
             using (var hash = SHA256.Create())
@@ -53,6 +73,8 @@ namespace CodexVBE
                 return BitConverter.ToString(hash.Hash).Replace("-", "").ToLowerInvariant();
             }
         }
+        /// <summary>Capture le projet et renvoie son état, ses changements, branches, points de contrôle et fusion.</summary>
+        /// <returns>Objet de statut destiné au protocole de l’agent.</returns>
         internal async Task<object> StatusAsync()
         {
             var live = project.Capture();
@@ -64,17 +86,38 @@ namespace CodexVBE
                 Synchronization = Repository.SynchronizationStatus()
             });
         }
+        /// <summary>Récupère le contenu des deux côtés d’un conflit pour le chemin indiqué.</summary>
+        /// <param name="path">Chemin du fichier en conflit.</param>
+        /// <returns>Tâche produisant le contenu du conflit.</returns>
         internal Task<GitConflictContent> ConflictAsync(string path) { return Task.Run(() => Repository.ConflictContent(path)); }
+        /// <summary>Refuse les opérations incompatibles avec une récupération ou fusion en attente.</summary>
+        /// <param name="allowMerge"><see langword="true"/> pour autoriser les actions de progression de fusion.</param>
+        /// <exception cref="InvalidOperationException">Une récupération interrompue doit être restaurée ou une fusion doit être terminée.</exception>
         private void Ready(bool allowMerge = false)
         {
             if (Repository.RecoveryPending) throw new InvalidOperationException(UiText.Get("Restore the interrupted import before continuing."));
             if (!allowMerge && Repository.PendingMerge != null) throw new InvalidOperationException(UiText.Get("Complete or abort the current merge."));
         }
+        /// <summary>Vérifie que les sources locales correspondent à la référence de base du dépôt.</summary>
+        /// <param name="live">Instantané courant du projet.</param>
+        /// <exception cref="InvalidOperationException">Le dépôt n’a pas de base ou des changements locaux sont présents.</exception>
         private void Clean(VbaGitSnapshot live)
         {
             var baseline = Repository.Read(Repository.Resolve(MacroGitRepository.Baseline));
             if (baseline == null || !live.SameAs(baseline)) throw new InvalidOperationException(UiText.Get("Local changes exist. Commit them, or create a checkpoint and restore a committed state before switching branches or merging."));
         }
+        /// <summary>Exécute une action Git après vérification de l’état attendu du projet.</summary>
+        /// <param name="action">Identifiant de l’action à exécuter.</param>
+        /// <param name="expectedState">Empreinte d’état attendue, ou <see langword="null"/> si aucune n’est fournie.</param>
+        /// <param name="name">Nom de branche, point de contrôle ou message de l’action.</param>
+        /// <param name="text">Texte complémentaire, tel qu’un message de commit ou une résolution.</param>
+        /// <param name="choice">Choix de résolution fourni pour une action de fusion.</param>
+        /// <param name="path">Chemin du fichier concerné, le cas échéant.</param>
+        /// <param name="modules">Modules sélectionnés pour un commit partiel.</param>
+        /// <param name="references"><see langword="true"/> pour inclure les références du projet dans un commit partiel.</param>
+        /// <returns>Statut actualisé du dépôt ou résultat spécifique à l’action.</returns>
+        /// <exception cref="ArgumentException">L’action ou ses arguments obligatoires sont invalides.</exception>
+        /// <exception cref="InvalidOperationException">L’état a changé ou les préconditions de l’action ne sont pas satisfaites.</exception>
         internal async Task<object> ExecuteAsync(string action, string expectedState = null, string name = null, string text = null, string choice = null, string path = null, string[] modules = null, bool references = false)
         {
             var live = project.Capture();
@@ -146,6 +189,12 @@ namespace CodexVBE
             }
             return await StatusAsync();
         }
+        /// <summary>Applique un instantané au projet après sauvegarde et vérifie l’état importé.</summary>
+        /// <param name="target">Instantané à importer.</param>
+        /// <param name="expected">Instantané courant attendu avant mutation.</param>
+        /// <param name="rollback"><see langword="true"/> si l’import restaure une récupération préparée.</param>
+        /// <returns>Tâche terminée après l’application et l’enregistrement de l’état relu.</returns>
+        /// <exception cref="InvalidOperationException">La cible est vide ou le projet ne correspond plus à l’état attendu.</exception>
         private async Task ImportAsync(VbaGitSnapshot target, VbaGitSnapshot expected, bool rollback = false)
         {
             if (target == null) throw new InvalidOperationException(UiText.Get("The target contains no VBA sources."));

@@ -139,6 +139,7 @@ namespace CodexVBE
     /// <summary>Appelle l’API GitHub avec les identifiants du gestionnaire GCM de l’utilisateur.</summary>
     internal sealed class GitHubApi : IDisposable
     {
+        /// <summary>Démarre un processus de saisie d’identifiants sans préambule sur son entrée standard.</summary>
         internal static Func<Process, bool> StartCredentialProcess = ProcessInput.StartWithoutPreamble;
         /// <summary>Client HTTP utilisé pour les requêtes API.</summary>
         private readonly HttpClient client;

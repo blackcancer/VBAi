@@ -31,7 +31,9 @@ namespace CodexVBE
     /// <summary>Transport app-server qui lance le client CLI Codex et échange des lignes UTF-8.</summary>
     internal sealed class CodexProcessTransport : ICodexAppServerTransport
     {
+        /// <summary>Vérifie la présence du binaire Codex installé à son emplacement local.</summary>
         internal Func<string, bool> InstalledExists = File.Exists;
+        /// <summary>Démarre le processus Codex sans préambule UTF-8 parasite sur l’entrée standard.</summary>
         internal Func<Process, bool> StartProcess = ProcessInput.StartWithoutPreamble;
         /// <summary>Processus CLI Codex détenu par le transport.</summary>
         private Process process;
@@ -98,6 +100,7 @@ namespace CodexVBE
         private readonly SynchronizationContext ui;
         /// <summary>Outils VBE exécutés à la demande du processus Codex.</summary>
         private readonly LlmVbeTools tools;
+        /// <summary>Exécute un outil VBE appelé par le serveur Codex avec son nom et ses arguments JSON.</summary>
         internal Func<string, string, Task<string>> InvokeTool;
         /// <summary>Callback qui signale les étapes de connexion et les appels d’outils.</summary>
         private readonly Action<string> progress;

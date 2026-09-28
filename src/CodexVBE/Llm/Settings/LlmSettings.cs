@@ -10,6 +10,7 @@ namespace CodexVBE
     /// <summary>Stocke les fournisseurs, modèles, points de terminaison et secrets de configuration LLM.</summary>
     internal sealed class LlmSettings
     {
+        /// <summary>Remplacement facultatif du chemin de stockage, principalement utilisé par les tests isolés.</summary>
         internal static string StoragePathOverride;
         /// <summary>Obtient ou définit le fournisseur sélectionné par défaut.</summary>
         /// <value>Nom du fournisseur, « Codex » par défaut.</value>
