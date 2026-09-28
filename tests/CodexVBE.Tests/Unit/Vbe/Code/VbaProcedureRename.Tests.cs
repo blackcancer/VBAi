@@ -10,6 +10,29 @@ namespace CodexVBE.Tests.Unit
     public sealed class VbaProcedureRenameTests
     {
         [TestMethod]
+        public void ProjectComponentCollisionsAndExactDeclarationPositionsAreRejected()
+        {
+            foreach (string scenario in new[] { "missing-sha", "query-project", "new-project", "query-module", "new-module", "wrong-line", "same-name-wrong-column" })
+            {
+                string project = "P";
+                var request = ProcedureRenameMatrix.Request();
+                var modules = ProcedureRenameMatrix.Project();
+                if (scenario == "missing-sha") request.ExpectedSha256 = null;
+                if (scenario == "query-project") project = request.Query;
+                if (scenario == "new-project") project = request.NewName;
+                if (scenario == "query-module" || scenario == "new-module")
+                    modules = modules.Concat(new[] { new VbaProcedureRename.ModuleSnapshot(scenario == "query-module" ? request.Query : request.NewName, 1, "") }).ToArray();
+                if (scenario == "wrong-line") request.StartLine = 1;
+                if (scenario == "same-name-wrong-column") request.StartColumn++;
+                Assert.ThrowsException<InvalidOperationException>(() => VbaProcedureRename.Prepare(project, modules, request), scenario);
+            }
+            string source = "Option Explicit\nPublic Function Calc() As Long\nIf True Then Calc = 1 Else Calc = 2\nEnd Function";
+            var plan = VbaProcedureRename.Prepare("P", new[] { new VbaProcedureRename.ModuleSnapshot("MathModule", 1, source) }, ProcedureRenameMatrix.Request(source));
+            StringAssert.Contains(plan.Edits[0].After, "Then Compute = 1 Else Compute = 2");
+            plan = VbaProcedureRename.Prepare("P", ProcedureRenameMatrix.Project(caller: "Option Explicit\nPublic Sub Caller()\nP.MathModule.Calc(1)\nEnd Sub"), ProcedureRenameMatrix.Request());
+            StringAssert.Contains(plan.Edits.Single(edit => edit.Module == "Caller").After, "P.MathModule.Compute(1)");
+        }
+        [TestMethod]
         public void CompleteCatalogueAndSignatureFaultMatrixNeverProducesEditablePlan()
         {
             var request = ProcedureRenameMatrix.Request();
@@ -23,7 +46,7 @@ namespace CodexVBE.Tests.Unit
                 Assert.ThrowsException<InvalidOperationException>(() => VbaProcedureRename.Prepare("P", new[] { new VbaProcedureRename.ModuleSnapshot("MathModule", 1, ProcedureRenameMatrix.Target), new VbaProcedureRename.ModuleSnapshot("Other", 2, "Option Explicit\n" + signature) }, request), signature);
             foreach (string source in new[] { "Option Explicit\nFriend Function Calc()\nEnd Function", "Option Explicit\nPublic Property Get Calc()\nEnd Property", "Option Explicit\nPublic Sub Calc()\nCalc = 1\nEnd Sub", "Option Explicit\nPublic Sub Calc()\nDebug.Print Calc\nEnd Sub" })
                 Assert.ThrowsException<InvalidOperationException>(() => VbaProcedureRename.Prepare("P", new[] { new VbaProcedureRename.ModuleSnapshot("MathModule", 1, source) }, ProcedureRenameMatrix.Request(source)), source);
-            foreach (string caller in new[] { "MathModule.Calc = 1", "Calc = 1", "obj.P.MathModule.Calc(1)", "Other.P.MathModule.Calc(1)" })
+            foreach (string caller in new[] { "MathModule.Calc = 1", "Calc = 1", ".MathModule.Calc(1)", "obj.P.MathModule.Calc(1)", "Other.P.MathModule.Calc(1)" })
                 Assert.ThrowsException<InvalidOperationException>(() => VbaProcedureRename.Prepare("P", new[] { new VbaProcedureRename.ModuleSnapshot("MathModule", 1, ProcedureRenameMatrix.Target), new VbaProcedureRename.ModuleSnapshot("Caller", 1, "Option Explicit\nPublic Sub Caller()\n" + caller + "\nEnd Sub") }, request), caller);
         }
 

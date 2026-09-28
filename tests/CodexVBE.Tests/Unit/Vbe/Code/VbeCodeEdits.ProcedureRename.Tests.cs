@@ -28,6 +28,9 @@ namespace CodexVBE.Tests.Unit
             fixture = new ProcedureRenameWorkflowFixture(); int reads = 0;
             fixture.Override = request => request.Command == "project_properties" ? Response.Success(new { Project = ++reads == 1 ? "P" : "Different", Mode = 2, Version = "v" }) : null;
             Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.PreviewProcedureRename(ProcedureRenameMatrix.Request())); Assert.AreEqual(0, fixture.Writes);
+            fixture = new ProcedureRenameWorkflowFixture(); reads = 0;
+            fixture.Override = request => request.Command == "project_properties" ? Response.Success(new { Project = "P", Mode = 2, Version = ++reads == 1 ? "v1" : "v2" }) : null;
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.PreviewProcedureRename(ProcedureRenameMatrix.Request())); Assert.AreEqual(0, fixture.Writes);
             fixture = new ProcedureRenameWorkflowFixture(); var apply = fixture.PreviewRequest();
             reads = 0;
             fixture.Override = request => { if (request.Command == "project_properties" && ++reads == 3) fixture.Mode = 1; return null; };
