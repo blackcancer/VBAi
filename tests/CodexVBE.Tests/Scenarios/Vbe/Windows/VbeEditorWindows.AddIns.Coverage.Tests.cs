@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
     [TestClass]
+    [TestCategory("Unit")]
     public sealed class VbeAddInReadbackTests
     {
         public sealed class Host { public List<Plugin> AddIns { get; } = new List<Plugin>(); }

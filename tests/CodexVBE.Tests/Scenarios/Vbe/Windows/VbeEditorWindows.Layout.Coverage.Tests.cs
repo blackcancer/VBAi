@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
     [TestClass]
+    [TestCategory("Unit")]
     public sealed class VbeWindowLayoutCoverageTests
     {
         public sealed class Host { public List<object> Windows { get; } = new List<object>(); }

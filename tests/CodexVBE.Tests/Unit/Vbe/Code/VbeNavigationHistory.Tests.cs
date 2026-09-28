@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
     [TestClass]
+    [TestCategory("Unit")]
     public sealed class VbeNavigationHistoryTests
     {
         public sealed class NavigationSource

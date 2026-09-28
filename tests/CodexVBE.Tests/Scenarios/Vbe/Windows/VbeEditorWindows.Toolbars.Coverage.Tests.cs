@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
     [TestClass]
+    [TestCategory("Unit")]
     public sealed class VbeToolbarCoverageTests
     {
         public sealed class Host { public List<object> CommandBars { get; } = new List<object>(); }

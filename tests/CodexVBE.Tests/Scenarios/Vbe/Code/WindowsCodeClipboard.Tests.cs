@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
     [TestClass]
+    [TestCategory("Unit")]
     public sealed class WindowsCodeClipboardTests
     {
         [STATestMethod]

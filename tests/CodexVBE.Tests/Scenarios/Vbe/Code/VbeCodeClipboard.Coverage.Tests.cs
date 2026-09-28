@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
     [TestClass]
+    [TestCategory("Unit")]
     public sealed class VbeCodeClipboardFaultTests
     {
         public sealed class Source { public string Code { get; set; } = "abc\r\ndef"; }
