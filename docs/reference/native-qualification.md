@@ -1,6 +1,24 @@
 # Qualification native des fonctions VBE
 
-État du 28 septembre 2026. Les preuves ci-dessous portent sur des scénarios précis ; elles ne transforment pas les fonctions absentes ou bornées de [functional-extensions.md](functional-extensions.md) en une couverture universelle. Le thème natif VBE reste exclu.
+État du 29 septembre 2026. Les preuves ci-dessous portent sur des scénarios précis ; elles ne transforment pas les fonctions absentes ou bornées de [functional-extensions.md](functional-extensions.md) en une couverture universelle. Le thème natif VBE reste exclu.
+
+## Monaco : références dynamiques, IntelliSense et édition automatique
+
+Le lot final `artifacts/monaco-language/native-final-results/native.trx` compte **10 réussis, 0 échec, 0 ignoré** : le parcours Excel réel, les huit scénarios du renderer WebView2 et la matrice JavaScript appelée par VSTest. Cette dernière comprend **57 scénarios réussis** sur les sources réellement utilisées pour construire le bundle.
+
+Excel, son VBE et la fenêtre Monaco du parcours sont visibles. Une instance et un classeur jetables sont créés puis fermés ; une session Excel existante interdit le démarrage. Les services sont exercés par les API COM et le pont JavaScript de Monaco, sans raccourci global ni coordonnées. La minuterie de synchronisation est arrêtée après son démarrage effectif pour isoler l’indexation des écritures de code.
+
+| Surface | Contrôles natifs réussis |
+| --- | --- |
+| Objets Excel | `Application.Workbooks`, `WorksheetFunction`, `Worksheet.Range("A1").Value2`, `.Font.Bold`, `.Font.Size` |
+| Collections et chaînes | `Workbook.Worksheets.Count/Item`, `Application.Workbooks(1).Names.Add/Count` |
+| Fonctions VBA | `VBA.Strings.Left/Left$`, `VBA.Math.Abs/Sqr`, fonctions globales `MsgBox`, `Left`, `Abs`, constante Excel `xlUp` |
+| Référence Office | Ajout explicite de la bibliothèque installée, apparition de `msoTrue`, retrait et disparition sans changer la révision du module |
+| Référence Scripting | Ajout/retrait dynamique ; `Dictionary.Add`, paramètres typés et survol avec identité et chemin de bibliothèque |
+| Opérations intrinsèques | `Debug.Print` et son texte d’aide ; survol de `VBA.Strings.Left$` sous son nom VBA utilisable |
+| Édition | Création de `End Sub` et `Next i`, curseur dans le corps indenté, annulation, formatage de `If (condition) Then` et conservation des chaînes/commentaires |
+
+Le contenu du module natif est relu et reste identique au contenu initial. Aucune macro n’est exécutée ni sauvegardée par ce parcours. Les blocs supplémentaires, fermetures sur une même ligne, directives, continuations, commentaires, visibilité et changements de références sont contrôlés par la matrice JavaScript. Ces essais ne qualifient pas toutes les bibliothèques COM possibles ni la liaison tardive arbitraire ; les limites du résolveur sont décrites dans [l’éditeur Monaco](../modern-editor.md).
 
 ## PR #10 : démarrage Monaco, SOLIDWORKS et comptes connectés
 

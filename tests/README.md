@@ -73,6 +73,22 @@ Remove-Item Env:CODEXVBE_RUN_EXCEL_TESTS
 
 `ExcelVbeFixture` crée une instance Excel visible et un classeur temporaire, ouvre le VBE par `CommandBars.ExecuteMso("VisualBasic")`, puis appelle le tube `CodexVBE.<PID>`. Les tests vérifient le chargement du complément, le projet ciblé et sa sauvegarde. Ils ferment uniquement leur propre classeur et processus. L’installation du complément est un prérequis ; les tests ne changent pas AccessVBOM. Une compilation isolée ne remplace pas la DLL installée.
 
+### Services de langage Monaco dans Excel
+
+La matrice JavaScript est intégrée à VSTest par `MonacoLanguageScriptScenarios` et nécessite Node.js. Elle vérifie les références dynamiques, les membres, le survol, les signatures et les règles de blocs et de formatage :
+
+```powershell
+node --test tools/tests/Test-MonacoLanguage.mjs tests/CodexVBE.Tests/Infrastructure/Fixtures/Editor/MonacoEditing.Scenarios.mjs
+```
+
+Le parcours `MonacoLanguageExcelTests` ouvre Excel et le véritable WebView Monaco, vérifie les objets et collections Excel, les fonctions et alias VBA (`Left`/`Left$`), ajoute puis retire les références Office et Scripting, vérifie le survol, crée des blocs, annule et formate. Sa minuterie de synchronisation est arrêtée après l’initialisation pour vérifier que les services de langage ne modifient pas le module natif. Aucun fichier utilisateur ni macro n’est exécuté. Il refuse de démarrer si une session Excel existe déjà.
+
+```powershell
+$env:VBAI_EDITOR_LANGUAGE_EXCEL_TEST = '1'
+dotnet test tests/CodexVBE.Tests/CodexVBE.Tests.csproj --filter FullyQualifiedName~MonacoLanguageExcelTests
+Remove-Item Env:VBAI_EDITOR_LANGUAGE_EXCEL_TEST
+```
+
 ## SOLIDWORKS préchargé
 
 ```powershell

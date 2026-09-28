@@ -10,6 +10,10 @@ using FUNCFLAGS = System.Runtime.InteropServices.ComTypes.FUNCFLAGS;
 using INVOKEKIND = System.Runtime.InteropServices.ComTypes.INVOKEKIND;
 using IMPLTYPEFLAGS = System.Runtime.InteropServices.ComTypes.IMPLTYPEFLAGS;
 using TYPEKIND = System.Runtime.InteropServices.ComTypes.TYPEKIND;
+using ELEMDESC = System.Runtime.InteropServices.ComTypes.ELEMDESC;
+using PARAMFLAG = System.Runtime.InteropServices.ComTypes.PARAMFLAG;
+using VARDESC = System.Runtime.InteropServices.ComTypes.VARDESC;
+using VARFLAGS = System.Runtime.InteropServices.ComTypes.VARFLAGS;
 
 namespace CodexVBE
 {
@@ -27,6 +31,14 @@ namespace CodexVBE
         [ThreadStatic] private static string cacheKey;
         /// <summary>Symboles issus du dernier index correspondant à la clé de cache.</summary>
         [ThreadStatic] private static EditorSymbol[] cacheValue;
+        /// <summary>Correspondance des types Automation scalaires avec leur nom VBA.</summary>
+        private static readonly Dictionary<VarEnum, string> PrimitiveTypes = new Dictionary<VarEnum, string> {
+            { VarEnum.VT_EMPTY, "Variant" }, { VarEnum.VT_VOID, "Void" }, { VarEnum.VT_VARIANT, "Variant" },
+            { VarEnum.VT_I2, "Integer" }, { VarEnum.VT_I4, "Long" }, { VarEnum.VT_I8, "LongLong" },
+            { VarEnum.VT_UI1, "Byte" }, { VarEnum.VT_R4, "Single" }, { VarEnum.VT_R8, "Double" },
+            { VarEnum.VT_CY, "Currency" }, { VarEnum.VT_DATE, "Date" }, { VarEnum.VT_BSTR, "String" },
+            { VarEnum.VT_BOOL, "Boolean" }, { VarEnum.VT_DISPATCH, "Object" }, { VarEnum.VT_UNKNOWN, "Object" }
+        };
         /// <summary>Lit les membres accessibles des types demandés dans les fichiers de référence.</summary>
         /// <param name="paths">Chemins des bibliothèques de types référencées.</param>
         /// <param name="requestedTypes">Noms complets des types utilisés par le projet.</param>
@@ -49,17 +61,24 @@ namespace CodexVBE
                     {
                         LoadTypeLibEx(path, 2, out library);
                         library.GetDocumentation(-1, out string libraryName, out string libraryHelp, out int libraryContext, out string libraryFile);
+                        if (pass == 0) symbols.Add(new EditorSymbol { Name = libraryName, Module = libraryName, Scope = "Module", Kind = "Library", TypeName = libraryName, Declaration = libraryName, Documentation = libraryHelp, Library = libraryName, LibraryDescription = libraryHelp, LibraryPath = path, HelpFile = libraryFile, HelpContext = libraryContext, External = true });
                         int count = Math.Min(library.GetTypeInfoCount(), 10000);
                         for (int i = 0; i < count; i++)
                         {
                             library.GetDocumentation(i, out string name, out string description, out int help, out string file);
-                            if (!requested.Contains(name) || !indexed.Add(path + "|" + name)) continue;
+                            library.GetTypeInfoType(i, out TYPEKIND typeKind);
+                            if (pass == 0 && !name.StartsWith("_", StringComparison.Ordinal))
+                            {
+                                symbols.Add(new EditorSymbol { Name = name, Module = libraryName, Scope = "Module", Kind = typeKind == TYPEKIND.TKIND_COCLASS ? "Class" : typeKind == TYPEKIND.TKIND_ENUM ? "Enum" : "Type", TypeName = libraryName + "." + name, Declaration = libraryName + "." + name, Documentation = description, Library = libraryName, LibraryDescription = libraryHelp, LibraryPath = path, HelpFile = file, HelpContext = help, External = true });
+                            }
+                            if ((!requested.Contains(name) && typeKind != TYPEKIND.TKIND_MODULE && typeKind != TYPEKIND.TKIND_ENUM) || !indexed.Add(path + "|" + name)) continue;
                             library.GetTypeInfo(i, out ITypeInfo info);
                             try
                             {
                                 int start = symbols.Count;
                                 ReadMembers(info, name, symbols, new HashSet<Guid>(), 0);
-                                for (int member = start; member < symbols.Count; member++) symbols[member].Library = libraryName;
+                                for (int member = start; member < symbols.Count; member++)
+                                { symbols[member].Library = libraryName; symbols[member].LibraryDescription = libraryHelp; symbols[member].LibraryPath = path; }
                             }
                             finally { Marshal.ReleaseComObject(info); }
                         }
@@ -67,7 +86,8 @@ namespace CodexVBE
                     catch (COMException error) { LoadLog.Write("Monaco type metadata: " + error.ErrorCode); }
                     finally { if (library != null) Marshal.ReleaseComObject(library); }
                 }
-                foreach (var symbol in symbols.Where(item => !string.IsNullOrEmpty(item.TypeName))) requested.Add(symbol.TypeName.Split('.').Last());
+                // Catalogued type names are offered in completion without eagerly expanding every type.
+                foreach (var symbol in symbols.Where(item => new[] { "Procedure", "Property", "Field", "EnumMember", "Constant" }.Contains(item.Kind))) requested.Add(symbol.TypeName.Split('.').Last());
                 if (requested.Count == previousCount) break;
             }
             cacheValue = symbols.ToArray(); cacheKey = key; return cacheValue;
@@ -81,7 +101,8 @@ namespace CodexVBE
             var kind = (VarEnum)description.vt;
             if (kind == VarEnum.VT_PTR || kind == VarEnum.VT_SAFEARRAY)
                 return ReturnType(info, (TYPEDESC)Marshal.PtrToStructure(description.lpValue, typeof(TYPEDESC)));
-            if (kind != VarEnum.VT_USERDEFINED) return null;
+            if (kind != VarEnum.VT_USERDEFINED)
+                return PrimitiveTypes.TryGetValue(kind, out string typeName) ? typeName : null;
             info.GetRefTypeInfo(unchecked((int)description.lpValue.ToInt64()), out ITypeInfo target);
             try
             {
@@ -116,10 +137,38 @@ namespace CodexVBE
                     var names = new string[Math.Max(1, Math.Min(64, func.cParams + 1))];
                     info.GetNames(func.memid, names, names.Length, out int found);
                     if (found == 0) continue;
-                    string[] parameters = names.Skip(1).Take(found - 1).ToArray();
-                    symbols.Add(new EditorSymbol { Name = names[0], Module = owner, Scope = "Module", Kind = func.invkind == INVOKEKIND.INVOKE_FUNC ? "Procedure" : "Property", Declaration = owner + "." + names[0] + "(" + string.Join(", ", parameters) + ")", Parameters = parameters, TypeName = ReturnType(info, func.elemdescFunc.tdesc), External = true });
+                    var parameters = new List<string>();
+                    string resultType = ReturnType(info, func.elemdescFunc.tdesc) ?? "Variant";
+                    for (int parameter = 0; parameter < func.cParams; parameter++)
+                    {
+                        var element = (ELEMDESC)Marshal.PtrToStructure(IntPtr.Add(func.lprgelemdescParam, parameter * Marshal.SizeOf(typeof(ELEMDESC))), typeof(ELEMDESC));
+                        var flags = element.desc.paramdesc.wParamFlags;
+                        string parameterType = ReturnType(info, element.tdesc) ?? "Variant";
+                        if ((flags & PARAMFLAG.PARAMFLAG_FRETVAL) != 0) { resultType = parameterType; continue; }
+                        if ((flags & PARAMFLAG.PARAMFLAG_FLCID) != 0) continue;
+                        string parameterName = parameter + 1 < found ? names[parameter + 1] : "argument" + (parameter + 1);
+                        parameters.Add(((flags & PARAMFLAG.PARAMFLAG_FOPT) != 0 ? "Optional " : "") + ((flags & PARAMFLAG.PARAMFLAG_FOUT) != 0 || (VarEnum)element.tdesc.vt == VarEnum.VT_PTR ? "ByRef " : "ByVal ") + parameterName + " As " + parameterType);
+                    }
+                    info.GetDocumentation(func.memid, out string memberName, out string documentation, out int helpContext, out string helpFile);
+                    string[] parameterNames = parameters.ToArray();
+                    symbols.Add(new EditorSymbol { Name = names[0], Module = owner, Scope = "Module", Kind = func.invkind == INVOKEKIND.INVOKE_FUNC ? "Procedure" : "Property", Declaration = owner + "." + names[0] + "(" + string.Join(", ", parameterNames) + ")" + (resultType == "Void" ? "" : " As " + resultType), Parameters = parameterNames, TypeName = resultType, Documentation = documentation, HelpFile = helpFile, HelpContext = helpContext, DefaultMember = func.memid == 0 || (func.wFuncFlags & (short)FUNCFLAGS.FUNCFLAG_FDEFAULTBIND) != 0, Global = attr.typekind == TYPEKIND.TKIND_MODULE, External = true });
                 }
                 finally { info.ReleaseFuncDesc(pointer); }
+            }
+            for (int i = 0; i < Math.Min((int)attr.cVars, 4096); i++)
+            {
+                info.GetVarDesc(i, out pointer);
+                try
+                {
+                    var variable = (VARDESC)Marshal.PtrToStructure(pointer, typeof(VARDESC));
+                    if ((variable.wVarFlags & (short)(VARFLAGS.VARFLAG_FHIDDEN | VARFLAGS.VARFLAG_FRESTRICTED)) != 0) continue;
+                    info.GetDocumentation(variable.memid, out string name, out string documentation, out int context, out string file);
+                    if (string.IsNullOrEmpty(name)) continue;
+                    string typeName = ReturnType(info, variable.elemdescVar.tdesc) ?? "Variant";
+                    string kind = attr.typekind == TYPEKIND.TKIND_ENUM ? "EnumMember" : variable.varkind == VARKIND.VAR_CONST ? "Constant" : "Field";
+                    symbols.Add(new EditorSymbol { Name = name, Module = owner, Scope = "Module", Kind = kind, TypeName = typeName, Declaration = owner + "." + name + " As " + typeName, Documentation = documentation, HelpFile = file, HelpContext = context, Global = attr.typekind == TYPEKIND.TKIND_MODULE || attr.typekind == TYPEKIND.TKIND_ENUM, External = true });
+                }
+                finally { info.ReleaseVarDesc(pointer); }
             }
             for (int i = 0; i < attr.cImplTypes; i++)
             {

@@ -1,14 +1,14 @@
 # Travaux restants
 
-Couverture et documentation actualisées le **29 septembre 2026**, après intégration de la PR #11. La mesure actuelle et les anciens passages datés sont distingués dans [le bilan de tests](test-coverage.md). Ce document distingue les contrats présents de la qualification native manquante. Le [catalogue LLM](reference/vbe-tools.md) expose 204 outils ; les [archives](archive/README.md) conservent les expériences détaillées.
+Couverture et documentation actualisées le **29 septembre 2026**, après intégration de la PR #11 et extension IntelliSense Monaco. La mesure actuelle et les anciens passages datés sont distingués dans [le bilan de tests](test-coverage.md). Ce document distingue les contrats présents de la qualification native manquante. Le [catalogue LLM](reference/vbe-tools.md) expose 204 outils ; les [archives](archive/README.md) conservent les expériences détaillées.
 
 ## Couverture et documentation
 
 | Travail | État actuel | Critère de fin |
 | --- | --- | --- |
-| Couverture du code de production | Suite globale : 1 828 réussis, 0 échec, 19 ignorés ; 100 % lignes et branches (29 663 / 30 793), sans exclusion | 100 % lignes et branches mesurées sur toute l’assembly, sans masquer du code ; suite globale verte |
+| Couverture du code de production | Suite globale : 1 834 réussis, 0 échec, 20 ignorés ; 100 % lignes et branches (29 712 / 30 845), sans exclusion ; 57 scénarios JavaScript et parcours Excel qualifiés séparément | 100 % lignes et branches mesurées sur toute l’assembly, sans masquer du code ; suite globale verte |
 | Organisation des tests | 237 miroirs pour 294 sources ; scénarios et fixtures complémentaires | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
-| Documentation IntelliSense | Complément : 5 208/5 208 déclarations documentées, audit intégré, zéro différence syntaxique | Préserver les commentaires privés/publics et leurs paramètres ; documentation des tests distincte |
+| Documentation IntelliSense | Complément : 5 216/5 216 déclarations documentées, audit intégré, aucune erreur syntaxique | Préserver les commentaires privés/publics et leurs paramètres ; documentation des tests distincte |
 | Concepteurs WinForms | 46 surfaces WinForms et 409 contrôles enfants validés | Préserver cette accessibilité après chaque changement de structure ; qualifier aussi le rendu réel |
 
 Compléter chaque branche de couverture identifiée avant de passer à la suivante. Construire le lot de scénarios cohérent avant de le lancer, puis mesurer la suite globale. Les pourcentages actuels sont détaillés dans [le bilan de tests](test-coverage.md).

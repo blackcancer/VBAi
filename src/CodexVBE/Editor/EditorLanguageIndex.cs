@@ -51,6 +51,27 @@ namespace CodexVBE
         /// <summary>Gets or sets the library.</summary>
         /// <value>The current value represented by this member.</value>
         public string Library { get; set; }
+        /// <summary>Description IntelliSense du membre fournie par la bibliothèque de types.</summary>
+        /// <value>Documentation native du membre, éventuellement vide.</value>
+        public string Documentation { get; set; }
+        /// <summary>Description de la bibliothèque qui définit le symbole externe.</summary>
+        /// <value>Texte de documentation de la référence chargée.</value>
+        public string LibraryDescription { get; set; }
+        /// <summary>Fichier de la référence chargée dont les métadonnées ont été lues.</summary>
+        /// <value>Chemin local de la bibliothèque, sans instanciation de ses objets.</value>
+        public string LibraryPath { get; set; }
+        /// <summary>Fichier d’aide déclaré par la bibliothèque pour ce membre.</summary>
+        /// <value>Chemin informatif ; aucune ouverture automatique.</value>
+        public string HelpFile { get; set; }
+        /// <summary>Identifiant de rubrique d’aide du membre.</summary>
+        /// <value>Contexte natif, ou zéro si aucune rubrique n’est déclarée.</value>
+        public int HelpContext { get; set; }
+        /// <summary>Indique le membre appelé implicitement pour indexer une collection.</summary>
+        /// <value>Valeur du DISPID zéro ou du drapeau de liaison par défaut.</value>
+        public bool DefaultMember { get; set; }
+        /// <summary>Indique un membre public d’un module de bibliothèque accessible sans qualification.</summary>
+        /// <value>Vrai pour les fonctions et constantes des modules statiques.</value>
+        public bool Global { get; set; }
         /// <summary>Première ligne de la déclaration.</summary>
         /// <value>Numéro de ligne indexé à partir de un.</value>
         public int Line { get; set; }

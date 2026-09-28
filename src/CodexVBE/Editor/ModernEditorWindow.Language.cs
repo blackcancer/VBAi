@@ -34,7 +34,10 @@ namespace CodexVBE
                     foreach (dynamic reference in ((dynamic)native.Project).References)
                         if (!(bool)reference.IsBroken) paths.Add((string)reference.FullPath);
                     string[] libraryPaths = paths.ToArray();
-                    string[] types = symbols.Where(s => !string.IsNullOrEmpty(s.TypeName)).Select(s => s.TypeName).Distinct().ToArray();
+                    // Include direct library/type receivers and late-bound New assignments as well as declared types.
+                    string[] types = symbols.Where(s => !string.IsNullOrEmpty(s.TypeName)).Select(s => s.TypeName)
+                        .Concat(sources.SelectMany(source => System.Text.RegularExpressions.Regex.Matches(source.Text, @"\b([\p{L}_][\p{L}\p{N}_]*)\s*\.").Cast<System.Text.RegularExpressions.Match>().Select(match => match.Groups[1].Value)))
+                        .Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(type => type, StringComparer.OrdinalIgnoreCase).ToArray();
                     var external = await synchronizationWorker.Evaluate(() => EditorReferenceIndex.Read(libraryPaths, types));
                     symbols = symbols.Concat(external).ToArray();
                 }
