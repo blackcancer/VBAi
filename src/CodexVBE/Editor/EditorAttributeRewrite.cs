@@ -106,6 +106,13 @@ namespace CodexVBE
             var procedures = Procedures(string.Join("\n", code.Split('\n').Where(line => !Attribute.IsMatch(line))));
             return procedures == null || procedures.Any(d => d.First != d.Last && Regex.IsMatch(code, @"(?im)^\s*Attribute\s+" + Regex.Escape(d.Name) + @"\."));
         }
+        internal static string FullExport(string original, string code)
+        {
+            string normalized = EditorDocument.Normalize(original);
+            var start = Regex.Match(normalized, @"(?im)^Attribute VB_Name\s*=");
+            return EditorDocument.Normalize((start.Success ? normalized.Substring(0, start.Index) : "") + code).Replace("\n", "\r\n");
+        }
+        internal static string MemberMetadata(string source) => string.Join("\n", Metadata(source).Split('\n').Where(line => !Regex.IsMatch(line, @"^Attribute VB_Name\s*=", RegexOptions.IgnoreCase)));
         internal static string Metadata(string source) => string.Join("\n", EditorDocument.Normalize(source).Split('\n').Where(line => Attribute.IsMatch(line)));
     }
 }

@@ -8,9 +8,11 @@ namespace CodexVBE
     /// <summary>All methods are called on the owning VBE UI thread. Bind to COM identity, not a mutable module name.</summary>
     internal sealed class EditorVbeModule : IEditorModule
     {
-        private readonly object vbe, project, component;
+        private readonly object vbe, project;
+        private object component;
         private readonly string sessionKey = Guid.NewGuid().ToString("N");
         private object nativeWindow;
+        internal Action<string> AttributeRewriteCheckpoint { get; set; } // Fault injection for recovery qualification; unset in production.
         internal EditorVbeModule(object vbe, object project, object component)
         { this.vbe = vbe; this.project = project; this.component = component; }
         public string Name => (string)((dynamic)project).Name + " · " + (string)((dynamic)component).Name;
@@ -158,7 +160,7 @@ namespace CodexVBE
                 string replacement = EditorAttributeRewrite.Prepare(original, before, patch);
                 if (replacement == null) return false;
                 if (EditorAttributeRewrite.HasMultilineAttributes(original) || EditorAttributeRewrite.HasMultilineAttributes(replacement))
-                    throw new InvalidOperationException("VBE AddFromFile cannot preserve multiline procedure attributes. The original component was not changed.");
+                { result = ReplaceAttributedComponent(directory, replacement, before, after); return true; }
                 File.WriteAllText(changed, replacement, System.Text.Encoding.Default);
                 string restore = Path.Combine(directory, "restore.bas");
                 File.WriteAllText(restore, EditorAttributeRewrite.CodeSection(original), System.Text.Encoding.Default);
@@ -186,7 +188,98 @@ namespace CodexVBE
                     throw new InvalidOperationException("Attributed edit failed; original source and attributes restored.", failure);
                 }
             }
+            catch (AggregateException) { preserveBackup = true; throw; }
             finally { if (!preserveBackup) Directory.Delete(directory, true); }
+        }
+        // Explicitly authorized component replacement. Stage and validate before removing the original.
+        private string ReplaceAttributedComponent(string directory, string replacement, string before, string after)
+        {
+            int type = (int)((dynamic)component).Type;
+            if (type != 1 && type != 2 && type != 3)
+                throw new InvalidOperationException("VBE cannot preserve multiline procedure attributes in a host-owned document module. Its source and attributes were not changed.");
+            string extension = type == 1 ? ".bas" : type == 2 ? ".cls" : ".frm";
+            string backup = Path.Combine(directory, "component" + extension), staged = Path.Combine(directory, "candidate" + extension);
+            ((dynamic)component).Export(backup); // Includes companion FRX for a UserForm.
+            string original = File.ReadAllText(backup, System.Text.Encoding.Default);
+            string stageName = "VBAiStage" + Guid.NewGuid().ToString("N").Substring(0, 12);
+            string stagedText = EditorAttributeRewrite.FullExport(original, replacement);
+            stagedText = System.Text.RegularExpressions.Regex.Replace(stagedText, @"(?im)^(Attribute VB_Name\s*=\s*)""[^""]*""", m => m.Groups[1].Value + "\"" + stageName + "\"");
+            if (type == 3)
+                stagedText = System.Text.RegularExpressions.Regex.Replace(stagedText, @"(?im)^(Begin\s+\{[^}]+\}\s+)\S+", m => m.Groups[1].Value + stageName);
+            File.WriteAllText(staged, stagedText, System.Text.Encoding.Default);
+            string name = ModuleName; object originalComponent = component, candidate = null;
+            var forms = type == 3 ? new VbeForms(vbe) : null;
+            string originalDesigner = forms == null ? null : EditorDesignerSnapshot.Capture(forms.Tree(ProjectName, name));
+            dynamic components = ((dynamic)project).VBComponents;
+            bool Present(object item) { foreach (object current in components) if (Same(current, item)) return true; return false; }
+            string Inspect(object item, string expected, string expectedExport)
+            {
+                dynamic code = ((dynamic)item).CodeModule; int count = code.CountOfLines;
+                string actual = count == 0 ? "" : (string)code.Lines[1, count];
+                if (type == 3)
+                {
+                    // Import adds a separator even when one already exists. Remove only the
+                    // surplus empty prefix, before any declaration, and verify attributes below.
+                    int surplus = EditorDocument.Normalize(actual).TakeWhile(c => c == '\n').Count() - expected.TakeWhile(c => c == '\n').Count();
+                    if (surplus > 0)
+                    {
+                        code.DeleteLines(1, surplus); count = code.CountOfLines;
+                        actual = count == 0 ? "" : (string)code.Lines[1, count];
+                    }
+                }
+                string verify = Path.Combine(directory, Guid.NewGuid().ToString("N") + extension);
+                ((dynamic)item).Export(verify);
+                // Read back exact source after native import formatting is reconciled.
+                bool sameSource = EditorDocument.Normalize(actual).TrimEnd('\n') == expected.TrimEnd('\n');
+                if ((int)((dynamic)item).Type != type || !sameSource || EditorAttributeRewrite.MemberMetadata(File.ReadAllText(verify, System.Text.Encoding.Default)) != EditorAttributeRewrite.MemberMetadata(expectedExport))
+                    throw new InvalidOperationException("Staged component validation failed (type " + ((int)((dynamic)item).Type == type) + ", source " + sameSource + ", attributes " + (EditorAttributeRewrite.MemberMetadata(File.ReadAllText(verify, System.Text.Encoding.Default)) == EditorAttributeRewrite.MemberMetadata(expectedExport)) + ").");
+                if (type == 3)
+                {
+                    string actualDesigner = EditorDesignerSnapshot.Capture(forms.Tree(ProjectName, (string)((dynamic)item).Name));
+                    if (actualDesigner != originalDesigner)
+                        throw new InvalidOperationException("The staged UserForm Designer properties do not match their backup.");
+                }
+                return actual;
+            }
+            try
+            {
+                candidate = components.Import(staged);
+                Inspect(candidate, after, replacement);
+                AttributeRewriteCheckpoint?.Invoke("prepared");
+                if (!CanWrite || EditorDocument.Normalize(Read()) != before) throw new InvalidOperationException("The original component changed during staging.");
+                // Free the logical name before deletion: a loaded UserForm Designer can keep
+                // its old storage name reserved until COM references are released.
+                ((dynamic)originalComponent).Name = "VBAiRetired" + Guid.NewGuid().ToString("N").Substring(0, 12);
+                ((dynamic)candidate).Name = name;
+                string actual = Inspect(candidate, after, replacement);
+                if (!CanWrite || EditorDocument.Normalize(Read()) != before) throw new InvalidOperationException("The original component changed before replacement.");
+                if (forms != null && EditorDesignerSnapshot.Capture(forms.Tree(ProjectName, (string)((dynamic)originalComponent).Name)) != originalDesigner)
+                    throw new InvalidOperationException("The original Designer changed before replacement.");
+                components.Remove(originalComponent);
+                AttributeRewriteCheckpoint?.Invoke("removed");
+                component = candidate; nativeWindow = null;
+                EnsureNativeWindow();
+                return actual;
+            }
+            catch (Exception failure)
+            {
+                try
+                {
+                    if (candidate == null) foreach (object item in components)
+                        if (string.Equals((string)((dynamic)item).Name, stageName, StringComparison.OrdinalIgnoreCase)) { candidate = item; break; }
+                    if (candidate != null && Present(candidate))
+                    { ((dynamic)candidate).Name = "VBAiDiscard" + Guid.NewGuid().ToString("N").Substring(0, 12); components.Remove(candidate); }
+                    if (!Present(originalComponent))
+                    {
+                        component = components.Import(backup); ((dynamic)component).Name = name; nativeWindow = null;
+                        Inspect(component, before, original); EnsureNativeWindow();
+                    }
+                    else { component = originalComponent; ((dynamic)component).Name = name; }
+                }
+                catch (Exception rollback)
+                { throw new AggregateException("Component restoration failed; recovery export: " + backup, failure, rollback); }
+                throw new InvalidOperationException("Attributed component replacement failed; original source retained or restored.", failure);
+            }
         }
         public void ShowNative(int line, int column)
         {
