@@ -1803,4 +1803,26 @@
   <data name="Copy the version and environment information for support." xml:space="preserve"><value>Копировать версию и сведения о среде для службы поддержки.</value></data>
   <data name="Version, technical details and project resources" xml:space="preserve"><value>Версия, технические сведения и ресурсы проекта</value></data>
   <data name="Close" xml:space="preserve"><value>Закрыть</value></data>
+  <data name="VBAi · Report an issue" xml:space="preserve"><value>VBAi · Сообщить о проблеме</value></data>
+  <data name="Review before sending. No VBA, chat, credentials or file paths are collected automatically." xml:space="preserve"><value>Проверьте перед отправкой. Код VBA, чаты, учётные данные и пути файлов не собираются автоматически.</value></data>
+  <data name="What happened?" xml:space="preserve"><value>Что произошло?</value></data>
+  <data name="Report preview" xml:space="preserve"><value>Предпросмотр отчёта</value></data>
+  <data name="Open GitHub issue" xml:space="preserve"><value>Открыть обращение GitHub</value></data>
+  <data name="Send report" xml:space="preserve"><value>Отправить отчёт</value></data>
+  <data name="Save report" xml:space="preserve"><value>Сохранить отчёт</value></data>
+  <data name="GitHub first; Outlook if unavailable." xml:space="preserve"><value>Сначала GitHub; при недоступности — Outlook.</value></data>
+  <data name="Send with Outlook, or open an email draft." xml:space="preserve"><value>Отправить через Outlook или открыть черновик письма.</value></data>
+  <data name="Save the full report and copy its path." xml:space="preserve"><value>Сохранить полный отчёт и скопировать путь.</value></data>
+  <data name="Do not include confidential information in your description." xml:space="preserve"><value>Не включайте конфиденциальные данные в описание.</value></data>
+  <data name="Attach the saved report to this email." xml:space="preserve"><value>Прикрепите сохранённый отчёт к этому письму.</value></data>
+  <data name="Sending report…" xml:space="preserve"><value>Отправка отчёта…</value></data>
+  <data name="Report published on GitHub." xml:space="preserve"><value>Отчёт опубликован на GitHub.</value></data>
+  <data name="Report handed to Outlook for sending." xml:space="preserve"><value>Отчёт передан в Outlook для отправки.</value></data>
+  <data name="Email draft opened. Attach the saved report, then send it." xml:space="preserve"><value>Черновик открыт. Прикрепите сохранённый отчёт и отправьте письмо.</value></data>
+  <data name="Delivery is uncertain. Check GitHub or Outlook before trying again." xml:space="preserve"><value>Результат отправки неизвестен. Проверьте GitHub или Outlook перед повторной попыткой.</value></data>
+  <data name="Unable to send the report. The local copy is available." xml:space="preserve"><value>Не удалось отправить отчёт. Локальная копия доступна.</value></data>
+  <data name="Local report saved. Its path has been copied." xml:space="preserve"><value>Отчёт сохранён локально. Путь скопирован.</value></data>
+  <data name="Unable to save the report." xml:space="preserve"><value>Не удалось сохранить отчёт.</value></data>
+  <data name="Title" xml:space="preserve"><value>Заголовок</value></data>
+  <data name="Email" xml:space="preserve"><value>Эл. почта</value></data>
 </root>

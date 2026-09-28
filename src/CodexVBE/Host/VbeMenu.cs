@@ -16,7 +16,7 @@ namespace CodexVBE
         /// <summary>Récupère l’icône <c>$this.Icon</c> des ressources associées à une fenêtre.</summary>
         /// <param name="windowType">Type de fenêtre qui possède les ressources.</param>
         /// <returns>Icône extraite des ressources du type.</returns>
-        private static System.Drawing.Icon ReadIconNative(Type windowType) { return windowType == typeof(AboutWindow) ? VbeWindowIcons.Icon("assistant") : (System.Drawing.Icon)new System.ComponentModel.ComponentResourceManager(windowType).GetObject("$this.Icon"); }
+        private static System.Drawing.Icon ReadIconNative(Type windowType) { return (windowType == typeof(AboutWindow) || windowType == typeof(CrashReportWindow)) ? VbeWindowIcons.Icon("assistant") : (System.Drawing.Icon)new System.ComponentModel.ComponentResourceManager(windowType).GetObject("$this.Icon"); }
         /// <summary>IID de l’interface Office utilisée pour recevoir les clics de CommandBarButton.</summary>
         private static readonly Guid ClickInterface = new Guid("000C0351-0000-0000-C000-000000000046");
         /// <summary>Bouton VBAi ajouté au menu View du VBE.</summary>
@@ -52,8 +52,9 @@ namespace CodexVBE
         /// <param name="showGitHub">Action qui ouvre l’interface GitHub.</param>
         /// <param name="editorAction">Action facultative appelée depuis un menu contextuel de l’éditeur.</param>
         /// <param name="showAbout">Action facultative ouvrant À propos sans dépendre du chat.</param>
-        public VbeMenu(object vbe, Action showAssistant, Action showSettings, Action showGitHub, Action<string> editorAction = null, Action showAbout = null)
-            : this(vbe, showAssistant, showSettings, showGitHub, editorAction, null, null, null, showAbout)
+        /// <param name="showCrashReport">Action facultative ouvrant le rapport de problème.</param>
+        public VbeMenu(object vbe, Action showAssistant, Action showSettings, Action showGitHub, Action<string> editorAction = null, Action showAbout = null, Action showCrashReport = null)
+            : this(vbe, showAssistant, showSettings, showGitHub, editorAction, null, null, null, showAbout, showCrashReport)
         {
         }
 
@@ -67,9 +68,10 @@ namespace CodexVBE
         /// <param name="unsubscribe">Fonction de désabonnement COM, ou valeur par défaut si null.</param>
         /// <param name="applyIcon">Fonction d’application d’icône, ou valeur par défaut si null.</param>
         /// <param name="showAbout">Action facultative ouvrant À propos sans dépendre du chat.</param>
+        /// <param name="showCrashReport">Action facultative ouvrant le rapport de problème.</param>
         internal VbeMenu(object vbe, Action showAssistant, Action showSettings, Action showGitHub,
             Action<string> editorAction, Action<object, Guid, int, Delegate> subscribe,
-            Action<object, Guid, int, Delegate> unsubscribe, Action<object, Type> applyIcon, Action showAbout = null)
+            Action<object, Guid, int, Delegate> unsubscribe, Action<object, Type> applyIcon, Action showAbout = null, Action showCrashReport = null)
         {
             this.subscribe = subscribe ?? SubscribeDefault;
             this.unsubscribe = unsubscribe ?? ((button, iid, dispid, handler) =>
@@ -101,6 +103,17 @@ namespace CodexVBE
                 editorButtons.Add(Tuple.Create(gitButton, gitHandler));
                 this.subscribe(gitButton, ClickInterface, 1, gitHandler);
                 this.applyIcon(gitButton, typeof(GitWindow));
+                if (showCrashReport != null)
+                {
+                    object reportButton = tools.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
+                    ((dynamic)reportButton).Caption = UiText.Get("Report an issue");
+                    ((dynamic)reportButton).Tag = "CodexVBE.CrashReport";
+                    ((dynamic)reportButton).TooltipText = UiText.Get("GitHub first; Outlook if unavailable.");
+                    ClickHandler reportHandler = (object control, ref bool cancel) => { cancel = true; showCrashReport(); };
+                    editorButtons.Add(Tuple.Create(reportButton, reportHandler));
+                    this.subscribe(reportButton, ClickInterface, 1, reportHandler);
+                    this.applyIcon(reportButton, typeof(CrashReportWindow));
+                }
                 if (showAbout != null)
                 {
                     object aboutButton = tools.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);

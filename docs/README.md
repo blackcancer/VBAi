@@ -18,6 +18,7 @@
 | --- | --- |
 | [Architecture](architecture.md) | Projets, dossiers et convention miroir des tests |
 | [À propos et support](about.md) | Identité produit, détails techniques et ressources |
+| [Rapports de problème](crash-report.md) | Issues GitHub, Outlook, brouillons et capture managée |
 | [Concepteurs WinForms](winforms-designer.md) | Vues éditables et séparation entre disposition et données |
 | [Localisation](localization.md) | Langues, ressources et maintenance des traductions |
 | [Outils LLM](reference/vbe-tools.md) | Catalogue extrait du code : permissions et paramètres requis |

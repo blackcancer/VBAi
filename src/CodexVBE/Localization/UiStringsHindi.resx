@@ -1803,4 +1803,26 @@ Git Credential Manager से साइन-इन करें; कमिट ल
   <data name="Copy the version and environment information for support." xml:space="preserve"><value>सहायता के लिए संस्करण और परिवेश की जानकारी कॉपी करें।</value></data>
   <data name="Version, technical details and project resources" xml:space="preserve"><value>संस्करण, तकनीकी विवरण और प्रोजेक्ट संसाधन</value></data>
   <data name="Close" xml:space="preserve"><value>बंद करें</value></data>
+  <data name="VBAi · Report an issue" xml:space="preserve"><value>VBAi · समस्या की रिपोर्ट</value></data>
+  <data name="Review before sending. No VBA, chat, credentials or file paths are collected automatically." xml:space="preserve"><value>भेजने से पहले जाँचें। VBA कोड, चैट, क्रेडेंशियल या फ़ाइल पथ अपने आप एकत्र नहीं किए जाते।</value></data>
+  <data name="What happened?" xml:space="preserve"><value>क्या हुआ?</value></data>
+  <data name="Report preview" xml:space="preserve"><value>रिपोर्ट का पूर्वावलोकन</value></data>
+  <data name="Open GitHub issue" xml:space="preserve"><value>GitHub इश्यू खोलें</value></data>
+  <data name="Send report" xml:space="preserve"><value>रिपोर्ट भेजें</value></data>
+  <data name="Save report" xml:space="preserve"><value>रिपोर्ट सहेजें</value></data>
+  <data name="GitHub first; Outlook if unavailable." xml:space="preserve"><value>पहले GitHub; उपलब्ध न हो तो Outlook।</value></data>
+  <data name="Send with Outlook, or open an email draft." xml:space="preserve"><value>Outlook से भेजें या ईमेल ड्राफ़्ट खोलें।</value></data>
+  <data name="Save the full report and copy its path." xml:space="preserve"><value>पूरी रिपोर्ट सहेजें और उसका पथ कॉपी करें।</value></data>
+  <data name="Do not include confidential information in your description." xml:space="preserve"><value>विवरण में गोपनीय जानकारी न दें।</value></data>
+  <data name="Attach the saved report to this email." xml:space="preserve"><value>सहेजी गई रिपोर्ट इस ईमेल में संलग्न करें।</value></data>
+  <data name="Sending report…" xml:space="preserve"><value>रिपोर्ट भेजी जा रही है…</value></data>
+  <data name="Report published on GitHub." xml:space="preserve"><value>रिपोर्ट GitHub पर प्रकाशित हुई।</value></data>
+  <data name="Report handed to Outlook for sending." xml:space="preserve"><value>रिपोर्ट भेजने के लिए Outlook को दी गई।</value></data>
+  <data name="Email draft opened. Attach the saved report, then send it." xml:space="preserve"><value>ईमेल ड्राफ़्ट खुल गया। सहेजी गई रिपोर्ट संलग्न करके भेजें।</value></data>
+  <data name="Delivery is uncertain. Check GitHub or Outlook before trying again." xml:space="preserve"><value>भेजने का परिणाम स्पष्ट नहीं है। फिर कोशिश करने से पहले GitHub या Outlook जाँचें।</value></data>
+  <data name="Unable to send the report. The local copy is available." xml:space="preserve"><value>रिपोर्ट नहीं भेजी जा सकी। स्थानीय प्रति उपलब्ध है।</value></data>
+  <data name="Local report saved. Its path has been copied." xml:space="preserve"><value>रिपोर्ट स्थानीय रूप से सहेजी गई। पथ कॉपी किया गया।</value></data>
+  <data name="Unable to save the report." xml:space="preserve"><value>रिपोर्ट सहेजी नहीं जा सकी।</value></data>
+  <data name="Title" xml:space="preserve"><value>शीर्षक</value></data>
+  <data name="Email" xml:space="preserve"><value>ईमेल</value></data>
 </root>

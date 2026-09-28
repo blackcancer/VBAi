@@ -64,6 +64,13 @@ renseignés à l’exécution sans démarrer le chat ni charger de paramètres f
 La fenêtre est accessible depuis **Outils → À propos de VBAi** et le menu du chat.
 Voir [À propos et support](about.md) pour les informations copiées et les liens.
 
+## Fenêtre de rapport de problème
+
+`src/CodexVBE/Ui/CrashReportWindow.cs` possède son `.Designer.cs` et son `.resx`.
+Ses 20 contrôles fixes (description, aperçu, destination, état, progression et boutons)
+sont éditables dans le concepteur. Le constructeur Designer ne charge aucun compte
+et n’appelle aucun transport. Voir [Rapports de problème](crash-report.md).
+
 ## Éléments réutilisables du chat
 
 Les vues suivantes sont dans `src/CodexVBE/Llm/Controls/`. Ouvrir chacune avec

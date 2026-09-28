@@ -1803,4 +1803,26 @@ Accesso tramite Git Credential Manager; l’identità dei commit si configura in
   <data name="Copy the version and environment information for support." xml:space="preserve"><value>Copia la versione e le informazioni sull’ambiente per l’assistenza.</value></data>
   <data name="Version, technical details and project resources" xml:space="preserve"><value>Versione, dettagli tecnici e risorse del progetto</value></data>
   <data name="Close" xml:space="preserve"><value>Chiudi</value></data>
+  <data name="VBAi · Report an issue" xml:space="preserve"><value>VBAi · Segnala un problema</value></data>
+  <data name="Review before sending. No VBA, chat, credentials or file paths are collected automatically." xml:space="preserve"><value>Controlla prima dell’invio. Codice VBA, chat, credenziali e percorsi dei file non vengono raccolti automaticamente.</value></data>
+  <data name="What happened?" xml:space="preserve"><value>Cosa è successo?</value></data>
+  <data name="Report preview" xml:space="preserve"><value>Anteprima del rapporto</value></data>
+  <data name="Open GitHub issue" xml:space="preserve"><value>Apri issue GitHub</value></data>
+  <data name="Send report" xml:space="preserve"><value>Invia rapporto</value></data>
+  <data name="Save report" xml:space="preserve"><value>Salva rapporto</value></data>
+  <data name="GitHub first; Outlook if unavailable." xml:space="preserve"><value>Prima GitHub; Outlook se non disponibile.</value></data>
+  <data name="Send with Outlook, or open an email draft." xml:space="preserve"><value>Invia con Outlook o apri una bozza e-mail.</value></data>
+  <data name="Save the full report and copy its path." xml:space="preserve"><value>Salva il rapporto completo e copia il percorso.</value></data>
+  <data name="Do not include confidential information in your description." xml:space="preserve"><value>Non includere informazioni riservate nella descrizione.</value></data>
+  <data name="Attach the saved report to this email." xml:space="preserve"><value>Allega il rapporto salvato a questa e-mail.</value></data>
+  <data name="Sending report…" xml:space="preserve"><value>Invio del rapporto…</value></data>
+  <data name="Report published on GitHub." xml:space="preserve"><value>Rapporto pubblicato su GitHub.</value></data>
+  <data name="Report handed to Outlook for sending." xml:space="preserve"><value>Rapporto affidato a Outlook per l’invio.</value></data>
+  <data name="Email draft opened. Attach the saved report, then send it." xml:space="preserve"><value>Bozza aperta. Allega il rapporto salvato, poi invia.</value></data>
+  <data name="Delivery is uncertain. Check GitHub or Outlook before trying again." xml:space="preserve"><value>Invio incerto. Controlla GitHub o Outlook prima di riprovare.</value></data>
+  <data name="Unable to send the report. The local copy is available." xml:space="preserve"><value>Impossibile inviare il rapporto. La copia locale è disponibile.</value></data>
+  <data name="Local report saved. Its path has been copied." xml:space="preserve"><value>Rapporto salvato in locale. Percorso copiato.</value></data>
+  <data name="Unable to save the report." xml:space="preserve"><value>Impossibile salvare il rapporto.</value></data>
+  <data name="Title" xml:space="preserve"><value>Titolo</value></data>
+  <data name="Email" xml:space="preserve"><value>E-mail</value></data>
 </root>

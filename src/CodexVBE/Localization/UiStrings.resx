@@ -1805,4 +1805,26 @@ Sign in through Git Credential Manager; commit identity is configured in Git.</v
   <data name="Copy the version and environment information for support." xml:space="preserve"><value>Copy the version and environment information for support.</value></data>
   <data name="Version, technical details and project resources" xml:space="preserve"><value>Version, technical details and project resources</value></data>
   <data name="Close" xml:space="preserve"><value>Close</value></data>
+  <data name="VBAi · Report an issue" xml:space="preserve"><value>VBAi · Report an issue</value></data>
+  <data name="Review before sending. No VBA, chat, credentials or file paths are collected automatically." xml:space="preserve"><value>Review before sending. No VBA, chat, credentials or file paths are collected automatically.</value></data>
+  <data name="What happened?" xml:space="preserve"><value>What happened?</value></data>
+  <data name="Report preview" xml:space="preserve"><value>Report preview</value></data>
+  <data name="Open GitHub issue" xml:space="preserve"><value>Open GitHub issue</value></data>
+  <data name="Send report" xml:space="preserve"><value>Send report</value></data>
+  <data name="Save report" xml:space="preserve"><value>Save report</value></data>
+  <data name="GitHub first; Outlook if unavailable." xml:space="preserve"><value>GitHub first; Outlook if unavailable.</value></data>
+  <data name="Send with Outlook, or open an email draft." xml:space="preserve"><value>Send with Outlook, or open an email draft.</value></data>
+  <data name="Save the full report and copy its path." xml:space="preserve"><value>Save the full report and copy its path.</value></data>
+  <data name="Do not include confidential information in your description." xml:space="preserve"><value>Do not include confidential information in your description.</value></data>
+  <data name="Attach the saved report to this email." xml:space="preserve"><value>Attach the saved report to this email.</value></data>
+  <data name="Sending report…" xml:space="preserve"><value>Sending report…</value></data>
+  <data name="Report published on GitHub." xml:space="preserve"><value>Report published on GitHub.</value></data>
+  <data name="Report handed to Outlook for sending." xml:space="preserve"><value>Report handed to Outlook for sending.</value></data>
+  <data name="Email draft opened. Attach the saved report, then send it." xml:space="preserve"><value>Email draft opened. Attach the saved report, then send it.</value></data>
+  <data name="Delivery is uncertain. Check GitHub or Outlook before trying again." xml:space="preserve"><value>Delivery is uncertain. Check GitHub or Outlook before trying again.</value></data>
+  <data name="Unable to send the report. The local copy is available." xml:space="preserve"><value>Unable to send the report. The local copy is available.</value></data>
+  <data name="Local report saved. Its path has been copied." xml:space="preserve"><value>Local report saved. Its path has been copied.</value></data>
+  <data name="Unable to save the report." xml:space="preserve"><value>Unable to save the report.</value></data>
+  <data name="Title" xml:space="preserve"><value>Title</value></data>
+  <data name="Email" xml:space="preserve"><value>Email</value></data>
 </root>
