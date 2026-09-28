@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -154,14 +154,14 @@ namespace CodexVBE.Tests.Integration
                 StringAssert.Contains(window.Drafts.Recover(doc.RecoveryKey).Text, "reload recovery");
                 Wait(() => UiInvoke.Field<Button>(window, "restore").Visible && !UiInvoke.Field<bool>(window, "busy")); UiInvoke.Field<Button>(window, "restore").PerformClick(); Wait(() => doc.Text.Contains("reload recovery") && !UiInvoke.Field<bool>(window, "busy"));
 
-                Wait(() => UiInvoke.Field<Button>(window, "closeModule").Visible && !UiInvoke.Field<bool>(window, "busy")); UiInvoke.Field<Button>(window, "closeModule").PerformClick(); Wait(() => !System.Linq.Enumerable.Any(window.Documents));
+                Wait(() => !UiInvoke.Field<bool>(window, "busy")); UiInvoke.Call(typeof(ModernEditorWindow), "CloseModuleClick", window, window, EventArgs.Empty); Wait(() => !System.Linq.Enumerable.Any(window.Documents));
                 StringAssert.Contains(window.Drafts.Recover(doc.RecoveryKey).Text, "reload recovery");
 
                 window.Close(); Wait(() => window.IsDisposed);
             }
         }
         [STATestMethod]
-        public void RepeatedBreakpointRequestsRemainUnverifiedUntilSourceChanges()
+        public void BreakpointRequestsToggleAndClearOnSourceChanges()
         {
             using (var host = new EditorFixture())
             using (var window = new ModernEditorWindow())
@@ -171,10 +171,60 @@ namespace CodexVBE.Tests.Integration
                 Wait(() => Wait(window.Script("snapshots")).Contains(doc.Id));
                 Wait(window.Script("breakpointRequested", doc.Id, 3));
                 Wait(window.Script("breakpointRequested", doc.Id, 3));
+                StringAssert.Contains(Wait(window.Script("testInfo")), "\"pendingBreakpoints\":0");
+                Wait(window.Script("breakpointRequested", doc.Id, 3));
                 StringAssert.Contains(Wait(window.Script("testInfo")), "\"pendingBreakpoints\":1");
                 Wait(window.Script("insert", "'changed\n"));
                 StringAssert.Contains(Wait(window.Script("testInfo")), "\"pendingBreakpoints\":0");
                 window.Close(); Wait(() => window.IsDisposed);
+            }
+        }
+        [STATestMethod]
+        public void ClosingATabKeepsItsOriginalTargetAcrossAnAwait()
+        {
+            using (var first = new EditorFixture())
+            using (var second = new EditorFixture())
+            using (var window = new ModernEditorWindow())
+            {
+                window.Drafts = new EditorDraftStore(first.Root);
+                var a = Wait(window.OpenModule(first)); window.Show(); Wait(() => window.Ready);
+                var b = Wait(window.OpenModule(second)); Wait(window.OpenModule(first));
+                UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer").Stop();
+                UiInvoke.Call(typeof(ModernEditorWindow), "CloseModuleClick", window, window, EventArgs.Empty);
+                Wait(window.OpenModule(second));
+                Wait(() => !UiInvoke.Field<bool>(window, "busy"));
+                Assert.AreSame(b, window.Current);
+                Assert.AreEqual(1, System.Linq.Enumerable.Count(window.Documents));
+                window.Close(); Wait(() => window.IsDisposed);
+            }
+        }
+        public sealed class WorkspaceVbe
+        {
+            public WorkspaceMain MainWindow { get; set; }
+            public WorkspaceWindow ActiveWindow { get; } = new WorkspaceWindow();
+        }
+        public sealed class WorkspaceMain { public int HWnd { get; set; } }
+        public sealed class WorkspaceWindow { public int Type { get; set; } }
+        [STATestMethod]
+        public void WorkspaceFillsDocumentAreaAndLeavesNativeDesignersAccessible()
+        {
+            using (var fixture = new EditorFixture())
+            using (var desktop = new Form { IsMdiContainer = true, Width = 1000, Height = 700 })
+            using (var window = new ModernEditorWindow())
+            {
+                desktop.Show();
+                var vbe = new WorkspaceVbe { MainWindow = new WorkspaceMain { HWnd = desktop.Handle.ToInt32() } };
+                using (var host = new EditorWorkspaceHost(vbe, window))
+                {
+                    host.Show(); Wait(() => window.Ready);
+                    var mdi = System.Linq.Enumerable.Single(System.Linq.Enumerable.OfType<MdiClient>(desktop.Controls));
+                    Assert.AreEqual(mdi.ClientSize, window.Size);
+                    desktop.Width = 800; Wait(() => window.Size == mdi.ClientSize);
+                    vbe.ActiveWindow.Type = 1; Wait(() => !window.Visible);
+                    vbe.ActiveWindow.Type = 7; UiInvoke.Call(typeof(EditorWorkspaceHost), "Resize", host); Assert.IsFalse(window.Visible);
+                    vbe.ActiveWindow.Type = 0; Wait(() => window.Visible);
+                    window.Close(); Assert.IsFalse(window.IsDisposed);
+                }
             }
         }
         private static Microsoft.Web.WebView2.Core.CoreWebView2CapturePreviewImageFormat CoreImageFormat() => Microsoft.Web.WebView2.Core.CoreWebView2CapturePreviewImageFormat.Png;

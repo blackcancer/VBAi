@@ -55,11 +55,11 @@ function hideDiff() {
 }
 window.vbai = {
   languageReply: language.reply,
-  labels(value) { commandLabels = value; installNativeActions(); },
+  labels(value) { commandLabels = value; installNativeActions(); installAssistantActions(); },
   languageInspect(id, line, column) { return language.inspect(models.get(id).model, { lineNumber: line, column }); },
   diagnostics(id, version, markers) { const entry = models.get(id); if (entry && entry.model.getVersionId() === version) monaco.editor.setModelMarkers(entry.model, 'VBA compiler', markers); },
-  execution(id, line) { const entry = models.get(id); if (!entry) return; entry.execution = entry.model.deltaDecorations(entry.execution || [], line > 0 ? [{ range: new monaco.Range(line, 1, line, 1), options: { isWholeLine: true, className: 'vbai-execution-line', glyphMarginClassName: 'vbai-execution', glyphMarginHoverMessage: { value: 'VBE: Show Next Statement' } } }] : []); if (line > 0) editor.revealLineInCenter(line); },
-  breakpointRequested(id, line) { const entry = models.get(id); if (!entry) return; entry.breakpoints ||= new Map(); if (entry.breakpoints.has(line)) { entry.model.deltaDecorations(entry.breakpoints.get(line), []); } entry.breakpoints.set(line, entry.model.deltaDecorations([], [{ range: new monaco.Range(line, 1, line, 1), options: { glyphMarginClassName: 'vbai-breakpoint-pending', glyphMarginHoverMessage: { value: commandLabels['Breakpoint request sent; verify in VBE.'] || 'Breakpoint request sent; verify in VBE.' } } }])); },
+  execution(id, line, reveal = true) { const entry = models.get(id); if (!entry) return; entry.execution = entry.model.deltaDecorations(entry.execution || [], line > 0 ? [{ range: new monaco.Range(line, 1, line, 1), options: { isWholeLine: true, className: 'vbai-execution-line', glyphMarginClassName: 'vbai-execution', glyphMarginHoverMessage: { value: 'VBE: Show Next Statement' } } }] : []); if (line > 0 && reveal && active === id) editor.revealLineInCenter(line); },
+  breakpointRequested(id, line) { const entry = models.get(id); if (!entry) return; entry.breakpoints ||= new Map(); if (entry.breakpoints.has(line)) { entry.model.deltaDecorations(entry.breakpoints.get(line), []); entry.breakpoints.delete(line); return; } entry.breakpoints.set(line, entry.model.deltaDecorations([], [{ range: new monaco.Range(line, 1, line, 1), options: { glyphMarginClassName: 'vbai-breakpoint-pending', glyphMarginHoverMessage: { value: commandLabels['Breakpoint request sent; verify in VBE.'] || 'Breakpoint request sent; verify in VBE.' } } }])); },
   open(id, text) {
     if (!models.has(id)) {
       const model = monaco.editor.createModel(text, 'vba', monaco.Uri.parse('vbai://module/' + id));
@@ -102,7 +102,8 @@ window.vbai = {
   insert(text) { editor.trigger('vbai', 'type', { text }); },
   testInfo() { return { language: editor.getModel()?.getLanguageId(), models: models.size, theme: document.body.style.background, version: monaco.editor?.getModels().length, diff: !!diff, pendingBreakpoints: models.get(active)?.breakpoints?.size || 0, executionMarkers: models.get(active)?.execution?.length || 0, markers: editor.getModel() ? monaco.editor.getModelMarkers({ resource: editor.getModel().uri }).length : 0 }; }
 };
-editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => send({ type: 'command', name: 'sync' }));
+editor.addAction({ id: 'vbai.save', label: 'VBA: Save', keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
+  run: () => { if (active) send({ type: 'command', name: 'save', id: active }); } });
 function nativeCommand(name) { if (!active) return; const entry = models.get(active); send({ type: 'editorCommand', name, id: active, version: entry.model.getVersionId(), line: editor.getPosition()?.lineNumber || 1 }); }
 function installNativeActions() {
   for (const action of nativeActions) action.dispose(); nativeActions = [];
@@ -116,6 +117,18 @@ function installNativeActions() {
   ]) nativeActions.push(editor.addAction({ id: 'vbai.' + name, label: 'VBA: ' + (commandLabels[label] || label), keybindings: binding ? [binding] : [], contextMenuGroupId: 'vba', run: () => nativeCommand(name) }));
 }
 installNativeActions();
-editor.onMouseDown(e => { if (e.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN && e.target.position) { editor.setPosition(e.target.position); nativeCommand('toggle_breakpoint'); } });
+let assistantActions = [];
+function installAssistantActions() {
+for (const action of assistantActions) action.dispose(); assistantActions = [];
+for (const [name, label] of [['expliquer', 'Explain'], ['corriger', 'Fix'], ['refactoriser', 'Refactor']]) {
+  assistantActions.push(editor.addAction({ id: 'vbai.' + name, label: 'VBAi: ' + (commandLabels[label] || label), contextMenuGroupId: 'vbai',
+    run: () => { if (!active) return; const entry = models.get(active), selection = editor.getSelection();
+      const text = selection && !selection.isEmpty() ? entry.model.getValueInRange(selection) : entry.model.getValue();
+      send({ type: 'assistantAction', name: '/' + name, ...snapshot(entry), selectedText: text, line: selection && !selection.isEmpty() ? selection.startLineNumber : 1 }); }
+  }));
+}
+}
+installAssistantActions();
+editor.onMouseDown(e => { if ([monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN, monaco.editor.MouseTargetType.GUTTER_LINE_NUMBERS].includes(e.target.type) && e.target.position) { editor.setPosition(e.target.position); nativeCommand('toggle_breakpoint'); } });
 const style = document.createElement('style'); style.textContent = '.vbai-breakpoint-pending::before { content:"○";color:#ef5350;font-size:20px;font-weight:bold; } .vbai-execution::before { content:"➜";color:#f7c948; } .vbai-execution-line { background:#f7c94826; }'; document.head.appendChild(style);
 send({ type: 'ready' });

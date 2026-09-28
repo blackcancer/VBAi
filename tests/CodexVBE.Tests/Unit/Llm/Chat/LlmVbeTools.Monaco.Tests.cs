@@ -142,7 +142,10 @@ namespace CodexVBE.Tests.Unit
             StringAssert.Contains(await tools.InvokeAsync("monaco_edit", "{\"Project\":\"P\",\"Module\":\"M\",\"ExpectedVersion\":\"1\",\"Text\":\"\"}"), "Invalid Monaco argument");
             StringAssert.Contains(await tools.InvokeAsync("monaco_read", "{\"Project\":\"P\",\"Module\":\"M\",\"Extra\":true}"), "Unexpected argument");
             tools.BoundProject = "Other";
-            StringAssert.Contains(await tools.InvokeAsync("monaco_read", "{\"Project\":\"P\",\"Module\":\"M\"}"), "autre projet");
+            StringAssert.Contains(new JavaScriptSerializer().Deserialize<Response>(await tools.InvokeAsync("monaco_read", "{\"Project\":\"P\",\"Module\":\"M\"}")).Error, UiText.Get("Read access to another project is not authorized for this conversation."));
+            tools.SetReadAccess(new[] { "P" }, false);
+            StringAssert.Contains(await tools.InvokeAsync("monaco_read", "{\"Project\":\"P\",\"Module\":\"M\"}"), "HOST WAS ACCESSED");
+            StringAssert.Contains(await tools.InvokeAsync("monaco_edit", "{\"Project\":\"P\",\"Module\":\"M\",\"ExpectedVersion\":1,\"Text\":\"\"}"), "autre projet");
             StringAssert.Contains(tools.Invoke("monaco_open", "{}"), "InvokeAsync");
         }
 

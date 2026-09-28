@@ -15,20 +15,45 @@ export function installLanguage(monaco, editor, models, send) {
       send({ type: 'language', id: entry.id, version, request });
     });
   }
-  function visible(data, position, prefix) {
+  function visible(data, position, prefix, model) {
+    const implicitReceiver = /(^\s*|[=(,+*/&-]\s*)\./;
+    if (implicitReceiver.test(prefix) && model) {
+      const stack = [];
+      for (let line = 1; line < position.lineNumber; line++) {
+        const text = model.getLineContent(line).replace(/"(?:[^"]|"")*"/g, '""').replace(/'[^\n]*$/, '').trim();
+        if (/^End\s+With\b/i.test(text)) stack.pop();
+        else { const start = /^With\s+(.+)$/i.exec(text); if (start) stack.push(start[1].startsWith('.') ? (stack[stack.length - 1] || '') + start[1] : start[1]); }
+      }
+      if (stack.length) prefix = prefix.replace(implicitReceiver, (_, start) => start + stack[stack.length - 1] + '.');
+    }
     if (!data) return [];
     const all = data.symbols, local = all.filter(s => s.Module === data.module);
     const procedure = local.find(s => ['Procedure', 'Property'].includes(s.Kind) && s.Line <= position.lineNumber && s.EndLine >= position.lineNumber);
     let symbols = all.filter(s => !s.Conditional && (s.Module === data.module || !s.Private) &&
       (s.Scope === 'Module' || (s.Module === data.module && s.Scope === procedure?.Name)));
-    const match = /([\p{L}_][\p{L}\p{N}_]*)\s*\.\s*[\p{L}\p{N}_]*$/u.exec(prefix);
+    // Resolve each receiver, including property/method calls, without evaluating VBA.
+    const identifier = '[\\p{L}_][\\p{L}\\p{N}_]*';
+    const expression = prefix.replace(/"(?:[^"]|"")*"/g, '""');
+    let simplified = expression;
+    for (let i = 0; i < 8 && /\([^()]*\)/.test(simplified); i++) simplified = simplified.replace(/\([^()]*\)/g, '');
+    const match = new RegExp('(' + identifier + '(?:\\s*\\.\\s*' + identifier + ')*)\\s*\\.\\s*[\\p{L}\\p{N}_]*$', 'u').exec(simplified);
     if (match) {
-      const receiver = match[1].toLowerCase();
-      const variable = symbols.find(s => s.Name.toLowerCase() === receiver && s.Scope === procedure?.Name) || symbols.find(s => s.Name.toLowerCase() === receiver);
-      const type = variable?.TypeName?.split('.').pop()?.toLowerCase();
-      return all.filter(s => !s.Conditional && (!s.Private || s.Module === data.module) &&
-        ((s.Module.toLowerCase() === (type || receiver) && s.Scope === 'Module' && !['Module', 'Class'].includes(s.Kind)) ||
-         (s.Scope?.toLowerCase() === (type || receiver) && ['Field', 'EnumMember'].includes(s.Kind))));
+      const names = match[1].split('.').map(n => n.trim().toLowerCase());
+      const memberType = n => n?.split('.').pop()?.replace(/^_/, '').toLowerCase();
+      const members = owner => all.filter(s => (!s.External || !owner.includes('.') || s.Library?.toLowerCase() === owner.split('.')[0].toLowerCase()) && !s.Conditional && (!s.Private || s.Module === data.module) &&
+        ((memberType(s.Module) === memberType(owner) && s.Scope === 'Module' && !['Module', 'Class'].includes(s.Kind)) ||
+         (memberType(s.Scope) === memberType(owner) && ['Field', 'EnumMember'].includes(s.Kind))));
+      const first = names.shift();
+      const variable = symbols.find(s => s.Name.toLowerCase() === first && s.Scope === procedure?.Name) || symbols.find(s => s.Name.toLowerCase() === first)
+        || all.find(s => memberType(s.Module) === 'global' && s.Name.toLowerCase() === first);
+      let type = first === 'me' ? data.module : variable?.TypeName || first;
+      for (const name of names) {
+        const member = members(type).find(s => s.Name.toLowerCase() === name);
+        if (!member?.TypeName) return [];
+        type = member.TypeName;
+      }
+      const seen = new Set();
+      return members(type).filter(s => { const key = s.Name.toLowerCase(); if (seen.has(key)) return false; seen.add(key); return true; });
     }
     // Local declarations shadow module and project declarations.
     symbols = symbols.filter(s => !s.External && (s.Module === data.module || ['Module', 'Class'].includes(s.Kind) || !all.some(t => t.Name === s.Module && t.Kind === 'Class')));
@@ -42,7 +67,7 @@ export function installLanguage(monaco, editor, models, send) {
     const data = await request(model), word = model.getWordAtPosition(position);
     if (!word) return null;
     const prefix = model.getLineContent(position.lineNumber).slice(0, word.endColumn - 1);
-    const symbol = visible(data, position, prefix).find(s => s.Name.toLowerCase() === word.word.toLowerCase());
+    const symbol = visible(data, position, prefix, model).find(s => s.Name.toLowerCase() === word.word.toLowerCase());
     return symbol ? { data, symbol } : null;
   }
   monaco.languages.registerCompletionItemProvider('vba', {
@@ -50,7 +75,7 @@ export function installLanguage(monaco, editor, models, send) {
     async provideCompletionItems(model, position) {
       const data = await request(model), word = model.getWordUntilPosition(position);
       const prefix = model.getLineContent(position.lineNumber).slice(0, position.column - 1);
-      return { suggestions: visible(data, position, prefix).map(s => ({ label: s.Name, kind: kind(s), detail: s.Declaration, insertText: s.Name,
+      return { suggestions: visible(data, position, prefix, model).map(s => ({ label: s.Name, kind: kind(s), detail: s.Declaration, insertText: s.Name,
         range: new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn) })) };
     }
   });
@@ -84,9 +109,9 @@ export function installLanguage(monaco, editor, models, send) {
     }
     if (opening < 0) return null;
     const name = /([\p{L}_][\p{L}\p{N}_]*)\s*$/u.exec(prefix.slice(0, opening)); if (!name) return null;
-    const data = await request(model), s = visible(data, position, prefix.slice(0, opening)).find(s => s.Name.toLowerCase() === name[1].toLowerCase() && s.Parameters.length);
+    const data = await request(model), s = visible(data, position, prefix.slice(0, opening), model).find(s => s.Name.toLowerCase() === name[1].toLowerCase() && s.Parameters.length);
     if (!s) return null;
     return { value: { signatures: [{ label: s.Name + '(' + s.Parameters.join(', ') + ')', parameters: s.Parameters.map(label => ({ label })) }], activeSignature: 0, activeParameter: Math.min(count, s.Parameters.length - 1) }, dispose() {} };
   } });
-  return { close(id) { for (const [uri, model] of definitions) if (model.uri.path.split('/')[1] === encodeURIComponent(id)) { model.dispose(); definitions.delete(uri); } }, reply(request, data) { const resolve = pending.get(request); if (resolve) { pending.delete(request); resolve(data); } }, async inspect(model, position) { return visible(await request(model), position, model.getLineContent(position.lineNumber).slice(0, position.column - 1)); } };
+  return { close(id) { for (const [uri, model] of definitions) if (model.uri.path.split('/')[1] === encodeURIComponent(id)) { model.dispose(); definitions.delete(uri); } }, reply(request, data) { const resolve = pending.get(request); if (resolve) { pending.delete(request); resolve(data); } }, async inspect(model, position) { return visible(await request(model), position, model.getLineContent(position.lineNumber).slice(0, position.column - 1), model); } };
 }

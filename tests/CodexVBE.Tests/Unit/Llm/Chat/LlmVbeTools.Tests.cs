@@ -434,7 +434,7 @@ namespace CodexVBE.Tests.Unit
                 var function = Dict(Dict(Json.DeserializeObject(Json.Serialize(definition)))["function"]);
                 string name = (string)function["name"];
                 // Monaco has its own awaited contract matrix and real WebView2 dispatch test.
-                if (name.StartsWith("git_") || name.StartsWith("monaco_") || name == "read_user_file" || name == "replace_lines") continue;
+                if (name.StartsWith("git_") || name.StartsWith("monaco_") || LlmVbeTools.IsCatalogTool(name) || name == "read_user_file" || name == "replace_lines") continue;
                 var parameters = Dict(function["parameters"]);
                 var required = (object[])parameters["required"];
                 var fields = Dict(parameters["properties"]);
@@ -720,7 +720,7 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual("initial",module.Code);Assert.IsTrue(first.Restored);Assert.IsTrue(second.Restored);
             tools.ValidateScope=()=> {throw new InvalidOperationException("stale scope");};
             Assert.AreEqual("stale scope",tools.RestoreChanges(new[] {first},null).Error);
-            Assert.IsNotNull(Json.DeserializeObject(tools.LiveContextJson()));
+            Assert.ThrowsException<InvalidOperationException>(() => tools.LiveContextJson());
         }
 
         /// <summary>Conserve les contrats de réponse pour réussite, échec, null et JSON invalide.</summary>

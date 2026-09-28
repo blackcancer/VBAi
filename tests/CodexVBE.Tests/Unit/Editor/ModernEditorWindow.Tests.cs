@@ -16,6 +16,25 @@ namespace CodexVBE.Tests.Unit
             { Assert.IsNull(window.Browser); Assert.AreEqual("VBAi editor", window.Text); }
         }
         [DataTestMethod]
+        [DataRow("Clear All Breakpoints")]
+        [DataRow("Effacer tous les points d'arrêt")]
+        public void ToggleNeverAcceptsClearAllBreakpoints(string caption)
+        { Assert.IsFalse(VbeDebug.IsAllowed("toggle_breakpoint", caption, 2)); }
+        [STATestMethod]
+        public void WorkspaceCannotBeClosedByANativeCloseCommand()
+        {
+            using (var window = new ModernEditorWindow())
+            {
+                window.WorkspaceHosted = true;
+                var args = new System.Windows.Forms.FormClosingEventArgs(System.Windows.Forms.CloseReason.UserClosing, false);
+                UiInvoke.Call(typeof(ModernEditorWindow), "ClosingWindow", window, window, args);
+                Assert.IsTrue(args.Cancel);
+                Assert.IsFalse(window.ControlBox);
+                Assert.AreEqual(System.Windows.Forms.FormBorderStyle.None, window.FormBorderStyle);
+                Assert.IsTrue(UiInvoke.Field<ThemedTabControl>(window, "tabs").ShowCloseButtons);
+            }
+        }
+        [DataTestMethod]
         [DataRow("https://editor.vbai.local/index.html", true)]
         [DataRow("https://editor.vbai.local/index.html?external", false)]
         [DataRow("https://editor.vbai.local.evil.test/index.html", false)]
@@ -86,7 +105,6 @@ namespace CodexVBE.Tests.Unit
             using (var f = new Editor.ModernEditorToolFixture())
             {
                 f.Private("SetStatus"); f.Private("SetStatus"); f.Private("SetResultStatus", "owned result"); System.Windows.Forms.Application.DoEvents(); Assert.AreEqual("owned result", UiInvoke.Field<System.Windows.Forms.Label>(f.Window, "status").Text);
-                int docked = 0; f.Private("DockClick", null, System.EventArgs.Empty); f.Window.DockRequested += () => docked++; f.Private("DockClick", null, System.EventArgs.Empty); Assert.AreEqual(1, docked);
                 var module = new Editor.EditorLifetimeModule(); var doc = ModernEditorDebugFixture.Wait(f.Window.OpenModule(module)); module.FailName = true; f.Private("UpdateStatus"); Assert.AreEqual(doc, f.Window.Current);
                 f.Base.Set("closing", true); f.Private("SetStatus"); f.Private("UpdateStatus"); f.Private("Report", new System.IO.IOException("owned closing error")); f.Base.Set("closing", false);
                 var child = new System.Windows.Forms.Panel(); f.Window.Controls.Add(child);

@@ -171,7 +171,7 @@ namespace CodexVBE
                 codex?.Dispose(); codex = null;
                 currentSession = session;
                 modePicker.SelectedItem = session.Mode;
-                if (tools != null) tools.Mode = session.Mode;
+                if (tools != null) { tools.Mode = session.Mode; tools.ResetCatalog(); }
                 draftAttachments.Clear();
                 if (session.DraftAttachments != null) draftAttachments.AddRange(session.DraftAttachments);
                 attachMemory.Checked = false;
@@ -188,6 +188,7 @@ namespace CodexVBE
                     if (!string.IsNullOrEmpty(entry.StreamId)) completedStreams.Add(entry.StreamId);
                     AddEntry(entry);
                 }
+                MigrateProviderPrivacy();
                 RefreshTranscriptWindow(Math.Max(0, transcriptEntries.Count - 80));
                 FollowLatest();
                 selectedReferences.Clear();
@@ -208,6 +209,7 @@ namespace CodexVBE
                 ShowWelcome();
             }
             finally { loadingSession = false; }
+            UpdateBudgetControls();
             _ = LoadModelsAsync();
         }
 
@@ -320,7 +322,11 @@ namespace CodexVBE
             var scope = scopePicker.SelectedItem as MacroScope;
             if (scopeSession == null) return;
             if (scope == null) throw new InvalidOperationException(UiText.Get("The project for this conversation is closed or ambiguous."));
-            if (tools != null) tools.BoundProject = scope.Project;
+            if (tools != null)
+            {
+                tools.BoundProject = scope.Project;
+                tools.SetReadAccess(currentSession?.ReadProjectGrants, currentSession?.SharedContextReadAllowed ?? false);
+            }
             var response = ReadHost(scopeSession, new Request { Command = "list_projects" });
             if (!response.Ok) throw new InvalidOperationException(response.Error);
             var projects = json.DeserializeObject(json.Serialize(response.Data)) as object[];

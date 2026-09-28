@@ -32,11 +32,16 @@ namespace CodexVBE
             try
             {
                 dynamic pane = vbe.ActiveCodePane;
+                bool belongsToProject = false;
                 if (pane != null)
+                    foreach (dynamic component in project.VBComponents)
+                        if (SameComObject((object)component.CodeModule, (object)pane.CodeModule))
+                        { belongsToProject = true; break; }
+                if (belongsToProject)
                 {
                     activeModule = (string)pane.CodeModule.Parent.Name;
-                    selectedProject = (string)vbe.ActiveVBProject.Name;
-                    try { selectedProjectPath = (string)vbe.ActiveVBProject.FileName; } catch { }
+                    selectedProject = (string)project.Name;
+                    try { selectedProjectPath = (string)project.FileName; } catch { }
                     int startLine = 0, startColumn = 0, endLine = 0, endColumn = 0;
                     pane.GetSelection(ref startLine, ref startColumn, ref endLine, ref endColumn);
                     selection = new { StartLine = startLine, StartColumn = startColumn,
@@ -427,6 +432,7 @@ namespace CodexVBE
             dynamic pane = module.CodePane;
             pane.Show();
             pane.SetSelection(request.StartLine, 1, request.StartLine, 1);
+            pane.Window.SetFocus();
             dynamic activePane = vbe.ActiveCodePane;
             if (activePane == null || !SameComObject(pane, activePane))
                 throw new InvalidOperationException("The requested code pane is not active in the VBE.");
@@ -660,9 +666,11 @@ namespace CodexVBE
             {
                 case "toggle_breakpoint":
                     return (mode == 1 || mode == 2) &&
-                        (label.IndexOf("breakpoint", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                         label.IndexOf("point d'arr", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                         label.IndexOf("point d’arrêt", StringComparison.OrdinalIgnoreCase) >= 0);
+                        (label.Equals("Toggle Breakpoint", StringComparison.OrdinalIgnoreCase) ||
+                         label.Equals("Basculer le point d'arrêt", StringComparison.OrdinalIgnoreCase) ||
+                         label.Equals("Basculer le point d’arrêt", StringComparison.OrdinalIgnoreCase) ||
+                         label.Equals("Point d'arrêt", StringComparison.OrdinalIgnoreCase) ||
+                         label.Equals("Point d’arrêt", StringComparison.OrdinalIgnoreCase));
                 case "run":
                     return mode == 2 &&
                         (label.StartsWith("Run Sub", StringComparison.OrdinalIgnoreCase) ||

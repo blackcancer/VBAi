@@ -1,6 +1,6 @@
 # Catalogue des outils LLM
 
-Catalogue intégré le 28 septembre 2026 après PR #7 et extensions classes/options : **204 outils**. Les catalogues Git, Editor et Monaco sont inclus ; ce tableau décrit les outils LLM et non toutes les commandes internes du pont.
+Catalogue intégré le 28 septembre 2026 après PR #7 et extensions classes/options : **206 outils**. Les catalogues Git, Editor et Monaco sont inclus ; ce tableau décrit les outils LLM et non toutes les commandes internes du pont.
 
 ## Contrat
 
@@ -257,3 +257,15 @@ Les cinq commandes Monaco restent centrées sur le document et sa sélection. `m
 La réconciliation après une écriture garde la version capturée avant COM : une frappe reçue pendant l'écriture est préservée. Le diff est capturé immédiatement après la synchronisation native, avant les attentes de réconciliation du moteur et de persistance. Une réponse `Synchronized=true` peut donc aussi porter `Dirty=true` si une nouvelle frappe est survenue après l'écriture ; elle sera traitée par la synchronisation continue.
 
 La compilation via compile_project capture aussi le moteur Monaco et refuse les brouillons non synchronisés ou conflictuels avant tout accès au compilateur natif. Son classement en inspection ne change pas : cette garde impose seulement que la compilation porte sur le code effectivement affiché et synchronisé.
+
+## Catalogue progressif
+
+Les 206 fonctions sont accessibles via découverte ; chaque requête ne transmet plus tous leurs schémas. Voir [Catalogue et reprise des tours](../chat-tool-workflow.md).
+
+| Outil | Catégorie | Paramètres requis |
+| --- | --- | --- |
+| `discover_tools` | Inspection | `Family` (`code`, `forms`, `debug`, `git`, `environment`, `all`) |
+| `invoke_tool` | Passerelle, permissions de la cible | `ToolName`, `ArgumentsJson` |
+
+Les deux commandes nécessitent `InvokeAsync`. Une passerelle ne change ni la portée de projet ni les autorisations de la fonction appelée.
+Politique de lecture : [confidentialité des projets](../project-privacy.md).

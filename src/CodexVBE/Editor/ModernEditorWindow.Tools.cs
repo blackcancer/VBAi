@@ -43,7 +43,7 @@ namespace CodexVBE
                     Native = doc.Native, NativeSha256 = EditorDocument.Hash(doc.Native), Dirty = dirty,
                     Conflict = dirty && doc.Native != doc.Baseline && doc.Native != text,
                     Writable = doc.Writable, Selection = snapshot["selection"],
-                    AutomaticSynchronization = true, HostDocumentSaved = false };
+                    AutomaticSynchronization = true, HostDocumentSaveInvoked = false, HostDocumentSaved = ReadDocumentHostSaved(doc) };
             }
             finally { busy = false; }
         }
@@ -105,7 +105,7 @@ namespace CodexVBE
                 { doc.Acknowledge(synchronized, captured); versions[doc.Id] = Math.Max(versions[doc.Id], reconciled); }
                 await CaptureDocuments(); if (doc.Dirty) await PrepareSynchronization(doc); else Drafts.ClearOwn(doc); SetStatus();
                 return new { AppliedToDraft = true, Synchronized = true, AppliedVersion = applied, Version = versions[doc.Id], doc.Dirty,
-                    AutomaticSynchronization = true, HostDocumentSaved = false };
+                    AutomaticSynchronization = true, HostDocumentSaveInvoked = false, HostDocumentSaved = ReadDocumentHostSaved(doc) };
             }
             finally { busy = false; }
         }
@@ -136,7 +136,7 @@ namespace CodexVBE
                 if (doc.Dirty) await PrepareSynchronization(doc); else Drafts.ClearOwn(doc);
                 SetStatus();
                 return new { Synchronized = true, Version = versions[doc.Id], doc.Dirty, Native = doc.Native,
-                    NativeSha256 = EditorDocument.Hash(doc.Native), HostDocumentSaved = false };
+                    NativeSha256 = EditorDocument.Hash(doc.Native), HostDocumentSaveInvoked = false, HostDocumentSaved = ReadDocumentHostSaved(doc) };
             }
             finally { busy = false; }
         }

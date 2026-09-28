@@ -1,8 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
+using TYPEDESC = System.Runtime.InteropServices.ComTypes.TYPEDESC;
 using TYPEATTR = System.Runtime.InteropServices.ComTypes.TYPEATTR;
 using FUNCDESC = System.Runtime.InteropServices.ComTypes.FUNCDESC;
 using FUNCFLAGS = System.Runtime.InteropServices.ComTypes.FUNCFLAGS;
@@ -25,26 +26,56 @@ namespace CodexVBE
             if (key == cacheKey) return cacheValue;
             var symbols = new List<EditorSymbol>();
             var requested = new HashSet<string>(requestedTypes.Select(n => n.Split('.').Last()), StringComparer.OrdinalIgnoreCase);
-            foreach (string path in paths.Distinct(StringComparer.OrdinalIgnoreCase))
+            requested.Add("Application"); requested.Add("_Application"); requested.Add("_Global");
+            var indexed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int pass = 0; pass < 6; pass++)
             {
-                ITypeLib library = null;
-                try
+                int previousCount = requested.Count;
+                foreach (string path in paths.Distinct(StringComparer.OrdinalIgnoreCase))
                 {
-                    LoadTypeLibEx(path, 2, out library);
-                    int count = Math.Min(library.GetTypeInfoCount(), 10000);
-                    for (int i = 0; i < count; i++)
+                    ITypeLib library = null;
+                    try
                     {
-                        library.GetDocumentation(i, out string name, out string description, out int help, out string file);
-                        if (!requested.Contains(name)) continue;
-                        library.GetTypeInfo(i, out ITypeInfo info);
-                        try { ReadMembers(info, name, symbols, new HashSet<Guid>(), 0); }
-                        finally { Marshal.ReleaseComObject(info); }
+                        LoadTypeLibEx(path, 2, out library);
+                        library.GetDocumentation(-1, out string libraryName, out string libraryHelp, out int libraryContext, out string libraryFile);
+                        int count = Math.Min(library.GetTypeInfoCount(), 10000);
+                        for (int i = 0; i < count; i++)
+                        {
+                            library.GetDocumentation(i, out string name, out string description, out int help, out string file);
+                            if (!requested.Contains(name) || !indexed.Add(path + "|" + name)) continue;
+                            library.GetTypeInfo(i, out ITypeInfo info);
+                            try
+                            {
+                                int start = symbols.Count;
+                                ReadMembers(info, name, symbols, new HashSet<Guid>(), 0);
+                                for (int member = start; member < symbols.Count; member++) symbols[member].Library = libraryName;
+                            }
+                            finally { Marshal.ReleaseComObject(info); }
+                        }
                     }
+                    catch (COMException error) { LoadLog.Write("Monaco type metadata: " + error.ErrorCode); }
+                    finally { if (library != null) Marshal.ReleaseComObject(library); }
                 }
-                catch (COMException error) { LoadLog.Write("Monaco type metadata: " + error.ErrorCode); }
-                finally { if (library != null) Marshal.ReleaseComObject(library); }
+                foreach (var symbol in symbols.Where(item => !string.IsNullOrEmpty(item.TypeName))) requested.Add(symbol.TypeName.Split('.').Last());
+                if (requested.Count == previousCount) break;
             }
             cacheValue = symbols.ToArray(); cacheKey = key; return cacheValue;
+        }
+        private static string ReturnType(ITypeInfo info, TYPEDESC description)
+        {
+            var kind = (VarEnum)description.vt;
+            if (kind == VarEnum.VT_PTR || kind == VarEnum.VT_SAFEARRAY)
+                return ReturnType(info, (TYPEDESC)Marshal.PtrToStructure(description.lpValue, typeof(TYPEDESC)));
+            if (kind != VarEnum.VT_USERDEFINED) return null;
+            info.GetRefTypeInfo(unchecked((int)description.lpValue.ToInt64()), out ITypeInfo target);
+            try
+            {
+                target.GetDocumentation(-1, out string name, out string help, out int context, out string file);
+                target.GetContainingTypeLib(out ITypeLib library, out int index);
+                try { library.GetDocumentation(-1, out string owner, out string text, out int topic, out string path); return owner + "." + name; }
+                finally { Marshal.ReleaseComObject(library); }
+            }
+            finally { Marshal.ReleaseComObject(target); }
         }
         private static void ReadMembers(ITypeInfo info, string owner, List<EditorSymbol> symbols, HashSet<Guid> visited, int depth)
         {
@@ -65,7 +96,7 @@ namespace CodexVBE
                     info.GetNames(func.memid, names, names.Length, out int found);
                     if (found == 0) continue;
                     string[] parameters = names.Skip(1).Take(found - 1).ToArray();
-                    symbols.Add(new EditorSymbol { Name = names[0], Module = owner, Scope = "Module", Kind = func.invkind == INVOKEKIND.INVOKE_FUNC ? "Procedure" : "Property", Declaration = owner + "." + names[0] + "(" + string.Join(", ", parameters) + ")", Parameters = parameters, External = true });
+                    symbols.Add(new EditorSymbol { Name = names[0], Module = owner, Scope = "Module", Kind = func.invkind == INVOKEKIND.INVOKE_FUNC ? "Procedure" : "Property", Declaration = owner + "." + names[0] + "(" + string.Join(", ", parameters) + ")", Parameters = parameters, TypeName = ReturnType(info, func.elemdescFunc.tdesc), External = true });
                 }
                 finally { info.ReleaseFuncDesc(pointer); }
             }

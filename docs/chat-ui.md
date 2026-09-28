@@ -91,3 +91,11 @@ Le contexte système décrit l’hôte VBE, les projets, le mode, la sélection 
 Un chemin de fichier fourni par l’utilisateur peut être lu par un outil dédié, avec confirmation avant transmission au fournisseur. Cette lecture ne remplace pas le code vivant du VBE et ne dépend pas du niveau de raisonnement.
 
 Les coupes de contrôles peuvent produire une carte de récupération dans le chat. La capture est conservée dans la session native ; elle ne doit pas être présentée comme récupérable après redémarrage sur la seule persistance du message.
+
+## Catalogue et tours en pause
+
+Les familles d'outils sont découvertes à la demande (code, formulaires, débogage, Git, environnement). Discussion et Plan exposent uniquement les inspections ; les mêmes protections de projet s'appliquent à tous les fournisseurs.
+
+Après huit réponses HTTP comportant des appels d'outils, la conversation affiche une pause avec le bilan des actions et le travail restant. Le menu **Reprendre le tour en pause**, ou **Reprendre ▶** lorsque le compositeur est vide, continue le même tour à partir des résultats enregistrés. Le profil doit correspondre à celui de la pause. Les actions terminées ne sont pas rejouées et la vérification automatique différée se déroule à la fin du tour.
+
+Détails : [catalogue et reprise](chat-tool-workflow.md), [confidentialité des projets](project-privacy.md).

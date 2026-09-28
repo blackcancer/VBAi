@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -28,11 +28,21 @@ namespace CodexVBE
         {
             var attachments = new List<ChatAttachment>();
             foreach (var reference in CurrentReferences(question))
+            {
+                tools?.RequireProjectRead(reference.Project);
                 attachments.Add(new ChatAttachment { Label = reference.Token, Text = referenceIndex.Resolve(reference),
                     Project = reference.Project, Module = reference.Module, Sha256 = reference.Sha256, StartLine = reference.StartLine });
+            }
             foreach (var attachment in draftAttachments)
             {
-                if (!string.IsNullOrEmpty(attachment.Module))
+                if (!string.IsNullOrEmpty(attachment.Project)) tools?.RequireProjectRead(attachment.Project);
+                if (!string.IsNullOrEmpty(attachment.EditorDocumentId))
+                {
+                    var document = scopeSession?.ModernEditor?.Invoke(false)?.Documents.FirstOrDefault(d => d.Id == attachment.EditorDocumentId);
+                    if (document == null || EditorDocument.Hash(document.Text) != attachment.Sha256)
+                        throw new InvalidOperationException(attachment.Label + UiText.Get(" is stale. Remove it and attach the current selection."));
+                }
+                else if (!string.IsNullOrEmpty(attachment.Module))
                 {
                     var module = ReadWorkflow("read_module", attachment.Project, attachment.Module);
                     if (!string.Equals(Convert.ToString(module["Sha256"]), attachment.Sha256, StringComparison.OrdinalIgnoreCase))
@@ -137,6 +147,19 @@ namespace CodexVBE
             prompt.Text = command + " "; prompt.CaretIndex = prompt.Text.Length; prompt.Focus();
         }
 
+        internal void PrepareMonacoAction(string command, ChatAttachment attachment)
+        {
+            if (busy) { SetStatus(UiText.Get("Wait for the response to finish before preparing an action.")); return; }
+            var action = ChatCommand.All.First(x => x.Token == command);
+            var scope = scopePicker.Items.Cast<MacroScope>().FirstOrDefault(item => string.Equals(item.Project, attachment.Project, StringComparison.OrdinalIgnoreCase));
+            if (scope == null) { SetStatus(UiText.Get("The selection belongs to another document. Choose its conversation.")); return; }
+            scopePicker.SelectedItem = scope; EnsureCurrentScope();
+            draftAttachments.RemoveAll(item => item.Label == attachment.Label); draftAttachments.Add(attachment);
+            modePicker.SelectedItem = action.Mode;
+            prompt.Text = command + " "; prompt.CaretIndex = prompt.Text.Length;
+            RefreshContextChips(); RefreshContextPreview(); ScheduleSessionSave(); prompt.Focus();
+        }
+
         /// <summary>Compile le projet pour recueillir un diagnostic, sans exécuter les macros.</summary>
         /// <returns>Tâche terminée après ajout du résultat de vérification au transcript.</returns>
         private async Task VerifyProjectAsync()
@@ -196,12 +219,16 @@ namespace CodexVBE
             if (busy || currentSession == null) return;
             int index = transcriptEntries.IndexOf(lastEntry);
             if (index < 0) return;
+            int start = Math.Max(0, currentSession.ProviderHistoryStartIndex);
+            if (index < start)
+            { SetStatus(UiText.Get("This message predates the project privacy upgrade. Use current authorized references in a new conversation.")); return; }
             SaveCurrentSession();
-            var entries = json.Deserialize<List<ChatEntry>>(json.Serialize(transcriptEntries.Take(index + 1)));
+            var entries = json.Deserialize<List<ChatEntry>>(json.Serialize(transcriptEntries.Skip(start).Take(index + 1 - start)));
             // A branch is conversational context, never a second owner of rollback controls.
             foreach (var entry in entries) if (entry.Change != null) { entry.Text = entry.Change.Label + "\n" + entry.Change.Diff; entry.Change = null; }
             var fork = new ChatSessionState { Scope = currentSession.Scope, Title = currentSession.Title + UiText.Get(" · branch"),
-                Provider = currentSession.Provider, Model = currentSession.Model, Effort = currentSession.Effort, Mode = currentSession.Mode, Entries = entries };
+                Provider = currentSession.Provider, Model = currentSession.Model, Effort = currentSession.Effort, Mode = currentSession.Mode, Entries = entries,
+                ReadProjectGrants = currentSession.ReadProjectGrants?.ToArray(), SharedContextReadAllowed = currentSession.SharedContextReadAllowed };
             var history = new List<object> { new { role = "system", content = LlmVbeContext.DeveloperInstructions } };
             foreach (var entry in entries.Where(x => x.Speaker == "Vous" || x.Speaker == "Assistant"))
                 history.Add(new { role = entry.Speaker == "Vous" ? "user" : "assistant", content = entry.Text });
@@ -212,11 +239,24 @@ namespace CodexVBE
 
         /// <summary>Sélectionne le code source correspondant à une pièce jointe dans le VBE.</summary>
         /// <param name="attachment">Référence ou sélection à ouvrir dans le VBE.</param>
-        private void NavigateAttachment(ChatAttachment attachment)
+        private async void NavigateAttachment(ChatAttachment attachment)
         {
             try
             {
                 EnsureCurrentScope();
+                if (!string.IsNullOrEmpty(attachment.EditorDocumentId))
+                {
+                    var editor = scopeSession?.ModernEditor?.Invoke(false);
+                    var document = editor?.Documents.FirstOrDefault(d => d.Id == attachment.EditorDocumentId);
+                    if (document == null) throw new InvalidOperationException(UiText.Get("Select code in the VBE."));
+                    await editor.CaptureForTool();
+                    if (EditorDocument.Hash(document.Text) != attachment.Sha256)
+                        throw new InvalidOperationException(attachment.Label + UiText.Get(" is stale. Remove it and attach the current selection."));
+                    scopeSession.ModernEditor(true);
+                    await editor.OpenModule(document.Module);
+                    await editor.Script("reveal", Math.Max(1, attachment.StartLine), 1);
+                    return;
+                }
                 var result = ReadHost(scopeSession, new Request { Command = "select_code", Project = attachment.Project,
                     Module = attachment.Module, StartLine = Math.Max(1, attachment.StartLine), ExpectedSha256 = attachment.Sha256 });
                 if (!result.Ok) SetStatus(result.Error);

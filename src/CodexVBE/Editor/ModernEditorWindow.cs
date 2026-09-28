@@ -35,7 +35,9 @@ namespace CodexVBE
         private bool busy, initializing, closing, closeAllowed, showingDiff;
         private int activeStatusLayouts;
         private int statusGeneration;
-        private string selected;
+                internal event Action<string, ChatAttachment> AssistantAction;
+        internal bool WorkspaceHosted { get; set; }
+        private string selected, synchronizationError;
         private DateTime lastEdit;
         private EditorSyncWorker synchronizationWorker;
         private Task<EditorSyncPlan> PrepareSynchronization(EditorDocument document)
@@ -43,7 +45,7 @@ namespace CodexVBE
             if (synchronizationWorker == null) synchronizationWorker = new EditorSyncWorker();
             return synchronizationWorker.Prepare(document, Drafts);
         }
-        internal event Action DockRequested;
+
 
         internal IEnumerable<EditorDocument> Documents => documents.Values;
         internal EditorDocument Current => selected != null && documents.ContainsKey(selected) ? documents[selected] : null;
@@ -90,6 +92,14 @@ namespace CodexVBE
                 {
                     if (!LocalResource(e.Request.Uri)) e.Response = environment.CreateWebResourceResponse(new MemoryStream(), 403, "Forbidden", "Content-Type: text/plain");
                 };
+                Browser.KeyDown += (sender, key) =>
+                {
+                    string action = key.KeyCode == Keys.F9 && key.Modifiers == Keys.None ? "vbai.toggle_breakpoint" :
+                        key.KeyCode == Keys.S && key.Modifiers == Keys.Control ? "vbai.save" : null;
+                    if (action == null) return;
+                    key.Handled = true; key.SuppressKeyPress = true;
+                    BeginInvoke(new Action(async () => { try { await Script("command", action); } catch (Exception error) { Report(error); } }));
+                };
                 core.WebMessageReceived += MessageReceived;
                 core.ProcessFailed += (s, e) => { if (IsDisposed || Disposing || closing) return; Ready = false; timer.Stop(); PreserveDrafts(); status.Text = UiText.Get("The editor stopped. Drafts are preserved; reopen the editor."); };
                 core.Navigate(Origin);
@@ -111,21 +121,33 @@ namespace CodexVBE
                 if (message.type == "ready")
                 {
                     Ready = true; await Theme();
-                    await Script("labels", new[] { "Compile project", "Toggle breakpoint", "Show next statement", "Step into", "Step over", "Step out", "Breakpoint request sent; verify in VBE." }.ToDictionary(key => key, UiText.Get));
+                    await Script("labels", new[] { "Compile project", "Toggle breakpoint", "Show next statement", "Step into", "Step over", "Step out", "Breakpoint request sent; verify in VBE.", "Explain", "Fix", "Refactor" }.ToDictionary(key => key, UiText.Get));
                     foreach (var document in documents.Values.ToArray()) await RenderDocument(document);
                     if (selected != null) await Script("select", selected);
                     if (!closing && !IsDisposed && !Disposing) { timer.Start(); SetStatus(); }
                 }
                 else if (message.type == "change" && documents.TryGetValue(message.id ?? "", out var doc) && message.version > versions[doc.Id])
-                { doc.Edit(message.text); versions[doc.Id] = message.version; lastEdit = DateTime.UtcNow; SetStatus(); }
+                { doc.Edit(message.text); versions[doc.Id] = message.version; lastEdit = DateTime.UtcNow; synchronizationError = null; lastSaveError = null; SetStatus(); }
                 else if (message.type == "command" && message.name == "sync") await ProcessDocuments(true);
+                else if (message.type == "command" && message.name == "save") await SaveDocument(message.id);
                 else if (message.type == "language") await LanguageRequest(message);
                 else if (message.type == "definition") await OpenDefinition(message);
+                else if (message.type == "assistantAction" && documents.TryGetValue(message.id ?? "", out var actionDoc) && actionDoc.Module is EditorVbeModule actionModule)
+                {
+                    if (!new[] { "/expliquer", "/corriger", "/refactoriser" }.Contains(message.name)) return;
+                    EditorDocument.Validate(message.text); EditorDocument.Validate(message.selectedText);
+                    if (message.version < versions[actionDoc.Id]) throw new InvalidOperationException("The editor selection changed. Select it again.");
+                    actionDoc.Edit(message.text); versions[actionDoc.Id] = message.version;
+                    await Task.Yield();
+                    AssistantAction?.Invoke(message.name, new ChatAttachment { Label = actionModule.Name + " · Monaco L" + message.line,
+                        Project = actionModule.ProjectName, Module = actionModule.ModuleName, Text = message.selectedText,
+                        StartLine = message.line, EditorDocumentId = actionDoc.Id, Sha256 = EditorDocument.Hash(message.text) });
+                }
                 else if (message.type == "editorCommand") await EditorCommand(message);
             }
             catch (Exception error) { Report(error); }
         }
-        private sealed class EditorMessage { public string type { get; set; } public string id { get; set; } public string text { get; set; } public int version { get; set; } public string name { get; set; } public int request { get; set; } public string module { get; set; } public int line { get; set; } public int column { get; set; } }
+        private sealed class EditorMessage { public string type { get; set; } public string id { get; set; } public string text { get; set; } public string selectedText { get; set; } public int version { get; set; } public string name { get; set; } public int request { get; set; } public string module { get; set; } public int line { get; set; } public int column { get; set; } }
         internal async Task<string> Script(string method, params object[] values)
         {
             if (ScriptExecution != null)
@@ -174,37 +196,39 @@ namespace CodexVBE
         {
             if (busy || !Ready || closing) return;
             busy = true;
-            try
-            {
-                await CaptureDocuments();
-                if (IsDisposed || closing) return;
-                Exception lastFailure = null;
-                foreach (var doc in documents.Values.ToArray())
-                {
-                    try
-                    {
-                        var plan = await PrepareSynchronization(doc);
-                        if (IsDisposed || closing) return;
-                        if (doc.Text != plan.After || doc.Baseline != plan.Before) continue;
-                        string captured = doc.Text;
-                        int capturedVersion = versions[doc.Id];
-                        string native = doc.Observe();
-                        if (synchronize && doc.Dirty && !doc.Conflict && doc.Writable) native = doc.Synchronize(plan);
-                        if (native != null)
-                        {
-                            int applied;
-                            if (int.TryParse(await Script("apply", doc.Id, capturedVersion, native), out applied) && applied > 0)
-                            { doc.Acknowledge(native, captured); versions[doc.Id] = Math.Max(versions[doc.Id], applied); }
-                        }
-                        if (!doc.Dirty) Drafts.ClearOwn(doc);
-                    }
-                    catch (Exception error) { lastFailure = error; }
-                }
-                SetStatus();
-                if (lastFailure != null) Report(lastFailure);
-            }
+            try { await ProcessDocumentsCore(synchronize); }
             catch (Exception error) { Report(error); }
             finally { busy = false; }
+        }
+        private async Task ProcessDocumentsCore(bool synchronize)
+        {
+            await CaptureDocuments();
+            if (IsDisposed || closing) return;
+            Exception lastFailure = null;
+            foreach (var doc in documents.Values.ToArray())
+            {
+                try
+                {
+                    var plan = await PrepareSynchronization(doc);
+                    if (IsDisposed || closing) return;
+                    if (doc.Text != plan.After || doc.Baseline != plan.Before) continue;
+                    string captured = doc.Text;
+                    int capturedVersion = versions[doc.Id];
+                    string native = doc.Observe();
+                    if (synchronize && doc.Dirty && !doc.Conflict && doc.Writable) native = doc.Synchronize(plan);
+                    if (native != null)
+                    {
+                        int applied;
+                        if (int.TryParse(await Script("apply", doc.Id, capturedVersion, native), out applied) && applied > 0)
+                        { doc.Acknowledge(native, captured); versions[doc.Id] = Math.Max(versions[doc.Id], applied); }
+                    }
+                    if (!doc.Dirty) Drafts.ClearOwn(doc);
+                }
+                catch (Exception error) { lastFailure = error; }
+            }
+            synchronizationError = lastFailure?.Message;
+            SetStatus();
+            if (lastFailure != null) Report(lastFailure);
         }
         private async void TimerTick(object sender, EventArgs e)
         {
@@ -227,6 +251,8 @@ namespace CodexVBE
             activeStatusLayouts++;
             try
             {
+            toolbar.Visible = showingDiff || (Current != null && (Current.Conflict || recovered.ContainsKey(Current.Id)));
+            layout.RowStyles[0].Height = toolbar.Visible ? 44 : 0;
             compare.Visible = Current != null && Current.Conflict;
             edit.Visible = showingDiff; reload.Visible = Current != null && Current.Conflict;
             resolve.Visible = Current != null && Current.Conflict;
@@ -235,12 +261,17 @@ namespace CodexVBE
             restore.Enabled = Current != null && recovered.ContainsKey(Current.Id);
             foreach (TabPage tab in tabs.TabPages)
             { var doc = documents[(string)tab.Tag]; try { tab.Text = doc.Module.Name + (doc.Dirty ? " *" : ""); } catch { } }
-            status.Text = UiText.Get(Current == null ? "Open a VBA module to start editing." : Current.Conflict ? "The module changed in VBA. Resolve the conflict first." : Current.Dirty ? "Changes pending synchronization with VBA." : "Synchronized with VBA. Save the macro in its host application.");
+            status.Text = UiText.Get(lastSaveError ?? synchronizationError ?? (Current == null ? "Open a VBA module to start editing." : Current.Conflict ? "The module changed in VBA. Resolve the conflict first." : Current.Dirty ? "Changes pending synchronization with VBA." : "Synchronized with VBA. Save the macro in its host application."));
             }
             finally { activeStatusLayouts--; }
         }
         private void Report(Exception error) { if (!IsDisposed && !Disposing && !closing) SetResultStatus(UiText.Get(error.Message)); LoadLog.Write("Monaco: " + error.GetType().Name); }
-        private void DockClick(object sender, EventArgs e) { DockRequested?.Invoke(); }
+        private void CloseTabRequested(object sender, TabControlEventArgs e)
+        {
+            if (busy) return;
+            tabs.SelectedTab = e.TabPage;
+            CloseModuleClick(sender, EventArgs.Empty);
+        }
         private async void DiffClick(object sender, EventArgs e)
         {
             try
@@ -258,10 +289,11 @@ namespace CodexVBE
         private async void ResolveClick(object sender, EventArgs e)
         {
             if (busy || Current == null || !reviewed.TryGetValue(Current.Id, out var revision)) return;
+            var doc = Current;
             busy = true;
             try
             {
-                await CaptureDocuments(); var doc = Current; Drafts.Save(doc);
+                await CaptureDocuments(); Drafts.Save(doc);
                 string captured = doc.Text, actual = doc.ResolveWithDraft(revision);
                 int applied;
                 if (int.TryParse(await Script("apply", doc.Id, versions[doc.Id], actual), out applied) && applied > 0)
@@ -274,10 +306,11 @@ namespace CodexVBE
         private async void CloseModuleClick(object sender, EventArgs e)
         {
             if (busy || Current == null) return;
+            var doc = Current;
             busy = true;
             try
             {
-                await CaptureDocuments(); var doc = Current; Drafts.Save(doc);
+                await CaptureDocuments(); Drafts.Save(doc);
                 await Script("close", doc.Id);
                 var closed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                 BeginInvoke(new Action(() =>
@@ -286,7 +319,8 @@ namespace CodexVBE
                     {
                         (doc.Module as EditorVbeModule)?.CloseNativeWindow();
                         var page = tabs.TabPages.Cast<TabPage>().First(t => (string)t.Tag == doc.Id);
-                        selected = null; tabs.TabPages.Remove(page); page.Dispose();
+                        if (selected == doc.Id) selected = null; tabs.TabPages.Remove(page); page.Dispose();
+                        if (tabs.SelectedTab != null) selected = (string)tabs.SelectedTab.Tag;
                         documents.Remove(doc.Id); versions.Remove(doc.Id); reviewed.Remove(doc.Id); recovered.Remove(doc.Id);
                         SetStatus(); closed.SetResult(true);
                     }
@@ -301,10 +335,11 @@ namespace CodexVBE
         private async void ReloadClick(object sender, EventArgs e)
         {
             if (busy || Current == null) return;
+            var doc = Current;
             busy = true;
             try
             {
-                await CaptureDocuments(); var doc = Current;
+                await CaptureDocuments();
                 if (doc.Dirty)
                 {
                     new EditorDraftStore(Drafts.Root).Save(doc);
@@ -321,10 +356,11 @@ namespace CodexVBE
         private async void RestoreClick(object sender, EventArgs e)
         {
             if (busy || Current == null || !recovered.TryGetValue(Current.Id, out var draft)) return;
+            var doc = Current;
             busy = true;
             try
             {
-                await CaptureDocuments(); var doc = Current; Drafts.Save(doc); int applied;
+                await CaptureDocuments(); Drafts.Save(doc); int applied;
                 if (int.TryParse(await Script("apply", doc.Id, versions[doc.Id], EditorDocument.Normalize(draft.Text)), out applied) && applied > 0)
                 { doc.Restore(draft.Baseline, draft.Text); versions[doc.Id] = applied; recovered.Remove(doc.Id); }
                 SetStatus();
@@ -337,6 +373,7 @@ namespace CodexVBE
         private void PreserveDrafts() { foreach (var doc in documents.Values) try { Drafts.Save(doc); } catch (Exception error) { LoadLog.Write("Editor recovery failed: " + error.GetType().Name); } }
         private async void ClosingWindow(object sender, FormClosingEventArgs e)
         {
+            if (WorkspaceHosted && e.CloseReason == CloseReason.UserClosing && !closeAllowed) { e.Cancel = true; return; }
             if (closeAllowed) { PreserveDrafts(); return; }
             if (!Ready && !initializing && !busy && activeStatusLayouts == 0) { closing = true; PreserveDrafts(); return; }
             e.Cancel = true; if (closing) return; closing = true; timer.Stop();

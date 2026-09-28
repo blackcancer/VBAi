@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using CodexVBE;
@@ -8,6 +8,16 @@ namespace CodexVBE.Tests.Unit.Editor
     [TestClass, TestCategory("Unit")]
     public sealed class EditorReferenceIndexTests
     {
+        [TestMethod]
+        public void FollowsReturnedObjectTypesAndKeepsLibraryIdentity()
+        {
+            string library = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "scrrun.dll");
+            var members = EditorReferenceIndex.Read(new[] { library }, new[] { "Scripting.FileSystemObject" });
+            var file = members.First(s => s.Module == "FileSystemObject" && s.Name == "GetFile");
+            Assert.AreEqual("Scripting.IFile", file.TypeName);
+            Assert.IsTrue(members.Any(s => s.Module == "IFile" && s.Name == "OpenAsTextStream" && s.Library == "Scripting"));
+            Assert.IsTrue(members.Any(s => s.Module == "ITextStream" && s.Name == "WriteLine"));
+        }
         [TestMethod]
         public void ReadsInstalledScriptingMetadataWithoutCreatingAutomationObjects()
         {

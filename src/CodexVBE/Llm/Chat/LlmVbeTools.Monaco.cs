@@ -69,9 +69,10 @@ namespace CodexVBE
                 }
                 foreach (string field in values.Keys) if (!fields.ContainsKey(field)) throw new ArgumentException("Unexpected argument: " + field);
                 string project = (string)values["Project"], module = (string)values["Module"];
-                if (!string.IsNullOrEmpty(BoundProject) && !string.Equals(BoundProject, project, StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidOperationException("Cette action vise un autre projet que celui de la conversation.");
                 bool edit = name == "monaco_edit" || name == "monaco_sync";
+                if (!edit) RequireProjectRead(project);
+                else if (!string.IsNullOrEmpty(BoundProject) && !string.Equals(BoundProject, project, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("Cette action vise un autre projet que celui de la conversation.");
                 if (edit)
                 {
                     if (settings.VbeEditApproval == "ReadOnly") throw new InvalidOperationException("VBE edits are disabled (Read-only mode).");

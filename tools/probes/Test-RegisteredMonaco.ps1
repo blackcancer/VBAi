@@ -1,4 +1,4 @@
-param([Parameter(Mandatory=$true)][string]$AssemblyPath,[Parameter(Mandatory=$true)][string]$OutputDirectory,[switch]$UseBridge,[switch]$AllowTemporaryVbaAccess)
+﻿param([Parameter(Mandatory=$true)][string]$AssemblyPath,[Parameter(Mandatory=$true)][string]$OutputDirectory,[switch]$UseBridge,[switch]$AllowTemporaryVbaAccess)
 $ErrorActionPreference='Stop'
 if (-not $UseBridge -or @(Get-Process EXCEL -ErrorAction SilentlyContinue).Count) { throw 'An isolated Excel session is required.' }
 Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes,System.Drawing,Accessibility
@@ -7,6 +7,11 @@ using System;
 using System.Runtime.InteropServices;
 public static class MonacoProbeMouse {
  [StructLayout(LayoutKind.Sequential)] public struct Point { public int X,Y; }
+ [StructLayout(LayoutKind.Sequential)] public struct Rect { public int Left,Top,Right,Bottom; }
+ [DllImport("user32.dll")] public static extern bool GetClientRect(IntPtr window, out Rect rect);
+ [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr window, out Rect rect);
+ [DllImport("user32.dll")] public static extern IntPtr GetParent(IntPtr window);
+ [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetClassName(IntPtr window, System.Text.StringBuilder name, int count);
  [DllImport("user32.dll")] public static extern bool ScreenToClient(IntPtr window, ref Point point);
  [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam);
  [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam);
@@ -55,10 +60,16 @@ function Find-Control([string]$id) {
   [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::AutomationIdProperty,$id))
  [Windows.Automation.AutomationElement]::RootElement.FindFirst([Windows.Automation.TreeScope]::Descendants,$conditions)
 }
-function Click-Control([string]$id) {
- $element=Wait-Condition {Find-Control $id}
- $pattern=$element.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern)
- $pattern.Invoke()
+function Close-ModuleTab {
+ $tabs=Wait-Condition {Find-Control 'tabs'}
+ $tab=Wait-Condition {@($tabs.FindAll([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::TabItem)) | Where-Object {$_.Current.Name -like '*MonacoDockProbe*'})[0]}
+ $rect=$tab.Current.BoundingRectangle
+ $point=[MonacoProbeMouse+Point]::new(); $point.X=[int]($rect.Right-13); $point.Y=[int]($rect.Top+$rect.Height/2)
+ $handle=[IntPtr]$tabs.Current.NativeWindowHandle
+ [void][MonacoProbeMouse]::ScreenToClient($handle,[ref]$point)
+ $position=[IntPtr](($point.Y -shl 16) -bor ($point.X -band 65535))
+ [void][MonacoProbeMouse]::PostMessage($handle,0x201,[IntPtr]1,$position)
+ [void][MonacoProbeMouse]::PostMessage($handle,0x202,[IntPtr]0,$position)
 }
 try {
  if($originalAccess -ne 1){New-ItemProperty -LiteralPath $securityPath -Name AccessVBOM -Value 1 -PropertyType DWord -Force | Out-Null}
@@ -85,7 +96,7 @@ try {
  # UI Automation waits for the real browser document, not only the WinForms shell.
  $browser=Wait-Condition {$editor.FindFirst([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::Document))}
  Write-Output 'Closing module tab.'
- Click-Control 'closeModule'
+ Close-ModuleTab
  @($vbe.Windows | ForEach-Object {@{Caption=$_.Caption;Type=$_.Type;Visible=$_.Visible}}) | ConvertTo-Json | Set-Content (Join-Path $outputRoot 'windows-after-close.json')
  [void](Wait-Condition {if(@($vbe.Windows | Where-Object {$_.Type -eq 0 -and $_.Caption -like '*MonacoDockProbe*'}).Count -eq 0){return $true}})
  Write-Output 'Native window closed; locating project tree.'
@@ -108,25 +119,41 @@ try {
  [void](Wait-Condition {@($editor.FindAll([Windows.Automation.TreeScope]::Descendants,[Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::TabItem)) | Where-Object {$_.Current.Name -like '*MonacoDockProbe*'})[0]})
  if(@($vbe.Windows | Where-Object {$_.Type -eq 0 -and $_.Caption -like '*MonacoDockProbe*'}).Count -ne 1){throw 'Native backing window must remain alive behind Monaco.'}
  Write-Output 'Project double-click opened Monaco and retained its backing code window.'
- Write-Output 'Browser document found; docking.'
- Click-Control 'dock'
- $native=Wait-Condition {foreach($window in $vbe.Windows){if($window.Caption -eq $editorCaption -and $window.Visible){return $window}}}
- $docked=Wait-Condition {Find-Control 'ModernEditorWindow'}
- Write-Output 'Native dock found; detaching.'
- if($docked.Current.BoundingRectangle.Width -lt 500){throw 'Docked editor is collapsed.'}
- Click-Control 'dock'
- [void](Wait-Condition {if(-not $native.Visible){return $true}})
- $editor=Wait-Condition {Find-Control 'ModernEditorWindow'}
+ $parent=[MonacoProbeMouse]::GetParent([IntPtr]$editor.Current.NativeWindowHandle)
+ $parentClass=[Text.StringBuilder]::new(128)
+ [void][MonacoProbeMouse]::GetClassName($parent,$parentClass,$parentClass.Capacity)
+ if($parentClass.ToString() -ne 'MDIClient'){throw 'Monaco must live in the native document workspace.'}
+ $client=[MonacoProbeMouse+Rect]::new()
+ [void][MonacoProbeMouse]::GetClientRect($parent,[ref]$client)
+ $editorRect=$editor.Current.BoundingRectangle
+ if([Math]::Abs($editorRect.Width-($client.Right-$client.Left)) -gt 2 -or [Math]::Abs($editorRect.Height-($client.Bottom-$client.Top)) -gt 2){throw 'Monaco does not fill the native document workspace.'}
+ $originalWidth=$vbe.MainWindow.Width; $originalHeight=$vbe.MainWindow.Height
+ try {
+  $vbe.MainWindow.Width=[Math]::Max(950,$originalWidth-120)
+  $vbe.MainWindow.Height=[Math]::Max(650,$originalHeight-80)
+  [void](Wait-Condition {
+   $client=[MonacoProbeMouse+Rect]::new(); [void][MonacoProbeMouse]::GetClientRect($parent,[ref]$client)
+   $bounds=$editor.Current.BoundingRectangle
+   [Math]::Abs($bounds.Width-($client.Right-$client.Left)) -le 2 -and [Math]::Abs($bounds.Height-($client.Bottom-$client.Top)) -le 2
+  })
+ } finally {$vbe.MainWindow.Width=$originalWidth; $vbe.MainWindow.Height=$originalHeight}
+ $treeSnapshot=& (Join-Path $PSScriptRoot 'Inspect-VbeWindowTree.ps1') -HostProcessId $probeProcess.Id
+ $treeSnapshot | Set-Content (Join-Path $outputRoot 'window-tree.json')
+ $rootRect=[MonacoProbeMouse+Rect]::new(); [void][MonacoProbeMouse]::GetWindowRect([IntPtr]$vbe.MainWindow.HWnd,[ref]$rootRect)
+ $rootBitmap=[Drawing.Bitmap]::new($rootRect.Right-$rootRect.Left,$rootRect.Bottom-$rootRect.Top)
+ $rootGraphics=[Drawing.Graphics]::FromImage($rootBitmap)
+ try {$rootGraphics.CopyFromScreen($rootRect.Left,$rootRect.Top,0,0,$rootBitmap.Size);$rootBitmap.Save((Join-Path $outputRoot 'vbe-workspace.png'))} finally {$rootGraphics.Dispose();$rootBitmap.Dispose()}
+
  $rect=$editor.Current.BoundingRectangle
  $bitmap=[Drawing.Bitmap]::new([int]$rect.Width,[int]$rect.Height)
  $graphics=[Drawing.Graphics]::FromImage($bitmap)
  try{$graphics.CopyFromScreen([int]$rect.X,[int]$rect.Y,0,0,$bitmap.Size);$bitmap.Save((Join-Path $outputRoot 'monaco-host.png'))}finally{$graphics.Dispose();$bitmap.Dispose()}
  Write-Output 'Closing module tab.'
- Click-Control 'closeModule'
+ Close-ModuleTab
  @($vbe.Windows | ForEach-Object {@{Caption=$_.Caption;Type=$_.Type;Visible=$_.Visible}}) | ConvertTo-Json | Set-Content (Join-Path $outputRoot 'windows-after-close.json')
  [void](Wait-Condition {if(@($vbe.Windows | Where-Object {$_.Type -eq 0 -and $_.Caption -like '*MonacoDockProbe*'}).Count -eq 0){return $true}})
- @{State='PASS';HostProcessId=$probeProcess.Id;Assembly=$response.Data.AssemblyModuleVersionId;Menu=$true;BrowserDocument=$true;Dock=$true;Detach=$true;ProjectDoubleClick=$true;NativeWindowLifetime=$true;MacroExecuted=$false}|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $outputRoot 'monaco-host.json') -Encoding UTF8
- $editor.GetCurrentPattern([Windows.Automation.WindowPattern]::Pattern).Close()
+ @{State='PASS';HostProcessId=$probeProcess.Id;Assembly=$response.Data.AssemblyModuleVersionId;Menu=$true;BrowserDocument=$true;DocumentWorkspace=$true;FillsWorkspace=$true;NativeResize=$true;TabClose=$true;ProjectDoubleClick=$true;NativeWindowLifetime=$true;MacroExecuted=$false}|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $outputRoot 'monaco-host.json') -Encoding UTF8
+ # The workspace remains owned by the VBE until the host closes.
 } catch {
  ($_ | Out-String) + $_.ScriptStackTrace | Set-Content -LiteralPath (Join-Path $outputRoot 'failure.txt') -Encoding UTF8
  Write-Output $_.ScriptStackTrace

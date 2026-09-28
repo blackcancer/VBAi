@@ -1,10 +1,25 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows.Forms;
 namespace CodexVBE
 {
     /// <summary>Dessine les onglets WinForms avec les couleurs et indicateurs de focus du thème actif.</summary>
     public sealed class ThemedTabControl : TabControl
     {
+        /// <summary>Affiche une croix de fermeture sur chaque onglet.</summary>
+        [System.ComponentModel.DefaultValue(false)]
+        public bool ShowCloseButtons { get; set; }
+        /// <summary>Demande la fermeture de l'onglet désigné.</summary>
+        public event System.EventHandler<TabControlEventArgs> CloseRequested;
+        private Rectangle CloseBounds(int index)
+        { var r = GetTabRect(index); return new Rectangle(r.Right - 21, r.Top + (r.Height - 16) / 2, 16, 16); }
+        /// <summary>Route le clic de fermeture sans changer les autres onglets.</summary>
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            if (ShowCloseButtons && e.Button == MouseButtons.Left)
+                for (int i = 0; i < TabCount; i++)
+                    if (CloseBounds(i).Contains(e.Location)) { CloseRequested?.Invoke(this, new TabControlEventArgs(TabPages[i], i, TabControlAction.Deselecting)); return; }
+            base.OnMouseDown(e);
+        }
         /// <summary>Active le dessin personnalisé et le double buffering des onglets.</summary>
         public ThemedTabControl() { SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true); }
         /// <summary>Dessine le fond, les onglets, leurs états désactivés, la sélection et le focus.</summary>
@@ -17,7 +32,15 @@ namespace CodexVBE
                 var bounds = GetTabRect(i); bool selected = i == SelectedIndex;
                 using (var brush = new SolidBrush(selected ? UiTheme.Surface : UiTheme.Background)) e.Graphics.FillRectangle(brush, bounds);
                 Color ink = TabPages[i].Enabled ? ForeColor : (UiTheme.Dark ? Color.FromArgb(148, 163, 184) : SystemColors.GrayText);
-                TextRenderer.DrawText(e.Graphics, TabPages[i].Text, Font, bounds, ink, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+                var textBounds = bounds;
+                if (ShowCloseButtons)
+                {
+                    textBounds.Width -= 24;
+                    var close = CloseBounds(i);
+                    using (var pen = new Pen(ink, 1.5F))
+                    { e.Graphics.DrawLine(pen, close.Left + 4, close.Top + 4, close.Right - 4, close.Bottom - 4); e.Graphics.DrawLine(pen, close.Left + 4, close.Bottom - 4, close.Right - 4, close.Top + 4); }
+                }
+                TextRenderer.DrawText(e.Graphics, TabPages[i].Text, Font, textBounds, ink, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
                 if (selected) using (var pen = new Pen(UiTheme.Dark ? Color.FromArgb(96, 165, 250) : Color.RoyalBlue, 2)) e.Graphics.DrawLine(pen, bounds.Left + 3, bounds.Bottom - 2, bounds.Right - 3, bounds.Bottom - 2);
                 if (selected && Focused) ControlPaint.DrawFocusRectangle(e.Graphics, Rectangle.Inflate(bounds, -3, -3), ink, UiTheme.Surface);
             }

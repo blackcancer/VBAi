@@ -1,4 +1,4 @@
-namespace CodexVBE
+﻿namespace CodexVBE
 {
     partial class ModernEditorWindow
     {
@@ -6,12 +6,10 @@ namespace CodexVBE
         private System.Windows.Forms.TableLayoutPanel layout;
         private System.Windows.Forms.FlowLayoutPanel toolbar;
         private CodexVBE.ThemedButton resolve;
-        private CodexVBE.ThemedButton closeModule;
         private CodexVBE.ThemedButton compare;
         private CodexVBE.ThemedButton edit;
         private CodexVBE.ThemedButton reload;
         private CodexVBE.ThemedButton restore;
-        private CodexVBE.ThemedButton dock;
         private CodexVBE.ThemedTabControl tabs;
         private System.Windows.Forms.Panel surface;
         private System.Windows.Forms.Label status;
@@ -24,12 +22,10 @@ namespace CodexVBE
             this.layout = new System.Windows.Forms.TableLayoutPanel();
             this.toolbar = new System.Windows.Forms.FlowLayoutPanel();
             this.resolve = new CodexVBE.ThemedButton();
-            this.closeModule = new CodexVBE.ThemedButton();
             this.compare = new CodexVBE.ThemedButton();
             this.edit = new CodexVBE.ThemedButton();
             this.reload = new CodexVBE.ThemedButton();
             this.restore = new CodexVBE.ThemedButton();
-            this.dock = new CodexVBE.ThemedButton();
             this.tabs = new CodexVBE.ThemedTabControl();
             this.surface = new System.Windows.Forms.Panel();
             this.status = new System.Windows.Forms.Label();
@@ -61,8 +57,6 @@ namespace CodexVBE
             this.toolbar.Controls.Add(this.reload);
             this.toolbar.Controls.Add(this.restore);
             this.toolbar.Controls.Add(this.resolve);
-            this.toolbar.Controls.Add(this.closeModule);
-            this.toolbar.Controls.Add(this.dock);
             this.toolbar.Name = "toolbar";
             this.compare.AutoSize = true;
             this.compare.Visible = false;
@@ -90,16 +84,11 @@ namespace CodexVBE
             this.resolve.Name = "resolve";
             this.resolve.Text = "Use edited version";
             this.resolve.Click += new System.EventHandler(this.ResolveClick);
-            this.closeModule.AutoSize = true;
-            this.closeModule.Name = "closeModule";
-            this.closeModule.Text = "Close module";
-            this.closeModule.Click += new System.EventHandler(this.CloseModuleClick);
-            this.dock.AutoSize = true;
-            this.dock.Text = "Dock / detach";
-            this.dock.Name = "dock";
-            this.dock.Click += new System.EventHandler(this.DockClick);
             this.tabs.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabs.Name = "tabs";
+            this.tabs.ShowCloseButtons = true;
+            this.tabs.Padding = new System.Drawing.Point(18, 3);
+            this.tabs.CloseRequested += this.CloseTabRequested;
             this.tabs.Margin = new System.Windows.Forms.Padding(0);
             this.tabs.SelectedIndexChanged += new System.EventHandler(this.TabChanged);
             this.surface.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -111,11 +100,10 @@ namespace CodexVBE
             this.status.Name = "status";
             this.timer.Interval = 900;
             this.timer.Tick += new System.EventHandler(this.TimerTick);
+            this.tips.SetToolTip(this.tabs, "Close this tab and preserve unsynchronized changes as a recovery draft.");
             this.tips.SetToolTip(this.resolve, "Apply your edited version after comparing; refuse if VBA changed again.");
-            this.tips.SetToolTip(this.closeModule, "Close this tab and preserve unsynchronized changes as a recovery draft.");
             this.tips.SetToolTip(this.reload, "Keep a recovery draft, then load the current VBA source.");
             this.tips.SetToolTip(this.restore, "Restore a previous draft without overwriting changed VBA code.");
-            this.tips.SetToolTip(this.dock, "Attach the editor to the VBE or move it to another screen.");
             this.tips.SetToolTip(this.edit, "Return from the comparison to editing.");
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -123,6 +111,9 @@ namespace CodexVBE
             this.MinimumSize = new System.Drawing.Size(720, 460);
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.Controls.Add(this.layout);
+            this.ControlBox = false;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            this.ShowInTaskbar = false;
             this.Text = "VBAi editor";
             this.Name = "ModernEditorWindow";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
