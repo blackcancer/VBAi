@@ -32,6 +32,7 @@ namespace CodexVBE
             CloseTimeoutMilliseconds = 2000, PageTimeoutMilliseconds = 1000;
         internal static Func<IntPtr, uint, IntPtr, IntPtr, bool> PostDialogMessage = PostMessage;
         internal static Func<Thread, int, bool> WaitWorker = (worker, timeout) => worker.Join(timeout);
+        internal static Func<IntPtr, HashSet<IntPtr>> OwnedWindows = Windows;
 
         internal static Row[] Visit(object vbe, Func<Row[], Row[]> update)
         {
@@ -39,7 +40,7 @@ namespace CodexVBE
             IntPtr owner = new IntPtr(Convert.ToInt64(editor.MainWindow.HWnd));
             if (!IsWindowEnabled(owner) || !IsWindowVisible(owner))
                 throw new InvalidOperationException("The VBE must be visible and have no modal dialog open.");
-            var existing = Windows(owner);
+            var existing = OwnedWindows(owner);
             dynamic command = editor.CommandBars.FindControl(1, 522);
             if (command == null || !(bool)command.Enabled) throw new InvalidOperationException("The native Options command is unavailable.");
             Exception failure = null;
@@ -55,7 +56,7 @@ namespace CodexVBE
                     while (dialog == IntPtr.Zero && wait.ElapsedMilliseconds < OpenTimeoutMilliseconds)
                     {
                         cancellation.Token.ThrowIfCancellationRequested();
-                        var candidates = Windows(owner).Where(window => !existing.Contains(window) &&
+                        var candidates = OwnedWindows(owner).Where(window => !existing.Contains(window) &&
                             ClassName(window) == "#32770" && GetDlgItem(window, 1) != IntPtr.Zero &&
                             GetDlgItem(window, 2) != IntPtr.Zero && Descendants(window, "SysTabControl32").Count == 1).ToArray();
                         if (candidates.Length > 1) throw new InvalidOperationException("The owned Options dialog is ambiguous.");
@@ -124,7 +125,7 @@ namespace CodexVBE
                 System.Windows.Forms.Application.DoEvents();
                 Thread.Sleep(10);
             }
-            if (dialog != IntPtr.Zero && IsWindowVisible(dialog))
+            if (IsWindowVisible(dialog))
                 throw new InvalidOperationException("The native Options dialog did not finish closing.");
             return observed;
         }

@@ -260,7 +260,7 @@ namespace CodexVBE.Tests.Unit
             });
             WithFixture(fixture =>
             {
-                fixture.Vbe.CommandBars.Command.Open = () => { fixture.Open(); fixture.Open(); };
+                fixture.ConfigureAmbiguousOpen();
                 Failure(fixture, rows => null, "ambiguous"); Assert.AreEqual(0, fixture.Cancels);
             });
         }
@@ -302,5 +302,17 @@ namespace CodexVBE.Tests.Unit
                 Failure(fixture, rows => null, "did not finish closing");
             });
         }
+        [TestMethod]
+        public void NativeVisibilityRejectsNullAndInvalidOwnedDialogHandles()
+        {
+            Assert.IsFalse(IsWindowVisible(IntPtr.Zero)); Assert.IsFalse(IsWindowVisible(new IntPtr(-1)));
+            WithFixture(fixture =>
+            {
+                var dialog = fixture.Open(); Assert.IsTrue(IsWindowVisible(dialog.Handle));
+                NativePaletteDialogFixture.ShowWindow(dialog.Handle, 0); Assert.IsFalse(IsWindowVisible(dialog.Handle));
+            });
+        }
+
+        [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
     }
 }

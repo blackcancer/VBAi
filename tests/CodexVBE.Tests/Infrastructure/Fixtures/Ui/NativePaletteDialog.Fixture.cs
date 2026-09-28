@@ -54,6 +54,8 @@ namespace CodexVBE.Tests.Unit
             close = VbeNativePaletteDialog.CloseTimeoutMilliseconds, page = VbeNativePaletteDialog.PageTimeoutMilliseconds;
         private readonly Func<IntPtr, uint, IntPtr, IntPtr, bool> previousPost = VbeNativePaletteDialog.PostDialogMessage;
         private readonly Func<Thread, int, bool> previousJoin = VbeNativePaletteDialog.WaitWorker;
+        private readonly Func<IntPtr, HashSet<IntPtr>> previousWindows = VbeNativePaletteDialog.OwnedWindows;
+        private readonly ManualResetEventSlim dialogsPublished = new ManualResetEventSlim();
         internal readonly Form Owner = new Form { ShowInTaskbar = false, StartPosition = FormStartPosition.Manual,
             Location = new System.Drawing.Point(-10000, -10000), Size = new System.Drawing.Size(480, 360) };
         internal readonly SyntheticPaletteVbe Vbe;
@@ -75,6 +77,17 @@ namespace CodexVBE.Tests.Unit
             using (var initialize = new TabControl()) { var unused = initialize.Handle; }
             Vbe = new SyntheticPaletteVbe { MainWindow = new SyntheticPaletteMainWindow { HWnd = Owner.Handle.ToInt64() },
                 CommandBars = new SyntheticPaletteCommandBars { Command = new SyntheticPaletteCommand { Open = () => { Open(); AfterOpen?.Invoke(); } } } };
+        }
+        internal void ConfigureAmbiguousOpen()
+        {
+            int ownerThread = Thread.CurrentThread.ManagedThreadId;
+            VbeNativePaletteDialog.OwnedWindows = owner =>
+            {
+                if (Thread.CurrentThread.ManagedThreadId != ownerThread)
+                    Assert.IsTrue(dialogsPublished.Wait(5000), "Both owned Options dialogs must be published before worker discovery.");
+                return previousWindows(owner);
+            };
+            Vbe.CommandBars.Command.Open = () => { Open(); Open(); dialogsPublished.Set(); };
         }
         internal Dialog Open()
         {
@@ -173,6 +186,7 @@ namespace CodexVBE.Tests.Unit
             VbeNativePaletteDialog.OpenTimeoutMilliseconds = open; VbeNativePaletteDialog.WorkerTimeoutMilliseconds = worker;
             VbeNativePaletteDialog.CloseTimeoutMilliseconds = close; VbeNativePaletteDialog.PageTimeoutMilliseconds = page;
             VbeNativePaletteDialog.PostDialogMessage = previousPost; VbeNativePaletteDialog.WaitWorker = previousJoin;
+            VbeNativePaletteDialog.OwnedWindows = previousWindows; dialogsPublished.Set(); dialogsPublished.Dispose();
         }
     }
 }
