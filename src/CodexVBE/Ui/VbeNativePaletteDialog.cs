@@ -28,6 +28,11 @@ namespace CodexVBE
         [DllImport("user32.dll")] private static extern bool PostMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
         [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
 
+        internal static int OpenTimeoutMilliseconds = 10000, WorkerTimeoutMilliseconds = 30000,
+            CloseTimeoutMilliseconds = 2000, PageTimeoutMilliseconds = 1000;
+        internal static Func<IntPtr, uint, IntPtr, IntPtr, bool> PostDialogMessage = PostMessage;
+        internal static Func<Thread, int, bool> WaitWorker = (worker, timeout) => worker.Join(timeout);
+
         internal static Row[] Visit(object vbe, Func<Row[], Row[]> update)
         {
             dynamic editor = vbe;
@@ -47,7 +52,7 @@ namespace CodexVBE
                 try
                 {
                     var wait = Stopwatch.StartNew();
-                    while (dialog == IntPtr.Zero && wait.ElapsedMilliseconds < 10000)
+                    while (dialog == IntPtr.Zero && wait.ElapsedMilliseconds < OpenTimeoutMilliseconds)
                     {
                         cancellation.Token.ThrowIfCancellationRequested();
                         var candidates = Windows(owner).Where(window => !existing.Contains(window) &&
@@ -90,7 +95,7 @@ namespace CodexVBE
                     if (dialog != IntPtr.Zero)
                     {
                         IntPtr button = GetDlgItem(dialog, accept ? 1 : 2);
-                        if (button == IntPtr.Zero || !PostMessage(button, 0xf5, IntPtr.Zero, IntPtr.Zero))
+                        if (button == IntPtr.Zero || !PostDialogMessage(button, 0xf5, IntPtr.Zero, IntPtr.Zero))
                             failure = failure ?? new InvalidOperationException("The native Options dialog could not be closed.");
                     }
                 }
@@ -103,18 +108,18 @@ namespace CodexVBE
                 // Some VBE hosts return before the modal dialog is visible. Keep
                 // pumping the owning STA until the worker closes that dialog.
                 var completion = Stopwatch.StartNew();
-                while (worker.IsAlive && completion.ElapsedMilliseconds < 30000)
+                while (worker.IsAlive && completion.ElapsedMilliseconds < WorkerTimeoutMilliseconds)
                 {
                     System.Windows.Forms.Application.DoEvents();
                     Thread.Sleep(10);
                 }
             }
             finally { cancellation.Cancel(); }
-            if (!worker.Join(1500)) throw new InvalidOperationException("The native palette worker did not finish.");
+            if (!WaitWorker(worker, 1500)) throw new InvalidOperationException("The native palette worker did not finish.");
             cancellation.Dispose();
             if (failure != null) throw new InvalidOperationException("Native editor colors could not be updated.", failure);
             var closing = Stopwatch.StartNew();
-            while (dialog != IntPtr.Zero && IsWindowVisible(dialog) && closing.ElapsedMilliseconds < 2000)
+            while (dialog != IntPtr.Zero && IsWindowVisible(dialog) && closing.ElapsedMilliseconds < CloseTimeoutMilliseconds)
             {
                 System.Windows.Forms.Application.DoEvents();
                 Thread.Sleep(10);
@@ -186,7 +191,7 @@ namespace CodexVBE
                         new[] { 4913, 4914, 4935 }.All(id => Descendants(dialog, "ComboBox", id).Count == 1))
                         return lists[0];
                     Thread.Sleep(50);
-                } while (wait.ElapsedMilliseconds < 1000);
+                } while (wait.ElapsedMilliseconds < PageTimeoutMilliseconds);
             }
             throw new InvalidOperationException("The native color formatting page was not found in " + count + " Options tabs.");
         }
