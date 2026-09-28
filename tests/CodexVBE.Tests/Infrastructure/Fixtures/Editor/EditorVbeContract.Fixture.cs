@@ -180,7 +180,9 @@ namespace CodexVBE.Tests.Infrastructure
             public int HWnd { get; set; }
             public bool Visible { get => visible; set { OnVisible?.Invoke(); visible = value; } }
             public bool FailClose;
-            public int Closes;
+            public int Closes, Focuses;
+            public Action OnFocus;
+            public void SetFocus() { Focuses++; OnFocus?.Invoke(); }
             public void Close() { Closes++; OnClose?.Invoke(); if (FailClose) throw new COMException("Pane already gone"); }
         }
     }
