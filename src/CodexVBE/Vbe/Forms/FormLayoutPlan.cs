@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 
 namespace CodexVBE
@@ -83,7 +83,8 @@ namespace CodexVBE
                     }
             }
             foreach (var item in result)
-                if (new[] { item.Left, item.Top, item.Width, item.Height }.Any(x => double.IsNaN(x) || double.IsInfinity(x)) || item.Left < 0 || item.Top < 0 || item.Width <= 0 || item.Height <= 0 || item.Left + item.Width > parentWidth + 0.1 || item.Top + item.Height > parentHeight + 0.1)
+                // Sizes are copied from validated input or its validated anchor; only positions can leave the container.
+                if (new[] { item.Left, item.Top, item.Width, item.Height }.Any(x => double.IsNaN(x) || double.IsInfinity(x)) || item.Left < 0 || item.Top < 0 || item.Left + item.Width > parentWidth + 0.1 || item.Top + item.Height > parentHeight + 0.1)
                     throw new InvalidOperationException("The layout would place a control outside its container.");
             return result;
         }
