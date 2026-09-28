@@ -2030,4 +2030,37 @@ QQ 附加内存
   <data name="The document was not saved because some edits are still pending synchronization." xml:space="preserve"><value>文档未保存，因为部分修改仍在等待同步。</value></data>
   <data name="Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data." xml:space="preserve"><value>项目隐私保护已升级。之前的历史记录仍可在本地查看；服务提供商的上下文将重新开始，以免再次发送之前共享的项目数据。</value></data>
   <data name="This message predates the project privacy upgrade. Use current authorized references in a new conversation." xml:space="preserve"><value>此消息早于项目隐私保护升级。请在新对话中使用当前已获授权的引用。</value></data>
+  <data name="Queue ↑" xml:space="preserve">
+    <value>加入队列 ↑</value>
+  </data>
+  <data name="Queue this message after the current response." xml:space="preserve">
+    <value>在当前回复之后发送此消息。</value>
+  </data>
+  <data name="Send now" xml:space="preserve">
+    <value>立即发送</value>
+  </data>
+  <data name="Queued message" xml:space="preserve">
+    <value>队列中的消息</value>
+  </data>
+  <data name="Stop the current response and send this message next." xml:space="preserve">
+    <value>停止当前回复，接着发送此消息。</value>
+  </data>
+  <data name="Move this queued message back to the composer." xml:space="preserve">
+    <value>将此排队消息移回输入框。</value>
+  </data>
+  <data name="Remove this message from the queue." xml:space="preserve">
+    <value>从队列中移除此消息。</value>
+  </data>
+  <data name="Send or clear the current draft before editing a queued message." xml:space="preserve">
+    <value>编辑排队消息前，请先发送或清空当前草稿。</value>
+  </data>
+  <data name="Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed." xml:space="preserve">
+    <value>安全暂停：连续多轮没有进展，或已达到干预上限。请从已保存的结果继续；已完成的操作不会重复执行。</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>编辑</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>删除</value>
+  </data>
 </root>

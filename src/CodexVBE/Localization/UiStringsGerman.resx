@@ -2030,4 +2030,37 @@ Anmeldung über Git Credential Manager; die Commit-Identität wird in Git festge
   <data name="The document was not saved because some edits are still pending synchronization." xml:space="preserve"><value>Das Dokument wurde nicht gespeichert, weil einige Änderungen noch auf die Synchronisierung warten.</value></data>
   <data name="Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data." xml:space="preserve"><value>Der Projektdatenschutz wurde verbessert. Der bisherige Verlauf bleibt lokal verfügbar; der Anbieterkontext beginnt neu, damit zuvor geteilte Projektdaten nicht erneut übertragen werden.</value></data>
   <data name="This message predates the project privacy upgrade. Use current authorized references in a new conversation." xml:space="preserve"><value>Diese Nachricht stammt aus der Zeit vor der Verbesserung des Projektdatenschutzes. Verwenden Sie aktuelle autorisierte Verweise in einer neuen Unterhaltung.</value></data>
+  <data name="Queue ↑" xml:space="preserve">
+    <value>Einreihen ↑</value>
+  </data>
+  <data name="Queue this message after the current response." xml:space="preserve">
+    <value>Diese Nachricht nach der aktuellen Antwort senden.</value>
+  </data>
+  <data name="Send now" xml:space="preserve">
+    <value>Jetzt senden</value>
+  </data>
+  <data name="Queued message" xml:space="preserve">
+    <value>Nachricht in der Warteschlange</value>
+  </data>
+  <data name="Stop the current response and send this message next." xml:space="preserve">
+    <value>Die aktuelle Antwort stoppen und diese Nachricht als Nächstes senden.</value>
+  </data>
+  <data name="Move this queued message back to the composer." xml:space="preserve">
+    <value>Diese Nachricht aus der Warteschlange zurück in das Eingabefeld verschieben.</value>
+  </data>
+  <data name="Remove this message from the queue." xml:space="preserve">
+    <value>Diese Nachricht aus der Warteschlange entfernen.</value>
+  </data>
+  <data name="Send or clear the current draft before editing a queued message." xml:space="preserve">
+    <value>Den aktuellen Entwurf senden oder leeren, bevor eine Nachricht in der Warteschlange bearbeitet wird.</value>
+  </data>
+  <data name="Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed." xml:space="preserve">
+    <value>Sicherheitspause: Mehrere Runden ohne Fortschritt oder die Eingriffsgrenze wurde erreicht. Mit gespeicherten Ergebnissen fortsetzen; abgeschlossene Aktionen werden nicht wiederholt.</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Bearbeiten</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Löschen</value>
+  </data>
 </root>

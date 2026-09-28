@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Unit
+namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections;

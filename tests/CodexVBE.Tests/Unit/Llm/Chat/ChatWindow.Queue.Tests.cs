@@ -11,7 +11,7 @@ namespace CodexVBE.Tests.Unit
     public sealed partial class ChatWindowStateTests
     {
         [STATestMethod, TestCategory("Unit")]
-        public void QueuedRequestDefersWhileBusyAndRestoresAnInterruptedSuccessfulResponse()
+        public void QueuedRequestDefersWhileBusyAndDiscardsAResponseReceivedAfterInterruption()
         {
             using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:test" }))
             {
@@ -26,7 +26,9 @@ namespace CodexVBE.Tests.Unit
                 Assert.AreEqual(0, requests); Assert.AreEqual(1, state.PendingMessages.Count);
                 Set(window, "busy", false);
                 CompleteOnSta((Task)Call(window, "SendRequestAsync", item));
-                Assert.AreEqual(1, requests); Assert.AreSame(item, state.PendingMessages.Single());
+                Assert.AreEqual(1, requests); Assert.AreEqual(0, state.PendingMessages.Count);
+                Assert.IsTrue(state.Entries.Any(entry => entry.Text == UiText.Get("Response interrupted. Changes already applied can still be undone in the chat.")));
+                Assert.IsFalse(state.Entries.Any(entry => entry.Text == "completed after stop"));
                 Assert.IsFalse(Get<bool>(window, "busy"));
                 Set(window, "currentSession", null);
             }

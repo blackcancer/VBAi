@@ -2030,4 +2030,37 @@ Conexão pelo Git Credential Manager; a identidade dos commits é configurada no
   <data name="The document was not saved because some edits are still pending synchronization." xml:space="preserve"><value>O documento não foi salvo porque algumas alterações ainda aguardam sincronização.</value></data>
   <data name="Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data." xml:space="preserve"><value>A privacidade dos projetos foi reforçada. O histórico anterior continua disponível localmente; o contexto do provedor começa do zero para evitar retransmitir dados de projetos compartilhados anteriormente.</value></data>
   <data name="This message predates the project privacy upgrade. Use current authorized references in a new conversation." xml:space="preserve"><value>Esta mensagem é anterior ao reforço da privacidade dos projetos. Use referências atuais autorizadas em uma nova conversa.</value></data>
+  <data name="Queue ↑" xml:space="preserve">
+    <value>Enfileirar ↑</value>
+  </data>
+  <data name="Queue this message after the current response." xml:space="preserve">
+    <value>Enviar esta mensagem após a resposta atual.</value>
+  </data>
+  <data name="Send now" xml:space="preserve">
+    <value>Enviar agora</value>
+  </data>
+  <data name="Queued message" xml:space="preserve">
+    <value>Mensagem na fila</value>
+  </data>
+  <data name="Stop the current response and send this message next." xml:space="preserve">
+    <value>Interromper a resposta atual e enviar esta mensagem em seguida.</value>
+  </data>
+  <data name="Move this queued message back to the composer." xml:space="preserve">
+    <value>Mover esta mensagem da fila de volta para o campo de mensagem.</value>
+  </data>
+  <data name="Remove this message from the queue." xml:space="preserve">
+    <value>Remover esta mensagem da fila.</value>
+  </data>
+  <data name="Send or clear the current draft before editing a queued message." xml:space="preserve">
+    <value>Envie ou limpe o rascunho atual antes de editar uma mensagem na fila.</value>
+  </data>
+  <data name="Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed." xml:space="preserve">
+    <value>Pausa de segurança: várias rodadas sem progresso ou limite de intervenção atingido. Retome a partir dos resultados salvos; as ações concluídas não serão repetidas.</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Editar</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Excluir</value>
+  </data>
 </root>

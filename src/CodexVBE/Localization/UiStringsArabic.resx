@@ -2030,4 +2030,37 @@
   <data name="The document was not saved because some edits are still pending synchronization." xml:space="preserve"><value>لم يُحفظ المستند لأن بعض التعديلات لا تزال تنتظر المزامنة.</value></data>
   <data name="Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data." xml:space="preserve"><value>تم تعزيز خصوصية المشاريع. يبقى السجل السابق متاحًا محليًا؛ ويبدأ سياق موفر الخدمة من جديد لتجنب إعادة إرسال بيانات المشاريع التي تمت مشاركتها سابقًا.</value></data>
   <data name="This message predates the project privacy upgrade. Use current authorized references in a new conversation." xml:space="preserve"><value>هذه الرسالة سابقة لتعزيز خصوصية المشاريع. استخدم مراجع حالية مسموحًا بها في محادثة جديدة.</value></data>
+  <data name="Queue ↑" xml:space="preserve">
+    <value>إضافة إلى قائمة الانتظار ↑</value>
+  </data>
+  <data name="Queue this message after the current response." xml:space="preserve">
+    <value>إرسال هذه الرسالة بعد الرد الحالي.</value>
+  </data>
+  <data name="Send now" xml:space="preserve">
+    <value>إرسال الآن</value>
+  </data>
+  <data name="Queued message" xml:space="preserve">
+    <value>رسالة في قائمة الانتظار</value>
+  </data>
+  <data name="Stop the current response and send this message next." xml:space="preserve">
+    <value>إيقاف الرد الحالي وإرسال هذه الرسالة بعده.</value>
+  </data>
+  <data name="Move this queued message back to the composer." xml:space="preserve">
+    <value>إعادة هذه الرسالة من قائمة الانتظار إلى محرر الرسائل.</value>
+  </data>
+  <data name="Remove this message from the queue." xml:space="preserve">
+    <value>إزالة هذه الرسالة من قائمة الانتظار.</value>
+  </data>
+  <data name="Send or clear the current draft before editing a queued message." xml:space="preserve">
+    <value>أرسل المسودة الحالية أو امسحها قبل تعديل رسالة في قائمة الانتظار.</value>
+  </data>
+  <data name="Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed." xml:space="preserve">
+    <value>توقف احترازي: تكررت جولات دون تقدم أو تم بلوغ الحد الأقصى للتدخل. استأنف من النتائج المحفوظة؛ لن تُعاد الإجراءات المكتملة.</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>تعديل</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>حذف</value>
+  </data>
 </root>

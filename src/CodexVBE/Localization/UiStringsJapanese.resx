@@ -2030,4 +2030,37 @@ Git Credential Manager でサインインします。コミットの作成者情
   <data name="The document was not saved because some edits are still pending synchronization." xml:space="preserve"><value>一部の編集がまだ同期を待っているため、ドキュメントは保存されませんでした。</value></data>
   <data name="Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data." xml:space="preserve"><value>プロジェクトのプライバシー保護が強化されました。以前の履歴はローカルで引き続き参照できます。過去に共有したプロジェクトのデータを再送信しないよう、プロバイダーのコンテキストは新しく始まります。</value></data>
   <data name="This message predates the project privacy upgrade. Use current authorized references in a new conversation." xml:space="preserve"><value>このメッセージは、プロジェクトのプライバシー保護が強化される前のものです。新しい会話で、現在許可されている参照を使用してください。</value></data>
+  <data name="Queue ↑" xml:space="preserve">
+    <value>キューに追加 ↑</value>
+  </data>
+  <data name="Queue this message after the current response." xml:space="preserve">
+    <value>現在の応答の後にこのメッセージを送信します。</value>
+  </data>
+  <data name="Send now" xml:space="preserve">
+    <value>今すぐ送信</value>
+  </data>
+  <data name="Queued message" xml:space="preserve">
+    <value>キュー内のメッセージ</value>
+  </data>
+  <data name="Stop the current response and send this message next." xml:space="preserve">
+    <value>現在の応答を停止し、このメッセージを次に送信します。</value>
+  </data>
+  <data name="Move this queued message back to the composer." xml:space="preserve">
+    <value>このメッセージをキューから入力欄に戻します。</value>
+  </data>
+  <data name="Remove this message from the queue." xml:space="preserve">
+    <value>このメッセージをキューから削除します。</value>
+  </data>
+  <data name="Send or clear the current draft before editing a queued message." xml:space="preserve">
+    <value>キュー内のメッセージを編集する前に、現在の下書きを送信または消去してください。</value>
+  </data>
+  <data name="Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed." xml:space="preserve">
+    <value>安全のため一時停止しました。進展のない処理が繰り返されたか、介入回数の上限に達しました。保存済みの結果から再開してください。完了済みの操作は繰り返されません。</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>編集</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>削除</value>
+  </data>
 </root>

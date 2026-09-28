@@ -2030,4 +2030,37 @@ Accesso tramite Git Credential Manager; l’identità dei commit si configura in
   <data name="The document was not saved because some edits are still pending synchronization." xml:space="preserve"><value>Il documento non è stato salvato perché alcune modifiche sono ancora in attesa di sincronizzazione.</value></data>
   <data name="Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data." xml:space="preserve"><value>La privacy dei progetti è stata rafforzata. La cronologia precedente resta disponibile localmente; il contesto del fornitore riparte da zero per evitare di ritrasmettere i dati dei progetti condivisi in precedenza.</value></data>
   <data name="This message predates the project privacy upgrade. Use current authorized references in a new conversation." xml:space="preserve"><value>Questo messaggio precede il rafforzamento della privacy dei progetti. Usa riferimenti attuali autorizzati in una nuova conversazione.</value></data>
+  <data name="Queue ↑" xml:space="preserve">
+    <value>Accoda ↑</value>
+  </data>
+  <data name="Queue this message after the current response." xml:space="preserve">
+    <value>Invia questo messaggio dopo la risposta corrente.</value>
+  </data>
+  <data name="Send now" xml:space="preserve">
+    <value>Invia ora</value>
+  </data>
+  <data name="Queued message" xml:space="preserve">
+    <value>Messaggio in coda</value>
+  </data>
+  <data name="Stop the current response and send this message next." xml:space="preserve">
+    <value>Interrompi la risposta corrente e invia questo messaggio per primo.</value>
+  </data>
+  <data name="Move this queued message back to the composer." xml:space="preserve">
+    <value>Riporta questo messaggio dalla coda al campo di composizione.</value>
+  </data>
+  <data name="Remove this message from the queue." xml:space="preserve">
+    <value>Rimuovi questo messaggio dalla coda.</value>
+  </data>
+  <data name="Send or clear the current draft before editing a queued message." xml:space="preserve">
+    <value>Invia o cancella la bozza corrente prima di modificare un messaggio in coda.</value>
+  </data>
+  <data name="Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed." xml:space="preserve">
+    <value>Pausa di sicurezza: più cicli senza progressi oppure limite di intervento raggiunto. Riprendi dai risultati salvati; le azioni completate non saranno ripetute.</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Modifica</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Elimina</value>
+  </data>
 </root>

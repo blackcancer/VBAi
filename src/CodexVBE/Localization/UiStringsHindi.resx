@@ -2030,4 +2030,37 @@ Git Credential Manager से साइन-इन करें; कमिट ल
   <data name="The document was not saved because some edits are still pending synchronization." xml:space="preserve"><value>दस्तावेज़ सहेजा नहीं गया क्योंकि कुछ बदलाव अभी भी समन्वयन की प्रतीक्षा में हैं।</value></data>
   <data name="Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data." xml:space="preserve"><value>प्रोजेक्ट की गोपनीयता बेहतर की गई है। पिछला इतिहास स्थानीय रूप से उपलब्ध है; पहले साझा किए गए प्रोजेक्ट डेटा को दोबारा भेजने से बचने के लिए प्रदाता का संदर्भ नए सिरे से शुरू होता है।</value></data>
   <data name="This message predates the project privacy upgrade. Use current authorized references in a new conversation." xml:space="preserve"><value>यह संदेश प्रोजेक्ट की गोपनीयता में सुधार से पहले का है। नई बातचीत में वर्तमान अधिकृत संदर्भों का उपयोग करें।</value></data>
+  <data name="Queue ↑" xml:space="preserve">
+    <value>कतार में जोड़ें ↑</value>
+  </data>
+  <data name="Queue this message after the current response." xml:space="preserve">
+    <value>वर्तमान उत्तर के बाद यह संदेश भेजें।</value>
+  </data>
+  <data name="Send now" xml:space="preserve">
+    <value>अभी भेजें</value>
+  </data>
+  <data name="Queued message" xml:space="preserve">
+    <value>कतार में रखा संदेश</value>
+  </data>
+  <data name="Stop the current response and send this message next." xml:space="preserve">
+    <value>वर्तमान उत्तर रोकें और अगला यह संदेश भेजें।</value>
+  </data>
+  <data name="Move this queued message back to the composer." xml:space="preserve">
+    <value>इस संदेश को कतार से वापस संदेश संपादक में लाएँ।</value>
+  </data>
+  <data name="Remove this message from the queue." xml:space="preserve">
+    <value>इस संदेश को कतार से हटाएँ।</value>
+  </data>
+  <data name="Send or clear the current draft before editing a queued message." xml:space="preserve">
+    <value>कतार में रखे संदेश को संपादित करने से पहले वर्तमान मसौदा भेजें या साफ़ करें।</value>
+  </data>
+  <data name="Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed." xml:space="preserve">
+    <value>सुरक्षा विराम: कई दौर में कोई प्रगति नहीं हुई या हस्तक्षेप की सीमा पूरी हो गई। सहेजे गए परिणामों से फिर शुरू करें; पूरे हो चुके कार्य दोहराए नहीं जाएँगे।</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>संपादित करें</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>हटाएँ</value>
+  </data>
 </root>

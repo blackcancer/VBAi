@@ -2030,4 +2030,37 @@ Git Credential Manager로 로그인하며 커밋 작성자 정보는 Git에서 �
   <data name="The document was not saved because some edits are still pending synchronization." xml:space="preserve"><value>일부 편집 내용이 아직 동기화를 기다리고 있어 문서가 저장되지 않았습니다.</value></data>
   <data name="Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data." xml:space="preserve"><value>프로젝트 개인정보 보호가 강화되었습니다. 이전 기록은 로컬에서 계속 사용할 수 있으며, 이전에 공유한 프로젝트 데이터를 다시 전송하지 않도록 공급자 컨텍스트가 새로 시작됩니다.</value></data>
   <data name="This message predates the project privacy upgrade. Use current authorized references in a new conversation." xml:space="preserve"><value>이 메시지는 프로젝트 개인정보 보호가 강화되기 전에 작성되었습니다. 새 대화에서 현재 허용된 참조를 사용하세요.</value></data>
+  <data name="Queue ↑" xml:space="preserve">
+    <value>대기열에 추가 ↑</value>
+  </data>
+  <data name="Queue this message after the current response." xml:space="preserve">
+    <value>현재 응답이 끝난 후 이 메시지를 보냅니다.</value>
+  </data>
+  <data name="Send now" xml:space="preserve">
+    <value>지금 보내기</value>
+  </data>
+  <data name="Queued message" xml:space="preserve">
+    <value>대기 중인 메시지</value>
+  </data>
+  <data name="Stop the current response and send this message next." xml:space="preserve">
+    <value>현재 응답을 중지하고 이 메시지를 다음으로 보냅니다.</value>
+  </data>
+  <data name="Move this queued message back to the composer." xml:space="preserve">
+    <value>이 메시지를 대기열에서 입력란으로 되돌립니다.</value>
+  </data>
+  <data name="Remove this message from the queue." xml:space="preserve">
+    <value>이 메시지를 대기열에서 제거합니다.</value>
+  </data>
+  <data name="Send or clear the current draft before editing a queued message." xml:space="preserve">
+    <value>대기 중인 메시지를 편집하기 전에 현재 초안을 보내거나 지우세요.</value>
+  </data>
+  <data name="Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed." xml:space="preserve">
+    <value>안전 일시 중지: 진행 없는 처리가 반복되었거나 개입 한도에 도달했습니다. 저장된 결과에서 재개하세요. 완료된 작업은 다시 실행되지 않습니다.</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>편집</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>삭제</value>
+  </data>
 </root>

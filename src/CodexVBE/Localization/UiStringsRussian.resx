@@ -2030,4 +2030,37 @@
   <data name="The document was not saved because some edits are still pending synchronization." xml:space="preserve"><value>Документ не сохранён, потому что некоторые изменения ещё ожидают синхронизации.</value></data>
   <data name="Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data." xml:space="preserve"><value>Защита данных проектов усилена. Предыдущая история остаётся доступной локально; контекст поставщика начинается заново, чтобы не передавать повторно ранее предоставленные данные проектов.</value></data>
   <data name="This message predates the project privacy upgrade. Use current authorized references in a new conversation." xml:space="preserve"><value>Это сообщение создано до усиления защиты данных проектов. Используйте актуальные разрешённые ссылки в новом разговоре.</value></data>
+  <data name="Queue ↑" xml:space="preserve">
+    <value>В очередь ↑</value>
+  </data>
+  <data name="Queue this message after the current response." xml:space="preserve">
+    <value>Отправить это сообщение после текущего ответа.</value>
+  </data>
+  <data name="Send now" xml:space="preserve">
+    <value>Отправить сейчас</value>
+  </data>
+  <data name="Queued message" xml:space="preserve">
+    <value>Сообщение в очереди</value>
+  </data>
+  <data name="Stop the current response and send this message next." xml:space="preserve">
+    <value>Остановить текущий ответ и отправить это сообщение следующим.</value>
+  </data>
+  <data name="Move this queued message back to the composer." xml:space="preserve">
+    <value>Вернуть это сообщение из очереди в поле ввода.</value>
+  </data>
+  <data name="Remove this message from the queue." xml:space="preserve">
+    <value>Удалить это сообщение из очереди.</value>
+  </data>
+  <data name="Send or clear the current draft before editing a queued message." xml:space="preserve">
+    <value>Отправьте или очистите текущий черновик перед редактированием сообщения в очереди.</value>
+  </data>
+  <data name="Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed." xml:space="preserve">
+    <value>Защитная пауза: несколько циклов без прогресса или достигнут предел вмешательства. Продолжите с сохранённых результатов; завершённые действия не будут повторены.</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Изменить</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
 </root>
