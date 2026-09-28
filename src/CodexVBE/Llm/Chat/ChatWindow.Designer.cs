@@ -3,18 +3,22 @@ namespace CodexVBE
     /// <summary>Fenêtre de conversation et commandes de son concepteur WinForms.</summary>
     internal sealed partial class ChatWindow
     {
-        /// <summary>Conteneur des composants WinForms dont la durée de vie est gérée par le formulaire.</summary>
-        private System.ComponentModel.IContainer components = null;
-        /// <summary>Gestionnaire des infobulles attachées aux commandes du formulaire.</summary>
-        private System.Windows.Forms.ToolTip toolTips;
+                /// <summary>Container that owns the disposable components created by the WinForms Designer.</summary>
+private System.ComponentModel.IContainer components = null;
+                /// <summary>ToolTip component used to show full text for transcript controls.</summary>
+private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Menu des commandes de configuration et d’intégration.</summary>
         private System.Windows.Forms.ContextMenuStrip optionsMenu;
         /// <summary>Commande qui ouvre les paramètres de l’application.</summary>
         private System.Windows.Forms.ToolStripMenuItem configure;
-        private System.Windows.Forms.ToolStripMenuItem projectAccess;
-        private System.Windows.Forms.ToolStripMenuItem resumeTurn;
-        private System.Windows.Forms.ToolStripMenuItem about;
-        private System.Windows.Forms.ToolStripSeparator aboutSeparator;
+        /// <summary>Stores the project access used by ChatWindow.</summary>
+private System.Windows.Forms.ToolStripMenuItem projectAccess;
+        /// <summary>Stores the resume turn used by ChatWindow.</summary>
+private System.Windows.Forms.ToolStripMenuItem resumeTurn;
+        /// <summary>Commande de menu qui ouvre les informations de l’application.</summary>
+private System.Windows.Forms.ToolStripMenuItem about;
+        /// <summary>Séparateur placé avant la commande d’informations.</summary>
+private System.Windows.Forms.ToolStripSeparator aboutSeparator;
         /// <summary>Commande qui actualise les modèles du fournisseur sélectionné.</summary>
         private System.Windows.Forms.ToolStripMenuItem refreshModels;
         /// <summary>Commande de gestion de l’ancrage de la fenêtre.</summary>
@@ -97,7 +101,8 @@ namespace CodexVBE
         private CodexVBE.ChatComposerPanel composerLayout;
         /// <summary>Disposition des références et pièces jointes sélectionnées.</summary>
         private System.Windows.Forms.FlowLayoutPanel contextChips;
-        private System.Windows.Forms.FlowLayoutPanel pendingMessagesPanel;
+        /// <summary>Contains the transcript rows for messages waiting to be sent.</summary>
+private System.Windows.Forms.FlowLayoutPanel pendingMessagesPanel;
         /// <summary>Panneau du champ de saisie du message.</summary>
         private System.Windows.Forms.Panel promptPanel;
         /// <summary>Libellé indicatif du champ de saisie.</summary>
@@ -153,8 +158,8 @@ namespace CodexVBE
 
         #region Windows Form Designer generated code
 
-        /// <summary>Crée les contrôles du formulaire et configure leur disposition et leurs événements.</summary>
-        private void InitializeComponent()
+                /// <summary>Creates and configures the chat window controls serialized by the WinForms Designer.</summary>
+private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);

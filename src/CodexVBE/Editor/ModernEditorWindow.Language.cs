@@ -4,9 +4,13 @@ using System.Threading.Tasks;
 
 namespace CodexVBE
 {
-    internal sealed partial class ModernEditorWindow
+    /// <summary>Répond aux demandes de symboles et d’ouverture de définition de l’éditeur Monaco.</summary>
+internal sealed partial class ModernEditorWindow
     {
-        private async Task LanguageRequest(EditorMessage message)
+        /// <summary>Construit l’index de langage du projet et renvoie symboles et sources à la révision demandée.</summary>
+        /// <param name="message">Demande Monaco avec l’identifiant, la révision et le numéro de requête.</param>
+        /// <returns>Tâche terminée après l’envoi éventuel de la réponse de langage.</returns>
+private async Task LanguageRequest(EditorMessage message)
         {
             object response = null;
             try
@@ -39,7 +43,10 @@ namespace CodexVBE
             catch (Exception error) { LoadLog.Write("Monaco language service: " + error.Message); }
             finally { if (Ready && !IsDisposed) await Script("languageReply", message.request, response); }
         }
-        private async Task OpenDefinition(EditorMessage message)
+        /// <summary>Ouvre le module qui définit le symbole demandé puis révèle sa ligne et sa colonne.</summary>
+        /// <param name="message">Destination du symbole fournie par l’index de langage.</param>
+        /// <returns>Tâche terminée après l’ouverture et le positionnement éventuels.</returns>
+private async Task OpenDefinition(EditorMessage message)
         {
             if (!documents.TryGetValue(message.id ?? "", out var doc)) return;
             if (doc.Module is EditorVbeModule native) await OpenModule(native.Sibling(message.module));

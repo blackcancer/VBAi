@@ -9,15 +9,32 @@ namespace CodexVBE
     /// <summary>Coordonne les vérifications entre les hôtes et l’application différée par un programme distinct.</summary>
     internal static class UpdateCoordinator
     {
-        private static readonly object timerLock = new object();
-        private static Timer timer;
-        private static CancellationTokenSource lifetime;
-        internal static Func<UpdateFeed> CreateFeed = () => new UpdateFeed();
-        internal static Action<bool> LaunchWorker = LaunchWorkerNative;
-        internal static Func<ProcessStartInfo, Process> StartProcess = Process.Start;
-        internal static Func<TimerCallback, object, TimeSpan, TimeSpan, Timer> CreateTimer = NewTimer;
-        private static Timer NewTimer(TimerCallback callback, object state, TimeSpan due, TimeSpan period) => new Timer(callback, state, due, period);
-        internal static async Task<UpdateRelease> Check(bool automatic, IProgress<int> progress, CancellationToken ct)
+        /// <summary>Synchronization object protecting timer and lifetime state.</summary>
+private static readonly object timerLock = new object();
+        /// <summary>Periodic timer for automatic checks in managed installations.</summary>
+private static Timer timer;
+        /// <summary>Cancellation source shared by automatic checks during this host lifetime.</summary>
+private static CancellationTokenSource lifetime;
+        /// <summary>Factory used to create a disposable release feed.</summary>
+internal static Func<UpdateFeed> CreateFeed = () => new UpdateFeed();
+        /// <summary>Launcher used to start the isolated installer worker.</summary>
+internal static Action<bool> LaunchWorker = LaunchWorkerNative;
+        /// <summary>Stores the start process used by UpdateCoordinator.</summary>
+internal static Func<ProcessStartInfo, Process> StartProcess = Process.Start;
+        /// <summary>Stores the create timer used by UpdateCoordinator.</summary>
+internal static Func<TimerCallback, object, TimeSpan, TimeSpan, Timer> CreateTimer = NewTimer;
+        /// <summary>Performs the new timer operation for UpdateCoordinator.</summary>
+/// <param name="callback">The callback used by this operation.</param>
+/// <param name="state">The state used by this operation.</param>
+/// <param name="due">The due used by this operation.</param>
+/// <param name="period">The period used by this operation.</param>
+/// <returns>The result produced by this operation.</returns>
+private static Timer NewTimer(TimerCallback callback, object state, TimeSpan due, TimeSpan period) => new Timer(callback, state, due, period);
+        /// <summary>Serializes release checks, optionally downloads the package, and may schedule installation.</summary>
+        /// <param name="automatic">Whether automatic-check preferences and skipped-version settings apply.</param>
+        /// <param name="progress">Optional download progress reporter.</param><param name="ct">Cancellation token.</param>
+        /// <returns>Selected release, or null when the check is not due or no eligible release exists.</returns>
+internal static async Task<UpdateRelease> Check(bool automatic, IProgress<int> progress, CancellationToken ct)
         {
             string root = UpdatePaths.Root;
             Directory.CreateDirectory(root);
@@ -49,7 +66,8 @@ namespace CodexVBE
                 }
             }
         }
-        internal static void Start()
+        /// <summary>Records the current managed host and starts the hourly automatic-check timer.</summary>
+internal static void Start()
         {
             // Development checkouts never start network traffic or an installer automatically.
             if (!UpdateInstallation.IsManaged(UpdateState.InstallationDirectory)) return;
@@ -69,13 +87,17 @@ namespace CodexVBE
             }
             catch (Exception) { LoadLog.Write("Update startup is unavailable."); }
         }
-        private static async Task RunAutomatic(CancellationToken token)
+        /// <summary>Runs one automatic check and logs failures unless the host lifetime cancelled it.</summary>
+        /// <param name="token">Host-lifetime cancellation token.</param>
+        /// <returns>Task that completes when the check attempt is finished.</returns>
+private static async Task RunAutomatic(CancellationToken token)
         {
             try { await Check(true, null, token); }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { }
             catch (Exception) { LoadLog.Write("Automatic update check is unavailable. Use the Updates window to retry."); }
         }
-        internal static void Stop()
+        /// <summary>Stops the periodic check timer and cancels its outstanding work.</summary>
+internal static void Stop()
         {
             lock (timerLock)
             {
@@ -83,7 +105,12 @@ namespace CodexVBE
                 lifetime?.Cancel(); lifetime?.Dispose(); lifetime = null;
             }
         }
-        internal static void Schedule(UpdateRelease release, string path, bool background)
+        /// <summary>Validates a staged installer, persists a worker job, then launches the separate updater process.</summary>
+        /// <param name="release">Release that supplied the installer asset.</param><param name="path">Path to the staged installer.</param>
+        /// <param name="background">Whether the updater worker should run without a visible window.</param>
+        /// <exception cref="InvalidOperationException">The installation is unmanaged or another job is active.</exception>
+        /// <exception cref="InvalidDataException">The staged package does not match the release digest.</exception>
+internal static void Schedule(UpdateRelease release, string path, bool background)
         {
             if (!UpdateInstallation.IsManaged(UpdateState.InstallationDirectory)) throw new InvalidOperationException("An installer-managed deployment is required.");
             if (release?.Installer?.Hash == null || !UpdatePaths.SamePath(path, UpdatePaths.AssetPath(UpdatePaths.Root, release.Installer.Hash, release.Installer.name)))
@@ -100,7 +127,10 @@ namespace CodexVBE
             }
             LaunchWorker(background);
         }
-        private static void LaunchWorkerNative(bool background)
+        /// <summary>Copies the signed updater beside the user cache and starts it with the selected visibility mode.</summary>
+        /// <param name="background">Whether the worker should use its background mode.</param>
+        /// <exception cref="FileNotFoundException">The deployed updater executable is missing.</exception>
+private static void LaunchWorkerNative(bool background)
         {
             string source = Path.Combine(UpdateState.InstallationDirectory, "VBAi.Updater.exe");
             if (!File.Exists(source)) throw new FileNotFoundException("The updater is missing.");

@@ -5,20 +5,30 @@ using System.Threading.Tasks;
 
 namespace CodexVBE
 {
-    internal sealed partial class ModernEditorWindow
+    /// <summary>Provides the modern editor window implementation.</summary>
+internal sealed partial class ModernEditorWindow
     {
         // Native boundary permits testing cancellation without replacing synchronization.
-        internal Action<EditorVbeModule> NativeSave = SaveInVbe;
-        internal Func<EditorVbeModule, bool?> NativeHostSaved = ReadHostSaved;
-        private string lastSaveError;
+        /// <summary>Stores the native save used by ModernEditorWindow.</summary>
+internal Action<EditorVbeModule> NativeSave = SaveInVbe;
+        /// <summary>Stores the native host saved used by ModernEditorWindow.</summary>
+internal Func<EditorVbeModule, bool?> NativeHostSaved = ReadHostSaved;
+        /// <summary>Stores the last save error used by ModernEditorWindow.</summary>
+private string lastSaveError;
 
-        private bool? ReadDocumentHostSaved(EditorDocument document)
+        /// <summary>Performs the read document host saved operation for ModernEditorWindow.</summary>
+/// <param name="document">The document used by this operation.</param>
+/// <returns>The result produced by this operation.</returns>
+private bool? ReadDocumentHostSaved(EditorDocument document)
         {
             try { return document.Module is EditorVbeModule native ? NativeHostSaved(native) : null; }
             catch { return null; }
         }
 
-        internal async Task SaveDocument(string id)
+        /// <summary>Performs the save document operation for ModernEditorWindow.</summary>
+/// <param name="id">Text containing the id.</param>
+/// <returns>The result produced by this operation.</returns>
+internal async Task SaveDocument(string id)
         {
             while (busy && !closing && !IsDisposed) await Task.Delay(15);
             if (closing || IsDisposed || !Ready || !documents.TryGetValue(id ?? "", out var document)) return;
@@ -56,13 +66,18 @@ namespace CodexVBE
             finally { busy = false; }
         }
 
-        private static bool? ReadHostSaved(EditorVbeModule native)
+        /// <summary>Performs the read host saved operation for ModernEditorWindow.</summary>
+/// <param name="native">The native used by this operation.</param>
+/// <returns>The result produced by this operation.</returns>
+private static bool? ReadHostSaved(EditorVbeModule native)
         {
             dynamic state = new VbeProjectComponents(native.Vbe, null).PersistenceStatus(native.ProjectName);
             return (bool)state.HostAvailable ? (bool?)state.HostSaved : null;
         }
 
-        private static void SaveInVbe(EditorVbeModule native)
+        /// <summary>Performs the save in vbe operation for ModernEditorWindow.</summary>
+/// <param name="native">The native used by this operation.</param>
+private static void SaveInVbe(EditorVbeModule native)
         {
             dynamic vbe = native.Vbe;
             // Save must target the tab's project even if a different workbook is active.

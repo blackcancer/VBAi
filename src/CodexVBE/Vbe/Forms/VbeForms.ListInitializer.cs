@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -62,7 +62,18 @@ namespace CodexVBE
             return ApplyManagedListBlock(request, module, before, name, beginPrefix, end, generated, rows.Length, columns);
         }
 
-        private object ApplyManagedListBlock(Request request, dynamic module, string before, string name,
+        /// <summary>Insère ou remplace le bloc de liste dans UserForm_Initialize et vérifie code et préservation utilisateur.</summary>
+        /// <param name="request">Identifiants du projet, formulaire et contrôle.</param>
+        /// <param name="module">Module de code du formulaire.</param>
+        /// <param name="before">Code observé avant mutation.</param>
+        /// <param name="name">Nom VBIDE du contrôle de liste.</param>
+        /// <param name="beginPrefix">Préfixe du marqueur de début géré.</param>
+        /// <param name="end">Marqueur de fin géré.</param>
+        /// <param name="generated">Lignes du bloc généré.</param>
+        /// <param name="itemsWritten">Nombre de lignes de données produites.</param>
+        /// <param name="columns">Nombre de colonnes existantes dans le contrôle.</param>
+        /// <returns>Résultat de mutation, préservation du code et état de vérification en lecture.</returns>
+private object ApplyManagedListBlock(Request request, dynamic module, string before, string name,
             string beginPrefix, string end, string[] generated, int itemsWritten, int columns)
         {
             string begin = generated[0].Trim();
@@ -179,7 +190,13 @@ namespace CodexVBE
             return GenerateListRowsBlock(name, items.Select(x => new[] { x }).ToArray(), beginPrefix, end);
         }
 
-        private static string[] GenerateListRowsBlock(string name, string[][] rows, string beginPrefix, string end)
+        /// <summary>Génère les commandes VBA pour remplir une liste à une ou plusieurs colonnes.</summary>
+        /// <param name="name">Nom du contrôle cible.</param>
+        /// <param name="rows">Lignes rectangulaires de valeurs à insérer.</param>
+        /// <param name="beginPrefix">Préfixe du marqueur de début suivi de l’empreinte.</param>
+        /// <param name="end">Marqueur de fin du bloc.</param>
+        /// <returns>Bloc VBA avec marqueurs et empreinte de son contenu.</returns>
+private static string[] GenerateListRowsBlock(string name, string[][] rows, string beginPrefix, string end)
         {
             var body = new List<string> { "    Me." + name + ".Clear" };
             for (int row = 0; row < rows.Length; row++)

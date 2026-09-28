@@ -1,12 +1,15 @@
-﻿using System;
+using System;
 using System.IO;
 
 namespace CodexVBE
 {
-    internal sealed partial class VbeProjectComponents
+    /// <summary>Gère l’enregistrement natif des projets VBA autonomes de macros SWP.</summary>
+internal sealed partial class VbeProjectComponents
     {
-        /// <summary>Détecte uniquement un projet VBA autonome de macro SWP, jamais un projet intégré à un document Office.</summary>
-        private static bool SupportsStandaloneMacro(dynamic project)
+                /// <summary>Détecte uniquement un projet VBA autonome de macro SWP, jamais un projet intégré à un document Office.</summary>
+        /// <param name="project">Projet VBIDE à examiner.</param>
+        /// <returns><see langword="true"/> si le type et le chemin correspondent à une macro autonome SWP.</returns>
+private static bool SupportsStandaloneMacro(dynamic project)
         {
             try
             {
@@ -16,8 +19,11 @@ namespace CodexVBE
             }
             catch { return false; }
         }
-        /// <summary>Lit le fichier natif d’une macro autonome et son état de sauvegarde VBIDE.</summary>
-        private static object StandalonePersistence(string selector, dynamic project)
+                /// <summary>Lit le fichier natif d’une macro autonome et son état de sauvegarde VBIDE.</summary>
+        /// <param name="selector">Identifiant du projet à inclure dans le résultat.</param>
+        /// <param name="project">Projet VBIDE dont l’état de persistance est lu.</param>
+        /// <returns>Un instantané sérialisable des indicateurs de sauvegarde et du fichier hôte.</returns>
+private static object StandalonePersistence(string selector, dynamic project)
         {
             string path = (string)project.FileName;
             bool hasPath = !string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path);
@@ -29,8 +35,11 @@ namespace CodexVBE
                 SaveApi = "Standalone VBProject.SaveAs", Reason = (string)null,
                 Limit = "Native standalone SWP only. A save/readback of flags and file metadata is not proof of reload fidelity or signature trust." };
         }
-        /// <summary>Enregistre une macro SWP autonome par VBIDE après contrôle de sa version et de son chemin.</summary>
-        private object SaveStandaloneMacro(Request request, bool saveAs)
+                /// <summary>Enregistre une macro SWP autonome par VBIDE après contrôle de sa version et de son chemin.</summary>
+        /// <param name="request">Requête contenant le projet, sa version attendue et éventuellement le chemin de destination.</param>
+        /// <param name="saveAs">Sélectionne une nouvelle destination lorsque la valeur est vraie.</param>
+        /// <returns>Le résultat de l’enregistrement et la vérification du chemin, de l’état et du fichier produit.</returns>
+private object SaveStandaloneMacro(Request request, bool saveAs)
         {
             dynamic project = GetDesignProject(request.Project);
             if (!SupportsStandaloneMacro((object)project))

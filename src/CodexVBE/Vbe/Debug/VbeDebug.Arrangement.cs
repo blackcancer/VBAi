@@ -7,20 +7,42 @@ using System.Web.Script.Serialization;
 
 namespace CodexVBE
 {
-    internal sealed class EditorWindowBounds
+    /// <summary>État géométrique et identité d’une fenêtre de document VBE visible.</summary>
+internal sealed class EditorWindowBounds
     {
-        public string Caption { get; set; }
-        public string Identity { get; set; }
-        public int Type { get; set; }
-        public int State { get; set; }
-        public int Left { get; set; }
-        public int Top { get; set; }
-        public int Width { get; set; }
-        public int Height { get; set; }
+        /// <summary>Légende native de la fenêtre.</summary>
+        /// <value>Caption lue sur la fenêtre VBE.</value>
+public string Caption { get; set; }
+        /// <summary>Identité d’empreinte de la fenêtre et de son document.</summary>
+        /// <value>SHA-256 de l’identité du composant ou de l’Explorateur d’objets.</value>
+public string Identity { get; set; }
+        /// <summary>Type natif de fenêtre VBE.</summary>
+        /// <value>Valeur Type lue depuis VBIDE.</value>
+public int Type { get; set; }
+        /// <summary>État natif de la fenêtre.</summary>
+        /// <value>Valeur WindowState observée.</value>
+public int State { get; set; }
+        /// <summary>Coordonnée gauche de la fenêtre.</summary>
+        /// <value>Position native Left.</value>
+public int Left { get; set; }
+        /// <summary>Coordonnée supérieure de la fenêtre.</summary>
+        /// <value>Position native Top.</value>
+public int Top { get; set; }
+        /// <summary>Largeur native de la fenêtre.</summary>
+        /// <value>Valeur Width en pixels de l’hôte.</value>
+public int Width { get; set; }
+        /// <summary>Hauteur native de la fenêtre.</summary>
+        /// <value>Valeur Height en pixels de l’hôte.</value>
+public int Height { get; set; }
     }
-    internal sealed partial class VbeDebug
+    /// <summary>Inventorie et organise les fenêtres de documents ouvertes dans l’éditeur VBE.</summary>
+internal sealed partial class VbeDebug
     {
-        private string DocumentIdentity(dynamic window, int type)
+        /// <summary>Associe une fenêtre visible à une identité stable de projet et de composant.</summary>
+        /// <param name="window">Fenêtre de document à identifier.</param>
+        /// <param name="type">Type natif de la fenêtre.</param>
+        /// <returns>Empreinte de l’identité trouvée sans ambiguïté.</returns>
+private string DocumentIdentity(dynamic window, int type)
         {
             var matches = new HashSet<string>(StringComparer.Ordinal);
             if (type == 0)
@@ -46,17 +68,26 @@ namespace CodexVBE
             if (matches.Count != 1) throw new InvalidOperationException("The document window cannot be mapped to one project/component identity.");
             using (var sha = SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(type + ":" + matches.Single()))).Replace("-", "").ToLowerInvariant();
         }
-        private static string ComponentIdentity(dynamic project, dynamic component)
+        /// <summary>Forme l’identité d’un composant depuis le chemin ou le nom du projet et le nom du composant.</summary>
+        /// <param name="project">Projet qui contient le composant.</param>
+        /// <param name="component">Composant à identifier.</param>
+        /// <returns>Représentation sérialisée de l’identité du composant.</returns>
+private static string ComponentIdentity(dynamic project, dynamic component)
         {
             string path = null; try { path = (string)project.FileName; } catch { }
             return new JavaScriptSerializer().Serialize(new { Project = string.IsNullOrWhiteSpace(path) ? (string)project.Name : path, Module = (string)component.Name });
         }
-        public object EditorLayout()
+        /// <summary>Retourne les fenêtres de document visibles et la version de leur disposition.</summary>
+        /// <returns>Instantanés géométriques triés et empreinte globale de disposition.</returns>
+public object EditorLayout()
         {
             var windows = ReadEditorBounds();
             return new { Windows = windows, WindowVersion = LayoutHash(windows), Scope = "All visible VBE document windows, across projects" };
         }
-        public object ArrangeEditorWindows(Request request)
+        /// <summary>Exécute la commande native de cascade ou de mosaïque après contrôle de la disposition.</summary>
+        /// <param name="request">Action, légende exacte de commande et version attendue des fenêtres.</param>
+        /// <returns>Résultat de l’appel natif, fenêtres avant/après et état de vérification géométrique.</returns>
+public object ArrangeEditorWindows(Request request)
         {
             int id;
             switch (request.Action)
@@ -83,7 +114,9 @@ namespace CodexVBE
                 WindowVersion = after == null ? null : LayoutHash(after), NativeError = error,
                 Scope = "All visible VBE document windows, across projects", PersistenceVerified = false };
         }
-        private EditorWindowBounds[] ReadEditorBounds()
+        /// <summary>Lit les fenêtres de document visibles en excluant les cadres liés et les types hors périmètre.</summary>
+        /// <returns>Fenêtres ordonnées par identité; échoue si leur identité n’est pas unique.</returns>
+private EditorWindowBounds[] ReadEditorBounds()
         {
             var rows = new List<EditorWindowBounds>();
             foreach (dynamic window in vbe.Windows)
@@ -97,12 +130,22 @@ namespace CodexVBE
                 throw new InvalidOperationException("Visible document identities are ambiguous.");
             return rows.OrderBy(WindowKey, StringComparer.Ordinal).ToArray();
         }
-        private static string WindowKey(EditorWindowBounds window) { return window.Type + ":" + window.Identity; }
-        private static string LayoutHash(EditorWindowBounds[] rows)
+        /// <summary>Construit la clé stable d’une fenêtre à partir de son type et de son identité.</summary>
+        /// <param name="window">Fenêtre à identifier.</param>
+        /// <returns>Clé textuelle déterministe.</returns>
+private static string WindowKey(EditorWindowBounds window) { return window.Type + ":" + window.Identity; }
+        /// <summary>Calcule l’empreinte d’un ensemble trié d’états de fenêtres.</summary>
+        /// <param name="rows">Géométries observées.</param>
+        /// <returns>Empreinte SHA-256 de leur représentation JSON.</returns>
+private static string LayoutHash(EditorWindowBounds[] rows)
         {
             using (var sha = SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(new JavaScriptSerializer().Serialize(rows)))).Replace("-", "").ToLowerInvariant();
         }
-        internal static bool VerifyArrangement(string action, EditorWindowBounds[] rows)
+        /// <summary>Vérifie la géométrie résultante d’une cascade ou d’une mosaïque sans modifier les fenêtres.</summary>
+        /// <param name="action">Commande attendue : cascade, tile_vertical ou tile_horizontal.</param>
+        /// <param name="rows">Géométries relues après la commande native.</param>
+        /// <returns><see langword="true"/> si les tailles et relations géométriques correspondent à l’action.</returns>
+internal static bool VerifyArrangement(string action, EditorWindowBounds[] rows)
         {
             if (rows == null || rows.Length < 2 || rows.Any(x => x.State != 0 || x.Width <= 0 || x.Height <= 0)) return false;
             if (rows.Max(x => x.Width) - rows.Min(x => x.Width) > 2 || rows.Max(x => x.Height) - rows.Min(x => x.Height) > 2) return false;

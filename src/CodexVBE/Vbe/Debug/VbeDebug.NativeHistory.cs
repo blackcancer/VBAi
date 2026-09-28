@@ -6,14 +6,21 @@ using System.Web.Script.Serialization;
 
 namespace CodexVBE
 {
-    internal sealed partial class VbeDebug
+    /// <summary>Inspecte et commande l’historique partagé natif du code du projet VBE.</summary>
+internal sealed partial class VbeDebug
     {
-        [DllImport("user32.dll", EntryPoint = "IsWindowEnabled")]
+        /// <summary>Vérifie si une fenêtre VBE reste activée malgré les dialogues modaux.</summary>
+        /// <param name="window">Handle de la fenêtre principale du VBE.</param>
+        /// <returns><see langword="true"/> si Windows signale la fenêtre comme activée.</returns>
+[DllImport("user32.dll", EntryPoint = "IsWindowEnabled")]
         private static extern bool NativeHistoryWindowEnabled(IntPtr window);
         /// <summary>Preserves the native modal-window check while allowing isolated host contracts.</summary>
         internal static Func<IntPtr, bool> HistoryWindowEnabled = NativeHistoryWindowEnabled;
 
-        public object NativeCodeHistoryState(Request request)
+        /// <summary>Lit les sources du projet et les commandes natives Undo/Redo avant mutation.</summary>
+        /// <param name="request">Sélecteur du projet dont l’historique partagé est inspecté.</param>
+        /// <returns>Empreinte d’état, empreintes de modules et commandes disponibles.</returns>
+public object NativeCodeHistoryState(Request request)
         {
             var snapshot = CaptureCodeHistory(request.Project);
             return new { request.Project, HistoryVersion = snapshot.Version,
@@ -22,7 +29,10 @@ namespace CodexVBE
                 Limit = "Projects containing UserForms and multiple open projects are refused. Native stack entries are not exposed." };
         }
 
-        public object NativeCodeHistory(Request request)
+        /// <summary>Exécute une seule commande native Undo ou Redo après vérification du projet et de la commande.</summary>
+        /// <param name="request">Action, projet, mode, version d’inspection et légende exacte de commande.</param>
+        /// <returns>Différences de code observées après l’action et état de vérification.</returns>
+public object NativeCodeHistory(Request request)
         {
             int id = request.Action == "undo" ? 128 : request.Action == "redo" ? 129 : 0;
             if (id == 0) throw new ArgumentException("Action must be undo or redo.");
@@ -60,19 +70,33 @@ namespace CodexVBE
                 Limit = "One shared native history action. No stack inventory or persistence guarantee. Do not retry automatically. Changes may affect a different module than the active one." };
         }
 
-        private sealed class HistoryModule
+        /// <summary>Code et empreinte d’un module capturé dans l’instantané d’historique.</summary>
+private sealed class HistoryModule
         {
-            public string Module { get; set; }
-            public string Code { get; set; }
-            public string Sha256 { get; set; }
+            /// <summary>Gets or sets the module.</summary>
+/// <value>The current value represented by this member.</value>
+public string Module { get; set; }
+            /// <summary>Gets or sets the code.</summary>
+/// <value>The current value represented by this member.</value>
+public string Code { get; set; }
+            /// <summary>Gets or sets the sha256.</summary>
+/// <value>The current value represented by this member.</value>
+public string Sha256 { get; set; }
         }
-        private sealed class HistorySnapshot
+        /// <summary>Instantané du projet utilisé pour vérifier une opération d’historique native.</summary>
+private sealed class HistorySnapshot
         {
-            public string Version;
-            public List<HistoryModule> Modules;
-            public object[] Commands;
+            /// <summary>Stores the version used by HistorySnapshot.</summary>
+public string Version;
+            /// <summary>Stores the modules used by HistorySnapshot.</summary>
+public List<HistoryModule> Modules;
+            /// <summary>Stores the commands used by HistorySnapshot.</summary>
+public object[] Commands;
         }
-        private HistorySnapshot CaptureCodeHistory(string selector)
+        /// <summary>Capture tous les modules et commandes d’historique du projet pris en charge.</summary>
+        /// <param name="selector">Sélecteur du projet dans la session VBE.</param>
+        /// <returns>Instantané avec version calculée à partir des sources et commandes lues.</returns>
+private HistorySnapshot CaptureCodeHistory(string selector)
         {
             dynamic project = GetProject(selector);
             if ((int)vbe.VBProjects.Count != 1)

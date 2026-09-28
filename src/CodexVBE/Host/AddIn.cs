@@ -47,7 +47,8 @@ namespace CodexVBE
         private static VbeMenu CreateMenuNative(object host, Action chat, Action settings, Action github, Action<string> editor) { return new VbeMenu(host, chat, settings, github, editor, () => AboutWindow.ShowForVbe(host), () => CrashReportWindow.ShowForVbe(host), () => UpdateWindow.ShowForVbe(host)); }
         /// <summary>Contrôle WinForms fournissant un contexte de synchronisation pour le serveur local.</summary>
         private Control dispatcher;
-        private CrashReporter crashReporter;
+        /// <summary>Rapporteur d’erreurs de l’add-in hôte.</summary>
+private CrashReporter crashReporter;
         /// <summary>Serveur de commandes local rattaché à l’instance du VBE.</summary>
         private BridgeServer server;
         /// <summary>Fenêtre de conversation actuellement ouverte.</summary>
@@ -64,11 +65,17 @@ namespace CodexVBE
         private ChatToolWindow nativeChatControl;
         /// <summary>Indique si la fenêtre de conversation est attachée au cadre VBE.</summary>
         private bool docked;
-        internal static Func<ModernEditorWindow> CreateModernEditor = CreateModernEditorNative;
-        private static ModernEditorWindow CreateModernEditorNative() => new ModernEditorWindow();
-        private ModernEditorWindow modernEditor;
-        private EditorWorkspaceHost editorWorkspace;
-        private EditorProjectNavigation editorNavigation;
+        /// <summary>Stores the create modern editor used by AddIn.</summary>
+internal static Func<ModernEditorWindow> CreateModernEditor = CreateModernEditorNative;
+        /// <summary>Performs the create modern editor native operation for AddIn.</summary>
+/// <returns>The result produced by this operation.</returns>
+private static ModernEditorWindow CreateModernEditorNative() => new ModernEditorWindow();
+        /// <summary>Fenêtre d’éditeur moderne réutilisée par les commandes de l’add-in.</summary>
+private ModernEditorWindow modernEditor;
+        /// <summary>Stores the editor workspace used by AddIn.</summary>
+private EditorWorkspaceHost editorWorkspace;
+        /// <summary>Navigation VBE associée à l’éditeur moderne ouvert.</summary>
+private EditorProjectNavigation editorNavigation;
 
         /// <summary>Crée l’instance COM et journalise le processus hôte.</summary>
         public AddIn()
@@ -194,7 +201,9 @@ public void OnConnection(object application, int connectMode, object addInInstan
             catch (Exception ex) { ReportMenuError(ex); }
         }
 
-        private async void PrepareEditorAction(string command)
+        /// <summary>Performs the prepare editor action operation for AddIn.</summary>
+/// <param name="command">Text containing the command.</param>
+private async void PrepareEditorAction(string command)
         {
             try
             {
@@ -206,7 +215,10 @@ public void OnConnection(object application, int connectMode, object addInInstan
             catch (Exception error) { ReportMenuError(error); }
         }
 
-        private IEditorModule ActiveEditorModule(bool followOnly)
+        /// <summary>Résout le module du volet actif si son type de fenêtre et mode correspondent aux restrictions.</summary>
+        /// <param name="followOnly">Limite la résolution au volet actif en mode conception lorsqu’il est vrai.</param>
+        /// <returns>Adaptateur du module actif, ou nul lorsqu’aucune cible admissible n’est active.</returns>
+private IEditorModule ActiveEditorModule(bool followOnly)
         {
             dynamic host = vbe;
             if (followOnly && (host.ActiveWindow == null || (int)host.ActiveWindow.Type != 0)) return null;
@@ -217,13 +229,20 @@ public void OnConnection(object application, int connectMode, object addInInstan
             if (followOnly && (int)((dynamic)project).Mode != 2) return null;
             return new EditorVbeModule(vbe, project, component);
         }
-        private VbeSession CreateEditorSession() => new VbeSession(vbe) { ModernEditor = GetModernEditor };
-        private async void OpenModernModule(IEditorModule module)
+        /// <summary>Crée une session VBE reliée au résolveur de la fenêtre d’éditeur moderne.</summary>
+        /// <returns>Nouvelle session configurée pour obtenir l’éditeur moderne à la demande.</returns>
+private VbeSession CreateEditorSession() => new VbeSession(vbe) { ModernEditor = GetModernEditor };
+        /// <summary>Ouvre un module dans l’éditeur moderne et rapporte les erreurs d’ouverture.</summary>
+        /// <param name="module">Module à afficher.</param>
+private async void OpenModernModule(IEditorModule module)
         {
             try { await GetModernEditor(true).OpenModule(module); }
             catch (Exception error) { ReportMenuError(error); }
         }
-        private ModernEditorWindow GetModernEditor(bool show)
+        /// <summary>Retourne la fenêtre moderne existante ou la crée et l’affiche selon la demande.</summary>
+        /// <param name="show">Crée ou active la fenêtre lorsqu’il est vrai; sinon retourne seulement l’instance existante.</param>
+        /// <returns>Fenêtre actuelle, ou nul si elle n’existe pas et que la création n’est pas demandée.</returns>
+private ModernEditorWindow GetModernEditor(bool show)
         {
             if (!show) return modernEditor != null && !modernEditor.IsDisposed ? modernEditor : null;
             if (modernEditor == null || modernEditor.IsDisposed)
@@ -237,7 +256,8 @@ public void OnConnection(object application, int connectMode, object addInInstan
             editorWorkspace.Show();
             return modernEditor;
         }
-        private async void ShowModernEditor()
+        /// <summary>Affiche l’éditeur moderne et y ouvre le module actuellement sélectionné, s’il existe.</summary>
+private async void ShowModernEditor()
         {
             try
             {
@@ -334,7 +354,8 @@ private void ReportMenuError(Exception ex)
             }
         }
 
-        private void EnsureUsableChatPlacement()
+        /// <summary>Convertit en fenêtre flottante un volet conversation trop petit pour respecter sa taille minimale.</summary>
+private void EnsureUsableChatPlacement()
         {
             System.Drawing.Size siteSize;
             if (nativeChatControl == null || !nativeChatControl.TryGetNativeSiteSize(out siteSize) ||

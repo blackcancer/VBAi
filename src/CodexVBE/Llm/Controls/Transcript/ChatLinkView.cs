@@ -2,8 +2,8 @@ using System;
 using System.Windows.Forms;
 namespace CodexVBE
 {
-    /// <summary>Designer-editable ChatLinkView layout.</summary>
-    public sealed partial class ChatLinkView : ChatDesignerView
+        /// <summary>Displays an actionable link in the chat transcript.</summary>
+public sealed partial class ChatLinkView : ChatDesignerView
     {
         /// <summary>Creates the fixed controls from the WinForms Designer.</summary>
         public ChatLinkView() { InitializeComponent(); UiText.Apply(this, components); UiTheme.Apply(this);  }

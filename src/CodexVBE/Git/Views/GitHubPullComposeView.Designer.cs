@@ -1,19 +1,32 @@
 namespace CodexVBE
 {
-    public sealed partial class GitHubPullComposeView
+    /// <summary>Vue de saisie du dépôt cible, du titre, du corps et du mode brouillon d’une pull request.</summary>
+public sealed partial class GitHubPullComposeView
     {
-        internal System.Windows.Forms.TableLayoutPanel composeLayout;
-        internal CodexVBE.ThemedComboBox targetBranch;
-        internal System.Windows.Forms.Label sourceLabel;
-        internal System.Windows.Forms.TextBox pullTitle;
-        internal System.Windows.Forms.TextBox pullBody;
-        internal System.Windows.Forms.CheckBox draft;
-        internal CodexVBE.ThemedButton createPull;
-        internal System.Windows.Forms.Label targetLabel;
-        internal System.Windows.Forms.Label titleLabel;
-        internal System.Windows.Forms.Label bodyLabel;
-        private System.ComponentModel.IContainer components;
-        private System.Windows.Forms.ToolTip toolTips;
+        /// <summary>Conteneur en grille des champs et commandes de composition.</summary>
+internal System.Windows.Forms.TableLayoutPanel composeLayout;
+        /// <summary>Choix de la branche cible de la pull request.</summary>
+internal CodexVBE.ThemedComboBox targetBranch;
+        /// <summary>Libellé affichant la branche source sélectionnée.</summary>
+internal System.Windows.Forms.Label sourceLabel;
+        /// <summary>Saisie du titre de la pull request.</summary>
+internal System.Windows.Forms.TextBox pullTitle;
+        /// <summary>Saisie multiligne de la description de la pull request.</summary>
+internal System.Windows.Forms.TextBox pullBody;
+        /// <summary>Option de création de la pull request comme brouillon.</summary>
+internal System.Windows.Forms.CheckBox draft;
+        /// <summary>Commande de création de la pull request.</summary>
+internal CodexVBE.ThemedButton createPull;
+        /// <summary>Libellé du sélecteur de branche cible.</summary>
+internal System.Windows.Forms.Label targetLabel;
+        /// <summary>Libellé du champ de titre.</summary>
+internal System.Windows.Forms.Label titleLabel;
+        /// <summary>Libellé du champ de description.</summary>
+internal System.Windows.Forms.Label bodyLabel;
+        /// <summary>Conteneur des composants managés de la vue.</summary>
+private System.ComponentModel.IContainer components;
+        /// <summary>Fournit les info-bulles des contrôles.</summary>
+private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)
@@ -22,7 +35,8 @@ namespace CodexVBE
             base.Dispose(disposing);
         }
 
-        private void InitializeComponent()
+        /// <summary>Crée et positionne les champs utilisés pour composer une pull request.</summary>
+private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);

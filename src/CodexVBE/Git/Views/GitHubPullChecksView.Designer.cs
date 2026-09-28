@@ -1,10 +1,14 @@
 namespace CodexVBE
 {
-    public sealed partial class GitHubPullChecksView
+    /// <summary>Vue en lecture seule des vérifications et statuts d’une pull request.</summary>
+public sealed partial class GitHubPullChecksView
     {
-        internal System.Windows.Forms.TextBox checks;
-        private System.ComponentModel.IContainer components;
-        private System.Windows.Forms.ToolTip toolTips;
+        /// <summary>Affiche le résumé des exécutions de vérification et leur état.</summary>
+internal System.Windows.Forms.TextBox checks;
+        /// <summary>Conteneur des composants managés de la vue.</summary>
+private System.ComponentModel.IContainer components;
+        /// <summary>Fournit les info-bulles des contrôles.</summary>
+private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)
@@ -13,7 +17,8 @@ namespace CodexVBE
             base.Dispose(disposing);
         }
 
-        private void InitializeComponent()
+        /// <summary>Crée la zone de texte en lecture seule des vérifications.</summary>
+private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);

@@ -1,22 +1,38 @@
 namespace CodexVBE
 {
-    public sealed partial class GitHubRepositoriesView
+    /// <summary>Designer-generated repository search, selection, and creation controls.</summary>
+public sealed partial class GitHubRepositoriesView
     {
-        internal System.Windows.Forms.TableLayoutPanel repoLayout;
-        internal System.Windows.Forms.FlowLayoutPanel repoActions;
-        internal System.Windows.Forms.FlowLayoutPanel createActions;
-        internal System.Windows.Forms.TextBox repositorySearch;
-        internal System.Windows.Forms.ListBox repositoryList;
-        internal CodexVBE.ThemedComboBox repositoryBranch;
-        internal CodexVBE.ThemedComboBox organization;
-        internal System.Windows.Forms.TextBox repositoryName;
-        internal System.Windows.Forms.CheckBox privateRepository;
-        internal CodexVBE.ThemedButton loadRepositories;
-        internal CodexVBE.ThemedButton useRepository;
-        internal CodexVBE.ThemedButton createRepository;
-        internal System.Windows.Forms.Label searchLabel;
-        private System.ComponentModel.IContainer components;
-        private System.Windows.Forms.ToolTip toolTips;
+        /// <summary>Layout for repository search and selection.</summary>
+internal System.Windows.Forms.TableLayoutPanel repoLayout;
+        /// <summary>Actions for loading and selecting a repository.</summary>
+internal System.Windows.Forms.FlowLayoutPanel repoActions;
+        /// <summary>Actions for creating a repository.</summary>
+internal System.Windows.Forms.FlowLayoutPanel createActions;
+        /// <summary>Repository filter input.</summary>
+internal System.Windows.Forms.TextBox repositorySearch;
+        /// <summary>Available repositories matching the filter.</summary>
+internal System.Windows.Forms.ListBox repositoryList;
+        /// <summary>Branches available for the selected repository.</summary>
+internal CodexVBE.ThemedComboBox repositoryBranch;
+        /// <summary>Organization that will own a new repository.</summary>
+internal CodexVBE.ThemedComboBox organization;
+        /// <summary>Name for a new repository.</summary>
+internal System.Windows.Forms.TextBox repositoryName;
+        /// <summary>Whether the new repository is private.</summary>
+internal System.Windows.Forms.CheckBox privateRepository;
+        /// <summary>Loads repositories from the connected account.</summary>
+internal CodexVBE.ThemedButton loadRepositories;
+        /// <summary>Uses the selected repository for the current project.</summary>
+internal CodexVBE.ThemedButton useRepository;
+        /// <summary>Creates the configured repository.</summary>
+internal CodexVBE.ThemedButton createRepository;
+        /// <summary>Caption for the repository filter.</summary>
+internal System.Windows.Forms.Label searchLabel;
+        /// <summary>Container that owns Designer components.</summary>
+private System.ComponentModel.IContainer components;
+        /// <summary>Tooltips associated with repository actions.</summary>
+private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)
@@ -25,7 +41,8 @@ namespace CodexVBE
             base.Dispose(disposing);
         }
 
-        private void InitializeComponent()
+        /// <summary>Creates and arranges repository search, selection, and creation controls.</summary>
+private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);

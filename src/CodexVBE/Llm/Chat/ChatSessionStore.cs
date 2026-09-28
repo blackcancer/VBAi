@@ -63,18 +63,42 @@ namespace CodexVBE
         /// <summary>Obtient ou définit le mode de conversation.</summary>
         /// <value>Mode choisi.</value>
         public ChatMode Mode { get; set; } = ChatMode.Agent;
-        public string[] ReadProjectGrants { get; set; } = new string[0];
-        public bool SharedContextReadAllowed { get; set; }
-        public int ReadAccessPolicyVersion { get; set; } = 1;
-        public int ProviderHistoryStartIndex { get; set; }
-        public List<QueuedChatMessage> PendingMessages { get; set; } = new List<QueuedChatMessage>();
-        public bool BudgetPaused { get; set; }
-        public string PausedTurnId { get; set; }
-        public string PausedProvider { get; set; }
-        public string PausedModel { get; set; }
-        public string PausedEffort { get; set; }
-        public ChatMode PausedMode { get; set; }
-        public List<string> CompletedToolActions { get; set; } = new List<string>();
+        /// <summary>Gets or sets the read project grants.</summary>
+/// <value>The current value represented by this member.</value>
+public string[] ReadProjectGrants { get; set; } = new string[0];
+        /// <summary>Gets or sets the shared context read allowed.</summary>
+/// <value>The current value represented by this member.</value>
+public bool SharedContextReadAllowed { get; set; }
+        /// <summary>Gets or sets the read access policy version.</summary>
+/// <value>The current value represented by this member.</value>
+public int ReadAccessPolicyVersion { get; set; } = 1;
+        /// <summary>Gets or sets the provider history start index.</summary>
+/// <value>The current value represented by this member.</value>
+public int ProviderHistoryStartIndex { get; set; }
+        /// <summary>Gets or sets the pending messages.</summary>
+/// <value>The current value represented by this member.</value>
+public List<QueuedChatMessage> PendingMessages { get; set; } = new List<QueuedChatMessage>();
+        /// <summary>Gets or sets the budget paused.</summary>
+/// <value>The current value represented by this member.</value>
+public bool BudgetPaused { get; set; }
+        /// <summary>Gets or sets the paused turn id.</summary>
+/// <value>The current value represented by this member.</value>
+public string PausedTurnId { get; set; }
+        /// <summary>Gets or sets the paused provider.</summary>
+/// <value>The current value represented by this member.</value>
+public string PausedProvider { get; set; }
+        /// <summary>Gets or sets the paused model.</summary>
+/// <value>The current value represented by this member.</value>
+public string PausedModel { get; set; }
+        /// <summary>Gets or sets the paused effort.</summary>
+/// <value>The current value represented by this member.</value>
+public string PausedEffort { get; set; }
+        /// <summary>Gets or sets the paused mode.</summary>
+/// <value>The current value represented by this member.</value>
+public ChatMode PausedMode { get; set; }
+        /// <summary>Gets or sets the completed tool actions.</summary>
+/// <value>The current value represented by this member.</value>
+public List<string> CompletedToolActions { get; set; } = new List<string>();
         /// <summary>Obtient ou définit les pièces jointes du brouillon.</summary>
         /// <value>Pièces jointes en attente du prochain message.</value>
         public ChatAttachment[] DraftAttachments { get; set; }
@@ -102,7 +126,9 @@ namespace CodexVBE
         /// <summary>Obtient ou définit le texte du brouillon courant.</summary>
         /// <value>Texte du compositeur.</value>
         public string Draft { get; set; }
-        public string DraftCapturedMemory { get; set; }
+        /// <summary>Gets or sets the draft captured memory.</summary>
+/// <value>The current value represented by this member.</value>
+public string DraftCapturedMemory { get; set; }
         /// <summary>Obtient ou définit les références VBE du brouillon.</summary>
         /// <value>Références sélectionnées pour le prochain message.</value>
         public VbeChatReference[] DraftReferences { get; set; }
@@ -170,7 +196,10 @@ namespace CodexVBE
             return result;
         }
 
-        internal static ChatSessionState DecodeSession(string payload)
+        /// <summary>Deserializes a stored chat session and restores its persisted queue and state.</summary>
+/// <param name="payload">Text containing the payload.</param>
+/// <returns>The result produced by this operation.</returns>
+internal static ChatSessionState DecodeSession(string payload)
         {
             var serializer = new JavaScriptSerializer { MaxJsonLength = 32 * 1024 * 1024 };
             var fields = serializer.DeserializeObject(payload) as Dictionary<string, object>;

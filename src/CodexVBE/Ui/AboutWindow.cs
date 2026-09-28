@@ -10,19 +10,36 @@ namespace CodexVBE
     /// <summary>Présente l’identité VBAi, sa version et les ressources de support.</summary>
     internal sealed partial class AboutWindow : Form
     {
-        internal Action<string> CopyText = Clipboard.SetText;
-        internal Action<string> OpenLink = SafeLinks.Open;
-        internal static Func<Assembly> MetadataAssembly = ReadMetadataAssembly;
-        internal static Func<bool> ProcessIs64Bit = ReadProcessIs64Bit;
-        internal static Func<Version> RuntimeVersion = ReadRuntimeVersion;
-        private static Version ReadRuntimeVersion() => Environment.Version;
-        private static Assembly ReadMetadataAssembly() => typeof(AboutWindow).Assembly;
-        private static bool ReadProcessIs64Bit() => Environment.Is64BitProcess;
-        internal static Assembly ResolveImageReader(object sender, ResolveEventArgs request) =>
+        /// <summary>Clipboard action used to copy the support details.</summary>
+internal Action<string> CopyText = Clipboard.SetText;
+        /// <summary>Safe link-opening action used by the resource links.</summary>
+internal Action<string> OpenLink = SafeLinks.Open;
+        /// <summary>Stores the metadata assembly used by AboutWindow.</summary>
+internal static Func<Assembly> MetadataAssembly = ReadMetadataAssembly;
+        /// <summary>Stores the process is64 bit used by AboutWindow.</summary>
+internal static Func<bool> ProcessIs64Bit = ReadProcessIs64Bit;
+        /// <summary>Stores the runtime version used by AboutWindow.</summary>
+internal static Func<Version> RuntimeVersion = ReadRuntimeVersion;
+        /// <summary>Performs the read runtime version operation for AboutWindow.</summary>
+/// <returns>The result produced by this operation.</returns>
+private static Version ReadRuntimeVersion() => Environment.Version;
+        /// <summary>Performs the read metadata assembly operation for AboutWindow.</summary>
+/// <returns>The result produced by this operation.</returns>
+private static Assembly ReadMetadataAssembly() => typeof(AboutWindow).Assembly;
+        /// <summary>Performs the read process is64 bit operation for AboutWindow.</summary>
+/// <returns>The result produced by this operation.</returns>
+private static bool ReadProcessIs64Bit() => Environment.Is64BitProcess;
+        /// <summary>Performs the resolve image reader operation for AboutWindow.</summary>
+/// <param name="sender">The sender used by this operation.</param>
+/// <param name="request">The request used by this operation.</param>
+/// <returns>The result produced by this operation.</returns>
+internal static Assembly ResolveImageReader(object sender, ResolveEventArgs request) =>
             request.Name == "System.Resources.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51"
                 ? typeof(System.Resources.Extensions.DeserializingResourceReader).Assembly : null;
-        private string hostProcess;
-        private bool runtimeInitialized;
+        /// <summary>Current host process name used in metadata and host description.</summary>
+private string hostProcess;
+        /// <summary>Whether runtime theme subscriptions have been installed.</summary>
+private bool runtimeInitialized;
 
         /// <summary>Construit la fenêtre Designer puis renseigne les métadonnées locales à l’exécution.</summary>
         public AboutWindow()
@@ -49,23 +66,27 @@ namespace CodexVBE
             UiTheme.Changed += ApplyAppearance;
         }
 
-        /// <summary>Informations techniques copiables, sans chemins, identifiants ou contenu de projet.</summary>
-        internal string TechnicalDetails => "VBAi " + versionValue.Text + Environment.NewLine +
+                /// <summary>Informations techniques copiables, sans chemins, identifiants ou contenu de projet.</summary>
+        /// <value>Version, host, platform, CLR, interface language, and theme details.</value>
+internal string TechnicalDetails => "VBAi " + versionValue.Text + Environment.NewLine +
             "Host: " + hostProcess + Environment.NewLine +
             "Platform: " + platformValue.Text + Environment.NewLine +
             "CLR: " + RuntimeVersion() + Environment.NewLine +
             "Interface: " + UiText.Culture.Name + Environment.NewLine +
             "Theme: " + UiTheme.Choice;
 
-        /// <summary>Décrit les hôtes connus et conserve le nom de processus pour les autres hôtes.</summary>
-        internal static string HostDescription(string processName)
+                /// <summary>Décrit les hôtes connus et conserve le nom de processus pour les autres hôtes.</summary>
+        /// <param name="processName">Host process name, such as EXCEL or SLDWORKS.</param>
+        /// <returns>A friendly description for recognized hosts, or the supplied process name.</returns>
+internal static string HostDescription(string processName)
         {
             if (string.Equals(processName, "EXCEL", StringComparison.OrdinalIgnoreCase)) return "Microsoft Excel · Visual Basic Editor";
             if (string.Equals(processName, "SLDWORKS", StringComparison.OrdinalIgnoreCase)) return "SOLIDWORKS · Visual Basic Editor";
             return processName;
         }
 
-        private void ApplyAppearance()
+        /// <summary>Applies the current theme colors to links, metadata, and the close action.</summary>
+private void ApplyAppearance()
         {
             if (IsDisposed) return;
             if (InvokeRequired) { BeginInvoke(new Action(ApplyAppearance)); return; }
@@ -81,40 +102,52 @@ namespace CodexVBE
             closeButton.ForeColor = UiTheme.HighContrast() ? SystemColors.HighlightText : Color.White;
         }
 
-        private void Updates_Click(object sender, EventArgs e)
+        /// <summary>Opens the update window as a modal child of the About dialog.</summary>
+        /// <param name="sender">Update button.</param><param name="e">Click event arguments.</param>
+private void Updates_Click(object sender, EventArgs e)
         {
             using (var window = new UpdateWindow()) AddIn.ShowModal(window, this);
         }
 
-        private void CopyDetails_Click(object sender, EventArgs e)
+        /// <summary>Copies the technical details and reports success or failure in the status label.</summary>
+        /// <param name="sender">Copy button.</param><param name="e">Click event arguments.</param>
+private void CopyDetails_Click(object sender, EventArgs e)
         {
             try { CopyText(TechnicalDetails); status.Text = UiText.Get("Technical details copied."); }
             catch (Exception error) { LoadLog.Write("About details copy failed: " + error.Message); status.Text = UiText.Get("Unable to copy technical details."); }
         }
 
-        private void ResourceLink_Click(object sender, LinkLabelLinkClickedEventArgs e)
+        /// <summary>Opens the clicked resource URL through the configured safe-link action.</summary>
+        /// <param name="sender">Link label whose Tag stores its destination.</param><param name="e">Link-click event arguments.</param>
+private void ResourceLink_Click(object sender, LinkLabelLinkClickedEventArgs e)
         {
             try { OpenLink((string)((LinkLabel)sender).Tag); status.Text = ""; }
             catch (Exception error) { LoadLog.Write("About resource link failed: " + error.Message); status.Text = UiText.Get("Unable to open the link."); }
         }
 
-        private void DisposeRuntime()
+        /// <summary>Removes the theme-change subscription installed for the live dialog.</summary>
+private void DisposeRuntime()
         {
             if (runtimeInitialized) UiTheme.Changed -= ApplyAppearance;
         }
 
-        /// <summary>Ouvre À propos depuis le VBE, même si le chat est fermé.</summary>
-        internal static void ShowForVbe(object vbe)
+                /// <summary>Ouvre À propos depuis le VBE, même si le chat est fermé.</summary>
+        /// <param name="vbe">VBE automation object used to obtain the native owner handle.</param>
+internal static void ShowForVbe(object vbe)
         {
             IWin32Window owner = null;
             try { owner = new NativeOwner(new IntPtr(Convert.ToInt64(((dynamic)vbe).MainWindow.HWnd))); }
             catch (Exception error) { LoadLog.Write("About VBE owner unavailable: " + error.Message); }
             using (var window = new AboutWindow()) AddIn.ShowModal(window, owner);
         }
-        private sealed class NativeOwner : IWin32Window
+        /// <summary>WinForms owner wrapper for the native VBE main-window handle.</summary>
+private sealed class NativeOwner : IWin32Window
         {
-            internal NativeOwner(IntPtr handle) { Handle = handle; }
-            public IntPtr Handle { get; }
+            /// <summary>Creates the owner wrapper for a native window.</summary><param name="handle">Native owner handle.</param>
+internal NativeOwner(IntPtr handle) { Handle = handle; }
+            /// <summary>Gets the native owner-window handle.</summary>
+            /// <value>Handle supplied to the constructor.</value>
+public IntPtr Handle { get; }
         }
     }
 }

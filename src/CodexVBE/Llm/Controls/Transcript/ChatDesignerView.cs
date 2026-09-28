@@ -6,14 +6,17 @@ namespace CodexVBE
     /// <summary>WinForms base that keeps variable vertical rows aligned to their Designer container.</summary>
     public class ChatDesignerView : UserControl
     {
-        private readonly HashSet<FlowLayoutPanel> watched = new HashSet<FlowLayoutPanel>();
+        /// <summary>Stores the watched used by ChatDesignerView.</summary>
+private readonly HashSet<FlowLayoutPanel> watched = new HashSet<FlowLayoutPanel>();
         /// <summary>Connects resize behavior to Designer-created containers.</summary>
         /// <param name="e">Added control.</param>
         protected override void OnControlAdded(ControlEventArgs e)
         {
             base.OnControlAdded(e); Watch(e.Control);
         }
-        private void Watch(Control parent)
+        /// <summary>Registers a control whose preferred height should trigger row remeasurement.</summary>
+/// <param name="parent">The parent used by this operation.</param>
+private void Watch(Control parent)
         {
             if (parent is FlowLayoutPanel flow && flow.FlowDirection == FlowDirection.TopDown && watched.Add(flow)) {
                 int lastWidth = -1;
@@ -25,7 +28,9 @@ namespace CodexVBE
             }
             foreach (Control child in parent.Controls) Watch(child);
         }
-        private static void ResizeRows(FlowLayoutPanel flow)
+        /// <summary>Resizes the designer host rows to fit their current transcript controls.</summary>
+/// <param name="flow">The flow used by this operation.</param>
+private static void ResizeRows(FlowLayoutPanel flow)
         {
             if (flow.ClientSize.Width <= 0) return;
             foreach (Control child in flow.Controls) {

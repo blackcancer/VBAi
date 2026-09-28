@@ -1,15 +1,23 @@
-﻿namespace CodexVBE
+namespace CodexVBE
 {
-    public sealed partial class ChatContextChipView
+    /// <summary>Contrôles générés de la vignette de contexte avec actions d’ouverture et de retrait.</summary>
+public sealed partial class ChatContextChipView
     {
-        private System.ComponentModel.IContainer components;
-        private System.Windows.Forms.FlowLayoutPanel layout;
-        private CodexVBE.ChatActionButton open;
-        private CodexVBE.ChatActionButton remove;
-        private System.Windows.Forms.ToolTip toolTips;
-        /// <summary>Libère les composants du modèle Designer.</summary>
-        protected override void Dispose(bool disposing) { if (disposing && components != null) components.Dispose(); base.Dispose(disposing); }
-        private void InitializeComponent()
+        /// <summary>Container that owns the disposable components created by the WinForms Designer.</summary>
+private System.ComponentModel.IContainer components;
+        /// <summary>Flow layout panel that contains this transcript view&apos;s child controls.</summary>
+private System.Windows.Forms.FlowLayoutPanel layout;
+        /// <summary>Bouton portant l’action principale sur l’élément.</summary>
+private CodexVBE.ChatActionButton open;
+        /// <summary>Bouton de retrait de l’élément du contexte.</summary>
+private CodexVBE.ChatActionButton remove;
+        /// <summary>ToolTip component used to show full text for transcript controls.</summary>
+private System.Windows.Forms.ToolTip toolTips;
+                /// <summary>Libère les composants du modèle Designer.</summary>
+        /// <param name="disposing">Indique si les composants gérés doivent également être libérés.</param>
+protected override void Dispose(bool disposing) { if (disposing && components != null) components.Dispose(); base.Dispose(disposing); }
+        /// <summary>Creates and configures the chat context chip view controls serialized by the WinForms Designer.</summary>
+private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.layout = new System.Windows.Forms.FlowLayoutPanel();

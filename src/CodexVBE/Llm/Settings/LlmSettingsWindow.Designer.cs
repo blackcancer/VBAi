@@ -1,19 +1,32 @@
 namespace CodexVBE
 {
-    internal sealed partial class LlmSettingsWindow
+    /// <summary>Contrôles générés de la fenêtre de configuration LLM.</summary>
+internal sealed partial class LlmSettingsWindow
     {
-        private System.Windows.Forms.TableLayoutPanel contentLayout;
-        private System.Windows.Forms.FlowLayoutPanel buttons;
-        private System.Windows.Forms.Button saveButton;
-        private System.Windows.Forms.Button cancelButton;
-        private CodexVBE.ThemedTabControl settingsTabs;
-        private CodexVBE.ProviderSettingsView providerSettingsView;
-        private System.Windows.Forms.TabPage providerSettingsViewTab;
-        private CodexVBE.GitHubAccountSettingsView gitHubAccountSettingsView;
-        private System.Windows.Forms.TabPage gitHubAccountSettingsViewTab;
-        private CodexVBE.AppearanceSettingsView appearanceSettingsView;
-        private System.Windows.Forms.TabPage appearanceSettingsViewTab;
-        private void InitializeComponent()
+        /// <summary>Disposition principale des onglets et des boutons.</summary>
+private System.Windows.Forms.TableLayoutPanel contentLayout;
+        /// <summary>Disposition des commandes de validation.</summary>
+private System.Windows.Forms.FlowLayoutPanel buttons;
+        /// <summary>Commande d’enregistrement des paramètres.</summary>
+private System.Windows.Forms.Button saveButton;
+        /// <summary>Commande d’annulation et de fermeture.</summary>
+private System.Windows.Forms.Button cancelButton;
+        /// <summary>Conteneur à onglets des catégories de réglage.</summary>
+private CodexVBE.ThemedTabControl settingsTabs;
+        /// <summary>Vue des paramètres de fournisseur et d’authentification Codex.</summary>
+private CodexVBE.ProviderSettingsView providerSettingsView;
+        /// <summary>Onglet des paramètres fournisseur.</summary>
+private System.Windows.Forms.TabPage providerSettingsViewTab;
+        /// <summary>Vue des paramètres du compte GitHub.</summary>
+private CodexVBE.GitHubAccountSettingsView gitHubAccountSettingsView;
+        /// <summary>Onglet du compte GitHub.</summary>
+private System.Windows.Forms.TabPage gitHubAccountSettingsViewTab;
+        /// <summary>Vue des préférences d’apparence.</summary>
+private CodexVBE.AppearanceSettingsView appearanceSettingsView;
+        /// <summary>Onglet des préférences d’apparence.</summary>
+private System.Windows.Forms.TabPage appearanceSettingsViewTab;
+        /// <summary>Initialise les onglets et boutons de la fenêtre de paramètres.</summary>
+private void InitializeComponent()
         {
             this.buttons = new System.Windows.Forms.FlowLayoutPanel();
             this.saveButton = new System.Windows.Forms.Button();

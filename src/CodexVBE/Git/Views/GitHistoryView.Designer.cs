@@ -1,12 +1,18 @@
 namespace CodexVBE
 {
-    public sealed partial class GitHistoryView
+    /// <summary>Designer-generated commit history list and details controls.</summary>
+public sealed partial class GitHistoryView
     {
-        internal System.Windows.Forms.ListBox history;
-        internal System.Windows.Forms.TextBox historyDetails;
-        internal CodexVBE.ThemedButton historyCompare;
-        private System.ComponentModel.IContainer components;
-        private System.Windows.Forms.ToolTip toolTips;
+        /// <summary>Commit history entries.</summary>
+internal System.Windows.Forms.ListBox history;
+        /// <summary>Details for the selected commit.</summary>
+internal System.Windows.Forms.TextBox historyDetails;
+        /// <summary>Compares the selected commit with the current project.</summary>
+internal CodexVBE.ThemedButton historyCompare;
+        /// <summary>Container that owns Designer components.</summary>
+private System.ComponentModel.IContainer components;
+        /// <summary>Tooltips associated with history actions.</summary>
+private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)
@@ -15,7 +21,8 @@ namespace CodexVBE
             base.Dispose(disposing);
         }
 
-        private void InitializeComponent()
+        /// <summary>Creates and arranges commit history controls.</summary>
+private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);

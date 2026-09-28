@@ -6,23 +6,32 @@ using System.Threading.Tasks;
 
 namespace CodexVBE
 {
-    internal sealed partial class ModernEditorWindow
+    /// <summary>Suit le mode d’exécution VBE et exécute les commandes de compilation ou de débogage native.</summary>
+internal sealed partial class ModernEditorWindow
     {
-        private int lastDebugMode = -1;
+        /// <summary>Dernier mode VBE observé pour le document actif.</summary>
+private int lastDebugMode = -1;
                 /// <summary>Checks that compilation starts without an existing native diagnostic.</summary>
         internal Action<int> EnsureCompileDialogAbsent = VbeDebugWindows.EnsureNoCompileDialog;
         /// <summary>Observes the host diagnostic until its compilation command completes.</summary>
         internal Func<ManualResetEventSlim, int, string> ObserveCompileDialog = VbeDebugWindows.AwaitCompileDialog;
-        private string lastDebugDocument, lastDebugPosition;
-        private int lastExecutionLine, lastExecutionVersion;
-        private string DebugPosition(EditorVbeModule native)
+        /// <summary>Identifiant du document associé au dernier mode observé.</summary>
+private string lastDebugDocument, lastDebugPosition;
+        /// <summary>Stores the last execution line,last execution version used by ModernEditorWindow.</summary>
+private int lastExecutionLine, lastExecutionVersion;
+        /// <summary>Performs the debug position operation for ModernEditorWindow.</summary>
+/// <param name="native">The native used by this operation.</param>
+/// <returns>The result produced by this operation.</returns>
+private string DebugPosition(EditorVbeModule native)
         {
             dynamic pane = ((dynamic)native.Vbe).ActiveCodePane;
             if (pane == null) return "";
             int a = 0, b = 0, c = 0, d = 0; pane.GetSelection(ref a, ref b, ref c, ref d);
             return (string)pane.CodeModule.Parent.Name + ":" + a + ":" + b + ":" + c + ":" + d;
         }
-        private async Task ObserveDebugMode()
+        /// <summary>Actualise l’état d’exécution affiché dans Monaco lorsque change le mode du projet.</summary>
+        /// <returns>Tâche terminée après la mise à jour de l’état d’exécution.</returns>
+private async Task ObserveDebugMode()
         {
             if (busy || Current == null || !(Current.Module is EditorVbeModule native)) return;
             int mode = (int)((dynamic)native.Project).Mode;
@@ -42,7 +51,12 @@ namespace CodexVBE
             await EditorCommand(new EditorMessage { id = Current.Id, version = versions[Current.Id], name = "show_next_statement" });
             lastDebugMode = mode; lastDebugPosition = DebugPosition(native);
         }
-        private async Task EditorCommand(EditorMessage message)
+        /// <summary>Valide puis exécute une commande de compilation ou de débogage sur le projet courant.</summary>
+        /// <param name="message">Commande et révision envoyées par l’interface Monaco.</param>
+        /// <returns>Tâche terminée après l’exécution et l’actualisation de l’interface.</returns>
+        /// <exception cref="InvalidOperationException">Le document a changé, le brouillon n’est pas synchronisé ou la commande native est indisponible.</exception>
+        /// <exception cref="ArgumentException">Le nom de commande n’est pas reconnu.</exception>
+private async Task EditorCommand(EditorMessage message)
         {
             while (busy && !closing && !IsDisposed) await Task.Delay(15);
             if (closing || IsDisposed || !documents.TryGetValue(message.id ?? "", out var document) || !(document.Module is EditorVbeModule native)) return;

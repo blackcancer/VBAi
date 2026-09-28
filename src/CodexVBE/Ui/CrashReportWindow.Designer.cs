@@ -1,35 +1,61 @@
-﻿namespace CodexVBE
+namespace CodexVBE
 {
-    partial class CrashReportWindow
+    /// <summary>Designer-generated controls and layout for the crash-report dialog.</summary>
+partial class CrashReportWindow
     {
-        private System.ComponentModel.IContainer components = null;
-        private System.Windows.Forms.TableLayoutPanel layout;
-        private System.Windows.Forms.Label heading;
-        private System.Windows.Forms.Label reportIdentity;
-        private System.Windows.Forms.Label privacy;
-        private System.Windows.Forms.Label destination;
-        private System.Windows.Forms.Label titleLabel;
-        private System.Windows.Forms.TextBox titleInput;
-        private System.Windows.Forms.Label descriptionLabel;
-        private System.Windows.Forms.TextBox descriptionInput;
-        private System.Windows.Forms.Label previewLabel;
-        private System.Windows.Forms.TextBox preview;
-        private System.Windows.Forms.Label status;
-        private System.Windows.Forms.LinkLabel issueLink;
-        private System.Windows.Forms.ProgressBar progress;
-        private System.Windows.Forms.FlowLayoutPanel buttons;
-        private System.Windows.Forms.Button closeButton;
-        private System.Windows.Forms.Button sendButton;
-        private System.Windows.Forms.Button emailButton;
-        private System.Windows.Forms.Button copyButton;
-        private System.Windows.Forms.Button saveButton;
-        private System.Windows.Forms.ToolTip tips;
-        protected override void Dispose(bool disposing)
+        /// <summary>Container that owns nonvisual form components.</summary>
+private System.ComponentModel.IContainer components = null;
+        /// <summary>Root layout for the report identity, inputs, preview, and actions.</summary>
+private System.Windows.Forms.TableLayoutPanel layout;
+        /// <summary>Dialog heading.</summary>
+private System.Windows.Forms.Label heading;
+        /// <summary>Displayed report identifier.</summary>
+private System.Windows.Forms.Label reportIdentity;
+        /// <summary>Privacy notice describing the report contents.</summary>
+private System.Windows.Forms.Label privacy;
+        /// <summary>Displayed report destination.</summary>
+private System.Windows.Forms.Label destination;
+        /// <summary>Title input caption.</summary>
+private System.Windows.Forms.Label titleLabel;
+        /// <summary>Editable issue title.</summary>
+private System.Windows.Forms.TextBox titleInput;
+        /// <summary>Description input caption.</summary>
+private System.Windows.Forms.Label descriptionLabel;
+        /// <summary>Editable issue description.</summary>
+private System.Windows.Forms.TextBox descriptionInput;
+        /// <summary>Preview caption.</summary>
+private System.Windows.Forms.Label previewLabel;
+        /// <summary>Formatted report preview.</summary>
+private System.Windows.Forms.TextBox preview;
+        /// <summary>Delivery and save feedback.</summary>
+private System.Windows.Forms.Label status;
+        /// <summary>Link to the created GitHub issue.</summary>
+private System.Windows.Forms.LinkLabel issueLink;
+        /// <summary>Progress indicator shown during delivery.</summary>
+private System.Windows.Forms.ProgressBar progress;
+        /// <summary>Flow layout containing report actions.</summary>
+private System.Windows.Forms.FlowLayoutPanel buttons;
+        /// <summary>Closes the dialog after delivery is no longer active.</summary>
+private System.Windows.Forms.Button closeButton;
+        /// <summary>Publishes the report through the configured delivery service.</summary>
+private System.Windows.Forms.Button sendButton;
+        /// <summary>Hands the report to Outlook or a local email draft.</summary>
+private System.Windows.Forms.Button emailButton;
+        /// <summary>Copies the formatted report body.</summary>
+private System.Windows.Forms.Button copyButton;
+        /// <summary>Saves a local Markdown report.</summary>
+private System.Windows.Forms.Button saveButton;
+        /// <summary>Tooltips associated with report controls.</summary>
+private System.Windows.Forms.ToolTip tips;
+        /// <summary>Releases runtime subscriptions and Designer-owned components.</summary>
+        /// <param name="disposing">Whether managed components should be disposed.</param>
+protected override void Dispose(bool disposing)
         {
             if (disposing) { DisposeRuntime(); if (components != null) components.Dispose(); }
             base.Dispose(disposing);
         }
-        private void InitializeComponent()
+        /// <summary>Creates and arranges the crash-report dialog controls.</summary>
+private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.layout = new System.Windows.Forms.TableLayoutPanel();

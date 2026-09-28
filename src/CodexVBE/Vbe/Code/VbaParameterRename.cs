@@ -72,9 +72,14 @@ namespace CodexVBE
             return output.ToString();
         }
 
-        /// <summary>Compare les noms VBA sans distinction de casse.</summary>
-        private static bool Same(string left, string right) => string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
-        /// <summary>Retire le suffixe de type d'un identifiant lexical.</summary>
-        private static string Bare(string text) => text.TrimEnd('$', '%', '&', '!', '#', '@', '^');
+                /// <summary>Compare deux noms VBA sans distinction de casse.</summary>
+        /// <param name="left">Premier nom.</param>
+        /// <param name="right">Second nom.</param>
+        /// <returns><see langword="true"/> si les noms sont égaux sans tenir compte de la casse.</returns>
+private static bool Same(string left, string right) => string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+                /// <summary>Retire le suffixe de type d’un identifiant lexical.</summary>
+        /// <param name="text">Jeton VBA.</param>
+        /// <returns>Identifiant sans son suffixe de type.</returns>
+private static string Bare(string text) => text.TrimEnd('$', '%', '&', '!', '#', '@', '^');
     }
 }

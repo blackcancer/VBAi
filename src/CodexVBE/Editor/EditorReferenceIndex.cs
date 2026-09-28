@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -16,11 +16,22 @@ namespace CodexVBE
     /// <summary>Reads only type-library metadata, never instantiates referenced automation classes.</summary>
     internal static class EditorReferenceIndex
     {
-        [DllImport("oleaut32.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
+        /// <summary>Charge une bibliothèque de types depuis un fichier sans consulter le registre COM.</summary>
+        /// <param name="path">Chemin du fichier de bibliothèque de types.</param>
+        /// <param name="registration">Mode de chargement OLE Automation.</param>
+        /// <param name="library">Reçoit l’interface ITypeLib chargée.</param>
+        /// <exception cref="COMException">Le fichier ne peut pas être chargé comme bibliothèque de types.</exception>
+[DllImport("oleaut32.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
         private static extern void LoadTypeLibEx(string path, int registration, out ITypeLib library);
-        [ThreadStatic] private static string cacheKey;
-        [ThreadStatic] private static EditorSymbol[] cacheValue;
-        internal static EditorSymbol[] Read(string[] paths, string[] requestedTypes)
+        /// <summary>Clé de cache du dernier index sur le thread courant.</summary>
+[ThreadStatic] private static string cacheKey;
+        /// <summary>Symboles issus du dernier index correspondant à la clé de cache.</summary>
+[ThreadStatic] private static EditorSymbol[] cacheValue;
+        /// <summary>Lit les membres accessibles des types demandés dans les fichiers de référence.</summary>
+        /// <param name="paths">Chemins des bibliothèques de types référencées.</param>
+        /// <param name="requestedTypes">Noms complets des types utilisés par le projet.</param>
+        /// <returns>Symboles externes avec leur propriétaire et leurs paramètres.</returns>
+internal static EditorSymbol[] Read(string[] paths, string[] requestedTypes)
         {
             string key = string.Join("|", paths.Select(p => p + ":" + System.IO.File.GetLastWriteTimeUtc(p).Ticks)) + ":" + string.Join("|", requestedTypes);
             if (key == cacheKey) return cacheValue;
@@ -61,7 +72,11 @@ namespace CodexVBE
             }
             cacheValue = symbols.ToArray(); cacheKey = key; return cacheValue;
         }
-        private static string ReturnType(ITypeInfo info, TYPEDESC description)
+        /// <summary>Performs the return type operation for EditorReferenceIndex.</summary>
+/// <param name="info">The info used by this operation.</param>
+/// <param name="description">The description used by this operation.</param>
+/// <returns>The result produced by this operation.</returns>
+private static string ReturnType(ITypeInfo info, TYPEDESC description)
         {
             var kind = (VarEnum)description.vt;
             if (kind == VarEnum.VT_PTR || kind == VarEnum.VT_SAFEARRAY)
@@ -77,7 +92,13 @@ namespace CodexVBE
             }
             finally { Marshal.ReleaseComObject(target); }
         }
-        private static void ReadMembers(ITypeInfo info, string owner, List<EditorSymbol> symbols, HashSet<Guid> visited, int depth)
+        /// <summary>Ajoute les fonctions et propriétés visibles d’un type, puis parcourt ses interfaces héritées.</summary>
+        /// <param name="info">Informations COM du type à lire.</param>
+        /// <param name="owner">Nom du type qui possédera les symboles indexés.</param>
+        /// <param name="symbols">Collection de résultats enrichie pendant le parcours.</param>
+        /// <param name="visited">Identifiants de types déjà visités, pour éviter les cycles.</param>
+        /// <param name="depth">Profondeur d’héritage courante, limitée pour borner la récursion.</param>
+private static void ReadMembers(ITypeInfo info, string owner, List<EditorSymbol> symbols, HashSet<Guid> visited, int depth)
         {
             if (depth > 8) return;
             info.GetTypeAttr(out IntPtr pointer);

@@ -5,9 +5,11 @@ using System.Windows.Forms;
 
 namespace CodexVBE
 {
-    internal sealed partial class ChatWindow
+    /// <summary>Provides the chat window implementation.</summary>
+internal sealed partial class ChatWindow
     {
-        private void MigrateProviderPrivacy()
+        /// <summary>Performs the migrate provider privacy operation for ChatWindow.</summary>
+private void MigrateProviderPrivacy()
         {
             if (currentSession == null || currentSession.ReadAccessPolicyVersion >= 1) return;
             bool hadContext = transcriptEntries.Count > 0 || messages.Count > 0 ||
@@ -24,7 +26,8 @@ namespace CodexVBE
             currentSession.ProviderHistoryStartIndex = transcriptEntries.Count;
         }
 
-        private void ConfigureProjectAccess()
+        /// <summary>Performs the configure project access operation for ChatWindow.</summary>
+private void ConfigureProjectAccess()
         {
             if (busy || currentSession == null || tools == null) return;
             try

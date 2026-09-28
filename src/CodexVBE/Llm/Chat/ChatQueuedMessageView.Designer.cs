@@ -1,14 +1,22 @@
 namespace CodexVBE
 {
-    public sealed partial class ChatQueuedMessageView
+    /// <summary>Displays one queued chat message and provides actions to send it, edit it, or remove it.</summary>
+public sealed partial class ChatQueuedMessageView
     {
-        private System.ComponentModel.IContainer components;
-        private System.Windows.Forms.TableLayoutPanel layout;
-        private System.Windows.Forms.Label message;
-        private ChatActionButton sendNow;
-        private ChatActionButton edit;
-        private ChatActionButton delete;
-        private System.Windows.Forms.ToolTip toolTips;
+        /// <summary>Container that owns the disposable components created by the WinForms Designer.</summary>
+private System.ComponentModel.IContainer components;
+        /// <summary>Flow layout panel that contains this transcript view&apos;s child controls.</summary>
+private System.Windows.Forms.TableLayoutPanel layout;
+        /// <summary>Stores the message used by ChatQueuedMessageView.</summary>
+private System.Windows.Forms.Label message;
+        /// <summary>Stores the send now used by ChatQueuedMessageView.</summary>
+private ChatActionButton sendNow;
+        /// <summary>Stores the edit used by ChatQueuedMessageView.</summary>
+private ChatActionButton edit;
+        /// <summary>Stores the delete used by ChatQueuedMessageView.</summary>
+private ChatActionButton delete;
+        /// <summary>ToolTip component used to show full text for transcript controls.</summary>
+private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Releases Designer-owned components.</summary>
         /// <param name="disposing">Whether managed resources should be released.</param>
         protected override void Dispose(bool disposing)
@@ -16,7 +24,8 @@ namespace CodexVBE
             if (disposing) components?.Dispose();
             base.Dispose(disposing);
         }
-        private void InitializeComponent()
+        /// <summary>Creates and configures the chat queued message view controls serialized by the WinForms Designer.</summary>
+private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);

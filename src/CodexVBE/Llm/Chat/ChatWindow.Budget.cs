@@ -5,10 +5,16 @@ using System.Threading.Tasks;
 
 namespace CodexVBE
 {
-    internal sealed partial class ChatWindow
+    /// <summary>Provides the chat window implementation.</summary>
+internal sealed partial class ChatWindow
     {
-        private string providerStreamId;
-        private async Task<string> ExecuteBudgetTool(string name, string arguments)
+        /// <summary>Stores the provider stream id used by ChatWindow.</summary>
+private string providerStreamId;
+        /// <summary>Performs the execute budget tool operation for ChatWindow.</summary>
+/// <param name="name">Text containing the name.</param>
+/// <param name="arguments">Text containing the arguments.</param>
+/// <returns>The result produced by this operation.</returns>
+private async Task<string> ExecuteBudgetTool(string name, string arguments)
         {
             string label = name;
             if (name == "invoke_tool")
@@ -32,7 +38,10 @@ namespace CodexVBE
                 throw;
             }
         }
-        private void PauseBudget(LlmProvider provider, string model)
+        /// <summary>Performs the pause budget operation for ChatWindow.</summary>
+/// <param name="provider">The provider used by this operation.</param>
+/// <param name="model">Text containing the model.</param>
+private void PauseBudget(LlmProvider provider, string model)
         {
             currentSession.BudgetPaused = true;
             currentSession.PausedTurnId = activeTurnId;
@@ -47,7 +56,8 @@ namespace CodexVBE
                 Text = UiText.Get("Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed.") + "\n" + remaining + "\n\n" + actions });
             SetStatus(UiText.Get("Paused — resume when ready"));
         }
-        private void UpdateBudgetControls()
+        /// <summary>Performs the update budget controls operation for ChatWindow.</summary>
+private void UpdateBudgetControls()
         {
             if (resumeTurn != null) resumeTurn.Enabled = !busy && currentSession?.BudgetPaused == true;
             if (send == null || prompt == null) return;
@@ -57,7 +67,9 @@ namespace CodexVBE
             toolTips.SetToolTip(send, UiText.Get(busy ? (hasText ? "Queue this message after the current response." : "Stop the current response. Changes already applied can still be undone in the chat.") : "Send the message and its context to the agent."));
             send.Enabled = !busy || !stopRequested || hasText;
         }
-        private async Task ResumeBudgetAsync()
+        /// <summary>Performs the resume budget async operation for ChatWindow.</summary>
+/// <returns>The result produced by this operation.</returns>
+private async Task ResumeBudgetAsync()
         {
             if (busy || currentSession?.BudgetPaused != true) return;
             var provider = providerPicker.SelectedItem as LlmProvider;
@@ -96,7 +108,8 @@ namespace CodexVBE
                 }
             }
         }
-        private void CompletePendingToolResponses()
+        /// <summary>Performs the complete pending tool responses operation for ChatWindow.</summary>
+private void CompletePendingToolResponses()
         {
             var records = messages.Select(m => json.DeserializeObject(json.Serialize(m)) as IDictionary<string, object>).Where(m => m != null).ToArray();
             var answered = new HashSet<string>(records.Where(m => m.ContainsKey("tool_call_id")).Select(m => Convert.ToString(m["tool_call_id"])));
@@ -108,7 +121,11 @@ namespace CodexVBE
                         messages.Add(new { role = "tool", tool_call_id = Convert.ToString(id), content = json.Serialize(Response.Failure("Interrupted before a result was recorded. Execution is unconfirmed; inspect live state and do not replay automatically.")) });
             }
         }
-        private async Task<bool> RunHttpBudgetAsync(LlmProvider provider, string model)
+        /// <summary>Performs the run http budget async operation for ChatWindow.</summary>
+/// <param name="provider">The provider used by this operation.</param>
+/// <param name="model">Text containing the model.</param>
+/// <returns>The result produced by this operation.</returns>
+private async Task<bool> RunHttpBudgetAsync(LlmProvider provider, string model)
         {
                 using (var client = new LlmChatClient(provider, settings,
                     model, HttpHandlerOverride?.Invoke()))

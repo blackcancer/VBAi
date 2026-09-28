@@ -51,7 +51,8 @@ namespace CodexVBE
         /// <summary>Choix persistant du thème, initialisé au chargement du fichier.</summary>
         /// <value>Choix courant du thème.</value>
         internal static ThemeChoice Choice { get; private set; } = Load();
-        internal static event Action Changed;
+        /// <summary>Notifies subscribers when changed occurs.</summary>
+internal static event Action Changed;
         /// <summary>Indique si le thème effectivement résolu est sombre.</summary>
         /// <value>Valeur déterminée selon le contraste élevé, le choix et la préférence Windows.</value>
         internal static bool Dark

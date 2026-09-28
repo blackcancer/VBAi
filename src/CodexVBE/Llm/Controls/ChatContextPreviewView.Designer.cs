@@ -1,13 +1,19 @@
-﻿namespace CodexVBE
+namespace CodexVBE
 {
-    public sealed partial class ChatContextPreviewView
+    /// <summary>Contrôles générés de l’aperçu du contexte en lecture seule.</summary>
+public sealed partial class ChatContextPreviewView
     {
-        private System.ComponentModel.IContainer components;
-        private System.Windows.Forms.GroupBox section;
-        private System.Windows.Forms.TextBox content;
-        /// <summary>Libère les composants du modèle Designer.</summary>
-        protected override void Dispose(bool disposing) { if (disposing && components != null) components.Dispose(); base.Dispose(disposing); }
-        private void InitializeComponent()
+        /// <summary>Container that owns the disposable components created by the WinForms Designer.</summary>
+private System.ComponentModel.IContainer components;
+        /// <summary>Cadre groupé portant le titre de l’aperçu.</summary>
+private System.Windows.Forms.GroupBox section;
+        /// <summary>Zone multiligne en lecture seule du contenu.</summary>
+private System.Windows.Forms.TextBox content;
+                /// <summary>Libère les composants du modèle Designer.</summary>
+        /// <param name="disposing">Indique si les composants gérés doivent également être libérés.</param>
+protected override void Dispose(bool disposing) { if (disposing && components != null) components.Dispose(); base.Dispose(disposing); }
+        /// <summary>Creates and configures the chat context preview view controls serialized by the WinForms Designer.</summary>
+private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.section = new System.Windows.Forms.GroupBox();

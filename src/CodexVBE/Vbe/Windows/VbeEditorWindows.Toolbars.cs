@@ -6,9 +6,12 @@ using System.Web.Script.Serialization;
 
 namespace CodexVBE
 {
-    internal sealed partial class VbeEditorWindows
+    /// <summary>Lit et modifie les barres d’outils normales du VBE avec vérification des versions observées.</summary>
+internal sealed partial class VbeEditorWindows
     {
-        public object Toolbars()
+        /// <summary>Retourne l’état lisible des barres d’outils normales et leurs erreurs de lecture.</summary>
+        /// <returns>Un objet sérialisable contenant les instantanés, les erreurs et la version de la collection.</returns>
+public object Toolbars()
         {
             var bars = new List<object>(); var errors = new List<string>();
             foreach (dynamic bar in vbe.CommandBars)
@@ -21,7 +24,10 @@ namespace CodexVBE
             return new { Toolbars = bars, Errors = errors, ProfileErrors = ToolbarProfileErrors.ToArray(), ToolbarCollectionVersion = collectionVersion,
                 Scope = "Normal VBE command bars only; menu bars and shortcut menus are excluded." };
         }
-        private static object ToolbarSnapshot(dynamic bar)
+        /// <summary>Capture les propriétés et la géométrie accessibles d’une barre, avec des empreintes distinctes.</summary>
+        /// <param name="bar">Barre native à lire.</param>
+        /// <returns>Un instantané sérialisable avec erreurs par propriété et versions calculées si la lecture est complète.</returns>
+private static object ToolbarSnapshot(dynamic bar)
         {
             var state = new Dictionary<string, object>(); var errors = new Dictionary<string, string>();
             Read(state, errors, "Name", () => (string)bar.Name);
@@ -48,7 +54,10 @@ namespace CodexVBE
             return new { Properties = state, Errors = errors, Geometry = geometry, GeometryErrors = geometryErrors,
                 ToolbarLayoutVersion = layoutVersion, WindowVersion = version, VersionScope = "Toolbar identity, visibility, enabled state and protection; geometry is observational." };
         }
-        public object SetToolbarVisibility(Request request)
+        /// <summary>Affiche ou masque une barre après contrôle de l’empreinte de son état.</summary>
+        /// <param name="request">Requête contenant l’action, le nom et la version attendue.</param>
+        /// <returns>Le résultat de la mutation et les instantanés avant et après lecture.</returns>
+public object SetToolbarVisibility(Request request)
         {
             if (request.Action != "show" && request.Action != "hide") throw new ArgumentException("Action must be show or hide.");
             if (string.IsNullOrWhiteSpace(request.ObjectName) || string.IsNullOrWhiteSpace(request.ExpectedWindowVersion))
@@ -73,7 +82,10 @@ namespace CodexVBE
                 NativeError = error, PersistenceVerified = false, NextRead = "list_toolbars" };
         }
 
-        private object FindNormalToolbar(string name)
+        /// <summary>Résout une barre par son nom et refuse les menus, ambiguïtés et disparitions.</summary>
+        /// <param name="name">Nom exact issu de l’inventaire des barres d’outils.</param>
+        /// <returns>L’objet natif de la barre normale correspondante.</returns>
+private object FindNormalToolbar(string name)
         {
             if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("ObjectName from list_toolbars is required.");
             object target = null;
@@ -87,7 +99,10 @@ namespace CodexVBE
             if ((int)((dynamic)target).Type != 0) throw new InvalidOperationException("Only normal toolbars can be changed; menu bars and popup menus are excluded.");
             return target;
         }
-        public object SetToolbarPlacement(Request request)
+        /// <summary>Déplace une barre flottante en pixels ou change son ordre dans une rangée ancrée.</summary>
+        /// <param name="request">Requête avec mode, coordonnées ou rangée et empreinte de disposition attendue.</param>
+        /// <returns>Le résultat vérifié de l’opération et les états observés avant et après.</returns>
+public object SetToolbarPlacement(Request request)
         {
             if (request.Action != "float" && request.Action != "row")
                 throw new ArgumentException("Action must be float (Left/Top pixels) or row (RowIndex).");
@@ -132,7 +147,10 @@ namespace CodexVBE
                 NativeError = error, PersistenceVerified = false, NextRead = "list_toolbars",
                 Limit = "VBE may normalize placement or rearrange neighbors. Partial changes are reported, not retried or implicitly rolled back." };
         }
-        public object SetToolbarPosition(Request request)
+        /// <summary>Ancre ou détache une barre selon l’action demandée, après contrôle de sa disposition.</summary>
+        /// <param name="request">Requête avec action et empreinte de disposition attendue.</param>
+        /// <returns>Le résultat de l’opération, l’état de visibilité et les instantanés observés.</returns>
+public object SetToolbarPosition(Request request)
         {
             int desired;
             switch (request.Action)

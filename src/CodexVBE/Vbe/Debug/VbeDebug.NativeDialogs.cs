@@ -4,13 +4,18 @@ using System.Threading;
 
 namespace CodexVBE
 {
-    internal sealed partial class VbeDebug
+    /// <summary>Planifie l’ouverture de surfaces IDE natives sous contrôle du contexte VBE courant.</summary>
+internal sealed partial class VbeDebug
     {
-        /// <summary>Source exacte utilisée pour garder la cible du dialogue Imprimer.</summary>
-        private static string NativeDialogSource(dynamic code) => (int)code.CountOfLines == 0 ? "" : (string)code.Lines[1, (int)code.CountOfLines];
+                /// <summary>Source exacte utilisée pour garder la cible du dialogue Imprimer.</summary>
+        /// <param name="code">Module de code à relire.</param>
+        /// <returns>Texte complet du module, ou chaîne vide si le module ne contient aucune ligne.</returns>
+private static string NativeDialogSource(dynamic code) => (int)code.CountOfLines == 0 ? "" : (string)code.Lines[1, (int)code.CountOfLines];
 
-        /// <summary>Ouvre uniquement une surface IDE native reconnue, sans valider ni lancer une impression.</summary>
-        public object QueueNativeIdeDialog(Request request)
+                /// <summary>Ouvre uniquement une surface IDE native reconnue, sans valider ni lancer une impression.</summary>
+        /// <param name="request">Projet, action, mode et éventuellement module, SHA et légende de commande.</param>
+        /// <returns>Confirmation de mise en file; l’exécution native et les effets du dialogue ne sont pas attestés.</returns>
+public object QueueNativeIdeDialog(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project) || string.IsNullOrWhiteSpace(request.ControlCaption))
                 throw new ArgumentException("Project, Action and the exact native ControlCaption are required.");
@@ -69,7 +74,8 @@ namespace CodexVBE
         }
     }
 
-    internal static partial class VbeDebugWindows
+    /// <summary>Vérifications des dialogues natifs du VBE avant les opérations de fenêtre.</summary>
+internal static partial class VbeDebugWindows
     {
         /// <summary>Refuse de réutiliser ou de modifier un dialogue de propriétés déjà ouvert par l'utilisateur.</summary>
         internal static void EnsureNoProjectPropertiesDialog()

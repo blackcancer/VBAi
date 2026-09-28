@@ -5,7 +5,8 @@ using System.Linq;
 
 namespace CodexVBE
 {
-    internal sealed partial class VbeProjectComponents
+    /// <summary>Inventorie les projets VBIDE et contrôle leurs opérations de cycle de vie autonome.</summary>
+internal sealed partial class VbeProjectComponents
     {
         /// <summary>Lit la collection native avec identités, sauvegarde et empreintes de source.</summary>
         /// <returns>Version à fournir à la création ou à l'ouverture d'un projet autonome.</returns>
@@ -77,8 +78,11 @@ namespace CodexVBE
             catch (Exception ex) { return LifecycleUncertain("Remove", ex); }
         }
 
-        /// <summary>Invoque Add ou Open exactement une fois et vérifie tous les projets préexistants.</summary>
-        private object AddLifecycleProject(List<LifecycleProject> before, string path)
+                /// <summary>Invoque Add ou Open exactement une fois et vérifie tous les projets préexistants.</summary>
+        /// <param name="before">Inventaire validé avant la mutation.</param>
+        /// <param name="path">Chemin SWP à ouvrir, ou <see langword="null"/> pour créer un projet autonome.</param>
+        /// <returns>État vérifié ou résultat indiquant une issue incertaine après l’appel natif.</returns>
+private object AddLifecycleProject(List<LifecycleProject> before, string path)
         {
             try
             {
@@ -101,8 +105,10 @@ namespace CodexVBE
             catch (Exception ex) { return LifecycleUncertain(path == null ? "Add" : "Open", ex); }
         }
 
-        /// <summary>Vérifie la version et le mode de chaque projet avant une mutation de collection.</summary>
-        private List<LifecycleProject> RequireLifecycleCollection(Request request)
+                /// <summary>Vérifie la version et le mode de chaque projet avant une mutation de collection.</summary>
+        /// <param name="request">Requête avec l’empreinte préalablement lue.</param>
+        /// <returns>La collection actuelle, si sa version correspond et si tous les projets sont modifiables.</returns>
+private List<LifecycleProject> RequireLifecycleCollection(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.ExpectedProjectVersion))
                 throw new ArgumentException("ExpectedProjectVersion from project_collection_state is required.");
@@ -113,15 +119,17 @@ namespace CodexVBE
             return rows;
         }
 
-        /// <summary>Interdit toute mutation lorsque la source ou le mode d'un projet est indisponible.</summary>
-        private static void RequireLifecycleDesign(List<LifecycleProject> rows)
+                /// <summary>Interdit toute mutation lorsque la source ou le mode d'un projet est indisponible.</summary>
+        /// <param name="rows">États des projets qui seront affectés par la mutation de collection.</param>
+private static void RequireLifecycleDesign(List<LifecycleProject> rows)
         {
             if (rows.Any(row => row.Mode != 2 || row.Protection != 0))
                 throw new InvalidOperationException("Every open project must be unprotected and in design mode.");
         }
 
-        /// <summary>Capture tous les projets sans dépendre du projet actif.</summary>
-        private List<LifecycleProject> ReadLifecycleCollection()
+                /// <summary>Capture tous les projets sans dépendre du projet actif.</summary>
+        /// <returns>Les projets triés par identité après lecture de leurs propriétés, références et sources accessibles.</returns>
+private List<LifecycleProject> ReadLifecycleCollection()
         {
             var rows = new List<LifecycleProject>();
             foreach (dynamic project in vbe.VBProjects)
@@ -153,11 +161,16 @@ namespace CodexVBE
             return rows.OrderBy(row => row.Identity, StringComparer.OrdinalIgnoreCase).ToList();
         }
 
-        /// <summary>Calcule l'empreinte complète et ordonnée de collection.</summary>
-        private string LifecycleVersion(List<LifecycleProject> rows) { return Hash(json.Serialize(rows)); }
+                /// <summary>Calcule l'empreinte complète et ordonnée de collection.</summary>
+        /// <param name="rows">Lignes de projet déjà capturées.</param>
+        /// <returns>Empreinte de la représentation sérialisée de la collection.</returns>
+private string LifecycleVersion(List<LifecycleProject> rows) { return Hash(json.Serialize(rows)); }
 
-        /// <summary>Signale qu'une mutation native peut avoir eu lieu sans effectuer de récupération destructive.</summary>
-        private static object LifecycleUncertain(string api, Exception error)
+                /// <summary>Signale qu'une mutation native peut avoir eu lieu sans effectuer de récupération destructive.</summary>
+        /// <param name="api">Nom de l’API native invoquée.</param>
+        /// <param name="error">Erreur observée pendant l’opération ou sa vérification.</param>
+        /// <returns>Résultat sérialisable marquant l’opération comme incertaine et sans nouvel essai autorisé.</returns>
+private static object LifecycleUncertain(string api, Exception error)
         {
             return new { Verified = false, MutationInvoked = true, Uncertain = true, NativeApi = api,
                 Reason = error.Message, RetryAllowed = false,
@@ -167,22 +180,30 @@ namespace CodexVBE
         /// <summary>État sérialisable d'une identité de projet natif.</summary>
         internal sealed class LifecycleProject
         {
-            /// <summary>Identité composée du nom et du chemin.</summary>
-            public string Identity { get; set; }
-            /// <summary>Nom natif du projet.</summary>
-            public string Name { get; set; }
-            /// <summary>Chemin natif, éventuellement vide avant la première sauvegarde.</summary>
-            public string Path { get; set; }
-            /// <summary>Type natif du projet.</summary>
-            public int Type { get; set; }
-            /// <summary>Mode natif du projet.</summary>
-            public int Mode { get; set; }
-            /// <summary>Protection native du projet.</summary>
-            public int Protection { get; set; }
-            /// <summary>État natif de sauvegarde.</summary>
-            public bool Saved { get; set; }
-            /// <summary>Empreinte des sources accessibles.</summary>
-            public string SourceSha256 { get; set; }
+                        /// <summary>Identité composée du nom et du chemin.</summary>
+            /// <value>Chaîne utilisée pour distinguer ce projet dans la collection.</value>
+public string Identity { get; set; }
+                        /// <summary>Nom natif du projet.</summary>
+            /// <value>Nom retourné par VBIDE.</value>
+public string Name { get; set; }
+                        /// <summary>Chemin natif, éventuellement vide avant la première sauvegarde.</summary>
+            /// <value>Chemin du fichier hôte, ou chaîne vide si le projet n’est pas enregistré.</value>
+public string Path { get; set; }
+                        /// <summary>Type natif du projet.</summary>
+            /// <value>Valeur de type de projet retournée par VBIDE.</value>
+public int Type { get; set; }
+                        /// <summary>Mode natif du projet.</summary>
+            /// <value>Valeur de mode retournée par VBIDE.</value>
+public int Mode { get; set; }
+                        /// <summary>Protection native du projet.</summary>
+            /// <value>Valeur de protection retournée par VBIDE.</value>
+public int Protection { get; set; }
+                        /// <summary>État natif de sauvegarde.</summary>
+            /// <value><see langword="true"/> si VBIDE indique que le projet est enregistré.</value>
+public bool Saved { get; set; }
+                        /// <summary>Empreinte des sources accessibles.</summary>
+            /// <value>Empreinte SHA-256 des sources du projet lisibles.</value>
+public string SourceSha256 { get; set; }
         }
     }
 }

@@ -6,9 +6,13 @@ using System.Web.Script.Serialization;
 namespace CodexVBE
 {
     // Compare stable Designer content, not OLE timestamps or uninitialized FRX padding.
-    internal static class EditorDesignerSnapshot
+    /// <summary>Crée une empreinte sérialisée des propriétés stables du concepteur UserForm et de ses contrôles.</summary>
+internal static class EditorDesignerSnapshot
     {
-        internal static string Capture(object tree)
+        /// <summary>Sérialise les propriétés de formulaire et de contrôles dans un ordre déterministe.</summary>
+        /// <param name="tree">Arbre de Designer produit par le lecteur des formulaires.</param>
+        /// <returns>JSON des propriétés pertinentes, triées par chemin et nom.</returns>
+internal static string Capture(object tree)
         {
             var json = new JavaScriptSerializer { MaxJsonLength = 16 * 1024 * 1024 };
             var root = (Dictionary<string, object>)json.DeserializeObject(json.Serialize(tree));
@@ -17,7 +21,12 @@ namespace CodexVBE
             Nodes(root, "Controls", rows);
             return json.Serialize(rows);
         }
-        private static void Nodes(IDictionary<string, object> owner, string key, SortedDictionary<string, object> rows)
+        /// <summary>Parcourt récursivement les contrôles connus et ajoute leurs propriétés à l’empreinte.</summary>
+        /// <param name="owner">Nœud contenant éventuellement une collection d’enfants.</param>
+        /// <param name="key">Nom de la propriété qui contient cette collection.</param>
+        /// <param name="rows">Dictionnaire trié recevant les valeurs observées.</param>
+        /// <exception cref="InvalidOperationException">Le formulaire contient un type de contrôle non vérifiable.</exception>
+private static void Nodes(IDictionary<string, object> owner, string key, SortedDictionary<string, object> rows)
         {
             if (!owner.TryGetValue(key, out var raw) || !(raw is object[] nodes)) return;
             foreach (IDictionary<string, object> node in nodes)
@@ -29,7 +38,12 @@ namespace CodexVBE
                 Properties(node, path, rows); Nodes(node, "Children", rows);
             }
         }
-        private static void Properties(IDictionary<string, object> owner, string path, SortedDictionary<string, object> rows)
+        /// <summary>Ajoute les propriétés persistées d’un nœud et refuse les valeurs opaques qui ne peuvent pas être vérifiées.</summary>
+        /// <param name="owner">Nœud contenant la collection de propriétés.</param>
+        /// <param name="path">Chemin stable du formulaire ou du contrôle.</param>
+        /// <param name="rows">Dictionnaire trié qui reçoit les propriétés.</param>
+        /// <exception cref="InvalidOperationException">Les propriétés sont absentes ou une valeur de Designer est invérifiable.</exception>
+private static void Properties(IDictionary<string, object> owner, string path, SortedDictionary<string, object> rows)
         {
             if (!owner.TryGetValue("Properties", out var raw) || !(raw is object[] properties)) throw new InvalidOperationException("Designer properties are unavailable.");
             foreach (IDictionary<string, object> property in properties)

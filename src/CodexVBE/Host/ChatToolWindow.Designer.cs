@@ -1,10 +1,14 @@
 namespace CodexVBE
 {
-    public sealed partial class ChatToolWindow
+    /// <summary>Contrôles générés du site WinForms hébergé dans le volet natif VBE.</summary>
+public sealed partial class ChatToolWindow
     {
-        private System.ComponentModel.IContainer components;
-        private System.Windows.Forms.Timer siteResizeTimer;
-        private void InitializeComponent()
+        /// <summary>Container that owns the disposable components created by the WinForms Designer.</summary>
+private System.ComponentModel.IContainer components;
+        /// <summary>Minuteur qui suit les dimensions de la zone native du volet.</summary>
+private System.Windows.Forms.Timer siteResizeTimer;
+        /// <summary>Creates and configures the chat tool window controls serialized by the WinForms Designer.</summary>
+private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.siteResizeTimer = new System.Windows.Forms.Timer(this.components);

@@ -9,8 +9,12 @@ namespace CodexVBE
     /// <summary>Lit une seule trame UTF-8 terminée par LF avec limites de taille et de durée totale.</summary>
     internal static class BridgeRequestReader
     {
-        /// <summary>Ferme la connexion si sa réception reste incomplète au terme du délai.</summary>
-        internal static async Task<string> ReadAsync(Stream stream, int maxBytes, TimeSpan timeout)
+                /// <summary>Ferme la connexion si sa réception reste incomplète au terme du délai.</summary>
+/// <param name="stream">The stream used by this operation.</param>
+/// <param name="maxBytes">The max bytes used by this operation.</param>
+/// <param name="timeout">The timeout used by this operation.</param>
+/// <returns>The result produced by this operation.</returns>
+internal static async Task<string> ReadAsync(Stream stream, int maxBytes, TimeSpan timeout)
         {
             if (maxBytes < 1) throw new ArgumentOutOfRangeException(nameof(maxBytes));
             if (timeout <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(timeout));
@@ -31,7 +35,11 @@ namespace CodexVBE
             }
         }
 
-        private static async Task<string> ReadFrameAsync(Stream stream, int maxBytes)
+        /// <summary>Reads and decodes one bounded UTF-8 frame terminated by a newline.</summary>
+/// <param name="stream">The stream used by this operation.</param>
+/// <param name="maxBytes">The max bytes used by this operation.</param>
+/// <returns>The result produced by this operation.</returns>
+private static async Task<string> ReadFrameAsync(Stream stream, int maxBytes)
         {
             var buffer = new byte[Math.Min(4096, maxBytes)];
             using (var frame = new MemoryStream())

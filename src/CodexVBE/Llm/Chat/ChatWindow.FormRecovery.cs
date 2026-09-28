@@ -4,10 +4,15 @@ using System.Windows;
 using System.Windows.Controls;
 namespace CodexVBE
 {
-    internal sealed partial class ChatWindow
+    /// <summary>Fenêtre du chat, y compris les cartes de récupération des contrôles coupés.</summary>
+internal sealed partial class ChatWindow
     {
-        private readonly Dictionary<FormCutChange, System.Windows.Forms.Button> formCutButtons = new Dictionary<FormCutChange, System.Windows.Forms.Button>();
-        private FrameworkElement RenderFormCut(FormCutChange change)
+        /// <summary>Boutons de récupération associés aux opérations de coupe de formulaire.</summary>
+private readonly Dictionary<FormCutChange, System.Windows.Forms.Button> formCutButtons = new Dictionary<FormCutChange, System.Windows.Forms.Button>();
+        /// <summary>Construit une carte de transcript permettant de restaurer les contrôles d’une coupe.</summary>
+        /// <param name="change">Changement de formulaire et état de récupération à présenter.</param>
+        /// <returns>Carte WPF avec l’action de restauration et son état courant.</returns>
+private FrameworkElement RenderFormCut(FormCutChange change)
         {
             var card = new ChatFormRecoveryView();
             card.title.Text = change.Form + (string.IsNullOrEmpty(change.ParentPath) ? "" : " / " + change.ParentPath);
@@ -24,7 +29,8 @@ namespace CodexVBE
             formCutButtons[change] = card.recover; RefreshFormCutCards();
             return new ChatDesignerHost(card) { Margin = new Thickness(0,0,4,14) };
         }
-        private void RefreshFormCutCards()
+        /// <summary>Met à jour disponibilité et libellé des boutons selon l’état des récupérations.</summary>
+private void RefreshFormCutCards()
         {
             foreach (var pair in formCutButtons)
             {

@@ -5,14 +5,18 @@ using System.Web.Script.Serialization;
 
 namespace CodexVBE
 {
-    internal sealed partial class VbeCodeEdits
+    /// <summary>Prévisualise les renommages de procédures standard et vérifie le projet complet avant leurs écritures multiples.</summary>
+internal sealed partial class VbeCodeEdits
     {
         /// <summary>Instantané complet du projet, métadonnées et sources, relu avant toute mutation.</summary>
         private sealed class ProcedureProjectSnapshot
         {
-            internal string Project, CanonicalProjectName, Version;
-            internal int Mode;
-            internal VbaProcedureRename.ModuleSnapshot[] Modules;
+            /// <summary>Sélecteur du projet accepté par le transport VBE.</summary>
+internal string Project, CanonicalProjectName, Version;
+            /// <summary>Mode courant du projet VBA.</summary>
+internal int Mode;
+            /// <summary>Sources complètes et types de tous les composants inspectés.</summary>
+internal VbaProcedureRename.ModuleSnapshot[] Modules;
         }
 
         /// <summary>Prévisualise toutes les éditions et leur SHA avant renommage d'une procédure standard.</summary>
@@ -68,8 +72,10 @@ namespace CodexVBE
                 Limit = "Other projects and external/string consumers are outside this plan. No compile or host runtime acceptance is implied." };
         }
 
-        /// <summary>Collecte toutes les sources et vérifie la stabilité du catalogue et des références pendant cette lecture.</summary>
-        private ProcedureProjectSnapshot CaptureProcedureProject(Request request)
+                /// <summary>Collecte toutes les sources et vérifie la stabilité du catalogue et des références pendant cette lecture.</summary>
+        /// <param name="request">Projet et module cible pour lequel capturer l’état complet.</param>
+        /// <returns>Snapshot cohérent des métadonnées, mode, composants et sources VBA.</returns>
+private ProcedureProjectSnapshot CaptureProcedureProject(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Project) || string.IsNullOrWhiteSpace(request.Module))
                 throw new ArgumentException("An exact Project and Module are required.");
@@ -100,8 +106,11 @@ namespace CodexVBE
                 Version = VbaProcedureRename.Digest((string)metadata["Version"] + ":" + VbaProcedureRename.Version(project, modules)) };
         }
 
-        /// <summary>Lit la version VBIDE des propriétés, références, types et identités de composants.</summary>
-        private IDictionary<string, object> ProcedureMetadata(string project, JavaScriptSerializer serializer)
+                /// <summary>Lit la version VBIDE des propriétés, références, types et identités de composants.</summary>
+        /// <param name="project">Sélecteur du projet VBA.</param>
+        /// <param name="serializer">Sérialiseur utilisé pour normaliser le résultat du transport.</param>
+        /// <returns>Champs de métadonnées du projet, dont nom, mode et version.</returns>
+private IDictionary<string, object> ProcedureMetadata(string project, JavaScriptSerializer serializer)
         {
             var response = execute(new Request { Command = "project_properties", Project = project });
             if (!response.Ok) throw new InvalidOperationException(response.Error);

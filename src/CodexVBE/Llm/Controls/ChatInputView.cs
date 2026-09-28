@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Windows.Forms;
 using WpfTextBox = System.Windows.Controls.TextBox;
 
@@ -8,16 +8,20 @@ namespace CodexVBE
     [ToolboxItem(true)]
     public sealed partial class ChatInputView : UserControl
     {
-        private WpfTextBox editor;
-        private bool spellCheckEnabled = true;
-        private Padding inputPadding = new Padding(12);
+        /// <summary>Contrôle WPF paresseux qui reçoit le texte de saisie.</summary>
+private WpfTextBox editor;
+        /// <summary>État du correcteur orthographique présenté au contrôle WPF.</summary>
+private bool spellCheckEnabled = true;
+        /// <summary>Marge intérieure appliquée au panneau et au moteur de texte.</summary>
+private Padding inputPadding = new Padding(12);
         /// <summary>Construit uniquement la surface Designer ; le moteur de texte est initialisé à la demande.</summary>
         public ChatInputView()
         {
             InitializeComponent();
         }
-        /// <summary>Moteur de texte créé uniquement lorsque le chat initialise ses comportements.</summary>
-        [Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+                /// <summary>Moteur de texte créé uniquement lorsque le chat initialise ses comportements.</summary>
+        /// <value>Contrôle WPF initialisé à la première lecture.</value>
+[Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         internal WpfTextBox Editor
         {
             get
@@ -38,15 +42,17 @@ namespace CodexVBE
                 return editor;
             }
         }
-        /// <summary>Active le correcteur intégré sans modifier la structure du formulaire.</summary>
-        [DefaultValue(true), Category("Behavior")]
+                /// <summary>Active le correcteur intégré sans modifier la structure du formulaire.</summary>
+        /// <value><see langword="true"/> lorsque la vérification orthographique WPF est activée.</value>
+[DefaultValue(true), Category("Behavior")]
         public bool SpellCheckEnabled
         {
             get => spellCheckEnabled;
             set { spellCheckEnabled = value; ApplyEditorAppearance(); }
         }
-        /// <summary>Marges du texte dans l’éditeur, éditables dans le Designer.</summary>
-        [Category("Layout")]
+                /// <summary>Marges du texte dans l’éditeur, éditables dans le Designer.</summary>
+        /// <value>Marge appliquée autour du texte; ses côtés doivent être non négatifs.</value>
+[Category("Layout")]
         public Padding InputPadding
         {
             get => inputPadding;
@@ -57,13 +63,19 @@ namespace CodexVBE
                 inputPadding = value; ApplyEditorAppearance();
             }
         }
-        private bool ShouldSerializeInputPadding() => inputPadding != new Padding(12);
-        private void ResetInputPadding() => InputPadding = new Padding(12);
-        /// <summary>Propage la police Designer au moteur de texte.</summary>
-        protected override void OnFontChanged(System.EventArgs e) { base.OnFontChanged(e); ApplyEditorAppearance(); }
-        /// <summary>Propage la couleur Designer au moteur de texte.</summary>
-        protected override void OnForeColorChanged(System.EventArgs e) { base.OnForeColorChanged(e); ApplyEditorAppearance(); }
-        private void ApplyEditorAppearance()
+        /// <summary>Indique au Designer si la marge diffère de sa valeur par défaut.</summary>
+        /// <returns><see langword="true"/> si la marge n’est plus égale à 12 pixels sur chaque côté.</returns>
+private bool ShouldSerializeInputPadding() => inputPadding != new Padding(12);
+        /// <summary>Rétablit la marge intérieure par défaut de 12 pixels sur chaque côté.</summary>
+private void ResetInputPadding() => InputPadding = new Padding(12);
+                /// <summary>Propage la police Designer au moteur de texte.</summary>
+        /// <param name="e">Données de changement de police.</param>
+protected override void OnFontChanged(System.EventArgs e) { base.OnFontChanged(e); ApplyEditorAppearance(); }
+                /// <summary>Propage la couleur Designer au moteur de texte.</summary>
+        /// <param name="e">Données de changement de couleur.</param>
+protected override void OnForeColorChanged(System.EventArgs e) { base.OnForeColorChanged(e); ApplyEditorAppearance(); }
+        /// <summary>Met à jour le padding, la police, la couleur et le correcteur du contrôle WPF, s’il est créé.</summary>
+private void ApplyEditorAppearance()
         {
             if (previewPanel != null) previewPanel.Padding = inputPadding;
             if (editor == null) return;

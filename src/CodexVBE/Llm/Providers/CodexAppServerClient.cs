@@ -33,8 +33,10 @@ namespace CodexVBE
     {
         /// <summary>Vérifie la présence du binaire Codex installé à son emplacement local.</summary>
         internal Func<string, bool> InstalledExists = File.Exists;
-        internal Func<string, string[]> GetDirectories = Directory.GetDirectories;
-        internal Func<string, DateTime> GetLastWriteTimeUtc = File.GetLastWriteTimeUtc;
+        /// <summary>Accès injectable aux sous-répertoires parcourus pour localiser le CLI Codex.</summary>
+internal Func<string, string[]> GetDirectories = Directory.GetDirectories;
+        /// <summary>Accès injectable aux dates UTC qui départagent les exécutables candidats.</summary>
+internal Func<string, DateTime> GetLastWriteTimeUtc = File.GetLastWriteTimeUtc;
         /// <summary>Démarre le processus Codex sans préambule UTF-8 parasite sur l’entrée standard.</summary>
         internal Func<Process, bool> StartProcess = ProcessInput.StartWithoutPreamble;
         /// <summary>Processus CLI Codex détenu par le transport.</summary>

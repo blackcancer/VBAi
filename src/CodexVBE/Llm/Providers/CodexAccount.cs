@@ -29,8 +29,10 @@ namespace CodexVBE
         internal static Func<Process, int, bool> WaitForExit = (process, milliseconds) => process.WaitForExit(milliseconds);
         /// <summary>Vérifie la présence du client à son emplacement installé.</summary>
         internal static Func<string, bool> FileExists = File.Exists;
-        internal static Func<string, string[]> GetDirectories = Directory.GetDirectories;
-        internal static Func<string, DateTime> GetLastWriteTimeUtc = File.GetLastWriteTimeUtc;
+        /// <summary>Énumère les dossiers contenant des versions de la CLI Codex Desktop.</summary>
+internal static Func<string, string[]> GetDirectories = Directory.GetDirectories;
+        /// <summary>Lit la date UTC de modification utilisée pour choisir la version la plus récente.</summary>
+internal static Func<string, DateTime> GetLastWriteTimeUtc = File.GetLastWriteTimeUtc;
         /// <summary>Résout le chemin du client Codex depuis sa configuration ou son emplacement usuel.</summary>
         /// <value>Chemin configuré, chemin installé, ou « codex.exe » si aucun fichier connu ne le confirme.</value>
         public static string Executable

@@ -7,10 +7,12 @@ namespace CodexVBE
     /// <summary>Isole l’état des clients CLI sous les données locales du complément.</summary>
     internal static class ProviderSessionStorage
     {
-        /// <summary>Dossier Codex privé, indépendant de CODEX_HOME hérité et de Codex Desktop.</summary>
-        internal static string CodexHome => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexVBE", "Providers", "Codex");
-        /// <summary>Dossier Copilot privé, indépendant de COPILOT_HOME hérité.</summary>
-        internal static string CopilotHome => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexVBE", "Providers", "Copilot");
+                /// <summary>Dossier Codex privé, indépendant de CODEX_HOME hérité et de Codex Desktop.</summary>
+        /// <value>Chemin CodexVBE local utilisé pour CODEX_HOME des processus lancés par le complément.</value>
+internal static string CodexHome => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexVBE", "Providers", "Codex");
+                /// <summary>Dossier Copilot privé, indépendant de COPILOT_HOME hérité.</summary>
+        /// <value>Chemin CodexVBE local utilisé pour COPILOT_HOME des processus lancés par le complément.</value>
+internal static string CopilotHome => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexVBE", "Providers", "Copilot");
         /// <summary>Configure exclusivement l’environnement du processus enfant Codex.</summary>
         /// <param name="info">Processus à lancer sans interpréteur shell.</param>
         internal static void ConfigureCodex(ProcessStartInfo info) { Directory.CreateDirectory(CodexHome); info.EnvironmentVariables["CODEX_HOME"] = CodexHome; }

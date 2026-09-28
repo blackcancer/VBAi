@@ -5,14 +5,21 @@ using System.Runtime.InteropServices;
 
 namespace CodexVBE
 {
-    internal static partial class VbeDebugWindows
+    /// <summary>Observe les fenêtres de formulaires VBA visibles dans le processus hôte.</summary>
+internal static partial class VbeDebugWindows
     {
-        [DllImport("user32.dll", EntryPoint = "GetWindow")]
+        /// <summary>Lit la fenêtre propriétaire d’un handle sans accéder aux objets formulaire VBA.</summary>
+        /// <param name="window">Handle dont le propriétaire doit être obtenu.</param>
+        /// <param name="command">Commande native GetWindow, généralement GW_OWNER.</param>
+        /// <returns>Handle de la fenêtre propriétaire, ou zéro.</returns>
+[DllImport("user32.dll", EntryPoint = "GetWindow")]
         private static extern IntPtr NativeRuntimeWindowOwner(IntPtr window, uint command);
         /// <summary>Reads the native owner without accessing a running VBA form instance.</summary>
         internal static Func<IntPtr, uint, IntPtr> RuntimeWindowOwner = NativeRuntimeWindowOwner;
 
-        internal static object ReadRuntimeForms()
+        /// <summary>Énumère les fenêtres ThunderDFrame visibles appartenant à l’hôte courant.</summary>
+        /// <returns>Fenêtres, erreurs d’énumération et limites de cette observation native.</returns>
+internal static object ReadRuntimeForms()
         {
             uint host = (uint)Process.GetCurrentProcess().Id;
             var windows = new List<object>();

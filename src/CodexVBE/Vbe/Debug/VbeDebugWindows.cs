@@ -601,8 +601,13 @@ namespace CodexVBE
                 }
                 return controls;
             }
-            /// <summary>Écrit un contrôle unique de l’onglet par son interface native accessible.</summary>
-            public void Write(IntPtr dialog, int tabIndex, string name, string type, object value)
+                        /// <summary>Écrit un contrôle unique de l’onglet par son interface native accessible.</summary>
+            /// <param name="dialog">Handle du dialogue Options.</param>
+            /// <param name="tabIndex">Index de l’onglet qui contient le contrôle.</param>
+            /// <param name="name">Nom exact du contrôle.</param>
+            /// <param name="type">Type UI Automation du contrôle.</param>
+            /// <param name="value">Valeur validée à écrire par son pattern natif.</param>
+public void Write(IntPtr dialog, int tabIndex, string name, string type, object value)
             {
                 Controls(dialog, tabIndex);
                 var candidates = root.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.NameProperty, name))
@@ -639,8 +644,9 @@ namespace CodexVBE
                 else throw new InvalidOperationException("The option has no supported writable pattern.");
                 PauseNative(100);
             }
-            /// <summary>Demande la validation par le bouton natif IDOK, sans raccourci clavier.</summary>
-            public void Accept(IntPtr dialog)
+                        /// <summary>Demande la validation par le bouton natif IDOK, sans raccourci clavier.</summary>
+            /// <param name="dialog">Handle du dialogue Options.</param>
+public void Accept(IntPtr dialog)
             {
                 IntPtr ok = GetDlgItem(dialog, 1);
                 if (ok == IntPtr.Zero || ClassName(ok) != "Button" || !OptionsWindowEnabled(ok) || !PostMessage(ok, 0x00F5, IntPtr.Zero, IntPtr.Zero))
@@ -776,9 +782,13 @@ namespace CodexVBE
         /// <summary>Implémente la lecture des volets et dialogues par Win32, UI Automation et MSAA.</summary>
         private sealed class NativeProbe : INativeProbe
         {
-            private readonly int dialogProcessId;
-            internal NativeProbe() : this(Process.GetCurrentProcess().Id) { }
-            internal NativeProbe(int processId) { if (processId <= 0) throw new ArgumentOutOfRangeException(nameof(processId)); dialogProcessId = processId; }
+            /// <summary>PID auquel les dialogues observés doivent appartenir.</summary>
+private readonly int dialogProcessId;
+            /// <summary>Crée une sonde limitée au processus hôte courant.</summary>
+internal NativeProbe() : this(Process.GetCurrentProcess().Id) { }
+            /// <summary>Crée une sonde limitée au processus indiqué.</summary>
+            /// <param name="processId">PID positif propriétaire des dialogues recherchés.</param>
+internal NativeProbe(int processId) { if (processId <= 0) throw new ArgumentOutOfRangeException(nameof(processId)); dialogProcessId = processId; }
             /// <summary>Recherche la fenêtre racine du VBE.</summary>
             /// <returns>Handle de la fenêtre, ou zéro.</returns>
             public IntPtr VbeRoot() { return FindVbeRoot(); }
@@ -874,11 +884,17 @@ namespace CodexVBE
 
         // The Compile command can open a modal native diagnostic. Its UI-thread
         // Execute call cannot be awaited with Control.Invoke in that case.
-        /// <summary>Vérifie qu’aucun dialogue d’erreur de compilation n’est encore ouvert.</summary>
+                /// <summary>Vérifie qu’aucun dialogue d’erreur de compilation n’est encore ouvert.</summary>
+        /// <param name="processId">PID de l’instance hôte à contrôler.</param>
         /// <exception cref="InvalidOperationException">Un dialogue de compilation reste visible.</exception>
-        internal static void EnsureNoCompileDialog(int processId) { EnsureNoCompileDialog(new NativeProbe(processId)); }
-        internal static string AwaitCompileDialog(ManualResetEventSlim completed, int processId) { return AwaitCompileDialog(completed, new NativeProbe(processId)); }
-        public static void EnsureNoCompileDialog()
+internal static void EnsureNoCompileDialog(int processId) { EnsureNoCompileDialog(new NativeProbe(processId)); }
+        /// <summary>Attend la commande de compilation et lit tout dialogue natif dans le processus indiqué.</summary>
+        /// <param name="completed">Signal de fin de compilation.</param>
+        /// <param name="processId">PID de l’instance hôte à observer.</param>
+        /// <returns>Diagnostic du dialogue reconnu, ou chaîne vide.</returns>
+internal static string AwaitCompileDialog(ManualResetEventSlim completed, int processId) { return AwaitCompileDialog(completed, new NativeProbe(processId)); }
+        /// <summary>Vérifie qu’aucun dialogue de compilation n’est ouvert dans l’hôte courant.</summary>
+public static void EnsureNoCompileDialog()
         {
             EnsureNoCompileDialog(new NativeProbe());
         }
@@ -1822,7 +1838,11 @@ namespace CodexVBE
         /// <returns>Handle du dialogue trouvé, ou zéro.</returns>
         private static IntPtr FindDialog(params string[] titles)
         { return FindDialogForProcess(Process.GetCurrentProcess().Id, titles); }
-        private static IntPtr FindDialogForProcess(int processId, params string[] titles)
+        /// <summary>Recherche un dialogue visible dans un processus et selon une liste de titres acceptés.</summary>
+        /// <param name="processId">PID dont les fenêtres sont examinées.</param>
+        /// <param name="titles">Titres localisés admissibles.</param>
+        /// <returns>Handle du premier dialogue correspondant, ou zéro.</returns>
+private static IntPtr FindDialogForProcess(int processId, params string[] titles)
         {
             IntPtr result = IntPtr.Zero;
             uint currentPid = checked((uint)processId);
@@ -1922,8 +1942,11 @@ namespace CodexVBE
                 Coverage = "UIAExposedRowsOnly" }; }
         }
 
-        /// <summary>Identifie une observation complète, en conservant le contexte et chaque segment du chemin.</summary>
-        internal static string DebugRowIdentity(string raw, string[] path) =>
+                /// <summary>Identifie une observation complète, en conservant le contexte et chaque segment du chemin.</summary>
+        /// <param name="raw">Texte brut de la ligne accessible.</param>
+        /// <param name="path">Segments du chemin UI Automation de la ligne.</param>
+        /// <returns>Clé JSON stable de la ligne et de son contexte.</returns>
+internal static string DebugRowIdentity(string raw, string[] path) =>
             new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(new { Raw = raw, PathSegments = path ?? new string[0] });
 
         /// <summary>Analyse une ligne affichée des volets Locals ou Watches et lui associe son chemin de parenté.</summary>

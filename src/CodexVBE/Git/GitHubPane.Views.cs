@@ -1,49 +1,92 @@
 namespace CodexVBE
 {
-    public sealed partial class GitHubPane
+    /// <summary>Control references from embedded repository, pull-request, detail, and review views.</summary>
+public sealed partial class GitHubPane
     {
-        private System.Windows.Forms.TableLayoutPanel repoLayout;
-        private System.Windows.Forms.FlowLayoutPanel repoActions;
-        private System.Windows.Forms.FlowLayoutPanel createActions;
-        private System.Windows.Forms.TextBox repositorySearch;
-        private System.Windows.Forms.ListBox repositoryList;
-        private System.Windows.Forms.ComboBox repositoryBranch;
-        private System.Windows.Forms.ComboBox organization;
-        private System.Windows.Forms.TextBox repositoryName;
-        private System.Windows.Forms.CheckBox privateRepository;
-        private System.Windows.Forms.Button loadRepositories;
-        private System.Windows.Forms.Button useRepository;
-        private System.Windows.Forms.Button createRepository;
-        private System.Windows.Forms.Label searchLabel;
-        private System.Windows.Forms.TableLayoutPanel pullLayout;
-        private System.Windows.Forms.FlowLayoutPanel pullActions;
-        private System.Windows.Forms.TabControl pullTabs;
-        private System.Windows.Forms.TabPage composeTab;
-        private System.Windows.Forms.TabPage detailTab;
-        private System.Windows.Forms.TabPage filesTab;
-        private System.Windows.Forms.TabPage commentsTab;
-        private System.Windows.Forms.TabPage checksTab;
-        private System.Windows.Forms.ListBox pulls;
-        private System.Windows.Forms.Button loadPulls;
-        private System.Windows.Forms.Button openPull;
-        private System.Windows.Forms.Button loadDraft;
-        private System.Windows.Forms.TableLayoutPanel composeLayout;
-        private System.Windows.Forms.ComboBox targetBranch;
-        private System.Windows.Forms.Label sourceLabel;
-        private System.Windows.Forms.TextBox pullTitle;
-        private System.Windows.Forms.TextBox pullBody;
-        private System.Windows.Forms.CheckBox draft;
-        private System.Windows.Forms.Button createPull;
-        private System.Windows.Forms.Label targetLabel;
-        private System.Windows.Forms.Label titleLabel;
-        private System.Windows.Forms.Label bodyLabel;
-        private System.Windows.Forms.TextBox pullDetails;
-        private System.Windows.Forms.ListBox files;
-        private System.Windows.Forms.TableLayoutPanel commentLayout;
-        private System.Windows.Forms.ListBox comments;
-        private System.Windows.Forms.TextBox commentBody;
-        private System.Windows.Forms.TextBox checks;
-        private void BindViews()
+        /// <summary>Root layout for repository search and selection.</summary>
+private System.Windows.Forms.TableLayoutPanel repoLayout;
+        /// <summary>Actions for loading or selecting a repository.</summary>
+private System.Windows.Forms.FlowLayoutPanel repoActions;
+        /// <summary>Actions for creating a repository.</summary>
+private System.Windows.Forms.FlowLayoutPanel createActions;
+        /// <summary>Repository filter input.</summary>
+private System.Windows.Forms.TextBox repositorySearch;
+        /// <summary>Filtered repository choices.</summary>
+private System.Windows.Forms.ListBox repositoryList;
+        /// <summary>Branches available for the selected repository.</summary>
+private System.Windows.Forms.ComboBox repositoryBranch;
+        /// <summary>Organization that owns a new repository.</summary>
+private System.Windows.Forms.ComboBox organization;
+        /// <summary>Name for a new repository.</summary>
+private System.Windows.Forms.TextBox repositoryName;
+        /// <summary>Whether a new repository should be private.</summary>
+private System.Windows.Forms.CheckBox privateRepository;
+        /// <summary>Loads repositories available to the connected account.</summary>
+private System.Windows.Forms.Button loadRepositories;
+        /// <summary>Selects the highlighted repository for the current Git project.</summary>
+private System.Windows.Forms.Button useRepository;
+        /// <summary>Creates the configured repository.</summary>
+private System.Windows.Forms.Button createRepository;
+        /// <summary>Caption for repository search input.</summary>
+private System.Windows.Forms.Label searchLabel;
+        /// <summary>Root layout for pull-request lists and detail pages.</summary>
+private System.Windows.Forms.TableLayoutPanel pullLayout;
+        /// <summary>Actions for listing and opening pull requests.</summary>
+private System.Windows.Forms.FlowLayoutPanel pullActions;
+        /// <summary>Tabs for pull composition, details, files, comments, and checks.</summary>
+private System.Windows.Forms.TabControl pullTabs;
+        /// <summary>Pull-request composition page.</summary>
+private System.Windows.Forms.TabPage composeTab;
+        /// <summary>Pull-request details page.</summary>
+private System.Windows.Forms.TabPage detailTab;
+        /// <summary>Changed files page.</summary>
+private System.Windows.Forms.TabPage filesTab;
+        /// <summary>Review comments page.</summary>
+private System.Windows.Forms.TabPage commentsTab;
+        /// <summary>CI checks page.</summary>
+private System.Windows.Forms.TabPage checksTab;
+        /// <summary>Pull requests for the selected repository.</summary>
+private System.Windows.Forms.ListBox pulls;
+        /// <summary>Loads pull requests for the selected repository.</summary>
+private System.Windows.Forms.Button loadPulls;
+        /// <summary>Opens the selected pull request detail pages.</summary>
+private System.Windows.Forms.Button openPull;
+        /// <summary>Loads a saved pull-request draft.</summary>
+private System.Windows.Forms.Button loadDraft;
+        /// <summary>Layout for creating a pull request.</summary>
+private System.Windows.Forms.TableLayoutPanel composeLayout;
+        /// <summary>Target branch for a new pull request.</summary>
+private System.Windows.Forms.ComboBox targetBranch;
+        /// <summary>Caption describing the source branch.</summary>
+private System.Windows.Forms.Label sourceLabel;
+        /// <summary>New pull-request title input.</summary>
+private System.Windows.Forms.TextBox pullTitle;
+        /// <summary>New pull-request description input.</summary>
+private System.Windows.Forms.TextBox pullBody;
+        /// <summary>Whether the new pull request is created as a draft.</summary>
+private System.Windows.Forms.CheckBox draft;
+        /// <summary>Creates the configured pull request.</summary>
+private System.Windows.Forms.Button createPull;
+        /// <summary>Caption for the pull-request target branch.</summary>
+private System.Windows.Forms.Label targetLabel;
+        /// <summary>Caption for the pull-request title.</summary>
+private System.Windows.Forms.Label titleLabel;
+        /// <summary>Caption for the pull-request description.</summary>
+private System.Windows.Forms.Label bodyLabel;
+        /// <summary>Details for the selected pull request.</summary>
+private System.Windows.Forms.TextBox pullDetails;
+        /// <summary>Files changed by the selected pull request.</summary>
+private System.Windows.Forms.ListBox files;
+        /// <summary>Layout for review comments and their text.</summary>
+private System.Windows.Forms.TableLayoutPanel commentLayout;
+        /// <summary>Review comments for the selected pull request.</summary>
+private System.Windows.Forms.ListBox comments;
+        /// <summary>Selected review comment text.</summary>
+private System.Windows.Forms.TextBox commentBody;
+        /// <summary>Checks reported for the selected pull request.</summary>
+private System.Windows.Forms.TextBox checks;
+        /// <summary>Associe les contrôles du volet à ceux des vues spécialisées et branche leurs interactions.</summary>
+private void BindViews()
         {
             repoLayout = gitHubRepositoriesView.repoLayout;
             repoActions = gitHubRepositoriesView.repoActions;

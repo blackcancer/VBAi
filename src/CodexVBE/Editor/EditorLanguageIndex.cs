@@ -1,37 +1,76 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace CodexVBE
 {
-    internal sealed class EditorSource
+    /// <summary>Instantané du code et du type d’un composant VBA.</summary>
+internal sealed class EditorSource
     {
-        public string Module { get; set; }
-        public string Text { get; set; }
-        public int ComponentType { get; set; }
+        /// <summary>Nom du composant dont la source est capturée.</summary>
+        /// <value>Nom VBComponent.Name.</value>
+public string Module { get; set; }
+        /// <summary>Code source du composant.</summary>
+        /// <value>Texte lu depuis son CodeModule.</value>
+public string Text { get; set; }
+        /// <summary>Type numérique du composant VBIDE.</summary>
+        /// <value>Valeur VBComponent.Type.</value>
+public int ComponentType { get; set; }
     }
-    internal sealed class EditorSymbol
+    /// <summary>Symbole déclaré ou déduit d’une source VBA indexée par l’éditeur.</summary>
+internal sealed class EditorSymbol
     {
-        public string Name { get; set; }
-        public string Module { get; set; }
-        public string Kind { get; set; }
-        public string Scope { get; set; }
-        public string TypeName { get; set; }
-        public string Declaration { get; set; }
-        public bool Private { get; set; }
-        public bool Conditional { get; set; }
-        public bool External { get; set; }
-        public string Library { get; set; }
-        public int Line { get; set; }
-        public int EndLine { get; set; }
-        public int Column { get; set; }
-        public string[] Parameters { get; set; } = Array.Empty<string>();
+        /// <summary>Nom du symbole.</summary>
+        /// <value>Nom du module, membre ou paramètre.</value>
+public string Name { get; set; }
+        /// <summary>Module qui contient le symbole.</summary>
+        /// <value>Nom du composant source.</value>
+public string Module { get; set; }
+        /// <summary>Catégorie de déclaration.</summary>
+        /// <value>Par exemple Module, Procedure ou Property.</value>
+public string Kind { get; set; }
+        /// <summary>Portée dans laquelle le symbole est déclaré.</summary>
+        /// <value>Nom de portée produit par l’analyseur VBA.</value>
+public string Scope { get; set; }
+        /// <summary>Type VBA déduit de la déclaration.</summary>
+        /// <value>Nom du type ou Variant lorsque la déclaration ne précise pas de type.</value>
+public string TypeName { get; set; }
+        /// <summary>Texte de déclaration affiché pour le symbole.</summary>
+        /// <value>Déclaration complète pour une procédure, ou ligne source pour les autres symboles.</value>
+public string Declaration { get; set; }
+        /// <summary>Indique si la déclaration est privée ou locale.</summary>
+        /// <value>Résultat de l’analyse de ses modificateurs de portée.</value>
+public bool Private { get; set; }
+        /// <summary>Indique que le symbole se trouve dans une compilation conditionnelle.</summary>
+        /// <value>État conditionnel relevé dans sa source.</value>
+public bool Conditional { get; set; }
+        /// <summary>Indique que la déclaration est une référence externe.</summary>
+        /// <value>Valeur fournie par l’index qui construit le symbole.</value>
+public bool External { get; set; }
+        /// <summary>Gets or sets the library.</summary>
+/// <value>The current value represented by this member.</value>
+public string Library { get; set; }
+        /// <summary>Première ligne de la déclaration.</summary>
+        /// <value>Numéro de ligne indexé à partir de un.</value>
+public int Line { get; set; }
+        /// <summary>Dernière ligne du symbole ou du corps de procédure qui le contient.</summary>
+        /// <value>Numéro de ligne indexé à partir de un.</value>
+public int EndLine { get; set; }
+        /// <summary>Colonne de début de la déclaration.</summary>
+        /// <value>Position de colonne fournie par l’analyseur VBA.</value>
+public int Column { get; set; }
+        /// <summary>Paramètres associés à une procédure.</summary>
+        /// <value>Descriptions sous la forme « nom As type ».</value>
+public string[] Parameters { get; set; } = Array.Empty<string>();
     }
     /// <summary>Pure snapshot analysis. No COM or UI access; executed by the synchronization worker.</summary>
     internal static class EditorLanguageIndex
     {
-        internal static EditorSymbol[] Build(EditorSource[] sources)
+        /// <summary>Construit les symboles des modules, procédures, propriétés et déclarations de leurs sources.</summary>
+        /// <param name="sources">Instantanés de code lus depuis le projet.</param>
+        /// <returns>Symboles avec leur emplacement, portée, type et déclaration source.</returns>
+internal static EditorSymbol[] Build(EditorSource[] sources)
         {
             var result = new List<EditorSymbol>();
             foreach (var source in sources)

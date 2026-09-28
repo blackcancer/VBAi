@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -83,8 +83,9 @@ namespace CodexVBE
         /// <summary>Empreinte du code source lors de sa lecture.</summary>
         /// <value>Empreinte SHA-256 du module lors de la capture.</value>
         public string Sha256 { get; set; }
-        /// <summary>Document Monaco source pour contrôler la fraîcheur du brouillon.</summary>
-        public string EditorDocumentId { get; set; }
+                /// <summary>Document Monaco source pour contrôler la fraîcheur du brouillon.</summary>
+/// <value>The current value represented by this member.</value>
+public string EditorDocumentId { get; set; }
         /// <summary>Première ligne source de l’extrait.</summary>
         /// <value>Numéro de la première ligne, selon l’indexation de la source.</value>
         public int StartLine { get; set; }

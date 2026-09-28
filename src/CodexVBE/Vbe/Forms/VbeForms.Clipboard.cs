@@ -7,16 +7,30 @@ using System.Runtime.InteropServices;
 
 namespace CodexVBE
 {
-    internal sealed partial class VbeForms
+    /// <summary>Expose le presse-papiers natif du Designer avec versions de précondition et récupération de coupes.</summary>
+internal sealed partial class VbeForms
     {
-        private sealed class ClipboardRecovery
+        /// <summary>Données de récupération d’une coupe Designer encore disponible dans la session.</summary>
+private sealed class ClipboardRecovery
         {
-            public string Id, ParentPath; public object Form; public DesignerClipboardBackup Backup;
-            public object OriginalTree, CutTree; public FormLayoutBox[] Boxes; public string[] TabOrder;
-            public bool RecoveryAttempted;
+            /// <summary>Stores the id,parent path used by ClipboardRecovery.</summary>
+public string Id, ParentPath; /// <summary>Stores the form used by ClipboardRecovery.</summary>
+public object Form; /// <summary>Stores the backup used by ClipboardRecovery.</summary>
+public DesignerClipboardBackup Backup;
+            /// <summary>Stores the original tree,cut tree used by ClipboardRecovery.</summary>
+public object OriginalTree, CutTree; /// <summary>Stores the boxes used by ClipboardRecovery.</summary>
+public FormLayoutBox[] Boxes; /// <summary>Stores the tab order used by ClipboardRecovery.</summary>
+public string[] TabOrder;
+            /// <summary>Stores the recovery attempted used by ClipboardRecovery.</summary>
+public bool RecoveryAttempted;
         }
-        private readonly Queue<ClipboardRecovery> clipboardRecoveries = new Queue<ClipboardRecovery>();
-        public object RestoreDesignerClipboard(Request request)
+        /// <summary>Conserve les huit sauvegardes de coupe les plus récentes de la session.</summary>
+private readonly Queue<ClipboardRecovery> clipboardRecoveries = new Queue<ClipboardRecovery>();
+        /// <summary>Republie les formats sauvegardés après vérification des versions du Designer et du presse-papiers.</summary>
+        /// <param name="request">Formulaire, conteneur et révisions attendues avec identifiant de récupération.</param>
+        /// <returns>État de relecture des données republiées et prochaine action explicite proposée.</returns>
+        /// <exception cref="InvalidOperationException">La sauvegarde a expiré ou ne correspond pas au formulaire courant.</exception>
+public object RestoreDesignerClipboard(Request request)
         {
             dynamic form = GetForm(GetDesignProject(request.Project), request.Form);
             var recovery = clipboardRecoveries.FirstOrDefault(x => x.Id == request.DesignerClipboardRecoveryId);
@@ -31,12 +45,22 @@ namespace CodexVBE
                 State = ClipboardState(request.Project, request.Form, request.ParentPath), NextAction = "native_form_clipboard paste",
                 Limit = "Restores captured clipboard formats only; does not recreate controls. Inspect the current tree before an explicit paste to avoid duplicates. Native paste may change placement; omitted formats are not restored." };
         }
-        [DllImport("user32.dll", EntryPoint = "GetClipboardSequenceNumber")] private static extern uint NativeClipboardSequence();
+        /// <summary>Lit le numéro de séquence natif du presse-papiers Windows.</summary>
+        /// <returns>Numéro incrémenté lors des changements du presse-papiers.</returns>
+[DllImport("user32.dll", EntryPoint = "GetClipboardSequenceNumber")] private static extern uint NativeClipboardSequence();
         /// <summary>Native clipboard boundaries; tests retain ownership of an in-memory IDataObject only.</summary>
         internal static Func<uint> DesignerClipboardSequence = NativeClipboardSequence;
-        internal static Func<System.Windows.Forms.IDataObject> ReadDesignerClipboard = System.Windows.Forms.Clipboard.GetDataObject;
-        internal static Action<System.Windows.Forms.IDataObject, bool> WriteDesignerClipboard = System.Windows.Forms.Clipboard.SetDataObject;
-        public object ClipboardState(string projectName, string formName, string parentPath = null)
+        /// <summary>Délégué injectable de lecture du presse-papiers MSForms.</summary>
+internal static Func<System.Windows.Forms.IDataObject> ReadDesignerClipboard = System.Windows.Forms.Clipboard.GetDataObject;
+        /// <summary>Délégué injectable d’écriture du presse-papiers MSForms.</summary>
+internal static Action<System.Windows.Forms.IDataObject, bool> WriteDesignerClipboard = System.Windows.Forms.Clipboard.SetDataObject;
+        /// <summary>Capture l’arbre, la sélection courante et le numéro de séquence du presse-papiers sans lire ses données binaires.</summary>
+        /// <param name="projectName">Projet VBA contenant le formulaire.</param>
+        /// <param name="formName">Nom du UserForm inspecté.</param>
+        /// <param name="parentPath">Chemin canonique d’un conteneur direct, ou null pour le formulaire racine.</param>
+        /// <returns>Arbre, noms sélectionnés, version de sélection, version de presse-papiers et capacité de collage.</returns>
+        /// <exception cref="InvalidOperationException">Le presse-papiers a changé pendant l’inspection ou la sélection est trop grande.</exception>
+public object ClipboardState(string projectName, string formName, string parentPath = null)
         {
             dynamic form = GetForm(GetDesignProject(projectName), formName);
             dynamic tree = Tree(projectName, formName);
@@ -56,7 +80,12 @@ namespace CodexVBE
                 SelectionVersion = selectionVersion, ClipboardVersion = sequence.ToString(CultureInfo.InvariantCulture), CanPaste = canPaste,
                 Limit = "Current Designer selection; binary clipboard data is not read or sent to the model. Clipboard revision is a Windows sequence number, not a content hash." };
         }
-        public object NativeClipboard(Request request)
+        /// <summary>Exécute Copy, Cut ou Paste sur le conteneur courant avec validation des versions Designer et clipboard.</summary>
+        /// <param name="request">Projet, formulaire, action, conteneur et révisions lues précédemment.</param>
+        /// <returns>Différences observées, évolution du numéro clipboard et récupération éventuelle de la coupe.</returns>
+        /// <exception cref="ArgumentException">L’action demandée n’est pas copy, cut ou paste.</exception>
+        /// <exception cref="InvalidOperationException">Aucune sélection n’existe ou le conteneur ne peut pas coller.</exception>
+public object NativeClipboard(Request request)
         {
             if (request.Action != "copy" && request.Action != "cut" && request.Action != "paste")
                 throw new ArgumentException("Action must be copy, cut or paste.");
@@ -109,7 +138,13 @@ namespace CodexVBE
                 NativeError = error, Saved = false, NextRead = "form_clipboard_state",
                 Limit = "Native selected controls are copied/cut; paste uses this Designer's current selection context. Event-handler code is not transferred. Binary clipboard contents are not inspected. Partial changes are reported without retry or implicit rollback; Copy/Cut/Paste may not enter native undo history; inspect CanUndo before offering native_form_history. Cut stores up to 8 MiB of readable MSForms formats before removal (latest 8 cuts in this session). restore_form_clipboard can republish the recovery; it does not undo or restore geometry automatically." };
         }
-        private static object ClipboardContainer(object designer, object tree, string parentPath)
+        /// <summary>Résout le formulaire racine ou un conteneur canonique pouvant exposer Controls.</summary>
+        /// <param name="designer">Designer du UserForm.</param>
+        /// <param name="tree">Arbre de formulaire déjà lu.</param>
+        /// <param name="parentPath">Chemin du conteneur direct, vide ou nul pour la racine.</param>
+        /// <returns>Objet COM du conteneur validé.</returns>
+        /// <exception cref="ArgumentException">Le chemin du parent n’est pas canonique.</exception>
+private static object ClipboardContainer(object designer, object tree, string parentPath)
         {
             if (string.IsNullOrEmpty(parentPath)) return designer;
             if (!TreeContainsPath((IEnumerable)((dynamic)tree).Controls, parentPath))
@@ -118,7 +153,12 @@ namespace CodexVBE
             ResolveNestedControls((dynamic)designer, parentPath);
             return ResolveTreeItem(designer, parentPath);
         }
-        public object SelectDesignerControls(Request request)
+        /// <summary>Remplace la sélection dans un conteneur par les noms directs fournis, sans changer le focus ni le presse-papiers.</summary>
+        /// <param name="request">Conteneur, noms sélectionnés et version de sélection attendue.</param>
+        /// <returns>État avant/après et indication de vérification de la sélection.</returns>
+        /// <exception cref="ArgumentException">Les noms ne sont pas uniques ou n’appartiennent pas tous au conteneur.</exception>
+        /// <exception cref="InvalidOperationException">La sélection ou l’arbre a changé depuis sa lecture.</exception>
+public object SelectDesignerControls(Request request)
         {
             if (request.Items == null || request.Items.Length > 64 ||
                 request.Items.Any(string.IsNullOrWhiteSpace) || request.Items.Distinct(StringComparer.Ordinal).Count() != request.Items.Length)
@@ -146,7 +186,12 @@ namespace CodexVBE
             return new { Verified = verified, Before = (object)before, After = after, NativeError = error,
                 NextRead = "form_clipboard_state", Limit = "Changes only the specified container selection; selections in other containers are independent. No focus or clipboard mutation. On partial failure re-read before another action." };
         }
-        internal static void RequireClipboardRevision(Request request, string selectionVersion, string clipboardVersion)
+        /// <summary>Refuse une commande lorsque la sélection Designer ou le presse-papiers diffère de la lecture attendue.</summary>
+        /// <param name="request">Préconditions transmises avec la commande.</param>
+        /// <param name="selectionVersion">Version courante de l’arbre et de la sélection.</param>
+        /// <param name="clipboardVersion">Numéro courant de séquence Windows.</param>
+        /// <exception cref="InvalidOperationException">Une version attendue est absente, nulle ou ne correspond plus.</exception>
+internal static void RequireClipboardRevision(Request request, string selectionVersion, string clipboardVersion)
         {
             if (string.IsNullOrWhiteSpace(request.ExpectedDesignerSelectionVersion) ||
                 !string.Equals(request.ExpectedDesignerSelectionVersion, selectionVersion, StringComparison.OrdinalIgnoreCase))

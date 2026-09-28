@@ -2,7 +2,8 @@ using System;
 
 namespace CodexVBE
 {
-    internal sealed partial class VbeCodeEdits
+    /// <summary>Partie de l’éditeur transactionnel consacrée au renommage de paramètres et d’appels nommés.</summary>
+internal sealed partial class VbeCodeEdits
     {
         /// <summary>Prévisualise ou applique le renommage d'un paramètre privé avec mise à jour des appels nommés locaux.</summary>
         /// <param name="request">Projet, module, procédure, déclaration et SHA inspectés.</param>

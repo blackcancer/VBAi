@@ -7,7 +7,12 @@ namespace CodexVBE
     /// <summary>Finds the Codex CLI independently of the host application's PATH.</summary>
     internal static class CodexCliLocator
     {
-        internal static string Resolve(Func<string, bool> fileExists,
+        /// <summary>Résout la CLI Codex à partir de la configuration puis des emplacements installés connus.</summary>
+        /// <param name="fileExists">Fonction qui vérifie l’existence d’un fichier.</param>
+        /// <param name="getDirectories">Fonction qui énumère les installations versionnées.</param>
+        /// <param name="getLastWriteTimeUtc">Fonction qui fournit la date UTC de modification d’un exécutable.</param>
+        /// <returns>Chemin du client configuré ou installé le plus récent, puis <c>codex.exe</c> en dernier recours.</returns>
+internal static string Resolve(Func<string, bool> fileExists,
             Func<string, string[]> getDirectories, Func<string, DateTime> getLastWriteTimeUtc)
         {
             string configured = Environment.GetEnvironmentVariable("CODEXVBE_CODEX_CLI");

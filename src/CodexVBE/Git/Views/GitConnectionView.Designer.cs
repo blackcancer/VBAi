@@ -1,16 +1,26 @@
 namespace CodexVBE
 {
-    public sealed partial class GitConnectionView
+    /// <summary>Designer-generated repository remote and branch connection controls.</summary>
+public sealed partial class GitConnectionView
     {
-        internal System.Windows.Forms.Label remoteLabel;
-        internal System.Windows.Forms.Label branchLabel;
-        internal System.Windows.Forms.Label help;
-        internal System.Windows.Forms.TextBox remote;
-        internal System.Windows.Forms.TextBox branch;
-        internal CodexVBE.ThemedButton connect;
-        internal System.Windows.Forms.TableLayoutPanel connectionLayout;
-        private System.ComponentModel.IContainer components;
-        private System.Windows.Forms.ToolTip toolTips;
+        /// <summary>Caption for the remote URL input.</summary>
+internal System.Windows.Forms.Label remoteLabel;
+        /// <summary>Caption for the current branch input.</summary>
+internal System.Windows.Forms.Label branchLabel;
+        /// <summary>Help text for connecting a repository.</summary>
+internal System.Windows.Forms.Label help;
+        /// <summary>Remote repository URL.</summary>
+internal System.Windows.Forms.TextBox remote;
+        /// <summary>Current branch name.</summary>
+internal System.Windows.Forms.TextBox branch;
+        /// <summary>Connects to the configured repository.</summary>
+internal CodexVBE.ThemedButton connect;
+        /// <summary>Layout for remote, branch, help, and connection action.</summary>
+internal System.Windows.Forms.TableLayoutPanel connectionLayout;
+        /// <summary>Container that owns Designer components.</summary>
+private System.ComponentModel.IContainer components;
+        /// <summary>Tooltips associated with connection controls.</summary>
+private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
         /// <param name="disposing">Indique si les ressources managées doivent être libérées.</param>
         protected override void Dispose(bool disposing)
@@ -19,7 +29,8 @@ namespace CodexVBE
             base.Dispose(disposing);
         }
 
-        private void InitializeComponent()
+        /// <summary>Creates and arranges repository connection controls.</summary>
+private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);

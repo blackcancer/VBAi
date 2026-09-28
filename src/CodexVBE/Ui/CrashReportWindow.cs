@@ -9,16 +9,25 @@ namespace CodexVBE
     /// <summary>Écran de support éditable dans le Designer : aperçu avant transmission et secours local.</summary>
     internal sealed partial class CrashReportWindow : Form
     {
-        private CrashReport report;
-        private bool busy, submitted, uncertain, runtimeInitialized;
-        private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
-        internal CrashReportDelivery Delivery = new CrashReportDelivery();
-        internal Action<string> CopyText = Clipboard.SetText;
-        internal Action<string> OpenLink = SafeLinks.Open;
-        internal Func<CrashReport, string, string> Store = (report, body) => report.Save(body);
-        private string savedPath;
+        /// <summary>Report currently displayed and edited by the window.</summary>
+private CrashReport report;
+        /// <summary>Delivery in progress, completed submission, uncertain outcome, and theme-subscription flags.</summary>
+private bool busy, submitted, uncertain, runtimeInitialized;
+        /// <summary>Cancellation source used when the dialog closes during an asynchronous send.</summary>
+private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
+        /// <summary>Delivery service used by the send and email actions.</summary>
+internal CrashReportDelivery Delivery = new CrashReportDelivery();
+        /// <summary>Action used to copy report text or its saved path.</summary>
+internal Action<string> CopyText = Clipboard.SetText;
+        /// <summary>Stores the open link used by CrashReportWindow.</summary>
+internal Action<string> OpenLink = SafeLinks.Open;
+        /// <summary>Delegate that saves a report body and returns its local path.</summary>
+internal Func<CrashReport, string, string> Store = (report, body) => report.Save(body);
+        /// <summary>Path of the local backup saved before delivery.</summary>
+private string savedPath;
 
-        public CrashReportWindow()
+        /// <summary>Creates the report dialog and initializes its default editable report.</summary>
+public CrashReportWindow()
         {
             InitializeComponent();
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
@@ -33,7 +42,10 @@ namespace CodexVBE
             UiTheme.Changed += ApplyAppearance;
         }
 
-        internal void Configure(CrashReport value)
+        /// <summary>Sets the report shown by this window and refreshes its identity and preview.</summary>
+        /// <param name="value">Report to display.</param>
+        /// <exception cref="ArgumentNullException">The report is null.</exception>
+internal void Configure(CrashReport value)
         {
             report = value ?? throw new ArgumentNullException(nameof(value));
             titleInput.Text = report.DefaultTitle;
@@ -41,7 +53,8 @@ namespace CodexVBE
             RefreshPreview();
         }
 
-        private void ApplyAppearance()
+        /// <summary>Applies the current UI theme to the send button, issue link, and preview.</summary>
+private void ApplyAppearance()
         {
             if (IsDisposed) return;
             if (InvokeRequired) { BeginInvoke(new Action(ApplyAppearance)); return; }
@@ -53,8 +66,11 @@ namespace CodexVBE
             preview.ForeColor = UiTheme.Foreground;
         }
 
-        private void ContentChanged(object sender, EventArgs e) { RefreshPreview(); }
-        private void RefreshPreview()
+        /// <summary>Refreshes the report preview after an editable field changes.</summary>
+        /// <param name="sender">Input control that changed.</param><param name="e">Change event arguments.</param>
+private void ContentChanged(object sender, EventArgs e) { RefreshPreview(); }
+        /// <summary>Formats the current input as Markdown and updates whether delivery actions are available.</summary>
+private void RefreshPreview()
         {
             if (report == null) return;
             try { preview.Text = report.Body(titleInput.Text, descriptionInput.Text); }
@@ -62,7 +78,9 @@ namespace CodexVBE
             sendButton.Enabled = emailButton.Enabled = !busy && !submitted && !uncertain && !string.IsNullOrWhiteSpace(titleInput.Text);
         }
 
-        private async void Send_Click(object sender, EventArgs e)
+        /// <summary>Saves and asynchronously sends the report through the configured delivery service.</summary>
+        /// <param name="sender">Send button.</param><param name="e">Click event arguments.</param>
+private async void Send_Click(object sender, EventArgs e)
         {
             if (busy || submitted || uncertain) return;
             SetBusy(true);
@@ -79,7 +97,9 @@ namespace CodexVBE
             finally { if (!IsDisposed) SetBusy(false); }
         }
 
-        private void Email_Click(object sender, EventArgs e)
+        /// <summary>Saves the report and hands it to Outlook or a local mail draft.</summary>
+        /// <param name="sender">Email button.</param><param name="e">Click event arguments.</param>
+private void Email_Click(object sender, EventArgs e)
         {
             if (busy || submitted || uncertain) return;
             SetBusy(true);
@@ -95,7 +115,9 @@ namespace CodexVBE
             finally { SetBusy(false); }
         }
 
-        private void ShowResult(CrashDeliveryResult result)
+        /// <summary>Updates delivery flags, status text, and issue-link visibility for a delivery result.</summary>
+        /// <param name="result">Result reported by the delivery service.</param>
+private void ShowResult(CrashDeliveryResult result)
         {
             uncertain = result == CrashDeliveryResult.Uncertain;
             submitted = !uncertain;
@@ -106,7 +128,9 @@ namespace CodexVBE
             issueLink.Visible = result == CrashDeliveryResult.GitHub;
         }
 
-        private void SetBusy(bool value)
+        /// <summary>Updates the in-progress state and disables editing while delivery runs.</summary>
+        /// <param name="value">Whether delivery is currently running.</param>
+private void SetBusy(bool value)
         {
             busy = value;
             progress.Visible = value;
@@ -116,12 +140,16 @@ namespace CodexVBE
             RefreshPreview();
         }
 
-        private void Copy_Click(object sender, EventArgs e)
+        /// <summary>Copies the formatted report body to the clipboard.</summary>
+        /// <param name="sender">Copy button.</param><param name="e">Click event arguments.</param>
+private void Copy_Click(object sender, EventArgs e)
         {
             try { CopyText(report.Body(titleInput.Text, descriptionInput.Text)); status.Text = UiText.Get("Technical details copied."); }
             catch (Exception) { status.Text = UiText.Get("Unable to copy technical details."); }
         }
-        private void Save_Click(object sender, EventArgs e)
+        /// <summary>Saves a local Markdown copy and copies its path to the clipboard.</summary>
+        /// <param name="sender">Save button.</param><param name="e">Click event arguments.</param>
+private void Save_Click(object sender, EventArgs e)
         {
             try
             {
@@ -131,25 +159,36 @@ namespace CodexVBE
             }
             catch (Exception) { status.Text = UiText.Get("Unable to save the report."); }
         }
-        private void Issue_Click(object sender, LinkLabelLinkClickedEventArgs e)
+        /// <summary>Opens the successfully published GitHub issue.</summary>
+        /// <param name="sender">Issue link.</param><param name="e">Link-click event arguments.</param>
+private void Issue_Click(object sender, LinkLabelLinkClickedEventArgs e)
         {
             try { OpenLink(Delivery.IssueUrl); }
             catch (Exception) { status.Text = UiText.Get("Unable to open the link."); }
         }
-        private void WindowClosing(object sender, FormClosingEventArgs e)
+        /// <summary>Prevents user closure while a delivery operation is still running.</summary>
+        /// <param name="sender">Report window.</param><param name="e">Closing event arguments that may be cancelled.</param>
+private void WindowClosing(object sender, FormClosingEventArgs e)
         {
             if (busy && e.CloseReason == CloseReason.UserClosing) e.Cancel = true;
         }
-        private void DisposeRuntime()
+        /// <summary>Unsubscribes from theme changes and cancels any outstanding send.</summary>
+private void DisposeRuntime()
         {
             if (runtimeInitialized) UiTheme.Changed -= ApplyAppearance;
             cancellation.Cancel();
             cancellation.Dispose();
         }
 
-        internal static void ShowForVbe(object vbe, Exception error = null) { ShowReportForVbe(vbe, new CrashReport(error)); }
+        /// <summary>Creates and shows a report dialog owned by the VBE main window.</summary>
+        /// <param name="vbe">VBE automation object used to obtain the native owner handle.</param>
+        /// <param name="error">Optional exception used to seed the report metadata.</param>
+internal static void ShowForVbe(object vbe, Exception error = null) { ShowReportForVbe(vbe, new CrashReport(error)); }
 
-        internal static void ShowReportForVbe(object vbe, CrashReport report)
+        /// <summary>Shows the supplied report in a modal window owned by the VBE when its handle is available.</summary>
+        /// <param name="vbe">VBE automation object used to obtain the native owner handle.</param>
+        /// <param name="report">Report to show.</param>
+internal static void ShowReportForVbe(object vbe, CrashReport report)
         {
             IWin32Window owner = null;
             try { owner = new NativeOwner(new IntPtr(Convert.ToInt64(((dynamic)vbe).MainWindow.HWnd))); }
@@ -160,10 +199,13 @@ namespace CodexVBE
                 AddIn.ShowModal(window, owner);
             }
         }
-        private sealed class NativeOwner : IWin32Window
+        /// <summary>WinForms owner wrapper for a native VBE window handle.</summary>
+private sealed class NativeOwner : IWin32Window
         {
-            internal NativeOwner(IntPtr handle) { Handle = handle; }
-            public IntPtr Handle { get; }
+            /// <summary>Creates the wrapper for a native owner window.</summary><param name="handle">Native window handle.</param>
+internal NativeOwner(IntPtr handle) { Handle = handle; }
+            /// <summary>Gets the native owner-window handle.</summary><value>Handle supplied to the constructor.</value>
+public IntPtr Handle { get; }
         }
     }
 }

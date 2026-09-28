@@ -1,22 +1,39 @@
-﻿namespace CodexVBE
+namespace CodexVBE
 {
-    partial class ModernEditorWindow
+    /// <summary>Déclare les contrôles WinForms qui structurent la fenêtre Monaco.</summary>
+partial class ModernEditorWindow
     {
-        private System.ComponentModel.IContainer components;
-        private System.Windows.Forms.TableLayoutPanel layout;
-        private System.Windows.Forms.FlowLayoutPanel toolbar;
-        private CodexVBE.ThemedButton resolve;
-        private CodexVBE.ThemedButton compare;
-        private CodexVBE.ThemedButton edit;
-        private CodexVBE.ThemedButton reload;
-        private CodexVBE.ThemedButton restore;
-        private CodexVBE.ThemedTabControl tabs;
-        private System.Windows.Forms.Panel surface;
-        private System.Windows.Forms.Label status;
-        private System.Windows.Forms.Timer timer;
-        private System.Windows.Forms.ToolTip tips;
-        protected override void Dispose(bool disposing) { if (disposing) { DisposeRuntime(); components?.Dispose(); } base.Dispose(disposing); }
-        private void InitializeComponent()
+        /// <summary>Conteneur des composants non visuels créés par le concepteur.</summary>
+private System.ComponentModel.IContainer components;
+        /// <summary>Grille principale qui place la barre d’outils, les onglets, la surface Web et le statut.</summary>
+private System.Windows.Forms.TableLayoutPanel layout;
+        /// <summary>Barre de commandes de l’éditeur, avec défilement horizontal.</summary>
+private System.Windows.Forms.FlowLayoutPanel toolbar;
+        /// <summary>Commande qui applique la version éditée après comparaison.</summary>
+private CodexVBE.ThemedButton resolve;
+        /// <summary>Commande qui compare le brouillon au code VBA natif.</summary>
+private CodexVBE.ThemedButton compare;
+        /// <summary>Commande qui revient à l’édition après la comparaison.</summary>
+private CodexVBE.ThemedButton edit;
+        /// <summary>Commande qui recharge la version native en préservant le brouillon.</summary>
+private CodexVBE.ThemedButton reload;
+        /// <summary>Commande qui restaure un brouillon récupéré.</summary>
+private CodexVBE.ThemedButton restore;
+        /// <summary>Onglets des modules ouverts.</summary>
+private CodexVBE.ThemedTabControl tabs;
+        /// <summary>Surface qui héberge le contrôle WebView2.</summary>
+private System.Windows.Forms.Panel surface;
+        /// <summary>Message d’état et de synchronisation du document actif.</summary>
+private System.Windows.Forms.Label status;
+        /// <summary>Minuterie de capture des révisions et de synchronisation périodique.</summary>
+private System.Windows.Forms.Timer timer;
+        /// <summary>Info-bulles descriptives des commandes de la barre d’outils.</summary>
+private System.Windows.Forms.ToolTip tips;
+        /// <summary>Libère les ressources de WebView2, du worker et des fenêtres CodePane détenues.</summary>
+        /// <param name="disposing">Indique si la libération concerne aussi les ressources managées.</param>
+protected override void Dispose(bool disposing) { if (disposing) { DisposeRuntime(); components?.Dispose(); } base.Dispose(disposing); }
+        /// <summary>Crée et dispose les contrôles de la fenêtre d’édition.</summary>
+private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.layout = new System.Windows.Forms.TableLayoutPanel();

@@ -1,32 +1,58 @@
 namespace CodexVBE
 {
-    partial class UpdateWindow
+    /// <summary>Designer-generated controls and layout for update settings and release actions.</summary>
+partial class UpdateWindow
     {
-        private System.ComponentModel.IContainer components;
-        private System.Windows.Forms.TableLayoutPanel layout;
-        private System.Windows.Forms.Label heading;
-        private System.Windows.Forms.Label version;
-        private System.Windows.Forms.Label description;
-        private System.Windows.Forms.CheckBox automaticCheck;
-        private System.Windows.Forms.CheckBox automaticDownload;
-        private System.Windows.Forms.CheckBox automaticInstall;
-        private System.Windows.Forms.CheckBox previews;
-        private System.Windows.Forms.Label notesLabel;
-        private System.Windows.Forms.FlowLayoutPanel secondaryButtons;
-        private System.Windows.Forms.TextBox notes;
-        private System.Windows.Forms.Label status;
-        private System.Windows.Forms.ProgressBar progress;
-        private System.Windows.Forms.FlowLayoutPanel buttons;
-        private System.Windows.Forms.Button close;
-        private System.Windows.Forms.Button check;
-        private System.Windows.Forms.Button download;
-        private System.Windows.Forms.Button install;
-        private System.Windows.Forms.Button skip;
-        private System.Windows.Forms.Button save;
-        private System.Windows.Forms.Button cancelPending;
-        private System.Windows.Forms.ToolTip tips;
-        protected override void Dispose(bool disposing) { if (disposing) { DisposeRuntime(); if (components != null) components.Dispose(); } base.Dispose(disposing); }
-        private void InitializeComponent()
+        /// <summary>Container that owns the Designer components.</summary>
+private System.ComponentModel.IContainer components;
+        /// <summary>Root layout for release metadata, preferences, and actions.</summary>
+private System.Windows.Forms.TableLayoutPanel layout;
+        /// <summary>Window heading.</summary>
+private System.Windows.Forms.Label heading;
+        /// <summary>Current and available version text.</summary>
+private System.Windows.Forms.Label version;
+        /// <summary>Release description and notes.</summary>
+private System.Windows.Forms.Label description;
+        /// <summary>Automatic release-check preference.</summary>
+private System.Windows.Forms.CheckBox automaticCheck;
+        /// <summary>Automatic installer-download preference.</summary>
+private System.Windows.Forms.CheckBox automaticDownload;
+        /// <summary>Automatic installer-launch preference.</summary>
+private System.Windows.Forms.CheckBox automaticInstall;
+        /// <summary>Prerelease eligibility preference.</summary>
+private System.Windows.Forms.CheckBox previews;
+        /// <summary>Release notes section caption.</summary>
+private System.Windows.Forms.Label notesLabel;
+        /// <summary>Secondary release action buttons.</summary>
+private System.Windows.Forms.FlowLayoutPanel secondaryButtons;
+        /// <summary>Read-only release notes pane.</summary>
+private System.Windows.Forms.TextBox notes;
+        /// <summary>Status and download feedback.</summary>
+private System.Windows.Forms.Label status;
+        /// <summary>Check and download progress indicator.</summary>
+private System.Windows.Forms.ProgressBar progress;
+        /// <summary>Primary and secondary update actions.</summary>
+private System.Windows.Forms.FlowLayoutPanel buttons;
+        /// <summary>Closes the update window.</summary>
+private System.Windows.Forms.Button close;
+        /// <summary>Checks for a newer release.</summary>
+private System.Windows.Forms.Button check;
+        /// <summary>Downloads the selected installer.</summary>
+private System.Windows.Forms.Button download;
+        /// <summary>Schedules installation of the staged package.</summary>
+private System.Windows.Forms.Button install;
+        /// <summary>Skips the selected release.</summary>
+private System.Windows.Forms.Button skip;
+        /// <summary>Saves the selected preferences.</summary>
+private System.Windows.Forms.Button save;
+        /// <summary>Cancels a scheduled installation that has not started.</summary>
+private System.Windows.Forms.Button cancelPending;
+        /// <summary>Tooltips associated with update controls.</summary>
+private System.Windows.Forms.ToolTip tips;
+        /// <summary>Releases runtime subscriptions and Designer-owned components.</summary><param name="disposing">Whether managed components should be disposed.</param>
+protected override void Dispose(bool disposing) { if (disposing) { DisposeRuntime(); if (components != null) components.Dispose(); } base.Dispose(disposing); }
+        /// <summary>Creates and arranges the update window controls.</summary>
+private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
             this.layout = new System.Windows.Forms.TableLayoutPanel();
