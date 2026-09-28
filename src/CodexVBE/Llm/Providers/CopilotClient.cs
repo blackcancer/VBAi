@@ -12,30 +12,60 @@ namespace CodexVBE
 {
     // Copilot CLI's SDK stdio protocol (Content-Length framed JSON-RPC, versions 2/3).
     // Only CodexVBE tools are exposed; native permissions are denied and VBA policy remains in InvokeAsync.
+    /// <summary>Pilote le client GitHub Copilot par son protocole stdio encadré par Content-Length.</summary>
     internal sealed class CopilotClient : IDisposable
     {
+        /// <summary>Verrou qui protège le processus et les requêtes en attente.</summary>
         private readonly object gate = new object();
+        /// <summary>Requêtes JSON-RPC en attente, indexées par identifiant.</summary>
         private readonly Dictionary<int, TaskCompletionSource<IDictionary<string, object>>> pending = new Dictionary<int, TaskCompletionSource<IDictionary<string, object>>>();
+        /// <summary>Identifiants des appels d’outils déjà traités afin d’éviter les exécutions répétées.</summary>
         private readonly HashSet<string> handledTools = new HashSet<string>();
+        /// <summary>Contexte d’interface capturé à la construction pour publier les fragments et outils.</summary>
         private readonly SynchronizationContext ui = SynchronizationContext.Current;
+        /// <summary>Processus Copilot CLI associé à la session.</summary>
         private Process process;
+        /// <summary>Dernier identifiant local de requête JSON-RPC.</summary>
         private int nextId;
+        /// <summary>Indique si le client a été libéré.</summary>
         private bool disposed;
+        /// <summary>Identifiant de session Copilot et dernier texte assistant complet.</summary>
         private string sessionId, answer;
+        /// <summary>Achèvement de la réponse assistant en cours.</summary>
         private TaskCompletionSource<string> completion;
+        /// <summary>Fonction qui exécute un outil VBA autorisé.</summary>
         private Func<string, string, Task<string>> invoke;
+        /// <summary>Noms des outils déclarés à Copilot pour la session.</summary>
         private HashSet<string> allowedTools;
+        /// <summary>Historique de conversation mis à jour avec les appels et résultats d’outils.</summary>
         private IList<object> history;
+        /// <summary>Callback facultatif pour les fragments de texte reçus en streaming.</summary>
+        /// <value>Fonction appelée pour chaque fragment, ou null si le streaming est désactivé.</value>
         public Action<string> TextDelta { get; set; }
+        /// <summary>Crée un sérialiseur JSON configuré pour les messages de dix mégaoctets au plus.</summary>
+        /// <returns>Sérialiseur de messages Copilot.</returns>
         private static JavaScriptSerializer Json() { return new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 }; }
+        /// <summary>Lit une valeur de dictionnaire comme texte.</summary>
+        /// <param name="o">Dictionnaire source, éventuellement null.</param>
+        /// <param name="k">Nom de la clé.</param>
+        /// <returns>Valeur convertie, ou null si la clé manque.</returns>
         private static string Text(IDictionary<string, object> o, string k) { return ClaudeProtocol.Text(o, k); }
+        /// <summary>Récupère une valeur de dictionnaire si elle-même est un dictionnaire.</summary>
+        /// <param name="o">Dictionnaire source, éventuellement null.</param>
+        /// <param name="k">Nom de la clé.</param>
+        /// <returns>Dictionnaire associé à la clé, ou null.</returns>
         private static IDictionary<string, object> Object(IDictionary<string, object> o, string k)
         { object value; return o != null && o.TryGetValue(k, out value) ? value as IDictionary<string, object> : null; }
+        /// <summary>Résout le CLI Copilot depuis sa variable de configuration ou son nom exécutable par défaut.</summary>
+        /// <value>Valeur de CODEXVBE_COPILOT_CLI, ou « copilot.exe ».</value>
         internal static string Executable { get { return Environment.GetEnvironmentVariable("CODEXVBE_COPILOT_CLI") ?? "copilot.exe"; } }
 
+        /// <summary>Ouvre la commande interactive de connexion Copilot.</summary>
         public static void StartLogin()
         { Process.Start(new ProcessStartInfo(Executable, "login") { UseShellExecute = true }); }
 
+        /// <summary>Démarre brièvement le CLI, charge son catalogue de modèles et retourne un état d’accessibilité.</summary>
+        /// <returns>Texte qui indique si Copilot est accessible et le nombre de modèles.</returns>
         public static async Task<string> ReadStatusAsync()
         {
             using (var client = new CopilotClient()) {
@@ -44,6 +74,8 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Démarre le CLI headless, valide la version 2 ou 3 du protocole et initialise le lecteur de messages.</summary>
+        /// <returns>Tâche terminée lorsque le processus et le protocole Copilot sont initialisés.</returns>
         private async Task StartAsync()
         {
             if (disposed) throw new ObjectDisposedException(nameof(CopilotClient));
@@ -66,6 +98,8 @@ namespace CodexVBE
                 throw new InvalidOperationException(UiText.Get("Incompatible Copilot protocol version (versions 2 and 3 supported)."));
         }
 
+        /// <summary>Demande au CLI le catalogue des modèles et ignore les entrées sans identifiant.</summary>
+        /// <returns>Modèles que le CLI Copilot rend disponibles.</returns>
         public async Task<LlmModelOption[]> ListModelsAsync()
         {
             await StartAsync();
@@ -75,6 +109,12 @@ namespace CodexVBE
                 .Select(x => new LlmModelOption(Text(x, "id"), Text(x, "name") ?? Text(x, "id"))).ToArray();
         }
 
+        /// <summary>Crée une session, envoie l’historique et attend une réponse ou un délai maximal de cinq minutes.</summary>
+        /// <param name="model">Identifiant du modèle Copilot sélectionné.</param>
+        /// <param name="history">Historique de conversation transmis au modèle et enrichi par les appels d’outils.</param>
+        /// <param name="tools">Définitions des outils VBE proposés.</param>
+        /// <param name="toolHandler">Fonction d’exécution des outils VBE autorisés.</param>
+        /// <returns>Message assistant contenant le texte final de Copilot.</returns>
         public async Task<IDictionary<string, object>> CompleteAsync(string model, IList<object> history, object[] tools,
             Func<string, string, Task<string>> toolHandler)
         {
@@ -102,6 +142,10 @@ namespace CodexVBE
             return new Dictionary<string, object> { ["role"] = "assistant", ["content"] = await completion.Task };
         }
 
+        /// <summary>Envoie une requête JSON-RPC, attend sa réponse pendant au plus 45 secondes puis la retourne.</summary>
+        /// <param name="method">Méthode du CLI appelée.</param>
+        /// <param name="parameters">Paramètres de la méthode.</param>
+        /// <returns>Résultat de la requête.</returns>
         private async Task<IDictionary<string, object>> RequestAsync(string method, object parameters)
         {
             var source = new TaskCompletionSource<IDictionary<string, object>>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -115,6 +159,8 @@ namespace CodexVBE
             } finally { lock (gate) pending.Remove(id); }
         }
 
+        /// <summary>Encode puis écrit un message avec son en-tête Content-Length sur l’entrée standard.</summary>
+        /// <param name="message">Message JSON-RPC à transmettre.</param>
         private void Send(object message)
         {
             byte[] bytes = Encoding.UTF8.GetBytes(Json().Serialize(message));
@@ -126,6 +172,7 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Lit les en-têtes et corps encadrés, valide leur taille puis transmet chaque message au répartiteur.</summary>
         private void ReadLoop()
         {
             try {
@@ -147,6 +194,8 @@ namespace CodexVBE
             } catch (Exception ex) { Fail(ex); }
         }
 
+        /// <summary>Associe les réponses aux requêtes et traite événements, appels d’outils et décisions de permission.</summary>
+        /// <param name="message">Message JSON-RPC décodé.</param>
         private void Dispatch(IDictionary<string, object> message)
         {
             string method = Text(message, "method");
@@ -183,12 +232,18 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Refuse une permission Copilot selon la règle des outils personnalisés puis signale les erreurs de transport.</summary>
+        /// <returns>Tâche terminée après le refus de la permission ou la gestion de son échec.</returns>
+        /// <param name="data">Données de la demande de permission.</param>
         private async Task DenyAsync(IDictionary<string, object> data)
         {
             try { await RequestAsync("session.permissions.handlePendingPermissionRequest", new { sessionId, requestId = Text(data, "requestId"), result = new { kind = PermissionDecision(Object(data, "permissionRequest")) } }); }
             catch (Exception ex) { Fail(ex); }
         }
 
+        /// <summary>Déduplique et exécute une demande d’outil, puis renvoie son résultat au format du protocole négocié.</summary>
+        /// <param name="data">Données de la demande d’outil.</param>
+        /// <param name="legacyId">Identifiant JSON-RPC pour l’ancien protocole, ou null.</param>
         private void RunTool(IDictionary<string, object> data, object legacyId)
         {
             string requestId = Text(data, "requestId") ?? Convert.ToString(legacyId);
@@ -212,11 +267,16 @@ namespace CodexVBE
             if (ui != null) ui.Post(async _ => await run(), null); else _ = run();
         }
 
+        /// <summary>Termine en erreur les requêtes et la réponse qui sont encore en attente.</summary>
+        /// <param name="error">Erreur transmise aux opérations en attente.</param>
         private void Fail(Exception error)
         {
             lock (gate) foreach (var request in pending.Values) request.TrySetException(error);
             completion?.TrySetException(error);
         }
+        /// <summary>Autorise seulement un outil personnalisé déclaré et encore actif.</summary>
+        /// <param name="permission">Description de la permission demandée.</param>
+        /// <returns>Décision « approved » ou « denied-by-rules » du protocole Copilot.</returns>
         private string PermissionDecision(IDictionary<string, object> permission)
         {
             // This only routes our registered custom tool to LlmVbeTools.InvokeAsync.
@@ -225,6 +285,7 @@ namespace CodexVBE
             return !disposed && Text(permission, "kind") == "custom-tool" && allowedTools != null &&
                 allowedTools.Contains(Text(permission, "toolName")) ? "approved" : "denied-by-rules";
         }
+        /// <summary>Annule les opérations en attente et arrête le processus Copilot CLI.</summary>
         public void Dispose()
         {
             lock (gate) { if (disposed) return; disposed = true; }

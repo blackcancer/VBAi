@@ -5,15 +5,26 @@ using System.Threading.Tasks;
 
 namespace CodexVBE
 {
+    /// <summary>Résume l’état de connexion au compte ChatGPT détecté par le client Codex.</summary>
     internal sealed class CodexAccountStatus
     {
+        /// <summary>Indique si la session CLI est connectée via ChatGPT.</summary>
+        /// <value>Vrai lorsque la sortie de statut confirme une connexion ChatGPT.</value>
         public bool ChatGptConnected { get; private set; }
+        /// <summary>Texte localisé à présenter pour cet état de compte.</summary>
+        /// <value>Statut de connexion ou détail d’échec.</value>
         public string Text { get; private set; }
+        /// <summary>Crée le statut retourné par la vérification du compte.</summary>
+        /// <param name="connected">Indique si le compte ChatGPT est connecté.</param>
+        /// <param name="text">Texte de statut à afficher.</param>
         public CodexAccountStatus(bool connected, string text) { ChatGptConnected = connected; Text = text; }
     }
 
+    /// <summary>Interroge le client Codex installé et ouvre sa procédure de connexion.</summary>
     internal static class CodexAccount
     {
+        /// <summary>Résout le chemin du client Codex depuis sa configuration ou son emplacement usuel.</summary>
+        /// <value>Chemin configuré, chemin installé, ou « codex.exe » si aucun fichier connu ne le confirme.</value>
         public static string Executable
         {
             get
@@ -26,6 +37,8 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Exécute « codex login status » et interprète le résultat pour déterminer la connexion ChatGPT.</summary>
+        /// <returns>Tâche qui fournit le statut de connexion ; elle échoue si la commande dépasse dix secondes.</returns>
         public static Task<CodexAccountStatus> ReadStatusAsync()
         {
             return Task.Run(() => {
@@ -49,6 +62,7 @@ namespace CodexVBE
             });
         }
 
+        /// <summary>Ouvre la commande interactive de connexion du client Codex.</summary>
         public static void StartLogin()
         {
             Process.Start(new ProcessStartInfo(Executable, "login") { UseShellExecute = true });

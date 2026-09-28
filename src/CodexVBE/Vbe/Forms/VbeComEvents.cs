@@ -9,15 +9,22 @@ using FUNCDESC = System.Runtime.InteropServices.ComTypes.FUNCDESC;
 
 namespace CodexVBE
 {
+    /// <summary>Interface COM qui expose les informations de type de la classe d’un objet.</summary>
     [ComImport, Guid("B196B283-BAB4-101A-B69C-00AA00341D07"),
         InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IProvideClassInfo
     {
+        /// <summary>Retourne la description Automation de la classe COM.</summary>
+        /// <param name="typeInfo">Reçoit les informations de type.</param>
         void GetClassInfo(out ITypeInfo typeInfo);
     }
 
+    /// <summary>Découvre les événements des interfaces COM source exposées par un contrôle.</summary>
     internal static class VbeComEvents
     {
+        /// <summary>Lit les interfaces source via IProvideClassInfo et rapporte les événements ainsi que les limites de la découverte.</summary>
+        /// <param name="target">Objet COM à inspecter.</param>
+        /// <returns>Rapport contenant les interfaces source, événements, erreurs et indicateurs de complétude.</returns>
         public static object Read(object target)
         {
             var events = new List<object>();
@@ -53,6 +60,11 @@ namespace CodexVBE
                 Sources = sources, Events = events, Errors = errors };
         }
 
+        /// <summary>Vérifie la coclasse et parcourt ses interfaces source COM dans la limite de 64 interfaces.</summary>
+        /// <param name="classInfo">Informations de type de la coclasse.</param>
+        /// <param name="events">Liste recevant les événements découverts.</param>
+        /// <param name="sources">Liste recevant les interfaces source.</param>
+        /// <param name="errors">Liste recevant les erreurs propres aux interfaces.</param>
         private static void ReadClass(ITypeInfo classInfo, List<object> events,
             List<object> sources, List<string> errors)
         {
@@ -90,6 +102,11 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Ajoute les métadonnées de l’interface source et ses membres événementiels, avec des limites de catalogue.</summary>
+        /// <param name="source">Informations de type de l’interface source.</param>
+        /// <param name="flags">Indicateurs COM associés à l’interface implémentée.</param>
+        /// <param name="events">Liste recevant les événements décrits.</param>
+        /// <param name="sources">Liste recevant les interfaces source.</param>
         private static void ReadSource(ITypeInfo source, IMPLTYPEFLAGS flags,
             List<object> events, List<object> sources)
         {

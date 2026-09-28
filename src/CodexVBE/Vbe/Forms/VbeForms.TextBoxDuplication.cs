@@ -6,11 +6,18 @@ using System.Linq;
 
 namespace CodexVBE
 {
+    /// <summary>Implémente le profil de duplication partielle des TextBox natifs.</summary>
     internal sealed partial class VbeForms
     {
         // Only the value and geometry previously exercised on MSForms TextBox
         // are copied. A descriptor claiming writability does not authorize
         // additional COM setters.
+        /// <summary>Crée un TextBox natif et copie sa géométrie ainsi que Value lorsqu’elle est textuelle ou vide.</summary>
+        /// <param name="request">Projet, formulaire, chemin du contrôle source, version attendue de l’arbre et nouveau nom.</param>
+        /// <returns>Rapport de duplication partielle avec les chemins source et cible ainsi que le nouvel arbre de contrôles.</returns>
+        /// <exception cref="ArgumentException">Un champ obligatoire manque, le chemin ne désigne pas un contrôle ou le nouveau nom est invalide.</exception>
+        /// <exception cref="InvalidOperationException">L’arbre est périmé, le contrôle ou son type ne convient pas, une propriété source est hors profil, ou la vérification échoue.</exception>
+        /// <remarks>Les autres propriétés ne sont pas déduites de la métadonnée de contrôle. Si la vérification échoue après création, la méthode tente de supprimer le contrôle ajouté.</remarks>
         public object DuplicateTextBox(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||

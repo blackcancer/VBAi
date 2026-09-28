@@ -6,11 +6,18 @@ using System.Linq;
 
 namespace CodexVBE
 {
+    /// <summary>Implémente le profil de duplication partielle des CommandButton natifs.</summary>
     internal sealed partial class VbeForms
     {
         // The first CommandButton profile copies only setters already exercised
         // by Controls.Add and its Caption/geometry assignment in disposable Excel.
         // Click procedures and other button state are deliberately not copied.
+        /// <summary>Crée un CommandButton natif sous le même parent et vérifie sa géométrie et sa légende.</summary>
+        /// <param name="request">Projet, formulaire, chemin du contrôle source, version attendue de l’arbre et nouveau nom.</param>
+        /// <returns>Rapport de duplication partielle avec les chemins source et cible ainsi que le nouvel arbre de contrôles.</returns>
+        /// <exception cref="ArgumentException">Un champ obligatoire manque, le chemin ne désigne pas un contrôle ou le nouveau nom est invalide.</exception>
+        /// <exception cref="InvalidOperationException">L’arbre est périmé, le contrôle ou son type ne convient pas, une propriété source est hors profil, ou la vérification échoue.</exception>
+        /// <remarks>La duplication est partielle et ne reprend pas les procédures Click ni les autres états du bouton. Si la vérification échoue après création, la méthode tente de supprimer le contrôle ajouté.</remarks>
         public object DuplicateCommandButton(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||

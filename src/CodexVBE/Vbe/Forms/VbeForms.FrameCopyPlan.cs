@@ -6,20 +6,31 @@ using System.Linq;
 
 namespace CodexVBE
 {
+    /// <summary>Construit en lecture seule un plan limité de duplication de Frames et de leurs contrôles directs.</summary>
     internal sealed partial class VbeForms
     {
         // Read-only preflight for a possible Frame-with-Labels copy. This does
         // not claim that creating the proposed hierarchy has been verified.
+        /// <summary>Construit un plan en lecture seule limité aux Labels directs copiables d’une Frame.</summary>
+        /// <param name="request">Projet, formulaire, chemin source, version d’arbre et nom proposé.</param>
+        /// <returns>Plan sérialisable indiquant les enfants admissibles et les motifs de refus.</returns>
         public object FrameCopyPlan(Request request)
         {
             return BuildFrameCopyPlan(request, false);
         }
 
+        /// <summary>Construit un plan en lecture seule pour une Frame avec Labels et TextBox directs admissibles.</summary>
+        /// <param name="request">Projet, formulaire, chemin source, version d’arbre et nom proposé.</param>
+        /// <returns>Plan sérialisable qui ne prétend pas que la création de la hiérarchie est vérifiée.</returns>
         public object FrameSimpleCopyPlan(Request request)
         {
             return BuildFrameCopyPlan(request, true);
         }
 
+        /// <summary>Vérifie le chemin, le type et le nom proposé puis liste les enfants directs et les collisions.</summary>
+        /// <param name="request">Données du plan demandé.</param>
+        /// <param name="allowTextBox">Vrai pour inclure le profil textuel des TextBox directs.</param>
+        /// <returns>Plan avec admissibilité, enfants, collisions et portée limitée.</returns>
         private object BuildFrameCopyPlan(Request request, bool allowTextBox)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||

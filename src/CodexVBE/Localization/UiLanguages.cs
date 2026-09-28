@@ -6,10 +6,18 @@ using System.Text.RegularExpressions;
 
 namespace CodexVBE
 {
+    /// <summary>Décrit les noms de menus et le suffixe de ressources d’une langue prise en charge.</summary>
     internal sealed class UiLanguage
     {
+        /// <summary>Nom de culture .NET et suffixe du catalogue de ressources.</summary>
         internal readonly string CultureName, ResourceSuffix;
+        /// <summary>Variantes reconnues des menus Affichage et Outils.</summary>
         internal readonly string[] View, Tools;
+        /// <summary>Initialise une langue et découpe ses variantes de menu séparées par une barre verticale.</summary>
+        /// <param name="culture">Nom de culture .NET.</param>
+        /// <param name="resource">Suffixe de ressources, ou chaîne vide pour la langue anglaise.</param>
+        /// <param name="view">Libellés du menu Affichage séparés par « | ».</param>
+        /// <param name="tools">Libellés du menu Outils séparés par « | ».</param>
         internal UiLanguage(string culture, string resource, string view, string tools)
         {
             CultureName = culture; ResourceSuffix = resource;
@@ -17,8 +25,10 @@ namespace CodexVBE
         }
     }
 
+    /// <summary>Associe les langues prises en charge aux libellés de menus du VBE.</summary>
     internal static class UiLanguages
     {
+        /// <summary>Catalogue des cultures et variantes de menus reconnues.</summary>
         internal static readonly UiLanguage[] All = {
             new UiLanguage("en-US", "", "view", "tools"),
             new UiLanguage("fr-FR", "French", "affichage", "outils"),
@@ -35,6 +45,9 @@ namespace CodexVBE
             new UiLanguage("hi-IN", "Hindi", "दृश्य|देखें", "उपकरण|टूल्स")
         };
 
+        /// <summary>Sélectionne la langue prise en charge correspondant à la culture, avec un traitement explicite du chinois traditionnel.</summary>
+        /// <param name="culture">Culture à associer ; null utilise le choix anglais par défaut.</param>
+        /// <returns>Langue reconnue correspondante, ou langue anglaise.</returns>
         internal static UiLanguage For(CultureInfo culture)
         {
             string name = culture?.Name ?? "";
@@ -48,6 +61,9 @@ namespace CodexVBE
             return All.FirstOrDefault(x => x.CultureName.StartsWith(language + "-", StringComparison.OrdinalIgnoreCase)) ?? All[0];
         }
 
+        /// <summary>Retire le raccourci clavier et les marqueurs directionnels avant de comparer une légende de menu.</summary>
+        /// <param name="caption">Légende de menu native, éventuellement null.</param>
+        /// <returns>Légende normalisée en minuscules invariant.</returns>
         internal static string NormalizeMenu(string caption)
         {
             // CJK menus use a suffix such as 表示(&V); Latin menus put & inside the caption.
@@ -55,12 +71,20 @@ namespace CodexVBE
                 .Replace("&", "").Replace("\u200e", "").Replace("\u200f", "").Trim().ToLowerInvariant();
         }
 
+        /// <summary>Vérifie si la légende normalisée correspond à un menu reconnu dans le catalogue.</summary>
+        /// <param name="caption">Légende native à comparer.</param>
+        /// <param name="view">Vrai pour le menu Affichage ; faux pour le menu Outils.</param>
+        /// <returns>Vrai si au moins une langue contient la variante.</returns>
         internal static bool IsMenu(string caption, bool view)
         {
             string name = NormalizeMenu(caption);
             return All.Any(x => (view ? x.View : x.Tools).Contains(name));
         }
 
+        /// <summary>Déduit la culture depuis les légendes de menus et utilise la culture de repli pour départager les égalités.</summary>
+        /// <param name="captions">Légendes des menus principaux du VBE.</param>
+        /// <param name="fallback">Culture qui départage des résultats de même score.</param>
+        /// <returns>Culture correspondante ou culture anglaise si aucun menu ne correspond.</returns>
         internal static CultureInfo FromMenus(IEnumerable<string> captions, CultureInfo fallback)
         {
             var names = captions.Select(NormalizeMenu).ToArray();

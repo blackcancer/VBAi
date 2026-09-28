@@ -7,8 +7,15 @@ using System.Linq;
 
 namespace CodexVBE
 {
+    /// <summary>Retire un élément d’une liste MSForms sous contrôle de sa version et vérifie le résultat.</summary>
     internal sealed partial class VbeForms
     {
+        /// <summary>Retire une ligne d’une liste à une colonne non liée sous contrôle des versions de l’arbre et de la liste.</summary>
+        /// <param name="request">Projet, formulaire, chemin, versions attendues et index de ligne.</param>
+        /// <returns>Rapport comprenant la valeur retirée et le statut de vérification.</returns>
+        /// <exception cref="ArgumentException">Une donnée obligatoire ou RowIndex manque.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">RowIndex est négatif ou hors des lignes actuelles.</exception>
+        /// <exception cref="InvalidOperationException">La liste est liée, multicolonne, illisible ou a changé depuis sa lecture.</exception>
         public object RemoveListItem(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.Project) ||
@@ -78,6 +85,9 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Aplati les valeurs des cellules des lignes d’une liste à une colonne.</summary>
+        /// <param name="rows">Lignes dont chaque entrée expose des cellules.</param>
+        /// <returns>Valeurs de cellules dans l’ordre des lignes.</returns>
         private static List<object> OneColumnValues(IEnumerable rows)
         {
             var values = new List<object>();

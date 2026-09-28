@@ -14,12 +14,25 @@ using Markdig.Extensions.TaskLists;
 
 namespace CodexVBE
 {
+    /// <summary>Convertit le Markdown du chat en contrôles WPF et relie références, liens et copie.</summary>
     internal static class ChatMarkdown
     {
+        /// <summary>Action utilisée pour copier un bloc de code dans le presse-papiers.</summary>
         internal static Action<string> CopyText = Clipboard.SetText;
+        /// <summary>Action utilisée pour ouvrir un lien HTTP(S) validé.</summary>
         internal static Action<string> OpenLink = SafeLinks.Open;
+        /// <summary>Pipeline Markdig configuré pour tableaux, liens automatiques, emphase et cases à cocher.</summary>
         private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().UsePipeTables().UseAutoLinks().UseEmphasisExtras().UseTaskLists().Build();
+        /// <summary>Crée un pinceau à partir d’une couleur ajustée par le thème.</summary>
+        /// <param name="hex">Couleur au format hexadécimal.</param>
+        /// <returns>Pinceau WPF correspondant à la couleur du thème.</returns>
         private static Brush Brush(string hex) { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(UiTheme.Map(hex))); }
+        /// <summary>Analyse le Markdown et construit un RichTextBox en lecture seule avec liens sûrs et références VBE navigables.</summary>
+        /// <param name="text">Markdown à afficher.</param>
+        /// <param name="references">Références reconnues dans le texte, éventuellement null.</param>
+        /// <param name="navigate">Callback appelé quand une référence VBE est activée.</param>
+        /// <param name="error">Callback qui reçoit les erreurs de copie ou d’ouverture de lien.</param>
+        /// <returns>Contrôle WPF de conversation prêt à afficher.</returns>
         internal static RichTextBox Render(string text, IDictionary<string, VbeChatReference> references, Action<VbeChatReference> navigate, Action<string> error)
         {
             var document = new FlowDocument { PagePadding = new Thickness(0), FontFamily = new FontFamily("Segoe UI"), FontSize = 13,
@@ -29,6 +42,12 @@ namespace CodexVBE
                 Background = Brushes.Transparent, Padding = new Thickness(0), VerticalScrollBarVisibility = ScrollBarVisibility.Disabled,
                 HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
         }
+        /// <summary>Rend récursivement les blocs de code, listes, tableaux, citations et paragraphes.</summary>
+        /// <param name="target">Collection WPF qui reçoit les blocs produits.</param>
+        /// <param name="blocks">Blocs Markdig à convertir.</param>
+        /// <param name="refs">Références VBE associées au message.</param>
+        /// <param name="navigate">Callback de navigation.</param>
+        /// <param name="error">Callback de signalement des erreurs utilisateur.</param>
         private static void AddBlocks(BlockCollection target, ContainerBlock blocks, IDictionary<string, VbeChatReference> refs, Action<VbeChatReference> navigate, Action<string> error)
         {
             foreach (var block in blocks)
@@ -86,6 +105,12 @@ namespace CodexVBE
                 }
             }
         }
+        /// <summary>Rend récursivement les segments de texte, références, liens et styles inline.</summary>
+        /// <param name="target">Collection WPF qui reçoit les segments produits.</param>
+        /// <param name="source">Inlines Markdig à convertir.</param>
+        /// <param name="refs">Références VBE associées au message.</param>
+        /// <param name="navigate">Callback de navigation.</param>
+        /// <param name="error">Callback de signalement des erreurs utilisateur.</param>
         private static void AddInlines(InlineCollection target, ContainerInline source, IDictionary<string, VbeChatReference> refs, Action<VbeChatReference> navigate, Action<string> error)
         {
             foreach (var inline in source)

@@ -1,73 +1,141 @@
 namespace CodexVBE
 {
+    /// <summary>Fenêtre de conversation et commandes de son concepteur WinForms.</summary>
     internal sealed partial class ChatWindow
     {
+        /// <summary>Conteneur des composants WinForms dont la durée de vie est gérée par le formulaire.</summary>
         private System.ComponentModel.IContainer components = null;
+        /// <summary>Gestionnaire des infobulles attachées aux commandes du formulaire.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+        /// <summary>Menu des commandes de configuration et d’intégration.</summary>
         private System.Windows.Forms.ContextMenuStrip optionsMenu;
+        /// <summary>Commande qui ouvre les paramètres de l’application.</summary>
         private System.Windows.Forms.ToolStripMenuItem configure;
+        /// <summary>Commande qui actualise les modèles du fournisseur sélectionné.</summary>
         private System.Windows.Forms.ToolStripMenuItem refreshModels;
+        /// <summary>Commande de gestion de l’ancrage de la fenêtre.</summary>
         private System.Windows.Forms.ToolStripMenuItem docking;
+        /// <summary>Commande qui ouvre les fonctions GitHub.</summary>
         private System.Windows.Forms.ToolStripMenuItem github;
+        /// <summary>Disposition racine du contenu de la fenêtre.</summary>
         private System.Windows.Forms.TableLayoutPanel rootLayout;
+        /// <summary>Disposition du titre de la conversation et des actions de fenêtre.</summary>
         private System.Windows.Forms.TableLayoutPanel headingLayout;
+        /// <summary>Libellé du nom de l’application.</summary>
         private System.Windows.Forms.Label appTitle;
+        /// <summary>Libellé du titre de la session active.</summary>
         private System.Windows.Forms.Label sessionTitle;
+        /// <summary>Commande de création d’une conversation.</summary>
         private CodexVBE.ChatActionButton newChat;
+        /// <summary>Commande d’accès aux options.</summary>
         private CodexVBE.ChatActionButton options;
+        /// <summary>Disposition du sélecteur de portée de projet et de l’historique.</summary>
         private System.Windows.Forms.TableLayoutPanel scopeLayout;
+        /// <summary>Commande d’affichage de l’historique.</summary>
         private CodexVBE.ChatActionButton history;
+        /// <summary>Sélecteur du projet auquel la conversation est liée.</summary>
         private CodexVBE.ChatChoiceBox scopePicker;
+        /// <summary>Disposition des commandes de mode et de workflow.</summary>
         private System.Windows.Forms.TableLayoutPanel workflowLayout;
+        /// <summary>Sélecteur du mode de conversation.</summary>
         private CodexVBE.ChatChoiceBox modePicker;
+        /// <summary>Commande de sélection de code ou de référence.</summary>
         private CodexVBE.ChatActionButton selection;
+        /// <summary>Commande de compilation du projet courant.</summary>
         private CodexVBE.ChatActionButton compile;
+        /// <summary>Option de vérification après une modification de code.</summary>
         private System.Windows.Forms.CheckBox verifyAfterEdit;
+        /// <summary>Conteneur de la conversation et de ses vues.</summary>
         private System.Windows.Forms.Panel conversationPanel;
+        /// <summary>Panneau de recherche et de gestion des sessions.</summary>
         private System.Windows.Forms.Panel historyPanel;
+        /// <summary>Disposition des contrôles de l’historique.</summary>
         private System.Windows.Forms.TableLayoutPanel historyLayout;
+        /// <summary>Libellé de la liste des conversations.</summary>
         private System.Windows.Forms.Label historyLabel;
+        /// <summary>Champ de filtrage des sessions.</summary>
         private System.Windows.Forms.TextBox historySearch;
+        /// <summary>Liste des sessions de la portée courante.</summary>
         private System.Windows.Forms.ListBox sessionList;
+        /// <summary>Option d’inclusion des sessions archivées.</summary>
         private System.Windows.Forms.CheckBox showArchived;
+        /// <summary>Champ de modification du titre de la conversation.</summary>
         private System.Windows.Forms.TextBox chatTitleEditor;
+        /// <summary>Disposition des actions appliquées à la session.</summary>
         private System.Windows.Forms.FlowLayoutPanel historyActions;
+        /// <summary>Commande de renommage de la session.</summary>
         private CodexVBE.ChatActionButton rename;
+        /// <summary>Commande d’archivage ou de restauration de la session.</summary>
         private CodexVBE.ChatActionButton archive;
+        /// <summary>Commande d’épinglage de la session.</summary>
         private CodexVBE.ChatActionButton pin;
+        /// <summary>Commande d’export de la conversation.</summary>
         private CodexVBE.ChatActionButton export;
+        /// <summary>Commande d’affichage ou de masquage de la mémoire de projet.</summary>
         private CodexVBE.ChatActionButton memoryToggle;
+        /// <summary>Groupe d’édition de la mémoire de projet.</summary>
         private System.Windows.Forms.GroupBox memoryPanel;
+        /// <summary>Disposition du champ et des commandes de mémoire.</summary>
         private System.Windows.Forms.TableLayoutPanel memoryLayout;
+        /// <summary>Champ d’édition de la mémoire de projet.</summary>
         private System.Windows.Forms.TextBox memoryEditor;
+        /// <summary>Commande d’enregistrement de la mémoire de projet.</summary>
         private CodexVBE.ChatActionButton saveMemory;
+        /// <summary>Option d’inclusion de la mémoire dans le prochain message.</summary>
         private System.Windows.Forms.CheckBox attachMemory;
+        /// <summary>Panneau contenant le transcript de conversation.</summary>
         private System.Windows.Forms.Panel transcriptPanel;
+        /// <summary>Libellé affiché avant la création de la vue du transcript.</summary>
         private System.Windows.Forms.Label transcriptPlaceholder;
+        /// <summary>Hôte WinForms du transcript WPF.</summary>
         private System.Windows.Forms.Integration.ElementHost transcriptHost;
+        /// <summary>Conteneur de composition du message et de ses commandes.</summary>
         private CodexVBE.ChatComposerPanel composerLayout;
+        /// <summary>Disposition des références et pièces jointes sélectionnées.</summary>
         private System.Windows.Forms.FlowLayoutPanel contextChips;
+        /// <summary>Panneau du champ de saisie du message.</summary>
         private System.Windows.Forms.Panel promptPanel;
+        /// <summary>Libellé indicatif du champ de saisie.</summary>
         private System.Windows.Forms.Label promptPlaceholder;
+        /// <summary>Hôte WinForms du compositeur WPF.</summary>
         private System.Windows.Forms.Integration.ElementHost promptHost;
+        /// <summary>Disposition des commandes du compositeur.</summary>
         private System.Windows.Forms.TableLayoutPanel composerActions;
+        /// <summary>Commande d’ajout ou de sélection d’un module.</summary>
         private CodexVBE.ChatActionButton modules;
+        /// <summary>Commande d’ajout ou de sélection d’une procédure.</summary>
         private CodexVBE.ChatActionButton methods;
+        /// <summary>Commande d’envoi du message.</summary>
         private CodexVBE.ChatActionButton send;
+        /// <summary>Commande d’affichage du contexte de conversation.</summary>
         private CodexVBE.ChatActionButton contextToggle;
+        /// <summary>Panneau contenant l’aperçu du contexte courant.</summary>
         private System.Windows.Forms.Panel contextPanel;
+        /// <summary>Disposition des éléments d’aperçu du contexte.</summary>
         private System.Windows.Forms.FlowLayoutPanel contextPreview;
+        /// <summary>Disposition des sélecteurs de fournisseur, modèle et effort.</summary>
         private System.Windows.Forms.TableLayoutPanel providerLayout;
+        /// <summary>Sélecteur du fournisseur LLM.</summary>
         private CodexVBE.ChatChoiceBox providerPicker;
+        /// <summary>Sélecteur du modèle du fournisseur.</summary>
         private CodexVBE.ChatChoiceBox modelPicker;
+        /// <summary>Sélecteur du niveau d’effort du modèle.</summary>
         private CodexVBE.ChatChoiceBox effortPicker;
+        /// <summary>Disposition du pied de fenêtre.</summary>
         private System.Windows.Forms.TableLayoutPanel footerLayout;
+        /// <summary>Commande de retour au dernier message du transcript.</summary>
         private CodexVBE.ChatActionButton jumpToLatest;
+        /// <summary>Commande d’affichage des modifications de code de la session.</summary>
         private CodexVBE.ChatActionButton changes;
+        /// <summary>Disposition du statut et de l’indicateur d’activité.</summary>
         private System.Windows.Forms.TableLayoutPanel statusLayout;
+        /// <summary>Libellé des messages d’état de l’interface.</summary>
         private System.Windows.Forms.Label status;
+        /// <summary>Indicateur de progression de l’activité en cours.</summary>
         private System.Windows.Forms.ProgressBar activityBar;
 
+        /// <summary>Libère les ressources d’exécution et les composants WinForms du formulaire.</summary>
+        /// <param name="disposing"><see langword="true"/> pour libérer les ressources managées.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -80,6 +148,7 @@ namespace CodexVBE
 
         #region Windows Form Designer generated code
 
+        /// <summary>Crée les contrôles du formulaire et configure leur disposition et leurs événements.</summary>
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();

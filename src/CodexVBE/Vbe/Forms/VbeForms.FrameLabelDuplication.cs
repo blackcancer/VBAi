@@ -7,25 +7,43 @@ using System.Linq;
 
 namespace CodexVBE
 {
+    /// <summary>Implémente une copie transactionnelle limitée aux Frames racines avec Labels directs.</summary>
     internal sealed partial class VbeForms
     {
+        /// <summary>Capture le chemin source et les propriétés de Label autorisées pour une copie de Frame.</summary>
         private sealed class DirectLabelCopy
         {
+            /// <summary>Chemin canonique du Label source.</summary>
             public string SourcePath;
+            /// <summary>Nom proposé pour le Label copié.</summary>
             public string Name;
+            /// <summary>Légende du Label.</summary>
             public string Caption;
+            /// <summary>Position horizontale dans la Frame.</summary>
             public double Left;
+            /// <summary>Position verticale dans la Frame.</summary>
             public double Top;
+            /// <summary>Largeur du Label.</summary>
             public double Width;
+            /// <summary>Hauteur du Label.</summary>
             public double Height;
+            /// <summary>Couleur OLE du fond du Label.</summary>
             public int BackColor;
+            /// <summary>Nom de police du Label.</summary>
             public string FontName;
+            /// <summary>Taille de police du Label.</summary>
             public double FontSize;
+            /// <summary>Indique si la police du Label est en gras.</summary>
             public bool FontBold;
         }
 
         // Transactional probe for one root Frame with direct Label children.
         // Other child types, nested Frames and unqualified properties are refused.
+        /// <summary>Duplique une Frame racine et ses Labels directs admissibles, vérifie le résultat et annule les ajouts si une étape échoue.</summary>
+        /// <param name="request">Projet, formulaire, chemin racine, version attendue et nom proposé.</param>
+        /// <returns>Rapport partiel avec la nouvelle Frame, les Labels copiés et l’arbre relu.</returns>
+        /// <exception cref="ArgumentException">Le chemin source ne désigne pas une Frame racine valide.</exception>
+        /// <exception cref="InvalidOperationException">Le plan est inadmissible, la version est périmée, une vérification échoue ou le rollback est incomplet.</exception>
         public object DuplicateFrameWithLabels(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||
@@ -156,12 +174,22 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Convertit une couleur Drawing en entier OLE ou convertit directement la valeur numérique.</summary>
+        /// <param name="value">Valeur couleur exposée par COM.</param>
+        /// <returns>Entier de couleur au format OLE.</returns>
         private static int CopyOleColor(object value)
         {
             return value is Color ? ColorTranslator.ToOle((Color)value) :
                 Convert.ToInt32(value, CultureInfo.InvariantCulture);
         }
 
+        /// <summary>Vérifie que la géométrie est finie, positive et comprise dans la plage prise en charge.</summary>
+        /// <param name="left">Coordonnée horizontale.</param>
+        /// <param name="top">Coordonnée verticale.</param>
+        /// <param name="width">Largeur positive.</param>
+        /// <param name="height">Hauteur positive.</param>
+        /// <param name="label">Nom utilisé pour identifier une erreur de géométrie.</param>
+        /// <exception cref="InvalidOperationException">Une dimension est hors de la plage prise en charge.</exception>
         private static void ValidateCopyBox(double left, double top, double width, double height, string label)
         {
             if (!IsFinite(left) || !IsFinite(top) || !IsFinite(width) || !IsFinite(height) ||
@@ -170,6 +198,13 @@ namespace CodexVBE
                 throw new InvalidOperationException(label + " geometry is outside the supported range.");
         }
 
+        /// <summary>Compare la géométrie COM relue à la géométrie attendue avec une tolérance de 0,01.</summary>
+        /// <param name="control">Contrôle COM à comparer.</param>
+        /// <param name="left">Coordonnée horizontale attendue.</param>
+        /// <param name="top">Coordonnée verticale attendue.</param>
+        /// <param name="width">Largeur attendue.</param>
+        /// <param name="height">Hauteur attendue.</param>
+        /// <returns>Vrai si les quatre mesures restent dans la tolérance.</returns>
         private static bool SameCopyBox(dynamic control, double left, double top, double width, double height)
         {
             return Math.Abs(Convert.ToDouble(control.Left, CultureInfo.InvariantCulture) - left) <= 0.01 &&

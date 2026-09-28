@@ -8,10 +8,15 @@ using System.Windows.Forms;
 namespace CodexVBE
 {
     // Explicit culture avoids changing the host's thread culture or VBA number/date formatting.
+    /// <summary>Fournit les chaînes localisées sans modifier la culture du fil ou le formatage VBA.</summary>
     internal static class UiText
     {
+        /// <summary>Gestionnaire du catalogue de ressources anglais embarqué.</summary>
         private static readonly ResourceManager English = new ResourceManager("CodexVBE.Localization.UiStrings", typeof(UiText).Assembly);
+        /// <summary>Gestionnaires de ressources créés pour chaque culture du catalogue.</summary>
         private static readonly Dictionary<string, ResourceManager> Catalogues = CreateCatalogues();
+        /// <summary>Associe chaque culture prise en charge à son gestionnaire de ressources.</summary>
+        /// <returns>Gestionnaire de ressources associé à chaque culture prise en charge.</returns>
         private static Dictionary<string, ResourceManager> CreateCatalogues()
         {
             var result = new Dictionary<string, ResourceManager>();
@@ -19,19 +24,30 @@ namespace CodexVBE
                 result[language.CultureName] = new ResourceManager("CodexVBE.Localization.UiStrings" + language.ResourceSuffix, typeof(UiText).Assembly);
             return result;
         }
+        /// <summary>Culture active des libellés de l’interface.</summary>
+        /// <value>Culture prise en charge choisie lors de l’initialisation.</value>
         internal static CultureInfo Culture { get; private set; } = Supported(CultureInfo.CurrentUICulture);
 
+        /// <summary>Convertit la culture demandée vers une des cultures prises en charge.</summary>
+        /// <param name="culture">Culture demandée.</param>
+        /// <returns>Culture du catalogue correspondant, ou anglais.</returns>
         internal static CultureInfo Supported(CultureInfo culture)
         {
             return CultureInfo.GetCultureInfo(UiLanguages.For(culture).CultureName);
         }
 
+        /// <summary>Détecte la langue des menus VBE, met à jour la culture active et inscrit le résultat au journal.</summary>
+        /// <param name="vbe">Instance Automation du VBE.</param>
         internal static void Initialize(object vbe)
         {
             Culture = Detect(vbe, CultureInfo.CurrentUICulture);
             LoadLog.Write("VBAi interface language: " + Culture.Name);
         }
 
+        /// <summary>Privilégie les légendes des menus VBE et utilise la culture système si elles sont indisponibles.</summary>
+        /// <param name="vbe">Instance Automation du VBE à inspecter.</param>
+        /// <param name="fallback">Culture de repli lorsque le VBE ne fournit pas de menus.</param>
+        /// <returns>Culture prise en charge déterminée.</returns>
         internal static CultureInfo Detect(object vbe, CultureInfo fallback)
         {
             bool hasMenu = false;
@@ -53,6 +69,9 @@ namespace CodexVBE
             return hasMenu ? UiLanguages.FromMenus(captions, fallback) : Supported(fallback);
         }
 
+        /// <summary>Traduit une clé anglaise dans la culture active avec repli sur le texte anglais.</summary>
+        /// <param name="english">Clé anglaise ou texte à rechercher dans les catalogues.</param>
+        /// <returns>Chaîne traduite, valeur anglaise, ou null si la clé est null.</returns>
         internal static string Get(string english)
         {
             if (english == null) return null;
@@ -64,6 +83,10 @@ namespace CodexVBE
 
         // Only called immediately after InitializeComponent, before document/user data is populated.
         // Designer captions stay editable in English; all translated strings live in resource files.
+        /// <summary>Traduit récursivement les libellés et info-bulles d’un contrôle après son initialisation.</summary>
+        /// <param name="control">Contrôle racine à localiser.</param>
+        /// <param name="components">Conteneur de composants, éventuellement null.</param>
+        /// <param name="additionalTips">Info-bulles qui ne figurent pas dans le conteneur des composants.</param>
         internal static void Apply(Control control, IContainer components, params ToolTip[] additionalTips)
         {
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
@@ -101,6 +124,8 @@ namespace CodexVBE
             if (form != null) UiTheme.Attach(form);
         }
 
+        /// <summary>Traduit les éléments d’un menu et parcourt récursivement les sous-menus.</summary>
+        /// <param name="items">Éléments de menu à traduire.</param>
         private static void ApplyItems(ToolStripItemCollection items)
         {
             foreach (ToolStripItem item in items)
@@ -113,6 +138,9 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Traduit les étiquettes de rôle affichées dans le transcript et conserve les autres valeurs telles quelles.</summary>
+        /// <param name="token">Étiquette française reconnue ou texte à préserver.</param>
+        /// <returns>Étiquette localisée ou valeur d’origine.</returns>
         internal static string Speaker(string token)
         {
             switch (token)

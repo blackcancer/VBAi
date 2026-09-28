@@ -7,53 +7,89 @@ using System.Linq;
 
 namespace CodexVBE
 {
+    /// <summary>Implémente des profils positifs et bornés pour copier une Frame racine avec certains enfants directs.</summary>
     internal sealed partial class VbeForms
     {
+        /// <summary>Liste les champs et limites vérifiés pour un type de contrôle MSForms.</summary>
         private sealed class VerifiedChildProfile
         {
+            /// <summary>Nom du type MSForms visé par le profil.</summary>
             public string Type;
+            /// <summary>ProgID utilisé pour créer le contrôle.</summary>
             public string ProgId;
+            /// <summary>Noms des propriétés que le profil copie et vérifie.</summary>
             public string[] Fields;
+            /// <summary>Propriétés et comportements exclus de ce profil.</summary>
             public string Limitation;
         }
 
+        /// <summary>Capture le profil et les valeurs lues d’un enfant avant sa duplication.</summary>
         private sealed class ProfiledChildSnapshot
         {
+            /// <summary>Profil positif utilisé pour lire, écrire et vérifier l’enfant.</summary>
             public VerifiedChildProfile Profile;
+            /// <summary>Chemin canonique du contrôle source.</summary>
             public string SourcePath;
+            /// <summary>Nom du contrôle à créer.</summary>
             public string ProposedName;
+            /// <summary>Chemin qui identifiera le contrôle créé.</summary>
             public string ProposedPath;
+            /// <summary>Légende d’un Label, CheckBox, CommandButton ou OptionButton.</summary>
             public string Caption;
+            /// <summary>Valeur textuelle du TextBox, éventuellement absente.</summary>
             public string TextValue;
+            /// <summary>État booléen du CheckBox source.</summary>
             public bool BooleanValue;
+            /// <summary>Largeur de liste textuelle du ComboBox.</summary>
             public string ListWidth;
+            /// <summary>Position horizontale de l’enfant.</summary>
             public double Left;
+            /// <summary>Position verticale de l’enfant.</summary>
             public double Top;
+            /// <summary>Largeur de l’enfant.</summary>
             public double Width;
+            /// <summary>Hauteur de l’enfant.</summary>
             public double Height;
+            /// <summary>Couleur OLE du fond d’un Label.</summary>
             public int BackColor;
+            /// <summary>Nom de police d’un Label.</summary>
             public string FontName;
+            /// <summary>Taille de police d’un Label.</summary>
             public double FontSize;
+            /// <summary>Indique si la police d’un Label est en gras.</summary>
             public bool FontBold;
         }
 
+        /// <summary>Capture la Frame, sa version d’arbre, ses enfants admissibles et les problèmes de prévalidation.</summary>
         private sealed class ProfiledFrameSnapshot
         {
+            /// <summary>Chemin de la Frame source.</summary>
             public string SourcePath;
+            /// <summary>Nom proposé pour la nouvelle Frame.</summary>
             public string NewName;
+            /// <summary>Légende de la Frame.</summary>
             public string Caption;
+            /// <summary>Position horizontale de la Frame.</summary>
             public double Left;
+            /// <summary>Position verticale de la Frame.</summary>
             public double Top;
+            /// <summary>Largeur de la Frame.</summary>
             public double Width;
+            /// <summary>Hauteur de la Frame.</summary>
             public double Height;
+            /// <summary>Version d’arbre utilisée pour contrôler la prévalidation.</summary>
             public string TreeVersion;
+            /// <summary>Nombre de nœuds du formulaire avant copie.</summary>
             public int NodeCount;
+            /// <summary>Snapshots des enfants directs qui disposent d’un profil lisible.</summary>
             public readonly List<ProfiledChildSnapshot> Children = new List<ProfiledChildSnapshot>();
+            /// <summary>Motifs qui rendent le profil proposé inadmissible.</summary>
             public readonly List<string> Issues = new List<string>();
         }
 
         // A positive registry. No profile is inferred from COM IsReadOnly or
         // PROPERTYPUT metadata; every field below came from a prior Excel probe.
+        /// <summary>Profils positifs limités aux types contrôlés : Label, TextBox, CheckBox, CommandButton, ComboBox et OptionButton.</summary>
         private static readonly Dictionary<string, VerifiedChildProfile> FrameChildProfiles =
             new Dictionary<string, VerifiedChildProfile>(StringComparer.OrdinalIgnoreCase)
             {
@@ -79,6 +115,9 @@ namespace CodexVBE
                     Limitation = "Value and GroupName are not copied; copying selection can affect siblings." }
             };
 
+        /// <summary>Retourne en lecture seule les profils d’enfants reconnus et les motifs d’inadmissibilité.</summary>
+        /// <param name="request">Projet, formulaire, chemin de Frame, version attendue et nom proposé.</param>
+        /// <returns>Plan sérialisable qui indique les champs copiés, les limites et l’absence de mutation.</returns>
         public object FrameProfileCopyPlan(Request request)
         {
             ProfiledFrameSnapshot plan = ReadFrameProfilePlan(request);
@@ -93,6 +132,11 @@ namespace CodexVBE
                 Scope = "Root Frame and direct leaf children with explicit positive profiles only." };
         }
 
+        /// <summary>Valide la Frame racine et sa version puis capture les enfants directs admissibles sans muter le formulaire.</summary>
+        /// <param name="request">Données du projet, du formulaire, de la Frame et du nom proposé.</param>
+        /// <returns>Snapshot de prévalidation avec les enfants et problèmes observés.</returns>
+        /// <exception cref="ArgumentException">Le chemin ne vise pas une Frame racine ou la version attendue manque.</exception>
+        /// <exception cref="InvalidOperationException">La hiérarchie a changé ou le contrôle ne correspond pas à une Frame native.</exception>
         private ProfiledFrameSnapshot ReadFrameProfilePlan(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||
@@ -171,6 +215,14 @@ namespace CodexVBE
             return plan;
         }
 
+        /// <summary>Lit les valeurs autorisées du contrôle selon son profil et valide la géométrie et les types de données.</summary>
+        /// <param name="child">Contrôle MSForms direct à lire.</param>
+        /// <param name="profile">Profil positif du type du contrôle.</param>
+        /// <param name="sourcePath">Chemin source utilisé dans les erreurs.</param>
+        /// <param name="proposedPath">Chemin de destination calculé.</param>
+        /// <param name="newName">Nom proposé pour le contrôle copié.</param>
+        /// <returns>Snapshot de propriétés autorisées pour la copie.</returns>
+        /// <exception cref="InvalidOperationException">Une propriété ne respecte pas les limites du profil positif.</exception>
         private static ProfiledChildSnapshot ReadProfiledChild(dynamic child,
             VerifiedChildProfile profile, string sourcePath, string proposedPath, string newName)
         {
@@ -222,6 +274,11 @@ namespace CodexVBE
             return item;
         }
 
+        /// <summary>Copie une Frame racine avec ses enfants directs profilés, relit chaque propriété autorisée et annule les ajouts en cas d’échec.</summary>
+        /// <param name="request">Projet, formulaire, chemin source, version attendue et nom proposé.</param>
+        /// <returns>Rapport partiel de duplication et arbre de contrôles relu.</returns>
+        /// <exception cref="ArgumentException">Les paramètres requis ou le chemin racine sont invalides.</exception>
+        /// <exception cref="InvalidOperationException">La prévalidation échoue, l’arbre change ou une vérification/compensation échoue.</exception>
         public object DuplicateFrameProfiled(Request request)
         {
             ProfiledFrameSnapshot plan = ReadFrameProfilePlan(request);
@@ -294,6 +351,10 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Applique uniquement les setters autorisés par le profil du contrôle copié.</summary>
+        /// <param name="copy">Nouveau contrôle MSForms.</param>
+        /// <param name="item">Snapshot des valeurs autorisées.</param>
+        /// <exception cref="InvalidOperationException">Aucun setter positif n’existe pour le type du profil.</exception>
         private static void ApplyProfiledChild(dynamic copy, ProfiledChildSnapshot item)
         {
             copy.Left = item.Left;
@@ -322,6 +383,10 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Compare au snapshot la géométrie et les propriétés prises en charge du contrôle relu.</summary>
+        /// <param name="actual">Contrôle recréé et résolu dans le formulaire.</param>
+        /// <param name="item">Valeurs source attendues et profil appliqué.</param>
+        /// <exception cref="InvalidOperationException">Une propriété relue diffère ou le profil ne permet pas de lecture.</exception>
         private static void VerifyProfiledChild(dynamic actual, ProfiledChildSnapshot item)
         {
             if (!SameCopyBox(actual, item.Left, item.Top, item.Width, item.Height))

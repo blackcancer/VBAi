@@ -6,11 +6,18 @@ using System.Linq;
 
 namespace CodexVBE
 {
+    /// <summary>Implémente le profil de duplication partielle des ToggleButton natifs.</summary>
     internal sealed partial class VbeForms
     {
         // A narrow design-time ToggleButton profile. Setting Value=true was
         // followed by Excel teardown crashes in disposable workbooks, so this
         // copy is restricted to the false value already present on the source.
+        /// <summary>Crée un ToggleButton natif uniquement lorsque Value=false, sans appeler de setter Value.</summary>
+        /// <param name="request">Projet, formulaire, chemin du contrôle source, version attendue de l’arbre et nouveau nom.</param>
+        /// <returns>Rapport de duplication partielle avec les chemins source et cible ainsi que le nouvel arbre de contrôles.</returns>
+        /// <exception cref="ArgumentException">Un champ obligatoire manque, le chemin ne désigne pas un contrôle ou le nouveau nom est invalide.</exception>
+        /// <exception cref="InvalidOperationException">L’arbre est périmé, le contrôle ou son type ne convient pas, une propriété source est hors profil, ou la vérification échoue.</exception>
+        /// <remarks>Cette restriction évite le chemin Value=true associé aux plantages de fermeture d’Excel. Si la vérification échoue après création, la méthode tente de supprimer le contrôle ajouté.</remarks>
         public object DuplicateToggleButton(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||

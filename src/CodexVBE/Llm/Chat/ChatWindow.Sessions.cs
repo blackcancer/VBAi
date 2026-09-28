@@ -8,28 +8,48 @@ using System.Windows.Threading;
 
 namespace CodexVBE
 {
+    /// <summary>Fenêtre de conversation avec gestion des sessions persistées.</summary>
     internal sealed partial class ChatWindow
     {
+        /// <summary>Magasin SQLite partagé par les sessions et la mémoire de projet.</summary>
         private ChatSessionStore sessionStore;
+        /// <summary>Session actuellement affichée.</summary>
         private ChatSessionState currentSession;
+        /// <summary>Indique qu’un chargement de session est en cours et bloque les sauvegardes déclenchées par l’interface.</summary>
         private bool loadingSession;
+        /// <summary>Indique qu’une erreur de stockage a empêché une sauvegarde.</summary>
         private bool storageFailed;
+        /// <summary>Session VBE utilisée pour actualiser les portées de projet.</summary>
         private VbeSession scopeSession;
+        /// <summary>Sessions chargées ou créées pour la portée sélectionnée.</summary>
         private readonly List<ChatSessionState> scopeSessions = new List<ChatSessionState>();
+        /// <summary>Cache des sessions par portée de projet.</summary>
         private readonly Dictionary<string, List<ChatSessionState>> cachedScopes = new Dictionary<string, List<ChatSessionState>>();
+        /// <summary>Minuterie qui regroupe les sauvegardes rapprochées du brouillon.</summary>
         private DispatcherTimer saveTimer;
+        /// <summary>Minuterie de nouvelle tentative de découverte lorsque aucun projet n’est ouvert.</summary>
         private DispatcherTimer projectRetryTimer;
+        /// <summary>Mémoire locale de la portée de projet courante.</summary>
         private string projectMemory = "";
 
+        /// <summary>Décrit une portée de projet sélectionnable dans l’interface.</summary>
         private sealed class MacroScope
         {
+            /// <summary>Clé stable utilisée pour les sessions et la mémoire.</summary>
             public string Key;
+            /// <summary>Libellé visible dans le sélecteur de portée.</summary>
             public string Label;
+            /// <summary>Chemin du projet enregistré ou son nom s’il est temporaire.</summary>
             public string Project;
+            /// <summary>Nom du projet VBE.</summary>
             public string Name;
+            /// <summary>Retourne le libellé du sélecteur.</summary>
+            /// <returns>Valeur de <see cref="Label"/>.</returns>
             public override string ToString() { return Label; }
         }
 
+        /// <summary>Initialise le stockage, découvre les portées de projet et connecte les sélecteurs de session.</summary>
+        /// <param name="session">Session VBE qui fournit la liste des projets.</param>
         private void InitializeSessions(VbeSession session)
         {
             scopeSession = session;
@@ -87,6 +107,9 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Ajoute au sélecteur les projets accessibles, avec une clé de portée adaptée aux documents temporaires.</summary>
+        /// <param name="session">Session VBE utilisée pour la commande de liste.</param>
+        /// <returns>Réponse de la commande de découverte.</returns>
         private Response PopulateProjectScopes(VbeSession session)
         {
             var projects = ReadHost(session, new Request { Command = "list_projects" });
@@ -110,6 +133,7 @@ namespace CodexVBE
             return projects;
         }
 
+        /// <summary>Sauvegarde la session courante et charge les sessions et la mémoire de la nouvelle portée.</summary>
         private void ChangeScope()
         {
             if (busy || loadingSession) return;
@@ -133,6 +157,9 @@ namespace CodexVBE
             ActivateSession(scopeSessions.First(item => !item.Archived), false);
         }
 
+        /// <summary>Restaure les messages, pièces jointes, références, fournisseur et brouillon d’une session.</summary>
+        /// <param name="session">Session à activer.</param>
+        /// <param name="savePrevious">Indique s’il faut sauvegarder la session actuellement affichée avant le basculement.</param>
         private void ActivateSession(ChatSessionState session, bool savePrevious = true)
         {
             if (busy) return;
@@ -183,6 +210,7 @@ namespace CodexVBE
             _ = LoadModelsAsync();
         }
 
+        /// <summary>Filtre, trie et remplit la liste des sessions visibles, en conservant la sélection courante.</summary>
         private void RefreshHistory()
         {
             if (sessionList == null) return;
@@ -200,12 +228,14 @@ namespace CodexVBE
             finally { sessionList.EndUpdate(); loadingSession = previous; }
         }
 
+        /// <summary>Programme une sauvegarde différée du brouillon lorsque le chargement ne bloque pas les modifications.</summary>
         private void ScheduleSessionSave()
         {
             if (loadingSession || saveTimer == null || currentSession == null) return;
             saveTimer.Stop(); saveTimer.Start();
         }
 
+        /// <summary>Copie l’état d’interface dans la session courante et demande sa persistance au magasin.</summary>
         private void SaveCurrentSession()
         {
             if (loadingSession || currentSession == null) return;
@@ -220,6 +250,8 @@ namespace CodexVBE
             catch (Exception ex) { storageFailed = true; SetStatus(UiText.Get("History not saved: ") + ex.Message); }
         }
 
+        /// <summary>Crée une session dans la portée courante et l’active avec le fournisseur indiqué ou celui des paramètres.</summary>
+        /// <param name="provider">Fournisseur initial facultatif.</param>
         private void NewSession(string provider = null)
         {
             if (busy || settings == null) return;
@@ -232,6 +264,8 @@ namespace CodexVBE
             SaveCurrentSession();
         }
 
+        /// <summary>Utilise la première question comme titre si la session conserve encore son titre par défaut.</summary>
+        /// <param name="text">Texte de la question, réduit à une ligne et tronqué à 64 caractères.</param>
         private void RenameFromQuestion(string text)
         {
             if (currentSession == null || currentSession.Title != "Nouvelle conversation" || transcriptEntries.Any(x => x.Speaker == "Vous")) return;
@@ -242,6 +276,7 @@ namespace CodexVBE
             RefreshHistory();
         }
 
+        /// <summary>Applique le titre saisi à la session, le limite à 120 caractères et sauvegarde l’état.</summary>
         private void RenameCurrentChat()
         {
             if (busy || currentSession == null || string.IsNullOrWhiteSpace(chatTitleEditor.Text)) return;
@@ -251,6 +286,7 @@ namespace CodexVBE
             SaveCurrentSession(); RefreshHistory();
         }
 
+        /// <summary>Inverse l’état archivé de la session courante et ouvre une session neuve si elle vient d’être archivée.</summary>
         private void ToggleArchiveCurrentChat()
         {
             if (busy || currentSession == null) return;
@@ -260,6 +296,7 @@ namespace CodexVBE
             else RefreshHistory();
         }
 
+        /// <summary>Enregistre localement le texte de mémoire de la portée courante et actualise le contexte affiché.</summary>
         private void SaveProjectMemory()
         {
             var scope = scopePicker.SelectedItem as MacroScope;
@@ -275,6 +312,8 @@ namespace CodexVBE
             catch (Exception ex) { SetStatus(UiText.Get("Memory not saved: ") + ex.Message); }
         }
 
+        /// <summary>Vérifie que le projet auquel appartient la conversation est encore ouvert et non ambigu.</summary>
+        /// <exception cref="InvalidOperationException">La portée n’existe plus ou le document enregistré a changé de chemin.</exception>
         private void EnsureCurrentScope()
         {
             var scope = scopePicker.SelectedItem as MacroScope;
@@ -296,6 +335,7 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Retire les appels d’outils incomplets du dernier tour et ajoute un avis de réponse interrompue.</summary>
         private void RepairInterruptedToolHistory()
         {
             int userIndex = -1;

@@ -11,22 +11,37 @@ using System.Web.Script.Serialization;
 
 namespace CodexVBE
 {
+    /// <summary>Abstraction du processus app-server et de ses échanges par lignes.</summary>
     internal interface ICodexAppServerTransport : IDisposable
     {
+        /// <summary>Survient lorsqu’une ligne est lue sur la sortie standard.</summary>
         event Action<string> LineReceived;
+        /// <summary>Survient lorsque le transport cesse de fonctionner.</summary>
         event Action<Exception> Exited;
+        /// <summary>Indique si le processus app-server est actif.</summary>
+        /// <value>Vrai si le processus est actif.</value>
         bool IsRunning { get; }
+        /// <summary>Démarre le processus et commence à lire ses sorties.</summary>
         void Start();
+        /// <summary>Écrit une ligne de protocole vers le processus.</summary>
+        /// <param name="line">Ligne JSON-RPC à transmettre.</param>
         void Send(string line);
     }
 
+    /// <summary>Transport app-server qui lance le client CLI Codex et échange des lignes UTF-8.</summary>
     internal sealed class CodexProcessTransport : ICodexAppServerTransport
     {
+        /// <summary>Processus CLI Codex détenu par le transport.</summary>
         private Process process;
+        /// <summary>Relaye les lignes reçues sur la sortie standard.</summary>
         public event Action<string> LineReceived;
+        /// <summary>Relaye la fin du processus comme une erreur de transport.</summary>
         public event Action<Exception> Exited;
+        /// <summary>Indique si le processus détenu est vivant.</summary>
+        /// <value>Vrai si le processus détenu est actif.</value>
         public bool IsRunning { get { return process != null && !process.HasExited; } }
 
+        /// <summary>Lance « codex app-server », évite un préambule UTF-8 sur l’entrée standard et active la lecture asynchrone.</summary>
         public void Start()
         {
             string executable = Environment.GetEnvironmentVariable("CODEXVBE_CODEX_CLI");
@@ -53,6 +68,8 @@ namespace CodexVBE
             process.BeginErrorReadLine();
         }
 
+        /// <summary>Écrit la ligne suivie d’un saut de ligne sur l’entrée standard UTF-8 sans BOM.</summary>
+        /// <param name="line">Ligne JSON-RPC à envoyer.</param>
         public void Send(string line)
         {
             if (!IsRunning) throw new InvalidOperationException("Codex app-server is not running.");
@@ -61,6 +78,7 @@ namespace CodexVBE
             process.StandardInput.BaseStream.Flush();
         }
 
+        /// <summary>Arrête le processus encore actif et libère ses ressources.</summary>
         public void Dispose()
         {
             if (process == null) return;
@@ -71,31 +89,64 @@ namespace CodexVBE
     }
 
     // Owns a single Codex CLI child process. Codex itself owns ChatGPT authentication.
+    /// <summary>Gère une session app-server Codex, ses requêtes JSON-RPC et les appels d’outils du VBE.</summary>
     internal sealed class CodexAppServerClient : IDisposable
     {
+        /// <summary>Contexte utilisé pour publier les mises à jour sur le fil de l’interface.</summary>
         private readonly SynchronizationContext ui;
+        /// <summary>Outils VBE exécutés à la demande du processus Codex.</summary>
         private readonly LlmVbeTools tools;
+        /// <summary>Callback qui signale les étapes de connexion et les appels d’outils.</summary>
         private readonly Action<string> progress;
+        /// <summary>Réglages LLM fournis à cette session.</summary>
         private readonly LlmSettings settings;
+        /// <summary>Réponses en attente, indexées par identifiant JSON-RPC.</summary>
         private readonly Dictionary<int, TaskCompletionSource<IDictionary<string, object>>> requests =
             new Dictionary<int, TaskCompletionSource<IDictionary<string, object>>>();
+        /// <summary>Verrou qui protège les échanges et le registre des requêtes.</summary>
         private readonly object gate = new object();
+        /// <summary>Transport utilisé pour lire et écrire le protocole app-server.</summary>
         private readonly ICodexAppServerTransport transport;
+        /// <summary>Indique si le transport a été démarré.</summary>
         private bool transportStarted;
+        /// <summary>Dernier identifiant JSON-RPC attribué aux requêtes.</summary>
         private int nextId;
+        /// <summary>Identifiant du fil Codex créé ou repris.</summary>
         private string threadId;
+        /// <summary>Achèvement de la réponse du tour actif.</summary>
         private TaskCompletionSource<string> turnDone;
+        /// <summary>Dernier texte final reçu pour le tour actif.</summary>
         private string finalText;
+        /// <summary>Indique si le client a été libéré.</summary>
         private bool disposed;
+        /// <summary>Identifiant du tour Codex en cours.</summary>
         private string activeTurnId;
+        /// <summary>Indique qu’une interruption a été demandée pendant le démarrage ou le tour.</summary>
         private bool interruptRequested;
+        /// <summary>Identifiant du fil courant.</summary>
+        /// <value>Identifiant du fil, ou null avant sa création.</value>
         public string ThreadId { get { return threadId; } }
+        /// <summary>Survient quand le fil Codex est prêt à recevoir des tours.</summary>
         public event Action<string> ThreadReady;
+        /// <summary>Publie le texte, le raisonnement et l’état des appels d’outils dans la conversation.</summary>
         public event Action<string, string, string, bool> ChatUpdate;
 
+        /// <summary>Crée un client qui utilise le transport CLI standard.</summary>
+        /// <param name="ui">Contexte du fil de l’interface.</param>
+        /// <param name="tools">Outils disponibles au processus Codex.</param>
+        /// <param name="progress">Callback de progression.</param>
+        /// <param name="settings">Réglages de session.</param>
+        /// <param name="resumeThreadId">Fil à reprendre, ou null pour en créer un.</param>
         public CodexAppServerClient(SynchronizationContext ui, LlmVbeTools tools, Action<string> progress, LlmSettings settings, string resumeThreadId = null)
             : this(ui, tools, progress, settings, resumeThreadId, new CodexProcessTransport()) { }
 
+        /// <summary>Crée un client avec un transport injecté, notamment pour les transports contrôlés par l’appelant.</summary>
+        /// <param name="ui">Contexte du fil de l’interface.</param>
+        /// <param name="tools">Outils disponibles au processus Codex.</param>
+        /// <param name="progress">Callback de progression, remplacé par un callback vide si null.</param>
+        /// <param name="settings">Réglages de session.</param>
+        /// <param name="resumeThreadId">Fil à reprendre, ou null pour en créer un.</param>
+        /// <param name="transport">Transport app-server à utiliser.</param>
         internal CodexAppServerClient(SynchronizationContext ui, LlmVbeTools tools, Action<string> progress,
             LlmSettings settings, string resumeThreadId, ICodexAppServerTransport transport)
         {
@@ -109,6 +160,8 @@ namespace CodexVBE
             threadId = resumeThreadId;
         }
 
+        /// <summary>Interroge toutes les pages du catalogue Codex et convertit les efforts pris en charge.</summary>
+        /// <returns>Modèles exposés par le compte Codex.</returns>
         public async Task<LlmModelOption[]> ListModelsAsync()
         {
             if (!transportStarted) await StartAsync();
@@ -147,6 +200,13 @@ namespace CodexVBE
             return result.ToArray();
         }
 
+        /// <summary>Démarre un tour dans le fil et attend son texte final ou son échec.</summary>
+        /// <param name="prompt">Texte transmis comme entrée du tour.</param>
+        /// <param name="model">Identifiant de modèle sélectionné.</param>
+        /// <param name="effort">Niveau d’effort demandé.</param>
+        /// <returns>Texte final du tour.</returns>
+        /// <exception cref="ArgumentException">Le prompt est vide ou ne contient que des espaces.</exception>
+        /// <exception cref="InvalidOperationException">Un tour est déjà actif.</exception>
         public async Task<string> TurnAsync(string prompt, string model, string effort)
         {
             if (string.IsNullOrWhiteSpace(prompt)) throw new ArgumentException("A prompt is required.");
@@ -172,6 +232,8 @@ namespace CodexVBE
             finally { turnDone = null; activeTurnId = null; }
         }
 
+        /// <summary>Demande l’interruption du tour actif ; mémorise la demande si son identifiant n’est pas encore disponible.</summary>
+        /// <returns>Tâche terminée après l’envoi de la demande, s’il y a un tour identifié.</returns>
         public async Task InterruptAsync()
         {
             interruptRequested = true;
@@ -179,6 +241,8 @@ namespace CodexVBE
                 await RequestAsync("turn/interrupt", new { threadId, turnId = activeTurnId });
         }
 
+        /// <summary>Démarre le transport, initialise le protocole, vérifie le compte ChatGPT et crée ou reprend le fil.</summary>
+        /// <returns>Tâche terminée lorsque le transport, le compte et le fil sont prêts.</returns>
         private async Task StartAsync()
         {
             try
@@ -226,6 +290,10 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Envoie une requête JSON-RPC et retourne une tâche complétée à la réception de sa réponse.</summary>
+        /// <param name="method">Méthode app-server appelée.</param>
+        /// <param name="parameters">Paramètres sérialisés dans la requête.</param>
+        /// <returns>Tâche contenant la réponse du serveur.</returns>
         private Task<IDictionary<string, object>> RequestAsync(string method, object parameters)
         {
             if (disposed || !transportStarted || !transport.IsRunning)
@@ -238,6 +306,8 @@ namespace CodexVBE
             return completion.Task;
         }
 
+        /// <summary>Sérialise un message JSON-RPC et l’envoie sous le verrou du transport.</summary>
+        /// <param name="message">Objet sérialisable à transmettre.</param>
         private void Send(object message)
         {
             string line = NewJson().Serialize(message);
@@ -248,6 +318,8 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Traite une réponse JSON-RPC, un appel d’outil ou une notification de tour reçue.</summary>
+        /// <param name="line">Ligne reçue sur le transport.</param>
         private void OnLine(string line)
         {
             try
@@ -332,12 +404,20 @@ namespace CodexVBE
             catch (Exception ex) { FailPending(ex); }
         }
 
+        /// <summary>Publie une mise à jour de conversation sur le contexte de l’interface.</summary>
+        /// <param name="kind">Catégorie du contenu publié.</param>
+        /// <param name="id">Identifiant stable de l’élément mis à jour.</param>
+        /// <param name="text">Texte ajouté ou contenu final, éventuellement null.</param>
+        /// <param name="complete">Indique si l’élément est terminé.</param>
         private void PublishUpdate(string kind, string id, string text, bool complete)
         {
             if (string.IsNullOrEmpty(id)) return;
             ui.Post(_ => { if (!disposed) ChatUpdate?.Invoke(kind, id, text, complete); }, null);
         }
 
+        /// <summary>Exécute un outil VBE demandé par le serveur puis lui renvoie son résultat.</summary>
+        /// <param name="requestId">Identifiant de la requête d’outil à répondre.</param>
+        /// <param name="parameters">Paramètres de l’appel d’outil.</param>
         private void HandleToolCall(object requestId, IDictionary<string, object> parameters)
         {
             ui.Post(async state => {
@@ -369,6 +449,8 @@ namespace CodexVBE
             }, null);
         }
 
+        /// <summary>Termine en erreur toutes les requêtes et le tour encore en attente.</summary>
+        /// <param name="error">Erreur transmise aux opérations en attente.</param>
         private void FailPending(Exception error)
         {
             lock (gate)
@@ -379,18 +461,29 @@ namespace CodexVBE
             turnDone?.TrySetException(error);
         }
 
+        /// <summary>Crée un sérialiseur configuré pour accepter des messages jusqu’à dix mégaoctets.</summary>
+        /// <returns>Sérialiseur JSON utilisé par le protocole.</returns>
         private static JavaScriptSerializer NewJson() { return new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 }; }
+        /// <summary>Récupère une propriété uniquement si elle contient un dictionnaire objet.</summary>
+        /// <param name="value">Dictionnaire source, éventuellement null.</param>
+        /// <param name="key">Nom de la propriété.</param>
+        /// <returns>Dictionnaire contenu dans la propriété, ou null.</returns>
         private static IDictionary<string, object> GetObject(IDictionary<string, object> value, string key)
         {
             object raw;
             return value != null && value.TryGetValue(key, out raw) ? raw as IDictionary<string, object> : null;
         }
+        /// <summary>Récupère une propriété et convertit sa valeur en chaîne.</summary>
+        /// <param name="value">Dictionnaire source, éventuellement null.</param>
+        /// <param name="key">Nom de la propriété.</param>
+        /// <returns>Valeur convertie, ou null si la propriété est absente.</returns>
         private static string GetString(IDictionary<string, object> value, string key)
         {
             object raw;
             return value != null && value.TryGetValue(key, out raw) ? Convert.ToString(raw) : null;
         }
 
+        /// <summary>Libère le client, termine les opérations en attente et ferme le transport.</summary>
         public void Dispose()
         {
             if (disposed) return;

@@ -4,8 +4,11 @@ using System.Text;
 
 namespace CodexVBE
 {
+    /// <summary>Expose les consignes de sécurité du client et un instantané des capacités du VBE courant.</summary>
     internal static class LlmVbeContext
     {
+        /// <summary>Consignes développeur qui limitent les opérations de l’assistant aux outils VBE fournis et à la politique de l’hôte.</summary>
+        /// <value>Instructions incluant les règles d’encodage et les contraintes des documents liés.</value>
         public static string DeveloperInstructions
         {
             get
@@ -30,6 +33,8 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Règles de provenance d’encodage à suivre avant l’insertion de code dans un module VBA.</summary>
+        /// <value>Instructions qui imposent l’inspection du fichier et la vérification des caractères après insertion.</value>
         public static string EncodingInstructions
         {
             get
@@ -44,6 +49,9 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Construit un instantané du processus hôte, du code page ANSI et des projets actuellement accessibles.</summary>
+        /// <param name="session">Session VBE utilisée pour lister les projets.</param>
+        /// <returns>Objet sérialisable avec les données du processus et les projets ou leur erreur.</returns>
         public static object LiveSnapshot(VbeSession session)
         {
             var process = Process.GetCurrentProcess();

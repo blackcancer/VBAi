@@ -6,10 +6,17 @@ using System.Linq;
 
 namespace CodexVBE
 {
+    /// <summary>Implémente le profil de duplication partielle des OptionButton natifs.</summary>
     internal sealed partial class VbeForms
     {
         // Copy only the visible design shell. Value and GroupName affect radio
         // selection across sibling controls and require a separate group probe.
+        /// <summary>Crée un OptionButton natif sous le même parent et vérifie sa géométrie et sa légende.</summary>
+        /// <param name="request">Projet, formulaire, chemin du contrôle source, version attendue de l’arbre et nouveau nom.</param>
+        /// <returns>Rapport de duplication partielle avec les chemins source et cible ainsi que le nouvel arbre de contrôles.</returns>
+        /// <exception cref="ArgumentException">Un champ obligatoire manque, le chemin ne désigne pas un contrôle ou le nouveau nom est invalide.</exception>
+        /// <exception cref="InvalidOperationException">L’arbre est périmé, le contrôle ou son type ne convient pas, une propriété source est hors profil, ou la vérification échoue.</exception>
+        /// <remarks>La duplication est partielle ; sélection et groupe ne sont pas copiés. Si la vérification échoue après création, la méthode tente de supprimer le contrôle ajouté.</remarks>
         public object DuplicateOptionButton(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||

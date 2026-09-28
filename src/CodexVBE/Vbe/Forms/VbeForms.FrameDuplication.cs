@@ -6,10 +6,16 @@ using System.Linq;
 
 namespace CodexVBE
 {
+    /// <summary>Implémente la duplication vérifiée des Frames vides.</summary>
     internal sealed partial class VbeForms
     {
         // Empty Frames only. Never produce a visually similar container while
         // silently dropping its child controls.
+        /// <summary>Duplique une Frame native uniquement si elle est vide, puis vérifie géométrie, légende et nouvel arbre.</summary>
+        /// <param name="request">Projet, formulaire, chemin source, version attendue et nouveau nom.</param>
+        /// <returns>Rapport de duplication partielle et arbre relu.</returns>
+        /// <exception cref="ArgumentException">Le chemin requis ou le nouveau nom est invalide.</exception>
+        /// <exception cref="InvalidOperationException">La source n’est pas une Frame vide valide, la version est périmée ou la duplication échoue.</exception>
         public object DuplicateEmptyFrame(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||

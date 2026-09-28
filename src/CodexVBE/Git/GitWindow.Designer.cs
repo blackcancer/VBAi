@@ -1,82 +1,158 @@
 namespace CodexVBE
 {
+    /// <summary>Fenêtre de gestion du dépôt et de l’historique du document VBA.</summary>
     internal sealed partial class GitWindow
     {
+        /// <summary>Conteneur des composants du formulaire.</summary>
         private System.ComponentModel.IContainer components;
+        /// <summary>Disposition racine de la fenêtre Git.</summary>
         private System.Windows.Forms.TableLayoutPanel layout;
+        /// <summary>Libellé du document VBA lié au dépôt.</summary>
         private System.Windows.Forms.Label documentLabel;
+        /// <summary>Libellé de l’adresse distante Git.</summary>
         private System.Windows.Forms.Label remoteLabel;
+        /// <summary>Libellé de la branche courante.</summary>
         private System.Windows.Forms.Label branchLabel;
+        /// <summary>Libellé du message de commit.</summary>
         private System.Windows.Forms.Label messageLabel;
+        /// <summary>Instructions de configuration de la connexion Git.</summary>
         private System.Windows.Forms.Label help;
+        /// <summary>Champ d’adresse du dépôt distant.</summary>
         private System.Windows.Forms.TextBox remote;
+        /// <summary>Champ de nom de branche.</summary>
         private System.Windows.Forms.TextBox branch;
+        /// <summary>Champ de message du commit.</summary>
         private System.Windows.Forms.TextBox commitMessage;
+        /// <summary>Commande de connexion au dépôt.</summary>
         private System.Windows.Forms.Button connect;
+        /// <summary>Commande de création d’un commit local.</summary>
         private System.Windows.Forms.Button commit;
+        /// <summary>Commande de récupération des mises à jour distantes.</summary>
         private System.Windows.Forms.Button fetch;
+        /// <summary>Libellé d’état de synchronisation.</summary>
         private System.Windows.Forms.Label syncStatus;
+        /// <summary>Onglets des fonctions Git du document.</summary>
         private System.Windows.Forms.TabControl tabs;
+        /// <summary>Onglet des changements locaux.</summary>
         private System.Windows.Forms.TabPage changesTab;
+        /// <summary>Onglet de l’historique des commits.</summary>
         private System.Windows.Forms.TabPage historyTab;
+        /// <summary>Disposition de la liste des changements et de leur diff.</summary>
         private System.Windows.Forms.SplitContainer changeSplit;
+        /// <summary>Vue de comparaison de code.</summary>
         private CodexVBE.CodeDiffView diff;
+        /// <summary>Colonne de code avant modification.</summary>
         private System.Windows.Forms.DataGridViewTextBoxColumn beforeColumn;
+        /// <summary>Colonne de code après modification.</summary>
         private System.Windows.Forms.DataGridViewTextBoxColumn afterColumn;
+        /// <summary>Liste des commits de l’historique.</summary>
         private System.Windows.Forms.ListBox history;
+        /// <summary>Commande de comparaison de versions.</summary>
         private System.Windows.Forms.Button compare;
+        /// <summary>Commande de publication vers la branche distante.</summary>
         private System.Windows.Forms.Button push;
+        /// <summary>Commande de récupération et intégration distante.</summary>
         private System.Windows.Forms.Button pull;
+        /// <summary>Commande de restauration d’un point d’historique.</summary>
         private System.Windows.Forms.Button restore;
+        /// <summary>Disposition des commandes relatives aux changements.</summary>
         private System.Windows.Forms.FlowLayoutPanel actions;
+        /// <summary>Liste des fichiers ou changements locaux.</summary>
         private System.Windows.Forms.CheckedListBox changes;
+        /// <summary>Libellé de résultat des opérations Git.</summary>
         private System.Windows.Forms.Label status;
+        /// <summary>Gestionnaire des infobulles des contrôles.</summary>
         private System.Windows.Forms.ToolTip toolTips;
+        /// <summary>Onglet de gestion des branches.</summary>
         private System.Windows.Forms.TabPage branchesTab;
+        /// <summary>Onglet des points de contrôle locaux.</summary>
         private System.Windows.Forms.TabPage checkpointsTab;
+        /// <summary>Onglet de résolution des conflits.</summary>
         private System.Windows.Forms.TabPage conflictsTab;
+        /// <summary>Disposition des commandes de branche.</summary>
         private System.Windows.Forms.FlowLayoutPanel branchActions;
+        /// <summary>Disposition des commandes de points de contrôle.</summary>
         private System.Windows.Forms.FlowLayoutPanel checkpointActions;
+        /// <summary>Disposition des commandes de résolution de conflit.</summary>
         private System.Windows.Forms.FlowLayoutPanel conflictActions;
+        /// <summary>Liste des branches disponibles.</summary>
         private System.Windows.Forms.ListBox branchList;
+        /// <summary>Liste des points de contrôle.</summary>
         private System.Windows.Forms.ListBox checkpointList;
+        /// <summary>Liste des conflits détectés.</summary>
         private System.Windows.Forms.ListBox conflictList;
+        /// <summary>Champ du nom de branche à créer ou suivre.</summary>
         private System.Windows.Forms.ComboBox branchName;
+        /// <summary>Champ de référence distante de la branche.</summary>
         private System.Windows.Forms.Button branchRemote;
+        /// <summary>Champ du nom du point de contrôle.</summary>
         private System.Windows.Forms.TextBox checkpointName;
+        /// <summary>Champ du texte de résolution du conflit.</summary>
         private System.Windows.Forms.TextBox resolutionText;
+        /// <summary>Commande de création d’une branche.</summary>
         private System.Windows.Forms.Button branchCreate;
+        /// <summary>Commande de suivi d’une branche distante.</summary>
         private System.Windows.Forms.Button branchTrack;
+        /// <summary>Commande de bascule vers une branche.</summary>
         private System.Windows.Forms.Button branchSwitch;
+        /// <summary>Commande de démarrage d’une fusion.</summary>
         private System.Windows.Forms.Button mergeBegin;
+        /// <summary>Commande de création d’un point de contrôle.</summary>
         private System.Windows.Forms.Button checkpointCreate;
+        /// <summary>Commande de restauration du point sélectionné.</summary>
         private System.Windows.Forms.Button checkpointRestore;
+        /// <summary>Commande de résolution en gardant la version locale.</summary>
         private System.Windows.Forms.Button mergeOurs;
+        /// <summary>Commande de résolution en gardant la version entrante.</summary>
         private System.Windows.Forms.Button mergeTheirs;
+        /// <summary>Commande de résolution par contenu textuel.</summary>
         private System.Windows.Forms.Button mergeText;
+        /// <summary>Commande de finalisation de la fusion.</summary>
         private System.Windows.Forms.Button mergeComplete;
+        /// <summary>Commande d’abandon de la fusion.</summary>
         private System.Windows.Forms.Button mergeAbort;
+        /// <summary>Grille du contenu en conflit.</summary>
         private System.Windows.Forms.DataGridView conflictDiff;
+        /// <summary>Colonne du contenu local.</summary>
         private System.Windows.Forms.DataGridViewTextBoxColumn conflictOurs;
+        /// <summary>Colonne du contenu entrant.</summary>
         private System.Windows.Forms.DataGridViewTextBoxColumn conflictTheirs;
 
+        /// <summary>Onglet des pull requests et fonctions GitHub.</summary>
         private System.Windows.Forms.TabPage githubTab;
+        /// <summary>Panneau de gestion des pull requests GitHub.</summary>
         private CodexVBE.GitHubPane githubPane;
+        /// <summary>Disposition des commandes de revue.</summary>
         private System.Windows.Forms.FlowLayoutPanel reviewActions;
+        /// <summary>Commande d’ouverture du module concerné dans le VBE.</summary>
         private System.Windows.Forms.Button openModule;
+        /// <summary>Commande de restauration du module concerné.</summary>
         private System.Windows.Forms.Button restoreModule;
+        /// <summary>Commande d’annulation de l’opération active.</summary>
         private System.Windows.Forms.Button cancelOperation;
+        /// <summary>Indicateur de progression de l’opération.</summary>
         private System.Windows.Forms.ProgressBar operationProgress;
+        /// <summary>Disposition du statut et de la progression.</summary>
         private System.Windows.Forms.TableLayoutPanel operationStatus;
+        /// <summary>Champ des détails du commit sélectionné.</summary>
         private System.Windows.Forms.TextBox historyDetails;
+        /// <summary>Contenu de base utilisé pour les comparaisons ou conflits.</summary>
         private System.Windows.Forms.TextBox baseContent;
+        /// <summary>Onglet d’import de changements.</summary>
         private System.Windows.Forms.TabPage importTab;
+        /// <summary>Résumé du contenu à importer.</summary>
         private System.Windows.Forms.TextBox importSummary;
+        /// <summary>Commande de comparaison avec une entrée d’historique.</summary>
         private System.Windows.Forms.Button historyCompare;
+        /// <summary>Commande d’aperçu avant import.</summary>
         private System.Windows.Forms.Button previewImport;
+        /// <summary>Disposition des libellés de base et de résultat du conflit.</summary>
         private System.Windows.Forms.TableLayoutPanel conflictLayout;
+        /// <summary>Libellé du contenu ancêtre du conflit.</summary>
         private System.Windows.Forms.Label ancestorLabel;
+        /// <summary>Libellé du résultat de résolution.</summary>
         private System.Windows.Forms.Label resultLabel;
+        /// <summary>Crée les contrôles et configure la disposition de la fenêtre Git.</summary>
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
