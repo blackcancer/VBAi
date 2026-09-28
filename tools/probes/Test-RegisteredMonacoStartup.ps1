@@ -69,8 +69,21 @@ try {
     $resized=Wait-Startup { $proof=Read-FillProof $editorHandle; if ($proof -and $proof.Width -ne $initial.Width) { $proof } }
     $vbe.MainWindow.Width=$width
     $restored=Wait-Startup { $proof=Read-FillProof $editorHandle; if ($proof -and $proof.Width -eq $initial.Width) { $proof } }
+    $browser=@($vbe.Windows | Where-Object { $_.Type -eq 2 })[0]
+    $browser.Visible=$true; $browser.SetFocus()
+    $browserHandle=[IntPtr]$browser.HWnd
+    $browserParent=[MonacoStartupWindow]::GetParent($browserHandle)
+    $browserBounds=[MonacoStartupWindow+Rect]::new()
+    [void][MonacoStartupWindow]::GetWindowRect($browserHandle,[ref]$browserBounds)
+    [void](Wait-Startup { if (-not [MonacoStartupWindow]::IsWindowVisible($editorHandle)) { $true } })
+    Start-Sleep -Milliseconds 600
+    $browserAfter=[MonacoStartupWindow+Rect]::new()
+    [void][MonacoStartupWindow]::GetWindowRect($browserHandle,[ref]$browserAfter)
+    if (-not $browser.Visible -or [MonacoStartupWindow]::GetParent($browserHandle) -ne $browserParent -or
+        $browserAfter.Left -ne $browserBounds.Left -or $browserAfter.Top -ne $browserBounds.Top -or
+        $browserAfter.Right -ne $browserBounds.Right -or $browserAfter.Bottom -ne $browserBounds.Bottom) { throw 'Monaco disturbed the native Object Browser layout.' }
     [IO.Directory]::CreateDirectory([IO.Path]::GetFullPath($OutputDirectory)) | Out-Null
-    @{ ProcessId=$ownerProcess; OpenedAutomatically=$true; MenuInvoked=$false; Initial=$initial; Resized=$resized; Restored=$restored } |
+    @{ ProcessId=$ownerProcess; OpenedAutomatically=$true; MenuInvoked=$false; Initial=$initial; Resized=$resized; Restored=$restored; NativeObjectBrowserVisible=$true; NativeObjectBrowserLayoutPreserved=$true; MonacoHiddenForNativeBrowser=$true } |
         ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $OutputDirectory 'monaco-startup.json') -Encoding UTF8
     Write-Output 'PASS: Monaco opened automatically, filled MDIClient, resized and restored without a menu, shortcut or pointer input.'
 } finally {

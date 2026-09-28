@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -14,6 +14,8 @@ namespace CodexVBE
         private bool nativeDocument;
         private readonly IntPtr workspace;
         private readonly Timer timer = new Timer { Interval = 200 };
+        /// <summary>Changes the native parent; defaults to the Windows API.</summary>
+        internal static Func<IntPtr, IntPtr, IntPtr> ChangeParent = SetParent;
         internal EditorWorkspaceHost(object vbe, ModernEditorWindow editor)
         {
             this.editor = editor; this.vbe = vbe;
@@ -30,7 +32,7 @@ namespace CodexVBE
             editor.TopLevel = false;
             editor.MinimumSize = System.Drawing.Size.Empty;
             SetLastError(0);
-            if (SetParent(editor.Handle, workspace) == IntPtr.Zero && Marshal.GetLastWin32Error() != 0)
+            if (ChangeParent(editor.Handle, workspace) == IntPtr.Zero && Marshal.GetLastWin32Error() != 0)
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             timer.Tick += (s, e) => Resize(); timer.Start();
         }
@@ -50,7 +52,9 @@ namespace CodexVBE
             }
             catch (COMException) { return; }
             if (GetClientRect(workspace, out Rect r))
-                SetWindowPos(editor.Handle, IntPtr.Zero, 0, 0, r.Right, r.Bottom, 0x0010);
+                // Resize only: a timer must never raise Monaco above native panes
+                // while their containing frame is being docked or detached.
+                SetWindowPos(editor.Handle, IntPtr.Zero, 0, 0, r.Right, r.Bottom, 0x0014);
         }
         public void Dispose() { timer.Stop(); timer.Dispose(); }
         [StructLayout(LayoutKind.Sequential)] private struct Rect { public int Left, Top, Right, Bottom; }

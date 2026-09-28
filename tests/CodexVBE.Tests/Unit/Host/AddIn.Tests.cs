@@ -375,6 +375,60 @@ namespace CodexVBE.Tests.Unit
     public sealed class AddInModernEditorTests
     {
         [STATestMethod]
+        public void EditorActionsRequireALiveVisibleReadyDocumentAndPreserveFailures()
+        {
+            foreach (int state in new[] { 0, 1, 2, 3, 4, 5, 6 })
+            using (var fixture = new AddInModernEditorFixture())
+            using (var module = new EditorFixture())
+            {
+                var commands = new System.Collections.Generic.List<string>();
+                ModernEditorWindow editor = state == 0 ? null : fixture.Get();
+                if (editor != null)
+                {
+                    editor.ScriptExecution = (name, args) =>
+                    {
+                        commands.Add(name + ":" + string.Join(",", args.Select(a => Convert.ToString(a))));
+                        if (state == 6) throw new IOException("owned editor command failure");
+                        return System.Threading.Tasks.Task.FromResult("null");
+                    };
+                    if (state >= 5)
+                    {
+                        editor.OpenModule(module).GetAwaiter().GetResult();
+                    }
+                    if (state == 1) editor.Dispose();
+                    if (state == 2) editor.Hide();
+                    if (state >= 4) LlmBoundaryScope.Set(editor, "<Ready>k__BackingField", true);
+                }
+                commands.Clear();
+                LlmBoundaryScope.Call(fixture.Instance, "PrepareEditorAction", "/explain");
+                if (state >= 5)
+                {
+                    CollectionAssert.AreEqual(new[] { "command:vbai.explain" }, commands);
+                    if (state == 6) Assert.IsTrue(fixture.Scope.Notices.Contains("owned editor command failure"));
+                }
+                else
+                {
+                    Assert.AreEqual(0, commands.Count);
+                    Assert.IsNotNull(LlmBoundaryScope.Get<ChatWindow>(fixture.Instance, "chat"));
+                }
+            }
+        }
+
+        [STATestMethod]
+        public void StartupWithAnActiveComponentObservesItsRealReadFailureWithoutLosingTheEditor()
+        {
+            using (var fixture = new AddInModernEditorFixture())
+            {
+                fixture.Active();
+                object[] custom = null;
+                fixture.Instance.OnConnection(fixture.Scope.Host, 0, fixture.Scope.Host.AddIns.AddIn, ref custom);
+                Assert.IsTrue(fixture.Get(false).Visible);
+                Assert.AreEqual(1, fixture.Scope.Notices.Count);
+                StringAssert.Contains(string.Join("\n", fixture.Scope.Logs), "VBE menu action failed:");
+            }
+        }
+
+        [STATestMethod]
         public void ConnectionAutomaticallyShowsBorderlessEditorAcrossTheOwnedWorkspace()
         {
             using (var fixture = new AddInModernEditorFixture(true))

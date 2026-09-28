@@ -139,3 +139,9 @@ le dialogue Enregistrer sous n'a pas été automatisé dans cette qualification.
 Qualification de ce lot : **205 tests .NET réussis, 0 échec, 0 ignoré** (`artifacts/monaco/tests/fixes-final.trx`) et **11 tests JavaScript réussis**. Ce résultat ne constitue pas une mesure de couverture globale du projet.
 
 La build locale de qualification est déployée dans `artifacts/monaco/host-build` du worktree. Les clés COM utilisateur AddIn et ChatToolWindow pointent vers cette build ; les anciennes valeurs sont sauvegardées dans `registration-before.json`. Aucun binaire du checkout main n’est remplacé.
+
+### Correctif de coexistence avec l'Explorateur d'objets
+
+Le timer d'ancrage redimensionne désormais Monaco avec `SWP_NOZORDER | SWP_NOACTIVATE` : il ne remonte plus sa surface devant les fenêtres natives pendant un changement de cadre. L'ouverture explicite de Monaco conserve son action de premier plan. Les **36 tests Host** passent, avec toutes les classes `AddIn` et `EditorWorkspaceHost` à **100 % lignes et branches** (`artifacts/cov/host-zorder-results/c5f4b6e7-bd91-421c-a1d0-5ba9d6f66313/coverage.cobertura.xml`). Une fenêtre native réellement placée devant Monaco conserve cet ordre après les passages du timer.
+
+La DLL de `bin/Debug/net48` est reconstruite. Dans Excel jetable, le scénario `MonacoStartup` vérifie son MVID, le remplissage/redimensionnement automatique puis l'ouverture réelle de l'Explorateur d'objets : Monaco s'efface, son parent et ses dimensions restent inchangés (`artifacts/pr10-start/native-browser/monaco-startup.json`). Ce contrôle ne prouve pas encore le basculement du choix d'ancrage signalé dans SOLIDWORKS.
