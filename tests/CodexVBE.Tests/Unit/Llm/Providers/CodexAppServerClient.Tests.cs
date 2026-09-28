@@ -105,9 +105,9 @@ namespace CodexVBE.Tests.Unit
                     }
                 }
                 using (var transport = new CodexProcessTransport()) { transport.StartProcess = p => false; Assert.ThrowsException<InvalidOperationException>(() => transport.Start()); transport.Dispose(); }
-                using (var transport = new CodexProcessTransport()) { transport.StartProcess = p => fixture.Start(p, "echo"); transport.Start(); transport.Send("unobserved"); var process = LlmBoundaryScope.Get<Process>(transport, "process"); transport.Send("exit"); Assert.IsTrue(process.WaitForExit(5000)); transport.Dispose(); }
-                using (var transport = new CodexProcessTransport()) { transport.StartProcess = p => fixture.Start(p, "echo"); transport.Start(); var process = LlmBoundaryScope.Get<Process>(transport, "process"); process.Kill(); Assert.IsTrue(process.WaitForExit(5000)); process.Close(); transport.Dispose(); }
-                using (var transport = new CodexProcessTransport()) { transport.StartProcess = p => fixture.Start(p, "echo"); transport.Start(); transport.Dispose(); }
+                using (var transport = new CodexProcessTransport()) { transport.StartProcess = p => { Assert.AreEqual(ProviderSessionStorage.CodexHome, p.StartInfo.EnvironmentVariables["CODEX_HOME"]); return fixture.Start(p, "echo"); }; transport.Start(); transport.Send("unobserved"); var process = LlmBoundaryScope.Get<Process>(transport, "process"); transport.Send("exit"); Assert.IsTrue(process.WaitForExit(5000)); transport.Dispose(); }
+                using (var transport = new CodexProcessTransport()) { transport.StartProcess = p => { Assert.AreEqual(ProviderSessionStorage.CodexHome, p.StartInfo.EnvironmentVariables["CODEX_HOME"]); return fixture.Start(p, "echo"); }; transport.Start(); var process = LlmBoundaryScope.Get<Process>(transport, "process"); process.Kill(); Assert.IsTrue(process.WaitForExit(5000)); process.Close(); transport.Dispose(); }
+                using (var transport = new CodexProcessTransport()) { transport.StartProcess = p => { Assert.AreEqual(ProviderSessionStorage.CodexHome, p.StartInfo.EnvironmentVariables["CODEX_HOME"]); return fixture.Start(p, "echo"); }; transport.Start(); transport.Dispose(); }
             }
         }
         /// <summary>Initialise une session ChatGPT après validation du compte et des outils en lecture seule.</summary>

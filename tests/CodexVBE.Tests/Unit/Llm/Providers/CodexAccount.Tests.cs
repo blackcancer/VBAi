@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Unit
+namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.IO;
@@ -19,7 +19,7 @@
             {
                 foreach(string mode in new[] {"chatgpt","api","error","error-empty"})
                 {
-                    scope.Mode(mode);var status=await CodexAccount.ReadStatusAsync();
+                    scope.Mode(mode); CodexAccount.StartProcess=info=> {Assert.AreEqual(ProviderSessionStorage.CodexHome,info.EnvironmentVariables["CODEX_HOME"]);return Process.Start(info);};var status=await CodexAccount.ReadStatusAsync();
                     Assert.AreEqual(mode=="chatgpt",status.ChatGptConnected);
                     if(mode=="chatgpt")Assert.AreEqual("Connected to ChatGPT",status.Text);
                     if(mode=="api")StringAssert.Contains(status.Text,"API account fixture");

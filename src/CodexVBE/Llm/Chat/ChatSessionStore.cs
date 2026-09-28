@@ -75,6 +75,9 @@ namespace CodexVBE
         /// <summary>Obtient ou définit l’identifiant de fil de conversation Codex associé.</summary>
         /// <value>Identifiant de fil, ou nul si non applicable.</value>
         public string CodexThreadId { get; set; }
+        /// <summary>Dossier privé auquel appartient le fil ; nul pour un ancien fil extérieur.</summary>
+        /// <value>Chemin du stockage Codex ayant créé ce fil.</value>
+        public string CodexThreadHome { get; set; }
         /// <summary>Obtient ou définit le contexte nécessaire pour reprendre la conversation.</summary>
         /// <value>Contexte de reprise ou nul.</value>
         public string ResumeContext { get; set; }

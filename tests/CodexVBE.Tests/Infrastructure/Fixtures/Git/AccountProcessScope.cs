@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Infrastructure
+namespace CodexVBE.Tests.Infrastructure
 {
     using System;
     using System.Collections.Generic;
@@ -47,7 +47,7 @@
         }
         internal Process StartLogin(ProcessStartInfo info)
         {
-            Assert.AreEqual(Executable,info.FileName);Assert.AreEqual("login",info.Arguments);Assert.IsTrue(info.UseShellExecute);
+            Assert.AreEqual(Executable,info.FileName);Assert.AreEqual("login",info.Arguments);Assert.IsFalse(info.UseShellExecute);Assert.IsFalse(info.CreateNoWindow);Assert.AreEqual(ProviderSessionStorage.CodexHome,info.EnvironmentVariables["CODEX_HOME"]);
             var process=Process.Start(info);logins.Add(process);return process;
         }
         internal void AssertLoginFinished()

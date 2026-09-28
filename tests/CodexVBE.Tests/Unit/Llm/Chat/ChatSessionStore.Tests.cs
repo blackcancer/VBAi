@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Unit
+namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.IO;
@@ -19,7 +19,7 @@
             {
                 string path=Path.Combine(scope.Root,"history.db");
                 var session=new ChatSessionState {Scope="é-scope",Title="O'Brien",Pinned=true,Archived=true,Mode=ChatMode.Plan,
-                    Provider="Fixture",Model="fixture-model",CodexThreadId="thread",ResumeContext="resume",MessagesJson="[]",Draft="draft",
+                    Provider="Fixture",Model="fixture-model",CodexThreadId="thread",CodexThreadHome=ProviderSessionStorage.CodexHome,ResumeContext="resume",MessagesJson="[]",Draft="draft",
                     DraftAttachments=new[] {new ChatAttachment {Label="L",Text="T",Project="P",Module="M",Sha256="sha",StartLine=8}},
                     DraftReferences=new[] {new VbeChatReference {Project="P",Module="M",Kind="Module"}}};
                 session.Entries.Add(new ChatEntry {Speaker="Assistant",Text="été",StreamId="stream",TurnId="turn",AttachedMemory="memory",
@@ -34,7 +34,7 @@
                     var read=store.List(session.Scope).Single();Assert.AreEqual(session.Id,read.Id);Assert.AreEqual("O'Brien",read.Title);
                     Assert.IsTrue(read.Pinned);Assert.IsTrue(read.Archived);Assert.AreEqual(ChatMode.Plan,read.Mode);
                     Assert.AreEqual("Fixture",read.Provider);Assert.AreEqual("fixture-model",read.Model);Assert.AreEqual("thread",read.CodexThreadId);
-                    Assert.AreEqual("resume",read.ResumeContext);Assert.AreEqual("[]",read.MessagesJson);Assert.AreEqual("draft",read.Draft);
+                    Assert.AreEqual(ProviderSessionStorage.CodexHome,read.CodexThreadHome);Assert.AreEqual("resume",read.ResumeContext);Assert.AreEqual("[]",read.MessagesJson);Assert.AreEqual("draft",read.Draft);
                     Assert.AreEqual("é-scope",read.Scope);Assert.AreEqual("sha",read.DraftAttachments[0].Sha256);
                     Assert.AreEqual("stream",read.Entries[0].StreamId);Assert.AreEqual("turn",read.Entries[0].TurnId);Assert.AreEqual("été",read.Entries[0].Text);
                     Assert.AreEqual("before-sha",read.Entries[0].Change.BeforeSha256);Assert.AreEqual("after-sha",read.Entries[0].Change.AfterSha256);

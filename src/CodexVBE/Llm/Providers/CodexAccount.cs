@@ -52,6 +52,7 @@ namespace CodexVBE
                     UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true,
                     RedirectStandardError = true
                 };
+                ProviderSessionStorage.ConfigureCodex(info);
                 using (var process = StartProcess(info))
                 {
                     var output = process.StandardOutput.ReadToEndAsync();
@@ -73,7 +74,9 @@ namespace CodexVBE
         /// <summary>Ouvre la commande interactive de connexion du client Codex.</summary>
         public static void StartLogin()
         {
-            StartProcess(new ProcessStartInfo(Executable, "login") { UseShellExecute = true });
+            var info = new ProcessStartInfo(Executable, "login") { UseShellExecute = false, CreateNoWindow = false };
+            ProviderSessionStorage.ConfigureCodex(info);
+            StartProcess(info);
         }
     }
 }

@@ -61,6 +61,7 @@ namespace CodexVBE
                 CreateNoWindow = true, StandardOutputEncoding = new UTF8Encoding(false),
                 StandardErrorEncoding = new UTF8Encoding(false)
             };
+            ProviderSessionStorage.ConfigureCodex(info);
             process = new Process { StartInfo = info, EnableRaisingEvents = true };
             process.Exited += (sender, args) => Exited?.Invoke(new InvalidOperationException(UiText.Get("Codex app-server stopped.")));
             if (!StartProcess(process))
