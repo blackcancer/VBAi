@@ -5,9 +5,11 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie les branches natives, les points de contrôle, les fusions et la résolution de conflits.</summary>
     public sealed partial class MacroGitRepositoryTests
     {
-        [TestMethod]
+                /// <summary>Vérifie les branches suivies, points de contrôle et garde-fous de fusion.</summary>
+[TestMethod]
         public void BranchTrackingCheckpointsAndMergeStateGuardsMatrix()
         {
             using (var f = new MacroGitOperationsTests.Fixture())
@@ -53,7 +55,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
-        [TestMethod]
+                /// <summary>Vérifie l’aperçu des conflits binaires, volumineux, absents ou encodés en UTF-8 invalide.</summary>
+[TestMethod]
         public void ConflictPreviewHandlesMissingDirectoriesBinaryLargeAndInvalidUtf8NativeObjects()
         {
             using (var f = new MacroGitOperationsTests.Fixture())
@@ -82,7 +85,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
-        [TestMethod]
+                /// <summary>Vérifie les choix de résolution et les restrictions appliquées aux conflits textuels.</summary>
+[TestMethod]
         public void ConflictResolutionChoicesAndTextEligibilityMatrix()
         {
             using (var f = new MacroGitOperationsTests.Fixture())
@@ -112,7 +116,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
-        [TestMethod]
+                /// <summary>Crée des branches Git en conflit et vérifie que leur résolution produit un commit de fusion validé.</summary>
+[TestMethod]
         public void NativeConflictingBranchesResolveToAValidatedMergeCommit()
         {
             using (var f = new MacroGitOperationsTests.Fixture())

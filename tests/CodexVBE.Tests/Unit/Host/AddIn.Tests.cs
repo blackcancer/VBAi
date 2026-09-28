@@ -74,10 +74,12 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE.Tests.Infrastructure;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    [TestClass, TestCategory("Unit")]
+        /// <summary>Vérifie le cycle de vie du complément et ses callbacks vers l’interface.</summary>
+[TestClass, TestCategory("Unit")]
     public sealed partial class AddInCoverageTests
     {
-        [STATestMethod]
+                /// <summary>Vérifie les garde-fous d’attachement lors de la réouverture d’une fenêtre native partiellement libérée.</summary>
+[STATestMethod]
         public void ReopeningAChatWithinALiveOrPartiallyReleasedNativeSiteKeepsAttachGuards()
         {
             foreach (bool missingControl in new[] { false, true }) using (var scope = new HostUiScope())
@@ -87,7 +89,8 @@ namespace CodexVBE.Tests.Unit
                 finally { LlmBoundaryScope.Set(instance, "nativeChatControl", control); scope.Close(instance); }
             }
         }
-        [STATestMethod]
+                /// <summary>Vérifie l’attachement, le détachement et la réouverture de la fenêtre assistant.</summary>
+[STATestMethod]
         public void RealAssistantCanDockUndockRecoverDisposedSiteAndReopenAfterClosing()
         {
             using (var scope = new HostUiScope())
@@ -104,7 +107,8 @@ namespace CodexVBE.Tests.Unit
                 Assert.IsNull(Chat(instance)); Assert.IsNull(LlmBoundaryScope.Get<object>(instance, "server"));
             }
         }
-        [STATestMethod]
+                /// <summary>Vérifie les menus, les dialogues possédés et les actions de préparation du compositeur.</summary>
+[STATestMethod]
         public void MenuCallbacksOpenOwnedDialogsAndPrepareActualComposerActions()
         {
             using (var scope = new HostUiScope())
@@ -115,7 +119,8 @@ namespace CodexVBE.Tests.Unit
                 finally { scope.Close(instance); }
             }
         }
-        [STATestMethod]
+                /// <summary>Vérifie les frontières natives au démarrage, la journalisation des valeurs nulles et les erreurs du pont.</summary>
+[STATestMethod]
         public void StartupNativeBoundariesLogNullComInstancesAndPropagateBridgeFailures()
         {
             using (var scope = new HostUiScope())
@@ -127,7 +132,8 @@ namespace CodexVBE.Tests.Unit
             }
             using (var scope = new HostUiScope()) { AddIn.CreateChat = session => throw new IOException("UI unavailable"); var instance = scope.Connected(); try { Assert.IsTrue(scope.Logs.Any(x => x.Contains("Assistant window failed"))); Assert.IsNull(Chat(instance)); } finally { scope.Close(instance); } }
         }
-        [STATestMethod]
+                /// <summary>Vérifie que les erreurs COM d’attachement restaurent la fenêtre flottante et conservent les nettoyages.</summary>
+[STATestMethod]
         public void DockingComFailuresRestoreFloatingChatAndRetainEveryCleanupDefense()
         {
             foreach (var failure in new[] { "lookup", "creation", "missing-control", "position", "focus", "close", "null-chat", "missing-attached-control" })
@@ -139,7 +145,8 @@ namespace CodexVBE.Tests.Unit
                     finally { scope.Close(instance); }
                 }
         }
-        [STATestMethod]
+                /// <summary>Vérifie les erreurs de validation des paramètres et de GitHub sans ouvrir de dialogue réel.</summary>
+[STATestMethod]
         public void SettingsAndGitHubValidationReportErrorsWithoutAnyRealUserDialog()
         {
             using (var scope = new HostUiScope())
@@ -152,7 +159,8 @@ namespace CodexVBE.Tests.Unit
             }
             using (var scope = new HostUiScope()) { var instance = scope.Connected(); var disposed = Chat(instance); disposed.Dispose(); LlmBoundaryScope.Set(instance, "chat", disposed); Call(instance, "ShowSettings"); Assert.AreEqual(typeof(LlmSettingsWindow), scope.Dialogs.Single()); scope.Close(instance); }
         }
-        [STATestMethod]
+                /// <summary>Vérifie l’arrêt idempotent avec une fenêtre absente, libérée, détachée ou encore active.</summary>
+[STATestMethod]
         public void ShutdownHandlesLiveDisposedMissingAndUndockedChatStatesIdempotently()
         {
             foreach (var state in new[] { "live", "disposed", "missing", "no-control", "undocked", "no-window", "reject-close" }) using (var scope = new HostUiScope())

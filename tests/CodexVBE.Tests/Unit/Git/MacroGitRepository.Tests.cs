@@ -10,10 +10,12 @@ namespace CodexVBE.Tests.Unit
 
     [TestClass]
     [TestCategory("Unit")]
-    [DoNotParallelize]
+        /// <summary>Vérifie les règles de dépôt, les arbres de fichiers et le lancement des commandes Git natives.</summary>
+[DoNotParallelize]
     public sealed partial class MacroGitRepositoryTests
     {
-        [TestMethod]
+                /// <summary>Vérifie les noms de branche, comptes, URL distantes et chemins de scope acceptés ou refusés.</summary>
+[TestMethod]
         public void BranchAccountRemoteAndScopeValidationMatrix()
         {
             foreach (string branch in new[] { null, "", "with space", "-invalid", "a..b", "a//b", "a/", "a/.hidden", "a/trailing.", "a/file.lock", new string('x', 129) })
@@ -29,7 +31,8 @@ namespace CodexVBE.Tests.Unit
             Assert.AreNotEqual(scope, MacroGitRepository.ScopeDirectory("Another disposable scope"));
         }
 
-        [TestMethod]
+                /// <summary>Initialise un dépôt Git et vérifie la récupération, la synchronisation et l’ascendance des commits.</summary>
+[TestMethod]
         public void NativeInitializeFetchSynchronizationAndAncestryMatrix()
         {
             using (var f = new MacroGitOperationsTests.Fixture())
@@ -66,7 +69,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
-        [TestMethod]
+                /// <summary>Vérifie les noms de fichiers du dépôt, sa structure et les limites de ressources d’export.</summary>
+[TestMethod]
         public void RepositoryTreeShapeNamesAndPackageResourceLimitsMatrix()
         {
             using (var f = new MacroGitOperationsTests.Fixture())
@@ -93,7 +97,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
-        [TestMethod]
+                /// <summary>Vérifie l’environnement du processus Git, les identifiants et les erreurs ou délais dépassés.</summary>
+[TestMethod]
         public void NativeProcessEnvironmentCredentialsFailureAndTimeoutMatrix()
         {
             using (var f = new MacroGitOperationsTests.Fixture())
@@ -126,7 +131,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
-        [TestMethod]
+                /// <summary>Vérifie l’annulation du processus Git avant, pendant et après sa terminaison.</summary>
+[TestMethod]
         public void NativeProcessCancellationBeforeDuringAndAfterExitMatrix()
         {
             using (var f = new MacroGitOperationsTests.Fixture())

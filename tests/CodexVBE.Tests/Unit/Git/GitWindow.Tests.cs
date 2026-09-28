@@ -107,10 +107,12 @@ namespace CodexVBE.Tests.Unit
 
     [TestClass]
     [TestCategory("Unit")]
-    [DoNotParallelize]
+        /// <summary>Vérifie les opérations de dépôt, les conflits et l’état de la fenêtre Git.</summary>
+[DoNotParallelize]
     public sealed partial class GitWindowCoverageTests
     {
-        [WinFormsTestMethod]
+                /// <summary>Connecte un dépôt Git local et vérifie la sauvegarde et le remplacement de la liaison.</summary>
+[WinFormsTestMethod]
         public void ConnectUsesRealLocalGitAndPersistsAndReplacesBinding()
         {
             using (var f = new Fixture(false))
@@ -129,7 +131,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
-        [WinFormsTestMethod]
+                /// <summary>Vérifie verrouillage, actualisation, annulation et fermeture pendant les opérations.</summary>
+[WinFormsTestMethod]
         public void PerformLockBranchRefreshCancellationAndClosingMatrix()
         {
             using (var f = new Fixture())
@@ -152,7 +155,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
-        [WinFormsTestMethod]
+                /// <summary>Compare l’état courant à la base et vérifie les imports interrompus ou modifiés.</summary>
+[WinFormsTestMethod]
         public void CompareTracksBaselineDirtyAndInterruptedImportStates()
         {
             using (var f = new Fixture())
@@ -169,7 +173,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
-        [WinFormsTestMethod]
+                /// <summary>Exécute les actions de branche, point de contrôle, distant et fusion sur Git local.</summary>
+[WinFormsTestMethod]
         public void BranchCheckpointRemoteAndMergeActionsUseNativeGitAndReturnToLiveState()
         {
             using (var f = new Fixture())
@@ -190,7 +195,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
-        [WinFormsTestMethod]
+                /// <summary>Vérifie les aperçus de conflit et les choix textuels « ours » et « theirs ».</summary>
+[WinFormsTestMethod]
         public void ConflictPreviewAndOursTheirsTextResolutionMatrix()
         {
             foreach (string choice in new[] { "ours", "theirs", "text" })
@@ -214,7 +220,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
-        [WinFormsTestMethod]
+                /// <summary>Vérifie les commits, la synchronisation, les états obsolètes et le statut des opérations.</summary>
+[WinFormsTestMethod]
         public void CommitSynchronizationStaleStateAndOperationStatusMatrix()
         {
             using (var f = new Fixture())
@@ -254,7 +261,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
-        [WinFormsTestMethod]
+                /// <summary>Vérifie les conflits binaires et les changements de sélection pendant la lecture.</summary>
+[WinFormsTestMethod]
         public void BinaryConflictPreviewAndSelectionChangesDuringReadAreHandled()
         {
             foreach (int selection in new[] { 0, -1, 1 })

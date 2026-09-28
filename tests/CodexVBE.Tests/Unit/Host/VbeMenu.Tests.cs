@@ -145,7 +145,8 @@ namespace CodexVBE.Tests.Unit
     [TestCategory("Unit")]
     public sealed partial class VbeMenuLifecycleTests
     {
-        [STATestMethod]
+                /// <summary>Vérifie les images natives, menus localisés, barres d’éditeur et erreurs de suppression.</summary>
+[STATestMethod]
         public void NativeMenuPicturesLocalizedEditorBarsAndRemovalFailuresKeepAllGuards()
         {
             using (var theme = new CodexVBE.Tests.Infrastructure.ThemeScope()) using (var culture = new CodexVBE.Tests.Infrastructure.LocalizationScope())
@@ -164,7 +165,8 @@ namespace CodexVBE.Tests.Unit
                 Assert.AreEqual(6, subscriptions.Count);
             }
         }
-        [TestMethod]
+                /// <summary>Vérifie le nettoyage partiel des menus face aux objets COM en lecture seule ou absents.</summary>
+[TestMethod]
         public void PartialMenuDestructionPreservesReadonlyNullDefenses()
         {
             foreach (var name in new[] { "viewButton", "settingsButton", "viewHandler", "settingsHandler" })
