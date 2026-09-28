@@ -6,10 +6,12 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie l’arrêt de l’add-in et la propriété des fenêtres natives.</summary>
     [TestClass]
     [TestCategory("Unit")]
     public sealed partial class HostSettingsCoverageTests
     {
+        /// <summary>Ferme la fenêtre native une fois et rend l’arrêt répétable.</summary>
         [TestMethod]
         [STATestMethod]
         public void AddInShutdownClosesNativeWindowAndCanRunTwice()
@@ -29,6 +31,7 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual(1, native.CloseCount);
         }
 
+        /// <summary>Utilise la fenêtre principale du VBE comme propriétaire des dialogues.</summary>
         [TestMethod]
         public void AddInUsesTheVbeMainWindowAsDialogOwner()
         {
@@ -41,6 +44,7 @@ namespace CodexVBE.Tests.Unit
             Assert.IsNull(Field<object>(addIn, "vbe"));
         }
 
+        /// <summary>Libère les ressources de l’add-in même si la fenêtre native refuse la fermeture.</summary>
         [TestMethod]
         public void AddInShutdownContinuesWhenTheNativeWindowRejectsClose()
         {
@@ -69,10 +73,12 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie les métadonnées COM et les callbacks sans connexion active.</summary>
     [TestClass]
     [TestCategory("Unit")]
     public sealed partial class HostSettingsWindowTests
     {
+        /// <summary>Conserve des callbacks inoffensifs lorsque l’objet AddIn n’a pas été initialisé par le VBE.</summary>
         [TestMethod]
         public void AddInMetadataAndNoOpLifecycleCallbacksRemainSafeWithoutConnection()
         {
