@@ -49,3 +49,46 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    [Microsoft.VisualStudio.TestTools.UnitTesting.TestClass, Microsoft.VisualStudio.TestTools.UnitTesting.TestCategory("Unit"), Microsoft.VisualStudio.TestTools.UnitTesting.DoNotParallelize]
+    public sealed class ProjectHelpNativeBoundaryTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void DefaultHelpAdapterPassesNativeContextCommandAndUnverifiedHandle()
+        {
+            string file = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "owned-help-" + System.Guid.NewGuid().ToString("N") + ".chm");
+            var original = VbeProjectComponents.NativeHelp;
+            try
+            {
+                System.IO.File.WriteAllText(file, "owned placeholder");
+                var vbe = new CodexVBE.Tests.Infrastructure.IdeSurfaceFixture.Vbe();
+                var project = new CodexVBE.Tests.Infrastructure.IdeSurfaceFixture.Project { HelpFile = file };
+                vbe.VBProjects.Add(project);
+                var service = new VbeProjectComponents(vbe, new VbeForms(vbe));
+                foreach (uint context in new[] { 0U, 12U, uint.MaxValue })
+                {
+                    project.HelpContextID = context; int calls = 0;
+                    VbeProjectComponents.NativeHelp = (owner, path, command, data) => {
+                        calls++;
+                        Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(System.IntPtr.Zero, owner);
+                        Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(file, path);
+                        Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(context == 0 ? 0U : 15U, command);
+                        Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual((ulong)context, data.ToUInt64());
+                        return context == 0 ? System.IntPtr.Zero : new System.IntPtr(2);
+                    };
+                    dynamic metadata = service.ProjectProperties("P");
+                    dynamic result = service.OpenProjectHelp(new Request { Project = "P", ExpectedProjectVersion = metadata.Version });
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(1, calls);
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(context != 0, (bool)result.HelpWindowCreated);
+                    Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse((bool)result.TopicVerified);
+                }
+                VbeProjectComponents.NativeHelp = (owner, path, command, data) => { throw new System.IO.IOException("native help unavailable"); };
+                dynamic before = service.ProjectProperties("P");
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.IO.IOException>(() => service.OpenProjectHelp(new Request { Project = "P", ExpectedProjectVersion = before.Version }));
+            }
+            finally { VbeProjectComponents.NativeHelp = original; System.IO.File.Delete(file); }
+        }
+    }
+}

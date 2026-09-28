@@ -45,7 +45,7 @@ namespace CodexVBE
                     throw new InvalidOperationException("The host document was not saved. Your code remains in the editor and host document.");
                 synchronizationError = null;
                 lastSaveError = hostSaved.HasValue ? null : "The native Save command finished, but the host document's saved state could not be verified.";
-                status.Text = UiText.Get(lastSaveError ?? "Saved.");
+                SetResultStatus(UiText.Get(lastSaveError ?? "Saved."));
             }
             catch (Exception error)
             {

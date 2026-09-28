@@ -5,6 +5,92 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CodexVBE.Tests.Unit
 {
+    public sealed partial class VbeDebugWindowsSystemTests
+    {
+        [TestMethod]
+        public void NativeToolboxPagesValidateOwnerWindowServersAndFullReadback()
+        {
+            foreach (string fault in new[] { "none", "zero owner", "foreign", "hidden", "class", "caption", "no servers", "too many", "foreign server", "hidden server", "server class", "provider error", "provider null", "wrong role", "duplicate groups", "changed owner", "changed server owner", "changed visible", "changed server visible", "changed caption", "changed server class" })
+            using (var scene = new SystemScene())
+            {
+                var editor = scene.Add("VBE", "wndclass_desked_gsk"); var window = scene.Add("Toolbox", "VbaWindow", editor); var server = scene.Add("pages", "F3 Server fixture", window);
+                var grouping = new AccessibleNode { NativeRole = System.Windows.Forms.AccessibleRole.Grouping };
+                var list = new AccessibleNode { NativeRole = System.Windows.Forms.AccessibleRole.PageTabList };
+                list.Children.Add(new AccessibleNode { Label = "Controls", NativeRole = System.Windows.Forms.AccessibleRole.PageTab, StateValue = System.Windows.Forms.AccessibleStates.Selected }); grouping.Children.Add(list); server.Accessible = grouping;
+                uint owner = window.ProcessId;
+                if (fault == "zero owner") owner = 0;
+                if (fault == "foreign") window.ProcessId = 999999;
+                if (fault == "hidden") window.Visible = false;
+                if (fault == "class") window.Class = "unrelated";
+                if (fault == "caption") window.Text = "unrelated";
+                if (fault == "no servers") scene.Windows.Remove(server);
+                if (fault == "too many") for (int i = 0; i < 64; i++) scene.Add("server", "F3 Server fixture", window);
+                if (fault == "foreign server") server.ProcessId = 999999;
+                if (fault == "hidden server") server.Visible = false;
+                if (fault == "server class") server.Class = "unrelated";
+                if (fault == "provider error") scene.AccessibilityHResult = -1;
+                if (fault == "provider null") server.Accessible = null;
+                if (fault == "wrong role") grouping.NativeRole = System.Windows.Forms.AccessibleRole.Client;
+                if (fault == "duplicate groups") scene.Add("second", "F3 Server fixture", window).Accessible = grouping;
+                list.Children[0].OnName = () => {
+                    if (fault == "changed owner") window.ProcessId = 999999;
+                    if (fault == "changed server owner") server.ProcessId = 999999;
+                    if (fault == "changed visible") window.Visible = false;
+                    if (fault == "changed server visible") server.Visible = false;
+                    if (fault == "changed caption") window.Text = "Changed";
+                    if (fault == "changed server class") server.Class = "changed";
+                };
+                var result = (VbeDebugWindows.NavigationSurface)Call("ReadNativeToolboxPages", window.Handle, owner);
+                Assert.AreEqual(fault == "none", result.Available, fault);
+                if (fault == "none") { Assert.AreEqual(1, result.Nodes.Length); Assert.AreEqual(true, result.Nodes[0].ObservedSelected); Assert.IsNull(result.Nodes[0].Selected); }
+                else { Assert.AreEqual(0, result.Nodes.Length); Assert.IsNull(result.Identity); Assert.IsFalse(string.IsNullOrEmpty(result.Error)); }
+                if (fault == "none") Assert.IsTrue(Native<VbeDebugWindows.INavigationSurfaceProbe>("NativeNavigationSurfaceProbe").Read("toolbox").Available);
+            }
+        }
+
+        [TestMethod]
+        public void NativeToolboxAdapterReturnsSimpleChildrenAndReleasesOwnedNativeInterfaces()
+        {
+            using (var scene = new SystemScene())
+            {
+                var node = new AccessibleNode { NativeRole = System.Windows.Forms.AccessibleRole.Grouping };
+                node.Children.Add(null);
+                var type = typeof(VbeDebugWindows).GetNestedType("ToolboxAccessibleNode", System.Reflection.BindingFlags.NonPublic);
+                using (var adapter = (VbeDebugWindows.IToolboxAccessibleNode)Activator.CreateInstance(type, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic, null, new object[] { node }, null))
+                    Assert.IsNull(adapter.Child(1));
+            }
+            object font = Activator.CreateInstance(Type.GetTypeFromProgID("StdFont", true));
+            IntPtr identity = System.Runtime.InteropServices.Marshal.GetIUnknownForObject(font);
+            try
+            {
+                foreach (bool native in new[] { false, true })
+                {
+                    object value = native ? System.Runtime.InteropServices.Marshal.GetUniqueObjectForIUnknown(identity) : new object();
+                    var node = new ChildValueAccessible { ChildValue = value };
+                    var type = typeof(VbeDebugWindows).GetNestedType("ToolboxAccessibleNode", System.Reflection.BindingFlags.NonPublic);
+                    using (var adapter = (VbeDebugWindows.IToolboxAccessibleNode)Activator.CreateInstance(type, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic, null, new object[] { node }, null)) Assert.IsNull(adapter.Child(1));
+                }
+                using (var scene = new SystemScene())
+                {
+                    scene.OverrideAccessibility = true; scene.AccessibilityOverride = System.Runtime.InteropServices.Marshal.GetUniqueObjectForIUnknown(identity);
+                    var error = Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => Call("OpenToolboxAccessibleNode", new IntPtr(100)));
+                    Assert.IsInstanceOfType(error.InnerException, typeof(InvalidOperationException));
+                }
+            }
+            finally { System.Runtime.InteropServices.Marshal.Release(identity); System.Runtime.InteropServices.Marshal.FinalReleaseComObject(font); }
+            var readNative = VbeDebugWindows.AccessibleObjectFromWindow;
+            using (var window = new System.Windows.Forms.Form())
+            {
+                Guid iid = new Guid("618736e0-3c3d-11cf-810c-00aa00389b71"); object accessible;
+                Assert.AreEqual(0, readNative(window.Handle, 0xfffffffc, ref iid, out accessible));
+                using (var scene = new SystemScene())
+                {
+                    scene.OverrideAccessibility = true; scene.AccessibilityOverride = accessible;
+                    using (var adapter = (VbeDebugWindows.IToolboxAccessibleNode)Call("OpenToolboxAccessibleNode", new IntPtr(100))) Assert.IsTrue(adapter.Role(0) != 20);
+                }
+            }
+        }
+    }
     /// <summary>Matrice de lecture, identités, bornes, défaillances et refus des actions MSAA.</summary>
     [TestClass, TestCategory("Unit")]
     public sealed class ToolboxPagesTests
@@ -103,6 +189,10 @@ namespace CodexVBE.Tests.Unit
             }
             Assert.ThrowsException<InvalidOperationException>(() => Read(root));
             root = ToolboxPagesFixture.Create(); root.CountOverride = 129;
+            Assert.ThrowsException<InvalidOperationException>(() => Read(root));
+            root = new ToolboxPagesFixture();
+            for (int i = 0; i < 3; i++) { branch = new ToolboxPagesFixture(16); for (int j = 0; j < 128; j++) branch.Children.Add(new ToolboxPagesFixture(16)); root.Children.Add(branch); }
+            branch = new ToolboxPagesFixture(60); for (int i = 0; i < 128; i++) branch.Children.Add(new ToolboxPagesFixture(37) { NameValue = "Page" }); root.Children.Add(branch);
             Assert.ThrowsException<InvalidOperationException>(() => Read(root));
         }
     }

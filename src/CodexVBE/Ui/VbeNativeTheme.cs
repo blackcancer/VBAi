@@ -81,17 +81,55 @@ namespace CodexVBE
         [DllImport("kernel32.dll", CharSet = CharSet.Ansi, ExactSpelling = true)] private static extern IntPtr GetProcAddress(IntPtr module, IntPtr ordinal);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        private struct NativeOsVersion
+        internal struct NativeOsVersion
         {
             internal uint Size, Major, Minor, Build, Platform;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)] internal string ServicePack;
         }
         [DllImport("ntdll.dll", ExactSpelling = true)] private static extern int RtlGetVersion(ref NativeOsVersion version);
 
+        internal delegate bool ReadClient(IntPtr window, out NativeRect rectangle);
+        internal delegate uint ReadWindowThread(IntPtr window, out uint process);
+        internal delegate int WindowAttribute(IntPtr window, int attribute, ref int value, int size);
+        internal delegate int ReadOsVersion(ref NativeOsVersion version);
+        internal delegate int PaintRegion(IntPtr dc, ref NativeRect rectangle, IntPtr brush);
+        internal delegate void PaintSurface(IntPtr window, bool client, IntPtr dc, bool hosted, bool preserve, bool code);
+        internal static Func<IntPtr, EnumWindowCallback, IntPtr, bool> EnumerateChildren = EnumChildWindows;
+        internal static Func<IntPtr, StringBuilder, int, int> ReadClassName = GetClassName, ReadWindowText = GetWindowText;
+        internal static Func<IntPtr, uint, IntPtr, IntPtr, int> NativeSend = SendMessage;
+        internal static Func<IntPtr, uint, IntPtr, IntPtr, bool> NativePost = PostMessage;
+        internal static Func<IntPtr, int, int> ReadStyle = GetWindowStyle;
+        internal static ReadClient ReadClientBounds = GetClientRect;
+        internal static Func<IntPtr, IntPtr, string, string, IntPtr> FindChild = FindWindowEx;
+        internal static PaintRegion PaintBackground = FillRect;
+        internal static Func<int, IntPtr> NewBrush = CreateSolidBrush;
+        internal static Func<IntPtr, bool> ReleaseBrush = DeleteObject;
+        internal static Func<IntPtr, int> SaveDeviceContext = SaveDC;
+        internal static Func<IntPtr, int, bool> RestoreDeviceContext = RestoreDC;
+        internal static Func<IntPtr, int, int> ForegroundColor = SetTextColor, BackgroundColor = SetBkColor;
+        internal static Func<IntPtr, IntPtr, IntPtr, uint, bool> Redraw = RedrawWindow;
+        internal static Func<IntPtr, IntPtr, bool> ChildRelation = IsChild;
+        internal static ReadWindowThread WindowThread = GetWindowThreadProcessId;
+        internal static Func<uint> CurrentThread = GetCurrentThreadId;
+        internal static Func<IntPtr, uint, IntPtr> WindowRelation = GetWindow, Ancestor = GetAncestor;
+        internal static Func<uint, uint, IntPtr, WinEventCallback, uint, uint, uint, IntPtr> InstallWindowHook = SetWinEventHook;
+        internal static Func<IntPtr, bool> RemoveWindowHook = UnhookWinEvent;
+        internal static Func<IntPtr, SubclassCallback, UIntPtr, IntPtr, bool> InstallSubclass = SetWindowSubclass;
+        internal static Func<IntPtr, SubclassCallback, UIntPtr, bool> RemoveSubclass = RemoveWindowSubclass;
+        internal static Func<IntPtr, uint, IntPtr, IntPtr, IntPtr> NativeProcedure = DefSubclassProc;
+        internal static Func<IntPtr, string, string, int> SetNativeTheme = SetWindowTheme;
+        internal static WindowAttribute SetAttribute = DwmSetWindowAttribute;
+        internal static Func<string, IntPtr> ThemeModule = GetModuleHandle;
+        internal static Func<IntPtr, IntPtr, IntPtr> NativeEntryPoint = GetProcAddress;
+        internal static ReadOsVersion ReadVersion = RtlGetVersion;
+        internal static PaintSurface DrawChrome = VbeNativeChrome.Paint;
+        internal static Action<IntPtr> DrawBorder = VbeNativeChrome.PaintBorder, DrawCombo = VbeNativeChrome.PaintComboButton;
+        internal static Action<IntPtr, NativeRect> DrawPropertyRow = VbeNativeChrome.PaintPropertyRow;
+
         internal static Version ReadNativeWindowsVersion()
         {
             var version = new NativeOsVersion { Size = (uint)Marshal.SizeOf(typeof(NativeOsVersion)), ServicePack = string.Empty };
-            if (RtlGetVersion(ref version) != 0)
+            if (ReadVersion(ref version) != 0)
                 throw new PlatformNotSupportedException("Cannot verify the Windows dark-mode ABI.");
             return new Version((int)version.Major, (int)version.Minor, (int)version.Build);
         }
@@ -107,7 +145,7 @@ namespace CodexVBE
         internal struct NativeRect { internal int Left, Top, Right, Bottom; }
 
         [StructLayout(LayoutKind.Sequential)]
-        private struct NativeDrawItem
+        internal struct NativeDrawItem
         {
             internal uint ControlType, ControlId, ItemId, Action, State;
             internal IntPtr Window, DeviceContext;
@@ -149,6 +187,9 @@ namespace CodexVBE
             return string.Equals(Environment.GetEnvironmentVariable(ExperimentVariable), "1", StringComparison.Ordinal);
         }
 
+        internal static Func<IntPtr, int> ApplyNativeTheme = Apply;
+        internal static Func<object, IntPtr, VbeNativePalette> CreatePalette = (vbe, editor) => new VbeNativePalette(vbe, editor);
+
         /// <summary>Stores the VBE owner and applies the persisted or explicitly gated preference.</summary>
         internal static void Initialize(IntPtr editor, bool enabled, object vbe = null)
         {
@@ -173,7 +214,7 @@ namespace CodexVBE
             nativePalette?.Dispose();
             // Disposable probes drive palette recovery explicitly in their own
             // artifact directory; they must not create a production recovery file.
-            nativePalette = vbe != null && !ExperimentEnabled() ? new VbeNativePalette(vbe, editor) : null;
+            nativePalette = vbe != null && !ExperimentEnabled() ? CreatePalette(vbe, editor) : null;
             SetEnabled(enabled || ExperimentEnabled());
         }
 
@@ -189,7 +230,7 @@ namespace CodexVBE
             if (editorWindow == IntPtr.Zero) throw new InvalidOperationException("The VBE window is not initialized.");
             if (themedWindows.Count == 0)
             {
-                try { Apply(editorWindow); }
+                try { ApplyNativeTheme(editorWindow); }
                 catch { Reset(); throw; }
             }
             nativePalette?.Request(true);
@@ -206,8 +247,8 @@ namespace CodexVBE
             localChromeRefresh = string.Equals(Environment.GetEnvironmentVariable(LocalRefreshExperimentVariable), "1", StringComparison.Ordinal);
             Version windowsVersion = ReadNativeWindowsVersion();
             if (!SupportsPreferredAppMode(windowsVersion))
-                throw new PlatformNotSupportedException("Native VBE dark mode requires the Windows 10 1903 or newer dark-mode ABI. Detected: " + windowsVersion);
-            IntPtr themeModule = GetModuleHandle("uxtheme.dll");
+                throw new PlatformNotSupportedException("Native VBE dark mode requires the Windows 10 1903 or newer dark-mode ABI. Detected: " + windowsVersion.ToString());
+            IntPtr themeModule = ThemeModule("uxtheme.dll");
             setPreferredMode = Resolve<SetPreferredAppModeDelegate>(themeModule, 135);
             allowDarkMode = Resolve<AllowDarkModeForWindowDelegate>(themeModule, 133);
             var refreshPolicy = Resolve<VoidThemeDelegate>(themeModule, 104);
@@ -224,16 +265,16 @@ namespace CodexVBE
             }
             VbeNativeRenderer.Start(editor);
             var windows = new List<IntPtr> { editor };
-            EnumChildWindows(editor, (window, parameter) => { windows.Add(window); return true; }, IntPtr.Zero);
+            EnumerateChildren(editor, (window, parameter) => { windows.Add(window); return true; }, IntPtr.Zero);
             foreach (IntPtr window in windows) ApplyWindow(window);
             int enabled = 1;
-            int titleResult = DwmSetWindowAttribute(editor, 20, ref enabled, sizeof(int));
-            if (titleResult != 0) DwmSetWindowAttribute(editor, 19, ref enabled, sizeof(int));
+            int titleResult = SetAttribute(editor, 20, ref enabled, sizeof(int));
+            if (titleResult != 0) SetAttribute(editor, 19, ref enabled, sizeof(int));
             flushMenuThemes?.Invoke();
             editorWindow = editor;
-            windowEventHook = SetWinEventHook(EventObjectCreate, EventObjectShow, IntPtr.Zero, WindowEvent,
+            windowEventHook = InstallWindowHook(EventObjectCreate, EventObjectShow, IntPtr.Zero, WindowEvent,
                 (uint)System.Diagnostics.Process.GetCurrentProcess().Id, 0, WinEventOutOfContext);
-            RedrawWindow(editor, IntPtr.Zero, IntPtr.Zero, RedrawFlags);
+            Redraw(editor, IntPtr.Zero, IntPtr.Zero, RedrawFlags);
             return themedWindows.Count;
         }
 
@@ -243,10 +284,10 @@ namespace CodexVBE
             lock (Sync)
             {
                 if (!VbeNativeRenderer.Stop()) return false;
-                if (windowEventHook != IntPtr.Zero) { UnhookWinEvent(windowEventHook); windowEventHook = IntPtr.Zero; }
+                if (windowEventHook != IntPtr.Zero) { RemoveWindowHook(windowEventHook); windowEventHook = IntPtr.Zero; }
                 foreach (VbeNativePropertyTabs tabs in propertyTabs.Values) tabs.Dispose();
                 propertyTabs.Clear();
-                foreach (IntPtr window in subclassedWindows) RemoveWindowSubclass(window, Subclass, SubclassId);
+                foreach (IntPtr window in subclassedWindows) RemoveSubclass(window, Subclass, SubclassId);
                 subclassedWindows.Clear();
                 pendingChrome.Clear();
                 pendingCaptions.Clear();
@@ -257,16 +298,16 @@ namespace CodexVBE
                     if (WindowClass(window) == "#32770")
                     {
                         int disabled = 0;
-                        DwmSetWindowAttribute(window, 20, ref disabled, sizeof(int));
-                        DwmSetWindowAttribute(window, 19, ref disabled, sizeof(int));
+                        SetAttribute(window, 20, ref disabled, sizeof(int));
+                        SetAttribute(window, 19, ref disabled, sizeof(int));
                     }
-                    SetWindowTheme(window, null, null);
+                    SetNativeTheme(window, null, null);
                     RestoreControlPalette(window, WindowClass(window));
-                    SendMessage(window, WmThemeChanged, IntPtr.Zero, IntPtr.Zero);
+                    NativeSend(window, WmThemeChanged, IntPtr.Zero, IntPtr.Zero);
                 }
                 themedWindows.Clear();
                 originalControlColors.Clear();
-                if (backgroundBrush != IntPtr.Zero) { DeleteObject(backgroundBrush); backgroundBrush = IntPtr.Zero; }
+                if (backgroundBrush != IntPtr.Zero) { ReleaseBrush(backgroundBrush); backgroundBrush = IntPtr.Zero; }
             }
             if (preferredModeChanged)
             {
@@ -277,9 +318,9 @@ namespace CodexVBE
             if (editorWindow != IntPtr.Zero)
             {
                 int disabled = 0;
-                DwmSetWindowAttribute(editorWindow, 20, ref disabled, sizeof(int));
-                DwmSetWindowAttribute(editorWindow, 19, ref disabled, sizeof(int));
-                RedrawWindow(editorWindow, IntPtr.Zero, IntPtr.Zero, RedrawFlags);
+                SetAttribute(editorWindow, 20, ref disabled, sizeof(int));
+                SetAttribute(editorWindow, 19, ref disabled, sizeof(int));
+                Redraw(editorWindow, IntPtr.Zero, IntPtr.Zero, RedrawFlags);
             }
             return true;
         }
@@ -304,20 +345,20 @@ namespace CodexVBE
             switch (className)
             {
                 case "SysTreeView32":
-                    original.Background = SendMessage(window, TreeSetBackground, IntPtr.Zero, background);
-                    original.Foreground = SendMessage(window, TreeSetText, IntPtr.Zero, new IntPtr(Foreground));
+                    original.Background = NativeSend(window, TreeSetBackground, IntPtr.Zero, background);
+                    original.Foreground = NativeSend(window, TreeSetText, IntPtr.Zero, new IntPtr(Foreground));
                     break;
                 case "SysListView32":
-                    original.Background = SendMessage(window, 0x1000, IntPtr.Zero, IntPtr.Zero);
-                    original.Foreground = SendMessage(window, 0x1023, IntPtr.Zero, IntPtr.Zero);
-                    original.TextBackground = SendMessage(window, 0x1025, IntPtr.Zero, IntPtr.Zero);
-                    SendMessage(window, ListSetBackground, IntPtr.Zero, background);
-                    SendMessage(window, ListSetText, IntPtr.Zero, new IntPtr(Foreground));
-                    SendMessage(window, ListSetTextBackground, IntPtr.Zero, background);
+                    original.Background = NativeSend(window, 0x1000, IntPtr.Zero, IntPtr.Zero);
+                    original.Foreground = NativeSend(window, 0x1023, IntPtr.Zero, IntPtr.Zero);
+                    original.TextBackground = NativeSend(window, 0x1025, IntPtr.Zero, IntPtr.Zero);
+                    NativeSend(window, ListSetBackground, IntPtr.Zero, background);
+                    NativeSend(window, ListSetText, IntPtr.Zero, new IntPtr(Foreground));
+                    NativeSend(window, ListSetTextBackground, IntPtr.Zero, background);
                     break;
                 case "RichEdit20A":
                 case "RICHEDIT60W":
-                    original.Background = SendMessage(window, RichEditSetBackground, IntPtr.Zero, background);
+                    original.Background = NativeSend(window, RichEditSetBackground, IntPtr.Zero, background);
                     break;
                 default: return;
             }
@@ -333,17 +374,17 @@ namespace CodexVBE
             switch (className)
             {
                 case "SysTreeView32":
-                    SendMessage(window, TreeSetBackground, IntPtr.Zero, background);
-                    SendMessage(window, TreeSetText, IntPtr.Zero, foreground);
+                    NativeSend(window, TreeSetBackground, IntPtr.Zero, background);
+                    NativeSend(window, TreeSetText, IntPtr.Zero, foreground);
                     break;
                 case "SysListView32":
-                    SendMessage(window, ListSetBackground, IntPtr.Zero, background);
-                    SendMessage(window, ListSetText, IntPtr.Zero, foreground);
-                    SendMessage(window, ListSetTextBackground, IntPtr.Zero, new IntPtr(original.TextBackground));
+                    NativeSend(window, ListSetBackground, IntPtr.Zero, background);
+                    NativeSend(window, ListSetText, IntPtr.Zero, foreground);
+                    NativeSend(window, ListSetTextBackground, IntPtr.Zero, new IntPtr(original.TextBackground));
                     break;
                 case "RichEdit20A":
                 case "RICHEDIT60W":
-                    SendMessage(window, RichEditSetBackground, IntPtr.Zero, background);
+                    NativeSend(window, RichEditSetBackground, IntPtr.Zero, background);
                     break;
             }
             originalControlColors.Remove(window);
@@ -363,17 +404,17 @@ namespace CodexVBE
                 if (className == "VbaWindow" && immediateWindow == IntPtr.Zero && !string.IsNullOrEmpty(immediateCaption))
                 {
                     var caption = new StringBuilder(256);
-                    GetWindowText(window, caption, caption.Capacity);
+                    ReadWindowText(window, caption, caption.Capacity);
                     if (caption.ToString() == immediateCaption) immediateWindow = window;
                 }
                 if (string.IsNullOrEmpty(className) || (IsManagedAddInWindow(className) && className != "GenericPane")) return;
                 bool propertiesControl = WindowClass(GetAncestorParent(window)) == "wndclass_pbrs";
-                bool dialogControl = WindowClass(GetAncestor(window, GetAncestorRoot)) == "#32770";
+                bool dialogControl = WindowClass(Ancestor(window, GetAncestorRoot)) == "#32770";
                 bool scopedControl = className == "ListBox" ? propertiesControl :
                     className != "SysTabControl32" || propertiesControl || dialogControl;
                 if (scopedControl && ShouldSubclass(className))
                 {
-                    if (!SetWindowSubclass(window, Subclass, SubclassId, IntPtr.Zero)) return;
+                    if (!InstallSubclass(window, Subclass, SubclassId, IntPtr.Zero)) return;
                     subclassedWindows.Add(window);
                 }
                 if (className == "SysTabControl32" && propertiesControl)
@@ -382,10 +423,10 @@ namespace CodexVBE
                 if (className == "#32770")
                 {
                     int enabled = 1;
-                    if (DwmSetWindowAttribute(window, 20, ref enabled, sizeof(int)) != 0)
-                        DwmSetWindowAttribute(window, 19, ref enabled, sizeof(int));
+                    if (SetAttribute(window, 20, ref enabled, sizeof(int)) != 0)
+                        SetAttribute(window, 19, ref enabled, sizeof(int));
                 }
-                SetWindowTheme(window, "DarkMode_Explorer", null);
+                SetNativeTheme(window, "DarkMode_Explorer", null);
                 // Keep the standard tab interaction and geometry. Supported
                 // Properties tabs supply their final colors before drawing text;
                 // other tabs retain the existing classic-renderer fallback.
@@ -393,12 +434,12 @@ namespace CodexVBE
                 // color. Classic controls honor WM_CTLCOLOR from their parent.
                 if ((className == "SysTabControl32" && (propertiesControl || dialogControl)) ||
                     (className == "Button" && dialogControl && IsDialogLabelButton(window)))
-                    SetWindowTheme(window, "", "");
+                    SetNativeTheme(window, "", "");
                 ApplyControlPalette(window, className);
                 if (className == "GenericPane")
                     LoadLog.Write("Native theme GenericPane: " + window + ", subclass=" + subclassedWindows.Contains(window));
                 themedWindows.Add(window);
-                SendMessage(window, WmThemeChanged, IntPtr.Zero, IntPtr.Zero);
+                NativeSend(window, WmThemeChanged, IntPtr.Zero, IntPtr.Zero);
             }
         }
 
@@ -419,25 +460,25 @@ namespace CodexVBE
             {
                 // Children may be created before their popup or pane is attached
                 // to the editor. Revisit them once the owner becomes visible.
-                EnumChildWindows(window, (child, parameter) =>
+                EnumerateChildren(window, (child, parameter) =>
                 {
                     ApplyWindow(child);
                     return true;
                 }, IntPtr.Zero);
             }
-            RedrawWindow(window, IntPtr.Zero, IntPtr.Zero, RedrawFlags);
+            Redraw(window, IntPtr.Zero, IntPtr.Zero, RedrawFlags);
         }
 
         private static bool BelongsToEditor(IntPtr window)
         {
             if (editorWindow == IntPtr.Zero || window == IntPtr.Zero) return false;
-            if (window == editorWindow || IsChild(editorWindow, window)) return true;
-            IntPtr root = GetAncestor(window, GetAncestorRoot);
-            IntPtr owner = GetWindow(root == IntPtr.Zero ? window : root, GetWindowOwner);
+            if (window == editorWindow || ChildRelation(editorWindow, window)) return true;
+            IntPtr root = Ancestor(window, GetAncestorRoot);
+            IntPtr owner = WindowRelation(root == IntPtr.Zero ? window : root, GetWindowOwner);
             for (int depth = 0; owner != IntPtr.Zero && depth < 16; depth++)
             {
-                if (owner == editorWindow || IsChild(editorWindow, owner)) return true;
-                owner = GetWindow(owner, GetWindowOwner);
+                if (owner == editorWindow || ChildRelation(editorWindow, owner)) return true;
+                owner = WindowRelation(owner, GetWindowOwner);
             }
             return false;
         }
@@ -479,8 +520,8 @@ namespace CodexVBE
                 if (!pendingCaptions.Remove(window)) return IntPtr.Zero;
                 if (subclassedWindows.Contains(window))
                 {
-                    VbeNativeChrome.Paint(window, false, IntPtr.Zero, WindowClass(window) == "GenericPane");
-                    VbeNativeChrome.PaintBorder(window);
+                    DrawChrome(window, false, IntPtr.Zero, WindowClass(window) == "GenericPane", false, false);
+                    DrawBorder(window);
                 }
                 return IntPtr.Zero;
             }
@@ -491,16 +532,16 @@ namespace CodexVBE
                 if (propertyTabs.ContainsKey(window)) return IntPtr.Zero;
                 string refreshedClass = WindowClass(window);
                 if (!localChromeRefresh && (refreshedClass == "PROJECT" || refreshedClass == "wndclass_pbrs" || refreshedClass == "VbaWindow"))
-                    VbeNativeChrome.Paint(window, false, IntPtr.Zero);
+                    DrawChrome(window, false, IntPtr.Zero, false, false, false);
                 if (refreshedClass == "MsoCommandBar") toolbarDeferredPaintCount++;
                 PaintChrome(window, refreshedClass, IntPtr.Zero);
                 return IntPtr.Zero;
             }
             if (message == WmNcDestroy)
             {
-                RemoveWindowSubclass(window, Subclass, SubclassId);
+                RemoveSubclass(window, Subclass, SubclassId);
                 ForgetWindow(window);
-                return DefSubclassProc(window, message, wParam, lParam);
+                return NativeProcedure(window, message, wParam, lParam);
             }
             VbeNativePropertyTabs directTabs;
             if (propertyTabs.TryGetValue(window, out directTabs))
@@ -510,7 +551,7 @@ namespace CodexVBE
                         wParam.ToInt64() == 1 ? directTabs.PrintCount : directTabs.PaintCount);
                 IntPtr handled;
                 if (directTabs.TryHandleMessage(message, wParam, lParam, out handled)) return handled;
-                IntPtr nativeResult = DefSubclassProc(window, message, wParam, lParam);
+                IntPtr nativeResult = NativeProcedure(window, message, wParam, lParam);
                 directTabs.AfterNativeMessage(message, wParam, lParam);
                 return nativeResult;
             }
@@ -518,10 +559,10 @@ namespace CodexVBE
             if (message == WmEraseBackground && (className == "#32770" || className == "MDIClient" || className == "VBSlider"))
             {
                 NativeRect rectangle;
-                if (GetClientRect(window, out rectangle))
+                if (ReadClientBounds(window, out rectangle))
                 {
                     EnsureBackgroundBrush();
-                    FillRect(wParam, ref rectangle, backgroundBrush);
+                    PaintBackground(wParam, ref rectangle, backgroundBrush);
                     return new IntPtr(1);
                 }
             }
@@ -529,8 +570,8 @@ namespace CodexVBE
                 message == WmCtlColorDialog || message == WmCtlColorScrollBar || message == WmCtlColorStatic)
             {
                 EnsureBackgroundBrush();
-                SetTextColor(wParam, Foreground);
-                SetBkColor(wParam, Background);
+                ForegroundColor(wParam, Foreground);
+                BackgroundColor(wParam, Background);
                 return backgroundBrush;
             }
             if (message == 0x002B && lParam != IntPtr.Zero && WindowClass(window) == "wndclass_pbrs")
@@ -539,7 +580,7 @@ namespace CodexVBE
                 if (item.ControlType == 2 && WindowClass(item.Window) == "ListBox" &&
                     item.DeviceContext != IntPtr.Zero && (item.Action & 3) != 0)
                 {
-                    int saved = SaveDC(item.DeviceContext);
+                    int saved = SaveDeviceContext(item.DeviceContext);
                     if (saved != 0)
                     {
                         try
@@ -547,17 +588,17 @@ namespace CodexVBE
                             // Render the native row on its original light palette,
                             // then translate that fresh row exactly once. Changing
                             // the whole list later would retouch ClearType pixels.
-                            SetTextColor(item.DeviceContext, 0);
-                            SetBkColor(item.DeviceContext, 0x00ffffff);
-                            IntPtr drawn = DefSubclassProc(window, message, wParam, lParam);
-                            VbeNativeChrome.PaintPropertyRow(item.DeviceContext, item.Bounds);
+                            ForegroundColor(item.DeviceContext, 0);
+                            BackgroundColor(item.DeviceContext, 0x00ffffff);
+                            IntPtr drawn = NativeProcedure(window, message, wParam, lParam);
+                            DrawPropertyRow(item.DeviceContext, item.Bounds);
                             return drawn;
                         }
-                        finally { RestoreDC(item.DeviceContext, saved); }
+                        finally { RestoreDeviceContext(item.DeviceContext, saved); }
                     }
                 }
             }
-            IntPtr result = DefSubclassProc(window, message, wParam, lParam);
+            IntPtr result = NativeProcedure(window, message, wParam, lParam);
             // Creation notifications can precede insertion of the native items.
             // Retry after native initialization instead of fixing the fallback
             // renderer for the complete lifetime of that HWND.
@@ -569,10 +610,10 @@ namespace CodexVBE
                 return result;
             }
             if ((message == 0x0201 || message == 0x0202 || message == 0x014F || message == 0x000A) && WindowClass(window) == "ComboBox")
-                VbeNativeChrome.PaintComboButton(window);
+                DrawCombo(window);
             if (message == 0x0085 || message == 0x0086 || message == 0x000C || message == 0x0317)
             {
-                if (window != editorWindow) VbeNativeChrome.Paint(window, false, message == 0x0317 ? wParam : IntPtr.Zero);
+                if (window != editorWindow) DrawChrome(window, false, message == 0x0317 ? wParam : IntPtr.Zero, false, false, false);
             }
             if (message == 0x000F || message == 0x0317 || message == 0x0318 || message == 0x0200 || message == 0x02A3)
             {
@@ -587,7 +628,7 @@ namespace CodexVBE
             if ((message == 0x0102 || message == 0x0101 || message == 0x0202 || message == 0x0114 || message == 0x0115 || message == 0x020A) &&
                 WindowClass(window) == "VbaWindow" && pendingChrome.Add(window))
             {
-                if (!PostMessage(window, WmRefreshChrome, IntPtr.Zero, IntPtr.Zero)) pendingChrome.Remove(window);
+                if (!NativePost(window, WmRefreshChrome, IntPtr.Zero, IntPtr.Zero)) pendingChrome.Remove(window);
             }
             // Caption work is local and never triggers a code-surface conversion.
             // A Properties notification must not repaint unrelated Office toolbars.
@@ -595,7 +636,7 @@ namespace CodexVBE
             {
                 string captionClass = WindowClass(window);
                 if ((captionClass == "PROJECT" || captionClass == "wndclass_pbrs" || captionClass == "VbaWindow" || captionClass == "GenericPane") &&
-                    pendingCaptions.Add(window) && !PostMessage(window, WmRefreshCaption, IntPtr.Zero, IntPtr.Zero))
+                    pendingCaptions.Add(window) && !NativePost(window, WmRefreshCaption, IntPtr.Zero, IntPtr.Zero))
                     pendingCaptions.Remove(window);
             }
             // The measured VBE updates its Standard toolbar directly during code
@@ -630,7 +671,7 @@ namespace CodexVBE
                     if ((candidateClass == "MsoCommandBar" || candidateClass == "MsoCommandBarPopup" || candidateClass == "MsoCommandBarDock" ||
                          candidateClass == "GenericPane" || candidateClass == "SysTabControl32" || candidateClass == "ListBox" || candidateClass == "VbaWindow" ||
                          candidateClass == "PROJECT" || candidateClass == "wndclass_pbrs" || candidateClass == "SysTreeView32" || candidateClass == "ComboBox" || candidateClass == "Edit") && pendingChrome.Add(candidate))
-                        if (!PostMessage(candidate, WmRefreshChrome, IntPtr.Zero, IntPtr.Zero)) pendingChrome.Remove(candidate);
+                        if (!NativePost(candidate, WmRefreshChrome, IntPtr.Zero, IntPtr.Zero)) pendingChrome.Remove(candidate);
                 }
             }
             return result;
@@ -642,32 +683,32 @@ namespace CodexVBE
             // screen-DC border pass, including already queued legacy refreshes.
             if (propertyTabs.ContainsKey(window)) return;
             if (className == "MsoCommandBar" && VbeNativeRenderer.Active &&
-                IsChild(editorWindow, window)) return;
+                ChildRelation(editorWindow, window)) return;
             if (className == "MsoCommandBar") toolbarPaintCount++;
-            if (className == "ComboBox" && dc == IntPtr.Zero) VbeNativeChrome.PaintComboButton(window);
-            if (className == "GenericPane") VbeNativeChrome.Paint(window, false, dc, true);
+            if (className == "ComboBox" && dc == IntPtr.Zero) DrawCombo(window);
+            if (className == "GenericPane") DrawChrome(window, false, dc, true, false, false);
             bool codeSurface = IsCodeSurface(window, className);
-            if (codeSurface) VbeNativeChrome.Paint(window, true, dc, false, false, true);
+            if (codeSurface) DrawChrome(window, true, dc, false, false, true);
             if (className == "MsoCommandBar" || className == "MsoCommandBarPopup" || className == "MsoCommandBarDock" || className == "SysTabControl32" ||
                 (className == "VbaWindow" && !codeSurface))
-                VbeNativeChrome.Paint(window, true, dc, false, className == "VbaWindow");
-            if (dc == IntPtr.Zero && window != editorWindow) VbeNativeChrome.PaintBorder(window);
+                DrawChrome(window, true, dc, false, className == "VbaWindow", false);
+            if (dc == IntPtr.Zero && window != editorWindow) DrawBorder(window);
         }
 
         private static bool IsDialogLabelButton(IntPtr window)
         {
-            int buttonType = GetWindowStyle(window, -16) & 0x0f;
+            int buttonType = ReadStyle(window, -16) & 0x0f;
             // Checkbox, three-state, radio and group-box labels need the parent
             // text color. Push buttons keep their native dark visual style.
             return (buttonType >= 2 && buttonType <= 7) || buttonType == 9;
         }
 
-        private static IntPtr GetAncestorParent(IntPtr window) { return GetAncestor(window, 1); }
+        private static IntPtr GetAncestorParent(IntPtr window) { return Ancestor(window, 1); }
 
         private static bool IsCodeSurface(IntPtr window, string className)
         {
             return className == "VbaWindow" && (window == immediateWindow ||
-                FindWindowEx(window, IntPtr.Zero, "ObtbarWndClass", null) != IntPtr.Zero);
+                FindChild(window, IntPtr.Zero, "ObtbarWndClass", null) != IntPtr.Zero);
         }
 
         private static void QueueContainerChromeRefresh(IntPtr container)
@@ -677,10 +718,10 @@ namespace CodexVBE
                 IntPtr dock = GetAncestorParent(candidate);
                 if (WindowClass(candidate) == "MsoCommandBar" && WindowClass(dock) == "MsoCommandBarDock" &&
                     GetAncestorParent(dock) == container && pendingChrome.Add(candidate) &&
-                    !PostMessage(candidate, WmRefreshChrome, IntPtr.Zero, IntPtr.Zero))
+                    !NativePost(candidate, WmRefreshChrome, IntPtr.Zero, IntPtr.Zero))
                     pendingChrome.Remove(candidate);
                 if (dock == container && WindowClass(candidate) == "GenericPane" && pendingCaptions.Add(candidate) &&
-                    !PostMessage(candidate, WmRefreshCaption, IntPtr.Zero, IntPtr.Zero))
+                    !NativePost(candidate, WmRefreshCaption, IntPtr.Zero, IntPtr.Zero))
                     pendingCaptions.Remove(candidate);
             }
         }
@@ -699,26 +740,26 @@ namespace CodexVBE
         private static bool IsCurrentWindowThread(IntPtr window)
         {
             uint processId;
-            return GetWindowThreadProcessId(window, out processId) == GetCurrentThreadId() &&
+            return WindowThread(window, out processId) == CurrentThread() &&
                 processId == (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
         }
 
         private static void EnsureBackgroundBrush()
         {
-            if (backgroundBrush == IntPtr.Zero) backgroundBrush = CreateSolidBrush(Background);
+            if (backgroundBrush == IntPtr.Zero) backgroundBrush = NewBrush(Background);
         }
 
         private static T Resolve<T>(IntPtr module, int ordinal) where T : class
         {
             if (module == IntPtr.Zero) return null;
-            IntPtr address = GetProcAddress(module, new IntPtr(ordinal));
+            IntPtr address = NativeEntryPoint(module, new IntPtr(ordinal));
             return address == IntPtr.Zero ? null : Marshal.GetDelegateForFunctionPointer(address, typeof(T)) as T;
         }
 
         private static string WindowClass(IntPtr window)
         {
             var text = new StringBuilder(256);
-            GetClassName(window, text, text.Capacity);
+            ReadClassName(window, text, text.Capacity);
             return text.ToString();
         }
 

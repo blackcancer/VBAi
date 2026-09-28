@@ -1995,4 +1995,39 @@
   <data name="Declined" xml:space="preserve">
     <value>Отклонено</value>
   </data>
+  <data name="Project access" xml:space="preserve"><value>Доступ к проектам</value></data>
+  <data name="Project access…" xml:space="preserve"><value>Доступ к проектам…</value></data>
+  <data name="The bound project is always readable. Select additional projects for read access only. Changing access starts a new conversation; previously transmitted data cannot be recalled." xml:space="preserve"><value>Привязанный проект всегда доступен для чтения. Выберите дополнительные проекты только для чтения. Изменение доступа начинает новый разговор; уже переданные данные невозможно отозвать.</value></data>
+  <data name="Allow shared VBE and clipboard context" xml:space="preserve"><value>Разрешить общий контекст VBE и буфера обмена</value></data>
+  <data name="Shared tools may transmit data from any open project, debugger windows, native inventories and the system clipboard. This permission does not authorize edits in other projects." xml:space="preserve"><value>Общие инструменты могут передавать данные из любых открытых проектов, окон отладчика, списков собственных элементов приложения и системного буфера обмена. Это разрешение не позволяет изменять другие проекты.</value></data>
+  <data name="Apply to new chat" xml:space="preserve"><value>Применить к новому разговору</value></data>
+  <data name="Additional projects can be read, but only the bound project can be edited." xml:space="preserve"><value>Дополнительные проекты можно читать, но изменять можно только привязанный проект.</value></data>
+  <data name="Authorize unfiltered native debugger, window and clipboard data for this chat." xml:space="preserve"><value>Разрешить в этом разговоре нефильтрованные данные встроенного отладчика, окон и буфера обмена.</value></data>
+  <data name="Project access configured for the new conversation." xml:space="preserve"><value>Доступ к проектам настроен для нового разговора.</value></data>
+  <data name="Read access to another project is not authorized for this conversation." xml:space="preserve"><value>В этом разговоре не разрешено читать другой проект.</value></data>
+  <data name="This tool uses shared VBE context. Authorize shared context in Project access before using it." xml:space="preserve"><value>Этот инструмент использует общий контекст VBE. Перед использованием разрешите общий контекст в разделе «Доступ к проектам».</value></data>
+  <data name="Restore the paused provider, model, effort and mode before resuming." xml:space="preserve"><value>Перед продолжением восстановите поставщика, модель, уровень рассуждения и режим, использовавшиеся в момент приостановки.</value></data>
+  <data name=" — interrupted; verify live state before retrying" xml:space="preserve"><value> — прервано; перед повторной попыткой проверьте текущее состояние</value></data>
+  <data name="Resume paused turn" xml:space="preserve"><value>Продолжить приостановленный ход</value></data>
+  <data name="Continue from saved tool results without repeating completed actions." xml:space="preserve"><value>Продолжить с сохранённых результатов инструментов, не повторяя завершённые действия.</value></data>
+  <data name="Pending: automatic verification and final response." xml:space="preserve"><value>Осталось: автоматическая проверка и окончательный ответ.</value></data>
+  <data name="Continuation interrupted. Completed results were kept; verify live state before retrying." xml:space="preserve"><value>Продолжение прервано. Завершённые результаты сохранены; перед повторной попыткой проверьте текущее состояние.</value></data>
+  <data name="Choose which other projects this conversation may read." xml:space="preserve"><value>Выберите другие проекты, которые разрешено читать в этом разговоре.</value></data>
+  <data name=" — completed" xml:space="preserve"><value> — завершено</value></data>
+  <data name="Resume ▶" xml:space="preserve"><value>Продолжить ▶</value></data>
+  <data name=" — refused or failed" xml:space="preserve"><value> — отклонено или завершилось с ошибкой</value></data>
+  <data name="Paused — resume when ready" xml:space="preserve"><value>Приостановлено — продолжите, когда будете готовы</value></data>
+  <data name="Pending: final response." xml:space="preserve"><value>Осталось: окончательный ответ.</value></data>
+  <data name="Paused after 8 model rounds. Resume to continue from the saved results; completed actions will not be replayed." xml:space="preserve"><value>Приостановлено после 8 раундов взаимодействия с моделью. Продолжите с сохранённых результатов; завершённые действия не будут повторены.</value></data>
+  <data name=" — response received; inspect returned state" xml:space="preserve"><value> — ответ получен; проверьте возвращённое состояние</value></data>
+  <data name="This document has no native host to save." xml:space="preserve"><value>У этого документа нет собственного приложения для сохранения.</value></data>
+  <data name="The native save target changed. Select the module and retry." xml:space="preserve"><value>Цель сохранения в приложении изменилась. Выберите модуль и повторите попытку.</value></data>
+  <data name="The native Save command is unavailable." xml:space="preserve"><value>Команда сохранения приложения недоступна.</value></data>
+  <data name="Saved." xml:space="preserve"><value>Сохранено.</value></data>
+  <data name="Saving was cancelled or not completed. Your code remains in the editor and host document." xml:space="preserve"><value>Сохранение отменено или не завершено. Код остаётся в редакторе и документе приложения.</value></data>
+  <data name="The host document was not saved. Your code remains in the editor and host document." xml:space="preserve"><value>Документ приложения не сохранён. Код остаётся в редакторе и документе приложения.</value></data>
+  <data name="The native Save command finished, but the host document&apos;s saved state could not be verified." xml:space="preserve"><value>Команда сохранения приложения завершилась, но не удалось проверить, сохранён ли документ приложения.</value></data>
+  <data name="The document was not saved because some edits are still pending synchronization." xml:space="preserve"><value>Документ не сохранён, потому что некоторые изменения ещё ожидают синхронизации.</value></data>
+  <data name="Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data." xml:space="preserve"><value>Защита данных проектов усилена. Предыдущая история остаётся доступной локально; контекст поставщика начинается заново, чтобы не передавать повторно ранее предоставленные данные проектов.</value></data>
+  <data name="This message predates the project privacy upgrade. Use current authorized references in a new conversation." xml:space="preserve"><value>Это сообщение создано до усиления защиты данных проектов. Используйте актуальные разрешённые ссылки в новом разговоре.</value></data>
 </root>

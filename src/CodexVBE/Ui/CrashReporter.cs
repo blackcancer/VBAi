@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.IO;
@@ -14,6 +14,8 @@ namespace CodexVBE
         private readonly string directory;
         private int reporting;
         private bool disposed;
+        /// <summary>Enumerates pending reports in the owned directory with the native filesystem by default.</summary>
+        internal Func<string, string[]> ReadPendingFiles = folder => Directory.GetFiles(folder, "*.pending");
         internal CrashReporter(Action<CrashReport> show, Action<CrashReport> save = null, string directory = null)
         {
             this.show = show;
@@ -52,7 +54,7 @@ namespace CodexVBE
             if (disposed || !Directory.Exists(directory) || Interlocked.CompareExchange(ref reporting, 1, 0) != 0) return;
             try
             {
-                foreach (string path in Directory.GetFiles(directory, "*.pending"))
+                foreach (string path in ReadPendingFiles(directory))
                 {
                     try
                     {

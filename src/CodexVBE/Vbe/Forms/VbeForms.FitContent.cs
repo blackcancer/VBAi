@@ -11,6 +11,8 @@ namespace CodexVBE
 {
     internal sealed partial class VbeForms
     {
+        /// <summary>Measures the owning window DPI; replaceable by a bounded native contract probe.</summary>
+        internal static Func<IntPtr, uint> MeasureFitWindowDpi = FitWindowDpi;
         /// <summary>Prévisualise les dimensions natives nécessaires pour contenir les enfants directs.</summary>
         /// <param name="request">Projet, formulaire, chemin canonique, version d'arbre et padding Left/Top.</param>
         /// <returns>Plan en lecture seule calculé à partir des mesures observées du concepteur.</returns>
@@ -65,7 +67,7 @@ namespace CodexVBE
             double tolerance = 0.1;
             if (root && NativeDesignerObject(container))
             {
-                uint dpi = FitWindowDpi(new IntPtr(Convert.ToInt64(vbe.MainWindow.HWnd)));
+                uint dpi = MeasureFitWindowDpi(new IntPtr(Convert.ToInt64(vbe.MainWindow.HWnd)));
                 if (dpi < 48 || dpi > 768) throw new InvalidOperationException("Native designer DPI is unavailable.");
                 tolerance = 72d / dpi;
                 // Round upward to a native pixel: a fractional border must not

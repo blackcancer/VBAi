@@ -128,14 +128,14 @@ namespace CodexVBE.Tests.Unit
                     var json = new JavaScriptSerializer();
                     foreach (string command in new[] { "debug_windows", "debug_dialog", "debug_item", "respond_debug_dialog",
                         "immediate_execute", "add_watch", "edit_watch", "quick_watch", "read_debug_options", "read_vbe_options",
-                        "read_project_signature_dialog", "remove_watch", "status" })
+                        "read_project_signature_dialog", "remove_watch", "status", "read_navigation_surface", "change_navigation_surface", "read_project_protection", "set_project_protection" })
                     {
                         var response = SendWithMessagePump(id, json.Serialize(new { Command = command, Project = "P", ExpectedMode = 2, Text = "Debug.Print 1" }));
                         Assert.AreEqual(true, response["Ok"], command);
                         Assert.IsNotNull(response["Data"], command);
                     }
                     foreach (string command in new[] { "add_watch", "edit_watch", "quick_watch", "read_debug_options", "read_vbe_options",
-                        "read_project_signature_dialog", "remove_watch", "sign_project", "immediate_execute" })
+                        "read_project_signature_dialog", "remove_watch", "sign_project", "immediate_execute", "read_project_protection", "set_project_protection" })
                     {
                         server.Execute = request => Response.Failure("host rejected " + request.Command);
                         var response = SendWithMessagePump(id, json.Serialize(new { Command = command, Project = "P", ExpectedMode = 2 }));
@@ -313,6 +313,24 @@ namespace CodexVBE.Tests.Unit
                     server.Native.SetVbeOption = request => throw new InvalidOperationException("native rejected");
                     response = SendWithMessagePump(id, "{\"Command\":\"set_vbe_option\"}");
                     Assert.AreEqual(false, response["Ok"]); Assert.AreEqual("native rejected", response["Error"]);
+                }
+            }
+        }
+        [STATestMethod]
+        public void StopRequestedBeforeListenerPublicationExitsAfterOwnedConnectionWithoutDispatch()
+        {
+            using (var dispatcher = new Control())
+            using (var created = new ManualResetEventSlim())
+            {
+                int id = Guid.NewGuid().GetHashCode() & int.MaxValue; int requests = 0;
+                using (var server = new BridgeServer(dispatcher, null, id))
+                {
+                    var open = server.OpenPipe; server.Execute = request => { requests++; throw new AssertFailedException("A stopped listener must not dispatch"); };
+                    server.OpenPipe = security => { var pipe = open(security); server.Dispose(); created.Set(); return pipe; };
+                    server.Start(); Assert.IsTrue(created.Wait(5000));
+                    using (var client = new NamedPipeClientStream(".", "CodexVBE." + id, PipeDirection.InOut)) client.Connect(5000);
+                    var worker = (Thread)typeof(BridgeServer).GetField("worker", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(server);
+                    Assert.IsTrue(worker.Join(5000)); Assert.AreEqual(0, requests);
                 }
             }
         }

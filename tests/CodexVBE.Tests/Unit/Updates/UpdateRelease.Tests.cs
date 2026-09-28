@@ -29,5 +29,20 @@ namespace CodexVBE.Tests.Unit
             var release = new UpdateRelease { assets = new[] { new UpdateAsset { name = "source.zip" }, new UpdateAsset { name = "VBAi-Setup-win-x64.exe" }, new UpdateAsset { name = "VBAi-Setup-win-x64.msi" } } };
             Assert.AreEqual("VBAi-Setup-win-x64.msi", release.Installer.name);
         }
+        [TestMethod]
+        public void VersionAndAssetContractsOrderAllPreviewKindsAndRejectInvalidDigests()
+        {
+            var ordered = new[] { "1.0.0-0", "1.0.0-0.0", "1.0.0-1", "1.0.0-2", "1.0.0-10", "1.0.0-0a", "1.0.0-a", "1.0.0-a.0", "1.0.0-a.a", "1.0.0-b", "1.0.0" };
+            for (int i = 0; i < ordered.Length; i++)
+            {
+                var left = UpdateVersion.Parse(ordered[i]); Assert.IsNotNull(left); Assert.AreEqual(0, left.CompareTo(UpdateVersion.Parse(ordered[i]))); Assert.AreEqual(1, left.CompareTo(null));
+                for (int j = 0; j < ordered.Length; j++) Assert.AreEqual(Math.Sign(i.CompareTo(j)), Math.Sign(left.CompareTo(UpdateVersion.Parse(ordered[j]))), ordered[i] + " vs " + ordered[j]);
+            }
+            Assert.IsNull(UpdateVersion.Parse("1.0.0+" + new string('x', 123)));
+            Assert.IsNull(new UpdateRelease().Installer); Assert.IsNull(new UpdateRelease { assets = new UpdateAsset[0] }.Installer);
+            var executable = new UpdateAsset { name = "VBAi-Setup-win-x64.exe" }; Assert.AreSame(executable, new UpdateRelease { assets = new[] { executable } }.Installer);
+            foreach (string digest in new[] { null, "", "sha256:bad", "sha512:" + new string('a', 64) }) Assert.IsNull(new UpdateAsset { digest = digest }.Hash);
+            Assert.AreEqual(new string('a', 64), new UpdateAsset { digest = "sha256:" + new string('A', 64) }.Hash);
+        }
     }
 }

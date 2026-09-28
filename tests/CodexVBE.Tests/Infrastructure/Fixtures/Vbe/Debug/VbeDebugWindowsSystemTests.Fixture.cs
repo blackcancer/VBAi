@@ -106,11 +106,20 @@ namespace CodexVBE.Tests.Unit
             public Action OnInvoke;
             public bool FailName;
             public bool FailRole;
-            public override string Name { get { if (FailName) throw new COMException("name unavailable"); return Label; } set { Label = value; } }
+            public AccessibleStates StateValue;
+            public Action OnName;
+            public override string Name { get { OnName?.Invoke(); if (FailName) throw new COMException("name unavailable"); return Label; } set { Label = value; } }
+            public override AccessibleStates State => StateValue;
             public override AccessibleRole Role { get { if (FailRole) throw new COMException("role unavailable"); return NativeRole; } }
             public override int GetChildCount() { return Children.Count; }
             public override AccessibleObject GetChild(int index) { return Children[index]; }
             public override void DoDefaultAction() { OnInvoke?.Invoke(); }
+        }
+
+        private sealed class ChildValueAccessible : AccessibleObject, Accessibility.IAccessible
+        {
+            public object ChildValue;
+            object Accessibility.IAccessible.get_accChild(object child) => ChildValue;
         }
 
         private static AccessibleNode Label(string text) { return new AccessibleNode { Label = text, NativeRole = AccessibleRole.StaticText }; }

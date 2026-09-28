@@ -1,5 +1,24 @@
 # Couverture automatisée du complément
 
+## Mesure globale à 100 % après PR #10
+
+Mesure du **28 septembre 2026**, source `48dfa88`, après intégration de la PR #10 et des matrices complémentaires. Un seul passage global VSTest instrumenté, sans exclusion de production, fournit les deux compteurs exacts :
+
+| Mesure | Résultat |
+| --- | --- |
+| Suite globale VSTest | **1 770 réussis, 0 échec, 19 ignorés**, 7 min 55 s |
+| Lignes du complément C# | **28 987 / 28 987 — 100 %** |
+| Branches du complément C# | **30 527 / 30 527 — 100 %** |
+| Build de la solution | **0 erreur, 0 avertissement** |
+| Concepteurs WinForms | **33 surfaces validées** |
+| Organisation miroir | **208 miroirs pour 265 sources**, scénarios complémentaires séparés |
+
+Preuves : `artifacts/cov/global-qualified-100-results/global.trx`, `ea683f23-fd08-461a-8e41-513991d2fe8e/coverage.cobertura.xml` et `coverage.json` dans le même répertoire. Les compteurs couverts et totaux sont égaux ; aucune classe instrumentée ne reste sous 100 %. Le passage `global-100` interrompu est obsolète et ne sert pas de preuve. Les anciens pourcentages ci-dessous sont historiques.
+
+Les 19 scénarios conditionnels nécessitant un hôte ou un compte connecté ne sont pas activés dans cette mesure. Les essais réels exécutés séparément comprennent cinq scénarios SOLIDWORKS (module, classe, formulaire, exécution et breakpoint), son test VSTest de connexion, deux tests fournisseurs connectés GitHub/Codex et le démarrage Monaco dans Excel. Leur détail et leurs limites restent dans [la qualification native](reference/native-qualification.md). Ces passages séparés ne sont pas ajoutés aux compteurs globaux.
+
+La couverture mesurée concerne l'assembly C# `CodexVBE`. Elle vérifie l'exécution des lignes et branches de ses contrats automatisés ; elle ne constitue pas une qualification universelle des combinaisons Office, COM, DPI, signatures et contrôles tiers. Le moteur C++ n'est pas instrumenté par Coverlet.
+
 ## Après intégration de la PR #9 — diagnostics et attributs Monaco
 
 Mesure locale du **28 septembre 2026**, fusion de `d91ffb8` et garde supplémentaire du renommage concurrent. Construction isolée : **0 erreur, 0 avertissement**.

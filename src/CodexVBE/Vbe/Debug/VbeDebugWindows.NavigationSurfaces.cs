@@ -133,6 +133,8 @@ namespace CodexVBE
         private sealed class NativeNavigationSurfaceProbe : INavigationSurfaceProbe
         {
             private readonly Dictionary<string, AutomationElement> elements = new Dictionary<string, AutomationElement>(StringComparer.Ordinal);
+            /// <summary>Reads the live UIA parent; isolates provider detachment races during contract qualification.</summary>
+            internal Func<AutomationElement, AutomationElement> ReadParent = TreeWalker.ControlViewWalker.GetParent;
 
             public NavigationSurface Read(string pane)
             {
@@ -199,7 +201,7 @@ namespace CodexVBE
                                     node.Selected = ((SelectionItemPattern)selection).Current.IsSelected;
                                 if (element.TryGetCurrentPattern(ExpandCollapsePattern.Pattern, out object expansion))
                                     node.Expansion = ((ExpandCollapsePattern)expansion).Current.ExpandCollapseState.ToString();
-                                var parent = TreeWalker.ControlViewWalker.GetParent(element);
+                                var parent = ReadParent(element);
                                 if (parent != null && parent.Current.ControlType == ControlType.TreeItem) node.ParentToken = Token(parent);
                             }
                             catch (Exception) { node.Error = "The native node state could not be read."; }

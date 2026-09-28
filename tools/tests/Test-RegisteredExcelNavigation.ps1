@@ -1,7 +1,7 @@
 param(
     [Parameter(Mandatory=$true)][string]$AssemblyPath,
     [Parameter(Mandatory=$true)][string]$OutputDirectory,
-    [ValidateSet('Navigation','FormLifecycle','FunctionalExtensions','DebuggerTree','Monaco')][string]$Scenario = 'Navigation',
+    [ValidateSet('Navigation','FormLifecycle','FunctionalExtensions','DebuggerTree','Monaco','MonacoStartup')][string]$Scenario = 'Navigation',
     [switch]$AllowTemporaryRegistration,
     [switch]$AllowTemporaryVbaAccess
 )
@@ -38,7 +38,7 @@ try {
     foreach ($entry in $backup) { Set-ItemProperty -LiteralPath $entry.Path -Name CodeBase -Value $codeBase }
     Write-Output ('Registration process bitness: ' + ([IntPtr]::Size * 8))
     foreach ($entry in $backup) { Write-Output ((Get-ItemProperty -LiteralPath $entry.Path).CodeBase) }
-    $probeName = if ($Scenario -eq 'Monaco') { '../probes/Test-RegisteredMonaco.ps1' } elseif ($Scenario -eq 'DebuggerTree') { '../probes/Test-RegisteredDebuggerTree.ps1' } elseif ($Scenario -eq 'FunctionalExtensions') { '../probes/Test-RegisteredFunctionalExtensions.ps1' } elseif ($Scenario -eq 'FormLifecycle') { '../probes/Test-FormLifecycle.ps1' } else { '../probes/Test-NativeDefinition.ps1' }
+    $probeName = if ($Scenario -eq 'MonacoStartup') { '../probes/Test-RegisteredMonacoStartup.ps1' } elseif ($Scenario -eq 'Monaco') { '../probes/Test-RegisteredMonaco.ps1' } elseif ($Scenario -eq 'DebuggerTree') { '../probes/Test-RegisteredDebuggerTree.ps1' } elseif ($Scenario -eq 'FunctionalExtensions') { '../probes/Test-RegisteredFunctionalExtensions.ps1' } elseif ($Scenario -eq 'FormLifecycle') { '../probes/Test-FormLifecycle.ps1' } else { '../probes/Test-NativeDefinition.ps1' }
     $probeArguments = @('-NoProfile','-STA','-File',(Join-Path $PSScriptRoot $probeName),'-AssemblyPath',$assembly,'-OutputDirectory',$directory,'-UseBridge')
     if ($AllowTemporaryVbaAccess) { $probeArguments += '-AllowTemporaryVbaAccess' }
     & powershell.exe @probeArguments

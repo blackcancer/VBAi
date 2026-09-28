@@ -17,6 +17,8 @@ namespace CodexVBE.Tests.Unit
         public sealed class OtherProject : VbeProjectComponentsTests.FakeProject
         {
             public int Protection { get; set; }
+            public bool ComPathUnavailable;
+            public override string FileName { get { if (ComPathUnavailable) throw new System.Runtime.InteropServices.COMException("Unsaved project"); return base.FileName; } set { base.FileName = value; } }
         }
 
         /// <summary>Sonde complète de sauvegarde ne touchant aucun vrai document Office ni fichier.</summary>
@@ -33,8 +35,11 @@ namespace CodexVBE.Tests.Unit
             internal int Calls, Attempts, ChosenFormat;
             internal long Bytes = 10;
             internal Action AfterInvocation;
+            internal Action BeforeSecondState;
+            internal int ProcessId = 42, StateCalls, IdentityCalls;
+            internal bool NullDocuments, ChangeIdentity;
             public string HostKind => Kind;
-            public int CurrentProcessId => 42;
+            public int CurrentProcessId => ProcessId;
             internal Fixture()
             {
                 Project.VBComponents.Add(Component); Items.Add(this);
@@ -50,10 +55,10 @@ namespace CodexVBE.Tests.Unit
             }
             public object Application() { if (Failure == "application") throw new InvalidOperationException("application unreadable"); return this; }
             public uint ApplicationProcessId(object app) { Calls++; return Failure == "changed pid" && Calls > 1 ? 43 : Owner; }
-            public IList<object> Documents(object app) => Items;
+            public IList<object> Documents(object app) => NullDocuments ? null : Items;
             public object DocumentProject(object document) { if (Failure == "identity read error") throw new InvalidOperationException("identity unreadable"); return Project; }
-            public bool SameProject(object first, object second) => Identity && ReferenceEquals(first, second);
-            public VbeProjectComponents.OtherHostDocumentState State(object document) => Observation;
+            public bool SameProject(object first, object second) { IdentityCalls++; return Identity && !(ChangeIdentity && IdentityCalls > 1) && ReferenceEquals(first, second); }
+            public VbeProjectComponents.OtherHostDocumentState State(object document) { StateCalls++; if (StateCalls == 2) BeforeSecondState?.Invoke(); return new VbeProjectComponents.OtherHostDocumentState { Path = Observation.Path, Format = Observation.Format, Saved = Observation.Saved, ReadOnly = Observation.ReadOnly }; }
             public void Save(object document, bool saveAs, string path, int format)
             {
                 Attempts++; ActualPath = path; ChosenFormat = format;

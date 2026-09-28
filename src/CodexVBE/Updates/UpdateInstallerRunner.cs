@@ -9,6 +9,8 @@ namespace CodexVBE
     /// <summary>Exécuté par le programme externe ; il ne charge pas CodexVBE.dll et ne remplace aucun fichier lui-même.</summary>
     internal sealed class UpdateInstallerRunner
     {
+        internal static Func<ProcessStartInfo, Process> StartProcess = Process.Start;
+        internal static Func<int, Process> ReadProcess = Process.GetProcessById;
         private readonly string root;
         internal Func<UpdateHostLease, bool> IsAlive = IsAliveNative;
         internal Func<string, bool> VerifySignature = VerifySignatureNative;
@@ -71,7 +73,7 @@ namespace CodexVBE
         }
         private static bool IsAliveNative(UpdateHostLease lease)
         {
-            try { using (var process = Process.GetProcessById(lease.Pid)) return !process.HasExited && process.StartTime.ToUniversalTime().Ticks == lease.StartTimeUtcTicks; }
+            try { using (var process = ReadProcess(lease.Pid)) return !process.HasExited && process.StartTime.ToUniversalTime().Ticks == lease.StartTimeUtcTicks; }
             catch (ArgumentException) { return false; }
             catch (InvalidOperationException) { return false; }
             // Access denied is deliberately propagated to HostsOpen, which waits.
@@ -81,7 +83,7 @@ namespace CodexVBE
             bool msi = path.EndsWith(".msi", StringComparison.OrdinalIgnoreCase);
             var start = new ProcessStartInfo(msi ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "msiexec.exe") : path,
                 msi ? "/i \"" + path + "\" /quiet /norestart /L*v \"" + path + ".install.log\"" : "/update /quiet /norestart") { UseShellExecute = true, WindowStyle = ProcessWindowStyle.Hidden };
-            using (var process = Process.Start(start))
+            using (var process = StartProcess(start))
             {
                 if (process == null) throw new InvalidOperationException("Installer did not start.");
                 process.WaitForExit(); return process.ExitCode;

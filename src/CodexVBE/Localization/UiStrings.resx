@@ -2032,4 +2032,15 @@ Sign in through Git Credential Manager; commit identity is configured in Git.</v
   <data name="Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed." xml:space="preserve"><value>Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed.</value></data>
   <data name="Edit" xml:space="preserve"><value>Edit</value></data>
   <data name="Delete" xml:space="preserve"><value>Delete</value></data>
+  <data name="Project access" xml:space="preserve"><value>Project access</value></data>
+  <data name="Project access…" xml:space="preserve"><value>Project access…</value></data>
+  <data name="The bound project is always readable. Select additional projects for read access only. Changing access starts a new conversation; previously transmitted data cannot be recalled." xml:space="preserve"><value>The bound project is always readable. Select additional projects for read access only. Changing access starts a new conversation; previously transmitted data cannot be recalled.</value></data>
+  <data name="Allow shared VBE and clipboard context" xml:space="preserve"><value>Allow shared VBE and clipboard context</value></data>
+  <data name="Shared tools may transmit data from any open project, debugger windows, native inventories and the system clipboard. This permission does not authorize edits in other projects." xml:space="preserve"><value>Shared tools may transmit data from any open project, debugger windows, native inventories and the system clipboard. This permission does not authorize edits in other projects.</value></data>
+  <data name="Apply to new chat" xml:space="preserve"><value>Apply to new chat</value></data>
+  <data name="Additional projects can be read, but only the bound project can be edited." xml:space="preserve"><value>Additional projects can be read, but only the bound project can be edited.</value></data>
+  <data name="Authorize unfiltered native debugger, window and clipboard data for this chat." xml:space="preserve"><value>Authorize unfiltered native debugger, window and clipboard data for this chat.</value></data>
+  <data name="Project access configured for the new conversation." xml:space="preserve"><value>Project access configured for the new conversation.</value></data>
+  <data name="Read access to another project is not authorized for this conversation." xml:space="preserve"><value>Read access to another project is not authorized for this conversation.</value></data>
+  <data name="This tool uses shared VBE context. Authorize shared context in Project access before using it." xml:space="preserve"><value>This tool uses shared VBE context. Authorize shared context in Project access before using it.</value></data>
 </root>

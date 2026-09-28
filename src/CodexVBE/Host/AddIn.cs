@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
@@ -64,6 +64,8 @@ namespace CodexVBE
         private ChatToolWindow nativeChatControl;
         /// <summary>Indique si la fenêtre de conversation est attachée au cadre VBE.</summary>
         private bool docked;
+        internal static Func<ModernEditorWindow> CreateModernEditor = CreateModernEditorNative;
+        private static ModernEditorWindow CreateModernEditorNative() => new ModernEditorWindow();
         private ModernEditorWindow modernEditor;
         private EditorWorkspaceHost editorWorkspace;
         private EditorProjectNavigation editorNavigation;
@@ -97,7 +99,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
                     VbeNativeTheme.Initialize(editor, nativeDark, vbe);
                     if (nativeDark || VbeNativeTheme.ExperimentEnabled()) WriteLog("Native VBE dark mode enabled.");
                 }
-                catch (Exception themeError) { WriteLog("Native VBE dark mode unavailable: " + themeError); }
+                catch (Exception themeError) { WriteLog("Native VBE dark mode unavailable: " + themeError.ToString()); }
                 addIn = addInInstance;
                 WriteLog("AddInInst: " + (addIn == null ? "null" : addIn.GetType().FullName)
                     + ", COM=" + (addIn != null && Marshal.IsComObject(addIn)));
@@ -115,6 +117,13 @@ public void OnConnection(object application, int connectMode, object addInInstan
                 editorNavigation = new EditorProjectNavigation(vbe, dispatcher, OpenModernModule);
                 try { ShowChat(); ToggleDock(); }
                 catch (Exception uiError) { WriteLog("Assistant window failed: " + uiError.ToString()); crashReporter.ReportUnexpected(uiError); }
+                try
+                {
+                    GetModernEditor(true);
+                    var module = ActiveEditorModule(false);
+                    if (module != null) OpenModernModule(module);
+                }
+                catch (Exception editorError) { WriteLog("Modern editor startup failed: " + editorError.ToString()); }
                 crashReporter.RecoverPending();
             }
             catch (Exception ex)
@@ -220,7 +229,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
             if (modernEditor == null || modernEditor.IsDisposed)
             {
                 editorWorkspace?.Dispose();
-                modernEditor = new ModernEditorWindow();
+                modernEditor = CreateModernEditor();
                 modernEditor.AssistantAction += (command, attachment) => { ShowChat(); chat.PrepareMonacoAction(command, attachment); };
                 try { editorWorkspace = new EditorWorkspaceHost(vbe, modernEditor); }
                 catch { modernEditor.Dispose(); modernEditor = null; editorWorkspace = null; throw; }
@@ -378,7 +387,7 @@ public void OnBeginShutdown(ref object[] custom) { CleanupTemporaryToolbarComman
         private void Dispose()
         {
             try { if (!VbeNativeTheme.Disconnect()) WriteLog("Native VBE theme cleanup deferred: renderer still active."); }
-            catch (Exception error) { WriteLog("Native VBE theme cleanup failed: " + error); }
+            catch (Exception error) { WriteLog("Native VBE theme cleanup failed: " + error.ToString()); }
             editorNavigation?.Dispose(); editorNavigation = null;
             editorWorkspace?.Dispose(); editorWorkspace = null;
             modernEditor?.Dispose(); modernEditor = null;

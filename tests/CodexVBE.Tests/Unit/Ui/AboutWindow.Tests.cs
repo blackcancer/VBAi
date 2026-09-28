@@ -114,6 +114,46 @@ namespace CodexVBE.Tests.Unit
             }
             finally { ChatWindow.ShowModal = chatShow; AddIn.ShowModal = hostShow; }
         }
+        [STATestMethod]
+        public void OwnedMetadataAppearanceAndOwnerFailuresRespectEveryRuntimeBoundary()
+        {
+            using (var metadata = new TechnicalUiMetadataScope())
+            using (var theme = new ThemeScope())
+            {
+                AboutWindow.MetadataAssembly = TechnicalUiMetadataScope.WithoutInformation; AboutWindow.ProcessIs64Bit = () => false; AboutWindow.RuntimeVersion = () => null;
+                using (var window = new AboutWindow())
+                {
+                    StringAssert.Contains(window.TechnicalDetails, "5.6.7.8"); StringAssert.Contains(window.TechnicalDetails, "x86");
+                    Assert.IsNotNull(AboutWindow.ResolveImageReader(null, new System.ResolveEventArgs("System.Resources.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")));
+                    Assert.IsNull(AboutWindow.ResolveImageReader(null, new System.ResolveEventArgs("Unrelated.Assembly")));
+                    var handle = window.Handle;
+                    foreach (bool contrast in new[] { false, true })
+                    foreach (var choice in new[] { ThemeChoice.Light, ThemeChoice.Dark })
+                    {
+                        UiTheme.HighContrast = () => contrast; ThemeScope.SetChoice(choice);
+                        ModernEditorDebugFixture.Wait(System.Threading.Tasks.Task.Run(() => UiInvoke.Call(typeof(AboutWindow), "ApplyAppearance", window)));
+                        Assert.AreEqual(contrast ? System.Drawing.SystemColors.HotTrack : choice == ThemeChoice.Dark ? System.Drawing.Color.FromArgb(147, 197, 253) : System.Drawing.Color.FromArgb(29, 78, 216), UiInvoke.Field<LinkLabel>(window, "projectLink").LinkColor);
+                    }
+                    window.Dispose(); UiInvoke.Call(typeof(AboutWindow), "ApplyAppearance", window);
+                }
+                var original = AddIn.ShowModal;
+                try { int shown = 0; AddIn.ShowModal = (form, owner) => { Assert.IsNull(owner); shown++; return DialogResult.Cancel; }; AboutWindow.ShowForVbe(null); Assert.AreEqual(1, shown); }
+                finally { AddIn.ShowModal = original; }
+            }
+        }
+
+        [STATestMethod]
+        public void DesignerDisposalHandlesAbsentImageAndAlreadyReleasedComponents()
+        {
+            using (var window = (AboutWindow)LicenseManager.CreateWithContext(typeof(AboutWindow), new DesignContext()))
+            {
+                var image = UiInvoke.Field<PictureBox>(window, "brandImage"); image.Image.Dispose(); image.Image = null;
+                var components = UiInvoke.Field<System.ComponentModel.IContainer>(window, "components");
+                typeof(AboutWindow).GetField("components", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(window, null);
+                try { UiInvoke.Call(typeof(AboutWindow), "Dispose", window, false); window.Dispose(); }
+                finally { components.Dispose(); }
+            }
+        }
         public sealed class AboutHost { public AboutMainWindow MainWindow { get; } = new AboutMainWindow(); }
         public sealed class AboutMainWindow { public long HWnd => 123; }
     }

@@ -129,3 +129,44 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Windows.Controls;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+    public sealed partial class ChatWindowStateTests
+    {
+        [STATestMethod, TestCategory("Unit")]
+        public void NativeActivityUpgradesLegacyStreamsAndRendersEveryTerminalAndRunningState()
+        {
+            using (var window = Surfaces())
+            {
+                Call(window, "ReceiveChatUpdate", "tool", "legacy", "previous text", false);
+                var entry = Get<Dictionary<string, ChatEntry>>(window, "liveEntries")["legacy"];
+                Assert.IsNull(entry.Activity);
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "legacy", Kind = "dynamicToolCall", Title = " ", Detail = "native detail", Append = true, Status = "inProgress" });
+                Assert.IsNull(entry.Activity.Title);
+                Assert.AreEqual("native detail", entry.Activity.Detail);
+                Assert.AreEqual("inProgress", entry.Activity.Status);
+                Assert.IsNull(entry.Activity.DurationMs);
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "legacy", Kind = "dynamicToolCall", Title = new string('t', 120), Detail = " continuation", Append = true, Status = "inProgress", DurationMs = 1234 });
+                Assert.AreEqual("native detail continuation", entry.Activity.Detail);
+                Assert.AreEqual(1234L, entry.Activity.DurationMs);
+                var group = (Expander)Call(window, "RenderActivityGroup", entry, new List<ChatEntry> { entry });
+                StringAssert.EndsWith((string)group.Header, "…");
+                foreach (var state in new[] { "inProgress", "failed", "declined", "completed", "interrupted" })
+                {
+                    entry.Activity.Status = state;
+                    var step = (Expander)Call(window, "RenderActivityStep", entry);
+                    var label = ((DockPanel)step.Header).Children.OfType<TextBlock>().First().Text;
+                    StringAssert.StartsWith(label, state == "inProgress" ? "● " : state == "failed" ? "× " : state == "completed" ? "✓ " : "— ");
+                    StringAssert.Contains(label, " s");
+                    Assert.AreEqual("native detail continuation", ((TextBox)step.Content).Text);
+                }
+            }
+        }
+    }
+}

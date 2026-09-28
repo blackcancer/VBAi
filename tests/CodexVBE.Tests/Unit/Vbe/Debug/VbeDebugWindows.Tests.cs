@@ -15,6 +15,22 @@ namespace CodexVBE.Tests.Unit
     public sealed partial class VbeDebugWindowsSystemTests
     {
         [TestMethod]
+        public void ProcessScopedCompileChecksUseTheRequestedProcess()
+        {
+            using (var scene = new SystemScene())
+            using (var completed = new System.Threading.ManualResetEventSlim(true))
+            {
+                var dialog = scene.Add("Microsoft Visual Basic for Applications");
+                dialog.ProcessId = 12345;
+                VbeDebugWindows.EnsureNoCompileDialog(12346);
+                Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.EnsureNoCompileDialog(12345));
+                Assert.IsNull(VbeDebugWindows.AwaitCompileDialog(completed, 12346));
+                Assert.ThrowsException<ArgumentOutOfRangeException>(() => VbeDebugWindows.EnsureNoCompileDialog(0));
+                Assert.ThrowsException<ArgumentOutOfRangeException>(() => VbeDebugWindows.AwaitCompileDialog(completed, 0));
+            }
+        }
+
+        [TestMethod]
         public void NativeWindowDiscoveryUsesProcessClassVisibilityAndExactLocalizedTitles()
         {
             using (var scene = new SystemScene())

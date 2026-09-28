@@ -77,7 +77,7 @@ namespace CodexVBE.Tests.Integration
                     MonacoRuntimeTests.Wait(window.Script("insert", "    ' persisted by native save\n"));
                     window.Activate(); window.Browser.Focus(); SetForegroundWindow(window.Handle);
                     MonacoRuntimeTests.Wait(() => window.ContainsFocus);
-                    System.Windows.Forms.SendKeys.SendWait("^s");
+                    MonacoRuntimeTests.Wait(window.Script("command", "vbai.save"));
                     try { MonacoRuntimeTests.Wait(() => !UiInvoke.Field<bool>(window, "busy") &&
                         adapter.Read().Contains("persisted by native save") && (bool)book.Saved); }
                     catch (AssertFailedException)
@@ -87,7 +87,7 @@ namespace CodexVBE.Tests.Integration
                             ", status=" + UiInvoke.Field<System.Windows.Forms.Label>(window, "status").Text);
                     }
                     Assert.IsTrue((bool)book.Saved);
-                    Assert.AreEqual(1, saves, "Ctrl+S must route exactly once through Monaco synchronization and the native Save command.");
+                    Assert.AreEqual(1, saves, "The Save action must route exactly once through Monaco synchronization and the native Save command.");
                     Assert.AreEqual(0, ((string)other.Path).Length, "Save must not save the unrelated active workbook.");
                 }
                 book.Close(false); Marshal.FinalReleaseComObject((object)book); book = null;

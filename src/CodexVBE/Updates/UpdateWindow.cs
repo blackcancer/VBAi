@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace CodexVBE
@@ -14,11 +15,15 @@ namespace CodexVBE
         private string downloaded;
         private bool busy;
         private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
+        private bool runtimeDisposed;
         internal Func<UpdateFeed> CreateFeed = () => new UpdateFeed();
         internal Func<UpdatePreferences> ReadPreferences = () => UpdateState.Load();
         internal Action<UpdatePreferences> StorePreferences = p => UpdateState.Save(p);
         internal Func<bool> ManagedInstallation = () => UpdateInstallation.IsManaged(UpdateState.InstallationDirectory);
         internal Action<UpdateRelease, string, bool> Schedule = UpdateCoordinator.Schedule;
+        internal Func<UpdateFeed, UpdateVersion, bool, CancellationToken, Task<UpdateRelease>> CheckRelease = (feed, version, previews, token) => feed.Check(version, previews, null, token);
+        internal Func<UpdateFeed, UpdateAsset, string, IProgress<int>, CancellationToken, Task<string>> DownloadInstaller = (feed, asset, root, progress, token) => feed.Download(asset, root, progress, token);
+        internal Func<Action, Task> RunBackground = action => Task.Run(action);
         public UpdateWindow()
         {
             InitializeComponent();
@@ -118,7 +123,7 @@ namespace CodexVBE
             try
             {
                 SavePreferences();
-                using (var feed = CreateFeed()) release = await feed.Check(UpdateVersion.Parse(UpdateState.ProductVersion), previews.Checked, null, cancellation.Token);
+                using (var feed = CreateFeed()) release = await CheckRelease(feed, UpdateVersion.Parse(UpdateState.ProductVersion), previews.Checked, cancellation.Token);
                 if (IsDisposed) return;
                 UpdateState.CacheRelease(release);
                 downloaded = null;
@@ -137,7 +142,7 @@ namespace CodexVBE
             try
             {
                 var reporter = new Progress<int>(value => { if (!IsDisposed) progress.Value = value; });
-                using (var feed = CreateFeed()) downloaded = await feed.Download(release.Installer, UpdatePaths.Root, reporter, cancellation.Token);
+                using (var feed = CreateFeed()) downloaded = await DownloadInstaller(feed, release.Installer, UpdatePaths.Root, reporter, cancellation.Token);
                 if (!IsDisposed) status.Text = UiText.Get("Update downloaded and verified.");
             }
             catch (Exception) { if (!IsDisposed) status.Text = UiText.Get("Unable to download or verify the installer."); }
@@ -147,7 +152,7 @@ namespace CodexVBE
         {
             if (busy || downloaded == null || release == null) return;
             SetBusy(true);
-            try { SavePreferences(); await System.Threading.Tasks.Task.Run(() => Schedule(release, downloaded, false)); if (!IsDisposed) { status.Text = UiText.Get("Waiting for VBA hosts to close."); cancelPending.Enabled = true; } }
+            try { SavePreferences(); await RunBackground(() => Schedule(release, downloaded, false)); if (!IsDisposed) { status.Text = UiText.Get("Waiting for VBA hosts to close."); cancelPending.Enabled = true; } }
             catch (Exception) { if (!IsDisposed) status.Text = UiText.Get("Unable to schedule the update."); }
             finally { if (!IsDisposed) { SetBusy(false); install.Enabled = false; } }
         }
@@ -182,7 +187,7 @@ namespace CodexVBE
             progress.Visible = value; progress.Style = ProgressBarStyle.Marquee;
         }
         protected override void OnFormClosing(FormClosingEventArgs e) { cancellation.Cancel(); base.OnFormClosing(e); }
-        private void DisposeRuntime() { UiTheme.Changed -= ApplyAppearance; cancellation.Cancel(); cancellation.Dispose(); }
+        private void DisposeRuntime() { if (runtimeDisposed) return; runtimeDisposed = true; UiTheme.Changed -= ApplyAppearance; cancellation.Cancel(); cancellation.Dispose(); }
         internal static void ShowForVbe(object vbe)
         {
             IWin32Window owner = null;

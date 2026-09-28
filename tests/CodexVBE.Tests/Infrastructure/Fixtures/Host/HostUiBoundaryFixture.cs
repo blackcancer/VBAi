@@ -65,12 +65,16 @@ namespace CodexVBE.Tests.Infrastructure
     {
         public NativeMainWindow MainWindow { get; }
         public NativeAddIns AddIns { get; } = new NativeAddIns();
+        public object ActiveWindow { get; set; }
+        public object ActiveCodePane { get; set; }
         public NativeWindows Windows { get; }
         public List<VbeSessionTests.FakeProject> VBProjects { get; } = new List<VbeSessionTests.FakeProject>();
         public VbeSessionTests.FakeProject ActiveVBProject { get; set; }
         public VbeSessionTests.FakeProject Project { get; }
         public VbeMenuLifecycleTests.FakeBar[] CommandBars { get; }
         private readonly Form owner;
+        internal Form Owner => owner;
+        internal void Workspace(bool available = true) { owner.IsMdiContainer = available; owner.ClientSize = new System.Drawing.Size(1000, 720); MainWindow.HWnd = owner.Handle.ToInt64(); owner.Show(); }
         public NativeHost(string path)
         {
             owner = new Form { Left = -10000, Top = -10000, ShowInTaskbar = false };
@@ -124,6 +128,8 @@ namespace CodexVBE.Tests.Infrastructure
     {
         internal NativeWindow Window;
         internal ChatToolWindow Control;
+        internal NativeWindow EditorWindow;
+        internal ChatToolWindow EditorControl;
         internal bool MissingControl;
         internal bool RejectCreation;
         internal Action AfterCreation;
@@ -134,14 +140,24 @@ namespace CodexVBE.Tests.Infrastructure
         public IEnumerator GetEnumerator() { return new object[0].GetEnumerator(); }
         object IVbeWindows.CreateToolWindow(IVbeAddIn addIn, string progId, string caption, string position, ref object document)
         {
-            Assert.IsNotNull(addIn); Assert.AreEqual("CodexVBE.ChatToolWindow", progId); Assert.AreEqual("VBAi", caption); StringAssert.Contains(position, "B5C96ED5");
+            Assert.IsNotNull(addIn); Assert.AreEqual("CodexVBE.ChatToolWindow", progId);
+            if (caption == UiText.Get("VBAi editor"))
+            {
+                StringAssert.Contains(position, "CC57B0DE");
+                if (RejectCreation) throw new IOException("creation rejected");
+                EditorWindow?.Dispose(); EditorWindow = new NativeWindow();
+                EditorControl = MissingControl ? null : new ChatToolWindow();
+                if (EditorControl != null) { EditorWindow.Form.Controls.Add(EditorControl); var handle = EditorControl.Handle; }
+                document = EditorControl; AfterCreation?.Invoke(); return EditorWindow;
+            }
+            Assert.AreEqual("VBAi", caption); StringAssert.Contains(position, "B5C96ED5");
             if (RejectCreation) throw new IOException("creation rejected");
             Window?.Dispose(); Window = new NativeWindow();
             Control = MissingControl ? null : new ChatToolWindow();
             if (Control != null) { Window.Form.Controls.Add(Control); var handle = Control.Handle; }
             document = Control; AfterCreation?.Invoke(); return Window;
         }
-        public void Dispose() { Window?.Dispose(); Control?.Dispose(); }
+        public void Dispose() { Window?.Dispose(); Control?.Dispose(); EditorWindow?.Dispose(); EditorControl?.Dispose(); }
     }
 }
 

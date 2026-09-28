@@ -9,9 +9,9 @@ namespace CodexVBE
     /// <summary>Remaps legacy neutral chrome after its native renderer has drawn it.</summary>
     internal static class VbeNativeChrome
     {
-        [StructLayout(LayoutKind.Sequential)] private struct Rect { internal int Left, Top, Right, Bottom; }
-        [StructLayout(LayoutKind.Sequential)] private struct Point { internal int X, Y; }
-        [StructLayout(LayoutKind.Sequential)] private struct ComboInfo
+        [StructLayout(LayoutKind.Sequential)] internal struct Rect { internal int Left, Top, Right, Bottom; }
+        [StructLayout(LayoutKind.Sequential)] internal struct Point { internal int X, Y; }
+        [StructLayout(LayoutKind.Sequential)] internal struct ComboInfo
         {
             internal int Size;
             internal Rect Item, Button;
@@ -30,6 +30,21 @@ namespace CodexVBE
         [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr window, uint command);
         [DllImport("user32.dll")] private static extern int ReleaseDC(IntPtr window, IntPtr dc);
         [DllImport("gdi32.dll")] private static extern bool BitBlt(IntPtr destination, int x, int y, int width, int height, IntPtr source, int sourceX, int sourceY, uint operation);
+        internal delegate bool ReadRectangle(IntPtr window, out Rect rectangle);
+        internal delegate bool ConvertPoint(IntPtr window, ref Point point);
+        internal delegate bool ReadPointer(out Point point);
+        internal delegate bool ReadCombo(IntPtr window, ref ComboInfo information);
+        internal static ReadRectangle WindowBounds = GetWindowRect, ClientBounds = GetClientRect;
+        internal static ConvertPoint ToScreen = ClientToScreen, ToClient = ScreenToClient;
+        internal static ReadPointer PointerPosition = GetCursorPos;
+        internal static ReadCombo ComboInformation = GetComboBoxInfo;
+        internal static Func<IntPtr, bool> WindowEnabled = IsWindowEnabled;
+        internal static Func<IntPtr, IntPtr> AcquireWindowDc = GetWindowDC, AcquireClientDc = GetDC;
+        internal static Func<IntPtr, uint, IntPtr> RelatedWindow = GetWindow;
+        internal static Func<IntPtr, IntPtr, int> ReleaseWindowDc = ReleaseDC;
+        internal static Func<IntPtr, Graphics> CreateGraphicsFromDc = Graphics.FromHdc;
+        internal static Func<int, int, Bitmap> CreateChromeBitmap = (width, height) => new Bitmap(width, height, PixelFormat.Format32bppRgb);
+
         internal const int EditorBackground = 0x282d35;
         private static readonly int[] Neutral = BuildNeutral();
         private static readonly HashSet<int> OutputColors = BuildOutputs();
@@ -147,7 +162,7 @@ namespace CodexVBE
         {
             Rect bounds, client;
             var origin = new Point();
-            if (!GetWindowRect(window, out bounds) || !GetClientRect(window, out client) || !ClientToScreen(window, ref origin)) return;
+            if (!WindowBounds(window, out bounds) || !ClientBounds(window, out client) || !ToScreen(window, ref origin)) return;
             int width = bounds.Right - bounds.Left, height = bounds.Bottom - bounds.Top;
             int left = origin.X - bounds.Left;
             int top = origin.Y - bounds.Top;
@@ -159,11 +174,11 @@ namespace CodexVBE
             right = Math.Min(2, Math.Max(0, right));
             bottom = Math.Min(2, Math.Max(0, bottom));
             if (width <= 0 || height <= 0 || (left == 0 && right == 0 && bottom == 0)) return;
-            IntPtr dc = GetWindowDC(window);
+            IntPtr dc = AcquireWindowDc(window);
             if (dc == IntPtr.Zero) return;
             try
             {
-                using (var graphics = Graphics.FromHdc(dc))
+                using (var graphics = CreateGraphicsFromDc(dc))
                 using (var brush = new SolidBrush(Color.FromArgb(62, 70, 81)))
                 {
                     if (left > 0) graphics.FillRectangle(brush, 0, 0, left, height);
@@ -173,27 +188,27 @@ namespace CodexVBE
                 }
             }
             catch (Exception error) { LoadLog.Write("Native border painting failed: " + error.Message); }
-            finally { ReleaseDC(window, dc); }
+            finally { ReleaseWindowDc(window, dc); }
         }
 
         internal static void PaintComboButton(IntPtr window)
         {
             var info = new ComboInfo { Size = Marshal.SizeOf(typeof(ComboInfo)) };
             Rect client;
-            if (!GetComboBoxInfo(window, ref info) || !GetClientRect(window, out client) || (info.ButtonState & 0x8000) != 0) return;
+            if (!ComboInformation(window, ref info) || !ClientBounds(window, out client) || (info.ButtonState & 0x8000) != 0) return;
             var button = Rectangle.FromLTRB(info.Button.Left, info.Button.Top, info.Button.Right, info.Button.Bottom);
             var area = Rectangle.FromLTRB(0, 0, client.Right, client.Bottom);
             if (button.Width < 4 || button.Height < 4 || !area.Contains(button)) return;
-            bool enabled = IsWindowEnabled(window);
+            bool enabled = WindowEnabled(window);
             Point cursor;
-            bool hot = GetCursorPos(out cursor) && ScreenToClient(window, ref cursor) && button.Contains(cursor.X, cursor.Y);
+            bool hot = PointerPosition(out cursor) && ToClient(window, ref cursor) && button.Contains(cursor.X, cursor.Y);
             Color face = !enabled ? Color.FromArgb(32, 36, 43) : (info.ButtonState & 8) != 0
                 ? Color.FromArgb(52, 68, 82) : hot ? Color.FromArgb(62, 70, 81) : Color.FromArgb(40, 45, 53);
-            IntPtr dc = GetDC(window);
+            IntPtr dc = AcquireClientDc(window);
             if (dc == IntPtr.Zero) return;
             try
             {
-                using (var graphics = Graphics.FromHdc(dc))
+                using (var graphics = CreateGraphicsFromDc(dc))
                 using (var background = new SolidBrush(face))
                 using (var arrow = new SolidBrush(enabled ? Color.FromArgb(226, 232, 240) : Color.FromArgb(120, 128, 139)))
                 using (var border = new Pen(Color.FromArgb(62, 70, 81)))
@@ -209,32 +224,32 @@ namespace CodexVBE
                 }
             }
             catch (Exception error) { LoadLog.Write("Native combo button painting failed: " + error.Message); }
-            finally { ReleaseDC(window, dc); }
+            finally { ReleaseWindowDc(window, dc); }
         }
 
         internal static void Paint(IntPtr window, bool client, IntPtr suppliedDc, bool hostedCaption = false, bool preserveDarkClient = false, bool codeSurface = false)
         {
             if (painting) return;
             Rect bounds, inner;
-            if (!GetWindowRect(window, out bounds) || !GetClientRect(window, out inner)) return;
+            if (!WindowBounds(window, out bounds) || !ClientBounds(window, out inner)) return;
             var origin = new Point();
-            if (!ClientToScreen(window, ref origin)) return;
+            if (!ToScreen(window, ref origin)) return;
             int width = client ? inner.Right : bounds.Right - bounds.Left;
             int height = client ? inner.Bottom : origin.Y - bounds.Top;
             if (hostedCaption)
             {
                 Rect childBounds;
-                IntPtr child = GetWindow(window, 5);
-                if (child == IntPtr.Zero || !GetWindowRect(child, out childBounds)) return;
+                IntPtr child = RelatedWindow(window, 5);
+                if (child == IntPtr.Zero || !WindowBounds(child, out childBounds)) return;
                 height = childBounds.Top - bounds.Top;
             }
             if (width <= 0 || height <= 0 || width > 16384 || height > 16384) return;
-            IntPtr dc = suppliedDc != IntPtr.Zero ? suppliedDc : client ? GetDC(window) : GetWindowDC(window);
+            IntPtr dc = suppliedDc != IntPtr.Zero ? suppliedDc : client ? AcquireClientDc(window) : AcquireWindowDc(window);
             if (dc == IntPtr.Zero) return;
             painting = true;
             try
             {
-                using (var bitmap = new Bitmap(width, height, PixelFormat.Format32bppRgb))
+                using (var bitmap = CreateChromeBitmap(width, height))
                 {
                     using (var graphics = Graphics.FromImage(bitmap))
                     {
@@ -270,12 +285,14 @@ namespace CodexVBE
                     // A native state notification can leave the surface unchanged.
                     // Do not present a second full image of an already themed bar.
                     if (!changed) return;
-                    using (var target = Graphics.FromHdc(dc)) target.DrawImageUnscaled(bitmap, 0, 0);
+                    using (var target = CreateGraphicsFromDc(dc)) target.DrawImageUnscaled(bitmap, 0, 0);
                 }
             }
             catch (Exception error) { LoadLog.Write("Native chrome painting failed: " + error.Message); }
-            finally { painting = false; if (suppliedDc == IntPtr.Zero) ReleaseDC(window, dc); }
+            finally { painting = false; if (suppliedDc == IntPtr.Zero) ReleaseWindowDc(window, dc); }
         }
+
+        internal static Func<int, int, Bitmap> CreatePropertyRowBitmap = (width, height) => new Bitmap(width, height, PixelFormat.Format32bppRgb);
 
         internal static void PaintPropertyRow(IntPtr dc, VbeNativeTheme.NativeRect bounds)
         {
@@ -283,7 +300,7 @@ namespace CodexVBE
             if (width <= 0 || height <= 0 || width > 16384 || height > 2048) return;
             try
             {
-                using (var bitmap = new Bitmap(width, height, PixelFormat.Format32bppRgb))
+                using (var bitmap = CreatePropertyRowBitmap(width, height))
                 {
                     using (var graphics = Graphics.FromImage(bitmap))
                     {
@@ -304,7 +321,7 @@ namespace CodexVBE
                         }
                     }
                     finally { bitmap.UnlockBits(data); }
-                    using (var target = Graphics.FromHdc(dc)) target.DrawImageUnscaled(bitmap, bounds.Left, bounds.Top);
+                    using (var target = CreateGraphicsFromDc(dc)) target.DrawImageUnscaled(bitmap, bounds.Left, bounds.Top);
                 }
             }
             catch (Exception error) { LoadLog.Write("Native property row painting failed: " + error.Message); }

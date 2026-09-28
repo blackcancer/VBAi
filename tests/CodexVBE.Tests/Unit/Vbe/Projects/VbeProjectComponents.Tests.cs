@@ -918,3 +918,51 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    public sealed partial class VbeOtherHostPersistenceTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod, Microsoft.VisualStudio.TestTools.UnitTesting.TestCategory("Unit")]
+        public void ComponentDispatchCarriesTheSameOwnedProbeThroughStatusSaveAndSaveAs()
+        {
+            foreach (string kind in new[] { "Word", "PowerPoint" })
+            {
+                var f = new Fixture { Kind = kind };
+                if (kind == "PowerPoint") { f.Project.FileName = @"C:\fixture\Document.pptm"; f.Observation.Path = f.Project.FileName; f.Observation.Format = null; }
+                int created = 0;
+                f.Service.OtherHostProbe = () => { created++; return f; };
+                dynamic status = f.Service.PersistenceStatus("P");
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsTrue((bool)status.HostAvailable);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(1, created);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsTrue(f.StateCalls > 0);
+                var request = f.Request();
+                dynamic saved = f.Service.SaveHostDocument(request);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsTrue((bool)saved.Verified);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(2, created);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(1, f.Attempts);
+                f = new Fixture { Kind = kind };
+                f.Service.OtherHostProbe = () => f;
+                request = f.Request(true, kind == "Word" ? ".docm" : ".pptm");
+                saved = f.Service.SaveHostDocumentAs(request);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsTrue((bool)saved.Verified);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(1, f.Attempts);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(request.Path, f.ActualPath);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(kind == "Word" ? 13 : 25, f.ChosenFormat);
+            }
+        }
+
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod, Microsoft.VisualStudio.TestTools.UnitTesting.TestCategory("Unit")]
+        public void ComponentDispatchPropagatesProbeConstructionErrorsBeforeInvokingSave()
+        {
+            var f = new Fixture();
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType(f.Service.OtherHostProbe(), typeof(VbeProjectComponents.NativeOtherHostProbe));
+            var failure = new System.IO.IOException("probe unavailable");
+            f.Service.OtherHostProbe = () => { throw failure; };
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreSame(failure, Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.IO.IOException>(() => f.Service.PersistenceStatus("P")));
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreSame(failure, Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.IO.IOException>(() => f.Service.SaveHostDocument(f.Request())));
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreSame(failure, Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.IO.IOException>(() => f.Service.SaveHostDocumentAs(f.Request(true))));
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, f.Attempts);
+        }
+    }
+}

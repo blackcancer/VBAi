@@ -58,6 +58,16 @@ namespace CodexVBE.Tests.Unit
             internal void Action(string action, string name = null, string text = null, string choice = null, string path = null)
             { Pump((Task)Call("RunGitAction", action, name, text, choice, path)); }
             internal void Compare() => Event("Compare_Click");
+            internal void AssertLiveMatchesHead()
+            {
+                var expected = Git.Repository.Read(Git.Repository.Resolve(Git.Repository.Head));
+                var observed = Git.Project.Capture();
+                string details = string.Join("\n", observed.Changes(expected));
+                foreach (var entry in observed.Serialize())
+                    if (expected.Serialize().TryGetValue(entry.Key, out var baseline) && !System.Linq.Enumerable.SequenceEqual(entry.Value, baseline))
+                        details += "\n" + entry.Key + " expected: " + System.Text.Encoding.UTF8.GetString(baseline) + " observed: " + System.Text.Encoding.UTF8.GetString(entry.Value);
+                Assert.IsTrue(observed.SameAs(expected), details);
+            }
             internal void Select(ListBox list, int index) { Set("running", true); list.SelectedIndex = index; Set("running", false); }
             internal string Status => Get<Label>("status").Text;
             private void OnUiError(object sender, ThreadExceptionEventArgs e) { uiError = e.Exception; }

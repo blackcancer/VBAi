@@ -254,3 +254,24 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    public sealed partial class ChatWindowStateTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.STATestMethod]
+        public void ScopeValidationWithoutCurrentSessionRevokesReadGrantsAndSharedAccess()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = new CodexVBE.ChatWindow(runtime.Session))
+            {
+                var tools = Get<CodexVBE.LlmVbeTools>(window, "tools"); tools.SetReadAccess(new[] { "Foreign" }, true);
+                Set(window, "currentSession", null); Call(window, "EnsureCurrentScope");
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(@"C:\Temp\P.xlsm", tools.BoundProject);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.InvalidOperationException>(() => tools.RequireProjectRead("Foreign"));
+                var refused = new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<CodexVBE.Response>(tools.Invoke("code_panes", "{}"));
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(refused.Ok); Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(string.IsNullOrEmpty(refused.Error));
+            }
+        }
+    }
+}

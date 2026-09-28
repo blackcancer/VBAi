@@ -12,6 +12,15 @@ namespace CodexVBE
     {
         internal Action<string> CopyText = Clipboard.SetText;
         internal Action<string> OpenLink = SafeLinks.Open;
+        internal static Func<Assembly> MetadataAssembly = ReadMetadataAssembly;
+        internal static Func<bool> ProcessIs64Bit = ReadProcessIs64Bit;
+        internal static Func<Version> RuntimeVersion = ReadRuntimeVersion;
+        private static Version ReadRuntimeVersion() => Environment.Version;
+        private static Assembly ReadMetadataAssembly() => typeof(AboutWindow).Assembly;
+        private static bool ReadProcessIs64Bit() => Environment.Is64BitProcess;
+        internal static Assembly ResolveImageReader(object sender, ResolveEventArgs request) =>
+            request.Name == "System.Resources.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51"
+                ? typeof(System.Resources.Extensions.DeserializingResourceReader).Assembly : null;
         private string hostProcess;
         private bool runtimeInitialized;
 
@@ -21,21 +30,19 @@ namespace CodexVBE
             // SDK-generated image resources name the legacy reader assembly. COM hosts
             // and the Designer do not use this library's binding-redirect configuration.
             // Resolve only that reader while loading this window's resources.
-            ResolveEventHandler imageReader = (sender, request) =>
-                request.Name == "System.Resources.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51"
-                    ? typeof(System.Resources.Extensions.DeserializingResourceReader).Assembly : null;
+            ResolveEventHandler imageReader = ResolveImageReader;
             AppDomain.CurrentDomain.AssemblyResolve += imageReader;
             try { InitializeComponent(); }
             finally { AppDomain.CurrentDomain.AssemblyResolve -= imageReader; }
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
             Icon = VbeWindowIcons.Icon("assistant");
             UiText.Apply(this, components);
-            var assembly = typeof(AboutWindow).Assembly;
+            var assembly = MetadataAssembly();
             var information = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
             versionValue.Text = information?.InformationalVersion ?? assembly.GetName().Version.ToString();
             using (var process = Process.GetCurrentProcess()) hostProcess = process.ProcessName;
             hostValue.Text = HostDescription(hostProcess);
-            platformValue.Text = "Windows · " + (Environment.Is64BitProcess ? "x64" : "x86") + " · .NET Framework 4.8";
+            platformValue.Text = "Windows · " + (ProcessIs64Bit() ? "x64" : "x86") + " · .NET Framework 4.8";
             languageValue.Text = UiText.Culture.NativeName;
             runtimeInitialized = true;
             ApplyAppearance();
@@ -46,7 +53,7 @@ namespace CodexVBE
         internal string TechnicalDetails => "VBAi " + versionValue.Text + Environment.NewLine +
             "Host: " + hostProcess + Environment.NewLine +
             "Platform: " + platformValue.Text + Environment.NewLine +
-            "CLR: " + Environment.Version + Environment.NewLine +
+            "CLR: " + RuntimeVersion() + Environment.NewLine +
             "Interface: " + UiText.Culture.Name + Environment.NewLine +
             "Theme: " + UiTheme.Choice;
 

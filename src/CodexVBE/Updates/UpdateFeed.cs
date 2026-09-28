@@ -15,6 +15,9 @@ namespace CodexVBE
     internal sealed class UpdateFeed : IDisposable
     {
         internal const string ApiRoot = "https://api.github.com/repos/blackcancer/CodexVBE";
+        internal static Func<LlmSettings> LoadCredentialSettings = LlmSettings.Load;
+        internal static Func<string, CancellationToken, Task<string>> ReadCredential = GitHubApi.ReadCredential;
+        private static Task<string> DefaultCredential(CancellationToken ct) => ReadCredential(LoadCredentialSettings().GitHubAccount, ct);
         private readonly HttpClient client;
         private readonly Func<CancellationToken, Task<string>> credentials;
         private string token;
@@ -23,7 +26,7 @@ namespace CodexVBE
         internal UpdateFeed(HttpMessageHandler handler = null, Func<CancellationToken, Task<string>> credentials = null)
         {
             client = new HttpClient(handler ?? new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromMinutes(10) };
-            this.credentials = credentials ?? (ct => GitHubApi.ReadCredential(LlmSettings.Load().GitHubAccount, ct));
+            this.credentials = credentials ?? DefaultCredential;
         }
         private async Task<HttpResponseMessage> Request(string url, bool binary, CancellationToken ct)
         {

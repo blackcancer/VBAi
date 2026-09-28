@@ -1995,4 +1995,39 @@ QQ 附加記憶體
   <data name="Declined" xml:space="preserve">
     <value>已拒絕</value>
   </data>
+  <data name="Project access" xml:space="preserve"><value>專案存取權限</value></data>
+  <data name="Project access…" xml:space="preserve"><value>專案存取權限…</value></data>
+  <data name="The bound project is always readable. Select additional projects for read access only. Changing access starts a new conversation; previously transmitted data cannot be recalled." xml:space="preserve"><value>繫結的專案始終可讀。請選擇僅允許讀取的其他專案。變更存取權限會開始新的對話；已傳送的資料無法撤回。</value></data>
+  <data name="Allow shared VBE and clipboard context" xml:space="preserve"><value>允許共用 VBE 和剪貼簿內容</value></data>
+  <data name="Shared tools may transmit data from any open project, debugger windows, native inventories and the system clipboard. This permission does not authorize edits in other projects." xml:space="preserve"><value>共用工具可能傳送任何已開啟專案、偵錯工具視窗、原生項目清單以及系統剪貼簿中的資料。此權限不允許編輯其他專案。</value></data>
+  <data name="Apply to new chat" xml:space="preserve"><value>套用至新對話</value></data>
+  <data name="Additional projects can be read, but only the bound project can be edited." xml:space="preserve"><value>可以讀取其他專案，但只能編輯繫結的專案。</value></data>
+  <data name="Authorize unfiltered native debugger, window and clipboard data for this chat." xml:space="preserve"><value>允許此對話使用未經篩選的原生偵錯工具、視窗和剪貼簿資料。</value></data>
+  <data name="Project access configured for the new conversation." xml:space="preserve"><value>已為新對話設定專案存取權限。</value></data>
+  <data name="Read access to another project is not authorized for this conversation." xml:space="preserve"><value>此對話未獲授權讀取其他專案。</value></data>
+  <data name="This tool uses shared VBE context. Authorize shared context in Project access before using it." xml:space="preserve"><value>此工具使用共用 VBE 內容。使用前請在「專案存取權限」中授權共用內容。</value></data>
+  <data name="Restore the paused provider, model, effort and mode before resuming." xml:space="preserve"><value>繼續前，請還原暫停時使用的服務提供者、模型、推理程度和模式。</value></data>
+  <data name=" — interrupted; verify live state before retrying" xml:space="preserve"><value> — 已中斷；重試前請確認目前狀態</value></data>
+  <data name="Resume paused turn" xml:space="preserve"><value>繼續已暫停的回合</value></data>
+  <data name="Continue from saved tool results without repeating completed actions." xml:space="preserve"><value>從已儲存的工具結果繼續，不重複已完成的操作。</value></data>
+  <data name="Pending: automatic verification and final response." xml:space="preserve"><value>待完成：自動驗證和最終回覆。</value></data>
+  <data name="Continuation interrupted. Completed results were kept; verify live state before retrying." xml:space="preserve"><value>繼續過程已中斷。已保留完成的結果；重試前請確認目前狀態。</value></data>
+  <data name="Choose which other projects this conversation may read." xml:space="preserve"><value>選擇此對話可以讀取的其他專案。</value></data>
+  <data name=" — completed" xml:space="preserve"><value> — 已完成</value></data>
+  <data name="Resume ▶" xml:space="preserve"><value>繼續 ▶</value></data>
+  <data name=" — refused or failed" xml:space="preserve"><value> — 已拒絕或失敗</value></data>
+  <data name="Paused — resume when ready" xml:space="preserve"><value>已暫停 — 準備好後繼續</value></data>
+  <data name="Pending: final response." xml:space="preserve"><value>待完成：最終回覆。</value></data>
+  <data name="Paused after 8 model rounds. Resume to continue from the saved results; completed actions will not be replayed." xml:space="preserve"><value>已在 8 回合模型互動後暫停。繼續時將使用已儲存的結果，不會重新執行已完成的操作。</value></data>
+  <data name=" — response received; inspect returned state" xml:space="preserve"><value> — 已收到回覆；請檢查傳回的狀態</value></data>
+  <data name="This document has no native host to save." xml:space="preserve"><value>此文件沒有可用於儲存的原生宿主應用程式。</value></data>
+  <data name="The native save target changed. Select the module and retry." xml:space="preserve"><value>原生儲存目標已變更。請選擇模組後重試。</value></data>
+  <data name="The native Save command is unavailable." xml:space="preserve"><value>原生儲存命令無法使用。</value></data>
+  <data name="Saved." xml:space="preserve"><value>已儲存。</value></data>
+  <data name="Saving was cancelled or not completed. Your code remains in the editor and host document." xml:space="preserve"><value>儲存已取消或未完成。程式碼仍保留在編輯器和宿主文件中。</value></data>
+  <data name="The host document was not saved. Your code remains in the editor and host document." xml:space="preserve"><value>宿主文件未儲存。程式碼仍保留在編輯器和宿主文件中。</value></data>
+  <data name="The native Save command finished, but the host document&apos;s saved state could not be verified." xml:space="preserve"><value>原生儲存命令已結束，但無法驗證宿主文件是否已儲存。</value></data>
+  <data name="The document was not saved because some edits are still pending synchronization." xml:space="preserve"><value>文件未儲存，因為部分修改仍在等待同步。</value></data>
+  <data name="Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data." xml:space="preserve"><value>專案隱私保護已升級。先前的歷程記錄仍可在本機查看；服務提供者的內容將重新開始，以免再次傳送先前共用的專案資料。</value></data>
+  <data name="This message predates the project privacy upgrade. Use current authorized references in a new conversation." xml:space="preserve"><value>此訊息早於專案隱私保護升級。請在新對話中使用目前已獲授權的參照。</value></data>
 </root>

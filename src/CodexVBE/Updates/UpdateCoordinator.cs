@@ -14,6 +14,9 @@ namespace CodexVBE
         private static CancellationTokenSource lifetime;
         internal static Func<UpdateFeed> CreateFeed = () => new UpdateFeed();
         internal static Action<bool> LaunchWorker = LaunchWorkerNative;
+        internal static Func<ProcessStartInfo, Process> StartProcess = Process.Start;
+        internal static Func<TimerCallback, object, TimeSpan, TimeSpan, Timer> CreateTimer = NewTimer;
+        private static Timer NewTimer(TimerCallback callback, object state, TimeSpan due, TimeSpan period) => new Timer(callback, state, due, period);
         internal static async Task<UpdateRelease> Check(bool automatic, IProgress<int> progress, CancellationToken ct)
         {
             string root = UpdatePaths.Root;
@@ -37,7 +40,7 @@ namespace CodexVBE
                         // Re-read user preferences after a potentially long download.
                         preferences = UpdateState.Load();
                         var previous = UpdateInstallJob.Load(root);
-                        bool cancelled = previous?.Completed == true && (previous.Status == "Update cancelled." || previous.Status == "Installation status is uncertain. Check the installed version.") && UpdateVersion.Parse(previous.TargetVersion)?.CompareTo(release.Version) == 0;
+                        bool cancelled = previous?.Completed == true && (previous.Status == "Update cancelled." || previous.Status == "Installation status is uncertain. Check the installed version.") && UpdateVersion.Parse(previous.TargetVersion).CompareTo(release.Version) == 0;
                         if (preferences.CheckAutomatically && preferences.InstallAutomatically && !cancelled && (previous == null || previous.Completed) && UpdateInstallation.IsManaged(UpdateState.InstallationDirectory))
                             Schedule(release, path, true);
                     }
@@ -60,7 +63,7 @@ namespace CodexVBE
                     if (timer == null)
                     {
                         lifetime = new CancellationTokenSource(); var token = lifetime.Token;
-                        timer = new Timer(state => { _ = RunAutomatic(token); }, null, TimeSpan.Zero, TimeSpan.FromHours(1));
+                        timer = CreateTimer(state => { _ = RunAutomatic(token); }, null, TimeSpan.Zero, TimeSpan.FromHours(1));
                     }
                 }
             }
@@ -107,7 +110,7 @@ namespace CodexVBE
             if (!File.Exists(worker)) File.Copy(source, worker);
             else if (UpdatePaths.Hash(worker) != UpdatePaths.Hash(source)) throw new InvalidDataException("Invalid cached updater.");
             string config = source + ".config"; if (File.Exists(config) && !File.Exists(worker + ".config")) File.Copy(config, worker + ".config");
-            Process.Start(new ProcessStartInfo(worker, background ? "--background" : "") { UseShellExecute = true, WindowStyle = background ? ProcessWindowStyle.Hidden : ProcessWindowStyle.Normal });
+            StartProcess(new ProcessStartInfo(worker, background ? "--background" : "") { UseShellExecute = true, WindowStyle = background ? ProcessWindowStyle.Hidden : ProcessWindowStyle.Normal });
         }
     }
 }

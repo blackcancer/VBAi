@@ -8,6 +8,34 @@ namespace CodexVBE.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class VbeProcedureRenameWorkflowTests
     {
+        [TestMethod]
+        public void IncompleteMetadataAndComponentCataloguesAreRejectedBeforeSourceMutation()
+        {
+            var fixture = new ProcedureRenameWorkflowFixture();
+            foreach (Request invalid in new[] { null, new Request { Module = "MathModule" }, new Request { Project = "P" } })
+                Assert.ThrowsException<ArgumentException>(() => fixture.Service.PreviewProcedureRename(invalid));
+            Assert.ThrowsException<ArgumentException>(() => fixture.Service.ApplyProcedureRename(null));
+            foreach (object metadata in new object[] { null, new object[0], new { Mode = 2, Version = "v" }, new { Project = "P", Version = "v" }, new { Project = "P", Mode = 2 }, new { Project = "P", Mode = 2, Version = " " }, new { Project = "", Mode = 2, Version = "v" } })
+            {
+                fixture = new ProcedureRenameWorkflowFixture(); fixture.Override = request => request.Command == "project_properties" ? Response.Success(metadata) : null;
+                Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.PreviewProcedureRename(ProcedureRenameMatrix.Request())); Assert.AreEqual(0, fixture.Writes);
+            }
+            foreach (object catalogue in new object[] { null, new { Name = "MathModule" }, new object[0], new object[1001], new object[] { 1 }, new object[] { new { Type = 1 } }, new object[] { new { Name = "MathModule" } }, new object[] { new { Name = " ", Type = 1 } }, new object[] { new { Name = "MathModule", Type = 1 }, new { Name = "MATHMODULE", Type = 1 } } })
+            {
+                fixture = new ProcedureRenameWorkflowFixture(); fixture.Override = request => request.Command == "list_modules" ? Response.Success(catalogue) : null;
+                Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.PreviewProcedureRename(ProcedureRenameMatrix.Request())); Assert.AreEqual(0, fixture.Writes);
+            }
+            fixture = new ProcedureRenameWorkflowFixture(); int reads = 0;
+            fixture.Override = request => request.Command == "project_properties" ? Response.Success(new { Project = ++reads == 1 ? "P" : "Different", Mode = 2, Version = "v" }) : null;
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.PreviewProcedureRename(ProcedureRenameMatrix.Request())); Assert.AreEqual(0, fixture.Writes);
+            fixture = new ProcedureRenameWorkflowFixture(); reads = 0;
+            fixture.Override = request => request.Command == "project_properties" ? Response.Success(new { Project = "P", Mode = 2, Version = ++reads == 1 ? "v1" : "v2" }) : null;
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.PreviewProcedureRename(ProcedureRenameMatrix.Request())); Assert.AreEqual(0, fixture.Writes);
+            fixture = new ProcedureRenameWorkflowFixture(); var apply = fixture.PreviewRequest();
+            reads = 0;
+            fixture.Override = request => { if (request.Command == "project_properties" && ++reads == 3) fixture.Mode = 1; return null; };
+            Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.ApplyProcedureRename(apply)); Assert.AreEqual(0, fixture.Writes);
+        }
         /// <summary>Le chemin sélectionne le projet natif; son nom VBA canonique résout les qualifications du code.</summary>
         [TestMethod]
         public void AbsoluteProjectSelectorsArePreservedWhileCanonicalNameResolvesCalls()

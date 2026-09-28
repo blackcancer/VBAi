@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -10,30 +10,40 @@ namespace CodexVBE
     /// <summary>Rapport technique volontairement limité aux métadonnées et aux méthodes, sans message brut ni chemin.</summary>
     internal sealed class CrashReport
     {
+        internal static Func<Assembly> MetadataAssembly = ReadMetadataAssembly;
+        internal static Func<bool> ProcessIs64Bit = ReadProcessIs64Bit;
+        internal static Func<Version> RuntimeVersion = ReadRuntimeVersion;
+        private static Version ReadRuntimeVersion() => Environment.Version;
+        internal static Func<Exception, StackFrame[]> FrameSnapshot = ReadFrames;
+        private static Assembly ReadMetadataAssembly() => typeof(CrashReport).Assembly;
+        private static bool ReadProcessIs64Bit() => Environment.Is64BitProcess;
+        private static StackFrame[] ReadFrames(Exception error) => new StackTrace(error, false).GetFrames();
         internal const string Repository = "https://github.com/blackcancer/CodexVBE";
         internal const string Recipient = "init-sys-rev@hotmail.com";
         internal string Id { get; } = Guid.NewGuid().ToString("N");
-        internal static string DirectoryPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexVBE", "CrashReports");
+        internal static Func<string> ReportDirectory = NativeReportDirectory;
+        private static string NativeReportDirectory() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexVBE", "CrashReports");
+        internal static string DirectoryPath => ReportDirectory();
         internal string TechnicalDetails { get; }
         internal string DefaultTitle { get; }
 
         internal CrashReport(Exception error = null)
         {
-            var assembly = typeof(CrashReport).Assembly;
+            var assembly = MetadataAssembly();
             var text = new StringBuilder();
             text.AppendLine("Report: " + Id);
             text.AppendLine("UTC: " + DateTime.UtcNow.ToString("O"));
             text.AppendLine("VBAi: " + (assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? assembly.GetName().Version.ToString()));
             using (var process = Process.GetCurrentProcess()) text.AppendLine("Host: " + process.ProcessName);
-            text.AppendLine("Platform: Windows " + (Environment.Is64BitProcess ? "x64" : "x86"));
-            text.AppendLine("CLR: " + Environment.Version);
+            text.AppendLine("Platform: Windows " + (ProcessIs64Bit() ? "x64" : "x86"));
+            text.AppendLine("CLR: " + RuntimeVersion());
             text.AppendLine("Interface: " + UiText.Culture.Name);
             text.AppendLine("Theme: " + UiTheme.Choice);
             int count = 0;
             for (var current = error; current != null && count++ < 5; current = current.InnerException)
             {
                 text.AppendLine("Exception: " + current.GetType().FullName);
-                var frames = new StackTrace(current, false).GetFrames();
+                var frames = FrameSnapshot(current);
                 if (frames == null) continue;
                 for (int i = 0; i < Math.Min(frames.Length, 40); i++)
                 {
@@ -100,7 +110,7 @@ namespace CodexVBE
                 foreach (var inner in aggregate.InnerExceptions) if (IsOwned(inner)) return true;
             for (var current = error; current != null; current = current.InnerException)
             {
-                var frames = new StackTrace(current, false).GetFrames();
+                var frames = FrameSnapshot(current);
                 if (frames != null) foreach (var frame in frames)
                     if (frame.GetMethod()?.DeclaringType?.Assembly == typeof(CrashReport).Assembly) return true;
             }

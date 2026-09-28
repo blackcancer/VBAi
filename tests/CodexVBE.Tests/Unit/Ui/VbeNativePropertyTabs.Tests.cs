@@ -12,7 +12,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
     [TestClass, TestCategory("Unit"), DoNotParallelize]
-    public sealed class VbeNativePropertyTabsTests
+    public sealed partial class VbeNativePropertyTabsTests
     {
         [StructLayout(LayoutKind.Sequential)] private struct Controls { internal uint Size, Classes; }
         [StructLayout(LayoutKind.Sequential)] private struct Rect { internal int Left, Top, Right, Bottom; }
@@ -294,6 +294,185 @@ namespace CodexVBE.Tests.Unit
             thread.Start();
             Assert.IsTrue(thread.Join(20000), "The native tab test did not finish.");
             if (failure != null) ExceptionDispatchInfo.Capture(failure).Throw();
+        }
+        private static void WithTabs(Action<NativePropertyTabsFixture> test) => OnSta(() =>
+        { using (var tabs = new NativePropertyTabsFixture()) test(tabs); });
+
+        [TestMethod]
+        public void NativeAdmissionRejectsEachIndependentWindowAndLayoutFailure()
+        {
+            WithTabs(tabs =>
+            {
+                Assert.IsFalse(VbeNativePropertyTabs.CanRender(IntPtr.Zero));
+                Assert.IsFalse(VbeNativePropertyTabs.CanRender(new IntPtr(-1)));
+                Assert.IsFalse(VbeNativePropertyTabs.CanRender(tabs.Owner.Handle));
+                VbeNativePropertyTabs.CurrentThread = () => tabs.Thread + 1;
+                Assert.IsFalse(VbeNativePropertyTabs.CanRender(tabs.Window)); tabs.ResetCallbacks();
+                foreach (int index in new[] { -16, -20 })
+                {
+                    VbeNativePropertyTabs.Style = (window, requested) => requested == index ? 1 : 0;
+                    Assert.IsFalse(VbeNativePropertyTabs.CanRender(tabs.Window));
+                }
+                tabs.ResetCallbacks();
+                var native = VbeNativePropertyTabs.SendMessage;
+                foreach (uint message in new uint[] { 0x1304, 0x1302, 0x132c })
+                {
+                    VbeNativePropertyTabs.SendMessage = (window, msg, first, second) => msg == message ? new IntPtr(msg == 0x1302 ? 1 : 3) : native(window, msg, first, second);
+                    Assert.IsFalse(VbeNativePropertyTabs.CanRender(tabs.Window));
+                }
+                tabs.ResetCallbacks(); VbeNativePropertyTabs.RelatedWindow = (window, kind) => tabs.Owner.Handle;
+                Assert.IsFalse(VbeNativePropertyTabs.CanRender(tabs.Window)); tabs.ResetCallbacks();
+                VbeNativePropertyTabs.ClientBounds = (IntPtr window, out VbeNativePropertyTabs.Rect rect) => { rect = default(VbeNativePropertyTabs.Rect); return false; };
+                Assert.IsFalse(VbeNativePropertyTabs.CanRender(tabs.Window)); tabs.ResetCallbacks();
+                VbeNativePropertyTabs.WindowBounds = (IntPtr window, out VbeNativePropertyTabs.Rect rect) => { rect = default(VbeNativePropertyTabs.Rect); return false; };
+                Assert.IsFalse(VbeNativePropertyTabs.CanRender(tabs.Window)); tabs.ResetCallbacks();
+                VbeNativePropertyTabs.ScreenPoint = (IntPtr window, ref VbeNativePropertyTabs.Point point) => false;
+                Assert.IsFalse(VbeNativePropertyTabs.CanRender(tabs.Window)); tabs.ResetCallbacks();
+                foreach (var rect in new[] { NativePropertyTabsFixture.Bounds(right: 0), NativePropertyTabsFixture.Bounds(bottom: 0), NativePropertyTabsFixture.Bounds(right: 16385), NativePropertyTabsFixture.Bounds(bottom: 16385) })
+                {
+                    VbeNativePropertyTabs.ClientBounds = (IntPtr window, out VbeNativePropertyTabs.Rect value) => { value = rect; return true; };
+                    Assert.IsFalse(VbeNativePropertyTabs.CanRender(tabs.Window));
+                }
+                tabs.ResetCallbacks();
+                VbeNativePropertyTabs.ClientBounds = (IntPtr window, out VbeNativePropertyTabs.Rect rect) => { rect = NativePropertyTabsFixture.Bounds(); return true; };
+                VbeNativePropertyTabs.ScreenPoint = (IntPtr window, ref VbeNativePropertyTabs.Point point) => { point.X = point.Y = 0; return true; };
+                foreach (var rect in new[] { NativePropertyTabsFixture.Bounds(left: 1), NativePropertyTabsFixture.Bounds(top: 1), NativePropertyTabsFixture.Bounds(right: 239), NativePropertyTabsFixture.Bounds(bottom: 59) })
+                {
+                    VbeNativePropertyTabs.WindowBounds = (IntPtr window, out VbeNativePropertyTabs.Rect value) => { value = rect; return true; };
+                    Assert.IsFalse(VbeNativePropertyTabs.CanRender(tabs.Window));
+                }
+                VbeNativePropertyTabs.WindowBounds = (IntPtr window, out VbeNativePropertyTabs.Rect rect) => { rect = NativePropertyTabsFixture.Bounds(); return true; };
+                Assert.IsTrue(VbeNativePropertyTabs.CanRender(tabs.Window));
+                Assert.IsFalse(VbeNativePropertyTabs.TryCreate(IntPtr.Zero, out VbeNativePropertyTabs refused)); Assert.IsNull(refused);
+            });
+        }
+
+        [TestMethod]
+        public void SnapshotFailuresLeavePaintingNativeAndBorrowedTextPointersAreNeverFreed()
+        {
+            WithTabs(tabs =>
+            {
+                VbeNativePropertyTabs.ReadItem = (IntPtr window, uint message, IntPtr index, ref VbeNativePropertyTabs.TabItem item) => IntPtr.Zero;
+                Assert.IsFalse(tabs.Handle(0x14)); tabs.ResetCallbacks();
+                VbeNativePropertyTabs.ReadItemRect = (IntPtr window, uint message, IntPtr index, out VbeNativePropertyTabs.Rect rect) => { rect = default(VbeNativePropertyTabs.Rect); return IntPtr.Zero; };
+                Assert.IsFalse(tabs.Handle(0x14)); tabs.ResetCallbacks();
+                foreach (var rect in new[] { NativePropertyTabsFixture.Bounds(right: 0), NativePropertyTabsFixture.Bounds(bottom: 0) })
+                {
+                    VbeNativePropertyTabs.ReadItemRect = (IntPtr window, uint message, IntPtr index, out VbeNativePropertyTabs.Rect value) => { value = rect; return new IntPtr(1); };
+                    Assert.IsFalse(tabs.Handle(0x14));
+                }
+                tabs.ResetCallbacks();
+                IntPtr borrowed = Marshal.StringToHGlobalUni(new string('x', 1023));
+                try
+                {
+                    VbeNativePropertyTabs.ReadItem = (IntPtr window, uint message, IntPtr index, ref VbeNativePropertyTabs.TabItem item) => { item.Text = borrowed; return new IntPtr(1); };
+                    Assert.IsFalse(tabs.Handle(0x14)); Assert.AreEqual(1023, Marshal.PtrToStringUni(borrowed).Length);
+                    VbeNativePropertyTabs.ReadItem = (IntPtr window, uint message, IntPtr index, ref VbeNativePropertyTabs.TabItem item) => { item.Text = IntPtr.Zero; return new IntPtr(1); };
+                    Assert.IsTrue(tabs.Handle(0x14));
+                }
+                finally { Marshal.FreeHGlobal(borrowed); }
+                tabs.ResetCallbacks(); VbeNativePropertyTabs.ValidWindow = window => false;
+                Assert.IsFalse(tabs.Handle(0x14));
+            });
+        }
+
+        [TestMethod]
+        public void PrintAndPaintFailuresRespectOwnershipFlagsAndEndPaintTransactions()
+        {
+            WithTabs(tabs =>
+            {
+                Assert.IsFalse(tabs.Handle(0x123));
+                VbeNativePropertyTabs.CurrentThread = () => tabs.Thread + 1;
+                Assert.IsFalse(tabs.Handle(0x14)); tabs.ResetCallbacks();
+                Assert.IsFalse(tabs.Handle(0x318));
+                VbeNativePropertyTabs.FinishPaint = (IntPtr window, ref VbeNativePropertyTabs.PaintState state) => { tabs.Ends++; return true; };
+                VbeNativePropertyTabs.StartPaint = (IntPtr window, out VbeNativePropertyTabs.PaintState state) => { state = default(VbeNativePropertyTabs.PaintState); return IntPtr.Zero; };
+                Assert.IsTrue(tabs.Handle(0xf)); Assert.AreEqual(1, tabs.Ends);
+                VbeNativePropertyTabs.StartPaint = (IntPtr window, out VbeNativePropertyTabs.PaintState state) => { state = default(VbeNativePropertyTabs.PaintState); return new IntPtr(-1); };
+                Assert.IsTrue(tabs.Handle(0xf)); Assert.AreEqual(2, tabs.Ends);
+                Assert.IsTrue(tabs.Handle(0x318, new IntPtr(-1))); Assert.IsTrue(tabs.Handle(0x317, new IntPtr(-1), 8));
+                Assert.AreEqual(2, tabs.Renderer.PrintCount);
+                using (var bitmap = new Bitmap(240, 60))
+                using (Graphics graphics = Graphics.FromImage(bitmap))
+                {
+                    graphics.Clear(Color.Magenta); IntPtr dc = graphics.GetHdc();
+                    try
+                    {
+                        VbeNativePropertyTabs.VisibleWindow = window => true;
+                        Assert.IsTrue(tabs.Handle(0x317, dc, 1)); Assert.AreEqual(2, tabs.Renderer.PrintCount);
+                        Assert.IsTrue(tabs.Handle(0x317, dc, 1 | 8)); Assert.AreEqual(3, tabs.Renderer.PrintCount);
+                    }
+                    finally { graphics.ReleaseHdc(dc); }
+                    Assert.AreEqual(Color.FromArgb(32, 36, 43).ToArgb(), bitmap.GetPixel(5, 5).ToArgb());
+                }
+            });
+        }
+
+        [TestMethod]
+        public void FocusHighlightAndHoverPaintingPreserveCallerDcAndExactAccentColors()
+        {
+            WithTabs(tabs =>
+            {
+                VbeNativePropertyTabs.Focus = () => tabs.Window;
+                var send = VbeNativePropertyTabs.SendMessage;
+                VbeNativePropertyTabs.SendMessage = (window, message, first, second) => message == 0x31 ? IntPtr.Zero : message == 0x132f ? IntPtr.Zero : message == 0x129 ? IntPtr.Zero : send(window, message, first, second);
+                var read = VbeNativePropertyTabs.ReadItem;
+                VbeNativePropertyTabs.ReadItem = (IntPtr window, uint message, IntPtr index, ref VbeNativePropertyTabs.TabItem item) => { IntPtr result = read(window, message, index, ref item); item.State = 2; return result; };
+                using (var bitmap = new Bitmap(240, 60))
+                using (Graphics graphics = Graphics.FromImage(bitmap))
+                {
+                    IntPtr dc = graphics.GetHdc();
+                    try { Assert.IsTrue(tabs.Handle(0x318, dc)); }
+                    finally { graphics.ReleaseHdc(dc); }
+                    Assert.AreNotEqual(IntPtr.Zero, VbeNativePropertyTabs.ReadItemRect(tabs.Window, 0x130a, IntPtr.Zero, out VbeNativePropertyTabs.Rect bounds));
+                    Assert.AreEqual(Color.FromArgb(86, 156, 214).ToArgb(), bitmap.GetPixel(bounds.Left + 5, bounds.Top).ToArgb());
+                }
+                VbeNativePropertyTabs.SendMessage = (window, message, first, second) => message == 0x129 ? new IntPtr(1) : send(window, message, first, second);
+                Assert.IsTrue(tabs.Handle(0x14));
+            });
+        }
+
+        [TestMethod]
+        public void HoverBoundariesAndEveryNativeStateMessageCoalesceAndRespectLayoutGuards()
+        {
+            WithTabs(tabs =>
+            {
+                VbeNativePropertyTabs.Style = (window, index) => index == -16 ? 0x40 : 0;
+                VbeNativePropertyTabs.ReadItemRect = (IntPtr window, uint message, IntPtr index, out VbeNativePropertyTabs.Rect rect) => { rect = NativePropertyTabsFixture.Bounds(left: index.ToInt32() * 100, right: (index.ToInt32() + 1) * 100, bottom: 20); return new IntPtr(1); };
+                tabs.TrackResult = false; tabs.Hover(-1, 0); Assert.AreEqual(1, tabs.Tracking.Count);
+                tabs.TrackResult = true; tabs.Hover(0, -1); Assert.AreEqual(2, tabs.Tracking.Count);
+                tabs.Hover(0, 20); tabs.Hover(200, 0); Assert.AreEqual(0, tabs.Invalidations);
+                tabs.Hover(0, 0); tabs.Hover(1, 1); Assert.AreEqual(1, tabs.Invalidations);
+                tabs.Hover(100, 0); Assert.AreEqual(2, tabs.Invalidations);
+                tabs.Renderer.AfterNativeMessage(0x2a3, IntPtr.Zero, IntPtr.Zero); Assert.AreEqual(3, tabs.Invalidations);
+                tabs.Renderer.AfterNativeMessage(0x2a3, IntPtr.Zero, IntPtr.Zero); Assert.AreEqual(3, tabs.Invalidations);
+                VbeNativePropertyTabs.ReadItemRect = (IntPtr window, uint message, IntPtr index, out VbeNativePropertyTabs.Rect rect) => { rect = default(VbeNativePropertyTabs.Rect); return IntPtr.Zero; };
+                tabs.Hover(0, 0); Assert.AreEqual(3, tabs.Invalidations);
+                foreach (uint message in new uint[] { 5, 7, 8, 0xa, 0x30, 0x7d, 0x128, 0x31a, 0x100, 0x101, 0x201, 0x202, 0x2e0, 0x130c, 0x1330, 0x133d, 0x1306, 0x1307, 0x133e, 0x1308, 0x1309 })
+                    tabs.Renderer.AfterNativeMessage(message, IntPtr.Zero, IntPtr.Zero);
+                Assert.AreEqual(24, tabs.Invalidations); Assert.AreEqual(tabs.Invalidations, tabs.Updates);
+                VbeNativePropertyTabs.Style = (window, index) => 0x100;
+                tabs.Renderer.AfterNativeMessage(5, IntPtr.Zero, IntPtr.Zero); tabs.Hover(0, 0);
+                Assert.AreEqual(24, tabs.Invalidations);
+                VbeNativePropertyTabs.CurrentThread = () => tabs.Thread + 1;
+                tabs.Renderer.AfterNativeMessage(5, IntPtr.Zero, IntPtr.Zero); Assert.AreEqual(24, tabs.Invalidations);
+                tabs.Renderer.Dispose(); tabs.Renderer.AfterNativeMessage(5, IntPtr.Zero, IntPtr.Zero);
+                Assert.AreEqual(24, tabs.Invalidations);
+            });
+        }
+
+        [TestMethod]
+        public void MouseTrackingIsCanceledOnlyForLiveControlOnItsOwningThread()
+        {
+            foreach (int mode in new[] { 0, 1, 2 }) WithTabs(tabs =>
+            {
+                tabs.Property("trackingMouse", true);
+                if (mode == 1) VbeNativePropertyTabs.CurrentThread = () => tabs.Thread + 1;
+                if (mode == 2) VbeNativePropertyTabs.ValidWindow = window => false;
+                tabs.Renderer.Dispose(); tabs.Renderer.Dispose();
+                Assert.AreEqual(mode == 0 ? 1 : 0, tabs.Tracking.Count);
+                if (mode == 0) Assert.AreEqual(0x80000002u, tabs.Tracking[0]);
+            });
         }
     }
 }

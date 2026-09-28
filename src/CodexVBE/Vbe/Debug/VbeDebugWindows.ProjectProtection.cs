@@ -181,7 +181,7 @@ namespace CodexVBE
                 if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path))
                     throw new ArgumentException();
                 byte[] bytes;
-                using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (var stream = OpenProtectionSecret(path))
                 {
                     if (stream.Length == 0 || stream.Length > 512) throw new ArgumentException();
                     bytes = new byte[(int)stream.Length];
@@ -195,7 +195,8 @@ namespace CodexVBE
                 }
                 string secret = new UTF8Encoding(false, true).GetString(bytes);
                 Array.Clear(bytes, 0, bytes.Length);
-                if (secret.Length > 0 && secret[0] == '\uFEFF') secret = secret.Substring(1);
+                // A successful strict decode of the nonempty byte buffer has at least one character.
+                if (secret[0] == '\uFEFF') secret = secret.Substring(1);
                 if (secret.Length < 1 || secret.Length > 128 || secret.IndexOfAny(new[] { '\r', '\n', '\0' }) >= 0)
                     throw new ArgumentException();
                 return secret;
@@ -237,6 +238,10 @@ namespace CodexVBE
         internal static Func<IntPtr, int, string> ProtectionTabText = ReadProtectionTabText;
         /// <summary>Frontière injectable de changement de page par la feuille de propriétés native.</summary>
         internal static Func<IntPtr, IntPtr, int, bool> ProtectionSelectTab = SelectProtectionTab;
+        /// <summary>Opens the bounded local secret read with the production file-sharing policy.</summary>
+        internal static Func<string, Stream> OpenProtectionSecret = path => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        /// <summary>Allocates owned native inspection buffers; failures retain the same cleanup path.</summary>
+        internal static Func<int, IntPtr> AllocateProtectionBuffer = System.Runtime.InteropServices.Marshal.AllocHGlobal;
 
         /// <summary>Interdit toute opération sur une fenêtre d'un autre processus.</summary>
         private static void RequireProtectionOwner(IntPtr window)
@@ -254,17 +259,17 @@ namespace CodexVBE
             IntPtr text = IntPtr.Zero, item = IntPtr.Zero;
             try
             {
-                text = System.Runtime.InteropServices.Marshal.AllocHGlobal(512);
+                text = AllocateProtectionBuffer(512);
                 for (int offset = 0; offset < 512; offset += 2)
                     System.Runtime.InteropServices.Marshal.WriteInt16(text, offset, 0);
                 var descriptor = new ProtectionTabItem { Mask = 1, Text = text, TextCapacity = 256 };
-                item = System.Runtime.InteropServices.Marshal.AllocHGlobal(System.Runtime.InteropServices.Marshal.SizeOf(typeof(ProtectionTabItem)));
+                item = AllocateProtectionBuffer(System.Runtime.InteropServices.Marshal.SizeOf(typeof(ProtectionTabItem)));
                 System.Runtime.InteropServices.Marshal.StructureToPtr(descriptor, item, false);
                 if (SendMessageInt(tab, 0x133C, new IntPtr(index), item) == IntPtr.Zero)
                     throw new InvalidOperationException("The native protection tab title is unreadable.");
                 var observed = (ProtectionTabItem)System.Runtime.InteropServices.Marshal.PtrToStructure(item, typeof(ProtectionTabItem));
                 string caption = observed.Text == IntPtr.Zero ? "" : System.Runtime.InteropServices.Marshal.PtrToStringUni(observed.Text);
-                if (caption == null || caption.Length > 255) throw new InvalidOperationException("The native tab title exceeds the bounded inspection limit.");
+                if (caption.Length > 255) throw new InvalidOperationException("The native tab title exceeds the bounded inspection limit.");
                 return caption;
             }
             finally

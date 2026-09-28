@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Threading;
@@ -14,6 +14,7 @@ namespace CodexVBE
         private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
         internal CrashReportDelivery Delivery = new CrashReportDelivery();
         internal Action<string> CopyText = Clipboard.SetText;
+        internal Action<string> OpenLink = SafeLinks.Open;
         internal Func<CrashReport, string, string> Store = (report, body) => report.Save(body);
         private string savedPath;
 
@@ -132,7 +133,7 @@ namespace CodexVBE
         }
         private void Issue_Click(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            try { SafeLinks.Open(Delivery.IssueUrl); }
+            try { OpenLink(Delivery.IssueUrl); }
             catch (Exception) { status.Text = UiText.Get("Unable to open the link."); }
         }
         private void WindowClosing(object sender, FormClosingEventArgs e)

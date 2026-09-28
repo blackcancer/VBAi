@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -22,11 +22,21 @@ namespace CodexVBE
         private readonly Dictionary<string, string> reviewed = new Dictionary<string, string>();
         internal EditorDraftStore Drafts = new EditorDraftStore();
         internal WebView2 Browser { get; private set; }
+        internal Func<WebView2> CreateBrowser = NewBrowser;
+        internal Func<string, Task<CoreWebView2Environment>> CreateBrowserEnvironment = NewBrowserEnvironment;
+        internal Func<WebView2, CoreWebView2Environment, Task> EnsureBrowserEnvironment = EnsureBrowser;
+        internal string BrowserAssetsDirectory;
+        private static WebView2 NewBrowser() => new WebView2 { Dock = DockStyle.Fill, DefaultBackgroundColor = UiTheme.Background };
+        private static Task<CoreWebView2Environment> NewBrowserEnvironment(string cache) => CoreWebView2Environment.CreateAsync(null, cache);
+        private static Task EnsureBrowser(WebView2 browser, CoreWebView2Environment environment) => browser.EnsureCoreWebView2Async(environment);
         internal bool Ready { get; private set; }
-        internal event Action<string, ChatAttachment> AssistantAction;
-        internal bool WorkspaceHosted { get; set; }
+        /// <summary>Optional renderer boundary for an embedded surface or an isolated contract host.</summary>
+        internal Func<string, object[], Task<string>> ScriptExecution;
         private bool busy, initializing, closing, closeAllowed, showingDiff;
         private int activeStatusLayouts;
+        private int statusGeneration;
+                internal event Action<string, ChatAttachment> AssistantAction;
+        internal bool WorkspaceHosted { get; set; }
         private string selected, synchronizationError;
         private DateTime lastEdit;
         private EditorSyncWorker synchronizationWorker;
@@ -59,14 +69,14 @@ namespace CodexVBE
             initializing = true;
             try
             {
-                string folder = Path.Combine(Path.GetDirectoryName(typeof(ModernEditorWindow).Assembly.Location), "EditorAssets");
+                string folder = BrowserAssetsDirectory ?? Path.Combine(Path.GetDirectoryName(typeof(ModernEditorWindow).Assembly.Location), "EditorAssets");
                 if (!File.Exists(Path.Combine(folder, "index.html"))) throw new FileNotFoundException("Monaco assets are missing.");
-                Browser?.Dispose(); Browser = new WebView2 { Dock = DockStyle.Fill, DefaultBackgroundColor = UiTheme.Background };
+                Browser?.Dispose(); Browser = CreateBrowser();
                 surface.Controls.Add(Browser);
                 string cache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexVBE", "EditorWebView", System.Diagnostics.Process.GetCurrentProcess().Id.ToString());
-                var environment = await CoreWebView2Environment.CreateAsync(null, cache);
+                var environment = await CreateBrowserEnvironment(cache);
                 if (IsDisposed || Disposing || closing) return;
-                await Browser.EnsureCoreWebView2Async(environment);
+                await EnsureBrowserEnvironment(Browser, environment);
                 if (IsDisposed || Disposing || closing) return;
                 var core = Browser.CoreWebView2;
                 string language = UiText.Culture.Name.ToLowerInvariant();
@@ -145,6 +155,12 @@ namespace CodexVBE
         private sealed class EditorMessage { public string type { get; set; } public string id { get; set; } public string text { get; set; } public string selectedText { get; set; } public int version { get; set; } public string name { get; set; } public int request { get; set; } public string module { get; set; } public int line { get; set; } public int column { get; set; } }
         internal async Task<string> Script(string method, params object[] values)
         {
+            if (ScriptExecution != null)
+            {
+                string rendered = await ScriptExecution(method, values);
+                await Task.Yield();
+                return rendered;
+            }
             if (!Ready || Browser?.CoreWebView2 == null || IsDisposed) return "null";
             // Method names are internal constants; all document text is serialized as data.
             string result = await Browser.CoreWebView2.ExecuteScriptAsync("window.vbai." + method + "(" + string.Join(",", values.Select(json.Serialize)) + ")");
@@ -229,8 +245,11 @@ namespace CodexVBE
         {
             if (IsDisposed || Disposing || closing) return;
             // WebView callbacks must unwind before changing WinForms visibility/layout.
-            if (IsHandleCreated) BeginInvoke(new Action(UpdateStatus)); else UpdateStatus();
+            int generation = ++statusGeneration;
+            if (IsHandleCreated) BeginInvoke(new Action(() => { if (generation == statusGeneration) UpdateStatus(); })); else UpdateStatus();
         }
+        /// <summary>Publishes a result and invalidates older queued synchronization status updates.</summary>
+        private void SetResultStatus(string text) { statusGeneration++; status.Text = text; }
         private void UpdateStatus()
         {
             if (IsDisposed || Disposing || closing) return;
@@ -251,7 +270,7 @@ namespace CodexVBE
             }
             finally { activeStatusLayouts--; }
         }
-        private void Report(Exception error) { if (!IsDisposed && !Disposing && !closing) status.Text = UiText.Get(error.Message); LoadLog.Write("Monaco: " + error.GetType().Name); }
+        private void Report(Exception error) { if (!IsDisposed && !Disposing && !closing) SetResultStatus(UiText.Get(error.Message)); LoadLog.Write("Monaco: " + error.GetType().Name); }
         private void CloseTabRequested(object sender, TabControlEventArgs e)
         {
             if (busy) return;

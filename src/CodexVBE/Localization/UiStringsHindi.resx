@@ -1995,4 +1995,39 @@ Git Credential Manager से साइन-इन करें; कमिट ल
   <data name="Declined" xml:space="preserve">
     <value>अस्वीकृत</value>
   </data>
+  <data name="Project access" xml:space="preserve"><value>प्रोजेक्ट की पहुँच</value></data>
+  <data name="Project access…" xml:space="preserve"><value>प्रोजेक्ट की पहुँच…</value></data>
+  <data name="The bound project is always readable. Select additional projects for read access only. Changing access starts a new conversation; previously transmitted data cannot be recalled." xml:space="preserve"><value>जुड़ा हुआ प्रोजेक्ट हमेशा पढ़ा जा सकता है। केवल पढ़ने की पहुँच के लिए अतिरिक्त प्रोजेक्ट चुनें। पहुँच बदलने पर नई बातचीत शुरू होती है; पहले भेजा गया डेटा वापस नहीं लिया जा सकता।</value></data>
+  <data name="Allow shared VBE and clipboard context" xml:space="preserve"><value>साझा VBE और क्लिपबोर्ड संदर्भ की अनुमति दें</value></data>
+  <data name="Shared tools may transmit data from any open project, debugger windows, native inventories and the system clipboard. This permission does not authorize edits in other projects." xml:space="preserve"><value>साझा टूल किसी भी खुले प्रोजेक्ट, डीबगर विंडो, मूल घटकों की सूचियों और सिस्टम क्लिपबोर्ड से डेटा भेज सकते हैं। यह अनुमति अन्य प्रोजेक्ट में बदलाव करने की अनुमति नहीं देती।</value></data>
+  <data name="Apply to new chat" xml:space="preserve"><value>नई बातचीत पर लागू करें</value></data>
+  <data name="Additional projects can be read, but only the bound project can be edited." xml:space="preserve"><value>अतिरिक्त प्रोजेक्ट पढ़े जा सकते हैं, लेकिन केवल जुड़े हुए प्रोजेक्ट में बदलाव किया जा सकता है।</value></data>
+  <data name="Authorize unfiltered native debugger, window and clipboard data for this chat." xml:space="preserve"><value>इस बातचीत के लिए मूल डीबगर, विंडो और क्लिपबोर्ड के बिना फ़िल्टर किए डेटा की अनुमति दें।</value></data>
+  <data name="Project access configured for the new conversation." xml:space="preserve"><value>नई बातचीत के लिए प्रोजेक्ट की पहुँच सेट कर दी गई है।</value></data>
+  <data name="Read access to another project is not authorized for this conversation." xml:space="preserve"><value>इस बातचीत में दूसरे प्रोजेक्ट को पढ़ने की अनुमति नहीं है।</value></data>
+  <data name="This tool uses shared VBE context. Authorize shared context in Project access before using it." xml:space="preserve"><value>यह टूल साझा VBE संदर्भ का उपयोग करता है। उपयोग से पहले “प्रोजेक्ट की पहुँच” में साझा संदर्भ की अनुमति दें।</value></data>
+  <data name="Restore the paused provider, model, effort and mode before resuming." xml:space="preserve"><value>फिर से शुरू करने से पहले, विराम के समय इस्तेमाल किए गए प्रदाता, मॉडल, विचार का स्तर और मोड बहाल करें।</value></data>
+  <data name=" — interrupted; verify live state before retrying" xml:space="preserve"><value> — बाधित; दोबारा कोशिश करने से पहले वर्तमान स्थिति जाँचें</value></data>
+  <data name="Resume paused turn" xml:space="preserve"><value>रुका हुआ चरण फिर शुरू करें</value></data>
+  <data name="Continue from saved tool results without repeating completed actions." xml:space="preserve"><value>पूरी हो चुकी कार्रवाइयों को दोहराए बिना सहेजे गए टूल परिणामों से आगे बढ़ें।</value></data>
+  <data name="Pending: automatic verification and final response." xml:space="preserve"><value>बाकी: स्वचालित सत्यापन और अंतिम उत्तर।</value></data>
+  <data name="Continuation interrupted. Completed results were kept; verify live state before retrying." xml:space="preserve"><value>आगे की प्रक्रिया बाधित हो गई। पूरे हो चुके परिणाम सुरक्षित हैं; दोबारा कोशिश करने से पहले वर्तमान स्थिति जाँचें।</value></data>
+  <data name="Choose which other projects this conversation may read." xml:space="preserve"><value>चुनें कि यह बातचीत कौन से अन्य प्रोजेक्ट पढ़ सकती है।</value></data>
+  <data name=" — completed" xml:space="preserve"><value> — पूरा हुआ</value></data>
+  <data name="Resume ▶" xml:space="preserve"><value>फिर शुरू करें ▶</value></data>
+  <data name=" — refused or failed" xml:space="preserve"><value> — अस्वीकृत या विफल</value></data>
+  <data name="Paused — resume when ready" xml:space="preserve"><value>रुका हुआ — तैयार होने पर फिर शुरू करें</value></data>
+  <data name="Pending: final response." xml:space="preserve"><value>बाकी: अंतिम उत्तर।</value></data>
+  <data name="Paused after 8 model rounds. Resume to continue from the saved results; completed actions will not be replayed." xml:space="preserve"><value>मॉडल के साथ 8 दौर के बाद प्रक्रिया रुकी है। सहेजे गए परिणामों से आगे बढ़ने के लिए फिर शुरू करें; पूरी हो चुकी कार्रवाइयाँ दोहराई नहीं जाएँगी।</value></data>
+  <data name=" — response received; inspect returned state" xml:space="preserve"><value> — उत्तर मिला; लौटाई गई स्थिति जाँचें</value></data>
+  <data name="This document has no native host to save." xml:space="preserve"><value>इस दस्तावेज़ को सहेजने के लिए कोई मूल होस्ट अनुप्रयोग नहीं है।</value></data>
+  <data name="The native save target changed. Select the module and retry." xml:space="preserve"><value>मूल सहेजने का लक्ष्य बदल गया है। मॉड्यूल चुनें और दोबारा कोशिश करें।</value></data>
+  <data name="The native Save command is unavailable." xml:space="preserve"><value>मूल सहेजने की कमांड उपलब्ध नहीं है।</value></data>
+  <data name="Saved." xml:space="preserve"><value>सहेजा गया।</value></data>
+  <data name="Saving was cancelled or not completed. Your code remains in the editor and host document." xml:space="preserve"><value>सहेजना रद्द हो गया या पूरा नहीं हुआ। आपका कोड संपादक और होस्ट दस्तावेज़ में बना हुआ है।</value></data>
+  <data name="The host document was not saved. Your code remains in the editor and host document." xml:space="preserve"><value>होस्ट दस्तावेज़ सहेजा नहीं गया। आपका कोड संपादक और होस्ट दस्तावेज़ में बना हुआ है।</value></data>
+  <data name="The native Save command finished, but the host document&apos;s saved state could not be verified." xml:space="preserve"><value>मूल सहेजने की कमांड पूरी हो गई, लेकिन होस्ट दस्तावेज़ के सहेजे जाने की स्थिति सत्यापित नहीं हो सकी।</value></data>
+  <data name="The document was not saved because some edits are still pending synchronization." xml:space="preserve"><value>दस्तावेज़ सहेजा नहीं गया क्योंकि कुछ बदलाव अभी भी समन्वयन की प्रतीक्षा में हैं।</value></data>
+  <data name="Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data." xml:space="preserve"><value>प्रोजेक्ट की गोपनीयता बेहतर की गई है। पिछला इतिहास स्थानीय रूप से उपलब्ध है; पहले साझा किए गए प्रोजेक्ट डेटा को दोबारा भेजने से बचने के लिए प्रदाता का संदर्भ नए सिरे से शुरू होता है।</value></data>
+  <data name="This message predates the project privacy upgrade. Use current authorized references in a new conversation." xml:space="preserve"><value>यह संदेश प्रोजेक्ट की गोपनीयता में सुधार से पहले का है। नई बातचीत में वर्तमान अधिकृत संदर्भों का उपयोग करें।</value></data>
 </root>

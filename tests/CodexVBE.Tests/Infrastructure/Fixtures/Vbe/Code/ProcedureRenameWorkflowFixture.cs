@@ -18,6 +18,7 @@ namespace CodexVBE.Tests.Unit
         internal int Mode = 2, Writes, Captures;
         internal bool WrongReadback;
         internal Action BeforeCatalogue;
+        internal Func<Request, Response> Override;
 
         /// <summary>Configure le service avec un exécutant qui enregistre les mutations relues par le workflow.</summary>
         internal ProcedureRenameWorkflowFixture()
@@ -27,6 +28,7 @@ namespace CodexVBE.Tests.Unit
         private Response Execute(Request request)
         {
             Selectors.Add(request.Project);
+            var replacement = Override?.Invoke(request); if (replacement != null) return replacement;
             if (request.Command == FailCommand) return Response.Failure("injected " + request.Command);
             switch (request.Command)
             {

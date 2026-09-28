@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Runtime.InteropServices;
@@ -14,6 +14,22 @@ namespace CodexVBE
     /// <summary>Publie sur le dépôt du produit avec GCM, ou utilise Outlook puis le client mail local.</summary>
     internal sealed class CrashReportDelivery
     {
+        internal static Func<LlmSettings> LoadSettings = LlmSettings.Load;
+        internal static Func<string, CancellationToken, Task<string>> ReadCredential = GitHubApi.ReadCredential;
+        internal static Func<string, Func<CancellationToken, Task<string>>, GitHubApi> CreateApi =
+            (account, credential) => new GitHubApi(account, credential: credential);
+        internal static Func<string, object> ActiveOutlook = Marshal.GetActiveObject;
+        internal static Func<string, Type> OutlookType = Type.GetTypeFromProgID;
+        internal static Func<Type, object> CreateOutlook = Activator.CreateInstance;
+        internal static Func<object, bool> IsComReference = Marshal.IsComObject;
+        internal static Func<object, int> ReleaseReference = Marshal.ReleaseComObject;
+        internal static Func<string, IDisposable> OpenProfiles = path => Registry.CurrentUser.OpenSubKey(path);
+        internal static Func<IDisposable, int> ReadProfileSubKeys = profiles => ((RegistryKey)profiles).SubKeyCount;
+        internal static Func<string, int?> ProfileCount = version =>
+        {
+            using (var profiles = OpenProfiles(@"Software\Microsoft\Office" + version + @"\Outlook\Profiles"))
+                return profiles == null ? (int?)null : ReadProfileSubKeys(profiles);
+        };
         internal Func<string, string, CancellationToken, Task<string>> Publish = PublishNative;
         internal Func<string, string, bool> SendOutlook = SendOutlookNative;
         internal Action<string> OpenDraft = url => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
@@ -50,11 +66,11 @@ namespace CodexVBE
         private static async Task<string> PublishNative(string title, string body, CancellationToken ct)
         {
             string account;
-            try { account = LlmSettings.Load().GitHubAccount; }
+            try { account = LoadSettings().GitHubAccount; }
             catch (Exception) { throw new CrashCredentialUnavailable(); }
-            using (var api = new GitHubApi(account, credential: async token =>
+            using (var api = CreateApi(account, async token =>
             {
-                try { return await GitHubApi.ReadCredential(account, token); }
+                try { return await ReadCredential(account, token); }
                 catch (OperationCanceledException) when (!token.IsCancellationRequested) { throw new CrashCredentialUnavailable(); }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception) { throw new CrashCredentialUnavailable(); }
@@ -69,8 +85,7 @@ namespace CodexVBE
         {
             // Avoid starting Outlook's account setup wizard while recovering a crash.
             foreach (string version in new[] { "16.0", "15.0", "14.0" })
-                using (var profiles = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Office" + version + @"\Outlook\Profiles"))
-                    if ((profiles?.SubKeyCount ?? 0) > 0) return true;
+                if ((ProfileCount(version) ?? 0) > 0) return true;
             return false;
         }
 
@@ -80,13 +95,13 @@ namespace CodexVBE
             bool sending = false;
             try
             {
-                try { application = Marshal.GetActiveObject("Outlook.Application"); }
+                try { application = ActiveOutlook("Outlook.Application"); }
                 catch (COMException)
                 {
                     if (!HasOutlookProfile()) return false;
-                    var type = Type.GetTypeFromProgID("Outlook.Application");
+                    var type = OutlookType("Outlook.Application");
                     if (type == null) return false;
-                    application = Activator.CreateInstance(type);
+                    application = CreateOutlook(type);
                 }
                 session = ((dynamic)application).Session;
                 accounts = ((dynamic)session).Accounts;
@@ -108,7 +123,7 @@ namespace CodexVBE
             finally
             {
                 foreach (var item in new[] { mail, accounts, session, application })
-                    try { if (item != null && Marshal.IsComObject(item)) Marshal.ReleaseComObject(item); }
+                    try { if (item != null && IsComReference(item)) ReleaseReference(item); }
                     catch (Exception) { LoadLog.Write("Outlook report COM reference could not be released."); }
             }
         }
