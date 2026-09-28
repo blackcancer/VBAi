@@ -710,8 +710,9 @@ namespace CodexVBE.Tests.Unit
                     { var result = savedPid(window, out processId); if (window == fixture.Font) processId++; return result; };
                     Assert.ThrowsException<InvalidOperationException>(() => InvokeOptionsMethod(null, "ReadOptionsCombo", fixture.Font, new VbeDebugWindows.OptionsControl()));
                     VbeDebugWindows.GetWindowThreadProcessId = (IntPtr window, out uint processId) =>
-                    { var result = savedPid(window, out processId); if (window == fixture.Host.Handle) processId++; return result; };
-                    Assert.ThrowsException<InvalidOperationException>(() => InvokeOptionsMethod(null, "WriteOptionsCombo", fixture.Font, "Courier New"));
+                    { var result = OwnedOptionsFixtureProcess(window, out processId); if (window == fixture.Host.Handle) processId++; return result; };
+                    var parentFailure = Assert.ThrowsException<InvalidOperationException>(() => InvokeOptionsMethod(null, "WriteOptionsCombo", fixture.Font, "Courier New"));
+                    StringAssert.Contains(parentFailure.Message, "parent does not belong to this process");
                 }
                 finally { VbeDebugWindows.GetWindowThreadProcessId = savedPid; }
                 int original = OptionsFixtureGetStyle(fixture.Font, -16);

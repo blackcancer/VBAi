@@ -110,12 +110,13 @@ la seule synchronisation au stockage sur disque. Si l'hôte ne permet pas de lir
 état, le statut précise que l'enregistrement natif a été demandé mais ne peut pas être vérifié ;
 il n'affiche pas une confirmation « Saved ».
 
-Qualification Excel : `MonacoSaveExcelTests` envoie réellement `Ctrl+S` à WebView2,
+Qualification Excel historique de la branche auteur : `MonacoSaveExcelTests` envoyait `Ctrl+S` à WebView2,
 contrôle le bon classeur malgré un second classeur actif, ferme puis rouvre le `.xlsm`
 et retrouve le changement sur disque (1 test réussi, aucun ignoré ;
 `artifacts/editor-save/results/editor-save-final.trx`). L'annulation d'un premier
 enregistrement et l'erreur de sauvegarde sont simulées à la frontière de commande native ;
 le dialogue Enregistrer sous n'a pas été automatisé dans cette qualification.
+Sur main, le scénario appelle désormais explicitement la commande `vbai.save`, sans simuler de raccourci clavier. L'ancien rapport ci-dessus ne prouve pas une nouvelle exécution de ce scénario modifié.
 
 ## Sources techniques
 
@@ -133,12 +134,12 @@ le dialogue Enregistrer sous n'a pas été automatisé dans cette qualification.
 - Commandes de débogage et synchronisation sérialisées avant les callbacks WebView ; cible d’onglet capturée avant les attentes asynchrones.
 - F9 traité par Monaco et par le routage clavier WinForms/WebView2 ; clic dans la marge ou les numéros de ligne.
 - Tests JavaScript : `node tools/tests/Test-MonacoLanguage.mjs` (11 cas, chaînes, portées, With et bibliothèques homonymes).
-- Tests Excel isolés : F9 réel, exécution jusqu’au point demandé, clic de marge Chromium, correction en arrêt, compilation et actions IA sans fournisseur.
+- Tests Excel historiques de la branche auteur : F9 réel, exécution jusqu’au point demandé, clic de marge Chromium, correction en arrêt, compilation et actions IA sans fournisseur. Sur main, les scénarios utilisent les commandes explicites de Monaco ; ces anciens rapports ne prouvent pas une nouvelle exécution de leurs variantes modifiées.
 - Hébergement vérifié dans un MDI WinForms réel. Le script `Test-RegisteredMonaco.ps1` est adapté au nouveau parent MDI et aux croix d’onglets ; sa qualification dans Excel/VBE enregistré est réussie : parent MDIClient, remplissage de la zone, redimensionnement natif, double-clic projet et fermeture de l’onglet (`artifacts/monaco/host-integration-resize/monaco-host.json`). Les tests SOLIDWORKS restent différés.
 
 Qualification de ce lot : **205 tests .NET réussis, 0 échec, 0 ignoré** (`artifacts/monaco/tests/fixes-final.trx`) et **11 tests JavaScript réussis**. Ce résultat ne constitue pas une mesure de couverture globale du projet.
 
-La build locale de qualification est déployée dans `artifacts/monaco/host-build` du worktree. Les clés COM utilisateur AddIn et ChatToolWindow pointent vers cette build ; les anciennes valeurs sont sauvegardées dans `registration-before.json`. Aucun binaire du checkout main n’est remplacé.
+La qualification historique de la branche auteur utilisait `artifacts/monaco/host-build` du worktree et sauvegardait les anciennes clés COM dans `registration-before.json`. Le correctif ci-dessous est maintenant déployé dans `bin/Debug/net48` de main ; son chargement réel est contrôlé par MVID.
 
 ### Correctif de coexistence avec l'Explorateur d'objets
 
