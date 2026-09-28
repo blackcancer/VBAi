@@ -515,7 +515,8 @@ namespace CodexVBE.Tests.Unit
                 f.Host.Invoke(owner => { lost = new ParentLostOnComboSelection(f.Font) { Armed = true }; });
                 try
                 {
-                    Assert.ThrowsException<InvalidOperationException>(() => InvokeOptionsMethod(null, "WriteOptionsCombo", f.Font, "Consolas"));
+                    var error = Assert.ThrowsException<InvalidOperationException>(() => InvokeOptionsMethod(null, "WriteOptionsCombo", f.Font, "Consolas"));
+                    StringAssert.Contains(error.Message, "parent does not belong to this process");
                     Assert.AreEqual(f.Host.Handle, lost.PreviousParent);
                 }
                 finally { f.Host.Invoke(owner => lost.Dispose()); }

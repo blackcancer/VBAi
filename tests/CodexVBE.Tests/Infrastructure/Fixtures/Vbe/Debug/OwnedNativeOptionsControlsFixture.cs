@@ -21,12 +21,13 @@ namespace CodexVBE.Tests.Unit
             internal ParentLostOnComboSelection(IntPtr handle) { AssignHandle(handle); }
             protected override void WndProc(ref Message message)
             {
-                if (Armed && message.Msg == 0x14E)
+                bool detachAfterSelection = Armed && message.Msg == 0x14E;
+                base.WndProc(ref message);
+                if (detachAfterSelection)
                 {
                     Armed = false;
                     PreviousParent = OptionsFixtureSetParent(Handle, IntPtr.Zero);
                 }
-                base.WndProc(ref message);
             }
             public void Dispose()
             {
