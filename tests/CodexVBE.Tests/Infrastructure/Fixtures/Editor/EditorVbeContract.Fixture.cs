@@ -31,7 +31,11 @@ namespace CodexVBE.Tests.Infrastructure
             public Window MainWindow { get; } = new Window();
             public object ActiveVBProject { get; set; }
             public object ActiveCodePane { get; set; }
-            public List<CodexVBE.Tests.Unit.VbeDebugTests.FakeBar> CommandBars { get; } = new List<CodexVBE.Tests.Unit.VbeDebugTests.FakeBar>();
+            public CommandInventory CommandBars { get; } = new CommandInventory();
+        }
+        public sealed class CommandInventory : List<CodexVBE.Tests.Unit.VbeDebugTests.FakeBar>
+        {
+            public object FindControl(int type, int id) => this.SelectMany(bar => bar.Controls).FirstOrDefault(control => control.Id == id);
         }
         public sealed class Reference { public bool IsBroken { get; set; } public string FullPath { get; set; } }
         public sealed class ContractProject

@@ -396,5 +396,88 @@ namespace CodexVBE.Tests.Unit
                 { try { System.IO.Directory.Delete(profile, true); } catch (System.IO.IOException) { System.Windows.Forms.Application.DoEvents(); System.Threading.Thread.Sleep(15); } catch (System.UnauthorizedAccessException) { System.Windows.Forms.Application.DoEvents(); System.Threading.Thread.Sleep(15); } }
             }
         }
+        [STATestMethod]
+        public void Pr10AssistantActionsValidateNativeIdentitySelectionVersionAndOptionalCallback()
+        {
+            foreach (string state in new[] { "null-id", "missing", "managed", "unknown", "invalid-text", "invalid-selection", "stale", "no-callback", "/expliquer", "/corriger", "/refactoriser" })
+            using (var f = new Editor.ModernEditorBrowserFixture())
+            using (var dispatcher = new Editor.OwnedEditorDispatcher())
+            {
+                var doc = f.Editor.Base.Document; int actions = 0; ChatAttachment attachment = null; string command = null;
+                if (state != "no-callback") f.Window.AssistantAction += (name, value) => { actions++; attachment = value; command = name; };
+                f.Message(f.Editor.Json.Serialize(new { type = "assistantAction", id = state == "null-id" ? null : state == "missing" ? "missing" : state == "managed" ? f.Editor.Document.Id : doc.Id,
+                    name = state == "unknown" ? "/unknown" : state.StartsWith("/") ? state : "/expliquer", text = state == "invalid-text" ? null : doc.Text,
+                    selectedText = state == "invalid-selection" ? null : "Debug.Print 1", version = state == "stale" ? 0 : 1, line = 3 }));
+                dispatcher.Drain(); bool valid = state.StartsWith("/"); Assert.AreEqual(valid ? 1 : 0, actions, state);
+                if (valid) { Assert.AreEqual(state, command); Assert.AreEqual("Debug.Print 1", attachment.Text); Assert.AreEqual("Project1", attachment.Project); Assert.AreEqual("Module1", attachment.Module); Assert.AreEqual(3, attachment.StartLine); Assert.AreEqual(doc.Id, attachment.EditorDocumentId); Assert.AreEqual(EditorDocument.Hash(doc.Text), attachment.Sha256); }
+                if (state.StartsWith("invalid") || state == "stale") Assert.IsFalse(string.IsNullOrEmpty(f.Editor.Base.Get<System.Windows.Forms.Label>("status").Text));
+            }
+        }
+
+        [STATestMethod]
+        public void Pr10ChangeClearsSavedAndSynchronizationErrorsAndSaveDispatchUsesOwnedFile()
+        {
+            using (var f = new Editor.ModernEditorBrowserFixture())
+            using (var dispatcher = new Editor.OwnedEditorDispatcher())
+            {
+                f.Editor.Base.Set("lastSaveError", "previous save failure"); f.Editor.Base.Set("synchronizationError", "previous sync failure");
+                f.Message(f.Editor.Json.Serialize(new { type = "change", id = f.Editor.Document.Id, version = 2, text = f.Editor.Document.Text + "\n' new edit" })); dispatcher.Drain();
+                Assert.IsNull(f.Editor.Base.Get<string>("lastSaveError")); Assert.IsNull(f.Editor.Base.Get<string>("synchronizationError"));
+                f.Editor.Base.Ready(true); System.IO.Directory.CreateDirectory(f.Editor.Module.Root);
+                f.Editor.Base.Native.Project.Path = System.IO.Path.Combine(f.Editor.Module.Root, "owned.bas"); System.IO.File.WriteAllText(f.Editor.Base.Native.Project.Path, "owned");
+                int saves = 0; f.Window.NativeSave = native => saves++; f.Window.NativeHostSaved = native => true;
+                f.Message(f.Editor.Json.Serialize(new { type = "command", name = "save", id = f.Editor.Base.Document.Id })); dispatcher.Drain();
+                Assert.AreEqual(1, saves); Assert.AreEqual(UiText.Get("Saved."), f.Editor.Base.Get<System.Windows.Forms.Label>("status").Text);
+                f.Editor.Base.Set("lastSaveError", "save has priority"); f.Editor.Base.Set("synchronizationError", "sync failure"); f.Editor.Private("UpdateStatus");
+                Assert.AreEqual(UiText.Get("save has priority"), f.Editor.Base.Get<System.Windows.Forms.Label>("status").Text);
+                f.Editor.Base.Set("lastSaveError", null); f.Editor.Private("UpdateStatus");
+                Assert.AreEqual(UiText.Get("sync failure"), f.Editor.Base.Get<System.Windows.Forms.Label>("status").Text);
+            }
+        }
+
+        [STATestMethod]
+        public void Pr10OwnedBrowserKeysDispatchOnlyF9AndControlSaveAndReportScriptFailure()
+        {
+            foreach (var keys in new[] { System.Windows.Forms.Keys.F9, System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.S, System.Windows.Forms.Keys.Shift | System.Windows.Forms.Keys.F9, System.Windows.Forms.Keys.S, System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.S })
+            using (var f = new Editor.ModernEditorBrowserFixture())
+            using (var dispatcher = new Editor.OwnedEditorDispatcher())
+            {
+                ModernEditorDebugFixture.Wait(f.Initialize()); f.Editor.Base.Ready(true); f.Editor.Base.Scripts.Clear();
+                var key = new System.Windows.Forms.KeyEventArgs(keys);
+                UiInvoke.Call(typeof(System.Windows.Forms.Control), "OnKeyDown", f.Window.Browser, key);
+                ModernEditorDebugFixture.Wait(System.Threading.Tasks.Task.Delay(30)); dispatcher.Drain();
+                bool handled = keys == System.Windows.Forms.Keys.F9 || keys == (System.Windows.Forms.Keys.Control | System.Windows.Forms.Keys.S);
+                Assert.AreEqual(handled, key.Handled); Assert.AreEqual(handled, key.SuppressKeyPress);
+                var commands = f.Editor.Base.Scripts.Where(item => item.Item1 == "command").ToArray(); Assert.AreEqual(handled ? 1 : 0, commands.Length);
+                if (handled) Assert.AreEqual(keys == System.Windows.Forms.Keys.F9 ? "vbai.toggle_breakpoint" : "vbai.save", commands[0].Item2[0]);
+            }
+            using (var f = new Editor.ModernEditorBrowserFixture())
+            using (var dispatcher = new Editor.OwnedEditorDispatcher())
+            {
+                ModernEditorDebugFixture.Wait(f.Initialize()); f.Editor.Base.Ready(true);
+                f.Editor.Override = (method, values) => { if (method == "command") throw new System.IO.IOException("owned key command failed"); return null; };
+                UiInvoke.Call(typeof(System.Windows.Forms.Control), "OnKeyDown", f.Window.Browser, new System.Windows.Forms.KeyEventArgs(System.Windows.Forms.Keys.F9));
+                ModernEditorDebugFixture.Wait(System.Threading.Tasks.Task.Delay(30)); dispatcher.Drain();
+                Assert.AreEqual(UiText.Get("owned key command failed"), f.Editor.Base.Get<System.Windows.Forms.Label>("status").Text);
+            }
+        }
+        [STATestMethod]
+        public void Pr10OwnedTabCloseRespectsBusySelectionAndVisibleToolbarLayout()
+        {
+            using (var f = new Editor.ModernEditorBrowserFixture())
+            using (var dispatcher = new Editor.OwnedEditorDispatcher())
+            {
+                var tabs = f.Editor.Base.Get<ThemedTabControl>("tabs"); var nativeTab = tabs.TabPages[0];
+                f.Editor.Base.Set("busy", true);
+                f.Editor.Private("CloseTabRequested", null, new System.Windows.Forms.TabControlEventArgs(nativeTab, 0, System.Windows.Forms.TabControlAction.Selected));
+                Assert.AreEqual(2, tabs.TabPages.Count);
+                f.Editor.Base.Set("busy", false); f.Editor.Base.Set("initializing", true);
+                f.Window.StartPosition = System.Windows.Forms.FormStartPosition.Manual; f.Window.Location = new System.Drawing.Point(-10000, -10000); f.Window.Show();
+                f.Editor.Base.Set("showingDiff", true); f.Editor.Private("UpdateStatus"); Assert.AreEqual(44f, f.Editor.Base.Get<System.Windows.Forms.TableLayoutPanel>("layout").RowStyles[0].Height);
+                f.Editor.Base.Set("showingDiff", false); f.Editor.Private("UpdateStatus"); Assert.AreEqual(0f, f.Editor.Base.Get<System.Windows.Forms.TableLayoutPanel>("layout").RowStyles[0].Height);
+                f.Editor.Private("CloseTabRequested", null, new System.Windows.Forms.TabControlEventArgs(nativeTab, 0, System.Windows.Forms.TabControlAction.Selected)); dispatcher.Drain();
+                Assert.AreEqual(1, tabs.TabPages.Count); Assert.AreEqual(1, f.Editor.Base.Native.Original.CodeModule.CodePane.Window.Closes);
+            }
+        }
     }
 }
