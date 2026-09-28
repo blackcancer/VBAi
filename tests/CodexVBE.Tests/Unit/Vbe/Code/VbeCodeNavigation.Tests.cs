@@ -1,4 +1,4 @@
-namespace CodexVBE.Tests.Unit
+﻿namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.IO;
@@ -769,6 +769,24 @@ namespace CodexVBE.Tests.Unit
     [TestCategory("Unit")]
     public sealed partial class VbeProcedureMutationTests
     {
+        [TestMethod]
+        public void ProjectSymbolsReturnsLiveDefinitionsAndPaginates()
+        {
+            var fixture = new Fixture("Option Explicit");
+            fixture.Navigation.CreateProcedure(fixture.Request("Sub Run()\nDebug.Print 1\nEnd Sub"));
+            dynamic all = fixture.Navigation.ProjectSymbols(new Request { Project = "Projet", Limit = 1 });
+            Assert.AreEqual(2, (int)all.Total);
+            Assert.IsTrue((bool)all.HasMore);
+            Assert.AreEqual(0, (int)all.Errors.Count);
+            dynamic found = fixture.Navigation.ProjectSymbols(new Request { Project = "Projet", Query = "run", WholeWord = true });
+            Assert.AreEqual(1, (int)found.Total);
+            Assert.AreEqual("Run", (string)found.Symbols[0].Name);
+            Assert.AreEqual(3, (int)found.Symbols[0].Line);
+            Assert.IsFalse(string.IsNullOrEmpty((string)found.Symbols[0].Sha256));
+            dynamic exactCase = fixture.Navigation.ProjectSymbols(new Request { Project = "Projet", Query = "run", WholeWord = true, MatchCase = true });
+            Assert.AreEqual(0, (int)exactCase.Total);
+        }
+
         [TestMethod]
         public void CreateReplaceListAndRemoveProcedureRoundTrip()
         {

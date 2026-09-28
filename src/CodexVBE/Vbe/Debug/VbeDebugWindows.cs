@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -12,7 +12,9 @@ using System.Windows.Automation.Text;
 namespace CodexVBE
 {
     /// <summary>Observe et pilote les fenêtres natives de débogage et de dialogue du VBE via Win32, UI Automation et MSAA.</summary>
-    internal static class VbeDebugWindows
+    // Run these accessibility calls away from the VBE UI thread. UIA and MSAA
+    // query native windows, not the VBIDE object model used by VbeDebug.
+    internal static partial class VbeDebugWindows
     {
         /// <summary>Callback de l’énumération Win32 des fenêtres.</summary>
         /// <param name="handle">Handle de la fenêtre énumérée.</param>
@@ -807,7 +809,7 @@ namespace CodexVBE
         internal static void EnsureNoCompileDialog(INativeProbe native)
         {
             if (native.Dialog("Microsoft Visual Basic pour Applications",
-                "Microsoft Visual Basic for Applications") != IntPtr.Zero)
+                "Microsoft Visual Basic for Applications", "Microsoft Visual Basic") != IntPtr.Zero)
                 throw new InvalidOperationException("A native VBE dialog is already open; compilation was not started.");
         }
 
@@ -824,7 +826,7 @@ namespace CodexVBE
         internal static object ReadDebugDialog(INativeProbe native)
         {
             IntPtr dialog = native.Dialog("Microsoft Visual Basic pour Applications",
-                "Microsoft Visual Basic for Applications");
+                "Microsoft Visual Basic for Applications", "Microsoft Visual Basic");
             if (dialog == IntPtr.Zero)
                 return new { Available = false, Diagnostic = (string)null,
                     Buttons = new string[0], Error = (string)null };
@@ -1330,7 +1332,7 @@ namespace CodexVBE
                 string.IsNullOrWhiteSpace(request.Button))
                 throw new ArgumentException("Diagnostic and Button are required.");
             IntPtr dialog = native.Dialog("Microsoft Visual Basic pour Applications",
-                "Microsoft Visual Basic for Applications");
+                "Microsoft Visual Basic for Applications", "Microsoft Visual Basic");
             if (dialog == IntPtr.Zero) throw new InvalidOperationException("No native VBE dialog is visible.");
             IntPtr target = IntPtr.Zero;
             string message = null;
@@ -1380,7 +1382,7 @@ namespace CodexVBE
             for (int attempt = 0; attempt < 200; attempt++)
             {
                 IntPtr dialog = native.Dialog("Microsoft Visual Basic pour Applications",
-                    "Microsoft Visual Basic for Applications");
+                    "Microsoft Visual Basic for Applications", "Microsoft Visual Basic");
                 if (dialog != IntPtr.Zero)
                 {
                     string diagnostic = native.DialogMessage(dialog);
@@ -1399,7 +1401,7 @@ namespace CodexVBE
                     // Allow the VBE to surface a delayed diagnostic after Execute.
                     native.Pause(250);
                     dialog = native.Dialog("Microsoft Visual Basic pour Applications",
-                        "Microsoft Visual Basic for Applications");
+                        "Microsoft Visual Basic for Applications", "Microsoft Visual Basic");
                     if (dialog == IntPtr.Zero) return null;
                 }
                 native.Pause(50);
@@ -1412,7 +1414,9 @@ namespace CodexVBE
         /// <returns><see langword="true"/> pour une erreur de compilation reconnue.</returns>
         internal static bool IsRecognizedDiagnostic(string message)
         {
-            return message != null && Regex.IsMatch(message,
+            return string.Equals(message, "L'identificateur sous le curseur n'est pas reconnu", StringComparison.Ordinal) ||
+                message != null && Regex.IsMatch(message, @"\AImpossible d'aller à '[^'\r\n]{1,255}' qui est caché\z") ||
+                message != null && Regex.IsMatch(message,
                 @"^(Erreur d'exécution|Run-time error|Erreur de compilation|Compile error)",
                 RegexOptions.IgnoreCase);
         }
@@ -1474,7 +1478,7 @@ namespace CodexVBE
                     native.Pause(50);
                     dialog = native.Dialog("Ajouter un espion", "Add Watch");
                     if (dialog == IntPtr.Zero) { completed = true; break; }
-                    error = native.Dialog("Microsoft Visual Basic pour Applications", "Microsoft Visual Basic for Applications");
+                    error = native.Dialog("Microsoft Visual Basic pour Applications", "Microsoft Visual Basic for Applications", "Microsoft Visual Basic");
                     if (error != IntPtr.Zero) break;
                 }
                 if (error != IntPtr.Zero)
@@ -1567,7 +1571,7 @@ namespace CodexVBE
                     native.Pause(50);
                     if (native.Dialog("Modifier un espion", "Edit Watch") == IntPtr.Zero)
                     { completed = true; break; }
-                    error = native.Dialog("Microsoft Visual Basic pour Applications", "Microsoft Visual Basic for Applications");
+                    error = native.Dialog("Microsoft Visual Basic pour Applications", "Microsoft Visual Basic for Applications", "Microsoft Visual Basic");
                     if (error != IntPtr.Zero) break;
                 }
                 if (error != IntPtr.Zero)

@@ -1779,4 +1779,12 @@ Git Credential Manager でサインインします。コミットの作成者情
   <data name="GitHub sign-in completed. " xml:space="preserve">
     <value>GitHub へのサインインが完了しました。 </value>
   </data>
+  <data name="Controls cut" xml:space="preserve"><value>切り取ったコントロール</value></data>
+  <data name="Restore cut controls" xml:space="preserve"><value>切り取ったコントロールを復元</value></data>
+  <data name="Restore names, position, size and tab order. Replaces the clipboard. Refuses intervening changes." xml:space="preserve"><value>名前、位置、サイズ、タブ順序を復元します。クリップボードを置き換えます。途中の変更がある場合は拒否します。</value></data>
+  <data name="Controls restored; some properties could not be verified." xml:space="preserve"><value>コントロールを復元しました。一部のプロパティは検証できませんでした。</value></data>
+  <data name="Recovery incomplete. Inspect the Designer before another action." xml:space="preserve"><value>復元は未完了です。次の操作の前にデザイナーを確認してください。</value></data>
+  <data name="Controls restored" xml:space="preserve"><value>コントロールを復元済み</value></data>
+  <data name="Recovery attempted" xml:space="preserve"><value>復元を試行済み</value></data>
+  <data name="Recovery unavailable" xml:space="preserve"><value>復元できません</value></data>
 </root>

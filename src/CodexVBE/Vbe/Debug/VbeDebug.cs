@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -10,7 +10,7 @@ using System.Threading;
 namespace CodexVBE
 {
     /// <summary>Expose les commandes de débogage, navigation et inspection du VBE.</summary>
-    internal sealed class VbeDebug
+    internal sealed partial class VbeDebug
     {
         /// <summary>Instance VBE utilisée pour résoudre les projets et exécuter les commandes IDE.</summary>
         private readonly dynamic vbe;
@@ -64,7 +64,7 @@ namespace CodexVBE
             int pageSize = limit == 0 ? 200 : Math.Min(limit, 200);
             var entries = EnumerateCommands();
             if (!string.IsNullOrWhiteSpace(query))
-                entries = entries.Where(e => e.Path.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+                entries = entries.Where(e => e.Path.Replace("&", "").IndexOf(query.Replace("&", ""), StringComparison.OrdinalIgnoreCase) >= 0).ToList();
             return entries.Skip(offset).Take(pageSize).Select(e => new { e.Path, e.Caption, e.Id, e.Enabled }).ToArray();
         }
 

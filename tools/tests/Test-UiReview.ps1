@@ -1,4 +1,4 @@
-param([string]$AssemblyPath = 'artifacts/ui-product/CodexVBE.dll')
+﻿param([string]$AssemblyPath = 'artifacts/ui-product/CodexVBE.dll')
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing, PresentationFramework
 $assembly = [Reflection.Assembly]::LoadFrom((Resolve-Path $AssemblyPath))
@@ -48,6 +48,7 @@ try {
             $tabs = Field $git tabs
             $tabs.SelectedTab = Field $git githubTab
             $pane = Field $git githubPane
+            Assert ($pane.Controls.Contains((Field $pane pages))) 'GitHub tabs are detached from their view.'
             foreach ($page in @('repositoriesPage','pullsPage')) {
                 (Field $pane pages).SelectedTab = Field $pane $page
                 $git.Refresh(); Pump
@@ -61,7 +62,7 @@ try {
             Assert ((Field $diff grid).RowCount -ge 3) 'Diff is empty.'
             $diff.ShowDiff('','')
             Assert ((Field $diff grid).RowCount -eq 0) 'Refreshing an empty diff failed.'
-            foreach ($name in @('changesTab','historyTab','branchesTab','checkpointsTab','conflictsTab','importTab')) {
+            foreach ($name in @('connectionTab','changesTab','historyTab','branchesTab','checkpointsTab','conflictsTab','importTab')) {
                 $page = Field $git $name; $page.Enabled = $true; $tabs.SelectedTab = $page
                 if ($name -eq 'conflictsTab') {
                     (Field $git baseContent).Text = "Sub Test()`r`n    value = 1`r`nEnd Sub"
@@ -88,5 +89,16 @@ try {
             try { $git.DrawToBitmap($bitmap,[Drawing.Rectangle]::new(0,0,$git.Width,$git.Height)); $bitmap.Save((Join-Path $output "$mode-narrow.png")) } finally { $bitmap.Dispose() }
             Write-Output "PASS $mode GitHub panels and diff refresh"
         } finally { $git.Dispose() }
+        $settings = New-Internal LlmSettingsWindow
+        try {
+            $settings.Show(); Pump
+            $settingsTabs = Field $settings settingsTabs
+            foreach ($page in $settingsTabs.TabPages) {
+                $settingsTabs.SelectedTab = $page; Pump
+                $bitmap = [Drawing.Bitmap]::new($settings.Width,$settings.Height)
+                try { $settings.DrawToBitmap($bitmap,[Drawing.Rectangle]::new(0,0,$settings.Width,$settings.Height)); $bitmap.Save((Join-Path $output "$mode-$($page.Name).png")) } finally { $bitmap.Dispose() }
+            }
+        } finally { $settings.Dispose() }
+
     }
 } finally { $choice.SetValue($null,$original) }

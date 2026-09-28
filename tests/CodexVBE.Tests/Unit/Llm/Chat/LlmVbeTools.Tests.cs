@@ -1,4 +1,4 @@
-namespace CodexVBE.Tests.Unit
+﻿namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
@@ -83,6 +83,8 @@ namespace CodexVBE.Tests.Unit
         public async Task AsyncNativePreflightRejectsWrongShapesWithoutOpeningDialogs()
         {
             var tools = new LlmVbeTools(null, null, new LlmSettings { VbeEditApproval = "Automatic" });
+            await Failure(tools, "read_runtime_forms", "[]", "empty argument object");
+            await Failure(tools, "read_runtime_forms", "{\"Project\":\"P\"}", "empty argument object");
             await Failure(tools, "debug_windows", "[]", "Tool arguments must be an object");
             await Failure(tools, "debug_windows", "{\"IncludeCallStack\":1}", "must be a boolean");
             await Failure(tools, "debug_windows", "{\"Unexpected\":true}", "Unexpected argument");
@@ -136,8 +138,42 @@ namespace CodexVBE.Tests.Unit
     [TestCategory("Unit")]
     public sealed partial class LlmVbeToolContractTests
     {
+        [TestMethod]
+        public void ObjectBrowserRejectsArgumentsBeforeNativeAccess()
+        {
+            var tools = new LlmVbeTools(null, null, new LlmSettings());
+            IsFailure(tools.InvokeAsync("list_object_browser", "{}").GetAwaiter().GetResult(), "Pane");
+            IsFailure(tools.InvokeAsync("list_object_browser", "{\"Pane\":\"members\",\"Limit\":\"2\"}").GetAwaiter().GetResult(), "integers");
+            Assert.ThrowsException<ArgumentException>(() => VbeDebugWindows.SelectObjectBrowser(new Request { Context = "VBA", Procedure = "Count" }));
+            Assert.ThrowsException<ArgumentException>(() => VbeDebugWindows.SelectObjectBrowser(new Request { Context = " " }));
+            Assert.ThrowsException<ArgumentException>(() => VbeDebugWindows.ListObjectBrowser(new Request { Pane = "other" }));
+            Assert.ThrowsException<ArgumentException>(() => VbeDebugWindows.ListObjectBrowser(new Request { Pane = "members", Offset = -1 }));
+            Assert.ThrowsException<ArgumentException>(() => VbeDebugWindows.ListObjectBrowser(new Request { Pane = "classes", Limit = 201 }));
+            IsFailure(tools.InvokeAsync("select_object_browser", "{}").GetAwaiter().GetResult(), "ObjectName");
+            IsFailure(tools.InvokeAsync("select_object_browser", "{\"ObjectName\":123}").GetAwaiter().GetResult(), "strings");
+            IsFailure(tools.InvokeAsync("select_object_browser", "{\"ObjectName\":\"\"}").GetAwaiter().GetResult(), "ObjectName");
+            IsFailure(tools.InvokeAsync("read_object_browser", "[]").GetAwaiter().GetResult(), "empty argument object");
+            IsFailure(tools.InvokeAsync("read_object_browser", "{\"Query\":\"Range\"}").GetAwaiter().GetResult(), "empty argument object");
+        }
+
+        [TestMethod]
+        public void ListInitializerSchemaExposesMatrixWithoutRequiringOneColumnItems()
+        {
+            var function = LlmVbeTools.Definitions.Select(definition => Dict(Dict(Json.DeserializeObject(Json.Serialize(definition)))["function"]))
+                .Single(item => (string)item["name"] == "set_form_list_initializer");
+            var parameters = Dict(function["parameters"]);
+            var properties = Dict(parameters["properties"]);
+            Assert.IsTrue(properties.ContainsKey("Items"));
+            Assert.IsTrue(properties.ContainsKey("Rows"));
+            Assert.IsFalse(((object[])parameters["required"]).Contains("Items"));
+            var matrix = Dict(properties["Rows"]);
+            Assert.AreEqual("array", matrix["type"]);
+            Assert.AreEqual(64, matrix["maxItems"]);
+            Assert.AreEqual(10, Dict(matrix["items"])["maxItems"]);
+        }
+
         /// <summary>Vérifie l’unicité des outils publiés et la présence des champs obligatoires de leurs schémas.</summary>
-[TestMethod]
+        [TestMethod]
         public void PublishedToolSchemasHaveUniqueNamesAndRequiredFieldsExist()
         {
             var names = new HashSet<string>(StringComparer.Ordinal);
@@ -188,9 +224,17 @@ namespace CodexVBE.Tests.Unit
                 Mode = ChatMode.Plan
             };
             IsFailure(tools.Invoke("create_module", "{}"), "create_module");
+            IsFailure(tools.Invoke("run_form", "{}"), "run_form");
+            IsFailure(tools.Invoke("native_code_history", "{}"), "native_code_history");
+            IsFailure(tools.Invoke("native_form_history", "{}"), "native_form_history");
+            IsFailure(tools.Invoke("cut_code", "{}"), "cut_code");
+            IsFailure(tools.Invoke("paste_code", "{}"), "paste_code");
             tools.Mode = ChatMode.Agent;
             settings.VbeEditApproval = "ReadOnly";
             IsFailure(tools.Invoke("create_module", "{\"Project\":\"P\",\"Module\":\"M\",\"ExpectedMode\":2}"), "VBE");
+            IsFailure(tools.Invoke("run_form", "{\"Project\":\"P\",\"Form\":\"F\",\"ExpectedMode\":2,\"ExpectedSha256\":\"hash\",\"ExpectedTreeVersion\":\"tree\",\"ControlCaption\":\"Run\"}"), "VBE");
+            IsFailure(tools.Invoke("native_code_history", "{\"Project\":\"P\",\"Action\":\"undo\",\"ExpectedMode\":2,\"ExpectedProjectVersion\":\"hash\",\"ControlCaption\":\"Undo\"}"), "VBE");
+            IsFailure(tools.Invoke("native_form_history", "{\"Project\":\"P\",\"Form\":\"F\",\"Action\":\"undo\",\"ExpectedTreeVersion\":\"tree\"}"), "VBE");
             settings.VbeEditApproval = "invalid";
             IsFailure(tools.Invoke("create_module", "{\"Project\":\"P\",\"Module\":\"M\",\"ExpectedMode\":2}"), "VBE");
             tools.ValidateScope = () =>
@@ -419,6 +463,20 @@ namespace CodexVBE.Tests.Unit
             { values["Items"] = items; Success(tools.Invoke(name, Json.Serialize(values)), "valid items"); }
             foreach (object items in new object[] { "x", Enumerable.Repeat("x", 65).ToArray(), new object[] { 2 }, new[] { new string('x',257) }, new[] { "line\nline" } })
             { values["Items"] = items; Failed(tools.Invoke(name, Json.Serialize(values)), "invalid items"); }
+        }
+
+        /// <summary>Valide les matrices rectangulaires et refuse chaque type ou taille incompatible avec le schéma.</summary>
+        [TestMethod]
+        public void RowsMatrixValidatesShapeTypesAndCellBoundaries()
+        {
+            var tools = Create();
+            const string name = "set_form_list_initializer";
+            var values = Arguments(name);
+            values.Remove("Items");
+            foreach (object rows in new object[] { new string[0][], new[] { new[] { "", new string('x', 256) } }, Enumerable.Range(0, 64).Select(_ => Enumerable.Repeat("x", 10).ToArray()).ToArray() })
+            { values["Rows"] = rows; Success(tools.Invoke(name, Json.Serialize(values)), "valid rows"); }
+            foreach (object rows in new object[] { null, "x", new object[] { "x" }, new object[] { null }, new[] { new string[0] }, new[] { Enumerable.Repeat("x", 11).ToArray() }, Enumerable.Range(0, 65).Select(_ => new[] { "x" }).ToArray(), new[] { new[] { "x" }, new[] { "x", "y" } }, new object[] { new object[] { 2 } }, new[] { new[] { new string('x', 257) } }, new[] { new[] { "line\nline" } } })
+            { values["Rows"] = rows; Failed(tools.Invoke(name, Json.Serialize(values)), "invalid rows"); }
         }
 
         /// <summary>Vérifie le chemin absolu littéral, la confirmation et la limite de taille des lectures de fichier.</summary>

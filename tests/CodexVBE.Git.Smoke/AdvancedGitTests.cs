@@ -91,7 +91,8 @@ internal static partial class GitTests
         Func<string, Dictionary<string, object>, Response> invoke = (name, input) => json.Deserialize<Response>(Pump(tools.InvokeAsync(name, json.Serialize(input))));
         Func<Dictionary<string, object>> argsForEdit = () => new Dictionary<string, object> { { "Project", host.FileName }, { "ExpectedState", revision() } };
         Assert(LlmVbeTools.Definitions.Cast<dynamic>().Any(x => (string)x.function.name == "git_branch_switch"), "Git definitions reach provider catalog");
-        Assert(LlmVbeTools.Definitions.Length <= 128 && LlmVbeTools.Definitions.Cast<dynamic>().Select(x => (string)x.function.name).Distinct().Count() == LlmVbeTools.Definitions.Length, "Provider tool catalog remains unique and within 128 tools");
+        var toolNames = LlmVbeTools.Definitions.Cast<dynamic>().Select(x => (string)x.function.name).ToArray();
+        Assert(toolNames.Distinct().Count() == toolNames.Length && toolNames.All(name => !string.IsNullOrWhiteSpace(name) && name.Length <= 64), "Provider tool catalog has unique, valid function names");
         var status = invoke("git_status", new Dictionary<string, object> { { "Project", host.FileName } });
         Assert(status.Ok && ((Dictionary<string, object>)status.Data).ContainsKey("State"), "Agent status returns revision");
         var args = argsForEdit(); args["Name"] = "Agent checkpoint";

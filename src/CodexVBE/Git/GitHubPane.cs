@@ -36,7 +36,7 @@ namespace CodexVBE
         /// <value><see langword="true"/> lorsqu’une source d’annulation est active.</value>
         internal bool Busy { get { return cancellation != null; } }
         /// <summary>Crée le panneau et applique les textes localisés.</summary>
-        public GitHubPane() { InitializeComponent(); UiText.Apply(this, components); }
+        public GitHubPane() { InitializeComponent(); BindViews(); UiText.Apply(this, components); }
         /// <summary>Configure le compte, le dépôt distant et la branche locale affichés.</summary>
         /// <param name="selectedAccount">Identifiant du compte GitHub à utiliser.</param>
         /// <param name="url">URL du dépôt distant sélectionné.</param>

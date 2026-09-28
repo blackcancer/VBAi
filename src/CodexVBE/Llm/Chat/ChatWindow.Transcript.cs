@@ -100,6 +100,7 @@ namespace CodexVBE
             if (item.RenderedContext is ChatEntry entry && entryViews.TryGetValue(entry, out var view) && ReferenceEquals(view, item.Content)) {
                 entryViews.Remove(entry);
                 if (entry.StreamId != null) liveTexts.Remove(entry.StreamId);
+                if (entry.FormCut != null) formCutButtons.Remove(entry.FormCut);
                 if (entry.Change != null) { rollbackButtons.Remove(entry.Change); changeStates.Remove(entry.Change); }
             }
         }
@@ -108,7 +109,7 @@ namespace CodexVBE
         private void RefreshTranscriptWindow(int start)
         {
             firstLoadedEntry = start;
-            visibleEntries.Clear(); entryViews.Clear(); liveTexts.Clear(); rollbackButtons.Clear(); changeStates.Clear();
+            visibleEntries.Clear(); entryViews.Clear(); liveTexts.Clear(); rollbackButtons.Clear(); changeStates.Clear(); formCutButtons.Clear();
             if (start > 0) visibleEntries.Add(earlierEntries);
             foreach (var entry in transcriptEntries.Skip(start)) visibleEntries.Add(entry);
         }
@@ -117,7 +118,7 @@ namespace CodexVBE
         {
             visibleEntries.Clear(); firstLoadedEntry = 0;
             transcriptEntries.Clear(); entryViews.Clear(); liveEntries.Clear(); liveTexts.Clear();
-            rollbackButtons.Clear(); changeStates.Clear(); followConversation = true;
+            rollbackButtons.Clear(); changeStates.Clear(); formCutButtons.Clear(); followConversation = true;
         }
         /// <summary>Fait défiler vers le dernier élément si le suivi automatique est activé.</summary>
         private void FollowLatest()
@@ -161,6 +162,7 @@ namespace CodexVBE
         /// <returns>Élément WPF matérialisant l’entrée.</returns>
         private FrameworkElement RenderEntry(ChatEntry entry)
         {
+            if (entry.FormCut != null) return RenderFormCut(entry.FormCut);
             if (entry.Change != null) return RenderChange(entry.Change);
             if (entry.Speaker == "Réflexion" || entry.Speaker == "Outil")
             {
@@ -315,6 +317,7 @@ namespace CodexVBE
         /// <summary>Actualise l’activation et le libellé des boutons selon l’état restauré et l’activité courante.</summary>
         private void RefreshCodeChangeCards()
         {
+            RefreshFormCutCards();
             foreach (var pair in rollbackButtons)
             {
                 pair.Value.IsEnabled = !pair.Key.Restored && !busy;

@@ -1,4 +1,4 @@
-namespace CodexVBE.Tests.Unit
+﻿namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections;
@@ -1327,7 +1327,9 @@ namespace CodexVBE.Tests.Unit
                 "Erreur d'exécution '9'",
                 "Run-time error '9'",
                 "Erreur de compilation: Syntaxe",
-                "Compile error: Syntax error"
+                "Compile error: Syntax error",
+                "L'identificateur sous le curseur n'est pas reconnu",
+                "Impossible d'aller à 'Range' qui est caché"
             }
 
             )
@@ -1338,7 +1340,10 @@ namespace CodexVBE.Tests.Unit
                 "",
                 "Other application error",
                 "Note: Compile error",
-                "Windows Security"
+                "Windows Security",
+                "Impossible d'aller à 'Range' qui est caché : autre dialogue",
+                "Impossible d'aller à 'Range' qui est caché\n",
+                "L'identificateur sous le curseur n'est pas reconnu : autre dialogue"
             }
 
             )

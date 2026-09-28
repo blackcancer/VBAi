@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -23,21 +23,15 @@ namespace CodexVBE
         /// <remarks>Après le début d’une mutation COM, une erreur est retournée comme vérification en attente afin de permettre une relecture.</remarks>
         public object SetListInitializer(Request request)
         {
-            if (string.IsNullOrWhiteSpace(request.Project) ||
-                string.IsNullOrWhiteSpace(request.Form) ||
-                string.IsNullOrWhiteSpace(request.ControlPath) ||
-                string.IsNullOrWhiteSpace(request.ExpectedTreeVersion) ||
-                string.IsNullOrWhiteSpace(request.ExpectedSha256) || request.Items == null)
-                throw new ArgumentException("Project, Form, ControlPath, ExpectedTreeVersion, ExpectedSha256 and Items are required.");
-            if (request.Items.Length > 64)
-                throw new ArgumentException("At most 64 list items can be initialized.");
-            foreach (string item in request.Items)
-                if (item == null || item.Length > 256 || item.Any(char.IsControl))
-                    throw new ArgumentException("Each item must be a non-null, single-line string of at most 256 characters.");
-            Match pathMatch = Regex.Match(request.ControlPath, @"^Controls/([A-Za-z][A-Za-z0-9_]*)$");
-            if (!pathMatch.Success)
-                throw new ArgumentException("The initial prototype requires a top-level control path.");
-            string name = pathMatch.Groups[1].Value;
+            if (string.IsNullOrWhiteSpace(request.Project) || string.IsNullOrWhiteSpace(request.Form) ||
+                string.IsNullOrWhiteSpace(request.ControlPath) || string.IsNullOrWhiteSpace(request.ExpectedTreeVersion) ||
+                string.IsNullOrWhiteSpace(request.ExpectedSha256) || (request.Items == null) == (request.Rows == null))
+                throw new ArgumentException("Project, Form, ControlPath, ExpectedTreeVersion, ExpectedSha256 and exactly one of Items or Rows are required.");
+            string[][] rows = request.Rows ?? request.Items.Select(x => new[] { x }).ToArray();
+            if (rows.Length > 64 || rows.Any(row => row == null || row.Length < 1 || row.Length > 10 || row.Length != rows[0].Length ||
+                row.Any(cell => cell == null || cell.Length > 256 || cell.Any(char.IsControl))))
+                throw new ArgumentException("Rows must be rectangular, with at most 64 rows and 1-10 columns of single-line strings up to 256 characters.");
+            string name = ListControlAccessor(request.ControlPath);
 
             dynamic form = GetForm(GetDesignProject(request.Project), request.Form);
             dynamic tree = Tree(request.Project, request.Form);
@@ -54,8 +48,9 @@ namespace CodexVBE
             dynamic list = target;
             if (!string.IsNullOrWhiteSpace(Convert.ToString(list.RowSource, CultureInfo.InvariantCulture)))
                 throw new InvalidOperationException("The list is bound to RowSource; a generated initializer is unavailable.");
-            if (Convert.ToInt32(list.ColumnCount, CultureInfo.InvariantCulture) != 1)
-                throw new InvalidOperationException("The initializer is restricted to one-column lists.");
+            int columns = Convert.ToInt32(list.ColumnCount, CultureInfo.InvariantCulture);
+            if (columns < 1 || columns > 10 || (request.Items != null && columns != 1) || (rows.Length > 0 && rows[0].Length != columns))
+                throw new InvalidOperationException("Data columns must match the existing ColumnCount (1-10). This command does not change designer properties.");
 
             dynamic module = form.CodeModule;
             string before = ReadFormCode(module);
@@ -63,7 +58,13 @@ namespace CodexVBE
                 throw new InvalidOperationException("The form code changed since it was read.");
             string beginPrefix = "' CodexVBE BEGIN LIST " + request.ControlPath + " SHA256=";
             string end = "' CodexVBE END LIST " + request.ControlPath;
-            string[] generated = GenerateListBlock(name, request.Items, beginPrefix, end);
+            string[] generated = GenerateListRowsBlock(name, rows, beginPrefix, end);
+            return ApplyManagedListBlock(request, module, before, name, beginPrefix, end, generated, rows.Length, columns);
+        }
+
+        private object ApplyManagedListBlock(Request request, dynamic module, string before, string name,
+            string beginPrefix, string end, string[] generated, int itemsWritten, int columns)
+        {
             string begin = generated[0].Trim();
             var allBefore = CodeLines(before);
             int oldBegin = FindMarkerPrefix(allBefore, beginPrefix);
@@ -96,7 +97,7 @@ namespace CodexVBE
                     return new { Project = request.Project, Form = request.Form,
                         ControlPath = request.ControlPath, Mechanism = "UserForm_Initialize",
                         Applied = false, Verified = true, VerificationPending = false,
-                        UserCodePreserved = true, ItemsWritten = request.Items.Length,
+                        UserCodePreserved = true, ItemsWritten = itemsWritten, Columns = columns,
                         Sha256Before = request.ExpectedSha256, Sha256After = request.ExpectedSha256,
                         RuntimeVerificationPending = true, NextRead = "read_module" };
                 if (oldBegin < 0)
@@ -129,7 +130,7 @@ namespace CodexVBE
                     ControlPath = request.ControlPath, Mechanism = "UserForm_Initialize",
                     Applied = true, Verified = exact && preserved,
                     VerificationPending = !(exact && preserved),
-                    UserCodePreserved = preserved, ItemsWritten = request.Items.Length,
+                    UserCodePreserved = preserved, ItemsWritten = itemsWritten, Columns = columns,
                     Sha256Before = request.ExpectedSha256, Sha256After = FormCodeSha(after),
                     RuntimeVerificationPending = true, NextRead = "read_module" };
             }
@@ -147,6 +148,26 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Construit un accès VBA pour un chemin de contrôle validé.</summary>
+        /// <param name="path">Chemin canonique utilisant Controls et Pages.</param>
+        /// <returns>Accès au contrôle sans expression arbitraire.</returns>
+        // Uses only validated collection names and quoted control identifiers. The final
+        // live tree lookup remains authoritative; this is not arbitrary VBA evaluation.
+        internal static string ListControlAccessor(string path)
+        {
+            string[] parts = (path ?? "").Split('/');
+            if (parts.Length < 2 || parts.Length > 16 || parts.Length % 2 != 0 || parts[0] != "Controls" || parts[parts.Length - 2] != "Controls")
+                throw new ArgumentException("ControlPath must identify a control using canonical Controls/Pages segments.");
+            for (int i = 0; i < parts.Length; i += 2)
+                if ((parts[i] != "Controls" && parts[i] != "Pages") || !Regex.IsMatch(parts[i + 1], @"^[A-Za-z_][A-Za-z0-9_]{0,254}$"))
+                    throw new ArgumentException("ControlPath contains an invalid collection or identifier.");
+            // Preserve the existing generated format for top-level lists.
+            if (parts.Length == 2) return parts[1];
+            string accessor = string.Join(".", Enumerable.Range(0, parts.Length / 2).Select(i => parts[i * 2] + "(\"" + parts[i * 2 + 1] + "\")"));
+            if (accessor.Length > 400) throw new ArgumentException("Control path exceeds the generated VBA line length budget.");
+            return accessor;
+        }
+
         /// <summary>Construit le bloc VBA encadré de marqueurs et contenant les commandes de remplissage.</summary>
         /// <param name="name">Nom du contrôle cible.</param>
         /// <param name="items">Valeurs à ajouter dans la liste.</param>
@@ -155,9 +176,18 @@ namespace CodexVBE
         /// <returns>Lignes du bloc, marqueurs inclus.</returns>
         private static string[] GenerateListBlock(string name, string[] items, string beginPrefix, string end)
         {
+            return GenerateListRowsBlock(name, items.Select(x => new[] { x }).ToArray(), beginPrefix, end);
+        }
+
+        private static string[] GenerateListRowsBlock(string name, string[][] rows, string beginPrefix, string end)
+        {
             var body = new List<string> { "    Me." + name + ".Clear" };
-            foreach (string item in items)
-                body.Add("    Me." + name + ".AddItem \"" + item.Replace("\"", "\"\"") + "\"");
+            for (int row = 0; row < rows.Length; row++)
+            {
+                body.Add("    Me." + name + ".AddItem \"" + rows[row][0].Replace("\"", "\"\"") + "\"");
+                for (int column = 1; column < rows[row].Length; column++)
+                    body.Add("    Me." + name + ".List(" + row.ToString(CultureInfo.InvariantCulture) + ", " + column.ToString(CultureInfo.InvariantCulture) + ") = \"" + rows[row][column].Replace("\"", "\"\"") + "\"");
+            }
             var lines = new List<string> { "    " + beginPrefix + FormCodeSha(string.Join("\r\n", body)) };
             lines.AddRange(body);
             lines.Add("    " + end);
@@ -176,13 +206,16 @@ namespace CodexVBE
         {
             string marker = lines[begin].Trim();
             string storedSha = marker.Substring(beginPrefix.Length);
-            if (!Regex.IsMatch(storedSha, "^[0-9a-f]{64}$") || end < begin + 2 || end - begin > 66)
+            if (!Regex.IsMatch(storedSha, "^[0-9a-f]{64}$") || end < begin + 2 || end - begin > 642)
                 throw new InvalidOperationException("The managed list block has invalid metadata.");
             string[] body = lines.Skip(begin + 1).Take(end - begin - 1).ToArray();
+            if (body.Length == 1 && IsManagedBindingLine(body[0], name) &&
+                string.Equals(FormCodeSha(body[0]), storedSha, StringComparison.Ordinal)) return;
             if (!string.Equals(body[0], "    Me." + name + ".Clear", StringComparison.Ordinal))
                 throw new InvalidOperationException("The managed list block has been edited outside the generated form.");
             string itemPattern = "^    Me\\." + Regex.Escape(name) + "\\.AddItem \"(?:[^\"]|\"\")*\"$";
-            if (body.Skip(1).Any(line => !Regex.IsMatch(line, itemPattern)) ||
+            string cellPattern = "^    Me\\." + Regex.Escape(name) + "\\.List\\((?:[0-9]|[1-5][0-9]|6[0-3]), [1-9]\\) = \"(?:[^\"]|\"\")*\"$";
+            if (body.Skip(1).Any(line => !Regex.IsMatch(line, itemPattern) && !Regex.IsMatch(line, cellPattern)) ||
                 !string.Equals(FormCodeSha(string.Join("\r\n", body)), storedSha, StringComparison.Ordinal))
                 throw new InvalidOperationException("The managed list block has been edited; user code will not be overwritten.");
         }

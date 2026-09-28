@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections;
 using System.IO;
@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 namespace CodexVBE
 {
     /// <summary>Inspecte, navigue et modifie le code des projets VBA en vérifiant les versions attendues.</summary>
-    internal sealed class VbeCodeNavigation
+    internal sealed partial class VbeCodeNavigation
     {
         /// <summary>Instance VBIDE contenant les projets et modules.</summary>
         private readonly dynamic vbe;

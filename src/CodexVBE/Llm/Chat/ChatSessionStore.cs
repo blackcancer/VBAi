@@ -22,6 +22,9 @@ namespace CodexVBE
         /// <summary>Obtient ou définit le changement de code associé au message, le cas échéant.</summary>
         /// <value>Changement de code ou nul.</value>
         public CodeChange Change { get; set; }
+        /// <summary>Coupe de concepteur proposant une récupération du formulaire.</summary>
+        /// <value>Changement récupérable ou null.</value>
+        public FormCutChange FormCut { get; set; }
         /// <summary>Obtient ou définit les références VBE citées par le message.</summary>
         /// <value>Références du message.</value>
         public VbeChatReference[] References { get; set; }
@@ -97,7 +100,8 @@ namespace CodexVBE
     }
 
     /// <summary>Persiste les sessions de chat et la mémoire de projet dans la base SQLite Windows.</summary>
-    internal sealed class ChatSessionStore : IDisposable
+    // Uses the SQLite runtime shipped with Windows. SQL values are always bound parameters.
+    internal sealed partial class ChatSessionStore : IDisposable
     {
         /// <summary>Handle natif de la base SQLite ouverte.</summary>
         private IntPtr database;
@@ -116,6 +120,7 @@ namespace CodexVBE
                 Native.sqlite3_busy_timeout(database, 1500);
                 Execute("CREATE TABLE IF NOT EXISTS chat_sessions (id TEXT PRIMARY KEY, scope TEXT NOT NULL, title TEXT NOT NULL, updated TEXT NOT NULL, payload TEXT NOT NULL)");
                 Execute("CREATE INDEX IF NOT EXISTS chat_sessions_scope ON chat_sessions(scope, updated)");
+                Execute("CREATE TABLE IF NOT EXISTS code_bookmarks (scope TEXT NOT NULL, name_key TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(scope, name_key))");
                 Execute("CREATE TABLE IF NOT EXISTS project_memory (scope TEXT PRIMARY KEY, content TEXT NOT NULL)");
             }
             catch { Dispose(); throw; }

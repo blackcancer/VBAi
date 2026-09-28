@@ -1,4 +1,4 @@
-namespace CodexVBE.Tests.Unit
+﻿namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections;
@@ -234,8 +234,10 @@ namespace CodexVBE.Tests.Unit
                 lines.RemoveRange(start - 1, count);
             }
 
+            public int InsertFailuresRemaining { get; set; }
             public void InsertLines(int start, string text)
             {
+                if (InsertFailuresRemaining > 0) { InsertFailuresRemaining--; throw new InvalidOperationException("Simulated insert failure"); }
                 lines.InsertRange(start - 1, text.Split(new[] { "\r\n" }, StringSplitOptions.None));
             }
 

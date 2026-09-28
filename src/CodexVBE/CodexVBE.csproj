@@ -16,6 +16,15 @@
     <EmbeddedResource Include="..\..\assets\icons\github.png" Link="Resources\Icons\github.png" LogicalName="CodexVBE.Icons.github.png" />
     <EmbeddedResource Include="..\..\assets\icons\settings.png" Link="Resources\Icons\settings.png" LogicalName="CodexVBE.Icons.settings.png" />
     <Compile Include="**\*.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
+    <Compile Update="Llm\Settings\Views\*.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Llm\Settings\Views\*.Designer.cs"><SubType>Code</SubType><DependentUpon>$([System.String]::Copy('%(Filename)').Replace('.Designer', '')).cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Llm\Settings\Views\*.resx"><DependentUpon>%(Filename).cs</DependentUpon></EmbeddedResource>
+    <Compile Update="Git\Views\*.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Git\Views\*.Designer.cs"><SubType>Code</SubType><DependentUpon>$([System.String]::Copy('%(Filename)').Replace('.Designer', '')).cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Git\Views\*.resx"><DependentUpon>%(Filename).cs</DependentUpon></EmbeddedResource>
+    <Compile Update="Host\ChatToolWindow.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Host\ChatToolWindow.Designer.cs"><DependentUpon>ChatToolWindow.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Host\ChatToolWindow.resx"><DependentUpon>ChatToolWindow.cs</DependentUpon></EmbeddedResource>
     <Compile Update="Git\GitHubPane.cs"><SubType>UserControl</SubType></Compile>
     <Compile Update="Git\GitHubPane.Designer.cs"><DependentUpon>GitHubPane.cs</DependentUpon></Compile>
     <Compile Update="Ui\CodeDiffView.cs"><SubType>UserControl</SubType></Compile>

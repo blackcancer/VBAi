@@ -41,6 +41,7 @@ internal static partial class ProviderTests
             accounts = "alice\n"; refresh(false);
             Assert(((Label)field("githubStatus")).Text == UiText.Get("The selected account is no longer saved. Sign in again or choose another account."), "Missing preferred account not silently switched");
             accounts = "alice\nbob\n";
+            ((TabControl)field("settingsTabs")).SelectedTab = (TabPage)field("gitHubAccountSettingsViewTab");
             form.Show(); Application.DoEvents(); form.Refresh();
             Assert(picker.Visible && ((Button)field("githubLogin")).Visible, "GitHub section visible for local AI provider");
             var save = (Button)field("saveButton");

@@ -127,9 +127,11 @@ namespace CodexVBE.Tests.Unit
             using (var f = new Fixture(false))
             {
                 f.Window.ClientSize = new System.Drawing.Size(900, 800);
-                f.Get<TabControl>("tabs").SelectedTab = f.Get<TabPage>("changesTab"); f.Call("AdjustReviewLayout");
+                f.Get<TabControl>("tabs").SelectedTab = f.Get<TabPage>("connectionTab");
                 Assert.IsTrue(f.Get<Label>("help").Visible);
-                f.Window.ClientSize = new System.Drawing.Size(900, 500); f.Call("AdjustReviewLayout");
+                f.Window.ClientSize = new System.Drawing.Size(900, 500);
+                Assert.IsTrue(f.Get<Label>("help").Visible);
+                f.Get<TabControl>("tabs").SelectedTab = f.Get<TabPage>("changesTab");
                 Assert.IsFalse(f.Get<Label>("help").Visible);
                 var pane = f.Get<GitHubPane>("githubPane");
                 pane.RepositorySelected("https://github.com/example/review.git", "feature");
@@ -141,11 +143,11 @@ namespace CodexVBE.Tests.Unit
                 pane.RepositorySelected("https://github.com/example/ignored.git", "ignored");
                 StringAssert.Contains(f.Status, UiText.Get("This document is already linked. Reopen GitHub to choose another repository."));
                 Assert.IsNull(pane.LoadDraft());
-                f.Get<TabControl>("tabs").SelectedTab = f.Get<TabPage>("githubTab"); f.Call("AdjustReviewLayout");
+                f.Get<TabControl>("tabs").SelectedTab = f.Get<TabPage>("githubTab");
                 Assert.IsFalse(f.Get<TextBox>("commitMessage").Visible);
-                f.Get<TabControl>("tabs").SelectedTab = f.Get<TabPage>("historyTab"); f.Call("AdjustReviewLayout");
+                f.Get<TabControl>("tabs").SelectedTab = f.Get<TabPage>("historyTab");
                 Assert.IsFalse(f.Get<TextBox>("commitMessage").Visible);
-                f.Get<TabControl>("tabs").SelectedTab = f.Get<TabPage>("changesTab"); f.Call("AdjustReviewLayout");
+                f.Get<TabControl>("tabs").SelectedTab = f.Get<TabPage>("changesTab");
                 Assert.IsTrue(f.Get<TextBox>("commitMessage").Visible);
             }
         }

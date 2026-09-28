@@ -1,4 +1,4 @@
-namespace CodexVBE.Tests.Unit
+﻿namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections;
@@ -24,6 +24,7 @@ namespace CodexVBE.Tests.Unit
             return new Fixture
             {
                 Project = project,
+                Host = vbe,
                 Form = form,
                 List = list,
                 Service = new VbeForms(vbe)
@@ -53,6 +54,7 @@ namespace CodexVBE.Tests.Unit
         private sealed class Fixture
         {
             public FakeProject Project;
+            public FakeVbe Host;
             public FakeForm Form;
             public FakeControl List;
             public VbeForms Service;
@@ -67,6 +69,7 @@ namespace CodexVBE.Tests.Unit
         {
             public string Name { get; set; } = "VBAProject";
             public int Mode { get; set; } = 2;
+            public string FileName { get; set; } = "";
             public List<FakeForm> VBComponents { get; } = new List<FakeForm>();
         }
 
@@ -145,10 +148,14 @@ namespace CodexVBE.Tests.Unit
                 TypeDescriptor.AddProvider(new NamedProvider(TypeDescriptor.GetProvider(this), type), this);
                 Name = name;
                 Parent = parent;
+                Controls = new FakeControls(this);
+                Pages = new FakeControls(this);
             }
 
             public string Name { get; }
             public object Parent { get; }
+            public FakeControls Controls { get; }
+            public FakeControls Pages { get; }
             public string RowSource { get; set; } = "";
             public int ColumnCount { get; set; } = 1;
             public int AddCount { get; private set; }

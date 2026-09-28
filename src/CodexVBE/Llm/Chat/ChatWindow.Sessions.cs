@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -53,6 +53,7 @@ namespace CodexVBE
         private void InitializeSessions(VbeSession session)
         {
             scopeSession = session;
+            InitializeContextMonitor(session);
             saveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
             saveTimer.Tick += (s, e) => { saveTimer.Stop(); SaveCurrentSession(); };
             try
@@ -317,7 +318,8 @@ namespace CodexVBE
         private void EnsureCurrentScope()
         {
             var scope = scopePicker.SelectedItem as MacroScope;
-            if (scope == null || scopeSession == null) return;
+            if (scopeSession == null) return;
+            if (scope == null) throw new InvalidOperationException(UiText.Get("The project for this conversation is closed or ambiguous."));
             if (tools != null) tools.BoundProject = scope.Project;
             var response = ReadHost(scopeSession, new Request { Command = "list_projects" });
             if (!response.Ok) throw new InvalidOperationException(response.Error);

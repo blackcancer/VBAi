@@ -1,4 +1,4 @@
-namespace CodexVBE
+﻿namespace CodexVBE
 {
     /// <summary>Arguments sérialisés en JSON pour une commande du pont entre le complément et son client.</summary>
     public sealed class Request
@@ -27,6 +27,9 @@ namespace CodexVBE
         /// <summary>Nombre d’éléments demandé ou attendu.</summary>
         /// <value>Nombre d’éléments demandé ou attendu.</value>
         public int Count { get; set; }
+        /// <summary>Version attendue du presse-papiers avant collage.</summary>
+        /// <value>Empreinte du contenu lu.</value>
+        public string ExpectedClipboardVersion { get; set; }
         /// <summary>Empreinte attendue qui protège une modification contre un état périmé.</summary>
         /// <value>Empreinte attendue qui protège une modification contre un état périmé.</value>
         public string ExpectedSha256 { get; set; }
@@ -36,9 +39,18 @@ namespace CodexVBE
         /// <summary>Liste de chaînes transmise à la commande.</summary>
         /// <value>Liste de chaînes transmise à la commande.</value>
         public string[] Items { get; set; }
+        /// <summary>Matrice des lignes d’une liste de formulaire.</summary>
+        /// <value>Cellules de chaque ligne.</value>
+        public string[][] Rows { get; set; }
         /// <summary>Texte recherché ou filtre de la commande.</summary>
         /// <value>Texte recherché ou filtre de la commande.</value>
         public string Query { get; set; }
+        /// <summary>Identifiant COM du complément ciblé.</summary>
+        /// <value>ProgID enregistré.</value>
+        public string ProgId { get; set; }
+        /// <summary>Version attendue du complément avant changement.</summary>
+        /// <value>Empreinte de l’état du complément.</value>
+        public string ExpectedAddInVersion { get; set; }
         /// <summary>Action demandée sur un élément.</summary>
         /// <value>Action demandée sur un élément.</value>
         public string Action { get; set; }
@@ -51,6 +63,33 @@ namespace CodexVBE
         /// <summary>Légende de la fenêtre VBE à retrouver.</summary>
         /// <value>Légende de la fenêtre VBE à retrouver.</value>
         public string WindowCaption { get; set; }
+        /// <summary>Légende de la fenêtre de destination.</summary>
+        /// <value>Légende native.</value>
+        public string TargetWindowCaption { get; set; }
+        /// <summary>Type de fenêtre de destination.</summary>
+        /// <value>Identifiant VBIDE.</value>
+        public int TargetWindowType { get; set; }
+        /// <summary>Position horizontale demandée pour une barre d’outils.</summary>
+        /// <value>Position ou null.</value>
+        public int? ToolbarLeft { get; set; }
+        /// <summary>Position verticale demandée pour une barre d’outils.</summary>
+        /// <value>Position ou null.</value>
+        public int? ToolbarTop { get; set; }
+        /// <summary>Identifiant d’une sauvegarde de coupe du concepteur.</summary>
+        /// <value>Identifiant de récupération.</value>
+        public string DesignerClipboardRecoveryId { get; set; }
+        /// <summary>Version attendue de la sélection dans le concepteur.</summary>
+        /// <value>Empreinte de sélection.</value>
+        public string ExpectedDesignerSelectionVersion { get; set; }
+        /// <summary>Version attendue de la disposition d’une barre d’outils.</summary>
+        /// <value>Empreinte de disposition.</value>
+        public string ExpectedToolbarLayoutVersion { get; set; }
+        /// <summary>Version attendue de la fenêtre source.</summary>
+        /// <value>Empreinte de l’état de fenêtre.</value>
+        public string ExpectedWindowVersion { get; set; }
+        /// <summary>Version attendue de la fenêtre de destination.</summary>
+        /// <value>Empreinte de l’état de destination.</value>
+        public string ExpectedTargetWindowVersion { get; set; }
         /// <summary>Type numérique de la fenêtre VBE visée.</summary>
         /// <value>Type numérique de la fenêtre VBE visée.</value>
         public int WindowType { get; set; }
@@ -141,6 +180,12 @@ namespace CodexVBE
         /// <summary>Chemin attendu du document hôte.</summary>
         /// <value>Chemin attendu du document hôte.</value>
         public string ExpectedHostPath { get; set; }
+        /// <summary>Nom de feuille associé à une liaison de liste.</summary>
+        /// <value>Nom de la feuille.</value>
+        public string SheetName { get; set; }
+        /// <summary>Adresse de plage associée à une liaison de liste.</summary>
+        /// <value>Adresse Excel.</value>
+        public string RangeAddress { get; set; }
         /// <summary>Empreinte du certificat de signature à utiliser.</summary>
         /// <value>Empreinte du certificat de signature à utiliser.</value>
         public string CertificateThumbprint { get; set; }

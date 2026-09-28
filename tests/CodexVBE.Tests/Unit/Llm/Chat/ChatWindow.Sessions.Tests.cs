@@ -185,7 +185,7 @@ namespace CodexVBE.Tests.Unit
                     }
                 }
                 ChatWindow.OpenHistory = p => { throw new IOException("store unavailable"); }; runtime.Host = r => Response.Success(r.Command == "list_projects" ? (object)new[] { new { Name = "P", FileName = "" } } : new { SelectedProject = "P" });
-                using (var window = new ChatWindow(runtime.Session)) { Call(window, "SaveProjectMemory"); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, UiText.Get("Memory requires")); Call(window, "EnsureCurrentScope"); Get<System.Windows.Forms.ComboBox>(window, "scopePicker").SelectedIndex = -1; Call(window, "ChangeScope"); Call(window, "EnsureCurrentScope"); }
+                using (var window = new ChatWindow(runtime.Session)) { Call(window, "SaveProjectMemory"); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, UiText.Get("Memory requires")); Call(window, "EnsureCurrentScope"); Get<System.Windows.Forms.ComboBox>(window, "scopePicker").SelectedIndex = -1; Call(window, "ChangeScope"); var failure = Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => Call(window, "EnsureCurrentScope")); Assert.IsInstanceOfType(failure.InnerException, typeof(InvalidOperationException)); }
             }
         }
                 /// <summary>Active, restaure, renomme et archive des sessions puis persiste leur état localement.</summary>

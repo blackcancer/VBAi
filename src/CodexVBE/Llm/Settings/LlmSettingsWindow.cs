@@ -52,7 +52,6 @@ namespace CodexVBE
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
-            FitContentHeight();
             if (settings != null && !githubLoaded) { githubLoaded = true; _ = RefreshGitHubAsync(false); }
         }
 
@@ -66,8 +65,11 @@ namespace CodexVBE
                 // Measure at the current width so wrapped descriptions and authentication
                 // buttons contribute their actual height, including the current DPI/font.
                 int width = ClientSize.Width;
-                int height = grid.GetPreferredSize(new Size(width, 0)).Height +
-                    buttons.GetPreferredSize(new Size(width, 0)).Height + themePanel.GetPreferredSize(new Size(width, 0)).Height;
+                int contentHeight = Math.Max(providerSettingsView.GetPreferredSize(new Size(width, 0)).Height,
+                    Math.Max(gitHubAccountSettingsView.GetPreferredSize(new Size(width, 0)).Height,
+                        appearanceSettingsView.GetPreferredSize(new Size(width, 0)).Height));
+                int height = contentHeight + settingsTabs.ItemSize.Height + settingsTabs.Padding.Y * 2 +
+                    buttons.GetPreferredSize(new Size(width, 0)).Height + contentLayout.Padding.Vertical;
                 int frameHeight = Height - ClientSize.Height;
                 int available = Screen.FromControl(this).WorkingArea.Height - frameHeight;
                 MinimumSize = new Size(MinimumSize.Width, 0);
@@ -82,10 +84,10 @@ namespace CodexVBE
         public LlmSettingsWindow()
         {
             InitializeComponent();
+            BindViews();
             Icon = VbeWindowIcons.Icon("settings");
             UiText.Apply(this, null, githubToolTips);
-            themePicker.SelectedIndex = (int)UiTheme.Choice;
-            themePicker.SelectedIndexChanged += (s, e) => { try { if (themePicker.SelectedIndex >= 0) SelectTheme((ThemeChoice)themePicker.SelectedIndex); } catch (Exception ex) { ShowNotice(this, ex.Message, "", MessageBoxButtons.OK, MessageBoxIcon.None); } };
+            InitializeTheme();
         }
 
         /// <summary>Crée la fenêtre et initialise ses contrôles avec les paramètres fournis.</summary>
@@ -94,10 +96,10 @@ namespace CodexVBE
         {
             this.settings = settings;
             InitializeComponent();
+            BindViews();
             Icon = VbeWindowIcons.Icon("settings");
             UiText.Apply(this, null, githubToolTips);
-            themePicker.SelectedIndex = (int)UiTheme.Choice;
-            themePicker.SelectedIndexChanged += (s, e) => { try { if (themePicker.SelectedIndex >= 0) SelectTheme((ThemeChoice)themePicker.SelectedIndex); } catch (Exception ex) { ShowNotice(this, ex.Message, "", MessageBoxButtons.OK, MessageBoxIcon.None); } };
+            InitializeTheme();
             githubAccount.Items.Add(UiText.Get("Automatic Git selection"));
             githubAccount.SelectedIndex = 0;
             customName.Text = settings.CustomProviderName ?? "";
@@ -117,6 +119,23 @@ namespace CodexVBE
             codexRefresh.Click += async (sender, args) => await RefreshCodexStatusAsync();
             saveButton.Click += (sender, args) => Save();
             UpdateRows();
+        }
+
+        /// <summary>Initialise le thème et son unique gestionnaire hors du concepteur Visual Studio.</summary>
+        private void InitializeTheme()
+        {
+            themePicker.SelectedIndex = (int)UiTheme.Choice;
+            if (System.ComponentModel.LicenseManager.UsageMode != System.ComponentModel.LicenseUsageMode.Designtime)
+                themePicker.SelectedIndexChanged += ThemePicker_SelectedIndexChanged;
+        }
+
+        /// <summary>Applique le thème choisi et affiche les erreurs de sélection.</summary>
+        /// <param name="sender">Sélecteur de thème.</param>
+        /// <param name="e">Événement de sélection.</param>
+        private void ThemePicker_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            try { if (themePicker.SelectedIndex >= 0) SelectTheme((ThemeChoice)themePicker.SelectedIndex); }
+            catch (Exception ex) { ShowNotice(this, ex.Message, "", MessageBoxButtons.OK, MessageBoxIcon.None); }
         }
 
         /// <summary>Met à jour valeurs, libellés et visibilité selon le fournisseur sélectionné.</summary>
@@ -151,18 +170,13 @@ namespace CodexVBE
             codexLogin.Text = selected.IsCopilot ? UiText.Get("Sign in to GitHub") : UiText.Get("Sign in to ChatGPT");
             codexLogin.Enabled = true;
             grid.SuspendLayout();
-            for (int i = 0; i < visible.Length; i++)
-            {
-                grid.RowStyles[i].SizeType = visible[i] ? SizeType.AutoSize : SizeType.Absolute;
-                grid.RowStyles[i].Height = 0;
-            }
             foreach (Control control in grid.Controls)
             {
                 int row = grid.GetRow(control);
                 control.Visible = row >= visible.Length || visible[row];
             }
             grid.ResumeLayout(true);
-            if (Visible) FitContentHeight();
+            FitContentHeight();
             if (cli) _ = RefreshCodexStatusAsync();
         }
 
@@ -219,7 +233,6 @@ namespace CodexVBE
                 if (!IsDisposed)
                 {
                     githubLogin.Enabled = githubRefresh.Enabled = githubAccount.Enabled = saveButton.Enabled = true;
-                    if (Visible) FitContentHeight();
                 }
             }
         }
@@ -244,7 +257,6 @@ namespace CodexVBE
                 codexStatus.Text = UiText.Get("Checking GitHub Copilot…");
                 try { string status = await ReadCopilotStatus(); if (!IsDisposed && ((LlmProvider)provider.SelectedItem).IsCopilot) codexStatus.Text = status; }
                 catch (Exception ex) { if (!IsDisposed && ((LlmProvider)provider.SelectedItem).IsCopilot) codexStatus.Text = ex.Message; }
-                if (!IsDisposed && Visible) FitContentHeight();
                 return;
             }
             codexStatus.Text = UiText.Get("Checking ChatGPT connection…");
@@ -265,7 +277,6 @@ namespace CodexVBE
                     codexLogin.Enabled = true;
                 }
             }
-            if (!IsDisposed && Visible) FitContentHeight();
         }
 
         /// <summary>Valide puis enregistre les réglages et ferme la fenêtre en cas de succès.</summary>

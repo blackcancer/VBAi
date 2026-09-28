@@ -1781,4 +1781,12 @@ Sign in through Git Credential Manager; commit identity is configured in Git.</v
   <data name="VBA references" xml:space="preserve">
     <value>VBA references</value>
   </data>
+  <data name="Controls cut" xml:space="preserve"><value>Controls cut</value></data>
+  <data name="Restore cut controls" xml:space="preserve"><value>Restore cut controls</value></data>
+  <data name="Restore names, position, size and tab order. Replaces the clipboard. Refuses intervening changes." xml:space="preserve"><value>Restore names, position, size and tab order. Replaces the clipboard. Refuses intervening changes.</value></data>
+  <data name="Controls restored; some properties could not be verified." xml:space="preserve"><value>Controls restored; some properties could not be verified.</value></data>
+  <data name="Recovery incomplete. Inspect the Designer before another action." xml:space="preserve"><value>Recovery incomplete. Inspect the Designer before another action.</value></data>
+  <data name="Controls restored" xml:space="preserve"><value>Controls restored</value></data>
+  <data name="Recovery attempted" xml:space="preserve"><value>Recovery attempted</value></data>
+  <data name="Recovery unavailable" xml:space="preserve"><value>Recovery unavailable</value></data>
 </root>

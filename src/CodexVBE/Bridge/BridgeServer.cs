@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.IO.Pipes;
 using System.Security.AccessControl;
@@ -120,6 +120,14 @@ namespace CodexVBE
                                 var request = json.Deserialize<Request>(line);
                                 if (request != null && request.Command == "debug_windows")
                                     response = Response.Success(Native.Capture(request.IncludeCallStack));
+                                else if (request != null && request.Command == "list_object_browser")
+                                    response = Response.Success(VbeDebugWindows.ListObjectBrowser(request));
+                                else if (request != null && request.Command == "select_object_browser")
+                                    response = Response.Success(VbeDebugWindows.SelectObjectBrowser(request));
+                                else if (request != null && request.Command == "read_runtime_forms")
+                                    response = Response.Success(VbeDebugWindows.ReadRuntimeForms());
+                                else if (request != null && request.Command == "read_object_browser")
+                                    response = Response.Success(VbeDebugWindows.ReadObjectBrowser());
                                 else if (request != null && request.Command == "debug_dialog")
                                     response = Response.Success(Native.ReadDebugDialog());
                                 else if (request != null && request.Command == "debug_item")

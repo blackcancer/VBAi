@@ -10,7 +10,7 @@ namespace CodexVBE
     [Guid("0F4D723B-97D8-42E5-9B31-70646B97C8D2")]
     [ProgId("CodexVBE.ChatToolWindow")]
     [ClassInterface(ClassInterfaceType.AutoDispatch)]
-    public sealed class ChatToolWindow : UserControl
+    public sealed partial class ChatToolWindow : UserControl
     {
         /// <summary>Lit un rectangle Win32 associé à une fenêtre.</summary>
         /// <param name="handle">Handle de la fenêtre source.</param>
@@ -32,22 +32,18 @@ namespace CodexVBE
         internal PointConverter CoordinateConverter = ScreenToClient;
         /// <summary>Redimensionne et repositionne le contrôle dans la fenêtre native.</summary>
         internal Func<IntPtr, IntPtr, int, int, int, int, uint, bool> PositionWindow = SetWindowPos;
-        /// <summary>Minuteur qui recalcule la taille du contrôle dans son site natif.</summary>
-        private readonly Timer siteResizeTimer;
 
         /// <summary>Crée le contrôle COM et démarre le suivi du site natif.</summary>
         public ChatToolWindow()
         {
-            Dock = DockStyle.Fill;
-            Size = new System.Drawing.Size(520, 760);
-            siteResizeTimer = new Timer { Interval = 300 };
-            siteResizeTimer.Tick += (sender, args) => FitNativeSite();
+            InitializeComponent();
         }
 
         /// <summary>Intègre la fenêtre de conversation comme contrôle enfant de ce conteneur.</summary>
         /// <param name="chat">Fenêtre de conversation à attacher ou détacher.</param>
         internal void Attach(ChatWindow chat)
         {
+            Dock = DockStyle.Fill;
             chat.Hide(); chat.TopLevel = false; chat.FormBorderStyle = FormBorderStyle.None;
             chat.Dock = DockStyle.Fill; Controls.Add(chat); chat.Show();
             siteResizeTimer.Start();
@@ -62,6 +58,10 @@ namespace CodexVBE
             chat.TopLevel = true; chat.FormBorderStyle = FormBorderStyle.Sizable;
         }
 
+        /// <summary>Actualise la taille du contrôle lors du tick du minuteur.</summary>
+        /// <param name="sender">Minuteur déclencheur.</param>
+        /// <param name="e">Événement du minuteur.</param>
+        private void SiteResizeTimer_Tick(object sender, EventArgs e) { FitNativeSite(); }
         /// <summary>Ajuste la taille du contrôle à la zone client du site VBE.</summary>
         private void FitNativeSite()
         {
@@ -84,7 +84,7 @@ namespace CodexVBE
         /// <param name="disposing">Indique si les ressources gérées doivent être libérées.</param>
         protected override void Dispose(bool disposing)
         {
-            if (disposing) siteResizeTimer.Dispose();
+            if (disposing) components?.Dispose();
             base.Dispose(disposing);
         }
 

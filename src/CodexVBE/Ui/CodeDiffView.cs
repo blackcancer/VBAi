@@ -26,24 +26,13 @@ namespace CodexVBE
         private void Rebuild()
         {
             visible = DiffModel.Build(before, after, unified.Checked, collapse.Checked);
-            var titles = unified.Checked ? new[] { "−", "+", UiText.Get("Code") }
-                : new[] { "−", UiText.Get("Before"), "+", UiText.Get("After") };
             grid.SuspendLayout();
             grid.Visible = false;
             try
             {
                 grid.RowCount = 0;
-                if (grid.Columns.Count != titles.Length)
-                {
-                    grid.Columns.Clear();
-                    foreach (string title in titles)
-                        grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = title,
-                            SortMode = DataGridViewColumnSortMode.NotSortable });
-                }
-                else for (int i = 0; i < titles.Length; i++) grid.Columns[i].HeaderText = titles[i];
-                grid.Columns[0].Width = 52; grid.Columns[unified.Checked ? 1 : 2].Width = 52;
-                foreach (int col in unified.Checked ? new[] { 2 } : new[] { 1, 3 })
-                    grid.Columns[col].Width = Math.Max(260, (grid.ClientSize.Width - 120) / (unified.Checked ? 1 : 2));
+                beforeColumn.Visible = !unified.Checked;
+                afterColumn.HeaderText = UiText.Get(unified.Checked ? "Code" : "After");
                 grid.RowCount = visible.Count;
             }
             finally
@@ -64,8 +53,8 @@ namespace CodexVBE
         {
             if (e.RowIndex >= visible.Count) return;
             var row = visible[e.RowIndex];
-            e.Value = unified.Checked ? (e.ColumnIndex == 0 ? (object)row.Old : e.ColumnIndex == 1 ? (object)row.New : row.Right ?? row.Left) :
-                e.ColumnIndex == 0 ? (object)row.Old : e.ColumnIndex == 1 ? (object)row.Left : e.ColumnIndex == 2 ? (object)row.New : row.Right;
+            e.Value = e.ColumnIndex == 0 ? (object)row.Old : e.ColumnIndex == 2 ? (object)row.New :
+                e.ColumnIndex == 1 ? row.Left : unified.Checked ? row.Right ?? row.Left : row.Right;
         }
         /// <summary>Applique les couleurs de fond et de texte selon le côté ajouté, supprimé ou inchangé.</summary>
         /// <param name="sender">Grille qui formate la cellule.</param>
@@ -86,7 +75,7 @@ namespace CodexVBE
             e.Handled = true;
             e.PaintBackground(e.CellBounds, true);
             if (e.Value == null) return;
-            bool code = unified.Checked ? e.ColumnIndex == 2 : e.ColumnIndex == 1 || e.ColumnIndex == 3;
+            bool code = e.ColumnIndex == 1 || e.ColumnIndex == 3;
             var font = e.CellStyle.Font ?? grid.Font;
             if (!code)
             {
@@ -119,7 +108,7 @@ namespace CodexVBE
         }
         /// <summary>Sélectionne la cellule de code de la ligne indiquée et la fait défiler à l’écran.</summary>
         /// <param name="index">Index de la ligne dans la grille.</param>
-        private void SelectRow(int index) { grid.CurrentCell = grid.Rows[index].Cells[unified.Checked ? 2 : 1]; grid.FirstDisplayedScrollingRowIndex = index; }
+        private void SelectRow(int index) { grid.CurrentCell = grid.Rows[index].Cells[unified.Checked ? 3 : 1]; grid.FirstDisplayedScrollingRowIndex = index; }
         /// <summary>Navigue au changement précédent en réponse au bouton correspondant.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>

@@ -20,9 +20,9 @@ namespace CodexVBE.Tests.Unit
             using (var tool = new ChatToolWindow())
             using (var chat = new ChatWindow(new VbeSession(scope.Host)))
             {
-                Assert.AreEqual(DockStyle.Fill, tool.Dock); Assert.AreEqual(new Size(520, 760), tool.Size);
+                Assert.AreEqual(DockStyle.None, tool.Dock); Assert.AreEqual(new Size(520, 760), tool.Size);
                 LlmBoundaryScope.Call(tool, "FitNativeSite"); var handle = tool.Handle; LlmBoundaryScope.Call(tool, "FitNativeSite");
-                owner.Controls.Add(tool); owner.Show(); tool.Attach(chat); Application.DoEvents(); Assert.AreSame(tool, chat.Parent); Assert.IsFalse(chat.TopLevel);
+                owner.Controls.Add(tool); owner.Show(); tool.Attach(chat); Application.DoEvents(); Assert.AreEqual(DockStyle.Fill, tool.Dock); Assert.AreSame(tool, chat.Parent); Assert.IsFalse(chat.TopLevel);
                 var timer = LlmBoundaryScope.Get<Timer>(tool, "siteResizeTimer"); Assert.IsTrue(timer.Enabled); LlmBoundaryScope.Call(timer, "OnTick", EventArgs.Empty);
                 LlmBoundaryScope.Call(tool, "FitNativeSite"); Assert.AreEqual(owner.ClientSize, tool.Size);
                 tool.Dock = DockStyle.None; tool.Location = new Point(11, 13); tool.Size = new Size(100, 100);

@@ -1779,4 +1779,12 @@
   <data name="GitHub sign-in completed. " xml:space="preserve">
     <value>Вход в GitHub выполнен. </value>
   </data>
+  <data name="Controls cut" xml:space="preserve"><value>Вырезанные элементы управления</value></data>
+  <data name="Restore cut controls" xml:space="preserve"><value>Восстановить вырезанные элементы</value></data>
+  <data name="Restore names, position, size and tab order. Replaces the clipboard. Refuses intervening changes." xml:space="preserve"><value>Восстанавливает имена, положение, размер и порядок перехода. Заменяет буфер обмена. Отклоняет промежуточные изменения.</value></data>
+  <data name="Controls restored; some properties could not be verified." xml:space="preserve"><value>Элементы восстановлены; некоторые свойства проверить не удалось.</value></data>
+  <data name="Recovery incomplete. Inspect the Designer before another action." xml:space="preserve"><value>Восстановление неполное. Проверьте конструктор перед следующим действием.</value></data>
+  <data name="Controls restored" xml:space="preserve"><value>Элементы восстановлены</value></data>
+  <data name="Recovery attempted" xml:space="preserve"><value>Восстановление предпринято</value></data>
+  <data name="Recovery unavailable" xml:space="preserve"><value>Восстановление недоступно</value></data>
 </root>

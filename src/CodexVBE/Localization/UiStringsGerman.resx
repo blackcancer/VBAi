@@ -1779,4 +1779,12 @@ Anmeldung über Git Credential Manager; die Commit-Identität wird in Git festge
   <data name="GitHub sign-in completed. " xml:space="preserve">
     <value>GitHub-Anmeldung abgeschlossen. </value>
   </data>
+  <data name="Controls cut" xml:space="preserve"><value>Ausgeschnittene Steuerelemente</value></data>
+  <data name="Restore cut controls" xml:space="preserve"><value>Ausgeschnittene Steuerelemente wiederherstellen</value></data>
+  <data name="Restore names, position, size and tab order. Replaces the clipboard. Refuses intervening changes." xml:space="preserve"><value>Stellt Namen, Position, Größe und Tabulatorreihenfolge wieder her. Ersetzt die Zwischenablage. Lehnt zwischenzeitliche Änderungen ab.</value></data>
+  <data name="Controls restored; some properties could not be verified." xml:space="preserve"><value>Steuerelemente wiederhergestellt; einige Eigenschaften konnten nicht geprüft werden.</value></data>
+  <data name="Recovery incomplete. Inspect the Designer before another action." xml:space="preserve"><value>Wiederherstellung unvollständig. Prüfen Sie den Designer vor einer weiteren Aktion.</value></data>
+  <data name="Controls restored" xml:space="preserve"><value>Steuerelemente wiederhergestellt</value></data>
+  <data name="Recovery attempted" xml:space="preserve"><value>Wiederherstellung versucht</value></data>
+  <data name="Recovery unavailable" xml:space="preserve"><value>Wiederherstellung nicht verfügbar</value></data>
 </root>

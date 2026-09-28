@@ -15,6 +15,31 @@ namespace CodexVBE.Tests.Unit
         /// <summary>Numérote les lignes à partir de un et marque uniquement les côtés modifiés.</summary>
         [TestMethod]
         [STATestMethod]
+        public void SwitchingDiffModePreservesDesignerColumnsAndLineNumberWidth()
+        {
+            using (var view = new CodeDiffView())
+            {
+                var grid = DiffGrid(view);
+                var oldLine = grid.Columns[0];
+                var after = grid.Columns[3];
+                var unified = (CheckBox)typeof(CodeDiffView).GetField("unified", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(view);
+                oldLine.Width = 73;
+                view.ShowDiff("same\nremoved", "same\nadded");
+                unified.Checked = true;
+                Assert.AreSame(oldLine, grid.Columns[0]);
+                Assert.AreSame(after, grid.Columns[3]);
+                Assert.AreEqual(73, oldLine.Width);
+                Assert.IsFalse(grid.Columns[1].Visible);
+                Assert.AreEqual("removed", grid.Rows[1].Cells[3].Value);
+                Assert.AreEqual("added", grid.Rows[2].Cells[3].Value);
+                unified.Checked = false;
+                Assert.IsTrue(grid.Columns[1].Visible);
+                Assert.AreEqual(73, oldLine.Width);
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
         public void DiffRowsUseOneBasedLineNumbersAndMarkOnlyChangedSides()
         {
             using (var window = new GitWindow())
@@ -66,7 +91,7 @@ namespace CodexVBE.Tests.Unit
                 search.Text="CHANGED TWENTY"; grid.CurrentCell=null; UiInvoke.Call(typeof(CodeDiffView),"Find_Click",view,null,EventArgs.Empty); Assert.IsFalse(fold.Checked); Assert.AreEqual(20,grid.CurrentCell.RowIndex);
                 grid.CurrentCell=null; UiInvoke.Call(typeof(CodeDiffView),"Find_Click",view,null,EventArgs.Empty); Assert.AreEqual(20,grid.CurrentCell.RowIndex);
                 var selected=grid.CurrentCell; search.Text="absent"; UiInvoke.Call(typeof(CodeDiffView),"Find_Click",view,null,EventArgs.Empty); Assert.AreSame(selected,grid.CurrentCell);
-                unified.Checked=true; Assert.AreEqual(3,grid.Columns.Count); search.Text="changed five";
+                unified.Checked=true; Assert.AreEqual(4,grid.Columns.Count); Assert.IsFalse(grid.Columns[1].Visible); Assert.IsTrue(grid.Columns[2].Visible); Assert.IsTrue(grid.Columns[3].Visible); search.Text="changed five";
                 foreach(var key in new[]{Keys.Escape,Keys.Enter}) {var args=new KeyEventArgs(key); UiInvoke.Call(typeof(CodeDiffView),"Search_KeyDown",view,search,args); Assert.AreEqual(key==Keys.Enter,args.SuppressKeyPress);}
                 Assert.AreEqual("changed five",UiInvoke.Field<System.Collections.Generic.List<DiffRow>>(view,"visible")[grid.CurrentCell.RowIndex].Right);
                 fold.Checked=true; var visible=UiInvoke.Field<System.Collections.Generic.List<DiffRow>>(view,"visible"); int foldIndex=visible.FindIndex(r=>r.Fold);
@@ -98,7 +123,7 @@ namespace CodexVBE.Tests.Unit
                     for(int row=0;row<rows.Count;row++)
                     for(int col=0;col<grid.Columns.Count;col++)
                     {
-                        var expected=single ? new object[]{rows[row].Old,rows[row].New,rows[row].Unified} : new object[]{rows[row].Old,rows[row].Left,rows[row].New,rows[row].Right};
+                        var expected=single ? new object[]{rows[row].Old,rows[row].Left,rows[row].New,rows[row].Unified} : new object[]{rows[row].Old,rows[row].Left,rows[row].New,rows[row].Right};
                         var value=new DataGridViewCellValueEventArgs(col,row); UiInvoke.Call(typeof(CodeDiffView),"ValueNeeded",view,grid,value); Assert.AreEqual(expected[col],value.Value);
                         var format=new DataGridViewCellFormattingEventArgs(col,row,value.Value,typeof(string),new DataGridViewCellStyle()); UiInvoke.Call(typeof(CodeDiffView),"FormatCell",view,grid,format);
                         Assert.AreEqual(rows[row].Hunk<0 ? UiTheme.Surface : (single ? rows[row].New.HasValue : col>=2) ? UiTheme.Added : UiTheme.Removed,format.CellStyle.BackColor); Assert.AreEqual(UiTheme.Foreground,format.CellStyle.ForeColor);
@@ -130,7 +155,7 @@ namespace CodexVBE.Tests.Unit
                         var style=new DataGridViewCellStyle{BackColor=Color.White,ForeColor=Color.Black,SelectionForeColor=Color.Purple,Font=customFont ? view.Font : null};
                         var args=DiffPaintFixture.Args(grid,graphics,new Rectangle(0,0,size,30),col<0 ? -1 : 0,col,selected ? DataGridViewElementStates.Selected : DataGridViewElementStates.None,value,style);
                         UiInvoke.Call(typeof(CodeDiffView),"PaintCell",view,grid,args); Assert.AreEqual(col>=0,args.Handled);
-                        if(size==450 && value is string && col>=0 && (single ? col==2 : col==1 || col==3)) { int ink=(selected ? Color.Purple : VbaSyntax.Color("keyword")).ToArgb(); Assert.IsTrue(Enumerable.Range(0,450).Any(x=>Enumerable.Range(0,30).Any(y=>bitmap.GetPixel(x,y).ToArgb()==ink)),"Code must draw the expected ink."); }
+                        if(size==450 && value is string && (col==1 || col==3)) { int ink=(selected ? Color.Purple : VbaSyntax.Color("keyword")).ToArgb(); Assert.IsTrue(Enumerable.Range(0,450).Any(x=>Enumerable.Range(0,30).Any(y=>bitmap.GetPixel(x,y).ToArgb()==ink)),"Code must draw the expected ink."); }
                     }
                 }
                 var invalid=new DataGridViewCellPaintingEventArgs(grid,graphics,new Rectangle(0,0,500,100),new Rectangle(0,0,450,30),0,-1,DataGridViewElementStates.None,"code","code",null,new DataGridViewCellStyle(),new DataGridViewAdvancedBorderStyle(),DataGridViewPaintParts.All); UiInvoke.Call(typeof(CodeDiffView),"PaintCell",view,grid,invalid); Assert.IsFalse(invalid.Handled);

@@ -33,7 +33,7 @@ namespace CodexVBE
         /// <summary>Initialise le dépôt et lit son état distant avec les commandes Git natives.</summary>
         internal Func<MacroGitRepository, string, Task> ConnectRepository = (selected, url) => Task.Run(() => { selected.Initialize(url); selected.Fetch(); });
         /// <summary>Crée la fenêtre Git et initialise la revue et les ressources visuelles.</summary>
-        public GitWindow() { InitializeComponent(); Icon = VbeWindowIcons.Icon("github"); UiText.Apply(this, components); InitializeReview(); }
+        public GitWindow() { InitializeComponent(); BindViews(); Icon = VbeWindowIcons.Icon("github"); UiText.Apply(this, components); InitializeReview(); }
 
         /// <summary>Crée la fenêtre et l’associe au projet, à sa portée de cache et au compte GitHub choisi.</summary>
         /// <param name="project">Projet VBA à suivre.</param>
@@ -92,6 +92,7 @@ namespace CodexVBE
                 else File.Move(temporaryBinding, bindingFile);
                 githubPane.Configure(account, remote.Text, repository.Branch);
                 await Compare();
+                tabs.SelectedTab = changesTab;
             });
         }
 
@@ -293,7 +294,6 @@ namespace CodexVBE
         /// <summary>Recalcule l’activation des commandes selon l’opération, le dépôt et l’état de revue.</summary>
         private void UpdateButtons()
         {
-            AdjustReviewLayout();
             connect.Enabled = !running && repository == null;
             remote.ReadOnly = branch.ReadOnly = repository != null || running;
             compare.Enabled = commit.Enabled = fetch.Enabled = push.Enabled = pull.Enabled = restore.Enabled = !running && repository != null;

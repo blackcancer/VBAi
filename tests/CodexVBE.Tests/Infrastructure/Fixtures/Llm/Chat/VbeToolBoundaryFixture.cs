@@ -30,6 +30,17 @@
         public bool Saved { get; set; }
     }
 
+    /// <summary>Données publiques lisibles par le dispatch dynamique de l’assembly de production.</summary>
+    public sealed class VbeToolCodeResult
+    {
+        /// <summary>Contenu stable du module simulé.</summary>
+        public string Code { get; set; } = "Option Explicit";
+        /// <summary>Version attendue par les arguments de la matrice.</summary>
+        public string Sha256 { get; set; } = "value";
+        /// <summary>Changements observés par la commande d’historique simulée.</summary>
+        public object[] Changes { get; set; } = new object[0];
+    }
+
     /// <summary>Configure les frontières natives VBE et l’exécution hôte pour les tests d’outils.</summary>
     internal static class VbeToolBoundaryFixture
     {
@@ -66,6 +77,7 @@
             if (request == null) return Response.Failure("request is null");
             if (request.Command == "debug_state") return Response.Success(new VbeToolMode { Mode = 2 });
             if (request.Command == "sign_project") return Response.Success(new VbeToolSignature { CertificateName = "Disposable", UnsignedVerified = true });
+            if (request.Command == "read_module" || request.Command == "native_code_history") return Response.Success(new VbeToolCodeResult());
             return Response.Success(new { Command = request.Command });
         }
     }

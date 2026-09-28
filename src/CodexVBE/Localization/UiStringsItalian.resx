@@ -1779,4 +1779,12 @@ Accesso tramite Git Credential Manager; l’identità dei commit si configura in
   <data name="GitHub sign-in completed. " xml:space="preserve">
     <value>Accesso a GitHub completato. </value>
   </data>
+  <data name="Controls cut" xml:space="preserve"><value>Controlli tagliati</value></data>
+  <data name="Restore cut controls" xml:space="preserve"><value>Ripristina controlli tagliati</value></data>
+  <data name="Restore names, position, size and tab order. Replaces the clipboard. Refuses intervening changes." xml:space="preserve"><value>Ripristina nomi, posizione, dimensioni e ordine di tabulazione. Sostituisce gli appunti. Rifiuta modifiche intervenute nel frattempo.</value></data>
+  <data name="Controls restored; some properties could not be verified." xml:space="preserve"><value>Controlli ripristinati; alcune proprietà non sono state verificate.</value></data>
+  <data name="Recovery incomplete. Inspect the Designer before another action." xml:space="preserve"><value>Ripristino incompleto. Controlla la finestra di progettazione prima di un’altra azione.</value></data>
+  <data name="Controls restored" xml:space="preserve"><value>Controlli ripristinati</value></data>
+  <data name="Recovery attempted" xml:space="preserve"><value>Ripristino tentato</value></data>
+  <data name="Recovery unavailable" xml:space="preserve"><value>Ripristino non disponibile</value></data>
 </root>

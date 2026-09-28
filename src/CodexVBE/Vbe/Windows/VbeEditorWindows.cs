@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace CodexVBE
@@ -6,7 +6,7 @@ namespace CodexVBE
     // Reads the VBIDE collections directly. In particular, do not use
     // VBComponent.CodePane for inspection: its getter opens and activates a pane.
     /// <summary>Crée le lecteur pour l’instance VBE fournie.</summary>
-    internal sealed class VbeEditorWindows
+    internal sealed partial class VbeEditorWindows
     {
         /// <summary>Instance VBE dont les collections sont inspectées.</summary>
         private readonly dynamic vbe;
@@ -73,15 +73,7 @@ namespace CodexVBE
             var addIns = new List<object>();
             int index = 0;
             foreach (dynamic addIn in vbe.AddIns)
-            {
-                var fields = new Dictionary<string, object>();
-                var errors = new Dictionary<string, string>();
-                Read(fields, errors, "ProgId", () => (string)addIn.ProgId);
-                Read(fields, errors, "Guid", () => (string)addIn.Guid);
-                Read(fields, errors, "Description", () => (string)addIn.Description);
-                Read(fields, errors, "Connect", () => (bool)addIn.Connect);
-                addIns.Add(new { Index = ++index, Properties = fields, Errors = errors });
-            }
+                addIns.Add(AddInSnapshot(addIn, ++index));
             return new { AddIns = addIns, Count = addIns.Count,
                 Scope = "VBE.AddIns contains VBE-registered add-ins, not the host application's COMAddIns." };
         }
