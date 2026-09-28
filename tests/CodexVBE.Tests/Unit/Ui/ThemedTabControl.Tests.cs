@@ -6,9 +6,11 @@ using CodexVBE.Tests.Infrastructure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
+    /// <summary>Vérifie le rendu des onglets et contrôles thémés sous différentes palettes.</summary>
     [TestClass]
     public sealed class ThemedTabControlTests
     {
+        /// <summary>Peint sélection, texte désactivé et focus clavier dans les deux palettes.</summary>
         [STATestMethod]
         public void TabsPaintSelectionDisabledTextAndKeyboardFocusInBothPalettes()
         {
@@ -35,6 +37,7 @@ namespace CodexVBE.Tests.Unit
                 }
             }
         }
+        /// <summary>Rend boutons et flèches de liste sous contraste, direction et changement de thème.</summary>
         [STATestMethod]
         public void DisabledButtonsAndComboArrowsRenderUnderContrastDirectionAndThemeChanges()
         {

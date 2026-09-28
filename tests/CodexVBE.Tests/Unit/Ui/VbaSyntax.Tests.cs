@@ -5,9 +5,11 @@ using CodexVBE.Tests.Infrastructure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
+    /// <summary>Vérifie la tokenisation et la coloration syntaxique du code VBA.</summary>
     [TestClass]
     public sealed class VbaSyntaxTests
     {
+        /// <summary>Préserve tous les caractères et distingue chaînes, commentaires et mots-clés.</summary>
         [TestMethod]
         public void TokenizationPreservesEveryCharacterAndDistinguishesStringsCommentsKeywords()
         {
@@ -20,6 +22,7 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual("plain",VbaSyntax.Parts("foo").Single().Kind);
             Assert.AreEqual(0,VbaSyntax.Parts("").Count());
         }
+        /// <summary>Suit les palettes des thèmes et utilise la couleur de texte par défaut pour les catégories inconnues.</summary>
         [TestMethod]
         public void SyntaxColorsFollowBothThemePalettesAndUnknownKindsUseForeground()
         {

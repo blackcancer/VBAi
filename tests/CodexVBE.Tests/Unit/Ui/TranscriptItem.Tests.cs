@@ -5,9 +5,11 @@ using CodexVBE.Tests.Infrastructure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
+    /// <summary>Vérifie le recyclage et le rendu des éléments de transcription.</summary>
     [TestClass]
     public sealed class TranscriptItemTests
     {
+        /// <summary>Libère l’ancienne vue lors du recyclage et évite un second rendu.</summary>
         [STATestMethod]
         public void RecyclingReleasesOldViewAndDoesNotRenderTwice()
         {
@@ -29,6 +31,7 @@ namespace CodexVBE.Tests.Unit
             item.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
             Assert.IsNull(item.Content); Assert.IsNull(item.RenderedContext);
         }
+        /// <summary>Rend le contexte de remplacement après chargement du conteneur.</summary>
         [STATestMethod]
         public void LoadedContainerRendersReplacementContext()
         {

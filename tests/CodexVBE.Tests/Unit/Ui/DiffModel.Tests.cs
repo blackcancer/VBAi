@@ -11,8 +11,10 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie les lignes de diff et le repli du contexte inchangé.</summary>
     public sealed partial class GitReviewTests
     {
+        /// <summary>Inclut les grands modules et replie uniquement le contexte inchangé.</summary>
         [TestMethod]
         public void DiffIncludesLargeModulesAndFoldsOnlyUnchangedContext()
         {
@@ -35,9 +37,11 @@ namespace CodexVBE.Tests.Unit
     using System.Linq;
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    /// <summary>Vérifie l’alignement des insertions, suppressions et groupes de contexte masqué.</summary>
     [TestClass]
     public sealed class DiffModelCoverageTests
     {
+        /// <summary>Conserve les numéros de lignes lors d’insertions et suppressions dans les deux layouts.</summary>
         [TestMethod]
         public void InsertionsAndDeletionsRetainLineNumbersInBothLayouts()
         {
@@ -52,6 +56,7 @@ namespace CodexVBE.Tests.Unit
                 Assert.AreEqual("a",new DiffRow{Left="a"}.Unified);
             }
         }
+        /// <summary>Maintient le contexte modifié et regroupe les lignes cachées consécutives.</summary>
         [TestMethod]
         public void CollapseKeepsChangedContextAndGroupsConsecutiveHiddenRows()
         {

@@ -9,8 +9,10 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie le modèle de lignes du diff dans le contrôle GitWindow.</summary>
     public sealed partial class GitWindowStateTests
     {
+        /// <summary>Numérote les lignes à partir de un et marque uniquement les côtés modifiés.</summary>
         [TestMethod]
         [STATestMethod]
         public void DiffRowsUseOneBasedLineNumbersAndMarkOnlyChangedSides()
@@ -41,9 +43,11 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using CodexVBE.Tests.Infrastructure;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    /// <summary>Vérifie le layout, les événements de pliage et le dessin des cellules virtuelles.</summary>
     [TestClass]
     public sealed class CodeDiffViewCoverageTests
     {
+        /// <summary>Suit les lignes visibles lors de la navigation, recherche et changement de pliage.</summary>
         [STATestMethod,TestCategory("Unit")]
         public void LayoutNavigationSearchAndFoldEventsTrackVisibleRows()
         {
@@ -72,6 +76,7 @@ namespace CodexVBE.Tests.Unit
                 UiInvoke.Call(typeof(CodeDiffView),"Dispose",view,false); Assert.IsFalse(view.IsDisposed);
             }
         }
+        /// <summary>Fournit les valeurs virtuelles et formate les cellules dans les deux layouts.</summary>
         [STATestMethod,TestCategory("Unit")]
         public void VirtualValuesAndCellFormattingCoverBothLayoutsAndInvalidIndices()
         {
@@ -101,6 +106,7 @@ namespace CodexVBE.Tests.Unit
                 }
             }
         }
+        /// <summary>Peint les entêtes, valeurs absentes, numéros, code sélectionné et contenu rogné.</summary>
         [STATestMethod,TestCategory("Unit")]
         public void CellPaintingHandlesHeadersMissingValuesNumbersCodeSelectionAndClipping()
         {

@@ -11,9 +11,11 @@ using Microsoft.Win32;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
+    /// <summary>Vérifie la sélection, la propagation et la présentation des thèmes de l’interface.</summary>
     [TestClass]
     public sealed class UiThemeTests
     {
+        /// <summary>Choisit la palette selon préférences système, contraste et thème explicitement sélectionné.</summary>
         [TestMethod]
         public void SystemPreferencesContrastAndExplicitThemesSelectExpectedPalette()
         {
@@ -42,6 +44,7 @@ namespace CodexVBE.Tests.Unit
                 }
             }
         }
+        /// <summary>Charge et sauvegarde le thème et notifie les abonnés après validation.</summary>
         [TestMethod]
         public void LoadingAndSavingThemeValidateStoredEnumAndNotifySubscribers()
         {
@@ -68,6 +71,7 @@ namespace CodexVBE.Tests.Unit
                 finally { if(changed!=null) UiTheme.Changed-=changed; if(File.Exists(path)) File.Delete(path); Directory.Delete(Path.GetDirectoryName(path)); }
             }
         }
+        /// <summary>Configure récursivement les contrôles et fenêtres natives lors de l’application d’un thème.</summary>
         [STATestMethod]
         public void ApplyingThemeConfiguresControlsRecursivelyAndNativeHandles()
         {
@@ -104,6 +108,7 @@ namespace CodexVBE.Tests.Unit
                 finally { LicenseManager.CurrentContext=context; }
             }
         }
+        /// <summary>Met à jour les formulaires attachés sur les deux threads et se désabonne à leur disposal.</summary>
         [STATestMethod]
         public void AttachedFormsUpdateOnBothThreadsAndUnsubscribeWhenDisposed()
         {
@@ -119,6 +124,7 @@ namespace CodexVBE.Tests.Unit
                 Assert.AreEqual(initial,typeof(UiTheme).GetField("Changed",BindingFlags.Static|BindingFlags.NonPublic).GetValue(null));
             }
         }
+        /// <summary>Formate les cellules de diff en ignorant les lignes ordinaires et virtuelles invalides.</summary>
         [STATestMethod]
         public void DiffFormattingIgnoresVirtualInvalidAndOrdinaryCellsAndColorsBothChangeKinds()
         {
@@ -143,6 +149,7 @@ namespace CodexVBE.Tests.Unit
                 }
             }
         }
+        /// <summary>Dessine les choix de ComboBox avec les couleurs de sélection et le texte de repli.</summary>
         [STATestMethod]
         public void OwnerDrawComboUsesSelectionColorsAndFallbackText()
         {
@@ -161,6 +168,7 @@ namespace CodexVBE.Tests.Unit
                 }
             }
         }
+        /// <summary>Préserve les couleurs claires ou inconnues et convertit chaque entrée de la palette sombre.</summary>
         [TestMethod]
         public void MappingPreservesLightAndUnknownColorsAndMapsEveryDarkPaletteEntry()
         {

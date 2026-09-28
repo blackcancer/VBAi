@@ -4,9 +4,11 @@ using CodexVBE;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
+    /// <summary>Vérifie la validation des liens externes autorisés par l’interface.</summary>
     [TestClass]
     public sealed class SafeLinksTests
     {
+        /// <summary>Accepte les liens Web sans identifiants et rejette credentials et schémas non Web.</summary>
         [TestMethod]
         public void HttpAndHttpsLinksRejectCredentialsAndNonWebSchemes()
         {
