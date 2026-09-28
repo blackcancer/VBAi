@@ -5,8 +5,14 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Fournit une recherche vérifiable des contrôles créés par les fenêtres Designer.</summary>
     public sealed partial class WinFormsDesignerTests
     {
+        /// <summary>Recherche un unique contrôle par nom dans l’arbre visuel.</summary>
+        /// <typeparam name="T">Type de contrôle attendu.</typeparam>
+        /// <param name="root">Racine à parcourir.</param>
+        /// <param name="name">Nom du contrôle recherché.</param>
+        /// <returns>Contrôle trouvé, converti en <typeparamref name="T"/>.</returns>
         private static T Find<T>(Control root, string name)
             where T : Control
         {
