@@ -33,6 +33,7 @@ namespace CodexVBE.Tests.Infrastructure
             public object ActiveCodePane { get; set; }
             public List<CodexVBE.Tests.Unit.VbeDebugTests.FakeBar> CommandBars { get; } = new List<CodexVBE.Tests.Unit.VbeDebugTests.FakeBar>();
         }
+        public sealed class Reference { public bool IsBroken { get; set; } public string FullPath { get; set; } }
         public sealed class ContractProject
         {
             public string Name { get; set; } = "Project1";
