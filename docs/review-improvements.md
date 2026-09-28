@@ -31,3 +31,11 @@ La build locale enregistrée est mise à jour dans `artifacts/monaco/host-build`
 - [Catalogue et reprise](chat-tool-workflow.md)
 - [Enregistrement Monaco](modern-editor.md)
 - [Budget du pont local](bridge-request-budget.md)
+
+## Évolution du compositeur et de la pause de secours
+
+Le compositeur fonctionne pendant les interventions : arrêt à vide, mise en attente avec du texte, file persistée par session et actions Envoyer maintenant / Modifier / Supprimer. Le départ immédiat attend la fin de l'interruption ; la file ne repart pas toute seule après un arrêt manuel, une erreur ou une pause. Les références et sélections sont revalidées avant leur transmission et les brouillons en cours sont conservés.
+
+Les huit tours représentent désormais un secours après huit réponses consécutives sans nouveau résultat réussi. Une intervention qui progresse continue ; un plafond séparé de 64 réponses protège les boucles dont les résultats changent continuellement. Voir [le workflow](chat-tool-workflow.md) pour la définition précise de la progression et les limites.
+
+Validation : build sans avertissement ni erreur ; 141 tests ciblés chat, sessions, localisation et Designer réussis, zéro ignoré (`artifacts/queue/results/queue-final.trx`). Les scénarios couvrent l'ordre de la file, la conservation du brouillon, l'interruption immédiate, son échec, l'arrêt manuel, la modification/suppression, la sérialisation des messages et de leur contexte, la progression au-delà de huit réponses et le plafond de sécurité. La vue WinForms de la file a été inspectée dans les thèmes clair et sombre, à 460 et 720 pixels ; les captures isolées des contrôles sont dans `artifacts/queue/render/queue-panel-*.png`. Ces validations utilisent les fournisseurs simulés et ne constituent pas un essai réseau avec chaque fournisseur.

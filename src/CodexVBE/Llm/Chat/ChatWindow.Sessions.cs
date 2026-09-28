@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -174,7 +174,8 @@ namespace CodexVBE
                 if (tools != null) { tools.Mode = session.Mode; tools.ResetCatalog(); }
                 draftAttachments.Clear();
                 if (session.DraftAttachments != null) draftAttachments.AddRange(session.DraftAttachments);
-                attachMemory.Checked = false;
+                queuedDraftMemory = session.DraftCapturedMemory;
+                attachMemory.Checked = !string.IsNullOrEmpty(queuedDraftMemory);
                 ClearTranscript(); codeChanges.Clear(); completedStreams.Clear(); streamedFinalText = null;
                 messages.Clear();
                 var saved = string.IsNullOrEmpty(session.MessagesJson) ? null :
@@ -210,6 +211,7 @@ namespace CodexVBE
             }
             finally { loadingSession = false; }
             UpdateBudgetControls();
+            RefreshPendingMessages();
             _ = LoadModelsAsync();
         }
 
@@ -246,6 +248,7 @@ namespace CodexVBE
             currentSession.Entries = transcriptEntries.ToList();
             currentSession.MessagesJson = json.Serialize(messages);
             currentSession.Draft = prompt.Text;
+            currentSession.DraftCapturedMemory = attachMemory.Checked ? queuedDraftMemory : null;
             currentSession.DraftAttachments = draftAttachments.ToArray();
             currentSession.DraftReferences = CurrentReferences(prompt.Text);
             if (codex != null && !string.IsNullOrEmpty(codex.ThreadId)) currentSession.CodexThreadId = codex.ThreadId;

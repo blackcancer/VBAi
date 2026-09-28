@@ -1,70 +1,60 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Documents;
+using System.Windows.Forms;
 using CodexVBE;
 using CodexVBE.Tests.Infrastructure;
-using Markdig.Syntax;
-using Markdig.Syntax.Inlines;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
-    /// <summary>Vérifie le rendu Markdown de la conversation et ses actions de lien.</summary>
-    [TestClass]
+    [TestClass, TestCategory("Unit")]
     public sealed class ChatMarkdownTests
     {
-        /// <summary>Préserve blocs de code, tableaux, citations, listes et direction du texte.</summary>
-        [STATestMethod,TestCategory("Unit")]
+        [STATestMethod]
         public void MarkdownBlocksPreserveCodeTableQuoteListsAndDirection()
         {
-            using(var theme=new ThemeScope())
-            using(var culture=new LocalizationScope())
+            using (var theme = new ThemeScope())
+            using (var culture = new LocalizationScope())
+            using (var view = new ChatTextContentView())
             {
-                Assert.AreEqual(0,ChatMarkdown.Render(null,null,r=>{},e=>{}).Document.Blocks.Count);
-                var view=ChatMarkdown.Render("# Heading\n\nparagraph `code` *italic* **bold** ~~deleted~~\nsoft\nline  \nhard\n\n> quoted\n\n---\n\n3. third\n4. fourth\n\n- [x] done\n- [ ] pending\n\n| A | B |\n|---|---|\n| x | y |\n\n```vba\nSub Test()\n' comment\nEnd Sub\n```\n\n<div>raw</div>",null,r=>{},e=>{});
-                Assert.IsTrue(view.IsReadOnly); Assert.IsTrue(view.IsDocumentEnabled);
-                Assert.AreEqual(FlowDirection.LeftToRight,view.Document.FlowDirection);
-                Assert.AreEqual(22,((Paragraph)view.Document.Blocks.FirstBlock).FontSize);
-                var ordered=view.Document.Blocks.OfType<System.Windows.Documents.List>().First(); Assert.AreEqual(TextMarkerStyle.Decimal,ordered.MarkerStyle); Assert.AreEqual(3,ordered.StartIndex);
-                var table=view.Document.Blocks.OfType<System.Windows.Documents.Table>().Single(); Assert.AreEqual(2,table.RowGroups[0].Rows.Count); Assert.AreEqual(FontWeights.SemiBold,table.RowGroups[0].Rows[0].Cells[0].FontWeight); Assert.AreEqual(FontWeights.Normal,table.RowGroups[0].Rows[1].Cells[0].FontWeight);
-                Assert.AreEqual(1,view.Document.Blocks.OfType<Section>().Count());
-                var panel=(StackPanel)view.Document.Blocks.OfType<BlockUIContainer>().Single().Child;
-                var code=(RichTextBox)panel.Children[1]; Assert.AreEqual(FlowDirection.LeftToRight,code.Document.FlowDirection); Assert.IsTrue(new TextRange(code.Document.ContentStart,code.Document.ContentEnd).Text.Contains("Sub Test()"));
-                LocalizationScope.Set("ar-SA"); Assert.AreEqual(FlowDirection.RightToLeft,ChatMarkdown.Render("text",null,r=>{},e=>{}).Document.FlowDirection);
-                var document=new FlowDocument(); var ast=new MarkdownDocument(); ast.Add(new LinkReferenceDefinitionGroup()); ast.Add(new ParagraphBlock());
-                foreach(var start in new[]{"0","invalid","1"}) ast.Add(new ListBlock(null){IsOrdered=true,OrderedStart=start});
-                UiInvoke.Call(typeof(ChatMarkdown),"AddBlocks",null,document.Blocks,ast,null,new Action<VbeChatReference>(r=>{}),new Action<string>(e=>{}));
-                Assert.AreEqual(4,document.Blocks.Count);
+                view.ShowMarkdown(null,null,r=>{},e=>{}); Assert.AreEqual("",view.content.Text);
+                view.ShowMarkdown("# Heading\n\nparagraph `code` *italic* **bold** ~~deleted~~\nsoft\nline  \nhard\n\n> quoted\n\n---\n\n3. third\n4. fourth\n\n- [x] done\n- [ ] pending\n\n| A | B |\n|---|---|\n| x | y |\n\n```vba\nSub Test()\n' comment\nEnd Sub\n```\n\n<div>raw</div>",null,r=>{},e=>{});
+                Assert.IsTrue(view.content.ReadOnly); Assert.AreEqual(RightToLeft.No,view.content.RightToLeft);
+                StringAssert.Contains(view.content.Text,"3. third"); StringAssert.Contains(view.content.Text,"4. fourth");
+                StringAssert.Contains(view.content.Text,"A\tB"); StringAssert.Contains(view.content.Text,"x\ty");
+                StringAssert.Contains(view.content.Text,"quoted"); StringAssert.Contains(view.content.Text,"Sub Test()");
+                view.content.Select(view.content.Text.IndexOf("bold"),4); Assert.IsTrue(view.content.SelectionFont.Bold);
+                view.content.Select(view.content.Text.IndexOf("italic"),6); Assert.IsTrue(view.content.SelectionFont.Italic);
+                view.content.Select(view.content.Text.IndexOf("deleted"),7); Assert.IsTrue(view.content.SelectionFont.Strikeout);
+                view.content.Select(view.content.Text.IndexOf("Sub Test()"),3); Assert.AreEqual("Consolas",view.content.SelectionFont.FontFamily.Name);
+                Assert.AreEqual(1,view.actions.Count(a=>a.Code!=null));
+                LocalizationScope.Set("ar-SA"); view.ShowMarkdown("text",null,r=>{},e=>{}); Assert.AreEqual(RightToLeft.Yes,view.content.RightToLeft);
+                view.ShowPlain("code",true); Assert.AreEqual(RightToLeft.No,view.content.RightToLeft);
             }
         }
-        /// <summary>Traite liens de références, liens Web et erreurs de copie sans effet externe.</summary>
-        [STATestMethod,TestCategory("Unit")]
+        [STATestMethod]
         public void ReferenceLinksWebLinksAndCopyActionsReportErrorsWithoutExternalEffects()
         {
-            using(var theme=new ThemeScope())
-            using(var culture=new LocalizationScope())
+            using (var theme = new ThemeScope())
+            using (var culture = new LocalizationScope())
+            using (var view = new ChatTextContentView())
             {
                 var copy=ChatMarkdown.CopyText; var open=ChatMarkdown.OpenLink;
-                try
-                {
+                try {
                     string copied=null,opened=null,error=null; VbeChatReference navigated=null;
                     ChatMarkdown.CopyText=s=>copied=s; ChatMarkdown.OpenLink=s=>opened=s;
-                    var reference=new VbeChatReference {Project="Project"}; var refs=new Dictionary<string,VbeChatReference>{{"#Project",reference}};
-                    var view=ChatMarkdown.Render("#Project #missing [web](https://example.invalid) [blocked](file:///C:/x) <https://auto.invalid> <b>html</b>\n\n```\ncode\n```",refs,r=>navigated=r,e=>error=e);
-                    var paragraph=(Paragraph)view.Document.Blocks.FirstBlock; var links=paragraph.Inlines.OfType<Hyperlink>().ToArray(); Assert.AreEqual(3,links.Length);
-                    links[0].RaiseEvent(new RoutedEventArgs(Hyperlink.ClickEvent)); Assert.AreSame(reference,navigated);
-                    links[1].RaiseEvent(new RoutedEventArgs(Hyperlink.ClickEvent)); Assert.AreEqual("https://example.invalid",opened);
-                    links[2].RaiseEvent(new RoutedEventArgs(Hyperlink.ClickEvent)); Assert.AreEqual("https://auto.invalid",opened);
-                    var button=(Button)((StackPanel)view.Document.Blocks.OfType<BlockUIContainer>().Single().Child).Children[0]; button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Assert.AreEqual("code",copied);
+                    var reference=new VbeChatReference { Project="Project" };
+                    view.ShowMarkdown("#Project #missing [web](https://example.invalid) [blocked](file:///C:/x) <https://auto.invalid> <b>html</b>\n\n```\ncode\n```",new Dictionary<string,VbeChatReference>{{"#Project",reference}},r=>navigated=r,e=>error=e);
+                    var links=view.actions.Where(a=>a.Invoke!=null).ToArray(); Assert.AreEqual(3,links.Length);
+                    view.ActivateAt(links[0].Start); Assert.AreSame(reference,navigated);
+                    view.ActivateAt(links[1].Start); Assert.AreEqual("https://example.invalid",opened);
+                    view.ActivateAt(links[2].Start); Assert.AreEqual("https://auto.invalid",opened);
+                    var code = view.actions.Single(a=>a.Code!=null); view.content.Select(code.Start,0); view.copyCode.PerformClick(); Assert.AreEqual("code",copied);
                     ChatMarkdown.OpenLink=s=>{throw new InvalidOperationException("open failed");}; ChatMarkdown.CopyText=s=>{throw new InvalidOperationException("copy failed");};
-                    foreach(var link in links.Skip(1)) {error=null; link.RaiseEvent(new RoutedEventArgs(Hyperlink.ClickEvent)); Assert.AreEqual("open failed",error);}
-                    button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Assert.AreEqual("copy failed",error);
-                    var source=new ContainerInline(); var nested=new ContainerInline(); nested.AppendChild(new LiteralInline("nested")); source.AppendChild(nested); source.AppendChild(new HtmlEntityInline());
-                    var destination=new Paragraph(); UiInvoke.Call(typeof(ChatMarkdown),"AddInlines",null,destination.Inlines,source,null,new Action<VbeChatReference>(r=>{}),new Action<string>(e=>{})); Assert.AreEqual("nested",((Run)destination.Inlines.Single()).Text);
-                }
-                finally {ChatMarkdown.CopyText=copy;ChatMarkdown.OpenLink=open;}
+                    foreach (var link in links.Skip(1)) { error=null; view.ActivateAt(link.Start); Assert.AreEqual("open failed",error); }
+                    view.copyCode.PerformClick(); Assert.AreEqual("copy failed",error);
+                } finally { ChatMarkdown.CopyText=copy; ChatMarkdown.OpenLink=open; }
             }
         }
     }

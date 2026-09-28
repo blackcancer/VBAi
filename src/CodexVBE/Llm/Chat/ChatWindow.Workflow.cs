@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -26,14 +26,19 @@ namespace CodexVBE
         /// <returns>Pièces jointes valides et présentes dans le contexte du message.</returns>
         private ChatAttachment[] PrepareAttachments(string question)
         {
+            return PrepareRequestAttachments(question, CurrentReferences(question), draftAttachments);
+        }
+
+        private ChatAttachment[] PrepareRequestAttachments(string question, IEnumerable<VbeChatReference> references, IEnumerable<ChatAttachment> drafts)
+        {
             var attachments = new List<ChatAttachment>();
-            foreach (var reference in CurrentReferences(question))
+            foreach (var reference in references)
             {
                 tools?.RequireProjectRead(reference.Project);
                 attachments.Add(new ChatAttachment { Label = reference.Token, Text = referenceIndex.Resolve(reference),
                     Project = reference.Project, Module = reference.Module, Sha256 = reference.Sha256, StartLine = reference.StartLine });
             }
-            foreach (var attachment in draftAttachments)
+            foreach (var attachment in drafts)
             {
                 if (!string.IsNullOrEmpty(attachment.Project)) tools?.RequireProjectRead(attachment.Project);
                 if (!string.IsNullOrEmpty(attachment.EditorDocumentId))
@@ -66,8 +71,9 @@ namespace CodexVBE
                 var attachments = PrepareAttachments(prompt.Text);
                 foreach (var attachment in attachments)
                     AddContextPreview(attachment.Label + " · " + attachment.Text.Length + UiText.Get(" characters"), attachment.Text);
-                int memorySize = attachMemory.Checked ? projectMemory.Length : 0;
-                if (memorySize > 0) AddContextPreview(UiText.Get("Memory · ") + memorySize + UiText.Get(" characters"), projectMemory);
+                string memory = queuedDraftMemory ?? projectMemory;
+                int memorySize = attachMemory.Checked ? (memory?.Length ?? 0) : 0;
+                if (memorySize > 0) AddContextPreview(UiText.Get("Memory · ") + memorySize + UiText.Get(" characters"), memory);
                 AddContextPreview(UiText.Get("Explicit context"), (attachments.Sum(x => x.Text.Length) + memorySize) +
                     UiText.Get(" characters. This conversation's history also accompanies the request."));
             }

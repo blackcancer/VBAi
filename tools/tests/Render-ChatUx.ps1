@@ -1,5 +1,5 @@
 ﻿param(
-    [ValidateSet('Conversation', 'History', 'Reference', 'Command', 'Welcome')][string]$Mode = 'Conversation',
+    [ValidateSet('Conversation', 'History', 'Reference', 'Command', 'Welcome', 'Queue')][string]$Mode = 'Conversation',
     [int]$Width = 720,
     [int]$Height = 950,
     [switch]$ScrollToTop,
@@ -67,6 +67,16 @@ try {
         (Field $window historyPanel).BringToFront()
         (Field $window chatTitleEditor).Text = 'Fiabiliser le calcul du total'
     }
+    if ($Mode -eq 'Queue') {
+        $chat = New-Internal ChatSessionState
+        $window.GetType().GetField('currentSession', $flags).SetValue($window, $chat)
+        foreach ($text in @('Ajoute les contrôles de validation dans le module.', 'Explique ensuite le résultat et les changements appliqués.')) {
+            $queued = New-Internal QueuedChatMessage; $queued.Text = $text; $chat.PendingMessages.Add($queued)
+        }
+        Call $window SetBusy @($true)
+        (Field $window prompt).Text = ''
+        Call $window RefreshPendingMessages @()
+    }
     $screen = [Windows.Forms.Screen]::AllScreens | Where-Object { -not $_.Primary } | Select-Object -First 1
     if (-not $screen) { $screen = [Windows.Forms.Screen]::PrimaryScreen }
     $window.Width = $Width; $window.Height = [Math]::Min($Height, $screen.WorkingArea.Height)
@@ -117,6 +127,14 @@ try {
         [IO.Directory]::CreateDirectory($directory) | Out-Null
         $path = Join-Path $directory "modern-$Mode-$Theme-$Width.png"
         $bitmap.Save($path, [Drawing.Imaging.ImageFormat]::Png)
+        if ($Mode -eq 'Queue') {
+            $panel = Field $window pendingMessagesPanel
+            $queueBitmap = [Drawing.Bitmap]::new($panel.Width, $panel.Height)
+            try {
+                $panel.DrawToBitmap($queueBitmap, [Drawing.Rectangle]::new(0, 0, $panel.Width, $panel.Height))
+                $queueBitmap.Save((Join-Path $directory "queue-panel-$Theme-$Width.png"), [Drawing.Imaging.ImageFormat]::Png)
+            } finally { $queueBitmap.Dispose() }
+        }
         Write-Output $path
     }
     finally { $bitmap.Dispose() }

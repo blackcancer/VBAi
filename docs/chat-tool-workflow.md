@@ -16,9 +16,9 @@ Le modèle commence avec un noyau de huit outils : état, projets, modules, lect
 
 Pour HTTP, une famille découverte est ajoutée aux définitions transmises aux réponses suivantes, avec un plafond de 64 schémas et priorité au noyau. Les autres fonctions restent accessibles par la passerelle, y compris après Family=all. Pour Codex, les outils dynamiques étant enregistrés au démarrage du fil, le noyau reste stable et `invoke_tool(ToolName, ArgumentsJson)` appelle une fonction découverte. Cette passerelle repasse systématiquement par les gardes normales : mode, projet lié, accès aux autres projets, contexte partagé et politique d'édition. Les appels récursifs de passerelle sont refusés.
 
-## Pause après huit réponses avec outils
+## Pause de secours
 
-La boucle HTTP dispose d'un budget de huit réponses du modèle par segment. Si le modèle demande encore des outils lors de la huitième réponse, leurs résultats sont enregistrés puis le tour passe en pause, sans exception de dépassement.
+La boucle HTTP continue au-delà de huit réponses lorsque les outils apportent de nouveaux résultats réussis. Huit réponses consécutives avec outils sans progression déclenchent une pause de secours : refus, erreurs, identifiants déjà traités ou résultats réussis identiques. La progression est évaluée sur le triplet nom/arguments/résultat ; ce n'est pas une mesure de l'accomplissement du besoin métier. Un plafond distinct de 64 réponses par segment borne également les boucles dont les résultats changent constamment. Les résultats sont enregistrés avant la pause, sans exception de dépassement.
 
 - Le transcript présente les outils terminés/refusés et indique ce qui reste : réponse finale, plus vérification automatique lorsque cette option est activée et que du code a changé.
 - Utiliser **Reprendre le tour en pause** dans le menu, ou **Reprendre ▶** avec un champ de saisie vide.
@@ -31,6 +31,17 @@ L'état de pause, le profil et l'historique sont persistés avec la session. Un 
 
 Ce budget appartient à la boucle HTTP de VBAi. Codex et les transports SDK gèrent leur orchestration interne ; cette modification n'impose pas artificiellement huit appels à ces moteurs.
 
+## Compositeur pendant une intervention
+
+- Champ vide : le bouton devient **Arrêter ■**. Entrée demande également l'arrêt ; Maj+Entrée conserve le retour à la ligne.
+- Champ rempli : **Mettre en attente ↑** (ou Entrée) capture le texte, les références, sélections et mémoire ; la réponse actuelle continue.
+- La file s'affiche immédiatement au-dessus du champ. Chaque message dispose de **Envoyer maintenant**, **Modifier** et **Supprimer**, avec info-bulles et thème.
+- Les messages sont traités dans l'ordre après une réponse terminée. Leur projet, permissions et révisions de code sont revérifiés au départ ; un contexte périmé bloque le départ sans retirer le message.
+- **Envoyer maintenant** donne priorité au message choisi, demande l'interruption et attend le nettoyage du tour avant de démarrer la nouvelle demande. Les autres messages suivent après son succès. Si l'interruption échoue, il reste en attente.
+- **Modifier** remet le message et son contexte dans le compositeur. Un brouillon déjà présent est préservé ; il faut l'envoyer ou le vider avant cette action. Le message modifié peut ensuite être remis en attente.
+- Un arrêt manuel, une erreur ou une pause de secours laisse les autres messages en attente. Le brouillon en cours n'est pas remplacé par l'envoi automatique.
+- La file appartient à la session liée au projet et est persistée dans SQLite. La réouverture l'affiche sans l'exécuter automatiquement.
+
 ## Validation
 
-Les tests de catalogue vérifient la disponibilité du catalogue complet par découverte, le filtrage Discussion et l'absence de contournement des restrictions de projet. Le scénario HTTP simule huit actions, une pause, un profil modifié refusé, puis une reprise comprenant un identifiant déjà traité : huit exécutions seulement, résultats et identifiant de tour conservés.
+Les tests de catalogue vérifient la disponibilité du catalogue complet par découverte, le filtrage Discussion et l'absence de contournement des restrictions de projet. Le scénario HTTP simule huit actions sans progression, une pause, un profil modifié refusé, puis une reprise comprenant un identifiant déjà traité : huit exécutions seulement, résultats et identifiant de tour conservés.

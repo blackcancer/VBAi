@@ -79,7 +79,7 @@ namespace CodexVBE.Tests.Unit
             using (var runtime = new RuntimeScope())
             using (var window = new ChatWindow(runtime.Session))
             {
-                var prompt = Get<TextBox>(window, "prompt"); var popup = Get<Popup>(window, "referencePopup"); var list = Get<ListBox>(window, "referenceList"); window.Show(); System.Windows.Forms.Application.DoEvents();
+                var prompt = Get<TextBox>(window, "prompt"); var popup = Get<Popup>(window, "referencePopup"); var list = Get<System.Windows.Forms.ListBox>(window, "referenceList"); window.Show(); System.Windows.Forms.Application.DoEvents();
                 foreach (var text in new[] { "", "ordinary", "prefix#P", "x@P", "#P", "@P", "#missing", "#P.M", "#P_M", "#P:M", "/", "/unknown", "/plan", "/plan instructions" }) { prompt.Text = text; prompt.CaretIndex = text.Length; Call(window, "UpdateReferences"); }
                 prompt.Text = "#P"; prompt.CaretIndex = 2; Call(window, "UpdateReferences"); var timer = Get<System.Windows.Forms.Timer>(window, "referenceTimer"); typeof(System.Windows.Forms.Timer).GetMethod("OnTick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(timer, new object[] { EventArgs.Empty }); Call(window, "UpdateReferences"); Assert.IsTrue(list.Items.Count > 0);
                 foreach (var key in new[] { Key.Down, Key.Up, Key.Escape }) { popup.IsOpen = true; Assert.IsTrue(RunKey(window, key).Handled); }
@@ -89,9 +89,9 @@ namespace CodexVBE.Tests.Unit
                 prompt.Text = "#P"; prompt.CaretIndex = 2; Call(window, "UpdateReferences"); Call(window, "AcceptReference"); Assert.IsTrue(Get<List<VbeChatReference>>(window, "selectedReferences").Count > 0); Assert.IsFalse(popup.IsOpen); Call(window, "UpdateReferences"); Assert.IsFalse(popup.IsOpen);
                 ChatWindow.ReadModifiers = () => ModifierKeys.Shift; popup.IsOpen = true; Assert.IsFalse(RunKey(window, Key.Enter).Handled); Assert.IsFalse(popup.IsOpen); ChatWindow.ReadModifiers = () => ModifierKeys.None;
                 prompt.Text = ""; Assert.IsTrue(RunKey(window, Key.Enter).Handled); Assert.IsFalse(RunKey(window, Key.F1).Handled);
-                list.ItemsSource = new object[0]; popup.IsOpen = true; Assert.IsTrue(RunKey(window, Key.Down).Handled); Assert.IsFalse(RunKey(window, Key.Tab).Handled); Assert.IsTrue(RunKey(window, Key.Enter).Handled); Call(window, "AcceptReference");
-                list.ItemsSource = new[] { new VbeChatReference { Project = "P" } }; list.SelectedIndex = 0; Set(window, "referenceStart", -1); Call(window, "AcceptReference");
-                var disconnected = Get<VbeChatReferences>(window, "referenceIndex"); disconnected.Entries.Clear(); prompt.Text = "@none"; prompt.CaretIndex = 5; Set(window, "referenceIndexReady", true); Call(window, "UpdateReferences"); Assert.AreEqual(Visibility.Collapsed, list.Visibility);
+                list.DataSource = new object[0]; popup.IsOpen = true; Assert.IsTrue(RunKey(window, Key.Down).Handled); Assert.IsFalse(RunKey(window, Key.Tab).Handled); Assert.IsTrue(RunKey(window, Key.Enter).Handled); Call(window, "AcceptReference");
+                list.DataSource = new[] { new VbeChatReference { Project = "P" } }; list.SelectedIndex = 0; Set(window, "referenceStart", -1); Call(window, "AcceptReference");
+                var disconnected = Get<VbeChatReferences>(window, "referenceIndex"); disconnected.Entries.Clear(); prompt.Text = "@none"; prompt.CaretIndex = 5; Set(window, "referenceIndexReady", true); Call(window, "UpdateReferences"); Assert.IsFalse(list.Visible);
             }
         }
         /// <summary>Vérifie les limites de résolution, la suppression des puces et la navigation vers une référence.</summary>
@@ -135,12 +135,12 @@ namespace CodexVBE.Tests.Unit
                 LocalizationScope.Set("ar-SA");
                 using (var window = new ChatWindow(runtime.Session))
                 {
-                    var prompt = Get<TextBox>(window, "prompt"); var index = Get<VbeChatReferences>(window, "referenceIndex"); var list = Get<ListBox>(window, "referenceList"); var popup = Get<Popup>(window, "referencePopup");
-                    prompt.Text = "#P"; prompt.CaretIndex = 2; Call(window, "UpdateReferences"); while (index.IsLoading) index.Step(); Set(window, "referenceIndexReady", true); Call(window, "UpdateReferences"); Assert.IsFalse(string.IsNullOrWhiteSpace(Get<TextBlock>(window, "referenceStatus").Text));
+                    var prompt = Get<TextBox>(window, "prompt"); var index = Get<VbeChatReferences>(window, "referenceIndex"); var list = Get<System.Windows.Forms.ListBox>(window, "referenceList"); var popup = Get<Popup>(window, "referencePopup");
+                    prompt.Text = "#P"; prompt.CaretIndex = 2; Call(window, "UpdateReferences"); while (index.IsLoading) index.Step(); Set(window, "referenceIndexReady", true); Call(window, "UpdateReferences"); Assert.IsFalse(string.IsNullOrWhiteSpace(Get<System.Windows.Forms.Label>(window, "referenceStatus").Text));
                     runtime.Vbe.VBProjects[0].VBComponents.Items.Clear(); index.Refresh(); while (index.IsLoading) index.Step(); index.Refresh(); typeof(System.Windows.Forms.Timer).GetMethod("OnTick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(Get<System.Windows.Forms.Timer>(window, "referenceTimer"), new object[] { EventArgs.Empty }); Assert.IsFalse(index.IsLoading);
                     foreach (var text in new[] { "#P", "#missing" }) { prompt.Text = text; prompt.CaretIndex = text.Length; while (index.IsLoading) index.Step(); Set(window, "referenceIndexReady", true); Call(window, "UpdateReferences"); Assert.IsFalse(index.IsLoading); Assert.IsTrue(string.IsNullOrEmpty(index.Error)); }
                     window.Show(); Call(window, "NavigateReference", new VbeChatReference { Project = "P", Module = "missing" });
-                    prompt.Text = "#P"; prompt.CaretIndex = 2; Set(window, "referenceStart", 0); list.ItemsSource = new[] { new VbeChatReference { Project = "P" } }; list.SelectedIndex = 0; popup.IsOpen = true; Assert.IsTrue(RunKey(window, Key.Enter).Handled);
+                    prompt.Text = "#P"; prompt.CaretIndex = 2; Set(window, "referenceStart", 0); list.DataSource = new[] { new VbeChatReference { Project = "P" } }; list.SelectedIndex = 0; popup.IsOpen = true; Assert.IsTrue(RunKey(window, Key.Enter).Handled);
                 }
                 using (var disconnected = new ChatWindow(new VbeSession(new UnavailableReferenceHost()))) { var text = Get<TextBox>(disconnected, "prompt"); text.Text = "#P"; text.CaretIndex = 2; Call(disconnected, "UpdateReferences"); Assert.IsFalse(string.IsNullOrWhiteSpace(Get<VbeChatReferences>(disconnected, "referenceIndex").Error)); }
                 var host = new VbeDebugTests.FakeVbe(); var project = new VbeDebugTests.FakeProject { Name = "P", FileName = @"C:\Temp\P.xlsm", Mode = 2 }; var component = new VbeDebugTests.FakeComponent { Name = "M", Type = 1 }; component.CodeModule = new VbeDebugTests.FakeModule(component, "Sub A()\r\nEnd Sub"); project.VBComponents.Add(component); host.VBProjects.Add(project); host.ActiveVBProject = project; host.ActiveCodePane = component.CodeModule.CodePane;

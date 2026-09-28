@@ -108,7 +108,6 @@ namespace CodexVBE.Tests.Unit
             using (var window = new ChatWindow(runtime.Session))
             {
                 window.Show(); System.Windows.Forms.Application.DoEvents();
-                var button = (Button)Call(window, "ChatButton", "Primary", true); Assert.AreEqual("Primary", button.Content);
                 Call(window, "Docking_Click", null, EventArgs.Empty); int docks = 0; window.DockRequested += () => docks++; Call(window, "Docking_Click", null, EventArgs.Empty); Set(window, "busy", true); Call(window, "Docking_Click", null, EventArgs.Empty); Assert.AreEqual(1, docks); Set(window, "busy", false); window.ReportDockFailure("test"); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, "test");
                 foreach (var method in new[] { "History_Click", "MemoryToggle_Click", "ContextToggle_Click" }) { Call(window, method, null, EventArgs.Empty); Call(window, method, null, EventArgs.Empty); }
                 Get<System.Windows.Forms.Panel>(window, "historyPanel").Visible = true; Get<System.Windows.Forms.GroupBox>(window, "memoryPanel").Visible = false; Call(window, "MemoryToggle_Click", null, EventArgs.Empty); Assert.AreEqual(226F, Get<System.Windows.Forms.TableLayoutPanel>(window, "historyLayout").RowStyles[7].Height); Call(window, "MemoryToggle_Click", null, EventArgs.Empty);

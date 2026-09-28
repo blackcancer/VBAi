@@ -1,0 +1,130 @@
+namespace CodexVBE
+{
+    public sealed partial class ChatMessageView
+    {
+        private System.ComponentModel.IContainer components;
+        private System.Windows.Forms.ToolTip toolTips;
+        private ChatComposerPanel layout;
+        private System.Windows.Forms.TableLayoutPanel header;
+        internal System.Windows.Forms.Label speaker;
+        internal ChatActionButton copy;
+        internal ChatActionButton fork;
+        internal System.Windows.Forms.FlowLayoutPanel headingActions;
+        internal ChatTextContentView message;
+        internal ChatDisclosureView memory;
+        internal System.Windows.Forms.FlowLayoutPanel attachments;
+        internal System.Windows.Forms.FlowLayoutPanel references;
+        internal System.Windows.Forms.FlowLayoutPanel targets;
+        internal ChatActionButton undoTurn;
+        internal ChatActionButton fix;
+        /// <summary>Releases the Designer components.</summary>
+        /// <param name="disposing">Whether to release managed resources.</param>
+        protected override void Dispose(bool disposing) { if (disposing) components?.Dispose(); base.Dispose(disposing); }
+        private void InitializeComponent()
+        {
+            this.components = new System.ComponentModel.Container();
+            this.toolTips = new System.Windows.Forms.ToolTip(this.components);
+            this.copy = new ChatActionButton(); this.copy.Name = "copy"; this.copy.Text = "Copy"; this.copy.AutoSize = true;
+            this.fork = new ChatActionButton(); this.fork.Name = "fork"; this.fork.Text = "Branch conversation"; this.fork.AutoSize = true;
+            this.layout = new ChatComposerPanel();
+            this.header = new System.Windows.Forms.TableLayoutPanel();
+            this.speaker = new System.Windows.Forms.Label();
+            this.speaker.Name = "speaker";
+            this.speaker.AutoSize = true;
+            this.speaker.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.speaker.Text = "Assistant";
+            this.headingActions = new System.Windows.Forms.FlowLayoutPanel();
+            this.headingActions.Name = "headingActions";
+            this.headingActions.Controls.Add(this.copy); this.headingActions.Controls.Add(this.fork);
+            this.headingActions.AutoSize = true;
+            this.headingActions.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.headingActions.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.headingActions.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
+            this.headingActions.WrapContents = false;
+            this.message = new ChatTextContentView();
+            this.message.Name = "message";
+            this.message.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.message.Margin = new System.Windows.Forms.Padding(0);
+            this.memory = new ChatDisclosureView();
+            this.memory.Name = "memory";
+            this.memory.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.memory.Title = "Attached document memory";
+            this.attachments = new System.Windows.Forms.FlowLayoutPanel();
+            this.attachments.Name = "attachments";
+            this.attachments.AutoSize = true;
+            this.attachments.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.attachments.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.attachments.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
+            this.attachments.WrapContents = false;
+            this.references = new System.Windows.Forms.FlowLayoutPanel();
+            this.references.Name = "references";
+            this.references.AutoSize = true;
+            this.references.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.references.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.references.FlowDirection = System.Windows.Forms.FlowDirection.LeftToRight;
+            this.references.WrapContents = true;
+            this.targets = new System.Windows.Forms.FlowLayoutPanel();
+            this.targets.Name = "targets";
+            this.targets.AutoSize = true;
+            this.targets.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.targets.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.targets.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
+            this.targets.WrapContents = false;
+            this.undoTurn = new ChatActionButton();
+            this.undoTurn.Name = "undoTurn";
+            this.undoTurn.AutoSize = true;
+            this.undoTurn.Text = "Undo entire turn";
+            this.fix = new ChatActionButton();
+            this.fix.Name = "fix";
+            this.fix.AutoSize = true;
+            this.fix.Text = "Prepare a fix";
+            this.header.Name = "header";
+            this.header.AutoSize = true;
+            this.header.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.header.ColumnCount = 2;
+            this.header.RowCount = 1;
+            this.header.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.header.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.header.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.header.Controls.Add(this.speaker, 0, 0);
+            this.header.Controls.Add(this.headingActions, 1, 0);
+            this.speaker.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.SuspendLayout(); this.layout.SuspendLayout();
+            this.layout.AutoSize = true;
+            this.layout.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.layout.Dock = System.Windows.Forms.DockStyle.Top;
+            this.layout.ColumnCount = 1;
+            this.layout.RowCount = 8;
+            this.layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.layout.Controls.Add(this.header, 0, 0);
+            this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.layout.Controls.Add(this.message, 0, 1);
+            this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.layout.Controls.Add(this.memory, 0, 2);
+            this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.layout.Controls.Add(this.attachments, 0, 3);
+            this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.layout.Controls.Add(this.references, 0, 4);
+            this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.layout.Controls.Add(this.targets, 0, 5);
+            this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.layout.Controls.Add(this.undoTurn, 0, 6);
+            this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.layout.Controls.Add(this.fix, 0, 7);
+            this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.layout.Name = "layout";
+            this.layout.Padding = new System.Windows.Forms.Padding(10);
+            this.toolTips.SetToolTip(this.copy, "Copy the message text to the clipboard.");
+            this.toolTips.SetToolTip(this.fork, "Create an independent conversation with the history up to this message.");
+            this.toolTips.SetToolTip(this.undoTurn, "Undo changes from this turn after checking for conflicts.");
+            this.toolTips.SetToolTip(this.fix, "Prepare a fix");
+            this.Controls.Add(this.layout);
+            this.AutoSize = true;
+            this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.Name = "ChatMessageView";
+            this.Size = new System.Drawing.Size(500, 120);
+            this.layout.ResumeLayout(false); this.layout.PerformLayout(); this.ResumeLayout(false); this.PerformLayout();
+        }
+    }
+}

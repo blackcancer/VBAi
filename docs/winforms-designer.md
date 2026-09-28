@@ -88,8 +88,8 @@ Designer montre un champ WinForms et ne démarre pas ce moteur. `Font`, `ForeCol
 `InputPadding` et `SpellCheckEnabled` sont transmis au moteur.
 
 Le diff inline réutilise `src/CodexVBE/Ui/CodeDiffView.cs` : grille, colonnes,
-recherche, navigation et options sont construits dans son Designer. `ChatDiffView`
-est seulement un adaptateur `WindowsFormsHost` pour le transcript WPF. Le mode
+recherche, navigation et options sont construits dans son Designer. `ChatChangeCardView` contient ce contrôle dans son Designer. `ChatDesignerHost`
+adapte les vues natives au transcript virtualisé. Le mode
 unifié se règle via `UnifiedDiff`. Les hôtes de diff sont libérés lorsqu’une carte
 est retirée, virtualisée ou lorsque la fenêtre est fermée.
 
@@ -101,8 +101,11 @@ pour éditer cet emplacement.
 
 - Disposition, contrôles fixes, ancrage, tailles, marges et tooltips : `.Designer.cs`.
 - Chargement des données, activation des boutons, sélection et opérations : `.cs`.
-- Messages du chat, Markdown, actions propres aux messages et suggestions au curseur :
-  contenu dynamique WPF dans les emplacements WinForms du `ChatWindow`.
+- Messages, activités, pièces jointes, actions et suggestions : instances de vues
+  WinForms Designer selon les données. Les contrôles internes sont fixes.
+- Markdown : contenu et styles du RichTextBox natif défini dans le Designer.
+- Transcript : infrastructure WPF virtualisée dans un emplacement fixe ; elle
+  héberge les vues WinForms sans construire leurs dispositions.
 - Puces et aperçus : instances des vues Designer selon les données ; leurs contrôles
   internes ne sont pas reconstruits par le contrôleur.
 - Lignes du diff : données virtuelles de la grille Designer partagée par Git et le chat.
@@ -156,8 +159,85 @@ SOLIDWORKS. Cette refonte ne modifie pas le thème du VBE.
 ## Mises à jour
 
 `Updates/UpdateWindow.cs` configure les mises à jour et affiche les notes de release.
-`Updates/UpdateProgressWindow.cs` est lié au projet `VBAi.Updater` pour l’application
+`src/CodexVBE/Updates/UpdateProgressWindow.cs` est partagée avec le programme de mise à jour
 différée. Les deux formulaires possèdent leurs Designer et ressources. Le programme
 externe partage les sources et les catalogues, sans charger l’assembly COM. Les
 contrôles secondaires et principaux ont des zones distinctes ; la progression reste
 dans une ligne dédiée. Voir [Mises à jour](updates.md) pour le protocole installeur.
+
+## Cartes et suggestions du chat
+
+Les vues de `src/CodexVBE/Llm/Controls/Transcript/` sont réellement utilisées
+par `ChatWindow.Transcript.cs`, `.Activities.cs`, `.FormRecovery.cs` et `.Composer.cs`.
+Ouvrir leur fichier `.cs` avec **Afficher le concepteur** (`Maj+F7`).
+
+| Vue | Contrôles fixes dans le Designer |
+| --- | --- |
+| `ChatMessageView` | En-tête, copier, créer une branche, message, mémoire, listes de contexte, annulation et correction |
+| `ChatActivityGroupView` | Section de chronologie des activités |
+| `ChatActivityStepView` | État et détail dépliable d'une étape |
+| `ChatChangeCardView` | Module, compte des changements, `CodeDiffView`, boutons de rollback et état |
+| `ChatAttachmentView` | Section, contenu joint et navigation vers le code |
+| `ChatFormRecoveryView` | Titre, bilan et récupération d'un formulaire |
+| `ChatWelcomeView` | Titre, indication et trois suggestions |
+| `ChatSuggestionsView` | Liste d'autocomplétion et état |
+| `ChatTextContentView` | RichTextBox en lecture seule et menu de copie |
+| `ChatLinkView` | Bouton de navigation vers une référence |
+| `ChatDisclosureView` | Bouton de dépliage et conteneur de contenu |
+
+`ChatQueuedMessageView`, dans `Llm/Chat/`, définit les actions Envoyer maintenant,
+Modifier et Supprimer des messages en attente.
+
+`ChatDisclosureDesigner` expose `ContentPanel` au concepteur : on peut y déposer
+un contrôle dans une vue parente. Le diff et les contenus des pièces jointes sont
+ainsi déclarés dans leurs Designers, pas ajoutés par le contrôleur à l'exécution.
+Les listes variables (messages, références, pièces jointes, étapes et blocs du menu
+de rollback) créent uniquement les instances nécessaires aux données.
+
+La saisie conserve son moteur WPF pour la correction orthographique ; sa surface
+WinForms est éditable dans `ChatInputView`. La virtualisation du fil et le placement
+du popup au curseur restent des mécanismes d'exécution.
+
+Validation locale : chargement des douze vues dans `DesignSurface`, édition du
+conteneur imbriqué, affichage d'un message, d'une référence et d'un diff dans
+`WindowsFormsHost`, captures natives claires et sombres. Ces tests ne remplacent
+pas une ouverture manuelle du projet dans le Designer de Visual Studio.
+
+## Éditeur Monaco, mises à jour et fichiers partiels
+
+`ModernEditorWindow.cs`, `UpdateWindow.cs` et `UpdateProgressWindow.cs` sont les
+entrées du Designer dans le projet principal. La progression est partagée avec
+le programme `VBAi.Updater`, mais sa surface s'édite uniquement dans
+`src/CodexVBE/Updates/`. Les liens de code dans l'Updater sont classés Code et la
+ressource est incorporée à la compilation sans ajouter une deuxième surface
+Designer : l'ouverture de cette copie dans l'Updater échouait à charger sa
+ressource dans Visual Studio.
+
+Les fichiers `ModernEditorWindow.Debug.cs`, `.Language.cs`, `.Save.cs`, `.Tools.cs`,
+`GitWindow.Review.cs`, `.Views.cs` et `LlmSettingsWindow.Views.cs` contiennent la
+logique et les liaisons aux vues. Ils sont classés **Code** et regroupés sous le
+fichier principal ; ce ne sont pas des surfaces Designer supplémentaires.
+Les dispositions Git et paramètres restent éditables dans leurs UserControls.
+
+Les métadonnées de mise à jour doivent suivre l'inclusion des fichiers C#.
+Les règles de classement des fichiers partiels sont appliquées après les imports
+SDK : Visual Studio peut conserver un `SubType=Form` dans le fichier utilisateur
+`.csproj.user`, qui prenait auparavant priorité sur les réglages du projet.
+L'import explicite de `Sdk.props` / `Sdk.targets` conserve le projet SDK et permet
+ces règles finales, sans supprimer les préférences locales.
+
+Les déclarations du Designer emploient des affectations séparées et des délégués
+explicites. Les aperçus Designer ne démarrent ni WebView2 ni le parcours de mise à
+jour. Le moteur Monaco et ses documents restent initialisés à l'exécution.
+
+Contrôles reproductibles :
+
+- `tools/tests/Test-WinFormsProjectMetadata.ps1` vérifie les éléments évalués par
+  MSBuild, y compris le classement Code de la copie partagée dans `VBAi.Updater` ;
+- `WindowDesignerCompatibilityTests` vérifie les composants éditables et leur
+  sérialisation pour les cinq fenêtres, ainsi que l'absence d'initialisation
+  runtime dans les aperçus ;
+- `tools/tests/Test-VisualStudioWinForms.ps1 -VisualStudioProcessId <PID>` ouvre
+  les fenêtres dans le Designer d'une instance VS associée à ce checkout et
+  vérifie leurs racines chargées. Le contrôle ne modifie pas les
+  composants et conserve les documents ouverts pour inspection.

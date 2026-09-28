@@ -10,7 +10,7 @@ namespace CodexVBE.Tests.Unit
     public sealed partial class ChatWindowStateTests
     {
         [STATestMethod, TestCategory("Unit")]
-        public void EightRoundsPauseAndResumeKeepsResultsWithoutReplayingActions()
+        public void EightRoundsWithoutProgressPauseAndResumeKeepsResultsWithoutReplayingActions()
         {
             using (var runtime = new RuntimeScope())
             using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
@@ -19,7 +19,7 @@ namespace CodexVBE.Tests.Unit
                 var replies = Enumerable.Range(0, 8).Select(i => json.Serialize(new { choices = new[] { new { message = new { role = "assistant", tool_calls = new[] { new { id = "action-" + i, type = "function", function = new { name = "status", arguments = "{}" } } } } } } })).ToArray();
                 var first = new ChatResponseHandler(replies);
                 window.HttpHandlerOverride = () => first;
-                ChatWindow.InvokeTool = (t, n, a) => { actions++; return Task.FromResult(json.Serialize(Response.Success(new { Action = actions }))); };
+                ChatWindow.InvokeTool = (t, n, a) => { actions++; return Task.FromResult(json.Serialize(Response.Failure("No progress"))); };
                 Question(window, "perform work"); CompleteOnSta((Task)Call(window, "SendAsync"));
                 var state = Get<ChatSessionState>(window, "currentSession");
                 Assert.IsTrue(state.BudgetPaused); Assert.AreEqual(8, actions);

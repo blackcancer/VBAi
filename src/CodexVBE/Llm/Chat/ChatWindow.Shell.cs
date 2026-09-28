@@ -18,41 +18,6 @@ namespace CodexVBE
             return new SolidColorBrush((Color)ColorConverter.ConvertFromString(UiTheme.Map(hex)));
         }
 
-        /// <summary>Crée un bouton WPF cohérent avec le thème, son style interactif et son nom d’accessibilité.</summary>
-        /// <param name="text">Texte visible et nom d’accessibilité du bouton.</param>
-        /// <param name="primary">Applique la couleur de fond et le texte du bouton principal.</param>
-        /// <returns>Bouton configuré.</returns>
-        private static Button ChatButton(string text, bool primary = false)
-        {
-            var button = new Button {
-                Content = text, Padding = new Thickness(12, 7, 12, 7),
-                Background = Ink(primary ? "#2563EB" : "#F1F5F9"),
-                Foreground = primary ? Brushes.White : Ink("#334155"),
-                BorderBrush = Brushes.Transparent, BorderThickness = new Thickness(0),
-                Cursor = Cursors.Hand, FontSize = 12, FontFamily = new FontFamily("Segoe UI"),
-                MinHeight = 32
-            };
-            var border = new FrameworkElementFactory(typeof(Border));
-            border.SetValue(Border.CornerRadiusProperty, new CornerRadius(7));
-            border.SetBinding(Border.BackgroundProperty, new System.Windows.Data.Binding("Background") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
-            border.SetBinding(Border.PaddingProperty, new System.Windows.Data.Binding("Padding") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
-            var content = new FrameworkElementFactory(typeof(ContentPresenter));
-            content.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
-            content.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
-            border.AppendChild(content);
-            button.Template = new ControlTemplate(typeof(Button)) { VisualTree = border };
-            var style = new Style(typeof(Button));
-            var hover = new Trigger { Property = UIElement.IsMouseOverProperty, Value = true };
-            hover.Setters.Add(new Setter(UIElement.OpacityProperty, 0.82));
-            style.Triggers.Add(hover);
-            var disabled = new Trigger { Property = UIElement.IsEnabledProperty, Value = false };
-            disabled.Setters.Add(new Setter(UIElement.OpacityProperty, 0.45));
-            style.Triggers.Add(disabled);
-            button.Style = style;
-            AutomationProperties.SetName(button, text);
-            return button;
-        }
-
         /// <summary>Masque les surfaces initialement inactives et remplit les options du sélecteur de mode.</summary>
         private void InitializeShell()
         {

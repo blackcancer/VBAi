@@ -57,7 +57,12 @@ namespace CodexVBE
             tabs.RightToLeft = RightToLeft.No;
             UiTheme.Changed += ThemeChanged;
         }
-        protected override async void OnShown(EventArgs e) { base.OnShown(e); await InitializeBrowser(); }
+        protected override async void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            if (DesignMode || LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
+            await InitializeBrowser();
+        }
         private async Task InitializeBrowser()
         {
             if (initializing || Ready || IsDisposed || Disposing || closing) return;

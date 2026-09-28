@@ -112,7 +112,11 @@ namespace CodexVBE
             if (control.IsHandleCreated) ApplyNativeTheme(control, EventArgs.Empty);
             control.BackColor = control is TextBoxBase || control is ListControl || control is DataGridView ? Surface : Background;
             control.ForeColor = Foreground;
-            if (control is TextBoxBase textBox) textBox.BorderStyle = BorderStyle.FixedSingle;
+            if (control is TextBoxBase textBox) {
+                bool transcript = textBox is RichTextBox rich && rich.ReadOnly && rich.BorderStyle == BorderStyle.None;
+                textBox.BorderStyle = transcript ? BorderStyle.None : BorderStyle.FixedSingle;
+                if (transcript) textBox.BackColor = Background;
+            }
             if (control is ListBox listBox) listBox.BorderStyle = BorderStyle.FixedSingle;
             if (control is CheckBox checkBox) checkBox.FlatStyle = FlatStyle.Flat;
             if (control is Button button) { button.FlatStyle = FlatStyle.Flat; button.FlatAppearance.BorderColor = Dark ? Color.FromArgb(75, 85, 99) : Color.FromArgb(203, 213, 225); }

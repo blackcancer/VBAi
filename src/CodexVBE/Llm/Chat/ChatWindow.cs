@@ -49,6 +49,7 @@ namespace CodexVBE
         public ChatWindow()
         {
             InitializeComponent();
+            pendingMessagesPanel.SizeChanged += (sender, args) => { foreach (Control row in pendingMessagesPanel.Controls) row.Width = Math.Max(200, pendingMessagesPanel.ClientSize.Width - 24); };
             Icon = VbeWindowIcons.Icon("assistant");
             github.Image = VbeWindowIcons.Image("github");
             configure.Image = VbeWindowIcons.Image("settings");
@@ -97,7 +98,6 @@ namespace CodexVBE
             configure.Click += (sender, args) => ShowSettings();
             projectAccess.Click += (sender, args) => ConfigureProjectAccess();
             resumeTurn.Click += async (sender, args) => await ResumeBudgetAsync();
-            prompt.TextChanged += (sender, args) => UpdateBudgetControls();
             refreshModels.Click += async (sender, args) => await LoadModelsAsync();
             modelPicker.SelectedIndexChanged += (sender, args) =>
             {
@@ -127,7 +127,7 @@ namespace CodexVBE
                 if (!restoringSelection)
                     try { WriteSettings(settings); } catch (Exception ex) { LoadLog.Write("Reasoning effort save failed: " + ex.Message); }
             };
-            send.Click += async (sender, args) => { if (busy) await StopTurnAsync(); else await SendAsync(); };
+            send.Click += async (sender, args) => await SendAsync();
             int defaultProvider = Array.FindIndex(LlmProvider.All, item => item.Name == settings.ProviderName);
             loadingSession = true;
             try { providerPicker.SelectedIndex = defaultProvider < 0 ? 0 : defaultProvider; }
@@ -327,8 +327,6 @@ namespace CodexVBE
         {
             busy = value;
             modePicker.Enabled = !value;
-            send.Text = value ? UiText.Get("Stop ■") : UiText.Get("Send ↑");
-            toolTips.SetToolTip(send, value ? UiText.Get("Stop the current response. Changes already applied can still be undone in the chat.") : UiText.Get("Send the message and its context to the agent."));
             send.Enabled = true;
             newChat.Enabled = scopePicker.Enabled = sessionList.Enabled =
                 providerPicker.Enabled = refreshModels.Enabled = configure.Enabled = projectAccess.Enabled = !value;
@@ -337,6 +335,7 @@ namespace CodexVBE
             activityBar.Visible = value;
             RefreshCodeChangeCards();
             UpdateBudgetControls();
+            RefreshPendingMessages();
         }
 
         /// <summary>Demande l’interruption du tour actif et désactive temporairement la commande d’arrêt.</summary>
@@ -360,7 +359,18 @@ namespace CodexVBE
         /// <returns>Tâche terminée lorsque le tour et son nettoyage sont achevés.</returns>
         private async Task SendAsync()
         {
-            string question = prompt.Text.Trim();
+            if (busy)
+            {
+                if (string.IsNullOrWhiteSpace(prompt.Text)) await StopTurnAsync();
+                else QueueComposerMessage();
+                return;
+            }
+            await SendRequestAsync(null);
+        }
+
+        private async Task SendRequestAsync(QueuedChatMessage queued)
+        {
+            string question = (queued?.Text ?? prompt.Text).Trim();
             if (!busy && question.Length == 0 && currentSession?.BudgetPaused == true) { await ResumeBudgetAsync(); return; }
             if (busy || question.Length == 0) return;
             var selectedModel = modelPicker.SelectedItem as LlmModelOption;
@@ -369,7 +379,7 @@ namespace CodexVBE
             ChatAttachment[] attachments;
             try
             {
-                EnsureCurrentScope(); attachments = PrepareAttachments(question);
+                EnsureCurrentScope(); attachments = queued == null ? PrepareAttachments(question) : PrepareRequestAttachments(question, queued.References ?? new VbeChatReference[0], queued.Attachments ?? new ChatAttachment[0]);
                 requestText = ChatCommand.Expand(question);
                 foreach (var attachment in attachments) requestText += "\n\n<context label=\"" + attachment.Label + "\">\n" + attachment.Text + "\n</context>";
             }
@@ -377,12 +387,12 @@ namespace CodexVBE
             var scope = scopePicker.SelectedItem as MacroScope;
             if (scope != null) requestText = UiText.Get("VBA project for this conversation: ") + scope.Label +
                 UiText.Get("\nProject identifier to use in tools: ") + scope.Project + "\n\n" + requestText;
-            string attachedMemory = attachMemory.Checked == true ? projectMemory : null;
+            string attachedMemory = queued != null ? queued.Memory : (attachMemory.Checked == true ? queuedDraftMemory ?? projectMemory : null);
             if (!string.IsNullOrWhiteSpace(attachedMemory))
                 requestText += "\n\n<memoire-document>\n" + attachedMemory + "\n</memoire-document>";
             var selectedEffort = effortPicker.SelectedItem as LlmEffortOption;
-            var attachedReferences = CurrentReferences(question);
-            var pendingDraftAttachments = draftAttachments.ToArray();
+            var attachedReferences = queued?.References ?? CurrentReferences(question);
+            var pendingDraftAttachments = queued?.Attachments ?? draftAttachments.ToArray();
             stopRequested = false;
             activeTurnId = Guid.NewGuid().ToString("N");
             currentSession.BudgetPaused = false;
@@ -395,12 +405,16 @@ namespace CodexVBE
             if (!string.IsNullOrEmpty(currentSession.ResumeContext)) requestText = UiText.Get("Branch history (context only; read the live code again):\n") + currentSession.ResumeContext + "\n\n" + requestText;
             streamedFinalText = null;
             RenameFromQuestion(question);
+            if (queued != null) currentSession.PendingMessages.Remove(queued);
             SetBusy(true);
-            prompt.Clear();
-            HideReferences();
-            selectedReferences.Clear();
-            draftAttachments.Clear();
-            attachMemory.Checked = false;
+            if (queued == null)
+            {
+                prompt.Clear();
+                HideReferences();
+                selectedReferences.Clear();
+                draftAttachments.Clear();
+                attachMemory.Checked = false; queuedDraftMemory = null;
+            }
             followConversation = true;
             AddEntry(new ChatEntry { Speaker = "Vous", Text = question, References = attachedReferences, AttachedMemory = attachedMemory, Attachments = attachments, TurnId = activeTurnId });
             tools.NoteUserRequest(question);
@@ -416,6 +430,7 @@ namespace CodexVBE
             if (!provider.IsCodex) messages.Add(new { role = "user", content = requestText });
             SaveCurrentSession();
             providerStreamId = null;
+            bool completed = false;
             try
             {
                 if (provider.IsCodex)
@@ -423,14 +438,17 @@ namespace CodexVBE
                     if (codex == null && CodexTurnOverride == null)
                         codex = CreateCodexClient();
                     SetStatus(UiText.Get("Codex — working"));
-                    CompleteAssistantResponse(await (CodexTurnOverride != null
+                    string answer = await (CodexTurnOverride != null
                         ? CodexTurnOverride(requestText, selectedModel.Id, selectedEffort == null ? null : selectedEffort.Id)
-                        : codex.TurnAsync(requestText, selectedModel.Id, selectedEffort == null ? null : selectedEffort.Id)));
+                        : codex.TurnAsync(requestText, selectedModel.Id, selectedEffort == null ? null : selectedEffort.Id));
+                    if (stopRequested) throw new OperationCanceledException();
+                    CompleteAssistantResponse(answer);
                     currentSession.ResumeContext = null;
                     SetStatus(UiText.Get("Codex — ready"));
+                    completed = !stopRequested;
                     return;
                 }
-                await RunHttpBudgetAsync(provider, selectedModel.Id);
+                completed = await RunHttpBudgetAsync(provider, selectedModel.Id);
             }
             catch (Exception ex)
             {
@@ -448,6 +466,7 @@ namespace CodexVBE
                 {
                     selectedReferences.AddRange(attachedReferences);
                     draftAttachments.AddRange(pendingDraftAttachments);
+                    queuedDraftMemory = attachedMemory;
                     attachMemory.Checked = !string.IsNullOrEmpty(attachedMemory);
                     prompt.Text = question;
                     RefreshContextChips();
@@ -467,6 +486,7 @@ namespace CodexVBE
                     });
                     if (currentSession?.BudgetPaused != true && verifyAfterEdit.Checked == true && codeChanges.Exists(x => x.TurnId == activeTurnId)) await VerifyProjectAsync();
                     activeTurnId = null; SetBusy(false); SaveCurrentSession();
+                    await DispatchPendingAsync(completed);
                 }
             }
         }

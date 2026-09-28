@@ -24,9 +24,10 @@ namespace CodexVBE
         /// <summary>Fenêtre contextuelle des commandes et références trouvées.</summary>
         private Popup referencePopup;
         /// <summary>Résultats sélectionnables de la recherche contextuelle.</summary>
-        private ListBox referenceList;
+        private Forms.ListBox referenceList;
+        private ChatSuggestionsView referenceView;
         /// <summary>État de la recherche ou instructions de sélection affichés sous la liste.</summary>
-        private TextBlock referenceStatus;
+        private Forms.Label referenceStatus;
         /// <summary>Index des références du projet VBA courant.</summary>
         private VbeChatReferences referenceIndex;
         /// <summary>Minuteur WinForms qui fait progresser la construction de l’index.</summary>
@@ -49,51 +50,22 @@ namespace CodexVBE
             prompt.FlowDirection = UiText.Culture.TextInfo.IsRightToLeft ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
             AutomationProperties.SetName(prompt, UiText.Get("Your request; Enter to send, Shift+Enter for a new line"));
 
-            referenceList = new ListBox { Width = 350, MaxHeight = 240,
-                BorderThickness = new Thickness(0), Background = Ink("#FFFFFF") };
-            ScrollViewer.SetHorizontalScrollBarVisibility(referenceList, ScrollBarVisibility.Disabled);
-            var itemLayout = new FrameworkElementFactory(typeof(DockPanel));
-            var tokenText = new FrameworkElementFactory(typeof(TextBlock));
-            tokenText.SetBinding(TextBlock.TextProperty, new Binding("DisplayToken"));
-            tokenText.SetValue(TextBlock.FontFamilyProperty, new FontFamily("Segoe UI Semibold"));
-            tokenText.SetValue(TextBlock.FontSizeProperty, 12.0);
-            tokenText.SetValue(TextBlock.TextTrimmingProperty, TextTrimming.CharacterEllipsis);
-            var kindText = new FrameworkElementFactory(typeof(TextBlock));
-            kindText.SetBinding(TextBlock.TextProperty, new Binding("DisplayKind"));
-            kindText.SetValue(TextBlock.MarginProperty, new Thickness(12, 0, 0, 0));
-            kindText.SetValue(TextBlock.ForegroundProperty,
-                new SolidColorBrush(Color.FromRgb(100, 116, 139)));
-            kindText.SetValue(DockPanel.DockProperty, System.Windows.Controls.Dock.Right);
-            itemLayout.AppendChild(kindText);
-            itemLayout.AppendChild(tokenText);
-            referenceList.ItemTemplate = new DataTemplate { VisualTree = itemLayout };
-            var itemStyle = new Style(typeof(ListBoxItem));
-            itemStyle.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(10, 7, 10, 7)));
-            itemStyle.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(0)));
-            itemStyle.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch));
-            itemStyle.Setters.Add(new Setter(FrameworkElement.ToolTipProperty, new Binding("DisplayToken")));
-            var selectedStyle = new Trigger { Property = ListBoxItem.IsSelectedProperty, Value = true };
-            selectedStyle.Setters.Add(new Setter(Control.BackgroundProperty,
-                new SolidColorBrush(Color.FromRgb(229, 240, 255))));
-            selectedStyle.Setters.Add(new Setter(Control.ForegroundProperty,
-                new SolidColorBrush(Color.FromRgb(29, 78, 216))));
-            itemStyle.Triggers.Add(selectedStyle);
-            referenceList.ItemContainerStyle = itemStyle;
-            referenceList.PreviewMouseLeftButtonUp += (sender, args) => AcceptReference();
-            referenceStatus = new TextBlock { FontSize = 11, Foreground = Ink("#64748B"),
-                Margin = new Thickness(9, 5, 9, 5), TextWrapping = TextWrapping.Wrap };
-            var referenceBody = new StackPanel();
-            referenceBody.Children.Add(referenceList);
-            referenceBody.Children.Add(referenceStatus);
-            referencePopup = new Popup {
-                PlacementTarget = prompt, Placement = PlacementMode.Relative,
-                StaysOpen = false, AllowsTransparency = true,
-                Child = new Border { Background = Ink("#FFFFFF"),
-                    BorderBrush = new SolidColorBrush(Color.FromRgb(203, 213, 225)),
-                    BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8),
-                    Padding = new Thickness(4), Child = referenceBody,
-                    Effect = new DropShadowEffect { BlurRadius = 14, ShadowDepth = 3, Opacity = 0.18 } }
+            referenceView = new ChatSuggestionsView();
+            referenceList = referenceView.targets; referenceStatus = referenceView.status;
+            referenceList.MouseUp += (sender,args) => AcceptReference();
+            referenceList.DrawItem += (sender,args) => {
+                if (args.Index < 0 || args.Index >= referenceList.Items.Count) return;
+                args.DrawBackground();
+                var value = referenceList.Items[args.Index];
+                string token = value is VbeChatReference reference ? reference.DisplayToken : ((ChatCommand)value).DisplayToken;
+                string kind = value is VbeChatReference item ? item.DisplayKind : ((ChatCommand)value).DisplayKind;
+                var bounds = args.Bounds; bounds.Inflate(-8,0);
+                Forms.TextRenderer.DrawText(args.Graphics, token + " · " + kind, args.Font, bounds, args.ForeColor,
+                    Forms.TextFormatFlags.VerticalCenter | Forms.TextFormatFlags.EndEllipsis | Forms.TextFormatFlags.NoPrefix);
+                args.DrawFocusRectangle();
             };
+            referencePopup = new Popup { PlacementTarget = prompt, Placement = PlacementMode.Relative,
+                StaysOpen = false, AllowsTransparency = true, Child = new ChatDesignerHost(referenceView) };
             referenceIndex = new VbeChatReferences(session);
             referenceTimer = new Forms.Timer { Interval = 30 };
             referenceTimer.Tick += (sender, args) => {
@@ -103,6 +75,7 @@ namespace CodexVBE
             // Event callbacks see a complete composer, including its popup and timer.
             prompt.PreviewKeyDown += PromptKeyDown;
             prompt.TextChanged += (sender, args) => {
+                UpdateBudgetControls();
                 acceptedTokenEnd = -1;
                 UpdateReferences();
                 RefreshContextChips();
@@ -163,20 +136,32 @@ namespace CodexVBE
             string query = prompt.Text.Substring(start, caret - start);
             char prefix = prompt.Text[start - 1];
             var matches = referenceIndex.MatchPrefix(query, prefix).ToArray();
-            referenceList.ItemsSource = matches;
+            SetSuggestionTargets(matches);
             referenceList.SelectedIndex = matches.Length > 0 ? 0 : -1;
             var rectangle = prompt.GetRectFromCharacterIndex(caret);
-            referenceList.Width = prompt.ActualWidth > 0 ? Math.Max(240, Math.Min(480, prompt.ActualWidth - 14)) : 350;
-            referenceStatus.MaxWidth = referenceList.Width - 12;
-            referencePopup.HorizontalOffset = Math.Max(0, Math.Min(rectangle.Left, prompt.ActualWidth - referenceList.Width - 10));
+            referenceView.Width = prompt.ActualWidth > 0 ? (int)Math.Max(240, Math.Min(480, prompt.ActualWidth - 14)) : 350;
+            referenceList.Height = Math.Max(30, Math.Min(240, matches.Length * referenceList.ItemHeight));
+            ((FrameworkElement)referencePopup.Child).Width = referenceView.Width;
+            referenceStatus.MaximumSize = new System.Drawing.Size(Math.Max(200, referenceView.Width - 24), 0);
+            referencePopup.HorizontalOffset = Math.Max(0, Math.Min(rectangle.Left, prompt.ActualWidth - referenceView.Width - 10));
             referencePopup.VerticalOffset = rectangle.Bottom + 3;
-            referenceList.Visibility = matches.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
+            referenceList.Visible = matches.Length > 0;
             referenceStatus.Text = referenceIndex.IsLoading ? UiText.Get("Searching the project…") :
                 !string.IsNullOrWhiteSpace(referenceIndex.Error) ? referenceIndex.Error :
                 matches.Length == 0 ? UiText.Get("No matching target") : UiText.Get("↑ ↓ Browse · Enter Insert · Esc Close");
             referencePopup.IsOpen = true;
         }
 
+        /// <summary>Replaces variable suggestion data without rebuilding the Designer list.</summary>
+        /// <param name="targets">Reference or command records.</param>
+        private void SetSuggestionTargets(object[] targets)
+        {
+            referenceList.BeginUpdate();
+            try {
+                referenceList.DataSource = null;
+                referenceList.Items.Clear(); referenceList.Items.AddRange(targets);
+            } finally { referenceList.EndUpdate(); }
+        }
         /// <summary>Affiche les commandes qui correspondent au préfixe saisi en début de message.</summary>
         /// <param name="caret">Position du curseur dans la zone de saisie.</param>
         /// <returns>true si une liste de commandes correspondantes est affichée.</returns>
@@ -184,11 +169,13 @@ namespace CodexVBE
         {
             if (!prompt.Text.StartsWith("/") || caret < 1 || prompt.Text.Substring(0, caret).Any(char.IsWhiteSpace)) return false;
             var matches = ChatCommand.All.Where(x => x.Token.StartsWith(prompt.Text.Substring(0, caret), StringComparison.OrdinalIgnoreCase) || x.EnglishToken.StartsWith(prompt.Text.Substring(0, caret), StringComparison.OrdinalIgnoreCase)).ToArray();
-            referenceList.ItemsSource = matches; referenceList.SelectedIndex = matches.Length > 0 ? 0 : -1;
-            referenceList.Visibility = Visibility.Visible; referenceStatus.Text = UiText.Get("Command · Enter to choose · add your instructions");
+            SetSuggestionTargets(matches); referenceList.SelectedIndex = matches.Length > 0 ? 0 : -1;
+            referenceList.Visible = true; referenceStatus.Text = UiText.Get("Command · Enter to choose · add your instructions");
             referencePopup.HorizontalOffset = 0; referencePopup.VerticalOffset = prompt.GetRectFromCharacterIndex(caret).Bottom + 3;
-            referenceList.Width = Math.Max(240, Math.Min(420, prompt.ActualWidth - 14));
-            referenceStatus.MaxWidth = referenceList.Width - 12;
+            referenceView.Width = (int)Math.Max(240, Math.Min(420, prompt.ActualWidth - 14));
+            ((FrameworkElement)referencePopup.Child).Width = referenceView.Width;
+            referenceList.Height = Math.Max(30, Math.Min(240, matches.Length * referenceList.ItemHeight));
+            referenceStatus.MaximumSize = new System.Drawing.Size(Math.Max(200, referenceView.Width - 24), 0);
             referencePopup.IsOpen = true; return true;
         }
 
@@ -267,7 +254,7 @@ namespace CodexVBE
             try
             {
                 while (contextChips.Controls.Count > 0) contextChips.Controls[0].Dispose();
-                if (attachMemory.Checked && !string.IsNullOrWhiteSpace(projectMemory))
+                if (attachMemory.Checked && !string.IsNullOrWhiteSpace(queuedDraftMemory ?? projectMemory))
                 {
                     var memory = new ChatContextChipView();
                     memory.ShowItem(UiText.Get("Attached memory · ×"), false, null, UiText.Get("Remove notes from the next message"));
@@ -337,6 +324,7 @@ namespace CodexVBE
         {
             referenceTimer?.Stop();
             referenceTimer?.Dispose();
+            referenceView?.Dispose();
             HideReferences();
         }
     }

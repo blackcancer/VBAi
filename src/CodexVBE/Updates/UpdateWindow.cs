@@ -38,6 +38,7 @@ namespace CodexVBE
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
+            if (DesignMode || LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
             var preferences = ReadPreferences();
             automaticCheck.Checked = preferences.CheckAutomatically;
             automaticDownload.Checked = preferences.DownloadAutomatically;

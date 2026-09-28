@@ -20,9 +20,9 @@ namespace CodexVBE.Tests.Unit
                 container.SetValue(TranscriptItem.ReleaseProperty, new Action<TranscriptItem>(item => Call(window, "ReleaseEntry", item)));
                 container.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
                 Assert.IsNotNull(container.Content);
-                Assert.AreEqual(1, Get<Dictionary<FormCutChange, System.Windows.Controls.Button>>(window, "formCutButtons").Count);
+                Assert.AreEqual(1, Get<Dictionary<FormCutChange, System.Windows.Forms.Button>>(window, "formCutButtons").Count);
                 container.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
-                Assert.AreEqual(0, Get<Dictionary<FormCutChange, System.Windows.Controls.Button>>(window, "formCutButtons").Count);
+                Assert.AreEqual(0, Get<Dictionary<FormCutChange, System.Windows.Forms.Button>>(window, "formCutButtons").Count);
                 Assert.AreEqual(0, Get<Dictionary<ChatEntry, FrameworkElement>>(window, "entryViews").Count);
             }
         }

@@ -97,6 +97,7 @@ namespace CodexVBE
         private CodexVBE.ChatComposerPanel composerLayout;
         /// <summary>Disposition des références et pièces jointes sélectionnées.</summary>
         private System.Windows.Forms.FlowLayoutPanel contextChips;
+        private System.Windows.Forms.FlowLayoutPanel pendingMessagesPanel;
         /// <summary>Panneau du champ de saisie du message.</summary>
         private System.Windows.Forms.Panel promptPanel;
         /// <summary>Libellé indicatif du champ de saisie.</summary>
@@ -207,6 +208,7 @@ namespace CodexVBE
             this.attachMemory = new System.Windows.Forms.CheckBox();
             this.composerLayout = new CodexVBE.ChatComposerPanel();
             this.contextChips = new System.Windows.Forms.FlowLayoutPanel();
+            this.pendingMessagesPanel = new System.Windows.Forms.FlowLayoutPanel();
             this.promptPanel = new System.Windows.Forms.Panel();
             this.promptPlaceholder = new System.Windows.Forms.Label();
             this.composerActions = new System.Windows.Forms.TableLayoutPanel();
@@ -915,17 +917,19 @@ namespace CodexVBE
             this.composerLayout.BackColor = System.Drawing.Color.White;
             this.composerLayout.ColumnCount = 1;
             this.composerLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.composerLayout.Controls.Add(this.pendingMessagesPanel, 0, 1);
             this.composerLayout.Controls.Add(this.contextChips, 0, 0);
-            this.composerLayout.Controls.Add(this.promptPanel, 0, 1);
-            this.composerLayout.Controls.Add(this.composerActions, 0, 2);
-            this.composerLayout.Controls.Add(this.contextToggle, 0, 3);
-            this.composerLayout.Controls.Add(this.contextPanel, 0, 4);
+            this.composerLayout.Controls.Add(this.promptPanel, 0, 2);
+            this.composerLayout.Controls.Add(this.composerActions, 0, 3);
+            this.composerLayout.Controls.Add(this.contextToggle, 0, 4);
+            this.composerLayout.Controls.Add(this.contextPanel, 0, 5);
             this.composerLayout.Dock = System.Windows.Forms.DockStyle.Fill;
             this.composerLayout.Location = new System.Drawing.Point(18, 416);
             this.composerLayout.Margin = new System.Windows.Forms.Padding(0);
             this.composerLayout.Name = "composerLayout";
             this.composerLayout.Padding = new System.Windows.Forms.Padding(6);
-            this.composerLayout.RowCount = 5;
+            this.composerLayout.RowCount = 6;
+            this.composerLayout.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.composerLayout.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.composerLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 88F));
             this.composerLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
@@ -933,6 +937,18 @@ namespace CodexVBE
             this.composerLayout.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.composerLayout.Size = new System.Drawing.Size(564, 294);
             this.composerLayout.TabIndex = 41;
+            //
+            // pendingMessagesPanel
+            //
+            this.pendingMessagesPanel.AutoSize = true;
+            this.pendingMessagesPanel.AutoScroll = true;
+            this.pendingMessagesPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pendingMessagesPanel.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
+            this.pendingMessagesPanel.WrapContents = false;
+            this.pendingMessagesPanel.MaximumSize = new System.Drawing.Size(0, 144);
+            this.pendingMessagesPanel.Margin = new System.Windows.Forms.Padding(0);
+            this.pendingMessagesPanel.Name = "pendingMessagesPanel";
+            this.pendingMessagesPanel.Visible = false;
             //
             // contextChips
             //
