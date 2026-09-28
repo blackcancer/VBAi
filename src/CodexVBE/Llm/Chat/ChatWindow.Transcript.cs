@@ -137,7 +137,7 @@ namespace CodexVBE
             DisposeEntryViews();
             visibleEntries.Clear(); firstLoadedEntry = 0;
             transcriptEntries.Clear(); entryViews.Clear(); liveEntries.Clear(); liveTexts.Clear();
-            activityGroups.Clear(); activityOwners.Clear(); expandedActivityGroups.Clear();
+            activityGroups.Clear(); activityOwners.Clear(); expandedActivityGroups.Clear(); expandedActivitySteps.Clear();
             rollbackButtons.Clear(); changeStates.Clear(); formCutButtons.Clear(); followConversation = true;
         }
         /// <summary>Fait défiler vers le dernier élément si le suivi automatique est activé.</summary>

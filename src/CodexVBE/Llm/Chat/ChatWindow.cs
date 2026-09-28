@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
@@ -307,8 +307,9 @@ namespace CodexVBE
                 tools, SetStatus, settings, currentSession?.CodexThreadId, TransportFactory());
             client.ChatUpdate += (kind, id, text, complete) =>
             {
-                if (currentSession == ownerSession && !IsDisposed) ReceiveChatUpdate(kind, id, text, complete);
+                if (currentSession == ownerSession && !IsDisposed && kind != "tool" && kind != "summary") ReceiveChatUpdate(kind, id, text, complete);
             };
+            client.ActivityUpdate += activity => { if (currentSession == ownerSession && !IsDisposed) ReceiveAgentActivity(activity); };
             client.ThreadReady += id =>
             {
                 if (currentSession == ownerSession && currentSession != null && !IsDisposed)

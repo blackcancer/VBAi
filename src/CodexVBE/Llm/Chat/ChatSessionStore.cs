@@ -13,6 +13,9 @@ namespace CodexVBE
         /// <summary>Obtient ou définit l’identifiant du locuteur, par exemple utilisateur ou assistant.</summary>
         /// <value>Nom du locuteur.</value>
         public string Speaker { get; set; }
+        /// <summary>Étape native détaillée lorsqu’il s’agit d’une activité de l’agent.</summary>
+        /// <value>Métadonnées de l’action, ou null pour un ancien message.</value>
+        public CodexAgentActivity Activity { get; set; }
         /// <summary>Obtient ou définit le texte du message.</summary>
         /// <value>Texte brut du message.</value>
         public string Text { get; set; }

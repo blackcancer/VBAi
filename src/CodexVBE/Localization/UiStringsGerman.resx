@@ -1980,4 +1980,19 @@ Anmeldung über Git Credential Manager; die Commit-Identität wird in Git festge
   <data name="Styles the VBE title bar, workspace, native panes and scrollbars. Menus and toolbars remain controlled by the legacy Office renderer." xml:space="preserve"><value>Gestaltet die Titelleiste, den Arbeitsbereich, die nativen Fensterbereiche und die Bildlaufleisten des VBE dunkel. Menüs und Symbolleisten werden weiterhin vom bisherigen Office-Renderer gesteuert.</value></data>
   <data name="Native editor colors could not be updated. See the log for details." xml:space="preserve"><value>Die Farben des nativen Editors konnten nicht aktualisiert werden. Weitere Informationen finden Sie im Protokoll.</value></data>
   <data name="Applies dark native surfaces and editor colors after Settings closes. Original editor colors are saved and restored when disabled. Some legacy controls remain experimental." xml:space="preserve"><value>Wendet dunkle native Oberflächen und Editorfarben nach dem Schließen der Einstellungen an. Die ursprünglichen Editorfarben werden gespeichert und beim Deaktivieren wiederhergestellt. Einige ältere Steuerelemente bleiben experimentell.</value></data>
+  <data name="In progress" xml:space="preserve">
+    <value>In Bearbeitung</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>Abgeschlossen</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>Fehlgeschlagen</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>Abgebrochen</value>
+  </data>
+  <data name="Declined" xml:space="preserve">
+    <value>Abgelehnt</value>
+  </data>
 </root>

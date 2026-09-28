@@ -11,6 +11,52 @@ namespace CodexVBE.Tests.Unit
     public sealed partial class ChatWindowStateTests
     {
         [STATestMethod, TestCategory("Unit")]
+        public void NativeTimelineUpdatesEachStepOnceAndRetainsItsDetailsAcrossRecycling()
+        {
+            using (var window = Surfaces())
+            {
+                Call(window, "ClearTranscript");
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "r:0", Kind = "reasoning", Title = UiText.Get("Reasoning · summary"), Detail = "Inspecter le module avant modification.", Status = "completed" });
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "t", Kind = "dynamicToolCall", Title = "read_module", Detail = "Classeur1 · Module1", Status = "inProgress" });
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "c", Kind = "commandExecution", Title = "dotnet test", Detail = "passed", Status = "completed", DurationMs = 1250 });
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "t", Kind = "dynamicToolCall", Title = "read_module", Detail = "Classeur1 · Module1", Status = "completed", DurationMs = 30 });
+                var entries = Get<List<ChatEntry>>(window, "transcriptEntries");
+                Assert.AreEqual(3, entries.Count); Assert.AreEqual(1, Get<ObservableCollection<object>>(window, "visibleEntries").Count);
+                var group = (Expander)Call(window, "RenderEntry", entries[0]);
+                var steps = ((StackPanel)group.Content).Children.OfType<Expander>().ToArray();
+                Assert.AreEqual(3, steps.Length); Assert.IsFalse(steps[1].IsExpanded);
+                steps[1].IsExpanded = true;
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "t", Kind = "dynamicToolCall", Title = "read_module", Detail = "Changed result", Status = "failed" });
+                group = (Expander)Call(window, "RenderEntry", entries[0]);
+                steps = ((StackPanel)group.Content).Children.OfType<Expander>().ToArray();
+                Assert.IsTrue(steps[1].IsExpanded); Assert.AreEqual("Changed result", ((TextBox)steps[1].Content).Text);
+                Assert.IsTrue(((DockPanel)steps[1].Header).Children.OfType<TextBlock>().Any(b => b.Text.Contains(UiText.Get("Failed"))));
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "c", Kind = "commandExecution", Detail = "\nnext", Append = true, Status = "inProgress" });
+                Assert.AreEqual("dotnet test", entries[2].Activity.Title); Assert.AreEqual("passed\nnext", entries[2].Activity.Detail);
+                Assert.AreEqual("completed", entries[2].Activity.Status, "A late output delta cannot reopen a completed action.");
+                foreach (var state in new[] { "declined", "interrupted", "completed" })
+                {
+                    Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "c", Kind = "commandExecution", Detail = "result", Status = state });
+                    Assert.IsNotNull(Call(window, "RenderActivityStep", entries[2]));
+                }
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Kind = "reasoning", Id = "empty", Detail = " " });
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity()); Call(window, "ReceiveAgentActivity", (object)null);
+                Assert.AreEqual(3, entries.Count);
+                Call(window, "RefreshTranscriptWindow", 0); Assert.AreEqual(1, Get<ObservableCollection<object>>(window, "visibleEntries").Count);
+                group = (Expander)Call(window, "RenderEntry", entries[0]); group.IsExpanded = true;
+                foreach (var step in ((StackPanel)group.Content).Children.OfType<Expander>()) step.IsExpanded = true;
+                string preview = System.Environment.GetEnvironmentVariable("CODEXVBE_ACTIVITY_PREVIEW");
+                if (!string.IsNullOrEmpty(preview))
+                {
+                    group.Measure(new Size(500, double.PositiveInfinity)); group.Arrange(new Rect(0, 0, 500, group.DesiredSize.Height)); group.UpdateLayout();
+                    var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap(500, (int)System.Math.Ceiling(group.ActualHeight), 96, 96, System.Windows.Media.PixelFormats.Pbgra32); bitmap.Render(group);
+                    var png = new System.Windows.Media.Imaging.PngBitmapEncoder(); png.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
+                    System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(preview)); using (var stream = System.IO.File.Create(preview)) png.Save(stream);
+                }
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
         public void ActivitiesGroupBetweenMessagesAndPreserveStreamsRawHistoryAndExpansion()
         {
             using (var window = Surfaces())

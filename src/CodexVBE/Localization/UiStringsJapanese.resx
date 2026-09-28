@@ -1980,4 +1980,19 @@ Git Credential Manager でサインインします。コミットの作成者情
   <data name="Styles the VBE title bar, workspace, native panes and scrollbars. Menus and toolbars remain controlled by the legacy Office renderer." xml:space="preserve"><value>VBE のタイトルバー、作業領域、ネイティブウィンドウ、スクロールバーをダーク表示にします。メニューとツールバーは従来の Office 描画エンジンで制御されます。</value></data>
   <data name="Native editor colors could not be updated. See the log for details." xml:space="preserve"><value>ネイティブエディターの色を更新できませんでした。詳細はログを確認してください。</value></data>
   <data name="Applies dark native surfaces and editor colors after Settings closes. Original editor colors are saved and restored when disabled. Some legacy controls remain experimental." xml:space="preserve"><value>設定を閉じた後にネイティブ領域のダーク表示とエディターの色を適用します。元の色は保存され、無効にすると復元されます。一部の従来のコントロールは試験的な機能です。</value></data>
+  <data name="In progress" xml:space="preserve">
+    <value>実行中</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>完了</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>失敗</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>中断</value>
+  </data>
+  <data name="Declined" xml:space="preserve">
+    <value>拒否</value>
+  </data>
 </root>
