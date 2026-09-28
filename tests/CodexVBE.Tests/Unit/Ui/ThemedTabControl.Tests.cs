@@ -75,5 +75,26 @@ namespace CodexVBE.Tests.Unit
                 Assert.IsTrue(combo.IsHandleCreated);
             }
         }
+        [STATestMethod]
+        public void CloseButtonsRouteOnlyOwnedLeftEventsWithoutChangingTabSelection()
+        {
+            using (var scope = new ThemeScope())
+            using (var form = new Form { Left = -10000, Top = -10000, ShowInTaskbar = false, Width = 400, Height = 200 })
+            using (var tabs = new ThemedTabControl { Dock = DockStyle.Fill })
+            {
+                form.Controls.Add(tabs); form.Show(); int ordinary = 0, closes = 0;
+                tabs.MouseDown += (sender, args) => ordinary++;
+                Action<MouseButtons, Point> dispatch = (button, point) => UiInvoke.Call(typeof(ThemedTabControl), "OnMouseDown", tabs, new MouseEventArgs(button, 1, point.X, point.Y, 0));
+                tabs.ShowCloseButtons = true; dispatch(MouseButtons.Left, Point.Empty); Assert.AreEqual(1, ordinary);
+                tabs.TabPages.Add(new TabPage("First")); tabs.TabPages.Add(new TabPage("Second")); tabs.SelectedIndex = 0;
+                Func<int, Point> closeCenter = index => { var rectangle = (Rectangle)UiInvoke.Call(typeof(ThemedTabControl), "CloseBounds", tabs, index); return new Point(rectangle.Left + rectangle.Width / 2, rectangle.Top + rectangle.Height / 2); };
+                tabs.ShowCloseButtons = false; dispatch(MouseButtons.Left, closeCenter(0)); Assert.AreEqual(2, ordinary);
+                tabs.ShowCloseButtons = true; dispatch(MouseButtons.Right, closeCenter(0)); Assert.AreEqual(3, ordinary);
+                dispatch(MouseButtons.Left, new Point(tabs.ClientRectangle.Left, tabs.ClientRectangle.Bottom - 1)); Assert.AreEqual(4, ordinary);
+                dispatch(MouseButtons.Left, closeCenter(0)); Assert.AreEqual(4, ordinary); Assert.AreEqual(0, tabs.SelectedIndex);
+                tabs.CloseRequested += (sender, args) => { closes++; Assert.AreSame(tabs, sender); Assert.AreEqual(1, args.TabPageIndex); Assert.AreSame(tabs.TabPages[1], args.TabPage); Assert.AreEqual(TabControlAction.Deselecting, args.Action); };
+                dispatch(MouseButtons.Left, closeCenter(1)); Assert.AreEqual(1, closes); Assert.AreEqual(4, ordinary); Assert.AreEqual(0, tabs.SelectedIndex); Assert.AreEqual(2, tabs.TabCount);
+            }
+        }
     }
 }

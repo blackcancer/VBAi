@@ -6,3 +6,8 @@
 | CrashReport | assembly metadata fallback and architecture; no exception, six nested exceptions bounded to five; frame arrays absent and methods/type absent; owned/foreign/aggregate stacks; title/description limits and null; snapshot null/invalid ID/filename/details/title/oversized title; native default directory resolved only, all files saved to temp override |
 
 Assembly, bitness and frame readers are restored after each fixture. Default readers preserve current runtime behavior. No real settings, clipboard, browser, Office or COM registration.
+## PR10 tab close matrix
+
+| Family | Cases |
+| --- | --- |
+| ThemedTabControl PR10 | close buttons disabled; non-left event; empty tabs; pointer outside all close rectangles; first/second close area with absent/present callback; selection and tab ownership preserved; callbacks receive Deselecting; no global input |
