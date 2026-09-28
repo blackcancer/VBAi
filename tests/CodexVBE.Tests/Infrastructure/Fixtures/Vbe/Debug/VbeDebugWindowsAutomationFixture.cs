@@ -34,6 +34,8 @@ namespace CodexVBE.Tests.Unit
             public bool HideCollapsedChildren;
             public bool FailName;
             public bool FailValue;
+            public bool FailSelection;
+            public int? RuntimeIdentity;
             public bool ReadOnly;
             public int FocusCount;
             public int SelectionCount;
@@ -74,14 +76,14 @@ namespace CodexVBE.Tests.Unit
                 int index = Parent.Children.IndexOf(this) + (direction == NavigateDirection.NextSibling ? 1 : -1);
                 return index >= 0 && index < Parent.Children.Count ? Parent.Children[index] : null;
             }
-            public int[] GetRuntimeId() { return new[] { AutomationInteropProvider.AppendRuntimeId, id }; }
+            public int[] GetRuntimeId() { return new[] { AutomationInteropProvider.AppendRuntimeId, RuntimeIdentity ?? id }; }
             public Rect BoundingRectangle => new Rect(0, 0, 100, 100);
             public IRawElementProviderSimple[] GetEmbeddedFragmentRoots() { return null; }
             public void SetFocus() { FocusCount++; }
             public IRawElementProviderFragmentRoot FragmentRoot => Root;
             public IRawElementProviderFragment ElementProviderFromPoint(double x, double y) { return this; }
             public IRawElementProviderFragment GetFocus() { return this; }
-            bool ISelectionItemProvider.IsSelected => Selected;
+            bool ISelectionItemProvider.IsSelected { get { if (FailSelection) throw new InvalidOperationException("selection unreadable"); return Selected; } }
             IRawElementProviderSimple ISelectionItemProvider.SelectionContainer => Parent;
             public void Select() { Selected = true; SelectionCount++; SelectedAction?.Invoke(); }
             public void AddToSelection() { Select(); }

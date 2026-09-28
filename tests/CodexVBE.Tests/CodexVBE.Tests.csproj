@@ -23,6 +23,7 @@
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="Accessibility" />
     <Reference Include="WindowsFormsIntegration" />
     <Reference Include="System.Xaml" />
     <Reference Include="System.Drawing" />
