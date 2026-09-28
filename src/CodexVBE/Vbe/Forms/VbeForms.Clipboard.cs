@@ -25,13 +25,17 @@ namespace CodexVBE
                 throw new InvalidOperationException("Clipboard recovery belongs to another live form or container.");
             dynamic before = ClipboardState(request.Project, request.Form, request.ParentPath);
             RequireClipboardRevision(request, (string)before.SelectionVersion, (string)before.ClipboardVersion);
-            System.Windows.Forms.Clipboard.SetDataObject(recovery.Backup.CreateDataObject(), true);
-            bool verified = recovery.Backup.Matches(System.Windows.Forms.Clipboard.GetDataObject());
+            WriteDesignerClipboard(recovery.Backup.CreateDataObject(), true);
+            bool verified = recovery.Backup.Matches(ReadDesignerClipboard());
             return new { Restored = verified, recovery.Backup.OmittedFormats,
                 State = ClipboardState(request.Project, request.Form, request.ParentPath), NextAction = "native_form_clipboard paste",
                 Limit = "Restores captured clipboard formats only; does not recreate controls. Inspect the current tree before an explicit paste to avoid duplicates. Native paste may change placement; omitted formats are not restored." };
         }
-        [DllImport("user32.dll")] private static extern uint GetClipboardSequenceNumber();
+        [DllImport("user32.dll", EntryPoint = "GetClipboardSequenceNumber")] private static extern uint NativeClipboardSequence();
+        /// <summary>Native clipboard boundaries; tests retain ownership of an in-memory IDataObject only.</summary>
+        internal static Func<uint> DesignerClipboardSequence = NativeClipboardSequence;
+        internal static Func<System.Windows.Forms.IDataObject> ReadDesignerClipboard = System.Windows.Forms.Clipboard.GetDataObject;
+        internal static Action<System.Windows.Forms.IDataObject, bool> WriteDesignerClipboard = System.Windows.Forms.Clipboard.SetDataObject;
         public object ClipboardState(string projectName, string formName, string parentPath = null)
         {
             dynamic form = GetForm(GetDesignProject(projectName), formName);
@@ -43,9 +47,9 @@ namespace CodexVBE
                 if (selected.Count >= 256) throw new InvalidOperationException("Designer selection exceeds 256 controls.");
                 selected.Add((string)control.Name);
             }
-            uint sequence = GetClipboardSequenceNumber();
+            uint sequence = DesignerClipboardSequence();
             bool canPaste = (bool)container.CanPaste;
-            if (sequence != GetClipboardSequenceNumber()) throw new InvalidOperationException("Clipboard changed during inspection.");
+            if (sequence != DesignerClipboardSequence()) throw new InvalidOperationException("Clipboard changed during inspection.");
             string selectionVersion = VbeCodeClipboard.Hash(new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(
                 new { Project = projectName, Form = formName, ParentPath = parentPath ?? "", TreeVersion = (string)tree.TreeVersion, Selected = selected }));
             return new { Project = projectName, Form = formName, ParentPath = parentPath ?? "", Tree = (object)tree, Selected = selected,
@@ -79,9 +83,9 @@ namespace CodexVBE
                             Left = (double)control.Left, Top = (double)control.Top, Width = (double)control.Width, Height = (double)control.Height });
                     }
                     container.Copy();
-                    uint sequence = GetClipboardSequenceNumber();
-                    var backup = DesignerClipboardBackup.Capture(System.Windows.Forms.Clipboard.GetDataObject());
-                    if (sequence != GetClipboardSequenceNumber()) throw new InvalidOperationException("Clipboard changed while preparing recovery; cut was not attempted.");
+                    uint sequence = DesignerClipboardSequence();
+                    var backup = DesignerClipboardBackup.Capture(ReadDesignerClipboard());
+                    if (sequence != DesignerClipboardSequence()) throw new InvalidOperationException("Clipboard changed while preparing recovery; cut was not attempted.");
                     recovery = new ClipboardRecovery { Id = Guid.NewGuid().ToString("N"), Form = (object)form, ParentPath = request.ParentPath ?? "", Backup = backup, OriginalTree = (object)before.Tree, Boxes = boxes.ToArray(), TabOrder = tabs.Values.ToArray() };
                     if (clipboardRecoveries.Count == 8) clipboardRecoveries.Dequeue();
                     clipboardRecoveries.Enqueue(recovery);
@@ -94,7 +98,7 @@ namespace CodexVBE
             catch (Exception ex) { error = error ?? ex.Message; }
             object afterTree = after == null ? null : (object)((dynamic)after).Tree;
             var changes = afterTree == null ? new FormHistoryDiff.Change[0] : FormHistoryDiff.Compare((object)before.Tree, afterTree);
-            if (recovery != null && error == null && afterTree != null && changes.Length > 0) recovery.CutTree = afterTree;
+            if (recovery != null && afterTree != null && error == null && changes.Length > 0) recovery.CutTree = afterTree;
             bool clipboardChanged = after != null && (string)((dynamic)after).ClipboardVersion != (string)before.ClipboardVersion;
             return new { request.Project, request.Form, request.Action, Executed = error == null,
                 DesignerChangeObserved = changes.Length > 0, ClipboardChanged = clipboardChanged,

@@ -37,8 +37,8 @@ namespace CodexVBE
             string error = null; object after = null; bool geometryVerified = false;
             try
             {
-                System.Windows.Forms.Clipboard.SetDataObject(recovery.Backup.CreateDataObject(), true);
-                if (!recovery.Backup.Matches(System.Windows.Forms.Clipboard.GetDataObject()))
+                WriteDesignerClipboard(recovery.Backup.CreateDataObject(), true);
+                if (!recovery.Backup.Matches(ReadDesignerClipboard()))
                     throw new InvalidOperationException("Recovery clipboard readback differs; no paste attempted.");
                 if (!(bool)container.CanPaste) throw new InvalidOperationException("The container cannot paste the recovery.");
                 // Never repeat a paste after a partial failure.
