@@ -40,7 +40,10 @@ namespace CodexVBE.Tests.Infrastructure
             public bool FailFileName;
             public string FileName => FailFileName ? throw new COMException("FileName unavailable") : Path;
             public int Mode { get; set; } = 2;
+            public int Type { get; set; } = 100;
+            public bool Saved { get; set; } = true;
             public int Protection { get; set; }
+            public List<object> References { get; } = new List<object>();
             public Components VBComponents { get; } = new Components();
         }
         public sealed class Components : IEnumerable
@@ -105,9 +108,14 @@ namespace CodexVBE.Tests.Infrastructure
             public int NumIndices => 0;
             public object Value => value();
         }
-        public sealed class Module
+        public sealed class Module : System.Dynamic.DynamicObject
         {
             public Component Parent { get; set; }
+            public override bool TryInvokeMember(System.Dynamic.InvokeMemberBinder binder, object[] args, out object result)
+            {
+                if (binder.Name == "Lines") { result = Lines[Convert.ToInt32(args[0]), Convert.ToInt32(args[1])]; return true; }
+                result = null; return false;
+            }
             public string Raw = "";
             public readonly Pane CodePane = new Pane();
             public Module() { CodePane.CodeModule = this; }
@@ -145,11 +153,13 @@ namespace CodexVBE.Tests.Infrastructure
                 if (LoseAttributesOnAdd) text = string.Join("\n", text.Split('\n').Where(line => !IsAttribute(line)));
                 Raw = CountOfLines == 0 ? text : Raw + "\n" + text; AfterOperation?.Invoke("add");
             }
-            public sealed class Range
+            public sealed class Range : System.Dynamic.DynamicObject
             {
                 private readonly Module owner;
                 public Range(Module owner) { this.owner = owner; }
                 public string this[int first, int count] { get { owner.BeforeRead?.Invoke(); return string.Join("\r\n", owner.Visible().Skip(first - 1).Take(count)); } }
+                public override bool TryInvoke(System.Dynamic.InvokeBinder binder, object[] args, out object result)
+                { result = this[Convert.ToInt32(args[0]), Convert.ToInt32(args[1])]; return true; }
             }
         }
         public sealed class Pane

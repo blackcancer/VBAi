@@ -66,6 +66,40 @@ namespace CodexVBE.Tests.Unit
         }
 
         [TestMethod]
+        public void EditorModuleResolutionUsesExactProjectAndCaseInsensitiveComponentIdentity()
+        {
+            var f = new CodexVBE.Tests.Infrastructure.EditorVbeContract(); var session = new VbeSession(f.Vbe);
+            Assert.AreSame(f.Original, ((EditorVbeModule)session.ResolveEditorModule("project1", "module1")).Component);
+            Assert.ThrowsException<ArgumentException>(() => session.ResolveEditorModule("Project1", null));
+            Assert.ThrowsException<ArgumentException>(() => session.ResolveEditorModule("Project1", " "));
+            Assert.ThrowsException<InvalidOperationException>(() => session.ResolveEditorModule("Project1", "Missing"));
+            Assert.IsNull(session.ReferenceEventSource(null)); Assert.IsNull(session.ReferenceEventSource(""));
+        }
+
+        [TestMethod]
+        public void RecentIdeRoutesReachTheirServiceGuardsAndAsyncOnlyResponses()
+        {
+            var f = new CodexVBE.Tests.Infrastructure.EditorVbeContract(); var session = new VbeSession(f.Vbe);
+            foreach (string command in new[] { "preview_procedure_rename", "apply_procedure_rename", "preview_class_member_rename", "apply_class_member_rename", "open_native_ide_dialog", "read_project_protection", "set_project_protection", "project_collection_state", "create_standalone_project", "open_standalone_project", "close_standalone_project", "open_project_help", "list_macros", "read_navigation_surface", "change_navigation_surface", "run_procedure_values", "procedure_values_status", "preview_fit_form_content", "apply_fit_form_content" })
+            {
+                try
+                {
+                    var response = session.Execute(new Request { Command = command });
+                    Assert.IsNotNull(response, command);
+                    Assert.IsFalse((response.Error ?? "").StartsWith("Unknown command:"), command);
+                    if (command == "read_project_protection" || command == "set_project_protection") Assert.AreEqual("ExpectedMode=2 is required for project properties.", response.Error);
+                    if (command == "read_navigation_surface" || command == "change_navigation_surface") StringAssert.Contains(response.Error, "requires InvokeAsync");
+                }
+                catch (ArgumentException) { }
+                catch (InvalidOperationException) { }
+            }
+            foreach (string command in new[] { "read_project_protection", "set_project_protection" })
+            {
+                Assert.ThrowsException<ArgumentException>(() => session.Execute(new Request { Command = command, ExpectedMode = 2 }));
+            }
+        }
+
+        [TestMethod]
         public void ProjectAndModuleDiscoveryRetainNamesTypesAndLineCounts()
         {
             var project = new FakeProject

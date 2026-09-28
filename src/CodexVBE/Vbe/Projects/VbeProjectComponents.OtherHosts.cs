@@ -56,8 +56,15 @@ namespace CodexVBE
         /// <summary>Sonde native bornée au processus Office courant; transport réel encore à qualifier dans Word/PowerPoint.</summary>
         internal sealed class NativeOtherHostProbe : IOtherHostProbe
         {
+            /// <summary>Reads the real process kind by default; isolates host contracts during qualification.</summary>
+            internal Func<string> ReadHostKind = CurrentHostKind;
+            /// <summary>Resolves an existing ROT application without starting Office.</summary>
+            internal Func<string, object> ReadActiveApplication = Marshal.GetActiveObject;
+            /// <summary>Reads the native window owner used by all application PID guards.</summary>
+            internal Func<IntPtr, uint> ReadOwner = Owner;
+            private static string CurrentHostKind() => RecognizeOtherHost(Process.GetCurrentProcess().ProcessName);
             /// <summary>Reconnaît exclusivement WINWORD.EXE ou POWERPNT.EXE.</summary>
-            public string HostKind => RecognizeOtherHost(Process.GetCurrentProcess().ProcessName);
+            public string HostKind => ReadHostKind();
             /// <summary>PID du processus de l'add-in.</summary>
             public int CurrentProcessId => Process.GetCurrentProcess().Id;
             /// <summary>Résout le ROT, puis NativeOM dans un document appartenant au PID courant si nécessaire.</summary>
@@ -66,7 +73,7 @@ namespace CodexVBE
                 if (HostKind == null) throw new InvalidOperationException("Only the current Word or PowerPoint process is supported.");
                 try
                 {
-                    object registered = Marshal.GetActiveObject(HostKind == "Word" ? "Word.Application" : "PowerPoint.Application");
+                    object registered = ReadActiveApplication(HostKind == "Word" ? "Word.Application" : "PowerPoint.Application");
                     if (ApplicationProcessId(registered) == (uint)CurrentProcessId) return registered;
                 }
                 catch (COMException) { }
@@ -100,13 +107,13 @@ namespace CodexVBE
             /// <summary>Vérifie HWND PowerPoint ou tous les HWND de fenêtres Word, sans sélectionner de document.</summary>
             public uint ApplicationProcessId(object application)
             {
-                if (HostKind == "PowerPoint") return Owner(new IntPtr(Convert.ToInt64(((dynamic)application).HWND)));
+                if (HostKind == "PowerPoint") return ReadOwner(new IntPtr(Convert.ToInt64(((dynamic)application).HWND)));
                 if (HostKind != "Word") return 0;
                 uint result = 0; int count = 0;
                 foreach (dynamic window in ((dynamic)application).Windows)
                 {
                     if (++count > 1000) throw new InvalidOperationException("Unexpected Word window count.");
-                    uint observed = Owner(new IntPtr(Convert.ToInt64(window.Hwnd)));
+                    uint observed = ReadOwner(new IntPtr(Convert.ToInt64(window.Hwnd)));
                     if (observed == 0 || (result != 0 && result != observed)) return 0;
                     result = observed;
                 }
