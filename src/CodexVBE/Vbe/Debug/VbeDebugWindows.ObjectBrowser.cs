@@ -1,4 +1,4 @@
-﻿﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -9,6 +9,8 @@ namespace CodexVBE
 {
     internal static partial class VbeDebugWindows
     {
+        /// <summary>Native UIA element acquisition, isolated without replacing browser orchestration.</summary>
+        internal static Func<IntPtr, AutomationElement> ObjectBrowserElement = AutomationElement.FromHandle;
         // Accessibility must run on a worker thread, never the VBE dispatcher.
         internal static object ReadObjectBrowser()
         {
@@ -59,7 +61,7 @@ namespace CodexVBE
             {
                 try
                 {
-                    AutomationElement element = AutomationElement.FromHandle(handle);
+                    AutomationElement element = ObjectBrowserElement(handle);
                     ControlType kind = element.Current.ControlType;
                     if (kind == ControlType.List || kind == ControlType.ComboBox || kind == ControlType.Document)
                         controls.Add(element);
@@ -71,10 +73,14 @@ namespace CodexVBE
         }
 
         [DllImport("user32.dll", EntryPoint = "GetParent")]
-        private static extern IntPtr ObjectBrowserParent(IntPtr handle);
+        private static extern IntPtr NativeObjectBrowserParent(IntPtr handle);
 
         [DllImport("user32.dll", EntryPoint = "IsWindowEnabled")]
-        private static extern bool ObjectBrowserEnabled(IntPtr handle);
+        private static extern bool NativeObjectBrowserEnabled(IntPtr handle);
+
+        /// <summary>Native ancestry and enabled-state boundaries shared by the browser and code view.</summary>
+        internal static Func<IntPtr, IntPtr> ObjectBrowserParent = NativeObjectBrowserParent;
+        internal static Func<IntPtr, bool> ObjectBrowserEnabled = NativeObjectBrowserEnabled;
 
         internal static object SelectObjectBrowser(Request request)
         {
@@ -105,12 +111,12 @@ namespace CodexVBE
                 bool found = false;
                 for (int attempt = 0; attempt < 10; attempt++)
                 {
-                    Thread.Sleep(100);
+                    PauseNative(100);
                     if (SelectBrowserLabel(controls, labels, true)) { found = true; break; }
                 }
                 if (!found) throw new InvalidOperationException("Class selection was sent, but the requested member was not found. Read the current browser before retrying.");
             }
-            Thread.Sleep(100);
+            PauseNative(100);
             var selectedLabels = new List<string>();
             foreach (AutomationElement control in controls)
                 if (control.Current.ControlType == ControlType.List && control.TryGetCurrentPattern(SelectionPattern.Pattern, out object current))
@@ -195,10 +201,11 @@ namespace CodexVBE
             // Use the native accessibility action so VBE receives the complete
             // combo selection lifecycle, not only a changed displayed index.
             ((SelectionItemPattern)selection).Select();
-            if (handle == IntPtr.Zero || !PostMessage(ObjectBrowserParent(handle), 0x111,
+            // handle was validated above and cannot change during the accessibility action.
+            if (!PostMessage(ObjectBrowserParent(handle), 0x111,
                 new IntPtr(GetDlgCtrlID(handle) | (1 << 16)), handle))
                 throw new InvalidOperationException("Library selection changed but notification failed. Read the browser before retrying.");
-            Thread.Sleep(150);
+            PauseNative(150);
             if (!combo.TryGetCurrentPattern(SelectionPattern.Pattern, out object current) ||
                 !((SelectionPattern)current).Current.GetSelection().Any(item => item.Current.Name == library))
                 throw new InvalidOperationException("Native library selection could not be verified.");

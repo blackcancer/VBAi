@@ -8,7 +8,9 @@ namespace CodexVBE
     internal static partial class VbeDebugWindows
     {
         [DllImport("user32.dll", EntryPoint = "GetWindow")]
-        private static extern IntPtr RuntimeWindowOwner(IntPtr window, uint command);
+        private static extern IntPtr NativeRuntimeWindowOwner(IntPtr window, uint command);
+        /// <summary>Reads the native owner without accessing a running VBA form instance.</summary>
+        internal static Func<IntPtr, uint, IntPtr> RuntimeWindowOwner = NativeRuntimeWindowOwner;
 
         internal static object ReadRuntimeForms()
         {

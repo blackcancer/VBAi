@@ -39,6 +39,7 @@ namespace CodexVBE.Tests.Unit
             public ToggleState ToggleState;
             public double Number = 25;
             public IntPtr Window;
+            public int? NativeHandle;
             public Action SelectedAction;
 
             public AutomationNode Add(AutomationNode child) { child.Parent = this; Children.Add(child); return child; }
@@ -56,7 +57,7 @@ namespace CodexVBE.Tests.Unit
                 if (propertyId == AutomationElementIdentifiers.IsPasswordProperty.Id) return Password;
                 if (propertyId == AutomationElementIdentifiers.IsControlElementProperty.Id || propertyId == AutomationElementIdentifiers.IsContentElementProperty.Id) return true;
                 if (propertyId == AutomationElementIdentifiers.IsKeyboardFocusableProperty.Id) return true;
-                if (propertyId == AutomationElementIdentifiers.NativeWindowHandleProperty.Id) return Parent == null ? Window.ToInt32() : 0;
+                if (propertyId == AutomationElementIdentifiers.NativeWindowHandleProperty.Id) return NativeHandle ?? (Parent == null ? Window.ToInt32() : 0);
                 return null;
             }
             public IRawElementProviderFragment Navigate(NavigateDirection direction)

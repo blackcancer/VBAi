@@ -9,7 +9,9 @@ namespace CodexVBE
     internal sealed partial class VbeDebug
     {
         [DllImport("user32.dll", EntryPoint = "IsWindowEnabled")]
-        private static extern bool HistoryWindowEnabled(IntPtr window);
+        private static extern bool NativeHistoryWindowEnabled(IntPtr window);
+        /// <summary>Preserves the native modal-window check while allowing isolated host contracts.</summary>
+        internal static Func<IntPtr, bool> HistoryWindowEnabled = NativeHistoryWindowEnabled;
 
         public object NativeCodeHistoryState(Request request)
         {
