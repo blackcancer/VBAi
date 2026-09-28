@@ -718,6 +718,15 @@ namespace CodexVBE.Tests.Unit
             { run["Arguments"] = arguments; Failed(tools.Invoke("run_procedure", Json.Serialize(run)), "invalid arguments"); }
             run["Arguments"] = new object[] { "literal", true, 2, 1.5 }; Success(tools.Invoke("run_procedure", Json.Serialize(run)), "scalars");
             run["Arguments"] = new object[] { new { Nested = true } }; Failed(tools.Invoke("run_procedure", Json.Serialize(run)), "non scalar");
+            run["Arguments"] = new object[] { 7 };
+            foreach (object names in new object[] { null, "not an array", new string[31], new object[] { 1 },
+                new[] { new string('x', 256) }, new[] { "first\nEnd" } })
+            { run["ArgumentNames"] = names; Failed(tools.Invoke("run_procedure", Json.Serialize(run)), "invalid names"); }
+            Request captured = null;
+            tools.Execute = request => { captured = request; return Response.Success("delivered"); };
+            run["ArgumentNames"] = new[] { "first" };
+            Success(tools.Invoke("run_procedure", Json.Serialize(run)), "named scalar");
+            CollectionAssert.AreEqual(new[] { "first" }, captured.ArgumentNames);
         }
     }
 }

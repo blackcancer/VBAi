@@ -2,12 +2,44 @@ using System.Drawing;
 using System.Reflection;
 using System.Windows.Forms;
 using CodexVBE;
+using CodexVBE.Tests.Infrastructure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Unit
 {
     [TestClass, TestCategory("Unit")]
     public sealed class ChatInputViewTests
     {
+        /// <summary>Qualifie le cycle de propriétés Designer et chacune des quatre bornes de marge.</summary>
+        [STATestMethod]
+        public void DesignerPaddingSerializationResetAndEveryInvalidEdgeAreChecked()
+        {
+            using (var font = new Font("Segoe UI", 11F, FontStyle.Regular))
+            using (var view = new ChatInputView())
+            {
+                Assert.AreEqual(false, UiInvoke.Call(typeof(ChatInputView), "ShouldSerializeInputPadding", view));
+                view.InputPadding = new Padding(1, 2, 3, 4);
+                Assert.AreEqual(true, UiInvoke.Call(typeof(ChatInputView), "ShouldSerializeInputPadding", view));
+                UiInvoke.Call(typeof(ChatInputView), "ResetInputPadding", view);
+                Assert.AreEqual(new Padding(12), view.InputPadding);
+                foreach (var padding in new[] { new Padding(-1, 0, 0, 0), new Padding(0, -1, 0, 0),
+                    new Padding(0, 0, -1, 0), new Padding(0, 0, 0, -1) })
+                    Assert.ThrowsException<System.ArgumentOutOfRangeException>(() => view.InputPadding = padding);
+                var editor = view.Editor;
+                view.Font = font;
+                view.ForeColor = Color.Green;
+                Assert.AreEqual(System.Windows.FontWeights.Normal, editor.FontWeight);
+                Assert.AreEqual(System.Windows.FontStyles.Normal, editor.FontStyle);
+                Assert.AreEqual(System.Windows.Media.Colors.Green, ((System.Windows.Media.SolidColorBrush)editor.Foreground).Color);
+                view.InputPadding = new Padding(3);
+                Assert.AreEqual(new System.Windows.Thickness(3), editor.Padding);
+                UiInvoke.Call(typeof(ChatInputView), "Dispose", view, false);
+                Assert.IsFalse(view.IsDisposed);
+                var components = UiInvoke.Field<System.ComponentModel.IContainer>(view, "components");
+                components.Dispose();
+                typeof(ChatInputView).GetField("components", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(view, null);
+            }
+        }
+
         [STATestMethod]
         public void DesignerInputHasNoEngineAndAppearanceFlowsToLazyEditor()
         {
@@ -28,6 +60,7 @@ namespace CodexVBE.Tests.Unit
                 Assert.IsFalse(editor.SpellCheck.IsEnabled);
                 view.SpellCheckEnabled = true;
                 Assert.IsTrue(editor.SpellCheck.IsEnabled);
+                Assert.IsTrue(view.SpellCheckEnabled);
                 Assert.ThrowsException<System.ArgumentOutOfRangeException>(() => view.InputPadding = new Padding(-1));
             }
         }

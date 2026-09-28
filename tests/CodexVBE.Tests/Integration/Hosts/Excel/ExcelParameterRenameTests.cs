@@ -33,6 +33,15 @@ namespace CodexVBE.Tests.Integration
                     Procedure = "Evaluate", ProcKind = 0, ExpectedSha256 = before["Sha256"], StartLine = 2, StartColumn = column, Query = "value", NewName = "amount" });
                 Assert.AreEqual(true, preview["Ok"], Convert.ToString(preview["Error"]));
                 Assert.AreEqual(original, VbeBridgeClient.Object(host.Command(new { Command = "read_module", Project = project, Module = module })["Data"])["Code"]);
+                var properties = VbeBridgeClient.Object(host.Command(new { Command = "project_properties", Project = project })["Data"]);
+                string savedPath = host.File("named-arguments.xlsm");
+                var saved = host.Command(new { Command = "save_host_document_as", Project = project, Path = savedPath, ExpectedProjectVersion = properties["Version"] });
+                Assert.AreEqual(true, saved["Ok"], Convert.ToString(saved["Error"]));
+                var verified = host.Command(new { Command = "verify_vba_signature_file", Path = savedPath });
+                Assert.AreEqual(true, verified["Ok"], Convert.ToString(verified["Error"]));
+                var signature = VbeBridgeClient.Object(verified["Data"]);
+                Assert.AreEqual(Convert.ToBoolean(signature["Available"]) ? "NoSignature" : "VerifierUnavailable", signature["Status"]);
+                Assert.IsNull(signature["SignatureValid"], "An unsigned file or unavailable SIP cannot become a valid VBA digest.");
                 var applied = host.Command(new { Command = "apply_parameter_rename", Project = project, Module = module,
                     Procedure = "Evaluate", ProcKind = 0, ExpectedSha256 = before["Sha256"], StartLine = 2, StartColumn = column, Query = "value", NewName = "amount", ExpectedMode = 2 });
                 Assert.AreEqual(true, applied["Ok"], Convert.ToString(applied["Error"]));

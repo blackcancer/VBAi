@@ -19,6 +19,8 @@ Les fonctions et les limites exactes sont détaillées dans [Extensions fonction
 
 ## Qualification de l’éditeur
 
+L'[inventaire fonctionnel complet](reference/vbe-capability-inventory.md) couvre désormais toutes les surfaces de l'éditeur. Le lot IDE `52cb537` ajoute trois contrats (180 outils au total), le renommage borné de paramètres privés et les arguments nommés de `run_procedure`. La vérification du fichier signé est implémentée mais son SIP natif attend une autorisation distincte. La PR #4 ajoute les structures fixes Designer et doit être incluse dans la prochaine mesure de couverture.
+
 | Surface | Ce qui reste à qualifier ou développer |
 | --- | --- |
 | Modules/classes | Cas d’erreur, encodages/imports et persistance dans les différents hôtes ; ne pas confondre catalogue de commandes et validation de toutes leurs combinaisons |

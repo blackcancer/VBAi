@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Unit
+namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
@@ -93,7 +93,7 @@
                 .Single(d => (string)d["name"] == name);
             var fields = Dict(Dict(definition["parameters"])["properties"]);
             return fields.ToDictionary(f => f.Key, f => f.Key == "Value" ? (object)"value" :
-                f.Key == "Arguments" ? new object[0] : f.Key == "Items" ? new string[0] : f.Key == "Rows" ? (object)new string[0][] : f.Key == "PathSegments" ? new[] { "item" } :
+                f.Key == "Arguments" ? new object[0] : f.Key == "ArgumentNames" ? new string[0] : f.Key == "Items" ? new string[0] : f.Key == "Rows" ? (object)new string[0][] : f.Key == "PathSegments" ? new[] { "item" } :
                 (string)Dict(f.Value)["type"] == "integer" ? (object)2 :
                 (string)Dict(f.Value)["type"] == "number" ? (object)1.5 :
                 (string)Dict(f.Value)["type"] == "boolean" ? (object)true :

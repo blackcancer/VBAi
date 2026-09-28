@@ -405,6 +405,14 @@ namespace CodexVBE
                         foreach (object scalar in scalars) VbeDebug.ProcedureLiteral(scalar);
                         continue;
                     }
+                    if (field == "ArgumentNames")
+                    {
+                        var names = value as object[];
+                        if (names == null || names.Length > 30 || names.Any(item => !(item is string) ||
+                            ((string)item).Length > 255 || ((string)item).Any(char.IsControl)))
+                            throw new ArgumentException("ArgumentNames must contain at most 30 single-line parameter names of at most 255 characters.");
+                        continue;
+                    }
                     if (field == "Items")
                     {
                         var items = value as object[];
