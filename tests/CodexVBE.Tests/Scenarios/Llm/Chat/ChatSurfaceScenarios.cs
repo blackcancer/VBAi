@@ -14,8 +14,10 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie les contrôles essentiels créés par les surfaces locales de discussion.</summary>
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Vérifie la création du compositeur, du transcript et des modes par défaut.</summary>
         [TestMethod]
         [STATestMethod]
         public void ConstructorAndLocalSurfacesCreateComposerTranscriptAndModes()

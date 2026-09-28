@@ -8,10 +8,12 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie l’exhaustivité des catalogues de langue intégrés et la détection des menus.</summary>
     [TestClass]
     [TestCategory("Unit")]
     public sealed partial class UiLocalizationTests
     {
+        /// <summary>Vérifie les traductions, les noms de culture pris en charge et les libellés de menus.</summary>
         [TestMethod]
         public void AllLanguagesHaveCompleteEmbeddedCataloguesAndRecognizableMenus()
         {

@@ -6,10 +6,12 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie les métadonnées de contrôles et les limites de l’inspection COM.</summary>
     [TestClass]
     [TestCategory("Unit")]
     public sealed partial class VbeFormsContractTests
     {
+        /// <summary>Confirme les contrôles natifs connus et signale comme incomplètes les métadonnées indisponibles.</summary>
         [TestMethod]
         public void NativeControlsAndMissingComMetadataAreReportedHonestly()
         {

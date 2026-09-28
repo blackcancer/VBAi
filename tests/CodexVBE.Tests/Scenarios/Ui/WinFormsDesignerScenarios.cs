@@ -5,10 +5,12 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie que les fenêtres fixes restent instanciables hors session IDE.</summary>
     [TestClass]
     [TestCategory("Unit")]
     public sealed partial class WinFormsDesignerTests
     {
+        /// <summary>Instancie les fenêtres principales et vérifie leurs contrôles Designer essentiels.</summary>
         [TestMethod]
         [STATestMethod]
         public void FixedWindowsOpenWithoutStartingAnIdeSession()
