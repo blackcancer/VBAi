@@ -45,6 +45,12 @@ namespace CodexVBE
         private CodexVBE.ChatChoiceBox scopePicker;
         /// <summary>Disposition des commandes de mode et de workflow.</summary>
         private System.Windows.Forms.TableLayoutPanel workflowLayout;
+        /// <summary>Approval policy for the next VBA actions.</summary>
+        private CodexVBE.ChatChoiceBox approvalPicker;
+        /// <summary>Compact model and effort summary.</summary>
+        private CodexVBE.ChatActionButton modelSummary;
+        /// <summary>Automatic verification command.</summary>
+        private System.Windows.Forms.ToolStripMenuItem verifyChanges;
         /// <summary>Sélecteur du mode de conversation.</summary>
         private CodexVBE.ChatChoiceBox modePicker;
         /// <summary>Commande de sélection de code ou de référence.</summary>
@@ -62,13 +68,13 @@ namespace CodexVBE
         /// <summary>Libellé de la liste des conversations.</summary>
         private System.Windows.Forms.Label historyLabel;
         /// <summary>Champ de filtrage des sessions.</summary>
-        private System.Windows.Forms.TextBox historySearch;
+        private CodexVBE.UiTextBox historySearch;
         /// <summary>Liste des sessions de la portée courante.</summary>
-        private System.Windows.Forms.ListBox sessionList;
+        private CodexVBE.UiListBox sessionList;
         /// <summary>Option d’inclusion des sessions archivées.</summary>
         private System.Windows.Forms.CheckBox showArchived;
         /// <summary>Champ de modification du titre de la conversation.</summary>
-        private System.Windows.Forms.TextBox chatTitleEditor;
+        private CodexVBE.UiTextBox chatTitleEditor;
         /// <summary>Disposition des actions appliquées à la session.</summary>
         private System.Windows.Forms.FlowLayoutPanel historyActions;
         /// <summary>Commande de renommage de la session.</summary>
@@ -86,7 +92,7 @@ namespace CodexVBE
         /// <summary>Disposition du champ et des commandes de mémoire.</summary>
         private System.Windows.Forms.TableLayoutPanel memoryLayout;
         /// <summary>Champ d’édition de la mémoire de projet.</summary>
-        private System.Windows.Forms.TextBox memoryEditor;
+        private CodexVBE.UiTextBox memoryEditor;
         /// <summary>Commande d’enregistrement de la mémoire de projet.</summary>
         private CodexVBE.ChatActionButton saveMemory;
         /// <summary>Option d’inclusion de la mémoire dans le prochain message.</summary>
@@ -164,7 +170,7 @@ namespace CodexVBE
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
             this.newChat = new CodexVBE.ChatActionButton();
-            this.historySearch = new System.Windows.Forms.TextBox();
+            this.historySearch = new CodexVBE.UiTextBox();
             this.modules = new CodexVBE.ChatActionButton();
             this.methods = new CodexVBE.ChatActionButton();
             this.modePicker = new CodexVBE.ChatChoiceBox();
@@ -187,6 +193,9 @@ namespace CodexVBE
             this.history = new CodexVBE.ChatActionButton();
             this.scopePicker = new CodexVBE.ChatChoiceBox();
             this.workflowLayout = new System.Windows.Forms.TableLayoutPanel();
+            this.approvalPicker = new CodexVBE.ChatChoiceBox();
+            this.modelSummary = new CodexVBE.ChatActionButton();
+            this.verifyChanges = new System.Windows.Forms.ToolStripMenuItem();
             this.selection = new CodexVBE.ChatActionButton();
             this.compile = new CodexVBE.ChatActionButton();
             this.verifyAfterEdit = new System.Windows.Forms.CheckBox();
@@ -197,9 +206,9 @@ namespace CodexVBE
             this.historyPanel = new System.Windows.Forms.Panel();
             this.historyLayout = new System.Windows.Forms.TableLayoutPanel();
             this.historyLabel = new System.Windows.Forms.Label();
-            this.sessionList = new System.Windows.Forms.ListBox();
+            this.sessionList = new CodexVBE.UiListBox();
             this.showArchived = new System.Windows.Forms.CheckBox();
-            this.chatTitleEditor = new System.Windows.Forms.TextBox();
+            this.chatTitleEditor = new CodexVBE.UiTextBox();
             this.historyActions = new System.Windows.Forms.FlowLayoutPanel();
             this.rename = new CodexVBE.ChatActionButton();
             this.archive = new CodexVBE.ChatActionButton();
@@ -208,7 +217,7 @@ namespace CodexVBE
             this.memoryToggle = new CodexVBE.ChatActionButton();
             this.memoryPanel = new System.Windows.Forms.GroupBox();
             this.memoryLayout = new System.Windows.Forms.TableLayoutPanel();
-            this.memoryEditor = new System.Windows.Forms.TextBox();
+            this.memoryEditor = new CodexVBE.UiTextBox();
             this.saveMemory = new CodexVBE.ChatActionButton();
             this.attachMemory = new System.Windows.Forms.CheckBox();
             this.composerLayout = new CodexVBE.ChatComposerPanel();
@@ -326,7 +335,7 @@ namespace CodexVBE
             this.modePicker.IntegralHeight = false;
             this.modePicker.ItemHeight = 22;
             this.modePicker.Location = new System.Drawing.Point(4, 6);
-            this.modePicker.Margin = new System.Windows.Forms.Padding(4, 6, 4, 3);
+            this.modePicker.Margin = new System.Windows.Forms.Padding(3);
             this.modePicker.Name = "modePicker";
             this.modePicker.Size = new System.Drawing.Size(92, 28);
             this.modePicker.TabIndex = 15;
@@ -352,6 +361,7 @@ namespace CodexVBE
             this.projectAccess,
             this.resumeTurn,
             this.refreshModels,
+            this.verifyChanges,
             this.docking,
             this.github,
             this.aboutSeparator,
@@ -400,8 +410,8 @@ namespace CodexVBE
             this.rootLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.rootLayout.Controls.Add(this.headingLayout, 0, 0);
             this.rootLayout.Controls.Add(this.scopeLayout, 0, 1);
-            this.rootLayout.Controls.Add(this.workflowLayout, 0, 2);
-            this.rootLayout.Controls.Add(this.verifyAfterEdit, 0, 3);
+
+
             this.rootLayout.Controls.Add(this.conversationPanel, 0, 4);
             this.rootLayout.Controls.Add(this.composerLayout, 0, 5);
             this.rootLayout.Controls.Add(this.providerLayout, 0, 6);
@@ -411,17 +421,17 @@ namespace CodexVBE
             this.rootLayout.Location = new System.Drawing.Point(0, 0);
             this.rootLayout.Margin = new System.Windows.Forms.Padding(0);
             this.rootLayout.Name = "rootLayout";
-            this.rootLayout.Padding = new System.Windows.Forms.Padding(18, 8, 18, 10);
+            this.rootLayout.Padding = new System.Windows.Forms.Padding(10, 6, 10, 6);
             this.rootLayout.RowCount = 9;
-            this.rootLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 60F));
-            this.rootLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 38F));
-            this.rootLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 38F));
-            this.rootLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 28F));
+            this.rootLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
+            this.rootLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 32F));
+            this.rootLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 0F));
+            this.rootLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 0F));
             this.rootLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.rootLayout.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.rootLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
-            this.rootLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
-            this.rootLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 24F));
+            this.rootLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 0F));
+            this.rootLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.rootLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 22F));
             this.rootLayout.Size = new System.Drawing.Size(600, 820);
             this.rootLayout.TabIndex = 5;
             //
@@ -429,19 +439,18 @@ namespace CodexVBE
             //
             this.headingLayout.ColumnCount = 3;
             this.headingLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.headingLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 108F));
-            this.headingLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 44F));
-            this.headingLayout.Controls.Add(this.appTitle, 0, 0);
-            this.headingLayout.Controls.Add(this.sessionTitle, 0, 1);
+            this.headingLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 36F));
+            this.headingLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 36F));
+
+            this.headingLayout.Controls.Add(this.sessionTitle, 0, 0);
             this.headingLayout.Controls.Add(this.newChat, 1, 0);
             this.headingLayout.Controls.Add(this.options, 2, 0);
             this.headingLayout.Dock = System.Windows.Forms.DockStyle.Fill;
             this.headingLayout.Location = new System.Drawing.Point(18, 8);
             this.headingLayout.Margin = new System.Windows.Forms.Padding(0);
             this.headingLayout.Name = "headingLayout";
-            this.headingLayout.RowCount = 2;
-            this.headingLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 55F));
-            this.headingLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 45F));
+            this.headingLayout.RowCount = 1;
+            this.headingLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.headingLayout.Size = new System.Drawing.Size(564, 60);
             this.headingLayout.TabIndex = 6;
             //
@@ -463,7 +472,7 @@ namespace CodexVBE
             //
             this.sessionTitle.AutoEllipsis = true;
             this.sessionTitle.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.sessionTitle.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.sessionTitle.Font = new System.Drawing.Font("Segoe UI Semibold", 10F);
             this.sessionTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(71)))), ((int)(((byte)(85)))), ((int)(((byte)(105)))));
             this.sessionTitle.Location = new System.Drawing.Point(4, 33);
             this.sessionTitle.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
@@ -494,7 +503,7 @@ namespace CodexVBE
             // scopeLayout
             //
             this.scopeLayout.ColumnCount = 2;
-            this.scopeLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 86F));
+            this.scopeLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 36F));
             this.scopeLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.scopeLayout.Controls.Add(this.history, 0, 0);
             this.scopeLayout.Controls.Add(this.scopePicker, 1, 0);
@@ -535,7 +544,7 @@ namespace CodexVBE
             this.scopePicker.IntegralHeight = false;
             this.scopePicker.ItemHeight = 22;
             this.scopePicker.Location = new System.Drawing.Point(90, 6);
-            this.scopePicker.Margin = new System.Windows.Forms.Padding(4, 6, 4, 3);
+            this.scopePicker.Margin = new System.Windows.Forms.Padding(3);
             this.scopePicker.Name = "scopePicker";
             this.toolTips.SetToolTip(this.scopePicker, "Choose the VBA document associated with this context and its conversations.");
             this.scopePicker.Size = new System.Drawing.Size(470, 28);
@@ -543,14 +552,30 @@ namespace CodexVBE
             //
             // workflowLayout
             //
-            this.workflowLayout.ColumnCount = 4;
-            this.workflowLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 100F));
-            this.workflowLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 160F));
-            this.workflowLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 112F));
+            this.workflowLayout.ColumnCount = 5;
+            this.workflowLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 98F));
             this.workflowLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.workflowLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 36F));
+            this.workflowLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 36F));
+            this.workflowLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 36F));
             this.workflowLayout.Controls.Add(this.modePicker, 0, 0);
-            this.workflowLayout.Controls.Add(this.selection, 1, 0);
-            this.workflowLayout.Controls.Add(this.compile, 2, 0);
+            this.workflowLayout.Controls.Add(this.approvalPicker, 1, 0);
+            this.workflowLayout.Controls.Add(this.selection, 2, 0);
+            this.workflowLayout.Controls.Add(this.compile, 3, 0);
+            this.workflowLayout.Controls.Add(this.contextToggle, 4, 0);
+            this.approvalPicker.Name = "approvalPicker";
+            this.approvalPicker.AccessibleName = "VBA edit approval";
+            this.approvalPicker.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.approvalPicker.Margin = new System.Windows.Forms.Padding(3);
+            this.approvalPicker.DropDownWidth = 260;
+            this.approvalPicker.Items.AddRange(new object[] { "Automatic", "Ask for other actions", "Read-only" });
+            this.approvalPicker.SelectedIndex = 0;
+            this.approvalPicker.SelectedIndexChanged += new System.EventHandler(this.ApprovalPicker_SelectedIndexChanged);
+            this.toolTips.SetToolTip(this.approvalPicker, "VBA edit approval");
+            this.verifyChanges.Text = "Compile after changes";
+            this.verifyChanges.Checked = true;
+            this.verifyChanges.CheckOnClick = true;
+            this.verifyChanges.CheckedChanged += new System.EventHandler(this.VerifyChanges_CheckedChanged);
             this.workflowLayout.Dock = System.Windows.Forms.DockStyle.Fill;
             this.workflowLayout.Location = new System.Drawing.Point(18, 106);
             this.workflowLayout.Margin = new System.Windows.Forms.Padding(0);
@@ -926,7 +951,7 @@ namespace CodexVBE
             this.composerLayout.Controls.Add(this.contextChips, 0, 0);
             this.composerLayout.Controls.Add(this.promptPanel, 0, 2);
             this.composerLayout.Controls.Add(this.composerActions, 0, 3);
-            this.composerLayout.Controls.Add(this.contextToggle, 0, 4);
+            this.composerLayout.Controls.Add(this.workflowLayout, 0, 4);
             this.composerLayout.Controls.Add(this.contextPanel, 0, 5);
             this.composerLayout.Dock = System.Windows.Forms.DockStyle.Fill;
             this.composerLayout.Location = new System.Drawing.Point(18, 416);
@@ -936,9 +961,9 @@ namespace CodexVBE
             this.composerLayout.RowCount = 6;
             this.composerLayout.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.composerLayout.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.composerLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 88F));
+            this.composerLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 80F));
             this.composerLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 36F));
-            this.composerLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.composerLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 34F));
             this.composerLayout.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.composerLayout.Size = new System.Drawing.Size(564, 294);
             this.composerLayout.TabIndex = 41;
@@ -996,13 +1021,20 @@ namespace CodexVBE
             // composerActions
             //
             this.composerActions.ColumnCount = 4;
-            this.composerActions.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 106F));
-            this.composerActions.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 108F));
+            this.composerActions.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 36F));
+            this.composerActions.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 36F));
             this.composerActions.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.composerActions.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 98F));
+            this.composerActions.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 36F));
             this.composerActions.Controls.Add(this.modules, 0, 0);
             this.composerActions.Controls.Add(this.methods, 1, 0);
             this.composerActions.Controls.Add(this.send, 3, 0);
+            this.composerActions.Controls.Add(this.modelSummary, 2, 0);
+            this.modelSummary.Name = "modelSummary";
+            this.modelSummary.Text = "Model";
+            this.modelSummary.AccessibleName = "Model and reasoning effort";
+            this.modelSummary.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.modelSummary.Margin = new System.Windows.Forms.Padding(3);
+            this.modelSummary.Click += new System.EventHandler(this.ModelSummary_Click);
             this.composerActions.Dock = System.Windows.Forms.DockStyle.Fill;
             this.composerActions.Location = new System.Drawing.Point(6, 94);
             this.composerActions.Margin = new System.Windows.Forms.Padding(0);
@@ -1080,6 +1112,7 @@ namespace CodexVBE
             this.providerLayout.Location = new System.Drawing.Point(18, 710);
             this.providerLayout.Margin = new System.Windows.Forms.Padding(0);
             this.providerLayout.Name = "providerLayout";
+            this.providerLayout.Visible = false;
             this.providerLayout.RowCount = 1;
             this.providerLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.providerLayout.Size = new System.Drawing.Size(564, 40);
@@ -1097,7 +1130,7 @@ namespace CodexVBE
             this.providerPicker.IntegralHeight = false;
             this.providerPicker.ItemHeight = 22;
             this.providerPicker.Location = new System.Drawing.Point(4, 6);
-            this.providerPicker.Margin = new System.Windows.Forms.Padding(4, 6, 4, 3);
+            this.providerPicker.Margin = new System.Windows.Forms.Padding(3);
             this.providerPicker.Name = "providerPicker";
             this.toolTips.SetToolTip(this.providerPicker, "Choose the AI provider for this conversation.");
             this.providerPicker.Size = new System.Drawing.Size(149, 28);
@@ -1115,7 +1148,7 @@ namespace CodexVBE
             this.modelPicker.IntegralHeight = false;
             this.modelPicker.ItemHeight = 22;
             this.modelPicker.Location = new System.Drawing.Point(161, 6);
-            this.modelPicker.Margin = new System.Windows.Forms.Padding(4, 6, 4, 3);
+            this.modelPicker.Margin = new System.Windows.Forms.Padding(3);
             this.modelPicker.Name = "modelPicker";
             this.toolTips.SetToolTip(this.modelPicker, "Choose a model offered by the selected provider.");
             this.modelPicker.Size = new System.Drawing.Size(240, 28);
@@ -1134,7 +1167,7 @@ namespace CodexVBE
             this.effortPicker.IntegralHeight = false;
             this.effortPicker.ItemHeight = 22;
             this.effortPicker.Location = new System.Drawing.Point(409, 6);
-            this.effortPicker.Margin = new System.Windows.Forms.Padding(4, 6, 4, 3);
+            this.effortPicker.Margin = new System.Windows.Forms.Padding(3);
             this.effortPicker.Name = "effortPicker";
             this.toolTips.SetToolTip(this.effortPicker, "Set the model's reasoning effort, when supported.");
             this.effortPicker.Size = new System.Drawing.Size(151, 28);
@@ -1144,7 +1177,7 @@ namespace CodexVBE
             //
             this.footerLayout.ColumnCount = 2;
             this.footerLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.footerLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 154F));
+            this.footerLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 36F));
             this.footerLayout.Controls.Add(this.jumpToLatest, 0, 0);
             this.footerLayout.Controls.Add(this.changes, 1, 0);
             this.footerLayout.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -1284,6 +1317,84 @@ namespace CodexVBE
             this.footerLayout.PerformLayout();
             this.statusLayout.ResumeLayout(false);
             this.statusLayout.PerformLayout();
+            this.newChat.Symbol = CodexVBE.UiSymbol.Add;
+            this.newChat.IconOnly = true;
+            this.newChat.AutoSize = false;
+            this.newChat.MinimumSize = System.Drawing.Size.Empty;
+            this.newChat.Size = new System.Drawing.Size(32, 30);
+            this.modules.Symbol = CodexVBE.UiSymbol.Folder;
+            this.modules.IconOnly = true;
+            this.modules.AutoSize = false;
+            this.modules.MinimumSize = System.Drawing.Size.Empty;
+            this.modules.Size = new System.Drawing.Size(32, 30);
+            this.methods.Symbol = CodexVBE.UiSymbol.Code;
+            this.methods.IconOnly = true;
+            this.methods.AutoSize = false;
+            this.methods.MinimumSize = System.Drawing.Size.Empty;
+            this.methods.Size = new System.Drawing.Size(32, 30);
+            this.options.Symbol = CodexVBE.UiSymbol.More;
+            this.options.IconOnly = true;
+            this.options.AutoSize = false;
+            this.options.MinimumSize = System.Drawing.Size.Empty;
+            this.options.Size = new System.Drawing.Size(32, 30);
+            this.history.Symbol = CodexVBE.UiSymbol.History;
+            this.history.IconOnly = true;
+            this.history.AutoSize = false;
+            this.history.MinimumSize = System.Drawing.Size.Empty;
+            this.history.Size = new System.Drawing.Size(32, 30);
+            this.selection.Symbol = CodexVBE.UiSymbol.Attach;
+            this.selection.IconOnly = true;
+            this.selection.AutoSize = false;
+            this.selection.MinimumSize = System.Drawing.Size.Empty;
+            this.selection.Size = new System.Drawing.Size(32, 30);
+            this.compile.Symbol = CodexVBE.UiSymbol.Check;
+            this.compile.IconOnly = true;
+            this.compile.AutoSize = false;
+            this.compile.MinimumSize = System.Drawing.Size.Empty;
+            this.compile.Size = new System.Drawing.Size(32, 30);
+            this.rename.Symbol = CodexVBE.UiSymbol.Edit;
+            this.rename.IconOnly = true;
+            this.rename.AutoSize = false;
+            this.rename.MinimumSize = System.Drawing.Size.Empty;
+            this.rename.Size = new System.Drawing.Size(32, 30);
+            this.archive.Symbol = CodexVBE.UiSymbol.Folder;
+            this.archive.IconOnly = true;
+            this.archive.AutoSize = false;
+            this.archive.MinimumSize = System.Drawing.Size.Empty;
+            this.archive.Size = new System.Drawing.Size(32, 30);
+            this.pin.Symbol = CodexVBE.UiSymbol.Pin;
+            this.pin.IconOnly = true;
+            this.pin.AutoSize = false;
+            this.pin.MinimumSize = System.Drawing.Size.Empty;
+            this.pin.Size = new System.Drawing.Size(32, 30);
+            this.export.Symbol = CodexVBE.UiSymbol.Download;
+            this.export.IconOnly = true;
+            this.export.AutoSize = false;
+            this.export.MinimumSize = System.Drawing.Size.Empty;
+            this.export.Size = new System.Drawing.Size(32, 30);
+            this.memoryToggle.Symbol = CodexVBE.UiSymbol.Code;
+            this.saveMemory.Symbol = CodexVBE.UiSymbol.Save;
+            this.send.Symbol = CodexVBE.UiSymbol.Upload;
+            this.send.IconOnly = true;
+            this.send.AutoSize = false;
+            this.send.MinimumSize = System.Drawing.Size.Empty;
+            this.send.Size = new System.Drawing.Size(32, 30);
+            this.send.Primary = true;
+            this.contextToggle.Symbol = CodexVBE.UiSymbol.Inspect;
+            this.contextToggle.IconOnly = true;
+            this.contextToggle.AutoSize = false;
+            this.contextToggle.MinimumSize = System.Drawing.Size.Empty;
+            this.contextToggle.Size = new System.Drawing.Size(32, 30);
+            this.jumpToLatest.Symbol = CodexVBE.UiSymbol.Download;
+            this.jumpToLatest.IconOnly = true;
+            this.jumpToLatest.AutoSize = false;
+            this.jumpToLatest.MinimumSize = System.Drawing.Size.Empty;
+            this.jumpToLatest.Size = new System.Drawing.Size(32, 30);
+            this.changes.Symbol = CodexVBE.UiSymbol.Code;
+            this.changes.IconOnly = true;
+            this.changes.AutoSize = false;
+            this.changes.MinimumSize = System.Drawing.Size.Empty;
+            this.changes.Size = new System.Drawing.Size(32, 30);
             this.ResumeLayout(false);
             this.PerformLayout();
         }

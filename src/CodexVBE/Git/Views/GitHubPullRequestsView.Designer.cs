@@ -20,7 +20,7 @@ namespace CodexVBE
         /// <summary>Continuous-integration checks page.</summary>
         internal System.Windows.Forms.TabPage checksTab;
         /// <summary>Pull requests for the selected repository.</summary>
-        internal System.Windows.Forms.ListBox pulls;
+        internal CodexVBE.UiListBox pulls;
         /// <summary>Loads pull requests from GitHub.</summary>
         internal CodexVBE.ThemedButton loadPulls;
         /// <summary>Opens the selected pull request.</summary>
@@ -67,7 +67,7 @@ namespace CodexVBE
             this.filesTab = new System.Windows.Forms.TabPage();
             this.commentsTab = new System.Windows.Forms.TabPage();
             this.checksTab = new System.Windows.Forms.TabPage();
-            this.pulls = new System.Windows.Forms.ListBox();
+            this.pulls = new CodexVBE.UiListBox();
             this.loadPulls = new CodexVBE.ThemedButton();
             this.openPull = new CodexVBE.ThemedButton();
             this.loadDraft = new CodexVBE.ThemedButton();
@@ -92,6 +92,8 @@ namespace CodexVBE
             this.pullLayout.Name = "pullLayout";
             this.pullActions.Name = "pullActions";
             this.pullTabs.Name = "pullTabs";
+            this.pullTabs.ItemSize = new System.Drawing.Size(0, 36);
+            this.pullTabs.Padding = new System.Drawing.Point(12, 6);
             this.composeTab.Name = "composeTab";
             this.detailTab.Name = "detailTab";
             this.filesTab.Name = "filesTab";
@@ -230,6 +232,21 @@ namespace CodexVBE
             this.gitHubPullCommentsView.PerformLayout();
             this.gitHubPullChecksView.ResumeLayout(false);
             this.gitHubPullChecksView.PerformLayout();
+            this.loadPulls.Symbol = CodexVBE.UiSymbol.Refresh;
+            this.loadPulls.IconOnly = true;
+            this.loadPulls.AutoSize = false;
+            this.loadPulls.MinimumSize = System.Drawing.Size.Empty;
+            this.loadPulls.Size = new System.Drawing.Size(32, 30);
+            this.openPull.Symbol = CodexVBE.UiSymbol.Inspect;
+            this.openPull.IconOnly = true;
+            this.openPull.AutoSize = false;
+            this.openPull.MinimumSize = System.Drawing.Size.Empty;
+            this.openPull.Size = new System.Drawing.Size(32, 30);
+            this.loadDraft.Symbol = CodexVBE.UiSymbol.Edit;
+            this.loadDraft.IconOnly = true;
+            this.loadDraft.AutoSize = false;
+            this.loadDraft.MinimumSize = System.Drawing.Size.Empty;
+            this.loadDraft.Size = new System.Drawing.Size(32, 30);
             this.ResumeLayout(false);
             this.PerformLayout();
         }

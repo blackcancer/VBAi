@@ -39,15 +39,18 @@ namespace CodexVBE
             this.layout.AutoSize = true;
             this.layout.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.layout.Dock = System.Windows.Forms.DockStyle.Top;
-            this.layout.ColumnCount = 1;
-            this.layout.RowCount = 2;
+            this.layout.ColumnCount = 2;
+            this.layout.RowCount = 1;
             this.layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.layout.Controls.Add(this.state, 0, 0);
+            this.layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 78F));
+            this.state.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            this.state.Margin = new System.Windows.Forms.Padding(3, 10, 3, 0);
+            this.layout.Controls.Add(this.state, 1, 0);
             this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
-            this.layout.Controls.Add(this.section, 0, 1);
-            this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.layout.Controls.Add(this.section, 0, 0);
+
             this.layout.Name = "layout";
-            this.layout.Padding = new System.Windows.Forms.Padding(10);
+            this.layout.Padding = new System.Windows.Forms.Padding(4, 0, 0, 0);
             this.Controls.Add(this.layout);
             this.AutoSize = true;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;

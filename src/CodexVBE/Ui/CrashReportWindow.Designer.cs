@@ -18,15 +18,15 @@ namespace CodexVBE
         /// <summary>Title input caption.</summary>
         private System.Windows.Forms.Label titleLabel;
         /// <summary>Editable issue title.</summary>
-        private System.Windows.Forms.TextBox titleInput;
+        private CodexVBE.UiTextBox titleInput;
         /// <summary>Description input caption.</summary>
         private System.Windows.Forms.Label descriptionLabel;
         /// <summary>Editable issue description.</summary>
-        private System.Windows.Forms.TextBox descriptionInput;
+        private CodexVBE.UiTextBox descriptionInput;
         /// <summary>Preview caption.</summary>
         private System.Windows.Forms.Label previewLabel;
         /// <summary>Formatted report preview.</summary>
-        private System.Windows.Forms.TextBox preview;
+        private CodexVBE.UiTextBox preview;
         /// <summary>Delivery and save feedback.</summary>
         private System.Windows.Forms.Label status;
         /// <summary>Link to the created GitHub issue.</summary>
@@ -36,15 +36,15 @@ namespace CodexVBE
         /// <summary>Flow layout containing report actions.</summary>
         private System.Windows.Forms.FlowLayoutPanel buttons;
         /// <summary>Closes the dialog after delivery is no longer active.</summary>
-        private System.Windows.Forms.Button closeButton;
+        private CodexVBE.UiActionButton closeButton;
         /// <summary>Publishes the report through the configured delivery service.</summary>
-        private System.Windows.Forms.Button sendButton;
+        private CodexVBE.UiActionButton sendButton;
         /// <summary>Hands the report to Outlook or a local email draft.</summary>
-        private System.Windows.Forms.Button emailButton;
+        private CodexVBE.UiActionButton emailButton;
         /// <summary>Copies the formatted report body.</summary>
-        private System.Windows.Forms.Button copyButton;
+        private CodexVBE.UiActionButton copyButton;
         /// <summary>Saves a local Markdown report.</summary>
-        private System.Windows.Forms.Button saveButton;
+        private CodexVBE.UiActionButton saveButton;
         /// <summary>Tooltips associated with report controls.</summary>
         private System.Windows.Forms.ToolTip tips;
         /// <summary>Releases runtime subscriptions and Designer-owned components.</summary>
@@ -64,20 +64,20 @@ namespace CodexVBE
             this.privacy = new System.Windows.Forms.Label();
             this.destination = new System.Windows.Forms.Label();
             this.titleLabel = new System.Windows.Forms.Label();
-            this.titleInput = new System.Windows.Forms.TextBox();
+            this.titleInput = new CodexVBE.UiTextBox();
             this.descriptionLabel = new System.Windows.Forms.Label();
-            this.descriptionInput = new System.Windows.Forms.TextBox();
+            this.descriptionInput = new CodexVBE.UiTextBox();
             this.previewLabel = new System.Windows.Forms.Label();
-            this.preview = new System.Windows.Forms.TextBox();
+            this.preview = new CodexVBE.UiTextBox();
             this.status = new System.Windows.Forms.Label();
             this.issueLink = new System.Windows.Forms.LinkLabel();
             this.progress = new System.Windows.Forms.ProgressBar();
             this.buttons = new System.Windows.Forms.FlowLayoutPanel();
-            this.closeButton = new System.Windows.Forms.Button();
-            this.sendButton = new System.Windows.Forms.Button();
-            this.emailButton = new System.Windows.Forms.Button();
-            this.copyButton = new System.Windows.Forms.Button();
-            this.saveButton = new System.Windows.Forms.Button();
+            this.closeButton = new CodexVBE.UiActionButton();
+            this.sendButton = new CodexVBE.UiActionButton();
+            this.emailButton = new CodexVBE.UiActionButton();
+            this.copyButton = new CodexVBE.UiActionButton();
+            this.saveButton = new CodexVBE.UiActionButton();
             this.tips = new System.Windows.Forms.ToolTip(this.components);
             this.layout.SuspendLayout();
             this.buttons.SuspendLayout();
@@ -102,7 +102,7 @@ namespace CodexVBE
             this.copyButton.Name = "copyButton";
             this.saveButton.Name = "saveButton";
             this.layout.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.layout.Padding = new System.Windows.Forms.Padding(24);
+            this.layout.Padding = new System.Windows.Forms.Padding(16);
             this.layout.ColumnCount = 1;
             this.layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.layout.RowCount = 14;
@@ -272,6 +272,25 @@ namespace CodexVBE
             this.layout.PerformLayout();
             this.buttons.ResumeLayout(false);
             this.buttons.PerformLayout();
+            this.closeButton.Symbol = CodexVBE.UiSymbol.Close;
+            this.closeButton.IconOnly = true;
+            this.closeButton.AutoSize = false;
+            this.closeButton.MinimumSize = System.Drawing.Size.Empty;
+            this.closeButton.Size = new System.Drawing.Size(32, 30);
+            this.sendButton.Symbol = CodexVBE.UiSymbol.Upload;
+            this.sendButton.Primary = true;
+            this.emailButton.Symbol = CodexVBE.UiSymbol.Mail;
+            this.emailButton.IconOnly = true;
+            this.emailButton.AutoSize = false;
+            this.emailButton.MinimumSize = System.Drawing.Size.Empty;
+            this.emailButton.Size = new System.Drawing.Size(32, 30);
+            this.copyButton.Symbol = CodexVBE.UiSymbol.Copy;
+            this.copyButton.IconOnly = true;
+            this.copyButton.AutoSize = false;
+            this.copyButton.MinimumSize = System.Drawing.Size.Empty;
+            this.copyButton.Size = new System.Drawing.Size(32, 30);
+            this.saveButton.Symbol = CodexVBE.UiSymbol.Save;
+            this.saveButton.Primary = true;
             this.ResumeLayout(false);
         }
     }

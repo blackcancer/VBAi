@@ -10,7 +10,7 @@ namespace CodexVBE
         /// <summary>Panneau d’aperçu visible dans le concepteur Visual Studio.</summary>
         private System.Windows.Forms.Panel previewPanel;
         /// <summary>Représentation WinForms statique destinée au concepteur.</summary>
-        private System.Windows.Forms.TextBox previewEditor;
+        private CodexVBE.UiTextBox previewEditor;
                 /// <summary>Libère les composants du modèle Designer.</summary>
                 /// <param name="disposing">Indique si les composants gérés doivent également être libérés.</param>
         protected override void Dispose(bool disposing)
@@ -24,7 +24,7 @@ namespace CodexVBE
             this.components = new System.ComponentModel.Container();
             this.host = new CodexVBE.ChatContentHost();
             this.previewPanel = new System.Windows.Forms.Panel();
-            this.previewEditor = new System.Windows.Forms.TextBox();
+            this.previewEditor = new CodexVBE.UiTextBox();
             this.previewPanel.SuspendLayout();
             this.SuspendLayout();
             // host

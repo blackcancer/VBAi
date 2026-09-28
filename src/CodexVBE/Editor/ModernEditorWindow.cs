@@ -502,10 +502,30 @@ public int column { get; set; } }
             finally { busy = false; }
         }
         /// <summary>Applique à Monaco les couleurs du thème hôte après un changement de thème.</summary>
-        private async void ThemeChanged() { try { await Theme(); } catch (Exception error) { Report(error); } }
+        private async void ThemeChanged()
+        {
+            if (IsDisposed || Disposing || closing || !IsHandleCreated) return;
+            // Windows preference notifications can arrive on the SystemEvents worker.
+            // WebView2, tabs and their palette must be updated on the owning UI thread.
+            if (InvokeRequired)
+            {
+                try { BeginInvoke(new Action(ThemeChanged)); }
+                catch (InvalidOperationException) { /* Window closed during dispatch. */ }
+                return;
+            }
+            try { await Theme(); } catch (Exception error) { Report(error); }
+        }
         /// <summary>Envoie à Monaco les indicateurs de thème sombre et de contraste élevé.</summary>
         /// <returns>Résultat JSON de l’appel de thème.</returns>
-        private Task<string> Theme() => Script("theme", UiTheme.Dark, UiTheme.HighContrast());
+        private Task<string> Theme()
+        {
+            UiTheme.Apply(this);
+            if (Browser != null) Browser.DefaultBackgroundColor = UiTheme.Surface;
+            return Script("theme", UiTheme.Dark, UiTheme.HighContrast(),
+                ThemeColor(UiTheme.Surface), ThemeColor(UiTheme.Foreground));
+        }
+        /// <summary>Monaco requires hexadecimal colors, including named and system colors.</summary>
+        private static string ThemeColor(System.Drawing.Color color) => "#" + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");
         /// <summary>Enregistre chaque brouillon modifié avant un arrêt ou une fermeture de la fenêtre.</summary>
         private void PreserveDrafts() { foreach (var doc in documents.Values) try { Drafts.Save(doc); } catch (Exception error) { LoadLog.Write("Editor recovery failed: " + error.GetType().Name); } }
         /// <summary>Capture et préserve les brouillons avant de permettre la fermeture définitive du formulaire.</summary>

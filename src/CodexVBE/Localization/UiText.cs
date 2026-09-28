@@ -120,7 +120,7 @@ namespace CodexVBE
             foreach (Control child in control.Controls) Apply(child, components, additionalTips);
             if (control is Form && components != null)
                 foreach (IComponent component in components.Components)
-                    if (component is ContextMenuStrip) ApplyItems(((ContextMenuStrip)component).Items);
+                    if (component is ContextMenuStrip menu) { ApplyItems(menu.Items); UiTheme.ApplyMenu(menu); }
             if (form != null) UiTheme.Attach(form);
         }
 

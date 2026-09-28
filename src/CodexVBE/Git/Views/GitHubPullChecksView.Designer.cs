@@ -4,7 +4,7 @@ namespace CodexVBE
     public sealed partial class GitHubPullChecksView
     {
         /// <summary>Affiche le résumé des exécutions de vérification et leur état.</summary>
-        internal System.Windows.Forms.TextBox checks;
+        internal CodexVBE.UiTextBox checks;
         /// <summary>Conteneur des composants managés de la vue.</summary>
         private System.ComponentModel.IContainer components;
         /// <summary>Fournit les info-bulles des contrôles.</summary>
@@ -22,7 +22,7 @@ namespace CodexVBE
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
-            this.checks = new System.Windows.Forms.TextBox();
+            this.checks = new CodexVBE.UiTextBox();
             this.SuspendLayout();
             this.checks.Name = "checks";
             this.checks.Multiline = true;

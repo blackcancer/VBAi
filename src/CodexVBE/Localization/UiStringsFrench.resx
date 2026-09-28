@@ -2043,4 +2043,6 @@ Connexion via Git Credential Manager ; identité de commit configurée dans Git.
   <data name="Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed." xml:space="preserve"><value>Pause de sécurité : tours répétés sans progression ou plafond de l’intervention atteint. Reprenez à partir des résultats conservés ; les actions terminées ne seront pas rejouées.</value></data>
   <data name="Edit" xml:space="preserve"><value>Modifier</value></data>
   <data name="Delete" xml:space="preserve"><value>Supprimer</value></data>
+  <data name="VBA edit approval" xml:space="preserve"><value>Autorisation des modifications VBA</value></data>
+  <data name="Model and reasoning effort" xml:space="preserve"><value>Modèle et effort de réflexion</value></data>
 </root>

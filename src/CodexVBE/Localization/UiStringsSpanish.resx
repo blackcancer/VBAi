@@ -2063,4 +2063,6 @@ Inicio de sesión mediante Git Credential Manager; la identidad de los commits s
   <data name="Delete" xml:space="preserve">
     <value>Eliminar</value>
   </data>
+  <data name="VBA edit approval" xml:space="preserve"><value>Aprobación de cambios VBA</value></data>
+  <data name="Model and reasoning effort" xml:space="preserve"><value>Modelo y nivel de razonamiento</value></data>
 </root>

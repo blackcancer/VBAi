@@ -6,7 +6,7 @@ namespace CodexVBE
         /// <summary>Caption for the commit message input.</summary>
         internal System.Windows.Forms.Label messageLabel;
         /// <summary>Commit message input.</summary>
-        internal System.Windows.Forms.TextBox commitMessage;
+        internal CodexVBE.UiTextBox commitMessage;
         /// <summary>Commits selected changes.</summary>
         internal CodexVBE.ThemedButton commit;
         /// <summary>Split layout for changed files and their code diff.</summary>
@@ -14,7 +14,7 @@ namespace CodexVBE
         /// <summary>Side-by-side or unified diff for the selected file.</summary>
         internal CodexVBE.CodeDiffView diff;
         /// <summary>Changed files available for staging and review.</summary>
-        internal System.Windows.Forms.CheckedListBox changes;
+        internal CodexVBE.UiCheckedListBox changes;
         /// <summary>Actions for opening and restoring the selected module.</summary>
         internal System.Windows.Forms.FlowLayoutPanel reviewActions;
         /// <summary>Opens the selected VBA module.</summary>
@@ -25,6 +25,8 @@ namespace CodexVBE
         internal System.Windows.Forms.TableLayoutPanel editorLayout;
         /// <summary>Container that owns Designer components.</summary>
         private System.ComponentModel.IContainer components;
+        /// <summary>Chat-style commit composer, editable in the Designer.</summary>
+        private CodexVBE.ChatComposerPanel commitComposer;
         /// <summary>Tooltips associated with change actions.</summary>
         private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Libère les composants de la vue avant son contrôle natif.</summary>
@@ -41,12 +43,14 @@ namespace CodexVBE
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
             this.editorLayout = new System.Windows.Forms.TableLayoutPanel();
+            this.commitComposer = new CodexVBE.ChatComposerPanel();
+            this.commitComposer.SuspendLayout();
             this.messageLabel = new System.Windows.Forms.Label();
-            this.commitMessage = new System.Windows.Forms.TextBox();
+            this.commitMessage = new CodexVBE.UiTextBox();
             this.commit = new CodexVBE.ThemedButton();
             this.changeSplit = new System.Windows.Forms.SplitContainer();
             this.diff = new CodexVBE.CodeDiffView();
-            this.changes = new System.Windows.Forms.CheckedListBox();
+            this.changes = new CodexVBE.UiCheckedListBox();
             this.reviewActions = new System.Windows.Forms.FlowLayoutPanel();
             this.openModule = new CodexVBE.ThemedButton();
             this.restoreModule = new CodexVBE.ThemedButton();
@@ -97,19 +101,34 @@ namespace CodexVBE
             this.reviewActions.Controls.Add(this.restoreModule);
             this.toolTips.SetToolTip(this.restoreModule, "Restore only the selected module from the reviewed revision, with a checkpoint first.");
             this.changes.CheckOnClick = true;
-            this.commit.Margin = new System.Windows.Forms.Padding(3, 3, 15, 3);
+            this.commit.Margin = new System.Windows.Forms.Padding(3);
             this.editorLayout.Dock = System.Windows.Forms.DockStyle.Fill;
             this.editorLayout.ColumnCount = 1;
             this.editorLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.editorLayout.RowCount = 5;
             this.editorLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
-            this.editorLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 54F));
+            this.editorLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 0F));
             this.editorLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
             this.editorLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.editorLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
-            this.editorLayout.Controls.Add(this.messageLabel, 0, 0);
-            this.editorLayout.Controls.Add(this.commitMessage, 0, 1);
-            this.editorLayout.Controls.Add(this.commit, 0, 2);
+            this.editorLayout.Controls.Add(this.commitComposer, 0, 0);
+            this.commitComposer.Name = "commitComposer";
+            this.commitComposer.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.commitComposer.AutoSize = true;
+            this.commitComposer.Padding = new System.Windows.Forms.Padding(10, 6, 10, 6);
+            this.commitComposer.ColumnCount = 2;
+            this.commitComposer.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.commitComposer.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 38F));
+            this.commitComposer.RowCount = 2;
+            this.commitComposer.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.commitComposer.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 54F));
+            this.commitComposer.Controls.Add(this.messageLabel, 0, 0);
+            this.commitComposer.Controls.Add(this.commitMessage, 0, 1);
+            this.commitComposer.Controls.Add(this.commit, 1, 1);
+            this.commitMessage.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.commit.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
+
+
             this.editorLayout.Controls.Add(this.changeSplit, 0, 3);
             this.reviewActions.Dock = System.Windows.Forms.DockStyle.Fill;
             this.editorLayout.Controls.Add(this.reviewActions, 0, 4);
@@ -159,6 +178,24 @@ namespace CodexVBE
             this.editorLayout.PerformLayout();
             this.changeSplit.ResumeLayout(false);
             this.changeSplit.PerformLayout();
+            this.commit.Symbol = CodexVBE.UiSymbol.Check;
+            this.commit.IconOnly = true;
+            this.commit.AutoSize = false;
+            this.commit.MinimumSize = System.Drawing.Size.Empty;
+            this.commit.Size = new System.Drawing.Size(32, 30);
+            this.commit.Primary = true;
+            this.openModule.Symbol = CodexVBE.UiSymbol.Code;
+            this.openModule.IconOnly = true;
+            this.openModule.AutoSize = false;
+            this.openModule.MinimumSize = System.Drawing.Size.Empty;
+            this.openModule.Size = new System.Drawing.Size(32, 30);
+            this.restoreModule.Symbol = CodexVBE.UiSymbol.Undo;
+            this.restoreModule.IconOnly = true;
+            this.restoreModule.AutoSize = false;
+            this.restoreModule.MinimumSize = System.Drawing.Size.Empty;
+            this.restoreModule.Size = new System.Drawing.Size(32, 30);
+            this.commitComposer.ResumeLayout(false);
+            this.commitComposer.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
         }

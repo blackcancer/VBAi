@@ -4,7 +4,7 @@ namespace CodexVBE
     public sealed partial class GitHubPullFilesView
     {
         /// <summary>Liste les chemins des fichiers modifiés et leur état de changement.</summary>
-        internal System.Windows.Forms.ListBox files;
+        internal CodexVBE.UiListBox files;
         /// <summary>Conteneur des composants managés de la vue.</summary>
         private System.ComponentModel.IContainer components;
         /// <summary>Fournit les info-bulles des contrôles.</summary>
@@ -22,7 +22,7 @@ namespace CodexVBE
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
-            this.files = new System.Windows.Forms.ListBox();
+            this.files = new CodexVBE.UiListBox();
             this.SuspendLayout();
             this.files.Name = "files";
             this.files.HorizontalScrollbar = true;

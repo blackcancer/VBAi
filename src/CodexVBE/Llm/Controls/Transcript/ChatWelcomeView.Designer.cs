@@ -77,7 +77,11 @@ namespace CodexVBE
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.Name = "ChatWelcomeView";
             this.Size = new System.Drawing.Size(500, 240);
-            this.layout.ResumeLayout(false); this.layout.PerformLayout(); this.ResumeLayout(false); this.PerformLayout();
+            this.layout.ResumeLayout(false); this.layout.PerformLayout();
+            this.explain.Symbol = CodexVBE.UiSymbol.Inspect;
+            this.fix.Symbol = CodexVBE.UiSymbol.Check;
+            this.improve.Symbol = CodexVBE.UiSymbol.Edit;
+            this.ResumeLayout(false); this.PerformLayout();
         }
     }
 }

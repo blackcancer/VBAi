@@ -89,7 +89,7 @@ namespace CodexVBE
             this.layout.Controls.Add(this.state, 0, 4);
             this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
             this.layout.Name = "layout";
-            this.layout.Padding = new System.Windows.Forms.Padding(10);
+            this.layout.Padding = new System.Windows.Forms.Padding(4);
             this.toolTips.SetToolTip(this.undoTurn, "Undo changes from this turn after checking for conflicts.");
             this.toolTips.SetToolTip(this.module, "Open the modified module in the VBE.");
             this.toolTips.SetToolTip(this.undo, "Restore the code before this change after checking for conflicts.");
@@ -100,7 +100,25 @@ namespace CodexVBE
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.Name = "ChatChangeCardView";
             this.Size = new System.Drawing.Size(500, 120);
-            this.layout.ResumeLayout(false); this.layout.PerformLayout(); this.ResumeLayout(false); this.PerformLayout();
+            this.layout.ResumeLayout(false); this.layout.PerformLayout();
+            this.undo.Symbol = CodexVBE.UiSymbol.Undo;
+            this.undo.IconOnly = true;
+            this.undo.AutoSize = false;
+            this.undo.MinimumSize = System.Drawing.Size.Empty;
+            this.undo.Size = new System.Drawing.Size(32, 30);
+            this.blocks.Symbol = CodexVBE.UiSymbol.Undo;
+            this.blocks.IconOnly = true;
+            this.blocks.AutoSize = false;
+            this.blocks.Size = new System.Drawing.Size(32, 30);
+            this.undoTurn.Symbol = CodexVBE.UiSymbol.Undo;
+            this.undoTurn.IconOnly = true;
+            this.undoTurn.AutoSize = false;
+            this.undoTurn.Size = new System.Drawing.Size(32, 30);
+            this.module.Symbol = CodexVBE.UiSymbol.Code;
+            this.module.IconOnly = false;
+            this.module.AutoSize = true;
+            this.module.Size = new System.Drawing.Size(32, 30);
+            this.ResumeLayout(false); this.PerformLayout();
         }
     }
 }

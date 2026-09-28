@@ -61,7 +61,7 @@ namespace CodexVBE
             conversationItems.ItemTemplate = new DataTemplate { VisualTree = presenter };
             var style = new Style(typeof(ListBoxItem));
             style.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Stretch));
-            style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(16, 4, 16, 0)));
+            style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(8, 2, 8, 0)));
             style.Setters.Add(new Setter(Control.BackgroundProperty, Brushes.Transparent));
             conversationItems.ItemContainerStyle = style;
             conversationItems.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler((s, e) => {
@@ -149,7 +149,7 @@ namespace CodexVBE
             DisposeEntryViews();
             visibleEntries.Clear(); firstLoadedEntry = 0;
             transcriptEntries.Clear(); entryViews.Clear(); liveEntries.Clear(); liveTexts.Clear();
-            activityGroups.Clear(); activityOwners.Clear(); expandedActivityGroups.Clear(); expandedActivitySteps.Clear();
+            activityGroups.Clear(); activityOwners.Clear(); expandedActivityGroups.Clear(); collapsedActivityGroups.Clear(); expandedActivitySteps.Clear(); collapsedActivitySteps.Clear();
             rollbackButtons.Clear(); changeStates.Clear(); formCutButtons.Clear(); followConversation = true;
         }
         /// <summary>Fait défiler vers le dernier élément si le suivi automatique est activé.</summary>
@@ -200,7 +200,7 @@ namespace CodexVBE
 
             var card = new ChatMessageView();
 
-            card.speaker.Text = entry.Speaker == "Vous" ? UiText.Get("YOU") : UiText.Speaker(entry.Speaker).ToUpperInvariant();
+            card.speaker.Text = UiText.Speaker(entry.Speaker);
 
             card.copy.Click += (s,e) => CopyText(entry.Text);
 
@@ -259,7 +259,7 @@ namespace CodexVBE
 
             card.fix.Click += (s,e) => { if (busy) return; modePicker.SelectedItem = ChatMode.Agent; prompt.Text = "/corriger " + entry.Text; draftAttachments.AddRange(entry.Attachments); RefreshContextChips(); };
 
-            return new ChatDesignerHost(card) { Margin = new Thickness(entry.Speaker == "Vous" ? 30 : 0, 0, 4, 14) };
+            return new ChatDesignerHost(card) { Margin = new Thickness(entry.Speaker == "Vous" ? 20 : 0, 0, 4, 8) };
         }
 
         /// <summary>Copie le texte dans le presse-papiers et signale les erreurs à l’interface.</summary>
@@ -323,7 +323,7 @@ namespace CodexVBE
 
             card.undoTurn.Click += (s,e) => RollbackIntervention(change, null, true);
 
-            var host = new ChatDesignerHost(card) { Margin = new Thickness(0, 0, 4, 14) };
+            var host = new ChatDesignerHost(card) { Margin = new Thickness(0, 0, 4, 8) };
 
             RefreshCodeChangeCards(); return host;
         }

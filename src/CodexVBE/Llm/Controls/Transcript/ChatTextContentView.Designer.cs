@@ -10,7 +10,7 @@ namespace CodexVBE
         /// <summary>Flow layout panel that contains this transcript view&apos;s child controls.</summary>
         private System.Windows.Forms.TableLayoutPanel layout;
         /// <summary>Stores the content used by ChatTextContentView.</summary>
-        internal System.Windows.Forms.RichTextBox content;
+        internal CodexVBE.UiRichTextBox content;
         /// <summary>Stores the copy menu used by ChatTextContentView.</summary>
         internal System.Windows.Forms.ContextMenuStrip copyMenu;
         /// <summary>Stores the copy selection used by ChatTextContentView.</summary>
@@ -31,7 +31,7 @@ namespace CodexVBE
             this.copySelection = new System.Windows.Forms.ToolStripMenuItem("Copy");
             this.copyCode = new System.Windows.Forms.ToolStripMenuItem("Copy code");
             this.copyMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { this.copySelection, this.copyCode });
-            this.content = new System.Windows.Forms.RichTextBox();
+            this.content = new CodexVBE.UiRichTextBox();
             this.content.ReadOnly = true;
             this.content.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.content.DetectUrls = false;

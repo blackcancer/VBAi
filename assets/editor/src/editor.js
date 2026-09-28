@@ -33,9 +33,9 @@ monaco.editor.defineTheme('vbai-dark', { base: 'vs-dark', inherit: true, rules: 
 } });
 monaco.editor.defineTheme('vbai-light', { base: 'vs', inherit: true, rules: [], colors: { 'editor.background': '#ffffff' } });
 const models = new Map();
-let active = null, suppress = false, diff = null;
+let active = null, suppress = false, diff = null, currentTheme = 'vbai-dark';
 const editor = monaco.editor.create(document.getElementById('editor'), {
-  theme: 'vbai-dark', language: 'vba', automaticLayout: true, fontFamily: 'Cascadia Code, Consolas, monospace', fontSize: 14,
+  theme: currentTheme, autoDetectHighContrast: false, language: 'vba', automaticLayout: true, fontFamily: 'Cascadia Code, Consolas, monospace', fontSize: 14,
   minimap: { enabled: false }, scrollBeyondLastLine: false, renderWhitespace: 'selection', wordBasedSuggestions: 'currentDocument',
   tabSize: 4, insertSpaces: true, readOnly: false, glyphMargin: true
 });
@@ -85,11 +85,24 @@ window.vbai = {
     }
     return entry.model.getVersionId();
   },
-  theme(dark, contrast) { monaco.editor.setTheme(contrast ? (dark ? 'hc-black' : 'hc-light') : dark ? 'vbai-dark' : 'vbai-light'); document.body.style.background = dark ? '#171b21' : '#ffffff'; },
+  theme(dark, contrast, background, foreground) {
+    currentTheme = contrast ? (dark ? 'hc-black' : 'hc-light') : dark ? 'vbai-dark' : 'vbai-light';
+    const surface = background || (dark ? '#1e222a' : '#ffffff');
+    if (!contrast) monaco.editor.defineTheme(currentTheme, {
+      base: dark ? 'vs-dark' : 'vs', inherit: true, rules: [], colors: {
+        'editor.background': surface, 'editorGutter.background': surface,
+        'editor.foreground': foreground || (dark ? '#e2e8f0' : '#1e293b'),
+        'editorWidget.background': surface
+      }
+    });
+    monaco.editor.setTheme(currentTheme);
+    document.body.style.background = surface;
+    document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+  },
   compare(original) {
     hideDiff(); if (!active) return;
     document.getElementById('editor').hidden = true; document.getElementById('diff').hidden = false;
-    diff = monaco.editor.createDiffEditor(document.getElementById('diff'), { automaticLayout: true, renderSideBySide: true, readOnly: true, originalEditable: false });
+    diff = monaco.editor.createDiffEditor(document.getElementById('diff'), { theme: currentTheme, autoDetectHighContrast: false, automaticLayout: true, renderSideBySide: true, readOnly: true, originalEditable: false });
     diff.setModel({ original: monaco.editor.createModel(original, 'vba'), modified: models.get(active).model });
   },
   hideDiff,
@@ -100,9 +113,9 @@ window.vbai = {
   reveal(line, column) { editor.setPosition({ lineNumber: line, column }); editor.revealLineInCenter(line); editor.focus(); },
   command(name) { const action = editor.getAction(name); if (action) action.run(); else editor.trigger('vbai', name, {}); },
   insert(text) { editor.trigger('vbai', 'type', { text }); },
-  testInfo() { return { language: editor.getModel()?.getLanguageId(), models: models.size, theme: document.body.style.background, version: monaco.editor?.getModels().length, diff: !!diff, pendingBreakpoints: models.get(active)?.breakpoints?.size || 0, executionMarkers: models.get(active)?.execution?.length || 0, markers: editor.getModel() ? monaco.editor.getModelMarkers({ resource: editor.getModel().uri }).length : 0 }; }
+  testInfo() { return { language: editor.getModel()?.getLanguageId(), models: models.size, theme: document.body.style.background, themeName: currentTheme, version: monaco.editor?.getModels().length, diff: !!diff, pendingBreakpoints: models.get(active)?.breakpoints?.size || 0, executionMarkers: models.get(active)?.execution?.length || 0, markers: editor.getModel() ? monaco.editor.getModelMarkers({ resource: editor.getModel().uri }).length : 0 }; }
 };
-editor.addAction({ id: 'vbai.save', label: 'VBA: Save', keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
+editor.addAction({ id: 'vbai.save', label: 'Save', keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
   run: () => { if (active) send({ type: 'command', name: 'save', id: active }); } });
 function nativeCommand(name) { if (!active) return; const entry = models.get(active); send({ type: 'editorCommand', name, id: active, version: entry.model.getVersionId(), line: editor.getPosition()?.lineNumber || 1 }); }
 function installNativeActions() {
@@ -114,14 +127,14 @@ function installNativeActions() {
     ['step_into', 'Step into', monaco.KeyCode.F8],
     ['step_over', 'Step over', monaco.KeyMod.Shift | monaco.KeyCode.F8],
     ['step_out', 'Step out', monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.F8]
-  ]) nativeActions.push(editor.addAction({ id: 'vbai.' + name, label: 'VBA: ' + (commandLabels[label] || label), keybindings: binding ? [binding] : [], contextMenuGroupId: 'vba', run: () => nativeCommand(name) }));
+  ]) nativeActions.push(editor.addAction({ id: 'vbai.' + name, label: commandLabels[label] || label, keybindings: binding ? [binding] : [], contextMenuGroupId: '2_debug', contextMenuOrder: nativeActions.length + 1, run: () => nativeCommand(name) }));
 }
 installNativeActions();
 let assistantActions = [];
 function installAssistantActions() {
 for (const action of assistantActions) action.dispose(); assistantActions = [];
 for (const [name, label] of [['expliquer', 'Explain'], ['corriger', 'Fix'], ['refactoriser', 'Refactor']]) {
-  assistantActions.push(editor.addAction({ id: 'vbai.' + name, label: 'VBAi: ' + (commandLabels[label] || label), contextMenuGroupId: 'vbai',
+  assistantActions.push(editor.addAction({ id: 'vbai.' + name, label: commandLabels[label] || label, contextMenuGroupId: '3_assistant', contextMenuOrder: assistantActions.length + 1,
     run: () => { if (!active) return; const entry = models.get(active), selection = editor.getSelection();
       const text = selection && !selection.isEmpty() ? entry.model.getValueInRange(selection) : entry.model.getValue();
       send({ type: 'assistantAction', name: '/' + name, ...snapshot(entry), selectedText: text, line: selection && !selection.isEmpty() ? selection.startLineNumber : 1 }); }

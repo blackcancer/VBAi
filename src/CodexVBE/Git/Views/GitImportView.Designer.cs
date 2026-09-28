@@ -4,7 +4,7 @@ namespace CodexVBE
     public sealed partial class GitImportView
     {
         /// <summary>Affiche le résultat et les détails de l’importation.</summary>
-        internal System.Windows.Forms.TextBox importSummary;
+        internal CodexVBE.UiTextBox importSummary;
         /// <summary>Conteneur des composants managés de la vue.</summary>
         private System.ComponentModel.IContainer components;
         /// <summary>Fournit les info-bulles des contrôles.</summary>
@@ -22,7 +22,7 @@ namespace CodexVBE
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
-            this.importSummary = new System.Windows.Forms.TextBox();
+            this.importSummary = new CodexVBE.UiTextBox();
             this.SuspendLayout();
             this.importSummary.Name = "importSummary";
             this.importSummary.Dock = System.Windows.Forms.DockStyle.Fill;

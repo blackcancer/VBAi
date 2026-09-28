@@ -62,6 +62,7 @@ namespace CodexVBE
             if (resumeTurn != null) resumeTurn.Enabled = !busy && currentSession?.BudgetPaused == true;
             if (send == null || prompt == null) return;
             bool hasText = !string.IsNullOrWhiteSpace(prompt.Text);
+            send.Symbol = busy && !hasText ? UiSymbol.Stop : currentSession?.BudgetPaused == true && !hasText ? UiSymbol.Play : UiSymbol.Upload;
             send.Text = busy ? UiText.Get(hasText ? "Queue ↑" : "Stop ■") :
                 UiText.Get(currentSession?.BudgetPaused == true && !hasText ? "Resume ▶" : "Send ↑");
             toolTips.SetToolTip(send, UiText.Get(busy ? (hasText ? "Queue this message after the current response." : "Stop the current response. Changes already applied can still be undone in the chat.") : "Send the message and its context to the agent."));

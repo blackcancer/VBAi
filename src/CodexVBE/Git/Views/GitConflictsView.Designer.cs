@@ -6,9 +6,9 @@ namespace CodexVBE
         /// <summary>Conflict resolution actions.</summary>
         internal System.Windows.Forms.FlowLayoutPanel conflictActions;
         /// <summary>Files with unresolved conflicts.</summary>
-        internal System.Windows.Forms.ListBox conflictList;
+        internal CodexVBE.UiListBox conflictList;
         /// <summary>Manual conflict resolution text.</summary>
-        internal System.Windows.Forms.TextBox resolutionText;
+        internal CodexVBE.UiTextBox resolutionText;
         /// <summary>Uses the current branch's version.</summary>
         internal CodexVBE.ThemedButton mergeOurs;
         /// <summary>Uses the incoming branch's version.</summary>
@@ -20,13 +20,13 @@ namespace CodexVBE
         /// <summary>Aborts the current merge.</summary>
         internal CodexVBE.ThemedButton mergeAbort;
         /// <summary>Comparison grid for the conflicting versions.</summary>
-        internal System.Windows.Forms.DataGridView conflictDiff;
+        internal CodexVBE.UiDataGridView conflictDiff;
         /// <summary>Current branch's conflict content.</summary>
         internal System.Windows.Forms.DataGridViewTextBoxColumn conflictOurs;
         /// <summary>Incoming branch's conflict content.</summary>
         internal System.Windows.Forms.DataGridViewTextBoxColumn conflictTheirs;
         /// <summary>Common ancestor version of the conflict.</summary>
-        internal System.Windows.Forms.TextBox baseContent;
+        internal CodexVBE.UiTextBox baseContent;
         /// <summary>Layout for ancestor and resolved-result content.</summary>
         internal System.Windows.Forms.TableLayoutPanel conflictLayout;
         /// <summary>Caption for the common ancestor content.</summary>
@@ -51,17 +51,17 @@ namespace CodexVBE
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
             this.conflictActions = new System.Windows.Forms.FlowLayoutPanel();
-            this.conflictList = new System.Windows.Forms.ListBox();
-            this.resolutionText = new System.Windows.Forms.TextBox();
+            this.conflictList = new CodexVBE.UiListBox();
+            this.resolutionText = new CodexVBE.UiTextBox();
             this.mergeOurs = new CodexVBE.ThemedButton();
             this.mergeTheirs = new CodexVBE.ThemedButton();
             this.mergeText = new CodexVBE.ThemedButton();
             this.mergeComplete = new CodexVBE.ThemedButton();
             this.mergeAbort = new CodexVBE.ThemedButton();
-            this.conflictDiff = new System.Windows.Forms.DataGridView();
+            this.conflictDiff = new CodexVBE.UiDataGridView();
             this.conflictOurs = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.conflictTheirs = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.baseContent = new System.Windows.Forms.TextBox();
+            this.baseContent = new CodexVBE.UiTextBox();
             this.conflictLayout = new System.Windows.Forms.TableLayoutPanel();
             this.ancestorLabel = new System.Windows.Forms.Label();
             this.resultLabel = new System.Windows.Forms.Label();
@@ -215,6 +215,11 @@ namespace CodexVBE
             this.conflictDiff.PerformLayout();
             this.conflictLayout.ResumeLayout(false);
             this.conflictLayout.PerformLayout();
+                        this.mergeOurs.Symbol = CodexVBE.UiSymbol.Previous;
+            this.mergeTheirs.Symbol = CodexVBE.UiSymbol.Next;
+            this.mergeText.Symbol = CodexVBE.UiSymbol.Edit;
+            this.mergeComplete.Symbol = CodexVBE.UiSymbol.Check;
+            this.mergeAbort.Symbol = CodexVBE.UiSymbol.Close;
             this.ResumeLayout(false);
             this.PerformLayout();
         }

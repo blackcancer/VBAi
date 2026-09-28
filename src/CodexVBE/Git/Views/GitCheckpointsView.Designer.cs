@@ -6,9 +6,9 @@ namespace CodexVBE
         /// <summary>Actions for checkpoint operations.</summary>
         internal System.Windows.Forms.FlowLayoutPanel checkpointActions;
         /// <summary>Saved local checkpoints.</summary>
-        internal System.Windows.Forms.ListBox checkpointList;
+        internal CodexVBE.UiListBox checkpointList;
         /// <summary>New checkpoint name input.</summary>
-        internal System.Windows.Forms.TextBox checkpointName;
+        internal CodexVBE.UiTextBox checkpointName;
         /// <summary>Creates a checkpoint from the current project state.</summary>
         internal CodexVBE.ThemedButton checkpointCreate;
         /// <summary>Restores the selected checkpoint.</summary>
@@ -31,8 +31,8 @@ namespace CodexVBE
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
             this.checkpointActions = new System.Windows.Forms.FlowLayoutPanel();
-            this.checkpointList = new System.Windows.Forms.ListBox();
-            this.checkpointName = new System.Windows.Forms.TextBox();
+            this.checkpointList = new CodexVBE.UiListBox();
+            this.checkpointName = new CodexVBE.UiTextBox();
             this.checkpointCreate = new CodexVBE.ThemedButton();
             this.checkpointRestore = new CodexVBE.ThemedButton();
             this.checkpointActions.SuspendLayout();
@@ -81,6 +81,16 @@ namespace CodexVBE
             this.checkpointRestore.TabIndex = 2;
             this.checkpointActions.ResumeLayout(false);
             this.checkpointActions.PerformLayout();
+            this.checkpointCreate.Symbol = CodexVBE.UiSymbol.Save;
+            this.checkpointCreate.IconOnly = true;
+            this.checkpointCreate.AutoSize = false;
+            this.checkpointCreate.MinimumSize = System.Drawing.Size.Empty;
+            this.checkpointCreate.Size = new System.Drawing.Size(32, 30);
+            this.checkpointRestore.Symbol = CodexVBE.UiSymbol.Undo;
+            this.checkpointRestore.IconOnly = true;
+            this.checkpointRestore.AutoSize = false;
+            this.checkpointRestore.MinimumSize = System.Drawing.Size.Empty;
+            this.checkpointRestore.Size = new System.Drawing.Size(32, 30);
             this.ResumeLayout(false);
             this.PerformLayout();
         }

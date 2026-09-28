@@ -10,15 +10,15 @@ namespace CodexVBE
         /// <summary>Actions for creating a repository.</summary>
         internal System.Windows.Forms.FlowLayoutPanel createActions;
         /// <summary>Repository filter input.</summary>
-        internal System.Windows.Forms.TextBox repositorySearch;
+        internal CodexVBE.UiTextBox repositorySearch;
         /// <summary>Available repositories matching the filter.</summary>
-        internal System.Windows.Forms.ListBox repositoryList;
+        internal CodexVBE.UiListBox repositoryList;
         /// <summary>Branches available for the selected repository.</summary>
         internal CodexVBE.ThemedComboBox repositoryBranch;
         /// <summary>Organization that will own a new repository.</summary>
         internal CodexVBE.ThemedComboBox organization;
         /// <summary>Name for a new repository.</summary>
-        internal System.Windows.Forms.TextBox repositoryName;
+        internal CodexVBE.UiTextBox repositoryName;
         /// <summary>Whether the new repository is private.</summary>
         internal System.Windows.Forms.CheckBox privateRepository;
         /// <summary>Loads repositories from the connected account.</summary>
@@ -49,11 +49,11 @@ namespace CodexVBE
             this.repoLayout = new System.Windows.Forms.TableLayoutPanel();
             this.repoActions = new System.Windows.Forms.FlowLayoutPanel();
             this.createActions = new System.Windows.Forms.FlowLayoutPanel();
-            this.repositorySearch = new System.Windows.Forms.TextBox();
-            this.repositoryList = new System.Windows.Forms.ListBox();
+            this.repositorySearch = new CodexVBE.UiTextBox();
+            this.repositoryList = new CodexVBE.UiListBox();
             this.repositoryBranch = new CodexVBE.ThemedComboBox();
             this.organization = new CodexVBE.ThemedComboBox();
-            this.repositoryName = new System.Windows.Forms.TextBox();
+            this.repositoryName = new CodexVBE.UiTextBox();
             this.privateRepository = new System.Windows.Forms.CheckBox();
             this.loadRepositories = new CodexVBE.ThemedButton();
             this.useRepository = new CodexVBE.ThemedButton();
@@ -178,6 +178,13 @@ namespace CodexVBE
             this.repoActions.PerformLayout();
             this.createActions.ResumeLayout(false);
             this.createActions.PerformLayout();
+            this.loadRepositories.Symbol = CodexVBE.UiSymbol.Refresh;
+            this.loadRepositories.IconOnly = true;
+            this.loadRepositories.AutoSize = false;
+            this.loadRepositories.MinimumSize = System.Drawing.Size.Empty;
+            this.loadRepositories.Size = new System.Drawing.Size(32, 30);
+            this.useRepository.Symbol = CodexVBE.UiSymbol.Check;
+            this.createRepository.Symbol = CodexVBE.UiSymbol.Add;
             this.ResumeLayout(false);
             this.PerformLayout();
         }

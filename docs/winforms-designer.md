@@ -243,3 +243,12 @@ Contrôles reproductibles :
   les fenêtres dans le Designer d'une instance VS associée à ce checkout et
   vérifie leurs racines chargées. Le contrôle ne modifie pas les
   composants et conserve les documents ouverts pour inspection.
+
+## Style commun du chat et des fenêtres
+
+Les contrôles `UiActionButton`, `UiComboBox`, `UiTextBox`, `UiRichTextBox`,
+`UiListBox`, `UiCheckedListBox` et `UiDataGridView` conservent leurs bases natives
+WinForms et s'emploient directement dans les Designers. Les sélecteurs du chat
+et des paramètres partagent `UiComboBox`. Les propriétés `Symbol`, `IconOnly`,
+`Primary` et `ShowBorder` sont sérialisables ; les SVG sont embarqués dans les
+assemblages. Voir [le style de référence](compact-ui.md).

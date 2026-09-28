@@ -16,11 +16,11 @@ namespace CodexVBE
         /// <summary>Bouton de navigation vers le changement suivant.</summary>
         private CodexVBE.ThemedButton next;
         /// <summary>Champ de recherche dans le contenu du diff.</summary>
-        private System.Windows.Forms.TextBox search;
+        private CodexVBE.UiTextBox search;
         /// <summary>Bouton qui lance la recherche courante.</summary>
         private CodexVBE.ThemedButton find;
         /// <summary>Grille virtuelle en lecture seule qui affiche les lignes du diff.</summary>
-        private System.Windows.Forms.DataGridView grid;
+        private CodexVBE.UiDataGridView grid;
         /// <summary>Composant qui affiche les explications des commandes de la barre d’outils.</summary>
         private System.Windows.Forms.ToolTip tips;
         /// <summary>Colonnes des positions et du texte avant et après le changement.</summary>
@@ -40,9 +40,9 @@ namespace CodexVBE
             this.collapse = new System.Windows.Forms.CheckBox();
             this.previous = new CodexVBE.ThemedButton();
             this.next = new CodexVBE.ThemedButton();
-            this.search = new System.Windows.Forms.TextBox();
+            this.search = new CodexVBE.UiTextBox();
             this.find = new CodexVBE.ThemedButton();
-            this.grid = new System.Windows.Forms.DataGridView();
+            this.grid = new CodexVBE.UiDataGridView();
             ((System.ComponentModel.ISupportInitialize)(this.grid)).BeginInit();
             this.toolbar.SuspendLayout();
             this.grid.SuspendLayout();
@@ -154,6 +154,21 @@ namespace CodexVBE
             this.toolbar.PerformLayout();
             this.grid.ResumeLayout(false);
             this.grid.PerformLayout();
+            this.previous.Symbol = CodexVBE.UiSymbol.Previous;
+            this.previous.IconOnly = true;
+            this.previous.AutoSize = false;
+            this.previous.MinimumSize = System.Drawing.Size.Empty;
+            this.previous.Size = new System.Drawing.Size(32, 30);
+            this.next.Symbol = CodexVBE.UiSymbol.Next;
+            this.next.IconOnly = true;
+            this.next.AutoSize = false;
+            this.next.MinimumSize = System.Drawing.Size.Empty;
+            this.next.Size = new System.Drawing.Size(32, 30);
+            this.find.Symbol = CodexVBE.UiSymbol.Search;
+            this.find.IconOnly = true;
+            this.find.AutoSize = false;
+            this.find.MinimumSize = System.Drawing.Size.Empty;
+            this.find.Size = new System.Drawing.Size(32, 30);
             this.ResumeLayout(false);
             this.PerformLayout();
         }

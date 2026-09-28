@@ -72,6 +72,12 @@ namespace CodexVBE
             this.Size = new System.Drawing.Size(150, 30);
             this.layout.ResumeLayout(false);
             this.layout.PerformLayout();
+            this.open.Symbol = CodexVBE.UiSymbol.Code;
+            this.remove.Symbol = CodexVBE.UiSymbol.Close;
+            this.remove.IconOnly = true;
+            this.remove.AutoSize = false;
+            this.remove.MinimumSize = System.Drawing.Size.Empty;
+            this.remove.Size = new System.Drawing.Size(32, 30);
             this.ResumeLayout(false);
             this.PerformLayout();
         }

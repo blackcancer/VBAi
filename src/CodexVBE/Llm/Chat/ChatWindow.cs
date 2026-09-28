@@ -68,6 +68,7 @@ namespace CodexVBE
 
             try { settings = ReadSettings(); }
             catch (Exception ex) { LoadLog.Write("LLM settings load failed: " + ex.Message); settings = new LlmSettings(); }
+            RefreshApprovalSelection();
             tools = new LlmVbeTools(session, this, settings);
             tools.ValidateScope = EnsureCurrentScope;
             tools.FormCut += change => AddEntry(new ChatEntry { Speaker = "Designer", FormCut = change });
@@ -111,6 +112,7 @@ namespace CodexVBE
                 }
                 if (!restoringSelection) settings.SetSelectedModel(selectedProvider, selectedModel.Id);
                 UpdateEfforts(selectedProvider, selectedModel);
+                RefreshModelSummary();
                 ScheduleSessionSave();
                 if (!restoringSelection)
                     try { WriteSettings(settings); } catch (Exception ex) { LoadLog.Write("Model selection save failed: " + ex.Message); }
@@ -122,6 +124,7 @@ namespace CodexVBE
                 var selectedEffort = effortPicker.SelectedItem as LlmEffortOption;
                 if (selectedProvider == null || selectedModel == null || selectedEffort == null) return;
                 if (currentSession != null) currentSession.Effort = selectedEffort.Id;
+                RefreshModelSummary();
                 if (!restoringSelection) settings.SetReasoningEffort(selectedProvider, selectedModel.Id, selectedEffort.Id);
                 ScheduleSessionSave();
                 if (!restoringSelection)
@@ -175,6 +178,7 @@ namespace CodexVBE
             effortPicker.Items.Clear();
             effortPicker.Enabled = false;
             refreshModels.Enabled = false;
+            RefreshModelSummary();
             if (provider == null || !provider.Available) { refreshModels.Enabled = true; return; }
             try
             {
@@ -216,6 +220,7 @@ namespace CodexVBE
                 {
                     modelPicker.Enabled = modelPicker.Items.Count > 0;
                     refreshModels.Enabled = true;
+                    RefreshModelSummary();
                 }
             }
         }
@@ -238,6 +243,7 @@ namespace CodexVBE
             using (var dialog = new LlmSettingsWindow(settings))
             {
                 if (ShowModal(dialog, owner ?? this) != DialogResult.OK) return;
+                RefreshApprovalSelection();
                 int selected = Array.FindIndex(LlmProvider.All, item => item.Name == settings.ProviderName);
                 if (selected >= 0 && providerPicker.SelectedIndex != selected) providerPicker.SelectedIndex = selected;
                 else
@@ -327,6 +333,7 @@ namespace CodexVBE
         {
             busy = value;
             modePicker.Enabled = !value;
+            approvalPicker.Enabled = modelSummary.Enabled = !value;
             send.Enabled = true;
             newChat.Enabled = scopePicker.Enabled = sessionList.Enabled =
                 providerPicker.Enabled = refreshModels.Enabled = configure.Enabled = projectAccess.Enabled = !value;
@@ -563,5 +570,53 @@ namespace CodexVBE
         /// <param name="arguments">Arguments de l’outil sérialisés en JSON.</param>
         /// <returns>Tâche produisant le résultat sérialisé de l’outil.</returns>
         private static Task<string> InvokeToolNative(LlmVbeTools tools, string name, string arguments) { return tools.InvokeAsync(name, arguments); }
+        private bool refreshingApproval;
+
+        /// <summary>Restores the policy without treating restoration as a user edit.</summary>
+        private void RefreshApprovalSelection()
+        {
+            refreshingApproval = true;
+            try { approvalPicker.SelectedIndex = settings?.VbeEditApproval == "ReadOnly" ? 2 : settings?.VbeEditApproval == "AskEachTime" ? 1 : settings == null || settings.VbeEditApproval == "Automatic" ? 0 : -1; }
+            finally { refreshingApproval = false; }
+        }
+
+        /// <summary>Changes the same VBE policy consumed by both native and HTTP tools.</summary>
+        private void ApprovalPicker_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (refreshingApproval || settings == null) return;
+            if (busy || approvalPicker.SelectedIndex < 0) { RefreshApprovalSelection(); return; }
+            string previous = settings.VbeEditApproval;
+            settings.VbeEditApproval = approvalPicker.SelectedIndex == 2 ? "ReadOnly" : approvalPicker.SelectedIndex == 1 ? "AskEachTime" : "Automatic";
+            try { WriteSettings(settings); }
+            catch (Exception error) { settings.VbeEditApproval = previous; RefreshApprovalSelection(); SetStatus(error.Message); }
+        }
+
+        /// <summary>Mirrors the menu choice into the existing verification preference.</summary>
+        private void VerifyChanges_CheckedChanged(object sender, EventArgs e)
+        {
+            if (verifyAfterEdit != null) verifyAfterEdit.Checked = verifyChanges.Checked;
+        }
+
+        /// <summary>Reveals the Designer-built provider, model and effort selectors.</summary>
+        private void ModelSummary_Click(object sender, EventArgs e)
+        {
+            if (busy) return;
+            bool expanded = rootLayout.RowStyles[6].Height == 0;
+            rootLayout.RowStyles[6].Height = expanded ? 36 : 0;
+            providerLayout.Visible = expanded;
+            RefreshModelSummary();
+            if (expanded) modelPicker.Focus();
+        }
+
+        /// <summary>Shows the selected model succinctly while retaining its full identity in the tooltip.</summary>
+        private void RefreshModelSummary()
+        {
+            string model = (modelPicker.SelectedItem as LlmModelOption)?.Label ?? modelPicker.Text;
+            string effort = effortPicker.Items.Count > 0 ? effortPicker.Text : "";
+            modelSummary.Text = (string.IsNullOrWhiteSpace(model) ? UiText.Get("Model") : model) +
+                (string.IsNullOrWhiteSpace(effort) ? "" : " · " + effort) + (rootLayout.RowStyles[6].Height > 0 ? " ▴" : " ▾");
+            toolTips.SetToolTip(modelSummary, providerPicker.Text + " · " + modelPicker.Text +
+                (string.IsNullOrWhiteSpace(effort) ? "" : " · " + effort));
+        }
     }
 }

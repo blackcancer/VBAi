@@ -10,7 +10,7 @@ namespace CodexVBE
         /// <summary>Flow layout panel that contains this transcript view&apos;s child controls.</summary>
         private System.Windows.Forms.TableLayoutPanel layout;
         /// <summary>Contains the navigation targets offered for the current composer text.</summary>
-        internal System.Windows.Forms.ListBox targets;
+        internal CodexVBE.UiListBox targets;
         /// <summary>Displays the current reference suggestion status.</summary>
         internal System.Windows.Forms.Label status;
         /// <summary>Releases the Designer components.</summary>
@@ -22,7 +22,7 @@ namespace CodexVBE
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
             this.layout = new System.Windows.Forms.TableLayoutPanel();
-            this.targets = new System.Windows.Forms.ListBox();
+            this.targets = new CodexVBE.UiListBox();
             this.targets.Name = "targets";
             this.targets.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
             this.targets.ItemHeight = 30;

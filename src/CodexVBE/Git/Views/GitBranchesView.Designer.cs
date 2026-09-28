@@ -6,7 +6,7 @@ namespace CodexVBE
         /// <summary>Actions for branch and merge operations.</summary>
         internal System.Windows.Forms.FlowLayoutPanel branchActions;
         /// <summary>Local and remote branches.</summary>
-        internal System.Windows.Forms.ListBox branchList;
+        internal CodexVBE.UiListBox branchList;
         /// <summary>Branch name input or selection.</summary>
         internal CodexVBE.ThemedComboBox branchName;
         /// <summary>Refreshes available remote branches.</summary>
@@ -37,7 +37,7 @@ namespace CodexVBE
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
             this.branchActions = new System.Windows.Forms.FlowLayoutPanel();
-            this.branchList = new System.Windows.Forms.ListBox();
+            this.branchList = new CodexVBE.UiListBox();
             this.branchName = new CodexVBE.ThemedComboBox();
             this.branchRemote = new CodexVBE.ThemedButton();
             this.branchCreate = new CodexVBE.ThemedButton();
@@ -113,6 +113,31 @@ namespace CodexVBE
             this.mergeBegin.TabIndex = 5;
             this.branchActions.ResumeLayout(false);
             this.branchActions.PerformLayout();
+            this.branchRemote.Symbol = CodexVBE.UiSymbol.Refresh;
+            this.branchRemote.IconOnly = true;
+            this.branchRemote.AutoSize = false;
+            this.branchRemote.MinimumSize = System.Drawing.Size.Empty;
+            this.branchRemote.Size = new System.Drawing.Size(32, 30);
+            this.branchCreate.Symbol = CodexVBE.UiSymbol.Add;
+            this.branchCreate.IconOnly = true;
+            this.branchCreate.AutoSize = false;
+            this.branchCreate.MinimumSize = System.Drawing.Size.Empty;
+            this.branchCreate.Size = new System.Drawing.Size(32, 30);
+            this.branchTrack.Symbol = CodexVBE.UiSymbol.Download;
+            this.branchTrack.IconOnly = true;
+            this.branchTrack.AutoSize = false;
+            this.branchTrack.MinimumSize = System.Drawing.Size.Empty;
+            this.branchTrack.Size = new System.Drawing.Size(32, 30);
+            this.branchSwitch.Symbol = CodexVBE.UiSymbol.Next;
+            this.branchSwitch.IconOnly = true;
+            this.branchSwitch.AutoSize = false;
+            this.branchSwitch.MinimumSize = System.Drawing.Size.Empty;
+            this.branchSwitch.Size = new System.Drawing.Size(32, 30);
+            this.mergeBegin.Symbol = CodexVBE.UiSymbol.Code;
+            this.mergeBegin.IconOnly = true;
+            this.mergeBegin.AutoSize = false;
+            this.mergeBegin.MinimumSize = System.Drawing.Size.Empty;
+            this.mergeBegin.Size = new System.Drawing.Size(32, 30);
             this.ResumeLayout(false);
             this.PerformLayout();
         }

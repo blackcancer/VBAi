@@ -8,7 +8,7 @@ namespace CodexVBE
         /// <summary>Cadre groupé portant le titre de l’aperçu.</summary>
         private System.Windows.Forms.GroupBox section;
         /// <summary>Zone multiligne en lecture seule du contenu.</summary>
-        private System.Windows.Forms.TextBox content;
+        private CodexVBE.UiTextBox content;
                 /// <summary>Libère les composants du modèle Designer.</summary>
                 /// <param name="disposing">Indique si les composants gérés doivent également être libérés.</param>
         protected override void Dispose(bool disposing) { if (disposing && components != null) components.Dispose(); base.Dispose(disposing); }
@@ -17,7 +17,7 @@ namespace CodexVBE
         {
             this.components = new System.ComponentModel.Container();
             this.section = new System.Windows.Forms.GroupBox();
-            this.content = new System.Windows.Forms.TextBox();
+            this.content = new CodexVBE.UiTextBox();
             this.section.SuspendLayout();
             this.SuspendLayout();
             // content
