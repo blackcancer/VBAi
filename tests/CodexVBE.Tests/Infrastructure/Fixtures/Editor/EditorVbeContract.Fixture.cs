@@ -176,12 +176,12 @@ namespace CodexVBE.Tests.Infrastructure
         public sealed class Window
         {
             private bool visible;
-            public Action OnVisible;
+            public Action OnVisible, OnClose;
             public int HWnd { get; set; }
             public bool Visible { get => visible; set { OnVisible?.Invoke(); visible = value; } }
             public bool FailClose;
             public int Closes;
-            public void Close() { Closes++; if (FailClose) throw new COMException("Pane already gone"); }
+            public void Close() { Closes++; OnClose?.Invoke(); if (FailClose) throw new COMException("Pane already gone"); }
         }
     }
 }

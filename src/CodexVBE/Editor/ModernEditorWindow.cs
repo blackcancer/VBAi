@@ -22,6 +22,13 @@ namespace CodexVBE
         private readonly Dictionary<string, string> reviewed = new Dictionary<string, string>();
         internal EditorDraftStore Drafts = new EditorDraftStore();
         internal WebView2 Browser { get; private set; }
+        internal Func<WebView2> CreateBrowser = NewBrowser;
+        internal Func<string, Task<CoreWebView2Environment>> CreateBrowserEnvironment = NewBrowserEnvironment;
+        internal Func<WebView2, CoreWebView2Environment, Task> EnsureBrowserEnvironment = EnsureBrowser;
+        internal string BrowserAssetsDirectory;
+        private static WebView2 NewBrowser() => new WebView2 { Dock = DockStyle.Fill, DefaultBackgroundColor = UiTheme.Background };
+        private static Task<CoreWebView2Environment> NewBrowserEnvironment(string cache) => CoreWebView2Environment.CreateAsync(null, cache);
+        private static Task EnsureBrowser(WebView2 browser, CoreWebView2Environment environment) => browser.EnsureCoreWebView2Async(environment);
         internal bool Ready { get; private set; }
         /// <summary>Optional renderer boundary for an embedded surface or an isolated contract host.</summary>
         internal Func<string, object[], Task<string>> ScriptExecution;
@@ -55,14 +62,14 @@ namespace CodexVBE
             initializing = true;
             try
             {
-                string folder = Path.Combine(Path.GetDirectoryName(typeof(ModernEditorWindow).Assembly.Location), "EditorAssets");
+                string folder = BrowserAssetsDirectory ?? Path.Combine(Path.GetDirectoryName(typeof(ModernEditorWindow).Assembly.Location), "EditorAssets");
                 if (!File.Exists(Path.Combine(folder, "index.html"))) throw new FileNotFoundException("Monaco assets are missing.");
-                Browser?.Dispose(); Browser = new WebView2 { Dock = DockStyle.Fill, DefaultBackgroundColor = UiTheme.Background };
+                Browser?.Dispose(); Browser = CreateBrowser();
                 surface.Controls.Add(Browser);
                 string cache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexVBE", "EditorWebView", System.Diagnostics.Process.GetCurrentProcess().Id.ToString());
-                var environment = await CoreWebView2Environment.CreateAsync(null, cache);
+                var environment = await CreateBrowserEnvironment(cache);
                 if (IsDisposed || Disposing || closing) return;
-                await Browser.EnsureCoreWebView2Async(environment);
+                await EnsureBrowserEnvironment(Browser, environment);
                 if (IsDisposed || Disposing || closing) return;
                 var core = Browser.CoreWebView2;
                 string language = UiText.Culture.Name.ToLowerInvariant();
@@ -232,7 +239,7 @@ namespace CodexVBE
             }
             finally { activeStatusLayouts--; }
         }
-        private void Report(Exception error) { if (!IsDisposed && !Disposing && !closing) status.Text = UiText.Get(error.Message); LoadLog.Write("Monaco: " + error.GetType().Name); }
+        private void Report(Exception error) { if (!IsDisposed && !Disposing && !closing) SetResultStatus(UiText.Get(error.Message)); LoadLog.Write("Monaco: " + error.GetType().Name); }
         private void DockClick(object sender, EventArgs e) { DockRequested?.Invoke(); }
         private async void DiffClick(object sender, EventArgs e)
         {
