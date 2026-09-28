@@ -44,9 +44,11 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie l’historique, les aperçus et les actions de revue du dépôt.</summary>
     public sealed partial class GitWindowCoverageTests
     {
-        [WinFormsTestMethod]
+                /// <summary>Compare des instantanés avec références modifiées et vérifie les ressources du formulaire.</summary>
+[WinFormsTestMethod]
         public void ReviewSnapshotsCoverAddedRemovedUnchangedReferencesAndFormResources()
         {
             using (var f = new Fixture())
@@ -71,7 +73,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
-        [WinFormsTestMethod]
+                /// <summary>Restaure un module depuis des snapshots de commit et vérifie la navigation dans l’historique.</summary>
+[WinFormsTestMethod]
         public void HistoryCheckpointAndModuleRestoreNavigateActualCommitSnapshots()
         {
             using (var f = new Fixture())
@@ -94,7 +97,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
-        [WinFormsTestMethod]
+                /// <summary>Vérifie l’aperçu, sa progression et son annulation ainsi que le refus d’une sélection vide.</summary>
+[WinFormsTestMethod]
         public void PreviewProgressCancellationAndEmptySelectionGuardsMatrix()
         {
             using (var f = new Fixture())
@@ -116,7 +120,8 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
-        [WinFormsTestMethod]
+                /// <summary>Vérifie la disposition de revue et les callbacks GitHub avec et sans document lié.</summary>
+[WinFormsTestMethod]
         public void ReviewLayoutAndGitHubCallbacksCoverBoundAndUnboundDocuments()
         {
             using (var f = new Fixture(false))

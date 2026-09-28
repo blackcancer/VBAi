@@ -111,7 +111,8 @@
             }
         }
         [TestMethod]
-        [STATestMethod]
+                /// <summary>Vérifie que le dispatch natif conserve les résultats de requête et les échecs renvoyés par l’hôte.</summary>
+[STATestMethod]
         public void NativeDispatchMatrixPreservesRequestResultsAndHostFailures()
         {
             using (var dispatcher = new Control())
@@ -154,7 +155,8 @@
         }
 
         [TestMethod]
-        [STATestMethod]
+                /// <summary>Vérifie les diagnostics, erreurs hôte, exceptions et callbacks retardés de la compilation.</summary>
+[STATestMethod]
         public void CompileMatrixReportsDiagnosticsHostFailuresExceptionsAndDelayedCallbacks()
         {
             using (var dispatcher = new Control())
@@ -188,7 +190,8 @@
         }
 
         [TestMethod]
-        [STATestMethod]
+                /// <summary>Vérifie le statut de sauvegarde de signature et les nouvelles tentatives bornées en cas d’occupation.</summary>
+[STATestMethod]
         public void SignatureMatrixRetainsSaveStatusAndBoundedBusyRetries()
         {
             using (var dispatcher = new Control())
@@ -231,7 +234,8 @@
         }
 
         [TestMethod]
-        [STATestMethod]
+                /// <summary>Vérifie la fermeture du serveur lors d’une destruction avant démarrage ou pendant l’attente inactive.</summary>
+[STATestMethod]
         public void DisposalBeforeStartAndDuringIdleWaitClosesServer()
         {
             using (var dispatcher = new Control())
@@ -254,7 +258,8 @@
         }
 
         [TestMethod]
-        [STATestMethod]
+                /// <summary>Vérifie que l’échec de création du canal est retenté sauf si l’arrêt est déjà demandé.</summary>
+[STATestMethod]
         public void PipeCreationIoFailureRetriesUnlessShutdownWasRequested()
         {
             using (var dispatcher = new Control())

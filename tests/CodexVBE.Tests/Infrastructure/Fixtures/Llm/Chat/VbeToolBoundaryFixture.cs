@@ -5,12 +5,36 @@
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    public sealed class VbeToolMode { public int Mode { get; set; } }
-    public sealed class VbeToolSignature { public string CertificateName { get; set; } public bool UnsignedVerified { get; set; } }
-    public sealed class VbeToolPersistence { public bool Saved { get; set; } }
+    /// <summary>État du mode VBE renvoyé par l’hôte simulé.</summary>
+    public sealed class VbeToolMode
+    {
+        /// <summary>Mode du projet.</summary>
+        /// <value>Code numérique du mode VBE.</value>
+        public int Mode { get; set; }
+    }
+    /// <summary>Informations de signature renvoyées par l’hôte de test.</summary>
+    public sealed class VbeToolSignature
+    {
+        /// <summary>Nom du certificat utilisé.</summary>
+        /// <value>Nom du certificat de test.</value>
+        public string CertificateName { get; set; }
+        /// <summary>Indique que la vérification sans signature a été confirmée.</summary>
+        /// <value>Résultat de cette vérification.</value>
+        public bool UnsignedVerified { get; set; }
+    }
+    /// <summary>Résultat de persistance de signature retourné par la fixture.</summary>
+    public sealed class VbeToolPersistence
+    {
+        /// <summary>Indique si les données ont été sauvegardées.</summary>
+        /// <value>Valeur de réussite de la persistance.</value>
+        public bool Saved { get; set; }
+    }
 
+    /// <summary>Configure les frontières natives VBE et l’exécution hôte pour les tests d’outils.</summary>
     internal static class VbeToolBoundaryFixture
     {
+        /// <summary>Remplace les opérations natives par des résultats déterministes de fixture.</summary>
+        /// <param name="native">Frontière à configurer.</param>
         internal static void Configure(VbeToolNativeBoundary native)
         {
             native.Capture = stack => new { Native = "capture", Stack = stack };
@@ -34,6 +58,9 @@
             native.VerifyWatchRemoved = request => new { Native = "remove_watch" };
         }
 
+        /// <summary>Retourne des réponses déterministes aux commandes de diagnostic et de signature.</summary>
+        /// <param name="request">Requête envoyée par un outil VBE.</param>
+        /// <returns>Échec pour une requête nulle, sinon succès contenant les données simulées.</returns>
         internal static Response Execute(Request request)
         {
             if (request == null) return Response.Failure("request is null");

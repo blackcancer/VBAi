@@ -12,10 +12,12 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CodexVBE.Tests.Unit
 {
+    /// <summary>Vérifie les actions GitHubPane par les événements réels de ses contrôles.</summary>
     [TestClass, TestCategory("Unit")]
     public sealed partial class GitHubPaneCoverageTests
     {
-        [STATestMethod]
+                /// <summary>Vérifie les dépôts, le filtrage, la sélection et la création depuis l’interface.</summary>
+[STATestMethod]
         public void DesignerRepositoriesFilteringSelectionAndCreationUseActualControlEvents()
         {
             using (var scope = new HostUiScope()) using (var pane = new GitHubPane())
@@ -30,7 +32,8 @@ namespace CodexVBE.Tests.Unit
                 Api(pane, "[{\"name\":\"dev\"}]"); Field<ListBox>(pane, "repositoryList").SelectedIndex = 1; Idle(pane); Assert.AreEqual("dev", Field<ComboBox>(pane, "repositoryBranch").Text);
             }
         }
-        [STATestMethod]
+                /// <summary>Vérifie les détails et brouillons de demandes de fusion ainsi que la navigation aux modules.</summary>
+[STATestMethod]
         public void PullDetailsChecksDraftsAndModuleNavigationKeepNativeValidationAndNullCallbacks()
         {
             using (var scope = new HostUiScope()) using (var pane = new GitHubPane())
@@ -48,7 +51,8 @@ namespace CodexVBE.Tests.Unit
                 Invoke(pane, "LoadDraft_Click"); pane.LoadDraft = () => null; Invoke(pane, "LoadDraft_Click"); pane.LoadDraft = () => new GitPullDraft { Target = "dev", Title = "Draft", Body = "Prepared" }; Invoke(pane, "LoadDraft_Click"); Assert.AreEqual("Prepared", Field<TextBox>(pane, "pullBody").Text); Assert.AreSame(Field<TabPage>(pane, "composeTab"), Field<TabControl>(pane, "pullTabs").SelectedTab); pane.LoadDraft = () => throw new IOException("draft unavailable"); Invoke(pane, "LoadDraft_Click"); Assert.AreEqual("draft unavailable", Field<Label>(pane, "status").Text);
             }
         }
-        [STATestMethod]
+                /// <summary>Vérifie l’annulation, la destruction et les erreurs des opérations en cours.</summary>
+[STATestMethod]
         public void PendingOperationsCancellationDisposalAndErrorKindsRestoreEnabledState()
         {
             using (var scope = new HostUiScope())

@@ -10,8 +10,13 @@ namespace CodexVBE
         /// <summary>Panneau WinForms de sélection de dépôt et de gestion des demandes de fusion GitHub.</summary>
     public sealed partial class GitHubPane : UserControl
     {
+        /// <summary>Crée un client API authentifié pour le compte demandé.</summary>
         internal Func<string, GitHubApi> ApiFactory = CreateApi;
+        /// <summary>Ouvre un lien externe après validation de son adresse.</summary>
         internal Action<string> OpenExternalLink = SafeLinks.Open;
+        /// <summary>Construit un client API GitHub associé à un compte.</summary>
+        /// <param name="account">Identifiant du compte d’authentification.</param>
+        /// <returns>Client API GitHub configuré pour ce compte.</returns>
         private static GitHubApi CreateApi(string account) { return new GitHubApi(account); }
         /// <summary>Compte GitHub actif, dépôt distant sélectionné et branche source locale.</summary>
         private string account, remote, branch;

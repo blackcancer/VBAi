@@ -14,8 +14,10 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie la mise à jour incrémentale et le rendu des entrées du transcript.</summary>
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Met à jour les flux du transcript en place et évite de dupliquer le message final.</summary>
         [TestMethod]
         [STATestMethod]
         public void TranscriptStreamsUpdateInPlaceAndAvoidDuplicateFinalMessage()
@@ -38,6 +40,7 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Complète en place les résumés et entrées d’outil transmis en flux.</summary>
         [TestMethod]
         [STATestMethod]
         public void StreamingSummaryAndToolEntriesCompleteInPlace()
@@ -71,9 +74,11 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using CodexVBE.Tests.Infrastructure;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    /// <summary>Vérifie le rendu de chaque type d’entrée et la réutilisation des vues du transcript.</summary>
     public sealed partial class ChatWindowStateTests
     {
-        [STATestMethod, TestCategory("Unit")]
+                /// <summary>Rend les différents types d’entrées, recycle leurs vues et préserve les actions de chaque carte.</summary>
+[STATestMethod, TestCategory("Unit")]
         public void TranscriptRendersEveryEntryKindAndRecyclesViewsWithoutLosingState()
         {
             using (var runtime = new RuntimeScope())
@@ -102,7 +107,8 @@ namespace CodexVBE.Tests.Unit
                 LocalizationScope.Set("ar-SA"); var code = (TextBox)Call(window, "SelectableText", null, true); Assert.AreEqual(FlowDirection.LeftToRight, code.FlowDirection); var plain = (TextBox)Call(window, "SelectableText", "rtl", false); Assert.AreEqual(FlowDirection.RightToLeft, plain.FlowDirection);
             }
         }
-        [STATestMethod, TestCategory("Unit")]
+        /// <summary>Vérifie la pagination, les mises à jour en flux et la conservation de l’historique lors des changements de thème.</summary>
+[STATestMethod, TestCategory("Unit")]
         public void TranscriptPagingStreamingWelcomeAndThemeChangesPreserveVisibleHistory()
         {
             using (var runtime = new RuntimeScope())
@@ -132,9 +138,11 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using CodexVBE.Tests.Infrastructure;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    /// <summary>Vérifie le routage des vues recyclées et les actions de suivi du transcript.</summary>
     public sealed partial class ChatWindowStateTests
     {
-        [STATestMethod, TestCategory("Unit")]
+        /// <summary>Exerce le chargement et le déchargement des vues, les événements de défilement et le suivi différé.</summary>
+[STATestMethod, TestCategory("Unit")]
         public void TranscriptReleaseRoutingAndPendingFollowActionsHandleEveryLifecycle()
         {
             using (var runtime = new RuntimeScope())

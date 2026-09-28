@@ -9,8 +9,13 @@ namespace CodexVBE
         /// <summary>Ajoute les boutons principaux et, si demandé, les commandes de l’éditeur.</summary>
     internal sealed class VbeMenu : IDisposable
     {
+        /// <summary>Abonne un délégué à un événement COM d’une source Office.</summary>
         internal static Action<object, Guid, int, Delegate> SubscribeDefault = ComEventsHelper.Combine;
+        /// <summary>Lit l’icône embarquée dans les ressources du type de fenêtre.</summary>
         internal Func<Type, System.Drawing.Icon> ReadIcon = ReadIconNative;
+        /// <summary>Récupère l’icône <c>$this.Icon</c> des ressources associées à une fenêtre.</summary>
+        /// <param name="windowType">Type de fenêtre qui possède les ressources.</param>
+        /// <returns>Icône extraite des ressources du type.</returns>
         private static System.Drawing.Icon ReadIconNative(Type windowType) { return (System.Drawing.Icon)new System.ComponentModel.ComponentResourceManager(windowType).GetObject("$this.Icon"); }
         /// <summary>IID de l’interface Office utilisée pour recevoir les clics de CommandBarButton.</summary>
         private static readonly Guid ClickInterface = new Guid("000C0351-0000-0000-C000-000000000046");

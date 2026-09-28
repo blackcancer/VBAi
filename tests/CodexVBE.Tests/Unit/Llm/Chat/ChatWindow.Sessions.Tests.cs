@@ -14,8 +14,10 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    /// <summary>Vérifie l’historique, la persistance locale et la réparation des conversations.</summary>
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Filtre les sessions selon le texte et l’état archivé, puis place les sessions épinglées en premier.</summary>
         [TestMethod]
         [STATestMethod]
         public void HistoryFiltersArchivedSessionsAndOrdersPinnedFirst()
@@ -51,6 +53,7 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Sauvegarde le titre, le brouillon et les messages de session sans stockage externe.</summary>
         [TestMethod]
         [STATestMethod]
         public void SessionTitleAndDraftAreSavedWithoutExternalStore()
@@ -76,6 +79,7 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Rogne le titre saisi manuellement et le limite à 120 caractères.</summary>
         [TestMethod]
         [STATestMethod]
         public void ManualRenameTrimsAndCapsTitle()
@@ -95,6 +99,7 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Répare l’historique interrompu sans supprimer les messages antérieurs à l’appel d’outil incomplet.</summary>
         [TestMethod]
         [STATestMethod]
         public void InterruptedToolHistoryDropsOnlyUnfinishedAssistantTail()
@@ -112,6 +117,7 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        /// <summary>Conserve les messages d’un appel d’outil dont la réponse est présente.</summary>
         [TestMethod]
         [STATestMethod]
         public void CompletedToolHistoryIsPreserved()
@@ -139,9 +145,11 @@ namespace CodexVBE.Tests.Unit
     using System.Windows.Threading;
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    /// <summary>Vérifie la découverte des sessions, leur activation et la validité de leur historique.</summary>
     public sealed partial class ChatWindowStateTests
     {
-        [STATestMethod, TestCategory("Unit")]
+                /// <summary>Gère les projets enregistrés ou non, les réponses mal formées et les erreurs de stockage ou d’hôte.</summary>
+[STATestMethod, TestCategory("Unit")]
         public void SessionDiscoveryHandlesSavedUnsavedEmptyMalformedAndFailingProjectResponses()
         {
             using (var runtime = new RuntimeScope())
@@ -160,7 +168,8 @@ namespace CodexVBE.Tests.Unit
                 using (var window = new ChatWindow(runtime.Session)) { Assert.IsTrue(Get<bool>(window, "storageFailed")); var timer = Get<DispatcherTimer>(window, "projectRetryTimer"); TimerTick(timer); runtime.Host = r => { throw new IOException("retry failure"); }; TimerTick(timer); window.Dispose(); TimerTick(timer); }
             }
         }
-        [STATestMethod, TestCategory("Unit")]
+                /// <summary>Vérifie la découverte, les événements de sélection et l’état valide lorsque le stockage est indisponible.</summary>
+[STATestMethod, TestCategory("Unit")]
         public void SessionsDiscoveryEventsAndUnavailableStorageKeepValidState()
         {
             using (var runtime = new RuntimeScope())
@@ -179,7 +188,8 @@ namespace CodexVBE.Tests.Unit
                 using (var window = new ChatWindow(runtime.Session)) { Call(window, "SaveProjectMemory"); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, UiText.Get("Memory requires")); Call(window, "EnsureCurrentScope"); Get<System.Windows.Forms.ComboBox>(window, "scopePicker").SelectedIndex = -1; Call(window, "ChangeScope"); Call(window, "EnsureCurrentScope"); }
             }
         }
-        [STATestMethod, TestCategory("Unit")]
+                /// <summary>Active, restaure, renomme et archive des sessions puis persiste leur état localement.</summary>
+[STATestMethod, TestCategory("Unit")]
         public void SessionsActivateRestoreRenameArchiveCacheAndPersistLocally()
         {
             using (var runtime = new RuntimeScope())
@@ -202,7 +212,8 @@ namespace CodexVBE.Tests.Unit
                 store.Dispose(); Call(window, "SaveCurrentSession"); Assert.IsTrue(Get<bool>(window, "storageFailed")); Call(window, "SaveProjectMemory"); Call(window, "ChangeScope");
             }
         }
-        [STATestMethod, TestCategory("Unit")]
+                /// <summary>Préserve les tours terminés et répare uniquement les tours utilisateur incomplets.</summary>
+[STATestMethod, TestCategory("Unit")]
         public void InterruptedHistoryValidationPreservesCompletedAndRepairsOnlyPendingUserTurns()
         {
             using (var window = Surfaces())
@@ -216,7 +227,8 @@ namespace CodexVBE.Tests.Unit
                 Set(window, "currentSession", null); Call(window, "RenameFromQuestion", "ignored"); Call(window, "RenameCurrentChat"); Call(window, "ToggleArchiveCurrentChat"); Call(window, "ScheduleSessionSave"); Call(window, "NewSession", (object)null); Call(window, "SaveProjectMemory");
             }
         }
-        [STATestMethod, TestCategory("Unit")]
+                /// <summary>Refuse une identité de scope obsolète au moment de sélectionner une session.</summary>
+[STATestMethod, TestCategory("Unit")]
         public void SessionsRejectStaleScopeIdentityAtTheSelectionBoundary()
         {
             using (var runtime = new RuntimeScope())

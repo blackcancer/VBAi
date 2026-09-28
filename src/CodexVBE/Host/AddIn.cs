@@ -13,14 +13,31 @@ namespace CodexVBE
     [ComDefaultInterface(typeof(IDTExtensibility2))]
         public sealed class AddIn : IDTExtensibility2
     {
+        /// <summary>Écrit une entrée dans le journal du complément.</summary>
         internal static Action<string> WriteLog = LoadLog.Write;
+        /// <summary>Démarre le pont de commandes local pour la session active.</summary>
         internal static Action<BridgeServer> StartBridge = (Action<BridgeServer>)Delegate.CreateDelegate(typeof(Action<BridgeServer>), typeof(BridgeServer).GetMethod("Start"));
+        /// <summary>Crée la fenêtre de discussion liée à une session VBE.</summary>
         internal static Func<VbeSession, ChatWindow> CreateChat = CreateChatNative;
+        /// <summary>Crée le gestionnaire de menus du VBE.</summary>
         internal static Func<object, Action, Action, Action, Action<string>, VbeMenu> CreateMenu = CreateMenuNative;
+        /// <summary>Charge les paramètres des fournisseurs LLM.</summary>
         internal static Func<LlmSettings> ReadSettings = LlmSettings.Load;
+        /// <summary>Affiche une fenêtre modale avec son propriétaire Win32.</summary>
         internal static Func<Form, IWin32Window, DialogResult> ShowModal = (Func<Form, IWin32Window, DialogResult>)Delegate.CreateDelegate(typeof(Func<Form, IWin32Window, DialogResult>), typeof(Form).GetMethod("ShowDialog", new[] { typeof(IWin32Window) }));
+        /// <summary>Affiche une notification WinForms et renvoie le choix de l’utilisateur.</summary>
         internal static Func<string, string, MessageBoxButtons, MessageBoxIcon, DialogResult> ShowNotice = MessageBox.Show;
+        /// <summary>Crée directement une fenêtre de discussion.</summary>
+        /// <param name="session">Session VBE associée à la fenêtre.</param>
+        /// <returns>Nouvelle fenêtre de discussion.</returns>
         private static ChatWindow CreateChatNative(VbeSession session) { return new ChatWindow(session); }
+        /// <summary>Crée directement le gestionnaire des commandes de menu VBE.</summary>
+        /// <param name="host">Instance hôte dont les barres de commandes seront utilisées.</param>
+        /// <param name="chat">Action d’ouverture de la discussion.</param>
+        /// <param name="settings">Action d’ouverture des paramètres.</param>
+        /// <param name="github">Action d’ouverture de GitHub.</param>
+        /// <param name="editor">Action de commande associée au texte fourni.</param>
+        /// <returns>Gestionnaire des menus installé sur l’hôte.</returns>
         private static VbeMenu CreateMenuNative(object host, Action chat, Action settings, Action github, Action<string> editor) { return new VbeMenu(host, chat, settings, github, editor); }
         /// <summary>Contrôle WinForms fournissant un contexte de synchronisation pour le serveur local.</summary>
         private Control dispatcher;

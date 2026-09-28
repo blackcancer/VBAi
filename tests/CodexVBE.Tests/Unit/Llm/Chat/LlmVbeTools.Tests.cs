@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Unit
+namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
@@ -8,11 +8,14 @@
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    [TestClass]
+    /// <summary>Vérifie les validations asynchrones des outils de débogage VBE.</summary>
+[TestClass]
     [TestCategory("Unit")]
     public sealed partial class LlmVbeAsyncValidationTests
     {
-        [TestMethod]
+        /// <summary>Refuse les arguments mal formés des outils natifs avant tout accès à l’interface.</summary>
+        /// <returns>Tâche terminée lorsque les arguments invalides sont refusés.</returns>
+[TestMethod]
         public async Task NativeDebuggerToolsRejectMalformedArgumentsBeforeUiAccess()
         {
             var settings = new LlmSettings
@@ -30,7 +33,9 @@
             await Failure(tools, "compile_project", "{\"Project\":\"P\",\"ExpectedMode\":1}", "Project and ExpectedMode=2");
         }
 
-        [TestMethod]
+        /// <summary>Exige une politique automatique pour les évaluations et mutations de débogage.</summary>
+        /// <returns>Tâche terminée lorsque les outils refusent la politique insuffisante.</returns>
+[TestMethod]
         public async Task NativeEvaluationAndMutationRequireAutomaticPolicy()
         {
             var settings = new LlmSettings
@@ -44,7 +49,9 @@
             await Failure(tools, "respond_debug_dialog", "{}", "Automatic VBE edit policy");
         }
 
-        [TestMethod]
+        /// <summary>Valide le scope et le projet lié avant l’accès à l’hôte pendant un appel asynchrone.</summary>
+        /// <returns>Tâche terminée lorsque les limites de scope sont vérifiées.</returns>
+[TestMethod]
         public async Task ScopeAndProjectBindingApplyToAsyncInvocationBeforeHostAccess()
         {
             var tools = new LlmVbeTools(null, null, new LlmSettings { VbeEditApproval = "Automatic" })
@@ -59,7 +66,9 @@
             await Failure(tools, "debug_item", "{}", "stale conversation scope");
         }
 
-        [TestMethod]
+        /// <summary>Retourne le statut en lecture seule depuis une session VBE en mémoire.</summary>
+        /// <returns>Tâche terminée après la vérification du statut.</returns>
+[TestMethod]
         public async Task AsyncDispatchReturnsReadOnlyStatusFromInMemorySession()
         {
             var tools = new LlmVbeTools(new VbeSession(new VbeSessionTests.FakeVbe()), null, new LlmSettings());
@@ -68,7 +77,9 @@
             Assert.IsNotNull(response.Data);
         }
 
-        [TestMethod]
+        /// <summary>Refuse les formes de requête natives invalides sans ouvrir de dialogue.</summary>
+        /// <returns>Tâche terminée après le contrôle des requêtes.</returns>
+[TestMethod]
         public async Task AsyncNativePreflightRejectsWrongShapesWithoutOpeningDialogs()
         {
             var tools = new LlmVbeTools(null, null, new LlmSettings { VbeEditApproval = "Automatic" });
@@ -80,7 +91,9 @@
             await Failure(tools, "remove_watch", "[]", "Tool arguments must be an object");
         }
 
-        [TestMethod]
+        /// <summary>Exige un contexte UI avant d’inspecter le dialogue de compilation natif.</summary>
+        /// <returns>Tâche terminée lorsque l’absence de contexte UI est refusée.</returns>
+[TestMethod]
         public async Task CompileRequiresUiContextBeforeNativeDialogInspection()
         {
             var tools = new LlmVbeTools(null, null, new LlmSettings());
@@ -96,7 +109,9 @@
             }
         }
 
-        [TestMethod]
+        /// <summary>Refuse l’exécution immédiate si le mode du projet a changé avant l’appel natif.</summary>
+        /// <returns>Tâche terminée lorsque l’appel natif n’est pas exécuté.</returns>
+[TestMethod]
         public async Task ImmediateExecuteRejectsModeChangedBeforeNativeExecution()
         {
             var host = new VbeSessionTests.FakeVbe();
@@ -116,11 +131,13 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    [TestClass]
+    /// <summary>Vérifie les schémas publiés et les règles de validation des outils VBE.</summary>
+[TestClass]
     [TestCategory("Unit")]
     public sealed partial class LlmVbeToolContractTests
     {
-        [TestMethod]
+        /// <summary>Vérifie l’unicité des outils publiés et la présence des champs obligatoires de leurs schémas.</summary>
+[TestMethod]
         public void PublishedToolSchemasHaveUniqueNamesAndRequiredFieldsExist()
         {
             var names = new HashSet<string>(StringComparer.Ordinal);
@@ -144,7 +161,8 @@ namespace CodexVBE.Tests.Unit
             Assert.IsTrue(names.Contains("list_reference_types"));
         }
 
-        [TestMethod]
+        /// <summary>Refuse les arguments JSON mal formés ou inattendus avant tout accès à l’hôte.</summary>
+[TestMethod]
         public void InvocationRejectsMalformedAndUnexpectedArgumentsBeforeHostAccess()
         {
             var tools = new LlmVbeTools(null, null, new LlmSettings());
@@ -157,7 +175,8 @@ namespace CodexVBE.Tests.Unit
             IsFailure(tools.Invoke("form_tree", "{\"Project\":\"P\"}"), "Form is required");
         }
 
-        [TestMethod]
+        /// <summary>Vérifie que les modes et politiques incompatibles empêchent toute modification hôte.</summary>
+[TestMethod]
         public void EditingModesAndPoliciesRejectChangesBeforeHostAccess()
         {
             var settings = new LlmSettings
@@ -181,7 +200,8 @@ namespace CodexVBE.Tests.Unit
             IsFailure(tools.Invoke("list_projects", "{}"), "scope changed");
         }
 
-        [TestMethod]
+        /// <summary>Valide le projet lié et le chemin de fichier avant les commandes hôte.</summary>
+[TestMethod]
         public void BoundProjectAndFilePathAreCheckedBeforeHostAccess()
         {
             var tools = new LlmVbeTools(null, null, new LlmSettings())
@@ -193,7 +213,8 @@ namespace CodexVBE.Tests.Unit
             IsFailure(tools.Invoke("set_form_node_property", "{\"Project\":\"WorkbookA\",\"Form\":\"F\",\"ControlPath\":\"X\",\"ExpectedTreeVersion\":\"v\",\"Property\":\"Caption\",\"Value\":[]}"), "Value must be");
         }
 
-        [TestMethod]
+        /// <summary>Permet la découverte des projets via le même protocole en modes Plan et lecture seule.</summary>
+[TestMethod]
         public void PlanAndReadOnlyModesCanDiscoverLiveProjectsThroughTheSameToolProtocol()
         {
             var host = new VbeSessionTests.FakeVbe();
@@ -212,7 +233,8 @@ namespace CodexVBE.Tests.Unit
             Assert.IsTrue(status.Ok);
         }
 
-        [TestMethod]
+        /// <summary>Exige le chemin absolu exact fourni par l’utilisateur avant de demander l’approbation de lecture.</summary>
+[TestMethod]
         public void FileReadRequiresTheExactUserProvidedAbsolutePathBeforeShowingApproval()
         {
             var tools = new LlmVbeTools(null, null, new LlmSettings());
@@ -223,7 +245,8 @@ namespace CodexVBE.Tests.Unit
             IsFailure(tools.Invoke("read_user_file", Json.Serialize(new { Path = supplied })), "introuvable");
         }
 
-        [TestMethod]
+        /// <summary>Publie une modification VBA vérifiée et permet de la restaurer.</summary>
+[TestMethod]
         public void AutomaticCodeEditPublishesVerifiedChangeAndCanRestoreIt()
         {
             var module = new VbeSessionTests.FakeModule("Alpha\r\nBeta");
@@ -253,7 +276,8 @@ namespace CodexVBE.Tests.Unit
             Assert.IsFalse(tools.RestoreCodeChange(observed).Ok);
         }
 
-        [TestMethod]
+        /// <summary>Vérifie tous les conflits d’annulation avant d’écrire dans un module quelconque.</summary>
+[TestMethod]
         public void MultiModuleUndoPreflightsEveryConflictBeforeWritingAnyModule()
         {
             var project = new VbeSessionTests.FakeProject
@@ -311,11 +335,13 @@ namespace CodexVBE.Tests.Unit
     using CodexVBE.Tests.Infrastructure;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    [TestClass]
+    /// <summary>Vérifie les frontières injectables des outils VBE et leurs matrices de validation.</summary>
+[TestClass]
     [TestCategory("Unit")]
     public sealed partial class LlmVbeToolsBoundaryTests
     {
-        [TestMethod]
+        /// <summary>Vérifie les types, champs requis, valeurs blanches et dispatch hôte du contrat.</summary>
+[TestMethod]
         [STATestMethod]
         public void ContractMatrixChecksRequiredTypesWhitespaceOptionalFieldsAndHostDispatch()
         {
@@ -381,7 +407,8 @@ namespace CodexVBE.Tests.Unit
             Success(tools.Invoke("create_module", Json.Serialize(Arguments("create_module"))), "approval yes");
         }
 
-        [TestMethod]
+        /// <summary>Vérifie les longueurs limites des éléments et refuse les types erronés, débordements et retours à la ligne.</summary>
+[TestMethod]
         public void ItemsMatrixAcceptsBoundaryLengthsAndRejectsMultilineWrongTypesAndOverflow()
         {
             var tools = Create();
@@ -394,7 +421,8 @@ namespace CodexVBE.Tests.Unit
             { values["Items"] = items; Failed(tools.Invoke(name, Json.Serialize(values)), "invalid items"); }
         }
 
-        [TestMethod]
+        /// <summary>Vérifie le chemin absolu littéral, la confirmation et la limite de taille des lectures de fichier.</summary>
+[TestMethod]
         public void FileReadMatrixRequiresLiteralAbsolutePathConfirmationAndTextSizeLimit()
         {
             using (var scope = new LlmBoundaryScope())
@@ -420,7 +448,9 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
-        [TestMethod]
+        /// <summary>Exécute les frontières natives injectées et transmet les échecs retournés par l’hôte.</summary>
+        /// <returns>Tâche terminée lorsque les chemins natifs et les erreurs hôte sont vérifiés.</returns>
+[TestMethod]
         public async Task AsyncDispatchMatrixExecutesNativeBoundariesAndReturnsHostFailures()
         {
             var tools = Create();
@@ -476,7 +506,9 @@ namespace CodexVBE.Tests.Unit
             Failed(await tools.InvokeAsync("remove_watch",Json.Serialize(Arguments("remove_watch"))),"remove policy");
         }
 
-        [TestMethod]
+        /// <summary>Vérifie la persistance de signature sans certificat et les nouvelles tentatives de sauvegarde.</summary>
+        /// <returns>Tâche terminée lorsque les différentes réponses de signature sont vérifiées.</returns>
+[TestMethod]
         public async Task SignaturePersistenceMatrixHandlesMissingCertificateAndSaveRetries()
         {
             var tools = Create(); string args = Json.Serialize(Arguments("sign_project"));
@@ -504,7 +536,8 @@ namespace CodexVBE.Tests.Unit
             StringAssert.Contains((string)data["PersistenceError"],"busy");
         }
 
-        [TestMethod]
+        /// <summary>Vérifie le travail UI différé de compilation et distingue délais, diagnostics et erreurs.</summary>
+[TestMethod]
         [STATestMethod]
         public void CompileMatrixUsesPostedUiWorkAndDistinguishesTimeoutDiagnosisAndErrors()
         {
@@ -530,7 +563,8 @@ namespace CodexVBE.Tests.Unit
             }
             finally { SynchronizationContext.SetSynchronizationContext(prior); }
         }
-        [TestMethod]
+        /// <summary>Refuse les lectures obsolètes et couvre le code inchangé ainsi que les erreurs d’abonné.</summary>
+[TestMethod]
         public void CodeEditReadbackMatrixRejectsStaleReadsAndHandlesUnchangedCodeOrSubscriberErrors()
         {
             var host=new VbeSessionTests.FakeVbe();
@@ -562,7 +596,8 @@ namespace CodexVBE.Tests.Unit
             Failed(tools.Invoke("replace_lines",arguments("A\r\nF")),"write refusal");
         }
 
-        [TestMethod]
+        /// <summary>Vérifie la restauration avec entrées nulles, blocs partagés et échec d’écriture.</summary>
+[TestMethod]
         public void RestorationMatrixHandlesNullEntriesSharedModuleHunksAndWriteFailure()
         {
             var host=new VbeSessionTests.FakeVbe();
@@ -593,7 +628,8 @@ namespace CodexVBE.Tests.Unit
             Assert.IsNotNull(Json.DeserializeObject(tools.LiveContextJson()));
         }
 
-        [TestMethod]
+        /// <summary>Conserve les contrats de réponse pour réussite, échec, null et JSON invalide.</summary>
+[TestMethod]
         public void ToolResponseParserKeepsSuccessFailureNullAndInvalidJsonContracts()
         {
             var tools = new LlmVbeTools(null,null,new LlmSettings());

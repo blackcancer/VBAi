@@ -7,10 +7,12 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CodexVBE.Tests.Unit
 {
-    [TestClass, TestCategory("Unit")]
+        /// <summary>Vérifie le dimensionnement natif et le cycle d’attachement de ChatToolWindow.</summary>
+[TestClass, TestCategory("Unit")]
     public sealed class ChatToolWindowCoverageTests
     {
-        [STATestMethod]
+                /// <summary>Utilise des handles WinForms réels pour vérifier le redimensionnement, l’attachement et la destruction.</summary>
+[STATestMethod]
         public void NativeSiteResizingAttachDetachTimerAndDisposeUseActualWinFormsHandles()
         {
             using (var scope = new HostUiScope())
@@ -30,7 +32,8 @@ namespace CodexVBE.Tests.Unit
             }
             using (var tool = new ChatToolWindow()) LlmBoundaryScope.Call(tool, "Dispose", false);
         }
-        [STATestMethod]
+                /// <summary>Vérifie les garde-fous d’interop et les dimensions minimales en cas de géométrie invalide.</summary>
+[STATestMethod]
         public void InteropFailureGuardsAndClampedDimensionsPreserveTheNativeSite()
         {
             using (var tool = new ChatToolWindow())
