@@ -18,6 +18,14 @@ namespace CodexVBE
         private readonly string directory;
         /// <summary>Compte GitHub configuré pour l’authentification distante.</summary>
         private readonly string account;
+        /// <summary>Frontière d’exécution optionnelle des commandes ; null utilise le processus Git natif.</summary>
+        internal Func<string[], byte[], bool, bool, Result> CommandOverride;
+        /// <summary>Démarre le processus natif sans préambule sur son entrée standard.</summary>
+        internal Func<Process, bool> StartProcess = ProcessInput.StartWithoutPreamble;
+        /// <summary>Attend la fin du processus dans le délai fourni.</summary>
+        internal Func<Process, int, bool> WaitForExit = (process, timeout) => process.WaitForExit(timeout);
+        /// <summary>Interrompt le processus Git possédé par cette opération.</summary>
+        internal Action<Process> StopProcess = process => process.Kill();
         /// <summary>Branche locale active.</summary>
         /// <value>Branche locale active.</value>
         internal string Branch { get; private set; }
@@ -252,7 +260,7 @@ namespace CodexVBE
         /// <param name="args">Arguments Git à transmettre.</param>
         private string Text(params string[] args) { return Encoding.UTF8.GetString(Run(args).Bytes).Trim(); }
         /// <summary>Sortie binaire et code de retour d’un processus Git.</summary>
-        private sealed class Result
+        internal sealed class Result
         {
             /// <summary>Octets écrits sur la sortie standard du processus.</summary>
             internal byte[] Bytes;
@@ -278,6 +286,7 @@ namespace CodexVBE
         private Result Run(string[] args, byte[] input = null, bool useRepository = true, bool allowFailure = false)
         {
             Cancellation.ThrowIfCancellationRequested();
+            if (CommandOverride != null) return CommandOverride(args, input, useRepository, allowFailure);
             Progress?.Invoke(UiText.Get("Operation in progress…") + " · " + UiText.Get(args[0] == "push" ? "Push" :
                 args[0] == "fetch" || args[0] == "ls-remote" ? "Fetch" : args[0] == "log" || args[0] == "rev-list" ? "History" : "Git changes"));
             var all = new List<string> { "-c", "core.hooksPath=" + Path.Combine(directory, "disabled-hooks"), "-c", "commit.gpgSign=false" };
@@ -295,13 +304,13 @@ namespace CodexVBE
             using (var process = new Process { StartInfo = start })
             using (var output = new MemoryStream())
             {
-                if (!ProcessInput.StartWithoutPreamble(process)) throw new InvalidOperationException(UiText.Get("Unable to start Git."));
+                if (!StartProcess(process)) throw new InvalidOperationException(UiText.Get("Unable to start Git."));
                 Task read = process.StandardOutput.BaseStream.CopyToAsync(output);
                 Task<string> error = process.StandardError.ReadToEndAsync();
                 Task write = Task.Run(() => { try { if (input != null) process.StandardInput.BaseStream.Write(input, 0, input.Length); }
                     finally { process.StandardInput.Close(); } });
-                using (Cancellation.Register(() => { try { if (!process.HasExited) process.Kill(); } catch (InvalidOperationException) { } }))
-                    if (!process.WaitForExit(120000)) { try { process.Kill(); } catch { } throw new TimeoutException(UiText.Get("Git did not respond within 120 seconds. Check the connection and GitHub authentication.")); }
+                using (Cancellation.Register(() => { try { if (!process.HasExited) StopProcess(process); } catch (InvalidOperationException) { } }))
+                    if (!WaitForExit(process, 120000)) { try { StopProcess(process); } catch { } throw new TimeoutException(UiText.Get("Git did not respond within 120 seconds. Check the connection and GitHub authentication.")); }
                 try { Task.WaitAll(read, error, write); }
                 catch (Exception) when (Cancellation.IsCancellationRequested) { throw new OperationCanceledException(Cancellation); }
                 Cancellation.ThrowIfCancellationRequested();
