@@ -40,3 +40,15 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    public sealed partial class VbeFormsValueDuplicationTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void OptionButtonCompleteGuardAndRollbackMatrix()
+        {
+            VerifyDuplicationGuards("OptionButton");
+        }
+    }
+}

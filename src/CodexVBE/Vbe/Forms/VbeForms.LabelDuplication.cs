@@ -57,6 +57,10 @@ namespace CodexVBE
                 string.IsNullOrWhiteSpace(request.ExpectedTreeVersion))
                 throw new ArgumentException("ControlPath and ExpectedTreeVersion are required.");
             ValidateName(request.NewName, "NewName");
+            string[] parts = request.ControlPath.Split('/');
+            if (parts.Length < 2 || parts.Length % 2 != 0 ||
+                !string.Equals(parts[parts.Length - 2], "Controls", StringComparison.Ordinal))
+                throw new ArgumentException("ControlPath must identify a Label control.");
             dynamic form = GetForm(GetDesignProject(request.Project), request.Form);
             dynamic before = Tree(request.Project, request.Form);
             if (!string.Equals((string)before.TreeVersion, request.ExpectedTreeVersion,
@@ -64,10 +68,6 @@ namespace CodexVBE
                 throw new InvalidOperationException("The UserForm hierarchy changed since it was read.");
             if (!TreeContainsPath((IEnumerable)before.Controls, request.ControlPath))
                 throw new InvalidOperationException("ControlPath is not a canonical path in form_tree.");
-            string[] parts = request.ControlPath.Split('/');
-            if (parts.Length < 2 || parts.Length % 2 != 0 ||
-                !string.Equals(parts[parts.Length - 2], "Controls", StringComparison.Ordinal))
-                throw new ArgumentException("ControlPath must identify a Label control.");
 
             object source = ResolveTreeItem(form.Designer, request.ControlPath);
             if (!string.Equals(TypeDescriptor.GetClassName(source), "Label", StringComparison.OrdinalIgnoreCase))

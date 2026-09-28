@@ -40,6 +40,8 @@ namespace CodexVBE
         /// <summary>Traite un appel d’outil retourné par le fournisseur.</summary>
         /// <value>Délégué qui reçoit le nom et les arguments JSON d’un outil, ou null si aucun outil n’est disponible.</value>
         public Func<string, string, Task<string>> ToolHandler { get; set; }
+        internal static Func<HttpMessageHandler> HttpHandlerFactory = CreateHttpHandler;
+        private static HttpMessageHandler CreateHttpHandler() { return new HttpClientHandler { AllowAutoRedirect = false }; }
 
         /// <summary>Crée un client pour le fournisseur, ses réglages et le modèle choisi.</summary>
         /// <param name="provider">Fournisseur LLM sélectionné.</param>
@@ -71,7 +73,7 @@ namespace CodexVBE
             key = settings.GetKey(provider);
             if (string.IsNullOrWhiteSpace(key) && provider.RequiresKey)
                 throw new InvalidOperationException(UiText.Get("Configure the API key for ") + provider.Name + UiText.Get(" in VBAi settings."));
-            http = handler == null ? new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) : new HttpClient(handler);
+            http = handler == null ? new HttpClient(HttpHandlerFactory()) : new HttpClient(handler);
             http.Timeout = TimeSpan.FromSeconds(120);
         }
 
@@ -111,7 +113,7 @@ namespace CodexVBE
                 : new Uri(chatEndpoint.AbsoluteUri.Replace(provider.IsClaude ? "/messages" : "/chat/completions", "/models"));
             var models = new List<LlmModelOption>();
             var cursors = new HashSet<string>();
-            using (var client = new HttpClient(handler ?? new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(20) })
+            using (var client = new HttpClient(handler ?? HttpHandlerFactory()) { Timeout = TimeSpan.FromSeconds(20) })
             for (int page = 0; page < 100; page++)
             {
                 using (var request = new HttpRequestMessage(HttpMethod.Get, catalogue)) {

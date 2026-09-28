@@ -52,3 +52,15 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    public sealed partial class VbeFormsValueDuplicationTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void TextBoxCompleteGuardAndRollbackMatrix()
+        {
+            VerifyDuplicationGuards("TextBox");
+        }
+    }
+}

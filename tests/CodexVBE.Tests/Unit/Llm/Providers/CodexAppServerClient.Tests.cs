@@ -8,11 +8,97 @@ namespace CodexVBE.Tests.Unit
     using System.Web.Script.Serialization;
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using CodexVBE.Tests.Infrastructure;
+    using System.Diagnostics;
+    using System.IO;
+    using System.Reflection;
 
     [TestClass]
     [TestCategory("Unit")]
     public sealed partial class CodexAppServerClientTests
     {
+        [TestMethod]
+        public async Task ConstructorCatalogueAndTransportGuardsRejectIncompleteContracts()
+        {
+            var settings = new LlmSettings(); var tools = new LlmVbeTools(null, null, settings); var context = new ImmediateContext();
+            Assert.ThrowsException<ArgumentNullException>(() => new CodexAppServerClient(null, tools, null, settings, null, new FakeTransport()));
+            Assert.ThrowsException<ArgumentNullException>(() => new CodexAppServerClient(context, null, null, settings, null, new FakeTransport()));
+            Assert.ThrowsException<ArgumentNullException>(() => new CodexAppServerClient(context, tools, null, null, null, new FakeTransport()));
+            Assert.ThrowsException<ArgumentNullException>(() => new CodexAppServerClient(context, tools, null, settings, null, null));
+            using (var native = new CodexAppServerClient(context, tools, null, settings)) Assert.IsNull(native.ThreadId);
+            var transport = new FakeTransport(); using (var client = Client(transport))
+            {
+                await client.InterruptAsync();
+                foreach (var method in new[] { "RequestAsync", "Send" }) { var error = Assert.ThrowsException<TargetInvocationException>(() => LlmBoundaryScope.Call(client, method, method == "Send" ? new object[] { new { } } : new object[] { "fixture", new { } })); Assert.IsInstanceOfType<InvalidOperationException>(error.InnerException); }
+                transport.Intercept = message => { if (Method(message) != "model/list") return false; transport.Emit(new { id = message["id"], result = new { data = new object[] { null, new { }, new { model = " " }, new { model = "one", supportedReasoningEfforts = (object)null }, new { model = "two", supportedReasoningEfforts = new object[] { null, new { }, new { reasoningEffort = " " }, new { reasoningEffort = "high", description = "High" } } } } } }); return true; };
+                var models = await client.ListModelsAsync(); Assert.AreEqual(2, models.Length); Assert.AreEqual(0, models[0].Efforts.Length); Assert.AreEqual("high", models[1].Efforts.Single().Id);
+                transport.EmitRaw("null"); transport.Emit(new { id = "nonnumeric" }); transport.Emit(new { id = 99999 });
+                transport.Stop(); var requestError = Assert.ThrowsException<TargetInvocationException>(() => LlmBoundaryScope.Call(client, "RequestAsync", "fixture", new { })); Assert.IsInstanceOfType<InvalidOperationException>(requestError.InnerException);
+                var sendError = Assert.ThrowsException<TargetInvocationException>(() => LlmBoundaryScope.Call(client, "Send", new { })); Assert.IsInstanceOfType<InvalidOperationException>(sendError.InnerException); client.Dispose(); client.Dispose();
+            }
+            transport = new FakeTransport(); using (var client = Client(transport)) { await client.ListModelsAsync(); transport.BeforeSend = () => throw new IOException("native write failure"); await Assert.ThrowsExceptionAsync<IOException>(() => client.ListModelsAsync()); transport.BeforeSend = null; Assert.AreEqual(0, LlmBoundaryScope.Get<Dictionary<int, TaskCompletionSource<IDictionary<string, object>>>>(client, "requests").Count); }
+            transport = new FakeTransport(); using (var client = Client(transport)) { await client.ListModelsAsync(); transport.Intercept = m => { if (Method(m) != "model/list") return false; transport.Emit(new { id = m["id"], error = new { } }); return true; }; var error = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => client.ListModelsAsync()); Assert.AreEqual("Codex request failed.", error.Message); }
+        }
+
+        [TestMethod]
+        public async Task InterruptedInitializationAndTurnStartRespectBothCancellationBoundaries()
+        {
+            foreach (bool initializing in new[] { true, false })
+            {
+                var transport = new FakeTransport(); object pendingId = null; transport.Intercept = m => { if (Method(m) != (initializing ? "initialize" : "turn/start")) return false; pendingId = m["id"]; return true; };
+                using (var client = Client(transport)) { var turn = client.TurnAsync("request", null, null); Assert.IsNotNull(pendingId); await client.InterruptAsync(); transport.Emit(new { id = pendingId, result = initializing ? (object)new { } : new { turn = new { id = "turn-1" } } }); await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => turn); Assert.AreEqual(!initializing, transport.Methods.Contains("turn/interrupt")); }
+            }
+            var alternate = new FakeTransport(); alternate.Intercept = m => { if (Method(m) != "turn/start") return false; alternate.Emit(new { method = "turn/started", @params = new { threadId = "thread-1", turn = new { id = "event-turn" } } }); alternate.Emit(new { id = m["id"], result = new { } }); alternate.EmitTurnCompleted("completed", null); return true; }; using (var client = Client(alternate)) Assert.IsFalse(string.IsNullOrWhiteSpace(await client.TurnAsync("request", null, null)));
+        }
+
+        [TestMethod]
+        public async Task AllNotificationShapesAndQueuedDisposalKeepUpdatesWithinTheActiveTurn()
+        {
+            var transport = new FakeTransport(); using (var client = Client(transport))
+            {
+                var updates = new List<string>(); client.ChatUpdate += (kind, id, text, complete) => updates.Add(kind + ":" + text); var turn = client.TurnAsync("request", null, null); await transport.TurnStarted.Task;
+                foreach (var index in new object[] { null, 0, 1 }) transport.Emit(new { method = "item/reasoning/summaryPartAdded", @params = index == null ? (object)new { threadId = "thread-1", itemId = "r" } : new { threadId = "thread-1", itemId = "r", summaryIndex = index } });
+                transport.Emit(new { method = "item/agentMessage/delta", @params = new { threadId = "thread-1", delta = "no item" } });
+                foreach (var summary in new object[] { null, "invalid", new object[0], new object[] { "text", new { text = "more" }, null, 5, new { text = " " } } }) transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", item = new { type = "reasoning", id = "r", summary } } });
+                transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", item = new { type = "reasoning", id = "r" } } });
+                transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", item = new { type = "agentMessage", phase = "commentary", id = "m", text = "intermediate" } } });
+                transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", item = new { type = "other" } } }); transport.Emit(new { method = "unknown", @params = new { threadId = "thread-1" } }); transport.EmitTurnCompleted("failed", null); var error = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => turn); Assert.AreEqual("Codex turn: failed", error.Message); Assert.IsTrue(updates.Contains("message:intermediate")); Assert.IsTrue(updates.Contains("summary:text\n\nmore"));
+            }
+            foreach (bool dispose in new[] { false, true }) { transport = new FakeTransport(); var queue = new LlmQueuedContext(); var settings = new LlmSettings(); using (var client = new CodexAppServerClient(queue, new LlmVbeTools(null, null, settings), null, settings, null, transport)) { var turn = client.TurnAsync("request", null, null); await transport.TurnStarted.Task; transport.Emit(new { method = "item/agentMessage/delta", @params = new { threadId = "thread-1", itemId = "m", delta = "queued" } }); if (dispose) client.Dispose(); queue.Drain(); if (dispose) await Assert.ThrowsExceptionAsync<ObjectDisposedException>(() => turn); else { transport.EmitTurnCompleted("completed", null); queue.Drain(); await turn; } } }
+            transport = new FakeTransport(); using (var client = Client(transport)) { var turn = client.TurnAsync("request", null, null); await transport.TurnStarted.Task; transport.Emit(new { method = "item/reasoning/summaryPartAdded", @params = new { threadId = "thread-1", summaryIndex = "invalid" } }); await Assert.ThrowsExceptionAsync<FormatException>(() => turn); }
+        }
+
+        [TestMethod]
+        public async Task ToolBoundaryResponsesExceptionsAndLateCallbacksNeverCallARealHost()
+        {
+            foreach (var output in new[] { "null", "{\"Ok\":true}", "{\"Ok\":false}", "not-json", "throw" }) foreach (bool observe in new[] { false, true })
+            {
+                var transport = new FakeTransport(); using (var client = Client(transport)) { int calls = 0; var updates = new List<string>(); if (observe) client.ChatUpdate += (k, i, t, c) => updates.Add(t); client.InvokeTool = (n, a) => { calls++; Assert.AreEqual("fixture", n); Assert.AreEqual("{}", a); return output == "throw" ? Task.FromException<string>(new IOException("tool boundary")) : Task.FromResult(output); }; var turn = client.TurnAsync("request", null, null); await transport.TurnStarted.Task; transport.Emit(new { id = "tool", method = "item/tool/call", @params = new { threadId = "thread-1", tool = "fixture", arguments = new { } } }); var reply = transport.Sent.Last(); Assert.AreEqual("tool", reply["id"]); Assert.AreEqual(output.Contains("true"), FakeTransport.Object(reply["result"])["success"]); Assert.AreEqual(1, calls); if (observe) Assert.IsTrue(updates.Count >= 1); transport.EmitTurnCompleted("completed", null); await turn; }
+            }
+            var idle = new FakeTransport(); using (var client = Client(idle)) { await client.ListModelsAsync(); idle.Emit(new { id = "idle-tool", method = "item/tool/call", @params = new { threadId = "thread-1" } }); Assert.AreEqual(false, FakeTransport.Object(idle.Sent.Last()["result"])["success"]); }
+            foreach (bool dispose in new[] { false, true }) { var transport = new FakeTransport(); var queue = new LlmQueuedContext(); var settings = new LlmSettings(); using (var client = new CodexAppServerClient(queue, new LlmVbeTools(null, null, settings), null, settings, null, transport)) { int calls = 0; client.InvokeTool = (n, a) => { calls++; return Task.FromResult("null"); }; var turn = client.TurnAsync("request", null, null); await transport.TurnStarted.Task; transport.Emit(new { id = "late", method = "item/tool/call", @params = new { threadId = "thread-1", tool = "fixture", arguments = new { } } }); if (dispose) client.Dispose(); else await client.InterruptAsync(); queue.Drain(); Assert.AreEqual(0, calls); if (dispose) await Assert.ThrowsExceptionAsync<ObjectDisposedException>(() => turn); else await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => turn); } }
+            var pending = new FakeTransport(); using (var client = Client(pending)) { await client.ListModelsAsync(); pending.Intercept = m => Method(m) == "model/list"; var request = client.ListModelsAsync(); client.Dispose(); await Assert.ThrowsExceptionAsync<ObjectDisposedException>(() => request); }
+        }
+
+        [TestMethod]
+        public async Task NativeProcessTransportUsesDisposableUtf8ChildAndDrainsOnlyProtocolOutput()
+        {
+            using (var fixture = new NativeProtocolFixture()) using (var scope = new LlmBoundaryScope())
+            {
+                foreach (var installed in new[] { false, true }) foreach (var explicitPath in new[] { false, true })
+                {
+                    Environment.SetEnvironmentVariable("CODEXVBE_CODEX_CLI", explicitPath ? "fixture-explicit.exe" : null); using (var transport = new CodexProcessTransport())
+                    {
+                        Assert.IsFalse(transport.IsRunning); Assert.ThrowsException<InvalidOperationException>(() => transport.Send("before")); string chosen = null; transport.InstalledExists = p => { StringAssert.EndsWith(p, Path.Combine("Codex", "bin", "codex.exe")); return installed; }; transport.StartProcess = p => { chosen = p.StartInfo.FileName; return fixture.Start(p, "echo"); };
+                        var output = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously); var exited = new TaskCompletionSource<Exception>(TaskCreationOptions.RunContinuationsAsynchronously); transport.LineReceived += line => output.TrySetResult(line); transport.Exited += ex => exited.TrySetResult(ex); transport.Start(); Assert.IsTrue(transport.IsRunning); Assert.AreEqual(explicitPath ? "fixture-explicit.exe" : installed ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "OpenAI", "Codex", "bin", "codex.exe") : "codex.exe", chosen); transport.Send("équipe"); Assert.AreEqual("équipe", await output.Task); transport.Send("exit"); Assert.IsInstanceOfType<InvalidOperationException>(await exited.Task); Assert.IsFalse(transport.IsRunning); transport.Dispose(); transport.Dispose();
+                    }
+                }
+                using (var transport = new CodexProcessTransport()) { transport.StartProcess = p => false; Assert.ThrowsException<InvalidOperationException>(() => transport.Start()); transport.Dispose(); }
+                using (var transport = new CodexProcessTransport()) { transport.StartProcess = p => fixture.Start(p, "echo"); transport.Start(); transport.Send("unobserved"); var process = LlmBoundaryScope.Get<Process>(transport, "process"); transport.Send("exit"); Assert.IsTrue(process.WaitForExit(5000)); transport.Dispose(); }
+                using (var transport = new CodexProcessTransport()) { transport.StartProcess = p => fixture.Start(p, "echo"); transport.Start(); var process = LlmBoundaryScope.Get<Process>(transport, "process"); process.Kill(); Assert.IsTrue(process.WaitForExit(5000)); process.Close(); transport.Dispose(); }
+                using (var transport = new CodexProcessTransport()) { transport.StartProcess = p => fixture.Start(p, "echo"); transport.Start(); transport.Dispose(); }
+            }
+        }
         [TestMethod]
         public async Task InitializeChecksChatGptAndStartsReadOnlyThread()
         {

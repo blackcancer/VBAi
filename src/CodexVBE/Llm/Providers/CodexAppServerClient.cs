@@ -31,6 +31,8 @@ namespace CodexVBE
     /// <summary>Transport app-server qui lance le client CLI Codex et échange des lignes UTF-8.</summary>
     internal sealed class CodexProcessTransport : ICodexAppServerTransport
     {
+        internal Func<string, bool> InstalledExists = File.Exists;
+        internal Func<Process, bool> StartProcess = ProcessInput.StartWithoutPreamble;
         /// <summary>Processus CLI Codex détenu par le transport.</summary>
         private Process process;
         /// <summary>Relaye les lignes reçues sur la sortie standard.</summary>
@@ -49,7 +51,7 @@ namespace CodexVBE
             {
                 string installed = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "Programs", "OpenAI", "Codex", "bin", "codex.exe");
-                executable = File.Exists(installed) ? installed : "codex.exe";
+                executable = InstalledExists(installed) ? installed : "codex.exe";
             }
             var info = new ProcessStartInfo(executable, "app-server") {
                 UseShellExecute = false, RedirectStandardInput = true,
@@ -59,7 +61,7 @@ namespace CodexVBE
             };
             process = new Process { StartInfo = info, EnableRaisingEvents = true };
             process.Exited += (sender, args) => Exited?.Invoke(new InvalidOperationException(UiText.Get("Codex app-server stopped.")));
-            if (!ProcessInput.StartWithoutPreamble(process))
+            if (!StartProcess(process))
                 throw new InvalidOperationException(UiText.Get("Unable to start codex app-server."));
             process.OutputDataReceived += (sender, args) => { if (args.Data != null) LineReceived?.Invoke(args.Data); };
             // Drain stderr; diagnostics are never protocol messages.
@@ -96,6 +98,7 @@ namespace CodexVBE
         private readonly SynchronizationContext ui;
         /// <summary>Outils VBE exécutés à la demande du processus Codex.</summary>
         private readonly LlmVbeTools tools;
+        internal Func<string, string, Task<string>> InvokeTool;
         /// <summary>Callback qui signale les étapes de connexion et les appels d’outils.</summary>
         private readonly Action<string> progress;
         /// <summary>Réglages LLM fournis à cette session.</summary>
@@ -152,6 +155,7 @@ namespace CodexVBE
         {
             this.ui = ui ?? throw new ArgumentNullException(nameof(ui));
             this.tools = tools ?? throw new ArgumentNullException(nameof(tools));
+            InvokeTool = tools.InvokeAsync;
             this.progress = progress ?? (_ => { });
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
             this.transport = transport ?? throw new ArgumentNullException(nameof(transport));
@@ -431,7 +435,7 @@ namespace CodexVBE
                     string activityId = "tool-" + Convert.ToString(requestId);
                     ChatUpdate?.Invoke("tool", activityId, name + " · en cours", false);
                     string arguments = NewJson().Serialize(parameters["arguments"]);
-                    string output = await tools.InvokeAsync(name, arguments);
+                    string output = await InvokeTool(name, arguments);
                     var response = NewJson().Deserialize<Response>(output);
                     ChatUpdate?.Invoke("tool", activityId, name + (response != null && response.Ok ? UiText.Get(" · complete") : UiText.Get(" · failed")), true);
                     Send(new { id = requestId, result = new {
