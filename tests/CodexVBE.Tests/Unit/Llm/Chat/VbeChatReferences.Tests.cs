@@ -1,4 +1,4 @@
-namespace CodexVBE.Tests.Unit
+﻿namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Linq;
@@ -99,5 +99,93 @@ namespace CodexVBE.Tests.Unit
             Assert.IsFalse(result.Ok);
             StringAssert.Contains(result.Error, "module");
         }
+        [TestMethod]
+        public void ReferenceDiscoveryMatrixHandlesProcedureShapesErrorsAndOptionalObservers()
+        {
+            var references=new VbeChatReferences(null);
+            references.Execute=request=>Response.Failure("host unavailable");references.Refresh();
+            Assert.AreEqual("host unavailable",references.Error);Assert.IsFalse(references.IsLoading);
+            references.Step();
+            references.Execute=request=>Response.Success("not an array");references.Refresh();Assert.AreEqual(0,references.Entries.Count);
+            references.Execute=request=>Response.Success(new[] {new {Name="P"}});references.Refresh();
+            references.Execute=request=>Response.Failure("module enumeration failed");references.Step();
+            StringAssert.Contains(references.Error,"P : module enumeration failed");
+            foreach(object payload in new object[] {"unexpected",new {Other=true},new {Procedures="unexpected"},new {Sha256="version",Procedures=new object[] {null,"invalid",new {Kind=0,Declaration="Public Function F()",Name="F",StartLine=1,EndLine=2},new {Kind=0,Declaration="Sub S()",Name="S",StartLine=3,EndLine=4},new {Kind=1,Declaration="Property Let",Name="Value",StartLine=5,EndLine=6}}}})
+            {
+                references.Execute=request=>Response.Success(new[] {new {Name=request.Command=="list_projects" ? "P":"M"}});
+                references.Refresh();references.Step();
+                references.Execute=request=>Response.Success(payload);references.Step();
+                Assert.IsFalse(references.IsLoading);Assert.IsNull(references.Error);
+                if(payload is string)Assert.AreEqual("",references.Entries[1].Sha256);
+                if(references.Entries.Count==5)
+                {
+                    Assert.AreEqual("Function",references.Entries[2].Kind);Assert.AreEqual("Sub",references.Entries[3].Kind);
+                    Assert.AreEqual("Property",references.Entries[4].Kind);Assert.AreEqual("version",references.Entries[4].Sha256);
+                }
+                references.Step();
+            }
+            references.Execute=request=>Response.Success(new[] {new {Name=request.Command=="list_projects" ? "P":"M"}});
+            references.Refresh();references.Step();
+            references.Execute=request=>Response.Failure("procedure enumeration failed");references.Step();
+            Assert.AreEqual("#P.M : procedure enumeration failed",references.Error);
+            references.Execute=request=>Response.Success(new[] {new {MissingName=true}});references.Refresh();Assert.AreEqual("#",references.Entries[0].Token);
+        }
+
+        [TestMethod]
+        public void NavigationMatrixUsesFreshHashForModuleAndProcedureAndReturnsReadFailures()
+        {
+            var references=new VbeChatReferences(null);
+            var item=new VbeChatReference {Project="P",Module="M",Kind="Module"};
+            references.Execute=request=>Response.Failure("module disappeared");
+            Assert.AreEqual("module disappeared",references.Navigate(item).Error);
+            Assert.ThrowsException<InvalidOperationException>(()=>references.Resolve(item));
+            string command=null;
+            references.Execute=request=>
+            {
+                if(request.Command=="read_module")return Response.Success(new {Code="line1\nline2",Sha256="fresh"});
+                command=request.Command;Assert.AreEqual("fresh",request.ExpectedSha256);Assert.AreEqual(1,request.StartLine);
+                return Response.Success(new {Selected=true});
+            };
+            Assert.IsTrue(references.Navigate(item).Ok);Assert.AreEqual("select_code",command);
+            item.Name="F";item.ProcKind=3;
+            Assert.IsTrue(references.Navigate(item).Ok);Assert.AreEqual("select_procedure",command);
+            item.Sha256="FRESH";item.StartLine=-1;item.EndLine=99;
+            StringAssert.Contains(references.Resolve(item),"line1\nline2");
+            references.Execute=request=>Response.Success(new {MissingCode=true});item.Name=null;
+            StringAssert.Contains(references.Resolve(item),"SHA-256");
+        }
+
+        [TestMethod]
+        public void ReferenceMatchingMatrixLimitsSortsAndDisplaysAllTokenKinds()
+        {
+            using(var localization=new Infrastructure.LocalizationScope())
+            {
+                var references=new VbeChatReferences(null);
+                foreach(int kind in new[] {1,2,3})
+                {
+                    var item=new VbeChatReference {Project="P",Module="M",Name="Value",Kind="Property",ProcKind=kind};
+                    Assert.AreEqual(new[] {"","Let","Set","Get"}[kind],item.Token.Split(':').Last());
+                    Assert.AreEqual(item.Token,item.DisplayToken);Assert.AreEqual(item.Display,item.ToString());
+                    StringAssert.Contains(item.Token,item.Name);
+                    references.Entries.Add(item);
+                }
+                var project=new VbeChatReference {Project="P",Kind="Projet"};
+                Assert.AreEqual(UiText.Get("Project"),project.DisplayKind);
+                StringAssert.Contains(project.Display,project.DisplayKind);
+                references.Entries.Add(project);
+                references.Entries.Add(new VbeChatReference {Project="Other",Module="M",Name="PInside",Kind="Sub"});
+                Assert.AreEqual(5,references.MatchPrefix("P",'\0').Count());
+                Assert.AreEqual(3,references.MatchPrefix("Value",'@').Count());
+                Assert.AreEqual(3,references.MatchPrefix("vAlUe",'@').Count());
+                Assert.AreEqual(3,references.Match("VALUE").Count());
+                Assert.AreEqual(0,references.MatchPrefix("no-match",'@').Count());
+                Assert.AreEqual(1,references.MatchPrefix("P",'#').Count());
+                Assert.AreEqual("#P",references.Match("P").First().Token);
+                references.Entries.Clear();
+                for(int i=0;i<45;i++)references.Entries.Add(new VbeChatReference {Project="P"+i.ToString("D2"),Kind="Projet"});
+                Assert.AreEqual(40,references.Match("").Count());Assert.AreEqual("#P00",references.Match("").First().Token);
+            }
+        }
+
     }
 }
