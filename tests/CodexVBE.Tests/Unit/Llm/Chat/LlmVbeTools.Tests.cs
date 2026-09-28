@@ -1,4 +1,4 @@
-namespace CodexVBE.Tests.Unit
+﻿namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
@@ -294,5 +294,317 @@ namespace CodexVBE.Tests.Unit
             Assert.IsTrue(valid.Restored);
             Assert.IsTrue(stale.Restored);
         }
+    }
+}
+
+namespace CodexVBE.Tests.Unit
+{
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using System.Web.Script.Serialization;
+    using System.Windows.Forms;
+    using CodexVBE;
+    using CodexVBE.Tests.Infrastructure;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+    [TestClass]
+    [TestCategory("Unit")]
+    public sealed partial class LlmVbeToolsBoundaryTests
+    {
+        [TestMethod]
+        [STATestMethod]
+        public void ContractMatrixChecksRequiredTypesWhitespaceOptionalFieldsAndHostDispatch()
+        {
+            Assert.ThrowsException<ArgumentNullException>(() => new LlmVbeTools(null, null, null));
+            var tools = Create();
+            tools.NoteUserRequest(null); tools.NoteUserRequest(" ");
+            tools.NoteUserRequest(@"The supplied path is C:\Temp\fixture.bas");
+            foreach (object definition in LlmVbeTools.Definitions)
+            {
+                var function = Dict(Dict(Json.DeserializeObject(Json.Serialize(definition)))["function"]);
+                string name = (string)function["name"];
+                if (name.StartsWith("git_") || name == "read_user_file" || name == "replace_lines") continue;
+                var parameters = Dict(function["parameters"]);
+                var required = (object[])parameters["required"];
+                var fields = Dict(parameters["properties"]);
+                var values = Arguments(name);
+                Success(tools.Invoke(name, Json.Serialize(values)), name);
+                foreach (string field in fields.Keys)
+                {
+                    object original = values[field];
+                    values[field] = null;
+                    Failed(tools.Invoke(name, Json.Serialize(values)), field);
+                    values[field] = new object[] { new object() };
+                    Failed(tools.Invoke(name, Json.Serialize(values)), name + ":" + field);
+                    values[field] = original;
+                }
+                foreach (string field in required.Cast<string>())
+                {
+                    object original = values[field]; values.Remove(field);
+                    Failed(tools.Invoke(name, Json.Serialize(values)), name + ":missing:" + field);
+                    values[field] = original;
+                    if (original is string && field != "Text" && field != "Caption" && field != "Value")
+                    {
+                        values[field] = " "; Failed(tools.Invoke(name, Json.Serialize(values)), field); values[field] = original;
+                    }
+                }
+            }
+            foreach (object value in new object[] { "", true, 1, 2147483648L, 1.25m, 1e50 })
+            {
+                var values = Arguments("set_form_node_property"); values["Value"] = value;
+                Success(tools.Invoke("set_form_node_property", Json.Serialize(values)), "scalar " + value);
+            }
+            foreach (object value in new object[] { 1, 2147483648L, 1.25m, 1e50 })
+            {
+                var values = Arguments("add_form_control");
+                // Every numeric field is checked through its published schema.
+                foreach (string field in values.Keys.ToArray())
+                    if (field == "Left" || field == "Top" || field == "Width" || field == "Height") values[field] = value;
+                Success(tools.Invoke("add_form_control", Json.Serialize(values)), "numeric " + value);
+            }
+            tools.BoundProject = "P";
+            Failed(tools.Invoke("create_module", "[]"), "bound array");
+            Failed(tools.Invoke("create_module", "{}"), "bound missing project");
+            Success(tools.Invoke("create_module", Json.Serialize(Arguments("create_module"))), "bound same project");
+            tools.Mode = ChatMode.Plan;
+            Failed(tools.Invoke("create_module", Json.Serialize(Arguments("create_module"))), "plan edit");
+            Success(tools.Invoke("list_projects", "{}"), "plan read");
+            tools.Mode = ChatMode.Agent;
+            tools.Settings.VbeEditApproval = "AskEachTime";
+            tools.ShowApproval = (dialog, owner) => DialogResult.No;
+            Failed(tools.Invoke("create_module", Json.Serialize(Arguments("create_module"))), "approval refusal");
+            tools.ShowApproval = (dialog, owner) => DialogResult.Yes;
+            Success(tools.Invoke("create_module", Json.Serialize(Arguments("create_module"))), "approval yes");
+        }
+
+        [TestMethod]
+        public void ItemsMatrixAcceptsBoundaryLengthsAndRejectsMultilineWrongTypesAndOverflow()
+        {
+            var tools = Create();
+            string name = LlmVbeTools.Definitions.Select(d => Dict(Dict(Json.DeserializeObject(Json.Serialize(d)))["function"]))
+                .Where(f => Dict(Dict(f["parameters"])["properties"]).ContainsKey("Items")).Select(f => (string)f["name"]).First();
+            var values = Arguments(name);
+            foreach (object items in new object[] { new string[0], new[] { "", new string('x', 256) }, Enumerable.Repeat("x", 64).ToArray() })
+            { values["Items"] = items; Success(tools.Invoke(name, Json.Serialize(values)), "valid items"); }
+            foreach (object items in new object[] { "x", Enumerable.Repeat("x", 65).ToArray(), new object[] { 2 }, new[] { new string('x',257) }, new[] { "line\nline" } })
+            { values["Items"] = items; Failed(tools.Invoke(name, Json.Serialize(values)), "invalid items"); }
+        }
+
+        [TestMethod]
+        public void FileReadMatrixRequiresLiteralAbsolutePathConfirmationAndTextSizeLimit()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var tools = Create();
+                string file = Path.Combine(scope.Root, "document.txt");
+                File.WriteAllText(file, "étè", new System.Text.UTF8Encoding(false));
+                tools.NoteUserRequest("Read " + file);
+                tools.ConfirmFile = (owner,text,title) => { StringAssert.Contains(text,file); return DialogResult.No; };
+                Failed(tools.Invoke("read_user_file", Json.Serialize(new { Path = file })), "declined");
+                tools.ConfirmFile = (owner,text,title) => DialogResult.Yes;
+                var data = Data(tools.Invoke("read_user_file", Json.Serialize(new { Path = file })));
+                Assert.AreEqual("étè", data["Text"]); Assert.AreEqual(false,data["Truncated"]);
+                tools.CurrentProviderName = "FixtureProvider";
+                tools.ConfirmFile = (owner,text,title) => { StringAssert.Contains(text,"FixtureProvider"); return DialogResult.Yes; };
+                File.WriteAllBytes(file, new byte[] { 65, 0, 66 });
+                Failed(tools.Invoke("read_user_file", Json.Serialize(new { Path = file })), "binary");
+                File.WriteAllText(file, new string('a',65537), new System.Text.UTF8Encoding(false));
+                data = Data(tools.Invoke("read_user_file", Json.Serialize(new { Path = file })));
+                Assert.AreEqual(65536, ((string)data["Text"]).Length); Assert.AreEqual(true,data["Truncated"]);
+                Assert.AreEqual(65537,Convert.ToInt32(data["ByteLength"]));
+                Failed(tools.Invoke("inspect_code_file", Json.Serialize(new { Path = "relative.bas" })), "relative path");
+            }
+        }
+
+        [TestMethod]
+        public async Task AsyncDispatchMatrixExecutesNativeBoundariesAndReturnsHostFailures()
+        {
+            var tools = Create();
+            foreach (string name in new[] { "sign_project", "read_project_signature_dialog", "read_debug_options", "read_vbe_options",
+                "quick_watch", "edit_watch", "debug_item", "immediate_execute", "debug_dialog", "respond_debug_dialog",
+                "remove_watch", "add_watch", "debug_windows" })
+            {
+                var values = AsyncArguments(name);
+                Success(await tools.InvokeAsync(name, Json.Serialize(values)),name);
+                tools.Execute = request => Response.Failure("host declined");
+                if (name != "debug_windows" && name != "debug_item" && name != "debug_dialog" && name != "respond_debug_dialog")
+                    Failed(await tools.InvokeAsync(name, Json.Serialize(values)), name + ":host");
+                tools.Execute = VbeToolBoundaryFixture.Execute;
+            }
+            Failed(await tools.InvokeAsync("debug_dialog","[]"),"dialog array");
+            tools.Native.ReadSignatureDialog = p => { throw new InvalidOperationException("signature dialog unavailable"); };
+            Failed(await tools.InvokeAsync("read_project_signature_dialog",Json.Serialize(Arguments("read_project_signature_dialog"))),"signature native exception");
+            tools.Native.ReadDebugOptions = () => { throw new InvalidOperationException("options unavailable"); };
+            Failed(await tools.InvokeAsync("read_debug_options","{}"),"options native exception");
+            tools.Native.VerifyWatchRemoved = r => { throw new InvalidOperationException("watch native unavailable"); };
+            Failed(await tools.InvokeAsync("remove_watch",Json.Serialize(Arguments("remove_watch"))),"remove native exception");
+            tools.Native.ReadDebugDialog = () => { throw new InvalidOperationException("native declined"); };
+            Failed(await tools.InvokeAsync("debug_dialog", "{}"), "native exception");
+            tools.Native.CompleteAddWatch = r => { throw new InvalidOperationException("native add declined"); };
+            Failed(await tools.InvokeAsync("add_watch", Json.Serialize(Arguments("add_watch"))), "native add exception");
+            tools.Native.Capture = stack => new { Stack = stack };
+            foreach (string args in new[] { "{}", "{\"IncludeCallStack\":true}", "{\"IncludeCallStack\":false}" })
+                Success(await tools.InvokeAsync("debug_windows", args), args);
+            foreach (string name in new[] { "sign_project", "read_project_signature_dialog", "quick_watch", "edit_watch", "remove_watch", "add_watch" })
+                Failed(await tools.InvokeAsync(name, "{}"), name + ":missing");
+            foreach (string args in new[] { "[]", "{\"Diagnostic\":\"x\"}", "{\"Diagnostic\":1,\"Button\":\"ok\"}", "{\"Diagnostic\":\"x\",\"Button\":1}" })
+                Failed(await tools.InvokeAsync("respond_debug_dialog", args), args);
+            foreach (string args in new[] { "[]", "{}", "{\"Action\":\"expand\",\"PathSegments\":[\"x\"]}", "{\"Pane\":\"locals\",\"PathSegments\":[\"x\"]}", "{\"Pane\":\"locals\",\"Action\":\"expand\"}", "{\"Pane\":\"locals\",\"Action\":\"expand\",\"PathSegments\":[\"x\"],\"Context\":\"p\"}" })
+            {
+                if (args.Contains("Context")) Success(await tools.InvokeAsync("debug_item",args),args);
+                else Failed(await tools.InvokeAsync("debug_item",args),args);
+            }
+            var immediate = AsyncArguments("immediate_execute");
+            foreach (string field in immediate.Keys.ToArray())
+            {
+                object original = immediate[field]; immediate.Remove(field);
+                Failed(await tools.InvokeAsync("immediate_execute",Json.Serialize(immediate)), "missing "+field);
+                immediate[field] = original is string ? (object)true : "2";
+                Failed(await tools.InvokeAsync("immediate_execute",Json.Serialize(immediate)), "type "+field);
+                immediate[field] = original;
+            }
+            immediate["ExpectedMode"] = 1;
+            Failed(await tools.InvokeAsync("immediate_execute",Json.Serialize(immediate)),"changed mode");
+            immediate["ExpectedMode"] = 3;
+            Failed(await tools.InvokeAsync("immediate_execute",Json.Serialize(immediate)),"invalid mode");
+            Failed(await tools.InvokeAsync("immediate_execute","[]"),"immediate array");
+            tools.Settings.VbeEditApproval = "ReadOnly";
+            Failed(await tools.InvokeAsync("remove_watch",Json.Serialize(Arguments("remove_watch"))),"remove policy");
+        }
+
+        [TestMethod]
+        public async Task SignaturePersistenceMatrixHandlesMissingCertificateAndSaveRetries()
+        {
+            var tools = Create(); string args = Json.Serialize(Arguments("sign_project"));
+            tools.Execute = r => Response.Success(new { Missing = true });
+            Failed(await tools.InvokeAsync("sign_project",args),"missing certificate");
+            tools.Execute = r => Response.Success("unexpected host shape");
+            Failed(await tools.InvokeAsync("sign_project",args),"host shape");
+            tools.Execute = VbeToolBoundaryFixture.Execute;
+            foreach (bool saved in new[] { false, true })
+            {
+                tools.PersistSignature = p => new CodexVBE.Tests.Infrastructure.VbeToolPersistence { Saved = saved };
+                Assert.AreEqual(!saved,Data(await tools.InvokeAsync("sign_project",args))["SaveRequired"]);
+            }
+            tools.PersistSignature = p => null;
+            Assert.AreEqual(true,Data(await tools.InvokeAsync("sign_project",args))["SaveRequired"]);
+            tools.PersistSignature = p => { throw new InvalidOperationException("save declined"); };
+            tools.Execute = r => r.Command == "project_signature_status" ? Response.Failure("status declined") : VbeToolBoundaryFixture.Execute(r);
+            var data = Data(await tools.InvokeAsync("sign_project",args));
+            Assert.AreEqual("save declined",data["PersistenceError"]); Assert.AreEqual("status declined",data["HostStatusError"]);
+            int attempts = 0;
+            tools.PersistSignature = p => { if (++attempts == 2) return new CodexVBE.Tests.Infrastructure.VbeToolPersistence { Saved = true }; throw new InvalidOperationException("0x800AC472 busy"); };
+            Assert.AreEqual(false,Data(await tools.InvokeAsync("sign_project",args))["SaveRequired"]); Assert.AreEqual(2,attempts);
+            attempts = 0; tools.PersistSignature = p => { attempts++; throw new InvalidOperationException("0x800AC472 busy"); };
+            data = Data(await tools.InvokeAsync("sign_project",args)); Assert.AreEqual(12,attempts);
+            StringAssert.Contains((string)data["PersistenceError"],"busy");
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void CompileMatrixUsesPostedUiWorkAndDistinguishesTimeoutDiagnosisAndErrors()
+        {
+            var prior = SynchronizationContext.Current;
+            try
+            {
+                var tools = Create();
+                SynchronizationContext.SetSynchronizationContext(new ImmediateContext());
+                const string args = "{\"Project\":\"P\",\"ExpectedMode\":2}";
+                Assert.AreEqual(true,Data(tools.InvokeAsync("compile_project",args).GetAwaiter().GetResult())["Compiled"]);
+                tools.Native.AwaitCompileDialog = completed => { Assert.IsTrue(completed.Wait(5000)); return "compile diagnostic"; };
+                var data = Data(tools.InvokeAsync("compile_project",args).GetAwaiter().GetResult());
+                Assert.AreEqual(false,data["Compiled"]); Assert.AreEqual("NativeDiagnosticCaptured",data["Verification"]);
+                tools.Execute = r => Response.Failure("compile failure"); Failed(tools.InvokeAsync("compile_project",args).GetAwaiter().GetResult(),"compile failure");
+                tools.Execute = r => { throw new InvalidOperationException("compile exception"); };
+                Failed(tools.InvokeAsync("compile_project",args).GetAwaiter().GetResult(),"compile exception");
+                SynchronizationContext.SetSynchronizationContext(new DeferredContext());
+                tools.Native.AwaitCompileDialog = completed => null;
+                Failed(tools.InvokeAsync("compile_project",args).GetAwaiter().GetResult(),"timeout");
+                SynchronizationContext.SetSynchronizationContext(new ImmediateContext());
+                foreach (string invalid in new[] { "[]", "{}", "{\"ExpectedMode\":2}", "{\"Project\":\"P\"}", "{\"Project\":1,\"ExpectedMode\":2}", "{\"Project\":\" \",\"ExpectedMode\":2}", "{\"Project\":\"P\",\"ExpectedMode\":\"2\"}", "{\"Project\":\"P\",\"ExpectedMode\":1}" })
+                    Failed(tools.InvokeAsync("compile_project",invalid).GetAwaiter().GetResult(),invalid);
+            }
+            finally { SynchronizationContext.SetSynchronizationContext(prior); }
+        }
+        [TestMethod]
+        public void CodeEditReadbackMatrixRejectsStaleReadsAndHandlesUnchangedCodeOrSubscriberErrors()
+        {
+            var host=new VbeSessionTests.FakeVbe();
+            var module=new VbeSessionTests.FakeModule("A\r\nB");
+            var project=new VbeSessionTests.FakeProject {Name="P",FileName=@"C:\Temp\fixture.xlsm",Mode=2};
+            project.VBComponents.Items.Add(new VbeSessionTests.FakeComponent {Name="M",Type=1,CodeModule=module});host.VBProjects.Add(project);
+            var session=new VbeSession(host);
+            var tools=new LlmVbeTools(session,null,new LlmSettings { VbeEditApproval="Automatic" });
+            var logs=new List<string>(); tools.WriteLog=logs.Add;
+            Func<string,string> arguments=text=>Json.Serialize(new {Project="P",Module="M",ExpectedSha256=(string)((dynamic)session.Execute(new Request {Command="read_module",Project="P",Module="M"}).Data).Sha256,StartLine=1,Count=2,Text=text});
+            string args=arguments("A\r\nC");
+            module.DeleteLines(1,module.CountOfLines); module.InsertLines(1,"stale");
+            Failed(tools.Invoke("replace_lines",args),"stale code");
+            module.DeleteLines(1,module.CountOfLines); module.InsertLines(1,"A\r\nB");
+            tools.Execute=r=>Response.Failure("read unavailable");
+            Failed(tools.Invoke("replace_lines",args),"read unavailable");
+            tools.Execute=session.Execute;
+            Success(tools.Invoke("replace_lines",arguments("A\r\nB")),"unchanged code");
+            Success(tools.Invoke("replace_lines",arguments("A\r\nC")),"edit without subscriber");
+            tools.CodeEdited+=change=> { throw new InvalidOperationException("subscriber failed"); };
+            Success(tools.Invoke("replace_lines",arguments("A\r\nD")),"subscriber error is contained");
+            int reads=0;
+            tools.Execute=r=> r.Command=="read_module" && ++reads==2 ? Response.Failure("readback failed") : session.Execute(r);
+            Success(tools.Invoke("replace_lines",arguments("A\r\nE")),"readback error is contained");
+            Assert.AreEqual(2,logs.Count);
+            StringAssert.Contains(logs[0],"subscriber failed");
+            StringAssert.Contains(logs[1],"readback failed");
+            tools.Execute=r=>r.Command=="replace_lines" ? Response.Failure("write refused") : session.Execute(r);
+            Failed(tools.Invoke("replace_lines",arguments("A\r\nF")),"write refusal");
+        }
+
+        [TestMethod]
+        public void RestorationMatrixHandlesNullEntriesSharedModuleHunksAndWriteFailure()
+        {
+            var host=new VbeSessionTests.FakeVbe();
+            var module=new VbeSessionTests.FakeModule("A2\r\nKeep\r\nB2");
+            var project=new VbeSessionTests.FakeProject {Name="P",FileName=@"C:\Temp\fixture.xlsm",Mode=2};
+            project.VBComponents.Items.Add(new VbeSessionTests.FakeComponent {Name="M",Type=1,CodeModule=module});host.VBProjects.Add(project);
+            var session=new VbeSession(host);
+            var settings=new LlmSettings {VbeEditApproval="Automatic"};
+            var tools=new LlmVbeTools(session,null,settings) {Mode=ChatMode.Plan};
+            Assert.IsFalse(tools.RestoreChanges(new CodeChange[] {null},null).Ok);
+            var change=new CodeChange("P","M","A\r\nKeep\r\nB","","A2\r\nKeep\r\nB2","",3);
+            tools.Execute=r=>r.Command=="replace_lines" ? Response.Failure("write refused") : session.Execute(r);
+            var failure=tools.RestoreChanges(new[] {change},null);
+            Assert.IsFalse(failure.Ok);StringAssert.Contains(failure.Error,"write refused");Assert.IsFalse(change.Restored);
+            tools.Execute=session.Execute;
+            Assert.IsTrue(tools.RestoreChanges(new[] {change},0).Ok);
+            Assert.AreEqual("A\r\nKeep\r\nB2",module.Code);Assert.IsFalse(change.Restored);
+            Assert.IsFalse(tools.RestoreChanges(new[] {change},0).Ok);
+            Assert.IsTrue(tools.RestoreChanges(new[] {change},null).Ok);Assert.IsTrue(change.Restored);
+            Assert.AreEqual("A\r\nKeep\r\nB",module.Code);
+            var first=new CodeChange("P","M","initial","","middle","",1);
+            var second=new CodeChange("P","M","middle","","last","",1);
+            module.DeleteLines(1,module.CountOfLines); module.InsertLines(1,"last");
+            Assert.IsTrue(tools.RestoreChanges(new[] {first,second},null).Ok);
+            Assert.AreEqual("initial",module.Code);Assert.IsTrue(first.Restored);Assert.IsTrue(second.Restored);
+            tools.ValidateScope=()=> {throw new InvalidOperationException("stale scope");};
+            Assert.AreEqual("stale scope",tools.RestoreChanges(new[] {first},null).Error);
+            Assert.IsNotNull(Json.DeserializeObject(tools.LiveContextJson()));
+        }
+
+        [TestMethod]
+        public void ToolResponseParserKeepsSuccessFailureNullAndInvalidJsonContracts()
+        {
+            var tools = new LlmVbeTools(null,null,new LlmSettings());
+            var missing = tools.ReadToolResponse("null");
+            Assert.IsNotNull(missing); Assert.IsFalse(missing.Ok); Assert.IsNull(missing.Error);
+            var success = tools.ReadToolResponse(Json.Serialize(Response.Success(new {Value="fixture"})));
+            Assert.IsTrue(success.Ok); Assert.AreEqual("fixture",Dict(success.Data)["Value"]);
+            var failure = tools.ReadToolResponse(Json.Serialize(Response.Failure("declined")));
+            Assert.IsFalse(failure.Ok); Assert.AreEqual("declined",failure.Error);
+            Assert.ThrowsException<ArgumentException>(()=>tools.ReadToolResponse("{invalid}"));
+        }
+
     }
 }

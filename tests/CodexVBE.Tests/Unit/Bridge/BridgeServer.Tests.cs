@@ -1,4 +1,4 @@
-namespace CodexVBE.Tests.Unit
+﻿namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
@@ -106,5 +106,180 @@ namespace CodexVBE.Tests.Unit
                 }
             }
         }
+        [TestMethod]
+        [STATestMethod]
+        public void NativeDispatchMatrixPreservesRequestResultsAndHostFailures()
+        {
+            using (var dispatcher = new Control())
+            {
+                var handle = dispatcher.Handle;
+                int id = Guid.NewGuid().GetHashCode() & int.MaxValue;
+                using (var server = new BridgeServer(dispatcher, null, id))
+                {
+                    Infrastructure.VbeToolBoundaryFixture.Configure(server.Native);
+                    server.Execute = Infrastructure.VbeToolBoundaryFixture.Execute;
+                    server.PersistSignature = project => new CodexVBE.Tests.Infrastructure.VbeToolPersistence { Saved = true };
+                    server.Start();
+                    var json = new JavaScriptSerializer();
+                    foreach (string command in new[] { "debug_windows", "debug_dialog", "debug_item", "respond_debug_dialog",
+                        "immediate_execute", "add_watch", "edit_watch", "quick_watch", "read_debug_options", "read_vbe_options",
+                        "read_project_signature_dialog", "remove_watch", "status" })
+                    {
+                        var response = SendWithMessagePump(id, json.Serialize(new { Command = command, Project = "P", ExpectedMode = 2, Text = "Debug.Print 1" }));
+                        Assert.AreEqual(true, response["Ok"], command);
+                        Assert.IsNotNull(response["Data"], command);
+                    }
+                    foreach (string command in new[] { "add_watch", "edit_watch", "quick_watch", "read_debug_options", "read_vbe_options",
+                        "read_project_signature_dialog", "remove_watch", "sign_project", "immediate_execute" })
+                    {
+                        server.Execute = request => Response.Failure("host rejected " + request.Command);
+                        var response = SendWithMessagePump(id, json.Serialize(new { Command = command, Project = "P", ExpectedMode = 2 }));
+                        Assert.AreEqual(false, response["Ok"], command);
+                        StringAssert.Contains((string)response["Error"], "host rejected");
+                    }
+                    server.Execute = Infrastructure.VbeToolBoundaryFixture.Execute;
+                    Assert.AreEqual(false, SendWithMessagePump(id, "{\"Command\":\"immediate_execute\",\"Project\":\"P\",\"ExpectedMode\":1}")["Ok"]);
+                    Assert.AreEqual(false, SendWithMessagePump(id, "{\"Command\":\"immediate_execute\",\"Project\":\"P\",\"ExpectedMode\":3}")["Ok"]);
+                    Assert.AreEqual(false, SendWithMessagePump(id, "null")["Ok"]);
+                    server.Native.ReadDebugDialog = () => { throw new InvalidOperationException("native unavailable"); };
+                    var unavailable = SendWithMessagePump(id, "{\"Command\":\"debug_dialog\"}");
+                    Assert.AreEqual(false, unavailable["Ok"]);
+                    Assert.AreEqual("native unavailable", unavailable["Error"]);
+                }
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void CompileMatrixReportsDiagnosticsHostFailuresExceptionsAndDelayedCallbacks()
+        {
+            using (var dispatcher = new Control())
+            {
+                var handle = dispatcher.Handle;
+                int id = Guid.NewGuid().GetHashCode() & int.MaxValue;
+                using (var server = new BridgeServer(dispatcher, null, id))
+                {
+                    Infrastructure.VbeToolBoundaryFixture.Configure(server.Native);
+                    server.Execute = Infrastructure.VbeToolBoundaryFixture.Execute;
+                    server.Start();
+                    const string request = "{\"Command\":\"compile_project\",\"Project\":\"P\"}";
+                    var success = SendWithMessagePump(id, request);
+                    Assert.AreEqual(true, ((IDictionary<string, object>)success["Data"])["Compiled"]);
+                    server.Native.AwaitCompileDialog = completed => { Assert.IsTrue(completed.Wait(5000)); return "Syntax error"; };
+                    var diagnostic = (IDictionary<string, object>)SendWithMessagePump(id, request)["Data"];
+                    Assert.AreEqual(false, diagnostic["Compiled"]);
+                    Assert.AreEqual("NativeDiagnosticCaptured", diagnostic["Verification"]);
+                    Assert.IsNotNull(diagnostic["NextRead"]);
+                    server.Execute = r => Response.Failure("compile declined");
+                    Assert.AreEqual("compile declined", SendWithMessagePump(id, request)["Error"]);
+                    server.Execute = r => { throw new InvalidOperationException("compile threw"); };
+                    Assert.AreEqual("compile threw", SendWithMessagePump(id, request)["Error"]);
+                    server.Native.AwaitCompileDialog = completed => null;
+                    // Holding the UI callback in the message queue models the native timeout.
+                    var delayed = SendWithoutMessagePump(id, request);
+                    StringAssert.Contains((string)delayed["Error"], "did not return");
+                    Application.DoEvents();
+                }
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void SignatureMatrixRetainsSaveStatusAndBoundedBusyRetries()
+        {
+            using (var dispatcher = new Control())
+            {
+                var handle = dispatcher.Handle;
+                int id = Guid.NewGuid().GetHashCode() & int.MaxValue;
+                using (var server = new BridgeServer(dispatcher, null, id))
+                {
+                    Infrastructure.VbeToolBoundaryFixture.Configure(server.Native);
+                    server.Execute = Infrastructure.VbeToolBoundaryFixture.Execute;
+                    server.Start();
+                    const string request = "{\"Command\":\"sign_project\",\"Project\":\"P\",\"CertificateThumbprint\":\"fixture\"}";
+                    foreach (bool saved in new[] { true, false })
+                    {
+                        server.PersistSignature = p => new CodexVBE.Tests.Infrastructure.VbeToolPersistence { Saved = saved };
+                        var result = (IDictionary<string, object>)SendWithMessagePump(id, request)["Data"];
+                        Assert.AreEqual(!saved, result["SaveRequired"]);
+                        Assert.IsNull(result["PersistenceError"]);
+                        Assert.IsNotNull(result["HostStatus"]);
+                    }
+                    server.PersistSignature = p => null;
+                    Assert.AreEqual(true, ((IDictionary<string, object>)SendWithMessagePump(id, request)["Data"])["SaveRequired"]);
+                    server.PersistSignature = p => { throw new InvalidOperationException("save refused"); };
+                    server.Execute = r => r.Command == "project_signature_status" ? Response.Failure("status refused") : Infrastructure.VbeToolBoundaryFixture.Execute(r);
+                    var failure = (IDictionary<string, object>)SendWithMessagePump(id, request)["Data"];
+                    Assert.AreEqual("save refused", failure["PersistenceError"]);
+                    Assert.AreEqual("status refused", failure["HostStatusError"]);
+                    Assert.IsNull(failure["HostStatus"]);
+                    int attempts = 0;
+                    server.PersistSignature = p => { if (++attempts == 2) return new CodexVBE.Tests.Infrastructure.VbeToolPersistence { Saved = true }; throw new InvalidOperationException("0x800AC472 busy"); };
+                    Assert.AreEqual(false, ((IDictionary<string, object>)SendWithMessagePump(id, request)["Data"])["SaveRequired"]);
+                    Assert.AreEqual(2, attempts);
+                    attempts = 0;
+                    server.PersistSignature = p => { attempts++; throw new InvalidOperationException("0x800AC472 busy"); };
+                    failure = (IDictionary<string, object>)SendWithMessagePump(id, request)["Data"];
+                    Assert.AreEqual(12, attempts);
+                    StringAssert.Contains((string)failure["PersistenceError"], "busy");
+                }
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void DisposalBeforeStartAndDuringIdleWaitClosesServer()
+        {
+            using (var dispatcher = new Control())
+            {
+                var idle = new BridgeServer(dispatcher, null, Guid.NewGuid().GetHashCode() & int.MaxValue);
+                idle.Dispose(); idle.Start();
+                var worker = (Thread)typeof(BridgeServer).GetField("worker", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(idle);
+                Assert.IsTrue(worker.Join(5000));
+                int id = Guid.NewGuid().GetHashCode() & int.MaxValue;
+                var server = new BridgeServer(dispatcher, null, id);
+                server.Start();
+                using (var client = new NamedPipeClientStream(".", "CodexVBE." + id, PipeDirection.InOut))
+                {
+                    client.Connect(5000);
+                    server.Dispose();
+                }
+                worker = (Thread)typeof(BridgeServer).GetField("worker", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(server);
+                Assert.IsTrue(worker.Join(5000));
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void PipeCreationIoFailureRetriesUnlessShutdownWasRequested()
+        {
+            using (var dispatcher = new Control())
+            {
+                var handle = dispatcher.Handle;
+                int id = Guid.NewGuid().GetHashCode() & int.MaxValue;
+                using (var server = new BridgeServer(dispatcher, null, id))
+                {
+                    var open = server.OpenPipe; int attempts = 0;
+                    server.OpenPipe = security => { if (Interlocked.Increment(ref attempts)==1) throw new IOException("transient pipe failure"); return open(security); };
+                    server.Execute = Infrastructure.VbeToolBoundaryFixture.Execute;
+                    server.Start();
+                    Assert.AreEqual(true,SendWithMessagePump(id,"{\"Command\":\"status\"}")["Ok"]);
+                    Assert.IsTrue(attempts>=2);
+                }
+                var stopping = new BridgeServer(dispatcher,null,Guid.NewGuid().GetHashCode() & int.MaxValue);
+                stopping.OpenPipe = security => { stopping.Dispose(); throw new IOException("shutdown during pipe creation"); };
+                stopping.Start();
+                var worker = (Thread)typeof(BridgeServer).GetField("worker",System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(stopping);
+                Assert.IsTrue(worker.Join(5000));
+                using (var disposed = new BridgeServer(dispatcher,null,Guid.NewGuid().GetHashCode() & int.MaxValue))
+                {
+                    disposed.OpenPipe = security => { throw new ObjectDisposedException("pipe creation"); };
+                    disposed.Start();
+                    worker = (Thread)typeof(BridgeServer).GetField("worker",System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(disposed);
+                    Assert.IsTrue(worker.Join(5000),"A disposed transport must stop the worker.");
+                }
+            }
+        }
+
     }
 }

@@ -12,6 +12,11 @@ namespace CodexVBE
         /// <summary>Fabrique injectable des opérations Git pour un projet VBA.</summary>
         /// <value>Résolve une opération pour le nom de projet, ou null pour l’ouverture standard.</value>
         internal Func<string, MacroGitOperations> GitOperationsFactory { get; set; }
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Func<string, GitHubApi> GitHubApiFactory = account => new GitHubApi(account);
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Func<IWin32Window, string, string, DialogResult> ConfirmGit = (window, text, title) =>
+            MessageBox.Show(window, text, title, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
         /// <summary>Construit la définition d’outil Git et ses champs requis.</summary>
         /// <param name="action">Nom d’action utilisé pour construire le nom de l’outil.</param>
         /// <param name="description">Description affichée au modèle pour l’opération.</param>
@@ -74,8 +79,8 @@ namespace CodexVBE
                     throw new InvalidOperationException(UiText.Get("Git is limited to the document of this conversation."));
                 bool edit = !ReadOnlyTools.Contains(name);
                 if (edit && settings.VbeEditApproval != "Automatic" && settings.VbeEditApproval != "AskEachTime") throw new InvalidOperationException(UiText.Get("The VBE policy does not allow this Git operation."));
-                if (edit && settings.VbeEditApproval == "AskEachTime" && MessageBox.Show(owner, name + "\r\n" + arguments,
-                    UiText.Get("VBAi — Git operation"), MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                if (edit && settings.VbeEditApproval == "AskEachTime" && ConfirmGit(owner, name + "\r\n" + arguments,
+                    UiText.Get("VBAi — Git operation")) != DialogResult.Yes)
                     throw new InvalidOperationException(UiText.Get("Git operation declined by the user."));
                 Func<string, string> value = key => values.ContainsKey(key) ? (string)values[key] : null;
                 using (var operations = GitOperationsFactory != null ? GitOperationsFactory(requested) : OpenGit(requested))
@@ -85,7 +90,7 @@ namespace CodexVBE
                         return json.Serialize(Response.Success(new { Details = operations.Repository.CommitDetails(commit), Modules = operations.Repository.Read(commit)?.Manifest.Components }));
                     }
                     if (name == "git_pull_requests") {
-                        using (var api = new GitHubApi(settings.GitHubAccount))
+                        using (var api = GitHubApiFactory(settings.GitHubAccount))
                             return json.Serialize(Response.Success(await api.Pulls(operations.Repository.RemoteUrl, System.Threading.CancellationToken.None)));
                     }
                     if (name == "git_commit_selected") {

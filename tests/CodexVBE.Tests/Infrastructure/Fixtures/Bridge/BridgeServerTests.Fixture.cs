@@ -1,4 +1,4 @@
-namespace CodexVBE.Tests.Unit
+﻿namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
@@ -14,6 +14,20 @@ namespace CodexVBE.Tests.Unit
 
     public sealed partial class BridgeServerTests
     {
+        private static IDictionary<string, object> SendWithoutMessagePump(int processId, string request)
+        {
+            using (var pipe = new NamedPipeClientStream(".", "CodexVBE." + processId, PipeDirection.InOut))
+            {
+                pipe.Connect(5000);
+                using (var writer = new StreamWriter(pipe, new UTF8Encoding(false), 4096, true) { AutoFlush = true })
+                using (var reader = new StreamReader(pipe, new UTF8Encoding(false), false, 4096, true))
+                {
+                    writer.WriteLine(request);
+                    return (IDictionary<string, object>)new JavaScriptSerializer().DeserializeObject(reader.ReadLine());
+                }
+            }
+        }
+
         private static IDictionary<string, object> SendWithMessagePump(int processId, string request)
         {
             var pending = Task.Run(() =>
