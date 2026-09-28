@@ -95,3 +95,46 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+namespace CodexVBE.Tests.Unit
+{
+    [Microsoft.VisualStudio.TestTools.UnitTesting.TestClass]
+    [Microsoft.VisualStudio.TestTools.UnitTesting.TestCategory("Unit")]
+    public sealed class BridgeRequestReaderBoundaryTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public async System.Threading.Tasks.Task ReaderValidatesBudgetsAndReadsEmptyUtf8OrFragmentedFrames()
+        {
+            using(var stream=new System.IO.MemoryStream()) {
+                await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.ArgumentOutOfRangeException>(()=>BridgeRequestReader.ReadAsync(stream,0,System.TimeSpan.FromSeconds(1)));
+                await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.ArgumentOutOfRangeException>(()=>BridgeRequestReader.ReadAsync(stream,1,System.TimeSpan.Zero));
+            }
+            foreach(var text in new[]{"\n","text\n","\r\n"}) using(var stream=new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(text)))
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(text.TrimEnd('\r','\n'),await BridgeRequestReader.ReadAsync(stream,10,System.TimeSpan.FromSeconds(1)));
+            using(var stream=new System.IO.MemoryStream(new byte[]{0xc3,0x28,10})) {
+                var error=await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.IO.IOException>(()=>BridgeRequestReader.ReadAsync(stream,10,System.TimeSpan.FromSeconds(1)));
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType(error.InnerException,typeof(System.Text.DecoderFallbackException));
+            }
+            foreach(bool fail in new[]{false,true}) using(var stream=new DeadlineStream(fail)) {
+                var error=await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.IO.IOException>(()=>BridgeRequestReader.ReadAsync(stream,10,System.TimeSpan.FromMilliseconds(20)));
+                Microsoft.VisualStudio.TestTools.UnitTesting.StringAssert.Contains(error.Message,"timed out");
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsTrue(stream.Disposed);
+            }
+        }
+
+        private sealed class DeadlineStream : System.IO.Stream
+        {
+            private readonly bool fail;
+            private readonly System.Threading.Tasks.TaskCompletionSource<int> completion=new System.Threading.Tasks.TaskCompletionSource<int>();
+            private byte[] buffer;
+            public bool Disposed;
+            public DeadlineStream(bool fail) { this.fail=fail; }
+            public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer,int offset,int count,System.Threading.CancellationToken cancellationToken) { this.buffer=buffer; return completion.Task; }
+            protected override void Dispose(bool disposing) { Disposed=true; if(fail) completion.TrySetException(new System.IO.IOException("Closed read")); else {buffer[0]=10;completion.TrySetResult(1);}base.Dispose(disposing); }
+            public override bool CanRead=>true;public override bool CanSeek=>false;public override bool CanWrite=>false;
+            public override long Length=>throw new System.NotSupportedException();public override long Position {get=>throw new System.NotSupportedException();set=>throw new System.NotSupportedException();}
+            public override int Read(byte[] buffer,int offset,int count)=>throw new System.NotSupportedException();
+            public override void Flush()=>throw new System.NotSupportedException();public override long Seek(long offset,System.IO.SeekOrigin origin)=>throw new System.NotSupportedException();
+            public override void SetLength(long value)=>throw new System.NotSupportedException();public override void Write(byte[] buffer,int offset,int count)=>throw new System.NotSupportedException();
+        }
+    }
+}

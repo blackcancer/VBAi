@@ -47,7 +47,7 @@ namespace CodexVBE
                 using (var dialog = new ProjectAccessWindow())
                 {
                     dialog.Populate(choices, currentSession.ReadProjectGrants, currentSession.SharedContextReadAllowed);
-                    if (dialog.ShowDialog(this) != DialogResult.OK) return;
+                    if (ShowModal(dialog, this) != DialogResult.OK) return;
                     NewSession();
                     currentSession.ReadProjectGrants = dialog.SelectedProjects;
                     currentSession.SharedContextReadAllowed = dialog.SharedContext;
