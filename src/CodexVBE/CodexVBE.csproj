@@ -1,4 +1,5 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <NativeRendererOutput>$(MSBuildProjectDirectory)\obj\native\$(Configuration)</NativeRendererOutput>
@@ -15,12 +16,6 @@
   <ItemGroup>
     <AssemblyAttribute Include="System.Reflection.AssemblyInformationalVersionAttribute"><_Parameter1>$(ProductVersion)</_Parameter1></AssemblyAttribute>
     <ProjectReference Include="../VBAi.Updater/VBAi.Updater.csproj" ReferenceOutputAssembly="false" />
-    <Compile Update="Updates\UpdateWindow.cs"><SubType>Form</SubType></Compile>
-    <Compile Update="Updates\UpdateWindow.Designer.cs"><DependentUpon>UpdateWindow.cs</DependentUpon></Compile>
-    <EmbeddedResource Update="Updates\UpdateWindow.resx"><DependentUpon>UpdateWindow.cs</DependentUpon></EmbeddedResource>
-    <Compile Update="Updates\UpdateProgressWindow.cs"><SubType>Form</SubType></Compile>
-    <Compile Update="Updates\UpdateProgressWindow.Designer.cs"><DependentUpon>UpdateProgressWindow.cs</DependentUpon></Compile>
-    <EmbeddedResource Update="Updates\UpdateProgressWindow.resx"><DependentUpon>UpdateProgressWindow.cs</DependentUpon></EmbeddedResource>
   </ItemGroup>
   <Target Name="WriteProductVersion" BeforeTargets="CoreCompile">
     <WriteCodeFragment Language="C#" OutputFile="$(IntermediateOutputPath)VbaProductVersion.g.cs" AssemblyAttributes="@(AssemblyAttribute)" />
@@ -44,6 +39,12 @@
     <EmbeddedResource Include="..\..\assets\icons\github.png" Link="Resources\Icons\github.png" LogicalName="CodexVBE.Icons.github.png" />
     <EmbeddedResource Include="..\..\assets\icons\settings.png" Link="Resources\Icons\settings.png" LogicalName="CodexVBE.Icons.settings.png" />
     <Compile Include="**\*.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
+    <Compile Update="Updates\UpdateProgressWindow.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="Updates\UpdateProgressWindow.Designer.cs"><SubType>Code</SubType><DependentUpon>UpdateProgressWindow.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Updates\UpdateProgressWindow.resx"><DependentUpon>UpdateProgressWindow.cs</DependentUpon></EmbeddedResource>
+    <Compile Update="Updates\UpdateWindow.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="Updates\UpdateWindow.Designer.cs"><DependentUpon>UpdateWindow.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Updates\UpdateWindow.resx"><DependentUpon>UpdateWindow.cs</DependentUpon></EmbeddedResource>
     <Compile Update="Editor\ModernEditorWindow.cs"><SubType>Form</SubType></Compile>
     <Compile Update="Editor\ModernEditorWindow.Designer.cs"><DependentUpon>ModernEditorWindow.cs</DependentUpon></Compile>
     <EmbeddedResource Update="Editor\ModernEditorWindow.resx"><DependentUpon>ModernEditorWindow.cs</DependentUpon></EmbeddedResource>
@@ -72,6 +73,42 @@
     <EmbeddedResource Update="Localization\*.resx"><LogicalName>CodexVBE.Localization.%(Filename).resources</LogicalName></EmbeddedResource>
     <Compile Update="Git\GitWindow.cs"><SubType>Form</SubType></Compile>
     <Compile Update="Git\GitWindow.Designer.cs"><DependentUpon>GitWindow.cs</DependentUpon></Compile>
+    <Compile Update="Llm\Chat\ChatQueuedMessageView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Llm\Chat\ChatQueuedMessageView.Designer.cs"><DependentUpon>ChatQueuedMessageView.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Llm\Chat\ChatQueuedMessageView.resx"><DependentUpon>ChatQueuedMessageView.cs</DependentUpon></EmbeddedResource>
+    <Compile Update="Llm\Controls\Transcript\ChatLinkView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Llm\Controls\Transcript\ChatLinkView.Designer.cs"><DependentUpon>ChatLinkView.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Llm\Controls\Transcript\ChatLinkView.resx"><DependentUpon>ChatLinkView.cs</DependentUpon></EmbeddedResource>
+    <Compile Update="Llm\Controls\Transcript\ChatTextContentView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Llm\Controls\Transcript\ChatTextContentView.Designer.cs"><DependentUpon>ChatTextContentView.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Llm\Controls\Transcript\ChatTextContentView.resx"><DependentUpon>ChatTextContentView.cs</DependentUpon></EmbeddedResource>
+    <Compile Update="Llm\Controls\Transcript\ChatDisclosureView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Llm\Controls\Transcript\ChatDisclosureView.Designer.cs"><DependentUpon>ChatDisclosureView.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Llm\Controls\Transcript\ChatDisclosureView.resx"><DependentUpon>ChatDisclosureView.cs</DependentUpon></EmbeddedResource>
+    <Compile Update="Llm\Controls\Transcript\ChatMessageView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Llm\Controls\Transcript\ChatMessageView.Designer.cs"><DependentUpon>ChatMessageView.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Llm\Controls\Transcript\ChatMessageView.resx"><DependentUpon>ChatMessageView.cs</DependentUpon></EmbeddedResource>
+    <Compile Update="Llm\Controls\Transcript\ChatAttachmentView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Llm\Controls\Transcript\ChatAttachmentView.Designer.cs"><DependentUpon>ChatAttachmentView.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Llm\Controls\Transcript\ChatAttachmentView.resx"><DependentUpon>ChatAttachmentView.cs</DependentUpon></EmbeddedResource>
+    <Compile Update="Llm\Controls\Transcript\ChatActivityGroupView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Llm\Controls\Transcript\ChatActivityGroupView.Designer.cs"><DependentUpon>ChatActivityGroupView.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Llm\Controls\Transcript\ChatActivityGroupView.resx"><DependentUpon>ChatActivityGroupView.cs</DependentUpon></EmbeddedResource>
+    <Compile Update="Llm\Controls\Transcript\ChatActivityStepView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Llm\Controls\Transcript\ChatActivityStepView.Designer.cs"><DependentUpon>ChatActivityStepView.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Llm\Controls\Transcript\ChatActivityStepView.resx"><DependentUpon>ChatActivityStepView.cs</DependentUpon></EmbeddedResource>
+    <Compile Update="Llm\Controls\Transcript\ChatChangeCardView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Llm\Controls\Transcript\ChatChangeCardView.Designer.cs"><DependentUpon>ChatChangeCardView.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Llm\Controls\Transcript\ChatChangeCardView.resx"><DependentUpon>ChatChangeCardView.cs</DependentUpon></EmbeddedResource>
+    <Compile Update="Llm\Controls\Transcript\ChatFormRecoveryView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Llm\Controls\Transcript\ChatFormRecoveryView.Designer.cs"><DependentUpon>ChatFormRecoveryView.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Llm\Controls\Transcript\ChatFormRecoveryView.resx"><DependentUpon>ChatFormRecoveryView.cs</DependentUpon></EmbeddedResource>
+    <Compile Update="Llm\Controls\Transcript\ChatWelcomeView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Llm\Controls\Transcript\ChatWelcomeView.Designer.cs"><DependentUpon>ChatWelcomeView.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Llm\Controls\Transcript\ChatWelcomeView.resx"><DependentUpon>ChatWelcomeView.cs</DependentUpon></EmbeddedResource>
+    <Compile Update="Llm\Controls\Transcript\ChatSuggestionsView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Llm\Controls\Transcript\ChatSuggestionsView.Designer.cs"><DependentUpon>ChatSuggestionsView.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Llm\Controls\Transcript\ChatSuggestionsView.resx"><DependentUpon>ChatSuggestionsView.cs</DependentUpon></EmbeddedResource>
     <Compile Update="Llm\Chat\ChatWindow.cs"><SubType>Form</SubType></Compile>
     <Compile Update="Llm\Chat\ChatWindow.Designer.cs"><DependentUpon>ChatWindow.cs</DependentUpon></Compile>
     <Compile Update="Llm\Chat\VbeApprovalDialog.cs"><SubType>Form</SubType></Compile>
@@ -88,6 +125,7 @@
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Security" />
+    <Reference Include="System.Design" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="WindowsFormsIntegration" />
     <Reference Include="PresentationCore" />
@@ -104,4 +142,15 @@
           Outputs="$(NativeRendererOutput)\CodexVBE.Native.dll">
     <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(RepositoryRoot)tools\build\Build-NativeRenderer.ps1&quot; -OutputDirectory &quot;$(NativeRendererOutput)&quot; -Configuration &quot;$(Configuration)&quot;" />
   </Target>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <!-- Override Visual Studio subtype inference persisted in the user project file. -->
+  <ItemGroup>
+    <Compile Update="Editor\ModernEditorWindow.*.cs"><SubType>Code</SubType><DependentUpon>ModernEditorWindow.cs</DependentUpon></Compile>
+    <Compile Update="Git\GitWindow.*.cs"><SubType>Code</SubType><DependentUpon>GitWindow.cs</DependentUpon></Compile>
+    <Compile Update="Llm\Settings\LlmSettingsWindow.*.cs"><SubType>Code</SubType><DependentUpon>LlmSettingsWindow.cs</DependentUpon></Compile>
+    <Compile Update="Llm\Chat\ChatWindow.*.cs"><SubType>Code</SubType><DependentUpon>ChatWindow.cs</DependentUpon></Compile>
+    <Compile Update="**\*.Designer.cs"><SubType>Code</SubType></Compile>
+    <Compile Update="Git\GitHubPane.*.cs"><SubType>Code</SubType><DependentUpon>GitHubPane.cs</DependentUpon></Compile>
+    <Compile Update="Llm\Controls\Transcript\ChatDesignerView.cs"><SubType>Code</SubType></Compile>
+  </ItemGroup>
 </Project>

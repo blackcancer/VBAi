@@ -2021,4 +2021,15 @@ Sign in through Git Credential Manager; commit identity is configured in Git.</v
   <data name="The document was not saved because some edits are still pending synchronization." xml:space="preserve"><value>The document was not saved because some edits are still pending synchronization.</value></data>
   <data name="Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data." xml:space="preserve"><value>Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data.</value></data>
   <data name="This message predates the project privacy upgrade. Use current authorized references in a new conversation." xml:space="preserve"><value>This message predates the project privacy upgrade. Use current authorized references in a new conversation.</value></data>
+  <data name="Queue ↑" xml:space="preserve"><value>Queue ↑</value></data>
+  <data name="Queue this message after the current response." xml:space="preserve"><value>Queue this message after the current response.</value></data>
+  <data name="Send now" xml:space="preserve"><value>Send now</value></data>
+  <data name="Queued message" xml:space="preserve"><value>Queued message</value></data>
+  <data name="Stop the current response and send this message next." xml:space="preserve"><value>Stop the current response and send this message next.</value></data>
+  <data name="Move this queued message back to the composer." xml:space="preserve"><value>Move this queued message back to the composer.</value></data>
+  <data name="Remove this message from the queue." xml:space="preserve"><value>Remove this message from the queue.</value></data>
+  <data name="Send or clear the current draft before editing a queued message." xml:space="preserve"><value>Send or clear the current draft before editing a queued message.</value></data>
+  <data name="Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed." xml:space="preserve"><value>Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed.</value></data>
+  <data name="Edit" xml:space="preserve"><value>Edit</value></data>
+  <data name="Delete" xml:space="preserve"><value>Delete</value></data>
 </root>

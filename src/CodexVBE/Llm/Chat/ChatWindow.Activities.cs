@@ -84,53 +84,36 @@ namespace CodexVBE
         /// <returns>Bloc repliable, fermé par défaut et conservant son état lors des mises à jour.</returns>
         private FrameworkElement RenderActivityGroup(ChatEntry owner, List<ChatEntry> entries)
         {
-            var body = new StackPanel { Margin = new Thickness(18, 8, 4, 6) };
-            foreach (var entry in entries)
-            {
-                if (entry.Activity != null) { body.Children.Add(RenderActivityStep(entry)); continue; }
-                if (entry.Speaker == "Réflexion") body.Children.Add(new TextBlock {
-                    Text = UiText.Get("Reasoning · summary"), Foreground = Ink("#64748B"), FontSize = 12,
-                    Margin = new Thickness(0, 4, 0, 4) });
-                var text = SelectableText(entry.Text); text.Margin = new Thickness(0, 0, 0, 6);
-                if (!string.IsNullOrEmpty(entry.StreamId)) liveTexts[entry.StreamId] = text;
-                body.Children.Add(text);
+            var card = new ChatActivityGroupView();
+            foreach (var entry in entries) {
+                if (entry.Activity != null) {
+                    var step = CreateActivityStep(entry); card.section.body.Controls.Add(step);
+                } else {
+                    var row = SelectableText(entry.Text);
+                    if (!string.IsNullOrEmpty(entry.StreamId)) liveTexts[entry.StreamId] = row.content; card.section.body.Controls.Add(row);
+                }
             }
             var latest = entries.LastOrDefault(entry => entry.Activity?.Status == "inProgress") ?? entries.Last();
             string preview = latest.Activity == null ? "" : " · " + CodexAgentActivity.Limit(latest.Activity.Title);
-            if (preview.Length > 90) preview = preview.Substring(0, 87) + "…";
-            var group = new Expander { Header = UiText.Get("Agent activity") + " · " + entries.Count + preview,
-                IsExpanded = expandedActivityGroups.Contains(owner), Content = body, FontSize = 12,
-                Foreground = Ink("#64748B"), Margin = new Thickness(0, 4, 0, 14) };
-            group.Expanded += (s, e) => expandedActivityGroups.Add(owner);
-            group.Collapsed += (s, e) => expandedActivityGroups.Remove(owner);
-            return group;
+            if (preview.Length > 90) preview = preview.Substring(0,87) + "…";
+            card.section.Title = UiText.Get("Agent activity") + " · " + entries.Count + preview;
+            card.section.Expanded = expandedActivityGroups.Contains(owner);
+            card.section.ExpansionChanged += (s,e) => { if (card.section.Expanded) expandedActivityGroups.Add(owner); else expandedActivityGroups.Remove(owner); };
+            return new ChatDesignerHost(card) { Margin = new Thickness(0,4,0,14) };
         }
-
-        /// <summary>Dessine une étape compacte avec résultat, durée native et détail dépliable.</summary>
-        /// <param name="entry">Entrée enrichie de l'historique.</param>
-        /// <returns>Étape de la chronologie.</returns>
-        private FrameworkElement RenderActivityStep(ChatEntry entry)
+        private FrameworkElement RenderActivityStep(ChatEntry entry) => new ChatDesignerHost(CreateActivityStep(entry));
+        private ChatActivityStepView CreateActivityStep(ChatEntry entry)
         {
             var activity = entry.Activity;
+            var card = new ChatActivityStepView();
             bool running = activity.Status == "inProgress", failed = activity.Status == "failed";
-            string status = UiText.Get(running ? "In progress" : failed ? "Failed" :
-                activity.Status == "declined" ? "Declined" : activity.Status == "completed" ? "Completed" : "Cancelled");
-            var heading = new DockPanel { LastChildFill = true };
-            var state = new TextBlock { Text = (running ? "● " : failed ? "× " : activity.Status == "completed" ? "✓ " : "— ") + status,
-                Foreground = Ink(failed ? "#B91C1C" : running ? "#2563EB" : "#64748B"), FontSize = 11,
-                Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
-            if (activity.DurationMs.HasValue) state.Text += " · " + (activity.DurationMs.Value / 1000d).ToString("0.0", UiText.Culture) + " s";
-            DockPanel.SetDock(state, System.Windows.Controls.Dock.Right); heading.Children.Add(state);
-            heading.Children.Add(new TextBlock { Text = activity.Title, ToolTip = activity.Title, Foreground = Ink("#334155"),
-                FontSize = 12, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center });
-            var detail = SelectableText(activity.Detail, activity.Kind == "commandExecution");
-            detail.Margin = new Thickness(18, 6, 4, 8);
-            if (!string.IsNullOrEmpty(entry.StreamId)) liveTexts[entry.StreamId] = detail;
-            var step = new Expander { Header = heading, Content = detail, IsExpanded = expandedActivitySteps.Contains(entry),
-                HorizontalContentAlignment = HorizontalAlignment.Stretch, Margin = new Thickness(0, 2, 0, 4) };
-            step.Expanded += (s, e) => { expandedActivitySteps.Add(entry); e.Handled = true; };
-            step.Collapsed += (s, e) => { expandedActivitySteps.Remove(entry); e.Handled = true; };
-            return step;
+            card.state.Text = UiText.Get(running ? "In progress" : failed ? "Failed" : activity.Status == "declined" ? "Declined" : activity.Status == "completed" ? "Completed" : "Cancelled");
+            if (activity.DurationMs.HasValue) card.state.Text += " · " + (activity.DurationMs.Value / 1000d).ToString("0.0", UiText.Culture) + " s";
+            card.section.Title = activity.Title;
+            card.detail.ShowPlain(activity.Detail, activity.Kind == "commandExecution");
+            if (!string.IsNullOrEmpty(entry.StreamId)) liveTexts[entry.StreamId] = card.detail.content; card.section.Expanded = expandedActivitySteps.Contains(entry);
+            card.section.ExpansionChanged += (s,e) => { if (card.section.Expanded) expandedActivitySteps.Add(entry); else expandedActivitySteps.Remove(entry); };
+            return card;
         }
 
         /// <summary>Libère les champs de flux d'un groupe lorsqu'il quitte la fenêtre virtualisée.</summary>

@@ -42,7 +42,9 @@ namespace CodexVBE
         }
         protected override async void OnShown(EventArgs e)
         {
-            base.OnShown(e); if (background) Hide();
+            base.OnShown(e);
+            if (DesignMode || LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
+            if (background) Hide();
             if (!prerequisite) return;
             polling = true;
             try

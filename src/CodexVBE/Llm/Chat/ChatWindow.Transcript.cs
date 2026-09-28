@@ -34,11 +34,14 @@ namespace CodexVBE
         /// <summary>Messages de flux actifs indexés par leur identifiant.</summary>
         private readonly Dictionary<string, ChatEntry> liveEntries = new Dictionary<string, ChatEntry>();
         /// <summary>Champs texte matérialisés pour afficher le texte des flux actifs.</summary>
-        private readonly Dictionary<string, TextBox> liveTexts = new Dictionary<string, TextBox>();
+
+        private readonly Dictionary<string, System.Windows.Forms.RichTextBox> liveTexts = new Dictionary<string, System.Windows.Forms.RichTextBox>();
         /// <summary>Boutons de restauration associés aux changements de code visibles.</summary>
-        private readonly Dictionary<CodeChange, Button> rollbackButtons = new Dictionary<CodeChange, Button>();
+
+        private readonly Dictionary<CodeChange, System.Windows.Forms.Button> rollbackButtons = new Dictionary<CodeChange, System.Windows.Forms.Button>();
         /// <summary>Libellés d’état associés aux changements de code visibles.</summary>
-        private readonly Dictionary<CodeChange, TextBlock> changeStates = new Dictionary<CodeChange, TextBlock>();
+
+        private readonly Dictionary<CodeChange, System.Windows.Forms.Label> changeStates = new Dictionary<CodeChange, System.Windows.Forms.Label>();
 
         /// <summary>Configure la liste virtualisée, les événements de défilement, l’accessibilité et les changements de thème.</summary>
         private void InitializeTranscript()
@@ -71,7 +74,8 @@ namespace CodexVBE
             }));
             AutomationProperties.SetName(conversationItems, UiText.Get("Conversation"));
             transcriptHost.Child = conversationItems;
-            Action themeChanged = () => { if (!IsDisposed && IsHandleCreated) BeginInvoke(new Action(() => { conversationItems.Background = Ink("#F8FAFC"); prompt.Foreground = Ink("#1E293B"); referenceList.Background = Ink("#FFFFFF"); ((Border)referencePopup.Child).Background = Ink("#FFFFFF"); RefreshTranscriptWindow(firstLoadedEntry); ShowWelcome(); })); };
+
+            Action themeChanged = () => { if (!IsDisposed && IsHandleCreated) BeginInvoke(new Action(() => { conversationItems.Background = Ink("#F8FAFC"); prompt.Foreground = Ink("#1E293B"); referenceList.BackColor = UiTheme.Surface; UiTheme.Apply(referenceView); RefreshTranscriptWindow(firstLoadedEntry); ShowWelcome(); })); };
             UiTheme.Changed += themeChanged;
             Disposed += (s, e) => UiTheme.Changed -= themeChanged;
         }
@@ -83,13 +87,16 @@ namespace CodexVBE
             if (entry != null) { var view = RenderEntry(entry); entryViews[entry] = view; item.Content = view; RefreshCodeChangeCards(); }
             else if (ReferenceEquals(item.DataContext, earlierEntries))
             {
-                var more = ChatButton(UiText.Get("Load earlier messages"));
-                more.Click += (s, e) => {
+
+                var more = new ChatLinkView(); more.link.Text = UiText.Get("Load earlier messages");
+
+                more.link.Click += (s, e) => {
                     var anchor = visibleEntries.OfType<ChatEntry>().FirstOrDefault();
                     RefreshTranscriptWindow(Math.Max(0, firstLoadedEntry - 80));
                     if (anchor != null) conversationItems.ScrollIntoView(anchor);
                 };
-                item.Content = more;
+
+                item.Content = new ChatDesignerHost(more);
             }
             else item.Content = item.DataContext as FrameworkElement;
         }
@@ -97,7 +104,7 @@ namespace CodexVBE
         /// <param name="item">Élément du transcript libéré.</param>
         private void ReleaseEntry(TranscriptItem item)
         {
-            if (item.RenderedContext is ChatEntry && item.Content is FrameworkElement content) DisposeEntryView(content);
+            if ((item.RenderedContext is ChatEntry || ReferenceEquals(item.RenderedContext, earlierEntries)) && item.Content is FrameworkElement content) DisposeEntryView(content);
             if (item.RenderedContext is ChatEntry entry && entryViews.TryGetValue(entry, out var view) && ReferenceEquals(view, item.Content)) {
                 entryViews.Remove(entry);
                 ReleaseActivityTexts(entry);
@@ -110,10 +117,14 @@ namespace CodexVBE
         private void DisposeEntryViews()
         {
             foreach (var view in entryViews.Values.ToArray()) DisposeEntryView(view);
+
+            foreach (var view in visibleEntries.OfType<ChatDesignerHost>().ToArray()) view.Dispose();
         }
-        /// <summary>Les cartes riches restent dynamiques ; leurs composants natifs suivent leur cycle de vie.</summary>
+        /// <summary>Les instances des vues Designer suivent le cycle de vie du transcript virtualisé.</summary>
         private static void DisposeEntryView(FrameworkElement view)
         {
+
+            if (view is ChatDesignerHost card) { card.Dispose(); return; }
             if (view is ChatDiffView diff) { diff.Dispose(); return; }
             foreach (var child in LogicalTreeHelper.GetChildren(view).OfType<FrameworkElement>()) DisposeEntryView(child);
         }
@@ -151,20 +162,17 @@ namespace CodexVBE
         /// <summary>Crée un champ texte en lecture seule dont le contenu peut être sélectionné et copié.</summary>
         /// <param name="text">Texte à afficher.</param>
         /// <param name="code">Active une police monospace, une ligne non renvoyée et un flux gauche-droite.</param>
-        /// <returns>Champ WPF configuré pour la sélection du texte.</returns>
-        private static TextBox SelectableText(string text, bool code = false)
+        /// <returns>Vue WinForms Designer configurée pour la sélection du texte.</returns>
+
+        private ChatTextContentView SelectableText(string text, bool code = false)
         {
-            return new TextBox { Text = text ?? "", IsReadOnly = true, AcceptsReturn = true,
-                FlowDirection = !code && UiText.Culture.TextInfo.IsRightToLeft ? FlowDirection.RightToLeft : FlowDirection.LeftToRight,
-                TextWrapping = code ? TextWrapping.NoWrap : TextWrapping.Wrap,
-                BorderThickness = new Thickness(0), Background = Brushes.Transparent,
-                Foreground = Ink("#334155"), FontSize = 13,
-                FontFamily = new FontFamily(code ? "Consolas" : "Segoe UI"),
-                Padding = new Thickness(0), IsReadOnlyCaretVisible = true };
+
+            var view = new ChatTextContentView { ErrorHandler = SetStatus }; view.ShowPlain(text,code); return view;
         }
         /// <summary>Ajoute un message simple au transcript.</summary>
         /// <param name="speaker">Locuteur ou catégorie du message.</param>
-        /// <param name="content">Texte du message.</param>
+
+        /// <param name="content">Message text.</param>
         private void AddTranscriptMessage(string speaker, string content) { AddEntry(new ChatEntry { Speaker = speaker, Text = content }); }
         /// <summary>Ajoute une entrée à l’historique et, hors chargement de session, à la liste visible.</summary>
         /// <param name="entry">Entrée à ajouter.</param>
@@ -186,78 +194,71 @@ namespace CodexVBE
             if (activityGroups.TryGetValue(entry, out var activities)) return RenderActivityGroup(entry, activities);
             if (entry.FormCut != null) return RenderFormCut(entry.FormCut);
             if (entry.Change != null) return RenderChange(entry.Change);
-            if (entry.Speaker == "Réflexion" || entry.Speaker == "Outil")
-            {
-                var text = SelectableText(entry.Text);
-                text.Margin = new Thickness(18, 8, 4, 6);
-                if (!string.IsNullOrEmpty(entry.StreamId)) liveTexts[entry.StreamId] = text;
-                return new Expander { Header = entry.Speaker == "Réflexion" ? UiText.Get("Reasoning · summary") : UiText.Get("Agent activity"),
-                    IsExpanded = entry.Speaker == "Réflexion", Content = text, FontSize = 12,
-                    Foreground = Ink("#64748B"), Margin = new Thickness(0, 4, 0, 14) };
+
+            if (IsActivity(entry)) return RenderActivityGroup(entry, new List<ChatEntry> { entry });
+
+            var card = new ChatMessageView();
+
+            card.speaker.Text = entry.Speaker == "Vous" ? UiText.Get("YOU") : UiText.Speaker(entry.Speaker).ToUpperInvariant();
+
+            card.copy.Click += (s,e) => CopyText(entry.Text);
+
+            card.fork.Visible = entry.Speaker == "Vous" || entry.Speaker == "Assistant";
+
+            card.fork.Click += (s,e) => ForkChat(entry);
+
+            if (!string.IsNullOrEmpty(entry.StreamId) && !completedStreams.Contains(entry.StreamId)) {
+
+                card.message.ShowPlain(entry.Text); liveTexts[entry.StreamId] = card.message.content;
+
+            } else {
+
+                var refs = transcriptEntries.SelectMany(x => x.References ?? new VbeChatReference[0]).GroupBy(x => x.Token).ToDictionary(x => x.Key, x => x.Last());
+
+                card.message.ShowMarkdown(entry.Text ?? "", refs, NavigateReference, SetStatus);
             }
-            bool user = entry.Speaker == "Vous";
-            var body = new StackPanel();
-            var heading = new DockPanel { Margin = new Thickness(0, 0, 0, 8) };
-            var copy = ChatButton(UiText.Get("Copy"));
-            copy.ToolTip = UiText.Get("Copy the message text to the clipboard.");
-            copy.FontSize = 10; copy.MinHeight = 20; copy.Padding = new Thickness(6, 2, 6, 2);
-            copy.Background = Brushes.Transparent;
-            copy.Click += (s, e) => CopyText(entry.Text);
-            DockPanel.SetDock(copy, System.Windows.Controls.Dock.Right); heading.Children.Add(copy);
-            if (entry.Speaker == "Vous" || entry.Speaker == "Assistant") {
-                var fork = ChatButton(UiText.Get("Branch conversation")); fork.FontSize = 10; fork.Padding = new Thickness(6, 2, 6, 2);
-                fork.ToolTip = UiText.Get("Create an independent conversation with the history up to this message.");
-                fork.Click += (s, e) => ForkChat(entry); DockPanel.SetDock(fork, System.Windows.Controls.Dock.Right); heading.Children.Add(fork);
+
+            card.memory.Visible = !string.IsNullOrWhiteSpace(entry.AttachedMemory);
+
+            if (card.memory.Visible) {
+
+                var text = SelectableText(entry.AttachedMemory); card.memory.body.Controls.Add(text);
             }
-            heading.Children.Add(new TextBlock { Text = user ? UiText.Get("YOU") : UiText.Speaker(entry.Speaker).ToUpperInvariant(),
-                FontSize = 10, FontWeight = FontWeights.SemiBold, Foreground = Ink("#64748B"),
-                VerticalAlignment = VerticalAlignment.Center });
-            body.Children.Add(heading);
-            if (!string.IsNullOrEmpty(entry.StreamId) && !completedStreams.Contains(entry.StreamId))
-            {
-                var live = SelectableText(entry.Text);
-                liveTexts[entry.StreamId] = live;
-                body.Children.Add(live);
-            }
-            else RenderMarkdown(body, entry.Text ?? "");
-            if (entry.Speaker == "Intervention")
-            {
-                var targets = codeChanges.Where(x => x.TurnId == entry.TurnId).ToArray();
-                foreach (var target in targets) { var link = ChatButton(target.Label); link.Click += (s, e) => ShowCodeChanges(target); body.Children.Add(link); }
-                if (targets.Length > 0) { var undo = ChatButton(UiText.Get("Undo entire turn")); undo.ToolTip = UiText.Get("Undo changes from this turn after checking for conflicts."); undo.Click += (s, e) => RollbackIntervention(targets[0], null, true); body.Children.Add(undo); }
-            }
-            if (!string.IsNullOrWhiteSpace(entry.AttachedMemory))
-                body.Children.Add(new Expander { Header = UiText.Get("Attached document memory"),
-                    Content = SelectableText(entry.AttachedMemory), FontSize = 11, Margin = new Thickness(0, 8, 0, 0) });
+
             foreach (var attachment in entry.Attachments ?? new ChatAttachment[0]) {
-                var content = new StackPanel();
-                var attachmentText = SelectableText(attachment.Text);
-                if (!string.IsNullOrEmpty(attachment.Module)) attachmentText.FlowDirection = FlowDirection.LeftToRight;
-                content.Children.Add(attachmentText);
-                if (!string.IsNullOrEmpty(attachment.Module)) { var navigate = ChatButton(UiText.Get("Open in the VBE")); navigate.Click += (s, e) => NavigateAttachment(attachment); content.Children.Add(navigate); }
-                body.Children.Add(new Expander { Header = attachment.Label + " · " + attachment.Text.Length + UiText.Get(" characters"), Content = content, FontSize = 11 });
+
+                var row = new ChatAttachmentView();
+
+                row.section.Title = attachment.Label + " · " + attachment.Text.Length + UiText.Get(" characters");
+
+                row.text.ShowPlain(attachment.Text, !string.IsNullOrEmpty(attachment.Module)); row.open.Visible = !string.IsNullOrEmpty(attachment.Module);
+
+                row.open.Click += (s,e) => NavigateAttachment(attachment); card.attachments.Controls.Add(row);
             }
-            if (entry.Speaker == "Vérification" && entry.Attachments != null && entry.Attachments.Length > 0) {
-                var fix = ChatButton(UiText.Get("Prepare a fix")); fix.Click += (s, e) => { if (busy) return; modePicker.SelectedItem = ChatMode.Agent; prompt.Text = "/corriger " + entry.Text; draftAttachments.AddRange(entry.Attachments); RefreshContextChips(); }; body.Children.Add(fix);
+
+            foreach (var reference in entry.References ?? new VbeChatReference[0]) {
+
+                var row = new ChatLinkView(); row.link.Text = reference.Token; row.link.Click += (s,e) => NavigateReference(reference);
+
+                card.references.Controls.Add(row);
             }
-            if (entry.References != null && entry.References.Length > 0)
-            {
-                var refs = new WrapPanel { Margin = new Thickness(0, 9, 0, 0) };
-                foreach (var reference in entry.References)
-                {
-                    var link = ChatButton(reference.Token);
-                    link.ToolTip = UiText.Get("Open this reference in the VBE.");
-                    link.FontSize = 11; link.Margin = new Thickness(0, 0, 5, 4);
-                    link.Padding = new Thickness(6, 3, 6, 3);
-                    link.Click += (s, e) => NavigateReference(reference);
-                    refs.Children.Add(link);
-                }
-                body.Children.Add(refs);
+
+            var targets = entry.Speaker == "Intervention" ? codeChanges.Where(x => x.TurnId == entry.TurnId).ToArray() : new CodeChange[0];
+
+            foreach (var target in targets) {
+
+                var row = new ChatLinkView(); row.link.Text = target.Label; row.link.Click += (s,e) => ShowCodeChanges(target); card.targets.Controls.Add(row);
             }
-            return new Border { Child = body, CornerRadius = new CornerRadius(12),
-                Background = Ink(entry.Speaker == "Erreur" ? "#FEF2F2" : user ? "#EFF6FF" : "#FFFFFF"),
-                BorderBrush = Ink(user ? "#DBEAFE" : "#E2E8F0"), BorderThickness = new Thickness(1),
-                Padding = new Thickness(14), Margin = new Thickness(user ? 30 : 0, 0, user ? 0 : 4, 14) };
+
+            card.undoTurn.Visible = targets.Length > 0;
+
+            card.undoTurn.Click += (s,e) => { if (targets.Length > 0) RollbackIntervention(targets[0], null, true); };
+
+            card.fix.Visible = entry.Speaker == "Vérification" && entry.Attachments?.Length > 0;
+
+            card.fix.Click += (s,e) => { if (busy) return; modePicker.SelectedItem = ChatMode.Agent; prompt.Text = "/corriger " + entry.Text; draftAttachments.AddRange(entry.Attachments); RefreshContextChips(); };
+
+            return new ChatDesignerHost(card) { Margin = new Thickness(entry.Speaker == "Vous" ? 30 : 0, 0, 4, 14) };
         }
 
         /// <summary>Copie le texte dans le presse-papiers et signale les erreurs à l’interface.</summary>
@@ -266,16 +267,6 @@ namespace CodexVBE
         {
             try { WriteClipboard(text ?? ""); }
             catch (Exception ex) { SetStatus(UiText.Get("Unable to copy: ") + ex.Message); }
-        }
-
-        /// <summary>Ajoute le rendu Markdown avec les références connues et leur navigation VBE.</summary>
-        /// <param name="body">Conteneur auquel ajouter le rendu.</param>
-        /// <param name="content">Contenu Markdown.</param>
-        private void RenderMarkdown(StackPanel body, string content)
-        {
-            var refs = transcriptEntries.SelectMany(x => x.References ?? new VbeChatReference[0])
-                .GroupBy(x => x.Token).ToDictionary(x => x.Key, x => x.Last());
-            body.Children.Add(ChatMarkdown.Render(content, refs, NavigateReference, SetStatus));
         }
 
         /// <summary>Ajoute une entrée de changement de code puis actualise les cartes visibles.</summary>
@@ -291,49 +282,49 @@ namespace CodexVBE
         /// <returns>Carte WPF de changement.</returns>
         private FrameworkElement RenderChange(CodeChange change)
         {
-            var body = new StackPanel();
-            var heading = new DockPanel();
-            var count = new TextBlock { Text = "+" + change.Rows.Count(r => r.Kind == CodeDiffKind.Added) +
-                "  −" + change.Rows.Count(r => r.Kind == CodeDiffKind.Removed), Foreground = Ink("#15803D"),
-                FontSize = 12, VerticalAlignment = VerticalAlignment.Center };
-            DockPanel.SetDock(count, System.Windows.Controls.Dock.Right); heading.Children.Add(count);
-            var link = ChatButton("#" + change.Project + "." + change.Module);
-            link.ToolTip = UiText.Get("Open the modified module in the VBE.");
-            link.HorizontalAlignment = HorizontalAlignment.Left; link.Background = Brushes.Transparent;
-            link.Click += (s, e) => NavigateReference(new VbeChatReference { Project = change.Project, Module = change.Module });
-            heading.Children.Add(link); body.Children.Add(heading);
-            body.Children.Add(new Expander { Header = UiText.Get("Change diff"), Content = new ChatDiffView(change.Before, change.After),
-                IsExpanded = true, Margin = new Thickness(0, 6, 0, 8), FontSize = 12, Foreground = Ink("#475569") });
-            var actions = new WrapPanel();
-            var restore = ChatButton(change.Restored ? UiText.Get("Change undone") : UiText.Get("Undo change"));
-            restore.ToolTip = UiText.Get("Restore the code before this change after checking for conflicts.");
-            restore.Click += async (s, e) => {
+
+            var card = new ChatChangeCardView();
+
+            card.module.Text = "#" + change.Project + "." + change.Module;
+
+            card.module.Click += (s,e) => NavigateReference(new VbeChatReference { Project = change.Project, Module = change.Module });
+
+            card.count.Text = "+" + change.Rows.Count(r => r.Kind == CodeDiffKind.Added) + "  −" + change.Rows.Count(r => r.Kind == CodeDiffKind.Removed);
+
+            card.diff.ShowDiff(change.Before, change.After); card.section.Expanded = true;
+
+            card.undo.Click += async (s,e) => {
                 if (busy || tools == null) return;
-                try { EnsureCurrentScope(); }
-                catch (Exception ex) { SetStatus(ex.Message); return; }
+
+                try { EnsureCurrentScope(); } catch (Exception ex) { SetStatus(ex.Message); return; }
                 var result = await tools.RestoreChangesAsync(new[] { change }, null);
                 if (!result.Ok) AddTranscriptMessage("Erreur", UiText.Get("Unable to undo: ") + result.Error);
                 RefreshCodeChangeCards(); SaveCurrentSession();
             };
-            rollbackButtons[change] = restore;
-            actions.Children.Add(restore);
-            var blocks = ChatButton(UiText.Get("Undo a block…"));
-            blocks.ToolTip = UiText.Get("Choose a block to undo while keeping other changes.");
-            blocks.Click += (s, e) => {
-                var menu = new ContextMenu();
+
+            rollbackButtons[change] = card.undo; changeStates[change] = card.state;
+
+            card.blocks.Click += (s,e) => {
+
+                card.blockMenu.Items.Clear();
                 foreach (var hunk in CodeRollback.Hunks(change.Before, change.After).Where(x => !change.RestoredHunks.Contains(x.Index))) {
-                    var item = new MenuItem { Header = UiText.Get("Block ") + (hunk.Index + 1) + " · L" + (hunk.AfterStart + 1) + " · +" + hunk.After.Length + " −" + hunk.Before.Length, IsEnabled = !busy };
-                    item.Click += (a, b) => RollbackIntervention(change, hunk.Index, false); menu.Items.Add(item);
+
+                    var item = new System.Windows.Forms.ToolStripMenuItem(UiText.Get("Block ") + (hunk.Index + 1) + " · L" + (hunk.AfterStart + 1) + " · +" + hunk.After.Length + " −" + hunk.Before.Length) { Enabled = !busy };
+
+                    item.Click += (a,b) => RollbackIntervention(change, hunk.Index, false); card.blockMenu.Items.Add(item);
                 }
-                blocks.ContextMenu = menu; menu.PlacementTarget = blocks; menu.IsOpen = true;
-            }; actions.Children.Add(blocks);
-            if (!string.IsNullOrEmpty(change.TurnId)) { var all = ChatButton(UiText.Get("Undo turn")); all.ToolTip = UiText.Get("Undo changes from this turn after checking for conflicts."); all.Click += (s, e) => RollbackIntervention(change, null, true); actions.Children.Add(all); }
-            var state = new TextBlock { FontSize = 11, Foreground = Ink("#64748B"),
-                Margin = new Thickness(8, 8, 0, 0) };
-            changeStates[change] = state; actions.Children.Add(state); body.Children.Add(actions);
-            return new Border { Child = body, Background = Ink("#FFFFFF"), BorderBrush = Ink("#CBD5E1"),
-                BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10),
-                Padding = new Thickness(10), Margin = new Thickness(0, 0, 4, 14) };
+
+                card.blockMenu.Show(card.blocks, 0, card.blocks.Height);
+
+            };
+
+            card.undoTurn.Visible = !string.IsNullOrEmpty(change.TurnId);
+
+            card.undoTurn.Click += (s,e) => RollbackIntervention(change, null, true);
+
+            var host = new ChatDesignerHost(card) { Margin = new Thickness(0, 0, 4, 14) };
+
+            RefreshCodeChangeCards(); return host;
         }
 
         /// <summary>Actualise l’activation et le libellé des boutons selon l’état restauré et l’activité courante.</summary>
@@ -342,8 +333,10 @@ namespace CodexVBE
             RefreshFormCutCards();
             foreach (var pair in rollbackButtons)
             {
-                pair.Value.IsEnabled = !pair.Key.Restored && !busy;
-                pair.Value.Content = pair.Key.Restored ? UiText.Get("Change undone") : UiText.Get("Undo change");
+
+                pair.Value.Enabled = !pair.Key.Restored && !busy;
+
+                pair.Value.Text = pair.Key.Restored ? UiText.Get("Change undone") : UiText.Get("Undo change");
                 changeStates[pair.Key].Text = pair.Key.Restored ? UiText.Get("Code restored") : pair.Key.RestoredHunks.Count > 0 ? UiText.Get("Partially undone") : UiText.Get("Applied");
             }
         }
@@ -379,7 +372,8 @@ namespace CodexVBE
             }
             else
             {
-                TextBox live;
+
+                System.Windows.Forms.RichTextBox live;
                 if (liveTexts.TryGetValue(id, out live)) live.Text = entry.Text;
             }
             FollowLatest(); ScheduleSessionSave();
@@ -397,21 +391,17 @@ namespace CodexVBE
         private void ShowWelcome()
         {
             if (conversationItems == null || transcriptEntries.Count > 0) return;
-            var welcome = new StackPanel { Margin = new Thickness(12, 45, 12, 16) };
-            welcome.Children.Add(new TextBlock { Text = UiText.Get("What would you like to build?"), FontSize = 23,
-                FontWeight = FontWeights.SemiBold, Foreground = Ink("#0F172A"), TextWrapping = TextWrapping.Wrap });
-            welcome.Children.Add(new TextBlock { Text = UiText.Get("Add #aModule or @aFunction to work on your code."),
-                FontSize = 13, Foreground = Ink("#64748B"), Margin = new Thickness(0, 12, 0, 22), TextWrapping = TextWrapping.Wrap });
-            foreach (string suggestion in new[] { UiText.Get("Explain a procedure"), UiText.Get("Fix an error"), UiText.Get("Improve the code") })
-            {
-                string seed = suggestion;
-                var button = ChatButton(seed + "  →");
-                button.HorizontalContentAlignment = HorizontalAlignment.Left;
-                button.Margin = new Thickness(0, 0, 0, 8);
-                button.Click += (s, e) => { prompt.Text = seed + " "; prompt.CaretIndex = prompt.Text.Length; prompt.Focus(); };
-                welcome.Children.Add(button);
+
+            var welcome = new ChatWelcomeView();
+
+            foreach (var button in new[] { welcome.explain, welcome.fix, welcome.improve }) {
+
+                string seed = button.Text;
+
+                button.Click += (s,e) => { prompt.Text = seed + " "; prompt.CaretIndex = prompt.Text.Length; prompt.Focus(); };
             }
-            visibleEntries.Add(welcome);
+
+            visibleEntries.Add(new ChatDesignerHost(welcome));
         }
     }
 }

@@ -4,7 +4,9 @@ namespace CodexVBE
     {
         private System.ComponentModel.IContainer components;
         private System.Windows.Forms.TableLayoutPanel layout;
-        private System.Windows.Forms.Label heading, version, status;
+        private System.Windows.Forms.Label heading;
+        private System.Windows.Forms.Label version;
+        private System.Windows.Forms.Label status;
         private System.Windows.Forms.ProgressBar progress;
         private System.Windows.Forms.Button cancel;
         private System.Windows.Forms.Timer timer;

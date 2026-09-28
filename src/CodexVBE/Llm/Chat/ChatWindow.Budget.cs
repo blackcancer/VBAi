@@ -44,14 +44,18 @@ namespace CodexVBE
             string remaining = verifyAfterEdit.Checked && codeChanges.Any(c => c.TurnId == activeTurnId)
                 ? UiText.Get("Pending: automatic verification and final response.") : UiText.Get("Pending: final response.");
             AddEntry(new ChatEntry { Speaker = "Assistant", TurnId = activeTurnId,
-                Text = UiText.Get("Paused after 8 model rounds. Resume to continue from the saved results; completed actions will not be replayed.") + "\n" + remaining + "\n\n" + actions });
+                Text = UiText.Get("Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed.") + "\n" + remaining + "\n\n" + actions });
             SetStatus(UiText.Get("Paused — resume when ready"));
         }
         private void UpdateBudgetControls()
         {
             if (resumeTurn != null) resumeTurn.Enabled = !busy && currentSession?.BudgetPaused == true;
-            if (!busy && send != null) send.Text = currentSession?.BudgetPaused == true && string.IsNullOrWhiteSpace(prompt.Text)
-                ? UiText.Get("Resume ▶") : UiText.Get("Send ↑");
+            if (send == null || prompt == null) return;
+            bool hasText = !string.IsNullOrWhiteSpace(prompt.Text);
+            send.Text = busy ? UiText.Get(hasText ? "Queue ↑" : "Stop ■") :
+                UiText.Get(currentSession?.BudgetPaused == true && !hasText ? "Resume ▶" : "Send ↑");
+            toolTips.SetToolTip(send, UiText.Get(busy ? (hasText ? "Queue this message after the current response." : "Stop the current response. Changes already applied can still be undone in the chat.") : "Send the message and its context to the agent."));
+            send.Enabled = !busy || !stopRequested || hasText;
         }
         private async Task ResumeBudgetAsync()
         {
@@ -70,7 +74,8 @@ namespace CodexVBE
             messages.Insert(0, new { role = "system", content = LlmVbeContext.DeveloperInstructions });
             int previousChanges = codeChanges.Count;
             currentSession.BudgetPaused = false; SetBusy(true);
-            try { await RunHttpBudgetAsync(provider, model.Id); }
+            bool completed = false;
+            try { completed = await RunHttpBudgetAsync(provider, model.Id); }
             catch (Exception error)
             {
                 CompletePendingToolResponses(); currentSession.BudgetPaused = true;
@@ -87,6 +92,7 @@ namespace CodexVBE
                         Text = applied + UiText.Get(" change(s) applied. Review the files and undo this turn below.") });
                     if (!currentSession.BudgetPaused && verifyAfterEdit.Checked && codeChanges.Any(c => c.TurnId == activeTurnId)) await VerifyProjectAsync();
                     activeTurnId = null; SetBusy(false); SaveCurrentSession();
+                    await DispatchPendingAsync(completed);
                 }
             }
         }
@@ -115,7 +121,11 @@ namespace CodexVBE
                         return await ExecuteBudgetTool(name, arguments);
                     };
                     SetStatus(client.DisplayName + UiText.Get(" — working"));
-                    for (int turn = 0; turn < 8; turn++)
+                    var observedResults = new HashSet<string>(StringComparer.Ordinal);
+                    int stalledRounds = 0;
+                    // Eight rounds without new successful tool results are a fallback; progressing work continues.
+                    // A separate ceiling keeps even continuously changing tool loops bounded.
+                    for (int turn = 0; turn < 64; turn++)
                     {
                         if (stopRequested) throw new OperationCanceledException();
                         providerStreamId = "http-" + Guid.NewGuid().ToString("N");
@@ -143,6 +153,7 @@ namespace CodexVBE
                             SetStatus(client.DisplayName + UiText.Get(" — ready"));
                             return true;
                         }
+                        bool progressed = false;
                         foreach (object rawCall in calls)
                         {
                             if (stopRequested) throw new OperationCanceledException();
@@ -158,9 +169,19 @@ namespace CodexVBE
                             string result = recorded
                                 ? json.Serialize(Response.Failure("This tool call ID already has a recorded result. No action was replayed. Read the prior result and live state before proposing a new action."))
                                 : await ExecuteBudgetTool(name, arguments);
+                            if (!recorded)
+                            {
+                                try
+                                {
+                                    if (json.Deserialize<Response>(result)?.Ok == true && observedResults.Add(EditorDocument.Hash(name + "\n" + arguments + "\n" + result))) progressed = true;
+                                }
+                                catch { }
+                            }
                             messages.Add(new { role = "tool", tool_call_id = Convert.ToString(call["id"]), content = result });
                             SaveCurrentSession();
                         }
+                        stalledRounds = progressed ? 0 : stalledRounds + 1;
+                        if (stalledRounds >= 8) { PauseBudget(provider, model); return false; }
                     }
                     PauseBudget(provider, model); return false;
                 }

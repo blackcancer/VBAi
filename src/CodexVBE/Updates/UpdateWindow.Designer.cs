@@ -227,7 +227,9 @@ namespace CodexVBE
             this.cancelPending.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.cancelPending.Click += new System.EventHandler(this.CancelPending_Click);
             this.tips.SetToolTip(this.cancelPending, "Cancel scheduled update");
-            this.download.Enabled = this.install.Enabled = this.skip.Enabled = false;
+            this.download.Enabled = false;
+            this.install.Enabled = false;
+            this.skip.Enabled = false;
             this.close.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.tips.SetToolTip(this.automaticCheck, "Check automatically once a day");
             this.tips.SetToolTip(this.automaticDownload, "Download updates automatically");

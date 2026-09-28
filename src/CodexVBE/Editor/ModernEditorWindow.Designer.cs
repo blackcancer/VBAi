@@ -88,7 +88,7 @@
             this.tabs.Name = "tabs";
             this.tabs.ShowCloseButtons = true;
             this.tabs.Padding = new System.Drawing.Point(18, 3);
-            this.tabs.CloseRequested += this.CloseTabRequested;
+            this.tabs.CloseRequested += new System.EventHandler<System.Windows.Forms.TabControlEventArgs>(this.CloseTabRequested);
             this.tabs.Margin = new System.Windows.Forms.Padding(0);
             this.tabs.SelectedIndexChanged += new System.EventHandler(this.TabChanged);
             this.surface.Dock = System.Windows.Forms.DockStyle.Fill;

@@ -164,6 +164,21 @@ namespace CodexVBE.Tests.Unit
         }
         /// <summary>Simule un clic sur un bouton WPF.</summary>
         /// <param name="button">Bouton qui reçoit l’événement routé.</param>
+        private static IEnumerable<System.Windows.Forms.Control> NativeDescendants(FrameworkElement element)
+        {
+            if (element is ChatDesignerHost host && host.View != null)
+                foreach (var control in NativeControls(host.View)) yield return control;
+        }
+        private static IEnumerable<System.Windows.Forms.Control> NativeControls(System.Windows.Forms.Control parent)
+        {
+            yield return parent;
+            foreach (System.Windows.Forms.Control child in parent.Controls)
+                foreach (var nested in NativeControls(child)) yield return nested;
+        }
+        private static void WpfClick(System.Windows.Forms.Button button)
+        {
+            typeof(System.Windows.Forms.Button).GetMethod("OnClick", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(button, new object[] { EventArgs.Empty });
+        }
         private static void WpfClick(System.Windows.Controls.Button button) { button.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); }
         /// <summary>Exécute le gestionnaire de touche de prompt avec une source WPF temporaire.</summary>
         /// <param name="window">Fenêtre qui reçoit la touche.</param>

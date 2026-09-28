@@ -67,6 +67,7 @@ namespace CodexVBE
         public bool SharedContextReadAllowed { get; set; }
         public int ReadAccessPolicyVersion { get; set; } = 1;
         public int ProviderHistoryStartIndex { get; set; }
+        public List<QueuedChatMessage> PendingMessages { get; set; } = new List<QueuedChatMessage>();
         public bool BudgetPaused { get; set; }
         public string PausedTurnId { get; set; }
         public string PausedProvider { get; set; }
@@ -101,6 +102,7 @@ namespace CodexVBE
         /// <summary>Obtient ou définit le texte du brouillon courant.</summary>
         /// <value>Texte du compositeur.</value>
         public string Draft { get; set; }
+        public string DraftCapturedMemory { get; set; }
         /// <summary>Obtient ou définit les références VBE du brouillon.</summary>
         /// <value>Références sélectionnées pour le prochain message.</value>
         public VbeChatReference[] DraftReferences { get; set; }
