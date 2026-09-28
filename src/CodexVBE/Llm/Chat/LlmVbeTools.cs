@@ -54,6 +54,8 @@ namespace CodexVBE
         internal readonly VbeToolNativeBoundary Native = new VbeToolNativeBoundary();
         /// <summary>Exécute une commande sur la session hôte, sans remplacer l’orchestration de l’outil.</summary>
         internal Func<Request, Response> Execute;
+        /// <summary>Interroge la disponibilité native d’une récupération dans le concepteur VBE.</summary>
+        internal Func<Request, bool> CanRecoverDesignerCut;
         /// <summary>Demande la sauvegarde de signature au document hôte.</summary>
         internal Func<string, object> PersistSignature;
         /// <summary>Écrit les erreurs de lecture de diff dans le journal de chargement.</summary>
@@ -96,6 +98,7 @@ namespace CodexVBE
         {
             this.session = session;
             Execute = request => session.Execute(request);
+            CanRecoverDesignerCut = request => session.CanRecoverFormCut(request);
             PersistSignature = project => session.PersistProjectSignature(project);
             this.owner = owner;
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));

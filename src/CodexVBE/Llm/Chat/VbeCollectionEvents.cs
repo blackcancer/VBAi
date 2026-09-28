@@ -9,6 +9,8 @@ namespace CodexVBE
     // object inside an event callback: removed objects may already be invalid.
     internal sealed class VbeCollectionEvents : IDisposable
     {
+        /// <summary>Frontière native de combinaison des événements COM, conservée séparément des gardes de connexion.</summary>
+        internal static Action<object, Guid, int, Delegate> CombineNative = ComEventsHelper.Combine;
         private readonly Guid iid;
         private readonly Action<object, Guid, int, Delegate> add, remove;
         private readonly List<Tuple<int, Delegate>> handlers = new List<Tuple<int, Delegate>>();
@@ -40,7 +42,7 @@ namespace CodexVBE
             if (point == null) throw new InvalidOperationException("The native event connection point is absent.");
             Guid actual; point.GetConnectionInterface(out actual);
             if (actual != iid) throw new InvalidOperationException("The native event connection interface does not match.");
-            ComEventsHelper.Combine(target, iid, member, handler);
+            CombineNative(target, iid, member, handler);
         }
         internal void Observe(object next)
         {

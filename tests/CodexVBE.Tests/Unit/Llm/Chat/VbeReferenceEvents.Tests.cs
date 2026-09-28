@@ -7,6 +7,16 @@ namespace CodexVBE.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class VbeReferenceEventsTests
     {
+        /// <summary>Vérifie le refus après destruction et le désabonnement natif d’une source devenue indisponible.</summary>
+        [TestMethod]
+        public void DefaultRemovalAndDisposedSubscriptionGuardRemainSafe()
+        {
+            using (var native = new VbeReferenceEvents(() => { }))
+                Assert.ThrowsException<ArgumentException>(() => native.Observe(new object()));
+            var events = new VbeReferenceEvents(() => { }, (s, g, id, callback) => { });
+            events.Observe(new object()); events.Dispose();
+            Assert.ThrowsException<ObjectDisposedException>(() => events.Observe(new object()));
+        }
         [TestMethod]
         public void ScopeSwitchAndDisposeRemoveExactHandlers()
         {
