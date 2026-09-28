@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Linq;
+using System.IO;
 using System.Reflection;
 using System.Threading;
 using CodexVBE;
@@ -117,6 +118,50 @@ namespace CodexVBE.Tests.Unit
             finally { VbeDebug.HistoryWindowEnabled = savedEnabled; SynchronizationContext.SetSynchronizationContext(savedContext); }
             request = f.Location("go"); request.StartColumn = 1;
             Run(session, request, "navigate_code");
+        }
+
+
+        [TestMethod]
+        public void SessionRollbackRestoresEmptyAndNonemptySourcesAfterPartialNativeWrites()
+        {
+            foreach (string original in new[] { "original", "" })
+            foreach (string partial in new[] { "partial", "" })
+            for (int repeat = 0; repeat < 2; repeat++)
+            {
+                var host = new SessionDispatchFixture.Host(); var project = new SessionDispatchFixture.CorruptProject();
+                var component = new SessionDispatchFixture.CorruptComponent();
+                component.CodeModule.Code = original;
+                component.CodeModule.PartialAfterFailure = partial;
+                component.CodeModule.RestoreExactly = true;
+                project.VBComponents.Add(component); host.VBProjects.Add(project);
+                var response = new VbeSession(host).Execute(new Request { Command = "replace_lines", Project = "P", Module = "M",
+                    StartLine = 1, Count = original.Length == 0 ? 0 : 1, Text = "replacement", ExpectedSha256 = VbeCodeClipboard.Hash(original) });
+                Assert.IsFalse(response.Ok);
+                StringAssert.Contains(response.Error, "original source restored");
+                Assert.AreEqual(original, component.CodeModule.Code, "Rollback must restore the exact original, including empty source.");
+            }
+        }
+
+        [TestMethod]
+        public void SessionExplicitBookmarkDatabasePersistsAcrossSessionInstances()
+        {
+            string root = Path.Combine(Path.GetTempPath(), "CodexSessionBookmarks-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                string database = Path.Combine(root, "bookmarks.db");
+                var host = new VbeSessionTests.FakeVbe();
+                var project = new VbeSessionTests.FakeProject { Name = "P", Mode = 2, FileName = Path.Combine(root, "macro.xlsm") };
+                project.VBComponents.Items.Add(new VbeSessionTests.FakeComponent { Name = "M", Type = 1, CodeModule = new VbeSessionTests.FakeModule("abc") });
+                host.VBProjects.Add(project);
+                var session = new VbeSession(host, database);
+                Run(session, new Request { Project = "P", Module = "M", Action = "add", Query = "mark", StartLine = 1, StartColumn = 1,
+                    ExpectedSha256 = VbeCodeClipboard.Hash("abc") }, "code_bookmark");
+                Assert.IsTrue(File.Exists(database));
+                dynamic state = Run(new VbeSession(host, database), new Request { Project = "P", Action = "list" }, "code_bookmark").Data;
+                Assert.AreEqual("SQLite", (string)state.Persistence);
+                Assert.AreEqual(1, ((IEnumerable)state.Bookmarks).Cast<object>().Count());
+            }
+            finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
         }
 
         [TestMethod]

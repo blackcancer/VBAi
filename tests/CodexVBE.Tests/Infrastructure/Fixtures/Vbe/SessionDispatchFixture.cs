@@ -67,12 +67,14 @@ namespace CodexVBE.Tests.Unit
         {
             public string Code = "original";
             private int inserts;
+            public string PartialAfterFailure = "";
+            public bool RestoreExactly;
             public int CountOfLines => Code.Length == 0 ? 0 : 1;
             public CorruptLines Lines { get; }
             public CorruptModule() { Lines = new CorruptLines(this); }
             public void DeleteLines(int start, int count) { Code = ""; }
             public void InsertLines(int start, string text)
-            { if (++inserts == 1) throw new InvalidOperationException("initial insert failed"); Code = "unexpected normalization"; }
+            { if (++inserts == 1) { Code = PartialAfterFailure; throw new InvalidOperationException("initial insert failed"); } Code = RestoreExactly ? text : "unexpected normalization"; }
         }
         public sealed class CorruptLines
         {
