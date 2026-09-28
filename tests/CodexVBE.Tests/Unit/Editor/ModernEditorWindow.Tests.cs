@@ -71,10 +71,13 @@ namespace CodexVBE.Tests.Unit
                 var worker = new EditorSyncWorker(); f.Base.Set("synchronizationWorker", worker);
                 var blocked = worker.Evaluate(() => { entered.Set(); if (!release.Wait(5000)) throw new System.TimeoutException("owned worker gate"); return 1; }); Assert.IsTrue(entered.Wait(5000));
                 var processing = f.Window.ProcessDocuments(true);
-                // The initial capture yields onto the owned dispatcher before queuing its immutable plan.
-                System.Windows.Forms.Application.DoEvents();
+                // Observe the actual immutable plan queue before releasing the worker.
+                var queue = (System.Collections.Concurrent.BlockingCollection<System.Action>)typeof(EditorSyncWorker).GetField("work", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(worker);
+                var limit = System.Diagnostics.Stopwatch.StartNew();
+                while (queue.Count == 0 && !processing.IsCompleted) { if (limit.ElapsedMilliseconds > 5000) throw new System.TimeoutException("Owned immutable plan was not queued"); System.Windows.Forms.Application.DoEvents(); System.Threading.Thread.Sleep(1); }
+                Assert.AreEqual(1, queue.Count); Assert.IsFalse(processing.IsCompleted);
                 if (state == "disposed") f.Window.Dispose(); if (state == "closing") f.Base.Set("closing", true);
-                if (state == "text") f.Base.Document.Edit(f.Base.Document.Text + "\n' concurrent plan"); if (state == "baseline") f.Base.Document.AcceptRemote("new baseline");
+                if (state == "text") f.Base.Document.Edit(f.Base.Document.Text + "\n' concurrent plan"); if (state == "baseline") f.Base.Document.Acknowledge("new baseline", "different captured revision");
                 release.Set(); ModernEditorDebugFixture.Wait(processing); Assert.AreEqual(0, f.Module.Writes); Assert.IsFalse(f.Base.Get<bool>("busy"));
             }
         }
