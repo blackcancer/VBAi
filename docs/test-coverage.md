@@ -1,5 +1,26 @@
 # Couverture automatisée du complément
 
+## Après intégration de la PR #8 — thème natif expérimental
+
+Mesure locale du **28 septembre 2026**, après Monaco et le thème natif jusqu'à `264e432`, avec les correctifs de fusion et d'arrêt. Build isolé : **0 erreur, 0 avertissement**.
+
+| Mesure | Résultat |
+| --- | --- |
+| Suite globale VSTest | **1 383 réussis, 0 échec, 15 ignorés**, 6 min 23 s |
+| Lignes du complément C# | **25 782 / 27 714 — 93,03 %** |
+| Branches du complément C# | **26 398 / 29 211 — 90,37 %** |
+| Concepteurs WinForms | **32 surfaces validées** |
+| Organisation miroir | **189 miroirs pour 253 fichiers de production** |
+| Catalogue LLM | **204 outils** |
+| Contrats ciblés thème/paramètres | **49 réussis, 0 échec, 0 ignoré** |
+| Moteur C++ | **20 cycles synthétiques réussis**, chargement/hash/ABI validés sans hooks Office |
+
+Il reste **1 932 lignes et 2 813 branches** C# non exécutées. Aucun code de production C# du complément n'est exclu. Le moteur C++ n'est pas instrumenté par Coverlet : ses tests synthétiques ne constituent pas une mesure de lignes/branches natives. Les pourcentages antérieurs sont historiques et l'objectif 100 % reste non atteint.
+
+Les 14 scénarios Excel restent désactivés pendant l'utilisation concurrente d'Excel ; SOLIDWORKS reste NOT_RUN. Les preuves visuelles natives de la branche auteur sont conservées comme telles, sans annoncer leur répétition sur main. Les limites du thème et les correctifs d'intégration sont dans [le bilan natif](native-dark-theme.md).
+
+Preuves : `artifacts/pr8-integration/qualified-global-final/global.trx`, `8c12c908-36f4-43cc-a5da-723cc8e9a251/coverage.cobertura.xml`, `coverage-summary.json` et `coverage-inventory.csv` dans le même répertoire ; tests ciblés `artifacts/pr8-integration/contracts/theme.trx` ; designers `artifacts/pr8-integration/designers/designers.json`.
+
 ## Après intégration de la PR #7 Monaco
 
 Mesure locale du **28 septembre 2026**, branche Monaco intégrée jusqu'à `a4e3560`, avec les contrats IDE existants et le correctif de fermeture WinForms. Build isolé : **0 erreur, 0 avertissement**.

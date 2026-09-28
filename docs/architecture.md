@@ -1,12 +1,13 @@
 # Organisation de la solution
 
-Ouvrir `CodexVBE.sln` dans Visual Studio. Les quatre projets ciblent .NET Framework 4.8, C# 7.3 et x64 en Debug comme en Release. `Directory.Build.props` centralise ces paramètres et `.editorconfig` définit UTF-8, CRLF et les règles d’indentation.
+Ouvrir `CodexVBE.sln` dans Visual Studio. Les cinq projets C# ciblent .NET Framework 4.8, C# 7.3 et x64 en Debug comme en Release. `Directory.Build.props` centralise ces paramètres et `.editorconfig` définit UTF-8, CRLF et les règles d’indentation.
 
 ## Projets et dépendances
 
 | Projet | Responsabilité | Références de projet |
 | --- | --- | --- |
 | `src/CodexVBE/CodexVBE.csproj` | Complément COM chargé par Excel ou SOLIDWORKS. | Aucune. |
+| `src/VBAi.Updater/VBAi.Updater.csproj` | Programme de mise à jour externe, copié dans la livraison du complément. | Aucune. |
 | `tests/CodexVBE.Tests/CodexVBE.Tests.csproj` | Tests MSTest/VSTest unitaires, locaux et hôtes opt-in. | Complément et simulation des fournisseurs. |
 | `tests/CodexVBE.Git.Smoke/CodexVBE.Git.Smoke.csproj` | Diagnostic autonome Git et interface associée. | Complément. |
 | `tests/CodexVBE.Providers.Smoke/CodexVBE.Providers.Smoke.csproj` | Diagnostic des protocoles et processus CLI simulé. | Complément. |
@@ -36,13 +37,20 @@ Les chemins suivants sont relatifs à `src/CodexVBE/`.
 | `Llm/Controls` | Contrôles nécessaires au concepteur du chat. |
 | `Git` | Dépôts VBA, snapshots, synchronisation et interface GitHub. |
 | `Git/Views` | Vues WinForms des onglets Git et GitHub. |
-| `Ui` | Contrôles partagés, thèmes, Markdown et comparaison de code. |
+| `Editor` | Éditeur Monaco, synchronisation des modules, brouillons et navigation. |
+| `Ui` | Contrôles partagés, thèmes WinForms et thème VBE natif expérimental, Markdown et comparaison de code. |
 | `Localization` | Catalogues de traduction et résolution des textes. |
 | `Properties` | Identité de l’assembly et visibilité accordée aux tests. |
 
 Les fichiers `.cs`, `.Designer.cs` et `.resx` restent réunis avec leurs métadonnées `SubType` et `DependentUpon` pour le concepteur WinForms. Les icônes restent sous `assets/icons/` avec leurs noms de ressources embarquées inchangés.
 
 Les tests unitaires suivent les dossiers et fichiers sous `tests/CodexVBE.Tests/Unit/`, avec un suffixe `.Tests.cs` par fichier source, y compris les classes partielles. Les parcours transversaux sont sous `Scenarios/`, les intégrations avec stockage ou hôte sous `Integration/`, les doubles partagés sous `Infrastructure/Fixtures/`, et les fixtures Excel et le client de passerelle sous `Infrastructure/Hosts/`. Les sondes PowerShell restent sous `tools/`, avec des liens dans VSTest pour les diagnostics manuels. Voir [la convention miroir](../tests/README.md#convention-miroir).
+
+## Moteur de thème natif
+
+`src/CodexVBE.Native/` contient le moteur C++ x64 des barres VBE. La solution expose ses sources dans un dossier ; le projet du complément déclenche `tools/build/Build-NativeRenderer.ps1` avant sa compilation et embarque la DLL produite. Le développeur doit disposer des outils C++ x64 Visual Studio et du SDK Windows ; le script respecte le dossier SDK déclaré dans le registre, y compris sur un autre disque. L'utilisateur final n'a pas besoin du compilateur ou d'un runtime C++ séparé.
+
+Les tests C# du chargeur et du thème suivent la convention miroir. `tests/native/` contient le programme de cycle C++ et la vérification de chargement ; sa fixture `VBE7.dll` est synthétique et reste dans les artefacts de test. Ces vérifications ne remplacent ni une mesure de couverture C++ ni les essais visuels Excel/SOLIDWORKS. Voir le [thème natif](native-dark-theme.md) et les [commandes des tests natifs](../tests/native/README.md).
 
 ## Compilation et installation
 

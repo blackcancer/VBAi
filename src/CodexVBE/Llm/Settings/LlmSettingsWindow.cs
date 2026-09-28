@@ -22,6 +22,8 @@ namespace CodexVBE
         internal static Func<System.Threading.Tasks.Task<CodexAccountStatus>> ReadCodexStatus = CodexAccount.ReadStatusAsync;
         /// <summary>Applique le thème sélectionné à l’interface.</summary>
         internal static Action<ThemeChoice> SelectTheme = UiTheme.Select;
+        /// <summary>Applique l’habillage sombre aux fenêtres natives du VBE.</summary>
+        internal static Action<bool> SelectNativeVbeTheme = VbeNativeTheme.SetEnabled;
         /// <summary>Affiche un message natif appartenant à la fenêtre de configuration.</summary>
         internal static Func<IWin32Window, string, string, MessageBoxButtons, MessageBoxIcon, DialogResult> ShowNotice = MessageBox.Show;
         /// <summary>Empêche les recalculs imbriqués de hauteur de contenu.</summary>
@@ -105,6 +107,7 @@ namespace CodexVBE
             customName.Text = settings.CustomProviderName ?? "";
             if (!string.IsNullOrEmpty(settings.GitHubAccount)) { githubAccount.Items.Add(settings.GitHubAccount); githubAccount.SelectedItem = settings.GitHubAccount; }
             azureEntra.Checked = settings.AzureUseEntraToken;
+            nativeVbeDark.Checked = settings.NativeVbeDarkTheme;
             provider.Items.AddRange(LlmProvider.All);
             approvalPicker.Items.AddRange(new object[] { UiText.Get("Automatic"), UiText.Get("Ask for other actions"), UiText.Get("Read-only") });
             approvalPicker.SelectedIndex = settings.VbeEditApproval == "ReadOnly" ? 2 :
@@ -294,13 +297,25 @@ namespace CodexVBE
                 foreach (var pair in modelDrafts) settings.ManualModelLists[pair.Key] = pair.Value;
                 settings.VbeEditApproval = approvalPicker.SelectedIndex == 2 ? "ReadOnly" :
                     approvalPicker.SelectedIndex == 1 ? "AskEachTime" : "Automatic";
+                bool previousNativeTheme = settings.NativeVbeDarkTheme;
+                settings.NativeVbeDarkTheme = nativeVbeDark.Checked;
                 foreach (var item in LlmProvider.All) {
                     string value;
                     if (endpointDrafts.TryGetValue(item.Name, out value)) settings.SetEndpoint(item, value);
                     if (clearedKeys.Contains(item.Name)) settings.SetKey(item, null);
                     if (keyDrafts.TryGetValue(item.Name, out value) && !string.IsNullOrWhiteSpace(value)) settings.SetKey(item, value);
                 }
-                WriteSettings(settings);
+                try
+                {
+                    SelectNativeVbeTheme(settings.NativeVbeDarkTheme);
+                    WriteSettings(settings);
+                }
+                catch
+                {
+                    settings.NativeVbeDarkTheme = previousNativeTheme;
+                    try { SelectNativeVbeTheme(previousNativeTheme); } catch { }
+                    throw;
+                }
                 DialogResult = DialogResult.OK;
                 Close();
             }

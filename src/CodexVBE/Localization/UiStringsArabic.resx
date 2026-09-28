@@ -1976,4 +1976,8 @@
   <data name="Step over" xml:space="preserve"><value>تخطي خطوة</value></data>
   <data name="Step out" xml:space="preserve"><value>الخروج من الإجراء</value></data>
   <data name="Breakpoint request sent; verify in VBE." xml:space="preserve"><value>تم إرسال طلب نقطة توقف؛ تحقق في VBE.</value></data>
+  <data name="Native dark VBE (experimental)" xml:space="preserve"><value>مظهر VBE الأصلي الداكن (تجريبي)</value></data>
+  <data name="Styles the VBE title bar, workspace, native panes and scrollbars. Menus and toolbars remain controlled by the legacy Office renderer." xml:space="preserve"><value>يطبق مظهراً داكناً على شريط العنوان ومساحة العمل واللوحات الأصلية وأشرطة التمرير في VBE. تبقى القوائم وأشرطة الأدوات تحت تحكم محرك الرسم القديم في Office.</value></data>
+  <data name="Native editor colors could not be updated. See the log for details." xml:space="preserve"><value>تعذر تحديث ألوان المحرر الأصلي. راجع السجل للاطلاع على التفاصيل.</value></data>
+  <data name="Applies dark native surfaces and editor colors after Settings closes. Original editor colors are saved and restored when disabled. Some legacy controls remain experimental." xml:space="preserve"><value>يطبق الأسطح الأصلية الداكنة وألوان المحرر بعد إغلاق الإعدادات. تُحفظ الألوان الأصلية وتُستعاد عند تعطيل الخيار. تبقى بعض عناصر التحكم القديمة تجريبية.</value></data>
 </root>

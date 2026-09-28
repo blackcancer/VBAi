@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
+    <NativeRendererOutput>$(MSBuildProjectDirectory)\obj\native\$(Configuration)</NativeRendererOutput>
     <UseWindowsForms>true</UseWindowsForms>
     <!-- Preserve the CodeBase path registered by the installer. -->
     <OutputPath Condition="'$(BuildOutputRoot)' == ''">$(RepositoryRoot)bin\$(Configuration)\</OutputPath>
@@ -31,6 +32,8 @@
     <Copy SourceFiles="@(_UpdateProgram->'%(FullPath).config')" DestinationFolder="$(TargetDir)" Condition="Exists('@(_UpdateProgram->'%(FullPath).config')')" />
   </Target>
   <ItemGroup>
+    <EmbeddedResource Include="$(NativeRendererOutput)\CodexVBE.Native.dll" LogicalName="CodexVBE.Native.Renderer.dll" />
+    <NativeRendererSource Include="..\CodexVBE.Native\*.cpp;..\CodexVBE.Native\*.h;..\..\tools\build\Build-NativeRenderer.ps1" />
     <PackageReference Include="Markdig" Version="0.37.0" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
     <Content Include="..\..\assets\editor\dist\**\*" Link="EditorAssets\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
@@ -92,4 +95,10 @@
     <Reference Include="UIAutomationClient" />
     <Reference Include="UIAutomationTypes" />
   </ItemGroup>
+  <Target Name="BuildNativeRenderer" BeforeTargets="PrepareForBuild"
+          Condition="'$(DesignTimeBuild)' != 'true'"
+          Inputs="@(NativeRendererSource)"
+          Outputs="$(NativeRendererOutput)\CodexVBE.Native.dll">
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(RepositoryRoot)tools\build\Build-NativeRenderer.ps1&quot; -OutputDirectory &quot;$(NativeRendererOutput)&quot; -Configuration &quot;$(Configuration)&quot;" />
+  </Target>
 </Project>

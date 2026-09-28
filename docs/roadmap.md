@@ -1,21 +1,21 @@
 # Travaux restants
 
-État consolidé le **28 septembre 2026**, après la PR #6 et le lot de complétion IDE. Les anciens passages à 100 % ne constituent pas la mesure du code actuel : voir [le bilan de tests](test-coverage.md). Ce document distingue les contrats présents de la qualification native manquante. Le [catalogue LLM](reference/vbe-tools.md) expose 197 outils ; les [archives](archive/README.md) conservent les expériences détaillées.
+État consolidé le **28 septembre 2026**, après les PR #7 Monaco et #8 thème natif expérimental. Les anciens passages à 100 % ne constituent pas la mesure du code actuel : voir [le bilan de tests](test-coverage.md). Ce document distingue les contrats présents de la qualification native manquante. Le [catalogue LLM](reference/vbe-tools.md) expose 204 outils ; les [archives](archive/README.md) conservent les expériences détaillées.
 
 ## Couverture et documentation
 
 | Travail | État actuel | Critère de fin |
 | --- | --- | --- |
-| Couverture du code de production | Suite globale verte ; 97,35 % lignes et 95,94 % branches ; 648 lignes et 1 045 branches restantes | 100 % lignes et branches mesurées sur toute l’assembly, sans masquer du code ; suite globale verte |
-| Organisation des tests | 171 miroirs pour 228 sources ; scénarios et fixtures complémentaires | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
+| Couverture du code de production | Suite globale verte ; 93,03 % lignes et 90,37 % branches ; 1932 lignes et 2813 branches restantes | 100 % lignes et branches mesurées sur toute l’assembly, sans masquer du code ; suite globale verte |
+| Organisation des tests | 189 miroirs pour 253 sources ; scénarios et fixtures complémentaires | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
 | Documentation IntelliSense | Travail Luna conservé séparément, intégration et conflits encore à traiter | Audit final des déclarations privées/publiques, propriétés et tests, sans lacune |
-| Concepteurs WinForms | 31 DesignSurface validées | Préserver cette accessibilité après chaque changement de structure ; qualifier aussi le rendu réel |
+| Concepteurs WinForms | 32 DesignSurface validées | Préserver cette accessibilité après chaque changement de structure ; qualifier aussi le rendu réel |
 
 Compléter chaque branche de couverture identifiée avant de passer à la suivante. Construire le lot de scénarios cohérent avant de le lancer, puis mesurer la suite globale. Les pourcentages actuels sont détaillés dans [le bilan de tests](test-coverage.md).
 
 ## Extensions fonctionnelles du 28 septembre
 
-Les fonctions et les limites exactes sont détaillées dans [Extensions fonctionnelles VBE](reference/functional-extensions.md). Le lot initial ajoutait 11 outils ; le catalogue actuel en contient 197. Contrats historiques : exécution paramétrée, renommage local, personnalisation des barres, mutation bornée des options et confiance de certificat. Il étend aussi les déclarations/références, le renommage de projet Excel et la sauvegarde standalone `.swp`. Les tests SOLIDWORKS restent différés.
+Les fonctions et les limites exactes sont détaillées dans [Extensions fonctionnelles VBE](reference/functional-extensions.md). Le lot initial ajoutait 11 outils ; le catalogue actuel en contient 204. Contrats historiques : exécution paramétrée, renommage local, personnalisation des barres, mutation bornée des options et confiance de certificat. Il étend aussi les déclarations/références, le renommage de projet Excel et la sauvegarde standalone `.swp`. Les tests SOLIDWORKS restent différés.
 
 ## Qualification de l’éditeur
 
@@ -34,6 +34,7 @@ L'[inventaire fonctionnel complet](reference/vbe-capability-inventory.md) couvre
 | Fenêtres/barres d’outils | Persistance des barres Excel qualifiée via SQLite ; géométries/DPI/ancrage natifs au-delà du profil mesuré ; premier ancrage du chat à droite sur un profil vierge |
 | Explorateur d’objets | Lecture/sélection/pagination implémentées ; qualification SOLIDWORKS et variantes UI natives |
 | Options/boîte à outils | Éditeur/Général et cases Format/Ancrage qualifiés après réouverture et restauration ; choix de police/palettes et autres langues natives à qualifier. Personnalisation de la boîte à outils absente ; neuf MSComctl installés refusés par la politique native de confiance |
+| Thème natif | Onglets Propriétés dessinés directement. Moteur natif intégré et installé pour les barres enfants ; seconde recoloration retirée, libellés nets sur le scénario Excel et 203 captures Standard sans retour général au clair. Finaliser les autres barres/popups, rendu du code avant rasterisation, netteté, cycle de thème, DPI et qualification SOLIDWORKS ; voir le [bilan](native-theme-renderer-pilot.md) |
 
 Les journaux anciens peuvent indiquer « manquant » pour des fonctions implémentées depuis : signets, navigation, mise en page, presse-papiers, historique, lancement UserForm, barres d’outils et lecture de l’Explorateur sont désormais dans le code.
 

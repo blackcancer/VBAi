@@ -1976,4 +1976,8 @@ QQ 附加内存
   <data name="Step over" xml:space="preserve"><value>逐过程</value></data>
   <data name="Step out" xml:space="preserve"><value>跳出</value></data>
   <data name="Breakpoint request sent; verify in VBE." xml:space="preserve"><value>已发送断点请求；请在 VBE 中确认。</value></data>
+  <data name="Native dark VBE (experimental)" xml:space="preserve"><value>原生 VBE 深色模式（实验性）</value></data>
+  <data name="Styles the VBE title bar, workspace, native panes and scrollbars. Menus and toolbars remain controlled by the legacy Office renderer." xml:space="preserve"><value>为 VBE 标题栏、工作区、原生窗格和滚动条应用深色样式。菜单和工具栏仍由旧版 Office 渲染引擎控制。</value></data>
+  <data name="Native editor colors could not be updated. See the log for details." xml:space="preserve"><value>无法更新原生编辑器颜色。请查看日志了解详情。</value></data>
+  <data name="Applies dark native surfaces and editor colors after Settings closes. Original editor colors are saved and restored when disabled. Some legacy controls remain experimental." xml:space="preserve"><value>关闭设置后应用原生界面深色样式和编辑器颜色。原始编辑器颜色会被保存，并在禁用时恢复。部分旧版控件仍处于实验阶段。</value></data>
 </root>

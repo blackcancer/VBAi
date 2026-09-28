@@ -225,6 +225,33 @@ namespace CodexVBE.Tests.Unit
             }
         }
         [STATestMethod]
+        public void NativeVbeThemeIsExplicitPersistedAndRolledBackWhenApplicationFails()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var applied = new System.Collections.Generic.List<bool>();
+                LlmSettingsWindow.SelectNativeVbeTheme = value => applied.Add(value);
+                var settings = new LlmSettings { ProviderName = "OpenAI API", NativeVbeDarkTheme = true };
+                using (var window = scope.Window(settings))
+                {
+                    var toggle = Get<CheckBox>(window, "nativeVbeDark");
+                    Assert.IsTrue(toggle.Checked);
+                    toggle.Checked = false;
+                    Call(window, "Save");
+                    Assert.IsFalse(settings.NativeVbeDarkTheme);
+                    CollectionAssert.AreEqual(new[] { false }, applied);
+                }
+                LlmSettingsWindow.SelectNativeVbeTheme = value => { if (value) throw new IOException("native theme unavailable"); };
+                using (var window = scope.Window(settings))
+                {
+                    Get<CheckBox>(window, "nativeVbeDark").Checked = true;
+                    Call(window, "Save");
+                    Assert.IsFalse(settings.NativeVbeDarkTheme);
+                    Assert.AreEqual("native theme unavailable", scope.Notices.Last());
+                }
+            }
+        }
+        [STATestMethod]
         public void GithubLoginAccountSelectionAndConcurrentDiscoveryRespectUiLifetime()
         {
             using (var scope = new LlmBoundaryScope())

@@ -1,6 +1,6 @@
 # Extensions fonctionnelles VBE
 
-Synthèse des extensions intégrées à `main` et du lot complémentaire du 28 septembre 2026. Les fonctions ci-dessous sont exposées au pont et au modèle ; aucune structure WinForms n’a été modifiée dans ces lots IDE. Le thème natif VBE demeure exclu.
+Synthèse des extensions intégrées à `main` et du lot complémentaire du 28 septembre 2026. Les fonctions ci-dessous sont exposées au pont et au modèle ; aucune structure WinForms n’a été modifiée dans ces lots IDE. Le thème natif VBE est maintenant intégré séparément via la [PR #8](../native-dark-theme.md), avec un statut expérimental et une qualification native incomplète.
 
 ## Fonctions ajoutées ou étendues
 

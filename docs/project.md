@@ -1,6 +1,6 @@
 # VBAi : objectif et état du projet
 
-État après intégration de la PR #6 (`c5f64eb`) et lot IDE en cours, vérifié le **28 septembre 2026**.
+État après intégration des PR #7 Monaco et #8 thème natif expérimental, vérifié le **28 septembre 2026**.
 
 ## Objectif
 
@@ -17,6 +17,7 @@ Le complément cible **VBE 64 bits, .NET Framework 4.8 et Windows**. Le chat, le
 | UserForms | Arbre des conteneurs, contrôles, propriétés typées, police/images, disposition, sélection, duplication bornée, listes, événements et récupération après coupe |
 | Exécution et débogage | Compilation, lancement, breakpoint natif, pas à pas, reprise/reset, fenêtres de diagnostic, Exécution et espions |
 | Fenêtres de l’éditeur | Volets de code, vues, fenêtres, disposition, barres d’outils, compléments et Explorateur d’objets |
+| Apparence native | Thème sombre VBE expérimental, explicite et réversible pour le cadre, l’espace MDI, les volets standards et les barres de défilement ; limites documentées pour le rendu Office personnalisé |
 | Conversation | Contexte VBE dynamique, références `#`/`@`, modes Discussion/Plan/Agent, sessions SQLite, choix persistants, résumé de réflexion et rollback |
 | Git et GitHub | Compte indépendant du fournisseur IA, export versionné, commits, push/fetch/pull, checkpoints, branches, fusions et PR |
 
@@ -38,15 +39,19 @@ Voir [Extensions fonctionnelles VBE](reference/functional-extensions.md) pour le
 
 Voir également le [bilan des qualifications natives](reference/native-qualification.md) : exécution paramétrée, options et barres Excel, UserForms, grand tableau du débogueur, langues et écrans. Les limites SOLIDWORKS, ActiveX et DPI y restent explicites.
 
+Le [thème sombre natif du VBE](native-dark-theme.md) décrit l’option expérimentale, son retour arrière, les APIs Windows utilisées et les surfaces encore contrôlées par l’ancien moteur Office/VBA.
+
+Le [bilan du pilote de rendu](native-theme-renderer-pilot.md) détaille les onglets Propriétés désormais dessinés directement, la trace graphique réelle du code et le moteur natif intégré des barres. Les libellés ont été stabilisés en retirant leur seconde recoloration ; les contrôles ciblés Excel et au repos sous SOLIDWORKS sont consignés. Les autres surfaces et les parcours complets restent à qualifier.
+
 ## Dernière validation
 
 | Vérification | Résultat |
 | --- | --- |
-| Suite globale VSTest avec hôtes activés | **1 281 réussis, aucun échec, 1 ignoré SOLIDWORKS** |
-| Couverture des lignes / branches | **97,35 % / 95,94 %**, objectif 100 % non atteint |
+| Suite globale VSTest, hôtes différés | **1383 réussis, aucun échec, 15 ignorés** |
+| Couverture des lignes / branches | **93,03 % / 90,37 %** du complément C#, objectif 100 % non atteint ; C++ non mesuré par Coverlet |
 | Compilation | **0 erreur, 0 avertissement** |
-| Concepteurs WinForms | **31 chargements, éditions de propriétés et redimensionnements réussis** |
-| Excel | Dix scénarios réussis : chargement/pont, sauvegarde isolée, renommages/appels, protection après réouverture, ajustement UserForm, explorateur, options restaurées, pages Toolbox et tableaux/retours |
+| Concepteurs WinForms | **32 chargements, éditions de propriétés et redimensionnements réussis** |
+| Excel | NOT_RUN dans ce passage concurrent ; qualifications antérieures : chargement/pont, sauvegarde isolée, renommages/appels, protection après réouverture, ajustement UserForm, explorateur, options restaurées, pages Toolbox et tableaux/retours |
 | SOLIDWORKS 2019 SP5 | NOT_RUN dans ce passage ; validation précédente : chargement, compilation/exécution, breakpoint, pas à pas et reprise sur `test.swp` ; inventaire et SHA initiaux restaurés |
 
 La capture des variables locales de SOLIDWORKS expose un panneau accessible mais aucune ligne dans ce dernier essai. La lecture de leurs valeurs n’est donc pas validée. Le dernier passage global ne qualifie pas chaque commande dans les deux hôtes.

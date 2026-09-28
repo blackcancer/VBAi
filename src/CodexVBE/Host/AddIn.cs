@@ -90,6 +90,16 @@ public void OnConnection(object application, int connectMode, object addInInstan
                 WriteLog("OnConnection: " + process.ProcessName + " PID=" + process.Id);
                 vbe = application;
                 UiText.Initialize(vbe);
+                bool nativeDark = false;
+                try { nativeDark = ReadSettings().NativeVbeDarkTheme; }
+                catch (Exception settingsError) { WriteLog("Native VBE theme setting unavailable: " + settingsError.Message); }
+                try
+                {
+                    var editor = new IntPtr(Convert.ToInt64(((dynamic)vbe).MainWindow.HWnd));
+                    VbeNativeTheme.Initialize(editor, nativeDark, vbe);
+                    if (nativeDark || VbeNativeTheme.ExperimentEnabled()) WriteLog("Native VBE dark mode enabled.");
+                }
+                catch (Exception themeError) { WriteLog("Native VBE dark mode unavailable: " + themeError); }
                 addIn = addInInstance;
                 WriteLog("AddInInst: " + (addIn == null ? "null" : addIn.GetType().FullName)
                     + ", COM=" + (addIn != null && Marshal.IsComObject(addIn)));
@@ -380,6 +390,8 @@ public void OnBeginShutdown(ref object[] custom) { CleanupTemporaryToolbarComman
         /// <summary>Détache et ferme les fenêtres, menus, serveur et contrôle de synchronisation.</summary>
         private void Dispose()
         {
+            try { if (!VbeNativeTheme.Disconnect()) WriteLog("Native VBE theme cleanup deferred: renderer still active."); }
+            catch (Exception error) { WriteLog("Native VBE theme cleanup failed: " + error); }
             editorNavigation?.Dispose(); editorNavigation = null;
             if (editorDocked && modernEditor != null && !modernEditor.IsDisposed) nativeEditorControl?.Detach(modernEditor);
             editorDocked = false;

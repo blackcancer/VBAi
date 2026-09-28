@@ -1976,4 +1976,8 @@
   <data name="Step over" xml:space="preserve"><value>Шаг с обходом</value></data>
   <data name="Step out" xml:space="preserve"><value>Шаг с выходом</value></data>
   <data name="Breakpoint request sent; verify in VBE." xml:space="preserve"><value>Запрос точки останова отправлен; проверьте в VBE.</value></data>
+  <data name="Native dark VBE (experimental)" xml:space="preserve"><value>Тёмная тема встроенного VBE (экспериментальная)</value></data>
+  <data name="Styles the VBE title bar, workspace, native panes and scrollbars. Menus and toolbars remain controlled by the legacy Office renderer." xml:space="preserve"><value>Применяет тёмное оформление к заголовку, рабочей области, встроенным панелям и полосам прокрутки VBE. Меню и панели инструментов остаются под управлением прежнего механизма отрисовки Office.</value></data>
+  <data name="Native editor colors could not be updated. See the log for details." xml:space="preserve"><value>Не удалось обновить цвета встроенного редактора. Подробности см. в журнале.</value></data>
+  <data name="Applies dark native surfaces and editor colors after Settings closes. Original editor colors are saved and restored when disabled. Some legacy controls remain experimental." xml:space="preserve"><value>Применяет тёмное оформление встроенных поверхностей и цвета редактора после закрытия настроек. Исходные цвета сохраняются и восстанавливаются при отключении. Некоторые устаревшие элементы управления остаются экспериментальными.</value></data>
 </root>

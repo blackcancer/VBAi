@@ -1976,4 +1976,8 @@ Git Credential Manager でサインインします。コミットの作成者情
   <data name="Step over" xml:space="preserve"><value>ステップ オーバー</value></data>
   <data name="Step out" xml:space="preserve"><value>ステップ アウト</value></data>
   <data name="Breakpoint request sent; verify in VBE." xml:space="preserve"><value>ブレークポイントを要求しました。VBE で確認してください。</value></data>
+  <data name="Native dark VBE (experimental)" xml:space="preserve"><value>ネイティブ VBE のダーク表示（試験的）</value></data>
+  <data name="Styles the VBE title bar, workspace, native panes and scrollbars. Menus and toolbars remain controlled by the legacy Office renderer." xml:space="preserve"><value>VBE のタイトルバー、作業領域、ネイティブウィンドウ、スクロールバーをダーク表示にします。メニューとツールバーは従来の Office 描画エンジンで制御されます。</value></data>
+  <data name="Native editor colors could not be updated. See the log for details." xml:space="preserve"><value>ネイティブエディターの色を更新できませんでした。詳細はログを確認してください。</value></data>
+  <data name="Applies dark native surfaces and editor colors after Settings closes. Original editor colors are saved and restored when disabled. Some legacy controls remain experimental." xml:space="preserve"><value>設定を閉じた後にネイティブ領域のダーク表示とエディターの色を適用します。元の色は保存され、無効にすると復元されます。一部の従来のコントロールは試験的な機能です。</value></data>
 </root>

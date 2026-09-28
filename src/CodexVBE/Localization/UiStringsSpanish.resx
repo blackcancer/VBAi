@@ -1976,4 +1976,8 @@ Inicio de sesión mediante Git Credential Manager; la identidad de los commits s
   <data name="Step over" xml:space="preserve"><value>Paso a paso por procedimientos</value></data>
   <data name="Step out" xml:space="preserve"><value>Salir del procedimiento</value></data>
   <data name="Breakpoint request sent; verify in VBE." xml:space="preserve"><value>Solicitud de punto de interrupción enviada; comprobar en VBE.</value></data>
+  <data name="Native dark VBE (experimental)" xml:space="preserve"><value>VBE nativo oscuro (experimental)</value></data>
+  <data name="Styles the VBE title bar, workspace, native panes and scrollbars. Menus and toolbars remain controlled by the legacy Office renderer." xml:space="preserve"><value>Aplica un estilo oscuro a la barra de título, el espacio de trabajo, los paneles nativos y las barras de desplazamiento del VBE. Los menús y las barras de herramientas siguen controlados por el motor de representación heredado de Office.</value></data>
+  <data name="Native editor colors could not be updated. See the log for details." xml:space="preserve"><value>No se pudieron actualizar los colores del editor nativo. Consulte el registro para obtener más detalles.</value></data>
+  <data name="Applies dark native surfaces and editor colors after Settings closes. Original editor colors are saved and restored when disabled. Some legacy controls remain experimental." xml:space="preserve"><value>Aplica superficies nativas oscuras y colores del editor después de cerrar Configuración. Los colores originales del editor se guardan y se restauran al desactivar la opción. Algunos controles heredados siguen siendo experimentales.</value></data>
 </root>

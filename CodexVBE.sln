@@ -25,6 +25,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VBAi.Updater", "src\VBAi.Updater\VBAi.Updater.csproj", "{FAD4FB2F-96CF-4359-8C0C-C030E5298CBF}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CodexVBE.Native", "CodexVBE.Native", "{1AF62396-65AD-4323-9DE9-5E9E231EC56B}"
+    ProjectSection(SolutionItems) = preProject
+        src\CodexVBE.Native\NativeTheme.cpp = src\CodexVBE.Native\NativeTheme.cpp
+        src\CodexVBE.Native\NativeTheme.h = src\CodexVBE.Native\NativeTheme.h
+        src\CodexVBE.Native\ImportTable.h = src\CodexVBE.Native\ImportTable.h
+        src\CodexVBE.Native\ToolbarDrawing.h = src\CodexVBE.Native\ToolbarDrawing.h
+        tools\build\Build-NativeRenderer.ps1 = tools\build\Build-NativeRenderer.ps1
+    EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -53,6 +62,7 @@ Global
 		{FAD4FB2F-96CF-4359-8C0C-C030E5298CBF}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+        {1AF62396-65AD-4323-9DE9-5E9E231EC56B} = {90EC58E5-6006-4715-B407-E90247B4DDAB}
 		{DF707C73-5B37-4507-97A3-0F3AF6A3A777} = {90EC58E5-6006-4715-B407-E90247B4DDAB}
 		{AE9DB930-B64F-4213-AC8B-BD198F8BA894} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{E9CF77AB-E4F8-4439-A34E-B028F55D0722} = {0AB3BF05-4346-4AA6-1389-037BE0695223}

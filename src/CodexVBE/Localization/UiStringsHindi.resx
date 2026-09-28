@@ -1976,4 +1976,8 @@ Git Credential Manager से साइन-इन करें; कमिट ल
   <data name="Step over" xml:space="preserve"><value>अगला चरण चलाएँ</value></data>
   <data name="Step out" xml:space="preserve"><value>प्रक्रिया से बाहर आएँ</value></data>
   <data name="Breakpoint request sent; verify in VBE." xml:space="preserve"><value>ब्रेकपॉइंट अनुरोध भेजा गया; VBE में जाँचें।</value></data>
+  <data name="Native dark VBE (experimental)" xml:space="preserve"><value>मूल VBE का डार्क मोड (प्रायोगिक)</value></data>
+  <data name="Styles the VBE title bar, workspace, native panes and scrollbars. Menus and toolbars remain controlled by the legacy Office renderer." xml:space="preserve"><value>VBE के शीर्षक बार, कार्यक्षेत्र, मूल पैनल और स्क्रॉल बार पर गहरा रंग लागू करता है। मेनू और टूलबार अब भी Office के पुराने रेंडरिंग इंजन द्वारा नियंत्रित होते हैं।</value></data>
+  <data name="Native editor colors could not be updated. See the log for details." xml:space="preserve"><value>मूल संपादक के रंग अपडेट नहीं किए जा सके। विवरण के लिए लॉग देखें।</value></data>
+  <data name="Applies dark native surfaces and editor colors after Settings closes. Original editor colors are saved and restored when disabled. Some legacy controls remain experimental." xml:space="preserve"><value>सेटिंग बंद होने के बाद मूल सतहों और संपादक पर गहरे रंग लागू करता है। संपादक के मूल रंग सहेजे जाते हैं और विकल्प बंद करने पर वापस लाए जाते हैं। कुछ पुराने नियंत्रण अभी भी प्रायोगिक हैं।</value></data>
 </root>

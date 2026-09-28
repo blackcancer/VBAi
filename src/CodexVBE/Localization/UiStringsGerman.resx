@@ -1976,4 +1976,8 @@ Anmeldung über Git Credential Manager; die Commit-Identität wird in Git festge
   <data name="Step over" xml:space="preserve"><value>Prozedurschritt</value></data>
   <data name="Step out" xml:space="preserve"><value>Prozedur verlassen</value></data>
   <data name="Breakpoint request sent; verify in VBE." xml:space="preserve"><value>Haltepunkt angefordert; im VBE überprüfen.</value></data>
+  <data name="Native dark VBE (experimental)" xml:space="preserve"><value>Dunkler nativer VBE (experimentell)</value></data>
+  <data name="Styles the VBE title bar, workspace, native panes and scrollbars. Menus and toolbars remain controlled by the legacy Office renderer." xml:space="preserve"><value>Gestaltet die Titelleiste, den Arbeitsbereich, die nativen Fensterbereiche und die Bildlaufleisten des VBE dunkel. Menüs und Symbolleisten werden weiterhin vom bisherigen Office-Renderer gesteuert.</value></data>
+  <data name="Native editor colors could not be updated. See the log for details." xml:space="preserve"><value>Die Farben des nativen Editors konnten nicht aktualisiert werden. Weitere Informationen finden Sie im Protokoll.</value></data>
+  <data name="Applies dark native surfaces and editor colors after Settings closes. Original editor colors are saved and restored when disabled. Some legacy controls remain experimental." xml:space="preserve"><value>Wendet dunkle native Oberflächen und Editorfarben nach dem Schließen der Einstellungen an. Die ursprünglichen Editorfarben werden gespeichert und beim Deaktivieren wiederhergestellt. Einige ältere Steuerelemente bleiben experimentell.</value></data>
 </root>

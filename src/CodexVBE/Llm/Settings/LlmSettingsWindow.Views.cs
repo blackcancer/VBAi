@@ -38,6 +38,8 @@ namespace CodexVBE
         private System.Windows.Forms.FlowLayoutPanel themePanel;
         private System.Windows.Forms.Label themeLabel;
         private System.Windows.Forms.ComboBox themePicker;
+        private System.Windows.Forms.CheckBox nativeVbeDark;
+        private System.Windows.Forms.Label nativeVbeDarkNote;
         private void BindViews()
         {
             grid = providerSettingsView.grid;
@@ -76,6 +78,8 @@ namespace CodexVBE
             themePanel = appearanceSettingsView.themePanel;
             themeLabel = appearanceSettingsView.themeLabel;
             themePicker = appearanceSettingsView.themePicker;
+            nativeVbeDark = appearanceSettingsView.nativeVbeDark;
+            nativeVbeDarkNote = appearanceSettingsView.nativeVbeDarkNote;
             this.githubLogin.Click += new System.EventHandler(this.GitHubLogin_Click);
             this.githubRefresh.Click += new System.EventHandler(this.GitHubRefresh_Click);
         }
