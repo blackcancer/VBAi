@@ -122,6 +122,7 @@ namespace CodexVBE
         /// <param name="height">Nouvelle hauteur de la fenêtre.</param>
         /// <param name="flags">Options de positionnement Win32.</param>
         /// <returns>true si le déplacement ou redimensionnement a réussi.</returns>
+        [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool SetWindowPos(IntPtr handle, IntPtr after, int x, int y, int width, int height, uint flags);
     }
 }
