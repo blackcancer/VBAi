@@ -28,5 +28,25 @@ namespace CodexVBE.Tests.Unit
                 Assert.IsFalse(doc.Dirty); Assert.AreEqual(1, host.Writes);
             }
         }
+        [TestMethod]
+        public void WorkerPropagatesOwnedEvaluationDiskAndCompletedQueueFailures()
+        {
+            using (var host = new EditorFixture())
+            {
+                var worker = new EditorSyncWorker();
+                Assert.ThrowsException<InvalidOperationException>(() => worker.Evaluate<int>(() => throw new InvalidOperationException("owned action refusal")).GetAwaiter().GetResult());
+                Assert.AreEqual(42, worker.Evaluate(() => 42).GetAwaiter().GetResult());
+                System.IO.File.WriteAllText(host.Root, "owned path occupies store root");
+                var document = new EditorDocument(host); document.Edit(document.Text + "\n' owned draft");
+                Assert.ThrowsException<System.IO.IOException>(() => worker.Prepare(document, new EditorDraftStore(host.Root)).GetAwaiter().GetResult());
+                System.IO.File.Delete(host.Root);
+                worker.Dispose();
+                var thread = (Thread)typeof(EditorSyncWorker).GetField("thread", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(worker);
+                Assert.IsTrue(thread.Join(5000), "Owned worker must finish its queue and release the collection.");
+                Assert.ThrowsException<ObjectDisposedException>(() => worker.Evaluate(() => 1).GetAwaiter().GetResult());
+                Assert.ThrowsException<ObjectDisposedException>(() => worker.Prepare(document, new EditorDraftStore(host.Root)).GetAwaiter().GetResult());
+                worker.Dispose();
+            }
+        }
     }
 }

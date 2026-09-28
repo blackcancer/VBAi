@@ -20,5 +20,17 @@ namespace CodexVBE.Tests.Unit.Editor
             Assert.AreEqual("Widget", symbols.Single(s => s.Name == "item").TypeName);
             Assert.AreEqual("Class", symbols.Single(s => s.Name == "Widget").Kind);
         }
+        [TestMethod]
+        public void ConditionalIncompleteAndPropertyStatementsKeepOwnedPhysicalRanges()
+        {
+            string code = "#If VBA7 Then\nPrivate Property Get Value()\nDim item As Long\nEnd Property\n#Else\nPublic Sub Another()\nEnd Sub\n#End If\n#End If\nPublic\nPrivate Friend Static\nSub\nProperty Get\nEnd\nEnd Enum\n#Const Flag = True\nPublic Function NoType()\nDim thing As String\nEnd Function";
+            var symbols = EditorLanguageIndex.Build(new[] { new EditorSource { Module = "OwnedClass", ComponentType = 2, Text = code } });
+            Assert.IsTrue(symbols.All(symbol => !symbol.External));
+            var property = symbols.Single(symbol => symbol.Name == "Value"); Assert.AreEqual("Property", property.Kind); Assert.IsTrue(property.Private); Assert.IsTrue(property.Conditional); Assert.AreEqual(4, property.EndLine); Assert.AreEqual("Variant", property.TypeName);
+            var another = symbols.Single(symbol => symbol.Name == "Another"); Assert.IsTrue(another.Conditional); Assert.AreEqual(7, another.EndLine);
+            var plain = symbols.Single(symbol => symbol.Name == "NoType"); Assert.IsFalse(plain.Conditional); Assert.AreEqual(19, plain.EndLine);
+            Assert.IsTrue(symbols.Any(symbol => symbol.Name == "thing" && symbol.Scope == "NoType"));
+            Assert.AreEqual(1, EditorLanguageIndex.Build(new[] { new EditorSource { Module = "Empty", ComponentType = 1, Text = "" } }).Length);
+        }
     }
 }
