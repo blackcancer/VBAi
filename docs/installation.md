@@ -42,3 +42,12 @@ Le VBE mémorise l’ancrage de son volet. Sur une disposition vierge, le premie
 ## Désinstaller ou diagnostiquer un chargement
 
 Fermer les hôtes VBE avant `tools/Uninstall-CodexVBE.ps1`. En cas de complément absent ou impossible à charger, commencer par `Test-CodexVBEInstallation.ps1`, le chemin de DLL retourné par `status` lorsqu’il répond, l’architecture 64 bits et l’état du Gestionnaire de compléments. Les anciens essais et la cause de l’inscription isolée sont conservés dans [l’historique d’exploration](archive/exploration/project.md).
+
+## Mises à jour et livraison
+
+Le mécanisme [de mise à jour par releases GitHub](updates.md) est distinct de
+l’inscription de développement décrite ci-dessus. `tools/Prepare-Release.ps1`
+prépare un payload versionné pour le futur installeur, avec la TLB et le programme
+externe d’application. La version COM reste stable ; la propriété MSBuild
+`ProductVersion` pilote la version de livraison. L’installation autonome exige
+le marqueur du protocole et un installeur signé disponible dans une release.

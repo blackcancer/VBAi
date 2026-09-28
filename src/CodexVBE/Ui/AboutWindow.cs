@@ -74,6 +74,11 @@ namespace CodexVBE
             closeButton.ForeColor = UiTheme.HighContrast() ? SystemColors.HighlightText : Color.White;
         }
 
+        private void Updates_Click(object sender, EventArgs e)
+        {
+            using (var window = new UpdateWindow()) AddIn.ShowModal(window, this);
+        }
+
         private void CopyDetails_Click(object sender, EventArgs e)
         {
             try { CopyText(TechnicalDetails); status.Text = UiText.Get("Technical details copied."); }

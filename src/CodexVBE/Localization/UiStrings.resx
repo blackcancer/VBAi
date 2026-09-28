@@ -1827,4 +1827,37 @@ Sign in through Git Credential Manager; commit identity is configured in Git.</v
   <data name="Unable to save the report." xml:space="preserve"><value>Unable to save the report.</value></data>
   <data name="Title" xml:space="preserve"><value>Title</value></data>
   <data name="Email" xml:space="preserve"><value>Email</value></data>
+  <data name="VBAi updates" xml:space="preserve"><value>VBAi updates</value></data>
+  <data name="Check automatically once a day" xml:space="preserve"><value>Check automatically once a day</value></data>
+  <data name="Download updates automatically" xml:space="preserve"><value>Download updates automatically</value></data>
+  <data name="Install automatically after closing VBA hosts" xml:space="preserve"><value>Install automatically after closing VBA hosts</value></data>
+  <data name="Include prereleases" xml:space="preserve"><value>Include prereleases</value></data>
+  <data name="Install update" xml:space="preserve"><value>Install update</value></data>
+  <data name="Check for updates" xml:space="preserve"><value>Check for updates</value></data>
+  <data name="Skip version" xml:space="preserve"><value>Skip version</value></data>
+  <data name="Waiting for VBA hosts to close." xml:space="preserve"><value>Waiting for VBA hosts to close.</value></data>
+  <data name="Installing update…" xml:space="preserve"><value>Installing update…</value></data>
+  <data name="Update installed. Restart the VBA host." xml:space="preserve"><value>Update installed. Restart the VBA host.</value></data>
+  <data name="Installation failed. Check the installer log." xml:space="preserve"><value>Installation failed. Check the installer log.</value></data>
+  <data name="Update cancelled." xml:space="preserve"><value>Update cancelled.</value></data>
+  <data name="Installation status is uncertain. Check the installed version." xml:space="preserve"><value>Installation status is uncertain. Check the installed version.</value></data>
+  <data name="Check for updates to get started." xml:space="preserve"><value>Check for updates to get started.</value></data>
+  <data name="An installer-managed deployment is required." xml:space="preserve"><value>An installer-managed deployment is required.</value></data>
+  <data name="Unable to read the update state." xml:space="preserve"><value>Unable to read the update state.</value></data>
+  <data name="Update preferences saved." xml:space="preserve"><value>Update preferences saved.</value></data>
+  <data name="Unable to save update preferences." xml:space="preserve"><value>Unable to save update preferences.</value></data>
+  <data name="Checking for updates…" xml:space="preserve"><value>Checking for updates…</value></data>
+  <data name="VBAi is up to date." xml:space="preserve"><value>VBAi is up to date.</value></data>
+  <data name="This release has no compatible verified installer." xml:space="preserve"><value>This release has no compatible verified installer.</value></data>
+  <data name="An update is available." xml:space="preserve"><value>An update is available.</value></data>
+  <data name="Downloading update…" xml:space="preserve"><value>Downloading update…</value></data>
+  <data name="Update downloaded and verified." xml:space="preserve"><value>Update downloaded and verified.</value></data>
+  <data name="Unable to download or verify the installer." xml:space="preserve"><value>Unable to download or verify the installer.</value></data>
+  <data name="Unable to schedule the update." xml:space="preserve"><value>Unable to schedule the update.</value></data>
+  <data name="This version will be skipped automatically." xml:space="preserve"><value>This version will be skipped automatically.</value></data>
+  <data name="Unable to check for updates. Check the GitHub account or retry later." xml:space="preserve"><value>Unable to check for updates. Check the GitHub account or retry later.</value></data>
+  <data name="Cancel scheduled update" xml:space="preserve"><value>Cancel scheduled update</value></data>
+  <data name="Update installed. Restart Windows to finish." xml:space="preserve"><value>Update installed. Restart Windows to finish.</value></data>
+  <data name="Download" xml:space="preserve"><value>Download</value></data>
+  <data name="Release notes" xml:space="preserve"><value>Release notes</value></data>
 </root>

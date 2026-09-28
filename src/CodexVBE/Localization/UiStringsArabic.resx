@@ -1825,4 +1825,37 @@
   <data name="Unable to save the report." xml:space="preserve"><value>تعذر حفظ التقرير.</value></data>
   <data name="Title" xml:space="preserve"><value>العنوان</value></data>
   <data name="Email" xml:space="preserve"><value>البريد</value></data>
+  <data name="VBAi updates" xml:space="preserve"><value>تحديثات VBAi</value></data>
+  <data name="Check automatically once a day" xml:space="preserve"><value>التحقق تلقائيًا كل يوم</value></data>
+  <data name="Download updates automatically" xml:space="preserve"><value>تنزيل التحديثات تلقائيًا</value></data>
+  <data name="Install automatically after closing VBA hosts" xml:space="preserve"><value>التثبيت تلقائيًا بعد إغلاق تطبيقات VBA المضيفة</value></data>
+  <data name="Include prereleases" xml:space="preserve"><value>تضمين الإصدارات التجريبية</value></data>
+  <data name="Install update" xml:space="preserve"><value>تثبيت التحديث</value></data>
+  <data name="Check for updates" xml:space="preserve"><value>التحقق من التحديثات</value></data>
+  <data name="Skip version" xml:space="preserve"><value>تخطي الإصدار</value></data>
+  <data name="Waiting for VBA hosts to close." xml:space="preserve"><value>بانتظار إغلاق تطبيقات VBA المضيفة.</value></data>
+  <data name="Installing update…" xml:space="preserve"><value>جارٍ تثبيت التحديث…</value></data>
+  <data name="Update installed. Restart the VBA host." xml:space="preserve"><value>ثُبّت التحديث. أعد تشغيل تطبيق VBA المضيف.</value></data>
+  <data name="Installation failed. Check the installer log." xml:space="preserve"><value>فشل التثبيت. راجع سجل المثبّت.</value></data>
+  <data name="Update cancelled." xml:space="preserve"><value>أُلغي التحديث.</value></data>
+  <data name="Installation status is uncertain. Check the installed version." xml:space="preserve"><value>حالة التثبيت غير مؤكدة. تحقق من الإصدار المثبّت.</value></data>
+  <data name="Check for updates to get started." xml:space="preserve"><value>تحقق من التحديثات للبدء.</value></data>
+  <data name="An installer-managed deployment is required." xml:space="preserve"><value>يلزم نشر تديره أداة التثبيت.</value></data>
+  <data name="Unable to read the update state." xml:space="preserve"><value>تعذرت قراءة حالة التحديث.</value></data>
+  <data name="Update preferences saved." xml:space="preserve"><value>حُفظت تفضيلات التحديث.</value></data>
+  <data name="Unable to save update preferences." xml:space="preserve"><value>تعذر حفظ تفضيلات التحديث.</value></data>
+  <data name="Checking for updates…" xml:space="preserve"><value>جارٍ التحقق من التحديثات…</value></data>
+  <data name="VBAi is up to date." xml:space="preserve"><value>VBAi محدّث.</value></data>
+  <data name="This release has no compatible verified installer." xml:space="preserve"><value>لا يحتوي هذا الإصدار على مثبّت متوافق قابل للتحقق.</value></data>
+  <data name="An update is available." xml:space="preserve"><value>يتوفر تحديث.</value></data>
+  <data name="Downloading update…" xml:space="preserve"><value>جارٍ تنزيل التحديث…</value></data>
+  <data name="Update downloaded and verified." xml:space="preserve"><value>نُزّل التحديث وتُحقق منه.</value></data>
+  <data name="Unable to download or verify the installer." xml:space="preserve"><value>تعذر تنزيل المثبّت أو التحقق منه.</value></data>
+  <data name="Unable to schedule the update." xml:space="preserve"><value>تعذرت جدولة التحديث.</value></data>
+  <data name="This version will be skipped automatically." xml:space="preserve"><value>سيُتخطى هذا الإصدار تلقائيًا.</value></data>
+  <data name="Unable to check for updates. Check the GitHub account or retry later." xml:space="preserve"><value>تعذر التحقق من التحديثات. تحقق من حساب GitHub أو حاول لاحقًا.</value></data>
+  <data name="Cancel scheduled update" xml:space="preserve"><value>إلغاء التحديث المجدول</value></data>
+  <data name="Update installed. Restart Windows to finish." xml:space="preserve"><value>ثُبّت التحديث. أعد تشغيل Windows لإكماله.</value></data>
+  <data name="Download" xml:space="preserve"><value>تنزيل</value></data>
+  <data name="Release notes" xml:space="preserve"><value>ملاحظات الإصدار</value></data>
 </root>

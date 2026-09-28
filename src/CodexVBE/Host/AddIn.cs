@@ -15,6 +15,10 @@ namespace CodexVBE
     {
         /// <summary>Écrit une entrée dans le journal du complément.</summary>
         internal static Action<string> WriteLog = LoadLog.Write;
+        /// <summary>Démarre les mises à jour sur un déploiement géré par l’installeur.</summary>
+        internal static Action StartUpdateCheck = UpdateCoordinator.Start;
+        /// <summary>Arrête les vérifications en cours quand le complément est déconnecté.</summary>
+        internal static Action StopUpdateCheck = UpdateCoordinator.Stop;
         /// <summary>Crée le collecteur d’erreurs lié à la session et à son stockage local.</summary>
         internal static Func<Action<CrashReport>, CrashReporter> CreateCrashReporter = show => new CrashReporter(show);
         /// <summary>Démarre le pont de commandes local pour la session active.</summary>
@@ -40,7 +44,7 @@ namespace CodexVBE
         /// <param name="github">Action d’ouverture de GitHub.</param>
         /// <param name="editor">Action de commande associée au texte fourni.</param>
         /// <returns>Gestionnaire des menus installé sur l’hôte.</returns>
-        private static VbeMenu CreateMenuNative(object host, Action chat, Action settings, Action github, Action<string> editor) { return new VbeMenu(host, chat, settings, github, editor, () => AboutWindow.ShowForVbe(host), () => CrashReportWindow.ShowForVbe(host)); }
+        private static VbeMenu CreateMenuNative(object host, Action chat, Action settings, Action github, Action<string> editor) { return new VbeMenu(host, chat, settings, github, editor, () => AboutWindow.ShowForVbe(host), () => CrashReportWindow.ShowForVbe(host), () => UpdateWindow.ShowForVbe(host)); }
         /// <summary>Contrôle WinForms fournissant un contexte de synchronisation pour le serveur local.</summary>
         private Control dispatcher;
         private CrashReporter crashReporter;
@@ -88,6 +92,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
                 catch (Exception infoError) { WriteLog("AddInInst ProgId unavailable: " + infoError.Message); }
                 dispatcher = new Control();
                 var handle = dispatcher.Handle;
+                StartUpdateCheck();
                 crashReporter = CreateCrashReporter(report => CrashReportWindow.ShowReportForVbe(vbe, report));
                 server = new BridgeServer(dispatcher, new VbeSession(vbe), process.Id);
                 StartBridge(server);
@@ -305,6 +310,7 @@ public void OnBeginShutdown(ref object[] custom) { CleanupTemporaryToolbarComman
         /// <summary>Détache et ferme les fenêtres, menus, serveur et contrôle de synchronisation.</summary>
         private void Dispose()
         {
+            StopUpdateCheck();
             crashReporter?.Dispose();
             crashReporter = null;
             menu?.Dispose();

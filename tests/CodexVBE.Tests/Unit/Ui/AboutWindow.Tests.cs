@@ -26,7 +26,7 @@ namespace CodexVBE.Tests.Unit
                         Assert.IsNotNull(UiInvoke.Field<PictureBox>(window, "brandImage").Image);
                         Assert.AreEqual("VBAi", UiInvoke.Field<Label>(window, "productName").Text);
                         Assert.AreEqual("Your AI agent for VBA", UiInvoke.Field<Label>(window, "tagline").Text);
-                        Assert.IsTrue(window.TechnicalDetails.Contains(typeof(AboutWindow).Assembly.GetName().Version.ToString()));
+                        Assert.IsTrue(window.TechnicalDetails.Contains(UpdateState.ProductVersion));
                         Assert.IsTrue(window.TechnicalDetails.Contains(".NET Framework 4.8"));
                         Assert.IsFalse(window.TechnicalDetails.Contains(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)));
                         Assert.AreEqual(UiText.Get("Close"), ((Button)window.CancelButton).Text);
@@ -76,6 +76,23 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual("Microsoft Excel · Visual Basic Editor", AboutWindow.HostDescription("excel"));
             Assert.AreEqual("SOLIDWORKS · Visual Basic Editor", AboutWindow.HostDescription("SLDWORKS"));
             Assert.AreEqual("other-host", AboutWindow.HostDescription("other-host"));
+        }
+
+        [STATestMethod]
+        public void AboutOpensTheUpdateConfigurationWithItsOwner()
+        {
+            var original = AddIn.ShowModal;
+            try
+            {
+                using (var window = new AboutWindow())
+                {
+                    int shown = 0;
+                    AddIn.ShowModal = (dialog, owner) => { Assert.IsInstanceOfType(dialog, typeof(UpdateWindow)); Assert.AreSame(window, owner); shown++; return DialogResult.Cancel; };
+                    window.Show();
+                    UiInvoke.Field<Button>(window, "updates").PerformClick(); Assert.AreEqual(1, shown);
+                }
+            }
+            finally { AddIn.ShowModal = original; }
         }
 
         [STATestMethod]

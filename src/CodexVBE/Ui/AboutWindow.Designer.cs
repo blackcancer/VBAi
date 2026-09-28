@@ -1,4 +1,4 @@
-namespace CodexVBE
+﻿namespace CodexVBE
 {
     internal sealed partial class AboutWindow
     {
@@ -325,6 +325,15 @@ namespace CodexVBE
             this.buttonLayout.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
             this.buttonLayout.WrapContents = true;
             this.buttonLayout.Margin = new System.Windows.Forms.Padding(0);
+            this.updates = new System.Windows.Forms.Button();
+            this.updates.Name = "updates";
+            this.updates.Text = "Check for updates";
+            this.updates.AutoSize = true;
+            this.updates.MinimumSize = new System.Drawing.Size(150, 36);
+            this.updates.Padding = new System.Windows.Forms.Padding(12, 6, 12, 6);
+            this.updates.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
+            this.updates.Click += new System.EventHandler(this.Updates_Click);
+            this.toolTips.SetToolTip(this.updates, "Check for updates");
             this.buttonLayout.Controls.Add(this.closeButton);
             this.closeButton.Text = "Close";
             this.closeButton.AutoSize = true;
@@ -332,6 +341,7 @@ namespace CodexVBE
             this.closeButton.Padding = new System.Windows.Forms.Padding(12, 6, 12, 6);
             this.closeButton.Margin = new System.Windows.Forms.Padding(8, 0, 0, 0);
             this.buttonLayout.Controls.Add(this.copyDetails);
+            this.buttonLayout.Controls.Add(this.updates);
             this.copyDetails.Text = "Copy technical details";
             this.copyDetails.AutoSize = true;
             this.copyDetails.MinimumSize = new System.Drawing.Size(170, 36);
@@ -374,5 +384,6 @@ namespace CodexVBE
             this.PerformLayout();
         }
         private System.Windows.Forms.ToolTip toolTips;
+        private System.Windows.Forms.Button updates;
     }
 }

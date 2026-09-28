@@ -7,6 +7,7 @@
 | Document | Contenu |
 | --- | --- |
 | [État du projet](project.md) | Objectif, fonctionnalités disponibles et validation par hôte |
+| [Mises à jour](updates.md) | Releases GitHub, préférences, application différée et contrat installeur |
 | [Installation](installation.md) | Compilation, bibliothèque COM, inscription et diagnostic |
 | [Conversation](chat-ui.md) | Sessions, contexte, modes, modèles, raisonnement et retour arrière |
 | [Fournisseurs](providers.md) | Configuration, authentification, catalogues et limites des transports |

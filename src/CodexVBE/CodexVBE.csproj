@@ -10,6 +10,26 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
+  <PropertyGroup><ProductVersion Condition="'$(ProductVersion)' == ''">0.1.0</ProductVersion></PropertyGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyInformationalVersionAttribute"><_Parameter1>$(ProductVersion)</_Parameter1></AssemblyAttribute>
+    <ProjectReference Include="../VBAi.Updater/VBAi.Updater.csproj" ReferenceOutputAssembly="false" />
+    <Compile Update="Updates\UpdateWindow.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="Updates\UpdateWindow.Designer.cs"><DependentUpon>UpdateWindow.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Updates\UpdateWindow.resx"><DependentUpon>UpdateWindow.cs</DependentUpon></EmbeddedResource>
+    <Compile Update="Updates\UpdateProgressWindow.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="Updates\UpdateProgressWindow.Designer.cs"><DependentUpon>UpdateProgressWindow.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Updates\UpdateProgressWindow.resx"><DependentUpon>UpdateProgressWindow.cs</DependentUpon></EmbeddedResource>
+  </ItemGroup>
+  <Target Name="WriteProductVersion" BeforeTargets="CoreCompile">
+    <WriteCodeFragment Language="C#" OutputFile="$(IntermediateOutputPath)VbaProductVersion.g.cs" AssemblyAttributes="@(AssemblyAttribute)" />
+    <ItemGroup><Compile Include="$(IntermediateOutputPath)VbaProductVersion.g.cs" /></ItemGroup>
+  </Target>
+  <Target Name="CopyUpdateProgram" AfterTargets="Build">
+    <MSBuild Projects="../VBAi.Updater/VBAi.Updater.csproj" Targets="GetTargetPath" Properties="Configuration=$(Configuration);Platform=$(Platform)"><Output TaskParameter="TargetOutputs" ItemName="_UpdateProgram" /></MSBuild>
+    <Copy SourceFiles="@(_UpdateProgram)" DestinationFolder="$(TargetDir)" />
+    <Copy SourceFiles="@(_UpdateProgram->'%(FullPath).config')" DestinationFolder="$(TargetDir)" Condition="Exists('@(_UpdateProgram->'%(FullPath).config')')" />
+  </Target>
   <ItemGroup>
     <PackageReference Include="Markdig" Version="0.37.0" />
     <PackageReference Include="System.Resources.Extensions" Version="8.0.0" />

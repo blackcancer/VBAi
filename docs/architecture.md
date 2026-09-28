@@ -69,3 +69,13 @@ Chaque projet dispose alors de sa sortie `artifacts/build/<NomProjet>/<Configura
 Le nom `CodexVBE.dll`, le namespace `CodexVBE`, le ProgID, les GUID COM et les noms des ressources restent stables. La règle IDE0130 est désactivée sous `src` pour conserver ce namespace à travers les dossiers fonctionnels.
 
 Le complément reste une seule assembly : `VbeSession`, les outils LLM, les interfaces et les objets COM partagent encore des contrats internes. Extraire ces couches en bibliothèques exige de définir leurs interfaces puis de vérifier le déploiement des dépendances dans les deux hôtes. Cette organisation sépare les responsabilités et les tests sans changer ces contrats lors du déplacement des fichiers.
+
+## Programme de mise à jour
+
+`src/VBAi.Updater` produit une application WinForms .NET Framework 4.8 x64.
+`src/CodexVBE/Updates` contient le flux GitHub, les préférences, la coordination,
+les travaux persistants et leurs interfaces. Le projet externe lie les seules
+sources nécessaires et les catalogues ; il ne référence pas `CodexVBE.dll`, afin
+que l’installeur puisse remplacer le complément après fermeture des hôtes.
+La compilation du complément copie `VBAi.Updater.exe` et sa configuration dans
+son dossier de sortie. Le protocole complet figure dans [updates.md](updates.md).
