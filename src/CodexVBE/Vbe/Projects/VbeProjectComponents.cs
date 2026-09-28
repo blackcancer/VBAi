@@ -51,9 +51,11 @@ namespace CodexVBE
             /// <summary>Obtient le PID du processus courant.</summary>
             /// <value>PID du processus courant.</value>
             public int CurrentProcessId => Process.GetCurrentProcess().Id;
-            /// <summary>Obtient l’application Excel active via ROT.</summary>
+            /// <summary>Obtient l’application Excel du processus via NativeOM, avec repli ROT protégé par PID.</summary>
             /// <returns>Objet COM Excel.Application.</returns>
             public object ExcelApplication() { return ExcelOwnedApplication.Resolve(CurrentProcessId, RegisteredExcel); }
+            /// <summary>Obtient l’entrée ROT historique si aucune fenêtre de document du processus ne fournit NativeOM.</summary>
+            /// <returns>Objet COM enregistré, dont le PID doit encore être vérifié par l’appelant.</returns>
             private static object RegisteredExcel() { return Marshal.GetActiveObject("Excel.Application"); }
             /// <summary>Retourne le PID propriétaire de la fenêtre native.</summary>
             /// <param name="window">Handle de la fenêtre Excel.</param>

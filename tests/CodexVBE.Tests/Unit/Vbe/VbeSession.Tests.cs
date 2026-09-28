@@ -979,6 +979,7 @@ namespace CodexVBE.Tests.Unit
         [DataRow("quick_watch", typeof(ArgumentException))]
         [DataRow("read_debug_options", typeof(InvalidOperationException))]
         [DataRow("read_vbe_options", typeof(InvalidOperationException))]
+        [DataRow("set_vbe_option", typeof(InvalidOperationException))]
         [DataRow("remove_watch", typeof(ArgumentException))]
         [DataRow("debug_global", typeof(InvalidOperationException))]
         [DataRow("select_code", typeof(ArgumentException))]
