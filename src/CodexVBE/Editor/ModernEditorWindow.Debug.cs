@@ -10,6 +10,10 @@ namespace CodexVBE
     {
         private int lastDebugMode = -1;
         private string lastDebugDocument;
+        /// <summary>Checks that compilation starts without an existing native diagnostic.</summary>
+        internal Action<int> EnsureCompileDialogAbsent = VbeDebugWindows.EnsureNoCompileDialog;
+        /// <summary>Observes the host diagnostic until its compilation command completes.</summary>
+        internal Func<ManualResetEventSlim, int, string> ObserveCompileDialog = VbeDebugWindows.AwaitCompileDialog;
         private async Task ObserveDebugMode()
         {
             if (busy || Current == null || !(Current.Module is EditorVbeModule native)) return;
@@ -40,11 +44,11 @@ namespace CodexVBE
                     if (mode != 2) throw new InvalidOperationException("Compilation requires design mode.");
                     native.ShowNative(1, 1);
                     int hostProcessId = native.HostProcessId;
-                    VbeDebugWindows.EnsureNoCompileDialog(hostProcessId);
+                    EnsureCompileDialogAbsent(hostProcessId);
                     string diagnostic;
                     using (var completed = new ManualResetEventSlim())
                     {
-                        var observe = Task.Run(() => VbeDebugWindows.AwaitCompileDialog(completed, hostProcessId));
+                        var observe = Task.Run(() => ObserveCompileDialog(completed, hostProcessId));
                         Exception failure = null;
                         try { debugger.CompileProject(new Request { Project = native.ProjectName, ExpectedMode = 2 }); }
                         catch (Exception error) { failure = error; }
@@ -62,11 +66,11 @@ namespace CodexVBE
                         pane.GetSelection(ref line, ref column, ref endLine, ref endColumn);
                         var doc = await OpenModule(target);
                         if (doc.Dirty || doc.Conflict || EditorDocument.Normalize(target.Read()) != doc.Text)
-                        { status.Text = diagnostic; return; } // Never underline an uncompiled draft.
+                        { SetResultStatus(diagnostic); return; } // Never underline an uncompiled draft.
                         await Script("diagnostics", doc.Id, versions[doc.Id], new[] { new { message = diagnostic, startLineNumber = line, startColumn = column, endLineNumber = endLine, endColumn = Math.Max(column + 1, endColumn), severity = 8, source = "VBA compiler" } });
                         await Script("reveal", line, column);
                     }
-                    else status.Text = UiText.Get("Compilation finished: no native diagnostics observed. Macros were not executed.");
+                    else SetResultStatus(UiText.Get("Compilation finished: no native diagnostics observed. Macros were not executed."));
                 }
                 else if (message.name == "show_next_statement")
                 {

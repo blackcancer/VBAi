@@ -21,12 +21,17 @@ namespace CodexVBE.Tests.Infrastructure
             Vbe.VBProjects.Add(Project); Project.VBComponents.Parent = Project;
             Original = new Component { Name = "Module1", Type = type, Collection = Project.VBComponents };
             Original.CodeModule.Raw = code; Project.VBComponents.Items.Add(Original);
+            Vbe.ActiveVBProject = Project; Vbe.ActiveCodePane = Original.CodeModule.CodePane;
+            Original.CodeModule.CodePane.OnShow = () => Vbe.ActiveCodePane = Original.CodeModule.CodePane;
             Adapter = new EditorVbeModule(Vbe, Project, Original);
         }
         public sealed class Host
         {
             public List<object> VBProjects { get; } = new List<object>();
             public Window MainWindow { get; } = new Window();
+            public object ActiveVBProject { get; set; }
+            public object ActiveCodePane { get; set; }
+            public List<CodexVBE.Tests.Unit.VbeDebugTests.FakeBar> CommandBars { get; } = new List<CodexVBE.Tests.Unit.VbeDebugTests.FakeBar>();
         }
         public sealed class ContractProject
         {
@@ -45,6 +50,7 @@ namespace CodexVBE.Tests.Infrastructure
             public Action<Component, string> AfterImport;
             public Action<Component> BeforeRemove, AfterRemove;
             public bool ImportThrowsBefore, ImportThrowsAfter;
+            public Component Item(string name) => Items.Single(item => item.Name == name);
             public Component Import(string path)
             {
                 if (ImportThrowsBefore) throw new IOException("Import before allocation");
@@ -64,6 +70,7 @@ namespace CodexVBE.Tests.Infrastructure
         }
         public sealed class Component
         {
+            public Component() { CodeModule.Parent = this; }
             private string name;
             public Action<string> BeforeName, AfterName;
             public string Name { get => name; set { BeforeName?.Invoke(value); name = value; AfterName?.Invoke(value); } }
@@ -100,6 +107,7 @@ namespace CodexVBE.Tests.Infrastructure
         }
         public sealed class Module
         {
+            public Component Parent { get; set; }
             public string Raw = "";
             public readonly Pane CodePane = new Pane();
             public Module() { CodePane.CodeModule = this; }
@@ -149,8 +157,10 @@ namespace CodexVBE.Tests.Infrastructure
             public Window Window { get; } = new Window();
             public Module CodeModule { get; set; }
             public int Shows, Line, Column;
-            public void Show() { Shows++; }
+            public Action OnShow;
+            public void Show() { Shows++; OnShow?.Invoke(); }
             public void SetSelection(int first, int column, int last, int endColumn) { Line = first; Column = column; }
+            public void GetSelection(ref int first, ref int column, ref int last, ref int endColumn) { first = Line; column = Column; last = Line; endColumn = Column; }
         }
         public sealed class Window
         {

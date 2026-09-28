@@ -23,8 +23,11 @@ namespace CodexVBE
         internal EditorDraftStore Drafts = new EditorDraftStore();
         internal WebView2 Browser { get; private set; }
         internal bool Ready { get; private set; }
+        /// <summary>Optional renderer boundary for an embedded surface or an isolated contract host.</summary>
+        internal Func<string, object[], Task<string>> ScriptExecution;
         private bool busy, initializing, closing, closeAllowed, showingDiff;
         private int activeStatusLayouts;
+        private int statusGeneration;
         private string selected;
         private DateTime lastEdit;
         private EditorSyncWorker synchronizationWorker;
@@ -118,6 +121,12 @@ namespace CodexVBE
         private sealed class EditorMessage { public string type { get; set; } public string id { get; set; } public string text { get; set; } public int version { get; set; } public string name { get; set; } public int request { get; set; } public string module { get; set; } public int line { get; set; } public int column { get; set; } }
         internal async Task<string> Script(string method, params object[] values)
         {
+            if (ScriptExecution != null)
+            {
+                string rendered = await ScriptExecution(method, values);
+                await Task.Yield();
+                return rendered;
+            }
             if (!Ready || Browser?.CoreWebView2 == null || IsDisposed) return "null";
             // Method names are internal constants; all document text is serialized as data.
             string result = await Browser.CoreWebView2.ExecuteScriptAsync("window.vbai." + method + "(" + string.Join(",", values.Select(json.Serialize)) + ")");
@@ -200,8 +209,11 @@ namespace CodexVBE
         {
             if (IsDisposed || Disposing || closing) return;
             // WebView callbacks must unwind before changing WinForms visibility/layout.
-            if (IsHandleCreated) BeginInvoke(new Action(UpdateStatus)); else UpdateStatus();
+            int generation = ++statusGeneration;
+            if (IsHandleCreated) BeginInvoke(new Action(() => { if (generation == statusGeneration) UpdateStatus(); })); else UpdateStatus();
         }
+        /// <summary>Publishes a result and invalidates older queued synchronization status updates.</summary>
+        private void SetResultStatus(string text) { statusGeneration++; status.Text = text; }
         private void UpdateStatus()
         {
             if (IsDisposed || Disposing || closing) return;
