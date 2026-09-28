@@ -73,6 +73,8 @@ namespace CodexVBE.Tests.Infrastructure
         public VbeSessionTests.FakeProject Project { get; }
         public VbeMenuLifecycleTests.FakeBar[] CommandBars { get; }
         private readonly Form owner;
+        internal Form Owner => owner;
+        internal void Workspace(bool available = true) { owner.IsMdiContainer = available; owner.ClientSize = new System.Drawing.Size(1000, 720); MainWindow.HWnd = owner.Handle.ToInt64(); owner.Show(); }
         public NativeHost(string path)
         {
             owner = new Form { Left = -10000, Top = -10000, ShowInTaskbar = false };

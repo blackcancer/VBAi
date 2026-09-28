@@ -1,12 +1,13 @@
-# AddIn modern editor orchestration matrix
+# AddIn modern editor PR10 workspace matrix
 
-Prepared before tests. Hosts, panes and tool windows are owned synthetic objects; editor windows are constructed normally with browser initialization held pending by the factory fixture. Drafts, settings and crash reports stay in owned temporary roots. No Excel, macros, WebView profile, native palette/settings or COM registration.
+Prepared before batch. The HostUiScope owns a WinForms IsMdiContainer window and its real MdiClient HWND. Every editor is a native child of that owned document workspace. Browser initialization is held by its existing guard; draft/settings/crash storage is temporary. No user VBE or Office instance.
 
 | Area | Cases |
 | --- | --- |
-| Active module | follow=false/true; missing active window; non-code window; missing code pane; project non-design mode; valid module identity |
-| Modern editor | show=false absent/live/disposed; create/recreate; disposed native site reset; visible reactivate; hidden show with owned owner; already docked attach and focus |
-| Navigation/menu | open real in-memory module; open refusal; show editor without module/with unavailable native module/host failure; /editor callback |
-| Dock | first create/reuse; missing/disposed control; native creation refusal/invalid control/focus refusal; attach dimensions/focus; undock/re-dock; DockRequested callback |
-| Cleanup | docked live/missing/disposed editor or control; native close refusal; repeated shutdown; resources disposed |
-| Startup | settings failure; native dark enabled log with injected palette/theme; native owner/theme failure |
+| Active module | follow false/true; missing/noncode active window; absent pane; running/design mode; exact component |
+| Editor workspace | absent/live/disposed getter; create/reuse/recreate; native GetParent matches owned MdiClient; show after hidden; resources and timer replaced; independent assistant site |
+| Workspace visibility | active native form/designer versus code; client dimensions; explicit show; user close canceled while hosted |
+| Creation refusal | owned host has no MdiClient; disposed rejected editor; cleared fields; logged notice; restoration with a new MdiClient succeeds |
+| Navigation/menu | memory module open; native module refusal; missing host; null module; editor menu callback |
+| Shutdown/startup | absent/live/disposed/already released workspace; repeated shutdown; unchanged settings/theme/bridge/logger error contracts |
+| PR10 action routing | editor versus assistant fallback; managed/native attachment; missing readiness/current; script failure |

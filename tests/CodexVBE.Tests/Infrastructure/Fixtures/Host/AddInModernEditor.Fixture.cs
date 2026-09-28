@@ -7,6 +7,7 @@ using CodexVBE.Tests.Infrastructure;
 namespace CodexVBE.Tests.Unit
 {
     public sealed class AddInEditorActiveWindow { public int Type { get; set; } }
+    internal static class OwnedMdiWorkspace { [System.Runtime.InteropServices.DllImport("user32.dll")] internal static extern IntPtr GetParent(IntPtr child); }
     public sealed class AddInEditorCollection { public object Parent { get; set; } }
     public sealed class AddInEditorComponent { public string Name { get; set; } = "Module1"; public AddInEditorCollection Collection { get; set; } }
     public sealed class AddInEditorCode { public object Parent { get; set; } }
@@ -18,6 +19,7 @@ namespace CodexVBE.Tests.Unit
         internal readonly AddIn Instance;
         internal AddInModernEditorFixture(bool connect = false)
         {
+            Scope.Host.Workspace();
             var create = AddIn.CreateModernEditor;
             AddIn.CreateModernEditor = () =>
             {

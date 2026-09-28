@@ -395,69 +395,55 @@ namespace CodexVBE.Tests.Unit
         }
 
         [STATestMethod]
-        public void FloatingEditorCreationVisibilityRecreationAndDisposedSiteAreOwned()
+        public void OwnedMdiEditorCreationVisibilityAndRecreationReuseOnlyTheDocumentWorkspace()
         {
             using (var fixture = new AddInModernEditorFixture())
             {
                 Assert.IsNull(fixture.Get(false));
-                var editor = fixture.Get(); Assert.IsTrue(editor.Visible); Assert.AreSame(editor, fixture.Get(false));
+                var editor = fixture.Get(); Assert.IsTrue(editor.Visible); Assert.IsFalse(editor.TopLevel); Assert.IsTrue(editor.WorkspaceHosted); Assert.AreSame(editor, fixture.Get(false));
+                var mdi = fixture.Scope.Host.Owner.Controls.OfType<System.Windows.Forms.MdiClient>().Single();
+                Assert.AreEqual(mdi.Handle, OwnedMdiWorkspace.GetParent(editor.Handle));
                 Assert.AreSame(editor, fixture.Get()); editor.Hide(); Assert.AreSame(editor, fixture.Get()); Assert.IsTrue(editor.Visible);
+                var oldWorkspace = LlmBoundaryScope.Get<EditorWorkspaceHost>(fixture.Instance, "editorWorkspace");
                 editor.Dispose(); Assert.IsNull(fixture.Get(false)); var replacement = fixture.Get(); Assert.AreNotSame(editor, replacement);
-                fixture.Call("ToggleEditorDock"); var control = fixture.Scope.Host.Windows.EditorControl;
-                control.Dispose(); Assert.IsTrue(replacement.IsDisposed);
-                var recovered = fixture.Get(); Assert.AreNotSame(replacement, recovered); Assert.IsTrue(recovered.TopLevel);
-                Assert.IsNull(LlmBoundaryScope.Get<object>(fixture.Instance, "nativeEditorControl"));
-                Assert.IsNull(LlmBoundaryScope.Get<object>(fixture.Instance, "nativeEditorWindow"));
-                Assert.IsFalse(LlmBoundaryScope.Get<bool>(fixture.Instance, "editorDocked"));
+                Assert.AreEqual(mdi.Handle, OwnedMdiWorkspace.GetParent(replacement.Handle)); Assert.IsFalse(replacement.TopLevel); Assert.IsTrue(replacement.WorkspaceHosted);
+                Assert.AreNotSame(oldWorkspace, LlmBoundaryScope.Get<EditorWorkspaceHost>(fixture.Instance, "editorWorkspace"));
+                Assert.IsNull(fixture.Scope.Host.Windows.EditorControl); Assert.IsNull(fixture.Scope.Host.Windows.EditorWindow);
             }
         }
 
         [STATestMethod]
-        public void DockRequestedCreatesDistinctEditorSiteUndocksAndReusesItsLiveControl()
+        public void OwnedMdiWorkspaceLeavesNativeDesignersVisibleAndRemainsDistinctFromAssistantSite()
         {
             using (var fixture = new AddInModernEditorFixture(true))
             {
-                var editor = fixture.Get();
-                var dock = (Action)typeof(ModernEditorWindow).GetField("DockRequested", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(editor);
-                dock(); var window = fixture.Scope.Host.Windows.EditorWindow;
-                Assert.IsFalse(editor.TopLevel); Assert.AreEqual(900, window.Width); Assert.AreEqual(650, window.Height); Assert.AreEqual(1, window.FocusCount);
-                Assert.IsTrue(LlmBoundaryScope.Get<bool>(fixture.Instance, "editorDocked"));
-                Assert.AreSame(editor, fixture.Get()); Assert.AreEqual(2, window.FocusCount);
-                dock(); Assert.IsTrue(editor.TopLevel); Assert.IsFalse(window.Visible); Assert.IsTrue(editor.Visible);
-                dock(); Assert.AreSame(window, fixture.Scope.Host.Windows.EditorWindow); Assert.IsFalse(editor.TopLevel);
-                Assert.IsTrue(fixture.Scope.Host.Windows.Window.Visible, "The assistant and editor must retain distinct native sites.");
+                var editor = fixture.Get(); var workspace = LlmBoundaryScope.Get<EditorWorkspaceHost>(fixture.Instance, "editorWorkspace");
+                foreach (int type in new[] { 1, 2, 0 })
+                {
+                    fixture.Scope.Host.ActiveWindow = new AddInEditorActiveWindow { Type = type };
+                    LlmBoundaryScope.Call(workspace, "Resize"); Assert.AreEqual(type == 0, editor.Visible);
+                }
+                Assert.IsTrue(fixture.Scope.Host.Windows.Window.Visible, "The owned assistant remains in its independent native site.");
+                fixture.Scope.Host.ActiveWindow = null; fixture.Get(); Assert.IsTrue(editor.Visible);
+                var mdi = fixture.Scope.Host.Owner.Controls.OfType<System.Windows.Forms.MdiClient>().Single(); Assert.AreEqual(mdi.ClientSize, editor.Size);
+                var closing = new System.Windows.Forms.FormClosingEventArgs(System.Windows.Forms.CloseReason.UserClosing, false);
+                LlmBoundaryScope.Call(editor, "ClosingWindow", null, closing); Assert.IsTrue(closing.Cancel); Assert.IsFalse(editor.IsDisposed);
             }
         }
 
         [STATestMethod]
-        public void DockedEditorRecreationAttachesToExistingControlBeforeFocus()
+        public void MissingOwnedMdiWorkspaceDisposesTheRejectedEditorAndReportsMenuFailure()
         {
             using (var fixture = new AddInModernEditorFixture())
             {
-                var editor = fixture.Get(); fixture.Call("ToggleEditorDock"); var window = fixture.Scope.Host.Windows.EditorWindow;
-                editor.Dispose(); var replacement = fixture.Get(); Assert.IsFalse(replacement.TopLevel); Assert.AreSame(window, fixture.Scope.Host.Windows.EditorWindow);
-                Assert.IsTrue(fixture.Scope.Host.Windows.EditorControl.Controls.Contains(replacement));
-                Assert.AreEqual(2, window.FocusCount);
-            }
-        }
-
-        [STATestMethod]
-        public void EditorDockFailuresReportOwnedNoticeAndNativeCloseRefusalDoesNotLeakForms()
-        {
-            foreach (int failure in new[] { 0, 1, 2 })
-            using (var fixture = new AddInModernEditorFixture())
-            {
-                var editor = fixture.Get();
-                fixture.Scope.Host.Windows.RejectCreation = failure == 0;
-                fixture.Scope.Host.Windows.MissingControl = failure == 1;
-                fixture.Scope.Host.Windows.AfterCreation = () => { if (failure == 2) fixture.Scope.Host.Windows.EditorWindow.Focusing = () => throw new IOException("owned focus failure"); };
-                fixture.Call("ToggleEditorDock"); Assert.AreEqual(1, fixture.Scope.Notices.Count);
+                fixture.Scope.Host.Workspace(false);
+                fixture.Call("ShowModernEditor"); Assert.AreEqual(1, fixture.Scope.Notices.Count);
+                Assert.IsTrue(fixture.Editors.Single().IsDisposed); Assert.IsNull(fixture.Get(false)); Assert.IsNull(LlmBoundaryScope.Get<object>(fixture.Instance, "editorWorkspace"));
                 StringAssert.Contains(fixture.Scope.Logs.Last(), "VBE menu action failed:");
-                if (fixture.Scope.Host.Windows.EditorWindow != null) fixture.Scope.Host.Windows.EditorWindow.RejectClose = true;
-                fixture.Scope.Close(fixture.Instance); Assert.IsTrue(editor.IsDisposed); Assert.IsNull(fixture.Get(false));
+                fixture.Scope.Host.Workspace(); var editor = fixture.Get(); Assert.IsFalse(editor.IsDisposed); Assert.IsTrue(editor.WorkspaceHosted);
+                fixture.Scope.Close(fixture.Instance); Assert.IsTrue(editor.IsDisposed);
             }
         }
-
         [STATestMethod]
         public void MenuEditorCommandAndNavigationOpenMemoryModulesOrReportTheirRealFailure()
         {
@@ -482,23 +468,19 @@ namespace CodexVBE.Tests.Unit
         }
 
         [STATestMethod]
-        public void ShutdownRetainsEachDockedEditorNullAndDisposedGuard()
+        public void ShutdownReleasesAbsentLiveDisposedAndAlreadyReleasedOwnedWorkspaces()
         {
-            foreach (int state in new[] { 0, 1, 2, 3, 4 })
+            foreach (int state in new[] { 0, 1, 2, 3 })
             using (var fixture = new AddInModernEditorFixture())
             {
-                var editor = fixture.Get(); fixture.Call("ToggleEditorDock");
-                if (state == 0) LlmBoundaryScope.Set(fixture.Instance, "editorDocked", false);
-                if (state == 1) LlmBoundaryScope.Set(fixture.Instance, "modernEditor", null);
+                ModernEditorWindow editor = state == 0 ? null : fixture.Get();
                 if (state == 2) editor.Dispose();
-                if (state == 3) LlmBoundaryScope.Set(fixture.Instance, "nativeEditorControl", null);
+                if (state == 3) { LlmBoundaryScope.Get<EditorWorkspaceHost>(fixture.Instance, "editorWorkspace").Dispose(); LlmBoundaryScope.Set(fixture.Instance, "editorWorkspace", null); }
                 fixture.Scope.Close(fixture.Instance);
-                Assert.IsNull(LlmBoundaryScope.Get<object>(fixture.Instance, "modernEditor")); Assert.IsNull(LlmBoundaryScope.Get<object>(fixture.Instance, "nativeEditorWindow"));
-                Assert.IsFalse(LlmBoundaryScope.Get<bool>(fixture.Instance, "editorDocked"));
-                if (state != 1) Assert.IsTrue(editor.IsDisposed);
+                Assert.IsNull(LlmBoundaryScope.Get<object>(fixture.Instance, "modernEditor")); Assert.IsNull(LlmBoundaryScope.Get<object>(fixture.Instance, "editorWorkspace"));
+                if (editor != null) Assert.IsTrue(editor.IsDisposed); fixture.Scope.Close(fixture.Instance);
             }
         }
-
         [STATestMethod]
         public void ConnectionLogsSettingsAndNativeThemeFailuresAndEnabledThemeWithoutRealPalette()
         {
