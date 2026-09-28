@@ -3,13 +3,14 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Xml.Linq;
 
-if (args.Length != 1)
+if (args.Length != 1 && (args.Length != 3 || args[1] != "--compare"))
 {
-    Console.Error.WriteLine("Usage: XmlDocumentationAudit <source-directory>");
+    Console.Error.WriteLine("Usage: XmlDocumentationAudit <source-directory> [--compare <baseline-source-directory>]");
     return 2;
 }
 
 var root = Path.GetFullPath(args[0]);
+var baselineRoot = args.Length == 3 ? Path.GetFullPath(args[2]) : null;
 var files = Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories)
     .Where(path => !path.Contains(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar)
         && !path.Contains(Path.DirectorySeparatorChar + "bin" + Path.DirectorySeparatorChar))
@@ -18,12 +19,28 @@ var files = Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories)
 var missing = new List<(string File, int Line, string Kind, string Name, string[] Tags)>();
 var kinds = new SortedDictionary<string, int>(StringComparer.Ordinal);
 var parseErrors = new List<(string File, string Message)>();
+var syntaxDifferences = new List<string>();
 
 foreach (var file in files)
 {
     var tree = CSharpSyntaxTree.ParseText(File.ReadAllText(file), new CSharpParseOptions(LanguageVersion.Latest));
     foreach (var diagnostic in tree.GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error))
         parseErrors.Add((Path.GetRelativePath(root, file), diagnostic.ToString()));
+
+    if (baselineRoot != null)
+    {
+        var relative = Path.GetRelativePath(root, file);
+        var baselineFile = Path.Combine(baselineRoot, relative);
+        if (!File.Exists(baselineFile))
+            syntaxDifferences.Add(relative + " (absent du baseline)");
+        else
+        {
+            var baselineTree = CSharpSyntaxTree.ParseText(File.ReadAllText(baselineFile),
+                new CSharpParseOptions(LanguageVersion.Latest));
+            if (!SyntaxFactory.AreEquivalent(baselineTree.GetRoot(), tree.GetRoot()))
+                syntaxDifferences.Add(relative);
+        }
+    }
 
     foreach (var node in tree.GetRoot().DescendantNodes().Where(IsDeclaration))
     {
@@ -46,6 +63,8 @@ foreach (var file in files)
 var total = kinds.Values.Sum();
 Console.WriteLine($"Source files: {files.Length}");
 Console.WriteLine($"Syntax errors: {parseErrors.Count}");
+if (baselineRoot != null)
+    Console.WriteLine($"Syntax differences from baseline (trivia ignored): {syntaxDifferences.Count}");
 Console.WriteLine($"Documentable declarations: {total}");
 Console.WriteLine($"Covered declarations: {total - missing.Count}");
 Console.WriteLine($"Missing or invalid: {missing.Count}");
@@ -53,9 +72,11 @@ foreach (var pair in kinds)
     Console.WriteLine($"  {pair.Key}: {pair.Value}");
 foreach (var error in parseErrors)
     Console.WriteLine($"SYNTAX {error.File}: {error.Message}");
+foreach (var difference in syntaxDifferences)
+    Console.WriteLine($"SYNTAX-DIFF {difference}");
 foreach (var entry in missing)
     Console.WriteLine($"MISSING {entry.File}:{entry.Line} {entry.Kind} {entry.Name} [{string.Join(", ", entry.Tags)}]");
-return missing.Count == 0 && parseErrors.Count == 0 ? 0 : 1;
+return missing.Count == 0 && parseErrors.Count == 0 && syntaxDifferences.Count == 0 ? 0 : 1;
 
 static bool IsDeclaration(SyntaxNode node) => node is BaseTypeDeclarationSyntax or DelegateDeclarationSyntax
     or MethodDeclarationSyntax or ConstructorDeclarationSyntax or DestructorDeclarationSyntax

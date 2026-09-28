@@ -6,8 +6,14 @@ using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using CodexVBE;
 
+/// <summary>Complète les scénarios smoke Git par les fusions, points de contrôle et outils agent.</summary>
 internal static partial class GitTests
 {
+    /// <summary>Pompe la boucle WinForms jusqu’à la fin d’une tâche asynchrone.</summary>
+    /// <typeparam name="T">Type du résultat de la tâche.</typeparam>
+    /// <param name="task">Tâche à attendre.</param>
+    /// <returns>Résultat de la tâche terminée.</returns>
+    /// <exception cref="Exception">La tâche dépasse une minute.</exception>
     private static T Pump<T>(Task<T> task)
     {
         var watch = System.Diagnostics.Stopwatch.StartNew();
@@ -18,6 +24,7 @@ internal static partial class GitTests
         }
         return task.GetAwaiter().GetResult();
     }
+    /// <summary>Vérifie checkpoints, branches, fusion, résolution de conflits et règles des outils agent.</summary>
     private static void Advanced()
     {
         ReviewWorkflow();
@@ -107,6 +114,7 @@ internal static partial class GitTests
         Console.WriteLine("PASS named checkpoints, branch switches, persisted branch, real merges/conflicts and agent tool policies");
     }
 
+    /// <summary>Vérifie commits partiels, restauration ciblée, rollback et brouillon de pull request.</summary>
     private static void ReviewWorkflow()
     {
         string remote = Path.Combine(root, "review-origin.git"); Git(root, "init --bare \"" + remote + "\"");

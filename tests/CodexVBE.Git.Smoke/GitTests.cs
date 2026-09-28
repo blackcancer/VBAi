@@ -9,10 +9,15 @@ using System.Text;
 using System.Text.RegularExpressions;
 using CodexVBE;
 
+/// <summary>Exécute les scénarios smoke Git avec dépôt local et projet VBE simulé.</summary>
 internal static partial class GitTests
 {
+    /// <summary>Nombre d’assertions validées par la suite.</summary>
     private static int checks;
+    /// <summary>Répertoire temporaire des dépôts et documents créés pendant l’exécution.</summary>
     private static string root;
+    /// <summary>Point d’entrée du programme smoke et traduit une exception en code de sortie non nul.</summary>
+    /// <returns>Zéro si les vérifications réussissent, sinon un.</returns>
     [STAThread]
     private static int Main()
     {
@@ -20,6 +25,7 @@ internal static partial class GitTests
         catch (Exception ex) { Console.Error.WriteLine(ex); return 1; }
     }
 
+    /// <summary>Configure WinForms et exécute les scénarios snapshots, dépôts, import, workflow et Designer.</summary>
     internal static void RunSuite()
     {
         checks = 0;
@@ -44,17 +50,27 @@ internal static partial class GitTests
             System.Threading.SynchronizationContext.SetSynchronizationContext(previousContext);
         }
     }
+    /// <summary>Incrémente le compteur puis échoue avec le message si la condition est fausse.</summary>
+    /// <param name="ok">Condition attendue.</param>
+    /// <param name="message">Message d’échec associé.</param>
     private static void Assert(bool ok, string message) { checks++; if (!ok) throw new Exception(message); }
+    /// <summary>Vérifie qu’une action lève une exception.</summary>
+    /// <param name="action">Action exécutée.</param>
+    /// <param name="message">Message d’échec si aucune exception n’est levée.</param>
     private static void Reject(Action action, string message)
     {
         bool rejected = false; try { action(); } catch { rejected = true; } Assert(rejected, message);
     }
+    /// <summary>Crée un snapshot de test à un module dont la constante peut être changée.</summary>
+    /// <param name="value">Valeur écrite dans la constante VBA.</param>
+    /// <returns>Snapshot minimal du module Module1.</returns>
     private static VbaGitSnapshot Snapshot(string value = "1")
     {
         return new VbaGitSnapshot(new VbaGitManifest { References = "test-reference:1:0", Components = new[] {
             new VbaGitComponent { Name = "Module1", Type = 1 }
         } }, new Dictionary<string, byte[]> { { "Module1.bas", Encoding.UTF8.GetBytes("Attribute VB_Name = \"Module1\"\nOption Explicit\nPublic Const Value = " + value + "\n") } });
     }
+    /// <summary>Vérifie la sérialisation, les différences et le rejet des snapshots mal formés.</summary>
     private static void Snapshots()
     {
         var one = Snapshot(); Assert(one.SameAs(VbaGitSnapshot.Read(one.Serialize())), "Snapshot round trip");
@@ -69,6 +85,7 @@ internal static partial class GitTests
         Reject(() => VbaGitSnapshot.ValidateName("CON"), "Reject Windows device name before export");
         Assert(MacroGitRepository.ValidateRemote("https://github.com/me/test.git") == "https://github.com/me/test.git", "GitHub HTTPS remote");
     }
+    /// <summary>Teste les commits locaux, fetch, push, fast-forward et marqueurs de récupération durables.</summary>
     private static void Repositories()
     {
         string remote = Path.Combine(root, "origin.git"), seed = Path.Combine(root, "seed");
@@ -98,15 +115,27 @@ internal static partial class GitTests
         Assert(a.History().Length >= 2, "Git history includes original repository");
         Assert(a.SynchronizationStatus().Contains("↓ 1"), "Incoming count");
     }
+    /// <summary>Initialise un dépôt de test et configure son identité Git.</summary>
+    /// <param name="name">Nom du répertoire local sous la racine temporaire.</param>
+    /// <param name="remote">Chemin du dépôt distant bare.</param>
+    /// <returns>Dépôt initialisé sur la branche main.</returns>
     private static MacroGitRepository Repo(string name, string remote)
     {
         string path = Path.Combine(root, name); var repo = new MacroGitRepository(path, "main"); repo.Initialize(remote); Identity(path, true); return repo;
     }
+    /// <summary>Configure le nom et l’adresse e-mail Git pour un dépôt bare ou de travail.</summary>
+    /// <param name="path">Chemin du dépôt.</param>
+    /// <param name="bare"><see langword="true"/> si le dépôt est bare.</param>
     private static void Identity(string path, bool bare)
     {
         string prefix = bare ? "--git-dir=\"" + path + "\" " : "";
         Git(path, prefix + "config user.name Test"); Git(path, prefix + "config user.email test@example.invalid");
     }
+    /// <summary>Exécute git.exe dans le répertoire demandé avec une limite de trente secondes.</summary>
+    /// <param name="cwd">Répertoire de travail du processus.</param>
+    /// <param name="args">Arguments Git.</param>
+    /// <returns>Sortie standard.</returns>
+    /// <exception cref="Exception">Git échoue ou dépasse le délai d’attente.</exception>
     private static string Git(string cwd, string args)
     {
         using (var p = Process.Start(new ProcessStartInfo("git.exe", args) { WorkingDirectory = cwd, UseShellExecute = false,
@@ -117,6 +146,7 @@ internal static partial class GitTests
             if (p.ExitCode != 0) throw new Exception(stderr.Result); return stdout.Result;
         }
     }
+    /// <summary>Vérifie capture, import, restauration et refus des changements de projet incompatibles.</summary>
     private static void ProjectImport()
     {
         var host = new FakeProject { FileName = Path.Combine(root, "macro.xlsm") };
@@ -144,6 +174,7 @@ internal static partial class GitTests
         host.Mode = 1; Reject(() => project.Capture(), "Reject running project"); host.Mode = 2;
         host.FileName += ".other"; Reject(() => project.Capture(), "Reject changed document identity");
     }
+    /// <summary>Charge GitWindow dans le Designer et vérifie le rendu et les commandes visuelles.</summary>
     private static void Designer()
     {
         using (var surface = new DesignSurface(typeof(GitWindow)))
@@ -179,6 +210,7 @@ internal static partial class GitTests
         }
     }
 
+    /// <summary>Parcourt les actions de l’interface, du commit local à la restauration après import partiel.</summary>
     private static void Workflow()
     {
         string remote = Path.Combine(root, "workflow-origin.git"); Git(root, "init --bare \"" + remote + "\"");
@@ -230,26 +262,59 @@ internal static partial class GitTests
             form.Close();
         }
     }
+    /// <summary>Lit un champ d’instance non public par réflexion dans le fixture.</summary>
+    /// <param name="target">Objet contenant le champ.</param>
+    /// <param name="name">Nom du champ.</param>
+    /// <returns>Valeur du champ.</returns>
     private static object Get(object target, string name) { return target.GetType().GetField(name, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(target); }
+    /// <summary>Écrit un champ d’instance non public par réflexion dans le fixture.</summary>
+    /// <param name="target">Objet contenant le champ.</param>
+    /// <param name="name">Nom du champ.</param>
+    /// <param name="value">Nouvelle valeur du champ.</param>
     private static void Set(object target, string name, object value) { target.GetType().GetField(name, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(target, value); }
 }
 
+/// <summary>Projet VBE factice exposant les propriétés lues et modifiées par l’adaptateur.</summary>
 public sealed class FakeProject
 {
+    /// <summary>Chemin du document hôte simulé.</summary>
+    /// <value>Chemin du document hôte simulé.</value>
     public string FileName { get; set; }
+    /// <summary>Mode d’exécution du projet, avec deux comme mode création par défaut.</summary>
+    /// <value>Mode d’exécution courant.</value>
     public int Mode { get; set; } = 2;
+    /// <summary>État de protection du projet.</summary>
+    /// <value>Valeur de protection configurée.</value>
     public int Protection { get; set; }
+    /// <summary>Collection ordonnée des composants VBA simulés.</summary>
+    /// <value>Collection des composants du projet.</value>
     public FakeComponents VBComponents { get; } = new FakeComponents();
+    /// <summary>Références du projet simulé.</summary>
+    /// <value>Références exposées par le projet factice.</value>
     public object[] References { get; } = new object[0];
 }
+/// <summary>Collection mutable de composants factices compatible avec l’énumération VBE.</summary>
 public sealed class FakeComponents : IEnumerable<FakeComponent>
 {
+    /// <summary>Composants actuellement présents dans la collection.</summary>
     private readonly List<FakeComponent> items = new List<FakeComponent>();
+    /// <summary>Provoque une exception après l’ajout d’un composant importé.</summary>
     public bool ThrowAfterImport;
+    /// <summary>Nombre de tentatives d’import effectuées.</summary>
     public int ImportAttempts;
+    /// <summary>Ajoute un composant à la collection.</summary>
+    /// <param name="item">Composant à ajouter.</param>
     public void Add(FakeComponent item) { items.Add(item); }
+    /// <summary>Retourne le composant portant le nom demandé.</summary>
+    /// <param name="name">Nom du composant.</param>
+    /// <returns>Composant correspondant.</returns>
     public FakeComponent Item(string name) { return items.Single(x => x.Name == name); }
+    /// <summary>Retire le composant, sauf le module document hôte de type 100.</summary>
+    /// <param name="item">Composant à retirer.</param>
     public void Remove(FakeComponent item) { if (item.Type == 100) throw new Exception("Cannot remove host module"); items.Remove(item); }
+    /// <summary>Importe un fichier de composant et son éventuel fichier de ressources FRX.</summary>
+    /// <param name="path">Chemin du fichier exporté.</param>
+    /// <returns>Composant construit à partir du fichier.</returns>
     public FakeComponent Import(string path)
     {
         ImportAttempts++;
@@ -259,29 +324,65 @@ public sealed class FakeComponents : IEnumerable<FakeComponent>
         string frx = Path.ChangeExtension(path, ".frx"); if (File.Exists(frx)) component.Resource = File.ReadAllBytes(frx);
         Add(component); if (ThrowAfterImport) throw new Exception("Simulated failure after applied import"); return component;
     }
+    /// <summary>Crée l’énumérateur générique de la collection.</summary>
+    /// <returns>Énumérateur des composants.</returns>
     public IEnumerator<FakeComponent> GetEnumerator() { return items.GetEnumerator(); }
+    /// <summary>Crée l’énumérateur non générique de la collection.</summary>
+    /// <returns>Énumérateur des composants.</returns>
     IEnumerator IEnumerable.GetEnumerator() { return GetEnumerator(); }
 }
+/// <summary>Composant VBA simulé avec module de code et ressources facultatives.</summary>
 public sealed class FakeComponent
 {
+    /// <summary>Nom du composant.</summary>
+    /// <value>Nom utilisé pour l’identité du composant.</value>
     public string Name { get; set; }
+    /// <summary>Type selon les constantes VBE.</summary>
+    /// <value>Type VBE du composant.</value>
     public int Type { get; set; }
+    /// <summary>Module de code associé au composant.</summary>
+    /// <value>Module de code factice.</value>
     public FakeCodeModule CodeModule { get; }
+    /// <summary>Octets du fichier FRX facultatif.</summary>
     public byte[] Resource;
+    /// <summary>Crée un composant simulé avec son nom, son type et son code.</summary>
+    /// <param name="name">Nom du composant.</param>
+    /// <param name="type">Type VBE du composant.</param>
+    /// <param name="text">Texte initial du module.</param>
     public FakeComponent(string name, int type, string text) { Name = name; Type = type; CodeModule = new FakeCodeModule(text); }
+    /// <summary>Écrit le code et, s’il existe, le fichier de ressources FRX compagnon.</summary>
+    /// <param name="path">Chemin d’export du composant.</param>
     public void Export(string path)
     {
         File.WriteAllText(path, CodeModule.Text, Encoding.GetEncoding(System.Globalization.CultureInfo.CurrentCulture.TextInfo.ANSICodePage));
         if (Resource != null) File.WriteAllBytes(Path.ChangeExtension(path, ".frx"), Resource);
     }
 }
+/// <summary>Module de code simulé avec opérations de lignes utilisées lors des imports.</summary>
 public sealed class FakeCodeModule
 {
+    /// <summary>Texte complet du module avec des séparateurs LF.</summary>
     public string Text;
+    /// <summary>Crée le module en normalisant ses fins de ligne en LF.</summary>
+    /// <param name="text">Texte initial du module.</param>
     public FakeCodeModule(string text) { Text = text.Replace("\r\n", "\n"); }
+    /// <summary>Nombre de lignes du module, ou zéro si son texte est vide.</summary>
+    /// <value>Nombre de lignes séparées par LF.</value>
     public int CountOfLines { get { return Text.Length == 0 ? 0 : Text.Split('\n').Length; } }
+    /// <summary>Retourne le module lui-même pour simuler l’objet <c>Lines</c> du VBE.</summary>
+    /// <value>Instance courante du module.</value>
     public FakeCodeModule Lines { get { return this; } }
+    /// <summary>Lit un segment de lignes, avec indexation à partir de un.</summary>
+    /// <param name="start">Première ligne à lire.</param>
+    /// <param name="count">Nombre maximal de lignes.</param>
+    /// <value>Texte des lignes demandées, joint par LF.</value>
     public string this[int start, int count] { get { return string.Join("\n", Text.Split('\n').Skip(start - 1).Take(count)); } }
+    /// <summary>Supprime un segment de lignes, avec indexation à partir de un.</summary>
+    /// <param name="start">Première ligne à supprimer.</param>
+    /// <param name="count">Nombre de lignes à supprimer.</param>
     public void DeleteLines(int start, int count) { var lines = Text.Split('\n').ToList(); lines.RemoveRange(start - 1, count); Text = string.Join("\n", lines); }
+    /// <summary>Insère les lignes fournies avant la position spécifiée.</summary>
+    /// <param name="start">Position d’insertion indexée à partir de un.</param>
+    /// <param name="text">Lignes à insérer, séparées par CRLF ou LF.</param>
     public void InsertLines(int start, string text) { var lines = Text.Length == 0 ? new List<string>() : Text.Split('\n').ToList(); lines.InsertRange(start - 1, text.Replace("\r\n", "\n").Split('\n')); Text = string.Join("\n", lines); }
 }
