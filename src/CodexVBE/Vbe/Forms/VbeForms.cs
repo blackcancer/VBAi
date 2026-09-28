@@ -16,13 +16,17 @@ using System.Web.Script.Serialization;
 
 namespace CodexVBE
 {
+        /// <summary>Expose les opérations d’inspection et de modification des UserForms du VBE.</summary>
     internal sealed partial class VbeForms
     {
+        /// <summary>Instance VBE utilisée pour résoudre les projets à inspecter.</summary>
         private readonly dynamic vbe;
+        /// <summary>Fonction injectable qui calcule l’empreinte de la sérialisation de l’arbre.</summary>
         internal static Func<byte[], byte[]> HashTree = bytes =>
         {
             using (var sha = SHA256.Create()) return sha.ComputeHash(bytes);
         };
+        /// <summary>ProgIDs des contrôles MSForms pris en charge par les opérations de création.</summary>
         private static readonly HashSet<string> BuiltInControls = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "Forms.CheckBox.1", "Forms.ComboBox.1", "Forms.CommandButton.1", "Forms.Frame.1",
@@ -31,10 +35,17 @@ namespace CodexVBE
             "Forms.TabStrip.1", "Forms.TextBox.1", "Forms.ToggleButton.1"
         };
 
+        /// <summary>Crée le service pour l’instance VBE fournie.</summary>
+        /// <param name="vbe">Instance VBE à utiliser pour résoudre les projets.</param>
         public VbeForms(object vbe) { this.vbe = vbe; }
 
+        /// <summary>Retourne le catalogue des types de contrôles MSForms disponibles.</summary>
+        /// <returns>Catalogue des ProgIDs MSForms pris en charge.</returns>
         public object ControlTypes() { return VbeControlCatalog.List(BuiltInControls); }
 
+        /// <summary>Énumère les UserForms du projet et indique si leur concepteur est ouvert.</summary>
+        /// <param name="projectName">Nom du projet contenant le formulaire.</param>
+        /// <returns>Formulaires du projet avec leur état de concepteur.</returns>
         public object List(string projectName)
         {
             dynamic project = GetProject(projectName);
@@ -45,18 +56,30 @@ namespace CodexVBE
             return result;
         }
 
+        /// <summary>Retourne l’état synthétique du UserForm et son empreinte de version.</summary>
+        /// <param name="projectName">Nom du projet contenant le formulaire.</param>
+        /// <param name="formName">Nom du UserForm ciblé.</param>
+        /// <returns>Instantané de l’état du formulaire.</returns>
         public object State(string projectName, string formName)
         {
             dynamic form = GetForm(GetProject(projectName), formName);
             return Snapshot(projectName, form);
         }
 
+        /// <summary>Décrit les propriétés du UserForm sélectionné.</summary>
+        /// <param name="projectName">Nom du projet contenant le formulaire.</param>
+        /// <param name="formName">Nom du UserForm ciblé.</param>
+        /// <returns>Propriétés du formulaire décrites par le service.</returns>
         public object Properties(string projectName, string formName)
         {
             dynamic form = GetForm(GetProject(projectName), formName);
             return DescribeProperties(form);
         }
 
+        /// <summary>Retourne l’arbre hiérarchique des contrôles et sa version.</summary>
+        /// <param name="projectName">Nom du projet contenant le formulaire.</param>
+        /// <param name="formName">Nom du UserForm ciblé.</param>
+        /// <returns>Arbre du formulaire, propriétés, chemins canoniques et empreinte.</returns>
         public object Tree(string projectName, string formName)
         {
             dynamic form = GetForm(GetProject(projectName), formName);
@@ -68,6 +91,11 @@ namespace CodexVBE
                 NodeCount = nodeCount, Properties = properties, Controls = nodes };
         }
 
+        /// <summary>Retourne les événements COM disponibles pour le UserForm ou le contrôle canonique indiqué.</summary>
+        /// <param name="projectName">Nom du projet contenant le formulaire.</param>
+        /// <param name="formName">Nom du UserForm ciblé.</param>
+        /// <param name="controlPath">Chemin hiérarchique canonique du contrôle dans form_tree.</param>
+        /// <returns>Événements COM disponibles pour la cible choisie.</returns>
         public object EventCatalog(string projectName, string formName, string controlPath)
         {
             dynamic form = GetForm(GetProject(projectName), formName);
@@ -85,6 +113,12 @@ namespace CodexVBE
                 TreeVersion = (string)tree.TreeVersion, Catalog = catalog };
         }
 
+        /// <summary>Construit l’arbre du concepteur et calcule sa version à partir de son contenu.</summary>
+        /// <param name="form">Formulaire VBE inspecté.</param>
+        /// <param name="nodes">Nœuds parcourus dans l’arbre.</param>
+        /// <param name="properties">Liste des propriétés décrites pour le formulaire.</param>
+        /// <param name="nodeCount">Compteur alimenté avec le nombre de nœuds parcourus.</param>
+        /// <returns>Empreinte de l’arbre et de ses propriétés.</returns>
         private static string TreeVersion(dynamic form, out List<object> nodes,
             out List<VbePropertyInfo> properties, out int nodeCount)
         {
@@ -99,6 +133,10 @@ namespace CodexVBE
                 .Replace("-", "").ToLowerInvariant();
         }
 
+        /// <summary>Retourne la sonde de parent de contrôle prise en charge par le conteneur.</summary>
+        /// <param name="projectName">Nom du projet contenant le formulaire.</param>
+        /// <param name="formName">Nom du UserForm ciblé.</param>
+        /// <returns>Sonde du parent du formulaire ou du contrôle, si l’interface COM l’expose.</returns>
         public object ParentProbe(string projectName, string formName)
         {
             dynamic form = GetForm(GetProject(projectName), formName);
@@ -116,12 +154,23 @@ namespace CodexVBE
             return new { Project = projectName, Form = formName, Rows = rows };
         }
 
+        /// <summary>Lit le nom COM sans laisser une erreur d’accès empêcher l’inspection.</summary>
+        /// <param name="item">Objet COM ou descripteur à inspecter.</param>
+        /// <returns>Nom COM accessible, ou valeur de repli en cas d’erreur.</returns>
         private static string SafeComName(object item)
         {
             try { return (string)((dynamic)item).Name; }
             catch { return null; }
         }
 
+        /// <summary>Parcourt les contrôles enfants et construit leurs descriptions hiérarchiques.</summary>
+        /// <param name="collection">Collection COM des contrôles à parcourir.</param>
+        /// <param name="owner">Objet parent attendu des contrôles de la collection.</param>
+        /// <param name="formName">Nom du UserForm ciblé.</param>
+        /// <param name="path">Chemin à rechercher dans les nœuds.</param>
+        /// <param name="depth">Profondeur courante de l’arbre.</param>
+        /// <param name="nodeCount">Compteur alimenté avec le nombre de nœuds parcourus.</param>
+        /// <returns>Nœuds des contrôles enfants et de leurs descendants.</returns>
         private static List<object> ReadChildControls(dynamic collection, object owner, string formName,
             string path, int depth, ref int nodeCount)
         {
@@ -132,6 +181,11 @@ namespace CodexVBE
             return result;
         }
 
+        /// <summary>Compare deux conteneurs de contrôle à partir de leur identité COM.</summary>
+        /// <param name="actualParent">Parent observé du contrôle.</param>
+        /// <param name="expectedOwner">Conteneur attendu selon l’arbre du formulaire.</param>
+        /// <param name="formName">Nom du UserForm ciblé.</param>
+        /// <returns>true si les objets appartiennent au même conteneur.</returns>
         private static bool SameContainer(object actualParent, object expectedOwner, string formName)
         {
             if (SameComIdentity(actualParent, expectedOwner)) return true;
@@ -140,6 +194,10 @@ namespace CodexVBE
             return actualPath != null && string.Equals(actualPath, expectedPath, StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>Construit une identité stable du conteneur à partir de ses éléments accessibles.</summary>
+        /// <param name="item">Objet COM ou descripteur à inspecter.</param>
+        /// <param name="formName">Nom du UserForm ciblé.</param>
+        /// <returns>Identité calculée du conteneur.</returns>
         private static string ContainerIdentity(object item, string formName)
         {
             if (item == null) return null;
@@ -160,6 +218,10 @@ namespace CodexVBE
             return null;
         }
 
+        /// <summary>Compare deux objets COM en utilisant leur identité IUnknown.</summary>
+        /// <param name="left">Premier objet COM à comparer.</param>
+        /// <param name="right">Second objet COM à comparer.</param>
+        /// <returns>true si les objets COM désignent la même identité.</returns>
         private static bool SameComIdentity(object left, object right)
         {
             if (left == null || right == null) return false;
@@ -180,6 +242,14 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Lit un nœud de contrôle, ses propriétés et ses enfants.</summary>
+        /// <param name="item">Objet COM ou descripteur à inspecter.</param>
+        /// <param name="kind">Type de nœud dans l’arbre.</param>
+        /// <param name="formName">Nom du UserForm ciblé.</param>
+        /// <param name="parentPath">Chemin du parent dans l’arbre.</param>
+        /// <param name="depth">Profondeur courante de l’arbre.</param>
+        /// <param name="nodeCount">Compteur alimenté avec le nombre de nœuds parcourus.</param>
+        /// <returns>Description du nœud et de ses propriétés enfant.</returns>
         private static object ReadTreeNode(object item, string kind, string formName,
             string parentPath, int depth, ref int nodeCount)
         {
@@ -220,6 +290,9 @@ namespace CodexVBE
                 Type = TypeDescriptor.GetClassName(item), Properties = ReadObjectProperties(item), Children = children };
         }
 
+        /// <summary>Lit les propriétés descriptibles d’un objet du concepteur.</summary>
+        /// <param name="item">Objet COM ou descripteur à inspecter.</param>
+        /// <returns>Propriétés lisibles de l’objet.</returns>
         private static List<VbePropertyInfo> ReadObjectProperties(object item)
         {
             var result = new List<VbePropertyInfo>();
@@ -249,6 +322,9 @@ namespace CodexVBE
             return result;
         }
 
+        /// <summary>Valide et affecte une propriété de formulaire puis retourne son état actualisé.</summary>
+        /// <param name="request">Paramètres de la commande et version attendue par le client.</param>
+        /// <returns>État mis à jour après la modification de la propriété.</returns>
         public object SetProperty(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.Property) || request.Value == null)
@@ -311,6 +387,9 @@ namespace CodexVBE
                 Properties = properties, State = Snapshot(request.Project, form) };
         }
 
+        /// <summary>Affecte et vérifie une image OLE sur le contrôle ciblé.</summary>
+        /// <param name="request">Paramètres de la commande et version attendue par le client.</param>
+        /// <returns>État mis à jour après le remplacement de l’image.</returns>
         public object SetPicture(Request request)
         {
             dynamic form = GetForm(GetDesignProject(request.Project), request.Form);
@@ -327,6 +406,10 @@ namespace CodexVBE
                 Picture = actual, Properties = DescribeProperties(form), State = Snapshot(request.Project, form) };
         }
 
+        /// <summary>Convertit une valeur JSON vers le type scalaire de la propriété COM.</summary>
+        /// <param name="value">Valeur demandée ou lue pour la propriété.</param>
+        /// <param name="targetType">Type .NET attendu pour la valeur.</param>
+        /// <returns>Valeur convertie vers le type cible.</returns>
         private static object ConvertScalar(object value, Type targetType)
         {
             if (targetType == null || targetType == typeof(object) || targetType.IsArray ||
@@ -358,6 +441,10 @@ namespace CodexVBE
             return Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
         }
 
+        /// <summary>Modifie un membre pris en charge de la police du UserForm.</summary>
+        /// <param name="designer">Objet Designer qui contient le contrôle.</param>
+        /// <param name="member">Membre de police à modifier.</param>
+        /// <param name="value">Valeur demandée ou lue pour la propriété.</param>
         private static void SetFormFontMember(dynamic designer, string member, object value)
         {
             dynamic font = designer.Font;
@@ -393,6 +480,9 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Produit les descriptions de propriétés lisibles du UserForm.</summary>
+        /// <param name="form">Formulaire VBE inspecté.</param>
+        /// <returns>Descriptions des propriétés du formulaire.</returns>
         private static List<VbePropertyInfo> DescribeProperties(dynamic form)
         {
             var result = new List<VbePropertyInfo>();
@@ -459,6 +549,9 @@ namespace CodexVBE
             return result;
         }
 
+        /// <summary>Décrit les membres accessibles d’un objet imbriqué du concepteur.</summary>
+        /// <param name="source">Objet dont les membres sont décrits.</param>
+        /// <returns>Descriptions des membres publics accessibles.</returns>
         private static List<VbePropertyInfo> DescribeObjectMembers(object source)
         {
             var members = new List<VbePropertyInfo>();
@@ -479,6 +572,9 @@ namespace CodexVBE
             return members;
         }
 
+        /// <summary>Retourne les noms symboliques possibles pour une propriété enum.</summary>
+        /// <param name="type">Type de propriété à énumérer.</param>
+        /// <returns>Noms symboliques des valeurs enum.</returns>
         private static string[] EnumChoices(Type type)
         {
             if (type == null || !type.IsEnum) return null;
@@ -486,6 +582,10 @@ namespace CodexVBE
             catch { return null; }
         }
 
+        /// <summary>Classe l’écriture d’une propriété selon son support observé par le concepteur.</summary>
+        /// <param name="targetType">Type .NET attendu pour la valeur.</param>
+        /// <param name="descriptor">Descripteur de propriété retourné par le concepteur.</param>
+        /// <returns>Statut descriptif de prise en charge de l’écriture.</returns>
         private static string DesignerSetterStatus(string targetType, PropertyDescriptor descriptor)
         {
             if (descriptor.IsReadOnly) return "DescriptorReadOnly";
@@ -510,6 +610,9 @@ namespace CodexVBE
             return "DescriptorCandidateUnverified";
         }
 
+        /// <summary>Normalise une valeur retournée par COM en valeur sérialisable.</summary>
+        /// <param name="value">Valeur demandée ou lue pour la propriété.</param>
+        /// <returns>Valeur normalisée et sérialisable.</returns>
         private static object NormalizeScalar(object value)
         {
             if (value == null) return null;
@@ -520,6 +623,9 @@ namespace CodexVBE
             return Convert.ToString(value, CultureInfo.InvariantCulture);
         }
 
+        /// <summary>Calcule l’empreinte de l’image actuellement exposée par le contrôle.</summary>
+        /// <param name="image">Valeur image à empreinter.</param>
+        /// <returns>Empreinte de l’image lue.</returns>
         private static string ImageDigest(Image image)
         {
             try
@@ -534,6 +640,11 @@ namespace CodexVBE
             catch { return null; }
         }
 
+        /// <summary>Retourne les propriétés d’un contrôle sélectionné par son chemin canonique.</summary>
+        /// <param name="projectName">Nom du projet contenant le formulaire.</param>
+        /// <param name="formName">Nom du UserForm ciblé.</param>
+        /// <param name="controlName">Nom du contrôle à résoudre.</param>
+        /// <returns>Données des propriétés du contrôle.</returns>
         public object ControlProperties(string projectName, string formName, string controlName)
         {
             dynamic form = GetForm(GetProject(projectName), formName);
@@ -561,6 +672,9 @@ namespace CodexVBE
             return result;
         }
 
+        /// <summary>Crée un UserForm ou une ressource de formulaire selon la commande.</summary>
+        /// <param name="request">Paramètres de la commande et version attendue par le client.</param>
+        /// <returns>Résultat de la création du formulaire.</returns>
         public object Create(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.Form) ||
@@ -606,6 +720,10 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Ouvre le concepteur du UserForm ciblé.</summary>
+        /// <param name="projectName">Nom du projet contenant le formulaire.</param>
+        /// <param name="formName">Nom du UserForm ciblé.</param>
+        /// <returns>État de l’ouverture du concepteur.</returns>
         public object Open(string projectName, string formName)
         {
             dynamic form = GetForm(GetProject(projectName), formName);
@@ -613,6 +731,9 @@ namespace CodexVBE
             return Snapshot(projectName, form);
         }
 
+        /// <summary>Ajoute un contrôle MSForms après validation du nom, type et version de l’arbre.</summary>
+        /// <param name="request">Paramètres de la commande et version attendue par le client.</param>
+        /// <returns>Contrôle créé et arbre actualisé.</returns>
         public object AddControl(Request request)
         {
             ValidateName(request.Control, "Control");
@@ -670,6 +791,9 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Refuse une propriété de contrôle qui n’est pas modifiable par le concepteur.</summary>
+        /// <param name="control">Contrôle dont l’écriture de propriété doit être vérifiée.</param>
+        /// <param name="name">Nom de la propriété, du composant ou du contrôle.</param>
         private static void RequireWritableControlProperty(object control, string name)
         {
             PropertyDescriptor descriptor = TypeDescriptor.GetProperties(control).Find(name, true);
@@ -679,11 +803,19 @@ namespace CodexVBE
                 throw new InvalidOperationException("The selected control type exposes " + name + " as read-only.");
         }
 
+        /// <summary>Indique si un contrôle portant ce nom existe dans le formulaire.</summary>
+        /// <param name="designer">Objet Designer qui contient le contrôle.</param>
+        /// <param name="name">Nom de la propriété, du composant ou du contrôle.</param>
+        /// <returns>true si le nom existe dans le formulaire.</returns>
         private static bool ControlNameExists(dynamic designer, string name)
         {
             return ControlNameExistsInCollection(designer.Controls, name);
         }
 
+        /// <summary>Recherche le nom dans une collection de contrôles du concepteur.</summary>
+        /// <param name="controls">Collection COM dans laquelle effectuer la recherche.</param>
+        /// <param name="name">Nom du contrôle à rechercher.</param>
+        /// <returns>true si un élément de la collection porte ce nom.</returns>
         private static bool ControlNameExistsInCollection(dynamic controls, string name)
         {
             foreach (dynamic item in controls)
@@ -691,6 +823,9 @@ namespace CodexVBE
             return false;
         }
 
+        /// <summary>Valide et applique la géométrie au contrôle demandé.</summary>
+        /// <param name="request">Paramètres de la commande et version attendue par le client.</param>
+        /// <returns>État du contrôle après application des coordonnées et dimensions.</returns>
         public object SetControlGeometry(Request request)
         {
             ValidateName(request.Control, "Control");
@@ -706,6 +841,9 @@ namespace CodexVBE
             return Snapshot(request.Project, form);
         }
 
+        /// <summary>Renomme un contrôle après vérification de la version et de l’unicité du nom.</summary>
+        /// <param name="request">Paramètres de la commande et version attendue par le client.</param>
+        /// <returns>Nouvel état du contrôle renommé.</returns>
         public object RenameControl(Request request)
         {
             ValidateName(request.Control, "Control");
@@ -721,6 +859,9 @@ namespace CodexVBE
             return Snapshot(request.Project, form);
         }
 
+        /// <summary>Modifie la légende du contrôle ciblé.</summary>
+        /// <param name="request">Paramètres de la commande et version attendue par le client.</param>
+        /// <returns>Nouvel état après affectation de la légende.</returns>
         public object SetControlCaption(Request request)
         {
             if (request.Caption == null) throw new ArgumentException("Caption is required.");
@@ -731,6 +872,9 @@ namespace CodexVBE
             return Snapshot(request.Project, form);
         }
 
+        /// <summary>Modifie les propriétés de police prises en charge du contrôle.</summary>
+        /// <param name="request">Paramètres de la commande et version attendue par le client.</param>
+        /// <returns>Nouvel état après mise à jour de la police.</returns>
         public object SetControlFont(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.FontName) || !IsFinite(request.FontSize) ||
@@ -746,11 +890,17 @@ namespace CodexVBE
             return Snapshot(request.Project, form);
         }
 
+        /// <summary>Résout un projet VBE par son nom.</summary>
+        /// <param name="name">Nom de la propriété, du composant ou du contrôle.</param>
+        /// <returns>Projet VBE résolu.</returns>
         private dynamic GetProject(string name)
         {
             return VbeProjectResolver.Resolve(vbe, name);
         }
 
+        /// <summary>Résout le projet et exige le mode conception avant modification.</summary>
+        /// <returns>Projet correspondant, validé en mode conception.</returns>
+        /// <param name="name">Nom du projet VBE à valider.</param>
         private dynamic GetDesignProject(string name)
         {
             dynamic project = GetProject(name);
@@ -758,6 +908,10 @@ namespace CodexVBE
             return project;
         }
 
+        /// <summary>Recherche le UserForm nommé dans les composants du projet.</summary>
+        /// <param name="project">Projet VBE résolu.</param>
+        /// <param name="name">Nom de la propriété, du composant ou du contrôle.</param>
+        /// <returns>UserForm correspondant au nom demandé.</returns>
         private static dynamic GetForm(dynamic project, string name)
         {
             if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Form is required.");
@@ -770,6 +924,10 @@ namespace CodexVBE
             throw new InvalidOperationException("UserForm not found: " + name);
         }
 
+        /// <summary>Résout le contrôle désigné par son chemin hiérarchique canonique.</summary>
+        /// <param name="designer">Objet Designer qui contient le contrôle.</param>
+        /// <param name="name">Nom de la propriété, du composant ou du contrôle.</param>
+        /// <returns>Contrôle résolu dans le concepteur.</returns>
         private static dynamic GetControl(dynamic designer, string name)
         {
             foreach (dynamic control in designer.Controls)
@@ -777,12 +935,17 @@ namespace CodexVBE
             throw new InvalidOperationException("Control not found: " + name);
         }
 
+        /// <summary>Valide le nom VBA d’un formulaire ou d’un contrôle.</summary>
+        /// <param name="name">Nom de la propriété, du composant ou du contrôle.</param>
+        /// <param name="label">Nom logique utilisé dans le message de validation.</param>
         private static void ValidateName(string name, string label)
         {
             if (string.IsNullOrWhiteSpace(name) || !Regex.IsMatch(name, @"^[A-Za-z_][A-Za-z0-9_]*$"))
                 throw new ArgumentException(label + " must be a VBA identifier.");
         }
 
+        /// <summary>Vérifie que la géométrie demandée est finie et dans les bornes admises.</summary>
+        /// <param name="request">Paramètres de la commande et version attendue par le client.</param>
         private static void ValidateGeometry(Request request)
         {
             if (!IsFinite(request.Left) || !IsFinite(request.Top) || !IsFinite(request.Width) || !IsFinite(request.Height) ||
@@ -791,8 +954,14 @@ namespace CodexVBE
                 throw new ArgumentException("Control geometry must use finite nonnegative point coordinates and positive sizes.");
         }
 
+        /// <summary>Indique si la valeur flottante est finie.</summary>
+        /// <param name="value">Valeur demandée ou lue pour la propriété.</param>
+        /// <returns>true si la valeur est finie.</returns>
         private static bool IsFinite(double value) { return !double.IsNaN(value) && !double.IsInfinity(value); }
 
+        /// <summary>Vérifie que l’arbre n’a pas changé depuis la lecture fournie par le client.</summary>
+        /// <param name="request">Paramètres de la commande et version attendue par le client.</param>
+        /// <param name="form">Formulaire VBE inspecté.</param>
         private static void AssertVersion(Request request, dynamic form)
         {
             if (string.IsNullOrWhiteSpace(request.ExpectedFormVersion))
@@ -802,6 +971,10 @@ namespace CodexVBE
                 throw new InvalidOperationException("The form changed since it was read.");
         }
 
+        /// <summary>Crée un instantané de l’état et de la version du formulaire.</summary>
+        /// <param name="projectName">Nom du projet contenant le formulaire.</param>
+        /// <param name="form">Formulaire VBE inspecté.</param>
+        /// <returns>Instantané sérialisable du formulaire.</returns>
         private static object Snapshot(string projectName, dynamic form)
         {
             dynamic designer = form.Designer;
@@ -834,6 +1007,9 @@ namespace CodexVBE
                 Version = Version(form), Controls = controls };
         }
 
+        /// <summary>Calcule l’empreinte de version du formulaire et de ses contrôles.</summary>
+        /// <param name="form">Formulaire VBE inspecté.</param>
+        /// <returns>Empreinte de version du formulaire.</returns>
         private static string Version(dynamic form)
         {
             List<object> nodes;
@@ -843,6 +1019,9 @@ namespace CodexVBE
         }
 
         // Create inside a verified canonical container and confirm rollback if any post-add step fails.
+        /// <summary>Ajoute un contrôle dans le conteneur sélectionné et vérifie le résultat dans le nouvel arbre.</summary>
+        /// <param name="request">Paramètres de la commande et version attendue par le client.</param>
+        /// <returns>Résultat de l’ajout et arbre actualisé.</returns>
         public object AddNestedControl(Request request)
         {
             ValidateName(request.Control, "Control");
@@ -907,6 +1086,9 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Modifie une propriété autorisée du nœud sélectionné puis retourne l’arbre actualisé.</summary>
+        /// <param name="request">Paramètres de la commande et version attendue par le client.</param>
+        /// <returns>Résultat de l’affectation et arbre actualisé.</returns>
         public object SetNodeProperty(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||
@@ -993,6 +1175,9 @@ namespace CodexVBE
             return new { ControlPath = request.ControlPath, Property = request.Property, Tree = after };
         }
 
+        /// <summary>Affecte une image OLE au nœud sélectionné après vérification de son chemin et de la version.</summary>
+        /// <param name="request">Paramètres de la commande et version attendue par le client.</param>
+        /// <returns>Résultat de l’affectation de l’image et arbre actualisé.</returns>
         public object SetNodePicture(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||
@@ -1023,6 +1208,9 @@ namespace CodexVBE
                 Tree = Tree(request.Project, request.Form) };
         }
 
+        /// <summary>Retire un contrôle après validation du chemin canonique et de la version de l’arbre.</summary>
+        /// <param name="request">Paramètres de la commande et version attendue par le client.</param>
+        /// <returns>Confirmation du retrait et arbre actualisé.</returns>
         public object RemoveControl(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||
@@ -1055,6 +1243,9 @@ namespace CodexVBE
             return new { RemovedPath = request.ControlPath, Applied = true, Tree = after };
         }
 
+        /// <summary>Place le contrôle sélectionné au premier plan ou à l’arrière-plan de son conteneur.</summary>
+        /// <param name="request">Paramètres de la commande et version attendue par le client.</param>
+        /// <returns>Résultat du changement d’ordre visuel et arbre actualisé.</returns>
         public object ZOrderControl(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||
@@ -1084,6 +1275,10 @@ namespace CodexVBE
                 TreeBefore = before, TreeAfter = after };
         }
 
+        /// <summary>Ajoute une page de MultiPage ou un onglet de TabStrip après validation de l’arbre.</summary>
+        /// <param name="request">Paramètres de la commande et version attendue par le client.</param>
+        /// <param name="collectionName">Nom de la collection contrôlée.</param>
+        /// <returns>Résultat de l’ajout et arbre actualisé.</returns>
         public object AddPageOrTab(Request request, string collectionName)
         {
             ValidateName(request.NewName, "NewName");
@@ -1155,6 +1350,10 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Retourne l’index de l’élément correspondant au nom dans la collection.</summary>
+        /// <param name="collection">Collection COM des contrôles à parcourir.</param>
+        /// <param name="name">Nom de la propriété, du composant ou du contrôle.</param>
+        /// <returns>Index de l’élément correspondant, ou -1.</returns>
         private static int FindCollectionIndexByName(dynamic collection, string name)
         {
             int index = 0;
@@ -1166,6 +1365,9 @@ namespace CodexVBE
             return -1;
         }
 
+        /// <summary>Retire la page ou l’onglet exact après vérification de la structure et de la version.</summary>
+        /// <param name="request">Paramètres de la commande et version attendue par le client.</param>
+        /// <returns>Confirmation du retrait et arbre actualisé.</returns>
         public object RemovePageOrTab(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||
@@ -1211,6 +1413,11 @@ namespace CodexVBE
             return new { RemovedPath = request.ControlPath, Applied = true, Tree = after };
         }
 
+        /// <summary>Convertit la valeur JSON selon le type de la propriété décrite.</summary>
+        /// <param name="value">Valeur demandée ou lue pour la propriété.</param>
+        /// <param name="declaredType">Type déclaré de la propriété COM.</param>
+        /// <param name="previous">Valeur existante utilisée pour préserver les membres non modifiés.</param>
+        /// <returns>Valeur convertie vers le type de propriété.</returns>
         private static object ConvertDescriptorValue(object value, Type declaredType, object previous)
         {
             bool variant = declaredType != null &&
@@ -1226,6 +1433,10 @@ namespace CodexVBE
             return ConvertScalar(value, type);
         }
 
+        /// <summary>Compare deux valeurs selon les règles de la propriété décrite.</summary>
+        /// <param name="actual">Valeur effectivement lue après modification.</param>
+        /// <param name="expected">Valeur attendue après modification.</param>
+        /// <returns>true si les valeurs sont identiques selon le descripteur.</returns>
         private static bool SameDescriptorValue(object actual, object expected)
         {
             if (Equals(actual, expected)) return true;
@@ -1238,6 +1449,10 @@ namespace CodexVBE
             return false;
         }
 
+        /// <summary>Indique si l’arbre contient exactement le chemin canonique demandé.</summary>
+        /// <param name="nodes">Nœuds parcourus dans l’arbre.</param>
+        /// <param name="path">Chemin à rechercher dans les nœuds.</param>
+        /// <returns>true si le chemin canonique existe dans l’arbre.</returns>
         private static bool TreeContainsPath(IEnumerable nodes, string path)
         {
             foreach (dynamic node in nodes)
@@ -1248,6 +1463,10 @@ namespace CodexVBE
             return false;
         }
 
+        /// <summary>Résout un contrôle ou une page en suivant chaque segment du chemin canonique.</summary>
+        /// <param name="designer">Objet Designer qui contient le contrôle.</param>
+        /// <param name="path">Chemin à rechercher dans les nœuds.</param>
+        /// <returns>Objet résolu au chemin canonique.</returns>
         private static object ResolveTreeItem(object designer, string path)
         {
             string[] parts = path.Split('/');
@@ -1269,6 +1488,10 @@ namespace CodexVBE
             return current;
         }
 
+        /// <summary>Résout les segments de collections imbriquées du chemin de contrôle.</summary>
+        /// <param name="designer">Objet Designer qui contient le contrôle.</param>
+        /// <param name="path">Chemin à rechercher dans les nœuds.</param>
+        /// <returns>Contrôle ou page obtenu au terme du chemin.</returns>
         private static dynamic ResolveNestedControls(dynamic designer, string path)
         {
             if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException("ParentPath is required.");
