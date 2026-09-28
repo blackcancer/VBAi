@@ -64,6 +64,8 @@ namespace CodexVBE
         private ChatToolWindow nativeChatControl;
         /// <summary>Indique si la fenêtre de conversation est attachée au cadre VBE.</summary>
         private bool docked;
+        internal static Func<ModernEditorWindow> CreateModernEditor = CreateModernEditorNative;
+        private static ModernEditorWindow CreateModernEditorNative() => new ModernEditorWindow();
         private ModernEditorWindow modernEditor;
         private object nativeEditorWindow;
         private ChatToolWindow nativeEditorControl;
@@ -99,7 +101,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
                     VbeNativeTheme.Initialize(editor, nativeDark, vbe);
                     if (nativeDark || VbeNativeTheme.ExperimentEnabled()) WriteLog("Native VBE dark mode enabled.");
                 }
-                catch (Exception themeError) { WriteLog("Native VBE dark mode unavailable: " + themeError); }
+                catch (Exception themeError) { WriteLog("Native VBE dark mode unavailable: " + themeError.ToString()); }
                 addIn = addInInstance;
                 WriteLog("AddInInst: " + (addIn == null ? "null" : addIn.GetType().FullName)
                     + ", COM=" + (addIn != null && Marshal.IsComObject(addIn)));
@@ -211,7 +213,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
             { nativeEditorControl = null; nativeEditorWindow = null; editorDocked = false; }
             if (modernEditor == null || modernEditor.IsDisposed)
             {
-                modernEditor = new ModernEditorWindow();
+                modernEditor = CreateModernEditor();
                 modernEditor.DockRequested += ToggleEditorDock;
                 if (editorDocked && nativeEditorControl != null) nativeEditorControl.Attach(modernEditor);
             }
@@ -391,7 +393,7 @@ public void OnBeginShutdown(ref object[] custom) { CleanupTemporaryToolbarComman
         private void Dispose()
         {
             try { if (!VbeNativeTheme.Disconnect()) WriteLog("Native VBE theme cleanup deferred: renderer still active."); }
-            catch (Exception error) { WriteLog("Native VBE theme cleanup failed: " + error); }
+            catch (Exception error) { WriteLog("Native VBE theme cleanup failed: " + error.ToString()); }
             editorNavigation?.Dispose(); editorNavigation = null;
             if (editorDocked && modernEditor != null && !modernEditor.IsDisposed) nativeEditorControl?.Detach(modernEditor);
             editorDocked = false;

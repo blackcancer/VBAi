@@ -360,3 +360,212 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    using System;
+    using System.IO;
+    using System.Linq;
+    using System.Reflection;
+    using CodexVBE;
+    using CodexVBE.Tests.Infrastructure;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+    [TestClass, TestCategory("Unit"), DoNotParallelize]
+    public sealed class AddInModernEditorTests
+    {
+        [STATestMethod]
+        public void ActiveEditorFollowsOnlyCodePanesInDesignModeAndRetainsComponentIdentity()
+        {
+            using (var fixture = new AddInModernEditorFixture())
+            {
+                Assert.IsNull(LlmBoundaryScope.Call(fixture.Instance, "ActiveEditorModule", true));
+                fixture.Scope.Host.ActiveWindow = new AddInEditorActiveWindow { Type = 1 };
+                Assert.IsNull(LlmBoundaryScope.Call(fixture.Instance, "ActiveEditorModule", true));
+                fixture.Scope.Host.ActiveWindow = new AddInEditorActiveWindow();
+                Assert.IsNull(LlmBoundaryScope.Call(fixture.Instance, "ActiveEditorModule", true));
+                Assert.IsNull(LlmBoundaryScope.Call(fixture.Instance, "ActiveEditorModule", false));
+                var component = fixture.Active(1);
+                Assert.IsNull(LlmBoundaryScope.Call(fixture.Instance, "ActiveEditorModule", true));
+                var module = (IEditorModule)LlmBoundaryScope.Call(fixture.Instance, "ActiveEditorModule", false);
+                Assert.AreEqual("P · Module1", module.Name);
+                fixture.Scope.Host.Project.Mode = 2;
+                Assert.AreEqual(module.Name, ((IEditorModule)LlmBoundaryScope.Call(fixture.Instance, "ActiveEditorModule", true)).Name);
+            }
+        }
+
+        [STATestMethod]
+        public void FloatingEditorCreationVisibilityRecreationAndDisposedSiteAreOwned()
+        {
+            using (var fixture = new AddInModernEditorFixture())
+            {
+                Assert.IsNull(fixture.Get(false));
+                var editor = fixture.Get(); Assert.IsTrue(editor.Visible); Assert.AreSame(editor, fixture.Get(false));
+                Assert.AreSame(editor, fixture.Get()); editor.Hide(); Assert.AreSame(editor, fixture.Get()); Assert.IsTrue(editor.Visible);
+                editor.Dispose(); Assert.IsNull(fixture.Get(false)); var replacement = fixture.Get(); Assert.AreNotSame(editor, replacement);
+                fixture.Call("ToggleEditorDock"); var control = fixture.Scope.Host.Windows.EditorControl;
+                control.Dispose(); Assert.IsTrue(replacement.IsDisposed);
+                var recovered = fixture.Get(); Assert.AreNotSame(replacement, recovered); Assert.IsTrue(recovered.TopLevel);
+                Assert.IsNull(LlmBoundaryScope.Get<object>(fixture.Instance, "nativeEditorControl"));
+                Assert.IsNull(LlmBoundaryScope.Get<object>(fixture.Instance, "nativeEditorWindow"));
+                Assert.IsFalse(LlmBoundaryScope.Get<bool>(fixture.Instance, "editorDocked"));
+            }
+        }
+
+        [STATestMethod]
+        public void DockRequestedCreatesDistinctEditorSiteUndocksAndReusesItsLiveControl()
+        {
+            using (var fixture = new AddInModernEditorFixture(true))
+            {
+                var editor = fixture.Get();
+                var dock = (Action)typeof(ModernEditorWindow).GetField("DockRequested", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(editor);
+                dock(); var window = fixture.Scope.Host.Windows.EditorWindow;
+                Assert.IsFalse(editor.TopLevel); Assert.AreEqual(900, window.Width); Assert.AreEqual(650, window.Height); Assert.AreEqual(1, window.FocusCount);
+                Assert.IsTrue(LlmBoundaryScope.Get<bool>(fixture.Instance, "editorDocked"));
+                Assert.AreSame(editor, fixture.Get()); Assert.AreEqual(2, window.FocusCount);
+                dock(); Assert.IsTrue(editor.TopLevel); Assert.IsFalse(window.Visible); Assert.IsTrue(editor.Visible);
+                dock(); Assert.AreSame(window, fixture.Scope.Host.Windows.EditorWindow); Assert.IsFalse(editor.TopLevel);
+                Assert.IsTrue(fixture.Scope.Host.Windows.Window.Visible, "The assistant and editor must retain distinct native sites.");
+            }
+        }
+
+        [STATestMethod]
+        public void DockedEditorRecreationAttachesToExistingControlBeforeFocus()
+        {
+            using (var fixture = new AddInModernEditorFixture())
+            {
+                var editor = fixture.Get(); fixture.Call("ToggleEditorDock"); var window = fixture.Scope.Host.Windows.EditorWindow;
+                editor.Dispose(); var replacement = fixture.Get(); Assert.IsFalse(replacement.TopLevel); Assert.AreSame(window, fixture.Scope.Host.Windows.EditorWindow);
+                Assert.IsTrue(fixture.Scope.Host.Windows.EditorControl.Controls.Contains(replacement));
+                Assert.AreEqual(2, window.FocusCount);
+            }
+        }
+
+        [STATestMethod]
+        public void EditorDockFailuresReportOwnedNoticeAndNativeCloseRefusalDoesNotLeakForms()
+        {
+            foreach (int failure in new[] { 0, 1, 2 })
+            using (var fixture = new AddInModernEditorFixture())
+            {
+                var editor = fixture.Get();
+                fixture.Scope.Host.Windows.RejectCreation = failure == 0;
+                fixture.Scope.Host.Windows.MissingControl = failure == 1;
+                fixture.Scope.Host.Windows.AfterCreation = () => { if (failure == 2) fixture.Scope.Host.Windows.EditorWindow.Focusing = () => throw new IOException("owned focus failure"); };
+                fixture.Call("ToggleEditorDock"); Assert.AreEqual(1, fixture.Scope.Notices.Count);
+                StringAssert.Contains(fixture.Scope.Logs.Last(), "VBE menu action failed:");
+                if (fixture.Scope.Host.Windows.EditorWindow != null) fixture.Scope.Host.Windows.EditorWindow.RejectClose = true;
+                fixture.Scope.Close(fixture.Instance); Assert.IsTrue(editor.IsDisposed); Assert.IsNull(fixture.Get(false));
+            }
+        }
+
+        [STATestMethod]
+        public void MenuEditorCommandAndNavigationOpenMemoryModulesOrReportTheirRealFailure()
+        {
+            using (var fixture = new AddInModernEditorFixture())
+            using (var module = new EditorFixture())
+            {
+                fixture.Call("ShowModernEditor"); Assert.AreEqual(1, fixture.Editors.Count);
+                LlmBoundaryScope.Call(fixture.Instance, "OpenModernModule", module);
+                Assert.AreEqual(1, fixture.Get(false).Documents.Count());
+                Assert.AreSame(module, fixture.Get(false).Documents.Single().Module);
+                LlmBoundaryScope.Call(fixture.Instance, "OpenModernModule", new object[] { null }); Assert.AreEqual(1, fixture.Scope.Notices.Count);
+                fixture.Active(); fixture.Call("ShowModernEditor"); Assert.AreEqual(2, fixture.Scope.Notices.Count);
+                LlmBoundaryScope.Set(fixture.Instance, "vbe", new object()); fixture.Call("ShowModernEditor"); Assert.AreEqual(3, fixture.Scope.Notices.Count);
+            }
+            using (var fixture = new AddInModernEditorFixture())
+            {
+                Action<string> action = null;
+                AddIn.CreateMenu = (host, chat, settings, github, editor) => { action = editor; return new VbeMenu(host, chat, settings, github, editor, (b, i, d, h) => { }, (b, i, d, h) => { }, (b, t) => { }); };
+                object[] custom = null; fixture.Instance.OnConnection(fixture.Scope.Host, 0, fixture.Scope.Host.AddIns.AddIn, ref custom);
+                action("/editor"); Assert.IsNotNull(fixture.Get(false)); Assert.AreEqual(0, fixture.Scope.Notices.Count);
+            }
+        }
+
+        [STATestMethod]
+        public void ShutdownRetainsEachDockedEditorNullAndDisposedGuard()
+        {
+            foreach (int state in new[] { 0, 1, 2, 3, 4 })
+            using (var fixture = new AddInModernEditorFixture())
+            {
+                var editor = fixture.Get(); fixture.Call("ToggleEditorDock");
+                if (state == 0) LlmBoundaryScope.Set(fixture.Instance, "editorDocked", false);
+                if (state == 1) LlmBoundaryScope.Set(fixture.Instance, "modernEditor", null);
+                if (state == 2) editor.Dispose();
+                if (state == 3) LlmBoundaryScope.Set(fixture.Instance, "nativeEditorControl", null);
+                fixture.Scope.Close(fixture.Instance);
+                Assert.IsNull(LlmBoundaryScope.Get<object>(fixture.Instance, "modernEditor")); Assert.IsNull(LlmBoundaryScope.Get<object>(fixture.Instance, "nativeEditorWindow"));
+                Assert.IsFalse(LlmBoundaryScope.Get<bool>(fixture.Instance, "editorDocked"));
+                if (state != 1) Assert.IsTrue(editor.IsDisposed);
+            }
+        }
+
+        [STATestMethod]
+        public void ConnectionLogsSettingsAndNativeThemeFailuresAndEnabledThemeWithoutRealPalette()
+        {
+            foreach (int outcome in new[] { 0, 1, 2 })
+            using (var theme = new NativeThemeFixture())
+            using (var palette = new NativePaletteSchedulerFixture())
+            using (var scope = new HostUiScope())
+            {
+                VbeNativeTheme.ApplyNativeTheme = window => 1;
+                VbeNativeTheme.CreatePalette = (host, window) => palette.Service;
+                scope.Settings.NativeVbeDarkTheme = outcome == 1;
+                if (outcome == 0) AddIn.ReadSettings = () => throw new IOException("owned settings failure");
+                if (outcome == 2) scope.Host.MainWindow.RejectHandle = true;
+                var instance = scope.Connected();
+                try
+                {
+                    StringAssert.Contains(string.Join("\n", scope.Logs), outcome == 0 ? "Native VBE theme setting unavailable" : outcome == 1 ? "Native VBE dark mode enabled." : "Native VBE dark mode unavailable:");
+                }
+                finally { scope.Host.MainWindow.RejectHandle = false; scope.Close(instance); }
+            }
+        }
+        [STATestMethod]
+        public void StartupFailureBeforeReporterAndConnectedMenuErrorPreserveTheirCleanupContracts()
+        {
+            using (var fixture = new AddInModernEditorFixture())
+            {
+                AddIn.StartUpdateCheck = () => throw new IOException("owned updater failure");
+                object[] custom = null;
+                Assert.ThrowsException<IOException>(() => fixture.Instance.OnConnection(fixture.Scope.Host, 0, fixture.Scope.Host.AddIns.AddIn, ref custom));
+                Assert.IsNull(LlmBoundaryScope.Get<object>(fixture.Instance, "dispatcher"));
+                Assert.IsNull(LlmBoundaryScope.Get<object>(fixture.Instance, "crashReporter"));
+                StringAssert.Contains(string.Join("\n", fixture.Scope.Logs), "OnConnection failed:");
+            }
+            using (var fixture = new AddInModernEditorFixture(true))
+            {
+                LlmBoundaryScope.Call(fixture.Instance, "ReportMenuError", new IOException("owned menu failure"));
+                Assert.AreEqual("owned menu failure", fixture.Scope.Notices.Single());
+                Assert.IsNotNull(LlmBoundaryScope.Get<CrashReporter>(fixture.Instance, "crashReporter"));
+                object[] custom = new object[] { "owned payload" };
+                var original = custom;
+                fixture.Instance.OnAddInsUpdate(ref custom); fixture.Instance.OnStartupComplete(ref custom);
+                Assert.AreSame(original, custom); Assert.AreEqual("owned payload", custom[0]);
+            }
+        }
+
+        [STATestMethod]
+        public void ThemeCleanupRefusalAndFailureAreLoggedWhileAllHostReferencesAreReleased()
+        {
+            using (var renderer = new NativeRendererStopFixture())
+            using (var theme = new NativeThemeFixture())
+            using (var fixture = new AddInModernEditorFixture())
+            {
+                renderer.Result = 1444;
+                fixture.Scope.Close(fixture.Instance);
+                StringAssert.Contains(string.Join("\n", fixture.Scope.Logs), "Native VBE theme cleanup deferred: renderer still active.");
+                Assert.IsTrue(VbeNativeRenderer.Active); Assert.IsNull(LlmBoundaryScope.Get<object>(fixture.Instance, "vbe"));
+                renderer.Result = 0;
+            }
+            using (var theme = new NativeThemeFixture())
+            using (var fixture = new AddInModernEditorFixture())
+            {
+                theme.AddBrush(); VbeNativeTheme.ReleaseBrush = brush => throw new InvalidOperationException("owned brush release failure");
+                fixture.Scope.Close(fixture.Instance);
+                StringAssert.Contains(string.Join("\n", fixture.Scope.Logs), "Native VBE theme cleanup failed:");
+                StringAssert.Contains(string.Join("\n", fixture.Scope.Logs), "owned brush release failure");
+                Assert.IsNull(LlmBoundaryScope.Get<object>(fixture.Instance, "vbe"));
+            }
+        }
+    }
+}
