@@ -61,6 +61,12 @@ namespace CodexVBE.Tests.Unit
             public bool BuiltIn { get; set; }
             public bool Visible => true;
             public bool Temporary { get; set; }
+            public bool CopiedFromSource { get; set; }
+            public Button Copy(object target, int before)
+            {
+                var copied = ((Bar)target).Controls.Add(Type, Id, System.Type.Missing, before, true);
+                copied.Caption = Caption; copied.BuiltIn = BuiltIn; copied.CopiedFromSource = true; return copied;
+            }
             public void Delete() {if(FailDelete)throw new InvalidOperationException("native delete rejected");if(!IgnoreDelete)Owner.Remove(this);}
         }
     }

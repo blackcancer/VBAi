@@ -1151,7 +1151,7 @@ namespace CodexVBE
                 if (root.IsReadOnly) throw new InvalidOperationException("Property is read-only: " + root.Name);
                 object oldValue = root.GetValue(target);
                 object converted = ConvertDescriptorValue(request.Value, root.PropertyType, oldValue);
-                root.SetValue(target, converted);
+                SetDesignerScalar(target, root, converted);
                 object actual = root.GetValue(target);
                 if (!SameDescriptorValue(actual, converted))
                     throw new InvalidOperationException("The VBE did not retain property " + root.Name + ".");
@@ -1167,7 +1167,7 @@ namespace CodexVBE
                 if (member.IsReadOnly) throw new InvalidOperationException("Object member is read-only: " + request.Property);
                 object oldValue = member.GetValue(owner);
                 object converted = ConvertDescriptorValue(request.Value, member.PropertyType, oldValue);
-                member.SetValue(owner, converted);
+                SetDesignerScalar(owner, member, converted);
                 if (!SameDescriptorValue(member.GetValue(owner), converted))
                     throw new InvalidOperationException("The VBE did not retain object member " + request.Property + ".");
             }

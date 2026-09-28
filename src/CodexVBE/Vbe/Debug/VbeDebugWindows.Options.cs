@@ -40,7 +40,8 @@ namespace CodexVBE
                 int index = -1;
                 for (int i = 0; i < names.Count; i++) if (names[i] == request.Pane) { if (index >= 0) throw new InvalidOperationException("The options tab is ambiguous."); index = i; }
                 if (index < 0) throw new InvalidOperationException("The exact options tab is absent.");
-                var matches = native.Controls(dialog, index).Where(x => x.Visible && x.Enabled && x.Name == request.Property).ToArray();
+                var matches = native.Controls(dialog, index).Where(x => x.Visible && x.Enabled && x.Name == request.Property &&
+                    (x.Type == "ControlType.CheckBox" || x.Type == "ControlType.RadioButton" || x.Type == "ControlType.Edit")).ToArray();
                 if (matches.Length != 1 || !string.IsNullOrEmpty(matches[0].Error)) throw new InvalidOperationException("The exact option is absent, ambiguous or unreadable.");
                 var selected = matches[0];
                 object writeValue = ValidateEditableOption(request.Pane, selected, request.Value);
@@ -67,20 +68,20 @@ namespace CodexVBE
         /// <summary>Autorise seulement les préférences connues d’éditeur et de débogueur, sans format de couleurs ni sécurité.</summary>
         internal static object ValidateEditableOption(string tab, OptionsControl control, object value)
         {
-            string normalized = (control.Name ?? "").Replace("&", "").Trim().TrimEnd(':').ToLowerInvariant();
+            string normalized = (control.Name ?? "").Replace("&", "").Trim().TrimEnd(':').Trim().ToLowerInvariant();
             string tabName = (tab ?? "").Replace("&", "").Trim().ToLowerInvariant();
             bool editor = tabName == "editor" || tabName == "éditeur" || tabName == "editeur";
             bool general = tabName == "general" || tabName == "général";
             if (!editor && !general) throw new InvalidOperationException("Only recognized Editor/General options are writable; formatting, docking and security are excluded.");
             var editorChecks = new[] { "auto syntax check", "require variable declaration", "auto list members", "auto quick info", "auto data tips", "auto indent",
-                "vérification automatique de la syntaxe", "déclaration des variables obligatoire", "liste des membres automatique", "info rapide automatique", "info-bulles automatiques", "retrait automatique" };
-            var generalChecks = new[] { "compile on demand", "background compile", "compilation à la demande", "compilation en arrière-plan", "compiler en arrière-plan" };
+                "vérification automatique de la syntaxe", "déclaration des variables obligatoire", "liste des membres automatique", "info rapide automatique", "complément automatique des instructions", "info express automatique", "info-bulles automatiques", "retrait automatique" };
+            var generalChecks = new[] { "compile on demand", "background compile", "compilation à la demande", "compilation sur demande", "compilation en arrière-plan", "compiler en arrière-plan" };
             if (control.Type == "ControlType.CheckBox" && (editor ? editorChecks : generalChecks).Contains(normalized))
             { if (!(value is bool)) throw new ArgumentException("This option requires a boolean Value."); return value; }
             if (general && control.Type == "ControlType.RadioButton" &&
                 new[] { "break on all errors", "break in class module", "break on unhandled errors", "arrêt sur toutes les erreurs", "arrêt dans le module de classe", "arrêt sur les erreurs non gérées" }.Contains(normalized))
             { if (!(value is bool) || !(bool)value) throw new ArgumentException("Select an error-trapping radio option with Value=true."); return true; }
-            if (editor && control.Type == "ControlType.Edit" && new[] { "tab width", "largeur de tabulation" }.Contains(normalized))
+            if (editor && control.Type == "ControlType.Edit" && new[] { "tab width", "largeur de tabulation", "largeur de la tabulation" }.Contains(normalized))
             {
                 string text = Convert.ToString(value, CultureInfo.InvariantCulture);
                 if (!int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out int size) || size < 1 || size > 32)

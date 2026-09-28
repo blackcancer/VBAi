@@ -1848,6 +1848,8 @@ namespace CodexVBE
                 var listCondition = new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem);
                 AutomationElementCollection elements = root.FindAll(TreeScope.Descendants, listCondition);
                 var items = new List<object>();
+                var rowKeys = new HashSet<string>(StringComparer.Ordinal);
+                int duplicates = 0;
                 for (int index = 0; index < elements.Count; index++)
                 {
                     AutomationElement element = elements[index];
@@ -1857,15 +1859,24 @@ namespace CodexVBE
                         raw = ((ValuePattern)pattern).Current.Value;
                     // Skip the native empty-list placeholder before querying its UIA ancestry.
                     if (ParseDebugRow(raw, null) == null) continue;
-                    object parsed = ParseDebugRow(raw, ItemPath(element));
-                    if (parsed != null) items.Add(parsed);
+                    string[] path = ItemPath(element);
+                    object parsed = ParseDebugRow(raw, path);
+                    if (parsed != null)
+                    {
+                        if (rowKeys.Add(DebugRowIdentity(raw, path))) items.Add(parsed);
+                        else duplicates++;
+                    }
                 }
                 return new { Available = true, Items = items.ToArray(), Error = (string)null,
-                    Coverage = "UIAExposedRowsOnly" };
+                    Coverage = "UIAExposedRowsOnly", DuplicateRowsOmitted = duplicates };
             }
             catch (Exception ex) { return new { Available = true, Items = new object[0], Error = ex.Message,
                 Coverage = "UIAExposedRowsOnly" }; }
         }
+
+        /// <summary>Identifie une observation complète, en conservant le contexte et chaque segment du chemin.</summary>
+        internal static string DebugRowIdentity(string raw, string[] path) =>
+            new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(new { Raw = raw, PathSegments = path ?? new string[0] });
 
         /// <summary>Analyse une ligne affichée des volets Locals ou Watches et lui associe son chemin de parenté.</summary>
         /// <param name="raw">Texte brut de la ligne accessible.</param>

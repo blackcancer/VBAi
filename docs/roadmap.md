@@ -25,13 +25,13 @@ Les fonctions et les limites exactes sont détaillées dans [Extensions fonction
 | Projets | Renommage de projet Excel enregistré/non protégé disponible ; autres périmètres refusés. Sauvegarde standalone `.swp` implémentée mais non qualifiée dans SOLIDWORKS ; autres hôtes non implémentés |
 | Signature | Première sélection du certificat dans Sécurité Windows, digest de la signature VBA et persistance SOLIDWORKS ; confiance de certificat disponible hors ligne ; l’état signé ne prouve pas la confiance du certificat |
 | Breakpoints | Inventaire indépendant des marqueurs et pointeur d’exécution ; la commande de basculement et l’arrêt effectif sont qualifiés, pas un inventaire exhaustif |
-| Variables/espions | Lecture des valeurs SOLIDWORKS, grands arbres, types particuliers et variantes de langues ; dernier essai SOLIDWORKS : zéro ligne exposée |
-| Exécution | Appel paramétré implémenté, à qualifier depuis le complément installé ; diagnostics particuliers et variantes d’hôtes ; les statuts asynchrones ne prouvent pas la réussite runtime |
+| Variables/espions | Lecture des valeurs SOLIDWORKS, arbres COM/espions et variantes de langues ; tableau Excel de 1 000 éléments et sept types scalaires qualifiés en français, doublons UIA supprimés ; dernier essai SOLIDWORKS : zéro ligne exposée |
+| Exécution | Appel paramétré qualifié depuis le complément Excel installé (texte, nombre, booléen, Null et Function) ; diagnostics particuliers et variantes d’hôtes ; les statuts asynchrones ne prouvent pas la réussite runtime |
 | UserForms | Propriétés réellement modifiables par type, persistance et effet runtime ; contrôles tiers ; fidélité des images, copies et récupérations ; événements et conteneurs complexes |
 | Listes | Initialisation multicolonne et liaisons implémentées ; qualifier les combinaisons de contrôles/conteneurs et les autres hôtes |
-| Fenêtres/barres d’outils | Persistance, géométries et DPI/écrans ; premier ancrage du chat à droite sur un profil vierge |
+| Fenêtres/barres d’outils | Persistance des barres Excel qualifiée via SQLite ; géométries/DPI/ancrage natifs au-delà du profil mesuré ; premier ancrage du chat à droite sur un profil vierge |
 | Explorateur d’objets | Lecture/sélection/pagination implémentées ; qualification SOLIDWORKS et variantes UI natives |
-| Options/boîte à outils | Mutation bornée Éditeur/Général implémentée, persistance à qualifier ; personnalisation de la boîte à outils absente et contrôles ActiveX tiers à qualifier |
+| Options/boîte à outils | 13 essais de mutation Éditeur/Général qualifiés après réouverture et restauration ; autres langues natives à qualifier. Personnalisation de la boîte à outils absente ; neuf MSComctl installés refusés par la politique native de confiance |
 
 Les journaux anciens peuvent indiquer « manquant » pour des fonctions implémentées depuis : signets, navigation, mise en page, presse-papiers, historique, lancement UserForm, barres d’outils et lecture de l’Explorateur sont désormais dans le code.
 
@@ -43,3 +43,5 @@ Les journaux anciens peuvent indiquer « manquant » pour des fonctions impléme
 - Poursuivre la relecture linguistique des catalogues ; leur parité technique ne garantit pas la qualité de traduction.
 
 Excel reste l’hôte automatisé prioritaire. Les essais SOLIDWORKS utilisent une instance et un VBE préchargés par l’utilisateur, sans démarrer une nouvelle instance COM. Les essais d’écriture restent limités aux projets jetables identifiés.
+
+Voir le [bilan précis des cinq qualifications](reference/native-qualification.md) pour les scénarios, preuves et conditions restantes.

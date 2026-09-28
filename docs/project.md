@@ -34,6 +34,8 @@ Le [catalogue des 177 outils LLM](reference/vbe-tools.md) fournit les noms et pa
 
 Voir [Extensions fonctionnelles VBE](reference/functional-extensions.md) pour les contrats et limites : appel paramétré, index de déclarations, renommage local/projet, sauvegarde SWP, barres personnalisées, options et confiance locale de certificat. Les mesures des nouvelles extensions sont détaillées dans le [bilan courant](test-coverage.md).
 
+Voir également le [bilan des qualifications natives](reference/native-qualification.md) : exécution paramétrée, options et barres Excel, UserForms, grand tableau du débogueur, langues et écrans. Les limites SOLIDWORKS, ActiveX et DPI y restent explicites.
+
 ## Dernière validation
 
 | Vérification | Résultat |

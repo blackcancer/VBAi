@@ -25,7 +25,7 @@ namespace CodexVBE
                 if (string.Equals((string)bar.Name, name, StringComparison.OrdinalIgnoreCase)) throw new InvalidOperationException("The toolbar already exists.");
             bool temporary = request.Temporary ?? true;
             object created = null; string error = null;
-            try { created = (object)vbe.CommandBars.Add(name, 1, false, temporary); ((dynamic)created).Visible = true; }
+            try { created = (object)vbe.CommandBars.Add(name, 1, false, temporary); ((dynamic)created).Visible = true; if (!temporary) SaveToolbarProfile((dynamic)created, true); }
             catch (Exception ex) { error = ex.Message; }
             return new { Created = created != null, Verified = error == null && created != null, NativeError = error,
                 Temporary = temporary, ObjectName = name, After = created == null ? null : ReadToolbarCommands(created),
@@ -41,6 +41,7 @@ namespace CodexVBE
             if ((bool)bar.BuiltIn || !((string)bar.Name).StartsWith(CustomToolbarPrefix, StringComparison.Ordinal) || (int)bar.Controls.Count != 0)
                 throw new InvalidOperationException("Only an empty custom VBAi toolbar can be removed.");
             if (((int)bar.Protection & 1) != 0) throw new InvalidOperationException("Toolbar customization is protected.");
+            ToolbarProfiles?.Update(request.ObjectName, null);
             bar.Delete();
             bool absent = true;
             foreach (dynamic current in vbe.CommandBars)
@@ -60,17 +61,19 @@ namespace CodexVBE
             int position = request.InsertIndex ?? ((int)bar.Controls.Count + 1);
             if (position < 1 || position > (int)bar.Controls.Count + 1) throw new ArgumentOutOfRangeException(nameof(request.InsertIndex));
             bool temporary = request.Temporary ?? true;
-            string tag = CustomCommandTag + Guid.NewGuid().ToString("N");
+            if (!temporary) RequirePersistentToolbar(bar);
+            string tag = (temporary ? CustomCommandTag : PersistentCommandTag) + Guid.NewGuid().ToString("N");
             string error = null;
             try
             {
-                dynamic added = bar.Controls.Add(1, request.ControlId, Type.Missing, position, temporary);
+                dynamic added = source.Copy(bar, position);
                 added.Tag = tag;
+                if (!temporary) SaveToolbarProfile(bar, false);
             }
             catch (Exception ex) { error = ex.Message; }
             var after = ReadToolbarCommands((object)bar);
             var addedState = after.Controls.FirstOrDefault(x => x.Tag == tag);
-            return new { Added = addedState != null, Verified = error == null && addedState != null && addedState.Id == request.ControlId,
+            return new { Added = addedState != null, Verified = error == null && addedState != null && addedState.Id == request.ControlId && addedState.Caption == request.ControlCaption,
                 Tag = tag, After = after, NativeError = error, Temporary = temporary, PersistenceVerified = false,
                 NextRead = "toolbar_controls", Limit = "Inspect partial results; no automatic retry. Restart persistence must be qualified separately." };
         }
@@ -87,7 +90,7 @@ namespace CodexVBE
             if (!tag.StartsWith(CustomCommandTag, StringComparison.Ordinal) || (int)control.Id != request.ControlId || (string)control.Caption != request.ControlCaption)
                 throw new InvalidOperationException("Only the exact VBAi-added command can be removed.");
             string error = null;
-            try { control.Delete(); } catch (Exception ex) { error = ex.Message; }
+            try { control.Delete(); SaveToolbarProfile(bar, false); } catch (Exception ex) { error = ex.Message; }
             var after = ReadToolbarCommands((object)bar);
             bool absent = !after.Controls.Any(x => x.Tag == tag);
             return new { Removed = absent, Verified = error == null && absent, After = after, NativeError = error };

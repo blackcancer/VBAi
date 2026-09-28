@@ -111,7 +111,7 @@ namespace CodexVBE.Tests.Unit
             request.ControlCaption = "Native command"; request.Temporary = false;
             var persistent = Data(service.AddToolbarCommand(request));
             Assert.IsTrue((bool)persistent["Verified"]); Assert.IsFalse((bool)persistent["Temporary"]);
-            Assert.IsFalse(bar.Controls[1].Temporary); Assert.IsFalse((bool)persistent["PersistenceVerified"]);
+            Assert.IsTrue(bar.Controls[1].CopiedFromSource); Assert.IsFalse((bool)persistent["PersistenceVerified"]);
         }
         [TestMethod]
         public void EmptyCustomToolbarCreationDeletionAndProtectedBarsAreVerified()

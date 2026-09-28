@@ -250,6 +250,7 @@ private void ReportMenuError(Exception ex)
 public void OnDisconnection(int removeMode, ref object[] custom)
         {
             WriteLog("OnDisconnection: " + removeMode);
+            CleanupTemporaryToolbarCommands();
             Dispose();
         }
 
@@ -261,7 +262,14 @@ public void OnAddInsUpdate(ref object[] custom) { }
 public void OnStartupComplete(ref object[] custom) { }
         /// <summary>Libère les services lorsque l’hôte commence son arrêt.</summary>
                 /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
-public void OnBeginShutdown(ref object[] custom) { Dispose(); }
+public void OnBeginShutdown(ref object[] custom) { CleanupTemporaryToolbarCommands(); Dispose(); }
+
+        /// <summary>Nettoie les boutons de session avant que la référence VBE soit libérée.</summary>
+        private void CleanupTemporaryToolbarCommands()
+        {
+            try { if (vbe != null) new VbeEditorWindows(vbe).RemoveTemporaryToolbarCommands(); }
+            catch (Exception error) { WriteLog("Temporary toolbar cleanup failed: " + error.Message); }
+        }
 
         /// <summary>Détache et ferme les fenêtres, menus, serveur et contrôle de synchronisation.</summary>
         private void Dispose()
