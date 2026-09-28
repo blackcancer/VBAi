@@ -1,4 +1,4 @@
-﻿namespace CodexVBE.Tests.Unit
+namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
@@ -11,24 +11,35 @@
     using CodexVBE.Tests.Infrastructure;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    [TestClass]
+    /// <summary>Vérifie la validation et les opérations Git exposées par les outils LLM.</summary>
+[TestClass]
     [TestCategory("Unit")]
     public sealed partial class LlmVbeToolsGitTests
     {
+        /// <summary>Sérialiseur utilisé pour décoder les réponses d’outil.</summary>
         private static readonly JavaScriptSerializer Json = new JavaScriptSerializer();
+        /// <summary>Désérialise une réponse d’outil.</summary>
+        /// <param name="value">Réponse JSON.</param><returns>Objet réponse décodé.</returns>
         private static Response Response(string value) { return Json.Deserialize<Response>(value); }
+        /// <summary>Demande le statut Git du projet puis renvoie ses données.</summary>
+        /// <param name="tools">Orchestrateur à invoquer.</param><returns>Données du statut Git.</returns>
         private static async Task<IDictionary<string,object>> Status(LlmVbeTools tools)
         {
             var response=Response(await tools.InvokeAsync("git_status","{\"Project\":\"P\"}"));
             Assert.IsTrue(response.Ok,response.Error);return (IDictionary<string,object>)response.Data;
         }
+        /// <summary>Vérifie qu’un appel Git est refusé avec le fragment d’erreur attendu.</summary>
+        /// <param name="tools">Orchestrateur.</param><param name="name">Nom de l’outil.</param><param name="arguments">Arguments à transmettre.</param><param name="fragment">Fragment attendu dans l’erreur.</param>
+        /// <returns>Tâche terminée lorsque l’appel est refusé comme attendu.</returns>
         private static async Task Rejected(LlmVbeTools tools,string name,object arguments,string fragment)
         {
             var response=Response(await tools.InvokeAsync(name,arguments is string ? (string)arguments : Json.Serialize(arguments)));
             Assert.IsFalse(response.Ok,name);StringAssert.Contains(response.Error,fragment);
         }
 
-        [TestMethod]
+        /// <summary>Refuse les arguments absents, mal typés, supplémentaires ou liés à un autre scope.</summary>
+        /// <returns>Tâche terminée lorsque tous les arguments invalides sont refusés.</returns>
+[TestMethod]
         public async Task GitValidationMatrixRejectsMissingWrongTypedWhitespaceExtraFieldsAndCrossDocumentScope()
         {
             var tools=new LlmVbeTools(null,null,new LlmSettings { VbeEditApproval="Automatic" }) { BoundProject="P" };
@@ -52,7 +63,9 @@
             await Rejected(tools,"git_merge_abort",new {Project="P",ExpectedState="state"},UiText.Get("Git operation declined by the user."));
         }
 
-        [TestMethod]
+        /// <summary>Exerce lecture, branches, commits, mutations et pull requests sur un dépôt Git temporaire.</summary>
+        /// <returns>Tâche terminée lorsque les opérations du dépôt satisfont les assertions.</returns>
+[TestMethod]
         public async Task GitStatusHistoryCommitReadMutationAndSelectiveCommitUseDisposableBareRepository()
         {
             using(var fixture=new Fixture())
@@ -103,7 +116,9 @@
             }
         }
 
-        [TestMethod]
+        /// <summary>Ouvre le dépôt par défaut depuis le document de session uniquement lorsque sa liaison existe.</summary>
+        /// <returns>Tâche terminée lorsque l’ouverture respecte la liaison existante.</returns>
+[TestMethod]
         public async Task DefaultGitOpeningUsesSessionDocumentAndRequiresExistingBinding()
         {
             using(var scope=new LlmBoundaryScope())
