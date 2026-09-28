@@ -119,6 +119,23 @@ namespace CodexVBE.Tests.Integration
                 window.Close(); Wait(() => window.IsDisposed);
             }
         }
+        [STATestMethod]
+        public void RepeatedBreakpointRequestsRemainUnverifiedUntilSourceChanges()
+        {
+            using (var host = new EditorFixture())
+            using (var window = new ModernEditorWindow())
+            {
+                window.Drafts = new EditorDraftStore(host.Root);
+                var doc = Wait(window.OpenModule(host)); window.Show(); Wait(() => window.Ready);
+                Wait(() => Wait(window.Script("snapshots")).Contains(doc.Id));
+                Wait(window.Script("breakpointRequested", doc.Id, 3));
+                Wait(window.Script("breakpointRequested", doc.Id, 3));
+                StringAssert.Contains(Wait(window.Script("testInfo")), "\"pendingBreakpoints\":1");
+                Wait(window.Script("insert", "'changed\n"));
+                StringAssert.Contains(Wait(window.Script("testInfo")), "\"pendingBreakpoints\":0");
+                window.Close(); Wait(() => window.IsDisposed);
+            }
+        }
         private static Microsoft.Web.WebView2.Core.CoreWebView2CapturePreviewImageFormat CoreImageFormat() => Microsoft.Web.WebView2.Core.CoreWebView2CapturePreviewImageFormat.Png;
     }
 }
