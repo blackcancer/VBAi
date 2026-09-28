@@ -1,4 +1,4 @@
-namespace CodexVBE.Tests.Unit
+﻿namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
@@ -136,5 +136,60 @@ namespace CodexVBE.Tests.Unit
             Assert.AreEqual(1, (int)first.Properties["CodePaneView"]);
             Assert.IsNull(snapshot.ActiveCodePane);
         }
+        [TestMethod]
+        public void FocusAndShowMatrixReportNullMismatchedAndSuccessfulActiveWindowReadback()
+        {
+            var host=new FakeVbe();
+            var target=new FakeWindow(host) {Caption="Target",Type=3,Visible=true,SuppressFocus=true}; host.Windows.Add(target);
+            var editor=new VbeEditorWindows(host);
+            Assert.ThrowsException<ArgumentException>(()=>editor.ShowWindow("Target",-1));
+            host.Windows.Add(new FakeWindow(host) {Caption="Other",Type=3,Visible=true});
+            host.Windows.Add(new FakeWindow(host) {Caption="Target",Type=4,Visible=true});
+            foreach(FakeWindow active in new[] {null,host.Windows[1],host.Windows[2],target})
+            {
+                target.FocusTarget=active;
+                dynamic focus=editor.FocusWindow("Target",3);
+                Assert.AreEqual(active==target ? "ActiveWindowReadback" : "Unverified",(string)focus.Verification);
+                Assert.AreEqual(active==null,focus.ActiveWindow==null);
+                dynamic shown=editor.ShowWindow("Target",3);
+                Assert.AreEqual(active==target,(bool)shown.FocusVerified);
+                Assert.AreEqual(active==null,shown.ActiveWindow==null);
+                Assert.IsTrue((bool)shown.WasVisible);
+            }
+            target.Visible=false; target.IgnoreVisibilityChanges=true;
+            Assert.ThrowsException<InvalidOperationException>(()=>editor.ShowWindow("Target",3));
+        }
+
+        [TestMethod]
+        public void CloseMatrixDistinguishesRemovedHiddenStillVisibleAndDuplicateWindows()
+        {
+            var host=new FakeVbe();var editor=new VbeEditorWindows(host);
+            var target=new FakeWindow(host) {Caption="Target",Type=3,Visible=true};host.Windows.Add(target);
+            host.Windows.Add(new FakeWindow(host) {Caption="Other",Type=3});
+            host.Windows.Add(new FakeWindow(host) {Caption="Target",Type=4});
+            target.OnClose=()=> { };
+            dynamic unchanged=editor.CloseWindow("Target",3);Assert.AreEqual("Unverified",(string)unchanged.Verification);Assert.IsTrue((bool)unchanged.RemainingVisible);
+            target.OnClose=()=> {target.Visible=false;host.Windows.Add(new FakeWindow(host) {Caption="Target",Type=3});};
+            dynamic duplicate=editor.CloseWindow("Target",3);Assert.AreEqual("Unverified",(string)duplicate.Verification);Assert.AreEqual(2,(int)duplicate.RemainingMatches);
+            host.Windows.RemoveAt(host.Windows.Count-1);target.Visible=true;
+            target.OnClose=()=>host.Windows.Remove(target);
+            dynamic removed=editor.CloseWindow("Target",3);Assert.AreEqual("RemovedFromWindows",(string)removed.Verification);Assert.AreEqual(0,(int)removed.RemainingMatches);
+        }
+
+        [TestMethod]
+        public void SnapshotMatrixReportsUnavailableActiveComObjectsAndLinkageErrors()
+        {
+            var host=new FakeVbe();var editor=new VbeEditorWindows(host);
+            dynamic empty=editor.Windows();Assert.IsNull(empty.ActiveWindow);Assert.AreEqual(0,(int)empty.Windows.Count);
+            host.ActiveWindowThrows=true;host.ActiveCodePaneThrows=true;
+            dynamic windows=editor.Windows();StringAssert.Contains((string)windows.ActiveWindow.Error,"unavailable");
+            dynamic panes=editor.CodePanes();StringAssert.Contains((string)panes.ActiveCodePane.Error,"unavailable");
+            host.ActiveWindowThrows=false;host.ActiveCodePaneThrows=false;
+            var target=new FakeWindow(host) {Caption="Target",Type=0,Visible=true};host.Windows.Add(target);
+            dynamic linkage=editor.WindowLinkage("Target",0);Assert.AreEqual(false,(bool)linkage.Properties["IsLinked"]);
+            target.LinkageThrows=true;linkage=editor.WindowLinkage("Target",0);StringAssert.Contains((string)linkage.Errors["LinkedWindowFrame"],"unavailable");
+            dynamic environment=editor.Environment();Assert.IsTrue(environment.Errors.ContainsKey("ActiveProject"));
+        }
+
     }
 }

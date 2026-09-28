@@ -9,19 +9,20 @@ namespace CodexVBE
     {
         /// <summary>Paramètres persistants modifiés par cette fenêtre.</summary>
         private readonly LlmSettings settings;
-        /// <summary>Délègue la persistance des paramètres à l’implémentation enregistrée.</summary>
+        // Keep authentication, persistence and notices at replaceable native boundaries.
+        /// <summary>Enregistre les paramètres avec le stockage natif.</summary>
         internal static Action<LlmSettings> WriteSettings = (Action<LlmSettings>)Delegate.CreateDelegate(typeof(Action<LlmSettings>), typeof(LlmSettings).GetMethod("Save"));
-        /// <summary>Démarre l’authentification Copilot.</summary>
+        /// <summary>Ouvre l’authentification native Copilot.</summary>
         internal static Action StartCopilotLogin = CopilotClient.StartLogin;
-        /// <summary>Démarre l’authentification Codex.</summary>
+        /// <summary>Ouvre l’authentification native Codex.</summary>
         internal static Action StartCodexLogin = CodexAccount.StartLogin;
-        /// <summary>Lit l’état de connexion Copilot de façon asynchrone.</summary>
+        /// <summary>Lit l’état de connexion du CLI Copilot.</summary>
         internal static Func<System.Threading.Tasks.Task<string>> ReadCopilotStatus = CopilotClient.ReadStatusAsync;
-        /// <summary>Lit l’état de connexion Codex de façon asynchrone.</summary>
+        /// <summary>Lit l’état du compte Codex.</summary>
         internal static Func<System.Threading.Tasks.Task<CodexAccountStatus>> ReadCodexStatus = CodexAccount.ReadStatusAsync;
         /// <summary>Applique le thème sélectionné à l’interface.</summary>
         internal static Action<ThemeChoice> SelectTheme = UiTheme.Select;
-        /// <summary>Affiche une notification modale avec les paramètres transmis.</summary>
+        /// <summary>Affiche un message natif appartenant à la fenêtre de configuration.</summary>
         internal static Func<IWin32Window, string, string, MessageBoxButtons, MessageBoxIcon, DialogResult> ShowNotice = MessageBox.Show;
         /// <summary>Empêche les recalculs imbriqués de hauteur de contenu.</summary>
         private bool fittingContent;

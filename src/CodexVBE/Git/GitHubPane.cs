@@ -10,6 +10,9 @@ namespace CodexVBE
         /// <summary>Panneau WinForms de sélection de dépôt et de gestion des demandes de fusion GitHub.</summary>
     public sealed partial class GitHubPane : UserControl
     {
+        internal Func<string, GitHubApi> ApiFactory = CreateApi;
+        internal Action<string> OpenExternalLink = SafeLinks.Open;
+        private static GitHubApi CreateApi(string account) { return new GitHubApi(account); }
         /// <summary>Compte GitHub actif, dépôt distant sélectionné et branche source locale.</summary>
         private string account, remote, branch;
         /// <summary>Source d’annulation de l’opération GitHub actuellement exécutée.</summary>
@@ -43,7 +46,7 @@ namespace CodexVBE
         {
             if (cancellation != null) return;
             using (var pending = new CancellationTokenSource())
-            using (var api = new GitHubApi(account))
+            using (var api = ApiFactory(account))
             {
                 cancellation = pending; pages.Enabled = false; cancel.Enabled = cancelable; status.Text = UiText.Get("Connecting to GitHub…");
                 try { await action(api, pending.Token); status.Text = UiText.Get("Operation complete."); }
@@ -148,7 +151,7 @@ namespace CodexVBE
         private void OpenPull_Click(object sender, EventArgs e)
         {
             if (selectedPull == null) return;
-            try { SafeLinks.Open(selectedPull.html_url); } catch (Exception ex) { status.Text = ex.Message; }
+            try { OpenExternalLink(selectedPull.html_url); } catch (Exception ex) { status.Text = ex.Message; }
         }
         /// <summary>Ouvre dans l’éditeur un module VBA lié au fichier ou commentaire sélectionné.</summary>
         /// <param name="sender">Contrôle à l’origine de l’événement.</param>

@@ -12,6 +12,13 @@ namespace CodexVBE
     [ClassInterface(ClassInterfaceType.AutoDispatch)]
     public sealed class ChatToolWindow : UserControl
     {
+        internal delegate bool RectReader(IntPtr handle, out NativeRect rect);
+        internal delegate bool PointConverter(IntPtr handle, ref NativePoint point);
+        internal Func<IntPtr, IntPtr> ParentReader = GetParent;
+        internal RectReader ClientReader = GetClientRect;
+        internal RectReader WindowReader = GetWindowRect;
+        internal PointConverter CoordinateConverter = ScreenToClient;
+        internal Func<IntPtr, IntPtr, int, int, int, int, uint, bool> PositionWindow = SetWindowPos;
         /// <summary>Minuteur qui recalcule la taille du contrôle dans son site natif.</summary>
         private readonly Timer siteResizeTimer;
 
@@ -46,17 +53,17 @@ namespace CodexVBE
         private void FitNativeSite()
         {
             if (!IsHandleCreated || IsDisposed) return;
-            var site = GetParent(Handle);
+            var site = ParentReader(Handle);
             if (site == IntPtr.Zero) return;
             NativeRect client;
             NativeRect control;
-            if (!GetClientRect(site, out client) || !GetWindowRect(Handle, out control)) return;
+            if (!ClientReader(site, out client) || !WindowReader(Handle, out control)) return;
             var origin = new NativePoint { X = control.Left, Y = control.Top };
-            if (!ScreenToClient(site, ref origin)) return;
+            if (!CoordinateConverter(site, ref origin)) return;
             var width = Math.Max(1, client.Right - origin.X);
             var height = Math.Max(1, client.Bottom - origin.Y);
             if (Width == width && Height == height) return;
-            SetWindowPos(Handle, IntPtr.Zero, origin.X, origin.Y, width, height, 0x0004 | 0x0010);
+            PositionWindow(Handle, IntPtr.Zero, origin.X, origin.Y, width, height, 0x0004 | 0x0010);
             Size = new System.Drawing.Size(width, height);
         }
 
@@ -70,7 +77,7 @@ namespace CodexVBE
 
         /// <summary>Structure Win32 de rectangle en coordonnées écran.</summary>
         [StructLayout(LayoutKind.Sequential)]
-        private struct NativeRect
+        internal struct NativeRect
         {
             /// <summary>Bord gauche du rectangle.</summary>
             public int Left;
@@ -83,7 +90,7 @@ namespace CodexVBE
         }
         /// <summary>Point Win32 utilisé pour convertir les coordonnées écran en coordonnées client.</summary>
         [StructLayout(LayoutKind.Sequential)]
-        private struct NativePoint
+        internal struct NativePoint
         {
             /// <summary>Coordonnée horizontale du point.</summary>
             public int X;

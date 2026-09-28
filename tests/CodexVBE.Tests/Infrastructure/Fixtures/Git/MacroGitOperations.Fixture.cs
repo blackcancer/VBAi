@@ -10,14 +10,12 @@ namespace CodexVBE.Tests.Unit
     public sealed partial class MacroGitOperationsTests
     {
         /// <summary>Crée et détruit l’environnement Git et le projet simulé pour un test.</summary>
-        private sealed class Fixture : IDisposable
+        internal sealed class Fixture : IDisposable
         {
             /// <summary>Répertoire temporaire réservé au dépôt et au dépôt distant du test.</summary>
             internal readonly string Root = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "git-branches", Guid.NewGuid().ToString("N"));
-            /// <summary>Chemin du dépôt local temporaire.</summary>
-            internal readonly string Cache;
-            /// <summary>Chemin du dépôt distant nu temporaire.</summary>
-            internal readonly string Remote;
+            /// <summary>Chemins du dépôt local et du dépôt distant temporaire de la fixture.</summary>
+            internal readonly string Cache, Remote;
             /// <summary>Projet VBA simulé par des composants en mémoire.</summary>
             internal readonly global::FakeProject Host;
             /// <summary>Adaptateur reliant le projet simulé au dépôt.</summary>

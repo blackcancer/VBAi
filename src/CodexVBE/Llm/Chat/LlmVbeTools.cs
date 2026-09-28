@@ -48,6 +48,19 @@ namespace CodexVBE
         public string BoundProject { get; set; }
         /// <summary>Indique qu’une restauration interne est en cours et peut contourner certaines gardes d’édition.</summary>
         private bool restoring;
+        /// <summary>Adaptateurs natifs du débogueur, remplaçables par instance à la frontière UI.</summary>
+        internal readonly VbeToolNativeBoundary Native = new VbeToolNativeBoundary();
+        /// <summary>Exécute une commande sur la session hôte, sans remplacer l’orchestration de l’outil.</summary>
+        internal Func<Request, Response> Execute;
+        /// <summary>Demande la sauvegarde de signature au document hôte.</summary>
+        internal Func<string, object> PersistSignature;
+        /// <summary>Écrit les erreurs de lecture de diff dans le journal de chargement.</summary>
+        internal Action<string> WriteLog = LoadLog.Write;
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Func<VbeApprovalDialog, IWin32Window, DialogResult> ShowApproval = (dialog, window) => dialog.ShowDialog(window);
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Func<IWin32Window, string, string, DialogResult> ConfirmFile = (window, text, title) =>
+            MessageBox.Show(window, text, title, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
 
         /// <summary>Valide la portée et refuse les outils d’écriture hors du mode Agent.</summary>
         /// <param name="name">Nom de l’outil demandé.</param>
@@ -80,6 +93,8 @@ namespace CodexVBE
         public LlmVbeTools(VbeSession session, IWin32Window owner, LlmSettings settings)
         {
             this.session = session;
+            Execute = request => session.Execute(request);
+            PersistSignature = project => session.PersistProjectSignature(project);
             this.owner = owner;
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
@@ -413,13 +428,13 @@ namespace CodexVBE
                     string summary = name + "\r\n\r\n" + json.Serialize(values);
                     using (var approval = new VbeApprovalDialog(summary))
                     {
-                        if (approval.ShowDialog(owner) != DialogResult.Yes)
+                        if (ShowApproval(approval, owner) != DialogResult.Yes)
                             return json.Serialize(Response.Failure("User rejected the edit."));
                     }
                 }
                 Response result = name == "status"
                     ? Response.Success(LlmVbeContext.LiveSnapshot(session))
-                    : session.Execute(request);
+                    : Execute(request);
                 if (result.Ok && beforeCode != null && !restoring)
                 {
                     try
@@ -432,7 +447,7 @@ namespace CodexVBE
                                 beforeCode.Code, beforeCode.Sha256, afterCode.Code, afterCode.Sha256, lineCount));
                         }
                     }
-                    catch (Exception ex) { LoadLog.Write("Code diff readback failed: " + ex.Message); }
+                    catch (Exception ex) { WriteLog("Code diff readback failed: " + ex.Message); }
                 }
                 return json.Serialize(result);
             }
@@ -454,7 +469,7 @@ namespace CodexVBE
         /// <returns>Code et empreinte lus.</returns>
         private CodeSnapshot ReadCode(string project, string module)
         {
-            Response response = session.Execute(new Request { Command = "read_module",
+            Response response = Execute(new Request { Command = "read_module",
                 Project = project, Module = module });
             if (!response.Ok) throw new InvalidOperationException(response.Error);
             dynamic data = response.Data;
@@ -496,8 +511,8 @@ namespace CodexVBE
                     var change = group.First(); var snapshot = snapshots[group.Key];
                     var arguments = new { Project = change.Project, Module = change.Module, ExpectedSha256 = snapshot.Sha256,
                         StartLine = 1, Count = CodeRollback.Lines(snapshot.Code).Length, Text = planned[group.Key] };
-                    var result = json.Deserialize<Response>(Invoke("replace_lines", json.Serialize(arguments)));
-                    if (result == null || !result.Ok) return Response.Failure(UiText.Get("Undo stopped after ") + applied + " module(s). " + result?.Error);
+                    var result = ReadToolResponse(Invoke("replace_lines", json.Serialize(arguments)));
+                    if (!result.Ok) return Response.Failure(UiText.Get("Undo stopped after ") + applied + " module(s). " + result.Error);
                     foreach (var item in group)
                     {
                         foreach (var block in CodeRollback.Hunks(item.Before, item.After).Where(x => !hunk.HasValue || x.Index == hunk.Value))
@@ -525,17 +540,17 @@ namespace CodexVBE
             {
                 try
                 {
-                    await Task.Run(() => VbeDebugWindows.EnsureNoSignatureDialog());
+                    await Task.Run(() => Native.EnsureNoSignatureDialog());
                     string scheduled = Invoke(name, arguments);
-                    Response initial = json.Deserialize<Response>(scheduled);
-                    if (initial == null || !initial.Ok) return scheduled;
+                    Response initial = ReadToolResponse(scheduled);
+                    if (!initial.Ok) return scheduled;
                     var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
                     var scheduledData = initial.Data as IDictionary<string, object>;
                     if (scheduledData == null || !scheduledData.ContainsKey("CertificateName"))
                         throw new InvalidOperationException("The certificate name was not returned by the VBE.");
                     string certificateName = (string)scheduledData["CertificateName"];
                     bool unsignedVerified = (bool)scheduledData["UnsignedVerified"];
-                    object signed = await Task.Run(() => VbeDebugWindows.CompleteProjectSignature(
+                    object signed = await Task.Run(() => Native.CompleteProjectSignature(
                         (string)values["Project"], (string)values["CertificateThumbprint"], certificateName,
                         unsignedVerified));
                     object persistence = null;
@@ -544,7 +559,7 @@ namespace CodexVBE
                     {
                         try
                         {
-                            persistence = session.PersistProjectSignature((string)values["Project"]);
+                            persistence = PersistSignature((string)values["Project"]);
                             persistenceError = null;
                             break;
                         }
@@ -556,7 +571,7 @@ namespace CodexVBE
                             await Task.Delay(250);
                         }
                     }
-                    Response status = session.Execute(new Request { Command = "project_signature_status",
+                    Response status = Execute(new Request { Command = "project_signature_status",
                         Project = (string)values["Project"] });
                     return json.Serialize(Response.Success(new { Signature = signed,
                         Persistence = persistence, PersistenceError = persistenceError,
@@ -570,13 +585,13 @@ namespace CodexVBE
             {
                 try
                 {
-                    await Task.Run(() => VbeDebugWindows.EnsureNoSignatureDialog());
+                    await Task.Run(() => Native.EnsureNoSignatureDialog());
                     string scheduled = Invoke(name, arguments);
-                    Response initial = json.Deserialize<Response>(scheduled);
-                    if (initial == null || !initial.Ok) return scheduled;
+                    Response initial = ReadToolResponse(scheduled);
+                    if (!initial.Ok) return scheduled;
                     var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
                     return json.Serialize(Response.Success(await Task.Run(() =>
-                        VbeDebugWindows.ReadSignatureDialog((string)values["Project"]))));
+                        Native.ReadSignatureDialog((string)values["Project"]))));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             }
@@ -584,12 +599,12 @@ namespace CodexVBE
             {
                 try
                 {
-                    await Task.Run(() => VbeDebugWindows.EnsureNoDebugOptionsDialog());
+                    await Task.Run(() => Native.EnsureNoDebugOptionsDialog());
                     string scheduled = Invoke(name, arguments);
-                    Response initial = json.Deserialize<Response>(scheduled);
-                    if (initial == null || !initial.Ok) return scheduled;
+                    Response initial = ReadToolResponse(scheduled);
+                    if (!initial.Ok) return scheduled;
                     return json.Serialize(Response.Success(await Task.Run(() => name == "read_vbe_options"
-                        ? VbeDebugWindows.ReadVbeOptions() : VbeDebugWindows.ReadDebugOptions())));
+                        ? Native.ReadVbeOptions() : Native.ReadDebugOptions())));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             }
@@ -604,9 +619,9 @@ namespace CodexVBE
                     var requestValues = new Dictionary<string, object>(values) { ["Command"] = name };
                     Request request = json.Deserialize<Request>(json.Serialize(requestValues));
                     string scheduled = Invoke(name, arguments);
-                    Response initial = json.Deserialize<Response>(scheduled);
-                    if (initial == null || !initial.Ok) return scheduled;
-                    return json.Serialize(Response.Success(await Task.Run(() => VbeDebugWindows.CompleteQuickWatch(request))));
+                    Response initial = ReadToolResponse(scheduled);
+                    if (!initial.Ok) return scheduled;
+                    return json.Serialize(Response.Success(await Task.Run(() => Native.CompleteQuickWatch(request))));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             }
@@ -620,11 +635,11 @@ namespace CodexVBE
                     if (values == null) throw new ArgumentException("Tool arguments must be an object.");
                     var requestValues = new Dictionary<string, object>(values) { ["Command"] = name };
                     Request request = json.Deserialize<Request>(json.Serialize(requestValues));
-                    await Task.Run(() => VbeDebugWindows.SelectWatch(request));
+                    await Task.Run(() => Native.SelectWatch(request));
                     string scheduled = Invoke(name, arguments);
-                    Response initial = json.Deserialize<Response>(scheduled);
-                    if (initial == null || !initial.Ok) return scheduled;
-                    return json.Serialize(Response.Success(await Task.Run(() => VbeDebugWindows.CompleteEditWatch(request))));
+                    Response initial = ReadToolResponse(scheduled);
+                    if (!initial.Ok) return scheduled;
+                    return json.Serialize(Response.Success(await Task.Run(() => Native.CompleteEditWatch(request))));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             }
@@ -641,7 +656,7 @@ namespace CodexVBE
                         throw new ArgumentException("Unexpected debug_item argument.");
                     var requestValues = new Dictionary<string, object>(values) { ["Command"] = name };
                     Request request = json.Deserialize<Request>(json.Serialize(requestValues));
-                    return json.Serialize(Response.Success(await Task.Run(() => VbeDebugWindows.ChangeDebugItem(request))));
+                    return json.Serialize(Response.Success(await Task.Run(() => Native.ChangeDebugItem(request))));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             }
@@ -658,12 +673,12 @@ namespace CodexVBE
                         !(values["Text"] is string) ||
                         ((int)values["ExpectedMode"] != 1 && (int)values["ExpectedMode"] != 2))
                         throw new ArgumentException("Project, ExpectedMode and Text are required.");
-                    var state = session.Execute(new Request { Command = "debug_state", Project = (string)values["Project"] });
+                    var state = Execute(new Request { Command = "debug_state", Project = (string)values["Project"] });
                     if (!state.Ok) return json.Serialize(state);
                     if ((int)((dynamic)state.Data).Mode != (int)values["ExpectedMode"])
                         return json.Serialize(Response.Failure("Project mode changed before Immediate execution."));
                     return json.Serialize(Response.Success(await Task.Run(() =>
-                        VbeDebugWindows.ExecuteImmediate((string)values["Text"]))));
+                        Native.ExecuteImmediate((string)values["Text"]))));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             }
@@ -676,7 +691,7 @@ namespace CodexVBE
                     if (name == "debug_dialog")
                     {
                         if (values.Count != 0) throw new ArgumentException("debug_dialog has no arguments.");
-                        return json.Serialize(Response.Success(await Task.Run(() => VbeDebugWindows.ReadDebugDialog())));
+                        return json.Serialize(Response.Success(await Task.Run(() => Native.ReadDebugDialog())));
                     }
                     if (settings.VbeEditApproval != "Automatic")
                         return json.Serialize(Response.Failure("Automatic VBE edit policy is required to respond to a diagnostic dialog."));
@@ -685,7 +700,7 @@ namespace CodexVBE
                         throw new ArgumentException("Exact Diagnostic and Button strings are required.");
                     var requestValues = new Dictionary<string, object>(values) { ["Command"] = name };
                     Request request = json.Deserialize<Request>(json.Serialize(requestValues));
-                    return json.Serialize(Response.Success(await Task.Run(() => VbeDebugWindows.RespondDebugDialog(request))));
+                    return json.Serialize(Response.Success(await Task.Run(() => Native.RespondDebugDialog(request))));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             }
@@ -703,15 +718,15 @@ namespace CodexVBE
                     Request request = json.Deserialize<Request>(json.Serialize(requestValues));
                     SynchronizationContext context = SynchronizationContext.Current;
                     if (context == null) throw new InvalidOperationException("The VBE UI context is unavailable.");
-                    VbeDebugWindows.EnsureNoCompileDialog();
+                    Native.EnsureNoCompileDialog();
                     Response compileResponse = null;
                     var completed = new System.Threading.ManualResetEventSlim(false);
                     context.Post(_ => {
-                        try { compileResponse = session.Execute(request); }
+                        try { compileResponse = Execute(request); }
                         catch (Exception ex) { compileResponse = Response.Failure(ex.Message); }
                         finally { completed.Set(); }
                     }, null);
-                    string diagnostic = await Task.Run(() => VbeDebugWindows.AwaitCompileDialog(completed));
+                    string diagnostic = await Task.Run(() => Native.AwaitCompileDialog(completed));
                     if (compileResponse == null) return json.Serialize(Response.Failure("The native Compile command did not return a result."));
                     if (!compileResponse.Ok) return json.Serialize(compileResponse);
                     return json.Serialize(Response.Success(new {
@@ -733,11 +748,11 @@ namespace CodexVBE
                         return json.Serialize(Response.Failure("Automatic VBE edit policy is required for native watch removal."));
                     var requestValues = new Dictionary<string, object>(values) { ["Command"] = name };
                     Request request = json.Deserialize<Request>(json.Serialize(requestValues));
-                    await Task.Run(() => VbeDebugWindows.SelectWatch(request));
+                    await Task.Run(() => Native.SelectWatch(request));
                     string executed = Invoke(name, arguments);
-                    Response response = json.Deserialize<Response>(executed);
-                    if (response == null || !response.Ok) return executed;
-                    object result = await Task.Run(() => VbeDebugWindows.VerifyWatchRemoved(request));
+                    Response response = ReadToolResponse(executed);
+                    if (!response.Ok) return executed;
+                    object result = await Task.Run(() => Native.VerifyWatchRemoved(request));
                     return json.Serialize(Response.Success(result));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
@@ -745,14 +760,14 @@ namespace CodexVBE
             if (name == "add_watch")
             {
                 string scheduled = Invoke(name, arguments);
-                Response initial = json.Deserialize<Response>(scheduled);
-                if (initial == null || !initial.Ok) return scheduled;
+                Response initial = ReadToolResponse(scheduled);
+                if (!initial.Ok) return scheduled;
                 try
                 {
                     var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
                     var requestValues = new Dictionary<string, object>(values) { ["Command"] = name };
                     Request request = json.Deserialize<Request>(json.Serialize(requestValues));
-                    object result = await Task.Run(() => VbeDebugWindows.CompleteAddWatch(request));
+                    object result = await Task.Run(() => Native.CompleteAddWatch(request));
                     return json.Serialize(Response.Success(result));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
@@ -768,10 +783,18 @@ namespace CodexVBE
                 bool stack = values.TryGetValue("IncludeCallStack", out raw) && raw is bool && (bool)raw;
                 if (values.ContainsKey("IncludeCallStack") && !(raw is bool))
                     throw new ArgumentException("IncludeCallStack must be a boolean.");
-                object result = await Task.Run(() => VbeDebugWindows.Capture(stack));
+                object result = await Task.Run(() => Native.Capture(stack));
                 return json.Serialize(Response.Success(result));
             }
             catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+        }
+
+        /// <summary>Désérialise une réponse d’outil et conserve la défense contre un JSON null.</summary>
+        /// <param name="serialized">Réponse JSON à lire.</param>
+        /// <returns>Réponse toujours non nulle ; un JSON null devient un échec sans message.</returns>
+        internal Response ReadToolResponse(string serialized)
+        {
+            return json.Deserialize<Response>(serialized) ?? Response.Failure(null);
         }
 
         /// <summary>Retourne l’instantané JSON du contexte VBE actuellement ouvert.</summary>
@@ -799,10 +822,9 @@ namespace CodexVBE
             if (!File.Exists(fullPath)) return Response.Failure(UiText.Get("The provided file could not be found."));
             const int limit = 65536;
             string provider = string.IsNullOrWhiteSpace(CurrentProviderName) ? UiText.Get("the active LLM provider") : CurrentProviderName;
-            var choice = MessageBox.Show(owner,
+            var choice = ConfirmFile(owner,
                 UiText.Get("Allow reading and sending to ") + provider + UiText.Get(" up to the first 64 KiB of this file?\r\n\r\n") + fullPath,
-                UiText.Get("VBAi — allow sending a file"), MessageBoxButtons.YesNo, MessageBoxIcon.Question,
-                MessageBoxDefaultButton.Button2);
+                UiText.Get("VBAi — allow sending a file"));
             if (choice != DialogResult.Yes) return Response.Failure(UiText.Get("The user declined sending the file."));
             using (var stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {

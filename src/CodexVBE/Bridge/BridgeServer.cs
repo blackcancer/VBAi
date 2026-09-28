@@ -10,6 +10,47 @@ using System.Windows.Forms;
 
 namespace CodexVBE
 {
+    /// <summary>Frontières natives du débogueur, conservant leurs implémentations VBE par défaut.</summary>
+    internal sealed class VbeToolNativeBoundary
+    {
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Func<bool, object> Capture = VbeDebugWindows.Capture;
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Func<object> ReadDebugDialog = VbeDebugWindows.ReadDebugDialog;
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Func<Request, object> ChangeDebugItem = VbeDebugWindows.ChangeDebugItem;
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Func<Request, object> RespondDebugDialog = VbeDebugWindows.RespondDebugDialog;
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Func<string, object> ExecuteImmediate = VbeDebugWindows.ExecuteImmediate;
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Action EnsureNoCompileDialog = VbeDebugWindows.EnsureNoCompileDialog;
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Func<ManualResetEventSlim, string> AwaitCompileDialog = VbeDebugWindows.AwaitCompileDialog;
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Func<Request, object> CompleteAddWatch = VbeDebugWindows.CompleteAddWatch;
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Func<Request, object> SelectWatch = VbeDebugWindows.SelectWatch;
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Func<Request, object> CompleteEditWatch = VbeDebugWindows.CompleteEditWatch;
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Func<Request, object> CompleteQuickWatch = VbeDebugWindows.CompleteQuickWatch;
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Action EnsureNoDebugOptionsDialog = VbeDebugWindows.EnsureNoDebugOptionsDialog;
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Func<object> ReadVbeOptions = VbeDebugWindows.ReadVbeOptions;
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Func<object> ReadDebugOptions = VbeDebugWindows.ReadDebugOptions;
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Action EnsureNoSignatureDialog = VbeDebugWindows.EnsureNoSignatureDialog;
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Func<string, object> ReadSignatureDialog = VbeDebugWindows.ReadSignatureDialog;
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Func<string, string, string, bool, object> CompleteProjectSignature = VbeDebugWindows.CompleteProjectSignature;
+        /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
+        internal Func<Request, object> VerifyWatchRemoved = VbeDebugWindows.VerifyWatchRemoved;
+    }
+
     /// <summary>Expose les opérations de session VBE par un canal nommé propre au processus.</summary>
     internal sealed class BridgeServer : IDisposable
     {
@@ -17,6 +58,14 @@ namespace CodexVBE
         private readonly Control dispatcher;
         /// <summary>Session qui traite les requêtes destinées au VBE.</summary>
         private readonly VbeSession session;
+        /// <summary>Adaptateurs natifs du débogueur, remplaçables par instance à la frontière UI.</summary>
+        internal readonly VbeToolNativeBoundary Native = new VbeToolNativeBoundary();
+        /// <summary>Exécute une commande sur la session hôte, sans remplacer l’orchestration de l’outil.</summary>
+        internal Func<Request, Response> Execute;
+        /// <summary>Demande la sauvegarde de signature au document hôte.</summary>
+        internal Func<string, object> PersistSignature;
+        /// <summary>Crée le canal local avec la sécurité de l’utilisateur courant.</summary>
+        internal Func<PipeSecurity, NamedPipeServerStream> OpenPipe;
         /// <summary>Nom du canal nommé associé au processus hôte.</summary>
         private readonly string pipeName;
         /// <summary>Thread d’arrière-plan qui accepte les connexions du client.</summary>
@@ -34,7 +83,11 @@ namespace CodexVBE
         {
             this.dispatcher = dispatcher;
             this.session = session;
+            Execute = request => session.Execute(request);
+            PersistSignature = project => session.PersistProjectSignature(project);
             pipeName = "CodexVBE." + processId;
+            OpenPipe = security => new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1,
+                PipeTransmissionMode.Byte, PipeOptions.None, 4096, 4096, security);
             worker = new Thread(Run) { IsBackground = true, Name = "CodexVBE pipe" };
         }
 
@@ -51,8 +104,7 @@ namespace CodexVBE
                     var security = new PipeSecurity();
                     security.AddAccessRule(new PipeAccessRule(WindowsIdentity.GetCurrent().User,
                         PipeAccessRights.FullControl, AccessControlType.Allow));
-                    using (var pipe = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1,
-                        PipeTransmissionMode.Byte, PipeOptions.None, 4096, 4096, security))
+                    using (var pipe = OpenPipe(security))
                     {
                         listener = pipe;
                         pipe.WaitForConnection();
@@ -67,38 +119,38 @@ namespace CodexVBE
                             {
                                 var request = json.Deserialize<Request>(line);
                                 if (request != null && request.Command == "debug_windows")
-                                    response = Response.Success(VbeDebugWindows.Capture(request.IncludeCallStack));
+                                    response = Response.Success(Native.Capture(request.IncludeCallStack));
                                 else if (request != null && request.Command == "debug_dialog")
-                                    response = Response.Success(VbeDebugWindows.ReadDebugDialog());
+                                    response = Response.Success(Native.ReadDebugDialog());
                                 else if (request != null && request.Command == "debug_item")
-                                    response = Response.Success(VbeDebugWindows.ChangeDebugItem(request));
+                                    response = Response.Success(Native.ChangeDebugItem(request));
                                 else if (request != null && request.Command == "respond_debug_dialog")
-                                    response = Response.Success(VbeDebugWindows.RespondDebugDialog(request));
+                                    response = Response.Success(Native.RespondDebugDialog(request));
                                 else if (request != null && request.Command == "immediate_execute")
                                 {
                                     if (string.IsNullOrWhiteSpace(request.Project) ||
                                         (request.ExpectedMode != 1 && request.ExpectedMode != 2))
                                         throw new ArgumentException("Project and ExpectedMode (1 or 2) are required.");
                                     var state = (Response)dispatcher.Invoke(new Func<Response>(() =>
-                                        session.Execute(new Request { Command = "debug_state", Project = request.Project })));
+                                        Execute(new Request { Command = "debug_state", Project = request.Project })));
                                     if (!state.Ok) response = state;
                                     else if ((int)((dynamic)state.Data).Mode != request.ExpectedMode)
                                         response = Response.Failure("Project mode changed before Immediate execution.");
-                                    else response = Response.Success(VbeDebugWindows.ExecuteImmediate(request.Text));
+                                    else response = Response.Success(Native.ExecuteImmediate(request.Text));
                                 }
                                 else if (request != null && request.Command == "compile_project")
                                 {
-                                    VbeDebugWindows.EnsureNoCompileDialog();
+                                    Native.EnsureNoCompileDialog();
                                     Response compileResponse = null;
                                     var completed = new ManualResetEventSlim(false);
                                     // Keep the event alive if a timeout occurs while the UI
                                     // callback is still pending; its finally block will signal it.
                                     dispatcher.BeginInvoke(new Action(() => {
-                                        try { compileResponse = session.Execute(request); }
+                                        try { compileResponse = Execute(request); }
                                         catch (Exception ex) { compileResponse = Response.Failure(ex.Message); }
                                         finally { completed.Set(); }
                                     }));
-                                    string diagnostic = VbeDebugWindows.AwaitCompileDialog(completed);
+                                    string diagnostic = Native.AwaitCompileDialog(completed);
                                     if (compileResponse == null)
                                         response = Response.Failure("The native Compile command did not return a result.");
                                     else if (!compileResponse.Ok)
@@ -115,44 +167,44 @@ namespace CodexVBE
                                 }
                                 else if (request != null && request.Command == "add_watch")
                                 {
-                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));
-                                    if (response.Ok) response = Response.Success(VbeDebugWindows.CompleteAddWatch(request));
+                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => Execute(request)));
+                                    if (response.Ok) response = Response.Success(Native.CompleteAddWatch(request));
                                 }
                                 else if (request != null && request.Command == "edit_watch")
                                 {
-                                    VbeDebugWindows.SelectWatch(request);
-                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));
-                                    if (response.Ok) response = Response.Success(VbeDebugWindows.CompleteEditWatch(request));
+                                    Native.SelectWatch(request);
+                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => Execute(request)));
+                                    if (response.Ok) response = Response.Success(Native.CompleteEditWatch(request));
                                 }
                                 else if (request != null && request.Command == "quick_watch")
                                 {
-                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));
-                                    if (response.Ok) response = Response.Success(VbeDebugWindows.CompleteQuickWatch(request));
+                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => Execute(request)));
+                                    if (response.Ok) response = Response.Success(Native.CompleteQuickWatch(request));
                                 }
                                 else if (request != null &&
                                     (request.Command == "read_debug_options" || request.Command == "read_vbe_options"))
                                 {
-                                    VbeDebugWindows.EnsureNoDebugOptionsDialog();
-                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));
+                                    Native.EnsureNoDebugOptionsDialog();
+                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => Execute(request)));
                                     if (response.Ok) response = Response.Success(request.Command == "read_vbe_options"
-                                        ? VbeDebugWindows.ReadVbeOptions() : VbeDebugWindows.ReadDebugOptions());
+                                        ? Native.ReadVbeOptions() : Native.ReadDebugOptions());
                                 }
                                 else if (request != null && request.Command == "read_project_signature_dialog")
                                 {
-                                    VbeDebugWindows.EnsureNoSignatureDialog();
-                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));
+                                    Native.EnsureNoSignatureDialog();
+                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => Execute(request)));
                                     if (response.Ok) response = Response.Success(
-                                        VbeDebugWindows.ReadSignatureDialog(request.Project));
+                                        Native.ReadSignatureDialog(request.Project));
                                 }
                                 else if (request != null && request.Command == "sign_project")
                                 {
-                                    VbeDebugWindows.EnsureNoSignatureDialog();
-                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));
+                                    Native.EnsureNoSignatureDialog();
+                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => Execute(request)));
                                     if (response.Ok)
                                     {
                                         string certificateName = (string)((dynamic)response.Data).CertificateName;
                                         bool unsignedVerified = (bool)((dynamic)response.Data).UnsignedVerified;
-                                        object signed = VbeDebugWindows.CompleteProjectSignature(request.Project,
+                                        object signed = Native.CompleteProjectSignature(request.Project,
                                             request.CertificateThumbprint, certificateName, unsignedVerified);
                                         object persistence = null;
                                         string persistenceError = null;
@@ -161,7 +213,7 @@ namespace CodexVBE
                                             try
                                             {
                                                 persistence = dispatcher.Invoke(new Func<object>(() =>
-                                                    session.PersistProjectSignature(request.Project)));
+                                                    PersistSignature(request.Project)));
                                                 persistenceError = null;
                                                 break;
                                             }
@@ -174,7 +226,7 @@ namespace CodexVBE
                                             }
                                         }
                                         Response status = (Response)dispatcher.Invoke(new Func<Response>(() =>
-                                            session.Execute(new Request { Command = "project_signature_status", Project = request.Project })));
+                                            Execute(new Request { Command = "project_signature_status", Project = request.Project })));
                                         response = Response.Success(new { Signature = signed,
                                             Persistence = persistence, PersistenceError = persistenceError,
                                             SaveRequired = persistence == null || !((bool)((dynamic)persistence).Saved),
@@ -184,11 +236,11 @@ namespace CodexVBE
                                 }
                                 else if (request != null && request.Command == "remove_watch")
                                 {
-                                    VbeDebugWindows.SelectWatch(request);
-                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));
-                                    if (response.Ok) response = Response.Success(VbeDebugWindows.VerifyWatchRemoved(request));
+                                    Native.SelectWatch(request);
+                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => Execute(request)));
+                                    if (response.Ok) response = Response.Success(Native.VerifyWatchRemoved(request));
                                 }
-                                else response = (Response)dispatcher.Invoke(new Func<Response>(() => session.Execute(request)));
+                                else response = (Response)dispatcher.Invoke(new Func<Response>(() => Execute(request)));
                             }
                             catch (Exception ex)
                             {

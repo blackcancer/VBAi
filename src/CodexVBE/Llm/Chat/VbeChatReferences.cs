@@ -59,6 +59,8 @@ namespace CodexVBE
     {
         /// <summary>Session VBE utilisée pour lire et naviguer dans le code.</summary>
         private readonly VbeSession session;
+        /// <summary>Exécute les requêtes de lecture et navigation via la session hôte par défaut.</summary>
+        internal Func<Request, Response> Execute;
         /// <summary>Sérialiseur utilisé pour convertir les résultats de pont en dictionnaires simples.</summary>
         private readonly JavaScriptSerializer json = new JavaScriptSerializer();
         /// <summary>Projets dont les modules doivent encore être énumérés.</summary>
@@ -78,7 +80,7 @@ namespace CodexVBE
 
         /// <summary>Crée le chargeur progressif lié à la session VBE.</summary>
         /// <param name="session">Session utilisée pour les commandes VBE.</param>
-        public VbeChatReferences(VbeSession session) { this.session = session; }
+        public VbeChatReferences(VbeSession session) { this.session = session; Execute = request => session.Execute(request); }
         /// <summary>Obtient la liste actuelle des projets, modules et procédures découverts.</summary>
         /// <value>Références actuellement disponibles.</value>
         public IList<VbeChatReference> Entries { get { return entries; } }
@@ -127,7 +129,7 @@ namespace CodexVBE
             var module = pending.Dequeue();
             try
             {
-                Response response = session.Execute(new Request { Command = "list_procedures",
+                Response response = Execute(new Request { Command = "list_procedures",
                     Project = module.Project, Module = module.Module });
                 if (!response.Ok) throw new InvalidOperationException(response.Error);
                 var data = json.DeserializeObject(json.Serialize(response.Data)) as IDictionary<string, object>;
@@ -169,8 +171,7 @@ namespace CodexVBE
         {
             string term = query.TrimStart('#', '@');
             return entries.Where(item => (prefix == '\0' || (prefix == '@' ? item.Name != null : item.Name == null)) &&
-                (item.Token.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                (item.Name != null && item.Name.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0)))
+                item.Token.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0)
                 .OrderBy(item => item.Token.Substring(1).StartsWith(term, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
                 .ThenBy(item => item.Token, StringComparer.OrdinalIgnoreCase).Take(40);
         }
@@ -182,10 +183,10 @@ namespace CodexVBE
         {
             if (item.Module == null)
                 return Response.Failure(UiText.Get("Select a module or procedure in this project to open its code."));
-            Response response = session.Execute(new Request { Command = "read_module", Project = item.Project, Module = item.Module });
+            Response response = Execute(new Request { Command = "read_module", Project = item.Project, Module = item.Module });
             if (!response.Ok) return response;
             var data = json.DeserializeObject(json.Serialize(response.Data)) as IDictionary<string, object>;
-            return session.Execute(new Request {
+            return Execute(new Request {
                 Command = item.Name == null ? "select_code" : "select_procedure",
                 Project = item.Project, Module = item.Module, Procedure = item.Name,
                 ProcKind = item.ProcKind, StartLine = 1, ExpectedSha256 = Field(data, "Sha256")
@@ -205,7 +206,7 @@ namespace CodexVBE
                     string.Join("\n", modules.Select(value => Field(value, "Name") +
                         " (type " + Field(value, "Type") + ", " + Field(value, "Lines") + " lignes)"));
             }
-            Response response = session.Execute(new Request { Command = "read_module",
+            Response response = Execute(new Request { Command = "read_module",
                 Project = item.Project, Module = item.Module });
             if (!response.Ok) throw new InvalidOperationException(response.Error);
             var data = json.DeserializeObject(json.Serialize(response.Data)) as IDictionary<string, object>;
@@ -230,7 +231,7 @@ namespace CodexVBE
         /// <exception cref="InvalidOperationException">La commande VBE échoue.</exception>
         private IDictionary<string, object>[] Read(string command, string project, string module)
         {
-            Response response = session.Execute(new Request { Command = command, Project = project, Module = module });
+            Response response = Execute(new Request { Command = command, Project = project, Module = module });
             if (!response.Ok) throw new InvalidOperationException(response.Error);
             var array = json.DeserializeObject(json.Serialize(response.Data)) as object[];
             return array == null ? new IDictionary<string, object>[0] :

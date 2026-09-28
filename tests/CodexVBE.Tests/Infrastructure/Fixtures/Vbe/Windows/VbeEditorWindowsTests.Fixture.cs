@@ -1,4 +1,4 @@
-namespace CodexVBE.Tests.Unit
+﻿namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections.Generic;
@@ -15,8 +15,12 @@ namespace CodexVBE.Tests.Unit
             public List<FakeAddIn> AddIns { get; } = new List<FakeAddIn>();
             public List<FakeProject> VBProjects { get; } = new List<FakeProject>();
             public FakeProject ActiveVBProject { get; set; }
-            public FakeWindow ActiveWindow { get; set; }
-            public object ActiveCodePane { get; set; }
+            private FakeWindow activeWindow;
+            public bool ActiveWindowThrows { get; set; }
+            public FakeWindow ActiveWindow { get { if (ActiveWindowThrows) throw new InvalidOperationException("Active window unavailable"); return activeWindow; } set {activeWindow=value;} }
+            private object activeCodePane;
+            public bool ActiveCodePaneThrows { get; set; }
+            public object ActiveCodePane { get { if (ActiveCodePaneThrows) throw new InvalidOperationException("Active pane unavailable"); return activeCodePane; } set {activeCodePane=value;} }
         }
 
         public sealed class FakeProject
@@ -97,24 +101,31 @@ namespace CodexVBE.Tests.Unit
 
             public string Caption { get; set; }
             public int Type { get; set; }
-            public bool Visible { get; set; }
+            private bool visible;
+            public bool IgnoreVisibilityChanges { get; set; }
+            public bool Visible { get { return visible; } set { if (!IgnoreVisibilityChanges) visible=value; } }
+            public bool SuppressFocus { get; set; }
+            public FakeWindow FocusTarget { get; set; }
+            public Action OnClose { get; set; }
             public int WindowState { get; set; }
             public int Left { get; set; }
             public int Top { get; set; }
             public int Width { get; set; } = 500;
             public int Height { get; set; } = 300;
-            public FakeFrame LinkedWindowFrame { get; set; }
+            private FakeFrame linkedWindowFrame;
+            public bool LinkageThrows { get; set; }
+            public FakeFrame LinkedWindowFrame { get { if (LinkageThrows) throw new InvalidOperationException("Linkage unavailable"); return linkedWindowFrame; } set {linkedWindowFrame=value;} }
             public int FocusCount { get; private set; }
 
             public void SetFocus()
             {
                 FocusCount++;
-                host.ActiveWindow = this;
+                host.ActiveWindow = SuppressFocus ? FocusTarget : this;
             }
 
             public void Close()
             {
-                Visible = false;
+                if (OnClose != null) OnClose(); else Visible = false;
             }
         }
     }

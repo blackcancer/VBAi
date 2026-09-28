@@ -28,6 +28,10 @@ namespace CodexVBE
         private VbaGitSnapshot displayedBaseline;
         /// <summary>Branche affichée lors de la dernière comparaison.</summary>
         private string displayedBranch;
+        /// <summary>Résout le cache local associé au document.</summary>
+        internal static Func<string, string> CacheDirectory = MacroGitRepository.ScopeDirectory;
+        /// <summary>Initialise le dépôt et lit son état distant avec les commandes Git natives.</summary>
+        internal Func<MacroGitRepository, string, Task> ConnectRepository = (selected, url) => Task.Run(() => { selected.Initialize(url); selected.Fetch(); });
         /// <summary>Crée la fenêtre Git et initialise la revue et les ressources visuelles.</summary>
         public GitWindow() { InitializeComponent(); Icon = VbeWindowIcons.Icon("github"); UiText.Apply(this, components); InitializeReview(); }
 
@@ -41,7 +45,7 @@ namespace CodexVBE
             this.account = account;
             this.project = project;
             githubPane.Configure(account, "", "main");
-            cache = MacroGitRepository.ScopeDirectory(scope);
+            cache = CacheDirectory(scope);
             documentLabel.Text = label;
             Directory.CreateDirectory(cache);
             string file = Path.Combine(cache, "binding.json");
@@ -76,7 +80,7 @@ namespace CodexVBE
                     bindingId = BitConverter.ToString(hash.ComputeHash(System.Text.Encoding.UTF8.GetBytes(url + "\n" + branch.Text.Trim()))).Replace("-", "");
                 var selected = new MacroGitRepository(Path.Combine(cache, bindingId + ".git"), branch.Text.Trim(), account);
                 selected.Cancellation = operationCancellation.Token; selected.Progress = ReportProgress; cancelOperation.Enabled = true;
-                try { await Task.Run(() => { selected.Initialize(url); selected.Fetch(); }); }
+                try { await ConnectRepository(selected, url); }
                 finally { selected.Cancellation = System.Threading.CancellationToken.None; selected.Progress = null; }
                 repository = selected;
                 string bindingFile = Path.Combine(cache, "binding.json");

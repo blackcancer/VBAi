@@ -77,6 +77,10 @@ namespace CodexVBE.Tests.Unit
             /// <summary>Texte d’aide affiché au survol.</summary>
             /// <value>Info-bulle du bouton.</value>
             public string TooltipText { get; set; }
+            public object Picture { get; set; }
+            public object Mask { get; set; }
+            public int Style { get; set; }
+            public bool RejectDelete { get; set; }
             /// <summary>Contrôles enfants du bouton.</summary>
             /// <value>Collection initialisée lors de la création du bouton.</value>
             public FakeControls Controls { get; } = new FakeControls();
@@ -87,6 +91,7 @@ namespace CodexVBE.Tests.Unit
             /// <summary>Incrémente le compteur de suppressions du bouton.</summary>
             public void Delete()
             {
+                if (RejectDelete) throw new InvalidOperationException("Delete rejected");
                 DeleteCount++;
             }
         }
