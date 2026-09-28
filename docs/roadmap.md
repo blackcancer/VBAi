@@ -6,10 +6,10 @@
 
 | Travail | État actuel | Critère de fin |
 | --- | --- | --- |
-| Couverture du code de production | 100 % lignes et branches ; zéro classe incomplète ; 1 151 tests verts et 1 scénario SOLIDWORKS NOT_RUN | 100 % lignes et branches mesurées sur toute l’assembly, sans masquer du code ; suite globale verte |
-| Organisation des tests | 134 miroirs pour 183 sources ; scénarios et fixtures complémentaires | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
+| Couverture du code de production | 100 % lignes et branches ; zéro classe incomplète ; 1 172 tests verts et 1 scénario SOLIDWORKS NOT_RUN | 100 % lignes et branches mesurées sur toute l’assembly, sans masquer du code ; suite globale verte |
+| Organisation des tests | 141 miroirs pour 193 sources ; scénarios et fixtures complémentaires | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
 | Documentation IntelliSense | Nouvelles déclarations apportées par chat-ux ; agent documentaire en cours | Audit final des déclarations privées/publiques, propriétés et tests, sans lacune |
-| Concepteurs WinForms | 24 DesignSurface validées | Préserver cette accessibilité après chaque changement de structure ; qualifier aussi le rendu réel |
+| Concepteurs WinForms | 27 DesignSurface validées | Préserver cette accessibilité après chaque changement de structure ; qualifier aussi le rendu réel |
 
 Compléter chaque branche de couverture identifiée avant de passer à la suivante. Construire le lot de scénarios cohérent avant de le lancer, puis mesurer la suite globale. Les pourcentages actuels sont détaillés dans [le bilan de tests](test-coverage.md).
 
@@ -19,7 +19,7 @@ Les fonctions et les limites exactes sont détaillées dans [Extensions fonction
 
 ## Qualification de l’éditeur
 
-L'[inventaire fonctionnel complet](reference/vbe-capability-inventory.md) couvre désormais toutes les surfaces de l'éditeur. Le lot IDE `52cb537` ajoute trois contrats (180 outils au total), le renommage borné de paramètres privés et les arguments nommés de `run_procedure`. La vérification du fichier signé est implémentée mais son SIP natif attend une autorisation distincte. La PR #4 ajoute les structures fixes Designer et doit être incluse dans la prochaine mesure de couverture.
+L'[inventaire fonctionnel complet](reference/vbe-capability-inventory.md) couvre désormais toutes les surfaces de l'éditeur. Le lot IDE `52cb537` ajoute trois contrats (180 outils au total), le renommage borné de paramètres privés et les arguments nommés de `run_procedure`. La vérification du fichier signé est implémentée mais son SIP natif attend une autorisation distincte. La PR #4 ajoute les structures fixes Designer ; elle est incluse dans la mesure globale `27389a8`, revenue à 100 % lignes et branches.
 
 | Surface | Ce qui reste à qualifier ou développer |
 | --- | --- |

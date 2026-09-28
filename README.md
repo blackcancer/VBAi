@@ -13,12 +13,12 @@ Anciennement CodexVBE : les noms de solution, d’assembly, les identifiants COM
 - [Conversation et sessions](docs/chat-ui.md)
 - [Fournisseurs](docs/providers.md) et [GitHub](docs/github-integration.md)
 - [Architecture](docs/architecture.md) et [concepteurs WinForms](docs/winforms-designer.md)
-- [Catalogue des 177 outils LLM](docs/reference/vbe-tools.md)
+- [Catalogue des 180 outils LLM](docs/reference/vbe-tools.md)
 - [Travaux restants](docs/roadmap.md) et [couverture des tests](docs/test-coverage.md)
 
 ## État vérifié
 
-Après intégration des PR #2 et #3, mesure globale du code `fb166a4` : **1 151 tests réussis, aucun échec, 1 test SOLIDWORKS ignoré**, couverture de **100 % des lignes et des branches**. Les deux tests Excel passent. Les **24 concepteurs WinForms** restent une validation antérieure.
+Après intégration de la PR #4 et du lot IDE, mesure globale du code `27389a8` : **1 172 tests réussis, aucun échec, 1 test SOLIDWORKS ignoré**, couverture de **100 % des lignes et des branches**. Les trois tests Excel passent. Les **27 concepteurs WinForms** sont chargés et éditables via DesignSurface.
 
 Les tests réels Excel vérifient le chargement, le pont et la sauvegarde/relecture d’un classeur macro jetable. Les essais historiques dans SOLIDWORKS 2019 SP5 sur `test.swp` vérifient compilation, exécution, breakpoint, pas à pas et reprise, avec restauration du code initial. Ces scénarios ne qualifient pas chaque fonction dans chaque hôte ; les preuves et limites figurent dans [l’état du projet](docs/project.md).
 

@@ -22,6 +22,10 @@ Les données CSV correspondantes sont conservées dans [reference/](../reference
 
 Ces intentions sont à confronter aux guides actuels [Conversation](../chat-ui.md), [GitHub](../github-integration.md) et [WinForms](../winforms-designer.md).
 
+## Mesures historiques
+
+- [Couverture avant la PR WinForms #4](test-coverage-pre-winforms-pr4.md) : code `fb166a4`, distinct du lot IDE et des nouvelles vues.
+
 ## Inventaires de tests
 
 - [ChatWindow](test-inventories/chat-window-coverage-inventory.md)

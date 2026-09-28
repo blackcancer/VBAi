@@ -1,6 +1,6 @@
 # Catalogue des outils LLM
 
-Catalogue vérifié le 28 septembre 2026 contre le lot IDE courant : **180 outils**. Cet inventaire est extrait de `LlmVbeTools.Definitions`, y compris les catalogues Git et Editor. Il décrit les outils exposés au modèle, et ne prétend pas inventorier toutes les commandes du pont.
+Catalogue vérifié le 28 septembre 2026 contre le code `27389a8` : **180 outils**. Cet inventaire est extrait de `LlmVbeTools.Definitions`, y compris les catalogues Git et Editor. Il décrit les outils exposés au modèle, et ne prétend pas inventorier toutes les commandes du pont.
 
 ## Contrat
 

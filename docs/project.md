@@ -1,6 +1,6 @@
 # VBAi : objectif et état du projet
 
-État du code **`611dcb5`**, vérifié le **28 septembre 2026**.
+État du code **`27389a8`**, vérifié le **28 septembre 2026**.
 
 ## Objectif
 
@@ -20,7 +20,7 @@ Le complément cible **VBE 64 bits, .NET Framework 4.8 et Windows**. Le chat, le
 | Conversation | Contexte VBE dynamique, références `#`/`@`, modes Discussion/Plan/Agent, sessions SQLite, choix persistants, résumé de réflexion et rollback |
 | Git et GitHub | Compte indépendant du fournisseur IA, export versionné, commits, push/fetch/pull, checkpoints, branches, fusions et PR |
 
-Le [catalogue des 177 outils LLM](reference/vbe-tools.md) fournit les noms et paramètres requis. Les fonctions du pont et les outils du modèle ont des périmètres distincts.
+Le [catalogue des 180 outils LLM](reference/vbe-tools.md) fournit les noms et paramètres requis. Les fonctions du pont et les outils du modèle ont des périmètres distincts.
 
 ## Gardes et limites
 
@@ -40,11 +40,11 @@ Voir également le [bilan des qualifications natives](reference/native-qualifica
 
 | Vérification | Résultat |
 | --- | --- |
-| Suite globale VSTest avec hôtes activés | **1 151 réussis, aucun échec, 1 ignoré SOLIDWORKS** |
+| Suite globale VSTest avec hôtes activés | **1 172 réussis, aucun échec, 1 ignoré SOLIDWORKS** |
 | Couverture des lignes / branches | **100 % / 100 %** |
 | Compilation | **0 erreur, 0 avertissement** |
-| Concepteurs WinForms | Validation précédente : **24 chargements et modifications de taille réussis** |
-| Excel | Chargement, pont, inspection et sauvegarde/relecture d’un classeur macro jetable |
+| Concepteurs WinForms | **27 chargements, éditions de propriétés et redimensionnements réussis** |
+| Excel | Trois scénarios : chargement/pont, sauvegarde isolée et renommage/appel nommé avec relecture indépendante des résultats |
 | SOLIDWORKS 2019 SP5 | NOT_RUN dans ce passage ; validation précédente : chargement, compilation/exécution, breakpoint, pas à pas et reprise sur `test.swp` ; inventaire et SHA initiaux restaurés |
 
 La capture des variables locales de SOLIDWORKS expose un panneau accessible mais aucune ligne dans ce dernier essai. La lecture de leurs valeurs n’est donc pas validée. Le dernier passage global ne qualifie pas chaque commande dans les deux hôtes.
