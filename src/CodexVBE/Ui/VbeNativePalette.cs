@@ -71,13 +71,19 @@ namespace CodexVBE
         internal static void Change(object vbe, bool enabled, string recoveryPath)
         {
             string version = Convert.ToString(((dynamic)vbe).Version);
+            Change(version, enabled, recoveryPath, update => VbeNativePaletteDialog.Visit(vbe, update));
+        }
+
+        internal static void Change(string version, bool enabled, string recoveryPath,
+            Func<Func<VbeNativePaletteState.ColorRow[], VbeNativePaletteState.ColorRow[]>, VbeNativePaletteState.ColorRow[]> visit)
+        {
             Directory.CreateDirectory(Path.GetDirectoryName(recoveryPath));
             using (var transaction = new FileStream(recoveryPath + ".lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
             {
                 var state = VbeNativePaletteState.Load(recoveryPath, version);
                 if (!enabled && state == null) return;
                 VbeNativePaletteState.ColorRow[] expected = null;
-                VbeNativePaletteDialog.Visit(vbe, current =>
+                visit(current =>
                 {
                     if (state == null)
                     {
@@ -90,7 +96,7 @@ namespace CodexVBE
                 });
                 // Reopen the dialog: checking the edited controls alone does not prove
                 // that OK committed their values to the editor's native settings.
-                var actual = VbeNativePaletteDialog.Visit(vbe, current => null);
+                var actual = visit(current => null);
                 if (!VbeNativePaletteState.Equal(actual, expected))
                     throw new InvalidOperationException("The native palette differs after reopening Options; the recovery file has been retained.");
                 if (!enabled) File.Delete(recoveryPath);

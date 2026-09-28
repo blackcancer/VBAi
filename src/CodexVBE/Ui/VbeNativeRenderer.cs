@@ -14,7 +14,7 @@ namespace CodexVBE
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint WindowCall(IntPtr window);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint SimpleCall();
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint StatusCall(ref RendererStatus status);
-        [StructLayout(LayoutKind.Sequential)] private struct RendererStatus
+        [StructLayout(LayoutKind.Sequential)] internal struct RendererStatus
         {
             internal uint Size, Abi, Active, Windows, Imports, RestoredImports;
             internal uint Patterns, Images, Text, Fills, Unsupported, Failures;

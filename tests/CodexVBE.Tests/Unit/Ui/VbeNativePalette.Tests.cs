@@ -62,3 +62,92 @@ namespace CodexVBE.Tests.Unit
         }
     }
 }
+
+namespace CodexVBE.Tests.Unit
+{
+    [TestClass, TestCategory("Unit")]
+    public sealed class VbeNativePaletteTransactionTests
+    {
+        [TestMethod]
+        public void RestoreWithoutSnapshotDoesNotOpenOptionsAndReleasesLock()
+        {
+            using (var fixture = new NativePaletteFixture())
+            {
+                fixture.Change(false);
+                Assert.AreEqual(0, fixture.Visits);
+                Assert.IsFalse(File.Exists(fixture.PathName));
+                using (File.Open(fixture.PathName + ".lock", FileMode.Open, FileAccess.ReadWrite, FileShare.None)) { }
+            }
+        }
+
+        [TestMethod]
+        public void ApplyRepeatAndRestorePreserveOriginalUntilVerifiedReopen()
+        {
+            using (var fixture = new NativePaletteFixture())
+            {
+                fixture.Change(true);
+                var saved = VbeNativePaletteState.Load(fixture.PathName, "7.1");
+                Assert.IsTrue(VbeNativePaletteState.Equal(NativePaletteFixture.Rows(), saved.Original));
+                Assert.IsTrue(VbeNativePaletteState.Equal(saved.Applied, fixture.Current));
+                string recovery = File.ReadAllText(fixture.PathName);
+                fixture.Change(true);
+                Assert.AreEqual(recovery, File.ReadAllText(fixture.PathName));
+                Assert.AreEqual(1, fixture.Updates);
+                fixture.Change(false);
+                Assert.IsTrue(VbeNativePaletteState.Equal(NativePaletteFixture.Rows(), fixture.Current));
+                Assert.IsFalse(File.Exists(fixture.PathName));
+                Assert.AreEqual(6, fixture.Visits);
+                Assert.AreEqual(2, fixture.Updates);
+            }
+        }
+
+        [TestMethod]
+        public void AlreadyOriginalRestoreDoesNotWriteControls()
+        {
+            using (var fixture = new NativePaletteFixture())
+            {
+                NativePaletteFixture.State().SaveNew(fixture.PathName);
+                fixture.Change(false);
+                Assert.AreEqual(0, fixture.Updates);
+                Assert.AreEqual(2, fixture.Visits);
+                Assert.IsFalse(File.Exists(fixture.PathName));
+            }
+        }
+
+        [TestMethod]
+        public void ChangedSettingsAndUncommittedUpdatesRetainRecoveryAndReleaseLock()
+        {
+            using (var fixture = new NativePaletteFixture())
+            {
+                fixture.RejectCommit = true;
+                Assert.ThrowsException<InvalidOperationException>(() => fixture.Change(true));
+                string originalRecovery = File.ReadAllText(fixture.PathName);
+                Assert.IsTrue(VbeNativePaletteState.Equal(NativePaletteFixture.Rows(), fixture.Current));
+                fixture.RejectCommit = false;
+                fixture.Current[0].Foreground = 12;
+                Assert.ThrowsException<InvalidOperationException>(() => fixture.Change(true));
+                Assert.AreEqual(originalRecovery, File.ReadAllText(fixture.PathName));
+                Assert.AreEqual(12, fixture.Current[0].Foreground);
+                using (File.Open(fixture.PathName + ".lock", FileMode.Open, FileAccess.ReadWrite, FileShare.None)) { }
+            }
+        }
+
+        [TestMethod]
+        public void DialogAndConcurrentTransactionFailuresPreserveRecovery()
+        {
+            using (var fixture = new NativePaletteFixture())
+            {
+                NativePaletteFixture.State().SaveNew(fixture.PathName);
+                string originalRecovery = File.ReadAllText(fixture.PathName);
+                fixture.Failure = new InvalidOperationException("synthetic dialog unavailable");
+                Assert.ThrowsException<InvalidOperationException>(() => fixture.Change(false));
+                Assert.AreEqual(originalRecovery, File.ReadAllText(fixture.PathName));
+                fixture.Failure = null;
+                using (File.Open(fixture.PathName + ".lock", FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                    Assert.ThrowsException<IOException>(() => fixture.Change(true));
+                Assert.AreEqual(1, fixture.Visits);
+                Assert.AreEqual(originalRecovery, File.ReadAllText(fixture.PathName));
+            }
+        }
+    }
+}
