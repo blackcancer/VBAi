@@ -277,13 +277,15 @@ namespace CodexVBE
             finally { painting = false; if (suppliedDc == IntPtr.Zero) ReleaseDC(window, dc); }
         }
 
+        internal static Func<int, int, Bitmap> CreatePropertyRowBitmap = (width, height) => new Bitmap(width, height, PixelFormat.Format32bppRgb);
+
         internal static void PaintPropertyRow(IntPtr dc, VbeNativeTheme.NativeRect bounds)
         {
             int width = bounds.Right - bounds.Left, height = bounds.Bottom - bounds.Top;
             if (width <= 0 || height <= 0 || width > 16384 || height > 2048) return;
             try
             {
-                using (var bitmap = new Bitmap(width, height, PixelFormat.Format32bppRgb))
+                using (var bitmap = CreatePropertyRowBitmap(width, height))
                 {
                     using (var graphics = Graphics.FromImage(bitmap))
                     {

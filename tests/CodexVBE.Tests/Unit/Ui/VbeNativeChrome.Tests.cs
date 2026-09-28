@@ -116,5 +116,29 @@ namespace CodexVBE.Tests.Unit
                 for (int y = 0; y < bitmap.Height; y++)
                     for (int x = 0; x < bitmap.Width; x++) Assert.AreEqual(0xff0000, Rgb(bitmap.GetPixel(x, y)));
         }
+        [TestMethod]
+        public void PropertyRowAllocationFailureIsLoggedAndLeavesMemoryCanvasUnchanged()
+        {
+            var previousFactory = VbeNativeChrome.CreatePropertyRowBitmap;
+            var previousLog = LoadLog.AppendText;
+            var messages = new System.Collections.Generic.List<string>();
+            int allocations = 0;
+            try
+            {
+                VbeNativeChrome.CreatePropertyRowBitmap = (width, height) =>
+                {
+                    Assert.AreEqual(4, width); Assert.AreEqual(5, height); allocations++;
+                    throw new OutOfMemoryException("synthetic property row allocation failed");
+                };
+                LoadLog.AppendText = (path, message) => messages.Add(message);
+                using (var bitmap = NativeChromeCanvas.Paint(Color.White, dc =>
+                    VbeNativeChrome.PaintPropertyRow(dc, new VbeNativeTheme.NativeRect { Right = 4, Bottom = 5 })))
+                    for (int y = 0; y < bitmap.Height; y++)
+                        for (int x = 0; x < bitmap.Width; x++) Assert.AreEqual(0xffffff, Rgb(bitmap.GetPixel(x, y)));
+                Assert.AreEqual(1, allocations); Assert.AreEqual(1, messages.Count);
+                StringAssert.Contains(messages[0], "Native property row painting failed: synthetic property row allocation failed");
+            }
+            finally { VbeNativeChrome.CreatePropertyRowBitmap = previousFactory; LoadLog.AppendText = previousLog; }
+        }
     }
 }
