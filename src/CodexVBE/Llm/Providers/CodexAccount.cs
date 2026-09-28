@@ -23,6 +23,12 @@ namespace CodexVBE
     /// <summary>Interroge le client Codex installé et ouvre sa procédure de connexion.</summary>
     internal static class CodexAccount
     {
+        /// <summary>Démarre le client natif configuré, y compris son écran de connexion.</summary>
+        internal static Func<ProcessStartInfo, Process> StartProcess = Process.Start;
+        /// <summary>Attend la vérification native avec son délai de dix secondes.</summary>
+        internal static Func<Process, int, bool> WaitForExit = (process, milliseconds) => process.WaitForExit(milliseconds);
+        /// <summary>Vérifie la présence du client à son emplacement installé.</summary>
+        internal static Func<string, bool> FileExists = File.Exists;
         /// <summary>Résout le chemin du client Codex depuis sa configuration ou son emplacement usuel.</summary>
         /// <value>Chemin configuré, chemin installé, ou « codex.exe » si aucun fichier connu ne le confirme.</value>
         public static string Executable
@@ -33,7 +39,7 @@ namespace CodexVBE
                 if (!string.IsNullOrWhiteSpace(configured)) return configured;
                 string installed = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "Programs", "OpenAI", "Codex", "bin", "codex.exe");
-                return File.Exists(installed) ? installed : "codex.exe";
+                return FileExists(installed) ? installed : "codex.exe";
             }
         }
 
@@ -46,12 +52,14 @@ namespace CodexVBE
                     UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true,
                     RedirectStandardError = true
                 };
-                using (var process = Process.Start(info))
+                using (var process = StartProcess(info))
                 {
-                    string output = process.StandardOutput.ReadToEnd();
-                    string error = process.StandardError.ReadToEnd();
-                    if (!process.WaitForExit(10000)) { process.Kill(); throw new TimeoutException(UiText.Get("Codex verification timed out.")); }
-                    string result = (output + " " + error).Trim();
+                    var output = process.StandardOutput.ReadToEndAsync();
+                    var error = process.StandardError.ReadToEndAsync();
+                    if (!WaitForExit(process, 10000)) { process.Kill(); throw new TimeoutException(UiText.Get("Codex verification timed out.")); }
+                    // Drain both pipes concurrently so neither can block the deadline check.
+                    Task.WaitAll(output, error);
+                    string result = (output.Result + " " + error.Result).Trim();
                     if (process.ExitCode != 0)
                         return new CodexAccountStatus(false, UiText.Get("Not signed in to ChatGPT") +
                             (result.Length == 0 ? "." : " : " + result));
@@ -65,7 +73,7 @@ namespace CodexVBE
         /// <summary>Ouvre la commande interactive de connexion du client Codex.</summary>
         public static void StartLogin()
         {
-            Process.Start(new ProcessStartInfo(Executable, "login") { UseShellExecute = true });
+            StartProcess(new ProcessStartInfo(Executable, "login") { UseShellExecute = true });
         }
     }
 }

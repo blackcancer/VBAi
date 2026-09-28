@@ -12,6 +12,14 @@ namespace CodexVBE
     {
         /// <summary>Exécuteur des commandes GCM, injectable pour fournir un transport alternatif.</summary>
         private readonly Func<string, CancellationToken, Task<string>> execute;
+        /// <summary>Démarre le processus Git natif sans modifier le protocole GCM.</summary>
+        internal Action<Process> StartProcess = process => process.Start();
+        /// <summary>Attend la fin du processus avec le délai de production.</summary>
+        internal Func<Process, int, bool> WaitForExit = (process, milliseconds) => process.WaitForExit(milliseconds);
+        /// <summary>Vérifie si le processus est déjà terminé avant l’annulation.</summary>
+        internal Func<Process, bool> HasExited = process => process.HasExited;
+        /// <summary>Interrompt uniquement le processus démarré par cette opération.</summary>
+        internal Action<Process> KillProcess = process => process.Kill();
         /// <summary>Crée le service avec l’exécuteur fourni, ou l’exécution système par défaut.</summary>
         /// <param name="execute">Fonction d’exécution facultative recevant les arguments et le jeton d’annulation.</param>
         internal GitHubAccountService(Func<string, CancellationToken, Task<string>> execute = null)
@@ -57,7 +65,7 @@ namespace CodexVBE
         /// <exception cref="InvalidOperationException">Git est absent ou GCM termine avec une erreur.</exception>
         /// <exception cref="TimeoutException">La commande dépasse cinq minutes.</exception>
         /// <exception cref="OperationCanceledException">L’annulation est demandée.</exception>
-        private static Task<string> Execute(string arguments, CancellationToken cancellation)
+        private Task<string> Execute(string arguments, CancellationToken cancellation)
         {
             return Task.Run(async () => {
                 cancellation.ThrowIfCancellationRequested();
@@ -66,13 +74,13 @@ namespace CodexVBE
                 };
                 using (var process = new Process { StartInfo = start })
                 {
-                    try { process.Start(); }
+                    try { StartProcess(process); }
                     catch (System.ComponentModel.Win32Exception) { throw new InvalidOperationException(UiText.Get("Git for Windows is required. Install it with Git Credential Manager, then reopen settings.")); }
-                    using (cancellation.Register(() => { try { if (!process.HasExited) process.Kill(); } catch (InvalidOperationException) { } catch (System.ComponentModel.Win32Exception) { } }))
+                    using (cancellation.Register(() => { try { if (!HasExited(process)) KillProcess(process); } catch (InvalidOperationException) { } catch (System.ComponentModel.Win32Exception) { } }))
                     {
                         var output = process.StandardOutput.ReadToEndAsync();
                         var error = process.StandardError.ReadToEndAsync();
-                        if (!process.WaitForExit(300000)) { try { process.Kill(); } catch { } throw new TimeoutException(UiText.Get("GitHub sign-in timed out. Start sign-in again from settings.")); }
+                        if (!WaitForExit(process, 300000)) { try { KillProcess(process); } catch { } throw new TimeoutException(UiText.Get("GitHub sign-in timed out. Start sign-in again from settings.")); }
                         await Task.WhenAll(output, error);
                         cancellation.ThrowIfCancellationRequested();
                         // Do not expose raw authentication output or diagnostic bodies in the UI.
