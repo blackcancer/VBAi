@@ -209,6 +209,7 @@ namespace CodexVBE.Tests.Unit
                     string local = f.Git.Commit(f.Git.Snapshot("3"), initial);
                     f.Git.Repository.SetRef(f.Git.Repository.Head, local); f.Git.Repository.SetRef(MacroGitRepository.Baseline, local);
                     f.Git.Host.VBComponents.Item("Module1").CodeModule.Text = System.Text.Encoding.UTF8.GetString(f.Git.Snapshot("3").Files["Module1.bas"]);
+                    f.AssertLiveMatchesHead();
                     f.Action("merge_begin", "feature");
                     var conflicts = f.Get<ListBox>("conflictList"); Assert.AreEqual(1, conflicts.Items.Count);
                     f.Select(conflicts, 0); f.Event("ConflictList_SelectedIndexChanged");
@@ -240,6 +241,7 @@ namespace CodexVBE.Tests.Unit
                 Assert.AreEqual(UiText.Get("Local commit created. Use Push to publish it."), f.Status);
                 f.Event("Push_Click"); Assert.AreEqual(UiText.Get("Push complete."), f.Status);
                 f.Event("Fetch_Click"); Assert.IsFalse(f.Get<bool>("running"));
+                f.AssertLiveMatchesHead();
                 f.Event("Pull_Click"); Assert.AreEqual(UiText.Get("Pull and import complete. Check and save the document."), f.Status);
                 f.Git.Repository.PrepareRecovery(f.Git.Project.Capture());
                 f.Git.Repository.SetRef(MacroGitRepository.AfterImport, f.Git.Repository.Resolve(f.Git.Repository.Head));
