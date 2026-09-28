@@ -133,6 +133,12 @@ namespace CodexVBE
         public event Action<string> ThreadReady;
         /// <summary>Publie le texte, le raisonnement et l’état des appels d’outils dans la conversation.</summary>
         public event Action<string, string, string, bool> ChatUpdate;
+        /// <summary>Publie une étape de travail native avec son état et ses détails.</summary>
+        public event Action<CodexAgentActivity> ActivityUpdate;
+        /// <summary>Section de résumé actuellement diffusée pour chaque item.</summary>
+        private readonly Dictionary<string, int> summarySections = new Dictionary<string, int>();
+        /// <summary>Étapes commencées dont aucun résultat natif n’a encore été reçu.</summary>
+        private readonly Dictionary<string, CodexAgentActivity> runningActivities = new Dictionary<string, CodexAgentActivity>();
 
         /// <summary>Crée un client qui utilise le transport CLI standard.</summary>
         /// <param name="ui">Contexte du fil de l’interface.</param>
@@ -354,15 +360,29 @@ namespace CodexVBE
                 switch (GetString(message, "method"))
                 {
                     case "turn/started":
+                        summarySections.Clear();
+                        lock (gate) runningActivities.Clear();
                         activeTurnId = GetString(GetObject(parameters, "turn"), "id");
+                        break;
+                    case "item/started":
+                        PublishActivity(CodexAgentActivity.FromItem(GetObject(parameters, "item"), false));
+                        break;
+                    case "item/commandExecution/outputDelta":
+                        PublishActivity(new CodexAgentActivity { Id = GetString(parameters, "itemId"), Kind = "commandExecution", Detail = GetString(parameters, "delta"), Status = "inProgress", Append = true });
                         break;
                     case "item/agentMessage/delta":
                         PublishUpdate("message", GetString(parameters, "itemId"), GetString(parameters, "delta"), false);
                         break;
                     case "item/reasoning/summaryTextDelta":
                         PublishUpdate("summary", GetString(parameters, "itemId"), GetString(parameters, "delta"), false);
+                        string summaryId = GetString(parameters, "itemId");
+                        int section = parameters.TryGetValue("summaryIndex", out var indexValue) ? Convert.ToInt32(indexValue) :
+                            (summaryId != null && summarySections.TryGetValue(summaryId, out var savedIndex) ? savedIndex : 0);
+                        PublishActivity(new CodexAgentActivity { Id = summaryId == null ? null : summaryId + ":summary:" + section, Kind = "reasoning", Title = UiText.Get("Reasoning · summary"), Detail = GetString(parameters, "delta"), Status = "inProgress", Append = true });
                         break;
                     case "item/reasoning/summaryPartAdded":
+                        string reasoningId = GetString(parameters, "itemId");
+                        if (reasoningId != null && parameters.TryGetValue("summaryIndex", out var partIndex)) summarySections[reasoningId] = Convert.ToInt32(partIndex);
                         object summaryIndex;
                         if (parameters.TryGetValue("summaryIndex", out summaryIndex) &&
                             Convert.ToInt32(summaryIndex) > 0)
@@ -370,6 +390,7 @@ namespace CodexVBE
                         break;
                     case "item/completed":
                         var item = GetObject(parameters, "item");
+                        PublishActivity(CodexAgentActivity.FromItem(item, true));
                         if (GetString(item, "type") == "agentMessage")
                         {
                             bool final = GetString(item, "phase") != "commentary";
@@ -381,6 +402,13 @@ namespace CodexVBE
                             object summary;
                             if (item.TryGetValue("summary", out summary) && summary is object[])
                             {
+                                int partNumber = 0;
+                                foreach (var part in (object[])summary)
+                                {
+                                    string partText = part is IDictionary<string, object> partObject ? GetString(partObject, "text") : part as string;
+                                    if (!string.IsNullOrEmpty(GetString(item, "id")) && !string.IsNullOrWhiteSpace(partText)) PublishActivity(new CodexAgentActivity { Id = GetString(item, "id") + ":summary:" + partNumber, Kind = "reasoning", Title = UiText.Get("Reasoning · summary"), Detail = partText, Status = "completed" });
+                                    partNumber++;
+                                }
                                 var parts = ((object[])summary).Select(part => {
                                     var value = part as IDictionary<string, object>;
                                     return value != null ? GetString(value, "text") : part as string;
@@ -394,6 +422,7 @@ namespace CodexVBE
                     case "turn/completed":
                         var turn = GetObject(parameters, "turn");
                         string status = GetString(turn, "status");
+                        EndActivities(status);
                         var completion = turnDone;
                         string answer = finalText;
                         ui.Post(_ => {
@@ -406,6 +435,29 @@ namespace CodexVBE
                 }
             }
             catch (Exception ex) { FailPending(ex); }
+        }
+
+        /// <summary>Transmet une étape native sur le contexte UI, en ignorant les identités absentes.</summary>
+        /// <param name="activity">Étape reçue du protocole.</param>
+        private void PublishActivity(CodexAgentActivity activity)
+        {
+            if (disposed || activity == null || string.IsNullOrEmpty(activity.Id)) return;
+            lock (gate)
+            {
+                if (activity.Status == "inProgress") runningActivities[activity.Id] = activity;
+                else runningActivities.Remove(activity.Id);
+            }
+            ui.Post(_ => { if (!disposed) ActivityUpdate?.Invoke(activity); }, null);
+        }
+
+        /// <summary>Termine les états encore actifs lorsque le tour s'arrête, sans inventer un résultat d'action manquant.</summary>
+        /// <param name="status">État terminal du tour.</param>
+        private void EndActivities(string status)
+        {
+            CodexAgentActivity[] pending;
+            lock (gate) { pending = runningActivities.Values.ToArray(); runningActivities.Clear(); }
+            foreach (var activity in pending) PublishActivity(new CodexAgentActivity { Id = activity.Id, Kind = activity.Kind,
+                Status = status == "failed" ? "failed" : status == "completed" && activity.Kind == "reasoning" ? "completed" : "interrupted", Append = true });
         }
 
         /// <summary>Publie une mise à jour de conversation sur le contexte de l’interface.</summary>
@@ -432,11 +484,13 @@ namespace CodexVBE
                     if (interruptRequested || disposed) throw new OperationCanceledException("Conversation interrompue.");
                     string name = GetString(parameters, "tool");
                     progress("Codex appelle " + name);
-                    string activityId = "tool-" + Convert.ToString(requestId);
+                    string activityId = GetString(parameters, "callId") ?? GetString(parameters, "itemId") ?? "tool-" + Convert.ToString(requestId);
+                    PublishActivity(CodexAgentActivity.FromItem(new Dictionary<string, object> { ["type"] = "dynamicToolCall", ["id"] = activityId, ["tool"] = name, ["arguments"] = parameters["arguments"] }, false));
                     ChatUpdate?.Invoke("tool", activityId, name + " · en cours", false);
                     string arguments = NewJson().Serialize(parameters["arguments"]);
                     string output = await InvokeTool(name, arguments);
                     var response = NewJson().Deserialize<Response>(output);
+                    PublishActivity(CodexAgentActivity.FromItem(new Dictionary<string, object> { ["type"] = "dynamicToolCall", ["id"] = activityId, ["tool"] = name, ["arguments"] = parameters["arguments"], ["success"] = response != null && response.Ok }, true));
                     ChatUpdate?.Invoke("tool", activityId, name + (response != null && response.Ok ? UiText.Get(" · complete") : UiText.Get(" · failed")), true);
                     Send(new { id = requestId, result = new {
                         contentItems = new[] { new { type = "inputText", text = output } },
@@ -445,6 +499,10 @@ namespace CodexVBE
                 }
                 catch (Exception ex)
                 {
+                    if (GetString(parameters, "threadId") == threadId && turnDone != null)
+                        PublishActivity(new CodexAgentActivity { Id = GetString(parameters, "callId") ?? GetString(parameters, "itemId") ?? "tool-" + Convert.ToString(requestId),
+                        Kind = "dynamicToolCall", Title = GetString(parameters, "tool"), Detail = ex.Message,
+                        Status = ex is OperationCanceledException ? "interrupted" : "failed" });
                     try { Send(new { id = requestId, result = new {
                         contentItems = new[] { new { type = "inputText", text = ex.Message } }, success = false
                     } }); }
@@ -457,6 +515,7 @@ namespace CodexVBE
         /// <param name="error">Erreur transmise aux opérations en attente.</param>
         private void FailPending(Exception error)
         {
+            EndActivities(error is OperationCanceledException ? "interrupted" : "failed");
             lock (gate)
             {
                 foreach (var pending in requests.Values) pending.TrySetException(error);

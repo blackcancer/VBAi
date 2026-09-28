@@ -291,6 +291,53 @@ namespace CodexVBE.Tests.Unit
             }
         }
 
+        [TestMethod]
+        public async Task ToolFailuresAndInterruptedTurnsPublishTerminalStepsWithOneNativeIdentity()
+        {
+            var transport = new FakeTransport();
+            using (var client = Client(transport))
+            {
+                var events = new List<CodexAgentActivity>(); client.ActivityUpdate += events.Add;
+                client.InvokeTool = (n, a) => Task.FromException<string>(new System.IO.IOException("tool failure"));
+                var turn = client.TurnAsync("request", null, null); await transport.TurnStarted.Task;
+                transport.Emit(new { method = "item/started", @params = new { threadId = "thread-1", item = new { id = "call-1", type = "dynamicToolCall", tool = "read_module" } } });
+                transport.Emit(new { id = "request", method = "item/tool/call", @params = new { threadId = "thread-1", callId = "call-1", tool = "read_module", arguments = new { Project = "Book", Module = "Module1" } } });
+                Assert.AreEqual(1, events.Select(e => e.Id).Distinct().Count());
+                Assert.AreEqual("failed", events.Last().Status); Assert.AreEqual("tool failure", events.Last().Detail);
+                transport.Emit(new { method = "item/started", @params = new { threadId = "thread-1", item = new { id = "command", type = "commandExecution", command = "dotnet test" } } });
+                transport.Emit(new { method = "item/reasoning/summaryTextDelta", @params = new { threadId = "thread-1", itemId = "r", delta = "Still checking" } });
+                transport.EmitTurnCompleted("interrupted", null); await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => turn);
+                Assert.IsTrue(events.Any(e => e.Id == "command" && e.Status == "interrupted"));
+                Assert.IsTrue(events.Any(e => e.Id == "r:summary:0" && e.Status == "interrupted"));
+            }
+        }
+
+        [TestMethod]
+        public async Task NativeActivitiesPreserveSummarySectionsActionIdentityAndCommandOutput()
+        {
+            var transport = new FakeTransport();
+            using (var client = Client(transport))
+            {
+                var events = new List<CodexAgentActivity>(); client.ActivityUpdate += events.Add;
+                var turn = client.TurnAsync("request", null, null); await transport.TurnStarted.Task;
+                transport.Emit(new { method = "item/reasoning/summaryTextDelta", @params = new { threadId = "thread-1", itemId = "r", summaryIndex = 0, delta = "Read code" } });
+                transport.Emit(new { method = "item/started", @params = new { threadId = "thread-1", item = new { id = "c", type = "commandExecution", command = "dotnet test", cwd = "C:/test" } } });
+                transport.Emit(new { method = "item/commandExecution/outputDelta", @params = new { threadId = "thread-1", itemId = "c", delta = "pass" } });
+                transport.Emit(new { method = "item/reasoning/summaryPartAdded", @params = new { threadId = "thread-1", itemId = "r", summaryIndex = 1 } });
+                transport.Emit(new { method = "item/reasoning/summaryTextDelta", @params = new { threadId = "thread-1", itemId = "r", delta = "Check result" } });
+                transport.Emit(new { method = "item/reasoning/textDelta", @params = new { threadId = "thread-1", itemId = "r", delta = "PRIVATE" } });
+                transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", item = new { id = "c", type = "commandExecution", command = "dotnet test", aggregatedOutput = "passed", exitCode = 0, status = "completed", durationMs = 250 } } });
+                transport.Emit(new { method = "item/completed", @params = new { threadId = "thread-1", item = new { id = "r", type = "reasoning", summary = new object[] { "Read code", new { text = "Check result" } }, content = "PRIVATE" } } });
+                transport.Emit(new { method = "item/started", @params = new { threadId = "other", item = new { id = "foreign", type = "webSearch", query = "ignored" } } });
+                Assert.AreEqual("r:summary:0", events[0].Id); Assert.AreEqual("c", events[1].Id);
+                Assert.AreEqual("r:summary:1", events[3].Id); Assert.AreEqual("completed", events.Single(e => e.Id == "c" && e.Status == "completed").Status);
+                Assert.AreEqual(250L, events.Single(e => e.Id == "c" && e.Status == "completed").DurationMs);
+                Assert.IsTrue(events.Any(e => e.Id == "c" && e.Append && e.Detail == "pass"));
+                Assert.IsFalse(events.Any(e => e.Detail == "PRIVATE" || e.Id == "foreign"));
+                transport.EmitTurnCompleted("completed", null); await turn;
+            }
+        }
+
         /// <summary>Expose une erreur native de tour et utilise le repli lorsque le texte final manque.</summary>
         /// <returns>Tâche terminée après réception de la réponse.</returns>
         [TestMethod]

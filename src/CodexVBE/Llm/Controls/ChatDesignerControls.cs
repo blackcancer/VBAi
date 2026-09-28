@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -89,9 +89,9 @@ namespace CodexVBE
         {
             if (e.Index < 0) return;
             bool selected = (e.State & DrawItemState.Selected) != 0;
-            using (var brush = new SolidBrush(selected ? Color.FromArgb(239, 246, 255) : BackColor)) e.Graphics.FillRectangle(brush, e.Bounds);
+            using (var brush = new SolidBrush(selected ? SystemColors.Highlight : BackColor)) e.Graphics.FillRectangle(brush, e.Bounds);
             var bounds = new Rectangle(e.Bounds.X + 7, e.Bounds.Y, Math.Max(1, e.Bounds.Width - 14), e.Bounds.Height);
-            TextRenderer.DrawText(e.Graphics, GetItemText(Items[e.Index]), Font, bounds, ForeColor,
+            TextRenderer.DrawText(e.Graphics, GetItemText(Items[e.Index]), Font, bounds, selected ? SystemColors.HighlightText : ForeColor,
                 TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
         }
         /// <summary>Redessine le contrôle après changement de sélection.</summary>

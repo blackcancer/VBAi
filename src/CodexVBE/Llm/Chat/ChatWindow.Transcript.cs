@@ -100,6 +100,7 @@ namespace CodexVBE
             if (item.RenderedContext is ChatEntry && item.Content is FrameworkElement content) DisposeEntryView(content);
             if (item.RenderedContext is ChatEntry entry && entryViews.TryGetValue(entry, out var view) && ReferenceEquals(view, item.Content)) {
                 entryViews.Remove(entry);
+                ReleaseActivityTexts(entry);
                 if (entry.StreamId != null) liveTexts.Remove(entry.StreamId);
                 if (entry.FormCut != null) formCutButtons.Remove(entry.FormCut);
                 if (entry.Change != null) { rollbackButtons.Remove(entry.Change); changeStates.Remove(entry.Change); }
@@ -121,10 +122,14 @@ namespace CodexVBE
         private void RefreshTranscriptWindow(int start)
         {
             DisposeEntryViews();
+            while (start > 0 && start < transcriptEntries.Count &&
+                CanGroupActivities(transcriptEntries[start - 1], transcriptEntries[start])) start--;
             firstLoadedEntry = start;
             visibleEntries.Clear(); entryViews.Clear(); liveTexts.Clear(); rollbackButtons.Clear(); changeStates.Clear(); formCutButtons.Clear();
             if (start > 0) visibleEntries.Add(earlierEntries);
-            foreach (var entry in transcriptEntries.Skip(start)) visibleEntries.Add(entry);
+            activityGroups.Clear(); activityOwners.Clear();
+            ChatEntry previous = null;
+            foreach (var entry in transcriptEntries.Skip(start)) { AppendVisibleEntry(entry, previous); previous = entry; }
         }
         /// <summary>Efface le transcript complet et réinitialise les contrôles matérialisés et le suivi du défilement.</summary>
         private void ClearTranscript()
@@ -132,6 +137,7 @@ namespace CodexVBE
             DisposeEntryViews();
             visibleEntries.Clear(); firstLoadedEntry = 0;
             transcriptEntries.Clear(); entryViews.Clear(); liveEntries.Clear(); liveTexts.Clear();
+            activityGroups.Clear(); activityOwners.Clear(); expandedActivityGroups.Clear(); expandedActivitySteps.Clear();
             rollbackButtons.Clear(); changeStates.Clear(); formCutButtons.Clear(); followConversation = true;
         }
         /// <summary>Fait défiler vers le dernier élément si le suivi automatique est activé.</summary>
@@ -167,8 +173,9 @@ namespace CodexVBE
             if (conversationItems == null) return;
             if (entry.TurnId == null) entry.TurnId = activeTurnId;
             if (transcriptEntries.Count == 0) visibleEntries.Clear();
+            var previous = transcriptEntries.LastOrDefault();
             transcriptEntries.Add(entry);
-            if (!loadingSession) { visibleEntries.Add(entry); FollowLatest(); ScheduleSessionSave(); }
+            if (!loadingSession) { AppendVisibleEntry(entry, previous); FollowLatest(); ScheduleSessionSave(); }
         }
 
         /// <summary>Construit le contrôle WPF correspondant à un message, une activité, une référence ou une pièce jointe.</summary>
@@ -176,6 +183,7 @@ namespace CodexVBE
         /// <returns>Élément WPF matérialisant l’entrée.</returns>
         private FrameworkElement RenderEntry(ChatEntry entry)
         {
+            if (activityGroups.TryGetValue(entry, out var activities)) return RenderActivityGroup(entry, activities);
             if (entry.FormCut != null) return RenderFormCut(entry.FormCut);
             if (entry.Change != null) return RenderChange(entry.Change);
             if (entry.Speaker == "Réflexion" || entry.Speaker == "Outil")
@@ -367,8 +375,7 @@ namespace CodexVBE
             {
                 completedStreams.Add(id);
                 if (kind == "final") streamedFinalText = entry.Text;
-                int index = visibleEntries.IndexOf(entry);
-                if (index >= 0) { visibleEntries.RemoveAt(index); visibleEntries.Insert(index, entry); }
+                RefreshVisibleActivity(entry);
             }
             else
             {

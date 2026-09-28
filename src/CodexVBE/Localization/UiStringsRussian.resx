@@ -1980,4 +1980,19 @@
   <data name="Styles the VBE title bar, workspace, native panes and scrollbars. Menus and toolbars remain controlled by the legacy Office renderer." xml:space="preserve"><value>Применяет тёмное оформление к заголовку, рабочей области, встроенным панелям и полосам прокрутки VBE. Меню и панели инструментов остаются под управлением прежнего механизма отрисовки Office.</value></data>
   <data name="Native editor colors could not be updated. See the log for details." xml:space="preserve"><value>Не удалось обновить цвета встроенного редактора. Подробности см. в журнале.</value></data>
   <data name="Applies dark native surfaces and editor colors after Settings closes. Original editor colors are saved and restored when disabled. Some legacy controls remain experimental." xml:space="preserve"><value>Применяет тёмное оформление встроенных поверхностей и цвета редактора после закрытия настроек. Исходные цвета сохраняются и восстанавливаются при отключении. Некоторые устаревшие элементы управления остаются экспериментальными.</value></data>
+  <data name="In progress" xml:space="preserve">
+    <value>Выполняется</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>Завершено</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>Прервано</value>
+  </data>
+  <data name="Declined" xml:space="preserve">
+    <value>Отклонено</value>
+  </data>
 </root>

@@ -1980,4 +1980,19 @@ QQ 附加記憶體
   <data name="Styles the VBE title bar, workspace, native panes and scrollbars. Menus and toolbars remain controlled by the legacy Office renderer." xml:space="preserve"><value>為 VBE 標題列、工作區、原生窗格及捲軸套用深色樣式。功能表與工具列仍由舊版 Office 繪製引擎控制。</value></data>
   <data name="Native editor colors could not be updated. See the log for details." xml:space="preserve"><value>無法更新原生編輯器色彩。請查看記錄以瞭解詳情。</value></data>
   <data name="Applies dark native surfaces and editor colors after Settings closes. Original editor colors are saved and restored when disabled. Some legacy controls remain experimental." xml:space="preserve"><value>關閉設定後套用原生介面深色樣式及編輯器色彩。原始編輯器色彩會被儲存，並在停用時還原。部分舊版控制項仍處於實驗階段。</value></data>
+  <data name="In progress" xml:space="preserve">
+    <value>進行中</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>已完成</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>失敗</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>已取消</value>
+  </data>
+  <data name="Declined" xml:space="preserve">
+    <value>已拒絕</value>
+  </data>
 </root>
