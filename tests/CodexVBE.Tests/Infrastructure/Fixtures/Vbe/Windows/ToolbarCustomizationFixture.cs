@@ -39,6 +39,7 @@ namespace CodexVBE.Tests.Unit
         {
             public bool FailAdd, FailTag, IgnoreTag;
             public int? AddedId;
+            public Action<Button> Copied;
             public new Button this[int oneBased] => base[oneBased - 1];
             public Button Add(int type, int id, object parameter, int before, bool temporary)
             {
@@ -65,7 +66,8 @@ namespace CodexVBE.Tests.Unit
             public Button Copy(object target, int before)
             {
                 var copied = ((Bar)target).Controls.Add(Type, Id, System.Type.Missing, before, true);
-                copied.Caption = Caption; copied.BuiltIn = BuiltIn; copied.CopiedFromSource = true; return copied;
+                copied.Caption = Caption; copied.BuiltIn = BuiltIn; copied.CopiedFromSource = true;
+                ((Bar)target).Controls.Copied?.Invoke(copied); return copied;
             }
             public void Delete() {if(FailDelete)throw new InvalidOperationException("native delete rejected");if(!IgnoreDelete)Owner.Remove(this);}
         }

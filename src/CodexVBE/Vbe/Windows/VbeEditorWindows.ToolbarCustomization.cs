@@ -41,11 +41,12 @@ namespace CodexVBE
             if ((bool)bar.BuiltIn || !((string)bar.Name).StartsWith(CustomToolbarPrefix, StringComparison.Ordinal) || (int)bar.Controls.Count != 0)
                 throw new InvalidOperationException("Only an empty custom VBAi toolbar can be removed.");
             if (((int)bar.Protection & 1) != 0) throw new InvalidOperationException("Toolbar customization is protected.");
-            ToolbarProfiles?.Update(request.ObjectName, null);
             bar.Delete();
             bool absent = true;
             foreach (dynamic current in vbe.CommandBars)
                 if (string.Equals((string)current.Name, request.ObjectName, StringComparison.OrdinalIgnoreCase)) absent = false;
+            // Un refus natif conserve le profil afin de permettre la restauration suivante.
+            if (absent) ToolbarProfiles?.Update(request.ObjectName, null);
             return new { Removed = absent, Verified = absent, ToolbarCollectionVersion = ToolbarCollectionVersion() };
         }
         /// <summary>Ajoute une commande native existante, sans OnAction arbitraire.</summary>
