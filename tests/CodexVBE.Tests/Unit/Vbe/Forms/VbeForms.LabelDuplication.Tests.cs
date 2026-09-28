@@ -1,3 +1,5 @@
+using System;
+
 namespace CodexVBE.Tests.Unit
 {
     using System;
@@ -69,6 +71,72 @@ namespace CodexVBE.Tests.Unit
             request.NewName = "Label1";
             Assert.ThrowsException<InvalidOperationException>(() => f.Service.DuplicateLabel(request));
             Assert.AreEqual(1, f.Form.Designer.Controls.Count);
+        }
+    }
+}
+
+namespace CodexVBE.Tests.Unit
+{
+    public sealed partial class VbeFormsValueDuplicationTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void LabelCompleteGuardAndRollbackMatrix()
+        {
+            VerifyDuplicationGuards("Label");
+        }
+
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void LabelFontAndOleColorValidationAndReadbackMatrix()
+        {
+            foreach (double size in new[] { 0d, 201d, double.NaN, double.PositiveInfinity })
+            {
+                var f = Create("Label"); f.Source.Font.Size = size;
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<InvalidOperationException>(() => Duplicate(f, "Label", f.Request()));
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(1, f.Form.Designer.Controls.Count);
+            }
+            {
+                var f = Create("Label"); f.Source.BackColor = System.Drawing.Color.Red;
+                f.Form.Designer.Controls.ConfigureAdded = copy => copy.ReadOverrides["BackColor"] = System.Drawing.Color.Red;
+                Duplicate(f, "Label", f.Request());
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(System.Drawing.Color.Red, f.Form.Designer.Controls.Item("Copy").BackColor);
+            }
+            foreach (string property in new[] { "BackColor", "Font.Name", "Font.Size", "Font.Bold" })
+            {
+                var f = Create("Label");
+                f.Form.Designer.Controls.ConfigureAdded = copy =>
+                {
+                    if (property == "BackColor") copy.ReadOverrides[property] = 255;
+                    else copy.Font.ReadOverrides[property.Substring(5)] = property == "Font.Name" ? (object)"Other" : property == "Font.Size" ? (object)24d : true;
+                };
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<InvalidOperationException>(() => Duplicate(f, "Label", f.Request()), property);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(1, f.Form.Designer.Controls.Count);
+            }
+        }
+
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public void PropertyAccessorTargetsAndNestedFontMatrix()
+        {
+            var f = Create("Label");
+            foreach (string path in new[] { null, "", "UserForm", "Controls/Label1" })
+            {
+                var request = f.Request(); request.ControlPath = path; request.Property = "Caption";
+                dynamic result = f.Service.PropertyAccessors(request);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("Caption", (string)result.Property);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse((bool)result.Metadata.MetadataComplete);
+            }
+            foreach (string property in new[] { "", "Font.Name.More", "Other.Name" })
+            {
+                var request = f.Request(); request.Property = property;
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<ArgumentException>(() => f.Service.PropertyAccessors(request));
+            }
+            {
+                var request = f.Request("Controls/Missing"); request.Property = "Caption";
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<InvalidOperationException>(() => f.Service.PropertyAccessors(request));
+                request = f.Request(); request.Property = "Font.Name";
+                dynamic result = f.Service.PropertyAccessors(request);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("Name", (string)result.Metadata.Property);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("Font.Name", (string)result.Property);
+            }
         }
     }
 }
