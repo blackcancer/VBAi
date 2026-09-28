@@ -9,11 +9,25 @@ using System.Web.Script.Serialization;
 
 namespace CodexVBE
 {
+    /// <summary>Lit les événements SSE des fournisseurs et assemble une réponse complète avant son utilisation.</summary>
     internal static class ChatStreamReader
     {
+        /// <summary>Convertit un événement décodé en dictionnaire de propriétés.</summary>
+        /// <param name="value">Valeur de l’événement à convertir.</param>
+        /// <returns>Dictionnaire de propriétés, ou null si la valeur est incompatible.</returns>
         private static IDictionary<string, object> Obj(object value) { return ClaudeProtocol.Object(value); }
+        /// <summary>Lit une propriété textuelle d’un événement.</summary>
+        /// <param name="value">Dictionnaire de l’événement.</param>
+        /// <param name="key">Nom de la propriété.</param>
+        /// <returns>Texte de la propriété, ou null si elle est absente.</returns>
         private static string Text(IDictionary<string, object> value, string key) { return ClaudeProtocol.Text(value, key); }
 
+        /// <summary>Lit le flux SSE, assemble les fragments et refuse les réponses incomplètes avant de retourner le message.</summary>
+        /// <param name="stream">Flux de réponse du fournisseur.</param>
+        /// <param name="claude">Vrai lorsque le flux suit le protocole Claude.</param>
+        /// <param name="progress">Callback appelé pour chaque fragment textuel reçu, éventuellement null.</param>
+        /// <param name="token">Jeton qui annule la lecture et ferme le flux.</param>
+        /// <returns>Message assistant assemblé avec ses appels d’outils complets.</returns>
         public static async Task<IDictionary<string, object>> ReadAsync(Stream stream, bool claude, Action<string> progress, CancellationToken token)
         {
             token.ThrowIfCancellationRequested();
@@ -80,6 +94,9 @@ namespace CodexVBE
             return message;
         }
 
+        /// <summary>Fusionne un fragment dans le message en concaténant les chaînes et en fusionnant récursivement les objets.</summary>
+        /// <param name="target">Dictionnaire qui reçoit les valeurs fusionnées.</param>
+        /// <param name="delta">Dictionnaire contenant le nouveau fragment.</param>
         private static void Merge(IDictionary<string, object> target, IDictionary<string, object> delta)
         {
             foreach (var pair in delta) {

@@ -4,19 +4,33 @@ using System.Linq;
 
 namespace CodexVBE
 {
+    /// <summary>Représente une zone contiguë différente entre deux versions d’un module.</summary>
     internal sealed class CodeHunk
     {
+        /// <summary>Obtient ou définit l’index de la zone dans la séquence de différences.</summary>
         public int Index { get; set; }
+        /// <summary>Obtient ou définit la première ligne concernée dans la version initiale, indexée à partir de zéro.</summary>
         public int BeforeStart { get; set; }
+        /// <summary>Obtient ou définit la première ligne concernée dans la version modifiée, indexée à partir de zéro.</summary>
         public int AfterStart { get; set; }
+        /// <summary>Obtient ou définit les lignes de la version initiale remplacées par cette zone.</summary>
         public string[] Before { get; set; }
+        /// <summary>Obtient ou définit les lignes de la version modifiée correspondant à cette zone.</summary>
         public string[] After { get; set; }
     }
 
+    /// <summary>Calcule les différences textuelles et restaure des blocs de code en vérifiant leur contexte.</summary>
     internal static class CodeRollback
     {
+        /// <summary>Découpe un texte en lignes, normalise les fins de ligne et retourne un tableau vide pour une entrée vide.</summary>
+        /// <param name="text">Texte à découper.</param>
+        /// <returns>Les lignes du texte sans leurs séparateurs.</returns>
         public static string[] Lines(string text) { return string.IsNullOrEmpty(text) ? new string[0] : text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n'); }
 
+        /// <summary>Construit les zones modifiées entre une version initiale et une version modifiée.</summary>
+        /// <param name="before">Texte initial.</param>
+        /// <param name="after">Texte modifié.</param>
+        /// <returns>Les zones ordonnées par position ; les textes identiques ne produisent aucune zone.</returns>
         public static CodeHunk[] Hunks(string before, string after)
         {
             var a = Lines(before); var b = Lines(after);
@@ -50,6 +64,12 @@ namespace CodexVBE
             return result.ToArray();
         }
 
+        /// <summary>Restaure une ou toutes les zones encore modifiées d’un changement, en refusant les contextes ambigus ou modifiés.</summary>
+        /// <param name="change">Changement à restaurer, avec ses versions et l’état des zones déjà restaurées.</param>
+        /// <param name="current">Contenu actuel du module.</param>
+        /// <param name="onlyHunk">Index facultatif de la seule zone à restaurer.</param>
+        /// <returns>Le contenu résultant, avec des fins de ligne CRLF.</returns>
+        /// <exception cref="InvalidOperationException">Aucune zone sélectionnée ne reste à restaurer, ou le bloc ne peut pas être retrouvé sans ambiguïté.</exception>
         public static string Apply(CodeChange change, string current, int? onlyHunk = null)
         {
             var lines = Lines(current).ToList(); var original = Lines(change.After).ToList();

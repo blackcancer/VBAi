@@ -5,10 +5,16 @@ using System.Text;
 
 namespace CodexVBE
 {
+    /// <summary>Démarre un processus avec une entrée redirigée UTF-8 sans préambule BOM.</summary>
     internal static class ProcessInput
     {
+        /// <summary>Sérialise temporairement la modification du réglage global d’encodage d’entrée.</summary>
         private static readonly object startLock = new object();
 
+        /// <summary>Remplace temporairement l’encodage d’entrée de Console afin que .NET Framework ne préfixe pas le flux binaire d’un BOM.</summary>
+        /// <param name="process">Processus configuré avec une entrée standard redirigée.</param>
+        /// <returns>Valeur renvoyée par Process.Start.</returns>
+        /// <exception cref="InvalidOperationException">Le runtime ne permet pas de retrouver son encodage d’entrée interne.</exception>
         internal static bool StartWithoutPreamble(Process process)
         {
             // .NET Framework has no ProcessStartInfo.StandardInputEncoding. Its redirected

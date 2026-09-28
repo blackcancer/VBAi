@@ -7,27 +7,46 @@ using System.Linq;
 
 namespace CodexVBE
 {
+    /// <summary>Implémente la copie partielle d’une Frame et des Labels/TextBox directs de son profil simple.</summary>
     internal sealed partial class VbeForms
     {
+        /// <summary>Capture les valeurs autorisées à recopier sur un Label ou TextBox enfant.</summary>
         private sealed class SimpleFrameChild
         {
+            /// <summary>Type MSForms du contrôle enfant.</summary>
             public string Kind;
+            /// <summary>Nom proposé pour le contrôle copié.</summary>
             public string Name;
+            /// <summary>Légende copiée pour un Label.</summary>
             public string Caption;
+            /// <summary>Valeur copiée pour un TextBox lorsque sa source contient du texte.</summary>
             public string TextValue;
+            /// <summary>Position horizontale de l’enfant dans sa Frame.</summary>
             public double Left;
+            /// <summary>Position verticale de l’enfant dans sa Frame.</summary>
             public double Top;
+            /// <summary>Largeur de l’enfant.</summary>
             public double Width;
+            /// <summary>Hauteur de l’enfant.</summary>
             public double Height;
+            /// <summary>Couleur OLE convertie du fond du Label.</summary>
             public int BackColor;
+            /// <summary>Nom de police copié pour le Label.</summary>
             public string FontName;
+            /// <summary>Taille de police copiée pour le Label.</summary>
             public double FontSize;
+            /// <summary>Indique si la police du Label est en gras.</summary>
             public bool FontBold;
         }
 
         // Extends the proven Frame+Labels transaction with the narrow TextBox
         // profile. It is a separate bridge route so the Label-only contract
         // and its tested rejection of TextBox children stay unchanged.
+        /// <summary>Copie une Frame racine avec ses enfants Label et TextBox directs admissibles puis vérifie la hiérarchie, la géométrie et les propriétés prévues.</summary>
+        /// <param name="request">Projet, formulaire, chemin racine, version attendue et nom de la nouvelle Frame.</param>
+        /// <returns>Rapport partiel avec les chemins des enfants copiés et le nouvel arbre.</returns>
+        /// <exception cref="ArgumentException">Le chemin ou les données obligatoires ne conviennent pas au profil racine.</exception>
+        /// <exception cref="InvalidOperationException">Le plan est inadmissible, un enfant est hors profil, la vérification échoue ou le rollback est incomplet.</exception>
         public object DuplicateFrameWithSimpleChildren(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||

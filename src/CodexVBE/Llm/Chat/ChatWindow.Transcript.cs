@@ -12,21 +12,35 @@ using System.Windows.Threading;
 
 namespace CodexVBE
 {
+    /// <summary>Fenêtre de conversation qui affiche les messages et les modifications de code.</summary>
     internal sealed partial class ChatWindow
     {
+        /// <summary>Défileur de la conversation une fois matérialisé par le template WPF.</summary>
         private ScrollViewer conversationScroll;
+        /// <summary>Liste virtualisée des éléments affichés dans la conversation.</summary>
         private ListBox conversationItems;
+        /// <summary>Entrées actuellement visibles par la liste virtualisée.</summary>
         private readonly System.Collections.ObjectModel.ObservableCollection<object> visibleEntries = new System.Collections.ObjectModel.ObservableCollection<object>();
+        /// <summary>Index de la première entrée du transcript chargée dans la fenêtre visible.</summary>
         private int firstLoadedEntry;
+        /// <summary>Marqueur inséré pour charger les messages antérieurs.</summary>
         private readonly object earlierEntries = new object();
+        /// <summary>Indique si le défilement doit rester attaché au dernier message.</summary>
         private bool followConversation = true;
+        /// <summary>Historique complet des entrées de la session courante.</summary>
         private readonly List<ChatEntry> transcriptEntries = new List<ChatEntry>();
+        /// <summary>Contrôles matérialisés actuellement associés à leurs entrées.</summary>
         private readonly Dictionary<ChatEntry, FrameworkElement> entryViews = new Dictionary<ChatEntry, FrameworkElement>();
+        /// <summary>Messages de flux actifs indexés par leur identifiant.</summary>
         private readonly Dictionary<string, ChatEntry> liveEntries = new Dictionary<string, ChatEntry>();
+        /// <summary>Champs texte matérialisés pour afficher le texte des flux actifs.</summary>
         private readonly Dictionary<string, TextBox> liveTexts = new Dictionary<string, TextBox>();
+        /// <summary>Boutons de restauration associés aux changements de code visibles.</summary>
         private readonly Dictionary<CodeChange, Button> rollbackButtons = new Dictionary<CodeChange, Button>();
+        /// <summary>Libellés d’état associés aux changements de code visibles.</summary>
         private readonly Dictionary<CodeChange, TextBlock> changeStates = new Dictionary<CodeChange, TextBlock>();
 
+        /// <summary>Configure la liste virtualisée, les événements de défilement, l’accessibilité et les changements de thème.</summary>
         private void InitializeTranscript()
         {
             conversationItems = new ListBox { ItemsSource = visibleEntries, Background = Ink("#F8FAFC"), BorderThickness = new Thickness(0),
@@ -61,6 +75,8 @@ namespace CodexVBE
             UiTheme.Changed += themeChanged;
             Disposed += (s, e) => UiTheme.Changed -= themeChanged;
         }
+        /// <summary>Construit le contrôle visuel d’un élément lorsque le panneau virtualisé le matérialise.</summary>
+        /// <param name="item">Élément du transcript à matérialiser.</param>
         private void RealizeEntry(TranscriptItem item)
         {
             var entry = item.DataContext as ChatEntry;
@@ -77,6 +93,8 @@ namespace CodexVBE
             }
             else item.Content = item.DataContext as FrameworkElement;
         }
+        /// <summary>Retire les références aux contrôles temporaires lorsqu’un élément sort de la fenêtre virtualisée.</summary>
+        /// <param name="item">Élément du transcript libéré.</param>
         private void ReleaseEntry(TranscriptItem item)
         {
             if (item.RenderedContext is ChatEntry entry && entryViews.TryGetValue(entry, out var view) && ReferenceEquals(view, item.Content)) {
@@ -85,6 +103,8 @@ namespace CodexVBE
                 if (entry.Change != null) { rollbackButtons.Remove(entry.Change); changeStates.Remove(entry.Change); }
             }
         }
+        /// <summary>Remplace la fenêtre virtualisée par les entrées commençant à l’index demandé.</summary>
+        /// <param name="start">Index de départ dans le transcript complet.</param>
         private void RefreshTranscriptWindow(int start)
         {
             firstLoadedEntry = start;
@@ -92,12 +112,14 @@ namespace CodexVBE
             if (start > 0) visibleEntries.Add(earlierEntries);
             foreach (var entry in transcriptEntries.Skip(start)) visibleEntries.Add(entry);
         }
+        /// <summary>Efface le transcript complet et réinitialise les contrôles matérialisés et le suivi du défilement.</summary>
         private void ClearTranscript()
         {
             visibleEntries.Clear(); firstLoadedEntry = 0;
             transcriptEntries.Clear(); entryViews.Clear(); liveEntries.Clear(); liveTexts.Clear();
             rollbackButtons.Clear(); changeStates.Clear(); followConversation = true;
         }
+        /// <summary>Fait défiler vers le dernier élément si le suivi automatique est activé.</summary>
         private void FollowLatest()
         {
             if (!followConversation || conversationItems == null || visibleEntries.Count == 0) return;
@@ -105,6 +127,10 @@ namespace CodexVBE
                 if (followConversation && visibleEntries.Count > 0) conversationItems.ScrollIntoView(visibleEntries.Last());
             }));
         }
+        /// <summary>Crée un champ texte en lecture seule dont le contenu peut être sélectionné et copié.</summary>
+        /// <param name="text">Texte à afficher.</param>
+        /// <param name="code">Active une police monospace, une ligne non renvoyée et un flux gauche-droite.</param>
+        /// <returns>Champ WPF configuré pour la sélection du texte.</returns>
         private static TextBox SelectableText(string text, bool code = false)
         {
             return new TextBox { Text = text ?? "", IsReadOnly = true, AcceptsReturn = true,
@@ -115,7 +141,12 @@ namespace CodexVBE
                 FontFamily = new FontFamily(code ? "Consolas" : "Segoe UI"),
                 Padding = new Thickness(0), IsReadOnlyCaretVisible = true };
         }
+        /// <summary>Ajoute un message simple au transcript.</summary>
+        /// <param name="speaker">Locuteur ou catégorie du message.</param>
+        /// <param name="content">Texte du message.</param>
         private void AddTranscriptMessage(string speaker, string content) { AddEntry(new ChatEntry { Speaker = speaker, Text = content }); }
+        /// <summary>Ajoute une entrée à l’historique et, hors chargement de session, à la liste visible.</summary>
+        /// <param name="entry">Entrée à ajouter.</param>
         private void AddEntry(ChatEntry entry)
         {
             if (conversationItems == null) return;
@@ -125,6 +156,9 @@ namespace CodexVBE
             if (!loadingSession) { visibleEntries.Add(entry); FollowLatest(); ScheduleSessionSave(); }
         }
 
+        /// <summary>Construit le contrôle WPF correspondant à un message, une activité, une référence ou une pièce jointe.</summary>
+        /// <param name="entry">Entrée du transcript à afficher.</param>
+        /// <returns>Élément WPF matérialisant l’entrée.</returns>
         private FrameworkElement RenderEntry(ChatEntry entry)
         {
             if (entry.Change != null) return RenderChange(entry.Change);
@@ -202,12 +236,17 @@ namespace CodexVBE
                 Padding = new Thickness(14), Margin = new Thickness(user ? 30 : 0, 0, user ? 0 : 4, 14) };
         }
 
+        /// <summary>Copie le texte dans le presse-papiers et signale les erreurs à l’interface.</summary>
+        /// <param name="text">Texte à copier.</param>
         private void CopyText(string text)
         {
             try { Clipboard.SetText(text ?? ""); }
             catch (Exception ex) { SetStatus(UiText.Get("Unable to copy: ") + ex.Message); }
         }
 
+        /// <summary>Ajoute le rendu Markdown avec les références connues et leur navigation VBE.</summary>
+        /// <param name="body">Conteneur auquel ajouter le rendu.</param>
+        /// <param name="content">Contenu Markdown.</param>
         private void RenderMarkdown(StackPanel body, string content)
         {
             var refs = transcriptEntries.SelectMany(x => x.References ?? new VbeChatReference[0])
@@ -215,12 +254,17 @@ namespace CodexVBE
             body.Children.Add(ChatMarkdown.Render(content, refs, NavigateReference, SetStatus));
         }
 
+        /// <summary>Ajoute une entrée de changement de code puis actualise les cartes visibles.</summary>
+        /// <param name="change">Changement à afficher.</param>
         private void AddCodeChangeCard(CodeChange change)
         {
             AddEntry(new ChatEntry { Speaker = "Code", Change = change });
             RefreshCodeChangeCards();
         }
 
+        /// <summary>Construit une carte de diff avec navigation vers le module et actions de restauration.</summary>
+        /// <param name="change">Changement dont il faut afficher le diff et les actions.</param>
+        /// <returns>Carte WPF de changement.</returns>
         private FrameworkElement RenderChange(CodeChange change)
         {
             var body = new StackPanel();
@@ -268,6 +312,7 @@ namespace CodexVBE
                 Padding = new Thickness(10), Margin = new Thickness(0, 0, 4, 14) };
         }
 
+        /// <summary>Actualise l’activation et le libellé des boutons selon l’état restauré et l’activité courante.</summary>
         private void RefreshCodeChangeCards()
         {
             foreach (var pair in rollbackButtons)
@@ -278,9 +323,16 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Identifiants des flux dont le contenu final est disponible.</summary>
         private readonly HashSet<string> completedStreams = new HashSet<string>();
+        /// <summary>Texte final du flux assistant courant, utilisé pour éviter un message final en double.</summary>
         private string streamedFinalText;
 
+        /// <summary>Ajoute ou met à jour le texte d’un flux de réponse et finalise l’entrée lorsqu’il est terminé.</summary>
+        /// <param name="kind">Catégorie de flux, notamment summary, tool ou final.</param>
+        /// <param name="id">Identifiant stable du flux.</param>
+        /// <param name="text">Fragment reçu ou texte final.</param>
+        /// <param name="complete">Indique si la mise à jour termine le flux.</param>
         private void ReceiveChatUpdate(string kind, string id, string text, bool complete)
         {
             if (IsDisposed || conversationItems == null) return;
@@ -309,12 +361,15 @@ namespace CodexVBE
             FollowLatest(); ScheduleSessionSave();
         }
 
+        /// <summary>Ajoute le texte final de l’assistant s’il n’a pas déjà été affiché par le flux.</summary>
+        /// <param name="text">Réponse complète de l’assistant.</param>
         private void CompleteAssistantResponse(string text)
         {
             if (!string.Equals(streamedFinalText, text, StringComparison.Ordinal)) AddTranscriptMessage("Assistant", text);
             streamedFinalText = null;
         }
 
+        /// <summary>Affiche l’écran d’accueil avec suggestions tant que le transcript est vide.</summary>
         private void ShowWelcome()
         {
             if (conversationItems == null || transcriptEntries.Count > 0) return;

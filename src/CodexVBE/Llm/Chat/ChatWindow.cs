@@ -10,24 +10,41 @@ using System.Windows.Forms;
 
 namespace CodexVBE
 {
+    /// <summary>Fenêtre principale de conversation avec les fournisseurs LLM et les outils VBE.</summary>
     internal sealed partial class ChatWindow : Form
     {
+        /// <summary>Configuration persistée des fournisseurs et options de la conversation.</summary>
         private readonly LlmSettings settings;
+        /// <summary>Outils permettant au fournisseur d’interroger ou modifier le projet VBE.</summary>
         private readonly LlmVbeTools tools;
+        /// <summary>Client Codex App Server actif, lorsqu’un fournisseur Codex est sélectionné.</summary>
         private CodexAppServerClient codex;
+        /// <summary>Historique de messages transmis au fournisseur courant.</summary>
         private readonly List<object> messages = new List<object>();
+        /// <summary>Modifications de code enregistrées dans la session.</summary>
         private readonly List<CodeChange> codeChanges = new List<CodeChange>();
+        /// <summary>Sérialiseur des messages et charges utiles fournisseur.</summary>
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
+        /// <summary>Indique qu’un tour de conversation est actif.</summary>
         private bool busy;
+        /// <summary>Version du chargement de catalogue la plus récente, utilisée pour ignorer les réponses périmées.</summary>
         private int catalogueVersion;
+        /// <summary>Bloque la persistance des sélections pendant leur restauration depuis la session.</summary>
         private bool restoringSelection;
+        /// <summary>Indique qu’une annulation du tour courant a été demandée.</summary>
         private bool stopRequested;
+        /// <summary>Client HTTP actif, disposé pour interrompre un tour non Codex.</summary>
         private LlmChatClient activeHttpClient;
+        /// <summary>Substitution facultative du tour Codex, principalement destinée aux validations automatisées.</summary>
         internal Func<string, string, string, Task<string>> CodexTurnOverride;
+        /// <summary>Substitution facultative de l’interruption Codex.</summary>
         internal Func<Task> CodexInterruptOverride;
+        /// <summary>Substitution facultative du chargement de catalogue de modèles.</summary>
         internal Func<LlmProvider, Task<LlmModelOption[]>> ModelCatalogueOverride;
+        /// <summary>Fabrique facultative du gestionnaire HTTP utilisé par les clients de chat.</summary>
         internal Func<HttpMessageHandler> HttpHandlerOverride;
 
+        /// <summary>Crée la fenêtre et initialise ses contrôles et ressources visuelles.</summary>
         public ChatWindow()
         {
             InitializeComponent();
@@ -37,6 +54,8 @@ namespace CodexVBE
             UiText.Apply(this, components);
         }
 
+        /// <summary>Crée la fenêtre connectée à la session VBE et initialise le compositeur, le transcript et les fournisseurs.</summary>
+        /// <param name="session">Session VBE liée à cette conversation.</param>
         public ChatWindow(VbeSession session) : this()
         {
             InitializeShell();
@@ -107,6 +126,9 @@ namespace CodexVBE
             if (scopePicker.SelectedItem == null) _ = LoadModelsAsync();
         }
 
+        /// <summary>Remplit le sélecteur d’effort si le fournisseur et le modèle prennent en charge cette option.</summary>
+        /// <param name="provider">Fournisseur sélectionné.</param>
+        /// <param name="model">Modèle sélectionné.</param>
         private void UpdateEfforts(LlmProvider provider, LlmModelOption model)
         {
             effortPicker.Items.Clear();
@@ -120,6 +142,7 @@ namespace CodexVBE
             effortPicker.Enabled = !busy;
         }
 
+        /// <summary>Libère le client Codex et met à jour l’état de connexion au fournisseur sélectionné.</summary>
         private void ResetProviderConnection()
         {
             codex?.Dispose();
@@ -131,6 +154,8 @@ namespace CodexVBE
             catch (Exception saveError) { LoadLog.Write("LLM settings save failed: " + saveError.Message); }
         }
 
+        /// <summary>Charge les modèles du fournisseur sélectionné et ignore les réponses obsolètes de requêtes précédentes.</summary>
+        /// <returns>Tâche terminée après le chargement et l’actualisation des sélecteurs.</returns>
         private async Task LoadModelsAsync()
         {
             int version = ++catalogueVersion;
@@ -185,6 +210,8 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Affiche les paramètres et recharge le catalogue lorsque le fournisseur ou sa connexion change.</summary>
+        /// <param name="owner">Fenêtre propriétaire facultative du dialogue.</param>
         public void ShowSettings(IWin32Window owner = null)
         {
             if (busy)
@@ -215,12 +242,17 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Ajoute un message au transcript si la fenêtre est encore active.</summary>
+        /// <param name="speaker">Locuteur ou catégorie.</param>
+        /// <param name="content">Contenu du message.</param>
         private void Append(string speaker, string content)
         {
             if (IsDisposed) return;
             AddTranscriptMessage(speaker, content);
         }
 
+        /// <summary>Affiche le menu des changements de session ou fait défiler jusqu’au changement sélectionné.</summary>
+        /// <param name="selected">Changement à afficher, ou nul pour ouvrir la liste des changements.</param>
         private void ShowCodeChanges(CodeChange selected = null)
         {
             if (selected == null)
@@ -247,6 +279,8 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Met à jour le statut sur le thread UI et signale si l’historique n’a pas pu être enregistré.</summary>
+        /// <param name="text">Texte de statut à présenter.</param>
         private void SetStatus(string text)
         {
             if (IsDisposed) return;
@@ -255,6 +289,8 @@ namespace CodexVBE
             toolTips.SetToolTip(status, status.Text);
         }
 
+        /// <summary>Crée un client Codex associé à la session courante et relaie ses événements uniquement vers celle-ci.</summary>
+        /// <returns>Client App Server configuré pour la fenêtre.</returns>
         private CodexAppServerClient CreateCodexClient()
         {
             var ownerSession = currentSession;
@@ -270,6 +306,8 @@ namespace CodexVBE
             return client;
         }
 
+        /// <summary>Met à jour l’état actif des commandes et l’indicateur de progression.</summary>
+        /// <param name="value">Indique si un tour est en cours.</param>
         private void SetBusy(bool value)
         {
             busy = value;
@@ -285,6 +323,8 @@ namespace CodexVBE
             RefreshCodeChangeCards();
         }
 
+        /// <summary>Demande l’interruption du tour actif et désactive temporairement la commande d’arrêt.</summary>
+        /// <returns>Tâche terminée lorsque la demande d’interruption aboutit ou échoue.</returns>
         private async Task StopTurnAsync()
         {
             if (!busy || stopRequested) return;
@@ -300,6 +340,8 @@ namespace CodexVBE
             catch (Exception ex) { SetStatus(UiText.Get("Unable to stop: ") + ex.Message); stopRequested = false; send.Enabled = true; }
         }
 
+        /// <summary>Valide le contexte courant, construit les messages, exécute les appels de modèle et enregistre le résultat.</summary>
+        /// <returns>Tâche terminée lorsque le tour et son nettoyage sont achevés.</returns>
         private async Task SendAsync()
         {
             string question = prompt.Text.Trim();
@@ -455,6 +497,7 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Arrête les minuteries, sauvegarde la session et libère les clients et ressources d’exécution.</summary>
         private void DisposeRuntime()
         {
             SaveCurrentSession(); saveTimer?.Stop(); projectRetryTimer?.Stop();

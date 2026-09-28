@@ -1,17 +1,29 @@
 namespace CodexVBE
 {
+    /// <summary>Déclare les contrôles WinForms générés pour la barre d’outils et la grille de différences.</summary>
     public sealed partial class CodeDiffView
     {
+        /// <summary>Conteneur des composants WinForms du concepteur.</summary>
         private System.ComponentModel.IContainer components;
+        /// <summary>Barre qui regroupe les options, navigation et recherche du diff.</summary>
         private System.Windows.Forms.FlowLayoutPanel toolbar;
+        /// <summary>Option qui choisit l’affichage unifié des changements.</summary>
         private System.Windows.Forms.CheckBox unified;
+        /// <summary>Option qui replie le contexte éloigné des changements.</summary>
         private System.Windows.Forms.CheckBox collapse;
+        /// <summary>Bouton de navigation vers le changement précédent.</summary>
         private System.Windows.Forms.Button previous;
+        /// <summary>Bouton de navigation vers le changement suivant.</summary>
         private System.Windows.Forms.Button next;
+        /// <summary>Champ de recherche dans le contenu du diff.</summary>
         private System.Windows.Forms.TextBox search;
+        /// <summary>Bouton qui lance la recherche courante.</summary>
         private System.Windows.Forms.Button find;
+        /// <summary>Grille virtuelle en lecture seule qui affiche les lignes du diff.</summary>
         private System.Windows.Forms.DataGridView grid;
+        /// <summary>Composant qui affiche les explications des commandes de la barre d’outils.</summary>
         private System.Windows.Forms.ToolTip tips;
+        /// <summary>Crée et configure la barre d’outils, la grille et leurs gestionnaires d’événements.</summary>
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();

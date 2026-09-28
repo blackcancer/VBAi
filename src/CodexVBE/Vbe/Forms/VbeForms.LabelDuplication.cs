@@ -7,8 +7,13 @@ using System.Linq;
 
 namespace CodexVBE
 {
+    /// <summary>Inspecte les accesseurs COM et duplique un Label avec un profil de propriétés limité.</summary>
     internal sealed partial class VbeForms
     {
+        /// <summary>Inspecte les métadonnées d’un accesseur COM sur le formulaire ou le contrôle ciblé.</summary>
+        /// <param name="request">Projet, formulaire, chemin de contrôle facultatif et propriété à inspecter.</param>
+        /// <returns>Rapport de métadonnées des accesseurs COM trouvés.</returns>
+        /// <exception cref="ArgumentException">Le nom de propriété est vide ou contient plus de deux segments.</exception>
         public object PropertyAccessors(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.Property))
@@ -41,6 +46,11 @@ namespace CodexVBE
         // Deliberately limited to setters already exercised on MSForms Label in Excel.
         // COM PropertyDescriptor.IsReadOnly is not proof of a working setter: Cancel
         // reported writable and its setter failed in the first generic-copy probe.
+        /// <summary>Duplique un Label natif en appliquant seulement les setters autorisés et relit les propriétés prises en charge.</summary>
+        /// <param name="request">Projet, formulaire, chemin source, version attendue et nouveau nom.</param>
+        /// <returns>Rapport de duplication partielle et arbre de formulaire relu.</returns>
+        /// <exception cref="ArgumentException">Le chemin requis ou le nouveau nom est invalide.</exception>
+        /// <exception cref="InvalidOperationException">La version est périmée, le contrôle ne convient pas, ou une propriété sort du profil pris en charge.</exception>
         public object DuplicateLabel(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||

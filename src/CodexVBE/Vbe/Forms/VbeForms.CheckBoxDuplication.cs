@@ -6,10 +6,17 @@ using System.Linq;
 
 namespace CodexVBE
 {
+    /// <summary>Implémente le profil de duplication partielle des CheckBox natifs.</summary>
     internal sealed partial class VbeForms
     {
         // A narrow design-time CheckBox profile. The only nondefault Value
         // assignment allowed here (true) was exercised in disposable Excel.
+        /// <summary>Crée un CheckBox natif sous le même parent après vérification de la version de l’arbre, en recopiant géométrie, légende et valeur booléenne.</summary>
+        /// <param name="request">Projet, formulaire, chemin du contrôle source, version attendue de l’arbre et nouveau nom.</param>
+        /// <returns>Rapport de duplication partielle avec les chemins source et cible ainsi que le nouvel arbre de contrôles.</returns>
+        /// <exception cref="ArgumentException">Un champ obligatoire manque, le chemin ne désigne pas un contrôle ou le nouveau nom est invalide.</exception>
+        /// <exception cref="InvalidOperationException">L’arbre est périmé, le contrôle ou son type ne convient pas, une propriété source est hors profil, ou la vérification échoue.</exception>
+        /// <remarks>Copie partielle : Value=true est attribué uniquement si la source vaut true. Si la vérification échoue après création, la méthode tente de supprimer le contrôle ajouté.</remarks>
         public object DuplicateCheckBox(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||

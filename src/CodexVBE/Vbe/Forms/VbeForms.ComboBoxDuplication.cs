@@ -6,10 +6,17 @@ using System.Linq;
 
 namespace CodexVBE
 {
+    /// <summary>Implémente le profil de duplication partielle des ComboBox natifs.</summary>
     internal sealed partial class VbeForms
     {
         // ListWidth is the one ComboBox-specific setter already read back in
         // disposable Excel. Items, bindings and selection are not copied.
+        /// <summary>Crée un ComboBox natif sous le même parent après contrôle de l’arbre et de sa version, puis vérifie sa géométrie et ListWidth.</summary>
+        /// <param name="request">Projet, formulaire, chemin du contrôle source, version attendue de l’arbre et nouveau nom.</param>
+        /// <returns>Rapport de duplication partielle avec les chemins source et cible ainsi que le nouvel arbre de contrôles.</returns>
+        /// <exception cref="ArgumentException">Un champ obligatoire manque, le chemin ne désigne pas un contrôle ou le nouveau nom est invalide.</exception>
+        /// <exception cref="InvalidOperationException">L’arbre est périmé, le contrôle ou son type ne convient pas, une propriété source est hors profil, ou la vérification échoue.</exception>
+        /// <remarks>Les éléments, liaisons de données et sélection ne sont pas inclus dans le résultat copié. Si la vérification échoue après création, la méthode tente de supprimer le contrôle ajouté.</remarks>
         public object DuplicateComboBox(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.ControlPath) ||

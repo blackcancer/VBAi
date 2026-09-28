@@ -4,9 +4,16 @@ using System.IO;
 
 namespace CodexVBE
 {
+    /// <summary>Sélectionne un projet VBA par son nom ou par le chemin de son fichier enregistré.</summary>
     internal static class VbeProjectResolver
     {
         // A saved project's FileName is a stable selector when several projects share a VBA name.
+        /// <summary>Résout un unique projet et refuse les sélecteurs absents ou ambigus.</summary>
+        /// <param name="vbe">Instance VBE dont les projets sont parcourus.</param>
+        /// <param name="selector">Nom du projet, ou chemin absolu de son fichier.</param>
+        /// <returns>Projet VBA correspondant au sélecteur.</returns>
+        /// <exception cref="ArgumentException">Le sélecteur est vide ou blanc.</exception>
+        /// <exception cref="InvalidOperationException">Aucun projet ou plusieurs projets correspondent.</exception>
         public static dynamic Resolve(dynamic vbe, string selector)
         {
             if (string.IsNullOrWhiteSpace(selector)) throw new ArgumentException("Project is required.");

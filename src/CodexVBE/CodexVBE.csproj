@@ -6,6 +6,7 @@
     <OutputPath Condition="'$(BuildOutputRoot)' == ''">$(RepositoryRoot)bin\$(Configuration)\</OutputPath>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Markdig" Version="0.37.0" />

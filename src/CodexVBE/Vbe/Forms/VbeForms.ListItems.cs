@@ -10,10 +10,16 @@ using System.Web.Script.Serialization;
 
 namespace CodexVBE
 {
+    /// <summary>Lit les cellules de listes MSForms avec pagination et version calculée de la liste complète.</summary>
     internal sealed partial class VbeForms
     {
         // MSForms.List(row, column) is indexed and does not appear among the
         // ordinary TypeDescriptor properties returned by form_tree.
+        /// <summary>Lit une page de cellules ComboBox ou ListBox et calcule ListVersion seulement si la lecture complète est fiable.</summary>
+        /// <param name="request">Projet, formulaire, chemin, décalage et limite de la page.</param>
+        /// <returns>Page de lignes avec erreurs cellule par cellule, versions et indication de pagination.</returns>
+        /// <exception cref="ArgumentException">Projet, formulaire ou chemin manquant, décalage ou limite négatif.</exception>
+        /// <exception cref="InvalidOperationException">Le chemin ou le contrôle ne correspond pas à une liste prise en charge, ou la liste dépasse 32 colonnes.</exception>
         public object ListItems(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.Project) ||
@@ -94,6 +100,13 @@ namespace CodexVBE
                 Scope = "Read-only design-time MSForms.List. TreeVersion may reflect ListCount but does not fingerprint indexed item values." };
         }
 
+        /// <summary>Calcule le SHA-256 des métadonnées du contrôle et des valeurs scalaires de la liste complète.</summary>
+        /// <param name="type">Type MSForms du contrôle.</param>
+        /// <param name="path">Chemin canonique du contrôle.</param>
+        /// <param name="rowCount">Nombre de lignes.</param>
+        /// <param name="columnCount">Nombre de colonnes déclaré.</param>
+        /// <param name="values">Valeurs de toutes les cellules en ordre de lecture.</param>
+        /// <returns>Empreinte hexadécimale minuscule de la représentation JSON.</returns>
         private static string ComputeListVersion(string type, string path, int rowCount,
             int columnCount, List<object> values)
         {

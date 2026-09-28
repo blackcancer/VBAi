@@ -9,8 +9,14 @@ using IMPLTYPEFLAGS = System.Runtime.InteropServices.ComTypes.IMPLTYPEFLAGS;
 
 namespace CodexVBE
 {
+    /// <summary>Inspecte les accesseurs COM déclarés pour une propriété sans prétendre vérifier un setter en exécution.</summary>
     internal static class VbeComPropertyAccessors
     {
+        /// <summary>Parcourt ITypeInfo et rapporte les interfaces et accesseurs de la propriété demandée.</summary>
+        /// <param name="target">Objet COM à inspecter.</param>
+        /// <param name="propertyName">Nom de la propriété recherché sans distinction de casse.</param>
+        /// <returns>Rapport de métadonnées qui distingue le setter déclaré de sa vérification réelle.</returns>
+        /// <exception cref="ArgumentException">La cible COM est nulle ou le nom est vide.</exception>
         public static object Inspect(object target, string propertyName)
         {
             if (target == null || string.IsNullOrWhiteSpace(propertyName))
@@ -49,6 +55,14 @@ namespace CodexVBE
                 Accessors = accessors, Errors = errors };
         }
 
+        /// <summary>Inspecte un type COM puis ses interfaces héritées non-source en évitant les GUID déjà visités.</summary>
+        /// <param name="info">Informations de type COM à parcourir.</param>
+        /// <param name="propertyName">Nom de propriété recherché.</param>
+        /// <param name="depth">Profondeur courante de l’héritage.</param>
+        /// <param name="visited">GUID déjà inspectés afin d’éviter les cycles.</param>
+        /// <param name="interfaces">Liste recevant les noms et GUID d’interfaces.</param>
+        /// <param name="accessors">Liste recevant les accesseurs correspondants.</param>
+        /// <param name="errors">Liste recevant les erreurs locales de parcours.</param>
         private static void ReadType(ITypeInfo info, string propertyName, int depth,
             HashSet<Guid> visited, List<string> interfaces, List<object> accessors,
             List<string> errors)

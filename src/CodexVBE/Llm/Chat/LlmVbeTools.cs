@@ -11,14 +11,22 @@ using System.Windows.Forms;
 
 namespace CodexVBE
 {
+    /// <summary>Décrit et exécute les outils accessibles au modèle pour inspecter et modifier le projet VBE.</summary>
     internal sealed partial class LlmVbeTools
     {
+        /// <summary>Session VBE utilisée pour exécuter les commandes sur le thread approprié.</summary>
         private readonly VbeSession session;
+        /// <summary>Fenêtre propriétaire des demandes de confirmation et dialogues.</summary>
         private readonly IWin32Window owner;
+        /// <summary>Paramètres utilisés par les outils et règles de modification.</summary>
         private readonly LlmSettings settings;
+        /// <summary>Sérialiseur des arguments des outils et des réponses du pont.</summary>
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
+        /// <summary>Requêtes explicites de l’utilisateur, utilisées pour limiter la lecture de fichiers locaux.</summary>
         private readonly List<string> userRequests = new List<string>();
+        /// <summary>Se produit lorsqu’un outil a appliqué une modification de code.</summary>
         public event Action<CodeChange> CodeEdited;
+        /// <summary>Noms des outils dont les opérations sont en lecture seule.</summary>
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
             "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "read_vbe_options", "compile_project", "open_debug_pane", "list_commands", "select_code", "select_code_range",
             "project_properties", "project_persistence_status", "project_signature_status", "read_project_signature_dialog", "list_signing_certificates", "component_properties", "component_property_value", "vbe_windows", "vbe_environment", "list_addins", "focus_vbe_window", "window_linkage", "code_panes", "open_object_browser", "list_procedures", "find_code", "inspect_code_file", "select_procedure", "list_forms",
@@ -26,12 +34,24 @@ namespace CodexVBE
             "form_state", "form_tree", "form_list_items", "form_properties", "form_control_properties", "form_event_catalog",
             "list_form_control_types", "open_form"
         };
+        /// <summary>Obtient ou définit le nom du fournisseur courant utilisé pour les décisions d’accès.</summary>
+        /// <value>Nom du fournisseur actif.</value>
         public string CurrentProviderName { get; set; }
+        /// <summary>Obtient ou définit le mode de conversation qui autorise ou bloque les opérations d’écriture.</summary>
+        /// <value>Mode courant, Agent par défaut.</value>
         public ChatMode Mode { get; set; } = ChatMode.Agent;
+        /// <summary>Obtient ou définit le contrôle de portée appelé avant un outil.</summary>
+        /// <value>Action de validation facultative.</value>
         public Action ValidateScope { get; set; }
+        /// <summary>Obtient ou définit l’identifiant du projet auquel les outils sont limités.</summary>
+        /// <value>Nom ou chemin du projet lié à la conversation.</value>
         public string BoundProject { get; set; }
+        /// <summary>Indique qu’une restauration interne est en cours et peut contourner certaines gardes d’édition.</summary>
         private bool restoring;
 
+        /// <summary>Valide la portée et refuse les outils d’écriture hors du mode Agent.</summary>
+        /// <param name="name">Nom de l’outil demandé.</param>
+        /// <exception cref="InvalidOperationException">Le mode courant interdit l’outil d’écriture.</exception>
         private void GuardMode(string name)
         {
             ValidateScope?.Invoke();
@@ -39,6 +59,10 @@ namespace CodexVBE
                 throw new InvalidOperationException(UiText.Get("Mode ") + Mode + UiText.Get(" does not allow this editing or execution tool: ") + name);
         }
 
+        /// <summary>Refuse qu’un outil cible un projet différent de celui lié à la conversation.</summary>
+        /// <param name="name">Nom de l’outil demandé.</param>
+        /// <param name="arguments">Arguments JSON contenant éventuellement le champ Project.</param>
+        /// <exception cref="InvalidOperationException">Le projet demandé diffère de la portée courante.</exception>
         private void GuardProject(string name, string arguments)
         {
             if (string.IsNullOrEmpty(BoundProject) || (ReadOnlyTools.Contains(name) && name != "compile_project")) return;
@@ -48,6 +72,11 @@ namespace CodexVBE
                 throw new InvalidOperationException("Cette action vise un autre projet que celui de la conversation.");
         }
 
+        /// <summary>Crée le catalogue d’outils lié à une session VBE et à sa fenêtre propriétaire.</summary>
+        /// <param name="session">Session de commandes VBE.</param>
+        /// <param name="owner">Fenêtre propriétaire des dialogues.</param>
+        /// <param name="settings">Configuration des règles et fournisseurs.</param>
+        /// <exception cref="ArgumentNullException">La configuration est nulle.</exception>
         public LlmVbeTools(VbeSession session, IWin32Window owner, LlmSettings settings)
         {
             this.session = session;
@@ -55,6 +84,12 @@ namespace CodexVBE
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
+        /// <summary>Construit une définition de fonction JSON avec les champs et propriétés connus.</summary>
+        /// <param name="name">Nom de l’outil.</param>
+        /// <param name="description">Description affichée au fournisseur.</param>
+        /// <param name="required">Noms des champs obligatoires.</param>
+        /// <param name="fields">Noms des champs autorisés.</param>
+        /// <returns>Objet conforme à la définition d’outil du fournisseur.</returns>
         private static object Definition(string name, string description, string[] required, params string[] fields)
         {
             var properties = new Dictionary<string, object>();
@@ -74,6 +109,8 @@ namespace CodexVBE
             } };
         }
 
+        /// <summary>Obtient l’ensemble des définitions d’outils proposées aux fournisseurs compatibles.</summary>
+        /// <value>Définitions JSON des opérations autorisées.</value>
         public static object[] Definitions { get { return new object[] {
             Definition("status", "Read the live host process and currently open VBA projects; call before acting on VBE.", new string[0]),
             Definition("read_user_file", "Request separate user approval before reading and transmitting up to 64 KiB of a text file at a path explicitly supplied by the user.",
@@ -298,6 +335,10 @@ namespace CodexVBE
                 "Project", "Form", "ExpectedFormVersion", "Control", "Left", "Top", "Width", "Height")
         }.Concat(GitDefinitions).ToArray(); } }
 
+        /// <summary>Valide les gardes puis exécute synchroniquement un outil et sérialise sa réponse.</summary>
+        /// <param name="name">Nom de l’outil demandé.</param>
+        /// <param name="arguments">Arguments JSON de l’appel.</param>
+        /// <returns>JSON d’une réponse réussie ou d’erreur.</returns>
         public string Invoke(string name, string arguments)
         {
             if (name.StartsWith("git_", StringComparison.Ordinal)) return json.Serialize(Response.Failure("Git tools require InvokeAsync."));
@@ -398,12 +439,19 @@ namespace CodexVBE
             catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
         }
 
+        /// <summary>Couple le contenu actuel d’un module à son empreinte de version.</summary>
         private sealed class CodeSnapshot
         {
+            /// <summary>Code source courant.</summary>
             public string Code;
+            /// <summary>Empreinte SHA-256 du code courant.</summary>
             public string Sha256;
         }
 
+        /// <summary>Lit le code d’un module et son empreinte auprès de la session VBE.</summary>
+        /// <param name="project">Projet ciblé.</param>
+        /// <param name="module">Module ciblé.</param>
+        /// <returns>Code et empreinte lus.</returns>
         private CodeSnapshot ReadCode(string project, string module)
         {
             Response response = session.Execute(new Request { Command = "read_module",
@@ -413,11 +461,18 @@ namespace CodexVBE
             return new CodeSnapshot { Code = (string)data.Code, Sha256 = (string)data.Sha256 };
         }
 
+        /// <summary>Restaure toutes les zones restantes d’un changement après vérification et lecture du code courant.</summary>
+        /// <param name="change">Changement à restaurer.</param>
+        /// <returns>Réponse indiquant le résultat de la restauration.</returns>
         public Response RestoreCodeChange(CodeChange change)
         {
             return RestoreChanges(new[] { change }, null);
         }
 
+        /// <summary>Restaure un bloc ou les changements d’un tour après vérification des conflits pour chaque module.</summary>
+        /// <param name="changes">Modifications ordonnées à traiter.</param>
+        /// <param name="hunk">Index de bloc facultatif à restaurer pour une modification unique.</param>
+        /// <returns>Résultat des opérations ou réponse d’échec lorsque la prévalidation détecte un conflit.</returns>
         public Response RestoreChanges(CodeChange[] changes, int? hunk)
         {
             try
@@ -457,6 +512,10 @@ namespace CodexVBE
             finally { restoring = false; }
         }
 
+        /// <summary>Exécute un outil en tenant compte des opérations asynchrones et des confirmations d’édition.</summary>
+        /// <param name="name">Nom de l’outil demandé.</param>
+        /// <param name="arguments">Arguments JSON.</param>
+        /// <returns>JSON de la réponse d’outil.</returns>
         public async Task<string> InvokeAsync(string name, string arguments)
         {
             try { GuardMode(name); GuardProject(name, arguments); }
@@ -715,16 +774,23 @@ namespace CodexVBE
             catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
         }
 
+        /// <summary>Retourne l’instantané JSON du contexte VBE actuellement ouvert.</summary>
+        /// <returns>Instantané sérialisé du contexte.</returns>
         public string LiveContextJson()
         {
             return json.Serialize(LlmVbeContext.LiveSnapshot(session));
         }
 
+        /// <summary>Mémorise une demande utilisateur non vide pour autoriser la lecture de son chemin explicite.</summary>
+        /// <param name="request">Texte de la demande.</param>
         public void NoteUserRequest(string request)
         {
             if (!string.IsNullOrWhiteSpace(request)) userRequests.Add(request);
         }
 
+        /// <summary>Demande confirmation, puis lit au plus 64 Kio du fichier texte explicitement demandé.</summary>
+        /// <param name="requestedPath">Chemin absolu fourni explicitement dans une requête utilisateur.</param>
+        /// <returns>Réponse contenant le texte, sa longueur et l’indication de troncature, ou une erreur de refus.</returns>
         private Response ReadUserFile(string requestedPath)
         {
             if (!IsExplicitUserPath(requestedPath))
@@ -761,6 +827,9 @@ namespace CodexVBE
             }
         }
 
+        /// <summary>Vérifie que le chemin absolu demandé figure littéralement dans une requête utilisateur mémorisée.</summary>
+        /// <param name="requestedPath">Chemin à vérifier.</param>
+        /// <returns><see langword="true"/> si une requête antérieure mentionne ce chemin.</returns>
         private bool IsExplicitUserPath(string requestedPath)
         {
             return !string.IsNullOrWhiteSpace(requestedPath) &&

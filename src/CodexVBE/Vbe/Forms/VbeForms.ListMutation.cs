@@ -7,8 +7,14 @@ using System.Linq;
 
 namespace CodexVBE
 {
+    /// <summary>Ajoute un élément à une liste MSForms sous contrôle de sa version et vérifie le résultat.</summary>
     internal sealed partial class VbeForms
     {
+        /// <summary>Ajoute un élément à une liste à une colonne non liée, si ses versions correspondent, puis relit toutes ses valeurs.</summary>
+        /// <param name="request">Projet, formulaire, chemin, versions attendues et texte à ajouter.</param>
+        /// <returns>Rapport qui distingue application, vérification réussie et relecture en attente.</returns>
+        /// <exception cref="ArgumentException">Une donnée obligatoire manque ou le texte dépasse 4096 caractères.</exception>
+        /// <exception cref="InvalidOperationException">La liste est liée, multicolonne, trop grande, illisible ou a changé depuis sa lecture.</exception>
         public object AddListItem(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.Project) ||
@@ -76,6 +82,11 @@ namespace CodexVBE
 
         // Kept bridge-only while persistence and teardown are qualified in a
         // disposable host. Never apply this to a bound list.
+        /// <summary>Ajoute en place un élément à une liste à une colonne non liée et vérifie le nouveau compte de lignes.</summary>
+        /// <param name="request">Projet, formulaire, chemin, version attendue et texte à ajouter.</param>
+        /// <returns>Résultat avec les comptes avant/après et indication de vérification.</returns>
+        /// <exception cref="ArgumentException">Une donnée obligatoire manque ou le texte dépasse 4096 caractères.</exception>
+        /// <exception cref="InvalidOperationException">La liste est liée, multicolonne, hors limites ou a changé depuis sa lecture.</exception>
         public object AppendListItem(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.Project) ||

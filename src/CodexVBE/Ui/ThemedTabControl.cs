@@ -2,9 +2,13 @@ using System.Drawing;
 using System.Windows.Forms;
 namespace CodexVBE
 {
+    /// <summary>Dessine les onglets WinForms avec les couleurs et indicateurs de focus du thème actif.</summary>
     public sealed class ThemedTabControl : TabControl
     {
+        /// <summary>Active le dessin personnalisé et le double buffering des onglets.</summary>
         public ThemedTabControl() { SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true); }
+        /// <summary>Dessine le fond, les onglets, leurs états désactivés, la sélection et le focus.</summary>
+        /// <param name="e">Contexte graphique et zone de peinture fournis par WinForms.</param>
         protected override void OnPaint(PaintEventArgs e)
         {
             e.Graphics.Clear(UiTheme.Background);
@@ -18,10 +22,15 @@ namespace CodexVBE
                 if (selected && Focused) ControlPaint.DrawFocusRectangle(e.Graphics, Rectangle.Inflate(bounds, -3, -3), ink, UiTheme.Surface);
             }
         }
+        /// <summary>Transmet le changement de sélection puis invalide le contrôle pour redessiner l’onglet actif.</summary>
+        /// <param name="e">Données de l’événement WinForms.</param>
         protected override void OnSelectedIndexChanged(System.EventArgs e) { base.OnSelectedIndexChanged(e); Invalidate(); }
     }
+    /// <summary>Bouton WinForms qui adapte le texte désactivé au thème sombre.</summary>
     public sealed class ThemedButton : Button
     {
+        /// <summary>Dessine le bouton natif puis renforce le contraste de son texte désactivé en thème sombre.</summary>
+        /// <param name="e">Contexte graphique et zone de peinture fournis par WinForms.</param>
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
@@ -33,8 +42,11 @@ namespace CodexVBE
             }
         }
     }
+    /// <summary>ComboBox WinForms dont la flèche et le contour sont repeints en thème sombre.</summary>
     public sealed class ThemedComboBox : ComboBox
     {
+        /// <summary>Traite le message Win32 puis repeint le bouton de liste en thème sombre hors mode contraste élevé.</summary>
+        /// <param name="message">Message Win32 reçu par le contrôle.</param>
         protected override void WndProc(ref Message message)
         {
             base.WndProc(ref message);

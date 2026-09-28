@@ -15,27 +15,49 @@ using IMPLTYPEFLAGS = System.Runtime.InteropServices.ComTypes.IMPLTYPEFLAGS;
 
 namespace CodexVBE
 {
-    // Reads only type metadata from a selected VBProject reference file. No
-    // object instance is created and REGKIND_NONE never registers a type library.
+    /// <summary>Énumère les types et membres d’une référence de projet à partir de ses seules métadonnées de bibliothèque COM.</summary>
     internal sealed class VbeReferenceTypes
     {
+        /// <summary>Nombre maximal d’éléments retournés par une page.</summary>
         private const int MaxPageSize = 50;
+        /// <summary>Limite de sécurité pour le nombre de types inspectés.</summary>
         private const int MaxTypes = 10000;
+        /// <summary>Limite de sécurité pour le nombre de membres inspectés.</summary>
         private const int MaxMembers = 10000;
+        /// <summary>Instance VBE utilisée pour résoudre les projets et références sélectionnés.</summary>
         private readonly dynamic vbe;
+        /// <summary>Chargeur injectable d’une bibliothèque depuis un fichier.</summary>
         private readonly Func<string, ITypeLib> loadFile;
+        /// <summary>Chargeur injectable d’une bibliothèque enregistrée.</summary>
         private readonly Func<Guid, ushort, ushort, ITypeLib> loadRegistered;
 
+        /// <summary>Charge une bibliothèque de types depuis un fichier sans l’enregistrer dans le système.</summary>
+        /// <param name="file">Chemin du fichier de bibliothèque.</param>
+        /// <param name="regKind">Mode de chargement COM.</param>
+        /// <param name="typeLib">Reçoit la bibliothèque chargée.</param>
         [DllImport("oleaut32.dll", CharSet = CharSet.Unicode, PreserveSig = false)]
         private static extern void LoadTypeLibEx(string file, int regKind, out ITypeLib typeLib);
 
+        /// <summary>Charge la bibliothèque enregistrée identifiée par son GUID et sa version.</summary>
+        /// <param name="guid">Identifiant de la bibliothèque.</param>
+        /// <param name="major">Version majeure.</param>
+        /// <param name="minor">Version mineure.</param>
+        /// <param name="lcid">Identifiant de langue.</param>
+        /// <param name="typeLib">Reçoit la bibliothèque chargée.</param>
         [DllImport("oleaut32.dll", PreserveSig = false)]
         private static extern void LoadRegTypeLib(ref Guid guid, ushort major, ushort minor,
             int lcid, out ITypeLib typeLib);
 
+        /// <summary>Crée le lecteur avec les chargeurs COM du système.</summary>
+        /// <param name="vbe">Instance VBE servant à résoudre le projet.</param>
         public VbeReferenceTypes(object vbe)
             : this(vbe, LoadSelectedFile, LoadRegisteredLibrary) { }
 
+        /// <summary>Crée le lecteur avec les chargeurs de fichiers et de bibliothèques enregistrées fournis.</summary>
+        /// <param name="vbe">Instance VBE servant à résoudre le projet.</param>
+        /// <param name="loadFile">Fonction de chargement depuis un fichier.</param>
+        /// <param name="loadRegistered">Fonction de chargement depuis le registre COM.</param>
+        /// <exception cref="ArgumentNullException">Un des chargeurs requis est nul.</exception>
         internal VbeReferenceTypes(object vbe, Func<string, ITypeLib> loadFile,
             Func<Guid, ushort, ushort, ITypeLib> loadRegistered)
         {
@@ -44,6 +66,9 @@ namespace CodexVBE
             this.loadRegistered = loadRegistered ?? throw new ArgumentNullException(nameof(loadRegistered));
         }
 
+        /// <summary>Charge le fichier de référence avec le mode REGKIND_NONE pour éviter toute inscription.</summary>
+        /// <param name="path">Chemin du fichier de bibliothèque.</param>
+        /// <returns>Bibliothèque de types chargée.</returns>
         private static ITypeLib LoadSelectedFile(string path)
         {
             ITypeLib library;
@@ -51,6 +76,11 @@ namespace CodexVBE
             return library;
         }
 
+        /// <summary>Charge une bibliothèque de types par son identité enregistrée.</summary>
+        /// <param name="guid">Identifiant de la bibliothèque.</param>
+        /// <param name="major">Version majeure.</param>
+        /// <param name="minor">Version mineure.</param>
+        /// <returns>Bibliothèque enregistrée correspondante.</returns>
         private static ITypeLib LoadRegisteredLibrary(Guid guid, ushort major, ushort minor)
         {
             ITypeLib library;
@@ -58,6 +88,11 @@ namespace CodexVBE
             return library;
         }
 
+        /// <summary>Retourne une page de types de la référence explicitement sélectionnée par le projet.</summary>
+        /// <param name="request">Requête contenant projet, identité de référence, décalage et limite.</param>
+        /// <returns>Objet résultat avec métadonnées de référence, pagination et types lus ou erreurs par type.</returns>
+        /// <exception cref="ArgumentException">Les paramètres de page ou l’identité de référence sont invalides.</exception>
+        /// <exception cref="InvalidOperationException">La bibliothèque dépasse les limites ou la référence ne peut pas être ouverte.</exception>
         public object ListTypes(Request request)
         {
             int offset = ValidatePage(request);
@@ -88,6 +123,12 @@ namespace CodexVBE
                 Types = types };
         }
 
+        /// <summary>Retourne une page de membres pour un type précédemment listé, après vérification de son identité.</summary>
+        /// <param name="request">Requête identifiant le type et la page de membres.</param>
+        /// <returns>Objet résultat avec le type, l’interface choisie, la pagination et les membres ou erreurs par membre.</returns>
+        /// <exception cref="ArgumentException">L’identité du type manque ou les paramètres de page sont invalides.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">L’index de type est hors limites.</exception>
+        /// <exception cref="InvalidOperationException">L’identité a changé, la référence est invalide ou la limite est dépassée.</exception>
         public object ListMembers(Request request)
         {
             ValidatePage(request);
@@ -146,6 +187,10 @@ namespace CodexVBE
                 HasMore = end < count, Members = members };
         }
 
+        /// <summary>Valide le décalage et la limite de pagination d’une requête.</summary>
+        /// <param name="request">Requête à contrôler.</param>
+        /// <returns>Décalage validé.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">Le décalage ou la limite dépasse les bornes admises.</exception>
         private static int ValidatePage(Request request)
         {
             if (request.Offset < 0 || request.Offset > MaxTypes)
@@ -155,8 +200,17 @@ namespace CodexVBE
             return request.Offset;
         }
 
+        /// <summary>Détermine la taille de page effective, en utilisant la limite maximale si la requête omet la limite.</summary>
+        /// <param name="request">Requête paginée.</param>
+        /// <returns>Limite explicite ou limite maximale par défaut.</returns>
         private static int PageSize(Request request) { return request.Limit == 0 ? MaxPageSize : request.Limit; }
 
+        /// <summary>Résout l’unique référence de projet correspondant exactement au GUID et à la version demandés.</summary>
+        /// <param name="request">Requête identifiant le projet et la référence.</param>
+        /// <returns>Métadonnées et empreinte de fichier de la référence retenue.</returns>
+        /// <exception cref="ArgumentException">Le projet, le GUID ou la version est invalide.</exception>
+        /// <exception cref="InvalidOperationException">La référence est ambiguë, cassée ou absente du projet.</exception>
+        /// <exception cref="FileNotFoundException">Le fichier de bibliothèque n’est pas disponible.</exception>
         private ReferenceSource FindReference(Request request)
         {
             Guid expectedGuid;
@@ -188,6 +242,10 @@ namespace CodexVBE
             return found;
         }
 
+        /// <summary>Ouvre le fichier de référence, utilise le registre en repli et vérifie l’identité de la bibliothèque chargée.</summary>
+        /// <param name="reference">Référence résolue dans le projet.</param>
+        /// <returns>Bibliothèque COM, source de chargement et erreur de repli éventuelle.</returns>
+        /// <exception cref="InvalidOperationException">Le chargement échoue ou l’identité de la bibliothèque ne correspond pas à la référence.</exception>
         private LoadedLibrary OpenLibrary(ReferenceSource reference)
         {
             ITypeLib library;
@@ -225,6 +283,9 @@ namespace CodexVBE
                 FallbackError = fallbackError };
         }
 
+        /// <summary>Choisit l’interface par défaut non source d’une coclasse, si elle en expose une.</summary>
+        /// <param name="coclass">Informations de type de la coclasse.</param>
+        /// <returns>Informations de l’interface choisie, ou nul si aucune interface admissible n’existe.</returns>
         private static ITypeInfo DefaultNonSourceInterface(ITypeInfo coclass)
         {
             IntPtr pointer = IntPtr.Zero;
@@ -252,6 +313,11 @@ namespace CodexVBE
             finally { if (pointer != IntPtr.Zero) coclass.ReleaseTypeAttr(pointer); }
         }
 
+        /// <summary>Projette les métadonnées d’un type dans l’objet de résultat retourné par l’API.</summary>
+        /// <param name="typeInfo">Informations COM du type.</param>
+        /// <param name="index">Index du type dans la bibliothèque.</param>
+        /// <param name="reference">Identité et version du fichier de référence.</param>
+        /// <returns>Objet exposant les informations et l’identité du type.</returns>
         private static object ReadType(ITypeInfo typeInfo, int index, ReferenceSource reference)
         {
             TypeMetadata type = ReadTypeMetadata(typeInfo, index, reference);
@@ -260,6 +326,11 @@ namespace CodexVBE
                 TypeIdentity = type.Identity };
         }
 
+        /// <summary>Lit les attributs, le nom et le GUID d’un type et calcule son identité de pagination.</summary>
+        /// <param name="typeInfo">Informations COM du type.</param>
+        /// <param name="index">Index du type dans la bibliothèque.</param>
+        /// <param name="reference">Métadonnées de la référence d’origine.</param>
+        /// <returns>Métadonnées de type et identité stable pour la référence lue.</returns>
         private static TypeMetadata ReadTypeMetadata(ITypeInfo typeInfo, int index, ReferenceSource reference)
         {
             IntPtr pointer = IntPtr.Zero;
@@ -281,6 +352,10 @@ namespace CodexVBE
             finally { if (pointer != IntPtr.Zero) typeInfo.ReleaseTypeAttr(pointer); }
         }
 
+        /// <summary>Lit le nom, le DISPID, le genre d’invocation et les noms de paramètres d’une fonction COM.</summary>
+        /// <param name="typeInfo">Informations COM du type membre.</param>
+        /// <param name="index">Index de fonction.</param>
+        /// <returns>Objet membre destiné au résultat paginé.</returns>
         private static object ReadFunction(ITypeInfo typeInfo, int index)
         {
             IntPtr pointer = IntPtr.Zero;
@@ -301,6 +376,11 @@ namespace CodexVBE
             finally { if (pointer != IntPtr.Zero) typeInfo.ReleaseFuncDesc(pointer); }
         }
 
+        /// <summary>Lit le nom, le DISPID et le genre d’une variable de type COM.</summary>
+        /// <param name="typeInfo">Informations COM du type membre.</param>
+        /// <param name="index">Index de variable dans le descripteur COM.</param>
+        /// <param name="memberIndex">Index global de membre utilisé dans le résultat.</param>
+        /// <returns>Objet membre destiné au résultat paginé.</returns>
         private static object ReadVariable(ITypeInfo typeInfo, int index, int memberIndex)
         {
             IntPtr pointer = IntPtr.Zero;
@@ -318,6 +398,9 @@ namespace CodexVBE
             finally { if (pointer != IntPtr.Zero) typeInfo.ReleaseVarDesc(pointer); }
         }
 
+        /// <summary>Calcule l’empreinte SHA-256 hexadécimale minuscule d’une chaîne UTF-8.</summary>
+        /// <param name="value">Texte à hacher.</param>
+        /// <returns>Empreinte composée de 64 chiffres hexadécimaux.</returns>
         private static string Hash(string value)
         {
             using (var sha = SHA256.Create())
@@ -325,6 +408,9 @@ namespace CodexVBE
                     .Replace("-", "").ToLowerInvariant();
         }
 
+        /// <summary>Projette une exception en type, HRESULT et message pour un résultat sérialisable.</summary>
+        /// <param name="error">Exception à décrire.</param>
+        /// <returns>Objet anonyme contenant les informations d’erreur.</returns>
         private static object Error(Exception error)
         {
             return new { Type = error.GetType().Name,
@@ -332,38 +418,62 @@ namespace CodexVBE
                 Message = error.Message };
         }
 
+        /// <summary>Formate le HRESULT d’une exception sur huit chiffres hexadécimaux préfixés par <c>0x</c>.</summary>
+        /// <param name="error">Exception source.</param>
+        /// <returns>Représentation hexadécimale non signée du HRESULT.</returns>
         private static string HResultHex(Exception error)
         {
             return "0x" + unchecked((uint)error.HResult).ToString("X8");
         }
 
+        /// <summary>Identité exacte et métadonnées de fichier d’une référence du projet.</summary>
         private sealed class ReferenceSource
         {
+            /// <summary>Obtient ou définit le nom de la référence.</summary>
             public string Name { get; set; }
+            /// <summary>Obtient ou définit le GUID au format avec accolades.</summary>
             public string Guid { get; set; }
+            /// <summary>Obtient ou définit la version majeure.</summary>
             public int Major { get; set; }
+            /// <summary>Obtient ou définit la version mineure.</summary>
             public int Minor { get; set; }
+            /// <summary>Obtient ou définit le chemin complet du fichier.</summary>
             public string FullPath { get; set; }
+            /// <summary>Obtient ou définit la taille du fichier en octets.</summary>
             public long FileLength { get; set; }
+            /// <summary>Obtient ou définit la date de modification UTC au format rond.</summary>
             public string FileLastWriteUtc { get; set; }
         }
 
+        /// <summary>Résultat de l’ouverture d’une bibliothèque et indication de sa source.</summary>
         private sealed class LoadedLibrary
         {
+            /// <summary>Obtient ou définit la bibliothèque COM chargée.</summary>
             public ITypeLib Library { get; set; }
+            /// <summary>Obtient ou définit le mécanisme de chargement utilisé.</summary>
             public string Source { get; set; }
+            /// <summary>Obtient ou définit l’erreur du chargement fichier si le repli registre a réussi.</summary>
             public object FallbackError { get; set; }
         }
 
+        /// <summary>Métadonnées de type COM utilisées pour la liste et l’inspection paginée.</summary>
         private sealed class TypeMetadata
         {
+            /// <summary>Obtient ou définit l’index du type dans sa bibliothèque.</summary>
             public int TypeIndex { get; set; }
+            /// <summary>Obtient ou définit le nom du type.</summary>
             public string Name { get; set; }
+            /// <summary>Obtient ou définit le GUID du type.</summary>
             public string Guid { get; set; }
+            /// <summary>Obtient ou définit la catégorie COM du type.</summary>
             public string Kind { get; set; }
+            /// <summary>Obtient ou définit le nombre de fonctions exposées.</summary>
             public int FunctionCount { get; set; }
+            /// <summary>Obtient ou définit le nombre de variables exposées.</summary>
             public int VariableCount { get; set; }
+            /// <summary>Obtient ou définit le nombre d’interfaces implémentées.</summary>
             public int ImplementedInterfaceCount { get; set; }
+            /// <summary>Obtient ou définit l’empreinte d’identité utilisée pour vérifier que le type n’a pas changé.</summary>
             public string Identity { get; set; }
         }
     }

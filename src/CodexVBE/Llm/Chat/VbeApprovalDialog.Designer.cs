@@ -1,12 +1,18 @@
 namespace CodexVBE
 {
+    /// <summary>Déclare les contrôles et leur disposition pour la boîte de dialogue d’approbation.</summary>
     internal sealed partial class VbeApprovalDialog
     {
+        /// <summary>Champ en lecture seule qui affiche le résumé de l’édition.</summary>
         private System.Windows.Forms.TextBox details;
+        /// <summary>Barre inférieure qui contient les boutons d’approbation et de refus.</summary>
         private System.Windows.Forms.FlowLayoutPanel actions;
+        /// <summary>Bouton dont le résultat de dialogue autorise l’édition.</summary>
         private System.Windows.Forms.Button approve;
+        /// <summary>Bouton dont le résultat de dialogue refuse l’édition.</summary>
         private System.Windows.Forms.Button reject;
 
+        /// <summary>Crée et configure les contrôles, leurs résultats de dialogue et les dimensions de la fenêtre.</summary>
         private void InitializeComponent()
         {
             this.details = new System.Windows.Forms.TextBox();
