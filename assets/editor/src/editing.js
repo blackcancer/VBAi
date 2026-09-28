@@ -42,6 +42,28 @@ function closing(text) {
   return null;
 }
 
+function statements(text) {
+  const code = codeMask(text).trim();
+  // Everything following Then in a single-line If belongs to that conditional statement.
+  return /^If\b.*\bThen\s*\S/i.test(code) ? [code] : code.split(/:(?!=)/).map(part => part.trim());
+}
+
+function closeBlocks(stack, code) {
+  const kind = closing(code);
+  if (!kind) return;
+  const count = kind === 'for' ? Math.max(1, code.split(',').length) : 1;
+  for (let n = 0; n < count; n++) { const at = stack.map(b => b.kind).lastIndexOf(kind); if (at >= 0) stack.splice(at); }
+}
+
+function unclosed(text) {
+  const stack = [];
+  for (const statement of statements(text)) {
+    closeBlocks(stack, statement);
+    const opener = block(statement); if (opener) stack.push(opener);
+  }
+  return stack.at(-1) || null;
+}
+
 function condition(text) {
   const mask = codeMask(text), match = /^(\s*)(If|ElseIf)\s*(.*?)\bThen\b/i.exec(mask);
   if (!match || !match[3].trim() || mask.slice(match[0].length).trim()) return text;
@@ -63,11 +85,8 @@ export function formatLines(lines, options = {}) {
   const stack = [], result = [], indents = [];
   let continuation = false, logical = '';
   for (let index = 0; index < lines.length; index++) {
-    const original = lines[index], code = codeMask(original).trim(), close = closing(code);
-    if (!continuation && close) {
-      const count = close === 'for' ? Math.max(1, code.split(',').length) : 1;
-      for (let n = 0; n < count; n++) { const at = stack.map(b => b.kind).lastIndexOf(close); if (at >= 0) stack.splice(at); }
-    }
+    const original = lines[index], code = codeMask(original).trim();
+    if (!continuation) closeBlocks(stack, statements(code)[0]);
     const branch = /^(#?ElseIf|#?Else)\b/i.test(code), caseLine = /^Case\b/i.test(code);
     if (caseLine && stack.at(-1)?.kind === 'case') stack.pop();
     let depth = stack.length - (branch && stack.some(b => b.kind === (code[0] === '#' ? '#if' : 'if')) ? 1 : 0) + (continuation ? 1 : 0);
@@ -78,8 +97,11 @@ export function formatLines(lines, options = {}) {
     logical += (logical ? ' ' : '') + code.replace(/_\s*$/, '').trim();
     const continued = /_\s*$/.test(code);
     if (!continued) {
-      const opener = block(logical);
-      if (opener) stack.push(opener);
+      const parts = statements(logical);
+      for (let part = 0; part < parts.length; part++) {
+        if (part > 0) closeBlocks(stack, parts[part]);
+        const opener = block(parts[part]); if (opener) stack.push(opener);
+      }
       if (caseLine) stack.push({ kind: 'case' });
       logical = '';
     }
@@ -91,12 +113,14 @@ export function formatLines(lines, options = {}) {
 function hasCloser(lines, start, opener) {
   let depth = 0;
   for (let i = start; i < lines.length; i++) {
-    const next = block(lines[i]), close = closing(lines[i]);
-    // A following procedure belongs to another body, rather than closing this one.
-    if (next && ['sub', 'function', 'property'].includes(next.kind) && ['sub', 'function', 'property'].includes(opener.kind)) return false;
-    if (next?.kind === opener.kind) depth++;
-    if (close === opener.kind) { if (depth === 0) return true; depth--; }
-    if (close && ['sub', 'function', 'property'].includes(close) && !['sub', 'function', 'property'].includes(opener.kind)) return false;
+    for (const statement of statements(lines[i])) {
+      const next = block(statement), close = closing(statement);
+      // A following procedure belongs to another body, rather than closing this one.
+      if (next && ['sub', 'function', 'property'].includes(next.kind) && ['sub', 'function', 'property'].includes(opener.kind)) return false;
+      if (next?.kind === opener.kind) depth++;
+      if (close === opener.kind) { if (depth === 0) return true; depth--; }
+      if (close && ['sub', 'function', 'property'].includes(close) && !['sub', 'function', 'property'].includes(opener.kind)) return false;
+    }
   }
   return false;
 }
@@ -108,8 +132,8 @@ export function enterPlan(lines, lineNumber, options = {}) {
   let start = previous;
   while (start > 0 && /_\s*$/.test(codeMask(lines[start - 1]))) start--;
   const statement = lines.slice(start, previous + 1).map(line => codeMask(line).trim().replace(/_\s*$/, '')).join(' ');
-  const header = formatted.lines[previous], opener = /_\s*$/.test(codeMask(lines[previous])) ? null : block(statement);
-  const closure = opener && !hasCloser(lines, current + 1, opener) ? '\n' + formatted.indents[start] + opener.close : '';
+  const header = formatted.lines[previous], opener = /_\s*$/.test(codeMask(lines[previous])) ? null : unclosed(statement);
+  const closure = opener && !hasCloser(lines, current + 1, opener) ? '\n' + formatted.nextIndent.slice(0, -formatted.unit.length) + opener.close : '';
   return { previous, current, header, text: formatted.nextIndent + closure, column: formatted.nextIndent.length + 1 };
 }
 

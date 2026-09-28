@@ -45,6 +45,17 @@ test('multiple Next variables close the matching nested loops', () => {
   assert.deepEqual(formatLines(['For i = 1 To 3', 'For j = 1 To 3', 'Next j, i', 'Debug.Print 1']).lines,
     ['For i = 1 To 3', '    For j = 1 To 3', 'Next j, i', 'Debug.Print 1']);
 });
+
+test('colon statements retain balanced blocks and do not create duplicate closures', () => {
+  const source = ['Sub Work()', 'For i = 1 To 3: Debug.Print i: Next i', 'Debug.Print "a:b"', 'End Sub'];
+  assert.deepEqual(formatLines(source).lines, ['Sub Work()', '    For i = 1 To 3: Debug.Print i: Next i', '    Debug.Print "a:b"', 'End Sub']);
+  assert.equal(enterPlan([source[0], source[1], '', source[3]], 3).text, '    ');
+  assert.equal(enterPlan(['Sub Work(): Debug.Print 1: End Sub', ''], 2).text, '');
+  assert.equal(enterPlan(['With sheet: .Value = 1', ''], 2).text, '    \nEnd With');
+  assert.equal(enterPlan(['With sheet: For i = 1 To 3', '', 'End With'], 2).text, '        \n    Next i');
+  assert.equal(enterPlan(['For i = 1 To 3', '', 'For j = 1 To 3: Next j', 'Next i'], 2).text, '    ');
+  assert.deepEqual(formatLines(['If ready Then Debug.Print 1: Debug.Print 2', 'Run value:=1']).lines, ['If ready Then Debug.Print 1: Debug.Print 2', 'Run value:=1']);
+});
 test('tabs and nondefault space widths follow Monaco options', () => {
   assert.equal(enterPlan(['Sub Work()', ''], 2, { insertSpaces: false, tabSize: 2 }).text, '\t\nEnd Sub');
   assert.equal(enterPlan(['Sub Work()', ''], 2, { insertSpaces: true, tabSize: 2 }).text, '  \nEnd Sub');
