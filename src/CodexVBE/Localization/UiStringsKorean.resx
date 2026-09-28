@@ -1787,4 +1787,20 @@ Git Credential Manager로 로그인하며 커밋 작성자 정보는 Git에서 �
   <data name="Controls restored" xml:space="preserve"><value>컨트롤 복원됨</value></data>
   <data name="Recovery attempted" xml:space="preserve"><value>복원 시도됨</value></data>
   <data name="Recovery unavailable" xml:space="preserve"><value>복원할 수 없음</value></data>
+  <data name="About VBAi" xml:space="preserve"><value>VBAi 정보</value></data>
+  <data name="Understand, edit and version your VBA projects with AI." xml:space="preserve"><value>AI로 VBA 프로젝트를 이해하고 편집하며 버전을 관리하세요.</value></data>
+  <data name="Version" xml:space="preserve"><value>버전</value></data>
+  <data name="Host" xml:space="preserve"><value>호스트</value></data>
+  <data name="Platform" xml:space="preserve"><value>플랫폼</value></data>
+  <data name="Interface language" xml:space="preserve"><value>인터페이스 언어</value></data>
+  <data name="Project on GitHub" xml:space="preserve"><value>GitHub 프로젝트</value></data>
+  <data name="Documentation" xml:space="preserve"><value>문서</value></data>
+  <data name="Report an issue" xml:space="preserve"><value>문제 보고</value></data>
+  <data name="Copy technical details" xml:space="preserve"><value>기술 정보 복사</value></data>
+  <data name="Technical details copied." xml:space="preserve"><value>기술 정보를 복사했습니다.</value></data>
+  <data name="Unable to copy technical details." xml:space="preserve"><value>기술 정보를 복사할 수 없습니다.</value></data>
+  <data name="Unable to open the link." xml:space="preserve"><value>링크를 열 수 없습니다.</value></data>
+  <data name="Copy the version and environment information for support." xml:space="preserve"><value>지원을 위해 버전 및 환경 정보를 복사합니다.</value></data>
+  <data name="Version, technical details and project resources" xml:space="preserve"><value>버전, 기술 정보 및 프로젝트 리소스</value></data>
+  <data name="Close" xml:space="preserve"><value>닫기</value></data>
 </root>

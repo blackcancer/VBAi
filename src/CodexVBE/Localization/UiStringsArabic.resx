@@ -1787,4 +1787,20 @@
   <data name="Controls restored" xml:space="preserve"><value>تمت استعادة عناصر التحكم</value></data>
   <data name="Recovery attempted" xml:space="preserve"><value>جرت محاولة الاستعادة</value></data>
   <data name="Recovery unavailable" xml:space="preserve"><value>الاستعادة غير متاحة</value></data>
+  <data name="About VBAi" xml:space="preserve"><value>حول VBAi</value></data>
+  <data name="Understand, edit and version your VBA projects with AI." xml:space="preserve"><value>افهم مشاريع VBA وحرّرها وأدِر إصداراتها باستخدام الذكاء الاصطناعي.</value></data>
+  <data name="Version" xml:space="preserve"><value>الإصدار</value></data>
+  <data name="Host" xml:space="preserve"><value>التطبيق المضيف</value></data>
+  <data name="Platform" xml:space="preserve"><value>المنصة</value></data>
+  <data name="Interface language" xml:space="preserve"><value>لغة الواجهة</value></data>
+  <data name="Project on GitHub" xml:space="preserve"><value>المشروع على GitHub</value></data>
+  <data name="Documentation" xml:space="preserve"><value>الوثائق</value></data>
+  <data name="Report an issue" xml:space="preserve"><value>الإبلاغ عن مشكلة</value></data>
+  <data name="Copy technical details" xml:space="preserve"><value>نسخ التفاصيل التقنية</value></data>
+  <data name="Technical details copied." xml:space="preserve"><value>تم نسخ التفاصيل التقنية.</value></data>
+  <data name="Unable to copy technical details." xml:space="preserve"><value>تعذّر نسخ التفاصيل التقنية.</value></data>
+  <data name="Unable to open the link." xml:space="preserve"><value>تعذّر فتح الرابط.</value></data>
+  <data name="Copy the version and environment information for support." xml:space="preserve"><value>نسخ الإصدار ومعلومات البيئة للدعم.</value></data>
+  <data name="Version, technical details and project resources" xml:space="preserve"><value>الإصدار والتفاصيل التقنية وموارد المشروع</value></data>
+  <data name="Close" xml:space="preserve"><value>إغلاق</value></data>
 </root>

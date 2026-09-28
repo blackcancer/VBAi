@@ -38,7 +38,7 @@ namespace CodexVBE
         /// <param name="github">Action d’ouverture de GitHub.</param>
         /// <param name="editor">Action de commande associée au texte fourni.</param>
         /// <returns>Gestionnaire des menus installé sur l’hôte.</returns>
-        private static VbeMenu CreateMenuNative(object host, Action chat, Action settings, Action github, Action<string> editor) { return new VbeMenu(host, chat, settings, github, editor); }
+        private static VbeMenu CreateMenuNative(object host, Action chat, Action settings, Action github, Action<string> editor) { return new VbeMenu(host, chat, settings, github, editor, () => AboutWindow.ShowForVbe(host)); }
         /// <summary>Contrôle WinForms fournissant un contexte de synchronisation pour le serveur local.</summary>
         private Control dispatcher;
         /// <summary>Serveur de commandes local rattaché à l’instance du VBE.</summary>

@@ -1787,4 +1787,20 @@ Inicio de sesión mediante Git Credential Manager; la identidad de los commits s
   <data name="Controls restored" xml:space="preserve"><value>Controles restaurados</value></data>
   <data name="Recovery attempted" xml:space="preserve"><value>Recuperación intentada</value></data>
   <data name="Recovery unavailable" xml:space="preserve"><value>Recuperación no disponible</value></data>
+  <data name="About VBAi" xml:space="preserve"><value>Acerca de VBAi</value></data>
+  <data name="Understand, edit and version your VBA projects with AI." xml:space="preserve"><value>Comprende, edita y versiona tus proyectos VBA con IA.</value></data>
+  <data name="Version" xml:space="preserve"><value>Versión</value></data>
+  <data name="Host" xml:space="preserve"><value>Aplicación anfitriona</value></data>
+  <data name="Platform" xml:space="preserve"><value>Plataforma</value></data>
+  <data name="Interface language" xml:space="preserve"><value>Idioma de la interfaz</value></data>
+  <data name="Project on GitHub" xml:space="preserve"><value>Proyecto en GitHub</value></data>
+  <data name="Documentation" xml:space="preserve"><value>Documentación</value></data>
+  <data name="Report an issue" xml:space="preserve"><value>Informar de un problema</value></data>
+  <data name="Copy technical details" xml:space="preserve"><value>Copiar detalles técnicos</value></data>
+  <data name="Technical details copied." xml:space="preserve"><value>Detalles técnicos copiados.</value></data>
+  <data name="Unable to copy technical details." xml:space="preserve"><value>No se pueden copiar los detalles técnicos.</value></data>
+  <data name="Unable to open the link." xml:space="preserve"><value>No se puede abrir el enlace.</value></data>
+  <data name="Copy the version and environment information for support." xml:space="preserve"><value>Copiar la versión y la información del entorno para soporte.</value></data>
+  <data name="Version, technical details and project resources" xml:space="preserve"><value>Versión, detalles técnicos y recursos del proyecto</value></data>
+  <data name="Close" xml:space="preserve"><value>Cerrar</value></data>
 </root>

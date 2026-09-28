@@ -1787,4 +1787,20 @@ QQ 附加内存
   <data name="Controls restored" xml:space="preserve"><value>控件已恢复</value></data>
   <data name="Recovery attempted" xml:space="preserve"><value>已尝试恢复</value></data>
   <data name="Recovery unavailable" xml:space="preserve"><value>恢复不可用</value></data>
+  <data name="About VBAi" xml:space="preserve"><value>关于 VBAi</value></data>
+  <data name="Understand, edit and version your VBA projects with AI." xml:space="preserve"><value>使用 AI 理解、编辑 VBA 项目并管理版本。</value></data>
+  <data name="Version" xml:space="preserve"><value>版本</value></data>
+  <data name="Host" xml:space="preserve"><value>宿主</value></data>
+  <data name="Platform" xml:space="preserve"><value>平台</value></data>
+  <data name="Interface language" xml:space="preserve"><value>界面语言</value></data>
+  <data name="Project on GitHub" xml:space="preserve"><value>GitHub 项目</value></data>
+  <data name="Documentation" xml:space="preserve"><value>文档</value></data>
+  <data name="Report an issue" xml:space="preserve"><value>报告问题</value></data>
+  <data name="Copy technical details" xml:space="preserve"><value>复制技术信息</value></data>
+  <data name="Technical details copied." xml:space="preserve"><value>技术信息已复制。</value></data>
+  <data name="Unable to copy technical details." xml:space="preserve"><value>无法复制技术信息。</value></data>
+  <data name="Unable to open the link." xml:space="preserve"><value>无法打开链接。</value></data>
+  <data name="Copy the version and environment information for support." xml:space="preserve"><value>复制版本和环境信息以便获得支持。</value></data>
+  <data name="Version, technical details and project resources" xml:space="preserve"><value>版本、技术信息和项目资源</value></data>
+  <data name="Close" xml:space="preserve"><value>关闭</value></data>
 </root>

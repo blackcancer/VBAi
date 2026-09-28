@@ -11,6 +11,8 @@ namespace CodexVBE
         private System.Windows.Forms.ContextMenuStrip optionsMenu;
         /// <summary>Commande qui ouvre les paramètres de l’application.</summary>
         private System.Windows.Forms.ToolStripMenuItem configure;
+        private System.Windows.Forms.ToolStripMenuItem about;
+        private System.Windows.Forms.ToolStripSeparator aboutSeparator;
         /// <summary>Commande qui actualise les modèles du fournisseur sélectionné.</summary>
         private System.Windows.Forms.ToolStripMenuItem refreshModels;
         /// <summary>Commande de gestion de l’ancrage de la fenêtre.</summary>
@@ -162,6 +164,8 @@ namespace CodexVBE
             this.optionsMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.github = new System.Windows.Forms.ToolStripMenuItem();
             this.configure = new System.Windows.Forms.ToolStripMenuItem();
+            this.about = new System.Windows.Forms.ToolStripMenuItem();
+            this.aboutSeparator = new System.Windows.Forms.ToolStripSeparator();
             this.refreshModels = new System.Windows.Forms.ToolStripMenuItem();
             this.docking = new System.Windows.Forms.ToolStripMenuItem();
             this.rootLayout = new System.Windows.Forms.TableLayoutPanel();
@@ -336,8 +340,15 @@ namespace CodexVBE
             this.configure,
             this.refreshModels,
             this.docking,
-            this.github});
+            this.github,
+            this.aboutSeparator,
+            this.about});
             this.optionsMenu.Name = "optionsMenu";
+            this.aboutSeparator.Name = "aboutSeparator";
+            this.about.Name = "about";
+            this.about.Text = "About VBAi";
+            this.about.ToolTipText = "Version, technical details and project resources";
+            this.about.Click += new System.EventHandler(this.About_Click);
             this.github.Name = "github";
             this.github.Text = "GitHub · synchronize VBA…";
             this.github.ToolTipText = "Export and synchronize the current document's sources with a GitHub repository.";

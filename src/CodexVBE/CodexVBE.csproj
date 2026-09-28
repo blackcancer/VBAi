@@ -5,11 +5,14 @@
     <!-- Preserve the CodeBase path registered by the installer. -->
     <OutputPath Condition="'$(BuildOutputRoot)' == ''">$(RepositoryRoot)bin\$(Configuration)\</OutputPath>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- Standard Designer image resources also compile with the .NET SDK resource generator. -->
+    <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Markdig" Version="0.37.0" />
+    <PackageReference Include="System.Resources.Extensions" Version="8.0.0" />
     <EmbeddedResource Include="..\..\assets\icons\assistant.ico" Link="Resources\Icons\assistant.ico" LogicalName="CodexVBE.Icons.assistant.ico" />
     <EmbeddedResource Include="..\..\assets\icons\github.ico" Link="Resources\Icons\github.ico" LogicalName="CodexVBE.Icons.github.ico" />
     <EmbeddedResource Include="..\..\assets\icons\settings.ico" Link="Resources\Icons\settings.ico" LogicalName="CodexVBE.Icons.settings.ico" />
@@ -30,6 +33,9 @@
     <EmbeddedResource Update="Host\ChatToolWindow.resx"><DependentUpon>ChatToolWindow.cs</DependentUpon></EmbeddedResource>
     <Compile Update="Git\GitHubPane.cs"><SubType>UserControl</SubType></Compile>
     <Compile Update="Git\GitHubPane.Designer.cs"><DependentUpon>GitHubPane.cs</DependentUpon></Compile>
+    <Compile Update="Ui\AboutWindow.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="Ui\AboutWindow.Designer.cs"><DependentUpon>AboutWindow.cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Ui\AboutWindow.resx"><DependentUpon>AboutWindow.cs</DependentUpon></EmbeddedResource>
     <Compile Update="Ui\CodeDiffView.cs"><SubType>UserControl</SubType></Compile>
     <Compile Update="Ui\CodeDiffView.Designer.cs"><DependentUpon>CodeDiffView.cs</DependentUpon></Compile>
     <EmbeddedResource Update="Localization\*.resx"><LogicalName>CodexVBE.Localization.%(Filename).resources</LogicalName></EmbeddedResource>

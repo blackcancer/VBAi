@@ -1787,4 +1787,20 @@ Conexão pelo Git Credential Manager; a identidade dos commits é configurada no
   <data name="Controls restored" xml:space="preserve"><value>Controles restaurados</value></data>
   <data name="Recovery attempted" xml:space="preserve"><value>Recuperação tentada</value></data>
   <data name="Recovery unavailable" xml:space="preserve"><value>Recuperação indisponível</value></data>
+  <data name="About VBAi" xml:space="preserve"><value>Sobre o VBAi</value></data>
+  <data name="Understand, edit and version your VBA projects with AI." xml:space="preserve"><value>Compreenda, edite e versione seus projetos VBA com IA.</value></data>
+  <data name="Version" xml:space="preserve"><value>Versão</value></data>
+  <data name="Host" xml:space="preserve"><value>Aplicativo hospedeiro</value></data>
+  <data name="Platform" xml:space="preserve"><value>Plataforma</value></data>
+  <data name="Interface language" xml:space="preserve"><value>Idioma da interface</value></data>
+  <data name="Project on GitHub" xml:space="preserve"><value>Projeto no GitHub</value></data>
+  <data name="Documentation" xml:space="preserve"><value>Documentação</value></data>
+  <data name="Report an issue" xml:space="preserve"><value>Relatar um problema</value></data>
+  <data name="Copy technical details" xml:space="preserve"><value>Copiar detalhes técnicos</value></data>
+  <data name="Technical details copied." xml:space="preserve"><value>Detalhes técnicos copiados.</value></data>
+  <data name="Unable to copy technical details." xml:space="preserve"><value>Não foi possível copiar os detalhes técnicos.</value></data>
+  <data name="Unable to open the link." xml:space="preserve"><value>Não foi possível abrir o link.</value></data>
+  <data name="Copy the version and environment information for support." xml:space="preserve"><value>Copiar a versão e as informações do ambiente para o suporte.</value></data>
+  <data name="Version, technical details and project resources" xml:space="preserve"><value>Versão, detalhes técnicos e recursos do projeto</value></data>
+  <data name="Close" xml:space="preserve"><value>Fechar</value></data>
 </root>

@@ -1787,4 +1787,20 @@ Anmeldung über Git Credential Manager; die Commit-Identität wird in Git festge
   <data name="Controls restored" xml:space="preserve"><value>Steuerelemente wiederhergestellt</value></data>
   <data name="Recovery attempted" xml:space="preserve"><value>Wiederherstellung versucht</value></data>
   <data name="Recovery unavailable" xml:space="preserve"><value>Wiederherstellung nicht verfügbar</value></data>
+  <data name="About VBAi" xml:space="preserve"><value>Über VBAi</value></data>
+  <data name="Understand, edit and version your VBA projects with AI." xml:space="preserve"><value>Verstehen, bearbeiten und versionieren Sie Ihre VBA-Projekte mit KI.</value></data>
+  <data name="Version" xml:space="preserve"><value>Version</value></data>
+  <data name="Host" xml:space="preserve"><value>Host</value></data>
+  <data name="Platform" xml:space="preserve"><value>Plattform</value></data>
+  <data name="Interface language" xml:space="preserve"><value>Sprache der Oberfläche</value></data>
+  <data name="Project on GitHub" xml:space="preserve"><value>Projekt auf GitHub</value></data>
+  <data name="Documentation" xml:space="preserve"><value>Dokumentation</value></data>
+  <data name="Report an issue" xml:space="preserve"><value>Problem melden</value></data>
+  <data name="Copy technical details" xml:space="preserve"><value>Technische Details kopieren</value></data>
+  <data name="Technical details copied." xml:space="preserve"><value>Technische Details kopiert.</value></data>
+  <data name="Unable to copy technical details." xml:space="preserve"><value>Technische Details konnten nicht kopiert werden.</value></data>
+  <data name="Unable to open the link." xml:space="preserve"><value>Der Link konnte nicht geöffnet werden.</value></data>
+  <data name="Copy the version and environment information for support." xml:space="preserve"><value>Version und Umgebungsinformationen für den Support kopieren.</value></data>
+  <data name="Version, technical details and project resources" xml:space="preserve"><value>Version, technische Details und Projektressourcen</value></data>
+  <data name="Close" xml:space="preserve"><value>Schließen</value></data>
 </root>

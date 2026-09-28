@@ -1789,4 +1789,20 @@ Sign in through Git Credential Manager; commit identity is configured in Git.</v
   <data name="Controls restored" xml:space="preserve"><value>Controls restored</value></data>
   <data name="Recovery attempted" xml:space="preserve"><value>Recovery attempted</value></data>
   <data name="Recovery unavailable" xml:space="preserve"><value>Recovery unavailable</value></data>
+  <data name="About VBAi" xml:space="preserve"><value>About VBAi</value></data>
+  <data name="Understand, edit and version your VBA projects with AI." xml:space="preserve"><value>Understand, edit and version your VBA projects with AI.</value></data>
+  <data name="Version" xml:space="preserve"><value>Version</value></data>
+  <data name="Host" xml:space="preserve"><value>Host</value></data>
+  <data name="Platform" xml:space="preserve"><value>Platform</value></data>
+  <data name="Interface language" xml:space="preserve"><value>Interface language</value></data>
+  <data name="Project on GitHub" xml:space="preserve"><value>Project on GitHub</value></data>
+  <data name="Documentation" xml:space="preserve"><value>Documentation</value></data>
+  <data name="Report an issue" xml:space="preserve"><value>Report an issue</value></data>
+  <data name="Copy technical details" xml:space="preserve"><value>Copy technical details</value></data>
+  <data name="Technical details copied." xml:space="preserve"><value>Technical details copied.</value></data>
+  <data name="Unable to copy technical details." xml:space="preserve"><value>Unable to copy technical details.</value></data>
+  <data name="Unable to open the link." xml:space="preserve"><value>Unable to open the link.</value></data>
+  <data name="Copy the version and environment information for support." xml:space="preserve"><value>Copy the version and environment information for support.</value></data>
+  <data name="Version, technical details and project resources" xml:space="preserve"><value>Version, technical details and project resources</value></data>
+  <data name="Close" xml:space="preserve"><value>Close</value></data>
 </root>
