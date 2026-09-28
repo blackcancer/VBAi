@@ -10,10 +10,61 @@ namespace CodexVBE.Tests.Unit
     using System.Web.Script.Serialization;
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using CodexVBE.Tests.Infrastructure;
+    using System.IO;
 
     [TestClass, TestCategory("Unit")]
     public sealed partial class GitReviewTests
     {
+        [TestMethod]
+        public async Task EveryGitHubPathAndHttpErrorGuardRunsOnlyAgainstMemoryHandlers()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                using (var native = new GitHubApi(null)) { }
+                Assert.AreEqual("/repos/owner/repo", GitHubApi.RepositoryPath("https://github.com/owner/repo")); Assert.AreEqual("/repos/owner/repo", GitHubApi.RepositoryPath("https://github.com/owner/repo.GIT"));
+                foreach (var path in new[] { "relative", "//other.invalid", "/back\\slash", "/a/../b" }) using (var api = new GitHubApi(null, new LlmHttpFixture(), ct => Task.FromResult("fixture"))) await Assert.ThrowsExceptionAsync<ArgumentException>(() => api.Request<object>(HttpMethod.Get, path, null, CancellationToken.None));
+                foreach (var status in new[] { 401, 403, 429, 404, 422, 500 }) { var handler = new LlmHttpFixture(); handler.Replies.Enqueue(new LlmHttpFixture.Reply("secret-body") { Status = (HttpStatusCode)status }); using (var api = new GitHubApi(null, handler, ct => Task.FromResult("secret-token"))) { var error = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => api.Request<object>(HttpMethod.Get, "/fixture", null, CancellationToken.None)); StringAssert.Contains(error.Message, status.ToString()); Assert.IsFalse(error.Message.Contains("secret")); } }
+                foreach (var name in new[] { null, "", "bad space", new string('x', 101) }) using (var api = new GitHubApi(null, new LlmHttpFixture(), ct => Task.FromResult("fixture"))) await Assert.ThrowsExceptionAsync<ArgumentException>(() => api.CreateRepository(name, null, false, CancellationToken.None));
+                foreach (var organization in new[] { "", "owner", null }) { var handler = new LlmHttpFixture("{\"full_name\":\"owner/repo\",\"clone_url\":\"https://github.com/owner/repo.git\",\"default_branch\":\"main\"}"); using (var api = new GitHubApi(null, handler, ct => Task.FromResult("fixture"))) { var repo = await api.CreateRepository("repo", organization, true, CancellationToken.None); Assert.AreEqual("owner/repo", repo.ToString()); Assert.AreEqual("https://github.com/owner/repo.git", repo.clone_url); Assert.AreEqual("main", repo.default_branch); Assert.AreEqual(string.IsNullOrEmpty(organization) ? "/user/repos" : "/orgs/owner/repos", handler.Uris.Single().AbsolutePath); Assert.AreEqual(true, LlmBoundaryScope.Object(new JavaScriptSerializer().DeserializeObject(handler.Bodies.Single()))["private"]); Assert.AreEqual("2026-03-10", handler.Headers.Single()["X-GitHub-Api-Version"]); } }
+                using (var api = new GitHubApi(null, new LlmHttpFixture(), ct => Task.FromResult("fixture"))) { await Assert.ThrowsExceptionAsync<ArgumentException>(() => api.CreateRepository("repo", "bad name", false, CancellationToken.None)); await Assert.ThrowsExceptionAsync<ArgumentException>(() => api.CreatePull("https://github.com/owner/repo.git", "feature", "main", " ", "", false, CancellationToken.None)); foreach (var sha in new[] { null, "BAD", new string('a', 39) }) await Assert.ThrowsExceptionAsync<ArgumentException>(() => api.Checks("https://github.com/owner/repo.git", sha, CancellationToken.None)); }
+                using (var cancellation = new CancellationTokenSource()) { cancellation.Cancel(); using (var api = new GitHubApi(null, new LlmHttpFixture(), ct => Task.FromResult("fixture"))) await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => api.Organizations(cancellation.Token)); }
+                using (var cancellation = new CancellationTokenSource()) { var handler = new LlmHttpFixture("{}") { BeforeResponse = () => cancellation.Cancel() }; using (var api = new GitHubApi(null, handler, ct => Task.FromResult("fixture"))) { Exception error = null; try { await api.Request<object>(HttpMethod.Get, "/fixture", null, cancellation.Token); } catch (OperationCanceledException ex) { error = ex; } Assert.IsNotNull(error); } }
+            }
+        }
+
+        [TestMethod]
+        public async Task GitHubListsChecksAndDisplayModelsPreserveAllNativeShapes()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var handler = new LlmHttpFixture("[{\"login\":\"organization\"}]", "[{\"name\":\"main\"}]", "[{\"number\":12,\"title\":\"title\",\"body\":\"body\",\"state\":\"open\",\"draft\":true,\"merged\":false,\"html_url\":\"https://github.com/owner/repo/pull/12\",\"head\":{\"sha\":\"abc\"}}]"); using (var api = new GitHubApi(null, handler, ct => Task.FromResult("fixture"))) { Assert.AreEqual("organization", (await api.Organizations(CancellationToken.None)).Single().login); Assert.AreEqual("main", (await api.Branches("https://github.com/owner/repo.git", CancellationToken.None)).Single().name); var pull = (await api.Pulls("https://github.com/owner/repo.git", CancellationToken.None)).Single(); StringAssert.Contains(pull.ToString(), "title"); Assert.AreEqual("body", pull.body); Assert.IsFalse(pull.merged); Assert.AreEqual("abc", pull.head.sha); StringAssert.Contains(pull.html_url, "/12"); pull.draft = false; Assert.AreEqual("#12 · open · title", pull.ToString()); }
+                var first = new JavaScriptSerializer().Serialize(new { check_runs = Enumerable.Range(0, 100).Select(i => new { name = "c" + i, status = "completed", conclusion = "success" }).ToArray() }); handler = new LlmHttpFixture(first, "{\"check_runs\":[{\"name\":\"pending\",\"status\":\"queued\",\"conclusion\":null}]}", "{\"state\":\"success\"}"); using (var api = new GitHubApi(null, handler, ct => Task.FromResult("fixture"))) { var result = await api.Checks("https://github.com/owner/repo.git", new string('a', 40), CancellationToken.None); StringAssert.Contains(result, "pending: queued"); StringAssert.Contains(result, "c99: success"); Assert.AreEqual(3, handler.Uris.Count); StringAssert.Contains(handler.Uris[1].Query, "page=2"); }
+                var file = new GitHubFile { filename = "module.bas", status = "modified" }; Assert.AreEqual("modified · module.bas", file.ToString()); Assert.AreEqual("comment", new GitHubComment { body = "comment" }.ToString()); Assert.AreEqual("module.bas:3 · comment", new GitHubComment { body = "comment", path = "module.bas", line = 3 }.ToString());
+            }
+        }
+
+        [TestMethod]
+        public async Task NativeCredentialChildReceivesNoninteractiveInputAndNeverLaunchesGcm()
+        {
+            using (var scope = new LlmBoundaryScope()) using (var fixture = new NativeProtocolFixture())
+            {
+                var original = GitHubApi.StartCredentialProcess;
+                try
+                {
+                    foreach (var account in new[] { null, "", "fixture-account" })
+                    {
+                        GitHubApi.StartCredentialProcess = p => { Assert.AreEqual("git.exe", p.StartInfo.FileName); Assert.AreEqual("credential-manager get", p.StartInfo.Arguments); Assert.AreEqual("never", p.StartInfo.EnvironmentVariables["GCM_INTERACTIVE"]); Assert.AreEqual("0", p.StartInfo.EnvironmentVariables["GIT_TERMINAL_PROMPT"]); return fixture.Start(p, "token"); }; var handler = new LlmHttpFixture("{}"); using (var api = new GitHubApi(account, handler)) { await api.Request<object>(HttpMethod.Get, "/fixture", null, CancellationToken.None); Assert.AreEqual("Bearer fixture-token", handler.Headers.Single()["Authorization"]); Assert.AreEqual("protocol=https\nhost=github.com\n" + (string.IsNullOrEmpty(account) ? "" : "username=fixture-account\n") + "\n", File.ReadAllText(Path.Combine(fixture.Root, "input.txt"))); }
+                    }
+                    using (var api = new GitHubApi("bad account", new LlmHttpFixture())) await Assert.ThrowsExceptionAsync<ArgumentException>(() => api.Request<object>(HttpMethod.Get, "/fixture", null, CancellationToken.None));
+                    foreach (var mode in new[] { "missing", "error" }) { GitHubApi.StartCredentialProcess = p => fixture.Start(p, mode); using (var api = new GitHubApi(null, new LlmHttpFixture())) await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => api.Request<object>(HttpMethod.Get, "/fixture", null, CancellationToken.None)); }
+                    using (var cancellation = new CancellationTokenSource()) { GitHubApi.StartCredentialProcess = p => { var result = fixture.Start(p, "wait"); cancellation.CancelAfter(100); return result; }; using (var api = new GitHubApi(null, new LlmHttpFixture())) await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => api.Request<object>(HttpMethod.Get, "/fixture", null, cancellation.Token)); }
+                    using (var cancellation = new CancellationTokenSource()) { GitHubApi.StartCredentialProcess = p => { cancellation.Cancel(); return false; }; using (var api = new GitHubApi(null, new LlmHttpFixture())) await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => api.Request<object>(HttpMethod.Get, "/fixture", null, cancellation.Token)); }
+                    using (var cancellation = new CancellationTokenSource()) { GitHubApi.StartCredentialProcess = p => { var result = fixture.Start(p, "immediate"); Assert.IsTrue(p.WaitForExit(5000)); cancellation.Cancel(); return result; }; using (var api = new GitHubApi(null, new LlmHttpFixture())) { Exception failure = null; try { await api.Request<object>(HttpMethod.Get, "/fixture", null, cancellation.Token); } catch (Exception ex) { failure = ex; } Assert.IsNotNull(failure); Assert.IsTrue(failure is IOException || failure is OperationCanceledException); } }
+                }
+                finally { GitHubApi.StartCredentialProcess = original; }
+            }
+        }
         [TestMethod]
         public async Task GitHubPaginatesRepositoriesAndUsesOnlyTheApiHost()
         {

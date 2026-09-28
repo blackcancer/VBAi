@@ -10,6 +10,7 @@ namespace CodexVBE
     /// <summary>Stocke les fournisseurs, modèles, points de terminaison et secrets de configuration LLM.</summary>
     internal sealed class LlmSettings
     {
+        internal static string StoragePathOverride;
         /// <summary>Obtient ou définit le fournisseur sélectionné par défaut.</summary>
         /// <value>Nom du fournisseur, « Codex » par défaut.</value>
         public string ProviderName { get; set; } = "Codex";
@@ -107,7 +108,7 @@ namespace CodexVBE
         /// <summary>Obtient le chemin du fichier settings.json dans le dossier AppData utilisateur.</summary>
         /// <value>Chemin complet de la configuration utilisateur.</value>
         private static string FilePath { get {
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            return StoragePathOverride ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 "CodexVBE", "settings.json");
         } }
 

@@ -115,6 +115,7 @@ namespace CodexVBE
     /// <summary>Appelle l’API GitHub avec les identifiants du gestionnaire GCM de l’utilisateur.</summary>
     internal sealed class GitHubApi : IDisposable
     {
+        internal static Func<Process, bool> StartCredentialProcess = ProcessInput.StartWithoutPreamble;
         /// <summary>Client HTTP utilisé pour les requêtes API.</summary>
         private readonly HttpClient client;
         /// <summary>Fournisseur asynchrone du jeton d’accès.</summary>
@@ -275,7 +276,7 @@ namespace CodexVBE
             using (var process = new Process { StartInfo = start })
             {
                 timeout.CancelAfter(TimeSpan.FromSeconds(30));
-                ProcessInput.StartWithoutPreamble(process);
+                StartCredentialProcess(process);
                 using (timeout.Token.Register(() => { try { if (!process.HasExited) process.Kill(); } catch (InvalidOperationException) { } }))
                 {
                     var output = process.StandardOutput.ReadToEndAsync(); var error = process.StandardError.ReadToEndAsync();

@@ -16,6 +16,7 @@ namespace CodexVBE.Tests.Unit
             var settings = new LlmSettings();
             return new CodexAppServerClient(new ImmediateContext(), new LlmVbeTools(null, null, settings), null, settings, resumed, transport);
         }
+        private static string Method(IDictionary<string, object> message) { return message.ContainsKey("method") ? Convert.ToString(message["method"]) : null; }
 
         private sealed class ImmediateContext : SynchronizationContext
         {
@@ -41,6 +42,8 @@ namespace CodexVBE.Tests.Unit
             public bool ModelRequestError { get; set; }
             public bool FailStart { get; set; }
             public bool CompleteTurn { get; set; }
+            public Func<IDictionary<string, object>, bool> Intercept { get; set; }
+            public Action BeforeSend { get; set; }
             public List<IDictionary<string, object>> Sent { get; } = new List<IDictionary<string, object>>();
             public IEnumerable<string> Methods => Sent.Where(x => x.ContainsKey("method")).Select(x => Convert.ToString(x["method"]));
             public TaskCompletionSource<bool> TurnStarted { get; } = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -54,8 +57,10 @@ namespace CodexVBE.Tests.Unit
 
             public void Send(string line)
             {
+                BeforeSend?.Invoke();
                 var message = Object(json.DeserializeObject(line));
                 Sent.Add(message);
+                if (Intercept != null && Intercept(message)) return;
                 object rawMethod;
                 if (!message.TryGetValue("method", out rawMethod))
                     return;
@@ -137,6 +142,7 @@ namespace CodexVBE.Tests.Unit
                 running = false;
                 Exited?.Invoke(new InvalidOperationException("Codex app-server stopped."));
             }
+            public void Stop() { running = false; }
 
             private void Reply(object id, object result)
             {
