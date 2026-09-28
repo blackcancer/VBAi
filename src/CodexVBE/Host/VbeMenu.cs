@@ -97,6 +97,17 @@ namespace CodexVBE
                 this.subscribe(settingsButton, ClickInterface, 1, settingsHandler);
                 this.applyIcon(viewButton, typeof(ChatWindow));
                 this.applyIcon(settingsButton, typeof(LlmSettingsWindow));
+                if (editorAction != null)
+                {
+                    object modernButton = view.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
+                    ((dynamic)modernButton).Caption = UiText.Get("VBAi editor");
+                    ((dynamic)modernButton).Tag = "CodexVBE.ModernEditor";
+                    ((dynamic)modernButton).TooltipText = UiText.Get("Open active module");
+                    ClickHandler modernHandler = (object control, ref bool cancel) => { cancel = true; editorAction("/editor"); };
+                    editorButtons.Add(Tuple.Create(modernButton, modernHandler));
+                    this.subscribe(modernButton, ClickInterface, 1, modernHandler);
+                    this.applyIcon(modernButton, typeof(AboutWindow));
+                }
                 object gitButton = view.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
                 ((dynamic)gitButton).Caption = "GitHub VBAi…";
                 ((dynamic)gitButton).Tag = "CodexVBE.GitHub";

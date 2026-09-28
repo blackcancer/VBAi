@@ -1858,4 +1858,122 @@ Git Credential Manager से साइन-इन करें; कमिट ल
   <data name="Update installed. Restart Windows to finish." xml:space="preserve"><value>अपडेट इंस्टॉल हुआ। पूरा करने के लिए Windows फिर शुरू करें।</value></data>
   <data name="Download" xml:space="preserve"><value>डाउनलोड</value></data>
   <data name="Release notes" xml:space="preserve"><value>रिलीज़ नोट्स</value></data>
+  <data name="VBAi editor" xml:space="preserve">
+    <value>VBAi संपादक</value>
+  </data>
+  <data name="Open active module" xml:space="preserve">
+    <value>सक्रिय मॉड्यूल खोलें</value>
+  </data>
+  <data name="Synchronize with VBA" xml:space="preserve">
+    <value>VBA से सिंक करें</value>
+  </data>
+  <data name="Compare with VBA" xml:space="preserve">
+    <value>VBA से तुलना करें</value>
+  </data>
+  <data name="Reload VBA version" xml:space="preserve">
+    <value>VBA संस्करण फिर लोड करें</value>
+  </data>
+  <data name="Restore draft" xml:space="preserve">
+    <value>ड्राफ़्ट बहाल करें</value>
+  </data>
+  <data name="Use edited version" xml:space="preserve">
+    <value>संपादित संस्करण लागू करें</value>
+  </data>
+  <data name="Close module" xml:space="preserve">
+    <value>मॉड्यूल बंद करें</value>
+  </data>
+  <data name="Native editor" xml:space="preserve">
+    <value>मूल संपादक</value>
+  </data>
+  <data name="Dock / detach" xml:space="preserve">
+    <value>डॉक / अलग करें</value>
+  </data>
+  <data name="Automatic synchronization" xml:space="preserve">
+    <value>स्वचालित सिंक</value>
+  </data>
+  <data name="Follow native code windows" xml:space="preserve">
+    <value>मूल कोड विंडो का अनुसरण करें</value>
+  </data>
+  <data name="Open a VBA module to start editing." xml:space="preserve">
+    <value>संपादन शुरू करने के लिए VBA मॉड्यूल खोलें।</value>
+  </data>
+  <data name="Changes pending synchronization with VBA." xml:space="preserve">
+    <value>बदलाव VBA से सिंक होने की प्रतीक्षा में हैं।</value>
+  </data>
+  <data name="Synchronized with VBA. Save the macro in its host application." xml:space="preserve">
+    <value>VBA से सिंक हो गया। होस्ट ऐप में मैक्रो सहेजें।</value>
+  </data>
+  <data name="The module changed in VBA. Resolve the conflict first." xml:space="preserve">
+    <value>मॉड्यूल VBA में बदल गया है। पहले विरोध हल करें।</value>
+  </data>
+  <data name="Loading editor…" xml:space="preserve">
+    <value>संपादक लोड हो रहा है…</value>
+  </data>
+  <data name="The editor stopped. Drafts are preserved; reopen the editor." xml:space="preserve">
+    <value>संपादक बंद हो गया। ड्राफ़्ट सुरक्षित हैं; संपादक फिर खोलें।</value>
+  </data>
+  <data name="Editor unavailable. Install WebView2 Runtime or use the native editor." xml:space="preserve">
+    <value>संपादक उपलब्ध नहीं है। WebView2 Runtime स्थापित करें या मूल संपादक का उपयोग करें।</value>
+  </data>
+  <data name="VBA is running, paused or unavailable. Your draft is preserved." xml:space="preserve">
+    <value>VBA चल रहा है, रुका है या उपलब्ध नहीं है। आपका ड्राफ़्ट सुरक्षित है।</value>
+  </data>
+  <data name="The module changed again. Compare with VBA before resolving." xml:space="preserve">
+    <value>मॉड्यूल फिर बदल गया। समाधान से पहले VBA से तुलना करें।</value>
+  </data>
+  <data name="This module has hidden procedure attributes. Use the native editor to preserve them." xml:space="preserve">
+    <value>इस मॉड्यूल में छिपी प्रक्रिया विशेषताएँ हैं। उन्हें सुरक्षित रखने के लिए मूल संपादक का उपयोग करें।</value>
+  </data>
+  <data name="The VBA project is closed. Your draft is preserved." xml:space="preserve">
+    <value>VBA प्रोजेक्ट बंद है। आपका ड्राफ़्ट सुरक्षित है।</value>
+  </data>
+  <data name="The VBA module was removed. Your draft is preserved." xml:space="preserve">
+    <value>VBA मॉड्यूल हटा दिया गया। आपका ड्राफ़्ट सुरक्षित है।</value>
+  </data>
+  <data name="Open the last active native code module in a new tab." xml:space="preserve">
+    <value>पिछला सक्रिय मूल कोड मॉड्यूल नए टैब में खोलें।</value>
+  </data>
+  <data name="Write checked changes to VBA. Save the macro separately in its host." xml:space="preserve">
+    <value>जाँचे गए बदलाव VBA में लिखें। मैक्रो को होस्ट में अलग से सहेजें।</value>
+  </data>
+  <data name="Keep a recovery draft, then load the current VBA source." xml:space="preserve">
+    <value>पुनर्प्राप्ति ड्राफ़्ट रखें, फिर वर्तमान VBA स्रोत लोड करें।</value>
+  </data>
+  <data name="Show native source and the editor draft side by side." xml:space="preserve">
+    <value>मूल स्रोत और संपादक ड्राफ़्ट साथ-साथ दिखाएँ।</value>
+  </data>
+  <data name="Restore a previous draft without overwriting changed VBA code." xml:space="preserve">
+    <value>बदले हुए VBA कोड को अधिलेखित किए बिना पिछला ड्राफ़्ट बहाल करें।</value>
+  </data>
+  <data name="Return to the native editor for debugging and designers." xml:space="preserve">
+    <value>डिबगिंग और डिज़ाइनर के लिए मूल संपादक पर लौटें।</value>
+  </data>
+  <data name="Follow activated code panes in design mode while this window is open." xml:space="preserve">
+    <value>यह विंडो खुली होने पर डिज़ाइन मोड में सक्रिय कोड विंडो का अनुसरण करें।</value>
+  </data>
+  <data name="Synchronize after typing pauses; conflicts and run mode suspend writes." xml:space="preserve">
+    <value>टाइपिंग रुकने पर सिंक करें; विरोध और रन मोड लिखना रोक देते हैं।</value>
+  </data>
+  <data name="Attach the editor to the VBE or move it to another screen." xml:space="preserve">
+    <value>संपादक को VBE में डॉक करें या दूसरी स्क्रीन पर ले जाएँ।</value>
+  </data>
+  <data name="Find and replace in the current module." xml:space="preserve">
+    <value>वर्तमान मॉड्यूल में खोजें और बदलें।</value>
+  </data>
+  <data name="Return from the comparison to editing." xml:space="preserve">
+    <value>तुलना से संपादन पर लौटें।</value>
+  </data>
+  <data name="Apply your edited version after comparing; refuse if VBA changed again." xml:space="preserve">
+    <value>तुलना के बाद संपादित संस्करण लागू करें; VBA फिर बदला हो तो अस्वीकार करें।</value>
+  </data>
+  <data name="Close this tab and preserve unsynchronized changes as a recovery draft." xml:space="preserve">
+    <value>यह टैब बंद करें और असिंक बदलाव पुनर्प्राप्ति ड्राफ़्ट के रूप में रखें।</value>
+  </data>
+  <data name="Compile project" xml:space="preserve"><value>प्रोजेक्ट संकलित करें</value></data>
+  <data name="Toggle breakpoint" xml:space="preserve"><value>ब्रेकपॉइंट टॉगल करें</value></data>
+  <data name="Show next statement" xml:space="preserve"><value>अगला कथन दिखाएँ</value></data>
+  <data name="Step into" xml:space="preserve"><value>अंदर कदम रखें</value></data>
+  <data name="Step over" xml:space="preserve"><value>अगला चरण चलाएँ</value></data>
+  <data name="Step out" xml:space="preserve"><value>प्रक्रिया से बाहर आएँ</value></data>
+  <data name="Breakpoint request sent; verify in VBE." xml:space="preserve"><value>ब्रेकपॉइंट अनुरोध भेजा गया; VBE में जाँचें।</value></data>
 </root>

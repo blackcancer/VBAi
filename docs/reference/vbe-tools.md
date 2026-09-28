@@ -1,6 +1,6 @@
 # Catalogue des outils LLM
 
-Catalogue extrait le 28 septembre 2026 de la DLL reconstruite, après PR #6 et extensions classes/options : **199 outils**. Les catalogues Git et Editor sont inclus ; ce tableau décrit les outils LLM et non toutes les commandes internes du pont.
+Catalogue intégré le 28 septembre 2026 après PR #7 et extensions classes/options : **204 outils**. Les catalogues Git, Editor et Monaco sont inclus ; ce tableau décrit les outils LLM et non toutes les commandes internes du pont.
 
 ## Contrat
 
@@ -116,6 +116,11 @@ Les descriptions, les champs facultatifs, les types et les bornes font autorité
 | `list_signing_certificates` | Inspection | Aucun |
 | `list_toolbars` | Inspection | Aucun |
 | `list_type_members` | Inspection | `Project`, `Guid`, `Major`, `Minor`, `TypeIndex`, `TypeIdentity` |
+| `monaco_edit` | Action | `Project`, `Module`, `ExpectedVersion`, `Text` |
+| `monaco_navigate` | Inspection | `Project`, `Module`, `ExpectedVersion`, `StartLine`, `StartColumn`, `EndLine`, `EndColumn` |
+| `monaco_open` | Inspection | `Project`, `Module` |
+| `monaco_read` | Inspection | `Project`, `Module` |
+| `monaco_sync` | Action | `Project`, `Module`, `ExpectedVersion`, `ExpectedSha256` |
 | `native_code_history` | Action | `Project`, `Action`, `ExpectedMode`, `ExpectedProjectVersion`, `ControlCaption` |
 | `native_code_history_state` | Inspection | `Project` |
 | `native_code_navigation` | Action | `Action` |
@@ -224,3 +229,31 @@ Consulter [l’état du projet](../project.md), [les travaux restants](../roadma
 ## Extensions fonctionnelles
 
 Voir [les contrats, preuves et limites des nouvelles fonctions](../reference/functional-extensions.md). La personnalisation des barres accepte `Temporary=false` pour demander la persistance native ; celle-ci doit être relue après redémarrage.
+
+## Éditeur moderne Monaco
+
+Ces cinq outils passent uniquement par `InvokeAsync` sur le thread UI du VBE. `Project` et `Module` sont obligatoires et résolus dans le projet vivant, jamais déduits du module actif. Même les lectures Monaco respectent le projet lié à la conversation.
+
+| Outil | Catégorie | Paramètres supplémentaires obligatoires |
+| --- | --- | --- |
+| `monaco_open` | Inspection | Aucun |
+| `monaco_read` | Inspection | Aucun |
+| `monaco_navigate` | Inspection | `ExpectedVersion`, `StartLine`, `StartColumn`, `EndLine`, `EndColumn` |
+| `monaco_edit` | Action | `ExpectedVersion`, `Text` |
+| `monaco_sync` | Action | `ExpectedVersion`, `ExpectedSha256` |
+
+- `monaco_open` peut retourner `Loading=true` : relire avec `monaco_read` après le chargement. Les autres outils exigent que le module exact soit déjà ouvert.
+- `monaco_read` distingue `Draft`, `Baseline` et `Native`, avec `Version`, `NativeSha256`, `Dirty`, `Conflict`, `Writable` et `Selection`. `read_module` continue de lire uniquement le code VBA natif.
+- `ExpectedVersion` est un entier strictement positif retourné par Monaco ; ce n'est pas le SHA du module. `ExpectedSha256` de `monaco_sync` est **NativeSha256 de monaco_read**, calculé avec fins de lignes LF ; ne pas substituer le SHA de `read_module`.
+- `monaco_edit` applique le texte complet par comparaison de version dans le moteur, puis synchronise en continu vers VBA. Un changement intervenu depuis la lecture refuse l'édition. `AppliedToDraft=true` et `Synchronized=false` signalent un brouillon appliqué mais une écriture native refusée : la réponse conserve l'erreur et le brouillon.
+- Les mutations respectent le mode Agent, la politique d'édition, le projet lié, le mode VBA design, la protection et les conflits. Aucune résolution de conflit implicite. La synchronisation n'enregistre pas le document hôte.
+- Les modifications natives réussies produisent le même diff dans le chat que les anciennes commandes. Le rollback du chat capture d'abord les saisies Monaco ; il refuse les brouillons non synchronisés, puis utilise la restauration native vérifiée par révision et rafraîchit Monaco sans écraser une frappe plus récente.
+- Les mutations natives/Git sont suspendues si un brouillon est en attente ou en conflit. Les appels asynchrones capturent d'abord le moteur pour ne pas manquer une saisie récente ; les appels synchrones utilisent l'état déjà reçu et ne bloquent jamais le thread UI en attendant WebView2.
+
+### Symboles, compilation et débogage avec Monaco
+
+Les cinq commandes Monaco restent centrées sur le document et sa sélection. `monaco_read` ne constitue pas un relevé des diagnostics affichés, des points d'arrêt ni de l'index d'autocomplétion. L'index de langage de l'interface peut inclure des brouillons ; `project_symbols` et `read_module` décrivent le code natif. Le modèle doit utiliser les outils existants `compile_project`, `debug_dialog` et `debug_state` pour observer les résultats natifs, sans déduire l'état du débogueur d'un marqueur visuel. Les compilations et actions de débogage n'ont pas été dupliquées dans le catalogue Monaco.
+
+La réconciliation après une écriture garde la version capturée avant COM : une frappe reçue pendant l'écriture est préservée. Le diff est capturé immédiatement après la synchronisation native, avant les attentes de réconciliation du moteur et de persistance. Une réponse `Synchronized=true` peut donc aussi porter `Dirty=true` si une nouvelle frappe est survenue après l'écriture ; elle sera traitée par la synchronisation continue.
+
+La compilation via compile_project capture aussi le moteur Monaco et refuse les brouillons non synchronisés ou conflictuels avant tout accès au compilateur natif. Son classement en inspection ne change pas : cette garde impose seulement que la compilation porte sur le code effectivement affiché et synchronisé.

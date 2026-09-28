@@ -41,7 +41,7 @@ namespace CodexVBE
 
         /// <summary>Intègre la fenêtre de conversation comme contrôle enfant de ce conteneur.</summary>
         /// <param name="chat">Fenêtre de conversation à attacher ou détacher.</param>
-        internal void Attach(ChatWindow chat)
+        internal void Attach(Form chat)
         {
             Dock = DockStyle.Fill;
             chat.Hide(); chat.TopLevel = false; chat.FormBorderStyle = FormBorderStyle.None;
@@ -51,7 +51,7 @@ namespace CodexVBE
         }
         /// <summary>Retire la fenêtre du conteneur et la restaure comme fenêtre autonome.</summary>
         /// <param name="chat">Fenêtre de conversation à attacher ou détacher.</param>
-        internal void Detach(ChatWindow chat)
+        internal void Detach(Form chat)
         {
             siteResizeTimer.Stop();
             chat.Hide(); Controls.Remove(chat); chat.Dock = DockStyle.None;

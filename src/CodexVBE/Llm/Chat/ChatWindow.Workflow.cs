@@ -228,14 +228,14 @@ namespace CodexVBE
         /// <param name="change">Changement enregistré à restaurer.</param>
         /// <param name="hunk">Index facultatif du bloc de diff à restaurer.</param>
         /// <param name="entireTurn">Indique si les changements du même tour doivent être restaurés ensemble.</param>
-        private void RollbackIntervention(CodeChange change, int? hunk, bool entireTurn)
+        private async void RollbackIntervention(CodeChange change, int? hunk, bool entireTurn)
         {
             if (busy || tools == null) return;
             try
             {
                 EnsureCurrentScope();
                 var targets = entireTurn && !string.IsNullOrEmpty(change.TurnId) ? codeChanges.Where(x => x.TurnId == change.TurnId).ToArray() : new[] { change };
-                var result = tools.RestoreChanges(targets, hunk);
+                var result = await tools.RestoreChangesAsync(targets, hunk);
                 AddTranscriptMessage(result.Ok ? UiText.Get("Code restored") : "Erreur", result.Ok ? UiText.Get("Undo complete. Other changes in the module were preserved.") : result.Error);
                 RefreshCodeChangeCards(); SaveCurrentSession();
             }

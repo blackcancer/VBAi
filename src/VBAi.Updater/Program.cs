@@ -10,6 +10,14 @@ internal static class Program
     [STAThread]
     private static void Main(string[] args)
     {
+        if (args.Length == 1 && args[0] == "--check-webview2")
+        { try { Environment.ExitCode = WebViewRuntimePrerequisite.Installed() ? 0 : 1; } catch { Environment.ExitCode = 2; } return; }
+        if (args.Length == 1 && args[0] == "--ensure-webview2")
+        {
+            Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
+            using (var window = new UpdateProgressWindow()) { window.ConfigureWebView(); Application.Run(window); }
+            return;
+        }
         bool background = args.Length == 1 && args[0] == "--background";
         if (args.Length > 1 || (args.Length == 1 && !background)) return;
         using (var mutex = new Mutex(true, "Local\\VBAi.UpdateWorker." + WindowsIdentity.GetCurrent().User.Value, out bool owner))

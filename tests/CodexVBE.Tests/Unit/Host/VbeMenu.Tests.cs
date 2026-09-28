@@ -162,7 +162,7 @@ namespace CodexVBE.Tests.Unit
                 host = Host(); Assert.ThrowsException<ArgumentException>(() => new VbeMenu(host, () => { }, () => { }, () => { }));
                 var nativeSubscription = VbeMenu.SubscribeDefault; try { VbeMenu.SubscribeDefault = (b, i, d, h) => { }; using (var publicMenu = new VbeMenu(Host(), () => { }, () => { }, () => { })) Assert.IsNotNull(publicMenu); } finally { VbeMenu.SubscribeDefault = nativeSubscription; }
                 host = Host(); var subscriptions = new List<object>(); using (var menu = new VbeMenu(host, () => { }, () => { }, () => { }, c => { }, (b, i, d, h) => subscriptions.Add(b), (b, i, d, h) => throw new InvalidOperationException("unsubscribe failed"), (b, t) => { })) { foreach (FakeButton button in subscriptions) button.RejectDelete = true; }
-                Assert.AreEqual(6, subscriptions.Count);
+                Assert.AreEqual(7, subscriptions.Count);
             }
         }
                 /// <summary>Vérifie le nettoyage partiel des menus face aux objets COM en lecture seule ou absents.</summary>
@@ -199,17 +199,19 @@ namespace CodexVBE.Tests.Unit
             var tools = host.CommandBars[0].Controls.Items[1].Controls.Items;
             var editor = host.CommandBars[1].Controls.Items;
             Assert.AreEqual("CodexVBE.Assistant", view[0].Tag);
-            Assert.AreEqual("CodexVBE.GitHub", view[1].Tag);
+            Assert.AreEqual("CodexVBE.ModernEditor", view[1].Tag);
+            Assert.AreEqual("CodexVBE.GitHub", view[2].Tag);
             Assert.AreEqual("CodexVBE.Settings", tools[0].Tag);
             Assert.AreEqual(3, editor.Count);
             Assert.AreEqual("CodexVBE.expliquer", editor[0].Tag);
             Assert.AreEqual("CodexVBE.corriger", editor[1].Tag);
             Assert.AreEqual("CodexVBE.refactoriser", editor[2].Tag);
-            Assert.AreEqual(6, icons.Count);
+            Assert.AreEqual(7, icons.Count);
             foreach (var button in new[]
             {
                 view[0],
                 tools[0],
+                view[2],
                 view[1],
                 editor[0],
                 editor[1],
@@ -227,13 +229,14 @@ namespace CodexVBE.Tests.Unit
                 Assert.AreEqual(true, arguments[1], "The VBE default click action must be canceled.");
             }
 
-            CollectionAssert.AreEqual(new[] { "assistant", "settings", "github", "/expliquer", "/corriger", "/refactoriser" }, actions);
+            CollectionAssert.AreEqual(new[] { "assistant", "settings", "github", "/editor", "/expliquer", "/corriger", "/refactoriser" }, actions);
             menu.Dispose();
-            Assert.AreEqual(6, removed);
+            Assert.AreEqual(7, removed);
             foreach (var button in new[]
             {
                 view[0],
                 tools[0],
+                view[2],
                 view[1],
                 editor[0],
                 editor[1],
@@ -243,7 +246,7 @@ namespace CodexVBE.Tests.Unit
             )
                 Assert.AreEqual(1, button.DeleteCount);
             menu.Dispose();
-            Assert.AreEqual(6, removed, "Disposal must be idempotent.");
+            Assert.AreEqual(7, removed, "Disposal must be idempotent.");
         }
 
         /// <summary>Supprime les boutons déjà créés lorsque la création du bouton Git échoue.</summary>
@@ -291,7 +294,7 @@ namespace CodexVBE.Tests.Unit
             }, (button, iconType) =>
             {
             }))
-                Assert.AreEqual(3, subscribed);
+                Assert.AreEqual(4, subscribed);
         }
 
         /// <summary>Nettoie le bouton éditeur partiel sans retirer les commandes principales après échec d’abonnement.</summary>
@@ -312,18 +315,18 @@ namespace CodexVBE.Tests.Unit
             }, (button, iid, dispid, handler) =>
             {
                 subscriptions++;
-                if (subscriptions == 4)
+                if (subscriptions == 5)
                     throw new InvalidOperationException("Editor event unavailable");
             }, (button, iid, dispid, handler) => removals++, (button, iconType) =>
             {
             }))
             {
-                Assert.AreEqual(4, subscriptions);
+                Assert.AreEqual(5, subscriptions);
                 Assert.AreEqual(1, host.CommandBars[1].Controls.Items.Count);
                 Assert.AreEqual(0, host.CommandBars[0].Controls.Items[0].Controls.Items[0].DeleteCount);
             }
 
-            Assert.AreEqual(4, removals);
+            Assert.AreEqual(5, removals);
             Assert.AreEqual(1, host.CommandBars[1].Controls.Items[0].DeleteCount);
         }
     }

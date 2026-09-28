@@ -1858,4 +1858,122 @@
   <data name="Update installed. Restart Windows to finish." xml:space="preserve"><value>Обновление установлено. Перезапустите Windows для завершения.</value></data>
   <data name="Download" xml:space="preserve"><value>Загрузить</value></data>
   <data name="Release notes" xml:space="preserve"><value>Примечания к выпуску</value></data>
+  <data name="VBAi editor" xml:space="preserve">
+    <value>Редактор VBAi</value>
+  </data>
+  <data name="Open active module" xml:space="preserve">
+    <value>Открыть активный модуль</value>
+  </data>
+  <data name="Synchronize with VBA" xml:space="preserve">
+    <value>Синхронизировать с VBA</value>
+  </data>
+  <data name="Compare with VBA" xml:space="preserve">
+    <value>Сравнить с VBA</value>
+  </data>
+  <data name="Reload VBA version" xml:space="preserve">
+    <value>Загрузить версию VBA</value>
+  </data>
+  <data name="Restore draft" xml:space="preserve">
+    <value>Восстановить черновик</value>
+  </data>
+  <data name="Use edited version" xml:space="preserve">
+    <value>Применить изменённую версию</value>
+  </data>
+  <data name="Close module" xml:space="preserve">
+    <value>Закрыть модуль</value>
+  </data>
+  <data name="Native editor" xml:space="preserve">
+    <value>Встроенный редактор</value>
+  </data>
+  <data name="Dock / detach" xml:space="preserve">
+    <value>Закрепить / открепить</value>
+  </data>
+  <data name="Automatic synchronization" xml:space="preserve">
+    <value>Автоматическая синхронизация</value>
+  </data>
+  <data name="Follow native code windows" xml:space="preserve">
+    <value>Следовать за окнами встроенного редактора</value>
+  </data>
+  <data name="Open a VBA module to start editing." xml:space="preserve">
+    <value>Откройте модуль VBA для редактирования.</value>
+  </data>
+  <data name="Changes pending synchronization with VBA." xml:space="preserve">
+    <value>Изменения ожидают синхронизации с VBA.</value>
+  </data>
+  <data name="Synchronized with VBA. Save the macro in its host application." xml:space="preserve">
+    <value>Синхронизировано с VBA. Сохраните макрос в приложении.</value>
+  </data>
+  <data name="The module changed in VBA. Resolve the conflict first." xml:space="preserve">
+    <value>Модуль изменён в VBA. Сначала разрешите конфликт.</value>
+  </data>
+  <data name="Loading editor…" xml:space="preserve">
+    <value>Загрузка редактора…</value>
+  </data>
+  <data name="The editor stopped. Drafts are preserved; reopen the editor." xml:space="preserve">
+    <value>Редактор остановлен. Черновики сохранены; откройте его снова.</value>
+  </data>
+  <data name="Editor unavailable. Install WebView2 Runtime or use the native editor." xml:space="preserve">
+    <value>Редактор недоступен. Установите WebView2 Runtime или используйте встроенный редактор.</value>
+  </data>
+  <data name="VBA is running, paused or unavailable. Your draft is preserved." xml:space="preserve">
+    <value>VBA выполняется, приостановлен или недоступен. Черновик сохранён.</value>
+  </data>
+  <data name="The module changed again. Compare with VBA before resolving." xml:space="preserve">
+    <value>Модуль снова изменён. Перед разрешением сравните его с VBA.</value>
+  </data>
+  <data name="This module has hidden procedure attributes. Use the native editor to preserve them." xml:space="preserve">
+    <value>В модуле есть скрытые атрибуты процедур. Используйте встроенный редактор для их сохранения.</value>
+  </data>
+  <data name="The VBA project is closed. Your draft is preserved." xml:space="preserve">
+    <value>Проект VBA закрыт. Черновик сохранён.</value>
+  </data>
+  <data name="The VBA module was removed. Your draft is preserved." xml:space="preserve">
+    <value>Модуль VBA удалён. Черновик сохранён.</value>
+  </data>
+  <data name="Open the last active native code module in a new tab." xml:space="preserve">
+    <value>Открыть последний активный модуль встроенного редактора в новой вкладке.</value>
+  </data>
+  <data name="Write checked changes to VBA. Save the macro separately in its host." xml:space="preserve">
+    <value>Применить проверенные изменения к VBA. Отдельно сохраните макрос в приложении.</value>
+  </data>
+  <data name="Keep a recovery draft, then load the current VBA source." xml:space="preserve">
+    <value>Сохранить резервный черновик и загрузить текущий код VBA.</value>
+  </data>
+  <data name="Show native source and the editor draft side by side." xml:space="preserve">
+    <value>Показать исходный код и черновик редактора рядом.</value>
+  </data>
+  <data name="Restore a previous draft without overwriting changed VBA code." xml:space="preserve">
+    <value>Восстановить предыдущий черновик, не перезаписывая изменённый код VBA.</value>
+  </data>
+  <data name="Return to the native editor for debugging and designers." xml:space="preserve">
+    <value>Вернуться во встроенный редактор для отладки и конструкторов.</value>
+  </data>
+  <data name="Follow activated code panes in design mode while this window is open." xml:space="preserve">
+    <value>Следовать за активными окнами кода в режиме разработки, пока это окно открыто.</value>
+  </data>
+  <data name="Synchronize after typing pauses; conflicts and run mode suspend writes." xml:space="preserve">
+    <value>Синхронизировать после паузы ввода; конфликты и режим выполнения приостанавливают запись.</value>
+  </data>
+  <data name="Attach the editor to the VBE or move it to another screen." xml:space="preserve">
+    <value>Закрепить редактор в VBE или перенести на другой экран.</value>
+  </data>
+  <data name="Find and replace in the current module." xml:space="preserve">
+    <value>Найти и заменить в текущем модуле.</value>
+  </data>
+  <data name="Return from the comparison to editing." xml:space="preserve">
+    <value>Вернуться из сравнения к редактированию.</value>
+  </data>
+  <data name="Apply your edited version after comparing; refuse if VBA changed again." xml:space="preserve">
+    <value>Применить отредактированную версию после сравнения; отказать, если VBA снова изменён.</value>
+  </data>
+  <data name="Close this tab and preserve unsynchronized changes as a recovery draft." xml:space="preserve">
+    <value>Закрыть вкладку и сохранить несинхронизированные изменения в резервном черновике.</value>
+  </data>
+  <data name="Compile project" xml:space="preserve"><value>Компилировать проект</value></data>
+  <data name="Toggle breakpoint" xml:space="preserve"><value>Переключить точку останова</value></data>
+  <data name="Show next statement" xml:space="preserve"><value>Показать следующую инструкцию</value></data>
+  <data name="Step into" xml:space="preserve"><value>Шаг с заходом</value></data>
+  <data name="Step over" xml:space="preserve"><value>Шаг с обходом</value></data>
+  <data name="Step out" xml:space="preserve"><value>Шаг с выходом</value></data>
+  <data name="Breakpoint request sent; verify in VBE." xml:space="preserve"><value>Запрос точки останова отправлен; проверьте в VBE.</value></data>
 </root>

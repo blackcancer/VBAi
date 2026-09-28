@@ -1860,4 +1860,122 @@ Sign in through Git Credential Manager; commit identity is configured in Git.</v
   <data name="Update installed. Restart Windows to finish." xml:space="preserve"><value>Update installed. Restart Windows to finish.</value></data>
   <data name="Download" xml:space="preserve"><value>Download</value></data>
   <data name="Release notes" xml:space="preserve"><value>Release notes</value></data>
+  <data name="VBAi editor" xml:space="preserve">
+    <value>VBAi editor</value>
+  </data>
+  <data name="Open active module" xml:space="preserve">
+    <value>Open active module</value>
+  </data>
+  <data name="Synchronize with VBA" xml:space="preserve">
+    <value>Synchronize with VBA</value>
+  </data>
+  <data name="Compare with VBA" xml:space="preserve">
+    <value>Compare with VBA</value>
+  </data>
+  <data name="Reload VBA version" xml:space="preserve">
+    <value>Reload VBA version</value>
+  </data>
+  <data name="Restore draft" xml:space="preserve">
+    <value>Restore draft</value>
+  </data>
+  <data name="Use edited version" xml:space="preserve">
+    <value>Use edited version</value>
+  </data>
+  <data name="Close module" xml:space="preserve">
+    <value>Close module</value>
+  </data>
+  <data name="Native editor" xml:space="preserve">
+    <value>Native editor</value>
+  </data>
+  <data name="Dock / detach" xml:space="preserve">
+    <value>Dock / detach</value>
+  </data>
+  <data name="Automatic synchronization" xml:space="preserve">
+    <value>Automatic synchronization</value>
+  </data>
+  <data name="Follow native code windows" xml:space="preserve">
+    <value>Follow native code windows</value>
+  </data>
+  <data name="Open a VBA module to start editing." xml:space="preserve">
+    <value>Open a VBA module to start editing.</value>
+  </data>
+  <data name="Changes pending synchronization with VBA." xml:space="preserve">
+    <value>Changes pending synchronization with VBA.</value>
+  </data>
+  <data name="Synchronized with VBA. Save the macro in its host application." xml:space="preserve">
+    <value>Synchronized with VBA. Save the macro in its host application.</value>
+  </data>
+  <data name="The module changed in VBA. Resolve the conflict first." xml:space="preserve">
+    <value>The module changed in VBA. Resolve the conflict first.</value>
+  </data>
+  <data name="Loading editor…" xml:space="preserve">
+    <value>Loading editor…</value>
+  </data>
+  <data name="The editor stopped. Drafts are preserved; reopen the editor." xml:space="preserve">
+    <value>The editor stopped. Drafts are preserved; reopen the editor.</value>
+  </data>
+  <data name="Editor unavailable. Install WebView2 Runtime or use the native editor." xml:space="preserve">
+    <value>Editor unavailable. Install WebView2 Runtime or use the native editor.</value>
+  </data>
+  <data name="VBA is running, paused or unavailable. Your draft is preserved." xml:space="preserve">
+    <value>VBA is running, paused or unavailable. Your draft is preserved.</value>
+  </data>
+  <data name="The module changed again. Compare with VBA before resolving." xml:space="preserve">
+    <value>The module changed again. Compare with VBA before resolving.</value>
+  </data>
+  <data name="This module has hidden procedure attributes. Use the native editor to preserve them." xml:space="preserve">
+    <value>This module has hidden procedure attributes. Use the native editor to preserve them.</value>
+  </data>
+  <data name="The VBA project is closed. Your draft is preserved." xml:space="preserve">
+    <value>The VBA project is closed. Your draft is preserved.</value>
+  </data>
+  <data name="The VBA module was removed. Your draft is preserved." xml:space="preserve">
+    <value>The VBA module was removed. Your draft is preserved.</value>
+  </data>
+  <data name="Open the last active native code module in a new tab." xml:space="preserve">
+    <value>Open the last active native code module in a new tab.</value>
+  </data>
+  <data name="Write checked changes to VBA. Save the macro separately in its host." xml:space="preserve">
+    <value>Write checked changes to VBA. Save the macro separately in its host.</value>
+  </data>
+  <data name="Keep a recovery draft, then load the current VBA source." xml:space="preserve">
+    <value>Keep a recovery draft, then load the current VBA source.</value>
+  </data>
+  <data name="Show native source and the editor draft side by side." xml:space="preserve">
+    <value>Show native source and the editor draft side by side.</value>
+  </data>
+  <data name="Restore a previous draft without overwriting changed VBA code." xml:space="preserve">
+    <value>Restore a previous draft without overwriting changed VBA code.</value>
+  </data>
+  <data name="Return to the native editor for debugging and designers." xml:space="preserve">
+    <value>Return to the native editor for debugging and designers.</value>
+  </data>
+  <data name="Follow activated code panes in design mode while this window is open." xml:space="preserve">
+    <value>Follow activated code panes in design mode while this window is open.</value>
+  </data>
+  <data name="Synchronize after typing pauses; conflicts and run mode suspend writes." xml:space="preserve">
+    <value>Synchronize after typing pauses; conflicts and run mode suspend writes.</value>
+  </data>
+  <data name="Attach the editor to the VBE or move it to another screen." xml:space="preserve">
+    <value>Attach the editor to the VBE or move it to another screen.</value>
+  </data>
+  <data name="Find and replace in the current module." xml:space="preserve">
+    <value>Find and replace in the current module.</value>
+  </data>
+  <data name="Return from the comparison to editing." xml:space="preserve">
+    <value>Return from the comparison to editing.</value>
+  </data>
+  <data name="Apply your edited version after comparing; refuse if VBA changed again." xml:space="preserve">
+    <value>Apply your edited version after comparing; refuse if VBA changed again.</value>
+  </data>
+  <data name="Close this tab and preserve unsynchronized changes as a recovery draft." xml:space="preserve">
+    <value>Close this tab and preserve unsynchronized changes as a recovery draft.</value>
+  </data>
+  <data name="Compile project" xml:space="preserve"><value>Compile project</value></data>
+  <data name="Toggle breakpoint" xml:space="preserve"><value>Toggle breakpoint</value></data>
+  <data name="Show next statement" xml:space="preserve"><value>Show next statement</value></data>
+  <data name="Step into" xml:space="preserve"><value>Step into</value></data>
+  <data name="Step over" xml:space="preserve"><value>Step over</value></data>
+  <data name="Step out" xml:space="preserve"><value>Step out</value></data>
+  <data name="Breakpoint request sent; verify in VBE." xml:space="preserve"><value>Breakpoint request sent; verify in VBE.</value></data>
 </root>

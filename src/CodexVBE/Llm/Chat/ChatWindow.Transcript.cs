@@ -299,11 +299,11 @@ namespace CodexVBE
             var actions = new WrapPanel();
             var restore = ChatButton(change.Restored ? UiText.Get("Change undone") : UiText.Get("Undo change"));
             restore.ToolTip = UiText.Get("Restore the code before this change after checking for conflicts.");
-            restore.Click += (s, e) => {
+            restore.Click += async (s, e) => {
                 if (busy || tools == null) return;
                 try { EnsureCurrentScope(); }
                 catch (Exception ex) { SetStatus(ex.Message); return; }
-                var result = tools.RestoreCodeChange(change);
+                var result = await tools.RestoreChangesAsync(new[] { change }, null);
                 if (!result.Ok) AddTranscriptMessage("Erreur", UiText.Get("Unable to undo: ") + result.Error);
                 RefreshCodeChangeCards(); SaveCurrentSession();
             };
