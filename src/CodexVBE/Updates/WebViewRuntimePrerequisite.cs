@@ -10,6 +10,15 @@ namespace CodexVBE
 {
     internal sealed class WebViewRuntimePrerequisite
     {
+        internal static Func<RegistryHive, RegistryView, IDisposable> OpenRegistryRoot = (hive, view) => RegistryKey.OpenBaseKey(hive, view);
+        internal static Func<IDisposable, string, IDisposable> OpenRuntimeKey = (root, path) => ((RegistryKey)root).OpenSubKey(path);
+        internal static Func<IDisposable, object> ReadRuntimeVersion = key => ((RegistryKey)key).GetValue("pv");
+        internal static Func<HttpClient> CreateClient = NewClient;
+        private static HttpClient NewClient() => new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
+        internal static Func<string, bool> VerifyTrust = UpdateInstallerRunner.VerifySignatureNative;
+        internal static Func<string, X509Certificate2> LoadCertificate = NativeCertificate;
+        private static X509Certificate2 NativeCertificate(string path) => new X509Certificate2(X509Certificate.CreateFromSignedFile(path));
+        internal static Func<ProcessStartInfo, Process> StartProcess = Process.Start;
         internal const string Bootstrapper = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
         internal Func<bool> IsInstalled = Installed;
         internal Func<string, Task> Download = DownloadNative;
@@ -20,9 +29,9 @@ namespace CodexVBE
         {
             foreach (var hive in new[] { RegistryHive.CurrentUser, RegistryHive.LocalMachine })
             foreach (var view in new[] { RegistryView.Registry32, RegistryView.Registry64 })
-                using (var root = RegistryKey.OpenBaseKey(hive, view))
-                using (var key = root.OpenSubKey(@"Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"))
-                    if (ValidVersion(key?.GetValue("pv") as string)) return true;
+                using (var root = OpenRegistryRoot(hive, view))
+                using (var key = OpenRuntimeKey(root, @"Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"))
+                    if (ValidVersion(key == null ? null : ReadRuntimeVersion(key) as string)) return true;
             return false;
         }
         internal async Task Ensure(string folder)
@@ -42,7 +51,7 @@ namespace CodexVBE
         }
         private static async Task DownloadNative(string path)
         {
-            using (var client = new HttpClient { Timeout = TimeSpan.FromMinutes(2) })
+            using (var client = CreateClient())
             using (var response = await client.GetAsync(Bootstrapper, HttpCompletionOption.ResponseHeadersRead))
             {
                 response.EnsureSuccessStatusCode();
@@ -58,13 +67,13 @@ namespace CodexVBE
         }
         private static bool VerifyMicrosoft(string path)
         {
-            if (!UpdateInstallerRunner.VerifySignatureNative(path)) return false;
-            using (var certificate = new X509Certificate2(X509Certificate.CreateFromSignedFile(path)))
+            if (!VerifyTrust(path)) return false;
+            using (var certificate = LoadCertificate(path))
                 return certificate.GetNameInfo(X509NameType.SimpleName, false) == "Microsoft Corporation";
         }
         private static int InstallNative(string path)
         {
-            using (var process = Process.Start(new ProcessStartInfo(path, "/silent /install") { UseShellExecute = false, CreateNoWindow = true }))
+            using (var process = StartProcess(new ProcessStartInfo(path, "/silent /install") { UseShellExecute = false, CreateNoWindow = true }))
             { if (process == null) throw new InvalidOperationException("WebView2 installer did not start."); process.WaitForExit(); return process.ExitCode; }
         }
     }
