@@ -24,16 +24,16 @@ namespace CodexVBE
         internal int PaintCount { get; private set; }
         internal int PrintCount { get; private set; }
 
-        [StructLayout(LayoutKind.Sequential)] private struct Rect { internal int Left, Top, Right, Bottom; }
-        [StructLayout(LayoutKind.Sequential)] private struct Point { internal int X, Y; }
-        [StructLayout(LayoutKind.Sequential)] private struct TabItem
+        [StructLayout(LayoutKind.Sequential)] internal struct Rect { internal int Left, Top, Right, Bottom; }
+        [StructLayout(LayoutKind.Sequential)] internal struct Point { internal int X, Y; }
+        [StructLayout(LayoutKind.Sequential)] internal struct TabItem
         {
             internal uint Mask, State, StateMask;
             internal IntPtr Text;
             internal int TextCapacity, Image;
             internal IntPtr Data;
         }
-        [StructLayout(LayoutKind.Sequential)] private struct PaintState
+        [StructLayout(LayoutKind.Sequential)] internal struct PaintState
         {
             internal IntPtr Dc;
             internal int Erase;
@@ -41,7 +41,7 @@ namespace CodexVBE
             internal int Restore, IncrementalUpdate;
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 32)] internal byte[] Reserved;
         }
-        [StructLayout(LayoutKind.Sequential)] private struct TrackMouse
+        [StructLayout(LayoutKind.Sequential)] internal struct TrackMouse
         {
             internal uint Size, Flags;
             internal IntPtr Window;
@@ -96,28 +96,53 @@ namespace CodexVBE
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int DrawText(IntPtr dc, string text, int length, ref Rect bounds, uint flags);
         [DllImport("user32.dll")] private static extern bool DrawFocusRect(IntPtr dc, ref Rect bounds);
 
+        internal delegate uint WindowThreadReader(IntPtr window, out uint process);
+        internal delegate bool RectReader(IntPtr window, out Rect rectangle);
+        internal delegate bool ScreenPointReader(IntPtr window, ref Point point);
+        internal delegate IntPtr ItemReader(IntPtr window, uint message, IntPtr index, ref TabItem item);
+        internal delegate IntPtr ItemRectReader(IntPtr window, uint message, IntPtr index, out Rect rectangle);
+        internal delegate IntPtr PaintBeginner(IntPtr window, out PaintState state);
+        internal delegate bool PaintEnder(IntPtr window, ref PaintState state);
+        internal delegate bool MouseTracker(ref TrackMouse state);
+        internal static Func<IntPtr, StringBuilder, int, int> ClassName = GetClassName;
+        internal static Func<IntPtr, int, int> Style = GetStyle;
+        internal static WindowThreadReader WindowThread = GetWindowThreadProcessId;
+        internal static Func<uint> CurrentThread = GetCurrentThreadId;
+        internal static Func<IntPtr, bool> ValidWindow = IsWindow, VisibleWindow = IsWindowVisible, EnabledWindow = IsWindowEnabled;
+        internal static Func<IntPtr> Focus = GetFocus;
+        internal static RectReader ClientBounds = GetClientRect, WindowBounds = GetWindowRect;
+        internal static ScreenPointReader ScreenPoint = ClientToScreen;
+        internal static Func<IntPtr, uint, IntPtr> RelatedWindow = GetWindow;
+        internal static Func<IntPtr, uint, IntPtr, IntPtr, IntPtr> SendMessage = Send;
+        internal static ItemReader ReadItem = SendItem;
+        internal static ItemRectReader ReadItemRect = SendRect;
+        internal static PaintBeginner StartPaint = BeginPaint;
+        internal static PaintEnder FinishPaint = EndPaint;
+        internal static Func<IntPtr, IntPtr, bool, bool> Invalidate = InvalidateRect;
+        internal static Func<IntPtr, bool> Update = UpdateWindow;
+        internal static MouseTracker Track = TrackMouseEvent;
         private VbeNativePropertyTabs(IntPtr window)
         {
             this.window = window;
-            ownerThread = GetWindowThreadProcessId(window, out _);
+            ownerThread = WindowThread(window, out _);
         }
 
         /// <summary>Accepts only two text-only horizontal native tabs on their owning thread.</summary>
         internal static bool CanRender(IntPtr window)
         {
-            if (window == IntPtr.Zero || !IsWindow(window) || GetWindowThreadProcessId(window, out _) != GetCurrentThreadId()) return false;
+            if (window == IntPtr.Zero || !ValidWindow(window) || WindowThread(window, out _) != CurrentThread()) return false;
             var name = new StringBuilder(64);
-            GetClassName(window, name, name.Capacity);
+            ClassName(window, name, name.Capacity);
             if (name.ToString() != "SysTabControl32") return false;
-            int style = GetStyle(window, -16);
+            int style = Style(window, -16);
             // Window borders and RTL would require a distinct WM_PRINT coordinate contract.
-            if ((style & (UnsupportedStyles | 0x00c00000)) != 0 || (GetStyle(window, -20) & UnsupportedExtendedStyles) != 0) return false;
-            if (Send(window, 0x1304, IntPtr.Zero, IntPtr.Zero).ToInt32() != 2 ||
-                Send(window, 0x1302, IntPtr.Zero, IntPtr.Zero) != IntPtr.Zero ||
-                Send(window, 0x132c, IntPtr.Zero, IntPtr.Zero).ToInt32() > 1 || GetWindow(window, 5) != IntPtr.Zero) return false;
+            if ((style & (UnsupportedStyles | 0x00c00000)) != 0 || (Style(window, -20) & UnsupportedExtendedStyles) != 0) return false;
+            if (SendMessage(window, 0x1304, IntPtr.Zero, IntPtr.Zero).ToInt32() != 2 ||
+                SendMessage(window, 0x1302, IntPtr.Zero, IntPtr.Zero) != IntPtr.Zero ||
+                SendMessage(window, 0x132c, IntPtr.Zero, IntPtr.Zero).ToInt32() > 1 || RelatedWindow(window, 5) != IntPtr.Zero) return false;
             Rect client, bounds;
             var origin = new Point();
-            return GetClientRect(window, out client) && GetWindowRect(window, out bounds) && ClientToScreen(window, ref origin) &&
+            return ClientBounds(window, out client) && WindowBounds(window, out bounds) && ScreenPoint(window, ref origin) &&
                 client.Right > 0 && client.Bottom > 0 && client.Right <= 16384 && client.Bottom <= 16384 &&
                 origin.X == bounds.Left && origin.Y == bounds.Top && client.Right == bounds.Right - bounds.Left && client.Bottom == bounds.Bottom - bounds.Top;
         }
@@ -133,7 +158,7 @@ namespace CodexVBE
         internal bool TryHandleMessage(uint message, IntPtr wParam, IntPtr lParam, out IntPtr result)
         {
             result = IntPtr.Zero;
-            if (disposed || ownerThread != GetCurrentThreadId() ||
+            if (disposed || ownerThread != CurrentThread() ||
                 (message != Paint && message != Erase && message != Print && message != PrintClient)) return false;
             Snapshot state;
             if (!TryRead(out state)) return false;
@@ -147,16 +172,16 @@ namespace CodexVBE
             {
                 PaintCount++;
                 PaintState paint;
-                IntPtr dc = BeginPaint(window, out paint);
+                IntPtr dc = StartPaint(window, out paint);
                 try { if (dc != IntPtr.Zero) Draw(dc, state); }
-                finally { EndPaint(window, ref paint); }
+                finally { FinishPaint(window, ref paint); }
                 return true;
             }
             if (wParam == IntPtr.Zero) return false;
             // Accepted controls have no non-client region or children. A non-client-only
             // request must leave the caller's DC untouched. Preserve its viewport and clip.
             long flags = lParam.ToInt64();
-            if ((flags & 1) != 0 && !IsWindowVisible(window)) return true;
+            if ((flags & 1) != 0 && !VisibleWindow(window)) return true;
             if (message == Print && (flags & (4 | 8)) == 0) return true;
             PrintCount++;
             if (message == Print && (flags & 4) == 0) DrawBackground(wParam, state.Client);
@@ -167,16 +192,16 @@ namespace CodexVBE
         /// <summary>Repaints only this control after native state transitions or pointer changes.</summary>
         internal void AfterNativeMessage(uint message, IntPtr wParam, IntPtr lParam)
         {
-            if (disposed || ownerThread != GetCurrentThreadId()) return;
+            if (disposed || ownerThread != CurrentThread()) return;
             bool changed = false;
-            if (message == 0x0200 && (GetStyle(window, -16) & 0x0040) != 0)
+            if (message == 0x0200 && (Style(window, -16) & 0x0040) != 0)
             {
                 int x = unchecked((short)lParam.ToInt64()), y = unchecked((short)(lParam.ToInt64() >> 16));
                 int next = -1;
                 for (int index = 0; index < 2; index++)
                 {
                     Rect item;
-                    if (SendRect(window, 0x130a, new IntPtr(index), out item) != IntPtr.Zero &&
+                    if (ReadItemRect(window, 0x130a, new IntPtr(index), out item) != IntPtr.Zero &&
                         x >= item.Left && x < item.Right && y >= item.Top && y < item.Bottom) { next = index; break; }
                 }
                 changed = hotItem != next;
@@ -184,7 +209,7 @@ namespace CodexVBE
                 if (!trackingMouse)
                 {
                     var track = new TrackMouse { Size = (uint)Marshal.SizeOf(typeof(TrackMouse)), Flags = 2, Window = window };
-                    trackingMouse = TrackMouseEvent(ref track);
+                    trackingMouse = Track(ref track);
                 }
             }
             else if (message == 0x02a3)
@@ -200,10 +225,10 @@ namespace CodexVBE
                 message == 0x1306 || message == 0x1307 || message == 0x133e || message == 0x1308 || message == 0x1309;
             if (changed && CanRender(window))
             {
-                InvalidateRect(window, IntPtr.Zero, false);
+                Invalidate(window, IntPtr.Zero, false);
                 // Some native state messages draw synchronously. Complete our paint before
                 // returning rather than posting a later screenshot recoloring pass.
-                UpdateWindow(window);
+                Update(window);
             }
         }
 
@@ -212,7 +237,7 @@ namespace CodexVBE
             state = null;
             if (!CanRender(window)) return false;
             var snapshot = new Snapshot { Items = new Item[2] };
-            GetClientRect(window, out snapshot.Client);
+            ClientBounds(window, out snapshot.Client);
             IntPtr storage = Marshal.AllocHGlobal(1024 * sizeof(char));
             try
             {
@@ -221,8 +246,8 @@ namespace CodexVBE
                     var item = new TabItem { Mask = 1 | 16, StateMask = 2, Text = storage, TextCapacity = 1024 };
                     Marshal.WriteInt16(storage, 0);
                     Rect bounds;
-                    if (SendItem(window, 0x133c, new IntPtr(index), ref item) == IntPtr.Zero ||
-                        SendRect(window, 0x130a, new IntPtr(index), out bounds) == IntPtr.Zero ||
+                    if (ReadItem(window, 0x133c, new IntPtr(index), ref item) == IntPtr.Zero ||
+                        ReadItemRect(window, 0x130a, new IntPtr(index), out bounds) == IntPtr.Zero ||
                         bounds.Right <= bounds.Left || bounds.Bottom <= bounds.Top) return false;
                     // TCM_GETITEM may return a different text pointer. Copy it while the
                     // control is on its owning thread; never free the returned pointer.
@@ -232,12 +257,12 @@ namespace CodexVBE
                 }
             }
             finally { Marshal.FreeHGlobal(storage); }
-            snapshot.Selected = Send(window, 0x130b, IntPtr.Zero, IntPtr.Zero).ToInt32();
-            snapshot.Focused = Send(window, 0x132f, IntPtr.Zero, IntPtr.Zero).ToInt32();
-            snapshot.Font = Send(window, 0x0031, IntPtr.Zero, IntPtr.Zero);
+            snapshot.Selected = SendMessage(window, 0x130b, IntPtr.Zero, IntPtr.Zero).ToInt32();
+            snapshot.Focused = SendMessage(window, 0x132f, IntPtr.Zero, IntPtr.Zero).ToInt32();
+            snapshot.Font = SendMessage(window, 0x0031, IntPtr.Zero, IntPtr.Zero);
             if (snapshot.Font == IntPtr.Zero) snapshot.Font = GetStockObject(17);
-            snapshot.Enabled = IsWindowEnabled(window);
-            snapshot.ShowFocus = GetFocus() == window && (Send(window, 0x0129, IntPtr.Zero, IntPtr.Zero).ToInt64() & 1) == 0;
+            snapshot.Enabled = EnabledWindow(window);
+            snapshot.ShowFocus = Focus() == window && (SendMessage(window, 0x0129, IntPtr.Zero, IntPtr.Zero).ToInt64() & 1) == 0;
             state = snapshot;
             return true;
         }
@@ -259,7 +284,7 @@ namespace CodexVBE
                 {
                     Item item = state.Items[index];
                     bool selected = index == state.Selected;
-                    bool hot = state.Enabled && index == hotItem && (GetStyle(window, -16) & 0x0040) != 0;
+                    bool hot = state.Enabled && index == hotItem && (Style(window, -16) & 0x0040) != 0;
                     uint face = selected ? Color(40, 45, 53) : hot ? Color(52, 68, 82) : Color(32, 36, 43);
                     Fill(dc, item.Bounds, face);
                     Frame(dc, item.Bounds, Color(62, 70, 81));
@@ -309,10 +334,10 @@ namespace CodexVBE
         {
             if (disposed) return;
             disposed = true;
-            if (trackingMouse && ownerThread == GetCurrentThreadId() && IsWindow(window))
+            if (trackingMouse && ownerThread == CurrentThread() && ValidWindow(window))
             {
                 var track = new TrackMouse { Size = (uint)Marshal.SizeOf(typeof(TrackMouse)), Flags = 0x80000002, Window = window };
-                TrackMouseEvent(ref track);
+                Track(ref track);
             }
         }
     }
