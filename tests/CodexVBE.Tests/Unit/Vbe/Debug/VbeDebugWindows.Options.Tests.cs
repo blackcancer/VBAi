@@ -9,6 +9,264 @@ namespace CodexVBE.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class WritableOptionsTests
     {
+        /// <summary>La frontière injectée envoie une seule notification de changement au parent exact; aucune preuve native n'est simulée.</summary>
+        [TestMethod]
+        public void FormatCategorySelectionNotifiesItsQualifiedParentExactlyOnceAndPropagatesFailures()
+        {
+            var list = new IntPtr(71); var parent = new IntPtr(19); int calls = 0;
+            VbeDebugWindows.NotifyOptionsListSelection(list, 4905, parent, (window, message, argument, value) =>
+            {
+                calls++; Assert.AreEqual(parent, window); Assert.AreEqual(0x111, message);
+                Assert.AreEqual(4905L, argument.ToInt64() & 0xffff); Assert.AreEqual(1L, argument.ToInt64() >> 16);
+                Assert.AreEqual(list, value);
+            });
+            Assert.AreEqual(1, calls);
+            Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.NotifyOptionsListSelection(list, 4905, parent,
+                (window, message, argument, value) => { calls++; throw new InvalidOperationException("notification failed"); }));
+            Assert.AreEqual(2, calls, "A failed notification is never resent automatically.");
+            foreach (int scenario in Enumerable.Range(0, 6))
+            {
+                var child = scenario == 0 ? IntPtr.Zero : list;
+                var owner = scenario == 1 ? IntPtr.Zero : scenario == 2 ? list : parent;
+                int id = scenario == 3 ? -1 : scenario == 4 ? 65536 : 4905;
+                Action<IntPtr, int, IntPtr, IntPtr> dispatch = scenario == 5 ? null : (Action<IntPtr, int, IntPtr, IntPtr>)((window, message, argument, value) => calls++);
+                Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.NotifyOptionsListSelection(child, id, owner, dispatch));
+            }
+            Assert.AreEqual(2, calls);
+        }
+
+        /// <summary>L'inspection de dix catégories appelle uniquement la lecture palette une fois chacune puis restaure la sélection.</summary>
+        [TestMethod]
+        public void FormatCategoryInspectionReadsOnlyEachPaletteSetAndRestoresOriginalSelection()
+        {
+            var labels = Enumerable.Range(0, 10).Select(i => "Category " + i).ToArray();
+            var list = new VbeDebugWindows.OptionsControl { Choices = labels, Value = labels[4] };
+            var selected = new List<string>(); int reads = 0;
+            var categories = VbeDebugWindows.CaptureOptionsFormatCategories(list, name => selected.Add(name), () =>
+            {
+                reads++; return new[] { "Foreground", "Background", "Indicator" }.Select(name =>
+                    new VbeDebugWindows.OptionsControl { Name = name, Type = "ControlType.ComboBox", Value = "NativeIndex:1", Enabled = name != "Indicator" }).ToArray();
+            });
+            Assert.AreEqual(10, reads); Assert.AreEqual(10, categories.Count);
+            CollectionAssert.AreEqual(labels.Concat(new[] { labels[4] }).ToArray(), selected.ToArray());
+            Assert.IsFalse(categories[0].Palettes[2].Enabled);
+            Assert.AreEqual("NativeIndex:1", categories[9].Palettes[0].Value);
+        }
+
+        /// <summary>Les échecs de sélection ou lecture et tous les contrôles invalides restaurent l'état avant propagation.</summary>
+        [TestMethod]
+        public void FormatCategoryInspectionRestoresOnEverySelectionAndPaletteFailure()
+        {
+            foreach (int scenario in Enumerable.Range(0, 10))
+            {
+                var list = new VbeDebugWindows.OptionsControl { Choices = new[] { "Original", "Other" }, Value = "Original" };
+                var selected = new List<string>();
+                var palettes = new[] { "Foreground", "Background", "Indicator" }.Select(name =>
+                    new VbeDebugWindows.OptionsControl { Name = name, Type = "ControlType.ComboBox", Value = "Automatic" }).ToArray();
+                Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.CaptureOptionsFormatCategories(list, name =>
+                {
+                    selected.Add(name); if (scenario == 0 && name == "Other") throw new InvalidOperationException("selection failed");
+                }, () =>
+                {
+                    if (scenario == 1) throw new InvalidOperationException("palette failed");
+                    if (scenario == 2) return null;
+                    if (scenario == 3) return palettes.Take(2).ToArray();
+                    if (scenario == 4) palettes[0].Type = "ControlType.Edit";
+                    if (scenario == 5) palettes[0].Name = "Font";
+                    if (scenario == 6) palettes[0].Name = "Background";
+                    if (scenario == 7) palettes[0].Error = "unreadable";
+                    if (scenario == 8) palettes[0].Value = null;
+                    if (scenario == 9) palettes[0].Visible = false;
+                    return palettes;
+                }));
+                Assert.AreEqual("Original", selected.Last(), "restore scenario " + scenario);
+            }
+            foreach (var list in new[] {
+                new VbeDebugWindows.OptionsControl { Choices = new string[0], Value = "Original" },
+                new VbeDebugWindows.OptionsControl { Choices = new[] { "Original", "Original" }, Value = "Original" },
+                new VbeDebugWindows.OptionsControl { Choices = new[] { "Original" }, Value = "Unknown" },
+                new VbeDebugWindows.OptionsControl { Choices = new[] { "Original" }, Value = "Original", Error = "unreadable" } })
+            {
+                int selects = 0;
+                Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.CaptureOptionsFormatCategories(list, _ => selects++, () => null));
+                Assert.AreEqual(0, selects);
+            }
+        }
+
+        /// <summary>La version couvre les palettes d'autres catégories avant toute sélection ni écriture.</summary>
+        [TestMethod]
+        public void FormatCategoryColoursAreGloballyVersionedAndSelectedOnlyAfterGuard()
+        {
+            var probe = new FormatOptionsMatrixProbe(); var request = probe.Request();
+            probe.Categories[1].Palettes[0].Value = "NativeIndex:2";
+            Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.SetVbeOption(request, probe));
+            Assert.AreEqual(0, probe.Selections); Assert.AreEqual(0, probe.Inner.Writes);
+            probe = new FormatOptionsMatrixProbe(); request = probe.Request();
+            dynamic result = VbeDebugWindows.SetVbeOption(request, probe);
+            Assert.AreEqual("Comment", result.Category); Assert.AreEqual("NativeIndex:1", result.After);
+            Assert.AreEqual(1, probe.Selections); Assert.AreEqual(1, probe.Inner.Writes); Assert.AreEqual(1, probe.Inner.Accepts);
+        }
+
+        /// <summary>Catégorie absente, requête hors palette ou changement pendant l'écriture échouent avec Cancel.</summary>
+        [TestMethod]
+        public void FormatCategoryQueryGuardsWrongScopeUnknownCategoryAndChangedReadback()
+        {
+            foreach (int scenario in Enumerable.Range(0, 3))
+            {
+                var probe = new FormatOptionsMatrixProbe(); var request = probe.Request();
+                if (scenario == 0) request.Query = "Unknown";
+                if (scenario == 1) request.Property = "Code Colors";
+                if (scenario == 2) probe.Inner.OnWrite = () => probe.Inner.Items[0].Value = "Normal";
+                Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.SetVbeOption(request, probe));
+                Assert.AreEqual(scenario == 2 ? 1 : 0, probe.Inner.Writes);
+                Assert.AreEqual(0, probe.Inner.Accepts); Assert.AreEqual(1, probe.Inner.Closes);
+            }
+            var noCategories = new WritableOptionsMatrixProbe(); var plain = noCategories.Request(); plain.Query = "Comment";
+            Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.SetVbeOption(plain, noCategories));
+            Assert.AreEqual(0, noCategories.Writes);
+        }
+
+        /// <summary>Les palettes opaques exposent leurs vrais index, sans couleurs inventées, et versionnent les sélections.</summary>
+        [TestMethod]
+        public void NativeFormatChoicesPreserveUnlabeledIndicesAndInvalidateChangedSelections()
+        {
+            var control = new VbeDebugWindows.OptionsControl { Name = "Foreground", Type = "ControlType.ComboBox" };
+            var palette = new[] { " Automatique" }.Concat(Enumerable.Repeat("", 16)).ToArray();
+            VbeDebugWindows.DescribeOptionsNativeChoices(control, palette, 3, "");
+            Assert.AreEqual(17, control.NativeChoices.Count); Assert.AreEqual(3, control.SelectedIndex);
+            Assert.AreEqual("NativeIndex:3", control.Value); Assert.AreEqual("", control.NativeChoices[3].Label);
+            Assert.AreEqual("NativeIndex:16", control.Choices[16]);
+            Assert.AreEqual("NativeIndex:3", VbeDebugWindows.ValidateEditableOption("Editor Format", control, "NativeIndex:3"));
+            Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ValidateEditableOption("Editor Format", control, "RGB:#ff0000"));
+            foreach (bool changeLabel in new[] { false, true })
+            {
+                var probe = new WritableOptionsMatrixProbe(); probe.Names[0] = "Editor Format"; probe.Items[0] = control;
+                var request = probe.Request(); request.Value = "NativeIndex:3";
+                if (changeLabel) control.NativeChoices[3].Label = "changed native label";
+                else control.SelectedIndex = 4;
+                Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.SetVbeOption(request, probe));
+                Assert.AreEqual(0, probe.Writes); Assert.AreEqual(1, probe.Closes);
+                VbeDebugWindows.DescribeOptionsNativeChoices(control, palette, 3, "");
+            }
+        }
+
+        /// <summary>Police non sélectionnée reste lisible; taille sans catalogue et libellés doubles ne sont pas inscriptibles.</summary>
+        [TestMethod]
+        public void NativeFormatTextReadsExactEditValueButRequiresUniqueEnumeratedChoiceForWriting()
+        {
+            var font = new VbeDebugWindows.OptionsControl { Name = "Font", Type = "ControlType.ComboBox" };
+            VbeDebugWindows.DescribeOptionsNativeChoices(font, new[] { "Courier New", "Arial" }, -1, "Courier New");
+            Assert.AreEqual(-1, font.SelectedIndex); Assert.AreEqual("Courier New", font.Value);
+            Assert.AreEqual("Arial", VbeDebugWindows.ValidateEditableOption("Editor Format", font, "Arial"));
+            VbeDebugWindows.DescribeOptionsNativeChoices(font, new[] { "Arial", "Arial" }, -1, "Courier New");
+            Assert.AreEqual("Courier New", font.Value);
+            Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ValidateEditableOption("Editor Format", font, "Arial"));
+            var size = new VbeDebugWindows.OptionsControl { Name = "Size", Type = "ControlType.ComboBox" };
+            VbeDebugWindows.DescribeOptionsNativeChoices(size, new string[0], -1, "10");
+            Assert.AreEqual("10", size.Value); Assert.AreEqual(0, size.Choices.Count);
+            Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ValidateEditableOption("Editor Format", size, "12"));
+            foreach (int index in new[] { -2, 2 })
+                Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.DescribeOptionsNativeChoices(font, new[] { "A", "B" }, index, "A"));
+            Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.DescribeOptionsNativeChoices(font, null, -1, "A"));
+            Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.DescribeOptionsNativeChoices(font, new string[2001], -1, "A"));
+            Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.DescribeOptionsNativeChoices(font, new[] { new string('x', 4097) }, -1, "A"));
+            Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.DescribeOptionsNativeChoices(font, new string[] { null }, -1, "A"));
+            Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.DescribeOptionsNativeChoices(font, new string[0], -1, null));
+        }
+
+        [TestMethod]
+        public void DocumentedOptionsCompleteTheWholeVersionWriteReadbackCommitWorkflow()
+        {
+            foreach (var row in OptionsCompletionMatrix.Supported())
+            {
+                var probe = new WritableOptionsMatrixProbe();
+                probe.Names[0] = row.Item1;
+                var control = probe.Items[0];
+                control.Name = row.Item2; control.Type = row.Item3;
+                control.Value = row.Item3 == "ControlType.CheckBox" ? "On" : "Original";
+                control.Choices = new[] { "Original", "Native choice" };
+                var request = probe.Request(); request.Value = row.Item4;
+                dynamic result = VbeDebugWindows.SetVbeOption(request, probe);
+                Assert.IsTrue((bool)result.ControlValueVerified, row.Item2);
+                Assert.IsTrue((bool)result.DialogClosed, row.Item2);
+                Assert.IsFalse((bool)result.PersistenceVerified, row.Item2);
+                Assert.AreEqual(1, probe.Writes); Assert.AreEqual(1, probe.Accepts);
+                Assert.AreEqual(0, probe.Closes);
+            }
+        }
+
+        [TestMethod]
+        public void GridDimensionsRejectInvalidValuesAndCancelBeforeWriting()
+        {
+            foreach (string name in new[] { "Width", "Height", "Largeur", "Hauteur" })
+                foreach (object value in OptionsCompletionMatrix.InvalidGridValues)
+                {
+                    var probe = new WritableOptionsMatrixProbe(); probe.Names[0] = "General";
+                    probe.Items[0].Name = name; probe.Items[0].Type = "ControlType.Edit"; probe.Items[0].Value = "6";
+                    var request = probe.Request(); request.Value = value;
+                    Assert.ThrowsException<ArgumentException>(() => VbeDebugWindows.SetVbeOption(request, probe));
+                    Assert.AreEqual(0, probe.Writes); Assert.AreEqual(0, probe.Accepts); Assert.AreEqual(1, probe.Closes);
+                }
+        }
+
+        [TestMethod]
+        public void FormatChoicesRejectUnknownAmbiguousUnreadableOrArbitraryValues()
+        {
+            foreach (string scenario in OptionsCompletionMatrix.InvalidChoiceScenarios)
+            {
+                var probe = new WritableOptionsMatrixProbe(); probe.Names[0] = "Editor Format";
+                var control = probe.Items[0]; control.Name = "Font"; control.Type = "ControlType.ComboBox";
+                control.Value = "Consolas"; control.Choices = new[] { "Consolas", "Courier New" };
+                object value = "Courier New";
+                if (scenario == "absent") value = "invented font";
+                if (scenario == "duplicate") control.Choices = new[] { "Courier New", "Courier New" };
+                if (scenario == "null catalogue") control.Choices = null;
+                if (scenario == "empty catalogue") control.Choices = new string[0];
+                if (scenario == "null value") value = null;
+                if (scenario == "numeric value") value = 12;
+                if (scenario == "wrong tab") probe.Names[0] = "General";
+                if (scenario == "unknown name") control.Name = "Unknown";
+                if (scenario == "wrong type") control.Type = "ControlType.Edit";
+                if (scenario == "unreadable") control.Error = "Selection unavailable";
+                var request = probe.Request(); request.Value = value;
+                if (scenario == "null value" || scenario == "numeric value")
+                    Assert.ThrowsException<ArgumentException>(() => VbeDebugWindows.SetVbeOption(request, probe));
+                else Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.SetVbeOption(request, probe));
+                Assert.AreEqual(0, probe.Writes); Assert.AreEqual(0, probe.Accepts); Assert.AreEqual(1, probe.Closes);
+            }
+        }
+
+        [TestMethod]
+        public void ChoiceCatalogueSelectionAndColorCategoryAreAllVersioned()
+        {
+            foreach (string scenario in OptionsCompletionMatrix.RevisionScenarios)
+            {
+                var probe = new WritableOptionsMatrixProbe(); probe.Names[0] = "Editor Format";
+                var color = probe.Items[0]; color.Name = "Foreground"; color.Type = "ControlType.ComboBox";
+                color.Value = "Black"; color.Choices = new[] { "Black", "Red" };
+                var category = new VbeDebugWindows.OptionsControl { Name = "Code Colors", Type = "ControlType.List",
+                    Value = "Normal Text", Choices = new[] { "Normal Text", "Comment Text" } };
+                probe.Items.Add(category);
+                var request = probe.Request(); request.Value = "Red";
+                if (scenario == "choices") color.Choices = new[] { "Black", "Blue" };
+                if (scenario == "selection") color.Value = "Red";
+                if (scenario == "category") category.Value = "Comment Text";
+                Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.SetVbeOption(request, probe));
+                Assert.AreEqual(0, probe.Writes); Assert.AreEqual(0, probe.Accepts); Assert.AreEqual(1, probe.Closes);
+            }
+        }
+
+        [TestMethod]
+        public void FormatChoiceReadbackFailureCancelsWithoutAccepting()
+        {
+            var probe = new WritableOptionsMatrixProbe { IgnoreWrite = true }; probe.Names[0] = "Editor Format";
+            probe.Items[0].Name = "Size"; probe.Items[0].Type = "ControlType.ComboBox";
+            probe.Items[0].Value = "10"; probe.Items[0].Choices = new[] { "10", "12" };
+            var request = probe.Request(); request.Value = "12";
+            Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.SetVbeOption(request, probe));
+            Assert.AreEqual(1, probe.Writes); Assert.AreEqual(0, probe.Accepts); Assert.AreEqual(1, probe.Closes);
+        }
+
         [TestMethod]
         public void SameNamedLabelsAreIgnoredAndOnlyEditableControlsCanBeWritten()
         {
@@ -182,6 +440,55 @@ namespace CodexVBE.Tests.Unit
     public sealed partial class VbeDebugWindowsSystemTests
     {
         [TestMethod]
+        public void NativeOptionsEnumerateAndSelectExactChoicesWithoutTypingOrInventingColors()
+        {
+            var root = new AutomationNode { Name = "Options", Kind = System.Windows.Automation.ControlType.Window };
+            root.Add(new AutomationNode { Name = "Editor Format", Kind = System.Windows.Automation.ControlType.TabItem }
+                .With(System.Windows.Automation.SelectionItemPattern.Pattern));
+            var combo = root.Add(new AutomationNode { Name = "Font", Kind = System.Windows.Automation.ControlType.ComboBox }
+                .With(System.Windows.Automation.SelectionPattern.Pattern, System.Windows.Automation.ValuePattern.Pattern));
+            var original = combo.Add(new AutomationNode { Name = "Consolas", Selected = true }.With(System.Windows.Automation.SelectionItemPattern.Pattern));
+            var desired = combo.Add(new AutomationNode { Name = "Courier New", Offscreen = true }.With(System.Windows.Automation.SelectionItemPattern.Pattern));
+            desired.SelectedAction = () => original.Selected = false;
+            using (var host = new AutomationHost(root, optionsDialog: true))
+            using (var scene = new SystemScene())
+            {
+                BindOwnedOptionsDialog(scene, host);
+                var native = Native<VbeDebugWindows.IWritableOptionsProbe>("NativeOptionsProbe"); native.Tabs(host.Handle);
+                var observed = native.Controls(host.Handle, 0).Single(x => x.Name == "Font");
+                Assert.AreEqual("Consolas", observed.Value);
+                CollectionAssert.AreEqual(new[] { "Consolas", "Courier New" }, observed.Choices.ToArray());
+                native.Write(host.Handle, 0, "Font", "ControlType.ComboBox", "Courier New");
+                Assert.AreEqual("Courier New", native.Controls(host.Handle, 0).Single(x => x.Name == "Font").Value);
+                Assert.AreEqual("", combo.Text); Assert.AreEqual(0, combo.FocusCount);
+                Assert.ThrowsException<InvalidOperationException>(() => native.Write(host.Handle, 0, "Font", "ControlType.ComboBox", "invented"));
+                desired.Enabled = false;
+                Assert.ThrowsException<InvalidOperationException>(() => native.Write(host.Handle, 0, "Font", "ControlType.ComboBox", "Courier New")); desired.Enabled = true;
+                desired.Patterns.Clear();
+                Assert.ThrowsException<InvalidOperationException>(() => native.Write(host.Handle, 0, "Font", "ControlType.ComboBox", "Courier New"));
+                desired.Patterns.Add(System.Windows.Automation.SelectionItemPattern.Pattern.Id);
+                var duplicate = combo.Add(new AutomationNode { Name = "Courier New" }.With(System.Windows.Automation.SelectionItemPattern.Pattern));
+                Assert.ThrowsException<InvalidOperationException>(() => native.Write(host.Handle, 0, "Font", "ControlType.ComboBox", "Courier New"));
+                combo.Children.Remove(duplicate);
+                combo.Password = true;
+                Assert.ThrowsException<InvalidOperationException>(() => native.Write(host.Handle, 0, "Font", "ControlType.ComboBox", "Courier New"));
+                Assert.IsFalse(string.IsNullOrEmpty(native.Controls(host.Handle, 0).Single(x => x.Name == "Font").Error)); combo.Password = false;
+                original.Selected = true;
+                Assert.IsFalse(string.IsNullOrEmpty(native.Controls(host.Handle, 0).Single(x => x.Name == "Font").Error)); original.Selected = false;
+                desired.Selected = false;
+                Assert.IsFalse(string.IsNullOrEmpty(native.Controls(host.Handle, 0).Single(x => x.Name == "Font").Error)); desired.Selected = true;
+                combo.Patterns.Remove(System.Windows.Automation.SelectionPattern.Pattern.Id); combo.Text = "Courier New";
+                Assert.AreEqual("Courier New", native.Controls(host.Handle, 0).Single(x => x.Name == "Font").Value);
+                combo.Patterns.Clear();
+                Assert.IsFalse(string.IsNullOrEmpty(native.Controls(host.Handle, 0).Single(x => x.Name == "Font").Error));
+                combo.Kind = System.Windows.Automation.ControlType.List;
+                combo.Patterns.Add(System.Windows.Automation.SelectionPattern.Pattern.Id);
+                native.Write(host.Handle, 0, "Font", "ControlType.List", "Courier New");
+                Assert.AreEqual("Courier New", native.Controls(host.Handle, 0).Single(x => x.Name == "Font").Value);
+            }
+        }
+
+        [TestMethod]
         public void NativeOptionsWriteRealUiaPatternsAndRefuseMissingPatternsOrReadOnlyValues()
         {
             var root=new AutomationNode{Name="Options",Kind=System.Windows.Automation.ControlType.Window};
@@ -189,9 +496,10 @@ namespace CodexVBE.Tests.Unit
             var check=root.Add(new AutomationNode{Name="Auto Syntax Check",Kind=System.Windows.Automation.ControlType.CheckBox}.With(System.Windows.Automation.TogglePattern.Pattern));
             var radio=root.Add(new AutomationNode{Name="Break on All Errors",Kind=System.Windows.Automation.ControlType.RadioButton}.With(System.Windows.Automation.SelectionItemPattern.Pattern));
             var edit=root.Add(new AutomationNode{Name="Tab Width",Kind=System.Windows.Automation.ControlType.Edit,Text="4"}.With(System.Windows.Automation.ValuePattern.Pattern));
-            using(var host=new AutomationHost(root))
+            using(var host=new AutomationHost(root, optionsDialog:true))
             using(var scene=new SystemScene())
             {
+                BindOwnedOptionsDialog(scene, host);
                 var native=Native<VbeDebugWindows.IWritableOptionsProbe>("NativeOptionsProbe");native.Tabs(host.Handle);
                 native.Write(host.Handle,0,check.Name,"ControlType.CheckBox",true);Assert.AreEqual(System.Windows.Automation.ToggleState.On,check.ToggleState);
                 native.Write(host.Handle,0,check.Name,"ControlType.CheckBox",true);Assert.AreEqual(System.Windows.Automation.ToggleState.On,check.ToggleState);
@@ -231,6 +539,207 @@ namespace CodexVBE.Tests.Unit
                 }
             }
             finally{VbeDebugWindows.OptionsWindowEnabled=saved;}
+        }
+    }
+}
+
+namespace CodexVBE.Tests.Unit
+{
+    using System;
+    using System.Linq;
+    using System.Windows.Automation;
+    using CodexVBE;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+    public sealed partial class VbeDebugWindowsSystemTests
+    {
+        /// <summary>Les vraies listes ComboBox détenues livrent leurs valeurs/indices, écrivent une entrée exacte et notifient le propriétaire.</summary>
+        [TestMethod]
+        public void OwnedNativeOptionsCombosReadAndSelectExactValuesWithoutTyping()
+        {
+            using (var fixture = new OwnedNativeOptionsControls())
+            {
+                var font = new VbeDebugWindows.OptionsControl();
+                InvokeOptionsMethod(null, "ReadOptionsCombo", fixture.Font, font);
+                Assert.AreEqual("Consolas", font.Value); Assert.AreEqual(-1, font.SelectedIndex);
+                CollectionAssert.AreEqual(new[] { "Consolas", "Courier New", "Duplicate", "Duplicate" }, font.Choices.ToArray());
+                InvokeOptionsMethod(null, "WriteOptionsCombo", fixture.Font, "Courier New");
+                InvokeOptionsMethod(null, "ReadOptionsCombo", fixture.Font, font);
+                Assert.AreEqual("Courier New", font.Value); Assert.AreEqual(1, font.SelectedIndex);
+                Assert.IsTrue(fixture.Notifications.Any(x => x.Item1 == 510 && x.Item2 == 1 && x.Item3 == fixture.Font));
+                Assert.IsTrue(fixture.Notifications.Any(x => x.Item1 == 510 && x.Item2 == 9 && x.Item3 == fixture.Font));
+                foreach (string choice in new[] { "Missing", "Duplicate" })
+                    Assert.ThrowsException<InvalidOperationException>(() => InvokeOptionsMethod(null, "WriteOptionsCombo", fixture.Font, choice));
+                var size = new VbeDebugWindows.OptionsControl();
+                InvokeOptionsMethod(null, "ReadOptionsCombo", fixture.Size, size);
+                Assert.AreEqual("10", size.Value); Assert.AreEqual(0, size.Choices.Count);
+                Assert.AreEqual(IntPtr.Zero, OptionsFixtureInteger(fixture.Size, 0x157, IntPtr.Zero, IntPtr.Zero), "Read must close its temporary dropdown.");
+                var palette = new VbeDebugWindows.OptionsControl(); var handle = new IntPtr(fixture.Palettes[0].NativeHandle.Value);
+                InvokeOptionsMethod(null, "WriteOptionsCombo", handle, "NativeIndex:2");
+                InvokeOptionsMethod(null, "ReadOptionsCombo", handle, palette);
+                Assert.AreEqual("NativeIndex:2", palette.Value); Assert.AreEqual(2, palette.SelectedIndex);
+                Assert.AreEqual("", palette.NativeChoices[2].Label); Assert.AreEqual(2, fixture.Colours["Normal"][0]);
+            }
+        }
+
+        /// <summary>Les fautes injectées sur les réponses entières conservent de vrais HWND détenus et ne provoquent aucune lecture de buffer trop petit.</summary>
+        [TestMethod]
+        public void OwnedNativeOptionsComboGuardsRejectMalformedNativeReadResultsAndSelectionFailure()
+        {
+            using (var fixture = new OwnedNativeOptionsControls())
+            {
+                var saved = VbeDebugWindows.SendMessageInt;
+                try
+                {
+                    foreach (int scenario in Enumerable.Range(0, 9))
+                    {
+                        VbeDebugWindows.SendMessageInt = (window, message, argument, value) =>
+                        {
+                            if (window != fixture.Font) return saved(window, message, argument, value);
+                            if (message == 0x146 && scenario < 2) return new IntPtr(scenario == 0 ? -1 : 2001);
+                            if (message == 0x149 && argument == IntPtr.Zero && scenario >= 2 && scenario <= 4)
+                                return new IntPtr(scenario == 2 ? -1 : scenario == 3 ? 4097 : saved(window, message, argument, value).ToInt32() + 1);
+                            if (message == 0x147 && scenario == 5) return new IntPtr(99);
+                            if (message == 0x000E && scenario >= 6) return new IntPtr(scenario == 6 ? -1 : scenario == 7 ? 4097 : saved(window, message, argument, value).ToInt32() + 1);
+                            return saved(window, message, argument, value);
+                        };
+                        Assert.ThrowsException<InvalidOperationException>(() => InvokeOptionsMethod(null, "ReadOptionsCombo", fixture.Font, new VbeDebugWindows.OptionsControl()), "native read scenario " + scenario);
+                    }
+                    VbeDebugWindows.SendMessageInt = (window, message, argument, value) => window == fixture.Font && message == 0x14e ? new IntPtr(-1) : saved(window, message, argument, value);
+                    Assert.ThrowsException<InvalidOperationException>(() => InvokeOptionsMethod(null, "WriteOptionsCombo", fixture.Font, "Courier New"));
+                    Assert.IsFalse(fixture.Notifications.Any(x => x.Item1 == 510 && (x.Item2 == 1 || x.Item2 == 9)));
+                }
+                finally { VbeDebugWindows.SendMessageInt = saved; }
+            }
+        }
+
+        /// <summary>Les gardes refusent handles nuls, mauvaise classe, PID étranger et style owner-data non lisible.</summary>
+        [TestMethod]
+        public void OwnedNativeOptionsComboIdentityAndStringsGuardsStayFailClosed()
+        {
+            using (var fixture = new OwnedNativeOptionsControls())
+            {
+                Assert.ThrowsException<InvalidOperationException>(() => InvokeOptionsMethod(null, "ReadOptionsCombo", IntPtr.Zero, new VbeDebugWindows.OptionsControl()));
+                Assert.ThrowsException<InvalidOperationException>(() => InvokeOptionsMethod(null, "ReadOptionsCombo", fixture.List, new VbeDebugWindows.OptionsControl()));
+                var savedPid = VbeDebugWindows.GetWindowThreadProcessId;
+                try
+                {
+                    VbeDebugWindows.GetWindowThreadProcessId = (IntPtr window, out uint processId) =>
+                    { var result = savedPid(window, out processId); if (window == fixture.Font) processId++; return result; };
+                    Assert.ThrowsException<InvalidOperationException>(() => InvokeOptionsMethod(null, "ReadOptionsCombo", fixture.Font, new VbeDebugWindows.OptionsControl()));
+                    VbeDebugWindows.GetWindowThreadProcessId = (IntPtr window, out uint processId) =>
+                    { var result = savedPid(window, out processId); if (window == fixture.Host.Handle) processId++; return result; };
+                    Assert.ThrowsException<InvalidOperationException>(() => InvokeOptionsMethod(null, "WriteOptionsCombo", fixture.Font, "Courier New"));
+                }
+                finally { VbeDebugWindows.GetWindowThreadProcessId = savedPid; }
+                int original = OptionsFixtureGetStyle(fixture.Font, -16);
+                try
+                {
+                    fixture.Host.Invoke(form => OptionsFixtureSetStyle(fixture.Font, -16, original & ~0x200));
+                    Assert.ThrowsException<InvalidOperationException>(() => InvokeOptionsMethod(null, "ReadOptionsCombo", fixture.Font, new VbeDebugWindows.OptionsControl()));
+                }
+                finally { fixture.Host.Invoke(form => OptionsFixtureSetStyle(fixture.Font, -16, original)); }
+                Assert.ThrowsException<InvalidOperationException>(() => InvokeOptionsMethod(null, "GuardOptionsOwnedWindow", fixture.Host.Handle, fixture.Font, "ListBox"));
+                Assert.ThrowsException<InvalidOperationException>(() => InvokeOptionsMethod(null, "GuardOptionsOwnedWindow", fixture.Host.Handle, fixture.Host.Handle, "ComboBox"));
+            }
+        }
+
+        /// <summary>Le propriétaire simulé ne met à jour ses palettes qu'après le vrai WM_COMMAND, puis chaque catégorie est lue et restaurée.</summary>
+        [TestMethod]
+        public void OwnedNativeOptionsCategoriesNotifyParentCaptureAllPalettesAndRestoreSelection()
+        {
+            using (var fixture = new OwnedNativeOptionsControls())
+            {
+                var probe = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe"); probe.Tabs(fixture.Host.Handle);
+                var categories = (VbeDebugWindows.IFormatCategoriesOptionsProbe)probe;
+                categories.SelectFormatCategory(fixture.Host.Handle, 0, "Comment");
+                Assert.AreEqual("Comment", fixture.CurrentCategory);
+                Assert.IsTrue(fixture.Notifications.Any(x => x.Item1 == 4905 && x.Item2 == 1 && x.Item3 == fixture.List));
+                var snapshot = categories.FormatCategories(fixture.Host.Handle, 0);
+                Assert.AreEqual(3, snapshot.Count); Assert.AreEqual("Comment", fixture.CurrentCategory);
+                Assert.AreEqual("Automatic", snapshot[0].Palettes[0].Value);
+                Assert.AreEqual("NativeIndex:1", snapshot[1].Palettes[0].Value);
+                Assert.AreEqual("NativeIndex:2", snapshot[2].Palettes[0].Value);
+                Assert.IsFalse(snapshot[2].Palettes[2].Enabled, "Disabled native indicator remains readable and versioned.");
+                Assert.ThrowsException<InvalidOperationException>(() => categories.SelectFormatCategory(fixture.Host.Handle, 0, "Missing"));
+                fixture.OnCategoryNotification = name => fixture.Palettes[0].Password = name == "Keyword";
+                Assert.ThrowsException<InvalidOperationException>(() => categories.FormatCategories(fixture.Host.Handle, 0));
+                Assert.AreEqual("Comment", fixture.CurrentCategory, "Native palette read failure restores the initial category.");
+                Assert.IsFalse(fixture.Palettes[0].Password);
+            }
+        }
+
+        /// <summary>Les identités/patterns/sélections invalides des catégories et onglets échouent avant mutation des palettes.</summary>
+        [TestMethod]
+        public void OwnedNativeOptionsCategoryAndTabMatricesRefuseUnreadableOrAmbiguousProviders()
+        {
+            using (var fixture = new OwnedNativeOptionsControls())
+            {
+                var probe = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe"); probe.Tabs(fixture.Host.Handle);
+                var categories = (VbeDebugWindows.IFormatCategoriesOptionsProbe)probe;
+                foreach (int index in new[] { -1, 1 }) Assert.ThrowsException<InvalidOperationException>(() => probe.Controls(fixture.Host.Handle, index));
+                fixture.Tab.ProcessId = System.Diagnostics.Process.GetCurrentProcess().Id + 1;
+                Assert.ThrowsException<InvalidOperationException>(() => probe.Controls(fixture.Host.Handle, 0)); fixture.Tab.ProcessId = null;
+                fixture.Tab.Patterns.Clear(); Assert.ThrowsException<InvalidOperationException>(() => probe.Controls(fixture.Host.Handle, 0)); fixture.Tab.With(SelectionItemPattern.Pattern);
+                fixture.Tab.Selected = false; fixture.Tab.SelectedAction = () => fixture.Tab.Selected = false;
+                Assert.ThrowsException<InvalidOperationException>(() => probe.Controls(fixture.Host.Handle, 0)); fixture.Tab.SelectedAction = null;
+                var original = fixture.CategoryItems[0]; var other = fixture.CategoryItems[1];
+                foreach (int scenario in Enumerable.Range(0, 7))
+                {
+                    if (scenario == 0) fixture.Categories.Patterns.Clear();
+                    if (scenario == 1) fixture.Categories.Enabled = false;
+                    if (scenario == 2) original.Selected = false;
+                    if (scenario == 3) other.Selected = true;
+                    if (scenario == 4) other.Name = original.Name;
+                    if (scenario == 5) other.Patterns.Clear();
+                    if (scenario == 6) other.ProcessId = System.Diagnostics.Process.GetCurrentProcess().Id + 1;
+                    Assert.ThrowsException<InvalidOperationException>(() => categories.SelectFormatCategory(fixture.Host.Handle, 0, "Comment"), "category scenario " + scenario);
+                    fixture.Categories.With(SelectionPattern.Pattern); fixture.Categories.Enabled = true;
+                    original.Selected = true; other.Selected = false; other.Name = "Comment"; other.With(SelectionItemPattern.Pattern); other.ProcessId = null;
+                }
+                fixture.Root.Children.Remove(fixture.Categories);
+                Assert.AreEqual(0, categories.FormatCategories(fixture.Host.Handle, 0).Count);
+                Assert.ThrowsException<InvalidOperationException>(() => categories.SelectFormatCategory(fixture.Host.Handle, 0, "Normal"));
+                fixture.Root.Add(fixture.Categories);
+                var duplicate = fixture.Root.Add(new AutomationNode { Name = "Code Colors", Kind = ControlType.List, NativeHandle = fixture.List.ToInt32() });
+                Assert.ThrowsException<InvalidOperationException>(() => categories.FormatCategories(fixture.Host.Handle, 0)); fixture.Root.Children.Remove(duplicate);
+                var hidden = fixture.Palettes[0]; hidden.Name = "Font";
+                Assert.ThrowsException<InvalidOperationException>(() => categories.FormatCategories(fixture.Host.Handle, 0)); hidden.Name = "Foreground";
+                var extras = Enumerable.Range(3, 30).Select(i => fixture.Categories.Add(new AutomationNode { Name = "Extra " + i }.With(SelectionItemPattern.Pattern))).ToArray();
+                Assert.ThrowsException<InvalidOperationException>(() => categories.SelectFormatCategory(fixture.Host.Handle, 0, "Normal"));
+                foreach (var extra in extras) fixture.Categories.Children.Remove(extra);
+                other.Name = " "; Assert.ThrowsException<InvalidOperationException>(() => categories.SelectFormatCategory(fixture.Host.Handle, 0, "Normal")); other.Name = "Comment";
+                var items = fixture.Categories.Children.ToArray(); fixture.Categories.Children.Clear();
+                Assert.ThrowsException<InvalidOperationException>(() => categories.SelectFormatCategory(fixture.Host.Handle, 0, "Normal"));
+                foreach (var item in items) fixture.Categories.Add(item);
+            }
+        }
+
+        /// <summary>Les palettes sont refusées si leur identité UIA diverge du handle réel, puis la catégorie initiale est restaurée.</summary>
+        [TestMethod]
+        public void OwnedNativeOptionsPaletteIdentityMatrixRestoresOnEveryFailure()
+        {
+            using (var fixture = new OwnedNativeOptionsControls())
+            {
+                var probe = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe"); probe.Tabs(fixture.Host.Handle);
+                var categories = (VbeDebugWindows.IFormatCategoriesOptionsProbe)probe;
+                var palette = fixture.Palettes[0]; int handle = palette.NativeHandle.Value;
+                foreach (int scenario in Enumerable.Range(0, 4))
+                {
+                    fixture.OnCategoryNotification = name =>
+                    {
+                        bool fail = name == "Keyword";
+                        palette.Offscreen = scenario == 0 && fail;
+                        palette.Password = scenario == 1 && fail;
+                        palette.Kind = scenario == 2 && fail ? ControlType.Edit : ControlType.ComboBox;
+                        palette.NativeHandle = scenario == 3 && fail ? fixture.Palettes[1].NativeHandle : handle;
+                    };
+                    Assert.ThrowsException<InvalidOperationException>(() => categories.FormatCategories(fixture.Host.Handle, 0), "palette identity " + scenario);
+                    Assert.AreEqual("Normal", fixture.CurrentCategory);
+                    Assert.AreEqual(handle, palette.NativeHandle.Value); Assert.IsFalse(palette.Offscreen); Assert.IsFalse(palette.Password);
+                    Assert.AreEqual(ControlType.ComboBox, palette.Kind);
+                }
+            }
         }
     }
 }

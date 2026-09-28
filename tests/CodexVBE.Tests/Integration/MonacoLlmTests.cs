@@ -9,7 +9,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Integration
 {
     [TestClass, TestCategory("MonacoRuntime")]
-    public sealed class MonacoLlmTests
+    public sealed class MonacoLlmTests : EditorUiTestFixture
     {
         [STATestMethod]
         public void CompilationCapturesUnreportedDraftBeforeNativeDispatch()

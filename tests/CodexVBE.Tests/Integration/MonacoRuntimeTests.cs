@@ -10,12 +10,53 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace CodexVBE.Tests.Integration
 {
     [TestClass, TestCategory("MonacoRuntime")]
-    public sealed class MonacoRuntimeTests
+    public sealed class MonacoRuntimeTests : EditorUiTestFixture
     {
         internal static void Wait(Func<bool> complete, int seconds = 40)
-        { var clock = Stopwatch.StartNew(); while (!complete() && clock.Elapsed.TotalSeconds < seconds) { Application.DoEvents(); Thread.Sleep(15); } Assert.IsTrue(complete(), "Timed out waiting for real WebView2/Monaco."); }
+        { var clock = Stopwatch.StartNew(); while (!complete() && clock.Elapsed.TotalSeconds < seconds) { Application.DoEvents(); EditorUiTestFixture.ThrowIfUiFailed(); Thread.Sleep(15); } EditorUiTestFixture.ThrowIfUiFailed(); Assert.IsTrue(complete(), "Timed out waiting for real WebView2/Monaco."); }
         internal static T Wait<T>(Task<T> task) { Wait(() => task.IsCompleted); return task.GetAwaiter().GetResult(); }
         internal static void Wait(Task task) { Wait(() => task.IsCompleted); task.GetAwaiter().GetResult(); }
+        [STATestMethod]
+        public void ClosingDuringBrowserInitializationPreservesDraftWithoutNativeWrites()
+        {
+            using (var host = new EditorFixture())
+            using (var window = new ModernEditorWindow { Drafts = new EditorDraftStore(host.Root) })
+            {
+                var document = Wait(window.OpenModule(host));
+                document.Edit(document.Text + "\n' recovery during initialization");
+                window.Show();
+                window.Close();
+                Wait(() => window.IsDisposed);
+                Assert.AreEqual(0, host.Writes);
+                Assert.AreEqual(document.Text, new EditorDraftStore(host.Root).Recover(host.Key).Text);
+            }
+        }
+
+        [STATestMethod]
+        public void ClosingDuringConflictButtonHandleCreationWaitsForStatusLayout()
+        {
+            using (var host = new EditorFixture())
+            using (var window = new ModernEditorWindow { Drafts = new EditorDraftStore(host.Root) })
+            {
+                window.Show(); Wait(() => window.Ready);
+                ((System.Windows.Forms.Timer)typeof(ModernEditorWindow).GetField("timer", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(window)).Stop();
+                var document = Wait(window.OpenModule(host));
+                var field = typeof(ModernEditorWindow).GetField("compare", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                var compare = (Button)field.GetValue(window);
+                Assert.IsFalse(compare.IsHandleCreated, "The conflict button must still be hidden and uncreated.");
+                bool closeRequested = false;
+                compare.HandleCreated += (sender, args) => { closeRequested = true; window.Close(); };
+                Wait(window.Script("insert", "' local draft\n"));
+                Wait(() => document.Dirty);
+                host.Code += "\n' concurrent native change";
+                Wait(window.ProcessDocuments(false));
+                Wait(() => closeRequested);
+                Wait(() => window.IsDisposed);
+                Assert.AreEqual(0, host.Writes);
+                Assert.AreEqual(document.Text, new EditorDraftStore(host.Root).Recover(host.Key).Text);
+            }
+        }
+
         [STATestMethod]
         public void DefinitionNavigationSelectsTheTargetModuleTab()
         {

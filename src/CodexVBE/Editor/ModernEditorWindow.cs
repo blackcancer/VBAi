@@ -24,6 +24,7 @@ namespace CodexVBE
         internal WebView2 Browser { get; private set; }
         internal bool Ready { get; private set; }
         private bool busy, initializing, closing, closeAllowed, showingDiff;
+        private int activeStatusLayouts;
         private string selected;
         private DateTime lastEdit;
         private EditorSyncWorker synchronizationWorker;
@@ -47,7 +48,7 @@ namespace CodexVBE
         protected override async void OnShown(EventArgs e) { base.OnShown(e); await InitializeBrowser(); }
         private async Task InitializeBrowser()
         {
-            if (initializing || Ready || IsDisposed) return;
+            if (initializing || Ready || IsDisposed || Disposing || closing) return;
             initializing = true;
             try
             {
@@ -57,14 +58,15 @@ namespace CodexVBE
                 surface.Controls.Add(Browser);
                 string cache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodexVBE", "EditorWebView", System.Diagnostics.Process.GetCurrentProcess().Id.ToString());
                 var environment = await CoreWebView2Environment.CreateAsync(null, cache);
-                if (IsDisposed) return;
+                if (IsDisposed || Disposing || closing) return;
                 await Browser.EnsureCoreWebView2Async(environment);
-                if (IsDisposed) return;
+                if (IsDisposed || Disposing || closing) return;
                 var core = Browser.CoreWebView2;
                 string language = UiText.Culture.Name.ToLowerInvariant();
                 if (language != "pt-br" && !language.StartsWith("zh-")) language = UiText.Culture.TwoLetterISOLanguageName;
                 string translation = Path.Combine(folder, "nls.messages." + language + ".js");
                 if (File.Exists(translation)) await core.AddScriptToExecuteOnDocumentCreatedAsync(File.ReadAllText(translation));
+                if (IsDisposed || Disposing || closing) return;
                 core.Settings.AreDevToolsEnabled = false; core.Settings.AreDefaultContextMenusEnabled = false;
                 core.Settings.IsStatusBarEnabled = false; core.Settings.AreHostObjectsAllowed = false;
                 core.SetVirtualHostNameToFolderMapping("editor.vbai.local", folder, CoreWebView2HostResourceAccessKind.DenyCors);
@@ -79,11 +81,11 @@ namespace CodexVBE
                     if (!LocalResource(e.Request.Uri)) e.Response = environment.CreateWebResourceResponse(new MemoryStream(), 403, "Forbidden", "Content-Type: text/plain");
                 };
                 core.WebMessageReceived += MessageReceived;
-                core.ProcessFailed += (s, e) => { Ready = false; timer.Stop(); PreserveDrafts(); status.Text = UiText.Get("The editor stopped. Drafts are preserved; reopen the editor."); };
+                core.ProcessFailed += (s, e) => { if (IsDisposed || Disposing || closing) return; Ready = false; timer.Stop(); PreserveDrafts(); status.Text = UiText.Get("The editor stopped. Drafts are preserved; reopen the editor."); };
                 core.Navigate(Origin);
                 status.Text = UiText.Get("Loading editor…");
             }
-            catch (Exception error) { LoadLog.Write("Monaco initialization: " + error.GetType().Name); status.Text = UiText.Get("Editor unavailable. Install WebView2 Runtime or use the native editor."); }
+            catch (Exception error) { LoadLog.Write("Monaco initialization: " + error.GetType().Name); if (!IsDisposed && !Disposing && !closing) status.Text = UiText.Get("Editor unavailable. Install WebView2 Runtime or use the native editor."); }
             finally { initializing = false; }
         }
         internal static bool Trusted(string uri) => string.Equals(uri, Origin, StringComparison.Ordinal);
@@ -91,7 +93,7 @@ namespace CodexVBE
         { return Uri.TryCreate(uri, UriKind.Absolute, out var u) && u.Scheme == "https" && u.Host == "editor.vbai.local" && u.IsDefaultPort && u.UserInfo.Length == 0; }
         private async void MessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs args)
         {
-            if (!Trusted(args.Source) || IsDisposed) return;
+            if (!Trusted(args.Source) || IsDisposed || Disposing || closing) return;
             try
             {
                 if (args.WebMessageAsJson.Length > 16 * 1024 * 1024) return;
@@ -102,7 +104,7 @@ namespace CodexVBE
                     await Script("labels", new[] { "Compile project", "Toggle breakpoint", "Show next statement", "Step into", "Step over", "Step out", "Breakpoint request sent; verify in VBE." }.ToDictionary(key => key, UiText.Get));
                     foreach (var document in documents.Values.ToArray()) await RenderDocument(document);
                     if (selected != null) await Script("select", selected);
-                    timer.Start(); SetStatus();
+                    if (!closing && !IsDisposed && !Disposing) { timer.Start(); SetStatus(); }
                 }
                 else if (message.type == "change" && documents.TryGetValue(message.id ?? "", out var doc) && message.version > versions[doc.Id])
                 { doc.Edit(message.text); versions[doc.Id] = message.version; lastEdit = DateTime.UtcNow; SetStatus(); }
@@ -196,13 +198,16 @@ namespace CodexVBE
         }
         private void SetStatus()
         {
-            if (IsDisposed || Disposing) return;
+            if (IsDisposed || Disposing || closing) return;
             // WebView callbacks must unwind before changing WinForms visibility/layout.
             if (IsHandleCreated) BeginInvoke(new Action(UpdateStatus)); else UpdateStatus();
         }
         private void UpdateStatus()
         {
-            if (IsDisposed || Disposing) return;
+            if (IsDisposed || Disposing || closing) return;
+            activeStatusLayouts++;
+            try
+            {
             compare.Visible = Current != null && Current.Conflict;
             edit.Visible = showingDiff; reload.Visible = Current != null && Current.Conflict;
             resolve.Visible = Current != null && Current.Conflict;
@@ -212,8 +217,10 @@ namespace CodexVBE
             foreach (TabPage tab in tabs.TabPages)
             { var doc = documents[(string)tab.Tag]; try { tab.Text = doc.Module.Name + (doc.Dirty ? " *" : ""); } catch { } }
             status.Text = UiText.Get(Current == null ? "Open a VBA module to start editing." : Current.Conflict ? "The module changed in VBA. Resolve the conflict first." : Current.Dirty ? "Changes pending synchronization with VBA." : "Synchronized with VBA. Save the macro in its host application.");
+            }
+            finally { activeStatusLayouts--; }
         }
-        private void Report(Exception error) { if (!IsDisposed) status.Text = UiText.Get(error.Message); LoadLog.Write("Monaco: " + error.GetType().Name); }
+        private void Report(Exception error) { if (!IsDisposed && !Disposing && !closing) status.Text = UiText.Get(error.Message); LoadLog.Write("Monaco: " + error.GetType().Name); }
         private void DockClick(object sender, EventArgs e) { DockRequested?.Invoke(); }
         private async void DiffClick(object sender, EventArgs e)
         {
@@ -311,11 +318,20 @@ namespace CodexVBE
         private void PreserveDrafts() { foreach (var doc in documents.Values) try { Drafts.Save(doc); } catch (Exception error) { LoadLog.Write("Editor recovery failed: " + error.GetType().Name); } }
         private async void ClosingWindow(object sender, FormClosingEventArgs e)
         {
-            if (closeAllowed || !Ready) { PreserveDrafts(); return; }
+            if (closeAllowed) { PreserveDrafts(); return; }
+            if (!Ready && !initializing && !busy && activeStatusLayouts == 0) { closing = true; PreserveDrafts(); return; }
             e.Cancel = true; if (closing) return; closing = true; timer.Stop();
-            try { await CaptureDocuments(); PreserveDrafts(); }
+            try { if (Ready) await CaptureDocuments(); PreserveDrafts(); }
             catch (Exception error) { Report(error); PreserveDrafts(); }
-            finally { closeAllowed = true; if (!IsDisposed) BeginInvoke(new Action(Close)); }
+            finally
+            {
+                // A WebView/WinForms callback can pump WM_CLOSE during a control's
+                // CreateHandle. Let initialization, synchronization and status layout
+                // unwind before allowing Form.Dispose to destroy their controls.
+                while (!IsDisposed && (initializing || busy || activeStatusLayouts > 0)) await Task.Delay(15);
+                closeAllowed = true;
+                if (!IsDisposed && !Disposing) BeginInvoke(new Action(Close));
+            }
         }
         private void DisposeRuntime()
         {

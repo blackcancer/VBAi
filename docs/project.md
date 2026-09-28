@@ -1,6 +1,6 @@
 # VBAi : objectif et état du projet
 
-État du code **`27389a8`**, vérifié le **28 septembre 2026**.
+État après intégration de la PR #6 (`c5f64eb`) et lot IDE en cours, vérifié le **28 septembre 2026**.
 
 ## Objectif
 
@@ -12,7 +12,7 @@ Le complément cible **VBE 64 bits, .NET Framework 4.8 et Windows**. Le chat, le
 
 | Surface | Fonctionnalités implémentées |
 | --- | --- |
-| Projets et références | Inventaire, propriétés, composants, références COM, bibliothèques de types, certificats et commande de signature |
+| Projets et références | Inventaire, propriétés, protection, cycle standalone SWP, sauvegarde Excel/Word/PowerPoint, composants, références COM, bibliothèques de types, certificats et commande de signature |
 | Modules et classes | Création, import/export, renommage de composants, lecture/édition avec SHA, procédures, événements, recherche, symboles, navigation et historique |
 | UserForms | Arbre des conteneurs, contrôles, propriétés typées, police/images, disposition, sélection, duplication bornée, listes, événements et récupération après coupe |
 | Exécution et débogage | Compilation, lancement, breakpoint natif, pas à pas, reprise/reset, fenêtres de diagnostic, Exécution et espions |
@@ -20,7 +20,7 @@ Le complément cible **VBE 64 bits, .NET Framework 4.8 et Windows**. Le chat, le
 | Conversation | Contexte VBE dynamique, références `#`/`@`, modes Discussion/Plan/Agent, sessions SQLite, choix persistants, résumé de réflexion et rollback |
 | Git et GitHub | Compte indépendant du fournisseur IA, export versionné, commits, push/fetch/pull, checkpoints, branches, fusions et PR |
 
-Le [catalogue des 180 outils LLM](reference/vbe-tools.md) fournit les noms et paramètres requis. Les fonctions du pont et les outils du modèle ont des périmètres distincts.
+Le [catalogue des 197 outils LLM](reference/vbe-tools.md) fournit les noms et paramètres requis. Les fonctions du pont et les outils du modèle ont des périmètres distincts.
 
 ## Gardes et limites
 
@@ -32,6 +32,8 @@ Le [catalogue des 180 outils LLM](reference/vbe-tools.md) fournit les noms et pa
 
 ## Extensions du 28 septembre
 
+Les mises à jour via releases GitHub sont intégrées ; leur installation réelle reste non qualifiée. Voir [Mises à jour](updates.md).
+
 Voir [Extensions fonctionnelles VBE](reference/functional-extensions.md) pour les contrats et limites : appel paramétré, index de déclarations, renommage local/projet, sauvegarde SWP, barres personnalisées, options et confiance locale de certificat. Les mesures des nouvelles extensions sont détaillées dans le [bilan courant](test-coverage.md).
 
 Voir également le [bilan des qualifications natives](reference/native-qualification.md) : exécution paramétrée, options et barres Excel, UserForms, grand tableau du débogueur, langues et écrans. Les limites SOLIDWORKS, ActiveX et DPI y restent explicites.
@@ -40,11 +42,11 @@ Voir également le [bilan des qualifications natives](reference/native-qualifica
 
 | Vérification | Résultat |
 | --- | --- |
-| Suite globale VSTest avec hôtes activés | **1 172 réussis, aucun échec, 1 ignoré SOLIDWORKS** |
-| Couverture des lignes / branches | **100 % / 100 %** |
+| Suite globale VSTest avec hôtes activés | **1 281 réussis, aucun échec, 1 ignoré SOLIDWORKS** |
+| Couverture des lignes / branches | **97,35 % / 95,94 %**, objectif 100 % non atteint |
 | Compilation | **0 erreur, 0 avertissement** |
-| Concepteurs WinForms | **27 chargements, éditions de propriétés et redimensionnements réussis** |
-| Excel | Trois scénarios : chargement/pont, sauvegarde isolée et renommage/appel nommé avec relecture indépendante des résultats |
+| Concepteurs WinForms | **31 chargements, éditions de propriétés et redimensionnements réussis** |
+| Excel | Dix scénarios réussis : chargement/pont, sauvegarde isolée, renommages/appels, protection après réouverture, ajustement UserForm, explorateur, options restaurées, pages Toolbox et tableaux/retours |
 | SOLIDWORKS 2019 SP5 | NOT_RUN dans ce passage ; validation précédente : chargement, compilation/exécution, breakpoint, pas à pas et reprise sur `test.swp` ; inventaire et SHA initiaux restaurés |
 
 La capture des variables locales de SOLIDWORKS expose un panneau accessible mais aucune ligne dans ce dernier essai. La lecture de leurs valeurs n’est donc pas validée. Le dernier passage global ne qualifie pas chaque commande dans les deux hôtes.

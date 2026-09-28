@@ -72,6 +72,14 @@ Le test `MonacoExcel`, activé par `VBAI_EDITOR_EXCEL_TEST=1`, utilise un classe
 
 Résultats détaillés locaux sous `artifacts/monaco/`. Les 32 Designers passent le chargement et le redimensionnement. Le parcours natif double-clic/ancrage/fermeture et le roundtrip Excel sont **PASS**. Les commandes de débogage/compilation utilisent les services natifs existants ; le parcours Excel de compilation sans erreur, instruction suivante, pas à pas et sortie est testé. Un vrai diagnostic de compilation Excel est également validé : identifiant non déclaré, sélection de la ligne native, marqueur Monaco, correction et disparition du marqueur. La capture des dialogues est isolée au PID propriétaire du VBE. Les autres hôtes restent à qualifier. SOLIDWORKS reste **NOT_RUN**, conformément à la demande.
 
+### Intégration dans main
+
+Les résultats ci-dessus appartiennent à la qualification de la branche Monaco. Le passage d'intégration sur `main` conserve les outils IDE existants et les cinq outils Monaco : **204 outils LLM**. Les tests d'attributs et de rétention sont rattachés aux miroirs `EditorVbeModule` et `EditorDraftStore` ; **184 miroirs pour 246 fichiers de production**. Les **32 surfaces WinForms** passent le chargement et le redimensionnement dans `artifacts/pr7-integration/designers/`.
+
+Le premier passage réel a révélé une exception WinForms lors d'une fermeture pendant la création de contrôles. La fermeture attend maintenant la fin de l'initialisation, des opérations de synchronisation et de la disposition des contrôles d'état ; les callbacks ne réactualisent plus l'interface après une demande de fermeture. Deux scénarios supplémentaires vérifient la fermeture durant l'initialisation et durant la création du bouton de conflit, ainsi que la conservation des brouillons sans écriture VBA. Les exceptions de boucle UI sont remontées à VSTest au lieu de laisser un dialogue JIT bloquant.
+
+Le lot ciblé avant le dernier delta de la branche donne **93 réussis, 0 échec, 1 ignoré** (`artifacts/pr7-integration/contracts-final/integration.trx`). La qualification globale et sa mesure de couverture sont suivies dans [le bilan de couverture](test-coverage.md). Les scénarios Excel sont désactivés dans ce passage d'intégration pour préserver les essais concurrents de l'autre session ; ce passage ne répète donc pas la preuve native de la branche. Les builds d'intégration utilisent `BuildOutputRoot` pour conserver la DLL chargée dans Excel.
+
 ## Sources techniques
 
 - [API publique Monaco](https://github.com/microsoft/monaco-editor) : contrats de fournisseurs de langage.
@@ -80,3 +88,4 @@ Résultats détaillés locaux sous `artifacts/monaco/`. Les 32 Designers passent
 - [Distribution WebView2](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution).
 
 - [Limites de l'API VBIDE concernant les points d'arrêt](https://rubberduckvba.blog/using-rubberduck/) : constat publié par le projet Rubberduck, cohérent avec les essais natifs de cette intégration.
+- [Thread STA et réentrance WebView2](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/threading-model).

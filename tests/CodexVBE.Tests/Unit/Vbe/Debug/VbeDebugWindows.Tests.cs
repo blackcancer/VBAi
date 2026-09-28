@@ -518,9 +518,10 @@ namespace CodexVBE.Tests.Unit
             var root = new AutomationNode { Kind = System.Windows.Automation.ControlType.Window, Name = "Options" };
             root.Add(new AutomationNode { Name = "Editor", Kind = System.Windows.Automation.ControlType.TabItem }.With(System.Windows.Automation.SelectionItemPattern.Pattern));
             root.Add(new AutomationNode { Name = "unavailable", Kind = System.Windows.Automation.ControlType.Edit, FailName = true });
-            using (var host = new AutomationHost(root))
+            using (var host = new AutomationHost(root, optionsDialog: true))
                 using (var scene = new SystemScene())
                 {
+                    BindOwnedOptionsDialog(scene, host);
                     var native = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe"); native.Tabs(host.Handle);
                     Assert.AreEqual(0, native.Controls(host.Handle, 0).Count);
                     root.Children.RemoveAt(1);

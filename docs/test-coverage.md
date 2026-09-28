@@ -1,5 +1,51 @@
 # Couverture automatisée du complément
 
+## Après intégration de la PR #7 Monaco
+
+Mesure locale du **28 septembre 2026**, branche Monaco intégrée jusqu'à `a4e3560`, avec les contrats IDE existants et le correctif de fermeture WinForms. Build isolé : **0 erreur, 0 avertissement**.
+
+| Mesure | Résultat |
+| --- | --- |
+| Suite globale VSTest | **1 358 réussis, 0 échec, 15 ignorés**, 6 min 1 s |
+| Lignes du complément | **25 249 / 26 359 — 95,78 %** |
+| Branches du complément | **25 995 / 27 897 — 93,18 %** |
+| Concepteurs WinForms | **32 surfaces validées** |
+| Organisation miroir | **184 miroirs pour 246 fichiers de production** |
+| Catalogue LLM | **204 outils** |
+
+Il reste **1 110 lignes et 1 902 branches** non exécutées. Aucun code de production n'est exclu. Les nouveaux adaptateurs Monaco ajoutent des chemins à couvrir ; les pourcentages ci-dessous sont historiques. Les 14 scénarios Excel (dont Monaco) sont désactivés pour éviter les essais concurrents ; le scénario SOLIDWORKS reste NOT_RUN. Les tests du véritable WebView2 passent dans cette suite, y compris les fermetures pendant l'initialisation et la création d'un contrôle d'état, avec conservation des brouillons sans écriture VBA.
+
+Preuves : `artifacts/pr7-integration/qualified-global/global.trx`, `8589ae6a-88d1-4b50-b986-c338cffd0f3a/coverage.cobertura.xml`, `coverage-summary.json` et `coverage-inventory.csv` dans le même répertoire. Les **93 tests ciblés réussis** précèdent le dernier delta de la branche, qui est couvert par ce passage global. Les mesures de la branche Monaco et les limites natives sont distinguées dans [la documentation de l'éditeur](modern-editor.md).
+
+## Lot complémentaire en qualification
+
+Les contrats ParamArray, renommage de membres privés de classe et options natives ajoutent du code après la mesure ci-dessous. Le build du projet de tests passe avec **0 erreur et 0 avertissement**. Après correction des fixtures pour utiliser un véritable dialogue Win32 #32770, leur matrice locale donne **127 réussis, 0 échec, 0 ignoré** (`artifacts/vbe-next/contracts-qualified-final/contracts.trx`). Les gardes de production restent inchangées. Ce lot ciblé ne constitue pas un bilan global. La structure conserve **174 miroirs pour 231 fichiers de production**.
+
+Le passage global local final donne **1 318 réussis, 0 échec, 14 ignorés**, en 5 min 48 s (`artifacts/vbe-next/qualified-local-final/global.trx`). Couverture du complément : **24 303 / 24 960 lignes — 97,36 %**, **25 316 / 26 377 branches — 95,97 %**. Aucun code de production n'est exclu. Les 13 scénarios Excel sont désactivés pour éviter les fermetures concurrentes ; SOLIDWORKS reste NOT_RUN. Il manque **657 lignes et 1 061 branches**. Les trois nouveaux fichiers de classes et ParamArray sont à **100 % lignes et branches** ; quatre méthodes du fichier des options restent incomplètes.
+
+Preuves : `2e065eb0-4302-43c8-b049-14f8fb397b11/coverage.cobertura.xml`, `coverage-summary.json` et `coverage-inventory.csv` dans le même répertoire final. Les passages exploratoires échoués ne remplacent pas ce résultat. Les nouveaux scénarios Excel et leurs interruptions sont décrits dans la [qualification native](reference/native-qualification.md). La couverture actuelle n'est pas annoncée à 100 % et la mesure après PR #6 reste un résultat historique.
+
+## Mesure après intégration de la PR #6 et complétion IDE
+
+Mesure du **28 septembre 2026**, après la fusion `c5f64eb` et le lot IDE décrit dans l'[inventaire](reference/vbe-capability-inventory.md). Compilation : **0 erreur, 0 avertissement**.
+
+| Mesure | Résultat |
+| --- | --- |
+| Suite globale VSTest | **1 281 réussis, 0 échec, 1 ignoré**, 8 min 7 s |
+| Lignes du complément | **23 821 / 24 469 — 97,35 %** |
+| Branches du complément | **24 724 / 25 769 — 95,94 %** |
+| Excel automatisé | **Dix scénarios réussis** |
+| SOLIDWORKS | **NOT_RUN**, aucune instance préchargée |
+| Concepteurs WinForms | **31 surfaces validées** après intégration PR #6 |
+| Organisation miroir | **171 miroirs pour 228 fichiers de production** |
+| Catalogue LLM | **197 outils**, dont 17 nouveaux contrats IDE |
+
+Il reste **648 lignes et 1 045 branches** non exécutées. Les nouveaux adaptateurs natifs et les mises à jour GitHub ajoutent du code à couvrir ; les mesures historiques à 100 % ne décrivent pas le code actuel. Aucun code du complément n'a été exclu. La couverture mesure l'assembly `CodexVBE` dans VSTest ; les qualifications Excel sont indépendantes, et l'installation réelle par `VBAi.Updater` reste NOT_RUN faute de release signée de test.
+
+Les dix scénarios Excel incluent la protection sauvegardée/réouverte, le renommage public intermodules et son annulation, l'ajustement UserForm, l'explorateur, les options Format/Ancrage restaurées, les pages Toolbox MSAA et les valeurs/tableaux retournés par une invocation unique. La [qualification native](reference/native-qualification.md) précise leurs limites.
+
+Preuves : `artifacts/vbe-completion/qualified-global/global.trx` et `136ec1d1-d534-432d-918d-64b5d9210601/coverage.cobertura.xml` dans ce même répertoire. `coverage-summary.json` et `coverage-inventory.csv` contiennent les compteurs et méthodes encore incomplètes. Organisation : `artifacts/vbe-completion/test-layout.json`. Designers : `artifacts/pr6-integration/designers/designers.json`. Les passages exploratoires échoués sont conservés séparément et ne constituent pas la validation finale.
+
 ## Mesure après intégration de la PR #5
 
 Mesure du **28 septembre 2026**, code **`a151498`** : À propos et rapports de problème GitHub/Outlook intégrés avec les fonctionnalités IDE de main. Compilation : **0 erreur, 0 avertissement**.

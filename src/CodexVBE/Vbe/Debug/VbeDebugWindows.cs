@@ -448,6 +448,12 @@ namespace CodexVBE
             public string Type;
             /// <summary>Valeur courante lue, si elle est disponible.</summary>
             public object Value;
+            /// <summary>Choix natifs observés, sans inventer de valeur pour les listes non accessibles.</summary>
+            public IList<string> Choices = new string[0];
+            /// <summary>Catalogue natif indexé; les entrées sans texte restent explicitement opaques.</summary>
+            public IList<OptionsNativeChoice> NativeChoices = new OptionsNativeChoice[0];
+            /// <summary>Index réellement sélectionné, ou -1 lorsque seul le champ éditable possède une valeur.</summary>
+            public int SelectedIndex = -1;
             /// <summary>Erreur de lecture du contrôle, si présente.</summary>
             public string Error;
             /// <summary>Indique si le contrôle est visible.</summary>
@@ -495,7 +501,7 @@ namespace CodexVBE
         }
 
         /// <summary>Implémente la lecture du dialogue Options avec UI Automation.</summary>
-        private sealed class NativeOptionsProbe : IWritableOptionsProbe
+        private sealed partial class NativeOptionsProbe : IWritableOptionsProbe
         {
             /// <summary>Racine UI Automation du dialogue.</summary>
             private AutomationElement root;
@@ -520,11 +526,7 @@ namespace CodexVBE
             /// <returns>Contrôles et valeurs, y compris les erreurs individuelles de lecture.</returns>
             public IList<OptionsControl> Controls(IntPtr dialog, int tabIndex)
             {
-                object tabPattern;
-                if (!tabItems[tabIndex].TryGetCurrentPattern(SelectionItemPattern.Pattern, out tabPattern))
-                    throw new InvalidOperationException("A native VBE Options tab is unreadable.");
-                ((SelectionItemPattern)tabPattern).Select();
-                PauseNative(75);
+                SelectOptionsTab(dialog, tabIndex);
                 var descendants = root.FindAll(TreeScope.Descendants,
                     new OrCondition(
                         new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.CheckBox),
@@ -532,7 +534,6 @@ namespace CodexVBE
                         new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit),
                         new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ComboBox),
                         new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.List),
-                        new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem),
                         new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Slider),
                         new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text)));
                 if (descendants.Count > 2000)
@@ -545,10 +546,12 @@ namespace CodexVBE
                     try
                     {
                         ControlType kind = element.Current.ControlType;
+                        if (kind == ControlType.Edit && element.Current.NativeWindowHandle != 0 &&
+                            ClassName(OptionsComboParent(new IntPtr(element.Current.NativeWindowHandle))) == "ComboBox") continue;
                         var control = new OptionsControl { Name = element.Current.Name,
                             Type = kind.ProgrammaticName, Visible = !element.Current.IsOffscreen,
                             Enabled = element.Current.IsEnabled };
-                        if (!control.Visible || !control.Enabled) { controls.Add(control); continue; }
+                        if (!control.Visible || (!control.Enabled && kind != ControlType.ComboBox)) { controls.Add(control); continue; }
                         try
                         {
                             if (kind == ControlType.CheckBox &&
@@ -557,7 +560,33 @@ namespace CodexVBE
                             else if ((kind == ControlType.RadioButton || kind == ControlType.ListItem) &&
                                 element.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object selection))
                                 control.Value = ((SelectionItemPattern)selection).Current.IsSelected;
-                            else if ((kind == ControlType.Edit || kind == ControlType.ComboBox) &&
+                            else if (kind == ControlType.ComboBox || kind == ControlType.List)
+                            {
+                                if (element.Current.IsPassword) throw new InvalidOperationException("A password list cannot be inspected.");
+                                if (kind == ControlType.ComboBox && element.Current.NativeWindowHandle != 0 &&
+                                    ClassName(new IntPtr(element.Current.NativeWindowHandle)) == "ComboBox")
+                                {
+                                    ReadOptionsCombo(new IntPtr(element.Current.NativeWindowHandle), control);
+                                    controls.Add(control); continue;
+                                }
+                                var choices = element.FindAll(TreeScope.Descendants,
+                                    new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem))
+                                    .Cast<AutomationElement>().Where(x => x.Current.IsEnabled &&
+                                        !string.IsNullOrWhiteSpace(x.Current.Name) &&
+                                        x.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object itemPattern)).ToArray();
+                                control.Choices = choices.Select(x => x.Current.Name).ToArray();
+                                if (element.TryGetCurrentPattern(SelectionPattern.Pattern, out object listPattern))
+                                {
+                                    var selectedItems = ((SelectionPattern)listPattern).Current.GetSelection();
+                                    if (selectedItems.Length != 1 || string.IsNullOrWhiteSpace(selectedItems[0].Current.Name))
+                                        throw new InvalidOperationException("The native list selection is absent or ambiguous.");
+                                    control.Value = selectedItems[0].Current.Name;
+                                }
+                                else if (!element.Current.IsPassword && element.TryGetCurrentPattern(ValuePattern.Pattern, out object listValue))
+                                    control.Value = ((ValuePattern)listValue).Current.Value;
+                                else throw new InvalidOperationException("The native list selection cannot be read.");
+                            }
+                            else if (kind == ControlType.Edit &&
                                 !element.Current.IsPassword &&
                                 element.TryGetCurrentPattern(ValuePattern.Pattern, out object input))
                                 control.Value = ((ValuePattern)input).Current.Value;
@@ -580,7 +609,10 @@ namespace CodexVBE
                     .Cast<AutomationElement>().Where(x => !x.Current.IsOffscreen && x.Current.IsEnabled && x.Current.ControlType.ProgrammaticName == type).ToArray();
                 if (candidates.Length != 1) throw new InvalidOperationException("The exact option control is absent or ambiguous.");
                 var selected = candidates[0];
-                if (type == "ControlType.CheckBox" && selected.TryGetCurrentPattern(TogglePattern.Pattern, out object toggle))
+                if (type == "ControlType.ComboBox" && selected.Current.NativeWindowHandle != 0 &&
+                    ClassName(new IntPtr(selected.Current.NativeWindowHandle)) == "ComboBox")
+                    WriteOptionsCombo(new IntPtr(selected.Current.NativeWindowHandle), (string)value);
+                else if (type == "ControlType.CheckBox" && selected.TryGetCurrentPattern(TogglePattern.Pattern, out object toggle))
                 {
                     var pattern = (TogglePattern)toggle;
                     if (pattern.Current.ToggleState == ToggleState.Indeterminate) throw new InvalidOperationException("An indeterminate option is not writable.");
@@ -594,6 +626,15 @@ namespace CodexVBE
                     var pattern = (ValuePattern)input;
                     if (pattern.Current.IsReadOnly) throw new InvalidOperationException("The option is read-only.");
                     pattern.SetValue(Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture));
+                }
+                else if ((type == "ControlType.ComboBox" || type == "ControlType.List") && !selected.Current.IsPassword)
+                {
+                    var choices = selected.FindAll(TreeScope.Descendants,
+                        new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem))
+                        .Cast<AutomationElement>().Where(x => x.Current.IsEnabled && x.Current.Name == (string)value &&
+                            x.TryGetCurrentPattern(SelectionItemPattern.Pattern, out object itemPattern)).ToArray();
+                    if (choices.Length != 1) throw new InvalidOperationException("The exact native choice is absent or ambiguous.");
+                    ((SelectionItemPattern)choices[0].GetCurrentPattern(SelectionItemPattern.Pattern)).Select();
                 }
                 else throw new InvalidOperationException("The option has no supported writable pattern.");
                 PauseNative(100);
