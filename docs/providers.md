@@ -57,6 +57,8 @@ Les emplacements suivent la [configuration officielle Codex](https://developers.
 
 Codex est le fournisseur par défaut. Le complément utilise le processus `codex app-server` et le compte ChatGPT authentifié par le CLI, sans clé OpenAI API. La configuration propose l’état du compte, la connexion et l’actualisation ; les champs de clé et d’endpoint des transports HTTP sont masqués pour ce mode.
 
+Le complément résout l’exécutable dans cet ordre : `CODEXVBE_CODEX_CLI` si elle est définie, l’ancien emplacement `%LOCALAPPDATA%\Programs\OpenAI\Codex\bin\codex.exe`, les sous-dossiers versionnés de `%LOCALAPPDATA%\OpenAI\Codex\bin` (exécutable le plus récent), puis `codex.exe` dans le `PATH` du processus hôte. Aucun identifiant de version propre à un poste n’est enregistré. Sur une installation non couverte par ces emplacements, définir `CODEXVBE_CODEX_CLI` vers le véritable exécutable natif et redémarrer Excel ou SOLIDWORKS. Un lanceur `.cmd` n’est pas pris en charge par ce transport sans shell.
+
 Le catalogue provient de `model/list`. Les niveaux de raisonnement disponibles et la valeur initiale proviennent des métadonnées du modèle. Le chat transmet le modèle et l’effort au prochain tour, conserve l’identifiant du thread par session et reprend celui-ci avec `thread/resume`.
 
 Le changement de fournisseur actualise son catalogue. Les réglages par défaut et ceux de chaque conversation sont persistés séparément : voir [Conversation et sessions](chat-ui.md). Un abonnement ChatGPT et des crédits OpenAI API sont des moyens d’accès distincts.

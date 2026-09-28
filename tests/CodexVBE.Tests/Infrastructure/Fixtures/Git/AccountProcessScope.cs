@@ -17,6 +17,8 @@ namespace CodexVBE.Tests.Infrastructure
         private readonly Func<ProcessStartInfo,Process> start = CodexAccount.StartProcess;
         private readonly Func<Process,int,bool> wait = CodexAccount.WaitForExit;
         private readonly Func<string,bool> exists = CodexAccount.FileExists;
+        private readonly Func<string,string[]> directories = CodexAccount.GetDirectories;
+        private readonly Func<string,DateTime> lastWrite = CodexAccount.GetLastWriteTimeUtc;
         private readonly string priorMode = Environment.GetEnvironmentVariable("CODEXVBE_TEST_ACCOUNT_MODE");
         private readonly string priorMarker = Environment.GetEnvironmentVariable("CODEXVBE_TEST_ACCOUNT_MARKER");
         private readonly List<Process> logins = new List<Process>();
@@ -59,6 +61,7 @@ namespace CodexVBE.Tests.Infrastructure
         {
             foreach(var process in logins) {if(!process.HasExited) {process.Kill();process.WaitForExit(5000);}process.Dispose();}
             CodexAccount.StartProcess=start;CodexAccount.WaitForExit=wait;CodexAccount.FileExists=exists;
+            CodexAccount.GetDirectories=directories;CodexAccount.GetLastWriteTimeUtc=lastWrite;
             Environment.SetEnvironmentVariable("CODEXVBE_TEST_ACCOUNT_MODE",priorMode);
             Environment.SetEnvironmentVariable("CODEXVBE_TEST_ACCOUNT_MARKER",priorMarker);
             scope.Dispose();

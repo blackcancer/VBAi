@@ -8,7 +8,7 @@ même lorsque le chat est fermé. **Affichage → Assistant VBAi** ouvre le chat
 Les entrées sont installées au chargement du complément ; après une mise à jour, recharger celui-ci.
 
 Dans le menu `…` du chat, **GitHub · synchroniser le VBA…** reste disponible pour le document sélectionné.
-Le document doit être enregistré, son projet déverrouillé et le VBE en mode conception.
+Le document doit être enregistré et accessible sur disque, son projet déverrouillé et le VBE en mode conception. Si l’hôte ne fournit pas encore de chemin au projet VBA actif, l’ouverture de la fenêtre GitHub demande d’abord l’enregistrement au lieu d’afficher une exception COM brute.
 
 1. Saisir l’URL HTTPS d’un dépôt GitHub existant et la branche, puis **Lier le dépôt**.
    Cette action consulte la branche distante, sans publier ni importer de code.
