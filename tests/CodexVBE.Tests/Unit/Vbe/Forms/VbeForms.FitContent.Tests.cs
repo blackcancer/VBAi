@@ -2,6 +2,7 @@ namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.ComponentModel;
+    using System.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using CodexVBE;
 
@@ -72,6 +73,9 @@ namespace CodexVBE.Tests.Unit
         [TestMethod]
         public void FitRejectsUnknownEmptyUnavailableAndNonfiniteMeasurements()
         {
+            var wrongRoot = Create(); wrongRoot.Target.ClassName = "Frame";
+            Assert.ThrowsException<InvalidOperationException>(() => wrongRoot.Service.ApplyFitFormContent(wrongRoot.Request()));
+            Assert.AreEqual(0, wrongRoot.Writes);
             for (int fault = 0; fault < 9; fault++)
             {
                 var f = Create(true);
@@ -104,6 +108,137 @@ namespace CodexVBE.Tests.Unit
                 Assert.IsFalse((bool)result.RetryAllowed);
                 Assert.AreEqual(fault == 0 ? 1 : 2, f.Writes);
             }
+        }
+
+        [STATestMethod]
+        public void NativeDpiQuantizesContainerDimensionsAndNeverRoundsScrollExtents()
+        {
+            var nativeObject = VbeForms.NativeDesignerObject; var readDpi = VbeForms.MeasureFitWindowDpi;
+            try
+            {
+                using (var window = new System.Windows.Forms.Form())
+                {
+                    uint actualDpi = readDpi(window.Handle); Assert.IsTrue(actualDpi >= 48 && actualDpi <= 768);
+                    foreach (uint dpi in new uint[] { 0, 47, 48, 96, 144, 768, 769 }) foreach (string action in new[] { "fit_container", "fit_scroll_extent" })
+                    {
+                        var f = Create(); f.Host.MainWindow.HWnd = window.Handle.ToInt64();
+                        VbeForms.NativeDesignerObject = target => ReferenceEquals(target, f.Target);
+                        VbeForms.MeasureFitWindowDpi = handle => { Assert.AreEqual(window.Handle, handle); return dpi; };
+                        var request = f.Request(action); request.ControlPath = "UserForm";
+                        if (dpi < 48 || dpi > 768) { Assert.ThrowsException<InvalidOperationException>(() => f.Service.PreviewFitFormContent(request)); Assert.AreEqual(0, f.Writes); }
+                        else
+                        {
+                            dynamic preview = f.Service.PreviewFitFormContent(request); double pixel = 72d / dpi;
+                            Assert.AreEqual(pixel, (double)preview.Plan.TolerancePoints);
+                            Assert.AreEqual(action == "fit_container" ? Math.Ceiling(85d / pixel) * pixel : 290d, (double)preview.Plan.WidthAfter, 0.0001);
+                            dynamic result = f.Service.ApplyFitFormContent(request); Assert.IsTrue((bool)result.Verified);
+                        }
+                    }
+                }
+            }
+            finally { VbeForms.NativeDesignerObject = nativeObject; VbeForms.MeasureFitWindowDpi = readDpi; }
+        }
+
+        [TestMethod]
+        public void NativeComponentDimensionsExposeCompletePropertyDescriptorContracts()
+        {
+            var previous = VbeForms.NativeDesignerObject;
+            try
+            {
+                VbeForms.NativeDesignerObject = target => true;
+                var f = Create(); var properties = f.Target.Metadata.Cast<PropertyDescriptor>().Where(p => p.Name != "Width" && p.Name != "Height").ToArray();
+                f.Target.Metadata = new PropertyDescriptorCollection(properties);
+                var descriptor = (PropertyDescriptor)FitCall("RequireFitProperty", f.Target, "Width", true, f.Form);
+                Assert.AreEqual(typeof(object), descriptor.ComponentType); Assert.AreEqual(typeof(double), descriptor.PropertyType); Assert.IsFalse(descriptor.IsReadOnly);
+                Assert.AreEqual(300d, descriptor.GetValue(f.Target)); descriptor.SetValue(f.Target, 123d); Assert.AreEqual(123d, f.Form.Properties.Item("Width").Stored);
+                Assert.IsFalse(descriptor.CanResetValue(f.Target)); Assert.IsFalse(descriptor.ShouldSerializeValue(f.Target)); Assert.ThrowsException<NotSupportedException>(() => descriptor.ResetValue(f.Target));
+                foreach (string fault in new[] { "absent", "indexed", "null", "type", "left" })
+                {
+                    f = Create(); f.Target.Metadata = new PropertyDescriptorCollection(new PropertyDescriptor[0]);
+                    if (fault == "absent") f.Form.Properties.Remove(f.Form.Properties.Item("Width"));
+                    if (fault == "indexed") f.Form.Properties.Item("Width").Indices = 1;
+                    if (fault == "null") f.Form.Properties.Item("Width").Stored = null;
+                    if (fault == "type") f.Form.Properties.Item("Width").Stored = "invalid";
+                    Assert.ThrowsException<InvalidOperationException>(() => FitCall("RequireFitProperty", f.Target, fault == "left" ? "Left" : "Width", true, f.Form), fault);
+                }
+                var root = Create();
+                foreach (string property in new[] { "Width", "Height" })
+                {
+                    var fallback = (PropertyDescriptor)FitCall("RequireFitProperty", new VbeFormsCoverageTests.Node(), property, true, root.Form);
+                    Assert.IsNotNull(fallback);
+                }
+            }
+            finally { VbeForms.NativeDesignerObject = previous; }
+        }
+
+        [TestMethod]
+        public void NumericAndControlsContractsRejectNullNonNumericReadonlyUnboundedAndAmbiguousData()
+        {
+            foreach (object value in new object[] { null, -1d, 32768d, double.NaN, double.PositiveInfinity })
+            {
+                var property = new VbeFormsCoverageTests.LiveProperty("Width", typeof(double), () => value);
+                Assert.ThrowsException<InvalidOperationException>(() => FitCall("ReadFitNumber", new object(), property));
+            }
+            foreach (Type type in new[] { typeof(float), typeof(double), typeof(decimal), typeof(int), typeof(short) })
+            {
+                var node = new VbeFormsCoverageTests.Node(); node.Metadata = new PropertyDescriptorCollection(new[] { new VbeFormsCoverageTests.LiveProperty("Width", type, () => Convert.ChangeType(100, type), value => { }) });
+                Assert.IsNotNull(FitCall("RequireFitProperty", node, "Width", true, null));
+            }
+            foreach (string fault in new[] { "readonly", "type", "missing-controls", "non-enumerable", "duplicate", "count" })
+            {
+                var f = Create();
+                if (fault == "readonly" || fault == "type")
+                {
+                    var property = fault == "readonly" ? new VbeFormsCoverageTests.LiveProperty("Width", typeof(double), () => 10d) : new VbeFormsCoverageTests.LiveProperty("Width", typeof(string), () => "10", value => { });
+                    f.Target.Metadata = new PropertyDescriptorCollection(new[] { property });
+                    Assert.ThrowsException<InvalidOperationException>(() => FitCall("RequireFitProperty", f.Target, "Width", true, null));
+                }
+                else
+                {
+                    if (fault == "missing-controls") f.Target.Metadata = new PropertyDescriptorCollection(new PropertyDescriptor[0]);
+                    if (fault == "non-enumerable") f.Target.Controls = new object();
+                    if (fault == "duplicate") f.Target.Controls = new[] { f.Children[0], f.Children[0] };
+                    if (fault == "count") f.Target.Controls = Enumerable.Range(0, 513).Select(i => new VbeFormsCoverageTests.Node { Name = "Label" + i, ClassName = "Label", Parent = f.Target, Metadata = f.Children[0].Metadata }).ToArray();
+                    Assert.ThrowsException<InvalidOperationException>(() => FitCall("ReadFitChildren", f.Target, f.Form.Name), fault);
+                }
+            }
+            var foreign = Create(); foreign.Children[0].Parent = new VbeFormsCoverageTests.Node { Name = "Other" };
+            Assert.AreEqual(0, ((System.Collections.IList)FitCall("ReadFitChildren", foreign.Target, foreign.Form.Name)).Count);
+        }
+
+        [TestMethod]
+        public void FitCoversEveryPaddingViewportExtentAndReadbackBoundary()
+        {
+            foreach (string fault in new[] { "top-nan", "left-negative", "top-high", "inside-height", "outer-height", "zero-width", "zero-height", "height-high" })
+            {
+                var f = Create(); var request = f.Request();
+                if (fault == "top-nan") request.Top = double.NaN;
+                if (fault == "left-negative") request.Left = -1;
+                if (fault == "top-high") request.Top = 1001;
+                if (fault == "inside-height") f.Height = f.BorderY;
+                if (fault == "outer-height") f.BorderY = -1;
+                if (fault == "zero-width") { f.ChildLeft = f.ChildWidth = f.BorderX = 0; request.Left = 0; }
+                if (fault == "zero-height") { f.ChildTop = f.ChildHeight = f.BorderY = 0; request.Top = 0; }
+                if (fault == "height-high") f.ChildTop = 32767;
+                if (fault.StartsWith("top-") || fault == "left-negative") Assert.ThrowsException<ArgumentException>(() => f.Service.ApplyFitFormContent(request), fault);
+                else Assert.ThrowsException<InvalidOperationException>(() => f.Service.ApplyFitFormContent(request), fault);
+                Assert.AreEqual(0, f.Writes);
+            }
+            foreach (string fault in new[] { "ignored-height", "inside-small-y", "inside-large-x", "inside-large-y", "scroll-large-x", "scroll-large-y" })
+            {
+                var f = Create(); var request = f.Request(fault.StartsWith("scroll") ? "fit_scroll_extent" : "fit_container");
+                f.AfterWrite = () => { if (f.Writes != 2) return;
+                    if (fault == "ignored-height") f.Height = 200;
+                    if (fault == "inside-small-y") f.BorderY += 1;
+                    if (fault == "inside-large-x") f.BorderX -= 1;
+                    if (fault == "inside-large-y") f.BorderY -= 1;
+                    if (fault == "scroll-large-x") f.Width += 1;
+                    if (fault == "scroll-large-y") f.Height += 1;
+                };
+                dynamic result = f.Service.ApplyFitFormContent(request); Assert.IsTrue((bool)result.Uncertain, fault); Assert.AreEqual(2, f.Writes); Assert.IsFalse((bool)result.RetryAllowed);
+            }
+            var parent = Create(true); var valid = parent.Request(); valid.ParentPath = valid.ControlPath; valid.ControlPath = null;
+            Assert.IsTrue((bool)((dynamic)parent.Service.PreviewFitFormContent(valid)).ReadOnly);
         }
     }
 }

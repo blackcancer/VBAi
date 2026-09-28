@@ -13,7 +13,7 @@ namespace CodexVBE.Tests.Unit
             f.Project = new VbeFormsTests.FakeProject();
             f.Form = new VbeFormsCoverageTests.Form();
             f.Project.VBComponents.Add(f.Form);
-            var host = new VbeFormsTests.FakeVbe(); host.VBProjects.Add(f.Project);
+            var host = new FitHost(); host.VBProjects.Add(f.Project); f.Host = host;
             f.Service = new VbeForms(host);
             f.Target = nested ? new VbeFormsCoverageTests.Node { Name = "Frame1", ClassName = "Frame", Parent = f.Form.Designer } : f.Form.Designer;
             f.Children = new[] { new VbeFormsCoverageTests.Node { Name = "Label1", ClassName = "Label", Parent = f.Target } };
@@ -45,6 +45,7 @@ namespace CodexVBE.Tests.Unit
         private sealed class FitFixture
         {
             internal VbeForms Service;
+            internal FitHost Host;
             internal VbeFormsTests.FakeProject Project;
             internal VbeFormsCoverageTests.Form Form;
             internal VbeFormsCoverageTests.Node Target;
@@ -55,6 +56,7 @@ namespace CodexVBE.Tests.Unit
             internal double ScrollWidth = 500, ScrollHeight = 400;
             internal int Writes;
             internal bool Ignore, Fail, ChangeChild, ChangeDecoration;
+            internal Action AfterWrite;
             internal Request Request(string action = "fit_container")
             {
                 return new Request { Project = Project.Name, Form = Form.Name, ControlPath = Path,
@@ -73,7 +75,19 @@ namespace CodexVBE.Tests.Unit
                 if (property == "ScrollHeight") ScrollHeight = number;
                 if (ChangeChild) ChildLeft++;
                 if (ChangeDecoration) BorderX++;
+                AfterWrite?.Invoke();
             }
+        }
+        public sealed class FitHost
+        {
+            public List<VbeFormsTests.FakeProject> VBProjects { get; } = new List<VbeFormsTests.FakeProject>();
+            public FitWindow MainWindow { get; } = new FitWindow();
+        }
+        public sealed class FitWindow { public long HWnd { get; set; } }
+        private static object FitCall(string method, params object[] args)
+        {
+            try { return typeof(VbeForms).GetMethod(method, System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).Invoke(null, args); }
+            catch (System.Reflection.TargetInvocationException error) { System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error.InnerException).Throw(); throw; }
         }
     }
 }
