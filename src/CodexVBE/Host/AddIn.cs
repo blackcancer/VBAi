@@ -13,6 +13,15 @@ namespace CodexVBE
     [ComDefaultInterface(typeof(IDTExtensibility2))]
         public sealed class AddIn : IDTExtensibility2
     {
+        internal static Action<string> WriteLog = LoadLog.Write;
+        internal static Action<BridgeServer> StartBridge = (Action<BridgeServer>)Delegate.CreateDelegate(typeof(Action<BridgeServer>), typeof(BridgeServer).GetMethod("Start"));
+        internal static Func<VbeSession, ChatWindow> CreateChat = CreateChatNative;
+        internal static Func<object, Action, Action, Action, Action<string>, VbeMenu> CreateMenu = CreateMenuNative;
+        internal static Func<LlmSettings> ReadSettings = LlmSettings.Load;
+        internal static Func<Form, IWin32Window, DialogResult> ShowModal = (Func<Form, IWin32Window, DialogResult>)Delegate.CreateDelegate(typeof(Func<Form, IWin32Window, DialogResult>), typeof(Form).GetMethod("ShowDialog", new[] { typeof(IWin32Window) }));
+        internal static Func<string, string, MessageBoxButtons, MessageBoxIcon, DialogResult> ShowNotice = MessageBox.Show;
+        private static ChatWindow CreateChatNative(VbeSession session) { return new ChatWindow(session); }
+        private static VbeMenu CreateMenuNative(object host, Action chat, Action settings, Action github, Action<string> editor) { return new VbeMenu(host, chat, settings, github, editor); }
         /// <summary>Contrôle WinForms fournissant un contexte de synchronisation pour le serveur local.</summary>
         private Control dispatcher;
         /// <summary>Serveur de commandes local rattaché à l’instance du VBE.</summary>
@@ -36,7 +45,7 @@ namespace CodexVBE
         public AddIn()
         {
             var process = Process.GetCurrentProcess();
-            LoadLog.Write("Constructed: " + process.ProcessName + " PID=" + process.Id);
+            WriteLog("Constructed: " + process.ProcessName + " PID=" + process.Id);
         }
 
         /// <summary>Initialise la session, démarre le pont local et ajoute les commandes de menu.</summary>
@@ -49,27 +58,27 @@ public void OnConnection(object application, int connectMode, object addInInstan
             try
             {
                 var process = Process.GetCurrentProcess();
-                LoadLog.Write("OnConnection: " + process.ProcessName + " PID=" + process.Id);
+                WriteLog("OnConnection: " + process.ProcessName + " PID=" + process.Id);
                 vbe = application;
                 UiText.Initialize(vbe);
                 addIn = addInInstance;
-                LoadLog.Write("AddInInst: " + (addIn == null ? "null" : addIn.GetType().FullName)
+                WriteLog("AddInInst: " + (addIn == null ? "null" : addIn.GetType().FullName)
                     + ", COM=" + (addIn != null && Marshal.IsComObject(addIn)));
-                try { LoadLog.Write("AddInInst ProgId: " + ((dynamic)addIn).ProgId); }
-                catch (Exception infoError) { LoadLog.Write("AddInInst ProgId unavailable: " + infoError.Message); }
+                try { WriteLog("AddInInst ProgId: " + ((dynamic)addIn).ProgId); }
+                catch (Exception infoError) { WriteLog("AddInInst ProgId unavailable: " + infoError.Message); }
                 dispatcher = new Control();
                 var handle = dispatcher.Handle;
                 server = new BridgeServer(dispatcher, new VbeSession(vbe), process.Id);
-                server.Start();
-                LoadLog.Write("Bridge started: CodexVBE." + process.Id);
-                try { menu = new VbeMenu(vbe, ShowChat, ShowSettings, ShowGitHub, command => { ShowChat(); chat.PrepareEditorAction(command); }); }
-                catch (Exception menuError) { LoadLog.Write("VBE menu failed: " + menuError); }
+                StartBridge(server);
+                WriteLog("Bridge started: CodexVBE." + process.Id);
+                try { menu = CreateMenu(vbe, ShowChat, ShowSettings, ShowGitHub, command => { ShowChat(); chat.PrepareEditorAction(command); }); }
+                catch (Exception menuError) { WriteLog("VBE menu failed: " + menuError.ToString()); }
                 try { ShowChat(); ToggleDock(); }
-                catch (Exception uiError) { LoadLog.Write("Assistant window failed: " + uiError); }
+                catch (Exception uiError) { WriteLog("Assistant window failed: " + uiError.ToString()); }
             }
             catch (Exception ex)
             {
-                LoadLog.Write("OnConnection failed: " + ex);
+                WriteLog("OnConnection failed: " + ex.ToString());
                 Dispose();
                 throw;
             }
@@ -93,7 +102,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
             { nativeChatControl = null; nativeChatWindow = null; docked = false; }
             if (chat == null || chat.IsDisposed)
             {
-                chat = new ChatWindow(new VbeSession(vbe));
+                chat = CreateChat(new VbeSession(vbe));
                 chat.DockRequested += ToggleDock;
                 chat.FormClosed += (sender, args) => chat = null;
                 if (docked && nativeChatControl != null) nativeChatControl.Attach(chat);
@@ -113,12 +122,12 @@ public void OnConnection(object application, int connectMode, object addInInstan
                 }
                 catch (Exception ownerError)
                 {
-                    LoadLog.Write("VBE window owner unavailable: " + ownerError.Message);
+                    WriteLog("VBE window owner unavailable: " + ownerError.Message);
                     chat.Show();
                 }
             }
             else chat.Activate();
-            LoadLog.Write("Assistant window shown.");
+            WriteLog("Assistant window shown.");
         }
 
         /// <summary>Ouvre les paramètres depuis la fenêtre de conversation ou directement.</summary>
@@ -127,8 +136,8 @@ public void OnConnection(object application, int connectMode, object addInInstan
             try
             {
                 if (chat != null && !chat.IsDisposed) chat.ShowSettings(VbeOwner());
-                else using (var dialog = new LlmSettingsWindow(LlmSettings.Load()))
-                    dialog.ShowDialog(VbeOwner());
+                else using (var dialog = new LlmSettingsWindow(ReadSettings()))
+                    ShowModal(dialog, VbeOwner());
             }
             catch (Exception ex) { ReportMenuError(ex); }
         }
@@ -153,8 +162,8 @@ public void OnConnection(object application, int connectMode, object addInInstan
                 var session = new VbeSession(vbe);
                 string scope = session.GitScope(path);
                 using (var dialog = new GitWindow(session.GitProject(path, scope), scope,
-                    (string)project.Name, LlmSettings.Load().GitHubAccount))
-                    dialog.ShowDialog(VbeOwner());
+                    (string)project.Name, ReadSettings().GitHubAccount))
+                    ShowModal(dialog, VbeOwner());
             }
             catch (Exception ex) { ReportMenuError(ex); }
         }
@@ -163,8 +172,8 @@ public void OnConnection(object application, int connectMode, object addInInstan
                 /// <param name="ex">Exception levée pendant une action de menu.</param>
 private void ReportMenuError(Exception ex)
         {
-            LoadLog.Write("VBE menu action failed: " + ex);
-            MessageBox.Show(ex.Message, "VBAi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            WriteLog("VBE menu action failed: " + ex.ToString());
+            ShowNotice(ex.Message, "VBAi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
         /// <summary>Attache ou détache la fenêtre de conversation au cadre principal du VBE.</summary>
@@ -185,9 +194,9 @@ private void ReportMenuError(Exception ex)
                     try
                     {
                         addInForWindow = ((dynamic)vbe).AddIns.Item("CodexVBE.AddIn");
-                        LoadLog.Write("Tool window AddIn from collection: " + ((dynamic)addInForWindow).ProgId);
+                        WriteLog("Tool window AddIn from collection: " + ((dynamic)addInForWindow).ProgId);
                     }
-                    catch (Exception lookupError) { LoadLog.Write("Tool window AddIn lookup failed: " + lookupError.Message); }
+                    catch (Exception lookupError) { WriteLog("Tool window AddIn lookup failed: " + lookupError.Message); }
                     nativeChatWindow = ((IVbeWindows)((dynamic)vbe).Windows).CreateToolWindow((IVbeAddIn)addInForWindow, "CodexVBE.ChatToolWindow",
                         "VBAi", "{B5C96ED5-1B16-497C-8441-B3F471F9F92B}", ref document);
                     nativeChatControl = document as ChatToolWindow;
@@ -196,12 +205,12 @@ private void ReportMenuError(Exception ex)
                 ((dynamic)nativeChatWindow).Visible = true;
                 nativeChatControl.Attach(chat); docked = true;
                 try { ((dynamic)vbe).MainWindow.LinkedWindows.Add(nativeChatWindow); }
-                catch (Exception positionError) { LoadLog.Write("Native chat main-frame docking unavailable: " + positionError.Message); }
+                catch (Exception positionError) { WriteLog("Native chat main-frame docking unavailable: " + positionError.Message); }
                 ((dynamic)nativeChatWindow).SetFocus();
             }
             catch (Exception ex)
             {
-                LoadLog.Write("Native chat docking failed: " + ex);
+                WriteLog("Native chat docking failed: " + ex.ToString());
                 try { if (!chat.TopLevel) nativeChatControl?.Detach(chat); } catch { }
                 docked = false;
                 try { if (nativeChatWindow != null) ((dynamic)nativeChatWindow).Close(); } catch { }
@@ -216,7 +225,7 @@ private void ReportMenuError(Exception ex)
         /// <param name="custom">Données personnalisées transmises par l’hôte, éventuellement modifiées par l’add-in.</param>
 public void OnDisconnection(int removeMode, ref object[] custom)
         {
-            LoadLog.Write("OnDisconnection: " + removeMode);
+            WriteLog("OnDisconnection: " + removeMode);
             Dispose();
         }
 

@@ -57,11 +57,16 @@ namespace CodexVBE.Tests.Unit
             public string Caption { get; set; }
             public string Tag { get; set; }
             public string TooltipText { get; set; }
+            public object Picture { get; set; }
+            public object Mask { get; set; }
+            public int Style { get; set; }
+            public bool RejectDelete { get; set; }
             public FakeControls Controls { get; } = new FakeControls();
             public int DeleteCount { get; private set; }
 
             public void Delete()
             {
+                if (RejectDelete) throw new InvalidOperationException("Delete rejected");
                 DeleteCount++;
             }
         }

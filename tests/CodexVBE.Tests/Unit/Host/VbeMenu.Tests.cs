@@ -130,6 +130,7 @@ namespace CodexVBE.Tests.Unit
 {
     using System;
     using System.Collections;
+    using System.Reflection;
     using System.Collections.Generic;
     using CodexVBE;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -138,6 +139,36 @@ namespace CodexVBE.Tests.Unit
     [TestCategory("Unit")]
     public sealed partial class VbeMenuLifecycleTests
     {
+        [STATestMethod]
+        public void NativeMenuPicturesLocalizedEditorBarsAndRemovalFailuresKeepAllGuards()
+        {
+            using (var theme = new CodexVBE.Tests.Infrastructure.ThemeScope()) using (var culture = new CodexVBE.Tests.Infrastructure.LocalizationScope())
+            {
+                var host = Host(); host.CommandBars[0].Controls.Items.Insert(0, new FakeButton { Caption = null }); host.CommandBars = new[] { host.CommandBars[0], new FakeBar { Type = 0, Name = "Code Window (Break)", Controls = new FakeControls() }, new FakeBar { Type = 0, Name = "Fenêtre code", Controls = new FakeControls() }, new FakeBar { Type = 0, Name = null, Controls = new FakeControls() } };
+                using (var menu = new VbeMenu(host, () => { }, () => { }, () => { }, command => { }, (b, i, d, h) => { }, null, null))
+                {
+                    var view = host.CommandBars[0].Controls.Items[1].Controls.Items[0]; Assert.AreEqual(0, view.Style); menu.ReadIcon = t => (System.Drawing.Icon)System.Drawing.SystemIcons.Information.Clone(); typeof(VbeMenu).GetMethod("SetIcon", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(menu, new object[] { view, typeof(ChatWindow) }); Assert.AreEqual(3, view.Style); Assert.IsNotNull(view.Picture); Assert.IsNotNull(view.Mask); Assert.AreEqual(3, host.CommandBars[1].Controls.Items.Count); Assert.AreEqual(3, host.CommandBars[2].Controls.Items.Count);
+                    typeof(VbeMenu).GetMethod("SetIcon", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(menu, new object[] { new object(), typeof(ChatWindow) });
+                    typeof(VbeMenu).GetMethod("SetIcon", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(menu, new object[] { new object(), typeof(VbeMenuLifecycleTests) });
+                }
+                var nested = typeof(VbeMenu).GetNestedType("MenuPicture", BindingFlags.NonPublic); var invalid = Assert.ThrowsException<TargetInvocationException>(() => Activator.CreateInstance(nested, true)); Assert.IsInstanceOfType<FormatException>(invalid.InnerException);
+                host = Host(); Assert.ThrowsException<ArgumentException>(() => new VbeMenu(host, () => { }, () => { }, () => { }));
+                var nativeSubscription = VbeMenu.SubscribeDefault; try { VbeMenu.SubscribeDefault = (b, i, d, h) => { }; using (var publicMenu = new VbeMenu(Host(), () => { }, () => { }, () => { })) Assert.IsNotNull(publicMenu); } finally { VbeMenu.SubscribeDefault = nativeSubscription; }
+                host = Host(); var subscriptions = new List<object>(); using (var menu = new VbeMenu(host, () => { }, () => { }, () => { }, c => { }, (b, i, d, h) => subscriptions.Add(b), (b, i, d, h) => throw new InvalidOperationException("unsubscribe failed"), (b, t) => { })) { foreach (FakeButton button in subscriptions) button.RejectDelete = true; }
+                Assert.AreEqual(6, subscriptions.Count);
+            }
+        }
+        [TestMethod]
+        public void PartialMenuDestructionPreservesReadonlyNullDefenses()
+        {
+            foreach (var name in new[] { "viewButton", "settingsButton", "viewHandler", "settingsHandler" })
+            {
+                var menu = new VbeMenu(Host(), () => { }, () => { }, () => { }, null, (b, i, d, h) => { }, (b, i, d, h) => { }, (b, t) => { }); var field = typeof(VbeMenu).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic); var original = field.GetValue(menu);
+                try { field.SetValue(menu, null); menu.Dispose(); }
+                finally { field.SetValue(menu, original); menu.Dispose(); }
+                Assert.AreSame(original, field.GetValue(menu));
+            }
+        }
         [TestMethod]
         public void MenuActionsUseTheirOwnCallbacksAndDisposeRemovesEveryCreatedButton()
         {

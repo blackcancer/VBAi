@@ -9,6 +9,9 @@ namespace CodexVBE
         /// <summary>Ajoute les boutons principaux et, si demandé, les commandes de l’éditeur.</summary>
     internal sealed class VbeMenu : IDisposable
     {
+        internal static Action<object, Guid, int, Delegate> SubscribeDefault = ComEventsHelper.Combine;
+        internal Func<Type, System.Drawing.Icon> ReadIcon = ReadIconNative;
+        private static System.Drawing.Icon ReadIconNative(Type windowType) { return (System.Drawing.Icon)new System.ComponentModel.ComponentResourceManager(windowType).GetObject("$this.Icon"); }
         /// <summary>IID de l’interface Office utilisée pour recevoir les clics de CommandBarButton.</summary>
         private static readonly Guid ClickInterface = new Guid("000C0351-0000-0000-C000-000000000046");
         /// <summary>Bouton VBAi ajouté au menu View du VBE.</summary>
@@ -61,7 +64,7 @@ namespace CodexVBE
             Action<string> editorAction, Action<object, Guid, int, Delegate> subscribe,
             Action<object, Guid, int, Delegate> unsubscribe, Action<object, Type> applyIcon)
         {
-            this.subscribe = subscribe ?? new Action<object, Guid, int, Delegate>(ComEventsHelper.Combine);
+            this.subscribe = subscribe ?? SubscribeDefault;
             this.unsubscribe = unsubscribe ?? ((button, iid, dispid, handler) =>
                 ComEventsHelper.Remove(button, iid, dispid, handler));
             this.applyIcon = applyIcon ?? SetIcon;
@@ -121,7 +124,7 @@ namespace CodexVBE
             }
             catch (Exception ex)
             {
-                LoadLog.Write("VBE editor context menus unavailable: " + ex);
+                LoadLog.Write("VBE editor context menus unavailable: " + ex.ToString());
             }
         }
 
@@ -132,8 +135,7 @@ namespace CodexVBE
         {
             try
             {
-                var resources = new System.ComponentModel.ComponentResourceManager(windowType);
-                using (var icon = (System.Drawing.Icon)resources.GetObject("$this.Icon"))
+                using (var icon = ReadIcon(windowType))
                 using (var small = new System.Drawing.Icon(icon, 16, 16))
                 using (var source = small.ToBitmap())
                 {
