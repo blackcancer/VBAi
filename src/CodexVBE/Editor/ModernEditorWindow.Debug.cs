@@ -39,11 +39,12 @@ namespace CodexVBE
                 {
                     if (mode != 2) throw new InvalidOperationException("Compilation requires design mode.");
                     native.ShowNative(1, 1);
-                    VbeDebugWindows.EnsureNoCompileDialog();
+                    int hostProcessId = native.HostProcessId;
+                    VbeDebugWindows.EnsureNoCompileDialog(hostProcessId);
                     string diagnostic;
                     using (var completed = new ManualResetEventSlim())
                     {
-                        var observe = Task.Run(() => VbeDebugWindows.AwaitCompileDialog(completed));
+                        var observe = Task.Run(() => VbeDebugWindows.AwaitCompileDialog(completed, hostProcessId));
                         Exception failure = null;
                         try { debugger.CompileProject(new Request { Project = native.ProjectName, ExpectedMode = 2 }); }
                         catch (Exception error) { failure = error; }
@@ -60,6 +61,8 @@ namespace CodexVBE
                         int line = 1, column = 1, endLine = 1, endColumn = 1;
                         pane.GetSelection(ref line, ref column, ref endLine, ref endColumn);
                         var doc = await OpenModule(target);
+                        if (doc.Dirty || doc.Conflict || EditorDocument.Normalize(target.Read()) != doc.Text)
+                        { status.Text = diagnostic; return; } // Never underline an uncompiled draft.
                         await Script("diagnostics", doc.Id, versions[doc.Id], new[] { new { message = diagnostic, startLineNumber = line, startColumn = column, endLineNumber = endLine, endColumn = Math.Max(column + 1, endColumn), severity = 8, source = "VBA compiler" } });
                         await Script("reveal", line, column);
                     }

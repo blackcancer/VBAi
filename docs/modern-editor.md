@@ -43,7 +43,13 @@ Un thread dédié prépare les différences, analyse les snapshots et chiffre le
 
 Les caractères incompatibles avec la page de codes Windows sont refusés. Les écritures utilisent un patch de lignes et une relecture du formatage natif. En cas d’échec, un patch inverse est tenté ; tout échec de restauration est signalé.
 
-Les corps des procédures avec attributs masqués peuvent être modifiés. Le renommage seul d'une déclaration sur une ligne est également pris en charge dans les modules standards : export de sauvegarde, adaptation du propriétaire des attributs, rechargement par CodeModule.AddFromFile dans le même composant puis vérification du texte et des métadonnées par nouvel export. Le renommage inverse est testé dans Excel. Les signatures, déclarations multilignes et modules de classe/document/UserForm restent protégés. Ce rechargement reconstruit le texte du module et peut perdre ses points d'arrêt natifs ; leur inventaire n'est pas disponible. Si la restauration échoue, l'export original est conservé et son chemin est signalé.
+Les corps des procédures avec attributs masqués restent éditables. Le renommage et les modifications de signature sur une ligne sont pris en charge dans les modules standards, classes, modules de document et UserForms : export de sauvegarde, réassociation des attributs, rechargement du code seul dans le même composant et vérification du texte et des métadonnées par nouvel export. Les données du Designer ne sont pas rechargées. Les essais Excel vérifient notamment le membre par défaut et VB_PredeclaredId d'une classe, l'identité d'une feuille et le bouton d'un UserForm.
+
+Les déclarations multilignes portant des attributs utilisent un [remplacement contrôlé autorisé](monaco-attribute-replacement-proposal.md) pour les modules standards, classes et UserForms : export complet, import sous un nom temporaire unique, contrôle du code et des métadonnées, réutilisation du FRX original et vérification des propriétés Designer lisibles, puis remplacement et reconnexion au nouvel objet COM. L'original est relu avant son retrait. Une erreur déclenche sa restauration ; les exports restent disponibles si la restauration échoue. Un essai Excel avec une panne injectée après retrait vérifie ce chemin de récupération. Les contrôles tiers ou propriétés Designer non vérifiables bloquent le remplacement. Les modules de document, dont l'identité appartient à une feuille ou au classeur, restent exclus de ce remplacement.
+
+Les associations ambiguës (branches conditionnelles, métadonnées de paramètres après changement de signature, suppression/ajout simultané de procédures) restent protégées. Les variables de module portant des attributs ne sont pas remplacées silencieusement.
+
+Un rechargement du code peut perdre les points d'arrêt natifs et l'historique Undo ; aucun inventaire public ne permet de les restaurer exactement. Si la restauration échoue, l'export original est conservé et son chemin est signalé.
 
 Les brouillons sont chiffrés avec DPAPI sous `%LocalAppData%\CodexVBE\EditorDrafts`, sans service externe. Le nettoyage quotidien supprime les anciennes versions de plus de 30 jours, en conservant toujours le dernier fichier par module et les fichiers appartenant à un processus vivant. Les répertoires/jonctions de réanalyse sont ignorés. Un projet jamais enregistré n’a pas d’identité durable entre redémarrages. Une interruption avant réception/sauvegarde de la dernière frappe peut encore la perdre.
 
@@ -66,7 +72,7 @@ Les tests unitaires couvrent les révisions, conflits, plans devenus obsolètes,
 
 Le test `MonacoExcel`, activé par `VBAI_EDITOR_EXCEL_TEST=1`, utilise un classeur jetable : accents, synchronisation, conflit, sauvegarde/réouverture, renommage/suppression, récupération, conservation et renommage d'une procédure avec attribut masqué. Il valide aussi la compilation via Monaco, le marqueur de position native et le pas à pas sur la seule procédure jetable Debug.Print. Le probe de cycle de vie n'exécute aucune macro. Le probe enregistré vérifie séparément le double-clic, l’ancrage/détachement et la fermeture couplée. Les réglages COM et AccessVBOM temporaires sont restaurés. L’arbre VBE est identifié par HWND et lu par MSAA : certains hôtes exposent `Window.HWnd=0` et aucun enfant UIA pour cet arbre.
 
-Résultats détaillés locaux sous `artifacts/monaco/`. Les 32 Designers passent le chargement et le redimensionnement. Le parcours natif double-clic/ancrage/fermeture et le roundtrip Excel sont **PASS**. Les commandes de débogage/compilation utilisent les services natifs existants ; le parcours Excel de compilation sans erreur, instruction suivante, pas à pas et sortie est testé. Les diagnostics d'échec de compilation dans Monaco et les autres hôtes restent à qualifier. SOLIDWORKS reste **NOT_RUN**, conformément à la demande.
+Résultats détaillés locaux sous `artifacts/monaco/`. Les 32 Designers passent le chargement et le redimensionnement. Le parcours natif double-clic/ancrage/fermeture et le roundtrip Excel sont **PASS**. Les commandes de débogage/compilation utilisent les services natifs existants ; le parcours Excel de compilation sans erreur, instruction suivante, pas à pas et sortie est testé. Un vrai diagnostic de compilation Excel est également validé : identifiant non déclaré, sélection de la ligne native, marqueur Monaco, correction et disparition du marqueur. La capture des dialogues est isolée au PID propriétaire du VBE. Les autres hôtes restent à qualifier. SOLIDWORKS reste **NOT_RUN**, conformément à la demande.
 
 ### Intégration dans main
 
@@ -76,10 +82,18 @@ Le premier passage réel a révélé une exception WinForms lors d'une fermeture
 
 Le lot ciblé avant le dernier delta de la branche donne **93 réussis, 0 échec, 1 ignoré** (`artifacts/pr7-integration/contracts-final/integration.trx`). La qualification globale et sa mesure de couverture sont suivies dans [le bilan de couverture](test-coverage.md). Les scénarios Excel sont désactivés dans ce passage d'intégration pour préserver les essais concurrents de l'autre session ; ce passage ne répète donc pas la preuve native de la branche. Les builds d'intégration utilisent `BuildOutputRoot` pour conserver la DLL chargée dans Excel.
 
+### Diagnostics et attributs après PR #9
+
+L'intégration conserve les **204 outils LLM** et compte **190 miroirs pour 254 fichiers de production**. Les **32 surfaces WinForms** passent leur qualification (`artifacts/pr9-integration/designers/designers.json`). La construction corrigée produit **0 erreur, 0 avertissement**.
+
+Le scénario Excel final est **PASS** (`artifacts/pr9-integration/native-final/excel.trx`) : diagnostic réel, marqueur, correction, pas à pas, attributs standards/classes/formulaires, restauration après retrait et conservation des changements concurrents. Le correctif de fusion protège aussi le nom du composant lors d'un refus : seul le nom temporaire créé par l'opération peut être restauré. Voir [la qualification native](reference/native-qualification.md) et [le remplacement contrôlé](monaco-attribute-replacement-proposal.md) pour les limites.
+
 ## Sources techniques
 
 - [API publique Monaco](https://github.com/microsoft/monaco-editor) : contrats de fournisseurs de langage.
 - [Modèle d’objets VBIDE](https://learn.microsoft.com/en-us/office/vba/language/reference/visual-basic-add-in-model/objects-visual-basic-add-in-model) : code, volets et événements exposés.
 - [Attributs VBA et export/import](https://github.com/rubberduck-vba/Rubberduck/wiki/VB_Attribute-Annotations).
 - [Distribution WebView2](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution).
+
+- [Limites de l'API VBIDE concernant les points d'arrêt](https://rubberduckvba.blog/using-rubberduck/) : constat publié par le projet Rubberduck, cohérent avec les essais natifs de cette intégration.
 - [Thread STA et réentrance WebView2](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/threading-model).

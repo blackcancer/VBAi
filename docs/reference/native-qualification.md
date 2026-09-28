@@ -2,6 +2,14 @@
 
 État du 28 septembre 2026. Les preuves ci-dessous portent sur des scénarios précis ; elles ne transforment pas les fonctions absentes ou bornées de [functional-extensions.md](functional-extensions.md) en une couverture universelle. Le thème natif VBE reste exclu.
 
+## Diagnostics Monaco et attributs après PR #9
+
+Le scénario `MonacoExcel` a été exécuté sur la fusion corrigée : **1 réussi, 0 échec, 0 ignoré** (`artifacts/pr9-integration/native-final/excel.trx`). Excel et le VBE sont visibles ; la fixture ferme son propre classeur et sa propre instance.
+
+La preuve couvre un véritable diagnostic de compilation, sa ligne native, son marqueur Monaco puis sa disparition après correction, ainsi que le pas à pas de la procédure jetable. Les exports relus vérifient les attributs masqués des modules standards, classes et UserForms, les déclarations multilignes et la conservation du concepteur. Les échecs injectés après retrait restaurent un module standard et un formulaire ; une modification concurrente du concepteur et un renommage concurrent restent conservés lors du refus. Les modules de document ne sont pas remplacés.
+
+Les références COM externes, les points d'arrêt et l'historique Undo d'un composant remplacé ne sont pas garantis. Les contrôles tiers et propriétés opaques non vérifiables sont refusés. Cette qualification concerne Excel ; SOLIDWORKS reste **NOT_RUN** pour ce lot.
+
 ## Lot de complétion IDE après PR #6
 
 Les tests vivent dans le projet VSTest, sous `Integration/Hosts/Excel`, avec leurs helpers sous `Infrastructure/Hosts`. Chaque fixture ouvre Excel et son VBE de façon visible, travaille sur son seul classeur jetable et le ferme.

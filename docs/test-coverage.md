@@ -1,5 +1,23 @@
 # Couverture automatisée du complément
 
+## Après intégration de la PR #9 — diagnostics et attributs Monaco
+
+Mesure locale du **28 septembre 2026**, fusion de `d91ffb8` et garde supplémentaire du renommage concurrent. Construction isolée : **0 erreur, 0 avertissement**.
+
+| Mesure | Résultat |
+| --- | --- |
+| Suite globale VSTest | **1 388 réussis, 0 échec, 15 ignorés**, 6 min 25 s |
+| Lignes du complément C# | **25 883 / 27 930 — 92,67 %** |
+| Branches du complément C# | **26 501 / 29 523 — 89,76 %** |
+| Excel natif Monaco, passage séparé | **1 réussi, 0 échec, 0 ignoré** |
+| Concepteurs WinForms | **32 surfaces validées** |
+| Organisation miroir | **190 miroirs pour 254 fichiers de production** |
+| Catalogue LLM | **204 outils** |
+
+Il reste **2 047 lignes et 3 022 branches** C# non exécutées. Aucun code de production du complément n'est exclu. Les nouvelles opérations de remplacement ajoutent des chemins à couvrir ; l'objectif 100 % reste non atteint. Les 14 scénarios Excel et le scénario SOLIDWORKS sont désactivés dans la mesure globale. Le test Excel séparé ne contribue pas à ces pourcentages.
+
+Preuves finales : `artifacts/pr9-integration/qualified-global-final/global.trx`, `116dfc83-d9d5-4558-8e15-e3e6dfaf0e09/coverage.cobertura.xml`, `coverage-summary.json` et `coverage-inventory.csv` dans le même répertoire. Le rapport vide du premier passage exploratoire n'est pas une mesure de couverture. Le lot ciblé précédent compte **113 réussis, 0 échec, 1 ignoré** (`artifacts/pr9-integration/contracts/contracts.trx`) ; le correctif ultérieur est validé dans la suite finale et dans `artifacts/pr9-integration/native-final/excel.trx`. Les limites natives sont précisées dans [la qualification](reference/native-qualification.md).
+
 ## Après intégration de la PR #8 — thème natif expérimental
 
 Mesure locale du **28 septembre 2026**, après Monaco et le thème natif jusqu'à `264e432`, avec les correctifs de fusion et d'arrêt. Build isolé : **0 erreur, 0 avertissement**.

@@ -35,6 +35,18 @@ namespace CodexVBE.Tests.Integration
                     MonacoRuntimeTests.Wait(() => window.Ready); UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer").Stop();
                     MonacoRuntimeTests.Wait(() => MonacoRuntimeTests.Wait(window.Script("snapshots")).Contains(doc.Id));
                     UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer").Stop();
+                    // A real compiler diagnostic must reach Monaco and then disappear after correction.
+                    component.CodeModule.ReplaceLine(3, "    UnknownDiagnosticVariable = 1");
+                    MonacoRuntimeTests.Wait(window.ProcessDocuments(false));
+                    MonacoRuntimeTests.Wait(window.Script("command", "vbai.compile"));
+                    MonacoRuntimeTests.Wait(() => MonacoRuntimeTests.Wait(window.Script("testInfo")).Contains("\"markers\":1"));
+                    MonacoRuntimeTests.Wait(() => !UiInvoke.Field<bool>(window, "busy"));
+                    int diagnosticLine = 0, diagnosticColumn = 0, diagnosticEnd = 0, diagnosticEndColumn = 0;
+                    excel.VBE.ActiveCodePane.GetSelection(ref diagnosticLine, ref diagnosticColumn, ref diagnosticEnd, ref diagnosticEndColumn);
+                    Assert.AreEqual(3, diagnosticLine, "The native compiler must select the invalid identifier.");
+                    component.CodeModule.ReplaceLine(3, "    Debug.Print 1");
+                    MonacoRuntimeTests.Wait(window.ProcessDocuments(false));
+                    StringAssert.Contains(MonacoRuntimeTests.Wait(window.Script("testInfo")), "\"markers\":0");
                     // Exercise the real Monaco action -> WebView message -> VBE compilation path.
                     MonacoRuntimeTests.Wait(window.Script("command", "vbai.compile"));
                     MonacoRuntimeTests.Wait(() => UiInvoke.Field<System.Windows.Forms.Label>(window, "status").Text == UiText.Get("Compilation finished: no native diagnostics observed. Macros were not executed."));
@@ -87,6 +99,118 @@ namespace CodexVBE.Tests.Integration
                     guarded.Write(renamed, renamed.Replace("Sub Renamed", "Sub Special"));
                     File.Delete(verifyExport); special.Export(verifyExport);
                     StringAssert.Contains(File.ReadAllText(verifyExport, System.Text.Encoding.Default), "Attribute Special.VB_Description = \"Preserve me\"");
+                    // Multiline declarations and changed signatures retain opaque procedure metadata.
+                    string simple = EditorDocument.Normalize(guarded.Read());
+                    string complex = simple.Replace("Public Sub Special()", "Public Sub Special( _\n    Optional ByVal count As Long = 1)");
+                    var attributedDocument = MonacoRuntimeTests.Wait(window.OpenModule(guarded));
+                    MonacoRuntimeTests.Wait(() => MonacoRuntimeTests.Wait(window.Script("snapshots")).Contains(attributedDocument.Id));
+                    object oldSpecial = special;
+                    guarded.Write(simple, complex); special = guarded.Component;
+                    Assert.IsFalse(guarded.IsComponent(oldSpecial), "Multiline attributes require a staged replacement.");
+                    MonacoRuntimeTests.Wait(window.ProcessDocuments(false));
+                    Assert.AreSame(attributedDocument, MonacoRuntimeTests.Wait(window.OpenModule(new EditorVbeModule(excel.VBE, project, special))));
+                    StringAssert.Contains(attributedDocument.Text, "Optional ByVal count As Long = 1");
+                    UiInvoke.Field<System.Windows.Forms.Button>(window, "closeModule").PerformClick();
+                    MonacoRuntimeTests.Wait(() => !System.Linq.Enumerable.Any(window.Documents, item => item.Id == attributedDocument.Id));
+                    MonacoRuntimeTests.Wait(window.OpenModule(adapter));
+                    File.Delete(verifyExport); special.Export(verifyExport);
+                    StringAssert.Contains(File.ReadAllText(verifyExport, System.Text.Encoding.Default), "Attribute Special.VB_Description = \"Preserve me\"");
+                    Assert.IsTrue(guarded.IsComponent((object)special));
+                    // The same code-only reload must preserve a class component's identity and attributes.
+                    string classPath = Path.Combine(fixture.Root, "AttributedClass.cls");
+                    File.WriteAllText(classPath, "VERSION 1.0 CLASS\r\nBEGIN\r\n  MultiUse = -1\r\nEND\r\nAttribute VB_Name = \"AttributedClass\"\r\nAttribute VB_PredeclaredId = True\r\nPublic Property Get Value() As Long\r\nAttribute Value.VB_UserMemId = 0\r\n    Value = 42\r\nEnd Property\r\n", System.Text.Encoding.Default);
+                    dynamic classComponent = ((dynamic)project).VBComponents.Import(classPath);
+                    var classAdapter = new EditorVbeModule(excel.VBE, project, classComponent);
+                    string classBefore = EditorDocument.Normalize(classAdapter.Read());
+                    classAdapter.Write(classBefore, classBefore.Replace("Value() As Long", "Value() As Double"));
+                    Assert.IsTrue(classAdapter.IsComponent((object)classComponent));
+                    string classVerify = Path.Combine(fixture.Root, "class-verified.cls"); classComponent.Export(classVerify);
+                    string classAfter = File.ReadAllText(classVerify, System.Text.Encoding.Default);
+                    StringAssert.Contains(classAfter, "Attribute VB_PredeclaredId = True");
+                    StringAssert.Contains(classAfter, "Attribute Value.VB_UserMemId = 0");
+                    string classSingle = EditorDocument.Normalize(classAdapter.Read());
+                    string classMulti = classSingle.Replace("Value() As Double", "Value( _\n    Optional ByVal index As Long = 0) As Double");
+                    classAdapter.Write(classSingle, classMulti); classComponent = classAdapter.Component;
+                    File.Delete(classVerify); classComponent.Export(classVerify);
+                    StringAssert.Contains(File.ReadAllText(classVerify, System.Text.Encoding.Default), "Attribute Value.VB_UserMemId = 0");
+                    // Refusal must preserve a user's concurrent rename, not restore the old name.
+                    string renameBefore = EditorDocument.Normalize(guarded.Read());
+                    string oldName = (string)((dynamic)guarded.Component).Name;
+                    object retainedComponent = guarded.Component;
+                    int renameComponentCount = ((dynamic)project).VBComponents.Count;
+                    guarded.AttributeRewriteCheckpoint = phase => { if (phase == "prepared") ((dynamic)retainedComponent).Name = "ConcurrentRenameProbe"; };
+                    try
+                    {
+                        Assert.ThrowsException<InvalidOperationException>(() => guarded.Write(renameBefore,
+                            renameBefore.Replace("Optional ByVal count As Long = 1", "Optional ByVal count As Long = 2")));
+                        Assert.IsTrue(guarded.IsComponent(retainedComponent));
+                        Assert.AreEqual("ConcurrentRenameProbe", (string)((dynamic)retainedComponent).Name);
+                        Assert.AreEqual(renameBefore, EditorDocument.Normalize(guarded.Read()));
+                        Assert.AreEqual(renameComponentCount, (int)((dynamic)project).VBComponents.Count);
+                    }
+                    finally
+                    {
+                        guarded.AttributeRewriteCheckpoint = null;
+                        ((dynamic)retainedComponent).Name = oldName;
+                    }
+                    // Force failure after removal to qualify recovery using the actual Excel importer.
+                    string recoveryBefore = EditorDocument.Normalize(guarded.Read());
+                    string recoveryAfter = recoveryBefore.Replace("Optional ByVal count As Long = 1", "Optional ByVal count As Long = 2");
+                    int componentCount = ((dynamic)project).VBComponents.Count;
+                    guarded.AttributeRewriteCheckpoint = phase => { if (phase == "removed") throw new InvalidOperationException("Injected post-removal failure"); };
+                    Assert.ThrowsException<InvalidOperationException>(() => guarded.Write(recoveryBefore, recoveryAfter));
+                    guarded.AttributeRewriteCheckpoint = null; special = guarded.Component;
+                    Assert.AreEqual(recoveryBefore, EditorDocument.Normalize(guarded.Read()));
+                    Assert.AreEqual(componentCount, (int)((dynamic)project).VBComponents.Count);
+                    File.Delete(verifyExport); special.Export(verifyExport);
+                    StringAssert.Contains(File.ReadAllText(verifyExport, System.Text.Encoding.Default), "Attribute Special.VB_Description = \"Preserve me\"");
+                    // Host document identity and UserForm designer controls survive code-only rewrites.
+                    dynamic sheetComponent = ((dynamic)project).VBComponents.Item((string)workbook.Worksheets.Item(1).CodeName);
+                    dynamic formComponent = ((dynamic)project).VBComponents.Add(3);
+                    dynamic button = formComponent.Designer.Controls.Add("Forms.CommandButton.1", "PreservedButton"); button.Caption = "Preserved designer";
+                    foreach (object item in new object[] { sheetComponent, formComponent })
+                    {
+                        dynamic nativeComponent = item;
+                        string fixtureCode = Path.Combine(fixture.Root, "inplace-" + nativeComponent.Name + ".bas");
+                        File.WriteAllText(fixtureCode, "Public Sub MetadataProbe()\r\nAttribute MetadataProbe.VB_Description = \"Keep host identity\"\r\nEnd Sub\r\n", System.Text.Encoding.Default);
+                        nativeComponent.CodeModule.AddFromFile(fixtureCode);
+                        var inplace = new EditorVbeModule(excel.VBE, project, item);
+                        string oldText = EditorDocument.Normalize(inplace.Read());
+                        inplace.Write(oldText, oldText.Replace("MetadataProbe()", "MetadataProbe(Optional ByVal count As Long = 1)"));
+                        Assert.IsTrue(inplace.IsComponent(item));
+                        string verified = Path.Combine(fixture.Root, "inplace-" + nativeComponent.Name + ".export"); nativeComponent.Export(verified);
+                        StringAssert.Contains(File.ReadAllText(verified, System.Text.Encoding.Default), "Attribute MetadataProbe.VB_Description = \"Keep host identity\"");
+                    }
+                    Assert.AreEqual("Preserved designer", (string)formComponent.Designer.Controls.Item("PreservedButton").Caption);
+                    Assert.AreEqual((string)sheetComponent.Name, (string)workbook.Worksheets.Item(1).CodeName);
+                    var formAdapter = new EditorVbeModule(excel.VBE, project, formComponent);
+                    string formBefore = EditorDocument.Normalize(formAdapter.Read());
+                    string formAfter = formBefore.Replace("MetadataProbe(Optional ByVal count As Long = 1)", "MetadataProbe( _\n    Optional ByVal count As Long = 1)");
+                    formAdapter.Write(formBefore, formAfter); formComponent = formAdapter.Component;
+                    Assert.AreEqual("Preserved designer", (string)formComponent.Designer.Controls.Item("PreservedButton").Caption);
+                    string concurrentBefore = EditorDocument.Normalize(formAdapter.Read());
+                    object unchangedForm = formAdapter.Component;
+                    formAdapter.AttributeRewriteCheckpoint = phase => { if (phase == "prepared") ((dynamic)unchangedForm).Designer.Controls.Item("PreservedButton").Caption = "Concurrent Designer edit"; };
+                    Assert.ThrowsException<InvalidOperationException>(() => formAdapter.Write(concurrentBefore, concurrentBefore.Replace("count As Long = 1", "count As Long = 2")));
+                    formAdapter.AttributeRewriteCheckpoint = null;
+                    Assert.IsTrue(formAdapter.IsComponent(unchangedForm));
+                    Assert.AreEqual("Concurrent Designer edit", (string)((dynamic)unchangedForm).Designer.Controls.Item("PreservedButton").Caption);
+                    ((dynamic)unchangedForm).Designer.Controls.Item("PreservedButton").Caption = "Preserved designer";
+                    string formRecoveryBefore = EditorDocument.Normalize(formAdapter.Read());
+                    int formComponentCount = ((dynamic)project).VBComponents.Count;
+                    formAdapter.AttributeRewriteCheckpoint = phase => { if (phase == "removed") throw new InvalidOperationException("Injected UserForm rollback"); };
+                    Assert.ThrowsException<InvalidOperationException>(() => formAdapter.Write(formRecoveryBefore, formRecoveryBefore.Replace("count As Long = 1", "count As Long = 2")));
+                    formAdapter.AttributeRewriteCheckpoint = null; formComponent = formAdapter.Component;
+                    Assert.AreEqual(formRecoveryBefore, EditorDocument.Normalize(formAdapter.Read()));
+                    Assert.AreEqual(formComponentCount, (int)((dynamic)project).VBComponents.Count);
+                    Assert.AreEqual("Preserved designer", (string)formComponent.Designer.Controls.Item("PreservedButton").Caption);
+                    var sheetAdapter = new EditorVbeModule(excel.VBE, project, sheetComponent);
+                    string sheetBefore = EditorDocument.Normalize(sheetAdapter.Read());
+                    Assert.ThrowsException<InvalidOperationException>(() => sheetAdapter.Write(sheetBefore, sheetBefore.Replace("MetadataProbe(Optional ByVal count As Long = 1)", "MetadataProbe( _\n    Optional ByVal count As Long = 1)")));
+                    Assert.AreEqual(sheetBefore, EditorDocument.Normalize(sheetAdapter.Read()));
+                    Assert.IsTrue(sheetAdapter.IsComponent((object)sheetComponent));
+                    ((dynamic)project).VBComponents.Remove(formComponent);
+                    ((dynamic)project).VBComponents.Remove(classComponent);
                     ((dynamic)project).VBComponents.Remove(special);
                     MonacoRuntimeTests.Wait(window.Script("reveal", 3, 1));
                     MonacoRuntimeTests.Wait(window.Script("insert", "    ' local pending\n"));
