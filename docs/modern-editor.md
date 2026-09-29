@@ -6,6 +6,10 @@ Double-cliquer un module dans l’explorateur de projet du VBE ouvre son onglet 
 
 Monaco occupe toute la zone centrale des documents VBE, sans bordure, commandes de fenêtre ni bouton ancrer/détacher. Les Designers UserForm et l’explorateur d’objets gardent leur place native ; sélectionner leur panneau Propriétés ne réaffiche pas Monaco par-dessus. La disposition fixe reste dans `ModernEditorWindow.Designer.cs`. Le WebView et les onglets de documents sont les éléments dynamiques. Le Designer ne démarre ni navigateur, ni worker, ni COM.
 
+Le correctif `0a2c3e4` maintient la surface Monaco devant une fenêtre de code native qui vient de s’ouvrir : lorsque `ActiveWindow.Type` vaut `0`, le suivi ajuste l’ordre Win32 sans déplacement, redimensionnement ni activation. Les Designers et l’Explorateur d’objets ne déclenchent pas cette remise au premier plan ; le redimensionnement conserve leur ordre. Les cinq tests VSTest de l’hébergement passent dans `artifacts/coverage-resumed/native-zorder-accepted/zorder.trx`, avec de vraies fenêtres Win32 créées par les fixtures.
+
+Le parcours Excel visible du 29 septembre confirme le chargement de la DLL `main` installée, par comparaison de son identifiant d’assembly, puis l’ouverture automatique, le remplissage de la zone centrale, le redimensionnement et sa restauration. Après activation de `ThisWorkbook`, sa fenêtre native reste visible derrière Monaco. L’Explorateur d’objets masque Monaco et conserve son parent et sa géométrie. Preuve : `artifacts/coverage-resumed/excel-startup/monaco-startup.json`. Le classeur jetable et Excel sont fermés à la fin ; aucune macro n’est exécutée. Ce parcours ne constitue pas une nouvelle qualification SOLIDWORKS.
+
 La synchronisation automatique est continue après une pause de saisie. **Elle ne sauvegarde pas le classeur ou la macro sur disque**. Ctrl+S synchronise les modifications puis déclenche la commande Enregistrer native pour le projet de l’onglet. Un conflit fait apparaître les actions de comparaison, rechargement et résolution. Une nouvelle modification native après comparaison interdit l’écrasement.
 
 ## Assistance VBA

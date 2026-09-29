@@ -21,6 +21,27 @@ public static class MonacoStartupWindow {
     [DllImport("user32.dll")] public static extern bool EnumChildWindows(IntPtr parent, WindowCallback callback, IntPtr parameter);
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr window, StringBuilder text, int capacity);
     [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr window);
+    [DllImport("user32.dll")] public static extern IntPtr GetWindow(IntPtr window, uint command);
+    public static bool IsAboveInWorkspace(IntPtr editor, IntPtr native) {
+        IntPtr workspace = GetParent(editor);
+        while (native != IntPtr.Zero && GetParent(native) != workspace) native = GetParent(native);
+        if (native == IntPtr.Zero) return false;
+        for (IntPtr child = GetWindow(workspace, 5); child != IntPtr.Zero; child = GetWindow(child, 2)) {
+            if (child == editor) return true;
+            if (child == native) return false;
+        }
+        return false;
+    }
+    public static IntPtr FindCodePane(IntPtr root, string caption) {
+        IntPtr found = IntPtr.Zero;
+        EnumChildWindows(root, (window, unused) => {
+            var kind = new StringBuilder(128); GetClassName(window, kind, kind.Capacity);
+            var text = new StringBuilder(256); GetWindowText(window, text, text.Capacity);
+            if (kind.ToString() == "VbaWindow" && text.ToString() == caption) { found = window; return false; }
+            return true;
+        }, IntPtr.Zero);
+        return found;
+    }
     public static IntPtr FindEditor(IntPtr parent) {
         IntPtr found = IntPtr.Zero;
         EnumChildWindows(parent, (window, unused) => {
@@ -64,6 +85,31 @@ try {
     if (-not [MonacoStartupWindow]::IsWindowVisible($editorHandle)) { throw 'The automatic editor is hidden.' }
     $initial=Wait-Startup { Read-FillProof $editorHandle }
     Write-Output ('Initial workspace: ' + $initial.Width + 'x' + $initial.Height)
+    $pane=$vbe.VBProjects.Item(1).VBComponents.Item('ThisWorkbook').CodeModule.CodePane
+    $pane.Window.Visible=$true; $pane.Window.SetFocus()
+    $codeHandle=[IntPtr]$pane.Window.HWnd
+    # Some VBE code windows expose HWnd=0 through COM; resolve the owned native pane by its caption.
+    if ($codeHandle -eq [IntPtr]::Zero) {
+        $codeHandle=Wait-Startup {
+            $handle=[MonacoStartupWindow]::FindCodePane([IntPtr]$vbe.MainWindow.HWnd,[string]$pane.Window.Caption)
+            if ($handle -ne [IntPtr]::Zero) { $handle }
+        }
+    }
+    try {
+        [void](Wait-Startup { if ([MonacoStartupWindow]::IsAboveInWorkspace($editorHandle,$codeHandle)) { $true } })
+    } catch {
+        $chain=@(); $window=$codeHandle
+        while ($window -ne [IntPtr]::Zero) {
+            $name=[Text.StringBuilder]::new(128)
+            [void][MonacoStartupWindow]::GetClassName($window,$name,$name.Capacity)
+            $chain+=@{ Handle=$window.ToInt64(); Class=$name.ToString() }
+            $window=[MonacoStartupWindow]::GetParent($window)
+        }
+        Write-Output (@{ Editor=$editorHandle.ToInt64(); Workspace=([MonacoStartupWindow]::GetParent($editorHandle)).ToInt64(); CodeChain=$chain; ActiveType=[int]$vbe.ActiveWindow.Type } | ConvertTo-Json -Depth 5)
+        throw
+    }
+    if (-not $pane.Window.Visible -or -not [MonacoStartupWindow]::IsWindowVisible($editorHandle)) { throw 'The native code pane and Monaco must remain visible.' }
+    Write-Output 'PASS: the native code window remains open behind Monaco after native activation.'
     $width=$vbe.MainWindow.Width
     $vbe.MainWindow.Width=[Math]::Max(700,$width-120)
     $resized=Wait-Startup { $proof=Read-FillProof $editorHandle; if ($proof -and $proof.Width -ne $initial.Width) { $proof } }
@@ -83,7 +129,7 @@ try {
         $browserAfter.Left -ne $browserBounds.Left -or $browserAfter.Top -ne $browserBounds.Top -or
         $browserAfter.Right -ne $browserBounds.Right -or $browserAfter.Bottom -ne $browserBounds.Bottom) { throw 'Monaco disturbed the native Object Browser layout.' }
     [IO.Directory]::CreateDirectory([IO.Path]::GetFullPath($OutputDirectory)) | Out-Null
-    @{ ProcessId=$ownerProcess; OpenedAutomatically=$true; MenuInvoked=$false; Initial=$initial; Resized=$resized; Restored=$restored; NativeObjectBrowserVisible=$true; NativeObjectBrowserLayoutPreserved=$true; MonacoHiddenForNativeBrowser=$true } |
+    @{ ProcessId=$ownerProcess; OpenedAutomatically=$true; MenuInvoked=$false; Initial=$initial; Resized=$resized; Restored=$restored; NativeCodePaneVisible=$true; NativeCodePaneBehindMonaco=$true; NativeObjectBrowserVisible=$true; NativeObjectBrowserLayoutPreserved=$true; MonacoHiddenForNativeBrowser=$true } |
         ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $OutputDirectory 'monaco-startup.json') -Encoding UTF8
     Write-Output 'PASS: Monaco opened automatically, filled MDIClient, resized and restored without a menu, shortcut or pointer input.'
 } finally {

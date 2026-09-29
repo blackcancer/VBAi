@@ -4,18 +4,20 @@ Couverture et documentation actualisées le **29 septembre 2026**, après intég
 
 ## Couverture et documentation
 
-La [revue Astra](audits/2026-09-29-astra-behavior-audit.md) a déclenché l’arrêt du chantier de couverture demandé par l’utilisateur. Ses quatre correctifs et l’optimisation des fragments font l’objet de régressions fonctionnelles ; la dernière mesure globale ci-dessous précède ces modifications.
+La couverture a repris après les correctifs de la [revue Astra](audits/2026-09-29-astra-behavior-audit.md). Le passage global final `953c84f` inclut leurs régressions, les interfaces de la PR #12 et le correctif d’ordre des fenêtres Monaco.
 
 | Travail | État actuel | Critère de fin |
 | --- | --- | --- |
-| Couverture du code de production | Suite globale : 1 847 réussis, 0 échec, 21 ignorés ; 99,90 % lignes (30 472/30 503), 99,75 % branches (31 093/31 171), sans exclusion ; 31 lignes et 78 branches UI restantes après PR #12 | 100 % lignes et branches mesurées sur toute l’assembly, sans masquer du code ; suite globale verte |
+| Couverture du code de production | Suite globale : 1 867 réussis, 0 échec, 21 ignorés ; 100 % lignes (30 521/30 521), 100 % branches (31 195/31 195), sans exclusion | Cible atteinte pour l’assembly C# ; préserver la suite verte et les compteurs après chaque modification |
 | Organisation des tests | 240 miroirs pour 297 sources ; scénarios et fixtures complémentaires | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
-| Documentation IntelliSense | Complément : 5 353/5 353 déclarations documentées, audit intégré, aucune erreur syntaxique | Préserver les commentaires privés/publics et leurs paramètres ; documentation des tests distincte |
+| Documentation IntelliSense | Complément : 5 356/5 356 déclarations documentées, audit intégré, aucune erreur syntaxique | Préserver les commentaires privés/publics et leurs paramètres ; documentation des tests distincte |
 | Concepteurs WinForms | 46 surfaces WinForms et 412 contrôles enfants validés | Préserver cette accessibilité après chaque changement de structure ; qualifier aussi le rendu réel |
 
 Compléter chaque branche de couverture identifiée avant de passer à la suivante. Construire le lot de scénarios cohérent avant de le lancer, puis mesurer la suite globale. Les pourcentages actuels sont détaillés dans [le bilan de tests](test-coverage.md).
 
 La récupération de palette native conserve les modifications manuelles et archive atomiquement l’ancien fichier. Les 36 tests ciblés, le cycle Excel natif et le chargement normal avec le fichier utilisateur sont qualifiés ; voir [le thème natif](native-dark-theme.md). Le rendu global et les cas SOLIDWORKS restent distincts de cette validation.
+
+Le correctif d’ordre des fenêtres conserve le code natif derrière Monaco. Le parcours Excel visible vérifie la DLL `main` réinstallée, son ouverture automatique, le redimensionnement et la disposition inchangée de l’Explorateur d’objets. Les autres combinaisons de fenêtres et SOLIDWORKS restent à qualifier ; voir [l’éditeur Monaco](modern-editor.md).
 
 ## Extensions fonctionnelles du 28 septembre
 

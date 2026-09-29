@@ -1,10 +1,28 @@
 # Couverture automatisée du complément
 
-## État après revue Astra
+## Reprise après revue Astra
+
+Le lot `eca1c08` reprend la couverture sur les corrections Astra et les interfaces de la PR #12. Huit nouveaux scénarios miroir couvrent les politiques d’approbation et leur rollback, les notifications de thème entre threads et la fermeture pendant leur dispatch, les sélecteurs et leurs pinceaux GDI, les activités anciennes ou dont la vue a été libérée, les boutons en contraste élevé et le repli de police, les palettes de prévisualisation, les ressources SVG absentes ou invalides et les onglets trop petits.
+
+Les scénarios sont préparés par lot avant exécution. Le lot ciblé élargi compte **30 réussites, 0 échec, 0 ignoré** (`artifacts/coverage-resumed/matrix-complete/matrix.trx`). Le test réel Monaco attend désormais la fin de l’initialisation des documents, au-delà du seul indicateur `Ready`, avant d’ouvrir une comparaison. Le passage initial `baseline/global.trx` comportait cet échec de synchronisation ; il ne constitue pas une preuve de suite verte.
+
+La lecture des SVG et la sélection de la police de repli sont isolées sans modifier leur contrat. Les contrôles utilisent le détecteur de contraste existant, qui lit Windows par défaut. Le dispatch de thème conserve `BeginInvoke` par défaut. Les tests peuvent ainsi exercer les erreurs et états système sans changer les préférences Windows ; aucune exclusion de code de production n’est ajoutée. Les coalescences nulles redondantes de `Button.Text` sont retirées : un scénario vérifie que l’affectation de `null` est normalisée en chaîne vide par WinForms.
+
+Le passage global final, source `953c84f`, inclut le correctif d’ordre des fenêtres `0a2c3e4` : **1 867 réussites, 0 échec, 21 ignorés** en **10 min 52 s**, **30 521/30 521 lignes** et **31 195/31 195 branches**, soit **100 %**. Preuves : `artifacts/coverage-resumed/qualified-final/global.trx`, `9e5a11b4-ffae-4fd2-9d1d-a83fe6da2ced/coverage.cobertura.xml` et `coverage.json` dans ce même dossier. Toutes les classes instrumentées atteignent 100 %.
+
+Le passage `final-with-zorder` a été interrompu après un échec de synchronisation de la fixture de sauvegarde : vider sa file ne garantissait pas la fin de l’opération asynchrone. Le test attend désormais son achèvement réel avant de vérifier le résultat, sans retirer d’assertion. Les six régressions ciblées passent dans `save-and-zorder/regressions.trx`. Le passage global final ci-dessus remplace ce passage interrompu.
+
+Les constructions Debug et Release réussissent sans erreur ni avertissement ; **46 concepteurs WinForms** passent leur qualification. La documentation XML couvre **5 356/5 356 déclarations**, et **240 miroirs pour 297 sources** conservent les scénarios complémentaires séparés. La construction Debug destinée à l’installation est réalisée après fermeture des fixtures Excel ; la bibliothèque COM est réexportée et l’installation utilisateur pointe désormais sur `bin/Debug/net48/CodexVBE.dll` de `main`.
+
+Le parcours Excel visible réussit avec cette DLL : identité de l’assembly chargé, démarrage automatique de Monaco, fenêtre de code native derrière lui, remplissage et redimensionnement de la zone centrale, Explorateur d’objets visible avec parent et géométrie préservés. Preuve : `artifacts/coverage-resumed/excel-startup/monaco-startup.json`. Le test résout la fenêtre de code native par son nom lorsque VBE renvoie `HWnd=0`. Ses deux premiers essais ont expiré sur ce handle nul et ne constituent pas une preuve de défaut du correctif. Le classeur jetable et Excel sont fermés ; aucune macro n’est exécutée.
+
+Les 21 scénarios conditionnels d’hôtes et de comptes restent désactivés dans cette mesure. Les compteurs concernent l’assembly C# `CodexVBE` ; le C++, le JavaScript et toutes les combinaisons d’hôtes conservent leur qualification distincte.
+
+## Historique : arrêt à réception du rapport Astra
 
 Le chantier de couverture a été arrêté à réception du [rapport Astra](audits/2026-09-29-astra-behavior-audit.md), comme demandé. Les deux lots terminés auparavant comptent **20 tests réussis**, dont six nouveaux scénarios. Les correctifs du rapport sont vérifiés par des régressions fonctionnelles séparées ; **leur couverture globale n’a pas été remesurée**. Les compteurs ci-dessous décrivent le commit indiqué, avant ces corrections.
 
-## Dernière mesure globale : intégration de la PR #12
+## Historique : intégration de la PR #12
 
 Mesure du **29 septembre 2026**, source `2c2a7f8`, après fusion des interfaces compactes, complément de documentation XML et correction de l’assertion de palette Monaco. Le passage global corrigé, instrumenté sans exclusion de production, fournit :
 
