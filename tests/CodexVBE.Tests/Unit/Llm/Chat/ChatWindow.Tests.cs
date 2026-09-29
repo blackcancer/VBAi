@@ -16,6 +16,56 @@ namespace CodexVBE.Tests.Unit
 
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Checks repeated selector expansion after physical scaling and a font change while collapsed.</summary>
+        [STATestMethod]
+        public void ModelSelectorsFitScaledControlsAndFontsAfterRepeatedExpansion()
+        {
+            foreach (float scale in new[] { 1f, 1.5f, 2f })
+            using (var window = Surfaces())
+            using (var font = new System.Drawing.Font("Segoe UI", 9f * scale))
+            using (var larger = new System.Drawing.Font("Segoe UI", 13f * scale))
+            {
+                window.Scale(new System.Drawing.SizeF(scale, scale)); window.Font = font;
+                var row = Get<TableLayoutPanel>(window, "rootLayout").RowStyles[6];
+                var provider = Get<TableLayoutPanel>(window, "providerLayout");
+                for (int cycle = 0; cycle < 3; cycle++)
+                {
+                    if (cycle == 2) window.Font = larger;
+                    Call(window, "ModelSummary_Click", null, EventArgs.Empty);
+                    foreach (Control control in provider.Controls)
+                        Assert.IsTrue(row.Height >= control.GetPreferredSize(System.Drawing.Size.Empty).Height + control.Margin.Vertical + provider.Padding.Vertical + provider.Margin.Vertical);
+                    Call(window, "ModelSummary_Click", null, EventArgs.Empty);
+                    Assert.AreEqual(0f, row.Height);
+                }
+            }
+        }
+
+        /// <summary>Checks that the verification menu updates the existing preference while selector expansion is blocked during a run.</summary>
+        [STATestMethod]
+        public void CompactVerificationAndModelCommandsPreserveExistingChatPreferences()
+        {
+            using (var window = Surfaces())
+            {
+                var verify = Get<ToolStripMenuItem>(window, "verifyChanges");
+                var existing = Get<CheckBox>(window, "verifyAfterEdit");
+                foreach (bool selected in new[] { true, false })
+                {
+                    verify.Checked = selected;
+                    Call(window, "VerifyChanges_CheckedChanged", null, EventArgs.Empty);
+                    Assert.AreEqual(selected, existing.Checked);
+                }
+                Set(window, "verifyAfterEdit", null);
+                Call(window, "VerifyChanges_CheckedChanged", null, EventArgs.Empty);
+                Set(window, "verifyAfterEdit", existing);
+                var layout = Get<TableLayoutPanel>(window, "rootLayout");
+                float before = layout.RowStyles[6].Height;
+                Set(window, "busy", true);
+                Call(window, "ModelSummary_Click", null, EventArgs.Empty);
+                Assert.AreEqual(before, layout.RowStyles[6].Height);
+                Set(window, "busy", false);
+            }
+        }
+
         [TestMethod]
         [STATestMethod]
         public void ProviderEffortChoicesFollowModelAndBusyState()

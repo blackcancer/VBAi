@@ -185,6 +185,7 @@ namespace CodexVBE
                 if (messages.Count == 0) messages.Add(new { role = "system", content = LlmVbeContext.DeveloperInstructions });
                 foreach (var entry in session.Entries)
                 {
+                    if (entry.Activity?.Status == "inProgress") entry.Activity.Status = "interrupted";
                     if (entry.Change != null) codeChanges.Add(entry.Change);
                     if (!string.IsNullOrEmpty(entry.StreamId)) completedStreams.Add(entry.StreamId);
                     AddEntry(entry);

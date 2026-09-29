@@ -4,11 +4,13 @@ Couverture et documentation actualisées le **29 septembre 2026**, après intég
 
 ## Couverture et documentation
 
+La [revue Astra](audits/2026-09-29-astra-behavior-audit.md) a déclenché l’arrêt du chantier de couverture demandé par l’utilisateur. Ses quatre correctifs et l’optimisation des fragments font l’objet de régressions fonctionnelles ; la dernière mesure globale ci-dessous précède ces modifications.
+
 | Travail | État actuel | Critère de fin |
 | --- | --- | --- |
 | Couverture du code de production | Suite globale : 1 847 réussis, 0 échec, 21 ignorés ; 99,90 % lignes (30 472/30 503), 99,75 % branches (31 093/31 171), sans exclusion ; 31 lignes et 78 branches UI restantes après PR #12 | 100 % lignes et branches mesurées sur toute l’assembly, sans masquer du code ; suite globale verte |
-| Organisation des tests | 239 miroirs pour 297 sources ; scénarios et fixtures complémentaires | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
-| Documentation IntelliSense | Complément : 5 352/5 352 déclarations documentées, audit intégré, aucune erreur syntaxique | Préserver les commentaires privés/publics et leurs paramètres ; documentation des tests distincte |
+| Organisation des tests | 240 miroirs pour 297 sources ; scénarios et fixtures complémentaires | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
+| Documentation IntelliSense | Complément : 5 353/5 353 déclarations documentées, audit intégré, aucune erreur syntaxique | Préserver les commentaires privés/publics et leurs paramètres ; documentation des tests distincte |
 | Concepteurs WinForms | 46 surfaces WinForms et 412 contrôles enfants validés | Préserver cette accessibilité après chaque changement de structure ; qualifier aussi le rendu réel |
 
 Compléter chaque branche de couverture identifiée avant de passer à la suivante. Construire le lot de scénarios cohérent avant de le lancer, puis mesurer la suite globale. Les pourcentages actuels sont détaillés dans [le bilan de tests](test-coverage.md).

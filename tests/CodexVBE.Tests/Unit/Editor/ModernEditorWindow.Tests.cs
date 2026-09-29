@@ -8,6 +8,40 @@ namespace CodexVBE.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class ModernEditorWindowTests
     {
+        /// <summary>Preserves visible conflict captions and scales command height for large fonts and long translations.</summary>
+        [STATestMethod]
+        public void ConflictChoicesKeepCaptionsAndFitScaledToolbar()
+        {
+            foreach (float scale in new[] { 1f, 1.5f, 2f })
+            using (var module = new EditorFixture())
+            using (var window = new ModernEditorWindow())
+            using (var font = new System.Drawing.Font("Segoe UI", 12f * scale))
+            {
+                window.Drafts = new EditorDraftStore(module.Root);
+                var doc = ModernEditorDebugFixture.Wait(window.OpenModule(module));
+                doc.Edit("edited source"); module.Code = "changed native source"; doc.Observe();
+                typeof(ModernEditorWindow).GetField("initializing", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(window, true);
+                window.Scale(new System.Drawing.SizeF(scale, scale)); window.Font = font;
+                window.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
+                window.Location = new System.Drawing.Point(-10000, -10000);
+                window.Show();
+                var resolve = UiInvoke.Field<ThemedButton>(window, "resolve"); var reload = UiInvoke.Field<ThemedButton>(window, "reload");
+                foreach (var caption in new[] { "Utiliser la version modifiée", new string('W', 80) })
+                {
+                    resolve.Text = caption; reload.Text = "Recharger la version VBA · " + caption;
+                    UiInvoke.Call(typeof(ModernEditorWindow), "UpdateStatus", window); window.PerformLayout();
+                    var toolbar = UiInvoke.Field<System.Windows.Forms.FlowLayoutPanel>(window, "toolbar");
+                    foreach (var button in new[] { resolve, reload })
+                    {
+                        Assert.IsFalse(button.IconOnly); Assert.IsTrue(button.AutoSize); Assert.IsTrue(button.Visible);
+                        Assert.AreEqual(button.Text, button.AccessibilityObject.Name);
+                        Assert.IsTrue(button.Width >= button.GetPreferredSize(System.Drawing.Size.Empty).Width);
+                        Assert.IsTrue(toolbar.ClientSize.Height >= button.Height + button.Margin.Vertical + toolbar.Padding.Vertical);
+                    }
+                }
+            }
+        }
+
         [STATestMethod]
         public void DesignerAndConstructionNeverLaunchWebViewOrReadVba()
         {
@@ -476,7 +510,7 @@ namespace CodexVBE.Tests.Unit
                 Assert.AreEqual(2, tabs.TabPages.Count);
                 f.Editor.Base.Set("busy", false); f.Editor.Base.Set("initializing", true);
                 f.Window.StartPosition = System.Windows.Forms.FormStartPosition.Manual; f.Window.Location = new System.Drawing.Point(-10000, -10000); f.Window.Show();
-                f.Editor.Base.Set("showingDiff", true); f.Editor.Private("UpdateStatus"); Assert.AreEqual(44f, f.Editor.Base.Get<System.Windows.Forms.TableLayoutPanel>("layout").RowStyles[0].Height);
+                f.Editor.Base.Set("showingDiff", true); f.Editor.Private("UpdateStatus"); Assert.IsTrue(f.Editor.Base.Get<System.Windows.Forms.TableLayoutPanel>("layout").RowStyles[0].Height >= f.Editor.Base.Get<System.Windows.Forms.FlowLayoutPanel>("toolbar").GetPreferredSize(System.Drawing.Size.Empty).Height);
                 f.Editor.Base.Set("showingDiff", false); f.Editor.Private("UpdateStatus"); Assert.AreEqual(0f, f.Editor.Base.Get<System.Windows.Forms.TableLayoutPanel>("layout").RowStyles[0].Height);
                 f.Editor.Private("CloseTabRequested", null, new System.Windows.Forms.TabControlEventArgs(nativeTab, 0, System.Windows.Forms.TabControlAction.Selected)); dispatcher.Drain();
                 Assert.AreEqual(1, tabs.TabPages.Count); Assert.AreEqual(1, f.Editor.Base.Native.Original.CodeModule.CodePane.Window.Closes);

@@ -182,7 +182,7 @@ namespace CodexVBE
                     Ready = true; await Theme();
                     await Script("labels", new[] { "Compile project", "Toggle breakpoint", "Show next statement", "Step into", "Step over", "Step out", "Breakpoint request sent; verify in VBE.", "Explain", "Fix", "Refactor" }.ToDictionary(key => key, UiText.Get));
                     foreach (var document in documents.Values.ToArray()) await RenderDocument(document);
-                    if (selected != null) await Script("select", selected);
+                    if (selected != null) await SelectEditorDocument(selected);
                     if (!closing && !IsDisposed && !Disposing) { timer.Start(); SetStatus(); }
                 }
                 else if (message.type == "change" && documents.TryGetValue(message.id ?? "", out var doc) && message.version > versions[doc.Id])
@@ -256,7 +256,7 @@ public int column { get; set; } }
         {
             var existing = documents.Values.FirstOrDefault(d => ReferenceEquals(d.Module, module) ||
                 (d.Module is EditorVbeModule vm && module is EditorVbeModule other && vm.IsComponent(other.Component)));
-            if (existing != null) { selected = existing.Id; SelectTab(existing.Id); if (Ready) await Script("select", existing.Id); return existing; }
+            if (existing != null) { selected = existing.Id; SelectTab(existing.Id); if (Ready) await SelectEditorDocument(existing.Id); return existing; }
             if (documents.Count >= 30) throw new InvalidOperationException("Close the editor before opening more than 30 modules.");
             var document = new EditorDocument(module);
             if (module is EditorVbeModule nativeModule) nativeModule.EnsureNativeWindow();
@@ -271,7 +271,12 @@ public int column { get; set; } }
         /// <param name="doc">Document à afficher.</param>
         /// <returns>Tâche terminée après la réponse de la page.</returns>
         private async Task RenderDocument(EditorDocument doc)
-        { int version; if (int.TryParse(await Script("open", doc.Id, doc.Text), out version)) versions[doc.Id] = version; }
+        { int version; if (int.TryParse(await Script("open", doc.Id, doc.Text), out version)) versions[doc.Id] = version; showingDiff = false; }
+        /// <summary>Selects the native editor model and synchronizes the host after Monaco closes its comparison.</summary>
+        /// <param name="id">Document model identifier to select.</param>
+        /// <returns>A task completed after selection and host status scheduling.</returns>
+        private async Task SelectEditorDocument(string id)
+        { await Script("select", id); showingDiff = false; SetStatus(); }
         /// <summary>Sélectionne l’onglet portant l’identifiant du document.</summary>
         /// <param name="id">Identifiant de session du document.</param>
         private void SelectTab(string id) { foreach (TabPage tab in tabs.TabPages) if ((string)tab.Tag == id) { tabs.SelectedTab = tab; break; } }
@@ -279,7 +284,7 @@ public int column { get; set; } }
         /// <param name="sender">Onglets à l’origine de l’événement.</param>
         /// <param name="e">Données de sélection.</param>
         private async void TabChanged(object sender, EventArgs e)
-        { if (tabs.SelectedTab == null) return; selected = (string)tabs.SelectedTab.Tag; try { if (Ready) await Script("select", selected); SetStatus(); } catch (Exception error) { Report(error); } }
+        { if (tabs.SelectedTab == null) return; selected = (string)tabs.SelectedTab.Tag; try { if (Ready) await SelectEditorDocument(selected); else SetStatus(); } catch (Exception error) { Report(error); } }
         /// <summary>Capture les textes et révisions les plus récents depuis la surface Monaco.</summary>
         /// <returns>Tâche terminée après la mise à jour des documents hôtes.</returns>
         private async Task CaptureDocuments()
@@ -361,14 +366,18 @@ public int column { get; set; } }
             activeStatusLayouts++;
             try
             {
-            toolbar.Visible = showingDiff || (Current != null && (Current.Conflict || recovered.ContainsKey(Current.Id)));
-            layout.RowStyles[0].Height = toolbar.Visible ? 44 : 0;
+            bool showToolbar = showingDiff || (Current != null && (Current.Conflict || recovered.ContainsKey(Current.Id)));
+            toolbar.Visible = showToolbar;
             compare.Visible = Current != null && Current.Conflict;
             edit.Visible = showingDiff; reload.Visible = Current != null && Current.Conflict;
             resolve.Visible = Current != null && Current.Conflict;
             restore.Visible = Current != null && recovered.ContainsKey(Current.Id);
             resolve.Enabled = Current != null && Current.Conflict && reviewed.ContainsKey(Current.Id);
             restore.Enabled = Current != null && recovered.ContainsKey(Current.Id);
+            var preferred = toolbar.GetPreferredSize(new System.Drawing.Size(layout.ClientSize.Width, 0));
+            int commandHeight = toolbar.Controls.Cast<Control>().Max(control => Math.Max(control.Height, control.GetPreferredSize(System.Drawing.Size.Empty).Height) + control.Margin.Vertical);
+            layout.RowStyles[0].Height = showToolbar ? Math.Max(preferred.Height, commandHeight + toolbar.Padding.Vertical)
+                + toolbar.Margin.Vertical + (preferred.Width > layout.ClientSize.Width ? System.Windows.Forms.SystemInformation.HorizontalScrollBarHeight : 0) : 0;
             foreach (TabPage tab in tabs.TabPages)
             { var doc = documents[(string)tab.Tag]; try { tab.Text = doc.Module.Name + (doc.Dirty ? " *" : ""); } catch { } }
             status.Text = UiText.Get(lastSaveError ?? synchronizationError ?? (Current == null ? "Open a VBA module to start editing." : Current.Conflict ? "The module changed in VBA. Resolve the conflict first." : Current.Dirty ? "Changes pending synchronization with VBA." : "Synchronized with VBA. Save the macro in its host application."));
@@ -436,6 +445,7 @@ public int column { get; set; } }
             {
                 await CaptureDocuments(); Drafts.Save(doc);
                 await Script("close", doc.Id);
+                if (selected == doc.Id) showingDiff = false;
                 var closed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                 BeginInvoke(new Action(() =>
                 {

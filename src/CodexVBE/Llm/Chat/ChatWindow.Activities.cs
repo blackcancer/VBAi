@@ -41,7 +41,11 @@ namespace CodexVBE
                 Status = activity.Append && previous != null && previous.Status != "inProgress" ? previous.Status : activity.Status, DurationMs = activity.DurationMs ?? previous?.DurationMs };
             entry.Text = entry.Activity.Title + "\n" + entry.Activity.Detail;
             if (activity.Status != "inProgress") completedStreams.Add(activity.Id);
-            RefreshVisibleActivity(entry); FollowLatest(); ScheduleSessionSave();
+            bool textOnly = activity.Append && previous != null && previous.Kind == entry.Activity.Kind &&
+                previous.Title == entry.Activity.Title && previous.Status == entry.Activity.Status && previous.DurationMs == entry.Activity.DurationMs;
+            if (textOnly && liveTexts.TryGetValue(activity.Id, out var live) && !live.IsDisposed) live.Text = entry.Activity.Detail;
+            else RefreshVisibleActivity(entry);
+            FollowLatest(); ScheduleSessionSave();
         }
 
         /// <summary>Identifie une activité textuelle dépourvue de carte interactive.</summary>
@@ -118,7 +122,7 @@ namespace CodexVBE
             var activity = entry.Activity;
             var card = new ChatActivityStepView();
             bool running = activity.Status == "inProgress", failed = activity.Status == "failed";
-            card.state.Text = UiText.Get(running ? "In progress" : failed ? "Failed" : activity.Status == "declined" ? "Declined" : activity.Status == "completed" ? "Completed" : "Cancelled");
+            card.state.Text = UiText.Get(running ? "In progress" : failed ? "Failed" : activity.Status == "declined" ? "Declined" : activity.Status == "completed" ? "Completed" : activity.Status == "interrupted" ? "Interrupted" : "Cancelled");
             if (activity.DurationMs.HasValue) card.state.Text += " · " + (activity.DurationMs.Value / 1000d).ToString("0.0", UiText.Culture) + " s";
             card.section.Title = string.IsNullOrWhiteSpace(activity.Title) ? UiText.Get(activity.Kind == "reasoning" ? "Reasoning" : "Tool") : activity.Title;
             card.detail.ShowPlain(activity.Detail, activity.Kind == "commandExecution");

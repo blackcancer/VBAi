@@ -2065,4 +2065,7 @@ Accesso tramite Git Credential Manager; l’identità dei commit si configura in
   </data>
   <data name="VBA edit approval" xml:space="preserve"><value>Approvazione delle modifiche VBA</value></data>
   <data name="Model and reasoning effort" xml:space="preserve"><value>Modello e livello di ragionamento</value></data>
+  <data name="Interrupted" xml:space="preserve">
+    <value>Interrotto</value>
+  </data>
 </root>

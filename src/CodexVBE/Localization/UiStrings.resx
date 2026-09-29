@@ -2045,4 +2045,7 @@ Sign in through Git Credential Manager; commit identity is configured in Git.</v
   <data name="This tool uses shared VBE context. Authorize shared context in Project access before using it." xml:space="preserve"><value>This tool uses shared VBE context. Authorize shared context in Project access before using it.</value></data>
   <data name="VBA edit approval" xml:space="preserve"><value>VBA edit approval</value></data>
   <data name="Model and reasoning effort" xml:space="preserve"><value>Model and reasoning effort</value></data>
+  <data name="Interrupted" xml:space="preserve">
+    <value>Interrupted</value>
+  </data>
 </root>

@@ -2065,4 +2065,7 @@ Git Credential Manager로 로그인하며 커밋 작성자 정보는 Git에서 �
   </data>
   <data name="VBA edit approval" xml:space="preserve"><value>VBA 편집 승인</value></data>
   <data name="Model and reasoning effort" xml:space="preserve"><value>모델 및 추론 수준</value></data>
+  <data name="Interrupted" xml:space="preserve">
+    <value>중단</value>
+  </data>
 </root>

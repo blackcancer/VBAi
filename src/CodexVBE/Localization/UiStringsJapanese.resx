@@ -2065,4 +2065,7 @@ Git Credential Manager でサインインします。コミットの作成者情
   </data>
   <data name="VBA edit approval" xml:space="preserve"><value>VBA 編集の承認</value></data>
   <data name="Model and reasoning effort" xml:space="preserve"><value>モデルと推論レベル</value></data>
+  <data name="Interrupted" xml:space="preserve">
+    <value>中断</value>
+  </data>
 </root>

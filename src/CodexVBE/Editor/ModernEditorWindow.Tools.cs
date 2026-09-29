@@ -46,7 +46,7 @@ namespace CodexVBE
             busy = true;
             try
             {
-                selected = doc.Id; SelectTab(doc.Id); await Script("select", doc.Id);
+                selected = doc.Id; SelectTab(doc.Id); await SelectEditorDocument(doc.Id);
                 // Chromium captures text, selection and revision together, without another UI await.
                 var snapshot = json.Deserialize<Dictionary<string, object>>(await Script("read", doc.Id));
                 if (snapshot == null) throw new InvalidOperationException("The Monaco document was closed.");

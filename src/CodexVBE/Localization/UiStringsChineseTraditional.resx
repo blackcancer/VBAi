@@ -2065,4 +2065,7 @@ QQ 附加記憶體
   </data>
   <data name="VBA edit approval" xml:space="preserve"><value>VBA 編輯核准</value></data>
   <data name="Model and reasoning effort" xml:space="preserve"><value>模型與推理強度</value></data>
+  <data name="Interrupted" xml:space="preserve">
+    <value>已中斷</value>
+  </data>
 </root>

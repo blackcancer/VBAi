@@ -2065,4 +2065,7 @@
   </data>
   <data name="VBA edit approval" xml:space="preserve"><value>الموافقة على تعديل VBA</value></data>
   <data name="Model and reasoning effort" xml:space="preserve"><value>النموذج ومستوى الاستدلال</value></data>
+  <data name="Interrupted" xml:space="preserve">
+    <value>تمت المقاطعة</value>
+  </data>
 </root>

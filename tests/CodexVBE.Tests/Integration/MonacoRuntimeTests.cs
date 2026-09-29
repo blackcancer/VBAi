@@ -12,6 +12,56 @@ namespace CodexVBE.Tests.Integration
     [TestClass, TestCategory("MonacoRuntime")]
     public sealed class MonacoRuntimeTests : EditorUiTestFixture
     {
+        /// <summary>Checks that native tab changes and reopening modules leave both Monaco and its host in code mode.</summary>
+        [STATestMethod]
+        public void SelectingAndOpeningDocumentsCloseComparisonInRendererAndHost()
+        {
+            using (var first = new EditorFixture())
+            using (var second = new EditorFixture())
+            using (var third = new EditorFixture())
+            using (var window = new ModernEditorWindow())
+            {
+                window.Drafts = new EditorDraftStore(first.Root);
+                var a = Wait(window.OpenModule(first)); window.Show(); Wait(() => window.Ready);
+                var b = Wait(window.OpenModule(second));
+                UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer").Stop();
+                Wait(window.OpenModule(first));
+                UiInvoke.Call(typeof(ModernEditorWindow), "DiffClick", window, null, EventArgs.Empty);
+                Wait(() => UiInvoke.Field<bool>(window, "showingDiff"));
+                StringAssert.Contains(Wait(window.Script("testInfo")), "\"diff\":true");
+                Wait(window.OpenModule(second));
+                Assert.IsFalse(UiInvoke.Field<bool>(window, "showingDiff"));
+                StringAssert.Contains(Wait(window.Script("testInfo")), "\"diff\":false");
+                Wait(window.OpenModule(first));
+                UiInvoke.Call(typeof(ModernEditorWindow), "DiffClick", window, null, EventArgs.Empty);
+                Wait(() => UiInvoke.Field<bool>(window, "showingDiff"));
+                var tabs = UiInvoke.Field<ThemedTabControl>(window, "tabs");
+                tabs.SelectedTab = System.Linq.Enumerable.Single(System.Linq.Enumerable.Cast<TabPage>(tabs.TabPages), tab => (string)tab.Tag == b.Id);
+                Wait(() => !UiInvoke.Field<bool>(window, "showingDiff"));
+                StringAssert.Contains(Wait(window.Script("testInfo")), "\"diff\":false");
+                UiInvoke.Call(typeof(ModernEditorWindow), "DiffClick", window, null, EventArgs.Empty);
+                Wait(() => UiInvoke.Field<bool>(window, "showingDiff"));
+                Wait(window.OpenModule(third));
+                Wait(() => !UiInvoke.Field<ThemedButton>(window, "edit").Visible);
+                Assert.IsFalse(UiInvoke.Field<bool>(window, "showingDiff"));
+                StringAssert.Contains(Wait(window.Script("testInfo")), "\"diff\":false");
+                Assert.AreEqual(0f, UiInvoke.Field<TableLayoutPanel>(window, "layout").RowStyles[0].Height);
+                Assert.IsTrue(UiInvoke.Field<System.Collections.Generic.Dictionary<string, string>>(window, "reviewed").ContainsKey(a.Id));
+                for (int remaining = 3; remaining > 0; remaining--)
+                {
+                    UiInvoke.Call(typeof(ModernEditorWindow), "DiffClick", window, null, EventArgs.Empty);
+                    Wait(() => UiInvoke.Field<bool>(window, "showingDiff"));
+                    UiInvoke.Call(typeof(ModernEditorWindow), "CloseModuleClick", window, null, EventArgs.Empty);
+                    int count = remaining - 1;
+                    Wait(() => tabs.TabPages.Count == count && !UiInvoke.Field<bool>(window, "busy"));
+                    Assert.IsFalse(UiInvoke.Field<bool>(window, "showingDiff"));
+                    StringAssert.Contains(Wait(window.Script("testInfo")), "\"diff\":false");
+                }
+                Assert.AreEqual(0f, UiInvoke.Field<TableLayoutPanel>(window, "layout").RowStyles[0].Height);
+                window.Close(); Wait(() => window.IsDisposed);
+            }
+        }
+
         internal static void Wait(Func<bool> complete, int seconds = 40)
         { var clock = Stopwatch.StartNew(); while (!complete() && clock.Elapsed.TotalSeconds < seconds) { Application.DoEvents(); EditorUiTestFixture.ThrowIfUiFailed(); Thread.Sleep(15); } EditorUiTestFixture.ThrowIfUiFailed(); Assert.IsTrue(complete(), "Timed out waiting for real WebView2/Monaco."); }
         internal static T Wait<T>(Task<T> task) { Wait(() => task.IsCompleted); return task.GetAwaiter().GetResult(); }

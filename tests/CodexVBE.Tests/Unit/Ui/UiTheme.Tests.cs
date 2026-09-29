@@ -15,6 +15,41 @@ namespace CodexVBE.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class UiThemeTests
     {
+        /// <summary>Checks input and menu colors across explicit themes and contrast, including dynamically inserted commands.</summary>
+        [STATestMethod]
+        public void ContextMenusRefreshNestedCommandsAndRendererPaletteWhenReopened()
+        {
+            using (var scope = new ThemeScope())
+            using (var menu = new ContextMenuStrip())
+            {
+                var parent = new ToolStripMenuItem("Parent");
+                var child = new ToolStripMenuItem("Child");
+                parent.DropDownItems.Add(child); menu.Items.Add(parent); menu.Items.Add(new ToolStripSeparator());
+                foreach (bool dark in new[] { false, true })
+                foreach (bool contrast in new[] { false, true })
+                {
+                    ThemeScope.SetChoice(dark ? ThemeChoice.Dark : ThemeChoice.Light);
+                    UiTheme.HighContrast = () => contrast; UiTheme.WindowColor = () => dark ? Color.Black : Color.White;
+                    Assert.AreEqual(contrast ? SystemColors.WindowText : dark ? Color.FromArgb(61, 68, 80) : Color.FromArgb(213, 220, 230), UiTheme.Border);
+                    Assert.AreEqual(contrast ? SystemColors.Highlight : dark ? Color.FromArgb(96, 165, 250) : Color.FromArgb(37, 99, 235), UiTheme.FocusBorder);
+                    Assert.AreEqual(contrast ? SystemColors.GrayText : dark ? Color.FromArgb(155, 165, 180) : Color.FromArgb(94, 106, 124), UiTheme.Muted);
+                    UiTheme.ApplyMenu(menu);
+                    var inserted = new ToolStripMenuItem("Added after setup"); parent.DropDownItems.Add(inserted);
+                    UiInvoke.Call(typeof(UiTheme), "MenuOpening", null, menu, new CancelEventArgs());
+                    foreach (ToolStripItem item in new ToolStripItem[] { parent, child, inserted })
+                    {
+                        Assert.AreEqual(UiTheme.Foreground, item.ForeColor); Assert.AreEqual(UiTheme.Surface, item.BackColor);
+                    }
+                    var colors = ((ToolStripProfessionalRenderer)menu.Renderer).ColorTable;
+                    foreach (var actual in new[] { colors.ToolStripDropDownBackground, colors.ImageMarginGradientBegin, colors.ImageMarginGradientMiddle, colors.ImageMarginGradientEnd, colors.SeparatorLight })
+                        Assert.AreEqual(UiTheme.Surface, actual);
+                    foreach (var actual in new[] { colors.MenuItemBorder, colors.MenuBorder, colors.SeparatorDark }) Assert.AreEqual(UiTheme.Border, actual);
+                    Assert.AreEqual(contrast ? SystemColors.Highlight : dark ? Color.FromArgb(48, 61, 81) : Color.FromArgb(229, 238, 253), colors.MenuItemSelected);
+                    parent.DropDownItems.Remove(inserted); inserted.Dispose();
+                }
+            }
+        }
+
         /// <summary>Choisit la palette selon préférences système, contraste et thème explicitement sélectionné.</summary>
         [TestMethod]
         public void SystemPreferencesContrastAndExplicitThemesSelectExpectedPalette()

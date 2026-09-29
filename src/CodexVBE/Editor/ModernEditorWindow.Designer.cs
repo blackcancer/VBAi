@@ -141,8 +141,8 @@ namespace CodexVBE
             this.layout.ResumeLayout(false);
             this.layout.PerformLayout();
             this.resolve.Symbol = CodexVBE.UiSymbol.Check;
-            this.resolve.IconOnly = true;
-            this.resolve.AutoSize = false;
+            this.resolve.IconOnly = false;
+            this.resolve.AutoSize = true;
             this.resolve.MinimumSize = System.Drawing.Size.Empty;
             this.resolve.Size = new System.Drawing.Size(32, 30);
             this.compare.Symbol = CodexVBE.UiSymbol.Inspect;
@@ -156,8 +156,8 @@ namespace CodexVBE
             this.edit.MinimumSize = System.Drawing.Size.Empty;
             this.edit.Size = new System.Drawing.Size(32, 30);
             this.reload.Symbol = CodexVBE.UiSymbol.Refresh;
-            this.reload.IconOnly = true;
-            this.reload.AutoSize = false;
+            this.reload.IconOnly = false;
+            this.reload.AutoSize = true;
             this.reload.MinimumSize = System.Drawing.Size.Empty;
             this.reload.Size = new System.Drawing.Size(32, 30);
             this.restore.Symbol = CodexVBE.UiSymbol.Undo;

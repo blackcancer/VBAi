@@ -10,6 +10,35 @@ namespace CodexVBE.Tests.Unit
 
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Updates hundreds of text fragments without recycling controls belonging to earlier steps.</summary>
+        [STATestMethod]
+        public void AppendOnlyActivityFragmentsKeepRealizedStepControlsAndExpansion()
+        {
+            using (var window = Surfaces())
+            {
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "previous", Kind = "commandExecution", Detail = "saved", Status = "completed" });
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = "reasoning", Title = "Reasoning", Detail = "start", Status = "inProgress" });
+                var entries = Get<List<ChatEntry>>(window, "transcriptEntries");
+                using (var host = (ChatDesignerHost)Call(window, "RenderEntry", entries[0]))
+                {
+                    var group = (ChatActivityGroupView)host.View;
+                    var controls = group.section.body.Controls.OfType<ChatActivityStepView>().ToArray();
+                    controls[0].section.Expanded = true;
+                    var live = Get<Dictionary<string, System.Windows.Forms.RichTextBox>>(window, "liveTexts");
+                    var original = live["stream"];
+                    int changes = 0; Get<ObservableCollection<object>>(window, "visibleEntries").CollectionChanged += (sender, args) => changes++;
+                    for (int i = 0; i < 300; i++)
+                        Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = "reasoning", Detail = ".", Status = "inProgress", Append = true });
+                    Assert.AreEqual(0, changes); Assert.AreSame(original, live["stream"]);
+                    Assert.AreEqual("start" + new string('.', 300), original.Text);
+                    Assert.IsTrue(controls[0].section.Expanded); Assert.IsFalse(controls[0].IsDisposed);
+                    Assert.AreSame(controls[0], group.section.body.Controls[0]);
+                    Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = "reasoning", Title = "Reasoning", Detail = original.Text, Status = "completed" });
+                    Assert.AreEqual(2, changes); Assert.AreEqual("completed", entries[1].Activity.Status);
+                }
+            }
+        }
+
         [STATestMethod, TestCategory("Unit")]
         public void NativeTimelineUpdatesEachStepOnceAndRetainsItsDetailsAcrossRecycling()
         {
@@ -158,13 +187,13 @@ namespace CodexVBE.Tests.Unit
                 var group = (ChatDesignerHost)Call(window, "RenderActivityGroup", entry, new List<ChatEntry> { entry });
                 StringAssert.EndsWith(((ChatActivityGroupView)group.View).section.Title, "…");
                 group.Dispose();
-                foreach (var state in new[] { "inProgress", "failed", "declined", "completed", "interrupted" })
+                foreach (var state in new[] { "inProgress", "failed", "declined", "completed", "interrupted", "cancelled" })
                 {
                     entry.Activity.Status = state;
                     var step = (ChatDesignerHost)Call(window, "RenderActivityStep", entry);
                     var card = (ChatActivityStepView)step.View;
                     var label = card.state.Text;
-                    StringAssert.StartsWith(label, UiText.Get(state == "inProgress" ? "In progress" : state == "failed" ? "Failed" : state == "declined" ? "Declined" : state == "completed" ? "Completed" : "Cancelled"));
+                    StringAssert.StartsWith(label, UiText.Get(state == "inProgress" ? "In progress" : state == "failed" ? "Failed" : state == "declined" ? "Declined" : state == "completed" ? "Completed" : state == "interrupted" ? "Interrupted" : "Cancelled"));
                     StringAssert.Contains(label, " s");
                     Assert.AreEqual("native detail continuation", card.detail.content.Text);
                     step.Dispose();

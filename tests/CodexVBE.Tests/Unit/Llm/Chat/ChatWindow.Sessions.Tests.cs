@@ -17,6 +17,36 @@ namespace CodexVBE.Tests.Unit
     /// <summary>Vérifie l’historique, la persistance locale et la réparation des conversations.</summary>
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Restores unfinished activities as interrupted while retaining their content and permitting new live activity.</summary>
+        [STATestMethod]
+        public void RestoredActivitiesAreInterruptedWithoutInventingResultsOrDuration()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = new ChatWindow(runtime.Session))
+            {
+                var session = new ChatSessionState { Provider = "missing-provider", Entries = new List<ChatEntry>() };
+                foreach (var kind in new[] { "reasoning", "commandExecution" })
+                    session.Entries.Add(new ChatEntry { Speaker = kind == "reasoning" ? "Réflexion" : "Outil", StreamId = kind,
+                        Activity = new CodexAgentActivity { Id = kind, Kind = kind, Title = "Saved activity", Detail = "Original partial output", Status = "inProgress" } });
+                Call(window, "ActivateSession", session, false);
+                foreach (var entry in session.Entries)
+                {
+                    Assert.AreEqual("interrupted", entry.Activity.Status); Assert.AreEqual("Original partial output", entry.Activity.Detail);
+                    Assert.IsNull(entry.Activity.DurationMs);
+                    using (var host = (ChatDesignerHost)Call(window, "RenderActivityStep", entry))
+                    {
+                        var view = (ChatActivityStepView)host.View;
+                        Assert.AreEqual(UiText.Get("Interrupted"), view.state.Text); Assert.IsFalse(view.section.Expanded);
+                    }
+                }
+                using (var host = (ChatDesignerHost)Call(window, "RenderActivityGroup", session.Entries[0], session.Entries))
+                    Assert.IsFalse(((ChatActivityGroupView)host.View).section.Expanded);
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "new", Kind = "reasoning", Title = "New activity", Detail = "Current output", Status = "inProgress" });
+                var live = Get<Dictionary<string, ChatEntry>>(window, "liveEntries")["new"];
+                using (var host = (ChatDesignerHost)Call(window, "RenderActivityStep", live)) Assert.IsTrue(((ChatActivityStepView)host.View).section.Expanded);
+            }
+        }
+
         /// <summary>Filtre les sessions selon le texte et l’état archivé, puis place les sessions épinglées en premier.</summary>
         [TestMethod]
         [STATestMethod]

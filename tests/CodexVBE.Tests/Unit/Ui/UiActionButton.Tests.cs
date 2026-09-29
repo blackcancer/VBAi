@@ -1,6 +1,8 @@
 using System;
 using System.Drawing;
+using System.Windows.Forms;
 using CodexVBE;
+using CodexVBE.Tests.Infrastructure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace CodexVBE.Tests.Unit
@@ -8,6 +10,46 @@ namespace CodexVBE.Tests.Unit
     [TestClass]
     public sealed class UiActionButtonTests
     {
+        /// <summary>Checks command interaction, caption accessibility and fallback rendering across surface and button states.</summary>
+        [STATestMethod, TestCategory("Unit")]
+        public void CommandStatesRenderWithoutChangingCaptionOrPreferredSize()
+        {
+            using (var form = new Form { Left = -10000, Top = -10000, ShowInTaskbar = false })
+            using (var button = new UiActionButton { Text = "Save document", Size = new Size(160, 36) })
+            using (var image = new Bitmap(160, 36))
+            using (var graphics = Graphics.FromImage(image))
+            {
+                form.Controls.Add(button); form.Show(); button.Focus();
+                foreach (var background in new[] { Color.White, Color.FromArgb(22, 26, 33) })
+                foreach (bool primary in new[] { false, true })
+                foreach (bool enabled in new[] { false, true })
+                foreach (var symbol in new[] { UiSymbol.None, UiSymbol.Copy, (UiSymbol)'!' })
+                foreach (bool iconOnly in new[] { false, true })
+                foreach (var direction in new[] { RightToLeft.No, RightToLeft.Yes })
+                {
+                    form.BackColor = background; button.ForeColor = background == Color.White ? Color.Black : Color.White;
+                    button.Primary = primary; button.Enabled = enabled; button.Symbol = symbol; button.IconOnly = iconOnly; button.RightToLeft = direction;
+                    var expected = button.GetPreferredSize(Size.Empty);
+                    foreach (int state in new[] { 0, 1, 2, 3 })
+                    {
+                        UiInvoke.Call(typeof(UiActionButton), "OnMouseLeave", button, EventArgs.Empty);
+                        if (state == 1) UiInvoke.Call(typeof(UiActionButton), "OnMouseEnter", button, EventArgs.Empty);
+                        if (state == 2 || state == 3) UiInvoke.Call(typeof(UiActionButton), "OnMouseDown", button, new MouseEventArgs(state == 2 ? MouseButtons.Left : MouseButtons.Right, 1, 0, 0, 0));
+                        Assert.AreEqual(state == 2, UiInvoke.Field<bool>(button, "pressed"));
+                        UiInvoke.Call(typeof(UiActionButton), "OnPaint", button, new PaintEventArgs(graphics, button.ClientRectangle));
+                        Assert.AreEqual("Save document", button.AccessibilityObject.Name);
+                        Assert.AreEqual(expected, button.GetPreferredSize(Size.Empty));
+                        UiInvoke.Call(typeof(UiActionButton), "OnMouseUp", button, new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
+                        Assert.IsFalse(UiInvoke.Field<bool>(button, "pressed"));
+                    }
+                }
+                button.Size = new Size(1, 1);
+                UiInvoke.Call(typeof(UiActionButton), "OnPaint", button, new PaintEventArgs(graphics, button.ClientRectangle));
+                button.Size = new Size(160, 1);
+                UiInvoke.Call(typeof(UiActionButton), "OnPaint", button, new PaintEventArgs(graphics, button.ClientRectangle));
+            }
+        }
+
         [STATestMethod, TestCategory("Unit")]
         public void EveryBundledSymbolRendersAtNormalAndHighDpiWithoutAFontFallback()
         {

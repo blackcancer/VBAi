@@ -10,6 +10,50 @@ namespace CodexVBE.Tests.Unit
     [TestClass]
     public sealed class ThemedTabControlTests
     {
+        /// <summary>Checks tab and close-command hover transitions without selecting or closing a document.</summary>
+        [STATestMethod]
+        public void HoverAndCloseHoverRepaintWithoutChangingDocumentSelection()
+        {
+            using (var scope = new ThemeScope())
+            using (var form = new Form { Left = -10000, Top = -10000, ShowInTaskbar = false, Width = 450, Height = 220 })
+            using (var tabs = new ThemedTabControl { Dock = DockStyle.Fill })
+            using (var image = new Bitmap(450, 220))
+            using (var graphics = Graphics.FromImage(image))
+            {
+                form.Controls.Add(tabs);
+                tabs.TabPages.Add(new TabPage("First"));
+                tabs.TabPages.Add(new TabPage("Second"));
+                tabs.TabPages.Add(new TabPage("Disabled") { Enabled = false });
+                form.Show(); tabs.SelectedIndex = 0;
+                int closes = 0; tabs.CloseRequested += (sender, args) => closes++;
+                foreach (var choice in new[] { ThemeChoice.Light, ThemeChoice.Dark })
+                foreach (bool showClose in new[] { false, true })
+                {
+                    ThemeScope.SetChoice(choice); UiTheme.Apply(form); tabs.ShowCloseButtons = showClose;
+                    for (int index = 0; index < tabs.TabCount; index++)
+                    {
+                        var tab = tabs.GetTabRect(index);
+                        var close = (Rectangle)UiInvoke.Call(typeof(ThemedTabControl), "CloseBounds", tabs, index);
+                        foreach (var point in new[] { new Point(tab.Left + 8, tab.Top + tab.Height / 2), new Point(close.Left + close.Width / 2, close.Top + close.Height / 2) })
+                        {
+                            var args = new MouseEventArgs(MouseButtons.None, 0, point.X, point.Y, 0);
+                            UiInvoke.Call(typeof(ThemedTabControl), "OnMouseMove", tabs, args);
+                            UiInvoke.Call(typeof(ThemedTabControl), "OnMouseMove", tabs, args);
+                            Assert.AreEqual(index, UiInvoke.Field<int>(tabs, "hoveredTab"));
+                            Assert.AreEqual(showClose && close.Contains(point), UiInvoke.Field<bool>(tabs, "closeHovered"));
+                            Assert.AreEqual(showClose && close.Contains(point) ? Cursors.Hand : Cursors.Default, tabs.Cursor);
+                            UiInvoke.Call(typeof(ThemedTabControl), "OnPaint", tabs, new PaintEventArgs(graphics, tabs.ClientRectangle));
+                            Assert.AreEqual(0, tabs.SelectedIndex); Assert.AreEqual(0, closes);
+                        }
+                    }
+                    UiInvoke.Call(typeof(ThemedTabControl), "OnMouseMove", tabs, new MouseEventArgs(MouseButtons.None, 0, -1, -1, 0));
+                    Assert.AreEqual(-1, UiInvoke.Field<int>(tabs, "hoveredTab"));
+                    UiInvoke.Call(typeof(ThemedTabControl), "OnMouseLeave", tabs, EventArgs.Empty);
+                    Assert.IsFalse(UiInvoke.Field<bool>(tabs, "closeHovered")); Assert.AreEqual(Cursors.Default, tabs.Cursor);
+                }
+            }
+        }
+
         /// <summary>Peint sélection, texte désactivé et focus clavier dans les deux palettes.</summary>
         [STATestMethod]
         public void TabsPaintSelectionDisabledTextAndKeyboardFocusInBothPalettes()

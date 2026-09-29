@@ -2065,4 +2065,7 @@
   </data>
   <data name="VBA edit approval" xml:space="preserve"><value>Разрешение изменений VBA</value></data>
   <data name="Model and reasoning effort" xml:space="preserve"><value>Модель и уровень рассуждения</value></data>
+  <data name="Interrupted" xml:space="preserve">
+    <value>Прервано</value>
+  </data>
 </root>

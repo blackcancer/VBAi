@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
@@ -609,7 +610,9 @@ namespace CodexVBE
         {
             if (busy) return;
             bool expanded = rootLayout.RowStyles[6].Height == 0;
-            rootLayout.RowStyles[6].Height = expanded ? 36 : 0;
+            rootLayout.RowStyles[6].Height = expanded ? providerLayout.Controls.Cast<System.Windows.Forms.Control>()
+                .Max(control => Math.Max(control.Height, control.GetPreferredSize(System.Drawing.Size.Empty).Height) + control.Margin.Vertical)
+                + providerLayout.Padding.Vertical + providerLayout.Margin.Vertical : 0;
             providerLayout.Visible = expanded;
             RefreshModelSummary();
             if (expanded) modelPicker.Focus();

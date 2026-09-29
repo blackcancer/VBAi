@@ -2045,4 +2045,7 @@ Connexion via Git Credential Manager ; identité de commit configurée dans Git.
   <data name="Delete" xml:space="preserve"><value>Supprimer</value></data>
   <data name="VBA edit approval" xml:space="preserve"><value>Autorisation des modifications VBA</value></data>
   <data name="Model and reasoning effort" xml:space="preserve"><value>Modèle et effort de réflexion</value></data>
+  <data name="Interrupted" xml:space="preserve">
+    <value>Interrompu</value>
+  </data>
 </root>

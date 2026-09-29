@@ -1,6 +1,10 @@
 # Couverture automatisée du complément
 
-## Mesure courante après intégration de la PR #12
+## État après revue Astra
+
+Le chantier de couverture a été arrêté à réception du [rapport Astra](audits/2026-09-29-astra-behavior-audit.md), comme demandé. Les deux lots terminés auparavant comptent **20 tests réussis**, dont six nouveaux scénarios. Les correctifs du rapport sont vérifiés par des régressions fonctionnelles séparées ; **leur couverture globale n’a pas été remesurée**. Les compteurs ci-dessous décrivent le commit indiqué, avant ces corrections.
+
+## Dernière mesure globale : intégration de la PR #12
 
 Mesure du **29 septembre 2026**, source `2c2a7f8`, après fusion des interfaces compactes, complément de documentation XML et correction de l’assertion de palette Monaco. Le passage global corrigé, instrumenté sans exclusion de production, fournit :
 
