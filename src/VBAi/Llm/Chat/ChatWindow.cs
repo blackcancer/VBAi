@@ -230,6 +230,7 @@ namespace VBAi
         /// <param name="owner">Fenêtre propriétaire facultative du dialogue.</param>
         public void ShowSettings(IWin32Window owner = null)
         {
+            if (loadingScope) return;
             if (busy)
             {
                 ShowNotice(owner ?? this, UiText.Get("Wait for the response to finish or stop the agent before changing settings."),
@@ -367,6 +368,7 @@ namespace VBAi
         /// <returns>Tâche terminée lorsque le tour et son nettoyage sont achevés.</returns>
         private async Task SendAsync()
         {
+            if (loadingScope) return;
             if (busy)
             {
                 if (string.IsNullOrWhiteSpace(prompt.Text)) await StopTurnAsync();
@@ -381,6 +383,7 @@ namespace VBAi
         /// <returns>The result produced by this operation.</returns>
         private async Task SendRequestAsync(QueuedChatMessage queued)
         {
+            if (loadingScope) return;
             string question = (queued?.Text ?? prompt.Text).Trim();
             if (!busy && question.Length == 0 && currentSession?.BudgetPaused == true) { await ResumeBudgetAsync(); return; }
             if (busy || question.Length == 0) return;
@@ -502,17 +505,37 @@ namespace VBAi
             }
         }
 
-        /// <summary>Arrête les minuteries, sauvegarde la session et libère les clients et ressources d’exécution.</summary>
+        private bool runtimeDisposed;
+
+        /// <summary>Saves the session and releases each resource even if another cleanup fails.</summary>
         private void DisposeRuntime()
         {
-            contextMonitorTimer?.Stop(); referenceEvents?.Dispose(); projectEvents?.Dispose(); componentEvents?.Dispose();
-            SaveCurrentSession(); saveTimer?.Stop(); projectRetryTimer?.Stop();
-            sessionStore?.Dispose(); sessionStore = null;
-            activeHttpClient?.Dispose(); codex?.Dispose(); codex = null;
-            changes?.ContextMenuStrip?.Dispose();
-            if (about?.Image != null) { about.Image.Dispose(); about.Image = null; }
-            DisposeEntryViews();
-            DisposeComposer();
+            if (runtimeDisposed) return;
+            runtimeDisposed = true;
+            CleanupRuntime(() => contextMonitorTimer?.Stop());
+            CleanupRuntime(() => referenceEvents?.Dispose());
+            CleanupRuntime(() => projectEvents?.Dispose());
+            CleanupRuntime(() => componentEvents?.Dispose());
+            CleanupRuntime(SaveCurrentSession);
+            CleanupRuntime(() => streamRenderTimer?.Stop());
+            CleanupRuntime(() => pendingFollow?.Abort()); pendingFollow = null;
+            CleanupRuntime(() => saveTimer?.Stop());
+            CleanupRuntime(() => historySearchTimer?.Stop());
+            CleanupRuntime(() => projectRetryTimer?.Stop());
+            CleanupRuntime(() => persistenceWorker?.Dispose()); persistenceWorker = null;
+            CleanupRuntime(() => sessionStore?.Dispose()); sessionStore = null;
+            CleanupRuntime(() => activeHttpClient?.Dispose()); activeHttpClient = null;
+            CleanupRuntime(() => codex?.Dispose()); codex = null;
+            CleanupRuntime(() => changes?.ContextMenuStrip?.Dispose());
+            CleanupRuntime(() => { if (about?.Image != null) { about.Image.Dispose(); about.Image = null; } });
+            CleanupRuntime(DisposeEntryViews);
+            CleanupRuntime(DisposeComposer);
+        }
+
+        private static void CleanupRuntime(Action cleanup)
+        {
+            try { cleanup(); }
+            catch (Exception ex) { LoadLog.Write("Chat cleanup failed: " + ex.Message); }
         }
     }
 }

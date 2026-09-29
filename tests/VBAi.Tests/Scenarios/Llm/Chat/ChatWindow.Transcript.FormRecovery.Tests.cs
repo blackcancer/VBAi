@@ -31,7 +31,7 @@ namespace VBAi.Tests.Unit
         public void ScopeClosureBetweenHostReadsIsRejectedByGitHubAndSelectionActions()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 var picker = Get<System.Windows.Forms.ComboBox>(window, "scopePicker");
                 var saved = runtime.Host;

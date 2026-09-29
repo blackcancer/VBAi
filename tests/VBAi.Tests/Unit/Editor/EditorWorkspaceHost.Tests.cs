@@ -13,6 +13,14 @@ namespace VBAi.Tests.Unit
         public object MainWindow { get; set; }
         public Func<object> ReadActive { get; set; }
         public object ActiveWindow => ReadActive();
+        public object[] Windows { get; set; } = new object[0];
+    }
+
+    public sealed class WorkspaceDocumentWindow
+    {
+        public int Type { get; set; }
+        public long HWnd { get; set; }
+        public string Caption { get; set; }
     }
 
     [TestClass, TestCategory("Unit")]
@@ -22,6 +30,8 @@ namespace VBAi.Tests.Unit
         [DllImport("user32.dll")] private static extern IntPtr SetParent(IntPtr child, IntPtr parent);
         [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr window, uint command);
         [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr window, IntPtr after, int x, int y, int width, int height, uint flags);
+        [DllImport("user32.dll")] private static extern IntPtr GetFocus();
+        [DllImport("user32.dll")] private static extern IntPtr SetFocus(IntPtr window);
 
         [STATestMethod]
         public void NewlyOpenedNativeCodePaneStaysBehindMonacoWithoutCoveringObjectBrowser()
@@ -69,6 +79,104 @@ namespace VBAi.Tests.Unit
                 f.Scope.Host.ActiveWindow = new AddInEditorActiveWindow { Type = 2 };
                 LlmBoundaryScope.Call(workspace, "Resize");
                 Assert.IsFalse(editor.Visible); Assert.IsTrue(browser.Visible);
+            }
+        }
+
+        [STATestMethod]
+        public void FocusedToolWindowStillUsesTheActiveMdiCodeChildWithoutTakingKeyboardFocus()
+        {
+            using (var f = new AddInModernEditorFixture())
+            using (var code = new Form { Text = "Owned code", MdiParent = f.Scope.Host.Owner })
+            using (var tool = new TextBox())
+            {
+                var editor = f.Get();
+                LlmBoundaryScope.Get<EditorWorkspaceHost>(f.Instance, "editorWorkspace").Dispose();
+                var mdi = f.Scope.Host.Owner.Controls.OfType<MdiClient>().Single();
+                code.Show(); code.Activate();
+                Assert.IsTrue(SetWindowPos(code.Handle, IntPtr.Zero, 0, 0, 0, 0, 0x0013));
+                f.Scope.Host.Owner.Controls.Add(tool);
+                tool.Show(); SetFocus(tool.Handle);
+                var host = new WorkspaceContractHost
+                {
+                    MainWindow = f.Scope.Host.MainWindow,
+                    ReadActive = () => new AddInEditorActiveWindow { Type = 15 },
+                    Windows = new object[] { new WorkspaceDocumentWindow { Type = 0, HWnd = code.Handle.ToInt64(), Caption = code.Text } }
+                };
+                using (var workspace = new EditorWorkspaceHost(host, editor))
+                {
+                    Assert.IsTrue(SetWindowPos(code.Handle, IntPtr.Zero, 0, 0, 0, 0, 0x0013));
+                    SetFocus(tool.Handle);
+                    Assert.AreEqual(tool.Handle, GetFocus());
+                    Assert.AreEqual(code.Handle, GetWindow(mdi.Handle, 5));
+                    LlmBoundaryScope.Call(workspace, "Resize");
+                    Assert.AreEqual(editor.Handle, GetWindow(mdi.Handle, 5));
+                    Assert.AreEqual(code, f.Scope.Host.Owner.ActiveMdiChild);
+                    Assert.AreEqual(tool.Handle, GetFocus(), "Raising Monaco must not activate it or change keyboard focus.");
+                    Assert.IsTrue(code.Visible); Assert.IsTrue(editor.Visible);
+                }
+            }
+        }
+
+        [STATestMethod]
+        public void FocusedToolWindowLeavesTheActiveMdiObjectBrowserVisible()
+        {
+            using (var f = new AddInModernEditorFixture())
+            using (var browser = new Form { Text = "Owned object browser", MdiParent = f.Scope.Host.Owner })
+            {
+                var editor = f.Get();
+                LlmBoundaryScope.Get<EditorWorkspaceHost>(f.Instance, "editorWorkspace").Dispose();
+                browser.Show(); browser.Activate();
+                var host = new WorkspaceContractHost
+                {
+                    MainWindow = f.Scope.Host.MainWindow,
+                    ReadActive = () => new AddInEditorActiveWindow { Type = 15 },
+                    Windows = new object[] { new WorkspaceDocumentWindow { Type = 2, HWnd = browser.Handle.ToInt64(), Caption = browser.Text } }
+                };
+                using (var workspace = new EditorWorkspaceHost(host, editor))
+                {
+                    LlmBoundaryScope.Call(workspace, "Resize");
+                    Assert.IsFalse(editor.Visible);
+                    Assert.IsTrue(browser.Visible);
+                    Assert.AreEqual(browser, f.Scope.Host.Owner.ActiveMdiChild);
+                }
+            }
+        }
+
+        [STATestMethod]
+        public void ZeroComHandleNeedsAnExactUniqueCaptionBeforeRaisingTheActiveMdiChild()
+        {
+            using (var f = new AddInModernEditorFixture())
+            using (var code = new Form { Text = "Owned code", MdiParent = f.Scope.Host.Owner })
+            using (var ambiguous = new Form { Text = "Owned code", MdiParent = f.Scope.Host.Owner })
+            {
+                var editor = f.Get();
+                LlmBoundaryScope.Get<EditorWorkspaceHost>(f.Instance, "editorWorkspace").Dispose();
+                var mdi = f.Scope.Host.Owner.Controls.OfType<MdiClient>().Single();
+                var host = new WorkspaceContractHost
+                {
+                    MainWindow = f.Scope.Host.MainWindow,
+                    ReadActive = () => new AddInEditorActiveWindow { Type = 15 },
+                    Windows = new object[] { new WorkspaceDocumentWindow { Type = 0, HWnd = 0, Caption = code.Text } }
+                };
+                using (var workspace = new EditorWorkspaceHost(host, editor))
+                {
+                    code.Show(); code.Activate();
+                    Assert.IsTrue(SetWindowPos(code.Handle, IntPtr.Zero, 0, 0, 0, 0, 0x0013));
+                    Assert.AreEqual(code.Handle, GetWindow(mdi.Handle, 5));
+                    LlmBoundaryScope.Call(workspace, "Resize");
+                    Assert.AreEqual(editor.Handle, GetWindow(mdi.Handle, 5));
+
+                    ambiguous.Show(); ambiguous.Activate();
+                    Assert.IsTrue(SetWindowPos(ambiguous.Handle, IntPtr.Zero, 0, 0, 0, 0, 0x0013));
+                    host.Windows = new object[] {
+                        new WorkspaceDocumentWindow { Type = 0, HWnd = 0, Caption = ambiguous.Text },
+                        new WorkspaceDocumentWindow { Type = 0, HWnd = 0, Caption = ambiguous.Text }
+                    };
+                    Assert.AreEqual(ambiguous.Handle, GetWindow(mdi.Handle, 5));
+                    LlmBoundaryScope.Call(workspace, "Resize");
+                    Assert.AreEqual(ambiguous.Handle, GetWindow(mdi.Handle, 5), "Ambiguous captions must not raise Monaco over a native document.");
+                    Assert.IsTrue(ambiguous.Visible);
+                }
             }
         }
 

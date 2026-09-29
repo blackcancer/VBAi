@@ -44,7 +44,7 @@ namespace VBAi.Tests.Unit
             {
                 var document = editor.OpenModule(fixture).GetAwaiter().GetResult();
                 runtime.Session.ModernEditor = show => editor;
-                using (var window = new ChatWindow(runtime.Session))
+                using (var window = LoadedWindow(runtime.Session))
                 {
                     foreach (string action in new[] { "/expliquer", "/corriger", "/refactoriser" })
                     {
@@ -105,7 +105,7 @@ namespace VBAi.Tests.Unit
         public void ShellActionsTogglePanelsModeArchivePinMemoryAndDockOnlyWhenIdle()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 window.Show(); System.Windows.Forms.Application.DoEvents();
                 Call(window, "Docking_Click", null, EventArgs.Empty); int docks = 0; window.DockRequested += () => docks++; Call(window, "Docking_Click", null, EventArgs.Empty); Set(window, "busy", true); Call(window, "Docking_Click", null, EventArgs.Empty); Assert.AreEqual(1, docks); Set(window, "busy", false); window.ReportDockFailure("test"); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, "test");
@@ -129,9 +129,9 @@ namespace VBAi.Tests.Unit
             {
                 string document = System.IO.Path.Combine(runtime.Root, "unique.xlsm"); runtime.Vbe.VBProjects[0].FileName = document; runtime.Host = r => Response.Success(r.Command == "list_projects" ? (object)new[] { new { Name = "P", FileName = document } } : new { SelectedProject = "P", SelectedProjectPath = document });
                 string cache = MacroGitRepository.ScopeDirectory(document.ToUpperInvariant()); int dialogs = 0; ChatWindow.ShowModal = (d, o) => { Assert.IsInstanceOfType<GitWindow>(d); dialogs++; return System.Windows.Forms.DialogResult.Cancel; };
-                try { using (var window = new ChatWindow(runtime.Session)) { Call(window, "GitHub_Click", null, EventArgs.Empty); Assert.AreEqual(1, dialogs); Get<System.Windows.Forms.ComboBox>(window, "scopePicker").SelectedIndex = -1; Call(window, "GitHub_Click", null, EventArgs.Empty); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, UiText.Get("The project for this conversation is closed or ambiguous.")); Assert.AreEqual(1, dialogs); } }
+                try { using (var window = LoadedWindow(runtime.Session)) { Call(window, "GitHub_Click", null, EventArgs.Empty); Assert.AreEqual(1, dialogs); Get<System.Windows.Forms.ComboBox>(window, "scopePicker").SelectedIndex = -1; Call(window, "GitHub_Click", null, EventArgs.Empty); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, UiText.Get("The project for this conversation is closed or ambiguous.")); Assert.AreEqual(1, dialogs); } }
                 finally { if (System.IO.Directory.Exists(cache)) System.IO.Directory.Delete(cache, true); }
-                runtime.Host = r => Response.Success(r.Command == "list_projects" ? (object)new[] { new { Name = "P", FileName = "" } } : new { SelectedProject = "P" }); using (var window = new ChatWindow(runtime.Session)) { Call(window, "GitHub_Click", null, EventArgs.Empty); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, UiText.Get("Save the document")); }
+                runtime.Host = r => Response.Success(r.Command == "list_projects" ? (object)new[] { new { Name = "P", FileName = "" } } : new { SelectedProject = "P" }); using (var window = LoadedWindow(runtime.Session)) { Call(window, "GitHub_Click", null, EventArgs.Empty); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, UiText.Get("Save the document")); }
                 using (var design = new ChatWindow()) { Call(design, "InsertReferencePrefix", '#'); Call(design, "StartNewChat"); Call(design, "ContextToggle_Click", null, EventArgs.Empty); Call(design, "ContextToggle_Click", null, EventArgs.Empty); }
             }
         }

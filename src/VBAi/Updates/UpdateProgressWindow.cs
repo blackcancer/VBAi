@@ -85,9 +85,9 @@ namespace VBAi
                 bool completed = await Task.Run(() => runner.Tick(job));
                 if (IsDisposed) return;
                 status.Text = UpdateText.Get(job.Status); cancel.Enabled = true;
-                if (completed) { timer.Stop(); progress.Visible = false; cancel.Text = UpdateText.Get("Close"); CloseBackground(); }
+                if (completed) { SetExitCode(job.Completed && job.Succeeded ? 0 : 1); timer.Stop(); progress.Visible = false; cancel.Text = UpdateText.Get("Close"); CloseBackground(); }
             }
-            catch (Exception) { timer.Stop(); status.Text = UpdateText.Get("Installation failed. Check the installer log."); CloseBackground(); }
+            catch (Exception) { SetExitCode(1); timer.Stop(); status.Text = UpdateText.Get("Installation failed. Check the installer log."); CloseBackground(); }
             finally { polling = false; }
         }
         /// <summary>Performs the close background operation for UpdateProgressWindow.</summary>
@@ -103,7 +103,7 @@ namespace VBAi
         private void Close_Click(object sender, EventArgs e)
         {
             if (polling || runner?.Installing == true) return;
-            if (job != null && !job.Completed) { job.Completed = true; job.Status = "Update cancelled."; job.Save(root); }
+            CancelPendingJob();
             Close();
         }
         /// <summary>Blocks user closure during polling and records cancellation for an unfinished job.</summary>
@@ -111,9 +111,16 @@ namespace VBAi
         private void WindowClosing(object sender, FormClosingEventArgs e)
         {
             if (closingInternally) return;
-            if (e.CloseReason == CloseReason.UserClosing && polling) { e.Cancel = true; return; }
-            if (e.CloseReason == CloseReason.UserClosing && job != null && !job.Completed)
-            { job.Completed = true; job.Status = "Update cancelled."; job.Save(root); }
+            if (e.CloseReason == CloseReason.UserClosing && (polling || runner?.Installing == true)) { e.Cancel = true; return; }
+            if (e.CloseReason == CloseReason.UserClosing) CancelPendingJob();
+        }
+        /// <summary>Records a user cancellation as an unsuccessful final result.</summary>
+        private void CancelPendingJob()
+        {
+            if (job == null || job.Completed) return;
+            job.Completed = true; job.Succeeded = false; job.Status = "Update cancelled.";
+            SetExitCode(1);
+            job.Save(root);
         }
     }
 }

@@ -14,7 +14,7 @@ namespace VBAi.Tests.Unit
         public void ContextScopeRefreshPreservesIdentityAndRejectsUnavailableCatalogues()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 var picker = Get<ComboBox>(window, "scopePicker");
                 var selected = picker.SelectedItem;
@@ -49,7 +49,7 @@ namespace VBAi.Tests.Unit
         public void DirtyContextRetriesFailureAndInvalidatesTheReferenceIndex()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 int reads = 0;
                 runtime.Host = r => { reads++; return Response.Failure("retry"); };
@@ -82,7 +82,7 @@ namespace VBAi.Tests.Unit
         public void ContextTimerDefersBusyHiddenAndFailingHostsWithoutLosingDirtyState()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 var timer = Get<Timer>(window, "contextMonitorTimer");
                 Action tick = () => typeof(Timer).GetMethod("OnTick", BindingFlags.Instance | BindingFlags.NonPublic)

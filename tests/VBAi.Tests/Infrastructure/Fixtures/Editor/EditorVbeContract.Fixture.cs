@@ -30,7 +30,13 @@ namespace VBAi.Tests.Infrastructure
             public List<object> VBProjects { get; } = new List<object>();
             public Window MainWindow { get; } = new Window();
             public object ActiveVBProject { get; set; }
-            public object ActiveCodePane { get; set; }
+            private object activeCodePane;
+            public int ActiveCodePaneSetCount { get; private set; }
+            public object ActiveCodePane
+            {
+                get => activeCodePane;
+                set { ActiveCodePaneSetCount++; activeCodePane = value; }
+            }
             public CommandInventory CommandBars { get; } = new CommandInventory();
         }
         public sealed class CommandInventory : List<VBAi.Tests.Unit.VbeDebugTests.FakeBar>
@@ -174,8 +180,9 @@ namespace VBAi.Tests.Infrastructure
             public Module CodeModule { get; set; }
             public int Shows, Line, Column;
             public Action OnShow;
+            public Action OnSetSelection;
             public void Show() { Shows++; OnShow?.Invoke(); }
-            public void SetSelection(int first, int column, int last, int endColumn) { Line = first; Column = column; }
+            public void SetSelection(int first, int column, int last, int endColumn) { OnSetSelection?.Invoke(); Line = first; Column = column; }
             public void GetSelection(ref int first, ref int column, ref int last, ref int endColumn) { first = Line; column = Column; last = Line; endColumn = Column; }
         }
         public sealed class Window

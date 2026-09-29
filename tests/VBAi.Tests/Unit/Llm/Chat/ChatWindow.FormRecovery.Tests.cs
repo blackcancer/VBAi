@@ -12,7 +12,7 @@ namespace VBAi.Tests.Unit
         public void FormRecoveryCardsReflectOwnershipBusyStateAndVerifiedNativeOutcome()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 var tools = Get<LlmVbeTools>(window, "tools");
                 tools.BoundProject = "P"; tools.ValidateScope = null;

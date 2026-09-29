@@ -8,6 +8,8 @@ param(
     [Parameter(ParameterSetName = 'Command')] [string] $Query
 )
 
+$ErrorActionPreference = 'Stop'
+
 if ($PSCmdlet.ParameterSetName -eq 'Command') {
     $request = @{ Command = $Command }
     if ($Project) { $request.Project = $Project }

@@ -41,6 +41,8 @@ Pour les quatre hôtes documentaires, le lot comprend sept scénarios :
 
 ## Relancer et lire les preuves
 
+La fusion ultérieure de `fix/ui-responsiveness-breakpoints` apporte le correctif `PowerPointWindow` : lecture du handle par l'interface COM Office officielle, avec No-PIA, au lieu du membre indisponible via IDispatch. Les essais ci-dessus restent ceux de la DLL indiquée dans le périmètre ; la sauvegarde PowerPoint avec la version fusionnée reste à qualifier nativement.
+
 ```powershell
 # Compiler les tests contre la DLL actuellement installée, sans remplacer une DLL chargée.
 dotnet build tests/VBAi.Tests/VBAi.Tests.csproj --no-restore -p:BuildProjectReferences=false

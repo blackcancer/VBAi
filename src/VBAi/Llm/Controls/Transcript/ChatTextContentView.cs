@@ -11,6 +11,8 @@ namespace VBAi
         internal Action<string> ErrorHandler = LoadLog.Write;
         /// <summary>Tracks fonts created by this view so they can be disposed with it.</summary>
         private readonly List<Font> ownedFonts = new List<Font>();
+        private int contentUpdateDepth;
+        private bool resizingText;
         /// <summary>Maps rendered character ranges to navigation, link, and code copy actions.</summary>
         internal readonly List<TextAction> actions = new List<TextAction>();
         /// <summary>Provides the text action implementation.</summary>
@@ -22,7 +24,7 @@ internal string Code; }
         public ChatTextContentView()
         {
             InitializeComponent(); UiText.Apply(this, components); UiTheme.Apply(this);
-            content.ContentsResized += (s,e) => content.Height = Math.Max(24, Math.Min(1200, e.NewRectangle.Height + 8));
+            content.ContentsResized += (s,e) => { if (contentUpdateDepth == 0 && !resizingText) content.Height = content.TextLength == 0 ? 24 : Math.Max(24, Math.Min(1200, e.NewRectangle.Height + 8)); };
             content.TextChanged += (s,e) => ResizeText();
             content.HandleCreated += (s,e) => ResizeText();
             content.MouseUp += (s,e) => { if (e.Button != MouseButtons.Left || content.SelectionLength != 0) return; ActivateAt(content.GetCharIndexFromPosition(e.Location)); };
@@ -36,10 +38,15 @@ internal string Code; }
         /// <param name="code">Whether to use code formatting for the text.</param>
         internal void ShowPlain(string text, bool code = false)
         {
-            actions.Clear(); content.Clear();
-            content.RightToLeft = !code && UiText.Culture.TextInfo.IsRightToLeft ? RightToLeft.Yes : RightToLeft.No;
-            content.Font = OwnFont(code ? "Consolas" : "Segoe UI", 9.5f, FontStyle.Regular);
-            content.Text = text ?? ""; content.Select(0,0); ResizeText();
+            contentUpdateDepth++;
+            try
+            {
+                actions.Clear(); content.Clear();
+                content.RightToLeft = !code && UiText.Culture.TextInfo.IsRightToLeft ? RightToLeft.Yes : RightToLeft.No;
+                content.Font = OwnFont(code ? "Consolas" : "Segoe UI", 9.5f, FontStyle.Regular);
+                content.Text = text ?? ""; content.Select(0,0);
+            }
+            finally { contentUpdateDepth--; ResizeText(); }
         }
         /// <summary>Renders Markdown into the transcript and installs the callbacks for references and errors.</summary>
         /// <param name="text">Markdown source to render in the transcript.</param>
@@ -48,11 +55,16 @@ internal string Code; }
         /// <param name="error">Callback used to report link and action errors.</param>
         internal void ShowMarkdown(string text, IDictionary<string,VbeChatReference> references, Action<VbeChatReference> navigate, Action<string> error)
         {
-            ErrorHandler = error;
-            content.RightToLeft = UiText.Culture.TextInfo.IsRightToLeft ? RightToLeft.Yes : RightToLeft.No;
-            actions.Clear(); content.Clear();
-            ChatNativeMarkdown.Render(this, text ?? "", references, navigate, error);
-            content.Select(0,0); ResizeText();
+            contentUpdateDepth++;
+            try
+            {
+                ErrorHandler = error;
+                content.RightToLeft = UiText.Culture.TextInfo.IsRightToLeft ? RightToLeft.Yes : RightToLeft.No;
+                actions.Clear(); content.Clear();
+                ChatNativeMarkdown.Render(this, text ?? "", references, navigate, error);
+                content.Select(0,0);
+            }
+            finally { contentUpdateDepth--; ResizeText(); }
         }
         /// <summary>Returns a cached view owned font matching the requested family, size, and style.</summary>
         /// <param name="family">Font family to reuse or create.</param>
@@ -92,10 +104,23 @@ internal string Code; }
         /// <summary>Measures the rendered text and updates the rich text control height and scroll bars.</summary>
         private void ResizeText()
         {
-            if (content == null || content.IsDisposed || !content.IsHandleCreated || content.TextLength == 0) return;
-            var end = content.GetPositionFromCharIndex(content.TextLength - 1);
-            content.Height = Math.Max(24, Math.Min(1200, end.Y + (int)Math.Ceiling(content.Font.GetHeight()) + 12));
-            content.ScrollBars = content.Height >= 1200 ? RichTextBoxScrollBars.Vertical : RichTextBoxScrollBars.None;
+            if (resizingText || contentUpdateDepth != 0 || content == null || content.IsDisposed || !content.IsHandleCreated) return;
+            resizingText = true;
+            try
+            {
+                int height = 24;
+                if (content.TextLength > 0)
+                {
+                    var end = content.GetPositionFromCharIndex(content.TextLength - 1);
+                    height = Math.Max(24, Math.Min(1200, end.Y + (int)Math.Ceiling(content.Font.GetHeight()) + 12));
+                }
+                content.Height = height;
+                // ScrollBars recreates the native handle and synchronously raises HandleCreated.
+                // Never start another measurement while that recreation is still in progress.
+                var scrollBars = height >= 1200 ? RichTextBoxScrollBars.Vertical : RichTextBoxScrollBars.None;
+                if (content.ScrollBars != scrollBars) content.ScrollBars = scrollBars;
+            }
+            finally { resizingText = false; }
         }
         /// <summary>Disposes fonts created by this view and clears its font cache.</summary>
         private void DisposeTextResources() { foreach (var font in ownedFonts) font.Dispose(); ownedFonts.Clear(); }

@@ -2068,4 +2068,7 @@
   <data name="Interrupted" xml:space="preserve">
     <value>Прервано</value>
   </data>
+  <data name="Installation outcome is uncertain. Check the installer and its log before attempting another update." xml:space="preserve"><value>Результат установки неизвестен. Проверьте программу установки и её журнал перед повторной попыткой обновления.</value></data>
+  <data name="Installation refused: no trusted VBAi publisher is configured or the publisher does not match." xml:space="preserve"><value>Установка отклонена: доверенный издатель VBAi не настроен или издатель не совпадает.</value></data>
+  <data name="Local history recovery copies are available. See the troubleshooting guide." xml:space="preserve"><value>Доступны резервные копии для восстановления локальной истории. См. руководство по устранению неполадок.</value></data>
 </root>

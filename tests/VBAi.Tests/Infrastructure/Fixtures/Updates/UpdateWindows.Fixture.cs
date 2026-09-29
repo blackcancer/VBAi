@@ -24,14 +24,17 @@ namespace VBAi.Tests.Unit
         internal readonly UpdateProgressWindow Window = new UpdateProgressWindow();
         internal readonly UpdateInstallJob Job;
         internal readonly UpdateInstallerRunner Runner;
+        internal int? ExitCode;
         private readonly string culture = UpdateText.Culture;
         internal UpdateProgressFixture(bool background = false, string language = "en-US")
         {
+            Window.SetExitCode = code => ExitCode = code;
             Job = UpdateInstallerRunnerTests.Job(Scope); Job.Culture = language;
             Window.Configure(Scope.Root, Job, background);
             UiInvoke.Field<System.Windows.Forms.Timer>(Window, "timer").Stop();
             Runner = UiInvoke.Field<UpdateInstallerRunner>(Window, "runner");
             Runner.VerifySignature = path => true;
+            Runner.VerifyPublisher = path => true;
             Runner.Install = path => 0;
             Runner.InstalledVersion = path => Job.TargetVersion;
             IntPtr handle = Window.Handle;

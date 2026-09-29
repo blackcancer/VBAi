@@ -1915,6 +1915,11 @@ namespace VBAi
                 AutomationElement root = AutomationElement.FromHandle(handle);
                 var listCondition = new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem);
                 AutomationElementCollection elements = root.FindAll(TreeScope.Descendants, listCondition);
+                // Missing accessibility support is not proof that the debugger has no variables.
+                if (elements.Count == 0 && root.Current.ControlType != ControlType.List &&
+                    root.FindAll(TreeScope.Descendants,
+                        new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.List)).Count == 0)
+                    throw new InvalidOperationException("The visible debugger pane exposes no accessible list provider; its variables could not be read.");
                 var items = new List<object>();
                 var rowKeys = new HashSet<string>(StringComparer.Ordinal);
                 int duplicates = 0;
@@ -2060,7 +2065,8 @@ namespace VBAi
         {
             AutomationElement root = AutomationElement.FromHandle(handle);
             var condition = new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Document);
-            AutomationElementCollection documents = root.FindAll(TreeScope.Descendants, condition);
+            // Some providers expose the document on the pane itself, without a child fragment.
+            AutomationElementCollection documents = root.FindAll(TreeScope.Element | TreeScope.Descendants, condition);
             if (documents.Count != 1)
                 throw new InvalidOperationException("Expected one Immediate document; found " + documents.Count + ".");
             if (!documents[0].TryGetCurrentPattern(TextPattern.Pattern, out _))

@@ -13,10 +13,16 @@ namespace VBAi
     {
         /// <summary>Magasin SQLite partagé par les sessions et la mémoire de projet.</summary>
         private ChatSessionStore sessionStore;
+        private ChatPersistenceWorker persistenceWorker;
+        private readonly System.Web.Script.Serialization.JavaScriptSerializer persistenceJson =
+            new System.Web.Script.Serialization.JavaScriptSerializer { MaxJsonLength = 32 * 1024 * 1024 };
         /// <summary>Session actuellement affichée.</summary>
         private ChatSessionState currentSession;
         /// <summary>Indique qu’un chargement de session est en cours et bloque les sauvegardes déclenchées par l’interface.</summary>
         private bool loadingSession;
+        private bool loadingScope;
+        private System.Threading.Tasks.Task scopeLoad = System.Threading.Tasks.Task.CompletedTask;
+        internal Func<string, string, bool, System.Threading.Tasks.Task<ChatSessionStore.ScopeSnapshot>> ReadScope = ChatSessionStore.ReadScopeAsync;
         /// <summary>Indique qu’une erreur de stockage a empêché une sauvegarde.</summary>
         private bool storageFailed;
         /// <summary>Session VBE utilisée pour actualiser les portées de projet.</summary>
@@ -27,6 +33,7 @@ namespace VBAi
         private readonly Dictionary<string, List<ChatSessionState>> cachedScopes = new Dictionary<string, List<ChatSessionState>>();
         /// <summary>Minuterie qui regroupe les sauvegardes rapprochées du brouillon.</summary>
         private DispatcherTimer saveTimer;
+        private DispatcherTimer historySearchTimer;
         /// <summary>Minuterie de nouvelle tentative de découverte lorsque aucun projet n’est ouvert.</summary>
         private DispatcherTimer projectRetryTimer;
         /// <summary>Mémoire locale de la portée de projet courante.</summary>
@@ -59,6 +66,30 @@ namespace VBAi
             try
             {
                 sessionStore = OpenHistory(HistoryPath());
+                var dispatcher = Dispatcher.CurrentDispatcher;
+                persistenceWorker = new ChatPersistenceWorker(sessionStore.DatabasePath, (snapshot, version, error) => {
+                    if (error != null) LoadLog.Write("Chat history persistence failed: " + error.GetType().Name);
+                    if (dispatcher.HasShutdownStarted) return;
+                    dispatcher.BeginInvoke(new Action(() => {
+                        if (runtimeDisposed || IsDisposed) return;
+                        if (error != null)
+                        {
+                            storageFailed = true;
+                            SetStatus(UiText.Get("History not saved: ") + error.Message);
+                        }
+                        else
+                        {
+                            var saved = scopeSessions.Concat(cachedScopes.Values.SelectMany(items => items))
+                                .FirstOrDefault(item => item.WriterId == snapshot.Writer);
+                            if (saved != null) saved.StorageVersion = version;
+                        }
+                    }));
+                });
+                if (Directory.Exists(persistenceWorker.RecoveryDirectory) && Directory.EnumerateFiles(persistenceWorker.RecoveryDirectory, "*.json").Any())
+                {
+                    storageFailed = true;
+                    SetStatus(UiText.Get("Local history recovery copies are available. See the troubleshooting guide."));
+                }
             }
             catch (Exception ex) { storageFailed = true; SetStatus(UiText.Get("History not saved: ") + ex.Message); }
             var projects = PopulateProjectScopes(session);
@@ -67,7 +98,7 @@ namespace VBAi
                 var selected = sessionList.SelectedItem as ChatSessionState;
                 if (!loadingSession && selected != null && selected != currentSession && !busy) ActivateSession(selected);
             };
-            historySearch.TextChanged += (s, e) => RefreshHistory();
+            historySearch.TextChanged += (s, e) => ScheduleHistorySearch();
             if (scopePicker.Items.Count > 0)
             {
                 int selected = 0;
@@ -137,25 +168,64 @@ namespace VBAi
         /// <summary>Sauvegarde la session courante et charge les sessions et la mémoire de la nouvelle portée.</summary>
         private void ChangeScope()
         {
-            if (busy || loadingSession) return;
-            SaveCurrentSession();
+            if (loadingSession || runtimeDisposed || IsDisposed) return;
+            scopeLoad = ChangeScopeAsync();
+        }
+
+        private async System.Threading.Tasks.Task ChangeScopeAsync()
+        {
+            if (busy || loadingSession || runtimeDisposed || IsDisposed) return;
             var scope = scopePicker.SelectedItem as MacroScope;
             if (scope == null) return;
+            SaveCurrentSession();
             if (currentSession != null) cachedScopes[currentSession.Scope] = scopeSessions.ToList();
-            scopeSessions.Clear();
-            projectMemory = "";
-            try {
-                List<ChatSessionState> cached;
-                if (cachedScopes.TryGetValue(scope.Key, out cached)) scopeSessions.AddRange(cached);
-                else if (sessionStore != null) scopeSessions.AddRange(sessionStore.List(scope.Key));
-                if (sessionStore != null) projectMemory = sessionStore.ReadMemory(scope.Key);
+            cachedScopes.TryGetValue(scope.Key, out var cached);
+            string path = sessionStore?.DatabasePath;
+            bool previousEnabled = rootLayout.Enabled;
+            bool previousWaitCursor = UseWaitCursor;
+            loadingScope = loadingSession = true;
+            rootLayout.Enabled = false;
+            UseWaitCursor = true;
+            // Ignore catalog results belonging to the outgoing session.
+            catalogueVersion++;
+            try
+            {
+                ChatSessionStore.ScopeSnapshot snapshot = null;
+                Exception failure = null;
+                if (path != null)
+                {
+                    try { snapshot = await ReadScope(path, scope.Key, cached == null); }
+                    catch (Exception error) { failure = error; }
+                }
+                if (runtimeDisposed || IsDisposed) return;
+                // A programmatic scope change can still occur while controls are disabled.
+                if (!ReferenceEquals(scopePicker.SelectedItem, scope)) return;
+                scopeSessions.Clear();
+                if (cached != null) scopeSessions.AddRange(cached);
+                else if (snapshot?.Sessions != null) scopeSessions.AddRange(snapshot.Sessions);
+                projectMemory = snapshot?.Memory ?? "";
+                memoryEditor.Text = projectMemory;
+                attachMemory.Checked = false;
+                if (!scopeSessions.Any(item => !item.Archived))
+                    scopeSessions.Add(new ChatSessionState { Scope = scope.Key, Provider = settings.ProviderName });
+                loadingScope = loadingSession = false;
+                ActivateSession(scopeSessions.First(item => !item.Archived), false);
+                if (failure != null) SetStatus(UiText.Get("History unavailable: ") + failure.Message);
             }
-            catch (Exception ex) { SetStatus(UiText.Get("History unavailable: ") + ex.Message); }
-            memoryEditor.Text = projectMemory;
-            attachMemory.Checked = false;
-            if (!scopeSessions.Any(item => !item.Archived))
-                scopeSessions.Add(new ChatSessionState { Scope = scope.Key, Provider = settings.ProviderName });
-            ActivateSession(scopeSessions.First(item => !item.Archived), false);
+            catch (Exception error)
+            {
+                if (!runtimeDisposed && !IsDisposed) SetStatus(UiText.Get("History unavailable: ") + error.Message);
+            }
+            finally
+            {
+                loadingScope = loadingSession = false;
+                if (!runtimeDisposed && !IsDisposed)
+                {
+                    rootLayout.Enabled = previousEnabled;
+                    UseWaitCursor = previousWaitCursor;
+                    if (!ReferenceEquals(scopePicker.SelectedItem, scope)) ChangeScope();
+                }
+            }
         }
 
         /// <summary>Restaure les messages, pièces jointes, références, fournisseur et brouillon d’une session.</summary>
@@ -163,7 +233,7 @@ namespace VBAi
         /// <param name="savePrevious">Indique s’il faut sauvegarder la session actuellement affichée avant le basculement.</param>
         private void ActivateSession(ChatSessionState session, bool savePrevious = true)
         {
-            if (busy) return;
+            if (busy || loadingScope) return;
             if (savePrevious) SaveCurrentSession();
             loadingSession = true;
             try
@@ -219,7 +289,8 @@ namespace VBAi
         /// <summary>Filtre, trie et remplit la liste des sessions visibles, en conservant la sélection courante.</summary>
         private void RefreshHistory()
         {
-            if (sessionList == null) return;
+            historySearchTimer?.Stop();
+            if (runtimeDisposed || IsDisposed || sessionList == null) return;
             bool previous = loadingSession;
             loadingSession = true;
             sessionList.BeginUpdate();
@@ -234,6 +305,21 @@ namespace VBAi
             finally { sessionList.EndUpdate(); loadingSession = previous; }
         }
 
+        /// <summary>Coalesces search edits before scanning and rebinding the session history.</summary>
+        private void ScheduleHistorySearch()
+        {
+            if (runtimeDisposed || IsDisposed) return;
+            if (historySearchTimer == null)
+            {
+                historySearchTimer = new DispatcherTimer(DispatcherPriority.Background) {
+                    Interval = TimeSpan.FromMilliseconds(200)
+                };
+                historySearchTimer.Tick += (sender, args) => RefreshHistory();
+            }
+            historySearchTimer.Stop();
+            historySearchTimer.Start();
+        }
+
         /// <summary>Programme une sauvegarde différée du brouillon lorsque le chargement ne bloque pas les modifications.</summary>
         private void ScheduleSessionSave()
         {
@@ -245,23 +331,51 @@ namespace VBAi
         private void SaveCurrentSession()
         {
             if (loadingSession || currentSession == null) return;
-            saveTimer?.Stop();
-            currentSession.Entries = transcriptEntries.ToList();
-            currentSession.MessagesJson = json.Serialize(messages);
-            currentSession.Draft = prompt.Text;
-            currentSession.DraftCapturedMemory = attachMemory.Checked ? queuedDraftMemory : null;
-            currentSession.DraftAttachments = draftAttachments.ToArray();
-            currentSession.DraftReferences = CurrentReferences(prompt.Text);
-            if (codex != null && !string.IsNullOrEmpty(codex.ThreadId)) currentSession.CodexThreadId = codex.ThreadId;
-            try { sessionStore?.Save(currentSession); }
-            catch (Exception ex) { storageFailed = true; SetStatus(UiText.Get("History not saved: ") + ex.Message); }
+            try
+            {
+                saveTimer?.Stop();
+                FlushStreamText();
+                // Capture fallible values before replacing the last complete in-memory snapshot.
+                string messageSnapshot = json.Serialize(messages);
+                string draft = prompt.Text;
+                var references = CurrentReferences(draft);
+                currentSession.Entries = transcriptEntries.ToList();
+                currentSession.MessagesJson = messageSnapshot;
+                currentSession.Draft = draft;
+                currentSession.DraftCapturedMemory = attachMemory.Checked ? queuedDraftMemory : null;
+                currentSession.DraftAttachments = draftAttachments.ToArray();
+                currentSession.DraftReferences = references;
+                if (codex != null && !string.IsNullOrEmpty(codex.ThreadId)) currentSession.CodexThreadId = codex.ThreadId;
+                // Only immutable strings cross this boundary; mutable activity/card models stay on the UI thread.
+                if (persistenceWorker != null)
+                    persistenceWorker.Enqueue(new ChatPersistenceWorker.Snapshot(currentSession, persistenceJson.Serialize(currentSession)));
+                else sessionStore?.Save(currentSession);
+            }
+            catch (Exception ex)
+            {
+                storageFailed = true;
+                LoadLog.Write("Chat history save failed: " + ex.Message);
+                try
+                {
+                    string recovery = (sessionStore?.DatabasePath ?? HistoryPath()) + ".recovery";
+                    // Preserve plain text even when an activity/card cannot be serialized. No tool replay.
+                    string payload = new System.Web.Script.Serialization.JavaScriptSerializer { MaxJsonLength = 64 * 1024 * 1024 }
+                        .Serialize(new { FormatVersion = 1, RecoveryKind = "draft-text", currentSession.Id, currentSession.Scope,
+                            Draft = prompt.Text, Entries = transcriptEntries.Select(entry => new { entry.Speaker, entry.Text }).ToArray() });
+                    UpdatePaths.WriteAtomic(Path.Combine(recovery, "capture-" + Guid.NewGuid().ToString("N") + ".json"), payload);
+                }
+                catch (Exception recoveryError) { LoadLog.Write("Chat emergency recovery failed: " + recoveryError.GetType().Name); }
+                // Shutdown must continue even if an already-disposed status surface cannot be updated.
+                try { SetStatus(UiText.Get("History not saved: ") + ex.Message); }
+                catch (Exception statusError) { LoadLog.Write("Chat save status unavailable: " + statusError.Message); }
+            }
         }
 
         /// <summary>Crée une session dans la portée courante et l’active avec le fournisseur indiqué ou celui des paramètres.</summary>
         /// <param name="provider">Fournisseur initial facultatif.</param>
         private void NewSession(string provider = null)
         {
-            if (busy || settings == null) return;
+            if (busy || loadingScope || settings == null) return;
             var scope = scopePicker.SelectedItem as MacroScope;
             if (scope == null) return;
             SaveCurrentSession();
@@ -286,7 +400,7 @@ namespace VBAi
         /// <summary>Applique le titre saisi à la session, le limite à 120 caractères et sauvegarde l’état.</summary>
         private void RenameCurrentChat()
         {
-            if (busy || currentSession == null || string.IsNullOrWhiteSpace(chatTitleEditor.Text)) return;
+            if (busy || loadingScope || currentSession == null || string.IsNullOrWhiteSpace(chatTitleEditor.Text)) return;
             currentSession.Title = chatTitleEditor.Text.Trim();
             if (currentSession.Title.Length > 120) currentSession.Title = currentSession.Title.Substring(0, 120);
             sessionTitle.Text = currentSession.Title;
@@ -296,7 +410,7 @@ namespace VBAi
         /// <summary>Inverse l’état archivé de la session courante et ouvre une session neuve si elle vient d’être archivée.</summary>
         private void ToggleArchiveCurrentChat()
         {
-            if (busy || currentSession == null) return;
+            if (busy || loadingScope || currentSession == null) return;
             currentSession.Archived = !currentSession.Archived;
             SaveCurrentSession();
             if (currentSession.Archived) NewSession();
@@ -307,7 +421,7 @@ namespace VBAi
         private void SaveProjectMemory()
         {
             var scope = scopePicker.SelectedItem as MacroScope;
-            if (scope == null || busy) return;
+            if (scope == null || busy || loadingScope) return;
             if (sessionStore == null) { SetStatus(UiText.Get("Memory requires an available SQLite history store.")); return; }
             try
             {
@@ -323,6 +437,7 @@ namespace VBAi
         /// <exception cref="InvalidOperationException">La portée n’existe plus ou le document enregistré a changé de chemin.</exception>
         private void EnsureCurrentScope()
         {
+            if (loadingScope) throw new InvalidOperationException("Conversation history is still loading.");
             var scope = scopePicker.SelectedItem as MacroScope;
             if (scopeSession == null) return;
             if (scope == null) throw new InvalidOperationException(UiText.Get("The project for this conversation is closed or ambiguous."));

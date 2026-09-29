@@ -16,6 +16,7 @@
     <Compile Include="../VBAi/Updates/UpdateRelease.cs" Link="UpdateRelease.cs" />
     <Compile Include="../VBAi/Updates/UpdateInstallJob.cs" Link="UpdateInstallJob.cs" />
     <Compile Include="../VBAi/Updates/UpdateInstallerRunner.cs" Link="UpdateInstallerRunner.cs" />
+    <Compile Include="../VBAi/Updates/UpdatePublisherPolicy.cs" Link="UpdatePublisherPolicy.cs" />
     <Compile Include="../VBAi/Updates/UpdateProgressWindow.cs" Link="UpdateProgressWindow.cs"><SubType>Code</SubType></Compile>
     <Compile Include="../VBAi/Updates/UpdateProgressWindow.Designer.cs" Link="UpdateProgressWindow.Designer.cs"><SubType>Code</SubType><DependentUpon>UpdateProgressWindow.cs</DependentUpon></Compile>
     <Compile Include="../VBAi/Updates/UpdateText.cs" Link="UpdateText.cs" />

@@ -100,7 +100,18 @@ namespace VBAi.Tests.Unit
             public List<FakeProject> VBProjects { get; } = new List<FakeProject>();
             public List<FakeBar> CommandBars { get; } = new List<FakeBar>();
             public FakeProject ActiveVBProject { get; set; }
-            public FakePane ActiveCodePane { get; set; }
+            private FakePane activeCodePane;
+            public bool IgnoreActiveCodePaneAssignment { get; set; }
+            public int ActiveCodePaneSetCount { get; private set; }
+            public FakePane ActiveCodePane
+            {
+                get => activeCodePane;
+                set
+                {
+                    ActiveCodePaneSetCount++;
+                    if (!IgnoreActiveCodePaneAssignment) activeCodePane = value;
+                }
+            }
         }
 
         public sealed class FakeProject
@@ -204,6 +215,7 @@ namespace VBAi.Tests.Unit
             public bool RetainSelection { get; set; } = true;
             public Func<int[], int[]> SelectionReadback { get; set; }
             public Action OnShow { get; set; }
+            public Action OnSetSelection { get; set; }
             public int StartLine { get; private set; } = 1;
             public int StartColumn { get; private set; } = 1;
             public int EndLine { get; private set; } = 1;
@@ -217,6 +229,7 @@ namespace VBAi.Tests.Unit
 
             public void SetSelection(int startLine, int startColumn, int endLine, int endColumn)
             {
+                OnSetSelection?.Invoke();
                 if (!RetainSelection)
                 {
                     StartLine = 1;
@@ -262,7 +275,9 @@ namespace VBAi.Tests.Unit
             public bool FailCaption { get; set; }
             public string Caption { get { if (FailCaption) throw new InvalidOperationException("control unavailable"); return caption; } set { caption = value; } }
             public int Id { get; set; }
-            public bool Enabled { get; set; } = true;
+            private bool enabled = true;
+            public Action OnEnabledRead { get; set; }
+            public bool Enabled { get { OnEnabledRead?.Invoke(); return enabled; } set => enabled = value; }
             public int ExecuteCount { get; private set; }
             public Action OnExecute { get; set; }
             private readonly List<FakeControl> controls = new List<FakeControl>();

@@ -275,3 +275,56 @@ L'[inventaire fonctionnel complet du VBE](reference/vbe-capability-inventory.md)
 ## Reproduire la mesure
 
 Voir [le projet de tests](../tests/README.md) pour VSTest, la couverture et les hôtes opt-in. Les rapports détaillés restent locaux sous `artifacts/`, ignoré par Git.
+
+## Excel validation before development pause (2026-09-29)
+
+Source baseline: `5c860a34f79f0ec3eb6b7d48df87b4a966b08a00`, with the audit
+remediation changes on `fix/ui-responsiveness-breakpoints`. Debug/net48/x64
+candidate built in `artifacts/build/audit-source-followup`; add-in MVID
+`a188e95c-ba49-4fd0-ba50-09b9084fa413`, SHA-256
+`4DEF8B06A76BD4DF2ED3F4895355861038CFCECE64969098A5D1F1BCB7B3145D`.
+The complete solution compiled without warnings or errors. Subsequent test-only
+fixture rebuilds also passed and left the add-in hash unchanged.
+
+| Execution | Results | Evidence under `artifacts/test-results/excel-followup` |
+| --- | --- | --- |
+| Changed chat/history, reconciliation, theme routing, Excel persistence and updater groups | 194 passed, 1 failed, 0 skipped | `excel-preflight.trx` |
+| Corrected chat fixture waits for asynchronous history before testing permissions | 1 passed, 0 failed, 0 skipped | `scope-permissions-fixed.trx` |
+| Native Excel: Monaco breakpoint, isolated persistence, scalar inspection | 2 passed, 1 failed, 0 skipped | `excel-native.trx` |
+| Scalar inspection with explicit native navigation readiness before one Run Sub | 1 passed, 0 failed, 0 skipped | `excel-scalars-navigation.trx` |
+
+The first chat failure was a test fixture using the old synchronous startup
+assumption. Production loading guards were retained. The first scalar failure
+was a refused `run_sub`: the requested CodePane was not active. No macro ran;
+the project stayed in design mode and owned Excel exited normally. The follow-up
+fixture sends `select_code`, observes the correct active module, then sends Run
+Sub once. This passes the scalar inspection scenario but does **not** resolve or
+qualify direct execution immediately after cold navigation.
+
+Native cases assert that the installed host MVID equals the test candidate.
+Monaco rejected declaration/comment lines without a message or marker; a valid
+breakpoint stopped native VBA at the requested line, removal and continuation
+returned to design mode, and source stayed unchanged. Single-fixture toggle
+observations were 175/169 ms for invalid lines, 786 ms to set and 518 ms to remove
+the valid breakpoint. These include fixture overhead and are not a latency
+percentile or a comparison against the previous build.
+
+Persistence saved only the intended disposable workbook while another owned
+Excel workbook remained unsaved. Scalar inspection verified declared supported
+values, skipped unsupported declarations, preserved source, and restored
+selection/focus. Each fixture requires normal Close/Quit and native exit code 0;
+no Excel process remained after this batch. Save/reopen and event cancellation
+are not covered by this persistence case. SOLIDWORKS, mixed DPI and idle chat
+pixel correctness remain unqualified by this batch.
+
+The guarded deployment verified 33 payload files, registration/type library and
+standalone COM activation. Local record:
+`artifacts/deployments/audit-20260929-150253/deployment.json`; the sibling
+`previous-net48` folder preserves the previous installation. Runtime connection
+was independently checked by the native fixtures.
+
+The documentation checker still reports 10 existing workspace errors: two CSV
+links whose targets were removed by separate documentation work and eight
+fixture Markdown files lacking final newlines. Those unrelated changes are not
+part of this remediation commit. Raw TRX/diagnostic artifacts remain local;
+this section records the results without publishing workstation logs.

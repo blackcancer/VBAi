@@ -1,6 +1,8 @@
+param([switch] $Direct)
+
 $ErrorActionPreference = 'Stop'
 
-if ($env:CODEX_SHELL -eq '1') {
+if ($env:CODEX_SHELL -eq '1' -and -not $Direct) {
     $expectedAssembly = Join-Path (Split-Path -Parent $PSScriptRoot) 'bin\Debug\net48\VBAi.dll'
     & (Join-Path $PSScriptRoot 'Invoke-VBAi-OutsideSandbox.ps1') -Action Verify -ExpectedAssemblyPath $expectedAssembly
     return
@@ -14,6 +16,9 @@ $assemblyPath = Join-Path $projectRoot 'bin\Debug\net48\VBAi.dll'
 $expectedCodeBase = 'file:///' + ([System.IO.Path]::GetFullPath($assemblyPath)).Replace([char]92, [char]47)
 $typeLibPath = Join-Path $projectRoot 'bin\Debug\net48\VBAi.tlb'
 $logPath = Join-Path $env:TEMP 'VBAi-load.log'
+$expectedAssemblyName = if (Test-Path -LiteralPath $assemblyPath) {
+    [Reflection.AssemblyName]::GetAssemblyName($assemblyPath).FullName
+} else { $null }
 
 Write-Output "64-bit PowerShell: $([Environment]::Is64BitProcess)"
 Write-Output "Assembly exists: $(Test-Path -LiteralPath $assemblyPath)"
@@ -25,16 +30,19 @@ $registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey(
     [Microsoft.Win32.RegistryHive]::CurrentUser,
     [Microsoft.Win32.RegistryView]::Registry64)
 try {
+    $registrationFailures = @()
     foreach ($entry in @(
-        @{ Label = 'VBE add-in'; Path = "Software\Microsoft\VBA\VBE\6.0\Addins64\$progId" },
-        @{ Label = 'COM ProgID'; Path = "Software\Classes\$progId\CLSID" },
-        @{ Label = 'COM server'; Path = "Software\Classes\CLSID\$classId\InprocServer32" },
-        @{ Label = 'COM class type library'; Path = "Software\Classes\CLSID\$classId\TypeLib" },
-        @{ Label = 'Registered type library'; Path = "Software\Classes\TypeLib\$typeLibId\0.1\0\win64" }
+        @{ Label = 'VBE add-in'; Path = "Software\Microsoft\VBA\VBE\6.0\Addins64\$progId"; Values = @{ LoadBehavior = 3 } },
+        @{ Label = 'COM ProgID'; Path = "Software\Classes\$progId\CLSID"; Values = @{ '' = $classId } },
+        @{ Label = 'COM class'; Path = "Software\Classes\CLSID\$classId"; Values = @{ '' = $progId } },
+        @{ Label = 'COM server'; Path = "Software\Classes\CLSID\$classId\InprocServer32"; Values = @{ '' = 'mscoree.dll'; ThreadingModel = 'Both'; Class = 'VBAi.AddIn'; RuntimeVersion = 'v4.0.30319'; CodeBase = $expectedCodeBase } },
+        @{ Label = 'COM class type library'; Path = "Software\Classes\CLSID\$classId\TypeLib"; Values = @{ '' = $typeLibId } },
+        @{ Label = 'Registered type library'; Path = "Software\Classes\TypeLib\$typeLibId\0.1\0\win64"; Values = @{ '' = $typeLibPath } }
     )) {
         $key = $registry.OpenSubKey($entry.Path)
         if ($null -eq $key) {
             Write-Output "$($entry.Label): MISSING"
+            $registrationFailures += "$($entry.Label) is missing"
             continue
         }
         try {
@@ -43,14 +51,18 @@ try {
                 $label = if ($name -eq '') { '(default)' } else { $name }
                 Write-Output "  $label = $($key.GetValue($name))"
             }
-            if ($entry.Label -eq 'COM server') {
-                Write-Output "  CodeBase matches RegAsm format: $($key.GetValue('CodeBase') -ceq $expectedCodeBase)"
+            foreach ($name in $entry.Values.Keys) {
+                $actual = $key.GetValue($name)
+                $expected = $entry.Values[$name]
+                $matches = if ($name -eq 'LoadBehavior') { $actual -eq $expected } else { $actual -ceq $expected }
+                $label = if ($name -eq '') { '(default)' } else { $name }
+                Write-Output "  $label matches expected: $matches"
+                if (-not $matches) { $registrationFailures += "$($entry.Label) $label mismatch" }
             }
-            if ($entry.Label -eq 'COM class type library') {
-                Write-Output "  Expected type library: $($key.GetValue('') -eq $typeLibId)"
-            }
-            if ($entry.Label -eq 'Registered type library') {
-                Write-Output "  Type library path matches: $($key.GetValue('') -ceq $typeLibPath)"
+            if ($entry.Label -eq 'COM server' -and $expectedAssemblyName) {
+                $matches = $key.GetValue('Assembly') -ceq $expectedAssemblyName
+                Write-Output "  Assembly matches expected: $matches"
+                if (-not $matches) { $registrationFailures += 'COM server Assembly mismatch' }
             }
         }
         finally { $key.Dispose() }
@@ -58,16 +70,25 @@ try {
 }
 finally { $registry.Dispose() }
 
+if (-not [Environment]::Is64BitProcess) { $registrationFailures += 'PowerShell is not 64-bit' }
+if (-not (Test-Path -LiteralPath $assemblyPath)) { $registrationFailures += 'Assembly is missing' }
+if (-not (Test-Path -LiteralPath $typeLibPath)) { $registrationFailures += 'Type library is missing' }
+
+$activationFailure = $null
+$instance = $null
 try {
     $type = [Type]::GetTypeFromProgID($progId, $true)
     $instance = [Activator]::CreateInstance($type)
     Write-Output 'COM activation: OK'
-    if ([Runtime.InteropServices.Marshal]::IsComObject($instance)) {
-        [Runtime.InteropServices.Marshal]::ReleaseComObject($instance) | Out-Null
-    }
 }
 catch {
-    Write-Output "COM activation: FAILED ($($_.Exception.ToString()))"
+    $activationFailure = $_.Exception.Message
+    Write-Output "COM activation: FAILED ($activationFailure)"
+}
+finally {
+    if ($null -ne $instance -and [Runtime.InteropServices.Marshal]::IsComObject($instance)) {
+        [Runtime.InteropServices.Marshal]::ReleaseComObject($instance) | Out-Null
+    }
 }
 
 if (Test-Path -LiteralPath $logPath) {
@@ -76,4 +97,17 @@ if (Test-Path -LiteralPath $logPath) {
 }
 else {
     Write-Output "Load log: MISSING ($logPath)"
+}
+
+$result = [pscustomobject]@{
+    Registration = if ($registrationFailures.Count) { 'FAILED' } else { 'OK' }
+    ComActivation = if ($activationFailure) { 'FAILED' } else { 'OK' }
+    OnConnection = 'NOT_TESTED'
+    ChatMonaco = 'NOT_TESTED'
+    RegistrationFailures = @($registrationFailures)
+    ActivationFailure = $activationFailure
+}
+Write-Output ($result | ConvertTo-Json -Compress -Depth 3)
+if ($registrationFailures.Count -or $activationFailure) {
+    throw ("VBAi installation verification failed: " + ($result | ConvertTo-Json -Compress -Depth 3))
 }

@@ -50,7 +50,7 @@ namespace VBAi
         /// <returns>Tâche terminée après la mise à jour de l’état d’exécution.</returns>
         private async Task ObserveDebugMode()
         {
-            if (busy || Current == null || !(Current.Module is EditorVbeModule native)) return;
+            if (VbeDebugInspection.IsActive || busy || Current == null || !(Current.Module is EditorVbeModule native)) return;
             int mode = (int)((dynamic)native.Project).Mode;
             if (mode != 1)
             {
@@ -85,10 +85,12 @@ namespace VBAi
                 if (!observation)
                 {
                     if (versions[document.Id] != message.version) throw new InvalidOperationException("The editor changed before the command. Retry at the current location.");
-                    await ProcessCapturedDocumentsCore(true, false);
+                    if (message.name == "toggle_breakpoint" && !VbaBreakpointLocation.CanRequest(document.Text, message.line)) return;
+                    await ProcessCapturedDocumentsCore(true, false, onlyDocument: message.name == "toggle_breakpoint" ? document : null);
                     if ((message.name != "compile" && versions[document.Id] != message.version) || document.Dirty || document.Conflict) throw new InvalidOperationException("Synchronize or resolve the draft before compiling or debugging.");
                 }
                 await Task.Yield(); // Native commands must never execute inside a WebView callback.
+                if (observation && VbeDebugInspection.IsActive) return;
                 if (closing || IsDisposed || !documents.ContainsKey(document.Id)) return;
                 if (!observation && (document.Dirty || document.Conflict || (message.name != "compile" && versions[document.Id] != message.version)))
                     throw new InvalidOperationException("The editor changed before the command. Retry at the current location.");
@@ -144,11 +146,12 @@ namespace VBAi
                 else
                 {
                     if (!new[] { "toggle_breakpoint", "step_into", "step_over", "step_out" }.Contains(message.name)) throw new ArgumentException("Unknown editor command.");
+                    string source = native.Read();
+                    if (message.name == "toggle_breakpoint" && !VbaBreakpointLocation.CanRequest(source, message.line)) return;
                     native.ShowNative(Math.Max(1, message.line), 1);
                     ((dynamic)native.Vbe).ActiveCodePane.Window.SetFocus();
                     object control = debugger.FindEditorCommand(message.name, mode);
                     if (control == null) throw new InvalidOperationException("The native debug command is unavailable in the current mode.");
-                    string source = native.Read();
                     debugger.InvokeCommand(new Request { Project = native.ProjectName, Module = native.ModuleName, ExpectedMode = mode,
                         ExpectedSha256 = EditorDocument.Hash(source), StartLine = Math.Max(1, message.line), Action = message.name, ControlId = (int)((dynamic)control).Id, ControlCaption = (string)((dynamic)control).Caption });
                     // VBIDE cannot enumerate breakpoints. This is deliberately a hollow request marker.

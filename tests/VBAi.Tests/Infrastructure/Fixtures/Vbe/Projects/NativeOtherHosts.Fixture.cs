@@ -32,6 +32,7 @@ namespace VBAi.Tests.Infrastructure
             Application.HWND = 1; Application.Windows.Add(new WindowContract { Hwnd = 1 });
             Accessible[20] = Accessible[23] = new AutomationContract { Application = Application };
             Native.ReadHostKind = () => Kind;
+            Native.ReadPowerPointWindow = application => new IntPtr(((ApplicationContract)application).HWND);
             Native.ReadOwner = window => Owners.TryGetValue(window.ToInt64(), out uint owner) ? owner : 0;
             Native.ReadActiveApplication = name => { Assert.AreEqual(Kind == "Word" ? "Word.Application" : "PowerPoint.Application", name); return Application; };
             VbeDebugWindows.EnumWindows = (callback, parameter) => { foreach (long root in Roots) callback(new IntPtr(root), parameter); return true; };

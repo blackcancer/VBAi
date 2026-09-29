@@ -77,7 +77,7 @@ namespace VBAi.Tests.Unit
         public void ComposerCommandReferencePopupAndKeyboardNavigationUseRealReferenceCatalogue()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 var prompt = Get<TextBox>(window, "prompt"); var popup = Get<Popup>(window, "referencePopup"); var list = Get<System.Windows.Forms.ListBox>(window, "referenceList"); window.Show(); System.Windows.Forms.Application.DoEvents();
                 foreach (var text in new[] { "", "ordinary", "prefix#P", "x@P", "#P", "@P", "#missing", "#P.M", "#P_M", "#P:M", "/", "/unknown", "/plan", "/plan instructions" }) { prompt.Text = text; prompt.CaretIndex = text.Length; Call(window, "UpdateReferences"); }
@@ -99,7 +99,7 @@ namespace VBAi.Tests.Unit
         public void ComposerReferenceResolutionBoundariesChipsAndNavigationKeepLatestAttachments()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 var refs = Get<List<VbeChatReference>>(window, "selectedReferences"); var module = new VbeChatReference { Project = "P", Module = "M" }; refs.Add(module); refs.Add(new VbeChatReference { Project = "P", Module = "M" });
                 foreach (var text in new[] { "#P.M", " #P.M!", "#P.M suffix", "prefix#P.M", "#P.Msuffix", "prefix#P.M #P.M", "missing" }) { var found = (VbeChatReference[])Call(window, "CurrentReferences", text); Assert.AreEqual(text == "missing" || text == "prefix#P.M" || text == "#P.Msuffix" ? 0 : 1, found.Length); }
@@ -133,7 +133,7 @@ namespace VBAi.Tests.Unit
             using (var runtime = new RuntimeScope())
             {
                 LocalizationScope.Set("ar-SA");
-                using (var window = new ChatWindow(runtime.Session))
+                using (var window = LoadedWindow(runtime.Session))
                 {
                     var prompt = Get<TextBox>(window, "prompt"); var index = Get<VbeChatReferences>(window, "referenceIndex"); var list = Get<System.Windows.Forms.ListBox>(window, "referenceList"); var popup = Get<Popup>(window, "referencePopup");
                     prompt.Text = "#P"; prompt.CaretIndex = 2; Call(window, "UpdateReferences"); while (index.IsLoading) index.Step(); Set(window, "referenceIndexReady", true); Call(window, "UpdateReferences"); Assert.IsFalse(string.IsNullOrWhiteSpace(Get<System.Windows.Forms.Label>(window, "referenceStatus").Text));
@@ -142,9 +142,9 @@ namespace VBAi.Tests.Unit
                     window.Show(); Call(window, "NavigateReference", new VbeChatReference { Project = "P", Module = "missing" });
                     prompt.Text = "#P"; prompt.CaretIndex = 2; Set(window, "referenceStart", 0); list.DataSource = new[] { new VbeChatReference { Project = "P" } }; list.SelectedIndex = 0; popup.IsOpen = true; Assert.IsTrue(RunKey(window, Key.Enter).Handled);
                 }
-                using (var disconnected = new ChatWindow(new VbeSession(new UnavailableReferenceHost()))) { var text = Get<TextBox>(disconnected, "prompt"); text.Text = "#P"; text.CaretIndex = 2; Call(disconnected, "UpdateReferences"); Assert.IsFalse(string.IsNullOrWhiteSpace(Get<VbeChatReferences>(disconnected, "referenceIndex").Error)); }
+                using (var disconnected = LoadedWindow(new VbeSession(new UnavailableReferenceHost()))) { var text = Get<TextBox>(disconnected, "prompt"); text.Text = "#P"; text.CaretIndex = 2; Call(disconnected, "UpdateReferences"); Assert.IsFalse(string.IsNullOrWhiteSpace(Get<VbeChatReferences>(disconnected, "referenceIndex").Error)); }
                 var host = new VbeDebugTests.FakeVbe(); var project = new VbeDebugTests.FakeProject { Name = "P", FileName = @"C:\Temp\P.xlsm", Mode = 2 }; var component = new VbeDebugTests.FakeComponent { Name = "M", Type = 1 }; component.CodeModule = new VbeDebugTests.FakeModule(component, "Sub A()\r\nEnd Sub"); project.VBComponents.Add(component); host.VBProjects.Add(project); host.ActiveVBProject = project; host.ActiveCodePane = component.CodeModule.CodePane;
-                using (var navigation = new ChatWindow(new VbeSession(host))) { Call(navigation, "NavigateReference", new VbeChatReference { Project = "P", Module = "M" }); Assert.AreEqual(1, component.CodeModule.CodePane.ShowCount); }
+                using (var navigation = LoadedWindow(new VbeSession(host))) { Call(navigation, "NavigateReference", new VbeChatReference { Project = "P", Module = "M" }); Assert.AreEqual(1, component.CodeModule.CodePane.ShowCount); }
                 using (var design = new ChatWindow()) { Call(design, "UpdateReferences"); Call(design, "RefreshContextChips"); Call(design, "HideReferences"); Call(design, "DisposeComposer"); Call(design, "InitializeComposer", new object[] { null }); Call(design, "NavigateReference", new VbeChatReference { Project = "P", Module = "M" }); StringAssert.Contains(Get<System.Windows.Forms.Label>(design, "status").Text, UiText.Get("Unable to navigate: ")); }
             }
         }

@@ -58,6 +58,7 @@ namespace VBAi.Tests.Unit
             using (var tool = new ChatToolWindow())
             using (var chat = new ChatWindow(new VbeSession(scope.Host)))
             {
+                LlmBoundaryScope.Pump(LlmBoundaryScope.Get<System.Threading.Tasks.Task>(chat, "scopeLoad"));
                 Assert.AreEqual(DockStyle.None, tool.Dock); Assert.AreEqual(new Size(520, 760), tool.Size);
                 LlmBoundaryScope.Call(tool, "FitNativeSite"); var handle = tool.Handle; LlmBoundaryScope.Call(tool, "FitNativeSite");
                 owner.Controls.Add(tool); owner.Show(); tool.Attach(chat); Application.DoEvents(); Assert.AreEqual(DockStyle.Fill, tool.Dock); Assert.AreSame(tool, chat.Parent); Assert.IsFalse(chat.TopLevel);

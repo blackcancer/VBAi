@@ -39,6 +39,7 @@ namespace VBAi.Tests.Integration
             object application = null, books = null, workbook = null, sheet = null, cell = null;
             uint processId = 0;
             bool owned = false;
+            Process ownedProcess = null;
             try
             {
                 application = Activator.CreateInstance(excelType);
@@ -47,6 +48,8 @@ namespace VBAi.Tests.Integration
                 owned = processId != 0 && !existing.Contains((int)processId);
                 if (!owned)
                     Assert.Inconclusive("Excel returned an existing session; no workbook was opened.");
+                ownedProcess = Process.GetProcessById((int)processId);
+                _ = ownedProcess.Handle;
 
                 excel.Visible = true;
                 excel.DisplayAlerts = false;
@@ -94,13 +97,14 @@ namespace VBAi.Tests.Integration
                 if (owned && application != null)
                     try { ((dynamic)application).Quit(); } catch { }
                 ReleaseSafely(cell); ReleaseSafely(sheet); ReleaseSafely(workbook); ReleaseSafely(books); ReleaseSafely(application);
-                if (owned && processId != 0)
-                {
-                    try { using (var process = Process.GetProcessById((int)processId)) {
-                        if (!process.WaitForExit(10000)) { process.Kill(); process.WaitForExit(10000); }
-                    } }
-                    catch (Exception) { }
-                }
+                if (ownedProcess != null)
+                    using (ownedProcess)
+                    {
+                        if (!ownedProcess.WaitForExit(10000))
+                            Assert.Fail("Excel did not exit after Quit. PID: " + processId + ". The owned process was left running for diagnosis.");
+                        Assert.AreEqual(0, ownedProcess.ExitCode, "Excel exited abnormally. PID: " + processId +
+                            "; exit code: 0x" + unchecked((uint)ownedProcess.ExitCode).ToString("X8"));
+                    }
                 try { if (Directory.Exists(root)) Directory.Delete(root, true); } catch (Exception) { }
             }
         }

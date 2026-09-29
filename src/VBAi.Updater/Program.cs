@@ -41,6 +41,7 @@ internal static class Program
             }
             catch (Exception)
             {
+                Environment.ExitCode = 1;
                 try { UpdatePaths.WriteAtomic(Path.Combine(UpdatePaths.Root, "worker-error.txt"), "The updater could not start."); } catch (Exception) { }
                 if (!background) MessageBox.Show(UpdateText.Get("Unable to schedule the update."), "VBAi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }

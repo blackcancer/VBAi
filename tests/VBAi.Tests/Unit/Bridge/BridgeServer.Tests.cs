@@ -17,6 +17,72 @@ namespace VBAi.Tests.Unit
     [TestCategory("Unit")]
     public sealed partial class BridgeServerTests
     {
+        [STATestMethod]
+        public void ImmediateCopyYieldsOnOwningUiThreadAndReportsAsyncFailure()
+        {
+            using (var dispatcher = new Control())
+            {
+                var handle = dispatcher.Handle;
+                int thread = Thread.CurrentThread.ManagedThreadId;
+                int id = Guid.NewGuid().GetHashCode() & int.MaxValue;
+                using (var server = new BridgeServer(dispatcher, null, id))
+                {
+                    server.ReadImmediateNative = async request => {
+                        Assert.AreEqual("P", request.Project);
+                        Assert.AreEqual(thread, Thread.CurrentThread.ManagedThreadId);
+                        Assert.AreEqual(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
+                        await Task.Yield();
+                        Assert.AreEqual(thread, Thread.CurrentThread.ManagedThreadId);
+                        if (request.ExpectedMode == 1) throw new InvalidOperationException("capture rejected");
+                        return new { Text = "native output", ClipboardRestored = true };
+                    };
+                    server.Execute = _ => { Assert.Fail("Capture must use the asynchronous boundary."); return null; };
+                    server.Start();
+                    var rejected = SendWithMessagePump(id, "{\"Command\":\"read_immediate\",\"Project\":\"P\",\"ExpectedMode\":1}");
+                    Assert.AreEqual(false, rejected["Ok"]);
+                    Assert.AreEqual("capture rejected", rejected["Error"]);
+                    var read = SendWithMessagePump(id, "{\"Command\":\"read_immediate\",\"Project\":\"P\",\"ExpectedMode\":2}");
+                    Assert.AreEqual(true, read["Ok"]);
+                    Assert.AreEqual("native output", ((IDictionary<string, object>)read["Data"])["Text"]);
+                }
+            }
+        }
+
+        [STATestMethod]
+        public void LocalScalarInspectionUsesAsyncUiBoundary()
+        {
+            using (var dispatcher = new Control())
+            {
+                var handle = dispatcher.Handle;
+                int thread = Thread.CurrentThread.ManagedThreadId;
+                int id = Guid.NewGuid().GetHashCode() & int.MaxValue;
+                using (var server = new BridgeServer(dispatcher, null, id))
+                {
+                    server.InspectLocalScalarsNative = async request => {
+                        Assert.AreEqual("P", request.Project);
+                        Assert.AreEqual("M", request.Module);
+                        Assert.AreEqual("Run", request.Procedure);
+                        Assert.AreEqual(new string('a', 64), request.ExpectedSha256);
+                        Assert.AreEqual(1, request.ExpectedMode);
+                        Assert.AreEqual(thread, Thread.CurrentThread.ManagedThreadId);
+                        await Task.Yield();
+                        Assert.AreEqual(thread, Thread.CurrentThread.ManagedThreadId);
+                        if (request.Offset == 1) throw new InvalidOperationException("inspection rejected");
+                        return new { Partial = true, Value = "41" };
+                    };
+                    server.Execute = _ => { Assert.Fail("Inspection must use the asynchronous boundary."); return null; };
+                    server.Start();
+                    const string prefix = "{\"Command\":\"inspect_local_scalars\",\"Project\":\"P\",\"Module\":\"M\",\"Procedure\":\"Run\",\"ExpectedSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"ExpectedMode\":1,";
+                    var rejected = SendWithMessagePump(id, prefix + "\"Offset\":1}");
+                    Assert.AreEqual(false, rejected["Ok"]);
+                    Assert.AreEqual("inspection rejected", rejected["Error"]);
+                    var inspected = SendWithMessagePump(id, prefix + "\"Offset\":0}");
+                    Assert.AreEqual(true, inspected["Ok"]);
+                    Assert.AreEqual("41", ((IDictionary<string, object>)inspected["Data"])["Value"]);
+                }
+            }
+        }
+
         /// <summary>Vérifie les connexions successives, les erreurs de requête et la reprise après une erreur.</summary>
         [TestMethod]
         [STATestMethod]

@@ -145,6 +145,19 @@ namespace VBAi.Tests.Unit
     [TestCategory("Unit")]
     public sealed partial class VbeMenuLifecycleTests
     {
+        [TestMethod]
+        public void MenuWindowTypesResolveTheirEmbeddedIconsWithoutConstructingForms()
+        {
+            var read = typeof(VbeMenu).GetMethod("ReadIconNative", BindingFlags.NonPublic | BindingFlags.Static);
+            foreach (var type in new[] { typeof(ChatWindow), typeof(LlmSettingsWindow), typeof(GitWindow),
+                typeof(ModernEditorWindow), typeof(AboutWindow), typeof(CrashReportWindow), typeof(UpdateWindow) })
+            using (var icon = (System.Drawing.Icon)read.Invoke(null, new object[] { type }))
+            {
+                Assert.IsNotNull(icon, type.Name);
+                using (var image = icon.ToBitmap()) Assert.IsTrue(image.Width > 0 && image.Height > 0, type.Name);
+            }
+        }
+
                 /// <summary>Vérifie les images natives, menus localisés, barres d’éditeur et erreurs de suppression.</summary>
 [STATestMethod]
         public void NativeMenuPicturesLocalizedEditorBarsAndRemovalFailuresKeepAllGuards()
@@ -154,7 +167,7 @@ namespace VBAi.Tests.Unit
                 var host = Host(); host.CommandBars[0].Controls.Items.Insert(0, new FakeButton { Caption = null }); host.CommandBars = new[] { host.CommandBars[0], new FakeBar { Type = 0, Name = "Code Window (Break)", Controls = new FakeControls() }, new FakeBar { Type = 0, Name = "Fenêtre code", Controls = new FakeControls() }, new FakeBar { Type = 0, Name = null, Controls = new FakeControls() } };
                 using (var menu = new VbeMenu(host, () => { }, () => { }, () => { }, command => { }, (b, i, d, h) => { }, null, null))
                 {
-                    var view = host.CommandBars[0].Controls.Items[1].Controls.Items[0]; Assert.AreEqual(0, view.Style); menu.ReadIcon = t => (System.Drawing.Icon)System.Drawing.SystemIcons.Information.Clone(); typeof(VbeMenu).GetMethod("SetIcon", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(menu, new object[] { view, typeof(ChatWindow) }); Assert.AreEqual(3, view.Style); Assert.IsNotNull(view.Picture); Assert.IsNotNull(view.Mask); Assert.AreEqual(3, host.CommandBars[1].Controls.Items.Count); Assert.AreEqual(3, host.CommandBars[2].Controls.Items.Count);
+                    var view = host.CommandBars[0].Controls.Items[1].Controls.Items[0]; Assert.AreEqual(3, view.Style); Assert.IsNotNull(view.Picture); Assert.IsNotNull(view.Mask); menu.ReadIcon = t => (System.Drawing.Icon)System.Drawing.SystemIcons.Information.Clone(); typeof(VbeMenu).GetMethod("SetIcon", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(menu, new object[] { view, typeof(ChatWindow) }); Assert.AreEqual(3, view.Style); Assert.IsNotNull(view.Picture); Assert.IsNotNull(view.Mask); Assert.AreEqual(3, host.CommandBars[1].Controls.Items.Count); Assert.AreEqual(3, host.CommandBars[2].Controls.Items.Count);
                     typeof(VbeMenu).GetMethod("SetIcon", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(menu, new object[] { new object(), typeof(ChatWindow) });
                     typeof(VbeMenu).GetMethod("SetIcon", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(menu, new object[] { new object(), typeof(VbeMenuLifecycleTests) });
                 }

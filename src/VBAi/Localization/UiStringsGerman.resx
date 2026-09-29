@@ -2068,4 +2068,7 @@ Anmeldung über Git Credential Manager; die Commit-Identität wird in Git festge
   <data name="Interrupted" xml:space="preserve">
     <value>Unterbrochen</value>
   </data>
+  <data name="Installation outcome is uncertain. Check the installer and its log before attempting another update." xml:space="preserve"><value>Das Installationsergebnis ist ungewiss. Prüfen Sie das Installationsprogramm und sein Protokoll, bevor Sie ein weiteres Update versuchen.</value></data>
+  <data name="Installation refused: no trusted VBAi publisher is configured or the publisher does not match." xml:space="preserve"><value>Installation abgelehnt: Es ist kein vertrauenswürdiger VBAi-Herausgeber konfiguriert oder der Herausgeber stimmt nicht überein.</value></data>
+  <data name="Local history recovery copies are available. See the troubleshooting guide." xml:space="preserve"><value>Wiederherstellungskopien des lokalen Verlaufs sind verfügbar. Lesen Sie die Anleitung zur Fehlerbehebung.</value></data>
 </root>

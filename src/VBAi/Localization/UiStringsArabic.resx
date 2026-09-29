@@ -2068,4 +2068,7 @@
   <data name="Interrupted" xml:space="preserve">
     <value>تمت المقاطعة</value>
   </data>
+  <data name="Installation outcome is uncertain. Check the installer and its log before attempting another update." xml:space="preserve"><value>نتيجة التثبيت غير مؤكدة. تحقق من برنامج التثبيت وسجله قبل محاولة التحديث مرة أخرى.</value></data>
+  <data name="Installation refused: no trusted VBAi publisher is configured or the publisher does not match." xml:space="preserve"><value>تم رفض التثبيت: لم يتم تكوين ناشر موثوق لـ VBAi أو أن الناشر غير مطابق.</value></data>
+  <data name="Local history recovery copies are available. See the troubleshooting guide." xml:space="preserve"><value>تتوفر نسخ لاستعادة السجل المحلي. راجع دليل استكشاف الأخطاء وإصلاحها.</value></data>
 </root>

@@ -9,6 +9,49 @@ namespace VBAi.Tests.Unit.Updates
     public sealed partial class WebViewRuntimePrerequisiteTests
     {
         [TestMethod]
+        public async Task TimedOutRuntimeInstallationRetainsPayloadAndOriginalFailure()
+        {
+            using (var fixture = new UpdatesNativeFixture())
+            {
+                string payload = null; int attempts = 0;
+                var failure = new TimeoutException("owned uncertain installer");
+                var runtime = new WebViewRuntimePrerequisite {
+                    IsInstalled = () => false,
+                    Download = path => { payload = path; File.WriteAllText(path, "owned bootstrapper"); return Task.CompletedTask; },
+                    Verify = path => true,
+                    Install = path => { attempts++; throw failure; }
+                };
+                var actual = await Assert.ThrowsExceptionAsync<TimeoutException>(() => runtime.Ensure(fixture.Scope.Root));
+                Assert.AreSame(failure, actual);
+                Assert.AreEqual(1, attempts);
+                Assert.IsTrue(File.Exists(payload));
+                Assert.AreEqual("owned bootstrapper", File.ReadAllText(payload));
+            }
+        }
+
+        [TestMethod]
+        public async Task CleanupFailureDoesNotHideTheOriginalRuntimeFailure()
+        {
+            using (var fixture = new UpdatesNativeFixture())
+            {
+                FileStream locked = null;
+                var failure = new InvalidDataException("owned verification refusal");
+                var runtime = new WebViewRuntimePrerequisite {
+                    IsInstalled = () => false,
+                    Download = path => { locked = new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None); return Task.CompletedTask; },
+                    Verify = path => throw failure,
+                    Install = path => throw new AssertFailedException("No unverified installation")
+                };
+                try
+                {
+                    var actual = await Assert.ThrowsExceptionAsync<InvalidDataException>(() => runtime.Ensure(fixture.Scope.Root));
+                    Assert.AreSame(failure, actual);
+                }
+                finally { locked?.Dispose(); }
+            }
+        }
+
+        [TestMethod]
         public async Task InstalledRuntimeSkipsDownloadAndInstallation()
         {
             var runtime = new WebViewRuntimePrerequisite { IsInstalled = () => true, Download = p => throw new AssertFailedException("Unexpected download") };

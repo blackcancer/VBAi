@@ -82,7 +82,7 @@ namespace VBAi.Tests.Unit
         public void TranscriptRendersEveryEntryKindAndRecyclesViewsWithoutLosingState()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 CompleteOnSta((System.Threading.Tasks.Task)Call(window, "LoadModelsAsync"));
                 var change = new CodeChange(@"C:\Temp\P.xlsm", "M", "old", "oldsha", "new", "newsha", 1) { TurnId = "turn" }; Get<List<CodeChange>>(window, "codeChanges").Add(change);
@@ -112,7 +112,7 @@ namespace VBAi.Tests.Unit
         public void TranscriptPagingStreamingWelcomeAndThemeChangesPreserveVisibleHistory()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 Call(window, "ClearTranscript"); Call(window, "ShowWelcome"); var visible = Get<System.Collections.ObjectModel.ObservableCollection<object>>(window, "visibleEntries"); var welcome = (ChatDesignerHost)visible.Last(); foreach (var b in NativeDescendants(welcome).OfType<System.Windows.Forms.Button>()) { WpfClick(b); Assert.IsTrue(Get<TextBox>(window, "prompt").Text.EndsWith(" ")); }
                 for (int i = 0; i < 170; i++) Call(window, "AddEntry", new ChatEntry { Speaker = "Assistant", Text = "line " + i }); Call(window, "RefreshTranscriptWindow", 90); Assert.AreEqual(81, visible.Count);
@@ -148,7 +148,7 @@ namespace VBAi.Tests.Unit
             using (var runtime = new RuntimeScope())
             {
                 LocalizationScope.Set("ar-SA");
-                using (var window = new ChatWindow(runtime.Session))
+                using (var window = LoadedWindow(runtime.Session))
                 {
                     var list = Get<ListBox>(window, "conversationItems"); Assert.AreEqual(FlowDirection.RightToLeft, list.FlowDirection); window.Show(); list.ApplyTemplate(); System.Windows.Forms.Application.DoEvents(); var scroll = Visual<ScrollViewer>(list); Assert.IsNotNull(scroll);
                     RaiseScroll(window, list, 1, 0); foreach (var vertical in new[] { 0d, 1d }) foreach (var extent in new[] { 0d, 1d }) RaiseScroll(window, scroll, vertical, extent);

@@ -19,6 +19,33 @@ namespace VBAi.Tests.Unit
     public sealed partial class UpdateProgressWindowTests
     {
         [STATestMethod]
+        public void CompletionExitCodesDistinguishVerifiedSuccessFailureCancellationAndLegacyJobs()
+        {
+            foreach (string outcome in new[] { "success", "failure", "mismatch", "legacy", "cancel", "close" })
+            using (var fixture = new UpdateProgressFixture())
+            {
+                int attempts = 0;
+                fixture.Runner.Install = path => { attempts++; return outcome == "failure" ? 1603 : 0; };
+                fixture.Runner.InstalledVersion = path => outcome == "mismatch" ? "0.0.1" : fixture.Job.TargetVersion;
+                if (outcome == "legacy") { fixture.Job.Completed = true; fixture.Job.Save(fixture.Scope.Root); }
+                if (outcome == "cancel") UpdateUiPump.Call(fixture.Window, "Close_Click");
+                else if (outcome == "close")
+                    LlmBoundaryScope.Call(fixture.Window, "WindowClosing", null, new FormClosingEventArgs(CloseReason.UserClosing, false));
+                else fixture.Poll();
+                Assert.AreEqual(outcome == "success" ? 0 : 1, fixture.ExitCode);
+                var saved = UpdateInstallJob.Load(fixture.Scope.Root);
+                Assert.IsTrue(saved.Completed);
+                Assert.AreEqual(outcome == "success", saved.Succeeded);
+                Assert.AreEqual(outcome == "legacy" || outcome == "cancel" || outcome == "close" ? 0 : 1, attempts);
+                if (outcome == "success")
+                {
+                    UpdateUiPump.Call(fixture.Window, "Close_Click");
+                    Assert.AreEqual(0, fixture.ExitCode, "Closing a verified success must not become cancellation.");
+                }
+            }
+        }
+
+        [STATestMethod]
         public void ExternalProgressWindowCancellationPersistsWithoutLaunchingAnything()
         {
             using (var scope = new UpdateScope())

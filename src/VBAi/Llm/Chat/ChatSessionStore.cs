@@ -45,6 +45,9 @@ namespace VBAi
     /// <summary>Contient l’état persistant d’une conversation, son brouillon et ses entrées.</summary>
     internal sealed class ChatSessionState
     {
+        /// <summary>Opaque database revision loaded with this snapshot; never sent to a provider.</summary>
+        internal string StorageVersion;
+        internal readonly string WriterId = Guid.NewGuid().ToString("N");
         /// <summary>Obtient ou définit l’identifiant stable de la session.</summary>
         /// <value>Identifiant texte au format GUID compact.</value>
         public string Id { get; set; } = Guid.NewGuid().ToString("N");
@@ -150,19 +153,25 @@ namespace VBAi
     {
         /// <summary>Handle natif de la base SQLite ouverte.</summary>
         private IntPtr database;
+        internal string DatabasePath { get; private set; }
         /// <summary>Sérialiseur JSON configuré pour les charges utiles de session volumineuses.</summary>
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 32 * 1024 * 1024 };
         /// <summary>Ouvre la base, configure l’attente sur verrou et crée les tables et index nécessaires.</summary>
         /// <param name="path">Chemin du fichier de base SQLite.</param>
         /// <exception cref="IOException">La base ne peut pas être ouverte ou initialisée.</exception>
-        public ChatSessionStore(string path)
+        public ChatSessionStore(string path) : this(path, false) { }
+
+        private ChatSessionStore(string path, bool readOnly)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path)));
-            int result = Native.sqlite3_open_v2(Utf8(path), out database, 6, IntPtr.Zero);
+            DatabasePath = Path.GetFullPath(path);
+            if (!readOnly) Directory.CreateDirectory(Path.GetDirectoryName(DatabasePath));
+            // SQLITE_OPEN_READONLY versus SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE.
+            int result = Native.sqlite3_open_v2(Utf8(DatabasePath), out database, readOnly ? 1 : 6, IntPtr.Zero);
             if (result != 0) { Dispose(); throw new IOException(UiText.Get("Unable to open SQLite history.")); }
             try
             {
                 Native.sqlite3_busy_timeout(database, 1500);
+                if (readOnly) return;
                 Execute("CREATE TABLE IF NOT EXISTS chat_sessions (id TEXT PRIMARY KEY, scope TEXT NOT NULL, title TEXT NOT NULL, updated TEXT NOT NULL, payload TEXT NOT NULL)");
                 Execute("CREATE INDEX IF NOT EXISTS chat_sessions_scope ON chat_sessions(scope, updated)");
                 Execute("CREATE TABLE IF NOT EXISTS code_bookmarks (scope TEXT NOT NULL, name_key TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(scope, name_key))");
@@ -175,8 +184,23 @@ namespace VBAi
         /// <param name="session">État de session à persister.</param>
         public void Save(ChatSessionState session)
         {
-            Execute("INSERT OR REPLACE INTO chat_sessions(id, scope, title, updated, payload) VALUES (?1, ?2, ?3, ?4, ?5)",
-                session.Id, session.Scope, session.Title, DateTime.UtcNow.ToString("O"), json.Serialize(session));
+            string payload = json.Serialize(session);
+            session.StorageVersion = SavePayload(session.Id, session.Scope, session.Title, payload, session.StorageVersion);
+        }
+
+        /// <summary>Writes an immutable UI snapshot on the connection's owning worker.</summary>
+        internal string SavePayload(string id, string scope, string title, string payload, string expectedVersion)
+        {
+            string version = DateTime.UtcNow.ToString("O") + "-" + Guid.NewGuid().ToString("N");
+            if (expectedVersion == null)
+                Execute("INSERT OR IGNORE INTO chat_sessions(id, scope, title, updated, payload) VALUES (?1, ?2, ?3, ?4, ?5)",
+                    id, scope, title, version, payload);
+            else
+                Execute("UPDATE chat_sessions SET title = ?3, updated = ?4, payload = ?5 WHERE id = ?1 AND scope = ?2 AND updated = ?6",
+                    id, scope, title, version, payload, expectedVersion);
+            if (Native.sqlite3_changes(database) != 1)
+                throw new IOException("This conversation was changed in another host. Your local draft is retained; reopen the conversation before saving again.");
+            return version;
         }
 
         /// <summary>Charge les sessions d’une portée dans l’ordre de mise à jour décroissant.</summary>
@@ -185,15 +209,37 @@ namespace VBAi
         public List<ChatSessionState> List(string scope)
         {
             var result = new List<ChatSessionState>();
-            using (var statement = Prepare("SELECT payload FROM chat_sessions WHERE scope = ?1 ORDER BY updated DESC", scope))
+            using (var statement = Prepare("SELECT payload, updated FROM chat_sessions WHERE scope = ?1 ORDER BY updated DESC", scope))
             {
                 while (statement.Step() == 100)
                 {
                     var session = DecodeSession(ReadText(Native.sqlite3_column_text(statement.Handle, 0)));
-                    if (session != null && session.Scope == scope) result.Add(session);
+                    if (session != null && session.Scope == scope)
+                    {
+                        session.StorageVersion = ReadText(Native.sqlite3_column_text(statement.Handle, 1));
+                        result.Add(session);
+                    }
                 }
             }
             return result;
+        }
+
+        internal sealed class ScopeSnapshot
+        {
+            internal List<ChatSessionState> Sessions;
+            internal string Memory;
+        }
+
+        /// <summary>Owns the read connection and decoded objects entirely on a worker until publication.</summary>
+        internal static System.Threading.Tasks.Task<ScopeSnapshot> ReadScopeAsync(string path, string scope, bool includeSessions)
+        {
+            return System.Threading.Tasks.Task.Run(() => {
+                using (var store = new ChatSessionStore(path, true))
+                    return new ScopeSnapshot {
+                        Sessions = includeSessions ? store.List(scope) : null,
+                        Memory = store.ReadMemory(scope)
+                    };
+            });
         }
 
         /// <summary>Deserializes a stored chat session and restores its persisted queue and state.</summary>
@@ -345,6 +391,8 @@ namespace VBAi
             /// <param name="statement">Instruction préparée.</param>
             /// <returns>Code indiquant une ligne, la fin des résultats ou une erreur.</returns>
             [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int sqlite3_step(IntPtr statement);
+            /// <summary>Returns the number of rows changed by the most recent write on this connection.</summary>
+            [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int sqlite3_changes(IntPtr db);
             /// <summary>Finalise une instruction préparée et libère ses ressources.</summary>
             /// <param name="statement">Instruction à finaliser.</param>
             /// <returns>Code de résultat SQLite.</returns>

@@ -1,6 +1,13 @@
-param([switch]$Offline)
+param(
+    [switch]$Offline,
+    [string]$OutputDirectory
+)
 $ErrorActionPreference = 'Stop'
 $repository = Split-Path -Parent $PSScriptRoot
+if (-not $OutputDirectory) { $OutputDirectory = Join-Path $repository 'assets/editor/dist' }
+if (-not [IO.Path]::IsPathRooted($OutputDirectory)) { $OutputDirectory = Join-Path $repository $OutputDirectory }
+$OutputDirectory = [IO.Path]::GetFullPath($OutputDirectory)
+New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 Push-Location $repository
 try {
     foreach ($name in @('monaco', 'esbuild')) {
@@ -20,14 +27,14 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "Extraction failed: $name" }
     }
     $builder = 'artifacts/monaco-dependencies/esbuild/package/esbuild.exe'
-    & $builder assets/editor/src/editor.js --bundle --minify --format=iife --loader:.ttf=file '--asset-names=[name]-[hash]' --outfile=assets/editor/dist/editor.js
+    & $builder assets/editor/src/editor.js --bundle --minify --format=iife --loader:.ttf=file '--asset-names=[name]-[hash]' "--outdir=$OutputDirectory" --outbase=assets/editor/src
     if ($LASTEXITCODE -ne 0) { throw 'Editor bundle failed.' }
-    & $builder artifacts/monaco-dependencies/monaco/package/esm/vs/editor/editor.worker.js --bundle --minify --format=esm --outfile=assets/editor/dist/editor.worker.js
+    & $builder artifacts/monaco-dependencies/monaco/package/esm/vs/editor/editor.worker.js --bundle --minify --format=esm "--outfile=$(Join-Path $OutputDirectory 'editor.worker.js')"
     if ($LASTEXITCODE -ne 0) { throw 'Worker bundle failed.' }
-    Copy-Item assets/editor/src/index.html assets/editor/dist/index.html
+    Copy-Item assets/editor/src/index.html $OutputDirectory
     foreach ($language in @('fr', 'de', 'es', 'it', 'pt-br', 'ru', 'ja', 'ko', 'zh-cn', 'zh-tw')) {
-        Copy-Item "artifacts/monaco-dependencies/monaco/package/esm/nls.messages.$language.js" assets/editor/dist/
+        Copy-Item "artifacts/monaco-dependencies/monaco/package/esm/nls.messages.$language.js" $OutputDirectory
     }
-    Copy-Item artifacts/monaco-dependencies/monaco/package/LICENSE assets/editor/dist/MONACO-LICENSE.txt
-    Copy-Item artifacts/monaco-dependencies/monaco/package/ThirdPartyNotices.txt assets/editor/dist/MONACO-ThirdPartyNotices.txt
+    Copy-Item artifacts/monaco-dependencies/monaco/package/LICENSE (Join-Path $OutputDirectory 'MONACO-LICENSE.txt')
+    Copy-Item artifacts/monaco-dependencies/monaco/package/ThirdPartyNotices.txt (Join-Path $OutputDirectory 'MONACO-ThirdPartyNotices.txt')
 } finally { Pop-Location }

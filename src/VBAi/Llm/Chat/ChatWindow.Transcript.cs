@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Automation;
@@ -27,6 +28,10 @@ namespace VBAi
         private readonly object earlierEntries = new object();
         /// <summary>Indique si le défilement doit rester attaché au dernier message.</summary>
         private bool followConversation = true;
+        private DispatcherOperation pendingFollow;
+        private DispatcherTimer streamRenderTimer;
+        private readonly Dictionary<ChatEntry, StringBuilder> pendingStreamText = new Dictionary<ChatEntry, StringBuilder>();
+        private readonly HashSet<ChatEntry> pendingActivityText = new HashSet<ChatEntry>();
         /// <summary>Historique complet des entrées de la session courante.</summary>
         private readonly List<ChatEntry> transcriptEntries = new List<ChatEntry>();
         /// <summary>Contrôles matérialisés actuellement associés à leurs entrées.</summary>
@@ -146,6 +151,8 @@ namespace VBAi
         /// <summary>Efface le transcript complet et réinitialise les contrôles matérialisés et le suivi du défilement.</summary>
         private void ClearTranscript()
         {
+            FlushStreamText();
+            pendingFollow?.Abort(); pendingFollow = null;
             DisposeEntryViews();
             visibleEntries.Clear(); firstLoadedEntry = 0;
             transcriptEntries.Clear(); entryViews.Clear(); liveEntries.Clear(); liveTexts.Clear();
@@ -155,9 +162,12 @@ namespace VBAi
         /// <summary>Fait défiler vers le dernier élément si le suivi automatique est activé.</summary>
         private void FollowLatest()
         {
-            if (!followConversation || conversationItems == null || visibleEntries.Count == 0) return;
-            conversationItems.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => {
-                if (followConversation && visibleEntries.Count > 0) conversationItems.ScrollIntoView(visibleEntries.Last());
+            if (runtimeDisposed || !followConversation || conversationItems == null || visibleEntries.Count == 0 ||
+                pendingFollow?.Status == DispatcherOperationStatus.Pending) return;
+            pendingFollow = conversationItems.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() => {
+                pendingFollow = null;
+                if (!IsDisposed && !runtimeDisposed && followConversation && visibleEntries.Count > 0)
+                    conversationItems.ScrollIntoView(visibleEntries.Last());
             }));
         }
         /// <summary>Crée un champ texte en lecture seule dont le contenu peut être sélectionné et copié.</summary>
@@ -354,7 +364,7 @@ namespace VBAi
         /// <param name="complete">Indique si la mise à jour termine le flux.</param>
         private void ReceiveChatUpdate(string kind, string id, string text, bool complete)
         {
-            if (IsDisposed || conversationItems == null) return;
+            if (IsDisposed || runtimeDisposed || conversationItems == null || (completedStreams.Contains(id) && !complete)) return;
             if (kind == "summary" && !liveEntries.ContainsKey(id) && string.IsNullOrWhiteSpace(text)) return;
             ChatEntry entry;
             if (!liveEntries.TryGetValue(id, out entry))
@@ -364,20 +374,64 @@ namespace VBAi
                 liveEntries[id] = entry;
                 AddEntry(entry);
             }
-            entry.Text = complete ? (string.IsNullOrWhiteSpace(text) ? entry.Text : text) : entry.Text + (text ?? "");
             if (complete)
             {
+                FlushStreamText();
+                if (!string.IsNullOrWhiteSpace(text)) entry.Text = text;
                 completedStreams.Add(id);
                 if (kind == "final") streamedFinalText = entry.Text;
                 RefreshVisibleActivity(entry);
             }
             else
             {
-
-                System.Windows.Forms.RichTextBox live;
-                if (liveTexts.TryGetValue(id, out live)) live.Text = entry.Text;
+                if (!pendingStreamText.TryGetValue(entry, out var buffer))
+                    pendingStreamText[entry] = buffer = new StringBuilder(entry.Text);
+                buffer.Append(text);
+                ScheduleStreamRender();
             }
-            FollowLatest(); ScheduleSessionSave();
+            if (complete) FollowLatest();
+            ScheduleSessionSave();
+        }
+
+        private void ScheduleStreamRender()
+        {
+            if (streamRenderTimer == null)
+            {
+                streamRenderTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(50) };
+                streamRenderTimer.Tick += (s, e) => FlushStreamText();
+            }
+            if (!streamRenderTimer.IsEnabled) streamRenderTimer.Start();
+        }
+
+        private void PublishStreamText(ChatEntry entry, string text)
+        {
+            if (entry.StreamId == null || !liveTexts.TryGetValue(entry.StreamId, out var live)) return;
+            SetTranscriptText(live, text);
+        }
+
+        private static void SetTranscriptText(System.Windows.Forms.RichTextBox live, string text)
+        {
+            text = text ?? "";
+            if (live.IsDisposed || live.Text == text) return;
+            int start = live.SelectionStart, length = live.SelectionLength;
+            live.Text = text;
+            live.Select(Math.Min(start, live.TextLength), Math.Min(length, Math.Max(0, live.TextLength - start)));
+        }
+
+        /// <summary>Publishes buffered fragments once per UI frame and before persistence or finalization.</summary>
+        private void FlushStreamText()
+        {
+            streamRenderTimer?.Stop();
+            if (pendingStreamText.Count == 0 && pendingActivityText.Count == 0) return;
+            foreach (var pair in pendingStreamText)
+            {
+                pair.Key.Text = pair.Value.ToString();
+                PublishStreamText(pair.Key, pair.Key.Text);
+            }
+            pendingStreamText.Clear();
+            foreach (var entry in pendingActivityText) PublishStreamText(entry, entry.Activity?.Detail ?? "");
+            pendingActivityText.Clear();
+            FollowLatest();
         }
 
         /// <summary>Ajoute le texte final de l’assistant s’il n’a pas déjà été affiché par le flux.</summary>

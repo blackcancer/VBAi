@@ -8,7 +8,7 @@ using System.Web.Script.Serialization;
 namespace VBAi
 {
     /// <summary>Stocke les fournisseurs, modèles, points de terminaison et secrets de configuration LLM.</summary>
-    internal sealed class LlmSettings
+    internal sealed partial class LlmSettings
     {
         /// <summary>Remplacement facultatif du chemin de stockage, principalement utilisé par les tests isolés.</summary>
         internal static string StoragePathOverride;
@@ -120,12 +120,10 @@ namespace VBAi
         /// <returns>Paramètres désérialisés ou configuration par défaut si le fichier n’existe pas.</returns>
         public static LlmSettings Load()
         {
-            if (!File.Exists(FilePath)) return new LlmSettings();
-            string content = File.ReadAllText(FilePath, Encoding.UTF8);
-            var stored = new JavaScriptSerializer().DeserializeObject(content) as System.Collections.Generic.IDictionary<string, object>;
-            var loaded = new JavaScriptSerializer().Deserialize<LlmSettings>(content) ?? new LlmSettings();
-            // Existing installations previously confirmed every edit. Preserve that behavior until changed in Settings.
-            if (stored == null || !stored.ContainsKey("VbeEditApproval")) loaded.VbeEditApproval = "AskEachTime";
+            string path = Path.GetFullPath(FilePath);
+            bool exists = File.Exists(path);
+            var loaded = exists ? DecodeSettings(File.ReadAllText(path, Encoding.UTF8)) : new LlmSettings();
+            loaded.RememberBaseline(path, exists);
             loaded.ApplyProviderLabels();
             return loaded;
         }
@@ -133,9 +131,7 @@ namespace VBAi
         /// <summary>Applique les noms personnalisés puis enregistre les paramètres JSON en UTF-8 sans BOM.</summary>
         public void Save()
         {
-            ApplyProviderLabels();
-            Directory.CreateDirectory(Path.GetDirectoryName(FilePath));
-            File.WriteAllText(FilePath, new JavaScriptSerializer().Serialize(this), new UTF8Encoding(false));
+            SaveMerged();
         }
 
         /// <summary>Déchiffre la clé OpenAI enregistrée ou retourne la variable OPENAI_API_KEY.</summary>

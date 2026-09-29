@@ -12,8 +12,34 @@ if (-not [Environment]::Is64BitProcess) {
     throw 'Run this script from 64-bit PowerShell.'
 }
 
-if (@(Get-Process EXCEL, SLDWORKS -ErrorAction SilentlyContinue).Count) {
-    throw 'Close VBA hosts before installing VBAi or migrating its user data.'
+$hostNames = @('EXCEL', 'WINWORD', 'POWERPNT', 'MSACCESS', 'OUTLOOK', 'VISIO', 'WINPROJ', 'MSPUB', 'SLDWORKS')
+$runningHosts = @(Get-Process -Name $hostNames -ErrorAction SilentlyContinue)
+if ($runningHosts.Count) {
+    $details = ($runningHosts | ForEach-Object { "$($_.ProcessName) (PID $($_.Id))" }) -join ', '
+    throw "Close VBA hosts before installing VBAi or migrating its user data: $details."
+}
+
+# A process can retain the DLL after its VBE window has closed.
+$loadedIn = @()
+foreach ($process in @(Get-Process)) {
+    try {
+        foreach ($module in $process.Modules) {
+            if ($module.ModuleName -ieq 'VBAi.dll' -or $module.ModuleName -ieq 'CodexVBE.dll') {
+                $loadedIn += "$($process.ProcessName) (PID $($process.Id), $($module.FileName))"
+                break
+            }
+        }
+    }
+    catch [System.ComponentModel.Win32Exception] {
+        # Inaccessible unrelated processes do not prove that VBAi is loaded.
+    }
+    catch [System.InvalidOperationException] {
+        # A process can exit during enumeration.
+    }
+    finally { $process.Dispose() }
+}
+if ($loadedIn.Count) {
+    throw "The VBAi DLL is still loaded; close these processes before installing: $($loadedIn -join ', ')."
 }
 
 # Legacy names are retained only for upgrading an existing installation.

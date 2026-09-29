@@ -2068,4 +2068,7 @@ Git Credential Manager से साइन-इन करें; कमिट ल
   <data name="Interrupted" xml:space="preserve">
     <value>बाधित</value>
   </data>
+  <data name="Installation outcome is uncertain. Check the installer and its log before attempting another update." xml:space="preserve"><value>स्थापना का परिणाम अनिश्चित है। दोबारा अपडेट करने से पहले इंस्टॉलर और उसका लॉग जाँचें।</value></data>
+  <data name="Installation refused: no trusted VBAi publisher is configured or the publisher does not match." xml:space="preserve"><value>स्थापना अस्वीकार की गई: कोई विश्वसनीय VBAi प्रकाशक कॉन्फ़िगर नहीं है या प्रकाशक मेल नहीं खाता।</value></data>
+  <data name="Local history recovery copies are available. See the troubleshooting guide." xml:space="preserve"><value>स्थानीय इतिहास की पुनर्प्राप्ति प्रतियाँ उपलब्ध हैं। समस्या निवारण गाइड देखें।</value></data>
 </root>

@@ -1,0 +1,7 @@
+# Generated assets must match the locked build byte for byte on every checkout.
+dist/*.js text eol=lf
+dist/*.css text eol=lf
+dist/*.html text eol=lf
+dist/*.txt text eol=lf
+dist/*.ttf binary
+src/index.html text eol=lf

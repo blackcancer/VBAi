@@ -2068,4 +2068,7 @@ QQ 附加内存
   <data name="Interrupted" xml:space="preserve">
     <value>已中断</value>
   </data>
+  <data name="Installation outcome is uncertain. Check the installer and its log before attempting another update." xml:space="preserve"><value>安装结果不确定。再次尝试更新前，请检查安装程序及其日志。</value></data>
+  <data name="Installation refused: no trusted VBAi publisher is configured or the publisher does not match." xml:space="preserve"><value>安装被拒绝：未配置受信任的 VBAi 发布者，或发布者不匹配。</value></data>
+  <data name="Local history recovery copies are available. See the troubleshooting guide." xml:space="preserve"><value>本地历史记录的恢复副本可用。请参阅故障排除指南。</value></data>
 </root>

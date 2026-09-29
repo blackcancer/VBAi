@@ -10,6 +10,72 @@ namespace VBAi.Tests.Unit
 
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Realized activity metadata and new siblings keep existing native controls and explicit disclosure choices.</summary>
+        [STATestMethod, TestCategory("Unit")]
+        public void RealizedActivityMetadataKeepsControlsSelectionAndDisclosureChoices()
+        {
+            using (var window = Surfaces())
+            {
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "first", Kind = "reasoning", Title = "Plan", Detail = "select this text", Status = "inProgress" });
+                var owner = Get<List<ChatEntry>>(window, "transcriptEntries")[0];
+                using (var host = (ChatDesignerHost)Call(window, "RenderEntry", owner))
+                {
+                    Get<Dictionary<ChatEntry, FrameworkElement>>(window, "entryViews")[owner] = host;
+                    var group = (ChatActivityGroupView)host.View;
+                    var step = (ChatActivityStepView)group.section.body.Controls[0];
+                    var text = step.detail.content;
+                    text.Select(2, 5);
+                    // These are explicit choices; status updates must not turn them into automatic defaults.
+                    group.section.Expanded = false;
+                    step.section.Expanded = false;
+                    int collectionChanges = 0;
+                    Get<ObservableCollection<object>>(window, "visibleEntries").CollectionChanged += (sender, args) => collectionChanges++;
+                    Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "first", Kind = "reasoning", Title = "Updated", Detail = "select this text plus output", Status = "completed", DurationMs = 125 });
+                    Assert.AreEqual(0, collectionChanges);
+                    Assert.AreSame(step, group.section.body.Controls[0]);
+                    Assert.AreSame(text, step.detail.content);
+                    Assert.AreEqual(2, text.SelectionStart); Assert.AreEqual(5, text.SelectionLength);
+                    Assert.AreEqual("Updated", step.section.Title);
+                    Assert.IsFalse(step.section.Expanded); Assert.IsFalse(group.section.Expanded);
+                    Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "second", Kind = "commandExecution", Title = "Run", Detail = "output", Status = "inProgress" });
+                    Assert.AreEqual(2, group.section.body.Controls.Count);
+                    Assert.AreSame(step, group.section.body.Controls[0]);
+                    Assert.IsFalse(step.IsDisposed); Assert.AreEqual(0, collectionChanges);
+                    Assert.IsFalse(group.section.Expanded);
+                    Assert.AreEqual(2, text.SelectionStart); Assert.AreEqual(5, text.SelectionLength);
+                    Get<Dictionary<ChatEntry, FrameworkElement>>(window, "entryViews").Remove(owner);
+                }
+            }
+        }
+
+        /// <summary>Automatic expansion does not become a stored user preference when realized metadata changes.</summary>
+        [STATestMethod, TestCategory("Unit")]
+        public void AutomaticActivityExpansionIsNotRecordedAsUserChoice()
+        {
+            using (var window = Surfaces())
+            {
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "activity", Kind = "reasoning", Detail = "result", Status = "completed" });
+                var owner = Get<List<ChatEntry>>(window, "transcriptEntries")[0];
+                using (var host = (ChatDesignerHost)Call(window, "RenderEntry", owner))
+                {
+                    Get<Dictionary<ChatEntry, FrameworkElement>>(window, "entryViews")[owner] = host;
+                    var group = (ChatActivityGroupView)host.View;
+                    var step = (ChatActivityStepView)group.section.body.Controls[0];
+                    foreach (string status in new[] { "inProgress", "completed" })
+                    {
+                        Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "activity", Kind = "reasoning", Detail = "result", Status = status });
+                        Assert.AreEqual(status == "inProgress", step.section.Expanded);
+                        Assert.AreEqual(status == "inProgress", group.section.Expanded);
+                        Assert.AreEqual(0, Get<HashSet<ChatEntry>>(window, "expandedActivitySteps").Count);
+                        Assert.AreEqual(0, Get<HashSet<ChatEntry>>(window, "collapsedActivitySteps").Count);
+                        Assert.AreEqual(0, Get<HashSet<ChatEntry>>(window, "expandedActivityGroups").Count);
+                        Assert.AreEqual(0, Get<HashSet<ChatEntry>>(window, "collapsedActivityGroups").Count);
+                    }
+                    Get<Dictionary<ChatEntry, FrameworkElement>>(window, "entryViews").Remove(owner);
+                }
+            }
+        }
+
         /// <summary>Rebuilds absent or disposed activity views and updates metadata without reopening completed streams.</summary>
         [STATestMethod]
         public void ActivityFragmentsRebuildMissingViewsAndPreserveTerminalMetadata()
@@ -66,15 +132,49 @@ namespace VBAi.Tests.Unit
                     controls[0].section.Expanded = true;
                     var live = Get<Dictionary<string, System.Windows.Forms.RichTextBox>>(window, "liveTexts");
                     var original = live["stream"];
+                    original.Select(1, 3);
+                    int textChanges = 0;
+                    original.TextChanged += (s, e) => textChanges++;
                     int changes = 0; Get<ObservableCollection<object>>(window, "visibleEntries").CollectionChanged += (sender, args) => changes++;
                     for (int i = 0; i < 300; i++)
                         Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = "reasoning", Detail = ".", Status = "inProgress", Append = true });
                     Assert.AreEqual(0, changes); Assert.AreSame(original, live["stream"]);
+                    Assert.AreEqual(0, textChanges, "Fragments must not reflow the native text control individually.");
+                    Call(window, "FlushStreamText");
+                    Assert.AreEqual(1, textChanges);
+                    Assert.AreEqual(1, original.SelectionStart); Assert.AreEqual(3, original.SelectionLength);
                     Assert.AreEqual("start" + new string('.', 300), original.Text);
                     Assert.IsTrue(controls[0].section.Expanded); Assert.IsFalse(controls[0].IsDisposed);
                     Assert.AreSame(controls[0], group.section.body.Controls[0]);
                     Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = "reasoning", Title = "Reasoning", Detail = original.Text, Status = "completed" });
                     Assert.AreEqual(2, changes); Assert.AreEqual("completed", entries[1].Activity.Status);
+                }
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void ActivityFlushUsesFinalMetadataAndClearsPendingWorkAcrossSessions()
+        {
+            using (var window = Surfaces())
+            {
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = "reasoning", Title = "Thinking", Detail = "initial", Status = "inProgress" });
+                var entry = Get<List<ChatEntry>>(window, "transcriptEntries").Single();
+                using (var first = (ChatDesignerHost)Call(window, "RenderEntry", entry))
+                {
+                    Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = "reasoning", Detail = " pending", Append = true, Status = "inProgress" });
+                    Assert.AreEqual(1, Get<HashSet<ChatEntry>>(window, "pendingActivityText").Count);
+                    Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = "reasoning", Detail = "authoritative final", Status = "completed" });
+                    using (var final = (ChatDesignerHost)Call(window, "RenderEntry", entry))
+                    {
+                        Call(window, "FlushStreamText");
+                        Assert.AreEqual("authoritative final", Get<Dictionary<string, System.Windows.Forms.RichTextBox>>(window, "liveTexts")["stream"].Text);
+                        Assert.AreEqual(0, Get<HashSet<ChatEntry>>(window, "pendingActivityText").Count);
+                        Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = "reasoning", Detail = " late", Append = true, Status = "inProgress" });
+                        Call(window, "ClearTranscript");
+                        Assert.AreEqual(0, Get<HashSet<ChatEntry>>(window, "pendingActivityText").Count);
+                        Assert.IsFalse(Get<System.Windows.Threading.DispatcherTimer>(window, "streamRenderTimer").IsEnabled);
+                        Assert.AreEqual("completed", entry.Activity.Status);
+                    }
                 }
             }
         }
@@ -146,6 +246,7 @@ namespace VBAi.Tests.Unit
                 Assert.AreEqual(3, group.body.Controls.OfType<ChatTextContentView>().Count());
                 group.Expanded = true;
                 Call(window, "ReceiveChatUpdate", "tool", "tool-a", " terminée", false);
+                TimerTick(Get<System.Windows.Threading.DispatcherTimer>(window, "streamRenderTimer"));
                 Assert.AreEqual("Lecture terminée", Get<Dictionary<string, System.Windows.Forms.RichTextBox>>(window, "liveTexts")["tool-a"].Text);
                 Call(window, "ReceiveChatUpdate", "summary", "reason-a", "Analyse terminée", true);
                 group = ((ChatActivityGroupView)((ChatDesignerHost)Call(window, "RenderEntry", owner)).View).section;

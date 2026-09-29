@@ -78,7 +78,10 @@ if ($Worker) {
         if ($Action -eq 'Install') { & (Join-Path $PSScriptRoot 'Install-VBAi.ps1') -Direct | Out-Null }
         if ($Action -eq 'Uninstall') { & (Join-Path $PSScriptRoot 'Uninstall-VBAi.ps1') -Direct | Out-Null }
         Assert-Registration ($Action -ne 'Uninstall')
-        Set-Content -LiteralPath $StatusPath -Value "SUCCESS $Action" -Encoding ASCII
+        $diagnostic = if ($Action -eq 'Verify') {
+            & (Join-Path $PSScriptRoot 'Test-VBAiInstallation.ps1') -Direct | Out-String
+        } else { '' }
+        Set-Content -LiteralPath $StatusPath -Value ("SUCCESS $Action`n$diagnostic") -Encoding UTF8
     }
     catch {
         Set-Content -LiteralPath $StatusPath -Value "ERROR $($_.Exception.Message)" -Encoding UTF8
@@ -99,6 +102,7 @@ if (-not $TaskHost) {
         if (-not $result.StartsWith("SUCCESS $Action", [StringComparison]::Ordinal)) { throw $result.Trim() }
         if ($process.ExitCode -ne 0) { throw "Elevated task host failed with exit code $($process.ExitCode)." }
         Write-Output "VBAi $Action verified outside the calling process."
+        if ($Action -eq 'Verify') { Write-Output $result.Substring(("SUCCESS $Action").Length).Trim() }
     }
     finally { Remove-Item -LiteralPath $status -ErrorAction SilentlyContinue }
     return

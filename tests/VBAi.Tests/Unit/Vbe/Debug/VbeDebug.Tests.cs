@@ -1054,10 +1054,56 @@ namespace VBAi.Tests.Unit
             Assert.ThrowsException<InvalidOperationException>(() => f.Service.InvokeCommand(r));
             f.Module.Code = Code; r.ExpectedSha256 = Sha(Code);
             foreach (var pane in new[] { null, new FakePane { CodeModule = f.Module } })
-            { f.Vbe.ActiveCodePane = pane; Assert.ThrowsException<InvalidOperationException>(() => f.Service.InvokeCommand(r)); }
+            {
+                f.Vbe.ActiveCodePane = pane;
+                f.Vbe.IgnoreActiveCodePaneAssignment = true;
+                Assert.ThrowsException<InvalidOperationException>(() => f.Service.InvokeCommand(r));
+                f.Vbe.IgnoreActiveCodePaneAssignment = false;
+            }
             f.Vbe.ActiveCodePane = f.Module.CodePane;
             f.Bar.Controls.Add(new FakeControl { Id = 123, Caption = "Unrelated" });
             Assert.ThrowsException<InvalidOperationException>(() => f.Service.InvokeCommand(r));
+        }
+
+        [TestMethod]
+        public void InvokeCommandSelectsRequestedPaneWhenShowAndFocusLeaveThePreviousPaneActive()
+        {
+            var f = Create(); var request = Location(f);
+            request.Action = "toggle_breakpoint"; request.ControlId = 123; request.ControlCaption = "Toggle Breakpoint";
+            var previous = new FakePane { CodeModule = f.Module };
+            f.Vbe.ActiveCodePane = previous;
+            f.Module.CodePane.OnSetSelection = () => Assert.AreSame(f.Module.CodePane, f.Vbe.ActiveCodePane);
+            var command = new FakeControl { Id = 123, Caption = request.ControlCaption };
+            f.Bar.Controls.Add(command);
+            int assignmentsBefore = f.Vbe.ActiveCodePaneSetCount;
+
+            dynamic result = f.Service.InvokeCommand(request);
+
+            Assert.IsTrue((bool)result.Executed);
+            Assert.AreEqual(1, command.ExecuteCount);
+            Assert.AreSame(f.Module.CodePane, f.Vbe.ActiveCodePane);
+            Assert.AreEqual(assignmentsBefore + 1, f.Vbe.ActiveCodePaneSetCount);
+            Assert.AreEqual(1, f.Module.CodePane.ShowCount);
+            Assert.AreEqual(1, f.Module.CodePane.Window.FocusCount);
+        }
+
+        [TestMethod]
+        public void InvokeCommandDoesNotExecuteWhenTheHostIgnoresPaneSelection()
+        {
+            var f = Create(); var request = Location(f);
+            request.Action = "toggle_breakpoint"; request.ControlId = 123; request.ControlCaption = "Toggle Breakpoint";
+            var previous = new FakePane { CodeModule = f.Module };
+            f.Vbe.ActiveCodePane = previous;
+            f.Vbe.IgnoreActiveCodePaneAssignment = true;
+            var command = new FakeControl { Id = 123, Caption = request.ControlCaption };
+            f.Bar.Controls.Add(command);
+            int assignmentsBefore = f.Vbe.ActiveCodePaneSetCount;
+
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.InvokeCommand(request));
+
+            Assert.AreEqual(0, command.ExecuteCount);
+            Assert.AreSame(previous, f.Vbe.ActiveCodePane);
+            Assert.AreEqual(assignmentsBefore + 1, f.Vbe.ActiveCodePaneSetCount);
         }
 
         [TestMethod]
@@ -1095,7 +1141,12 @@ namespace VBAi.Tests.Unit
             var f = Create(1); var r = Location(f, 2); r.Action = "set_next_statement"; r.ControlId = 400; r.ControlCaption = "Set Next Statement";
             f.Bar.Controls.Add(new FakeControl { Id = 400, Caption = r.ControlCaption });
             foreach (var pane in new[] { null, new FakePane { CodeModule = f.Module } })
-            { f.Vbe.ActiveCodePane = pane; Assert.ThrowsException<InvalidOperationException>(() => f.Service.InvokeCommand(r)); }
+            {
+                f.Vbe.ActiveCodePane = pane;
+                f.Vbe.IgnoreActiveCodePaneAssignment = true;
+                Assert.ThrowsException<InvalidOperationException>(() => f.Service.InvokeCommand(r));
+                f.Vbe.IgnoreActiveCodePaneAssignment = false;
+            }
             f.Vbe.ActiveCodePane = f.Module.CodePane;
             foreach (var names in new[] { new[] { (string)null, "TryMe" }, new[] { "TryMe", " " }, new[] { "TryMe", "Other" } })
             {
@@ -1167,6 +1218,47 @@ namespace VBAi.Tests.Unit
             f.Bar.Controls.AddRange(new[] { new FakeControl { Id = -1, Caption = "Run Sub" },
                 new FakeControl { Id = 186, Caption = "Run Sub", Enabled = false }, new FakeControl { Id = 186, Caption = "Unrelated" } });
             Assert.ThrowsException<InvalidOperationException>(() => f.Service.RunSub(r));
+        }
+
+        [TestMethod]
+        public void RunSubSelectsRequestedPaneBeforeCheckingNativeRunAvailability()
+        {
+            var f = Create(); f.Project.VBComponents[0].Type = 1;
+            f.Module.Code = "Sub TryMe()\r\nEnd Sub";
+            var request = new Request { Project = f.Project.Name, Module = "Module1", Procedure = "TryMe",
+                ExpectedMode = 2, ExpectedSha256 = Sha(f.Module.Code) };
+            f.Vbe.ActiveCodePane = new FakePane { CodeModule = f.Module };
+            f.Module.CodePane.OnSetSelection = () => Assert.AreSame(f.Module.CodePane, f.Vbe.ActiveCodePane);
+            var command = new FakeControl { Id = 186, Caption = "Run Sub",
+                OnEnabledRead = () => Assert.AreSame(f.Module.CodePane, f.Vbe.ActiveCodePane) };
+            f.Bar.Controls.Add(command);
+            int assignmentsBefore = f.Vbe.ActiveCodePaneSetCount;
+
+            dynamic result = f.Service.RunSub(request);
+
+            Assert.IsTrue((bool)result.Executed);
+            Assert.AreEqual(1, command.ExecuteCount);
+            Assert.IsTrue(f.Vbe.ActiveCodePaneSetCount >= assignmentsBefore + 2);
+            Assert.AreSame(f.Module.CodePane, f.Vbe.ActiveCodePane);
+        }
+
+        [TestMethod]
+        public void RunSubDoesNotExecuteWhenTheHostIgnoresPaneSelection()
+        {
+            var f = Create(); f.Project.VBComponents[0].Type = 1;
+            f.Module.Code = "Sub TryMe()\r\nEnd Sub";
+            var request = new Request { Project = f.Project.Name, Module = "Module1", Procedure = "TryMe",
+                ExpectedMode = 2, ExpectedSha256 = Sha(f.Module.Code) };
+            var previous = new FakePane { CodeModule = f.Module };
+            f.Vbe.ActiveCodePane = previous;
+            f.Vbe.IgnoreActiveCodePaneAssignment = true;
+            var command = new FakeControl { Id = 186, Caption = "Run Sub" };
+            f.Bar.Controls.Add(command);
+
+            Assert.ThrowsException<InvalidOperationException>(() => f.Service.RunSub(request));
+
+            Assert.AreEqual(0, command.ExecuteCount);
+            Assert.AreSame(previous, f.Vbe.ActiveCodePane);
         }
 
         [TestMethod]

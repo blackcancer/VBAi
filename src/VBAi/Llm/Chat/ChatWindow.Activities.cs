@@ -21,18 +21,32 @@ namespace VBAi
         /// <summary>Stores the collapsed activity steps used by ChatWindow.</summary>
         private readonly HashSet<ChatEntry> collapsedActivitySteps = new HashSet<ChatEntry>();
 
+        // View state belongs to the control tree and is released with its virtualized owner.
+        private sealed class ActivityGroupViewState
+        {
+            internal readonly Dictionary<ChatEntry, System.Windows.Forms.Control> Rows =
+                new Dictionary<ChatEntry, System.Windows.Forms.Control>();
+            internal bool Updating;
+        }
+
+        private sealed class ActivityStepViewState
+        {
+            internal string Kind;
+            internal bool Initialized, Updating;
+        }
+
         /// <summary>Ajoute ou actualise une étape native, sans dupliquer son identité.</summary>
         /// <param name="activity">Données reçues du fournisseur.</param>
         private void ReceiveAgentActivity(CodexAgentActivity activity)
         {
-            if (IsDisposed || conversationItems == null || activity == null || string.IsNullOrEmpty(activity.Id)) return;
+            if (IsDisposed || runtimeDisposed || conversationItems == null || activity == null || string.IsNullOrEmpty(activity.Id)) return;
             if (activity.Kind == "reasoning" && string.IsNullOrWhiteSpace(activity.Detail) && !liveEntries.ContainsKey(activity.Id)) return;
-            if (!liveEntries.TryGetValue(activity.Id, out var entry))
+            bool isNew = !liveEntries.TryGetValue(activity.Id, out var entry);
+            if (isNew)
             {
                 entry = new ChatEntry { Speaker = activity.Kind == "reasoning" ? "Réflexion" : "Outil", StreamId = activity.Id };
                 liveEntries[activity.Id] = entry;
                 entry.Activity = new CodexAgentActivity { Id = activity.Id, Kind = activity.Kind };
-                AddEntry(entry);
             }
             var previous = entry.Activity;
             entry.Activity = new CodexAgentActivity { Id = activity.Id, Kind = activity.Kind,
@@ -41,11 +55,22 @@ namespace VBAi
                 Status = activity.Append && previous != null && previous.Status != "inProgress" ? previous.Status : activity.Status, DurationMs = activity.DurationMs ?? previous?.DurationMs };
             entry.Text = entry.Activity.Title + "\n" + entry.Activity.Detail;
             if (activity.Status != "inProgress") completedStreams.Add(activity.Id);
+            // Publish a complete first snapshot; adding to a group already refreshes its view.
+            if (isNew) AddEntry(entry);
             bool textOnly = activity.Append && previous != null && previous.Kind == entry.Activity.Kind &&
                 previous.Title == entry.Activity.Title && previous.Status == entry.Activity.Status && previous.DurationMs == entry.Activity.DurationMs;
-            if (textOnly && liveTexts.TryGetValue(activity.Id, out var live) && !live.IsDisposed) live.Text = entry.Activity.Detail;
-            else RefreshVisibleActivity(entry);
-            FollowLatest(); ScheduleSessionSave();
+            if (textOnly && liveTexts.TryGetValue(activity.Id, out var live) && !live.IsDisposed)
+            {
+                pendingActivityText.Add(entry);
+                ScheduleStreamRender();
+            }
+            else
+            {
+                pendingActivityText.Remove(entry);
+                if (!isNew) RefreshVisibleActivity(entry);
+                FollowLatest();
+            }
+            ScheduleSessionSave();
         }
 
         /// <summary>Identifie une activité textuelle dépourvue de carte interactive.</summary>
@@ -82,6 +107,10 @@ namespace VBAi
         private void RefreshVisibleActivity(ChatEntry entry)
         {
             if (activityOwners.TryGetValue(entry, out var owner)) entry = owner;
+            if (entryViews.TryGetValue(entry, out var view) && view is ChatDesignerHost host &&
+                host.View is ChatActivityGroupView group && !group.IsDisposed &&
+                activityGroups.TryGetValue(entry, out var entries) && UpdateActivityGroup(group, entry, entries))
+                return;
             int index = visibleEntries.IndexOf(entry);
             if (index >= 0) { visibleEntries.RemoveAt(index); visibleEntries.Insert(index, entry); }
         }
@@ -93,22 +122,70 @@ namespace VBAi
         private FrameworkElement RenderActivityGroup(ChatEntry owner, List<ChatEntry> entries)
         {
             var card = new ChatActivityGroupView();
-            foreach (var entry in entries) {
-                if (entry.Activity != null) {
-                    var step = CreateActivityStep(entry); card.section.body.Controls.Add(step);
-                } else {
-                    var row = SelectableText(entry.Text);
-                    if (!string.IsNullOrEmpty(entry.StreamId)) liveTexts[entry.StreamId] = row.content; card.section.body.Controls.Add(row);
-                }
-            }
-            var latest = entries.LastOrDefault(entry => entry.Activity?.Status == "inProgress") ?? entries.Last();
-            string preview = string.IsNullOrWhiteSpace(latest.Activity?.Title) ? "" : " · " + CodexAgentActivity.Limit(latest.Activity.Title);
-            if (preview.Length > 90) preview = preview.Substring(0,87) + "…";
-            card.section.Title = UiText.Get(entries.All(e => e.Speaker == "Réflexion") ? "Reasoning" : "Agent activity") + " · " + entries.Count + preview;
-            bool running = entries.Any(e => e.Activity?.Status == "inProgress" || (busy && e.Activity == null && e.StreamId != null && !completedStreams.Contains(e.StreamId)));
-            card.section.Expanded = expandedActivityGroups.Contains(owner) || running && !collapsedActivityGroups.Contains(owner);
-            card.section.ExpansionChanged += (s,e) => { if (card.section.Expanded) { expandedActivityGroups.Add(owner); collapsedActivityGroups.Remove(owner); } else { expandedActivityGroups.Remove(owner); collapsedActivityGroups.Add(owner); } };
+            var state = new ActivityGroupViewState();
+            card.Tag = state;
+            UpdateActivityGroup(card, owner, entries);
+            card.section.ExpansionChanged += (sender, args) => {
+                if (state.Updating) return;
+                if (card.section.Expanded) { expandedActivityGroups.Add(owner); collapsedActivityGroups.Remove(owner); }
+                else { expandedActivityGroups.Remove(owner); collapsedActivityGroups.Add(owner); }
+            };
             return new ChatDesignerHost(card) { Margin = new Thickness(0,4,0,14) };
+        }
+
+        /// <summary>Updates realized rows without replacing their native text controls or user selection.</summary>
+        private bool UpdateActivityGroup(ChatActivityGroupView card, ChatEntry owner, List<ChatEntry> entries)
+        {
+            var state = card.Tag as ActivityGroupViewState;
+            if (state == null || entries.Count == 0) return false;
+            // A changed row type or damaged control requires the existing full rebuild path.
+            if (state.Rows.Count > entries.Count) return false;
+            int retainedRows = 0;
+            foreach (var entry in entries)
+            {
+                if (!state.Rows.TryGetValue(entry, out var existingRow)) continue;
+                retainedRows++;
+                if (existingRow.IsDisposed) return false;
+                if (entry.Activity != null)
+                {
+                    if (!(existingRow is ChatActivityStepView existingStep) || existingStep.detail.content.IsDisposed) return false;
+                }
+                else if (!(existingRow is ChatTextContentView existingText) || existingText.content.IsDisposed) return false;
+            }
+            if (retainedRows != state.Rows.Count) return false;
+            state.Updating = true;
+            card.SuspendLayout();
+            card.section.body.SuspendLayout();
+            try
+            {
+                foreach (var entry in entries)
+                {
+                    if (!state.Rows.TryGetValue(entry, out var row))
+                    {
+                        row = entry.Activity != null ? (System.Windows.Forms.Control)CreateActivityStep(entry) : SelectableText(entry.Text);
+                        state.Rows.Add(entry, row);
+                        card.section.body.Controls.Add(row);
+                    }
+                    else if (row is ChatActivityStepView step) UpdateActivityStep(step, entry);
+                    else if (row is ChatTextContentView text) SetTranscriptText(text.content, entry.Text);
+                    if (!string.IsNullOrEmpty(entry.StreamId))
+                        liveTexts[entry.StreamId] = row is ChatActivityStepView activity ? activity.detail.content : ((ChatTextContentView)row).content;
+                }
+                var latest = entries.LastOrDefault(entry => entry.Activity?.Status == "inProgress") ?? entries.Last();
+                string preview = string.IsNullOrWhiteSpace(latest.Activity?.Title) ? "" : " · " + CodexAgentActivity.Limit(latest.Activity.Title);
+                if (preview.Length > 90) preview = preview.Substring(0,87) + "…";
+                string title = UiText.Get(entries.All(e => e.Speaker == "Réflexion") ? "Reasoning" : "Agent activity") + " · " + entries.Count + preview;
+                if (card.section.Title != title) card.section.Title = title;
+                bool running = entries.Any(e => e.Activity?.Status == "inProgress" || (busy && e.Activity == null && e.StreamId != null && !completedStreams.Contains(e.StreamId)));
+                card.section.Expanded = expandedActivityGroups.Contains(owner) || running && !collapsedActivityGroups.Contains(owner);
+            }
+            finally
+            {
+                card.section.body.ResumeLayout(true);
+                card.ResumeLayout(true);
+                state.Updating = false;
+            }
+            return true;
         }
         /// <summary>Dessine une étape compacte avec résultat, durée native et détail dépliable.</summary>
         /// <param name="entry">Entrée enrichie de l'historique.</param>
@@ -119,16 +196,41 @@ namespace VBAi
         /// <returns>The result produced by this operation.</returns>
         private ChatActivityStepView CreateActivityStep(ChatEntry entry)
         {
-            var activity = entry.Activity;
-            var card = new ChatActivityStepView();
-            bool running = activity.Status == "inProgress", failed = activity.Status == "failed";
-            card.state.Text = UiText.Get(running ? "In progress" : failed ? "Failed" : activity.Status == "declined" ? "Declined" : activity.Status == "completed" ? "Completed" : activity.Status == "interrupted" ? "Interrupted" : "Cancelled");
-            if (activity.DurationMs.HasValue) card.state.Text += " · " + (activity.DurationMs.Value / 1000d).ToString("0.0", UiText.Culture) + " s";
-            card.section.Title = string.IsNullOrWhiteSpace(activity.Title) ? UiText.Get(activity.Kind == "reasoning" ? "Reasoning" : "Tool") : activity.Title;
-            card.detail.ShowPlain(activity.Detail, activity.Kind == "commandExecution");
-            if (!string.IsNullOrEmpty(entry.StreamId)) liveTexts[entry.StreamId] = card.detail.content; card.section.Expanded = expandedActivitySteps.Contains(entry) || running && activity.Kind == "reasoning" && !collapsedActivitySteps.Contains(entry);
-            card.section.ExpansionChanged += (s,e) => { if (card.section.Expanded) { expandedActivitySteps.Add(entry); collapsedActivitySteps.Remove(entry); } else { expandedActivitySteps.Remove(entry); collapsedActivitySteps.Add(entry); } };
+            var card = new ChatActivityStepView { Tag = new ActivityStepViewState() };
+            UpdateActivityStep(card, entry);
+            card.section.ExpansionChanged += (sender, args) => {
+                if (((ActivityStepViewState)card.Tag).Updating) return;
+                if (card.section.Expanded) { expandedActivitySteps.Add(entry); collapsedActivitySteps.Remove(entry); }
+                else { expandedActivitySteps.Remove(entry); collapsedActivitySteps.Add(entry); }
+            };
             return card;
+        }
+
+        private void UpdateActivityStep(ChatActivityStepView card, ChatEntry entry)
+        {
+            var activity = entry.Activity;
+            var state = (ActivityStepViewState)card.Tag;
+            state.Updating = true;
+            try
+            {
+                bool running = activity.Status == "inProgress", failed = activity.Status == "failed";
+                string status = UiText.Get(running ? "In progress" : failed ? "Failed" : activity.Status == "declined" ? "Declined" : activity.Status == "completed" ? "Completed" : activity.Status == "interrupted" ? "Interrupted" : "Cancelled");
+                if (activity.DurationMs.HasValue) status += " · " + (activity.DurationMs.Value / 1000d).ToString("0.0", UiText.Culture) + " s";
+                if (card.state.Text != status) card.state.Text = status;
+                string title = string.IsNullOrWhiteSpace(activity.Title) ? UiText.Get(activity.Kind == "reasoning" ? "Reasoning" : "Tool") : activity.Title;
+                if (card.section.Title != title) card.section.Title = title;
+                if (!state.Initialized || state.Kind != activity.Kind)
+                {
+                    int start = card.detail.content.SelectionStart, length = card.detail.content.SelectionLength;
+                    card.detail.ShowPlain(activity.Detail, activity.Kind == "commandExecution");
+                    card.detail.content.Select(System.Math.Min(start, card.detail.content.TextLength), System.Math.Min(length, System.Math.Max(0, card.detail.content.TextLength - start)));
+                    state.Kind = activity.Kind; state.Initialized = true;
+                }
+                else SetTranscriptText(card.detail.content, activity.Detail);
+                if (!string.IsNullOrEmpty(entry.StreamId)) liveTexts[entry.StreamId] = card.detail.content;
+                card.section.Expanded = expandedActivitySteps.Contains(entry) || running && activity.Kind == "reasoning" && !collapsedActivitySteps.Contains(entry);
+            }
+            finally { state.Updating = false; }
         }
 
         /// <summary>Libère les champs de flux d'un groupe lorsqu'il quitte la fenêtre virtualisée.</summary>

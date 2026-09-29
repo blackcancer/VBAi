@@ -100,6 +100,25 @@ namespace VBAi.Tests.Unit.Editor
         }
 
         [TestMethod]
+        public void ShowNativeSelectsTheRequestedPaneWhenShowingItLeavesAnotherPaneActive()
+        {
+            var f = new EditorVbeContract();
+            var other = new EditorVbeContract.Component { Name = "Other", Type = 1, Collection = f.Project.VBComponents };
+            other.CodeModule.Raw = "Sub Other()\r\nEnd Sub";
+            f.Project.VBComponents.Items.Add(other);
+            var adapter = f.Adapter.Sibling("Other");
+            other.CodeModule.CodePane.OnSetSelection = () => Assert.AreSame(other.CodeModule.CodePane, f.Vbe.ActiveCodePane);
+            int assignmentsBefore = f.Vbe.ActiveCodePaneSetCount;
+
+            adapter.ShowNative(2, 1);
+
+            Assert.AreSame(other.CodeModule.CodePane, f.Vbe.ActiveCodePane);
+            Assert.AreEqual(assignmentsBefore + 1, f.Vbe.ActiveCodePaneSetCount);
+            Assert.AreEqual(1, other.CodeModule.CodePane.Shows);
+            Assert.AreEqual(2, other.CodeModule.CodePane.Line);
+        }
+
+        [TestMethod]
         public void WriteGuardsPlansAndEveryPlainPatchShapePreserveExpectedSource()
         {
             foreach (var mode in new[] { 0, 1, 2 }) foreach (var protection in new[] { 0, 1 })
