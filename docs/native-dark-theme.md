@@ -8,6 +8,8 @@ Avant tout changement dans le VBE, le nouvel état remplace atomiquement le fich
 
 Qualification : **36 tests ciblés réussis** et **1 parcours Excel natif réussi**, avec application, relecture, archivage et restauration complète des couleurs initiales. Le parcours utilise une récupération temporaire, refuse les hôtes déjà ouverts et ferme son propre classeur sans enregistrer ni exécuter de macro. Preuves : `artifacts/palette-diagnostic/contracts-accepted/palette.trx` et `artifacts/palette-diagnostic/native/native.trx`. Les sections suivantes conservent l’historique des qualifications précédentes.
 
+Le chargement normal de la DLL installée dans un second Excel jetable a également réconcilié le fichier utilisateur `palette-7.01.json`, conservé son ancienne version dans une archive et confirmé « Native editor palette restored and verified ». L’erreur signalée n’est pas reproduite. Preuve : `artifacts/palette-diagnostic/normal-startup.log` ; Excel est ensuite fermé sans sauvegarde.
+
 ## Intégration de la PR #8 dans main
 
 Le 28 septembre 2026, l'intégration conserve Monaco issu de la PR #7 et ajoute le thème natif jusqu'au commit `264e432`. L'option reste **expérimentale et désactivée par défaut**. Les captures et essais Office décrits ci-dessous viennent de la branche auteur ; ils n'ont pas été répétés pendant cette intégration, car une autre session utilise Excel.

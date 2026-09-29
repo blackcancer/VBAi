@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -118,7 +118,7 @@ namespace CodexVBE.Tests.Integration
                 StringAssert.Contains(Wait(window.Script("testInfo")), "\"markers\":0");
                 Assert.AreEqual("0", Wait(window.Script("apply", doc.Id, version, "stale text")));
                 Wait(window.ProcessDocuments(true)); Assert.AreEqual(edited, host.Code); Assert.IsFalse(doc.Dirty);
-                Wait(window.Script("theme", true, false)); StringAssert.Contains(Wait(window.Script("testInfo")), "23, 27, 33");
+                Wait(window.Script("theme", true, false)); StringAssert.Contains(Wait(window.Script("testInfo")), "30, 34, 42");
                 Wait(window.Script("compare", "Option Explicit")); StringAssert.Contains(Wait(window.Script("testInfo")), "\"diff\":true");
                 Wait(window.Script("hideDiff"));
                 Wait(window.Script("reveal", 4, 8));

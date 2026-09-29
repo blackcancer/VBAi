@@ -8,6 +8,8 @@
 
 Le parcours utilise une récupération temporaire et ne consomme pas le fichier de récupération utilisateur. Il refuse les hôtes déjà ouverts, restaure les préférences même en cas d’échec et ferme uniquement son propre classeur et son instance Excel. Aucune macro n’est exécutée ou enregistrée ; aucune coordonnée souris ni raccourci global n’est utilisé. Ce résultat qualifie la transaction de palette, sans constituer une validation du rendu global ou du parcours SOLIDWORKS.
 
+Un chargement normal séparé de la DLL installée confirme ensuite la réconciliation du fichier utilisateur et sa restauration vérifiée, avec archivage de l’état précédent et fermeture du classeur jetable. Preuve : `artifacts/palette-diagnostic/normal-startup.log`.
+
 ## Monaco : références dynamiques, IntelliSense et édition automatique
 
 Le lot final `artifacts/monaco-language/native-final-results/native.trx` compte **10 réussis, 0 échec, 0 ignoré** : le parcours Excel réel, les huit scénarios du renderer WebView2 et la matrice JavaScript appelée par VSTest. Cette dernière comprend **57 scénarios réussis** sur les sources réellement utilisées pour construire le bundle.
