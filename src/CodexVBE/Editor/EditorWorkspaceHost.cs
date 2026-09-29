@@ -60,6 +60,9 @@ namespace CodexVBE
                 else if (type == 0) nativeDocument = false;
                 if (nativeDocument) { editor.Hide(); return; }
                 if (!editor.Visible) editor.Show();
+                // A newly opened CodePane can raise itself above the child editor.
+                // Reorder only for native code, preserving designers and docked panes.
+                if (type == 0) SetWindowPos(editor.Handle, IntPtr.Zero, 0, 0, 0, 0, 0x0013);
             }
             catch (COMException) { return; }
             if (GetClientRect(workspace, out Rect r))

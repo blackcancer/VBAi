@@ -24,6 +24,31 @@ namespace CodexVBE.Tests.Unit
         [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr window, IntPtr after, int x, int y, int width, int height, uint flags);
 
         [STATestMethod]
+        public void NewlyOpenedNativeCodePaneStaysBehindMonacoWithoutCoveringObjectBrowser()
+        {
+            using (var f = new AddInModernEditorFixture())
+            using (var code = new Form { TopLevel = false, FormBorderStyle = FormBorderStyle.None })
+            {
+                var editor = f.Get();
+                var mdi = f.Scope.Host.Owner.Controls.OfType<MdiClient>().Single();
+                SetParent(code.Handle, mdi.Handle); code.Show();
+                Assert.IsTrue(SetWindowPos(code.Handle, IntPtr.Zero, 0, 0, 300, 250, 0x0010));
+                Assert.AreEqual(code.Handle, GetWindow(editor.Handle, 3));
+                var workspace = LlmBoundaryScope.Get<EditorWorkspaceHost>(f.Instance, "editorWorkspace");
+                f.Scope.Host.ActiveWindow = new AddInEditorActiveWindow { Type = 0 };
+                LlmBoundaryScope.Call(workspace, "Resize");
+                Assert.AreEqual(editor.Handle, GetWindow(code.Handle, 3));
+                Assert.IsTrue(code.Visible); Assert.IsTrue(editor.Visible);
+                f.Scope.Host.ActiveWindow = new AddInEditorActiveWindow { Type = 2 };
+                LlmBoundaryScope.Call(workspace, "Resize");
+                Assert.IsFalse(editor.Visible); Assert.IsTrue(code.Visible);
+                f.Scope.Host.ActiveWindow = new AddInEditorActiveWindow { Type = 0 };
+                LlmBoundaryScope.Call(workspace, "Resize");
+                Assert.IsTrue(editor.Visible); Assert.AreEqual(editor.Handle, GetWindow(code.Handle, 3));
+            }
+        }
+
+        [STATestMethod]
         public void TimerResizePreservesNativePaneZOrderDuringFrameDocking()
         {
             using (var f = new AddInModernEditorFixture())
