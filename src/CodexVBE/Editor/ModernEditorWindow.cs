@@ -208,25 +208,25 @@ namespace CodexVBE
         }
         /// <summary>Message typé échangé entre l’interface Monaco et la fenêtre hôte.</summary>
         private sealed class EditorMessage { /// <summary>Type d’opération demandée.</summary>
-            /// <value>Message de changement, commande, navigation ou réponse.</value>
+/// <value>Message de changement, commande, navigation ou réponse.</value>
 public string type { get; set; } /// <summary>Identifiant du document concerné.</summary>
-            /// <value>Identifiant de session du document Monaco.</value>
+/// <value>Identifiant de session du document Monaco.</value>
 public string id { get; set; } /// <summary>Texte transmis avec un changement de brouillon.</summary>
-            /// <value>Contenu source envoyé par Monaco.</value>
+/// <value>Contenu source envoyé par Monaco.</value>
 public string text { get; set; } /// <summary>Gets or sets the selected text.</summary>
 /// <value>The current value represented by this member.</value>
 public string selectedText { get; set; } /// <summary>Révision Monaco associée au message.</summary>
-            /// <value>Numéro de version du document.</value>
+/// <value>Numéro de version du document.</value>
 public int version { get; set; } /// <summary>Nom de commande d’éditeur ou de débogage.</summary>
-            /// <value>Commande interne, par exemple compile ou step_into.</value>
+/// <value>Commande interne, par exemple compile ou step_into.</value>
 public string name { get; set; } /// <summary>Identifiant de la requête de langage à laquelle répondre.</summary>
-            /// <value>Numéro de requête généré par Monaco.</value>
+/// <value>Numéro de requête généré par Monaco.</value>
 public int request { get; set; } /// <summary>Nom du module cible d’une navigation vers définition.</summary>
-            /// <value>Nom du composant cible.</value>
+/// <value>Nom du composant cible.</value>
 public string module { get; set; } /// <summary>Ligne de navigation ou de sélection.</summary>
-            /// <value>Numéro de ligne indexé à partir de un.</value>
+/// <value>Numéro de ligne indexé à partir de un.</value>
 public int line { get; set; } /// <summary>Colonne de navigation ou de sélection.</summary>
-            /// <value>Numéro de colonne indexé à partir de un.</value>
+/// <value>Numéro de colonne indexé à partir de un.</value>
 public int column { get; set; } }
         /// <summary>Appelle une méthode de l’interface Monaco avec des arguments sérialisés en données JSON.</summary>
         /// <param name="method">Nom de méthode interne exposée par l’application Web.</param>
@@ -351,8 +351,8 @@ public int column { get; set; } }
             int generation = ++statusGeneration;
             if (IsHandleCreated) BeginInvoke(new Action(() => { if (generation == statusGeneration) UpdateStatus(); })); else UpdateStatus();
         }
-                /// <summary>Publishes a result and invalidates older queued synchronization status updates.</summary>
-                /// <param name="text">Text containing the text.</param>
+        /// <summary>Publishes a result and invalidates older queued synchronization status updates.</summary>
+        /// <param name="text">Text containing the text.</param>
         private void SetResultStatus(string text) { statusGeneration++; status.Text = text; }
         /// <summary>Met à jour les boutons de conflit, les titres d’onglets et le statut du document actif.</summary>
         private void UpdateStatus()
@@ -380,7 +380,7 @@ public int column { get; set; } }
         private void Report(Exception error) { if (!IsDisposed && !Disposing && !closing) SetResultStatus(UiText.Get(error.Message)); LoadLog.Write("Monaco: " + error.GetType().Name); }
         /// <summary>Performs the close tab requested operation for ModernEditorWindow.</summary>
         /// <param name="sender">The sender used by this operation.</param>
-        /// <param name="e">The e used by this operation.</param>
+        /// <param name="e">Native event data.</param>
         private void CloseTabRequested(object sender, TabControlEventArgs e)
         {
             if (busy) return;
@@ -525,6 +525,8 @@ public int column { get; set; } }
                 ThemeColor(UiTheme.Surface), ThemeColor(UiTheme.Foreground));
         }
         /// <summary>Monaco requires hexadecimal colors, including named and system colors.</summary>
+        /// <param name="color">The color used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         private static string ThemeColor(System.Drawing.Color color) => "#" + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");
         /// <summary>Enregistre chaque brouillon modifié avant un arrêt ou une fermeture de la fenêtre.</summary>
         private void PreserveDrafts() { foreach (var doc in documents.Values) try { Drafts.Save(doc); } catch (Exception error) { LoadLog.Write("Editor recovery failed: " + error.GetType().Name); } }

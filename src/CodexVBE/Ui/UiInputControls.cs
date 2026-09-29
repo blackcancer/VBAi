@@ -10,10 +10,21 @@ namespace CodexVBE
     /// <summary>Shared rounded input outlines; native editing, scrolling and accessibility are preserved.</summary>
     internal static class UiInputFrame
     {
+        /// <summary>Acquires the device context for the entire native window.</summary>
+        /// <param name="window">Target native window handle.</param>
+        /// <returns>The result produced by this operation.</returns>
         [DllImport("user32.dll")] private static extern IntPtr GetWindowDC(IntPtr window);
+        /// <summary>Releases a device context obtained for the native window.</summary>
+        /// <param name="window">Target native window handle.</param>
+        /// <param name="dc">Native device context.</param>
+        /// <returns>The result produced by this operation.</returns>
         [DllImport("user32.dll")] private static extern int ReleaseDC(IntPtr window, IntPtr dc);
         /// <summary>The chat selector seven-DIP corner radius, shared by fields and lists.</summary>
         internal const int CornerRadius = 7;
+        /// <summary>Builds a closed rounded path at the requested DPI.</summary>
+        /// <param name="bounds">Available drawing rectangle.</param>
+        /// <param name="dpi">Display density used to scale logical dimensions.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal static GraphicsPath Outline(Rectangle bounds, int dpi)
         {
             var path = new GraphicsPath();
@@ -24,6 +35,9 @@ namespace CodexVBE
             path.AddArc(bounds.Left, bounds.Bottom - diameter, diameter, diameter, 90, 90);
             path.CloseFigure(); return path;
         }
+        /// <summary>Masks outer corners and draws the focused or idle input boundary.</summary>
+        /// <param name="graphics">Drawing context; ownership remains with the caller.</param>
+        /// <param name="control">Control whose native palette and geometry are used.</param>
         internal static void DrawOutline(Graphics graphics, Control control)
         {
             var saved = graphics.Save();
@@ -44,7 +58,14 @@ namespace CodexVBE
             }
             finally { graphics.Restore(saved); }
         }
+        /// <summary>Selects the input boundary color from its focus state.</summary>
+        /// <param name="control">Control whose native palette and geometry are used.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal static Color Border(Control control) => control.ContainsFocus ? UiTheme.FocusBorderFor(control) : UiTheme.BorderFor(control);
+        /// <summary>Draws an input outline for native paint, focus and print messages.</summary>
+        /// <param name="control">Control whose native palette and geometry are used.</param>
+        /// <param name="style">The style used by this operation.</param>
+        /// <param name="message">The message used by this operation.</param>
         internal static void Paint(Control control, BorderStyle style, Message message)
         {
             if (style == BorderStyle.None || !control.IsHandleCreated || control.Width < 2 || control.Height < 2) return;
@@ -66,8 +87,16 @@ namespace CodexVBE
     {
         /// <summary>Creates a text field.</summary>
         public UiTextBox() { BorderStyle = BorderStyle.FixedSingle; }
+        /// <summary>Performs the send message operation for UiTextBox.</summary>
+        /// <param name="window">Target native window handle.</param>
+        /// <param name="message">The message used by this operation.</param>
+        /// <param name="wParam">The w param used by this operation.</param>
+        /// <param name="lParam">The l param used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam);
         /// <inheritdoc/>
+        /// <summary>Performs the on handle created operation for UiTextBox.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
@@ -75,6 +104,8 @@ namespace CodexVBE
             SendMessage(Handle, 0xD3, new IntPtr(3), new IntPtr(inset | (inset << 16)));
         }
         /// <inheritdoc/>
+        /// <summary>Preserves native message handling and repaints the input surface and outline.</summary>
+        /// <param name="m">The m used by this operation.</param>
         protected override void WndProc(ref Message m) { base.WndProc(ref m); UiInputFrame.Paint(this, BorderStyle, m); }
     }
     /// <summary>Native rich text field with the common field border.</summary>
@@ -84,6 +115,8 @@ namespace CodexVBE
         /// <summary>Creates a rich text field.</summary>
         public UiRichTextBox() { BorderStyle = BorderStyle.FixedSingle; }
         /// <inheritdoc/>
+        /// <summary>Preserves native message handling and repaints the input surface and outline.</summary>
+        /// <param name="m">The m used by this operation.</param>
         protected override void WndProc(ref Message m) { base.WndProc(ref m); UiInputFrame.Paint(this, BorderStyle, m); }
     }
     /// <summary>Native list with the common field border.</summary>
@@ -93,6 +126,8 @@ namespace CodexVBE
         /// <summary>Creates a list.</summary>
         public UiListBox() { BorderStyle = BorderStyle.FixedSingle; }
         /// <inheritdoc/>
+        /// <summary>Preserves native message handling and repaints the input surface and outline.</summary>
+        /// <param name="m">The m used by this operation.</param>
         protected override void WndProc(ref Message m) { base.WndProc(ref m); UiInputFrame.Paint(this, BorderStyle, m); }
     }
     /// <summary>Native checked list with the common field border.</summary>
@@ -102,6 +137,8 @@ namespace CodexVBE
         /// <summary>Creates a checked list.</summary>
         public UiCheckedListBox() { BorderStyle = BorderStyle.FixedSingle; }
         /// <inheritdoc/>
+        /// <summary>Preserves native message handling and repaints the input surface and outline.</summary>
+        /// <param name="m">The m used by this operation.</param>
         protected override void WndProc(ref Message m) { base.WndProc(ref m); UiInputFrame.Paint(this, BorderStyle, m); }
     }
     /// <summary>Native data grid with the common field border.</summary>
@@ -111,31 +148,63 @@ namespace CodexVBE
         /// <summary>Creates a data grid.</summary>
         public UiDataGridView() { BorderStyle = BorderStyle.FixedSingle; }
         /// <inheritdoc/>
+        /// <summary>Preserves native message handling and repaints the input surface and outline.</summary>
+        /// <param name="m">The m used by this operation.</param>
         protected override void WndProc(ref Message m) { base.WndProc(ref m); UiInputFrame.Paint(this, BorderStyle, m); }
     }
     /// <summary>Shared selector for chat, Git and settings; editable dropdowns keep their native edit control.</summary>
     [ToolboxItem(true)]
     public class UiComboBox : ComboBox
     {
-        [StructLayout(LayoutKind.Sequential)] private struct NativeRect { public int Left, Top, Right, Bottom; }
+        /// <summary>Represents native rect data.</summary>
+        [StructLayout(LayoutKind.Sequential)] private struct NativeRect { /// <summary>Stores the left,top,right,bottom used by NativeRect.</summary>
+public int Left, Top, Right, Bottom; }
+        /// <summary>Represents combo info data.</summary>
         [StructLayout(LayoutKind.Sequential)] private struct ComboInfo
         {
-            public int Size; public NativeRect Item, Button; public int ButtonState;
+            /// <summary>Stores the size used by ComboInfo.</summary>
+            public int Size; /// <summary>Stores the item,button used by ComboInfo.</summary>
+public NativeRect Item, Button; /// <summary>Stores the button state used by ComboInfo.</summary>
+public int ButtonState;
+            /// <summary>Stores the combo,edit,list used by ComboInfo.</summary>
             public IntPtr Combo, Edit, List;
         }
+        /// <summary>Reads the native selector and editable child bounds.</summary>
+        /// <param name="combo">The combo used by this operation.</param>
+        /// <param name="info">The info used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         [DllImport("user32.dll")] private static extern bool GetComboBoxInfo(IntPtr combo, ref ComboInfo info);
+        /// <summary>Stores the input brush used by UiComboBox.</summary>
         private IntPtr inputBrush;
+        /// <summary>Creates a GDI brush for the native input background.</summary>
+        /// <param name="color">The color used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         [DllImport("gdi32.dll")] private static extern IntPtr CreateSolidBrush(int color);
+        /// <summary>Releases a previously allocated GDI object.</summary>
+        /// <param name="value">The value used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         [DllImport("gdi32.dll")] private static extern bool DeleteObject(IntPtr value);
+        /// <summary>Sets the native device context background color.</summary>
+        /// <param name="dc">Native device context.</param>
+        /// <param name="color">The color used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         [DllImport("gdi32.dll")] private static extern int SetBkColor(IntPtr dc, int color);
+        /// <summary>Sets the native device context text color.</summary>
+        /// <param name="dc">Native device context.</param>
+        /// <param name="color">The color used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         [DllImport("gdi32.dll")] private static extern int SetTextColor(IntPtr dc, int color);
         /// <inheritdoc/>
+        /// <summary>Releases the cached native brush when its background color changes.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnBackColorChanged(EventArgs e)
         {
             if (inputBrush != IntPtr.Zero) { DeleteObject(inputBrush); inputBrush = IntPtr.Zero; }
             base.OnBackColorChanged(e);
         }
         /// <inheritdoc/>
+        /// <summary>Releases the resources owned by this control before base disposal.</summary>
+        /// <param name="disposing">Whether managed resources must also be released.</param>
         protected override void Dispose(bool disposing)
         {
             if (inputBrush != IntPtr.Zero) { DeleteObject(inputBrush); inputBrush = IntPtr.Zero; }
@@ -145,14 +214,24 @@ namespace CodexVBE
         /// <summary>Creates a selector with consistent list spacing.</summary>
         public UiComboBox() { FlatStyle = FlatStyle.Standard; DrawMode = DrawMode.OwnerDrawFixed; ItemHeight = Math.Max(Font.Height, 22 * DeviceDpi / 96); }
         /// <inheritdoc/>
+        /// <summary>Updates the native item height for the current font and DPI.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnFontChanged(EventArgs e) { base.OnFontChanged(e); ItemHeight = Math.Max(Font.Height, 22 * DeviceDpi / 96); }
         /// <inheritdoc/>
+        /// <summary>Repaints the focus outline after the control gains focus.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnGotFocus(EventArgs e) { base.OnGotFocus(e); Invalidate(); }
         /// <inheritdoc/>
+        /// <summary>Repaints the focus outline after the control loses focus.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnLostFocus(EventArgs e) { base.OnLostFocus(e); Invalidate(); }
         /// <inheritdoc/>
+        /// <summary>Repaints the current selection after its index changes.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnSelectedIndexChanged(EventArgs e) { base.OnSelectedIndexChanged(e); Invalidate(); }
         /// <inheritdoc/>
+        /// <summary>Performs the on draw item operation for UiComboBox.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnDrawItem(DrawItemEventArgs e)
         {
             if (e.Index < 0) return;
@@ -164,6 +243,8 @@ namespace CodexVBE
             e.DrawFocusRectangle();
         }
         /// <inheritdoc/>
+        /// <summary>Preserves native message handling and repaints the input surface and outline.</summary>
+        /// <param name="m">The m used by this operation.</param>
         protected override void WndProc(ref Message m)
         {
             base.WndProc(ref m);

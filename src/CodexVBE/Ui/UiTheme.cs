@@ -17,7 +17,7 @@ namespace CodexVBE
         /// <summary>Force les couleurs sombres.</summary>
         Dark
     }
-        /// <summary>Résout les couleurs de l’interface et applique le thème aux contrôles WinForms.</summary>
+    /// <summary>Résout les couleurs de l’interface et applique le thème aux contrôles WinForms.</summary>
     internal static class UiTheme
     {
         /// <summary>Applique un thème visuel natif à une fenêtre donnée.</summary>
@@ -73,12 +73,17 @@ namespace CodexVBE
         /// <value>Couleur du texte selon le thème actif.</value>
         internal static Color Foreground { get { return HighContrast() ? SystemColors.WindowText : Dark ? Color.FromArgb(226, 232, 240) : Color.FromArgb(30, 41, 59); } }
         /// <summary>Subtle boundary shared by cards, fields and menus.</summary>
+        /// <value>The current value represented by this member.</value>
         internal static Color Border => HighContrast() ? SystemColors.WindowText : Dark ? Color.FromArgb(61, 68, 80) : Color.FromArgb(213, 220, 230);
         /// <summary>Common keyboard focus outline for all input controls.</summary>
+        /// <value>The current value represented by this member.</value>
         internal static Color FocusBorder => HighContrast() ? SystemColors.Highlight : Dark ? Color.FromArgb(96, 165, 250) : Color.FromArgb(37, 99, 235);
         /// <summary>Secondary text without reducing disabled-state legibility.</summary>
+        /// <value>The current value represented by this member.</value>
         internal static Color Muted => HighContrast() ? SystemColors.GrayText : Dark ? Color.FromArgb(155, 165, 180) : Color.FromArgb(94, 106, 124);
         /// <summary>Detects hosted Designer controls even after the design license context has ended.</summary>
+        /// <param name="control">Control whose native palette and geometry are used.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal static bool IsDesignPreview(Control control)
         {
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return true;
@@ -87,14 +92,24 @@ namespace CodexVBE
             return false;
         }
         /// <summary>Uses the form's actual palette in Visual Studio instead of the user's runtime preference.</summary>
+        /// <param name="control">Control whose native palette and geometry are used.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal static Color BackgroundFor(Control control) => control.Parent?.BackColor ?? control.BackColor;
         /// <summary>Selected surfaces match the design form in Visual Studio.</summary>
+        /// <param name="control">Control whose native palette and geometry are used.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal static Color SurfaceFor(Control control) => SystemInformation.HighContrast ? SystemColors.Window : BackgroundFor(control).GetBrightness() < .5f ? Color.FromArgb(30, 34, 42) : Color.White;
         /// <summary>Designer labels inherit the form's foreground.</summary>
+        /// <param name="control">Control whose native palette and geometry are used.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal static Color ForegroundFor(Control control) => control.Parent?.ForeColor ?? control.ForeColor;
         /// <summary>Field boundaries use the preview palette when hosted by a Designer.</summary>
+        /// <param name="control">Control whose native palette and geometry are used.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal static Color BorderFor(Control control) => SystemInformation.HighContrast ? SystemColors.WindowText : BackgroundFor(control).GetBrightness() < .5f ? Color.FromArgb(61, 68, 80) : Color.FromArgb(213, 220, 230);
         /// <summary>Designer focus follows Windows rather than application settings.</summary>
+        /// <param name="control">Control whose native palette and geometry are used.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal static Color FocusBorderFor(Control control) => SystemInformation.HighContrast ? SystemColors.Highlight : BackgroundFor(control).GetBrightness() < .5f ? Color.FromArgb(96, 165, 250) : Color.FromArgb(37, 99, 235);
         /// <summary>Couleur de fond d’un changement VBA ajouté.</summary>
         /// <value>Couleur de fond des changements ajoutés.</value>
@@ -156,6 +171,7 @@ namespace CodexVBE
             control.Invalidate();
         }
         /// <summary>Styles context commands consistently when they open, including after a theme change.</summary>
+        /// <param name="menu">The menu used by this operation.</param>
         internal static void ApplyMenu(ContextMenuStrip menu)
         {
             menu.Opening -= MenuOpening; menu.Opening += MenuOpening;
@@ -163,7 +179,12 @@ namespace CodexVBE
             menu.Renderer = new ToolStripProfessionalRenderer(new MenuColors());
             ApplyMenuItems(menu.Items);
         }
+        /// <summary>Reapplies the current palette when a context menu opens.</summary>
+        /// <param name="sender">The sender used by this operation.</param>
+        /// <param name="e">Native event data.</param>
         private static void MenuOpening(object sender, CancelEventArgs e) { ApplyMenu((ContextMenuStrip)sender); }
+        /// <summary>Applies the current text and surface colors to commands and nested menus.</summary>
+        /// <param name="items">The items used by this operation.</param>
         private static void ApplyMenuItems(ToolStripItemCollection items)
         {
             foreach (ToolStripItem item in items) {
@@ -171,16 +192,35 @@ namespace CodexVBE
                 if (item is ToolStripDropDownItem parent) ApplyMenuItems(parent.DropDownItems);
             }
         }
+        /// <summary>Provides the menu colors implementation.</summary>
         private sealed class MenuColors : ProfessionalColorTable
         {
+            /// <summary>Gets the tool strip drop down background.</summary>
+            /// <value>The current value represented by this member.</value>
             public override Color ToolStripDropDownBackground => Surface;
+            /// <summary>Gets the image margin gradient begin.</summary>
+            /// <value>The current value represented by this member.</value>
             public override Color ImageMarginGradientBegin => Surface;
+            /// <summary>Gets the image margin gradient middle.</summary>
+            /// <value>The current value represented by this member.</value>
             public override Color ImageMarginGradientMiddle => Surface;
+            /// <summary>Gets the image margin gradient end.</summary>
+            /// <value>The current value represented by this member.</value>
             public override Color ImageMarginGradientEnd => Surface;
+            /// <summary>Gets the menu item selected.</summary>
+            /// <value>The current value represented by this member.</value>
             public override Color MenuItemSelected => HighContrast() ? SystemColors.Highlight : Dark ? Color.FromArgb(48, 61, 81) : Color.FromArgb(229, 238, 253);
+            /// <summary>Gets the menu item border.</summary>
+            /// <value>The current value represented by this member.</value>
             public override Color MenuItemBorder => Border;
+            /// <summary>Gets the menu border.</summary>
+            /// <value>The current value represented by this member.</value>
             public override Color MenuBorder => Border;
+            /// <summary>Gets the separator dark.</summary>
+            /// <value>The current value represented by this member.</value>
             public override Color SeparatorDark => Border;
+            /// <summary>Gets the separator light.</summary>
+            /// <value>The current value represented by this member.</value>
             public override Color SeparatorLight => Surface;
         }
         /// <summary>Applique le thème natif à la poignée du contrôle sans modifier la préférence du processus hôte.</summary>

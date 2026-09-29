@@ -67,9 +67,13 @@ namespace CodexVBE
     [ToolboxItem(true)]
     public class UiActionButton : Button
     {
+        /// <summary>Stores the symbol used by UiActionButton.</summary>
         private UiSymbol symbol;
+        /// <summary>Stores the icon only,primary,hovered,pressed used by UiActionButton.</summary>
         private bool iconOnly, primary, hovered, pressed;
+        /// <summary>Stores the caption tip used by UiActionButton.</summary>
         private readonly ToolTip captionTip = new ToolTip { ShowAlways = true };
+        /// <summary>Stores the symbol font used by UiActionButton.</summary>
         private static readonly string SymbolFont = FindSymbolFont();
         /// <summary>Creates a native keyboard-accessible command.</summary>
         public UiActionButton()
@@ -79,26 +83,37 @@ namespace CodexVBE
             Cursor = Cursors.Hand;
         }
         /// <summary>Symbol displayed beside the caption or on its own.</summary>
+        /// <value>The current value represented by this member.</value>
         [Category("Appearance"), DefaultValue(UiSymbol.None)]
         public UiSymbol Symbol { get => symbol; set { symbol = value; Invalidate(); } }
         /// <summary>Hides the painted caption while retaining its tooltip and accessible name.</summary>
+        /// <value>The current value represented by this member.</value>
         [Category("Appearance"), DefaultValue(false)]
         public bool IconOnly { get => iconOnly; set { iconOnly = value; UpdateCaption(); Invalidate(); } }
         /// <summary>Emphasizes the main action in its group.</summary>
+        /// <value>The current value represented by this member.</value>
         [Category("Appearance"), DefaultValue(false)]
         public bool Primary { get => primary; set { primary = value; Invalidate(); } }
+        /// <summary>Chooses the available Windows icon font for symbols without a bundled SVG.</summary>
+        /// <returns>The result produced by this operation.</returns>
         private static string FindSymbolFont()
         {
             using (var font = new Font("Segoe Fluent Icons", 12))
                 return font.Name == "Segoe Fluent Icons" ? font.Name : "Segoe MDL2 Assets";
         }
+        /// <summary>Updates the tooltip when the caption is hidden.</summary>
         private void UpdateCaption()
         {
             if (captionTip != null) captionTip.SetToolTip(this, iconOnly ? Text : "");
         }
         /// <inheritdoc/>
+        /// <summary>Refreshes the tooltip and invalidates the caption after its text changes.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnTextChanged(EventArgs e) { base.OnTextChanged(e); UpdateCaption(); Invalidate(); }
         /// <inheritdoc/>
+        /// <summary>Measures the caption and icon without accumulating width across layout passes.</summary>
+        /// <param name="proposedSize">The proposed size used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         public override Size GetPreferredSize(Size proposedSize)
         {
             if (IconOnly && Symbol != UiSymbol.None) return new Size(32 * DeviceDpi / 96, 30 * DeviceDpi / 96);
@@ -110,14 +125,24 @@ namespace CodexVBE
                 Math.Max(MinimumSize.Height, Math.Max(caption.Height + Padding.Vertical + 10 * DeviceDpi / 96, 30 * DeviceDpi / 96)));
         }
         /// <inheritdoc/>
+        /// <summary>Records the hover state and requests a repaint.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnMouseEnter(EventArgs e) { hovered = true; Invalidate(); base.OnMouseEnter(e); }
         /// <inheritdoc/>
+        /// <summary>Clears hover state and requests a repaint.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnMouseLeave(EventArgs e) { hovered = pressed = false; Invalidate(); base.OnMouseLeave(e); }
         /// <inheritdoc/>
+        /// <summary>Handles native mouse presses and updates the command state.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnMouseDown(MouseEventArgs e) { pressed = e.Button == MouseButtons.Left; Invalidate(); base.OnMouseDown(e); }
         /// <inheritdoc/>
+        /// <summary>Releases the pressed state and requests a repaint.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnMouseUp(MouseEventArgs e) { pressed = false; Invalidate(); base.OnMouseUp(e); }
         /// <inheritdoc/>
+        /// <summary>Draws the control using its current palette, selection and focus state.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnPaint(PaintEventArgs e)
         {
             if (Width < 2 || Height < 2) return;
@@ -166,6 +191,8 @@ namespace CodexVBE
             TextRenderer.DrawText(e.Graphics, Text, Font, textBounds, foreground, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
         }
         /// <inheritdoc/>
+        /// <summary>Releases the resources owned by this control before base disposal.</summary>
+        /// <param name="disposing">Whether managed resources must also be released.</param>
         protected override void Dispose(bool disposing) { if (disposing) captionTip.Dispose(); base.Dispose(disposing); }
     }
 }

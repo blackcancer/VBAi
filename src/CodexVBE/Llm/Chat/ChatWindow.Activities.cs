@@ -16,7 +16,9 @@ namespace CodexVBE
         private readonly HashSet<ChatEntry> expandedActivityGroups = new HashSet<ChatEntry>();
         /// <summary>Actions dont les détails ont été ouverts par l'utilisateur.</summary>
         private readonly HashSet<ChatEntry> expandedActivitySteps = new HashSet<ChatEntry>();
+        /// <summary>Stores the collapsed activity groups used by ChatWindow.</summary>
         private readonly HashSet<ChatEntry> collapsedActivityGroups = new HashSet<ChatEntry>();
+        /// <summary>Stores the collapsed activity steps used by ChatWindow.</summary>
         private readonly HashSet<ChatEntry> collapsedActivitySteps = new HashSet<ChatEntry>();
 
         /// <summary>Ajoute ou actualise une étape native, sans dupliquer son identité.</summary>

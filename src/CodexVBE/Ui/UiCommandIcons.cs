@@ -11,8 +11,15 @@ namespace CodexVBE
     /// <summary>Draws the bundled original SVG paths at the current DPI and foreground color.</summary>
     internal static class UiCommandIcons
     {
+        /// <summary>Stores the paths used by UiCommandIcons.</summary>
         private static readonly Dictionary<UiSymbol, GraphicsPath> Paths = new Dictionary<UiSymbol, GraphicsPath>();
         /// <summary>Renders an icon without bitmap scaling or theme-specific asset copies.</summary>
+        /// <param name="graphics">Drawing context; ownership remains with the caller.</param>
+        /// <param name="symbol">The symbol used by this operation.</param>
+        /// <param name="bounds">Available drawing rectangle.</param>
+        /// <param name="color">The color used by this operation.</param>
+        /// <param name="dpi">Display density used to scale logical dimensions.</param>
+        /// <returns>The result produced by this operation.</returns>
         internal static bool Draw(Graphics graphics, UiSymbol symbol, Rectangle bounds, Color color, int dpi)
         {
             lock (Paths)
@@ -44,6 +51,9 @@ namespace CodexVBE
             }
         }
         // The bundled SVGs intentionally use absolute M/L/C/Z commands only.
+        /// <summary>Parses the absolute M, L, C and Z commands used by bundled SVG paths.</summary>
+        /// <param name="data">Text containing the data.</param>
+        /// <returns>The result produced by this operation.</returns>
         private static GraphicsPath Parse(string data)
         {
             var tokens = Regex.Matches(data, @"[A-Za-z]|-?\d+(?:\.\d+)?");

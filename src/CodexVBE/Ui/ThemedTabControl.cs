@@ -8,9 +8,12 @@ namespace CodexVBE
     /// <summary>Native Designer-editable tabs using the chat's rounded surfaces and focus states.</summary>
     public sealed class ThemedTabControl : TabControl
     {
+        /// <summary>Stores the hovered tab used by ThemedTabControl.</summary>
         private int hoveredTab = -1;
+        /// <summary>Stores the close hovered used by ThemedTabControl.</summary>
         private bool closeHovered;
         /// <summary>Displays a close command on each document tab.</summary>
+        /// <value>The current value represented by this member.</value>
         [DefaultValue(false)]
         public bool ShowCloseButtons { get; set; }
         /// <summary>Requests closure of a document without selecting a different tab.</summary>
@@ -22,12 +25,17 @@ namespace CodexVBE
             ItemSize = new Size(0, 36);
             Padding = new Point(12, 6);
         }
+        /// <summary>Computes the close command rectangle for a document tab.</summary>
+        /// <param name="index">The index used by this operation.</param>
+        /// <returns>The result produced by this operation.</returns>
         private Rectangle CloseBounds(int index)
         {
             var bounds = GetTabRect(index); int size = 22 * DeviceDpi / 96;
             return new Rectangle(bounds.Right - size - 6 * DeviceDpi / 96, bounds.Top + (bounds.Height - size) / 2, size, size);
         }
         /// <inheritdoc/>
+        /// <summary>Handles native mouse presses and updates the command state.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnMouseDown(MouseEventArgs e)
         {
             if (ShowCloseButtons && e.Button == MouseButtons.Left)
@@ -36,6 +44,8 @@ namespace CodexVBE
             base.OnMouseDown(e);
         }
         /// <inheritdoc/>
+        /// <summary>Updates the hovered tab and its close command.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
@@ -46,12 +56,20 @@ namespace CodexVBE
             Cursor = close ? Cursors.Hand : Cursors.Default;
         }
         /// <inheritdoc/>
+        /// <summary>Clears hover state and requests a repaint.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnMouseLeave(EventArgs e) { hoveredTab = -1; closeHovered = false; Cursor = Cursors.Default; Invalidate(); base.OnMouseLeave(e); }
         /// <inheritdoc/>
+        /// <summary>Repaints the focus outline after the control gains focus.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnGotFocus(EventArgs e) { base.OnGotFocus(e); Invalidate(); }
         /// <inheritdoc/>
+        /// <summary>Repaints the focus outline after the control loses focus.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnLostFocus(EventArgs e) { base.OnLostFocus(e); Invalidate(); }
         /// <inheritdoc/>
+        /// <summary>Draws the control using its current palette, selection and focus state.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnPaint(PaintEventArgs e)
         {
             e.Graphics.Clear(UiTheme.BackgroundFor(this));
@@ -85,6 +103,8 @@ namespace CodexVBE
             }
         }
         /// <inheritdoc/>
+        /// <summary>Repaints the current selection after its index changes.</summary>
+        /// <param name="e">Native event data.</param>
         protected override void OnSelectedIndexChanged(EventArgs e) { base.OnSelectedIndexChanged(e); Invalidate(); }
     }
     /// <summary>Bouton WinForms qui adapte le texte désactivé au thème sombre.</summary>

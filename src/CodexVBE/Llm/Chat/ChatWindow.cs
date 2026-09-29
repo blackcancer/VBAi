@@ -570,6 +570,7 @@ namespace CodexVBE
         /// <param name="arguments">Arguments de l’outil sérialisés en JSON.</param>
         /// <returns>Tâche produisant le résultat sérialisé de l’outil.</returns>
         private static Task<string> InvokeToolNative(LlmVbeTools tools, string name, string arguments) { return tools.InvokeAsync(name, arguments); }
+        /// <summary>Stores the refreshing approval used by ChatWindow.</summary>
         private bool refreshingApproval;
 
         /// <summary>Restores the policy without treating restoration as a user edit.</summary>
@@ -581,6 +582,8 @@ namespace CodexVBE
         }
 
         /// <summary>Changes the same VBE policy consumed by both native and HTTP tools.</summary>
+        /// <param name="sender">The sender used by this operation.</param>
+        /// <param name="e">Native event data.</param>
         private void ApprovalPicker_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (refreshingApproval || settings == null) return;
@@ -592,12 +595,16 @@ namespace CodexVBE
         }
 
         /// <summary>Mirrors the menu choice into the existing verification preference.</summary>
+        /// <param name="sender">The sender used by this operation.</param>
+        /// <param name="e">Native event data.</param>
         private void VerifyChanges_CheckedChanged(object sender, EventArgs e)
         {
             if (verifyAfterEdit != null) verifyAfterEdit.Checked = verifyChanges.Checked;
         }
 
         /// <summary>Reveals the Designer-built provider, model and effort selectors.</summary>
+        /// <param name="sender">The sender used by this operation.</param>
+        /// <param name="e">Native event data.</param>
         private void ModelSummary_Click(object sender, EventArgs e)
         {
             if (busy) return;

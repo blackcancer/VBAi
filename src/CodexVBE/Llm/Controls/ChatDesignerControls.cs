@@ -43,6 +43,7 @@ namespace CodexVBE
     public class ChatComposerPanel : TableLayoutPanel
     {
         /// <summary>Whether a boundary is drawn around this surface.</summary>
+        /// <value>The current value represented by this member.</value>
         [Category("Appearance"), DefaultValue(true)]
         public bool ShowBorder { get; set; } = true;
         /// <summary>Crée le panneau de composition avec double tampon et fond blanc.</summary>
