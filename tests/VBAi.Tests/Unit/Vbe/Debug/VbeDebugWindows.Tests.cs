@@ -345,6 +345,32 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void UiaListWithoutProviderReportsUnreadableVariables()
+        {
+            var root = new AutomationNode { Name = "Locals", Kind = System.Windows.Automation.ControlType.Window };
+            using (var host = new AutomationHost(root))
+            {
+                dynamic result = Call("ReadList", host.Handle);
+                Assert.IsTrue((bool)result.Available);
+                Assert.AreEqual(0, ((IEnumerable)result.Items).Cast<object>().Count());
+                StringAssert.Contains((string)result.Error, "no accessible list provider");
+            }
+        }
+
+        [TestMethod]
+        public void UiaEmptyListProviderReportsValidEmptyCollection()
+        {
+            var root = new AutomationNode { Name = "Locals", Kind = System.Windows.Automation.ControlType.List };
+            using (var host = new AutomationHost(root))
+            {
+                dynamic result = Call("ReadList", host.Handle);
+                Assert.IsTrue((bool)result.Available);
+                Assert.IsNull((string)result.Error);
+                Assert.AreEqual(0, ((IEnumerable)result.Items).Cast<object>().Count());
+            }
+        }
+
+        [TestMethod]
         public void DebugRowIdentityPreservesRawValuesAndFullAncestryWithoutSeparatorCollisions()
         {
             Assert.AreEqual(VbeDebugWindows.DebugRowIdentity("row", null),
@@ -446,6 +472,38 @@ namespace VBAi.Tests.Unit
                     var countError = Assert.ThrowsException<TargetInvocationException>(() => Call("ImmediateDocument", host.Handle)); Assert.IsInstanceOfType(countError.InnerException, typeof(InvalidOperationException));
                     dynamic failed = Call("ReadImmediate", host.Handle); Assert.IsNotNull((string)failed.Error);
                 }
+        }
+
+        [TestMethod]
+        public void UiaImmediateDocumentAtRootCanBeRead()
+        {
+            var root = new AutomationNode { Name = "Immediate", Kind = System.Windows.Automation.ControlType.Document,
+                Text = "root output\r\n" }.With(System.Windows.Automation.TextPattern.Pattern);
+            using (var host = new AutomationHost(root))
+            {
+                dynamic result = Call("ReadImmediate", host.Handle);
+                Assert.IsTrue((bool)result.Available);
+                Assert.IsNull((string)result.Error);
+                Assert.AreEqual(root.Text, (string)result.Text);
+            }
+        }
+
+        [TestMethod]
+        public void UiaImmediateRootAndChildDocumentsAreAmbiguous()
+        {
+            var root = new AutomationNode { Name = "Immediate", Kind = System.Windows.Automation.ControlType.Document,
+                Text = "root output\r\n" }.With(System.Windows.Automation.TextPattern.Pattern);
+            root.Add(new AutomationNode { Name = "Child", Kind = System.Windows.Automation.ControlType.Document,
+                Text = "child output\r\n" }.With(System.Windows.Automation.TextPattern.Pattern));
+            using (var host = new AutomationHost(root))
+            {
+                var error = Assert.ThrowsException<TargetInvocationException>(() => Call("ImmediateDocument", host.Handle));
+                StringAssert.Contains(error.InnerException.Message, "found 2");
+                dynamic result = Call("ReadImmediate", host.Handle);
+                Assert.IsTrue((bool)result.Available);
+                Assert.IsNull((string)result.Text);
+                StringAssert.Contains((string)result.Error, "found 2");
+            }
         }
 
         [TestMethod]

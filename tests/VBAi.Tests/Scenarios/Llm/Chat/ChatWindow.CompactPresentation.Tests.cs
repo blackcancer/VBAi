@@ -12,7 +12,7 @@ namespace VBAi.Tests.Unit
         public void ApprovalPickerPersistsPolicyAndRefusesChangesDuringRunOrFailedSave()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 var picker = Get<ComboBox>(window, "approvalPicker");
                 picker.SelectedIndex = 2;

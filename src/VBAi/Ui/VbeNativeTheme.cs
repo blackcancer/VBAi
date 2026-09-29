@@ -607,7 +607,7 @@ internal int Left, Top, Right, Bottom; }
                     ReadWindowText(window, caption, caption.Capacity);
                     if (caption.ToString() == immediateCaption) immediateWindow = window;
                 }
-                if (string.IsNullOrEmpty(className) || (IsManagedAddInWindow(className) && className != "GenericPane")) return;
+                if (string.IsNullOrEmpty(className) || IsManagedContent(window)) return;
                 bool propertiesControl = WindowClass(GetAncestorParent(window)) == "wndclass_pbrs";
                 bool dialogControl = WindowClass(Ancestor(window, GetAncestorRoot)) == "#32770";
                 bool scopedControl = className == "ListBox" ? propertiesControl :
@@ -659,6 +659,7 @@ internal int Left, Top, Right, Bottom; }
                 return;
             }
             if (!BelongsToEditor(window)) return;
+            if (IsManagedContent(window)) return;
             if (IsCurrentWindowThread(window)) VbeNativeRenderer.Refresh();
             ApplyWindow(window);
             if (eventType == EventObjectShow)
@@ -851,7 +852,7 @@ internal int Left, Top, Right, Bottom; }
             }
             // Caption work is local and never triggers a code-surface conversion.
             // A Properties notification must not repaint unrelated Office toolbars.
-            if (localChromeRefresh && (message == 0x0086 || message == 0x000c || message == 0x0047 || message == 0x0222))
+            if ((message == 0x0086 || message == 0x000c || message == 0x0047 || message == 0x0222) && (localChromeRefresh || WindowClass(window) == "GenericPane"))
             {
                 string captionClass = WindowClass(window);
                 if ((captionClass == "PROJECT" || captionClass == "wndclass_pbrs" || captionClass == "VbaWindow" || captionClass == "GenericPane") &&
@@ -881,11 +882,13 @@ internal int Left, Top, Right, Bottom; }
             // The scoped-refresh pilot leaves some Office button faces light after
             // view activation. Keep its old recovery path until a renderer supplies
             // final colors before drawing. The pilot is a diagnostic-only opt-in.
-            if (!localChromeRefresh && (message == 0x000f || message == 0x0085 || message == 0x004e || message == 0x0047))
+            if (!localChromeRefresh && (message == 0x000f || message == 0x0085 || message == 0x004e || message == 0x0047) &&
+                WindowClass(window) != "GenericPane")
             {
                 foreach (IntPtr candidate in subclassedWindows.ToArray())
                 {
-                    if (propertyTabs.ContainsKey(candidate)) continue;
+                    // Already queued windows cannot receive another post in this pass.
+                    if (propertyTabs.ContainsKey(candidate) || pendingChrome.Contains(candidate)) continue;
                     string candidateClass = WindowClass(candidate);
                     if ((candidateClass == "MsoCommandBar" || candidateClass == "MsoCommandBarPopup" || candidateClass == "MsoCommandBarDock" ||
                          candidateClass == "GenericPane" || candidateClass == "SysTabControl32" || candidateClass == "ListBox" || candidateClass == "VbaWindow" ||
@@ -1008,6 +1011,20 @@ internal int Left, Top, Right, Bottom; }
             var text = new StringBuilder(256);
             ReadClassName(window, text, text.Capacity);
             return text.ToString();
+        }
+
+        /// <summary>Leaves hosted WinForms/WPF content and its native child controls to their own renderer.</summary>
+        private static bool IsManagedContent(IntPtr window)
+        {
+            IntPtr current = window;
+            for (int depth = 0; current != IntPtr.Zero && current != editorWindow && depth < 64; depth++)
+            {
+                string className = WindowClass(current);
+                // Only the native host's own caption belongs to this theme.
+                if (IsManagedAddInWindow(className) && (current != window || className != "GenericPane")) return true;
+                current = GetAncestorParent(current);
+            }
+            return false;
         }
 
         /// <summary>Recognizes managed add-in surface classes that should retain their own rendering.</summary>

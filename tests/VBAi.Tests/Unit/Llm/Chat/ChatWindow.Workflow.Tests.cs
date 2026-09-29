@@ -108,7 +108,7 @@ namespace VBAi.Tests.Unit
         public void WorkflowSelectionValidatesLocationScopeRangesAndStaleAttachments()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 Call(window, "CaptureSelection"); var attachments = Get<List<ChatAttachment>>(window, "draftAttachments"); Assert.AreEqual(1, attachments.Count); Assert.AreEqual("Sub A()\nEnd Sub", attachments[0].Text); Call(window, "CaptureSelection"); Assert.AreEqual(1, attachments.Count);
                 foreach (var range in new[] { new[] { 1, 1, 2, 5 }, new[] { 1, 1, 2, 2 }, new[] { 0, 1, 1, 1 }, new[] { 2, 1, 1, 1 }, new[] { 1, 8, 1, 1 } })
@@ -127,7 +127,7 @@ namespace VBAi.Tests.Unit
         public void WorkflowVerificationExportsForksAndRollbackHandleSuccessAndFailure()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 var json = new JavaScriptSerializer();
                 foreach (var payload in new[] { "null", json.Serialize(Response.Failure("compile failure")), json.Serialize(Response.Success((object)null)), json.Serialize(Response.Success(new { Compiled = false, Diagnostic = "diagnostic" })), json.Serialize(Response.Success(new { Compiled = true })) })
@@ -147,7 +147,7 @@ namespace VBAi.Tests.Unit
             using (var runtime = new RuntimeScope())
             {
                 runtime.Host = r => Response.Success(r.Command == "list_projects" ? (object)new[] { new { Name = "P", FileName = "" } } : r.Command == "debug_state" ? new { SelectedProject = "P", ActiveModule = "M", Selection = new { StartLine = 1 } } : r.Command == "code_panes" ? (object)new { ActiveCodePane = new { Properties = new { Project = "P", Module = "M", Selection = new { StartLine = 1, EndLine = 1, StartColumn = 1, EndColumn = 1 } } } } : new { Code = "new", Sha256 = "sha" });
-                using (var window = new ChatWindow(runtime.Session))
+                using (var window = LoadedWindow(runtime.Session))
                 {
                     var references = Get<List<VbeChatReference>>(window, "selectedReferences"); references.Add(new VbeChatReference { Project = "P", Module = "M" }); var attachments = (ChatAttachment[])Call(window, "PrepareAttachments", "#P.M"); Assert.AreEqual(1, attachments.Length); StringAssert.Contains(attachments[0].Text, "new"); Call(window, "CaptureSelection"); Assert.AreEqual(1, Get<List<ChatAttachment>>(window, "draftAttachments").Count);
                     ChatWindow.InvokeTool = (t, n, a) => Task.FromResult(new JavaScriptSerializer().Serialize(Response.Success(new { Diagnostic = "no compiled field" }))); CompleteOnSta((Task)Call(window, "VerifyProjectAsync")); Assert.IsNotNull(Get<List<ChatEntry>>(window, "transcriptEntries").Last().Attachments); var existingHost = runtime.Host; runtime.Host = r => r.Command == "debug_state" ? Response.Success(new { SelectedProject = "P", ActiveModule = "M", Selection = new { StartLine = (object)null } }) : existingHost(r); CompleteOnSta((Task)Call(window, "VerifyProjectAsync")); Assert.AreEqual(0, Get<List<ChatEntry>>(window, "transcriptEntries").Last().Attachments[0].StartLine); runtime.Host = existingHost;
@@ -155,7 +155,7 @@ namespace VBAi.Tests.Unit
                     var host = runtime.Host; runtime.Host = r => { throw new InvalidOperationException("host disconnected"); }; Call(window, "NavigateAttachment", new ChatAttachment { Project = "P", Module = "M" }); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, "host disconnected"); Call(window, "RollbackIntervention", new CodeChange { Project = "P", Module = "M" }, null, false); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, "host disconnected");
                     runtime.Host = host; Get<System.Windows.Forms.ComboBox>(window, "scopePicker").SelectedIndex = -1; Call(window, "CaptureSelection"); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, UiText.Get("Selection: "));
                 }
-                runtime.Host = r => Response.Success(r.Command == "list_projects" ? (object)new[] { new { Name = "P", FileName = @"C:\Temp\P.xlsm" } } : r.Command == "code_panes" ? (object)new { ActiveCodePane = new { Properties = new { Project = "P", Module = "M", Selection = new { StartLine = 1, EndLine = 1, StartColumn = 1, EndColumn = 1 } } } } : new { SelectedProject = "P", SelectedProjectPath = @"C:\Temp\P.xlsm" }); using (var window = new ChatWindow(runtime.Session)) { Call(window, "CaptureSelection"); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, UiText.Get("another document")); }
+                runtime.Host = r => Response.Success(r.Command == "list_projects" ? (object)new[] { new { Name = "P", FileName = @"C:\Temp\P.xlsm" } } : r.Command == "code_panes" ? (object)new { ActiveCodePane = new { Properties = new { Project = "P", Module = "M", Selection = new { StartLine = 1, EndLine = 1, StartColumn = 1, EndColumn = 1 } } } } : new { SelectedProject = "P", SelectedProjectPath = @"C:\Temp\P.xlsm" }); using (var window = LoadedWindow(runtime.Session)) { Call(window, "CaptureSelection"); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, UiText.Get("another document")); }
                 using (var design = new ChatWindow()) { Call(design, "ExportCurrentChat"); Call(design, "ForkChat", new ChatEntry()); Call(design, "RefreshContextPreview"); }
             }
         }
@@ -179,7 +179,7 @@ namespace VBAi.Tests.Unit
             foreach (string state in new[] { "no-session", "no-factory", "no-window", "missing", "stale", "current" })
             using (var runtime = new RuntimeScope())
             using (var editor = new Editor.ModernEditorToolFixture())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 if (state == "no-session") Set(window, "scopeSession", null);
                 runtime.Session.ModernEditor = state == "no-factory" ? null : (Func<bool, ModernEditorWindow>)(create => state == "no-window" ? null : editor.Window);
@@ -192,7 +192,7 @@ namespace VBAi.Tests.Unit
             using (var runtime = new RuntimeScope())
             {
                 runtime.Host = request => Response.Success(request.Command == "list_projects" ? (object)new[] { new { Name = "P", FileName = "" } } : new { Code = "new", Sha256 = "sha" });
-                using (var window = new ChatWindow(runtime.Session))
+                using (var window = LoadedWindow(runtime.Session))
                 {
                     Set(window, "tools", null); Get<List<VbeChatReference>>(window, "selectedReferences").Add(new VbeChatReference { Project = "P", Module = "M" });
                     var attachments = (ChatAttachment[])Call(window, "PrepareAttachments", "#P.M"); Assert.AreEqual(1, attachments.Length); StringAssert.Contains(attachments[0].Text, "new");
@@ -206,7 +206,7 @@ namespace VBAi.Tests.Unit
             foreach (string state in new[] { "no-session", "no-factory", "no-window", "missing", "stale", "current", "clamped" })
             using (var runtime = new RuntimeScope())
             using (var editor = new Editor.ModernEditorToolFixture())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             using (var dispatcher = new Editor.OwnedEditorDispatcher())
             {
                 int shown = 0;
@@ -228,7 +228,7 @@ namespace VBAi.Tests.Unit
             foreach (string state in new[] { "busy", "foreign", "current" })
             using (var runtime = new RuntimeScope())
             using (var editor = new Editor.ModernEditorToolFixture())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 runtime.Session.ModernEditor = create => editor.Window;
                 if (state == "busy") Set(window, "busy", true);
@@ -246,7 +246,7 @@ namespace VBAi.Tests.Unit
         public void ForkWithoutReadGrantsDoesNotGrantAnotherProjectOrSharedContext()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 var original = Get<ChatSessionState>(window, "currentSession"); original.ReadProjectGrants = null; original.SharedContextReadAllowed = false;
                 var entry = new ChatEntry { Speaker = "Assistant", Text = "owned branch point" }; Call(window, "AddEntry", entry); Call(window, "ForkChat", entry);

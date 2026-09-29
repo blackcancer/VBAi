@@ -31,6 +31,8 @@ namespace VBAi
         public string Status { get; set; } = "Waiting for VBA hosts to close.";
         /// <summary>Gets or sets whether the worker has reached a final state.</summary><value>Completion flag.</value>
         public bool Completed { get; set; }
+        /// <summary>Whether the completed installer result was verified as successful.</summary>
+        public bool Succeeded { get; set; }
         /// <summary>Gets or sets whether restarting the host is required after installation.</summary><value>Restart requirement.</value>
         public bool RestartRequired { get; set; }
         /// <summary>Validates the target package, version, installation path, and cache containment.</summary>

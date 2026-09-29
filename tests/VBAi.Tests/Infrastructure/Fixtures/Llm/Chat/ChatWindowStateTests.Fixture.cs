@@ -56,6 +56,26 @@ namespace VBAi.Tests.Unit
             return info.Invoke(window, args);
         }
 
+        /// <summary>Loads real asynchronous history before a scenario starts inspecting session state.</summary>
+        private static ChatWindow LoadedWindow(VbeSession session)
+        {
+            var window = new ChatWindow(session);
+            try { CompleteScopeLoad(window); return window; }
+            catch { window.Dispose(); throw; }
+        }
+
+        /// <summary>Also follows a replacement scope read scheduled by a stale completion.</summary>
+        private static void CompleteScopeLoad(ChatWindow window)
+        {
+            Task observed;
+            do
+            {
+                observed = Get<Task>(window, "scopeLoad");
+                CompleteOnSta(observed);
+            }
+            while (!ReferenceEquals(observed, Get<Task>(window, "scopeLoad")));
+        }
+
         /// <summary>Crée les trois surfaces UI sans initialiser de session VBE.</summary>
         /// <returns>Fenêtre initialisée avec shell, compositeur et transcript.</returns>
         private static ChatWindow Surfaces()

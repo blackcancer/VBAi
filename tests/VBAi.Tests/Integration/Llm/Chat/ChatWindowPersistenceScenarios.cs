@@ -84,12 +84,12 @@ namespace VBAi.Tests.Unit
                     store.SaveMemory("temporary:B", "Mémoire B");
                     Set(window, "sessionStore", store);
                     scopes.SelectedIndex = 1;
-                    Call(window, "ChangeScope");
+                    Call(window, "ChangeScope"); CompleteScopeLoad(window);
                     Assert.AreEqual("B", Get<ChatSessionState>(window, "currentSession").Title);
                     Assert.AreEqual("Brouillon B", Get<object>(window, "prompt").GetType().GetProperty("Text").GetValue(Get<object>(window, "prompt"), null));
                     Assert.AreEqual("Mémoire B", Get<TextBox>(window, "memoryEditor").Text);
                     scopes.SelectedIndex = 0;
-                    Call(window, "ChangeScope");
+                    Call(window, "ChangeScope"); CompleteScopeLoad(window);
                     Assert.AreSame(original, Get<ChatSessionState>(window, "currentSession"));
                     Set(window, "currentSession", null);
                     Set(window, "sessionStore", null);

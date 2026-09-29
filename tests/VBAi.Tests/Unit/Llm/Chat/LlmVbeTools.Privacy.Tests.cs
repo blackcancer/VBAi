@@ -87,6 +87,63 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public async Task ReadImmediateRequiresBoundProjectAndSharedContextGrant()
+        {
+            var tools = Bound();
+            int nativeCalls = 0;
+            tools.Execute = request =>
+            {
+                if (request.Command == "debug_state")
+                {
+                    var state = new System.Dynamic.ExpandoObject();
+                    ((IDictionary<string, object>)state)["Mode"] = 1;
+                    return Response.Success(state);
+                }
+                throw new InvalidOperationException("Unexpected synchronous command.");
+            };
+            tools.ReadImmediateNative = request =>
+            {
+                nativeCalls++;
+                return Task.FromResult<object>(new { Text = "private VBE-wide output" });
+            };
+            const string own = "{\"Project\":\"A\",\"ExpectedMode\":1}";
+            const string other = "{\"Project\":\"B\",\"ExpectedMode\":1}";
+            Assert.IsFalse(json.Deserialize<Response>(await tools.InvokeAsync("read_immediate", own)).Ok);
+            Assert.AreEqual(0, nativeCalls);
+            tools.SetReadAccess(new[] { "B" }, true);
+            Assert.IsFalse(json.Deserialize<Response>(await tools.InvokeAsync("read_immediate", other)).Ok);
+            Assert.AreEqual(0, nativeCalls);
+            var granted = json.Deserialize<Response>(await tools.InvokeAsync("read_immediate", own));
+            Assert.IsTrue(granted.Ok, granted.Error);
+            Assert.AreEqual(1, nativeCalls);
+        }
+
+        [TestMethod]
+        public async Task LocalScalarInspectionRequiresBoundProjectAndSharedContextGrant()
+        {
+            var tools = Bound();
+            int nativeCalls = 0;
+            tools.Execute = request => {
+                var state = new System.Dynamic.ExpandoObject();
+                ((IDictionary<string, object>)state)["Mode"] = 1;
+                return Response.Success(state);
+            };
+            tools.InspectLocalScalarsNative = request => {
+                nativeCalls++;
+                return Task.FromResult<object>(new { Partial = true });
+            };
+            const string own = "{\"Project\":\"A\",\"Module\":\"M\",\"Procedure\":\"Run\",\"ExpectedSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"ExpectedMode\":1}";
+            const string other = "{\"Project\":\"B\",\"Module\":\"M\",\"Procedure\":\"Run\",\"ExpectedSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"ExpectedMode\":1}";
+            Assert.IsFalse(json.Deserialize<Response>(await tools.InvokeAsync("inspect_local_scalars", own)).Ok);
+            tools.SetReadAccess(new[] { "B" }, true);
+            Assert.IsFalse(json.Deserialize<Response>(await tools.InvokeAsync("inspect_local_scalars", other)).Ok);
+            Assert.AreEqual(0, nativeCalls);
+            var granted = json.Deserialize<Response>(await tools.InvokeAsync("inspect_local_scalars", own));
+            Assert.IsTrue(granted.Ok, granted.Error);
+            Assert.AreEqual(1, nativeCalls);
+        }
+
+        [TestMethod]
         public void DebugStateRemovesActiveContextFromAnotherProject()
         {
             var tools = Bound();

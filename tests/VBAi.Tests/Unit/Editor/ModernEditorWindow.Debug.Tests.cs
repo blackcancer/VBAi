@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using VBAi;
 using VBAi.Tests.Infrastructure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -10,6 +11,38 @@ namespace VBAi.Tests.Unit.Editor
     [TestClass]
     public sealed class ModernEditorDebugTests
     {
+        [STATestMethod]
+        public void InvalidBreakpointIsSilentAndNeverInvokesNativeCommandOrAddsMarker()
+        {
+            foreach (string statement in new[] { "", "' comment", "Rem comment", "Dim value As Long", "label:" })
+            using (var f = new ModernEditorDebugFixture())
+            {
+                string source = "Sub Example()\n" + statement + "\nEnd Sub";
+                f.Native.Original.CodeModule.Raw = source;
+                f.Document.AcceptRemote(source);
+                var command = f.Command(51, "Toggle Breakpoint");
+                f.Send("toggle_breakpoint", 2);
+                Assert.AreEqual(0, command.ExecuteCount, statement);
+                Assert.IsFalse(f.Scripts.Any(x => x.Item1 == "breakpointRequested"), statement);
+                Assert.IsFalse(f.Get<bool>("busy"));
+            }
+        }
+
+        [STATestMethod]
+        public void BreakpointDoesNotSynchronizeUnrelatedDirtyDocuments()
+        {
+            using (var f = new ModernEditorDebugFixture())
+            {
+                var other = ModernEditorDebugFixture.Wait(f.Window.OpenModule(f.Storage));
+                other.Edit(other.Text + "\n' unrelated draft");
+                var command = f.Command(51, "Toggle Breakpoint");
+                f.Send("toggle_breakpoint");
+                Assert.AreEqual(1, command.ExecuteCount);
+                Assert.AreEqual(0, f.Storage.Writes);
+                Assert.IsTrue(other.Dirty);
+            }
+        }
+
         [STATestMethod]
         public void ObservationCoversAbsentBusyManagedStableRunningDirtyConflictedAndCleanDocuments()
         {
@@ -27,6 +60,56 @@ namespace VBAi.Tests.Unit.Editor
                 if (state == "conflict") { f.Document.Edit(f.Document.Text + "\n' draft"); f.Native.Original.CodeModule.Raw += "\n' external"; f.Document.Observe(); f.Document.Edit(f.Document.Baseline); Assert.IsTrue(f.Document.Conflict); Assert.IsFalse(f.Document.Dirty); }
                 f.Scripts.Clear(); f.Observe();
                 Assert.AreEqual(state == "clean" || state == "running" || state == "dirty" || state == "conflict" ? 1 : 0, f.Scripts.Count(x => (x.Item1 == "execution" || x.Item1 == "executionBatch")), state);
+            }
+        }
+
+        [STATestMethod]
+        public void ActiveLocalInspectionSuppressesAutomaticExecutionNavigation()
+        {
+            using (var f = new ModernEditorDebugFixture())
+            {
+                f.Native.Project.Mode = 1;
+                f.Native.Adapter.ShowNative(3, 2);
+                var command = f.Command(1813, "Show Next Statement");
+                using (new VbeDebugInspection())
+                {
+                    f.Observe();
+                    Assert.AreEqual(0, command.ExecuteCount);
+                    Assert.AreEqual(-1, f.Get<int>("lastDebugMode"));
+                }
+                f.Observe();
+                Assert.AreEqual(1, command.ExecuteCount);
+                Assert.AreEqual(1, f.Get<int>("lastDebugMode"));
+            }
+        }
+
+        [WinFormsTestMethod]
+        public void InspectionStartingDuringCaptureSuppressesQueuedObservationAfterAwait()
+        {
+            Assert.IsInstanceOfType(System.Threading.SynchronizationContext.Current,
+                typeof(System.Windows.Forms.WindowsFormsSynchronizationContext));
+            using (var f = new ModernEditorDebugFixture())
+            {
+                f.Native.Project.Mode = 1;
+                f.Native.Adapter.ShowNative(3, 2);
+                var command = f.Command(1813, "Show Next Statement");
+                VbeDebugInspection inspection = null;
+                int ownerThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
+                f.Window.ScriptExecution = (method, values) => {
+                    Assert.AreEqual(ownerThread, System.Threading.Thread.CurrentThread.ManagedThreadId);
+                    if (method == "snapshots" && inspection == null) inspection = new VbeDebugInspection();
+                    return Task.FromResult("null");
+                };
+                try
+                {
+                    f.Send("show_next_statement");
+                    Assert.IsNotNull(inspection);
+                    Assert.AreEqual(0, command.ExecuteCount);
+                    Assert.IsFalse(f.Get<bool>("busy"));
+                }
+                finally { inspection?.Dispose(); }
+                f.Send("show_next_statement");
+                Assert.AreEqual(1, command.ExecuteCount);
             }
         }
 

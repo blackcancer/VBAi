@@ -22,6 +22,8 @@ namespace VBAi
         private readonly Dictionary<string, EditorDocument> documents = new Dictionary<string, EditorDocument>();
         /// <summary>Dernières révisions Monaco observées pour chaque document.</summary>
         private readonly Dictionary<string, int> versions = new Dictionary<string, int>();
+        // Native captions are observed with the bounded document batch, never during layout.
+        private readonly Dictionary<string, string> displayNames = new Dictionary<string, string>();
         /// <summary>Brouillons récupérés au chargement et proposés séparément du code natif.</summary>
         private readonly Dictionary<string, EditorDraft> recovered = new Dictionary<string, EditorDraft>();
         /// <summary>Versions natives comparées par l’utilisateur avant résolution de conflit.</summary>
@@ -67,6 +69,9 @@ namespace VBAi
         private int activeStatusLayouts;
         /// <summary>Stores the status generation used by ModernEditorWindow.</summary>
         private int statusGeneration;
+        private int backgroundDocumentCursor;
+        private bool statusUpdatePending;
+        private int pendingStatusGeneration;
                 /// <summary>Notifies subscribers when assistant action occurs.</summary>
                 internal event Action<string, ChatAttachment> AssistantAction;
         /// <summary>Gets or sets the workspace hosted.</summary>
@@ -331,7 +336,8 @@ public int column { get; set; } }
             var draft = Drafts.Recover(module.Key);
             documents.Add(document.Id, document); versions[document.Id] = 1;
             if (draft != null && EditorDocument.Normalize(draft.Text) != document.Text) recovered[document.Id] = draft;
-            var tab = new TabPage(module.Name) { Tag = document.Id }; tabs.TabPages.Add(tab); selected = document.Id; tabs.SelectedTab = tab;
+            string displayName = module.Name; displayNames[document.Id] = displayName;
+            var tab = new TabPage(displayName) { Tag = document.Id }; tabs.TabPages.Add(tab); selected = document.Id; tabs.SelectedTab = tab;
             if (Ready) await RenderDocument(document);
             SetStatus(); Activate(); return document;
         }
@@ -379,13 +385,22 @@ public int column { get; set; } }
         /// <returns>The result produced by this operation.</returns>
         private Task ProcessDocumentsCore(bool synchronize) => ProcessCapturedDocumentsCore(synchronize, true);
         /// <summary>Processes a revision-checked snapshot, optionally capturing it at the entry barrier.</summary>
-        private async Task ProcessCapturedDocumentsCore(bool synchronize, bool capture, bool dirtyOnly = false)
+        private async Task ProcessCapturedDocumentsCore(bool synchronize, bool capture, bool dirtyOnly = false, EditorDocument onlyDocument = null,
+            EditorDocument[] backgroundBatch = null)
         {
             if (capture) await CaptureDocuments();
             if (IsDisposed || closing) return;
             Exception lastFailure = null;
-            foreach (var doc in documents.Values.ToArray())
+            foreach (var doc in backgroundBatch ?? documents.Values.ToArray())
             {
+                if (backgroundBatch != null)
+                {
+                    // Yield between COM reads so a queued user command can take priority.
+                    await Task.Yield();
+                    if (closing || IsDisposed || debugCommands.CurrentCount == 0) break;
+                    if (!documents.ContainsKey(doc.Id)) continue;
+                }
+                if (onlyDocument != null && doc != onlyDocument) continue;
                 if (dirtyOnly && !doc.Dirty) continue;
                 try
                 {
@@ -395,6 +410,7 @@ public int column { get; set; } }
                     string captured = doc.Text;
                     int capturedVersion = versions[doc.Id];
                     string native = doc.Observe();
+                    try { displayNames[doc.Id] = doc.Module.Name; } catch { /* Preserve the last caption if only metadata is unavailable. */ }
                     if (synchronize && doc.Dirty && !doc.Conflict && doc.Writable) native = doc.Synchronize(plan);
                     if (native != null)
                     {
@@ -415,17 +431,46 @@ public int column { get; set; } }
         /// <param name="e">Données de l’événement.</param>
         private async void TimerTick(object sender, EventArgs e)
         {
-            if (busy || closing) return;
-            await ProcessDocuments(DateTime.UtcNow - lastEdit > TimeSpan.FromMilliseconds(600));
+            if (busy || closing || debugCommands.CurrentCount == 0) return;
+            await ProcessBackgroundDocuments();
             try { if (!closing && !IsDisposed) await ObserveDebugMode(); } catch (Exception error) { LoadLog.Write("Monaco debug observation: " + error.Message); }
+        }
+
+        /// <summary>Reconciles the active document and at most two background documents per tick.</summary>
+        private async Task ProcessBackgroundDocuments()
+        {
+            if (busy || !Ready || closing || IsDisposed || debugCommands.CurrentCount == 0) return;
+            busy = true;
+            var timing = PerformanceSample == null ? null : System.Diagnostics.Stopwatch.StartNew();
+            try
+            {
+                await CaptureDocuments();
+                var active = Current;
+                var inactive = documents.Values.Where(doc => doc != active).ToArray();
+                var batch = new List<EditorDocument>();
+                if (active != null) batch.Add(active);
+                for (int i = 0; i < Math.Min(2, inactive.Length); i++)
+                    batch.Add(inactive[(backgroundDocumentCursor + i) % inactive.Length]);
+                if (inactive.Length > 0) backgroundDocumentCursor = (backgroundDocumentCursor + Math.Min(2, inactive.Length)) % inactive.Length;
+                await ProcessCapturedDocumentsCore(DateTime.UtcNow - lastEdit > TimeSpan.FromMilliseconds(600), false,
+                    backgroundBatch: batch.ToArray());
+            }
+            catch (Exception error) { Report(error); }
+            finally { busy = false; Measure("reconcile.background", timing); }
         }
         /// <summary>Planifie la mise à jour des contrôles de statut après la fin des callbacks WebView2.</summary>
         private void SetStatus()
         {
             if (IsDisposed || Disposing || closing) return;
             // WebView callbacks must unwind before changing WinForms visibility/layout.
-            int generation = ++statusGeneration;
-            if (IsHandleCreated) BeginInvoke(new Action(() => { if (generation == statusGeneration) UpdateStatus(); })); else UpdateStatus();
+            pendingStatusGeneration = ++statusGeneration;
+            if (!IsHandleCreated) { UpdateStatus(); return; }
+            if (statusUpdatePending) return;
+            statusUpdatePending = true;
+            BeginInvoke(new Action(() => {
+                statusUpdatePending = false;
+                if (pendingStatusGeneration == statusGeneration && !IsDisposed && !Disposing && !closing) UpdateStatus();
+            }));
         }
         /// <summary>Publishes a result and invalidates older queued synchronization status updates.</summary>
         /// <param name="text">Text containing the text.</param>
@@ -445,12 +490,22 @@ public int column { get; set; } }
             restore.Visible = Current != null && recovered.ContainsKey(Current.Id);
             resolve.Enabled = Current != null && Current.Conflict && reviewed.ContainsKey(Current.Id);
             restore.Enabled = Current != null && recovered.ContainsKey(Current.Id);
-            var preferred = toolbar.GetPreferredSize(new System.Drawing.Size(layout.ClientSize.Width, 0));
-            int commandHeight = toolbar.Controls.Cast<Control>().Max(control => Math.Max(control.Height, control.GetPreferredSize(System.Drawing.Size.Empty).Height) + control.Margin.Vertical);
-            layout.RowStyles[0].Height = showToolbar ? Math.Max(preferred.Height, commandHeight + toolbar.Padding.Vertical)
-                + toolbar.Margin.Vertical + (preferred.Width > layout.ClientSize.Width ? System.Windows.Forms.SystemInformation.HorizontalScrollBarHeight : 0) : 0;
+            int toolbarHeight = 0;
+            if (showToolbar)
+            {
+                var preferred = toolbar.GetPreferredSize(new System.Drawing.Size(layout.ClientSize.Width, 0));
+                int commandHeight = toolbar.Controls.Cast<Control>().Max(control => Math.Max(control.Height, control.GetPreferredSize(System.Drawing.Size.Empty).Height) + control.Margin.Vertical);
+                toolbarHeight = Math.Max(preferred.Height, commandHeight + toolbar.Padding.Vertical)
+                    + toolbar.Margin.Vertical + (preferred.Width > layout.ClientSize.Width ? System.Windows.Forms.SystemInformation.HorizontalScrollBarHeight : 0);
+            }
+            if (layout.RowStyles[0].Height != toolbarHeight) layout.RowStyles[0].Height = toolbarHeight;
             foreach (TabPage tab in tabs.TabPages)
-            { var doc = documents[(string)tab.Tag]; try { tab.Text = doc.Module.Name + (doc.Dirty ? " *" : ""); } catch { } }
+            {
+                string id = (string)tab.Tag;
+                if (!documents.TryGetValue(id, out var doc) || !displayNames.TryGetValue(id, out var name)) continue;
+                string title = name + (doc.Dirty ? " *" : "");
+                if (tab.Text != title) tab.Text = title;
+            }
             status.Text = UiText.Get(lastSaveError ?? synchronizationError ?? (Current == null ? "Open a VBA module to start editing." : Current.Conflict ? "The module changed in VBA. Resolve the conflict first." : Current.Dirty ? "Changes pending synchronization with VBA." : "Synchronized with VBA. Save the macro in its host application."));
             }
             finally { activeStatusLayouts--; }
@@ -526,7 +581,7 @@ public int column { get; set; } }
                         var page = tabs.TabPages.Cast<TabPage>().First(t => (string)t.Tag == doc.Id);
                         if (selected == doc.Id) selected = null; tabs.TabPages.Remove(page); page.Dispose();
                         if (tabs.SelectedTab != null) selected = (string)tabs.SelectedTab.Tag;
-                        documents.Remove(doc.Id); versions.Remove(doc.Id); reviewed.Remove(doc.Id); recovered.Remove(doc.Id);
+                        documents.Remove(doc.Id); versions.Remove(doc.Id); reviewed.Remove(doc.Id); recovered.Remove(doc.Id); displayNames.Remove(doc.Id);
                         SetStatus(); closed.SetResult(true);
                     }
                     catch (Exception error) { closed.SetException(error); }

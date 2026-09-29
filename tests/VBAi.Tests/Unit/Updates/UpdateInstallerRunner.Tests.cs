@@ -26,14 +26,35 @@ namespace VBAi.Tests.Unit
             job.Save(scope.Root); return job;
         }
         [TestMethod]
+        public void UnapprovedPublisherIsFinalBeforeWaitingForLiveHosts()
+        {
+            using (var scope = new UpdateScope())
+            {
+                var job = Job(scope); UpdateState.RecordHost();
+                int hostChecks = 0, installs = 0;
+                var runner = new UpdateInstallerRunner(scope.Root) {
+                    VerifyPublisher = path => false,
+                    IsAlive = lease => { hostChecks++; return true; },
+                    Install = path => { installs++; return 0; }
+                };
+                Assert.IsTrue(runner.Tick(job));
+                Assert.IsTrue(job.Completed); Assert.IsFalse(job.Succeeded);
+                Assert.AreEqual(0, hostChecks); Assert.AreEqual(0, installs);
+                Assert.IsFalse(File.Exists(Path.Combine(scope.Root, "installation.started")));
+                Assert.IsFalse(UpdateInstallJob.Load(scope.Root).Succeeded);
+            }
+        }
+
+        [TestMethod]
         public void RunnerWaitsForRegisteredHostsAndVerifiesAgainBeforeExactlyOneInstallation()
         {
             using (var scope = new UpdateScope())
             {
                 var job = Job(scope); UpdateState.RecordHost(); int installed = 0;
-                var runner = new UpdateInstallerRunner(scope.Root) { InstalledVersion = directory => "1.2.3", IsAlive = lease => true, VerifySignature = path => true, Install = path => { installed++; return 0; } };
+                var runner = new UpdateInstallerRunner(scope.Root) { InstalledVersion = directory => "1.2.3", IsAlive = lease => true, VerifySignature = path => true, VerifyPublisher = path => true, Install = path => { installed++; return 0; } };
                 Assert.IsFalse(runner.Tick(job)); Assert.AreEqual(0, installed);
                 runner.IsAlive = lease => false; Assert.IsTrue(runner.Tick(job)); Assert.AreEqual(1, installed); Assert.IsTrue(job.Completed);
+                Assert.IsFalse(File.Exists(Path.Combine(scope.Root, "installation.started")));
                 Assert.IsTrue(runner.Tick(job)); Assert.AreEqual(1, installed); Assert.AreEqual("Update installed. Restart the VBA host.", UpdateInstallJob.Load(scope.Root).Status);
             }
         }
@@ -44,7 +65,7 @@ namespace VBAi.Tests.Unit
             using (var scope = new UpdateScope())
             {
                 var job = Job(scope); int installed = 0;
-                var runner = new UpdateInstallerRunner(scope.Root) { VerifySignature = path => scenario != "signature", Install = path => { installed++; return scenario == "reboot" ? 3010 : 1603; } };
+                var runner = new UpdateInstallerRunner(scope.Root) { VerifySignature = path => scenario != "signature", VerifyPublisher = path => true, Install = path => { installed++; return scenario == "reboot" ? 3010 : 1603; } };
                 if (scenario == "cancel") { var cancelled = UpdateInstallJob.Load(scope.Root); cancelled.Completed = true; cancelled.Status = "Update cancelled."; cancelled.Save(scope.Root); }
                 if (scenario == "hash") File.WriteAllText(job.InstallerPath, "changed");
                 Assert.IsTrue(runner.Tick(job)); Assert.IsTrue(job.Completed);
@@ -130,7 +151,7 @@ namespace VBAi.Tests.Unit
             using (var fixture = new UpdatesNativeFixture())
             {
                 var job = Job(fixture.Scope);
-                var runner = new UpdateInstallerRunner(fixture.Scope.Root) { VerifySignature = path => true, Install = path => 0, InstalledVersion = path => "1.2.3" };
+                var runner = new UpdateInstallerRunner(fixture.Scope.Root) { VerifySignature = path => true, VerifyPublisher = path => true, Install = path => 0, InstalledVersion = path => "1.2.3" };
                 using (File.Open(Path.Combine(fixture.Scope.Root, "installation.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)) Assert.IsFalse(runner.Tick(job));
                 var next = Job(fixture.Scope); next.TargetVersion = "1.2.4"; next.Save(fixture.Scope.Root);
                 Assert.IsTrue(runner.Tick(job)); Assert.IsFalse(job.Completed);
@@ -141,13 +162,119 @@ namespace VBAi.Tests.Unit
             using (var fixture = new UpdatesNativeFixture())
             {
                 var job = Job(fixture.Scope);
-                var runner = new UpdateInstallerRunner(fixture.Scope.Root) { VerifySignature = path => true, Install = path => outcome == "1641" ? 1641 : 0, InstalledVersion = path => outcome == "invalid" ? "invalid" : outcome == "mismatch" ? "1.2.2" : "1.2.3" };
+                var runner = new UpdateInstallerRunner(fixture.Scope.Root) { VerifySignature = path => true, VerifyPublisher = path => true, Install = path => outcome == "1641" ? 1641 : 0, InstalledVersion = path => outcome == "invalid" ? "invalid" : outcome == "mismatch" ? "1.2.2" : "1.2.3" };
                 if (outcome == "missing") File.Delete(job.InstallerPath);
                 if (outcome == "no-pending") File.Delete(Path.Combine(fixture.Scope.Root, "pending.json"));
                 if (outcome == "host-reopened") { runner.IsAlive = lease => true; runner.VerifySignature = path => { UpdateState.RecordHost(); return true; }; }
                 Assert.AreEqual(outcome != "host-reopened", runner.Tick(job));
                 Assert.AreEqual(outcome != "host-reopened", job.Completed);
                 if (outcome != "host-reopened") Assert.AreEqual(outcome == "1641" ? "Update installed. Restart Windows to finish." : outcome == "0" || outcome == "no-pending" ? "Update installed. Restart the VBA host." : "Installation failed. Check the installer log.", job.Status);
+            }
+        }
+
+        [TestMethod]
+        public void PublisherRefusalPersistsEvenWhenWindowsTrustWouldAcceptThePackage()
+        {
+            using (var scope = new UpdateScope())
+            {
+                var job = Job(scope); int signatureChecks = 0; int installs = 0;
+                var runner = new UpdateInstallerRunner(scope.Root)
+                {
+                    VerifySignature = path => { signatureChecks++; return true; },
+                    Install = path => { installs++; return 0; }
+                };
+                Assert.IsTrue(runner.Tick(job));
+                Assert.AreEqual(0, signatureChecks);
+                Assert.AreEqual(0, installs);
+                Assert.AreEqual("Installation refused: no trusted VBAi publisher is configured or the publisher does not match.", job.Status);
+                Assert.AreEqual(job.Status, UpdateInstallJob.Load(scope.Root).Status);
+                Assert.IsTrue(UpdateInstallJob.Load(scope.Root).Completed);
+                Assert.IsFalse(File.Exists(Path.Combine(scope.Root, "installation.started")));
+            }
+        }
+
+        [TestMethod]
+        public void UnknownInstallerExceptionLeavesAttemptMarkerAndBlocksASecondJob()
+        {
+            using (var scope = new UpdateScope())
+            {
+                var job = Job(scope); int installs = 0;
+                var runner = new UpdateInstallerRunner(scope.Root)
+                {
+                    VerifyPublisher = path => true,
+                    VerifySignature = path => true,
+                    Install = path => { installs++; throw new IOException("owned installer outcome unknown"); }
+                };
+                Assert.IsTrue(runner.Tick(job));
+                Assert.AreEqual(1, installs);
+                Assert.IsTrue(File.Exists(Path.Combine(scope.Root, "installation.started")));
+                Assert.AreEqual(UpdateInstallerRunner.UncertainStatus, job.Status);
+                Assert.AreEqual(job.Status, UpdateInstallJob.Load(scope.Root).Status);
+
+                var second = Job(scope);
+                Assert.IsTrue(runner.Tick(second));
+                Assert.AreEqual(1, installs);
+                Assert.AreEqual(UpdateInstallerRunner.UncertainStatus, second.Status);
+                Assert.AreEqual(second.Status, UpdateInstallJob.Load(scope.Root).Status);
+                Assert.IsTrue(File.Exists(Path.Combine(scope.Root, "installation.started")));
+            }
+        }
+
+        [TestMethod]
+        public void NativeInstallerTimeoutIsBoundedLeavesOwnedProcessRunningAndBlocksReplay()
+        {
+            using (var fixture = new UpdatesNativeFixture())
+            {
+                var job = Job(fixture.Scope); int processId = 0; int starts = 0; int waits = 0;
+                var originalStartProcess = UpdateInstallerRunner.StartProcess;
+                var originalWaitForInstaller = UpdateInstallerRunner.WaitForInstaller;
+                UpdateInstallerRunner.StartProcess = start =>
+                {
+                    starts++;
+                    var helper = Process.Start(new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "cmd.exe"), "/d /c ping -n 8 127.0.0.1 >nul")
+                    { UseShellExecute = false, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden });
+                    processId = helper.Id;
+                    return helper;
+                };
+                UpdateInstallerRunner.WaitForInstaller = (process, milliseconds) =>
+                {
+                    waits++;
+                    Assert.AreEqual(UpdateInstallerRunner.InstallerTimeoutMilliseconds, milliseconds);
+                    Assert.AreEqual(processId, process.Id);
+                    return false;
+                };
+                var runner = new UpdateInstallerRunner(fixture.Scope.Root)
+                { VerifyPublisher = path => true, VerifySignature = path => true };
+                try
+                {
+                    Assert.IsTrue(runner.Tick(job));
+                    Assert.AreEqual(1, starts);
+                    Assert.AreEqual(1, waits);
+                    Assert.AreEqual(UpdateInstallerRunner.UncertainStatus, job.Status);
+                    Assert.AreEqual(job.Status, UpdateInstallJob.Load(fixture.Scope.Root).Status);
+                    Assert.IsTrue(File.Exists(Path.Combine(fixture.Scope.Root, "installation.started")));
+                    using (var helper = Process.GetProcessById(processId))
+                        Assert.IsFalse(helper.HasExited, "The runner must not kill a process with an uncertain outcome.");
+
+                    var second = Job(fixture.Scope);
+                    Assert.IsTrue(runner.Tick(second));
+                    Assert.AreEqual(1, starts);
+                    Assert.AreEqual(1, waits);
+                    Assert.AreEqual(UpdateInstallerRunner.UncertainStatus, second.Status);
+                    Assert.AreEqual(second.Status, UpdateInstallJob.Load(fixture.Scope.Root).Status);
+                }
+                finally
+                {
+                    UpdateInstallerRunner.StartProcess = originalStartProcess;
+                    UpdateInstallerRunner.WaitForInstaller = originalWaitForInstaller;
+                    if (processId != 0)
+                        try
+                        {
+                            using (var helper = Process.GetProcessById(processId))
+                                Assert.IsTrue(helper.WaitForExit(15000), "The owned helper did not exit naturally.");
+                        }
+                        catch (ArgumentException) { } // It already exited on its own.
+                }
             }
         }
     }

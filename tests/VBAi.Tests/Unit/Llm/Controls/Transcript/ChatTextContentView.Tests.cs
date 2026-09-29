@@ -44,6 +44,38 @@ namespace VBAi.Tests.Unit
             }
         }
         [STATestMethod]
+        public void MarkdownDefersHeightChangesUntilAllStyledRunsAreRendered()
+        {
+            using (var view = new ChatTextContentView())
+            {
+                view.Width = 400;
+                var handle = view.content.Handle;
+                view.ShowPlain("seed");
+                int initialHeight = view.content.Height, changes = 0;
+                int recreated = 0;
+                view.content.HandleCreated += (s, e) => recreated++;
+                EventHandler observe = (s, e) => {
+                    changes++;
+                    Assert.AreEqual(initialHeight, view.content.Height, "Intermediate styled runs must not resize the transcript card.");
+                };
+                view.content.TextChanged += observe;
+                string markdown = string.Concat(System.Linq.Enumerable.Repeat("**Heading** and `code`\n\n", 100));
+                try { view.ShowMarkdown(markdown, null, reference => { }, error => Assert.Fail(error)); }
+                finally { view.content.TextChanged -= observe; }
+                Assert.IsTrue(changes > 100, "The fixture must exercise many native append operations.");
+                Assert.AreEqual(1200, view.content.Height);
+                Assert.AreEqual(1, recreated, "Enabling the scrollbar must recreate the native handle only once.");
+                StringAssert.Contains(view.content.Text, "Heading and code");
+                view.content.Select(0, 7);
+                Assert.IsTrue(view.content.SelectionFont.Bold);
+                view.ShowPlain("");
+                Assert.AreEqual(24, view.content.Height);
+                Assert.AreEqual(RichTextBoxScrollBars.None, view.content.ScrollBars);
+                Assert.AreEqual(2, recreated, "Clearing the text must disable the scrollbar without recursive handle creation.");
+            }
+        }
+
+        [STATestMethod]
         public void RichTextReflowBoundsHeightAndSupportsEmptyDisposedOrInitializingContent()
         {
             using(var theme=new ThemeScope())

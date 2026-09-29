@@ -87,6 +87,7 @@ namespace VBAi
             internal Func<string, object> ReadActiveApplication = Marshal.GetActiveObject;
             /// <summary>Reads the native window owner used by all application PID guards.</summary>
             internal Func<IntPtr, uint> ReadOwner = Owner;
+            internal Func<object, IntPtr> ReadPowerPointWindow = PowerPointWindow.Read;
             /// <summary>Performs the current host kind operation for NativeOtherHostProbe.</summary>
             /// <returns>The result produced by this operation.</returns>
             private static string CurrentHostKind() => RecognizeOtherHost(Process.GetCurrentProcess().ProcessName);
@@ -139,7 +140,7 @@ namespace VBAi
                         /// <returns>PID propriétaire commun, ou zéro lorsque la vérification échoue.</returns>
             public uint ApplicationProcessId(object application)
             {
-                if (HostKind == "PowerPoint") return ReadOwner(new IntPtr(Convert.ToInt64(((dynamic)application).HWND)));
+                if (HostKind == "PowerPoint") return ReadOwner(ReadPowerPointWindow(application));
                 if (HostKind != "Word") return 0;
                 uint result = 0; int count = 0;
                 foreach (dynamic window in ((dynamic)application).Windows)

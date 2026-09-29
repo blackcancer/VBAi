@@ -81,13 +81,15 @@ namespace VBAi
         }
         /// <summary>Lit les sources des composants du projet en laissant le thread hôte traiter les messages entre lectures.</summary>
         /// <param name="cancellation">Stops obsolete language requests between native module reads.</param>
+        /// <param name="urgentCommand">Allows a queued debugger operation to preempt background catalog reads.</param>
         /// <returns>Sources avec nom, type et code de chaque composant.</returns>
-        internal async System.Threading.Tasks.Task<EditorSource[]> Sources(System.Threading.CancellationToken cancellation = default(System.Threading.CancellationToken))
+        internal async System.Threading.Tasks.Task<EditorSource[]> Sources(System.Threading.CancellationToken cancellation = default(System.Threading.CancellationToken), Func<bool> urgentCommand = null)
         {
             Validate(); var sources = new System.Collections.Generic.List<EditorSource>();
             foreach (dynamic item in ((dynamic)project).VBComponents)
             {
                 cancellation.ThrowIfCancellationRequested();
+                if (urgentCommand?.Invoke() == true) throw new OperationCanceledException();
                 dynamic code = item.CodeModule; int count = code.CountOfLines;
                 sources.Add(new EditorSource { Module = (string)item.Name, ComponentType = (int)item.Type, Text = count == 0 ? "" : (string)code.Lines[1, count] });
                 await System.Threading.Tasks.Task.Yield(); // Let the host process input between COM module reads.
@@ -388,7 +390,9 @@ namespace VBAi
             Validate(); dynamic pane = ((dynamic)component).CodeModule.CodePane;
             int count = (int)pane.CodeModule.CountOfLines;
             line = Math.Max(1, Math.Min(Math.Max(1, count), line)); column = Math.Max(1, column);
-            pane.Show(); pane.SetSelection(line, column, line, column);
+            pane.Show();
+            ((dynamic)vbe).ActiveCodePane = pane;
+            pane.SetSelection(line, column, line, column);
         }
         /// <summary>Empêche une édition CodeModule qui supprimerait des attributs de procédure masqués.</summary>
         /// <param name="before">Source avant édition.</param>

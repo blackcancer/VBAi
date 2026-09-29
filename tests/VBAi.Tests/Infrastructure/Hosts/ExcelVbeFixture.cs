@@ -26,6 +26,8 @@ namespace VBAi.Tests.Integration
         private object workbook;
         /// <summary>Indique si cette fixture a créé le processus et peut le fermer.</summary>
         private bool owned;
+        // Retain a process handle before shutdown so even a fast crash remains observable.
+        private Process ownedProcess;
 
         /// <summary>Crée une fixture avant son initialisation par <see cref="Start"/>.</summary>
         private ExcelVbeFixture() { }
@@ -62,6 +64,8 @@ namespace VBAi.Tests.Integration
                 fixture.owned = processId != 0 && !existingIds.Contains((int)processId);
                 if (!fixture.owned)
                     Assert.Inconclusive("Excel returned an existing session; no workbook was opened.");
+                fixture.ownedProcess = Process.GetProcessById(fixture.ProcessId);
+                _ = fixture.ownedProcess.Handle;
                 excel.Visible = true;
                 excel.DisplayAlerts = false;
                 fixture.workbooks = excel.Workbooks;
@@ -130,15 +134,16 @@ namespace VBAi.Tests.Integration
             Release(workbooks);
             Release(application);
             workbook = workbooks = application = null;
-            if (owned && ProcessId != 0)
-            {
-                try
+            var process = ownedProcess;
+            ownedProcess = null;
+            if (process != null)
+                using (process)
                 {
-                    using (var process = Process.GetProcessById(ProcessId))
-                        if (!process.WaitForExit(10000)) { process.Kill(); process.WaitForExit(10000); }
+                    if (!process.WaitForExit(10000))
+                        Assert.Fail("Excel did not exit after Quit and COM release. PID: " + ProcessId + "; fixture: " + Root + ". The process was left running for diagnosis.");
+                    Assert.AreEqual(0, process.ExitCode, "Excel exited abnormally. PID: " + ProcessId +
+                        "; exit code: 0x" + unchecked((uint)process.ExitCode).ToString("X8") + "; fixture: " + Root);
                 }
-                catch (ArgumentException) { }
-            }
             if (string.IsNullOrWhiteSpace(Root) || !Directory.Exists(Root)) return;
             try
             {

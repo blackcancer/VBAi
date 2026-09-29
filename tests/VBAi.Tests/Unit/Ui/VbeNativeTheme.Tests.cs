@@ -596,6 +596,34 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void LegacyRefreshSkipsUnrelatedMessagesAndAlreadyQueuedClassReads()
+        {
+            WithFixture((fixture, renderer) =>
+            {
+                fixture.State.Set("localChromeRefresh", false);
+                IntPtr sender = fixture.Add("Other", fixture.Main);
+                IntPtr toolbar = fixture.Add("MsoCommandBar", fixture.Main);
+                fixture.State.Add("subclassedWindows", toolbar);
+                var original = VbeNativeTheme.ReadClassName;
+                int senderReads = 0, toolbarReads = 0;
+                VbeNativeTheme.ReadClassName = (window, text, capacity) => {
+                    if (window == sender) senderReads++;
+                    if (window == toolbar) toolbarReads++;
+                    return original(window, text, capacity);
+                };
+                fixture.Message(sender, 0x0000);
+                Assert.AreEqual(0, senderReads, "An unrelated message must not classify its sender for refresh routing.");
+                fixture.Message(sender, 0x0047);
+                Assert.AreEqual(1, toolbarReads);
+                int posts = fixture.Posts.Count;
+                Assert.AreEqual(1, fixture.State.Count("pendingChrome"));
+                fixture.Message(sender, 0x0047);
+                Assert.AreEqual(1, toolbarReads, "Pending targets are already classified for this queued refresh.");
+                Assert.AreEqual(posts, fixture.Posts.Count);
+            });
+        }
+
+        [TestMethod]
         public void ContainerRefreshQueuesOnlyOwnedDockToolbarAndHostedCaptionAndCoalescesPosts()
         {
             WithFixture((fixture, renderer) =>
@@ -834,6 +862,35 @@ namespace VBAi.Tests.Unit
                 foreach (IntPtr window in ((System.Collections.IList)fixture.State.Read("subclassedWindows"))) fixture.Message(window, 0x8564);
                 fixture.PostSucceeds = false; fixture.Message(fixture.Main, 0xf); Assert.AreEqual(0, fixture.State.Count("pendingChrome"));
                 Assert.AreEqual(24, fixture.Posts.Count);
+            });
+        }
+        [TestMethod]
+        public void HostedChatNotificationsDoNotRepaintTheWholeEditor()
+        {
+            WithFixture((fixture, renderer) =>
+            {
+                IntPtr host = fixture.Add("GenericPane", fixture.Main);
+                IntPtr code = fixture.Add("VbaWindow", fixture.Main);
+                fixture.State.Add("subclassedWindows", code);
+                foreach (uint message in new uint[] { 0xf, 0x85, 0x4e, 0x47 }) fixture.Message(host, message);
+                Assert.IsFalse(fixture.Posts.Exists(post => post.Item1 == code));
+                Assert.IsTrue(fixture.Posts.Exists(post => post.Item1 == host));
+            });
+        }
+
+        [TestMethod]
+        public void NativeChildrenOfManagedContentKeepTheirOwnThemeAndRedraw()
+        {
+            WithFixture((fixture, renderer) =>
+            {
+                IntPtr host = fixture.Add("GenericPane", fixture.Main);
+                IntPtr forms = fixture.Add("WindowsForms10.Window.fixture", host);
+                IntPtr edit = fixture.Add("Edit", forms);
+                fixture.ApplyWindow(edit);
+                fixture.Event(0x8002, edit);
+                Assert.IsFalse(fixture.Installations.Contains(edit));
+                Assert.IsFalse(fixture.Themes.Exists(theme => theme.Item1 == edit));
+                Assert.IsFalse(fixture.Redraws.Contains(edit));
             });
         }
         [TestMethod]

@@ -12,6 +12,32 @@ namespace VBAi
         private readonly EditorLanguageCache languageCache = new EditorLanguageCache();
         private readonly System.Collections.Generic.Dictionary<string, System.Threading.CancellationTokenSource> languageRequests = new System.Collections.Generic.Dictionary<string, System.Threading.CancellationTokenSource>();
         private readonly System.Threading.SemaphoreSlim languageGate = new System.Threading.SemaphoreSlim(1, 1);
+        private object languageSourceProject;
+        private EditorSource[] languageSources;
+        private string[] languageReferencePaths;
+        private long languageSourcesAt;
+        internal Func<long> LanguageClock = () => System.Diagnostics.Stopwatch.GetTimestamp() / (System.Diagnostics.Stopwatch.Frequency / 1000);
+
+        /// <summary>Bounds native catalog reads during a burst of completion/hover requests.</summary>
+        private async Task<EditorSource[]> ReadLanguageSources(EditorVbeModule native, System.Threading.CancellationToken cancellation)
+        {
+            long now = LanguageClock();
+            if (!ReferenceEquals(languageSourceProject, native.Project) || languageSources == null || now - languageSourcesAt >= 1000)
+            {
+                var captured = await native.Sources(cancellation, () => debugCommands.CurrentCount == 0);
+                var paths = new System.Collections.Generic.List<string>();
+                foreach (dynamic reference in ((dynamic)native.Project).References)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    if (debugCommands.CurrentCount == 0) throw new OperationCanceledException();
+                    if (!(bool)reference.IsBroken) paths.Add((string)reference.FullPath);
+                }
+                languageSourceProject = native.Project; languageSources = captured;
+                languageReferencePaths = paths.ToArray(); languageSourcesAt = LanguageClock();
+            }
+            // Overlay drafts on a copy; never poison the cached native snapshot.
+            return languageSources.Select(source => new EditorSource { Module = source.Module, Text = source.Text, ComponentType = source.ComponentType }).ToArray();
+        }
         /// <summary>Reads fresh project state but only parses and transfers changed language data.</summary>
         private async Task LanguageRequest(EditorMessage message)
         {
@@ -24,11 +50,12 @@ namespace VBAi
             try
             {
                 await languageGate.WaitAsync(cancellation.Token); entered = true;
+                if (debugCommands.CurrentCount == 0) return;
                 await CaptureDocuments();
                 cancellation.Token.ThrowIfCancellationRequested();
                 if (!documents.TryGetValue(id, out var doc) || versions[doc.Id] != message.version || closing || IsDisposed) return;
                 var native = doc.Module as EditorVbeModule;
-                var sources = native == null ? documents.Values.Where(d => !(d.Module is EditorVbeModule)).Select(d => new EditorSource { Module = d.Module.Name, Text = d.Text, ComponentType = 1 }).ToArray() : await native.Sources(cancellation.Token);
+                var sources = native == null ? documents.Values.Where(d => !(d.Module is EditorVbeModule)).Select(d => new EditorSource { Module = d.Module.Name, Text = d.Text, ComponentType = 1 }).ToArray() : await ReadLanguageSources(native, cancellation.Token);
                 cancellation.Token.ThrowIfCancellationRequested();
                 foreach (var entry in documents.Values)
                 {
@@ -37,11 +64,7 @@ namespace VBAi
                     var source = sources.FirstOrDefault(s => s.Module == (other?.ModuleName ?? entry.Module.Name));
                     if (source != null) source.Text = entry.Text;
                 }
-                var paths = new System.Collections.Generic.List<string>();
-                if (native != null)
-                    foreach (dynamic reference in ((dynamic)native.Project).References)
-                        if (!(bool)reference.IsBroken) paths.Add((string)reference.FullPath);
-                string[] libraryPaths = paths.ToArray();
+                string[] libraryPaths = native == null ? Array.Empty<string>() : languageReferencePaths;
                 if (languageWorker == null) languageWorker = new EditorSyncWorker("VBAi editor language");
                 var snapshot = await languageWorker.Evaluate(() => languageCache.Build(sources, libraryPaths, cancellation.Token));
                 cancellation.Token.ThrowIfCancellationRequested();

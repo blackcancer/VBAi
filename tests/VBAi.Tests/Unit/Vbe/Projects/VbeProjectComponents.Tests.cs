@@ -11,6 +11,33 @@ namespace VBAi.Tests.Unit
     public sealed partial class VbeProjectExcelHostTests
     {
         [TestMethod]
+        public void ExcelSaveReadbackRejectsChangedPathsFormatsAndUnsavedStateWithoutReplay()
+        {
+            foreach (bool signature in new[] { false, true })
+            foreach (int fault in new[] { 0, 1, 2, 3, 4 })
+            {
+                var fixture = Create(); fixture.Workbook.VBASigned = true;
+                dynamic before = fixture.Service.ProjectProperties(fixture.Project.Name);
+                var request = new Request { Project = fixture.Project.Name, ExpectedHostPath = fixture.Project.FileName, ExpectedProjectVersion = before.Version };
+                fixture.Workbook.AfterSave = () => {
+                    if (fault == 0) fixture.Workbook.FullName = Path.Combine(Path.GetTempPath(), "redirected.xlsm");
+                    if (fault == 1) fixture.Project.FileName = Path.Combine(Path.GetTempPath(), "redirected.xlsm");
+                    if (fault == 2) fixture.Workbook.FileFormat = 51;
+                    if (fault == 3) fixture.Workbook.Saved = false;
+                    if (fault == 4) fixture.Project.Saved = false;
+                };
+                Assert.ThrowsException<InvalidOperationException>(() => {
+                    if (signature) fixture.Service.PersistExcelSignature(fixture.Project.Name);
+                    else fixture.Service.SaveHostDocument(request);
+                });
+                Assert.AreEqual(1, fixture.Workbook.SaveAttempts, "A failed readback must not replay Save.");
+            }
+            var unsupported = Create(); unsupported.Workbook.VBASigned = true; unsupported.Workbook.FileFormat = 51;
+            Assert.ThrowsException<InvalidOperationException>(() => unsupported.Service.PersistExcelSignature(unsupported.Project.Name));
+            Assert.AreEqual(0, unsupported.Workbook.SaveAttempts);
+        }
+
+        [TestMethod]
         public void SignaturePersistenceRejectsWrongProcessMissingPathsAndAmbiguousWorkbooks()
         {
             foreach (int fault in new[] { 0, 1, 2, 3, 4, 5 })
@@ -72,7 +99,7 @@ namespace VBAi.Tests.Unit
                 Assert.ThrowsException<ArgumentException>(() => f.Service.SaveHostDocumentAs(new Request { Path = Path.Combine(root, "book.xlsm") }));
                 Assert.ThrowsException<ArgumentException>(() => f.Service.SaveHostDocumentAs(new Request { Path = Path.Combine(root, "book.xlsx"), ExpectedProjectVersion = "version" }));
                 Assert.ThrowsException<DirectoryNotFoundException>(() => f.Service.SaveHostDocumentAs(new Request { Path = Path.Combine(root, "absent", "book.xlsm"), ExpectedProjectVersion = "version" }));
-                for (int fault = 0; fault < 5; fault++)
+                for (int fault = 0; fault < 6; fault++)
                 {
                     f = Create(""); string path = Path.Combine(root, "readback" + fault + ".xlsm"); var current = f;
                     f.Workbook.AfterSaveAs = () =>
@@ -82,6 +109,7 @@ namespace VBAi.Tests.Unit
                         if (fault == 2) File.Delete(path);
                         if (fault == 3) current.Workbook.Saved = false;
                         if (fault == 4) current.Project.Saved = false;
+                        if (fault == 5) current.Workbook.FileFormat = 51;
                     };
                     dynamic before = f.Service.ProjectProperties(f.Project.Name);
                     Assert.ThrowsException<InvalidOperationException>(() => current.Service.SaveHostDocumentAs(new Request { Project = current.Project.Name, Path = path, ExpectedProjectVersion = before.Version }));
@@ -810,6 +838,48 @@ namespace VBAi.Tests.Unit
             request.ExpectedHostPath = Path.Combine(Path.GetTempPath(), "different.xlsm");
             Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.SaveHostDocument(request));
             Assert.AreEqual(1, fixture.Workbook.SaveAttempts);
+        }
+
+        [TestMethod]
+        public void SaveRejectsFormatsThatCannotPreserveVbaBeforeCallingExcel()
+        {
+            foreach (int format in new[] { 51, 54, 61, 6, 60, 9999 })
+            {
+                var fixture = Create();
+                fixture.Workbook.FileFormat = format;
+                fixture.Workbook.Saved = false;
+                fixture.Project.Saved = false;
+                dynamic state = fixture.Service.ProjectProperties(fixture.Project.Name);
+                var request = new Request { Project = fixture.Project.Name,
+                    ExpectedHostPath = fixture.Project.FileName, ExpectedProjectVersion = state.Version };
+
+                var error = Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.SaveHostDocument(request));
+                StringAssert.Contains(error.Message, "Excel Save As");
+                Assert.AreEqual(0, fixture.Workbook.SaveAttempts);
+                Assert.AreEqual(0, fixture.Workbook.SaveAsAttempts);
+                Assert.IsFalse(fixture.Workbook.Saved);
+                Assert.IsFalse(fixture.Project.Saved);
+            }
+        }
+
+        [TestMethod]
+        public void SaveAllowsMacroCapableExcelFormatsIncludingLegacyWorkbooks()
+        {
+            foreach (int format in new[] { -4143, 17, 18, 39, 43, 50, 52, 53, 55, 56 })
+            {
+                var fixture = Create();
+                fixture.Workbook.FileFormat = format;
+                fixture.Workbook.Saved = false;
+                fixture.Project.Saved = false;
+                dynamic state = fixture.Service.ProjectProperties(fixture.Project.Name);
+                var request = new Request { Project = fixture.Project.Name,
+                    ExpectedHostPath = fixture.Project.FileName, ExpectedProjectVersion = state.Version };
+
+                dynamic result = fixture.Service.SaveHostDocument(request);
+                Assert.IsTrue((bool)result.SaveInvoked);
+                Assert.AreEqual(1, fixture.Workbook.SaveAttempts);
+                Assert.AreEqual(0, fixture.Workbook.SaveAsAttempts);
+            }
         }
 
         [TestMethod]

@@ -28,7 +28,7 @@ namespace VBAi
         /// <summary>Stores the shared project tools used by LlmVbeTools.</summary>
         private static readonly HashSet<string> SharedProjectTools = new HashSet<string>(StringComparer.Ordinal)
         {
-            "debug_global", "immediate_execute", "run_procedure", "procedure_run_status",
+            "debug_global", "immediate_execute", "read_immediate", "inspect_local_scalars", "run_procedure", "procedure_run_status",
             "run_procedure_values", "procedure_values_status", "edit_watch", "remove_watch",
             "read_project_signature_dialog", "close_standalone_project"
         };

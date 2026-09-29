@@ -13,6 +13,18 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <PropertyGroup><ProductVersion Condition="'$(ProductVersion)' == ''">0.1.0</ProductVersion></PropertyGroup>
+  <PropertyGroup>
+    <!-- Build-time metadata only: the required COM types are embedded, with no PIA deployment. -->
+    <PowerPointInteropPath Condition="'$(PowerPointInteropPath)' == '' and Exists('$(MSBuildProgramFiles32)\Microsoft Visual Studio\Shared\Visual Studio Tools for Office\PIA\Office15\Microsoft.Office.Interop.PowerPoint.dll')">$(MSBuildProgramFiles32)\Microsoft Visual Studio\Shared\Visual Studio Tools for Office\PIA\Office15\Microsoft.Office.Interop.PowerPoint.dll</PowerPointInteropPath>
+    <PowerPointInteropPath Condition="'$(PowerPointInteropPath)' == '' and Exists('$(SystemRoot)\assembly\GAC_MSIL\Microsoft.Office.Interop.PowerPoint\15.0.0.0__71e9bce111e9429c\Microsoft.Office.Interop.PowerPoint.dll')">$(SystemRoot)\assembly\GAC_MSIL\Microsoft.Office.Interop.PowerPoint\15.0.0.0__71e9bce111e9429c\Microsoft.Office.Interop.PowerPoint.dll</PowerPointInteropPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.Office.Interop.PowerPoint, Version=15.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c">
+      <HintPath>$(PowerPointInteropPath)</HintPath>
+      <EmbedInteropTypes>true</EmbedInteropTypes>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="../../assets/icons/commands/*.svg" LogicalName="VBAi.CommandIcons.%(Filename).svg" />
   </ItemGroup>

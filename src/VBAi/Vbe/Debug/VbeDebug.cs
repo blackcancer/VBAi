@@ -457,6 +457,9 @@ namespace VBAi
 
             dynamic pane = module.CodePane;
             pane.Show();
+            // Show/SetFocus can leave another pane active in a background VBE host.
+            // Select through VBIDE as well; the identity guard below still fails closed.
+            vbe.ActiveCodePane = pane;
             pane.SetSelection(request.StartLine, 1, request.StartLine, 1);
             pane.Window.SetFocus();
             dynamic activePane = vbe.ActiveCodePane;
@@ -612,6 +615,7 @@ namespace VBAi
                 throw new InvalidOperationException("Only a parameterless standard-module Sub can be run by name.");
             dynamic pane = module.CodePane;
             pane.Show();
+            vbe.ActiveCodePane = pane;
             pane.SetSelection(body, 1, body, 1);
             var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == 186 &&
                 entry.Enabled && IsAllowed("run", entry.Caption, 2));

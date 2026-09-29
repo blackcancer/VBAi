@@ -63,6 +63,16 @@ using System;
             await Failure(tools, "debug_item", "{\"Pane\":\"locals\",\"Action\":\"expand\",\"PathSegments\":[\"x\"],\"Extra\":1}", "Unexpected debug_item argument");
             await Failure(tools, "immediate_execute", "{}", "Project, ExpectedMode and Text");
             await Failure(tools, "immediate_execute", "{\"Project\":\"P\",\"ExpectedMode\":0,\"Text\":\"Debug.Print 1\"}", "Project, ExpectedMode and Text");
+            await Failure(tools, "read_immediate", "{}", "Project and ExpectedMode");
+            await Failure(tools, "read_immediate", "{\"Project\":\"P\",\"ExpectedMode\":0}", "Project and ExpectedMode");
+            await Failure(tools, "read_immediate", "{\"Project\":\"P\",\"ExpectedMode\":1,\"Text\":\"extra\"}", "no other arguments");
+            const string local = "{\"Project\":\"P\",\"Module\":\"M\",\"Procedure\":\"Run\",\"ExpectedSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"ExpectedMode\":1";
+            await Failure(tools, "inspect_local_scalars", "{}", "Project, Module, Procedure");
+            await Failure(tools, "inspect_local_scalars", local.Replace("\"ExpectedMode\":1", "\"ExpectedMode\":2") + "}", "ExpectedMode=1");
+            await Failure(tools, "inspect_local_scalars", local.Replace("\"ExpectedSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",", "") + "}", "ExpectedSha256");
+            await Failure(tools, "inspect_local_scalars", local + ",\"Limit\":17}", "Limit 0..16");
+            await Failure(tools, "inspect_local_scalars", local + ",\"Offset\":-1}", "Offset must be nonnegative");
+            await Failure(tools, "inspect_local_scalars", local + ",\"Unexpected\":1}", "no other arguments");
             await Failure(tools, "respond_debug_dialog", "{}", "Exact Diagnostic and Button");
             await Failure(tools, "debug_dialog", "{\"Unexpected\":1}", "debug_dialog has no arguments");
             await Failure(tools, "compile_project", "{}", "Project and ExpectedMode=2");
@@ -82,6 +92,8 @@ using System;
             await Failure(tools, "quick_watch", "{}", "Automatic VBE edit policy");
             await Failure(tools, "edit_watch", "{}", "Automatic VBE edit policy");
             await Failure(tools, "immediate_execute", "{}", "Automatic VBE edit policy");
+            await Failure(tools, "read_immediate", "{}", "Automatic VBE edit policy");
+            await Failure(tools, "inspect_local_scalars", "{}", "Automatic VBE edit policy");
             await Failure(tools, "respond_debug_dialog", "{}", "Automatic VBE edit policy");
         }
 
@@ -156,6 +168,75 @@ using System;
             host.VBProjects.Add(new VbeSessionTests.FakeProject { Name = "P", FileName = @"C:\Temp\P.xlsm", Mode = 2 });
             var tools = new LlmVbeTools(new VbeSession(host), null, new LlmSettings { VbeEditApproval = "Automatic" });
             await Failure(tools, "immediate_execute", "{\"Project\":\"P\",\"ExpectedMode\":1,\"Text\":\"Debug.Print 1\"}", "Project mode changed");
+        }
+
+        [TestMethod]
+        public async Task ReadImmediateChecksModeAndDispatchesOnCallingThread()
+        {
+            var tools = new LlmVbeTools(null, null, new LlmSettings { VbeEditApproval = "Automatic" });
+            int callerThread = Thread.CurrentThread.ManagedThreadId;
+            int nativeThread = -1;
+            int nativeCalls = 0;
+            tools.Execute = request =>
+            {
+                if (request.Command == "debug_state")
+                {
+                    var state = new System.Dynamic.ExpandoObject();
+                    ((IDictionary<string, object>)state)["Mode"] = 1;
+                    return Response.Success(state);
+                }
+                throw new InvalidOperationException("Unexpected synchronous command.");
+            };
+            tools.ReadImmediateNative = request =>
+            {
+                nativeCalls++;
+                nativeThread = Thread.CurrentThread.ManagedThreadId;
+                Assert.AreEqual("P", request.Project);
+                Assert.AreEqual(1, request.ExpectedMode);
+                return Task.FromResult<object>(new { Text = "41", Method = "NativeCopy" });
+            };
+            const string arguments = "{\"Project\":\"P\",\"ExpectedMode\":1}";
+            var read = Json.Deserialize<Response>(await tools.InvokeAsync("read_immediate", arguments));
+            Assert.IsTrue(read.Ok, read.Error);
+            Assert.AreEqual(1, nativeCalls);
+            Assert.AreEqual(callerThread, nativeThread);
+            await Failure(tools, "read_immediate", "{\"Project\":\"P\",\"ExpectedMode\":2}", "Project mode changed");
+            Assert.AreEqual(1, nativeCalls);
+            tools.Mode = ChatMode.Plan;
+            await Failure(tools, "read_immediate", arguments, UiText.Get(" does not allow this editing or execution tool: "));
+            Assert.AreEqual(1, nativeCalls);
+        }
+
+        [TestMethod]
+        public async Task InspectLocalScalarsChecksScopeModeAndDispatchesAsync()
+        {
+            var tools = new LlmVbeTools(null, null, new LlmSettings { VbeEditApproval = "Automatic" });
+            int calls = 0;
+            tools.Execute = request => {
+                Assert.AreEqual("debug_state", request.Command);
+                var state = new System.Dynamic.ExpandoObject();
+                ((IDictionary<string, object>)state)["Mode"] = 1;
+                return Response.Success(state);
+            };
+            tools.InspectLocalScalarsNative = async request => {
+                calls++;
+                Assert.AreEqual("P", request.Project);
+                Assert.AreEqual("M", request.Module);
+                Assert.AreEqual("Run", request.Procedure);
+                Assert.AreEqual(1, request.ExpectedMode);
+                Assert.AreEqual(2, request.Offset);
+                Assert.AreEqual(3, request.Limit);
+                await Task.Yield();
+                return new { Partial = true, Value = "41" };
+            };
+            const string args = "{\"Project\":\"P\",\"Module\":\"M\",\"Procedure\":\"Run\",\"ExpectedSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"ExpectedMode\":1,\"Offset\":2,\"Limit\":3}";
+            var inspected = Json.Deserialize<Response>(await tools.InvokeAsync("inspect_local_scalars", args));
+            Assert.IsTrue(inspected.Ok, inspected.Error);
+            Assert.AreEqual(1, calls);
+            Assert.IsFalse(Json.Deserialize<Response>(tools.Invoke("inspect_local_scalars", args)).Ok);
+            tools.Mode = ChatMode.Plan;
+            await Failure(tools, "inspect_local_scalars", args, UiText.Get(" does not allow this editing or execution tool: "));
+            Assert.AreEqual(1, calls);
         }
     }
 }

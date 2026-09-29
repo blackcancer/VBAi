@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32;
 
@@ -32,6 +33,9 @@ namespace VBAi
         private static X509Certificate2 NativeCertificate(string path) => new X509Certificate2(X509Certificate.CreateFromSignedFile(path));
         /// <summary>Stores the start process used by WebViewRuntimePrerequisite.</summary>
         internal static Func<ProcessStartInfo, Process> StartProcess = Process.Start;
+        /// <summary>Bounds the silent installer wait without terminating a process with an uncertain outcome.</summary>
+        internal static Func<Process, int, bool> WaitForInstaller = (process, milliseconds) => process.WaitForExit(milliseconds);
+        internal const int InstallerTimeoutMilliseconds = 15 * 60 * 1000;
         /// <summary>Microsoft-hosted Evergreen WebView2 bootstrapper URL.</summary>
         internal const string Bootstrapper = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
         /// <summary>Runtime detection delegate.</summary>
@@ -67,21 +71,35 @@ namespace VBAi
             string directory = Path.Combine(folder, "WebView2-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(directory);
             string path = Path.Combine(directory, "MicrosoftEdgeWebview2Setup.exe");
+            Exception failure = null;
+            bool installerTimedOut = false;
             try
             {
                 await Download(path);
                 if (!Verify(path)) throw new InvalidDataException("WebView2 installer signature is invalid.");
-                int code = await Task.Run(() => Install(path));
+                int code;
+                try { code = await Task.Run(() => Install(path)); }
+                catch (TimeoutException) { installerTimedOut = true; throw; }
                 if (code != 0 || !IsInstalled()) throw new InvalidOperationException("WebView2 installation could not be verified.");
             }
-            finally { if (File.Exists(path)) File.Delete(path); Directory.Delete(directory); }
+            catch (Exception error) { failure = error; throw; }
+            finally
+            {
+                if (!installerTimedOut)
+                {
+                    try { if (File.Exists(path)) File.Delete(path); Directory.Delete(directory); }
+                    catch (IOException) when (failure != null) { }
+                    catch (UnauthorizedAccessException) when (failure != null) { }
+                }
+            }
         }
         /// <summary>Downloads the Microsoft bootstrapper over HTTPS with a two-minute timeout and size limit.</summary>
         /// <param name="path">New file path for the downloaded bootstrapper.</param><returns>Task completed after the file is written.</returns>
         private static async Task DownloadNative(string path)
         {
+            using (var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2)))
             using (var client = CreateClient())
-            using (var response = await client.GetAsync(Bootstrapper, HttpCompletionOption.ResponseHeadersRead))
+            using (var response = await client.GetAsync(Bootstrapper, HttpCompletionOption.ResponseHeadersRead, timeout.Token))
             {
                 response.EnsureSuccessStatusCode();
                 if (response.RequestMessage.RequestUri.Scheme != "https") throw new InvalidDataException("HTTPS required.");
@@ -89,8 +107,8 @@ namespace VBAi
                 using (var output = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None))
                 {
                     var buffer = new byte[81920]; int read, size = 0;
-                    while ((read = await input.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                    { size += read; if (size > 20 * 1024 * 1024) throw new InvalidDataException("Unexpected bootstrapper size."); await output.WriteAsync(buffer, 0, read); }
+                    while ((read = await input.ReadAsync(buffer, 0, buffer.Length, timeout.Token)) > 0)
+                    { size += read; if (size > 20 * 1024 * 1024) throw new InvalidDataException("Unexpected bootstrapper size."); await output.WriteAsync(buffer, 0, read, timeout.Token); }
                 }
             }
         }
@@ -108,7 +126,12 @@ namespace VBAi
         private static int InstallNative(string path)
         {
             using (var process = StartProcess(new ProcessStartInfo(path, "/silent /install") { UseShellExecute = false, CreateNoWindow = true }))
-            { if (process == null) throw new InvalidOperationException("WebView2 installer did not start."); process.WaitForExit(); return process.ExitCode; }
+            {
+                if (process == null) throw new InvalidOperationException("WebView2 installer did not start.");
+                if (!WaitForInstaller(process, InstallerTimeoutMilliseconds))
+                    throw new TimeoutException("WebView2 installation outcome is uncertain. Check the installer and runtime state before retrying.");
+                return process.ExitCode;
+            }
         }
     }
 }

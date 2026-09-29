@@ -16,7 +16,15 @@ namespace VBAi
         /// <summary>Récupère l’icône <c>$this.Icon</c> des ressources associées à une fenêtre.</summary>
         /// <param name="windowType">Type de fenêtre qui possède les ressources.</param>
         /// <returns>Icône extraite des ressources du type.</returns>
-        private static System.Drawing.Icon ReadIconNative(Type windowType) { return (windowType == typeof(AboutWindow) || windowType == typeof(CrashReportWindow) || windowType == typeof(UpdateWindow)) ? VbeWindowIcons.Icon("assistant") : (System.Drawing.Icon)new System.ComponentModel.ComponentResourceManager(windowType).GetObject("$this.Icon"); }
+        private static System.Drawing.Icon ReadIconNative(Type windowType)
+        {
+            if (windowType == typeof(LlmSettingsWindow)) return VbeWindowIcons.Icon("settings");
+            if (windowType == typeof(GitWindow)) return VbeWindowIcons.Icon("github");
+            if (windowType == typeof(ChatWindow) || windowType == typeof(ModernEditorWindow) ||
+                windowType == typeof(AboutWindow) || windowType == typeof(CrashReportWindow) || windowType == typeof(UpdateWindow))
+                return VbeWindowIcons.Icon("assistant");
+            return (System.Drawing.Icon)new System.ComponentModel.ComponentResourceManager(windowType).GetObject("$this.Icon");
+        }
         /// <summary>IID de l’interface Office utilisée pour recevoir les clics de CommandBarButton.</summary>
         private static readonly Guid ClickInterface = new Guid("000C0351-0000-0000-C000-000000000046");
         /// <summary>Bouton VBAi ajouté au menu View du VBE.</summary>

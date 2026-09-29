@@ -20,6 +20,12 @@ namespace VBAi.Tests.Unit.Editor
             return message;
         }
         private static void Call(ModernEditorToolFixture f, string method, object message) => ModernEditorDebugFixture.Wait((Task)f.Private(method, message));
+        private static string LanguagePayload(ModernEditorToolFixture fixture)
+        {
+            var reply = fixture.Base.Scripts.Single(script => script.Item1 == "languageReply");
+            Assert.IsNotNull(reply.Item2[1]);
+            return fixture.Json.Serialize(fixture.Result(reply.Item2[1]));
+        }
         [STATestMethod]
         public void LanguageRequestsReplyOnlyToLiveOwnedWindowsAndHandleMissingStaleOrFailedSnapshots()
         {
@@ -67,6 +73,68 @@ namespace VBAi.Tests.Unit.Editor
                 var response = f.Result(reply.Item2[1]); Assert.AreEqual("Module1", response["module"]);
                 string payload = f.Json.Serialize(response); StringAssert.Contains(payload, "draftOnly"); StringAssert.Contains(payload, "Dictionary"); Assert.IsFalse(payload.Contains("Foreign")); Assert.IsFalse(payload.Contains("Removed"));
                 Assert.IsTrue(payload.Contains("\"External\":true"));
+            }
+        }
+        [STATestMethod]
+        public void NativeLanguageCatalogIsCachedForOneSecondAndDraftsDoNotChangeTheCachedSource()
+        {
+            using (var f = new ModernEditorToolFixture())
+            {
+                long clock = 10000;
+                f.Window.LanguageClock = () => clock;
+                var native = f.Base.Native;
+                var unopened = new EditorVbeContract.Component { Name = "Unopened", Collection = native.Project.VBComponents, Type = 1 };
+                unopened.CodeModule.Raw = "Public Sub BeforeRefresh()\nEnd Sub";
+                int reads = 0;
+                unopened.CodeModule.BeforeRead = () => reads++;
+                native.Project.VBComponents.Items.Add(unopened);
+
+                f.Base.Scripts.Clear(); Call(f, "LanguageRequest", Message(f, id: f.Base.Document.Id));
+                StringAssert.Contains(LanguagePayload(f), "BeforeRefresh");
+                Assert.AreEqual(1, reads);
+
+                unopened.CodeModule.Raw = "Public Sub AfterRefresh()\nEnd Sub";
+                f.Base.Scripts.Clear(); Call(f, "LanguageRequest", Message(f, id: f.Base.Document.Id));
+                string cached = LanguagePayload(f);
+                StringAssert.Contains(cached, "BeforeRefresh");
+                Assert.IsFalse(cached.Contains("AfterRefresh"));
+                Assert.AreEqual(1, reads, "Unopened modules must not be reread during the cache window.");
+
+                string original = f.Base.Document.Text;
+                f.Base.Document.Edit(original + "\nPublic draftOnly As Long");
+                f.Base.Scripts.Clear(); Call(f, "LanguageRequest", Message(f, id: f.Base.Document.Id));
+                StringAssert.Contains(LanguagePayload(f), "draftOnly");
+                Assert.AreEqual(1, reads);
+                f.Base.Document.Edit(original);
+                f.Base.Scripts.Clear(); Call(f, "LanguageRequest", Message(f, id: f.Base.Document.Id));
+                Assert.IsFalse(LanguagePayload(f).Contains("draftOnly"), "A draft overlay must not mutate the cached native source.");
+                Assert.AreEqual(1, reads);
+
+                clock += 1001;
+                f.Base.Scripts.Clear(); Call(f, "LanguageRequest", Message(f, id: f.Base.Document.Id));
+                string refreshed = LanguagePayload(f);
+                StringAssert.Contains(refreshed, "AfterRefresh");
+                Assert.IsFalse(refreshed.Contains("BeforeRefresh"));
+                Assert.AreEqual(2, reads);
+            }
+        }
+        [STATestMethod]
+        public void PendingDebugCommandReturnsNullWithoutReadingNativeCatalog()
+        {
+            using (var f = new ModernEditorToolFixture())
+            {
+                int reads = 0;
+                f.Base.Native.Original.CodeModule.BeforeRead = () => reads++;
+                var debugCommands = f.Base.Get<SemaphoreSlim>("debugCommands");
+                Assert.IsTrue(debugCommands.Wait(0));
+                try
+                {
+                    f.Base.Scripts.Clear(); Call(f, "LanguageRequest", Message(f, id: f.Base.Document.Id));
+                    var reply = f.Base.Scripts.Single(script => script.Item1 == "languageReply");
+                    Assert.IsNull(reply.Item2[1]);
+                    Assert.AreEqual(0, reads);
+                }
+                finally { debugCommands.Release(); }
             }
         }
         [STATestMethod]

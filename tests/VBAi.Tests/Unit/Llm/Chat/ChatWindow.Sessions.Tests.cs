@@ -17,12 +17,94 @@ namespace VBAi.Tests.Unit
     /// <summary>Vérifie l’historique, la persistance locale et la réparation des conversations.</summary>
     public sealed partial class ChatWindowStateTests
     {
+        [STATestMethod, TestCategory("Unit")]
+        public void ScopeReadIgnoresStaleResultsAndKeepsActionsBlockedUntilLatestScopeLoads()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var store = new ChatSessionStore(Path.Combine(runtime.Root, "scope-reader.db")))
+            using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:A" }))
+            {
+                Set(window, "sessionStore", store);
+                var original = Get<ChatSessionState>(window, "currentSession");
+                Get<List<ChatSessionState>>(window, "scopeSessions").Add(original);
+                var b = AddScope(window, "temporary:B");
+                var c = AddScope(window, "temporary:C");
+                var scopes = Get<ComboBox>(window, "scopePicker");
+                var first = new TaskCompletionSource<ChatSessionStore.ScopeSnapshot>();
+                var latest = new TaskCompletionSource<ChatSessionStore.ScopeSnapshot>();
+                var requested = new List<string>();
+                window.ReadScope = (path, scope, includeSessions) => {
+                    requested.Add(scope);
+                    return scope == "temporary:B" ? first.Task : latest.Task;
+                };
+                try
+                {
+                    scopes.SelectedItem = b;
+                    Call(window, "ChangeScope");
+                    Task staleLoad = Get<Task>(window, "scopeLoad");
+                    Assert.IsTrue(Get<bool>(window, "loadingScope"));
+                    Assert.IsFalse(Get<TableLayoutPanel>(window, "rootLayout").Enabled);
+                    Call(window, "NewSession", (object)null);
+                    Assert.AreSame(original, Get<ChatSessionState>(window, "currentSession"));
+                    Assert.ThrowsException<TargetInvocationException>(() => Call(window, "EnsureCurrentScope"));
+                    scopes.SelectedItem = c;
+                    Call(window, "ChangeScope");
+                    first.SetResult(new ChatSessionStore.ScopeSnapshot {
+                        Sessions = new List<ChatSessionState> { new ChatSessionState { Scope = "temporary:B", Title = "Stale" } }, Memory = "stale memory"
+                    });
+                    CompleteOnSta(staleLoad);
+                    Assert.AreSame(original, Get<ChatSessionState>(window, "currentSession"));
+                    Assert.IsTrue(Get<bool>(window, "loadingScope"));
+                    CollectionAssert.AreEqual(new[] { "temporary:B", "temporary:C" }, requested);
+                    var expected = new ChatSessionState { Scope = "temporary:C", Title = "Current" };
+                    latest.SetResult(new ChatSessionStore.ScopeSnapshot { Sessions = new List<ChatSessionState> { expected }, Memory = "current memory" });
+                    CompleteScopeLoad(window);
+                    Assert.AreSame(expected, Get<ChatSessionState>(window, "currentSession"));
+                    Assert.AreEqual("current memory", Get<TextBox>(window, "memoryEditor").Text);
+                    Assert.IsFalse(Get<bool>(window, "loadingScope"));
+                    Assert.IsTrue(Get<TableLayoutPanel>(window, "rootLayout").Enabled);
+                }
+                finally
+                {
+                    first.TrySetResult(new ChatSessionStore.ScopeSnapshot());
+                    latest.TrySetResult(new ChatSessionStore.ScopeSnapshot());
+                    CompleteScopeLoad(window);
+                }
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void ScopeReadCompletingAfterDisposalDoesNotActivateAConversation()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var store = new ChatSessionStore(Path.Combine(runtime.Root, "scope-close.db")))
+            using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:A" }))
+            {
+                Set(window, "sessionStore", store);
+                var original = Get<ChatSessionState>(window, "currentSession");
+                var target = AddScope(window, "temporary:B");
+                Get<ComboBox>(window, "scopePicker").SelectedItem = target;
+                var read = new TaskCompletionSource<ChatSessionStore.ScopeSnapshot>();
+                window.ReadScope = (path, scope, includeSessions) => read.Task;
+                Call(window, "ChangeScope");
+                Task loading = Get<Task>(window, "scopeLoad");
+                window.Dispose();
+                read.SetResult(new ChatSessionStore.ScopeSnapshot {
+                    Sessions = new List<ChatSessionState> { new ChatSessionState { Scope = "temporary:B" } }, Memory = "ignored"
+                });
+                CompleteOnSta(loading);
+                Assert.AreSame(original, Get<ChatSessionState>(window, "currentSession"));
+                Assert.IsTrue(window.IsDisposed);
+                Assert.IsFalse(Get<bool>(window, "loadingScope"));
+            }
+        }
+
         /// <summary>Restores unfinished activities as interrupted while retaining their content and permitting new live activity.</summary>
         [STATestMethod]
         public void RestoredActivitiesAreInterruptedWithoutInventingResultsOrDuration()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 var session = new ChatSessionState { Provider = "missing-provider", Entries = new List<ChatEntry>() };
                 foreach (var kind in new[] { "reasoning", "commandExecution" })
@@ -187,15 +269,15 @@ namespace VBAi.Tests.Unit
                 foreach (var projects in new object[] { new object[0], "unexpected", new object[] { "skip", new { Name = "Unsaved", FileName = "" }, new { Name = "Relative", FileName = "relative.xlsm" }, new { Name = "Saved", FileName = @"C:\Temp\Saved.xlsm" } } })
                 {
                     runtime.Host = r => Response.Success(r.Command == "list_projects" ? projects : (object)new { SelectedProject = "Unsaved" });
-                    using (var window = new ChatWindow(runtime.Session))
+                    using (var window = LoadedWindow(runtime.Session))
                     {
                         var scopes = Get<System.Windows.Forms.ComboBox>(window, "scopePicker");
-                        if (scopes.Items.Count == 0) { var timer = Get<DispatcherTimer>(window, "projectRetryTimer"); TimerTick(timer); runtime.Host = r => Response.Success(r.Command == "list_projects" ? (object)new[] { new { Name = "P", FileName = "" } } : new { }); TimerTick(timer); Assert.AreEqual(1, scopes.Items.Count); }
+                        if (scopes.Items.Count == 0) { var timer = Get<DispatcherTimer>(window, "projectRetryTimer"); TimerTick(timer); runtime.Host = r => Response.Success(r.Command == "list_projects" ? (object)new[] { new { Name = "P", FileName = "" } } : new { }); TimerTick(timer); CompleteScopeLoad(window); Assert.AreEqual(1, scopes.Items.Count); }
                         else Assert.AreEqual(3, scopes.Items.Count);
                     }
                 }
                 ChatWindow.OpenHistory = p => { throw new IOException("store unavailable"); }; runtime.Host = r => Response.Failure("host unavailable");
-                using (var window = new ChatWindow(runtime.Session)) { Assert.IsTrue(Get<bool>(window, "storageFailed")); var timer = Get<DispatcherTimer>(window, "projectRetryTimer"); TimerTick(timer); runtime.Host = r => { throw new IOException("retry failure"); }; TimerTick(timer); window.Dispose(); TimerTick(timer); }
+                using (var window = LoadedWindow(runtime.Session)) { Assert.IsTrue(Get<bool>(window, "storageFailed")); var timer = Get<DispatcherTimer>(window, "projectRetryTimer"); TimerTick(timer); runtime.Host = r => { throw new IOException("retry failure"); }; TimerTick(timer); window.Dispose(); TimerTick(timer); }
             }
         }
                 /// <summary>Vérifie la découverte, les événements de sélection et l’état valide lorsque le stockage est indisponible.</summary>
@@ -207,15 +289,15 @@ namespace VBAi.Tests.Unit
                 foreach (var state in new[] { Response.Failure("state unavailable"), Response.Success((object)null), Response.Success(new { }), Response.Success(new { SelectedProject = "P" }), Response.Success(new { SelectedProject = "P", SelectedProjectPath = @"C:\Temp\P.xlsm" }) })
                 {
                     runtime.Host = r => r.Command == "list_projects" ? Response.Success(new[] { new { Name = "P", FileName = @"C:\Temp\P.xlsm" } }) : state;
-                    using (var window = new ChatWindow(runtime.Session))
+                    using (var window = LoadedWindow(runtime.Session))
                     {
                         var sessions = Get<System.Windows.Forms.ListBox>(window, "sessionList"); var first = Get<ChatSessionState>(window, "currentSession"); Call(window, "NewSession", (object)null); sessions.SelectedItem = first; Assert.AreSame(first, Get<ChatSessionState>(window, "currentSession")); sessions.SelectedIndex = -1; sessions.SelectedItem = first;
                         Set(window, "loadingSession", true); sessions.SelectedIndex = -1; sessions.SelectedItem = first; Set(window, "loadingSession", false); Set(window, "busy", true); sessions.SelectedIndex = -1; sessions.SelectedItem = first; Set(window, "busy", false);
-                        Get<System.Windows.Forms.TextBox>(window, "historySearch").Text = "missing"; Assert.AreEqual(0, sessions.Items.Count); Get<System.Windows.Forms.TextBox>(window, "historySearch").Text = "";
+                        Get<System.Windows.Forms.TextBox>(window, "historySearch").Text = "missing"; TimerTick(Get<DispatcherTimer>(window, "historySearchTimer")); Assert.AreEqual(0, sessions.Items.Count); Get<System.Windows.Forms.TextBox>(window, "historySearch").Text = "";
                     }
                 }
                 ChatWindow.OpenHistory = p => { throw new IOException("store unavailable"); }; runtime.Host = r => Response.Success(r.Command == "list_projects" ? (object)new[] { new { Name = "P", FileName = "" } } : new { SelectedProject = "P" });
-                using (var window = new ChatWindow(runtime.Session)) { Call(window, "SaveProjectMemory"); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, UiText.Get("Memory requires")); Call(window, "EnsureCurrentScope"); Get<System.Windows.Forms.ComboBox>(window, "scopePicker").SelectedIndex = -1; Call(window, "ChangeScope"); var failure = Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => Call(window, "EnsureCurrentScope")); Assert.IsInstanceOfType(failure.InnerException, typeof(InvalidOperationException)); }
+                using (var window = LoadedWindow(runtime.Session)) { Call(window, "SaveProjectMemory"); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, UiText.Get("Memory requires")); Call(window, "EnsureCurrentScope"); Get<System.Windows.Forms.ComboBox>(window, "scopePicker").SelectedIndex = -1; Call(window, "ChangeScope"); CompleteScopeLoad(window); var failure = Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => Call(window, "EnsureCurrentScope")); Assert.IsInstanceOfType(failure.InnerException, typeof(InvalidOperationException)); }
             }
         }
                 /// <summary>Active, restaure, renomme et archive des sessions puis persiste leur état localement.</summary>
@@ -223,23 +305,28 @@ namespace VBAi.Tests.Unit
         public void SessionsActivateRestoreRenameArchiveCacheAndPersistLocally()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 var original = Get<ChatSessionState>(window, "currentSession"); var store = Get<ChatSessionStore>(window, "sessionStore"); var scope = original.Scope;
                 Get<System.Windows.Forms.TextBox>(window, "memoryEditor").Text = "memory"; Call(window, "SaveProjectMemory"); Assert.AreEqual("memory", store.ReadMemory(scope));
                 var session = new ChatSessionState { Scope = scope, Provider = "missing-provider", Mode = ChatMode.Plan, Draft = null, DraftAttachments = null, DraftReferences = null, MessagesJson = "[{},7,{\"role\":\"assistant\",\"tool_calls\":[{\"id\":\"orphan\"}]}]", Entries = new List<ChatEntry> { new ChatEntry { Speaker = "Code", Change = new CodeChange { Project = "P", Module = "M", Before = "old", After = "new" } }, new ChatEntry { Speaker = "Assistant", Text = "stream complete", StreamId = "saved" } } };
                 Call(window, "ActivateSession", session, true); Assert.AreSame(session, Get<ChatSessionState>(window, "currentSession")); Assert.AreEqual(2, Get<List<ChatEntry>>(window, "transcriptEntries").Count); Assert.IsTrue(Get<HashSet<string>>(window, "completedStreams").Contains("saved"));
-                Call(window, "ScheduleSessionSave"); TimerTick(Get<DispatcherTimer>(window, "saveTimer")); Assert.AreEqual(2, store.List(scope).Count);
-                Set(window, "busy", true); Call(window, "ActivateSession", original, true); Call(window, "NewSession", (object)null); Call(window, "ChangeScope"); Call(window, "RenameCurrentChat"); Call(window, "ToggleArchiveCurrentChat"); Call(window, "SaveProjectMemory"); Set(window, "busy", false);
-                Set(window, "loadingSession", true); Call(window, "ScheduleSessionSave"); Call(window, "SaveCurrentSession"); Call(window, "ChangeScope"); Set(window, "loadingSession", false);
+                Call(window, "ScheduleSessionSave"); TimerTick(Get<DispatcherTimer>(window, "saveTimer"));
+                Assert.IsTrue(Get<ChatPersistenceWorker>(window, "persistenceWorker").Flush(5000));
+                Assert.AreEqual(2, store.List(scope).Count);
+                Set(window, "busy", true); Call(window, "ActivateSession", original, true); Call(window, "NewSession", (object)null); Call(window, "ChangeScope"); CompleteScopeLoad(window); Call(window, "RenameCurrentChat"); Call(window, "ToggleArchiveCurrentChat"); Call(window, "SaveProjectMemory"); Set(window, "busy", false);
+                Set(window, "loadingSession", true); Call(window, "ScheduleSessionSave"); Call(window, "SaveCurrentSession"); Call(window, "ChangeScope"); CompleteScopeLoad(window); Set(window, "loadingSession", false);
                 Call(window, "RenameFromQuestion", new string('x', 100)); Assert.AreEqual(session.Title, Get<System.Windows.Forms.Label>(window, "sessionTitle").Text);
                 session.Title = "Nouvelle conversation"; Get<List<ChatEntry>>(window, "transcriptEntries").Clear(); Call(window, "RenameFromQuestion", new string('x', 100)); Assert.AreEqual(62, session.Title.Length);
                 Get<System.Windows.Forms.TextBox>(window, "chatTitleEditor").Text = " "; Call(window, "RenameCurrentChat"); Get<System.Windows.Forms.TextBox>(window, "chatTitleEditor").Text = "short"; Call(window, "RenameCurrentChat"); Assert.AreEqual("short", session.Title);
                 session.Archived = true; Call(window, "ToggleArchiveCurrentChat"); Assert.IsFalse(session.Archived); Call(window, "ToggleArchiveCurrentChat"); Assert.IsTrue(session.Archived); Assert.AreNotSame(session, Get<ChatSessionState>(window, "currentSession"));
                 Call(window, "NewSession", "Ollama"); Assert.AreEqual("Ollama", Get<ChatSessionState>(window, "currentSession").Provider);
-                var scopes = Get<System.Windows.Forms.ComboBox>(window, "scopePicker"); var extra = AddScope(window, "temporary:extra"); scopes.SelectedItem = extra; Call(window, "ChangeScope"); Assert.AreEqual("temporary:extra", Get<ChatSessionState>(window, "currentSession").Scope); scopes.SelectedIndex = 0; Call(window, "ChangeScope"); Assert.AreEqual(scope, Get<ChatSessionState>(window, "currentSession").Scope);
+                var scopes = Get<System.Windows.Forms.ComboBox>(window, "scopePicker"); var extra = AddScope(window, "temporary:extra"); scopes.SelectedItem = extra; Call(window, "ChangeScope"); CompleteScopeLoad(window); Assert.AreEqual("temporary:extra", Get<ChatSessionState>(window, "currentSession").Scope); scopes.SelectedIndex = 0; Call(window, "ChangeScope"); CompleteScopeLoad(window); Assert.AreEqual(scope, Get<ChatSessionState>(window, "currentSession").Scope);
                 runtime.Host = r => Response.Failure("scope closed"); Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => Call(window, "EnsureCurrentScope")); runtime.Host = r => Response.Success(new object[0]); Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => Call(window, "EnsureCurrentScope"));
-                store.Dispose(); Call(window, "SaveCurrentSession"); Assert.IsTrue(Get<bool>(window, "storageFailed")); Call(window, "SaveProjectMemory"); Call(window, "ChangeScope");
+                var worker = Get<ChatPersistenceWorker>(window, "persistenceWorker");
+                Assert.IsTrue(worker.Flush(5000)); worker.Dispose();
+                Call(window, "SaveCurrentSession"); Assert.IsTrue(Get<bool>(window, "storageFailed"));
+                store.Dispose(); Call(window, "SaveProjectMemory"); Call(window, "ChangeScope"); CompleteScopeLoad(window);
             }
         }
                 /// <summary>Préserve les tours terminés et répare uniquement les tours utilisateur incomplets.</summary>
@@ -262,7 +349,7 @@ namespace VBAi.Tests.Unit
         public void SessionsRejectStaleScopeIdentityAtTheSelectionBoundary()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 var picker = Get<System.Windows.Forms.ComboBox>(window, "scopePicker"); var scope = picker.SelectedItem; var type = scope.GetType(); var project = type.GetField("Project"); var key = type.GetField("Key"); var originalProject = project.GetValue(scope); var originalKey = key.GetValue(scope);
                 try
@@ -293,7 +380,7 @@ namespace VBAi.Tests.Unit
         public void ScopeValidationWithoutCurrentSessionRevokesReadGrantsAndSharedAccess()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new VBAi.ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 var tools = Get<VBAi.LlmVbeTools>(window, "tools"); tools.SetReadAccess(new[] { "Foreign" }, true);
                 Set(window, "currentSession", null); Call(window, "EnsureCurrentScope");

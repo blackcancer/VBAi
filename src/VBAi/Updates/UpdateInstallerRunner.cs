@@ -19,6 +19,11 @@ namespace VBAi
         internal Func<UpdateHostLease, bool> IsAlive = IsAliveNative;
         /// <summary>Authenticode verification delegate for the staged installer.</summary>
         internal Func<string, bool> VerifySignature = VerifySignatureNative;
+        /// <summary>Product publisher policy is separate from general Windows signature trust.</summary>
+        internal Func<string, bool> VerifyPublisher = UpdatePublisherPolicy.Accepts;
+        internal static Func<Process, int, bool> WaitForInstaller = (process, milliseconds) => process.WaitForExit(milliseconds);
+        internal const int InstallerTimeoutMilliseconds = 15 * 60 * 1000;
+        internal const string UncertainStatus = "Installation outcome is uncertain. Check the installer and its log before attempting another update.";
         /// <summary>Delegate that launches an installer and returns its process exit code.</summary>
         internal Func<string, int> Install = InstallNative;
         /// <summary>Delegate that reads the installed product version from a directory.</summary>
@@ -55,7 +60,6 @@ namespace VBAi
         {
             job.Validate(root);
             if (job.Completed) return true;
-            if (HostsOpen(job)) return false;
             FileStream gate;
             try { gate = new FileStream(Path.Combine(root, "installation.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None); }
             catch (IOException) { return false; }
@@ -64,22 +68,44 @@ namespace VBAi
             {
                 var persisted = UpdateInstallJob.Load(root);
                 if (persisted != null && (persisted.Sha256 != job.Sha256 || persisted.TargetVersion != job.TargetVersion)) return true;
-                if (persisted?.Completed == true) { job.Completed = true; job.Status = persisted.Status; return true; }
+                if (persisted?.Completed == true) { job.Completed = true; job.Succeeded = persisted.Succeeded; job.Status = persisted.Status; return true; }
+                job.Succeeded = false;
+                string attempt = Path.Combine(root, "installation.started");
+                if (File.Exists(attempt))
+                {
+                    job.Status = UncertainStatus; job.Completed = true; job.Save(root); return true;
+                }
+                if (!VerifyPublisher(job.InstallerPath))
+                {
+                    job.Status = "Installation refused: no trusted VBAi publisher is configured or the publisher does not match.";
+                    job.Completed = true; job.Save(root); return true;
+                }
+                if (HostsOpen(job)) return false;
                 // Recheck integrity and Windows trust immediately before executing cached bytes.
                 if (!File.Exists(job.InstallerPath) || UpdatePaths.Hash(job.InstallerPath) != job.Sha256 || !VerifySignature(job.InstallerPath))
                     throw new InvalidDataException("Installer verification failed.");
                 if (HostsOpen(job)) return false;
                 Installing = true;
                 job.Status = "Installing update…"; job.Save(root);
+                // Persist before process creation. A crash or timeout must never cause an automatic replay.
+                using (var marker = new FileStream(attempt, FileMode.CreateNew, FileAccess.Write, FileShare.Read))
+                {
+                    byte[] identity = System.Text.Encoding.UTF8.GetBytes(DateTime.UtcNow.ToString("O") + "\n" + job.Sha256 + "\n" + job.TargetVersion);
+                    marker.Write(identity, 0, identity.Length); marker.Flush(true);
+                }
                 int code = Install(job.InstallerPath);
                 job.RestartRequired = code == 3010 || code == 1641;
                 bool verified = job.RestartRequired || (code == 0 && UpdateVersion.Parse(InstalledVersion(job.InstallationDirectory))?.CompareTo(UpdateVersion.Parse(job.TargetVersion)) == 0);
+                job.Succeeded = verified;
                 job.Status = job.RestartRequired ? "Update installed. Restart Windows to finish." : verified ? "Update installed. Restart the VBA host." : "Installation failed. Check the installer log.";
                 job.Completed = true; job.Save(root);
+                File.Delete(attempt);
             }
             catch (Exception)
             {
-                job.Status = "Installation failed. Check the installer log."; job.Completed = true; job.Save(root);
+                job.Succeeded = false;
+                job.Status = File.Exists(Path.Combine(root, "installation.started")) ? UncertainStatus : "Installation failed. Check the installer log.";
+                job.Completed = true; job.Save(root);
             }
             finally { Installing = false; }
             return true;
@@ -104,7 +130,9 @@ namespace VBAi
             using (var process = StartProcess(start))
             {
                 if (process == null) throw new InvalidOperationException("Installer did not start.");
-                process.WaitForExit(); return process.ExitCode;
+                if (!WaitForInstaller(process, InstallerTimeoutMilliseconds))
+                    throw new TimeoutException(UncertainStatus);
+                return process.ExitCode;
             }
         }
         /// <summary>Uses WinVerifyTrust to verify the installer without UI and then releases trust state.</summary>

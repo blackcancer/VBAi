@@ -232,19 +232,60 @@ namespace VBAi
                 throw new InvalidOperationException("The selected VBA project's workbook path changed since it was read.");
             dynamic workbook = MatchExcelWorkbook(project, false);
             if ((bool)workbook.ReadOnly) throw new InvalidOperationException("The workbook is read-only and cannot be saved.");
+            int fileFormat = (int)workbook.FileFormat;
+            if (!CanPreserveExcelVba(fileFormat))
+                throw new InvalidOperationException("Excel workbook format " + fileFormat +
+                    " cannot be verified to preserve VBA. Explicitly use Excel Save As to create a macro-enabled copy, then retry the save.");
             bool beforeHostSaved = (bool)workbook.Saved;
             bool beforeProjectSaved = (bool)project.Saved;
             workbook.Save();
             bool hostSaved = (bool)workbook.Saved;
             bool projectSaved = (bool)project.Saved;
             if (!hostSaved || !projectSaved)
-                throw new InvalidOperationException("Excel did not mark the workbook and VBA project as saved; a BeforeSave handler may have cancelled the save.");
+                throw new InvalidOperationException("Excel did not mark the workbook and VBA project as saved; a BeforeSave handler may have cancelled the save. Inspect the result; do not retry automatically.");
+            AssertExcelSaveIdentity(workbook, project, projectPath, fileFormat);
             return new { Project = request.Project, HostPath = projectPath,
                 SaveInvoked = true, HostSavedBefore = beforeHostSaved,
                 ProjectSavedBefore = beforeProjectSaved, HostSaved = hostSaved,
                 ProjectSaved = projectSaved,
                 Verification = "ExcelWorkbookSaveAndSavedReadback",
                 Limit = "The host reported Saved=true. Reopen the file to verify that a specific code edit persisted on disk." };
+        }
+
+        /// <summary>Rejects path or format changes made by save event handlers without replaying the mutation.</summary>
+        private static void AssertExcelSaveIdentity(dynamic workbook, dynamic project, string expectedPath, int expectedFormat)
+        {
+            string expected = Path.GetFullPath(expectedPath);
+            string actual = (string)workbook.FullName;
+            string projectPath = (string)project.FileName;
+            if (string.IsNullOrWhiteSpace(actual) || !Path.IsPathRooted(actual) ||
+                string.IsNullOrWhiteSpace(projectPath) || !Path.IsPathRooted(projectPath) ||
+                !string.Equals(Path.GetFullPath(actual), expected, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(Path.GetFullPath(projectPath), expected, StringComparison.OrdinalIgnoreCase) ||
+                (int)workbook.FileFormat != expectedFormat)
+                throw new InvalidOperationException("Excel Save was invoked but the workbook/project path or file format changed. Inspect the result; do not retry automatically.");
+        }
+
+        private static bool CanPreserveExcelVba(int fileFormat)
+        {
+            // XlFileFormat values for macro-capable workbooks, templates, and add-ins.
+            // Reject unrecognized formats before Save rather than risking VBA loss.
+            switch (fileFormat)
+            {
+                case -4143: // xlWorkbookNormal (.xls)
+                case 17:    // xlTemplate / xlTemplate8 (.xlt)
+                case 18:    // xlAddIn / xlAddIn8 (.xla)
+                case 39:    // xlExcel5 / xlExcel7 (.xls)
+                case 43:    // xlExcel9795 (.xls)
+                case 50:    // xlExcel12 (.xlsb)
+                case 52:    // xlOpenXMLWorkbookMacroEnabled (.xlsm)
+                case 53:    // xlOpenXMLTemplateMacroEnabled (.xltm)
+                case 55:    // xlOpenXMLAddIn (.xlam)
+                case 56:    // xlExcel8 (.xls)
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         /// <summary>Enregistre pour la première fois un projet Excel non enregistré au chemin .xlsm demandé.</summary>
@@ -288,6 +329,7 @@ namespace VBAi
                 !string.Equals(projectPath, path, StringComparison.OrdinalIgnoreCase) ||
                 !File.Exists(path) || !(bool)workbook.Saved || !(bool)project.Saved)
                 throw new InvalidOperationException("Excel SaveAs returned without matching saved workbook and project paths.");
+            AssertExcelSaveIdentity(workbook, project, path, 52);
             return new { Project = request.Project, HostPath = actual, ProjectPath = projectPath,
                 SaveAsInvoked = true, Bytes = new FileInfo(path).Length,
                 HostSaved = true, ProjectSaved = true,
@@ -354,7 +396,13 @@ namespace VBAi
             if (match == null) throw new InvalidOperationException("No workbook matches the selected VBA project.");
             if ((bool)match.ReadOnly) throw new InvalidOperationException("The signed workbook is read-only and cannot be saved.");
             if (!(bool)match.VBASigned) throw new InvalidOperationException("Excel does not report a signed VBA project before saving.");
+            int fileFormat = (int)match.FileFormat;
+            if (!CanPreserveExcelVba(fileFormat))
+                throw new InvalidOperationException("Excel workbook format " + fileFormat + " cannot be verified to preserve VBA.");
             match.Save();
+            if (!(bool)match.Saved || !(bool)project.Saved)
+                throw new InvalidOperationException("Excel did not mark the signed workbook and VBA project as saved. Inspect the result; do not retry automatically.");
+            AssertExcelSaveIdentity(match, project, projectPath, fileFormat);
             if (!(bool)match.VBASigned) throw new InvalidOperationException("Excel no longer reports the VBA project as signed after saving.");
             return new { Available = true, Saved = true, Path = projectPath,
                 Signed = true, Verification = "ExcelWorkbookSaveAndVBASignedReadback",

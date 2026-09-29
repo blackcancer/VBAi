@@ -111,6 +111,7 @@ namespace VBAi.Tests.Unit
 
             public string FullName { get; set; }
             public string Path { get; set; }
+            public int FileFormat { get; set; } = 52;
             public bool Saved { get; set; } = true;
             public bool ReadOnly { get; set; }
             public bool VBASigned { get; set; }
@@ -120,6 +121,7 @@ namespace VBAi.Tests.Unit
             public int SaveAsAttempts { get; private set; }
             public int LastSaveAsFormat { get; private set; }
             public Action AfterSaveAs { get; set; }
+            public Action AfterSave { get; set; }
 
             public void Save()
             {
@@ -132,12 +134,14 @@ namespace VBAi.Tests.Unit
 
                 if (DropSignatureOnSave)
                     VBASigned = false;
+                AfterSave?.Invoke();
             }
 
             public void SaveAs(string path, int format)
             {
                 SaveAsAttempts++;
                 LastSaveAsFormat = format;
+                FileFormat = format;
                 File.WriteAllText(path, "macro workbook test fixture");
                 FullName = path;
                 Path = System.IO.Path.GetDirectoryName(path);

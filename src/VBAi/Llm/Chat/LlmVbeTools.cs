@@ -55,6 +55,10 @@ namespace VBAi
         internal readonly VbeToolNativeBoundary Native = new VbeToolNativeBoundary();
         /// <summary>Exécute une commande sur la session hôte, sans remplacer l’orchestration de l’outil.</summary>
         internal Func<Request, Response> Execute;
+        /// <summary>Reads the native Immediate buffer asynchronously on the VBE STA.</summary>
+        internal Func<Request, Task<object>> ReadImmediateNative;
+        /// <summary>Inspects declared scalar locals asynchronously on the VBE STA.</summary>
+        internal Func<Request, Task<object>> InspectLocalScalarsNative;
         /// <summary>Interroge la disponibilité native d’une récupération dans le concepteur VBE.</summary>
         internal Func<Request, bool> CanRecoverDesignerCut;
         /// <summary>Demande la sauvegarde de signature au document hôte.</summary>
@@ -95,6 +99,8 @@ namespace VBAi
         {
             this.session = session;
             Execute = request => session.Execute(request);
+            ReadImmediateNative = request => session.ReadImmediateAsync(request);
+            InspectLocalScalarsNative = request => session.InspectLocalScalarsAsync(request);
             CanRecoverDesignerCut = request => session.CanRecoverFormCut(request);
             PersistSignature = project => session.PersistProjectSignature(project);
             this.owner = owner;
@@ -147,6 +153,11 @@ namespace VBAi
                 new[] { "Pane", "Action", "PathSegments" }, "Pane", "Action", "PathSegments", "Context"),
             Definition("immediate_execute", "Execute one line in the visible VBE Immediate window through native character and Enter messages, without shortcuts or coordinates. Requires Project and current ExpectedMode (1 break or 2 design). Returns exact text before/after; arbitrary side effects require separate verification. Automatic VBE edit policy is required.",
                 new[] { "Project", "ExpectedMode", "Text" }, "Project", "ExpectedMode", "Text"),
+            Definition("read_immediate", "Explicitly copy and read the entire visible native VBE Immediate window through validated Select All and Copy commands. Requires Project and current ExpectedMode (1 break or 2 design), Agent mode, automatic VBE edit policy and shared VBE context access. Output may contain data from other projects; selection and focus change. The clipboard is restored when supported, otherwise the operation is refused before Copy. No shortcuts or VBA evaluation are used.",
+                new[] { "Project", "ExpectedMode" }, "Project", "ExpectedMode"),
+            Definition("inspect_local_scalars", "Explicitly inspect declared simple scalar locals and parameters in one paused Sub or Function through native Quick Watch. Requires exact Project, Module, Procedure, current module SHA-256 and ExpectedMode=1; Offset and Limit page candidates (default 8, maximum 16). Native context is checked for each value. Variant, object, array and other unsupported declarations are excluded and reported; results are partial, not a complete Locals snapshot. This can evaluate VBA and change native selection, so Agent mode, automatic VBE edit policy and shared VBE context access are required. Passive debugger polling does not invoke it.",
+                new[] { "Project", "Module", "Procedure", "ExpectedSha256", "ExpectedMode" },
+                "Project", "Module", "Procedure", "ExpectedSha256", "ExpectedMode", "Offset", "Limit"),
             Definition("respond_debug_dialog", "Activate one button on a visible native VBA run-time or compile diagnostic. Supply the exact Diagnostic and Button strings returned by debug_dialog, then read debug_state separately. Requires automatic VBE edit policy; no shortcut or coordinate click is used.",
                 new[] { "Diagnostic", "Button" }, "Diagnostic", "Button"),
             Definition("open_debug_pane", "Open the native Locals, Watches or Immediate pane. Action is locals, watches or immediate. The effect may be asynchronous; verify with debug_windows in a separate request.",
@@ -369,6 +380,8 @@ namespace VBAi
         /// <returns>JSON d’une réponse réussie ou d’erreur.</returns>
         public string Invoke(string name, string arguments)
         {
+            if (name == "read_immediate" || name == "inspect_local_scalars")
+                return json.Serialize(Response.Failure(name + " requires InvokeAsync."));
             if (name.StartsWith("monaco_", StringComparison.Ordinal)) return json.Serialize(Response.Failure("Monaco tools require InvokeAsync."));
             try { GuardLegacyEditorMutation(name); }
             catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
@@ -612,9 +625,9 @@ namespace VBAi
             try
             {
                 var editor = EditorWindow(false);
-                if (NeedsSynchronizedEditor(name) && editor != null && !editor.IsDisposed && editor.Documents.Any())
+                if (name != "read_immediate" && name != "inspect_local_scalars" && NeedsSynchronizedEditor(name) && editor != null && !editor.IsDisposed && editor.Documents.Any())
                     await editor.CaptureForTool();
-                GuardLegacyEditorMutation(name);
+                if (name != "read_immediate" && name != "inspect_local_scalars") GuardLegacyEditorMutation(name);
             }
             catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             if (name.StartsWith("git_", StringComparison.Ordinal)) return await InvokeGitAsync(name, arguments);
@@ -794,6 +807,56 @@ namespace VBAi
                         return json.Serialize(Response.Failure("Project mode changed before Immediate execution."));
                     return json.Serialize(Response.Success(await Task.Run(() =>
                         Native.ExecuteImmediate((string)values["Text"]))));
+                }
+                catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+            }
+            if (name == "read_immediate")
+            {
+                try
+                {
+                    if (settings.VbeEditApproval != "Automatic")
+                        return json.Serialize(Response.Failure("Automatic VBE edit policy is required for Immediate reading."));
+                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
+                    if (values == null || !values.TryGetValue("Project", out var project) ||
+                        !(project is string) || string.IsNullOrWhiteSpace((string)project) ||
+                        !values.TryGetValue("ExpectedMode", out var expectedMode) || !(expectedMode is int) ||
+                        ((int)expectedMode != 1 && (int)expectedMode != 2) ||
+                        values.Keys.Any(key => key != "Project" && key != "ExpectedMode"))
+                        throw new ArgumentException("Project and ExpectedMode (1 or 2) are required; no other arguments are accepted.");
+                    var request = new Request { Command = name, Project = (string)project, ExpectedMode = (int)expectedMode };
+                    var state = Execute(new Request { Command = "debug_state", Project = request.Project });
+                    if (!state.Ok) return json.Serialize(state);
+                    if ((int)((dynamic)state.Data).Mode != request.ExpectedMode)
+                        return json.Serialize(Response.Failure("Project mode changed before Immediate reading."));
+                    return json.Serialize(Response.Success(await ReadImmediateNative(request)));
+                }
+                catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+            }
+            if (name == "inspect_local_scalars")
+            {
+                try
+                {
+                    if (settings.VbeEditApproval != "Automatic")
+                        return json.Serialize(Response.Failure("Automatic VBE edit policy is required for local inspection."));
+                    var values = json.DeserializeObject(arguments) as IDictionary<string, object>;
+                    if (values == null || !values.TryGetValue("Project", out var project) || !(project is string) || string.IsNullOrWhiteSpace((string)project) ||
+                        !values.TryGetValue("Module", out var module) || !(module is string) || string.IsNullOrWhiteSpace((string)module) ||
+                        !values.TryGetValue("Procedure", out var procedure) || !(procedure is string) || string.IsNullOrWhiteSpace((string)procedure) ||
+                        !values.TryGetValue("ExpectedSha256", out var sha) || !(sha is string) || !Regex.IsMatch((string)sha, @"\A[0-9a-fA-F]{64}\z") ||
+                        !values.TryGetValue("ExpectedMode", out var mode) || !(mode is int) || (int)mode != 1 ||
+                        values.Keys.Any(key => key != "Project" && key != "Module" && key != "Procedure" && key != "ExpectedSha256" && key != "ExpectedMode" && key != "Offset" && key != "Limit") ||
+                        (values.TryGetValue("Offset", out var offset) && (!(offset is int) || (int)offset < 0)) ||
+                        (values.TryGetValue("Limit", out var limit) && (!(limit is int) || (int)limit < 0 || (int)limit > 16)))
+                        throw new ArgumentException("Project, Module, Procedure, 64-character ExpectedSha256 and ExpectedMode=1 are required; Offset must be nonnegative, Limit 0..16, with no other arguments.");
+                    var request = new Request { Command = name, Project = (string)project, Module = (string)module,
+                        Procedure = (string)procedure, ExpectedSha256 = (string)sha, ExpectedMode = 1,
+                        Offset = values.TryGetValue("Offset", out var selectedOffset) ? (int)selectedOffset : 0,
+                        Limit = values.TryGetValue("Limit", out var selectedLimit) ? (int)selectedLimit : 0 };
+                    var state = Execute(new Request { Command = "debug_state", Project = request.Project });
+                    if (!state.Ok) return json.Serialize(state);
+                    if ((int)((dynamic)state.Data).Mode != 1)
+                        return json.Serialize(Response.Failure("Project mode changed before local inspection."));
+                    return json.Serialize(Response.Success(await InspectLocalScalarsNative(request)));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             }

@@ -241,7 +241,8 @@ namespace VBAi.Tests.Unit
                 var task=(Task<bool>)Call(window,"RunHttpBudgetAsync",LlmProvider.All[2],"local-test");CompleteOnSta(task);
                 Assert.IsTrue(task.Result);
                 Set(window,"stopRequested",true);Get<LlmChatClient>(window,"activeHttpClient").TextDelta("ignored");
-                Set(window,"stopRequested",false);window.Dispose();Get<LlmChatClient>(window,"activeHttpClient").TextDelta("ignored disposed");
+                var completedClient = Get<LlmChatClient>(window,"activeHttpClient");
+                Set(window,"stopRequested",false);window.Dispose();completedClient.TextDelta("ignored disposed");
                 Set(window,"currentSession",null);
             }
         }

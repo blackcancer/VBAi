@@ -52,8 +52,8 @@ namespace VBAi.Tests.Unit
         {
             var json=new System.Web.Script.Serialization.JavaScriptSerializer();
             var tools=new LlmVbeTools(null,null,new LlmSettings());
-            foreach(var name in new[]{"git_status","form_tree","designer_state","debug_state","watch_state","breakpoint_set","run_any","step_any","compile_project","immediate_execute","invoke_command","list_commands","monaco_read","code_read","module_read","procedure_read","rename_any","replace_lines","project_symbols","status"}) {
-                var expected=name.StartsWith("git_")?"git":name.Contains("form")||name.Contains("designer")?"forms":name.Contains("debug")||name.Contains("watch")||name.Contains("breakpoint")||name.StartsWith("run_")||name.StartsWith("step_")||name=="compile_project"||name=="immediate_execute"||name=="invoke_command"||name=="list_commands"?"debug":name.StartsWith("monaco_")||name.Contains("code")||name.Contains("module")||name.Contains("procedure")||name.Contains("rename")||name=="replace_lines"||name=="project_symbols"?"code":"environment";
+            foreach(var name in new[]{"git_status","form_tree","designer_state","debug_state","watch_state","breakpoint_set","run_any","step_any","compile_project","immediate_execute","read_immediate","inspect_local_scalars","invoke_command","list_commands","monaco_read","code_read","module_read","procedure_read","rename_any","replace_lines","project_symbols","status"}) {
+                var expected=name.StartsWith("git_")?"git":name.Contains("form")||name.Contains("designer")?"forms":name.Contains("debug")||name.Contains("watch")||name.Contains("breakpoint")||name.StartsWith("run_")||name.StartsWith("step_")||name=="compile_project"||name=="immediate_execute"||name=="read_immediate"||name=="inspect_local_scalars"||name=="invoke_command"||name=="list_commands"?"debug":name.StartsWith("monaco_")||name.Contains("code")||name.Contains("module")||name.Contains("procedure")||name.Contains("rename")||name=="replace_lines"||name=="project_symbols"?"code":"environment";
                 Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(expected,LlmVbeTools.ToolFamily(name),name);
             }
             foreach(var args in new[]{"null","[]","{}","{\"Family\":1}","{\"Other\":\"code\"}","{\"Family\":\"code\",\"extra\":1}","{\"Family\":\"unknown\"}","broken"})
@@ -69,6 +69,76 @@ namespace VBAi.Tests.Unit
                 }
                 tools.ResetCatalog();Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsTrue(tools.CatalogForProvider().Length<15);
             }
+        }
+
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public async System.Threading.Tasks.Task ReadImmediateGatewayKeepsModePolicyAndPrivacyGuards()
+        {
+            var json = new System.Web.Script.Serialization.JavaScriptSerializer();
+            var settings = new LlmSettings { VbeEditApproval = "ReadOnly" };
+            var tools = new LlmVbeTools(null, null, settings) { BoundProject = "A" };
+            int reads = 0;
+            tools.Execute = request =>
+            {
+                if (request.Command == "debug_state")
+                {
+                    var state = new System.Dynamic.ExpandoObject();
+                    ((System.Collections.Generic.IDictionary<string, object>)state)["Mode"] = 1;
+                    return Response.Success(state);
+                }
+                throw new System.InvalidOperationException("Unexpected synchronous command.");
+            };
+            tools.ReadImmediateNative = request =>
+            {
+                reads++;
+                return System.Threading.Tasks.Task.FromResult<object>(new { Text = "private output" });
+            };
+            const string arguments = "{\"Project\":\"A\",\"ExpectedMode\":1}";
+            string gateway = json.Serialize(new { ToolName = "read_immediate", ArgumentsJson = arguments });
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(json.Deserialize<Response>(tools.Invoke("read_immediate", arguments)).Ok);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(json.Deserialize<Response>(await tools.InvokeCatalogAsync("invoke_tool", gateway)).Ok);
+            settings.VbeEditApproval = "Automatic";
+            tools.Mode = ChatMode.Plan;
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(json.Deserialize<Response>(await tools.InvokeCatalogAsync("invoke_tool", gateway)).Ok);
+            tools.Mode = ChatMode.Agent;
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(json.Deserialize<Response>(await tools.InvokeCatalogAsync("invoke_tool", gateway)).Ok);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, reads);
+            tools.SetReadAccess(new string[0], true);
+            var granted = json.Deserialize<Response>(await tools.InvokeCatalogAsync("invoke_tool", gateway));
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsTrue(granted.Ok, granted.Error);
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(1, reads);
+        }
+
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public async System.Threading.Tasks.Task LocalScalarGatewayKeepsModePolicyAndPrivacyGuards()
+        {
+            var json = new JavaScriptSerializer();
+            var settings = new LlmSettings { VbeEditApproval = "ReadOnly" };
+            var tools = new LlmVbeTools(null, null, settings) { BoundProject = "A" };
+            int calls = 0;
+            tools.Execute = request => {
+                var state = new System.Dynamic.ExpandoObject();
+                ((IDictionary<string, object>)state)["Mode"] = 1;
+                return Response.Success(state);
+            };
+            tools.InspectLocalScalarsNative = request => {
+                calls++;
+                return Task.FromResult<object>(new { Partial = true });
+            };
+            const string arguments = "{\"Project\":\"A\",\"Module\":\"M\",\"Procedure\":\"Run\",\"ExpectedSha256\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"ExpectedMode\":1}";
+            string gateway = json.Serialize(new { ToolName = "inspect_local_scalars", ArgumentsJson = arguments });
+            Assert.IsFalse(json.Deserialize<Response>(tools.Invoke("inspect_local_scalars", arguments)).Ok);
+            Assert.IsFalse(json.Deserialize<Response>(await tools.InvokeCatalogAsync("invoke_tool", gateway)).Ok);
+            settings.VbeEditApproval = "Automatic";
+            tools.Mode = ChatMode.Plan;
+            Assert.IsFalse(json.Deserialize<Response>(await tools.InvokeCatalogAsync("invoke_tool", gateway)).Ok);
+            tools.Mode = ChatMode.Agent;
+            Assert.IsFalse(json.Deserialize<Response>(await tools.InvokeCatalogAsync("invoke_tool", gateway)).Ok);
+            Assert.AreEqual(0, calls);
+            tools.SetReadAccess(new string[0], true);
+            var allowed = json.Deserialize<Response>(await tools.InvokeCatalogAsync("invoke_tool", gateway));
+            Assert.IsTrue(allowed.Ok, allowed.Error);
+            Assert.AreEqual(1, calls);
         }
     }
 }

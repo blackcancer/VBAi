@@ -38,7 +38,7 @@ namespace VBAi
             if (name.IndexOf("form", StringComparison.Ordinal) >= 0 || name.IndexOf("designer", StringComparison.Ordinal) >= 0) return "forms";
             if (name.IndexOf("debug", StringComparison.Ordinal) >= 0 || name.IndexOf("watch", StringComparison.Ordinal) >= 0 ||
                 name.IndexOf("breakpoint", StringComparison.Ordinal) >= 0 || name.StartsWith("run_", StringComparison.Ordinal) ||
-                name.StartsWith("step_", StringComparison.Ordinal) || name == "compile_project" || name == "immediate_execute" || name == "invoke_command" || name == "list_commands") return "debug";
+                name.StartsWith("step_", StringComparison.Ordinal) || name == "compile_project" || name == "immediate_execute" || name == "read_immediate" || name == "inspect_local_scalars" || name == "invoke_command" || name == "list_commands") return "debug";
             if (name.StartsWith("monaco_", StringComparison.Ordinal) || name.IndexOf("code", StringComparison.Ordinal) >= 0 ||
                 name.IndexOf("module", StringComparison.Ordinal) >= 0 || name.IndexOf("procedure", StringComparison.Ordinal) >= 0 ||
                 name.IndexOf("rename", StringComparison.Ordinal) >= 0 || name == "replace_lines" || name == "project_symbols") return "code";

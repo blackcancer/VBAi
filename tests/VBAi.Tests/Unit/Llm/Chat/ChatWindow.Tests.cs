@@ -366,7 +366,7 @@ namespace VBAi.Tests.Unit
         {
             Assert.AreEqual("Save", ChatWindow.WriteSettings.Method.Name); Assert.AreEqual("ShowDialog", ChatWindow.ShowModal.Method.Name); Assert.IsTrue(ChatWindow.HistoryPath().EndsWith("chat.db")); using (var native = ChatWindow.TransportFactory()) Assert.IsFalse(native.IsRunning);
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 CompleteOnSta((Task)Call(window, "LoadModelsAsync")); var provider = Get<ComboBox>(window, "providerPicker"); var model = Get<ComboBox>(window, "modelPicker"); var effort = Get<ComboBox>(window, "effortPicker"); var current = Get<ChatSessionState>(window, "currentSession");
                 var change = new CodeChange(@"C:\Temp\P.xlsm", "M", "old", "before", "new", "after", 1); var tool = Get<LlmVbeTools>(window, "tools"); ((Action<CodeChange>)typeof(LlmVbeTools).GetField("CodeEdited", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(tool))(change); Assert.AreEqual(1, Get<List<CodeChange>>(window, "codeChanges").Count); Click(Get<Button>(window, "changes")); Get<Button>(window, "changes").ContextMenuStrip.Close();
@@ -380,13 +380,13 @@ namespace VBAi.Tests.Unit
                 ChatWindow.WriteSettings = s => runtime.Saves++; Call(window, "ResetProviderConnection");
                 var handle = window.Handle; var thread = new Thread(() => Call(window, "SetStatus", "worker update")); thread.Start(); Assert.IsTrue(thread.Join(5000)); Application.DoEvents(); Assert.AreEqual("worker update", Get<Label>(window, "status").Text); Set(window, "storageFailed", true); Call(window, "SetStatus", "storage"); StringAssert.Contains(Get<Label>(window, "status").Text, UiText.Get("History not saved"));
             }
-            using (var runtime = new RuntimeScope()) { ChatWindow.ReadSettings = () => { throw new InvalidOperationException("settings load failed"); }; runtime.Host = r => Response.Success(new object[0]); using (var window = new ChatWindow(runtime.Session)) { Assert.AreEqual(0, Get<ComboBox>(window, "providerPicker").SelectedIndex); } }
+            using (var runtime = new RuntimeScope()) { ChatWindow.ReadSettings = () => { throw new InvalidOperationException("settings load failed"); }; runtime.Host = r => Response.Success(new object[0]); using (var window = LoadedWindow(runtime.Session)) { Assert.AreEqual(0, Get<ComboBox>(window, "providerPicker").SelectedIndex); } }
         }
         [STATestMethod, TestCategory("Unit")]
         public void RuntimeModelCatalogueHandlesMissingEmptyDefaultsFallbacksAndLateDisposedRequests()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 var picker = Get<ComboBox>(window, "providerPicker"); var model = Get<ComboBox>(window, "modelPicker");
                 picker.SelectedIndex = -1; CompleteOnSta((Task)Call(window, "LoadModelsAsync")); Assert.AreEqual(0, model.Items.Count);
@@ -402,7 +402,7 @@ namespace VBAi.Tests.Unit
         public void RuntimeCodexTransportSendsStreamsThreadReadyAndInterruptionWithoutAProcess()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 CompleteOnSta((Task)Call(window, "LoadModelsAsync"));
                 runtime.Transport.BeforeComplete = () => { var change = new CodeChange(@"C:\Temp\P.xlsm", "M", "old", "before", "new", "after", 1); var tools = Get<LlmVbeTools>(window, "tools"); ((Action<CodeChange>)typeof(LlmVbeTools).GetField("CodeEdited", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(tools))(change); }; Get<CheckBox>(window, "verifyAfterEdit").Checked = true; Question(window, "request"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.AreEqual("thread", Get<ChatSessionState>(window, "currentSession").CodexThreadId); Assert.IsFalse(Get<bool>(window, "busy"));
@@ -431,7 +431,7 @@ namespace VBAi.Tests.Unit
             using (var runtime = new RuntimeScope())
             {
                 runtime.Host = r => Response.Success(new object[0]);
-                using (var window = new ChatWindow(runtime.Session))
+                using (var window = LoadedWindow(runtime.Session))
                 {
                     var providers = Get<ComboBox>(window, "providerPicker"); providers.SelectedIndex = 2; providers.SelectedIndex = 0; CompleteOnSta((Task)Call(window, "LoadModelsAsync"));
                     var model = Get<ComboBox>(window, "modelPicker"); var effort = Get<ComboBox>(window, "effortPicker"); providers.SelectedIndex = -1; model.Items.Add(new LlmModelOption("other", "Other")); model.SelectedIndex = model.Items.Count - 1; effort.Items.Add(new LlmEffortOption("other", "Other")); effort.SelectedIndex = effort.Items.Count - 1; providers.SelectedIndex = 0; CompleteOnSta((Task)Call(window, "LoadModelsAsync"));
@@ -446,7 +446,7 @@ namespace VBAi.Tests.Unit
         public void RuntimeModelFailuresStaleExceptionsAndChangeMenusPreserveUiState()
         {
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 window.Show(); CompleteOnSta((Task)Call(window, "LoadModelsAsync")); runtime.Transport.FailModels = true; CompleteOnSta((Task)Call(window, "LoadModelsAsync")); Assert.IsNull(Get<CodexAppServerClient>(window, "codex")); runtime.Transport.FailModels = false;
                 var pending = new TaskCompletionSource<LlmModelOption[]>(); window.ModelCatalogueOverride = p => pending.Task; var stale = (Task)Call(window, "LoadModelsAsync"); window.ModelCatalogueOverride = p => Task.FromResult(new[] { new LlmModelOption("fresh", "Fresh") }); CompleteOnSta((Task)Call(window, "LoadModelsAsync")); pending.SetException(new InvalidOperationException("stale failure")); CompleteOnSta(stale); Assert.AreEqual("fresh", ((LlmModelOption)Get<ComboBox>(window, "modelPicker").SelectedItem).Id);
@@ -475,7 +475,7 @@ namespace VBAi.Tests.Unit
         {
             using (var runtime = new RuntimeScope())
             {
-                using (var window = new ChatWindow(runtime.Session))
+                using (var window = LoadedWindow(runtime.Session))
                 {
                     CompleteOnSta((Task)Call(window, "LoadModelsAsync")); var effort = Get<ComboBox>(window, "effortPicker"); effort.Items.Add(new LlmEffortOption("high", "High")); ChatWindow.WriteSettings = s => { throw new IOException("effort persistence unavailable"); }; effort.SelectedIndex = effort.Items.Count - 1; ChatWindow.WriteSettings = s => runtime.Saves++;
                     Call(window, "ResetProviderConnection"); effort.SelectedIndex = -1; Question(window, "reconnect without effort"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.AreEqual("thread", Get<ChatSessionState>(window, "currentSession").CodexThreadId);
@@ -489,7 +489,7 @@ namespace VBAi.Tests.Unit
                     var changes = Get<Button>(design, "changes"); try { Set(design, "changes", null); Call(design, "DisposeRuntime"); Assert.IsNull(Get<CodexAppServerClient>(design, "codex")); } finally { Set(design, "changes", changes); }
                     Call(design, "SetBusy", true); CompleteOnSta((Task)Call(design, "StopTurnAsync")); Assert.IsTrue(Get<bool>(design, "stopRequested")); Call(design, "SetBusy", false);
                 }
-                runtime.Host = r => Response.Success(new object[0]); using (var window = new ChatWindow(runtime.Session))
+                runtime.Host = r => Response.Success(new object[0]); using (var window = LoadedWindow(runtime.Session))
                 {
                     var unavailable = (LlmProvider)Activator.CreateInstance(typeof(LlmProvider), BindingFlags.Instance | BindingFlags.NonPublic, null, new object[] { "Future provider", false, false, null, null, null }, null); var providers = Get<ComboBox>(window, "providerPicker"); providers.Items.Add(unavailable); providers.SelectedItem = unavailable; Call(window, "ResetProviderConnection"); StringAssert.Contains(Get<Label>(window, "status").Text, UiText.Get("not implemented yet"));
                     var pending = new TaskCompletionSource<LlmModelOption[]>(); providers.SelectedIndex = 0; window.ModelCatalogueOverride = p => pending.Task; var stale = (Task)Call(window, "LoadModelsAsync"); window.ModelCatalogueOverride = p => Task.FromResult(new LlmModelOption[0]); CompleteOnSta((Task)Call(window, "LoadModelsAsync")); pending.SetException(new InvalidOperationException("stale codex failure")); CompleteOnSta(stale);
@@ -517,7 +517,7 @@ namespace VBAi.Tests.Unit
                 var handler = new RuntimeHttpHandler(); handler.BeforeResponse = () => { var client = Get<LlmChatClient>(window, "activeHttpClient"); window.Dispose(); client.TextDelta("queued late fragment"); }; window.HttpHandlerOverride = () => handler; Question(window, "dispose during request"); CompleteOnSta((Task)Call(window, "SendAsync")); Assert.IsTrue(window.IsDisposed); Set(window, "currentSession", null);
             }
             using (var runtime = new RuntimeScope())
-            using (var window = new ChatWindow(runtime.Session))
+            using (var window = LoadedWindow(runtime.Session))
             {
                 CompleteOnSta((Task)Call(window, "LoadModelsAsync")); var pending = new TaskCompletionSource<string>(); bool verifying = false; ChatWindow.InvokeTool = (t, n, a) => { verifying = true; return pending.Task; }; Get<CheckBox>(window, "verifyAfterEdit").Checked = true; runtime.Transport.BeforeComplete = () => { var change = new CodeChange(@"C:\Temp\P.xlsm", "M", "old", "before", "new", "after", 1); var tools = Get<LlmVbeTools>(window, "tools"); ((Action<CodeChange>)typeof(LlmVbeTools).GetField("CodeEdited", Fields).GetValue(tools))(change); }; Question(window, "edit and verify"); var send = (Task)Call(window, "SendAsync"); var deadline = DateTime.UtcNow.AddSeconds(5); while (!verifying && DateTime.UtcNow < deadline) { Application.DoEvents(); Thread.Sleep(1); }
                 Assert.IsTrue(verifying); Assert.IsFalse(send.IsCompleted); pending.SetResult(new JavaScriptSerializer().Serialize(Response.Success(new { Compiled = true }))); CompleteOnSta(send); Assert.IsFalse(Get<bool>(window, "busy")); Assert.IsTrue(Get<List<ChatEntry>>(window, "transcriptEntries").Any(x => x.Speaker == "Vérification"));
@@ -531,7 +531,7 @@ namespace VBAi.Tests.Unit
         [STATestMethod, TestCategory("Unit")]
         public void RuntimeUnknownProviderInvalidNativeEndpointAndSubscriberFailureAreSafe()
         {
-            using (var runtime = new RuntimeScope()) { runtime.Settings.ProviderName = "Unknown provider"; using (var window = new ChatWindow(runtime.Session)) { Assert.AreEqual("Codex", ((LlmProvider)Get<ComboBox>(window, "providerPicker").SelectedItem).Name); } }
+            using (var runtime = new RuntimeScope()) { runtime.Settings.ProviderName = "Unknown provider"; using (var window = LoadedWindow(runtime.Session)) { Assert.AreEqual("Codex", ((LlmProvider)Get<ComboBox>(window, "providerPicker").SelectedItem).Name); } }
             using (var runtime = new RuntimeScope())
             using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
             {

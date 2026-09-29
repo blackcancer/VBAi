@@ -5,6 +5,7 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
@@ -82,6 +83,10 @@ namespace VBAi
         internal readonly VbeToolNativeBoundary Native = new VbeToolNativeBoundary();
         /// <summary>Exécute une commande sur la session hôte, sans remplacer l’orchestration de l’outil.</summary>
         internal Func<Request, Response> Execute;
+        /// <summary>Captures Immediate output while yielding to the owning VBE message loop.</summary>
+        internal Func<Request, Task<object>> ReadImmediateNative;
+        /// <summary>Inspects declared scalar locals on the owning VBE UI thread.</summary>
+        internal Func<Request, Task<object>> InspectLocalScalarsNative;
         /// <summary>Demande la sauvegarde de signature au document hôte.</summary>
         internal Func<string, object> PersistSignature;
         /// <summary>Crée le canal local avec la sécurité de l’utilisateur courant.</summary>
@@ -96,6 +101,8 @@ namespace VBAi
         private NamedPipeServerStream listener;
         /// <summary>Budget de réception d'une requête complète, indépendant de la durée d'exécution VBE.</summary>
         internal TimeSpan RequestReadTimeout = TimeSpan.FromSeconds(10);
+        /// <summary>Limits response delivery independently of native command execution.</summary>
+        internal TimeSpan ResponseWriteTimeout = TimeSpan.FromSeconds(10);
         /// <summary>Limite UTF-8 appliquée avant l'allocation de la ligne JSON complète.</summary>
         internal int MaxRequestBytes = 10 * 1024 * 1024;
 
@@ -108,6 +115,8 @@ namespace VBAi
             this.dispatcher = dispatcher;
             this.session = session;
             Execute = request => session.Execute(request);
+            ReadImmediateNative = request => session.ReadImmediateAsync(request);
+            InspectLocalScalarsNative = request => session.InspectLocalScalarsAsync(request);
             PersistSignature = project => session.PersistProjectSignature(project);
             pipeName = "VBAi." + processId;
             OpenPipe = security => new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1,
@@ -126,6 +135,8 @@ namespace VBAi
                 try
                 {
                     var security = new PipeSecurity();
+                    security.AddAccessRule(new PipeAccessRule(new SecurityIdentifier(WellKnownSidType.NetworkSid, null),
+                        PipeAccessRights.FullControl, AccessControlType.Deny));
                     security.AddAccessRule(new PipeAccessRule(WindowsIdentity.GetCurrent().User,
                         PipeAccessRights.FullControl, AccessControlType.Allow));
                     using (var pipe = OpenPipe(security))
@@ -171,6 +182,24 @@ namespace VBAi
                                     else if ((int)((dynamic)state.Data).Mode != request.ExpectedMode)
                                         response = Response.Failure("Project mode changed before Immediate execution.");
                                     else response = Response.Success(Native.ExecuteImmediate(request.Text));
+                                }
+                                else if (request != null && request.Command == "read_immediate")
+                                {
+                                    var completion = new TaskCompletionSource<Response>(TaskCreationOptions.RunContinuationsAsynchronously);
+                                    dispatcher.BeginInvoke(new Action(async () => {
+                                        try { completion.TrySetResult(Response.Success(await ReadImmediateNative(request))); }
+                                        catch (Exception ex) { completion.TrySetResult(Response.Failure(ex.Message)); }
+                                    }));
+                                    response = completion.Task.GetAwaiter().GetResult();
+                                }
+                                else if (request != null && request.Command == "inspect_local_scalars")
+                                {
+                                    var completion = new TaskCompletionSource<Response>(TaskCreationOptions.RunContinuationsAsynchronously);
+                                    dispatcher.BeginInvoke(new Action(async () => {
+                                        try { completion.TrySetResult(Response.Success(await InspectLocalScalarsNative(request))); }
+                                        catch (Exception ex) { completion.TrySetResult(Response.Failure(ex.Message)); }
+                                    }));
+                                    response = completion.Task.GetAwaiter().GetResult();
                                 }
                                 else if (request != null && request.Command == "compile_project")
                                 {
@@ -292,8 +321,14 @@ namespace VBAi
                             {
                                 response = Response.Failure(ex.Message);
                             }
-                            using (var writer = new StreamWriter(pipe, new UTF8Encoding(false), 4096, true) { AutoFlush = true })
-                                writer.WriteLine(json.Serialize(response));
+                            string payload;
+                            try { payload = json.Serialize(response); }
+                            catch (Exception error)
+                            {
+                                LoadLog.Write("Bridge response serialization failed: " + error.GetType().Name);
+                                payload = json.Serialize(Response.Failure("The command response could not be serialized. The command may already have completed; inspect its state before retrying."));
+                            }
+                            BridgeResponseWriter.WriteAsync(pipe, payload, ResponseWriteTimeout).GetAwaiter().GetResult();
                         }
                     }
                 }

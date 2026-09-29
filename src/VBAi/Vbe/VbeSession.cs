@@ -160,6 +160,18 @@ namespace VBAi
             return vbe.Events.ReferencesEvents[VbeProjectResolver.Resolve(vbe, project)];
         }
 
+        /// <summary>Runs an explicit Immediate capture on the caller's VBE UI context.</summary>
+        internal System.Threading.Tasks.Task<object> ReadImmediateAsync(Request request)
+        {
+            return debugger.ReadImmediateAsync(request);
+        }
+
+        /// <summary>Inspects declared scalar locals through the asynchronous native debugger route.</summary>
+        internal System.Threading.Tasks.Task<object> InspectLocalScalarsAsync(Request request)
+        {
+            return debugger.InspectLocalScalarsAsync(request);
+        }
+
         /// <summary>Exécute la commande demandée et encapsule son résultat dans une réponse.</summary>
         /// <param name="request">Paramètres de la commande à exécuter.</param>
         /// <returns>Réponse contenant le résultat de la commande ou son erreur de validation.</returns>
@@ -359,6 +371,10 @@ namespace VBAi
                     return Response.Success(debugger.CompileProject(request));
                 case "open_debug_pane":
                     return Response.Success(debugger.OpenDebugPane(request.Action, editorWindows));
+                case "read_immediate":
+                    return Response.Failure("Native Immediate capture requires the asynchronous bridge or tool route.");
+                case "inspect_local_scalars":
+                    return Response.Failure("Native local inspection requires the asynchronous bridge or tool route.");
                 case "add_watch":
                     return Response.Success(debugger.QueueAddWatchDialog(request));
                 case "edit_watch":
