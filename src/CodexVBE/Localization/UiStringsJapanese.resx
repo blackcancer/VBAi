@@ -2063,4 +2063,6 @@ Git Credential Manager でサインインします。コミットの作成者情
   <data name="Delete" xml:space="preserve">
     <value>削除</value>
   </data>
+  <data name="VBA edit approval" xml:space="preserve"><value>VBA 編集の承認</value></data>
+  <data name="Model and reasoning effort" xml:space="preserve"><value>モデルと推論レベル</value></data>
 </root>

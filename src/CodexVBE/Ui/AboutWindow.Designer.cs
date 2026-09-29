@@ -353,7 +353,7 @@ namespace CodexVBE
             this.buttonLayout.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
             this.buttonLayout.WrapContents = true;
             this.buttonLayout.Margin = new System.Windows.Forms.Padding(0);
-            this.updates = new System.Windows.Forms.Button();
+            this.updates = new CodexVBE.UiActionButton();
             this.updates.Name = "updates";
             this.updates.Text = "Check for updates";
             this.updates.AutoSize = true;
@@ -408,12 +408,27 @@ namespace CodexVBE
             this.headerLayout.PerformLayout();
             this.rootLayout.ResumeLayout(false);
             this.rootLayout.PerformLayout();
+            this.copyDetails.Symbol = CodexVBE.UiSymbol.Copy;
+            this.copyDetails.IconOnly = true;
+            this.copyDetails.AutoSize = false;
+            this.copyDetails.MinimumSize = System.Drawing.Size.Empty;
+            this.copyDetails.Size = new System.Drawing.Size(32, 30);
+            this.closeButton.Symbol = CodexVBE.UiSymbol.Close;
+            this.closeButton.IconOnly = true;
+            this.closeButton.AutoSize = false;
+            this.closeButton.MinimumSize = System.Drawing.Size.Empty;
+            this.closeButton.Size = new System.Drawing.Size(32, 30);
+            this.updates.Symbol = CodexVBE.UiSymbol.Refresh;
+            this.updates.IconOnly = true;
+            this.updates.AutoSize = false;
+            this.updates.MinimumSize = System.Drawing.Size.Empty;
+            this.updates.Size = new System.Drawing.Size(32, 30);
             this.ResumeLayout(false);
             this.PerformLayout();
         }
         /// <summary>ToolTip component associated with About dialog controls.</summary>
         private System.Windows.Forms.ToolTip toolTips;
         /// <summary>Button that opens the update window.</summary>
-        private System.Windows.Forms.Button updates;
+        private CodexVBE.UiActionButton updates;
     }
 }

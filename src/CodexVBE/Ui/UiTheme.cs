@@ -72,6 +72,30 @@ namespace CodexVBE
         /// <summary>Couleur du texte au premier plan.</summary>
         /// <value>Couleur du texte selon le thème actif.</value>
         internal static Color Foreground { get { return HighContrast() ? SystemColors.WindowText : Dark ? Color.FromArgb(226, 232, 240) : Color.FromArgb(30, 41, 59); } }
+        /// <summary>Subtle boundary shared by cards, fields and menus.</summary>
+        internal static Color Border => HighContrast() ? SystemColors.WindowText : Dark ? Color.FromArgb(61, 68, 80) : Color.FromArgb(213, 220, 230);
+        /// <summary>Common keyboard focus outline for all input controls.</summary>
+        internal static Color FocusBorder => HighContrast() ? SystemColors.Highlight : Dark ? Color.FromArgb(96, 165, 250) : Color.FromArgb(37, 99, 235);
+        /// <summary>Secondary text without reducing disabled-state legibility.</summary>
+        internal static Color Muted => HighContrast() ? SystemColors.GrayText : Dark ? Color.FromArgb(155, 165, 180) : Color.FromArgb(94, 106, 124);
+        /// <summary>Detects hosted Designer controls even after the design license context has ended.</summary>
+        internal static bool IsDesignPreview(Control control)
+        {
+            if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return true;
+            for (var current = control; current != null; current = current.Parent)
+                if (current.Site?.DesignMode == true) return true;
+            return false;
+        }
+        /// <summary>Uses the form's actual palette in Visual Studio instead of the user's runtime preference.</summary>
+        internal static Color BackgroundFor(Control control) => control.Parent?.BackColor ?? control.BackColor;
+        /// <summary>Selected surfaces match the design form in Visual Studio.</summary>
+        internal static Color SurfaceFor(Control control) => SystemInformation.HighContrast ? SystemColors.Window : BackgroundFor(control).GetBrightness() < .5f ? Color.FromArgb(30, 34, 42) : Color.White;
+        /// <summary>Designer labels inherit the form's foreground.</summary>
+        internal static Color ForegroundFor(Control control) => control.Parent?.ForeColor ?? control.ForeColor;
+        /// <summary>Field boundaries use the preview palette when hosted by a Designer.</summary>
+        internal static Color BorderFor(Control control) => SystemInformation.HighContrast ? SystemColors.WindowText : BackgroundFor(control).GetBrightness() < .5f ? Color.FromArgb(61, 68, 80) : Color.FromArgb(213, 220, 230);
+        /// <summary>Designer focus follows Windows rather than application settings.</summary>
+        internal static Color FocusBorderFor(Control control) => SystemInformation.HighContrast ? SystemColors.Highlight : BackgroundFor(control).GetBrightness() < .5f ? Color.FromArgb(96, 165, 250) : Color.FromArgb(37, 99, 235);
         /// <summary>Couleur de fond d’un changement VBA ajouté.</summary>
         /// <value>Couleur de fond des changements ajoutés.</value>
         internal static Color Added { get { return Dark ? Color.FromArgb(24, 64, 42) : Color.FromArgb(232, 247, 237); } }
@@ -98,7 +122,7 @@ namespace CodexVBE
         /// <param name="form">Fenêtre dont le cycle de vie pilote l’application du thème.</param>
         internal static void Attach(Form form)
         {
-            if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
+            if (IsDesignPreview(form)) return;
             Action update = () => { if (!form.IsDisposed) { if (form.InvokeRequired) form.BeginInvoke(new Action(() => Apply(form))); else Apply(form); } };
             Changed += update;
             form.Disposed += (s, e) => { Changed -= update; };
@@ -108,26 +132,56 @@ namespace CodexVBE
         /// <param name="control">Contrôle dont les propriétés visuelles sont mises à jour.</param>
         internal static void Apply(Control control)
         {
+            if (IsDesignPreview(control)) return;
             control.HandleCreated -= ApplyNativeTheme;
             control.HandleCreated += ApplyNativeTheme;
             if (control.IsHandleCreated) ApplyNativeTheme(control, EventArgs.Empty);
             control.BackColor = control is TextBoxBase || control is ListControl || control is DataGridView ? Surface : Background;
             control.ForeColor = Foreground;
+            if (control.ContextMenuStrip != null) ApplyMenu(control.ContextMenuStrip);
             if (control is TextBoxBase textBox) {
-                bool transcript = textBox is RichTextBox rich && rich.ReadOnly && rich.BorderStyle == BorderStyle.None;
+                bool transcript = textBox.BorderStyle == BorderStyle.None && (textBox is UiTextBox || textBox is RichTextBox rich && rich.ReadOnly);
                 textBox.BorderStyle = transcript ? BorderStyle.None : BorderStyle.FixedSingle;
                 if (transcript) textBox.BackColor = Background;
             }
             if (control is ListBox listBox) listBox.BorderStyle = BorderStyle.FixedSingle;
             if (control is CheckBox checkBox) checkBox.FlatStyle = FlatStyle.Flat;
             if (control is Button button) { button.FlatStyle = FlatStyle.Flat; button.FlatAppearance.BorderColor = Dark ? Color.FromArgb(75, 85, 99) : Color.FromArgb(203, 213, 225); }
-            if (control is DataGridView grid) { grid.BackgroundColor = Surface; grid.DefaultCellStyle.BackColor = Surface; grid.DefaultCellStyle.ForeColor = Foreground; grid.EnableHeadersVisualStyles = false; grid.ColumnHeadersDefaultCellStyle.BackColor = Background; grid.ColumnHeadersDefaultCellStyle.ForeColor = Foreground;
+            if (control is DataGridView grid) { grid.BackgroundColor = Surface; grid.DefaultCellStyle.BackColor = Surface; grid.DefaultCellStyle.ForeColor = Foreground; grid.EnableHeadersVisualStyles = false; grid.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None; grid.ColumnHeadersDefaultCellStyle.BackColor = Background; grid.ColumnHeadersDefaultCellStyle.ForeColor = Foreground;
                 grid.ColumnHeadersDefaultCellStyle.SelectionBackColor = Background; grid.ColumnHeadersDefaultCellStyle.SelectionForeColor = Foreground;
                 grid.GridColor = Dark ? Color.FromArgb(71, 85, 105) : Color.FromArgb(203, 213, 225);
                 grid.CellFormatting -= FormatDiffCell; grid.CellFormatting += FormatDiffCell; }
-            if (control is ComboBox combo) { combo.FlatStyle = FlatStyle.Flat; combo.DrawMode = DrawMode.OwnerDrawFixed; combo.DrawItem -= DrawCombo; combo.DrawItem += DrawCombo; }
+            if (control is ComboBox combo) { combo.FlatStyle = combo is UiComboBox ? FlatStyle.Standard : FlatStyle.Flat; combo.DrawMode = DrawMode.OwnerDrawFixed; combo.DrawItem -= DrawCombo; if (!(combo is UiComboBox)) combo.DrawItem += DrawCombo; }
             foreach (Control child in control.Controls) Apply(child);
             control.Invalidate();
+        }
+        /// <summary>Styles context commands consistently when they open, including after a theme change.</summary>
+        internal static void ApplyMenu(ContextMenuStrip menu)
+        {
+            menu.Opening -= MenuOpening; menu.Opening += MenuOpening;
+            menu.BackColor = Surface; menu.ForeColor = Foreground;
+            menu.Renderer = new ToolStripProfessionalRenderer(new MenuColors());
+            ApplyMenuItems(menu.Items);
+        }
+        private static void MenuOpening(object sender, CancelEventArgs e) { ApplyMenu((ContextMenuStrip)sender); }
+        private static void ApplyMenuItems(ToolStripItemCollection items)
+        {
+            foreach (ToolStripItem item in items) {
+                item.ForeColor = Foreground; item.BackColor = Surface;
+                if (item is ToolStripDropDownItem parent) ApplyMenuItems(parent.DropDownItems);
+            }
+        }
+        private sealed class MenuColors : ProfessionalColorTable
+        {
+            public override Color ToolStripDropDownBackground => Surface;
+            public override Color ImageMarginGradientBegin => Surface;
+            public override Color ImageMarginGradientMiddle => Surface;
+            public override Color ImageMarginGradientEnd => Surface;
+            public override Color MenuItemSelected => HighContrast() ? SystemColors.Highlight : Dark ? Color.FromArgb(48, 61, 81) : Color.FromArgb(229, 238, 253);
+            public override Color MenuItemBorder => Border;
+            public override Color MenuBorder => Border;
+            public override Color SeparatorDark => Border;
+            public override Color SeparatorLight => Surface;
         }
         /// <summary>Applique le thème natif à la poignée du contrôle sans modifier la préférence du processus hôte.</summary>
         /// <param name="sender">Objet système ou contrôle à l’origine de l’événement.</param>
@@ -135,10 +189,10 @@ namespace CodexVBE
         private static void ApplyNativeTheme(object sender, EventArgs e)
         {
             var control = (Control)sender;
-            if (!control.IsHandleCreated || LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
+            if (!control.IsHandleCreated || IsDesignPreview(control)) return;
             bool dark = Dark && !HighContrast();
             // Per-window styling only: do not change Office/SOLIDWORKS process-wide theme policy.
-            if (control is TextBoxBase || control is ListBox || control is ComboBox || control is DataGridView)
+            if (control is TextBoxBase || control is ListBox || control is ComboBox || control is DataGridView || control is ScrollableControl scroll && scroll.AutoScroll)
                 SetWindowTheme(control.Handle, dark ? (control is ComboBox ? "DarkMode_CFD" : "DarkMode_Explorer") : null, null);
             if (control is Form) { int value = dark ? 1 : 0; DwmSetWindowAttribute(control.Handle, 20, ref value, sizeof(int)); }
         }

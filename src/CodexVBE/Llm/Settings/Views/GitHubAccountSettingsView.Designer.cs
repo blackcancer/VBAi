@@ -152,6 +152,12 @@ namespace CodexVBE
             this.githubActions.PerformLayout();
             this.accountLayout.ResumeLayout(false);
             this.accountLayout.PerformLayout();
+            this.githubLogin.Symbol = CodexVBE.UiSymbol.Next;
+            this.githubRefresh.Symbol = CodexVBE.UiSymbol.Refresh;
+            this.githubRefresh.IconOnly = true;
+            this.githubRefresh.AutoSize = false;
+            this.githubRefresh.MinimumSize = System.Drawing.Size.Empty;
+            this.githubRefresh.Size = new System.Drawing.Size(32, 30);
             this.ResumeLayout(false);
             this.PerformLayout();
         }

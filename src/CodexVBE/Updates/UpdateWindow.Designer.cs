@@ -26,7 +26,7 @@ namespace CodexVBE
         /// <summary>Secondary release action buttons.</summary>
         private System.Windows.Forms.FlowLayoutPanel secondaryButtons;
         /// <summary>Read-only release notes pane.</summary>
-        private System.Windows.Forms.TextBox notes;
+        private CodexVBE.UiTextBox notes;
         /// <summary>Status and download feedback.</summary>
         private System.Windows.Forms.Label status;
         /// <summary>Check and download progress indicator.</summary>
@@ -34,19 +34,19 @@ namespace CodexVBE
         /// <summary>Primary and secondary update actions.</summary>
         private System.Windows.Forms.FlowLayoutPanel buttons;
         /// <summary>Closes the update window.</summary>
-        private System.Windows.Forms.Button close;
+        private CodexVBE.UiActionButton close;
         /// <summary>Checks for a newer release.</summary>
-        private System.Windows.Forms.Button check;
+        private CodexVBE.UiActionButton check;
         /// <summary>Downloads the selected installer.</summary>
-        private System.Windows.Forms.Button download;
+        private CodexVBE.UiActionButton download;
         /// <summary>Schedules installation of the staged package.</summary>
-        private System.Windows.Forms.Button install;
+        private CodexVBE.UiActionButton install;
         /// <summary>Skips the selected release.</summary>
-        private System.Windows.Forms.Button skip;
+        private CodexVBE.UiActionButton skip;
         /// <summary>Saves the selected preferences.</summary>
-        private System.Windows.Forms.Button save;
+        private CodexVBE.UiActionButton save;
         /// <summary>Cancels a scheduled installation that has not started.</summary>
-        private System.Windows.Forms.Button cancelPending;
+        private CodexVBE.UiActionButton cancelPending;
         /// <summary>Tooltips associated with update controls.</summary>
         private System.Windows.Forms.ToolTip tips;
         /// <summary>Releases runtime subscriptions and Designer-owned components.</summary><param name="disposing">Whether managed components should be disposed.</param>
@@ -65,17 +65,17 @@ namespace CodexVBE
             this.previews = new System.Windows.Forms.CheckBox();
             this.notesLabel = new System.Windows.Forms.Label();
             this.secondaryButtons = new System.Windows.Forms.FlowLayoutPanel();
-            this.notes = new System.Windows.Forms.TextBox();
+            this.notes = new CodexVBE.UiTextBox();
             this.status = new System.Windows.Forms.Label();
             this.progress = new System.Windows.Forms.ProgressBar();
             this.buttons = new System.Windows.Forms.FlowLayoutPanel();
-            this.close = new System.Windows.Forms.Button();
-            this.check = new System.Windows.Forms.Button();
-            this.download = new System.Windows.Forms.Button();
-            this.install = new System.Windows.Forms.Button();
-            this.skip = new System.Windows.Forms.Button();
-            this.save = new System.Windows.Forms.Button();
-            this.cancelPending = new System.Windows.Forms.Button();
+            this.close = new CodexVBE.UiActionButton();
+            this.check = new CodexVBE.UiActionButton();
+            this.download = new CodexVBE.UiActionButton();
+            this.install = new CodexVBE.UiActionButton();
+            this.skip = new CodexVBE.UiActionButton();
+            this.save = new CodexVBE.UiActionButton();
+            this.cancelPending = new CodexVBE.UiActionButton();
             this.tips = new System.Windows.Forms.ToolTip(this.components);
             this.layout.SuspendLayout();
             this.buttons.SuspendLayout();
@@ -106,7 +106,7 @@ namespace CodexVBE
             this.save.Paint += new System.Windows.Forms.PaintEventHandler(this.PaintDisabled);
             this.save.Name = "save";
             this.layout.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.layout.Padding = new System.Windows.Forms.Padding(24);
+            this.layout.Padding = new System.Windows.Forms.Padding(16);
             this.layout.ColumnCount = 1;
             this.layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.layout.RowCount = 13;
@@ -276,6 +276,34 @@ namespace CodexVBE
             this.layout.PerformLayout();
             this.buttons.ResumeLayout(false);
             this.buttons.PerformLayout();
+            this.close.Symbol = CodexVBE.UiSymbol.Close;
+            this.close.IconOnly = true;
+            this.close.AutoSize = false;
+            this.close.MinimumSize = System.Drawing.Size.Empty;
+            this.close.Size = new System.Drawing.Size(32, 30);
+            this.check.Symbol = CodexVBE.UiSymbol.Refresh;
+            this.check.IconOnly = true;
+            this.check.AutoSize = false;
+            this.check.MinimumSize = System.Drawing.Size.Empty;
+            this.check.Size = new System.Drawing.Size(32, 30);
+            this.download.Symbol = CodexVBE.UiSymbol.Download;
+            this.download.IconOnly = true;
+            this.download.AutoSize = false;
+            this.download.MinimumSize = System.Drawing.Size.Empty;
+            this.download.Size = new System.Drawing.Size(32, 30);
+            this.install.Symbol = CodexVBE.UiSymbol.Download;
+            this.install.Primary = true;
+            this.skip.Symbol = CodexVBE.UiSymbol.Next;
+            this.skip.IconOnly = true;
+            this.skip.AutoSize = false;
+            this.skip.MinimumSize = System.Drawing.Size.Empty;
+            this.skip.Size = new System.Drawing.Size(32, 30);
+            this.save.Symbol = CodexVBE.UiSymbol.Save;
+            this.save.IconOnly = true;
+            this.save.AutoSize = false;
+            this.save.MinimumSize = System.Drawing.Size.Empty;
+            this.save.Size = new System.Drawing.Size(32, 30);
+            this.cancelPending.Symbol = CodexVBE.UiSymbol.Stop;
             this.ResumeLayout(false);
         }
     }

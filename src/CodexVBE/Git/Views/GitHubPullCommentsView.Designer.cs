@@ -6,9 +6,9 @@ namespace CodexVBE
         /// <summary>Layout for the comment list and body.</summary>
         internal System.Windows.Forms.TableLayoutPanel commentLayout;
         /// <summary>Review comments on the selected pull request.</summary>
-        internal System.Windows.Forms.ListBox comments;
+        internal CodexVBE.UiListBox comments;
         /// <summary>Text of the selected review comment.</summary>
-        internal System.Windows.Forms.TextBox commentBody;
+        internal CodexVBE.UiTextBox commentBody;
         /// <summary>Container that owns Designer components.</summary>
         private System.ComponentModel.IContainer components;
         /// <summary>Tooltips associated with comments.</summary>
@@ -27,8 +27,8 @@ namespace CodexVBE
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
             this.commentLayout = new System.Windows.Forms.TableLayoutPanel();
-            this.comments = new System.Windows.Forms.ListBox();
-            this.commentBody = new System.Windows.Forms.TextBox();
+            this.comments = new CodexVBE.UiListBox();
+            this.commentBody = new CodexVBE.UiTextBox();
             this.commentLayout.SuspendLayout();
             this.SuspendLayout();
             this.commentLayout.Name = "commentLayout";

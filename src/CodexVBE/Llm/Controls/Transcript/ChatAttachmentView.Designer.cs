@@ -41,7 +41,7 @@ namespace CodexVBE
             this.layout.Controls.Add(this.section, 0, 0);
             this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
             this.layout.Name = "layout";
-            this.layout.Padding = new System.Windows.Forms.Padding(10);
+            this.layout.Padding = new System.Windows.Forms.Padding(4);
             this.toolTips.SetToolTip(this.open, "Open in the VBE");
             this.Controls.Add(this.layout);
             this.AutoSize = true;
@@ -49,7 +49,9 @@ namespace CodexVBE
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.Name = "ChatAttachmentView";
             this.Size = new System.Drawing.Size(500, 120);
-            this.layout.ResumeLayout(false); this.layout.PerformLayout(); this.ResumeLayout(false); this.PerformLayout();
+            this.layout.ResumeLayout(false); this.layout.PerformLayout();
+            this.open.Symbol = CodexVBE.UiSymbol.Code;
+            this.ResumeLayout(false); this.PerformLayout();
         }
     }
 }

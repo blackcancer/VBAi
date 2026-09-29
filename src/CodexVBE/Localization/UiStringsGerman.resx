@@ -2063,4 +2063,6 @@ Anmeldung über Git Credential Manager; die Commit-Identität wird in Git festge
   <data name="Delete" xml:space="preserve">
     <value>Löschen</value>
   </data>
+  <data name="VBA edit approval" xml:space="preserve"><value>Freigabe von VBA-Änderungen</value></data>
+  <data name="Model and reasoning effort" xml:space="preserve"><value>Modell und Denkaufwand</value></data>
 </root>

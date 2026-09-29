@@ -44,6 +44,7 @@ namespace CodexVBE
             this.copy = new ChatActionButton(); this.copy.Name = "copy"; this.copy.Text = "Copy"; this.copy.AutoSize = true;
             this.fork = new ChatActionButton(); this.fork.Name = "fork"; this.fork.Text = "Branch conversation"; this.fork.AutoSize = true;
             this.layout = new ChatComposerPanel();
+            this.layout.ShowBorder = false;
             this.header = new System.Windows.Forms.TableLayoutPanel();
             this.speaker = new System.Windows.Forms.Label();
             this.speaker.Name = "speaker";
@@ -130,7 +131,7 @@ namespace CodexVBE
             this.layout.Controls.Add(this.fix, 0, 7);
             this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
             this.layout.Name = "layout";
-            this.layout.Padding = new System.Windows.Forms.Padding(10);
+            this.layout.Padding = new System.Windows.Forms.Padding(4);
             this.toolTips.SetToolTip(this.copy, "Copy the message text to the clipboard.");
             this.toolTips.SetToolTip(this.fork, "Create an independent conversation with the history up to this message.");
             this.toolTips.SetToolTip(this.undoTurn, "Undo changes from this turn after checking for conflicts.");
@@ -141,7 +142,25 @@ namespace CodexVBE
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.Name = "ChatMessageView";
             this.Size = new System.Drawing.Size(500, 120);
-            this.layout.ResumeLayout(false); this.layout.PerformLayout(); this.ResumeLayout(false); this.PerformLayout();
+            this.layout.ResumeLayout(false); this.layout.PerformLayout();
+            this.copy.Symbol = CodexVBE.UiSymbol.Copy;
+            this.copy.IconOnly = true;
+            this.copy.AutoSize = false;
+            this.copy.MinimumSize = System.Drawing.Size.Empty;
+            this.copy.Size = new System.Drawing.Size(32, 30);
+            this.fork.Symbol = CodexVBE.UiSymbol.Add;
+            this.fork.IconOnly = true;
+            this.fork.AutoSize = false;
+            this.fork.Size = new System.Drawing.Size(32, 30);
+            this.undoTurn.Symbol = CodexVBE.UiSymbol.Undo;
+            this.undoTurn.IconOnly = true;
+            this.undoTurn.AutoSize = false;
+            this.undoTurn.Size = new System.Drawing.Size(32, 30);
+            this.fix.Symbol = CodexVBE.UiSymbol.Check;
+            this.fix.IconOnly = true;
+            this.fix.AutoSize = false;
+            this.fix.Size = new System.Drawing.Size(32, 30);
+            this.ResumeLayout(false); this.PerformLayout();
         }
     }
 }

@@ -71,7 +71,23 @@ namespace CodexVBE
             this.Name = "ChatQueuedMessageView";
             this.Size = new System.Drawing.Size(540, 60);
             this.Margin = new System.Windows.Forms.Padding(0, 2, 0, 2);
-            this.layout.ResumeLayout(false); this.layout.PerformLayout(); this.ResumeLayout(false);
+            this.layout.ResumeLayout(false); this.layout.PerformLayout();
+            this.sendNow.Symbol = CodexVBE.UiSymbol.Play;
+            this.sendNow.IconOnly = true;
+            this.sendNow.AutoSize = false;
+            this.sendNow.MinimumSize = System.Drawing.Size.Empty;
+            this.sendNow.Size = new System.Drawing.Size(32, 30);
+            this.edit.Symbol = CodexVBE.UiSymbol.Edit;
+            this.edit.IconOnly = true;
+            this.edit.AutoSize = false;
+            this.edit.MinimumSize = System.Drawing.Size.Empty;
+            this.edit.Size = new System.Drawing.Size(32, 30);
+            this.delete.Symbol = CodexVBE.UiSymbol.Delete;
+            this.delete.IconOnly = true;
+            this.delete.AutoSize = false;
+            this.delete.MinimumSize = System.Drawing.Size.Empty;
+            this.delete.Size = new System.Drawing.Size(32, 30);
+            this.ResumeLayout(false);
         }
     }
 }

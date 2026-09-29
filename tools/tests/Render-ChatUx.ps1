@@ -1,5 +1,5 @@
 ﻿param(
-    [ValidateSet('Conversation', 'History', 'Reference', 'Command', 'Welcome', 'Queue')][string]$Mode = 'Conversation',
+    [ValidateSet('Conversation', 'History', 'Reference', 'Command', 'Welcome', 'Queue', 'Reasoning')][string]$Mode = 'Conversation',
     [int]$Width = 720,
     [int]$Height = 950,
     [switch]$ScrollToTop,
@@ -10,6 +10,10 @@
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing, PresentationFramework
 Add-Type -TypeDefinition @'
+public static class RenderWindowCapture {
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    public static extern bool PrintWindow(System.IntPtr handle, System.IntPtr dc, uint flags);
+}
 public class RenderVbe { public object[] VBProjects { get { return new object[0]; } } }
 '@
 $assembly = [Reflection.Assembly]::LoadFrom((Resolve-Path $AssemblyPath))
@@ -32,12 +36,24 @@ try {
         $picker.Items.Add($pair[1]) | Out-Null
         $picker.SelectedIndex = 0
     }
+    Call $window RefreshModelSummary @()
     (Field $window status).Text = 'Prêt'
     (Field $window effortPicker).Enabled = $true
     (Field $window sessionTitle).Text = 'Fiabiliser le calcul du total'
     $reference = New-Internal VbeChatReference
     $reference.Project = 'SuiviBudget'; $reference.Module = 'ModuleCalcul'; $reference.Name = 'CalculerTotal'; $reference.Kind = 'Function'
     if ($Mode -eq 'Welcome') { Call $window ShowWelcome @() }
+    elseif ($Mode -eq 'Reasoning') {
+        Call $window AddTranscriptMessage @('Vous', 'Vérifie le calcul du total et les bornes de la boucle.')
+        Call $window SetBusy @($true)
+        $entry = New-Internal ChatEntry
+        $entry.Speaker = 'Réflexion'
+        $activity = New-Internal CodexAgentActivity
+        $activity.Kind = 'reasoning'; $activity.Status = 'inProgress'
+        $activity.Detail = 'Je vérifie la dernière ligne parcourue et le traitement des cellules vides avant de proposer une correction.'
+        $entry.Activity = $activity
+        Call $window AddEntry @($entry)
+    }
     else {
         $entry = New-Internal ChatEntry
         $entry.Speaker = 'Vous'; $entry.Text = 'Corrige @SuiviBudget.ModuleCalcul.CalculerTotal'
@@ -83,6 +99,7 @@ try {
     $window.StartPosition = [Windows.Forms.FormStartPosition]::Manual
     $window.Location = [Drawing.Point]::new($screen.WorkingArea.Left + [int](($screen.WorkingArea.Width - $window.Width)/2),
         $screen.WorkingArea.Top + [int](($screen.WorkingArea.Height - $window.Height)/2))
+    $window.TopMost = $true
     $window.Show(); $window.Activate()
     [Windows.Forms.Application]::DoEvents()
     if ($Mode -eq 'History') {
@@ -117,11 +134,12 @@ try {
     }
     $bitmap = [Drawing.Bitmap]::new($window.Width, $window.Height)
     try {
-        # Copy the displayed window: bitmap rendering misses native HWND content
-        # inside WindowsFormsHost (the Designer-backed inline diff).
+        # Capture the actual window handle, avoiding unrelated foreground windows.
         $graphics = [Drawing.Graphics]::FromImage($bitmap)
         try {
-            $graphics.CopyFromScreen($window.Location, [Drawing.Point]::Empty, $window.Size)
+            $dc = $graphics.GetHdc()
+            try { if (-not [RenderWindowCapture]::PrintWindow($window.Handle, $dc, 2)) { throw 'PrintWindow failed' } }
+            finally { $graphics.ReleaseHdc($dc) }
         } finally { $graphics.Dispose() }
         $directory = [IO.Path]::GetFullPath((Join-Path (Get-Location) $OutputDirectory))
         [IO.Directory]::CreateDirectory($directory) | Out-Null

@@ -2043,4 +2043,6 @@ Sign in through Git Credential Manager; commit identity is configured in Git.</v
   <data name="Project access configured for the new conversation." xml:space="preserve"><value>Project access configured for the new conversation.</value></data>
   <data name="Read access to another project is not authorized for this conversation." xml:space="preserve"><value>Read access to another project is not authorized for this conversation.</value></data>
   <data name="This tool uses shared VBE context. Authorize shared context in Project access before using it." xml:space="preserve"><value>This tool uses shared VBE context. Authorize shared context in Project access before using it.</value></data>
+  <data name="VBA edit approval" xml:space="preserve"><value>VBA edit approval</value></data>
+  <data name="Model and reasoning effort" xml:space="preserve"><value>Model and reasoning effort</value></data>
 </root>

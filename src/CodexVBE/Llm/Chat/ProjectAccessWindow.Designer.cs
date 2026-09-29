@@ -8,15 +8,15 @@ namespace CodexVBE
         /// <summary>Stores the explanation used by ProjectAccessWindow.</summary>
         private System.Windows.Forms.Label explanation;
         /// <summary>Stores the project list used by ProjectAccessWindow.</summary>
-        private System.Windows.Forms.CheckedListBox projectList;
+        private CodexVBE.UiCheckedListBox projectList;
         /// <summary>Stores the shared context used by ProjectAccessWindow.</summary>
         private System.Windows.Forms.CheckBox sharedContext;
         /// <summary>Stores the shared explanation used by ProjectAccessWindow.</summary>
         private System.Windows.Forms.Label sharedExplanation;
         /// <summary>Stores the apply button used by ProjectAccessWindow.</summary>
-        private System.Windows.Forms.Button applyButton;
+        private CodexVBE.UiActionButton applyButton;
         /// <summary>Stores the cancel button used by ProjectAccessWindow.</summary>
-        private System.Windows.Forms.Button cancelButton;
+        private CodexVBE.UiActionButton cancelButton;
         /// <summary>Stores the tool tip used by ProjectAccessWindow.</summary>
         private System.Windows.Forms.ToolTip toolTip;
         /// <summary>Performs the dispose operation for ProjectAccessWindow.</summary>
@@ -31,11 +31,11 @@ namespace CodexVBE
         {
             this.components = new System.ComponentModel.Container();
             this.explanation = new System.Windows.Forms.Label();
-            this.projectList = new System.Windows.Forms.CheckedListBox();
+            this.projectList = new CodexVBE.UiCheckedListBox();
             this.sharedContext = new System.Windows.Forms.CheckBox();
             this.sharedExplanation = new System.Windows.Forms.Label();
-            this.applyButton = new System.Windows.Forms.Button();
-            this.cancelButton = new System.Windows.Forms.Button();
+            this.applyButton = new CodexVBE.UiActionButton();
+            this.cancelButton = new CodexVBE.UiActionButton();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
             this.SuspendLayout();
             this.explanation.Name = "explanation";
@@ -94,6 +94,13 @@ namespace CodexVBE
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Project access";
+            this.applyButton.Symbol = CodexVBE.UiSymbol.Check;
+            this.applyButton.Primary = true;
+            this.cancelButton.Symbol = CodexVBE.UiSymbol.Close;
+            this.cancelButton.IconOnly = true;
+            this.cancelButton.AutoSize = false;
+            this.cancelButton.MinimumSize = System.Drawing.Size.Empty;
+            this.cancelButton.Size = new System.Drawing.Size(32, 30);
             this.ResumeLayout(false);
         }
     }

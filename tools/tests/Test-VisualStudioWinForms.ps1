@@ -34,7 +34,7 @@ public static class VisualStudioFormValidation {
   var output=new StringBuilder();
   bool wasVisible=dte.MainWindow.Visible; dte.MainWindow.Visible=true;
   try {
-  foreach(var rel in new[]{"Editor/ModernEditorWindow.cs","Updates/UpdateWindow.cs","Updates/UpdateProgressWindow.cs","Git/GitWindow.cs","Llm/Settings/LlmSettingsWindow.cs"}) {
+  foreach(var rel in new[]{"Llm/Chat/ChatWindow.cs","Editor/ModernEditorWindow.cs","Updates/UpdateWindow.cs","Updates/UpdateProgressWindow.cs","Git/GitWindow.cs","Llm/Settings/LlmSettingsWindow.cs"}) {
    var path=System.IO.Path.Combine(root,"src/CodexVBE",rel.Replace('/','\\'));
    var item=dte.Solution.FindProjectItem(path);
    if(item==null)throw new InvalidOperationException("Project item not loaded: "+rel);

@@ -2063,4 +2063,6 @@ QQ 附加記憶體
   <data name="Delete" xml:space="preserve">
     <value>刪除</value>
   </data>
+  <data name="VBA edit approval" xml:space="preserve"><value>VBA 編輯核准</value></data>
+  <data name="Model and reasoning effort" xml:space="preserve"><value>模型與推理強度</value></data>
 </root>

@@ -8,9 +8,9 @@ namespace CodexVBE
         /// <summary>Disposition des commandes de validation.</summary>
         private System.Windows.Forms.FlowLayoutPanel buttons;
         /// <summary>Commande d’enregistrement des paramètres.</summary>
-        private System.Windows.Forms.Button saveButton;
+        private CodexVBE.UiActionButton saveButton;
         /// <summary>Commande d’annulation et de fermeture.</summary>
-        private System.Windows.Forms.Button cancelButton;
+        private CodexVBE.UiActionButton cancelButton;
         /// <summary>Conteneur à onglets des catégories de réglage.</summary>
         private CodexVBE.ThemedTabControl settingsTabs;
         /// <summary>Vue des paramètres de fournisseur et d’authentification Codex.</summary>
@@ -29,8 +29,8 @@ namespace CodexVBE
         private void InitializeComponent()
         {
             this.buttons = new System.Windows.Forms.FlowLayoutPanel();
-            this.saveButton = new System.Windows.Forms.Button();
-            this.cancelButton = new System.Windows.Forms.Button();
+            this.saveButton = new CodexVBE.UiActionButton();
+            this.cancelButton = new CodexVBE.UiActionButton();
             this.contentLayout = new System.Windows.Forms.TableLayoutPanel();
             this.settingsTabs = new CodexVBE.ThemedTabControl();
             this.providerSettingsView = new CodexVBE.ProviderSettingsView();
@@ -120,6 +120,8 @@ namespace CodexVBE
             this.contentLayout.Size = new System.Drawing.Size(720, 600);
             this.contentLayout.TabIndex = 0;
             this.settingsTabs.Name = "settingsTabs";
+            this.settingsTabs.ItemSize = new System.Drawing.Size(0, 36);
+            this.settingsTabs.Padding = new System.Drawing.Point(12, 6);
             this.settingsTabs.Location = new System.Drawing.Point(3, 3);
             this.settingsTabs.Size = new System.Drawing.Size(714, 540);
             this.settingsTabs.TabIndex = 0;
@@ -162,6 +164,13 @@ namespace CodexVBE
             this.appearanceSettingsView.PerformLayout();
             this.appearanceSettingsViewTab.ResumeLayout(false);
             this.appearanceSettingsViewTab.PerformLayout();
+            this.saveButton.Symbol = CodexVBE.UiSymbol.Save;
+            this.saveButton.Primary = true;
+            this.cancelButton.Symbol = CodexVBE.UiSymbol.Close;
+            this.cancelButton.IconOnly = true;
+            this.cancelButton.AutoSize = false;
+            this.cancelButton.MinimumSize = System.Drawing.Size.Empty;
+            this.cancelButton.Size = new System.Drawing.Size(32, 30);
             this.ResumeLayout(false);
             this.PerformLayout();
         }

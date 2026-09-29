@@ -2063,4 +2063,6 @@ Conexão pelo Git Credential Manager; a identidade dos commits é configurada no
   <data name="Delete" xml:space="preserve">
     <value>Excluir</value>
   </data>
+  <data name="VBA edit approval" xml:space="preserve"><value>Aprovação de alterações VBA</value></data>
+  <data name="Model and reasoning effort" xml:space="preserve"><value>Modelo e nível de raciocínio</value></data>
 </root>

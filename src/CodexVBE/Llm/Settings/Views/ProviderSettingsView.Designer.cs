@@ -16,11 +16,11 @@ namespace CodexVBE
         /// <summary>Action de relecture du statut CLI.</summary>
         internal CodexVBE.ThemedButton codexRefresh;
         /// <summary>Champ de point de terminaison OpenAI.</summary>
-        internal System.Windows.Forms.TextBox openAiEndpoint;
+        internal CodexVBE.UiTextBox openAiEndpoint;
         /// <summary>Champ de point de terminaison Ollama.</summary>
-        internal System.Windows.Forms.TextBox ollamaEndpoint;
+        internal CodexVBE.UiTextBox ollamaEndpoint;
         /// <summary>Champ de clé du fournisseur.</summary>
-        internal System.Windows.Forms.TextBox openAiKey;
+        internal CodexVBE.UiTextBox openAiKey;
         /// <summary>Option de suppression de la clé enregistrée.</summary>
         internal System.Windows.Forms.CheckBox clearKey;
         /// <summary>Libellé du sélecteur de fournisseur.</summary>
@@ -44,11 +44,11 @@ namespace CodexVBE
         /// <summary>Libellé de la liste de modèles manuelle.</summary>
         internal System.Windows.Forms.Label manualModelsLabel;
         /// <summary>Champ des modèles saisis manuellement.</summary>
-        internal System.Windows.Forms.TextBox manualModels;
+        internal CodexVBE.UiTextBox manualModels;
         /// <summary>Libellé du fournisseur personnalisé.</summary>
         internal System.Windows.Forms.Label customNameLabel;
         /// <summary>Champ du nom personnalisé.</summary>
-        internal System.Windows.Forms.TextBox customName;
+        internal CodexVBE.UiTextBox customName;
         /// <summary>Option d’authentification Azure par Entra.</summary>
         internal System.Windows.Forms.CheckBox azureEntra;
         /// <summary>Conteneur des composants WinForms non visuels.</summary>
@@ -78,19 +78,19 @@ namespace CodexVBE
             this.codexLogin = new CodexVBE.ThemedButton();
             this.codexRefresh = new CodexVBE.ThemedButton();
             this.openAiEndpointLabel = new System.Windows.Forms.Label();
-            this.openAiEndpoint = new System.Windows.Forms.TextBox();
+            this.openAiEndpoint = new CodexVBE.UiTextBox();
             this.ollamaEndpointLabel = new System.Windows.Forms.Label();
-            this.ollamaEndpoint = new System.Windows.Forms.TextBox();
+            this.ollamaEndpoint = new CodexVBE.UiTextBox();
             this.keyLabel = new System.Windows.Forms.Label();
-            this.openAiKey = new System.Windows.Forms.TextBox();
+            this.openAiKey = new CodexVBE.UiTextBox();
             this.clearKey = new System.Windows.Forms.CheckBox();
             this.keyNote = new System.Windows.Forms.Label();
             this.approvalLabel = new System.Windows.Forms.Label();
             this.approvalPicker = new CodexVBE.ThemedComboBox();
             this.manualModelsLabel = new System.Windows.Forms.Label();
-            this.manualModels = new System.Windows.Forms.TextBox();
+            this.manualModels = new CodexVBE.UiTextBox();
             this.customNameLabel = new System.Windows.Forms.Label();
-            this.customName = new System.Windows.Forms.TextBox();
+            this.customName = new CodexVBE.UiTextBox();
             this.azureEntra = new System.Windows.Forms.CheckBox();
             this.grid.SuspendLayout();
             this.codexActions.SuspendLayout();
@@ -355,6 +355,12 @@ namespace CodexVBE
             this.grid.PerformLayout();
             this.codexActions.ResumeLayout(false);
             this.codexActions.PerformLayout();
+            this.codexLogin.Symbol = CodexVBE.UiSymbol.Next;
+            this.codexRefresh.Symbol = CodexVBE.UiSymbol.Refresh;
+            this.codexRefresh.IconOnly = true;
+            this.codexRefresh.AutoSize = false;
+            this.codexRefresh.MinimumSize = System.Drawing.Size.Empty;
+            this.codexRefresh.Size = new System.Drawing.Size(32, 30);
             this.ResumeLayout(false);
             this.PerformLayout();
         }

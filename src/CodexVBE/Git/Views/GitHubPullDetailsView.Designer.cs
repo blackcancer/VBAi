@@ -4,7 +4,7 @@ namespace CodexVBE
     public sealed partial class GitHubPullDetailsView
     {
         /// <summary>Affiche le titre, l’état et la description de la pull request.</summary>
-        internal System.Windows.Forms.TextBox pullDetails;
+        internal CodexVBE.UiTextBox pullDetails;
         /// <summary>Conteneur des composants managés de la vue.</summary>
         private System.ComponentModel.IContainer components;
         /// <summary>Fournit les info-bulles des contrôles.</summary>
@@ -22,7 +22,7 @@ namespace CodexVBE
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
-            this.pullDetails = new System.Windows.Forms.TextBox();
+            this.pullDetails = new CodexVBE.UiTextBox();
             this.SuspendLayout();
             this.pullDetails.Name = "pullDetails";
             this.pullDetails.Multiline = true;

@@ -7,6 +7,9 @@
     <OutputPath Condition="'$(BuildOutputRoot)' == ''">$(RepositoryRoot)bin/$(Configuration)/updater/</OutputPath>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="../../assets/icons/commands/*.svg" LogicalName="CodexVBE.CommandIcons.%(Filename).svg" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="../CodexVBE/Updates/WebViewRuntimePrerequisite.cs" Link="WebViewRuntimePrerequisite.cs" />
     <Reference Include="System.Net.Http" />
     <Compile Include="../CodexVBE/Updates/UpdatePaths.cs" Link="UpdatePaths.cs" />
@@ -17,6 +20,9 @@
     <Compile Include="../CodexVBE/Updates/UpdateProgressWindow.Designer.cs" Link="UpdateProgressWindow.Designer.cs"><SubType>Code</SubType><DependentUpon>UpdateProgressWindow.cs</DependentUpon></Compile>
     <Compile Include="../CodexVBE/Updates/UpdateText.cs" Link="UpdateText.cs" />
     <Compile Include="../CodexVBE/Localization/UiLanguages.cs" Link="UiLanguages.cs" />
+    <Compile Include="../CodexVBE/Ui/UiCommandIcons.cs" Link="UiCommandIcons.cs" />
+    <Compile Include="../CodexVBE/Ui/UiActionButton.cs" Link="UiActionButton.cs" />
+    <Compile Include="../CodexVBE/Ui/UiInputControls.cs" Link="UiInputControls.cs" />
     <Compile Include="../CodexVBE/Ui/UiTheme.cs" Link="UiTheme.cs" />
     <EmbeddedResource Include="../CodexVBE/Localization/UiStrings*.resx" Link="Localization\%(Filename)%(Extension)"><LogicalName>CodexVBE.Localization.%(Filename).resources</LogicalName></EmbeddedResource>
     <Reference Include="System.Web.Extensions" /><Reference Include="System.Windows.Forms" /><Reference Include="System.Drawing" />

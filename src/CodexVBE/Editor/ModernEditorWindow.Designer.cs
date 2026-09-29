@@ -55,7 +55,7 @@ namespace CodexVBE
             this.layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.layout.RowCount = 4;
             this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 44F));
-            this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 42F));
             this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
             this.layout.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -103,8 +103,9 @@ namespace CodexVBE
             this.resolve.Click += new System.EventHandler(this.ResolveClick);
             this.tabs.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabs.Name = "tabs";
+            this.tabs.ItemSize = new System.Drawing.Size(0, 36);
             this.tabs.ShowCloseButtons = true;
-            this.tabs.Padding = new System.Drawing.Point(18, 3);
+            this.tabs.Padding = new System.Drawing.Point(18, 6);
             this.tabs.CloseRequested += new System.EventHandler<System.Windows.Forms.TabControlEventArgs>(this.CloseTabRequested);
             this.tabs.Margin = new System.Windows.Forms.Padding(0);
             this.tabs.SelectedIndexChanged += new System.EventHandler(this.TabChanged);
@@ -139,6 +140,31 @@ namespace CodexVBE
             this.toolbar.PerformLayout();
             this.layout.ResumeLayout(false);
             this.layout.PerformLayout();
+            this.resolve.Symbol = CodexVBE.UiSymbol.Check;
+            this.resolve.IconOnly = true;
+            this.resolve.AutoSize = false;
+            this.resolve.MinimumSize = System.Drawing.Size.Empty;
+            this.resolve.Size = new System.Drawing.Size(32, 30);
+            this.compare.Symbol = CodexVBE.UiSymbol.Inspect;
+            this.compare.IconOnly = true;
+            this.compare.AutoSize = false;
+            this.compare.MinimumSize = System.Drawing.Size.Empty;
+            this.compare.Size = new System.Drawing.Size(32, 30);
+            this.edit.Symbol = CodexVBE.UiSymbol.Edit;
+            this.edit.IconOnly = true;
+            this.edit.AutoSize = false;
+            this.edit.MinimumSize = System.Drawing.Size.Empty;
+            this.edit.Size = new System.Drawing.Size(32, 30);
+            this.reload.Symbol = CodexVBE.UiSymbol.Refresh;
+            this.reload.IconOnly = true;
+            this.reload.AutoSize = false;
+            this.reload.MinimumSize = System.Drawing.Size.Empty;
+            this.reload.Size = new System.Drawing.Size(32, 30);
+            this.restore.Symbol = CodexVBE.UiSymbol.Undo;
+            this.restore.IconOnly = true;
+            this.restore.AutoSize = false;
+            this.restore.MinimumSize = System.Drawing.Size.Empty;
+            this.restore.Size = new System.Drawing.Size(32, 30);
             this.ResumeLayout(false);
         }
     }

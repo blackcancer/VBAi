@@ -2063,4 +2063,6 @@ Git Credential Manager से साइन-इन करें; कमिट ल
   <data name="Delete" xml:space="preserve">
     <value>हटाएँ</value>
   </data>
+  <data name="VBA edit approval" xml:space="preserve"><value>VBA संपादन की अनुमति</value></data>
+  <data name="Model and reasoning effort" xml:space="preserve"><value>मॉडल और तर्क का स्तर</value></data>
 </root>

@@ -4,21 +4,21 @@ namespace CodexVBE
     internal sealed partial class VbeApprovalDialog
     {
         /// <summary>Champ en lecture seule qui affiche le résumé de l’édition.</summary>
-        private System.Windows.Forms.TextBox details;
+        private CodexVBE.UiTextBox details;
         /// <summary>Barre inférieure qui contient les boutons d’approbation et de refus.</summary>
         private System.Windows.Forms.FlowLayoutPanel actions;
         /// <summary>Bouton dont le résultat de dialogue autorise l’édition.</summary>
-        private System.Windows.Forms.Button approve;
+        private CodexVBE.UiActionButton approve;
         /// <summary>Bouton dont le résultat de dialogue refuse l’édition.</summary>
-        private System.Windows.Forms.Button reject;
+        private CodexVBE.UiActionButton reject;
 
         /// <summary>Crée et configure les contrôles, leurs résultats de dialogue et les dimensions de la fenêtre.</summary>
         private void InitializeComponent()
         {
-            this.details = new System.Windows.Forms.TextBox();
+            this.details = new CodexVBE.UiTextBox();
             this.actions = new System.Windows.Forms.FlowLayoutPanel();
-            this.approve = new System.Windows.Forms.Button();
-            this.reject = new System.Windows.Forms.Button();
+            this.approve = new CodexVBE.UiActionButton();
+            this.reject = new CodexVBE.UiActionButton();
             this.actions.SuspendLayout();
             this.SuspendLayout();
             //
@@ -78,6 +78,8 @@ namespace CodexVBE
             this.reject.Location = new System.Drawing.Point(531, 3);
             this.actions.ResumeLayout(false);
             this.actions.PerformLayout();
+            this.approve.Symbol = CodexVBE.UiSymbol.Check;
+            this.reject.Symbol = CodexVBE.UiSymbol.Close;
             this.ResumeLayout(false);
             this.PerformLayout();
         }

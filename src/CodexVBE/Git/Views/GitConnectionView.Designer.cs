@@ -10,13 +10,13 @@ namespace CodexVBE
         /// <summary>Help text for connecting a repository.</summary>
         internal System.Windows.Forms.Label help;
         /// <summary>Remote repository URL.</summary>
-        internal System.Windows.Forms.TextBox remote;
+        internal CodexVBE.UiTextBox remote;
         /// <summary>Current branch name.</summary>
-        internal System.Windows.Forms.TextBox branch;
+        internal CodexVBE.UiTextBox branch;
         /// <summary>Connects to the configured repository.</summary>
         internal CodexVBE.ThemedButton connect;
         /// <summary>Layout for remote, branch, help, and connection action.</summary>
-        internal System.Windows.Forms.TableLayoutPanel connectionLayout;
+        internal CodexVBE.ChatComposerPanel connectionLayout;
         /// <summary>Container that owns Designer components.</summary>
         private System.ComponentModel.IContainer components;
         /// <summary>Tooltips associated with connection controls.</summary>
@@ -34,12 +34,12 @@ namespace CodexVBE
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
-            this.connectionLayout = new System.Windows.Forms.TableLayoutPanel();
+            this.connectionLayout = new CodexVBE.ChatComposerPanel();
             this.remoteLabel = new System.Windows.Forms.Label();
             this.branchLabel = new System.Windows.Forms.Label();
             this.help = new System.Windows.Forms.Label();
-            this.remote = new System.Windows.Forms.TextBox();
-            this.branch = new System.Windows.Forms.TextBox();
+            this.remote = new CodexVBE.UiTextBox();
+            this.branch = new CodexVBE.UiTextBox();
             this.connect = new CodexVBE.ThemedButton();
             this.connectionLayout.SuspendLayout();
             this.SuspendLayout();
@@ -67,7 +67,10 @@ namespace CodexVBE
             this.connect.Name = "connect";
             this.connect.TabIndex = 2;
             this.toolTips.SetToolTip(this.connect, "Save the link for this document on this computer. Does not publish code.");
-            this.connectionLayout.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.connectionLayout.Dock = System.Windows.Forms.DockStyle.Top;
+            this.connectionLayout.Padding = new System.Windows.Forms.Padding(12);
+            this.connectionLayout.AutoSize = true;
+            this.connectionLayout.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.connectionLayout.ColumnCount = 2;
             this.connectionLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 140F));
             this.connectionLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
@@ -110,6 +113,7 @@ namespace CodexVBE
             this.connectionLayout.TabIndex = 0;
             this.connectionLayout.ResumeLayout(false);
             this.connectionLayout.PerformLayout();
+            this.connect.Symbol = CodexVBE.UiSymbol.Attach;
             this.ResumeLayout(false);
             this.PerformLayout();
         }

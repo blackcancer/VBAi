@@ -16,6 +16,8 @@ namespace CodexVBE
         private readonly HashSet<ChatEntry> expandedActivityGroups = new HashSet<ChatEntry>();
         /// <summary>Actions dont les détails ont été ouverts par l'utilisateur.</summary>
         private readonly HashSet<ChatEntry> expandedActivitySteps = new HashSet<ChatEntry>();
+        private readonly HashSet<ChatEntry> collapsedActivityGroups = new HashSet<ChatEntry>();
+        private readonly HashSet<ChatEntry> collapsedActivitySteps = new HashSet<ChatEntry>();
 
         /// <summary>Ajoute ou actualise une étape native, sans dupliquer son identité.</summary>
         /// <param name="activity">Données reçues du fournisseur.</param>
@@ -94,11 +96,12 @@ namespace CodexVBE
                 }
             }
             var latest = entries.LastOrDefault(entry => entry.Activity?.Status == "inProgress") ?? entries.Last();
-            string preview = latest.Activity == null ? "" : " · " + CodexAgentActivity.Limit(latest.Activity.Title);
+            string preview = string.IsNullOrWhiteSpace(latest.Activity?.Title) ? "" : " · " + CodexAgentActivity.Limit(latest.Activity.Title);
             if (preview.Length > 90) preview = preview.Substring(0,87) + "…";
-            card.section.Title = UiText.Get("Agent activity") + " · " + entries.Count + preview;
-            card.section.Expanded = expandedActivityGroups.Contains(owner);
-            card.section.ExpansionChanged += (s,e) => { if (card.section.Expanded) expandedActivityGroups.Add(owner); else expandedActivityGroups.Remove(owner); };
+            card.section.Title = UiText.Get(entries.All(e => e.Speaker == "Réflexion") ? "Reasoning" : "Agent activity") + " · " + entries.Count + preview;
+            bool running = entries.Any(e => e.Activity?.Status == "inProgress" || (busy && e.Activity == null && e.StreamId != null && !completedStreams.Contains(e.StreamId)));
+            card.section.Expanded = expandedActivityGroups.Contains(owner) || running && !collapsedActivityGroups.Contains(owner);
+            card.section.ExpansionChanged += (s,e) => { if (card.section.Expanded) { expandedActivityGroups.Add(owner); collapsedActivityGroups.Remove(owner); } else { expandedActivityGroups.Remove(owner); collapsedActivityGroups.Add(owner); } };
             return new ChatDesignerHost(card) { Margin = new Thickness(0,4,0,14) };
         }
         /// <summary>Dessine une étape compacte avec résultat, durée native et détail dépliable.</summary>
@@ -115,10 +118,10 @@ namespace CodexVBE
             bool running = activity.Status == "inProgress", failed = activity.Status == "failed";
             card.state.Text = UiText.Get(running ? "In progress" : failed ? "Failed" : activity.Status == "declined" ? "Declined" : activity.Status == "completed" ? "Completed" : "Cancelled");
             if (activity.DurationMs.HasValue) card.state.Text += " · " + (activity.DurationMs.Value / 1000d).ToString("0.0", UiText.Culture) + " s";
-            card.section.Title = activity.Title;
+            card.section.Title = string.IsNullOrWhiteSpace(activity.Title) ? UiText.Get(activity.Kind == "reasoning" ? "Reasoning" : "Tool") : activity.Title;
             card.detail.ShowPlain(activity.Detail, activity.Kind == "commandExecution");
-            if (!string.IsNullOrEmpty(entry.StreamId)) liveTexts[entry.StreamId] = card.detail.content; card.section.Expanded = expandedActivitySteps.Contains(entry);
-            card.section.ExpansionChanged += (s,e) => { if (card.section.Expanded) expandedActivitySteps.Add(entry); else expandedActivitySteps.Remove(entry); };
+            if (!string.IsNullOrEmpty(entry.StreamId)) liveTexts[entry.StreamId] = card.detail.content; card.section.Expanded = expandedActivitySteps.Contains(entry) || running && activity.Kind == "reasoning" && !collapsedActivitySteps.Contains(entry);
+            card.section.ExpansionChanged += (s,e) => { if (card.section.Expanded) { expandedActivitySteps.Add(entry); collapsedActivitySteps.Remove(entry); } else { expandedActivitySteps.Remove(entry); collapsedActivitySteps.Add(entry); } };
             return card;
         }
 

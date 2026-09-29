@@ -60,7 +60,12 @@ namespace CodexVBE
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.Name = "ChatFormRecoveryView";
             this.Size = new System.Drawing.Size(500, 120);
-            this.layout.ResumeLayout(false); this.layout.PerformLayout(); this.ResumeLayout(false); this.PerformLayout();
+            this.layout.ResumeLayout(false); this.layout.PerformLayout();
+            this.recover.Symbol = CodexVBE.UiSymbol.Undo;
+            this.recover.IconOnly = true;
+            this.recover.AutoSize = false;
+            this.recover.Size = new System.Drawing.Size(32, 30);
+            this.ResumeLayout(false); this.PerformLayout();
         }
     }
 }

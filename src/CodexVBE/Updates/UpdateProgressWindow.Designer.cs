@@ -16,7 +16,7 @@ namespace CodexVBE
         /// <summary>Installer progress indicator.</summary>
         private System.Windows.Forms.ProgressBar progress;
         /// <summary>Close or cancel action.</summary>
-        private System.Windows.Forms.Button cancel;
+        private CodexVBE.UiActionButton cancel;
         /// <summary>Timer that polls the updater job.</summary>
         private System.Windows.Forms.Timer timer;
         /// <summary>Releases Designer-owned components.</summary><param name="disposing">Whether managed components should be disposed.</param>
@@ -30,13 +30,13 @@ namespace CodexVBE
             this.version = new System.Windows.Forms.Label();
             this.status = new System.Windows.Forms.Label();
             this.progress = new System.Windows.Forms.ProgressBar();
-            this.cancel = new System.Windows.Forms.Button();
+            this.cancel = new CodexVBE.UiActionButton();
             this.timer = new System.Windows.Forms.Timer(this.components);
             this.layout.SuspendLayout();
             this.SuspendLayout();
             this.layout.Name = "layout";
             this.layout.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.layout.Padding = new System.Windows.Forms.Padding(24);
+            this.layout.Padding = new System.Windows.Forms.Padding(16);
             this.layout.ColumnCount = 1;
             this.layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.layout.RowCount = 5;
@@ -88,6 +88,11 @@ namespace CodexVBE
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.WindowClosing);
             this.layout.ResumeLayout(false);
             this.layout.PerformLayout();
+            this.cancel.Symbol = CodexVBE.UiSymbol.Close;
+            this.cancel.IconOnly = true;
+            this.cancel.AutoSize = false;
+            this.cancel.MinimumSize = System.Drawing.Size.Empty;
+            this.cancel.Size = new System.Drawing.Size(32, 30);
             this.ResumeLayout(false);
         }
     }

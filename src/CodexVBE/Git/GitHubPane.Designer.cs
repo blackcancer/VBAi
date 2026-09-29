@@ -44,6 +44,8 @@ namespace CodexVBE
             this.SuspendLayout();
             this.tips = new System.Windows.Forms.ToolTip(this.components);
             this.pages.Name = "pages";
+            this.pages.ItemSize = new System.Drawing.Size(0, 36);
+            this.pages.Padding = new System.Drawing.Point(12, 6);
             this.repositoriesPage.Name = "repositoriesPage";
             this.pullsPage.Name = "pullsPage";
             this.status.Name = "status";
@@ -111,6 +113,11 @@ namespace CodexVBE
             this.gitHubRepositoriesView.PerformLayout();
             this.gitHubPullRequestsView.ResumeLayout(false);
             this.gitHubPullRequestsView.PerformLayout();
+            this.cancel.Symbol = CodexVBE.UiSymbol.Close;
+            this.cancel.IconOnly = true;
+            this.cancel.AutoSize = false;
+            this.cancel.MinimumSize = System.Drawing.Size.Empty;
+            this.cancel.Size = new System.Drawing.Size(32, 30);
             this.ResumeLayout(false);
             this.PerformLayout();
         }

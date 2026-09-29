@@ -4,9 +4,9 @@ namespace CodexVBE
     public sealed partial class GitHistoryView
     {
         /// <summary>Commit history entries.</summary>
-        internal System.Windows.Forms.ListBox history;
+        internal CodexVBE.UiListBox history;
         /// <summary>Details for the selected commit.</summary>
-        internal System.Windows.Forms.TextBox historyDetails;
+        internal CodexVBE.UiTextBox historyDetails;
         /// <summary>Compares the selected commit with the current project.</summary>
         internal CodexVBE.ThemedButton historyCompare;
         /// <summary>Container that owns Designer components.</summary>
@@ -26,8 +26,8 @@ namespace CodexVBE
         {
             this.components = new System.ComponentModel.Container();
             this.toolTips = new System.Windows.Forms.ToolTip(this.components);
-            this.history = new System.Windows.Forms.ListBox();
-            this.historyDetails = new System.Windows.Forms.TextBox();
+            this.history = new CodexVBE.UiListBox();
+            this.historyDetails = new CodexVBE.UiTextBox();
             this.historyCompare = new CodexVBE.ThemedButton();
             this.SuspendLayout();
             this.history.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -62,6 +62,11 @@ namespace CodexVBE
             this.historyCompare.Location = new System.Drawing.Point(0, 472);
             this.historyCompare.Size = new System.Drawing.Size(860, 28);
             this.historyCompare.TabIndex = 2;
+            this.historyCompare.Symbol = CodexVBE.UiSymbol.Inspect;
+            this.historyCompare.IconOnly = true;
+            this.historyCompare.AutoSize = false;
+            this.historyCompare.MinimumSize = System.Drawing.Size.Empty;
+            this.historyCompare.Size = new System.Drawing.Size(32, 30);
             this.ResumeLayout(false);
             this.PerformLayout();
         }

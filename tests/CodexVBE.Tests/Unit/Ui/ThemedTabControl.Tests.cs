@@ -22,16 +22,17 @@ namespace CodexVBE.Tests.Unit
             {
                 form.Controls.Add(tabs);
                 UiInvoke.Call(typeof(ThemedTabControl),"OnPaint",tabs,new PaintEventArgs(graphics,new Rectangle(0,0,400,200)));
-                Assert.AreEqual(UiTheme.Background.ToArgb(),bitmap.GetPixel(399,199).ToArgb());
+                Assert.AreEqual(form.BackColor.ToArgb(),bitmap.GetPixel(399,199).ToArgb());
                 tabs.TabPages.Add(new TabPage("first")); tabs.TabPages.Add(new TabPage("second") {Enabled=false});
                 form.Show(); tabs.Focus(); Assert.IsTrue(tabs.Focused);
                 foreach(var dark in new[]{false,true})
                 {
                     ThemeScope.SetChoice(dark ? ThemeChoice.Dark : ThemeChoice.Light);
+                    UiTheme.Apply(form);
                     tabs.SelectedIndex=0;
                     UiInvoke.Call(typeof(ThemedTabControl),"OnPaint",tabs,new PaintEventArgs(graphics,tabs.ClientRectangle));
                     var rect=tabs.GetTabRect(0);
-                    Assert.AreEqual((dark ? Color.FromArgb(96,165,250) : Color.RoyalBlue).ToArgb(),bitmap.GetPixel(rect.Left+5,rect.Bottom-2).ToArgb());
+                    Assert.AreEqual(UiTheme.Surface.ToArgb(), bitmap.GetPixel(rect.Left+10,rect.Top+6).ToArgb());
                     tabs.SelectedIndex=1; form.Focus();
                     UiInvoke.Call(typeof(ThemedTabControl),"OnPaint",tabs,new PaintEventArgs(graphics,tabs.ClientRectangle));
                 }
@@ -64,7 +65,7 @@ namespace CodexVBE.Tests.Unit
                         IntPtr hdc=graphics.GetHdc();
                         try { var args=new object[]{Message.Create(handle,0x0318,hdc,IntPtr.Zero)}; UiInvoke.Call(typeof(ThemedComboBox),"WndProc",combo,args); }
                         finally { graphics.ReleaseHdc(hdc); }
-                        if(dark) { int x=(rtl==RightToLeft.Yes ? 1 : combo.Width-SystemInformation.VerticalScrollBarWidth-1)+SystemInformation.VerticalScrollBarWidth/2; int y=(combo.Height-2)/2+1; Assert.AreEqual((enabled ? UiTheme.Foreground : SystemColors.GrayText).ToArgb(),bitmap.GetPixel(x,y).ToArgb()); }
+                        if(dark) { int x=(rtl==RightToLeft.Yes ? 1 : combo.Width-SystemInformation.VerticalScrollBarWidth-1)+SystemInformation.VerticalScrollBarWidth/2; int y=(combo.Height-2)/2+1; Assert.AreEqual((enabled ? UiTheme.Foreground : SystemColors.GrayText).ToArgb(),bitmap.GetPixel(x,y+2).ToArgb()); }
                     }
                     Assert.AreEqual("Choice",combo.Text);
                 }

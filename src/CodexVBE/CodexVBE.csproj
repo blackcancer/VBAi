@@ -14,6 +14,9 @@
   </PropertyGroup>
   <PropertyGroup><ProductVersion Condition="'$(ProductVersion)' == ''">0.1.0</ProductVersion></PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="../../assets/icons/commands/*.svg" LogicalName="CodexVBE.CommandIcons.%(Filename).svg" />
+  </ItemGroup>
+  <ItemGroup>
     <AssemblyAttribute Include="System.Reflection.AssemblyInformationalVersionAttribute"><_Parameter1>$(ProductVersion)</_Parameter1></AssemblyAttribute>
     <ProjectReference Include="../VBAi.Updater/VBAi.Updater.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>

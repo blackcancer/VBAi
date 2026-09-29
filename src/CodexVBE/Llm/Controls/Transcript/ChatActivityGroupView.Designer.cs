@@ -34,7 +34,7 @@ namespace CodexVBE
             this.layout.Controls.Add(this.section, 0, 0);
             this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
             this.layout.Name = "layout";
-            this.layout.Padding = new System.Windows.Forms.Padding(10);
+            this.layout.Padding = new System.Windows.Forms.Padding(4);
             this.Controls.Add(this.layout);
             this.AutoSize = true;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;

@@ -10,9 +10,9 @@ namespace CodexVBE
         /// <summary>Libellé affichant la branche source sélectionnée.</summary>
         internal System.Windows.Forms.Label sourceLabel;
         /// <summary>Saisie du titre de la pull request.</summary>
-        internal System.Windows.Forms.TextBox pullTitle;
+        internal CodexVBE.UiTextBox pullTitle;
         /// <summary>Saisie multiligne de la description de la pull request.</summary>
-        internal System.Windows.Forms.TextBox pullBody;
+        internal CodexVBE.UiTextBox pullBody;
         /// <summary>Option de création de la pull request comme brouillon.</summary>
         internal System.Windows.Forms.CheckBox draft;
         /// <summary>Commande de création de la pull request.</summary>
@@ -43,8 +43,8 @@ namespace CodexVBE
             this.composeLayout = new System.Windows.Forms.TableLayoutPanel();
             this.targetBranch = new CodexVBE.ThemedComboBox();
             this.sourceLabel = new System.Windows.Forms.Label();
-            this.pullTitle = new System.Windows.Forms.TextBox();
-            this.pullBody = new System.Windows.Forms.TextBox();
+            this.pullTitle = new CodexVBE.UiTextBox();
+            this.pullBody = new CodexVBE.UiTextBox();
             this.draft = new System.Windows.Forms.CheckBox();
             this.createPull = new CodexVBE.ThemedButton();
             this.targetLabel = new System.Windows.Forms.Label();
@@ -149,6 +149,8 @@ namespace CodexVBE
             this.bodyLabel.TabIndex = 8;
             this.composeLayout.ResumeLayout(false);
             this.composeLayout.PerformLayout();
+            this.createPull.Symbol = CodexVBE.UiSymbol.Add;
+            this.createPull.Primary = true;
             this.ResumeLayout(false);
             this.PerformLayout();
         }
