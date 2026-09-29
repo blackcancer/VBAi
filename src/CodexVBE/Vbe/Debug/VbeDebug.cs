@@ -73,6 +73,32 @@ namespace CodexVBE
             return entries.Skip(offset).Take(pageSize).Select(e => new { e.Path, e.Caption, e.Id, e.Enabled }).ToArray();
         }
 
+        /// <summary>Finds an enabled control directly when possible, revalidating its identity and caption each time.</summary>
+        private CommandEntry FindAvailableCommand(int id, Func<CommandEntry, bool> allowed)
+        {
+            if (id > 0)
+                try
+                {
+                    dynamic control = vbe.CommandBars.FindControl(1, id);
+                    if (control != null)
+                    {
+                        var entry = new CommandEntry { Control = control, Id = (int)control.Id, Caption = (string)control.Caption,
+                            Enabled = (bool)control.Enabled, Path = (string)control.Caption };
+                        if (entry.Id == id && entry.Enabled && allowed(entry)) return entry;
+                    }
+                }
+                catch { } // Hosts without FindControl, stale menus or duplicate IDs use the bounded inventory.
+            return EnumerateCommands().FirstOrDefault(entry => (id == 0 || entry.Id == id) && entry.Enabled && allowed(entry));
+        }
+        /// <summary>Resolves an editor action without repeatedly rebuilding paginated command inventories.</summary>
+        internal object FindEditorCommand(string action, int mode)
+        {
+            int id = action == "toggle_breakpoint" ? 51 : action == "step_into" ? 188 : 0;
+            var entry = FindAvailableCommand(id, item => IsAllowed(action, item.Caption, mode));
+            if (entry == null && action == "step_into") entry = FindAvailableCommand(0, item => IsAllowed(action, item.Caption, mode));
+            return entry == null ? null : new { entry.Id, entry.Caption };
+        }
+
         /// <summary>Ouvre ou met au premier plan l’Explorateur d’objets VBE et vérifie sa présence dans l’état des fenêtres.</summary>
         /// <param name="windows">Service de lecture des fenêtres de l’éditeur.</param>
         /// <returns>État du navigateur observé après la commande.</returns>
@@ -296,7 +322,7 @@ namespace CodexVBE
                     break;
                 default: throw new ArgumentException("Action must be break, reset, clear_all_breakpoints or show_next_statement.");
             }
-            var command = EnumerateCommands().FirstOrDefault(entry => entry.Id == id && entry.Enabled &&
+            var command = FindAvailableCommand(id, entry =>
                 captions.Any(caption => (entry.Caption ?? "").Replace("&", "")
                     .IndexOf(caption, StringComparison.OrdinalIgnoreCase) >= 0));
             if (command == null) throw new InvalidOperationException("The native VBE debug command is absent or disabled.");
@@ -437,11 +463,9 @@ namespace CodexVBE
             if (activePane == null || !SameComObject(pane, activePane))
                 throw new InvalidOperationException("The requested code pane is not active in the VBE.");
 
-            var matches = EnumerateCommands().Where(e => e.Id == request.ControlId &&
-                string.Equals(e.Caption, request.ControlCaption, StringComparison.Ordinal)).ToList();
-            if (matches.Count == 0)
-                throw new InvalidOperationException("The requested VBE command was not found.");
-            var selected = matches.FirstOrDefault(e => e.Enabled && IsAllowed(request.Action, e.Caption, mode)) ?? throw new InvalidOperationException("The requested VBE command is disabled.");
+            var selected = FindAvailableCommand(request.ControlId, entry =>
+                string.Equals(entry.Caption, request.ControlCaption, StringComparison.Ordinal) && IsAllowed(request.Action, entry.Caption, mode))
+                ?? throw new InvalidOperationException("The requested VBE command is absent or disabled.");
             dynamic control = selected.Control;
             object before = State(request.Project);
             control.Execute();

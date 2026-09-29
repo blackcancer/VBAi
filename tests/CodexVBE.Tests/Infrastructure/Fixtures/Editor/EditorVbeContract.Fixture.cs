@@ -35,7 +35,8 @@ namespace CodexVBE.Tests.Infrastructure
         }
         public sealed class CommandInventory : List<CodexVBE.Tests.Unit.VbeDebugTests.FakeBar>
         {
-            public object FindControl(int type, int id) => this.SelectMany(bar => bar.Controls).FirstOrDefault(control => control.Id == id);
+            public int FindControlCalls;
+            public object FindControl(int type, int id) { FindControlCalls++; return this.SelectMany(bar => bar.Controls).FirstOrDefault(control => control.Id == id); }
         }
         public sealed class Reference { public bool IsBroken { get; set; } public string FullPath { get; set; } }
         public sealed class ContractProject

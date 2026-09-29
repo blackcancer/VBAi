@@ -62,6 +62,43 @@ namespace CodexVBE.Tests.Integration
             }
         }
 
+        /// <summary>Exercises the actual delta wire format, automatic native adapter writes and gap recovery.</summary>
+        [STATestMethod]
+        public void StreamedTypingFlushesWithoutPollingAllModelsAndRecoversLostRevision()
+        {
+            using (var host = new EditorFixture())
+            using (var second = new EditorFixture())
+            using (var window = new ModernEditorWindow { Drafts = new EditorDraftStore(host.Root) })
+            {
+                var document = Wait(window.OpenModule(host)); window.Show(); Wait(() => window.Ready);
+                var other = Wait(window.OpenModule(second)); Wait(window.OpenModule(host));
+                UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer").Stop();
+                var messages = new System.Collections.Generic.List<string>();
+                window.Browser.CoreWebView2.WebMessageReceived += (sender, args) => messages.Add(args.WebMessageAsJson);
+                Wait(window.Script("reveal", 3, 18));
+                Wait(window.Script("insert", "2"));
+                try { Wait(() => host.Code.Contains("Print 12") && !document.Dirty, 8); }
+                catch { Assert.Fail("Native=" + host.Code + " Draft=" + document.Text + " Status=" + UiInvoke.Field<Label>(window, "status").Text + " StreamEnabled=" + UiInvoke.Field<System.Windows.Forms.Timer>(window, "streamTimer").Enabled + " Seq=" + UiInvoke.Field<int>(window, "streamSequence") + "/" + UiInvoke.Field<int>(window, "streamedSequence") + " Busy=" + UiInvoke.Field<bool>(window, "busy") + " First=" + UiInvoke.Field<DateTime>(window, "firstStreamEdit") + " Gate=" + UiInvoke.Field<System.Threading.SemaphoreSlim>(window, "debugCommands").CurrentCount + " Messages=" + string.Join(";", messages)); }
+                Assert.AreEqual(0, second.Writes);
+                Assert.IsTrue(System.Linq.Enumerable.Any(messages, text => text.Contains("\"changes\"") && text.Contains("\"baseVersion\"")));
+                var versions = UiInvoke.Field<System.Collections.Generic.Dictionary<string, int>>(window, "versions");
+                Assert.AreEqual("[]", Wait(window.Script("snapshots", versions)));
+                // Deliberately lose a host revision; the next edit must recover the full current renderer text.
+                versions[document.Id] = 0;
+                Wait(window.Script("insert", "3"));
+                Wait(() => host.Code.Contains("Print 123") && !document.Dirty);
+                Assert.AreEqual(document.Text, host.Code);
+                Wait(window.Script("executionBatch", document.Id, 3, false));
+                StringAssert.Contains(Wait(window.Script("testInfo")), "\"executionMarkers\":1");
+                Wait(window.OpenModule(second));
+                StringAssert.Contains(Wait(window.Script("testInfo")), "\"executionMarkers\":0");
+                Wait(window.Script("executionBatch", other.Id, 2, false));
+                Wait(window.OpenModule(host));
+                StringAssert.Contains(Wait(window.Script("testInfo")), "\"executionMarkers\":0");
+                window.Close(); Wait(() => window.IsDisposed);
+            }
+        }
+
         internal static void Wait(Func<bool> complete, int seconds = 40)
         { var clock = Stopwatch.StartNew(); while (!complete() && clock.Elapsed.TotalSeconds < seconds) { Application.DoEvents(); EditorUiTestFixture.ThrowIfUiFailed(); Thread.Sleep(15); } EditorUiTestFixture.ThrowIfUiFailed(); Assert.IsTrue(complete(), "Timed out waiting for real WebView2/Monaco."); }
         internal static T Wait<T>(Task<T> task) { Wait(() => task.IsCompleted); return task.GetAwaiter().GetResult(); }

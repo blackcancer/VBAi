@@ -31,7 +31,7 @@ namespace CodexVBE.Tests.Unit.Editor
                 if (state == "error") f.Override = (method, values) => method == "snapshots" ? throw new IOException("owned snapshot unavailable") : (string)null;
                 if (state == "existing-worker" || state == "failed-worker")
                 {
-                    worker = new EditorSyncWorker(); f.Base.Set("synchronizationWorker", worker);
+                    worker = new EditorSyncWorker(); f.Base.Set("languageWorker", worker);
                     if (state == "failed-worker") { worker.Dispose(); Assert.IsTrue(((Thread)typeof(EditorSyncWorker).GetField("thread", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(worker)).Join(5000)); }
                 }
                 f.Base.Scripts.Clear();

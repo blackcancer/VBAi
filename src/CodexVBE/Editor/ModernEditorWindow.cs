@@ -56,6 +56,11 @@ namespace CodexVBE
         internal bool Ready { get; private set; }
         /// <summary>Optional renderer boundary for an embedded surface or an isolated contract host.</summary>
         internal Func<string, object[], Task<string>> ScriptExecution;
+        /// <summary>Optional local timing sink: operation, milliseconds and payload characters; never source content.</summary>
+        internal Action<string, double, int> PerformanceSample;
+        /// <summary>Diagnostics must never interrupt synchronization or native commands.</summary>
+        private void Measure(string operation, System.Diagnostics.Stopwatch watch, int characters = 0)
+        { if (watch != null) try { PerformanceSample?.Invoke(operation, watch.Elapsed.TotalMilliseconds, characters); } catch { } }
         /// <summary>Indique qu’une opération asynchrone ou un état transitoire interdit une autre opération.</summary>
         private bool busy, initializing, closing, closeAllowed, showingDiff;
         /// <summary>Nombre de mises à jour d’état qui manipulent actuellement la disposition des contrôles.</summary>
@@ -71,6 +76,47 @@ namespace CodexVBE
         private string selected, synchronizationError;
         /// <summary>Heure du dernier changement de texte, utilisée pour différer la synchronisation automatique.</summary>
         private DateTime lastEdit;
+        /// <summary>Beginning of the current stream batch and its latest accepted edit sequence.</summary>
+        private DateTime firstStreamEdit;
+        private int streamSequence, streamedSequence;
+        /// <summary>Accepts only revision-matched deltas; missing batches are recovered from Monaco.</summary>
+        private async Task AcceptEditorChange(EditorMessage message)
+        {
+            if (!documents.TryGetValue(message.id ?? "", out var doc) || message.version <= versions[doc.Id]) return;
+            if (message.changes != null)
+            {
+                if (message.baseVersion != versions[doc.Id] || !EditorTextChange.TryApply(doc.Text, message.changes, out var text))
+                    await CaptureDocuments();
+                else { doc.Edit(text); versions[doc.Id] = message.version; }
+            }
+            else { doc.Edit(message.text); versions[doc.Id] = message.version; }
+            lastEdit = DateTime.UtcNow;
+            if (streamSequence == streamedSequence) firstStreamEdit = lastEdit;
+            streamSequence++;
+            synchronizationError = null; lastSaveError = null; SetStatus();
+        }
+        /// <summary>Observes execution independently of draft persistence, without overlapping UI operations.</summary>
+        private async void DebugTimerTick(object sender, EventArgs e)
+        {
+            if (!Ready || busy || observingDebug || closing || IsDisposed || debugCommands.CurrentCount == 0) return;
+            observingDebug = true;
+            try { await ObserveDebugMode(); }
+            catch (Exception error) { LoadLog.Write("Monaco debug observation: " + error.Message); }
+            finally { observingDebug = false; }
+        }
+        /// <summary>Flushes streamed drafts after 120 ms of idle, or 450 ms during sustained typing.</summary>
+        private async void StreamTimerTick(object sender, EventArgs e) { await FlushStream(); }
+        /// <summary>Flushes the latest stream batch without rereading unchanged renderer models.</summary>
+        private async Task FlushStream()
+        {
+            if (!Ready || busy || closing || IsDisposed || streamSequence == streamedSequence || debugCommands.CurrentCount == 0) return;
+            var now = DateTime.UtcNow;
+            if (now - lastEdit < TimeSpan.FromMilliseconds(120) && now - firstStreamEdit < TimeSpan.FromMilliseconds(450)) return;
+            busy = true; streamedSequence = streamSequence;
+            try { await ProcessCapturedDocumentsCore(true, false, true); }
+            catch (Exception error) { Report(error); }
+            finally { busy = false; }
+        }
         /// <summary>Worker dédié à la préparation des instantanés et des diffs.</summary>
         private EditorSyncWorker synchronizationWorker;
         /// <summary>Persiste le document puis calcule en arrière-plan son plan de synchronisation.</summary>
@@ -151,7 +197,7 @@ namespace CodexVBE
                     BeginInvoke(new Action(async () => { try { await Script("command", action); } catch (Exception error) { Report(error); } }));
                 };
                 core.WebMessageReceived += MessageReceived;
-                core.ProcessFailed += (s, e) => { if (IsDisposed || Disposing || closing) return; Ready = false; timer.Stop(); PreserveDrafts(); status.Text = UiText.Get("The editor stopped. Drafts are preserved; reopen the editor."); };
+                core.ProcessFailed += (s, e) => { if (IsDisposed || Disposing || closing) return; Ready = false; timer.Stop(); debugTimer.Stop(); streamTimer.Stop(); PreserveDrafts(); status.Text = UiText.Get("The editor stopped. Drafts are preserved; reopen the editor."); };
                 core.Navigate(Origin);
                 status.Text = UiText.Get("Loading editor…");
             }
@@ -183,10 +229,14 @@ namespace CodexVBE
                     await Script("labels", new[] { "Compile project", "Toggle breakpoint", "Show next statement", "Step into", "Step over", "Step out", "Breakpoint request sent; verify in VBE.", "Explain", "Fix", "Refactor" }.ToDictionary(key => key, UiText.Get));
                     foreach (var document in documents.Values.ToArray()) await RenderDocument(document);
                     if (selected != null) await SelectEditorDocument(selected);
-                    if (!closing && !IsDisposed && !Disposing) { timer.Start(); SetStatus(); }
+                    if (!closing && !IsDisposed && !Disposing && IsHandleCreated)
+                        BeginInvoke(new Action(() =>
+                        {
+                            if (closing || IsDisposed || Disposing) return;
+                            timer.Start(); debugTimer.Start(); streamTimer.Start(); SetStatus();
+                        }));
                 }
-                else if (message.type == "change" && documents.TryGetValue(message.id ?? "", out var doc) && message.version > versions[doc.Id])
-                { doc.Edit(message.text); versions[doc.Id] = message.version; lastEdit = DateTime.UtcNow; synchronizationError = null; lastSaveError = null; SetStatus(); }
+                else if (message.type == "change") await AcceptEditorChange(message);
                 else if (message.type == "command" && message.name == "sync") await ProcessDocuments(true);
                 else if (message.type == "command" && message.name == "save") await SaveDocument(message.id);
                 else if (message.type == "language") await LanguageRequest(message);
@@ -213,7 +263,11 @@ public string type { get; set; } /// <summary>Identifiant du document concerné.
 /// <value>Identifiant de session du document Monaco.</value>
 public string id { get; set; } /// <summary>Texte transmis avec un changement de brouillon.</summary>
 /// <value>Contenu source envoyé par Monaco.</value>
-public string text { get; set; } /// <summary>Gets or sets the selected text.</summary>
+public string text { get; set; }
+/// <summary>Revision against which streamed changes were produced.</summary>
+public int baseVersion { get; set; }
+/// <summary>Optional streamed changes; full text remains a recovery format.</summary>
+public EditorTextChange[] changes { get; set; } /// <summary>Gets or sets the selected text.</summary>
 /// <value>The current value represented by this member.</value>
 public string selectedText { get; set; } /// <summary>Révision Monaco associée au message.</summary>
 /// <value>Numéro de version du document.</value>
@@ -221,7 +275,15 @@ public int version { get; set; } /// <summary>Nom de commande d’éditeur ou de
 /// <value>Commande interne, par exemple compile ou step_into.</value>
 public string name { get; set; } /// <summary>Identifiant de la requête de langage à laquelle répondre.</summary>
 /// <value>Numéro de requête généré par Monaco.</value>
-public int request { get; set; } /// <summary>Nom du module cible d’une navigation vers définition.</summary>
+public int request { get; set; }
+/// <summary>Previously received language snapshot identifier.</summary>
+public string knownLanguage { get; set; }
+/// <summary>Client-owned symbol bucket revisions for incremental replies.</summary>
+public Dictionary<string, string> knownParts { get; set; }
+/// <summary>Requests the compact language wire format.</summary>
+public bool compact { get; set; }
+/// <summary>Includes sources only for navigation/definition requests.</summary>
+public bool includeSources { get; set; } /// <summary>Nom du module cible d’une navigation vers définition.</summary>
 /// <value>Nom du composant cible.</value>
 public string module { get; set; } /// <summary>Ligne de navigation ou de sélection.</summary>
 /// <value>Numéro de ligne indexé à partir de un.</value>
@@ -242,7 +304,12 @@ public int column { get; set; } }
             }
             if (!Ready || Browser?.CoreWebView2 == null || IsDisposed) return "null";
             // Method names are internal constants; all document text is serialized as data.
-            string result = await Browser.CoreWebView2.ExecuteScriptAsync("window.vbai." + method + "(" + string.Join(",", values.Select(json.Serialize)) + ")");
+            var timing = PerformanceSample == null ? null : System.Diagnostics.Stopwatch.StartNew();
+            string script = "window.vbai." + method + "(" + string.Join(",", values.Select(json.Serialize)) + ")";
+            Measure("serialize." + method, timing, script.Length);
+            timing?.Restart();
+            string result = await Browser.CoreWebView2.ExecuteScriptAsync(script);
+            Measure("webview." + method, timing, script.Length);
             // WebView completes script tasks inside its COM callback. Unwind that callback
             // before callers resize controls, change tabs, activate windows or close them.
             await Task.Yield();
@@ -289,7 +356,7 @@ public int column { get; set; } }
         /// <returns>Tâche terminée après la mise à jour des documents hôtes.</returns>
         private async Task CaptureDocuments()
         {
-            var snapshots = json.Deserialize<EditorMessage[]>(await Script("snapshots"));
+            var snapshots = json.Deserialize<EditorMessage[]>(await Script("snapshots", new Dictionary<string, int>(versions)));
             if (snapshots == null) return;
             foreach (var item in snapshots)
                 if (documents.TryGetValue(item.id, out var doc) && item.version >= versions[item.id])
@@ -309,18 +376,21 @@ public int column { get; set; } }
         /// <summary>Performs the process documents core operation for ModernEditorWindow.</summary>
         /// <param name="synchronize">Indicates whether synchronize is enabled.</param>
         /// <returns>The result produced by this operation.</returns>
-        private async Task ProcessDocumentsCore(bool synchronize)
+        private Task ProcessDocumentsCore(bool synchronize) => ProcessCapturedDocumentsCore(synchronize, true);
+        /// <summary>Processes a revision-checked snapshot, optionally capturing it at the entry barrier.</summary>
+        private async Task ProcessCapturedDocumentsCore(bool synchronize, bool capture, bool dirtyOnly = false)
         {
-            await CaptureDocuments();
+            if (capture) await CaptureDocuments();
             if (IsDisposed || closing) return;
             Exception lastFailure = null;
             foreach (var doc in documents.Values.ToArray())
             {
+                if (dirtyOnly && !doc.Dirty) continue;
                 try
                 {
-                    var plan = await PrepareSynchronization(doc);
+                    var plan = doc.Dirty ? await PrepareSynchronization(doc) : null;
                     if (IsDisposed || closing) return;
-                    if (doc.Text != plan.After || doc.Baseline != plan.Before) continue;
+                    if (plan != null && (doc.Text != plan.After || doc.Baseline != plan.Before)) continue;
                     string captured = doc.Text;
                     int capturedVersion = versions[doc.Id];
                     string native = doc.Observe();
@@ -548,7 +618,7 @@ public int column { get; set; } }
             if (WorkspaceHosted && e.CloseReason == CloseReason.UserClosing && !closeAllowed) { e.Cancel = true; return; }
             if (closeAllowed) { PreserveDrafts(); return; }
             if (!Ready && !initializing && !busy && activeStatusLayouts == 0) { closing = true; PreserveDrafts(); return; }
-            e.Cancel = true; if (closing) return; closing = true; timer.Stop();
+            e.Cancel = true; if (closing) return; closing = true; timer.Stop(); debugTimer.Stop(); streamTimer.Stop();
             try { if (Ready) await CaptureDocuments(); PreserveDrafts(); }
             catch (Exception error) { Report(error); PreserveDrafts(); }
             finally
@@ -564,7 +634,9 @@ public int column { get; set; } }
         /// <summary>Arrête les minuteries et workers, détache le thème, libère WebView2 et ferme les CodePane détenus.</summary>
         private void DisposeRuntime()
         {
-            timer?.Stop(); PreserveDrafts(); synchronizationWorker?.Dispose(); UiTheme.Changed -= ThemeChanged; Browser?.Dispose();
+            timer?.Stop(); debugTimer?.Stop(); streamTimer?.Stop(); PreserveDrafts(); synchronizationWorker?.Dispose();
+            foreach (var request in languageRequests.Values.ToArray()) request.Cancel();
+            languageWorker?.Dispose(); UiTheme.Changed -= ThemeChanged; Browser?.Dispose();
             foreach (var doc in documents.Values) (doc.Module as EditorVbeModule)?.CloseNativeWindow();
         }
     }

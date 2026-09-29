@@ -26,7 +26,7 @@ namespace CodexVBE.Tests.Unit.Editor
                 if (state == "dirty") f.Document.Edit(f.Document.Text + "\n' draft");
                 if (state == "conflict") { f.Document.Edit(f.Document.Text + "\n' draft"); f.Native.Original.CodeModule.Raw += "\n' external"; f.Document.Observe(); f.Document.Edit(f.Document.Baseline); Assert.IsTrue(f.Document.Conflict); Assert.IsFalse(f.Document.Dirty); }
                 f.Scripts.Clear(); f.Observe();
-                Assert.AreEqual(state == "clean" || state == "running" || state == "dirty" || state == "conflict" ? 1 : 0, f.Scripts.Count(x => x.Item1 == "execution"), state);
+                Assert.AreEqual(state == "clean" || state == "running" || state == "dirty" || state == "conflict" ? 1 : 0, f.Scripts.Count(x => (x.Item1 == "execution" || x.Item1 == "executionBatch")), state);
             }
         }
 
@@ -123,8 +123,8 @@ namespace CodexVBE.Tests.Unit.Editor
                 if (foreign) Assert.ThrowsException<InvalidOperationException>(() => f.Send("show_next_statement"));
                 else
                 {
-                    f.Send("show_next_statement"); var markers = f.Scripts.Where(x => x.Item1 == "execution").ToArray();
-                    Assert.AreEqual(2, markers.Length); Assert.AreEqual(1, markers.Count(x => (int)x.Item2[1] == 3)); Assert.AreEqual(1, markers.Count(x => (int)x.Item2[1] == 0));
+                    f.Send("show_next_statement"); var markers = f.Scripts.Where(x => (x.Item1 == "execution" || x.Item1 == "executionBatch")).ToArray();
+                    Assert.AreEqual(1, markers.Length); Assert.AreEqual("executionBatch", markers[0].Item1); Assert.AreEqual(f.Document.Id, markers[0].Item2[0]); Assert.AreEqual(3, markers[0].Item2[1]);
                 }
                 Assert.IsFalse(f.Get<bool>("busy"));
             }
@@ -149,7 +149,7 @@ namespace CodexVBE.Tests.Unit.Editor
                 {
                     f.Send(action); Assert.AreEqual(1, command.ExecuteCount);
                     if (action == "toggle_breakpoint") Assert.IsTrue(f.Scripts.Any(x => x.Item1 == "breakpointRequested"));
-                    else { Assert.AreEqual(-1, f.Get<int>("lastDebugMode")); Assert.IsTrue(f.Scripts.Any(x => x.Item1 == "execution" && (int)x.Item2[1] == 0)); }
+                    else { Assert.AreEqual(-1, f.Get<int>("lastDebugMode")); Assert.IsTrue(f.Scripts.Any(x => (x.Item1 == "execution" || x.Item1 == "executionBatch") && (int)x.Item2[1] == 0)); }
                 }
                 Assert.IsFalse(f.Get<bool>("busy"));
             }
@@ -212,7 +212,7 @@ namespace CodexVBE.Tests.Unit.Editor
                 f.Send("show_next_statement");
                 Assert.AreEqual(unopened ? 3 : 1, f.Get<Dictionary<string, EditorDocument>>("documents").Count);
                 Assert.AreEqual(unopened ? 1 : 3, f.Get<int>("lastExecutionLine"));
-                Assert.AreEqual(1, f.Scripts.Count(x => x.Item1 == "execution" && (int)x.Item2[1] != 0));
+                Assert.AreEqual(1, f.Scripts.Count(x => (x.Item1 == "execution" || x.Item1 == "executionBatch") && (int)x.Item2[1] != 0));
             }
         }
     }

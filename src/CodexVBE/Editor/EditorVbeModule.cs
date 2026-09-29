@@ -80,12 +80,14 @@ namespace CodexVBE
             get { try { string path = ((dynamic)project).FileName; if (!string.IsNullOrEmpty(path)) return path; } catch { } return (string)((dynamic)project).Name; }
         }
         /// <summary>Lit les sources des composants du projet en laissant le thread hôte traiter les messages entre lectures.</summary>
+        /// <param name="cancellation">Stops obsolete language requests between native module reads.</param>
         /// <returns>Sources avec nom, type et code de chaque composant.</returns>
-        internal async System.Threading.Tasks.Task<EditorSource[]> Sources()
+        internal async System.Threading.Tasks.Task<EditorSource[]> Sources(System.Threading.CancellationToken cancellation = default(System.Threading.CancellationToken))
         {
             Validate(); var sources = new System.Collections.Generic.List<EditorSource>();
             foreach (dynamic item in ((dynamic)project).VBComponents)
             {
+                cancellation.ThrowIfCancellationRequested();
                 dynamic code = item.CodeModule; int count = code.CountOfLines;
                 sources.Add(new EditorSource { Module = (string)item.Name, ComponentType = (int)item.Type, Text = count == 0 ? "" : (string)code.Lines[1, count] });
                 await System.Threading.Tasks.Task.Yield(); // Let the host process input between COM module reads.

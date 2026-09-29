@@ -104,6 +104,7 @@ namespace CodexVBE.Tests.Unit
             {
                 var worker = new EditorSyncWorker(); f.Base.Set("synchronizationWorker", worker);
                 var blocked = worker.Evaluate(() => { entered.Set(); if (!release.Wait(5000)) throw new System.TimeoutException("owned worker gate"); return 1; }); Assert.IsTrue(entered.Wait(5000));
+                f.Base.Document.Edit(f.Base.Document.Text + "\n' queued draft");
                 var processing = f.Window.ProcessDocuments(true);
                 // Observe the actual immutable plan queue before releasing the worker.
                 var queue = (System.Collections.Concurrent.BlockingCollection<System.Action>)typeof(EditorSyncWorker).GetField("work", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(worker);
