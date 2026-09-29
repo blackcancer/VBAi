@@ -13,6 +13,25 @@ namespace CodexVBE.Tests.Unit
     [TestClass]
     public sealed class UiCommandIconsTests
     {
+        /// <summary>Handles absent and empty SVGs, reads only their first path and rejects entity expansion.</summary>
+        [TestMethod]
+        public void IconResourcesValidateXmlAndReadOnlyTheFirstSupportedPath()
+        {
+            Assert.IsNull(UiInvoke.Call(typeof(UiCommandIcons), "ReadPath", null, new object[] { null }));
+            foreach (var xml in new[] { "<svg />", "<svg><metadata>no path</metadata></svg>", "<svg><path d='M 1 2 L 3 4'/><path d='Q 1 2'/></svg>" })
+            using (var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(xml)))
+            using (var path = (GraphicsPath)UiInvoke.Call(typeof(UiCommandIcons), "ReadPath", null, stream))
+            {
+                if (xml.Contains("<path")) { Assert.AreEqual(2, path.PointCount); Assert.AreEqual(new PointF(1, 2), path.PathPoints[0]); }
+                else Assert.IsNull(path);
+            }
+            using (var stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes("<!DOCTYPE svg [<!ENTITY unsafe 'expanded'>]><svg>&unsafe;</svg>")))
+            {
+                var error = Assert.ThrowsException<TargetInvocationException>(() => UiInvoke.Call(typeof(UiCommandIcons), "ReadPath", null, stream));
+                Assert.IsInstanceOfType(error.InnerException, typeof(System.Xml.XmlException));
+            }
+        }
+
         /// <summary>Rejects unsupported path commands and accepts decimal SVG coordinates regardless of the current culture.</summary>
         [TestMethod]
         public void UnsupportedSvgCommandsFailAndValidPathsRemainReusableAcrossCultures()

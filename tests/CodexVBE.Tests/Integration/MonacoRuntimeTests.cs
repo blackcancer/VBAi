@@ -22,7 +22,8 @@ namespace CodexVBE.Tests.Integration
             using (var window = new ModernEditorWindow())
             {
                 window.Drafts = new EditorDraftStore(first.Root);
-                var a = Wait(window.OpenModule(first)); window.Show(); Wait(() => window.Ready);
+                var a = Wait(window.OpenModule(first)); window.Show();
+                Wait(() => window.Ready && UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer").Enabled);
                 var b = Wait(window.OpenModule(second));
                 UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer").Stop();
                 Wait(window.OpenModule(first));

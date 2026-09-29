@@ -98,7 +98,7 @@ namespace CodexVBE
         /// <summary>Selected surfaces match the design form in Visual Studio.</summary>
         /// <param name="control">Control whose native palette and geometry are used.</param>
         /// <returns>The result produced by this operation.</returns>
-        internal static Color SurfaceFor(Control control) => SystemInformation.HighContrast ? SystemColors.Window : BackgroundFor(control).GetBrightness() < .5f ? Color.FromArgb(30, 34, 42) : Color.White;
+        internal static Color SurfaceFor(Control control) => HighContrast() ? SystemColors.Window : BackgroundFor(control).GetBrightness() < .5f ? Color.FromArgb(30, 34, 42) : Color.White;
         /// <summary>Designer labels inherit the form's foreground.</summary>
         /// <param name="control">Control whose native palette and geometry are used.</param>
         /// <returns>The result produced by this operation.</returns>
@@ -106,11 +106,11 @@ namespace CodexVBE
         /// <summary>Field boundaries use the preview palette when hosted by a Designer.</summary>
         /// <param name="control">Control whose native palette and geometry are used.</param>
         /// <returns>The result produced by this operation.</returns>
-        internal static Color BorderFor(Control control) => SystemInformation.HighContrast ? SystemColors.WindowText : BackgroundFor(control).GetBrightness() < .5f ? Color.FromArgb(61, 68, 80) : Color.FromArgb(213, 220, 230);
+        internal static Color BorderFor(Control control) => HighContrast() ? SystemColors.WindowText : BackgroundFor(control).GetBrightness() < .5f ? Color.FromArgb(61, 68, 80) : Color.FromArgb(213, 220, 230);
         /// <summary>Designer focus follows Windows rather than application settings.</summary>
         /// <param name="control">Control whose native palette and geometry are used.</param>
         /// <returns>The result produced by this operation.</returns>
-        internal static Color FocusBorderFor(Control control) => SystemInformation.HighContrast ? SystemColors.Highlight : BackgroundFor(control).GetBrightness() < .5f ? Color.FromArgb(96, 165, 250) : Color.FromArgb(37, 99, 235);
+        internal static Color FocusBorderFor(Control control) => HighContrast() ? SystemColors.Highlight : BackgroundFor(control).GetBrightness() < .5f ? Color.FromArgb(96, 165, 250) : Color.FromArgb(37, 99, 235);
         /// <summary>Couleur de fond d’un changement VBA ajouté.</summary>
         /// <value>Couleur de fond des changements ajoutés.</value>
         internal static Color Added { get { return Dark ? Color.FromArgb(24, 64, 42) : Color.FromArgb(232, 247, 237); } }

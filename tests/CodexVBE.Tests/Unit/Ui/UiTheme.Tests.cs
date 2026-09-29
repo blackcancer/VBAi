@@ -15,6 +15,40 @@ namespace CodexVBE.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class UiThemeTests
     {
+        /// <summary>Resolves preview colors from parent surfaces and keeps context menus synchronized during normal theme application.</summary>
+        [STATestMethod]
+        public void PreviewPaletteUsesParentOrStandaloneColorsAndWindowsContrast()
+        {
+            using (var scope = new ThemeScope())
+            using (var parent = new Panel())
+            using (var child = new Panel { ForeColor = Color.Purple })
+            using (var menu = new ContextMenuStrip())
+            {
+                parent.Controls.Add(child); parent.ContextMenuStrip = menu; menu.Items.Add("Action");
+                foreach (bool contrast in new[] { false, true })
+                foreach (bool dark in new[] { false, true })
+                {
+                    UiTheme.HighContrast = () => contrast; parent.BackColor = dark ? Color.Black : Color.White; parent.ForeColor = Color.Green;
+                    Assert.AreEqual(contrast ? SystemColors.Window : dark ? Color.FromArgb(30, 34, 42) : Color.White, UiTheme.SurfaceFor(child));
+                    Assert.AreEqual(contrast ? SystemColors.WindowText : dark ? Color.FromArgb(61, 68, 80) : Color.FromArgb(213, 220, 230), UiTheme.BorderFor(child));
+                    Assert.AreEqual(contrast ? SystemColors.Highlight : dark ? Color.FromArgb(96, 165, 250) : Color.FromArgb(37, 99, 235), UiTheme.FocusBorderFor(child));
+                    Assert.AreEqual(Color.Green, UiTheme.ForegroundFor(child));
+                }
+                parent.Controls.Remove(child); Assert.AreEqual(Color.Purple, UiTheme.ForegroundFor(child));
+                UiTheme.Apply(parent); Assert.AreEqual(UiTheme.Foreground, menu.Items[0].ForeColor);
+                using (var ordinary = new TextBox { BorderStyle = BorderStyle.None })
+                using (var transcript = new UiTextBox { BorderStyle = BorderStyle.None })
+                {
+                    UiTheme.Apply(ordinary); UiTheme.Apply(transcript);
+                    Assert.AreEqual(BorderStyle.FixedSingle, ordinary.BorderStyle);
+                    Assert.AreEqual(BorderStyle.None, transcript.BorderStyle);
+                }
+                var context = LicenseManager.CurrentContext;
+                try { LicenseManager.CurrentContext = new DesignContext(); var before = child.BackColor; UiTheme.Apply(child); Assert.AreEqual(before, child.BackColor); }
+                finally { LicenseManager.CurrentContext = context; }
+            }
+        }
+
         /// <summary>Checks input and menu colors across explicit themes and contrast, including dynamically inserted commands.</summary>
         [STATestMethod]
         public void ContextMenusRefreshNestedCommandsAndRendererPaletteWhenReopened()

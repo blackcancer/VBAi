@@ -10,6 +10,43 @@ namespace CodexVBE.Tests.Unit
     [TestClass]
     public sealed class UiActionButtonTests
     {
+        /// <summary>Uses Windows highlight colors for contrasted commands and preserves captions when no icon is selected.</summary>
+        [STATestMethod]
+        public void ContrastedCommandsAndFontFallbackKeepAccessibleRendering()
+        {
+            Assert.AreEqual("Segoe Fluent Icons", UiInvoke.Call(typeof(UiActionButton), "ChooseSymbolFont", null, "Segoe Fluent Icons"));
+            Assert.AreEqual("Segoe MDL2 Assets", UiInvoke.Call(typeof(UiActionButton), "ChooseSymbolFont", null, "Arial"));
+            using (var scope = new ThemeScope())
+            using (var form = new Form { StartPosition = FormStartPosition.Manual, Location = new Point(-10000, -10000) })
+            using (var button = new UiActionButton { Text = "Save", Size = new Size(180, 40) })
+            using (var image = new Bitmap(180, 40))
+            using (var graphics = Graphics.FromImage(image))
+            {
+                form.Controls.Add(button); form.Show(); button.Focus();
+                foreach (bool contrast in new[] { false, true })
+                foreach (bool primary in new[] { false, true })
+                foreach (bool enabled in new[] { false, true })
+                foreach (bool pressed in new[] { false, true })
+                {
+                    UiTheme.HighContrast = () => contrast;
+                    button.Primary = primary; button.Enabled = enabled;
+                    if (enabled) { button.Focus(); Assert.IsTrue(button.Focused); }
+                    NativeUiState.SendMessage(button.Handle, 0x128, new IntPtr(0x10002), IntPtr.Zero);
+                    UiInvoke.Call(typeof(UiActionButton), "OnMouseLeave", button, EventArgs.Empty);
+                    UiInvoke.Call(typeof(UiActionButton), "OnMouseEnter", button, EventArgs.Empty);
+                    if (pressed) UiInvoke.Call(typeof(UiActionButton), "OnMouseDown", button, new MouseEventArgs(MouseButtons.Left, 1, 0, 0, 0));
+                    UiInvoke.Call(typeof(UiActionButton), "OnPaint", button, new PaintEventArgs(graphics, button.ClientRectangle));
+                    if (contrast) Assert.AreEqual((enabled ? SystemColors.Highlight : form.BackColor).ToArgb(), image.GetPixel(15, 20).ToArgb());
+                    Assert.AreEqual("Save", button.AccessibilityObject.Name);
+                }
+                button.IconOnly = true; button.Symbol = UiSymbol.None;
+                button.Text = null; Assert.AreEqual(string.Empty, button.Text);
+                button.Text = "Save";
+                Assert.IsTrue(button.GetPreferredSize(Size.Empty).Width > 32);
+                Assert.AreEqual("Save", button.AccessibilityObject.Name);
+            }
+        }
+
         /// <summary>Checks command interaction, caption accessibility and fallback rendering across surface and button states.</summary>
         [STATestMethod, TestCategory("Unit")]
         public void CommandStatesRenderWithoutChangingCaptionOrPreferredSize()

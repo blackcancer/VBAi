@@ -10,6 +10,46 @@ namespace CodexVBE.Tests.Unit
 
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Rebuilds absent or disposed activity views and updates metadata without reopening completed streams.</summary>
+        [STATestMethod]
+        public void ActivityFragmentsRebuildMissingViewsAndPreserveTerminalMetadata()
+        {
+            foreach (string changed in new[] { "missing", "disposed", "kind", "title", "status", "duration" })
+            using (var window = Surfaces())
+            {
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = "commandExecution", Title = "Run", Detail = "first", Status = "inProgress" });
+                var entry = Get<List<ChatEntry>>(window, "transcriptEntries")[0];
+                using (var host = (ChatDesignerHost)Call(window, "RenderEntry", entry))
+                {
+                    var texts = Get<Dictionary<string, System.Windows.Forms.RichTextBox>>(window, "liveTexts");
+                    if (changed == "missing") texts.Remove("stream");
+                    if (changed == "disposed") texts["stream"].Dispose();
+                    int changes = 0; Get<ObservableCollection<object>>(window, "visibleEntries").CollectionChanged += (s, e) => changes++;
+                    Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = changed == "kind" ? "reasoning" : "commandExecution", Title = changed == "title" ? "Updated" : "Run", Detail = " next", Append = true, Status = changed == "status" ? "completed" : "inProgress", DurationMs = changed == "duration" ? (long?)75 : null });
+                    Assert.AreEqual(2, changes, changed); Assert.AreEqual("first next", entry.Activity.Detail);
+                }
+            }
+            using (var window = Surfaces())
+            {
+                Set(window, "busy", true);
+                foreach (string state in new[] { "live", "completed", "no-stream", "native-terminal" })
+                {
+                    var entry = new ChatEntry { Speaker = "Outil", Text = "Legacy output", StreamId = state == "no-stream" ? null : state };
+                    if (state == "native-terminal") entry.Activity = new CodexAgentActivity { Status = "completed", Detail = "Native result" };
+                    if (state == "completed") Get<HashSet<string>>(window, "completedStreams").Add(state);
+                    using (var host = (ChatDesignerHost)Call(window, "RenderActivityGroup", entry, new List<ChatEntry> { entry }))
+                        Assert.AreEqual(state == "live", ((ChatActivityGroupView)host.View).section.Expanded);
+                }
+                Set(window, "busy", false);
+                foreach (var title in new[] { (string)null, "", "Visible title" })
+                {
+                    var entry = new ChatEntry { Speaker = "Outil", Activity = new CodexAgentActivity { Kind = "commandExecution", Title = title, Status = "completed", Detail = "result" } };
+                    using (var host = (ChatDesignerHost)Call(window, "RenderActivityGroup", entry, new List<ChatEntry> { entry }))
+                    { Assert.AreEqual(title == "Visible title" ? UiText.Get("Agent activity") + " · 1 · Visible title" : UiText.Get("Agent activity") + " · 1", ((ChatActivityGroupView)host.View).section.Title); }
+                }
+            }
+        }
+
         /// <summary>Updates hundreds of text fragments without recycling controls belonging to earlier steps.</summary>
         [STATestMethod]
         public void AppendOnlyActivityFragmentsKeepRealizedStepControlsAndExpansion()

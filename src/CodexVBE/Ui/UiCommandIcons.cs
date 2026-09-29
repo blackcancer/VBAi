@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Globalization;
+using System.IO;
 using System.Text.RegularExpressions;
 using System.Xml;
 
@@ -28,11 +29,7 @@ namespace CodexVBE
                 {
                     using (var stream = typeof(UiCommandIcons).Assembly.GetManifestResourceStream("CodexVBE.CommandIcons." + symbol + ".svg"))
                     {
-                        if (stream == null) return false;
-                        using (var reader = XmlReader.Create(stream, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null }))
-                        {
-                            while (reader.Read()) if (reader.NodeType == XmlNodeType.Element && reader.LocalName == "path") { path = Parse(reader.GetAttribute("d")); break; }
-                        }
+                        path = ReadPath(stream);
                     }
                     if (path == null) return false;
                     Paths.Add(symbol, path);
@@ -49,6 +46,16 @@ namespace CodexVBE
                 finally { graphics.Restore(state); }
                 return true;
             }
+        }
+        /// <summary>Reads the first supported path without resolving external XML resources.</summary>
+        /// <param name="stream">Icon resource stream, or null when the resource is absent.</param>
+        /// <returns>The parsed path, or null when the resource contains no path.</returns>
+        private static GraphicsPath ReadPath(Stream stream)
+        {
+            if (stream == null) return null;
+            using (var reader = XmlReader.Create(stream, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null }))
+                while (reader.Read()) if (reader.NodeType == XmlNodeType.Element && reader.LocalName == "path") return Parse(reader.GetAttribute("d"));
+            return null;
         }
         // The bundled SVGs intentionally use absolute M/L/C/Z commands only.
         /// <summary>Parses the absolute M, L, C and Z commands used by bundled SVG paths.</summary>

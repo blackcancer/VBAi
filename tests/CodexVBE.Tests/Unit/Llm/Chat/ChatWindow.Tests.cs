@@ -16,6 +16,42 @@ namespace CodexVBE.Tests.Unit
 
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Restores each approval policy without saving and rolls user edits back when persistence fails.</summary>
+        [STATestMethod]
+        public void ApprovalSelectionRestoresUnknownPoliciesAndRollsBackFailedEdits()
+        {
+            var save = ChatWindow.WriteSettings;
+            try
+            {
+                using (var window = Surfaces())
+                {
+                    int saves = 0; ChatWindow.WriteSettings = value => saves++;
+                    var picker = Get<ComboBox>(window, "approvalPicker");
+                    Call(window, "RefreshApprovalSelection"); Assert.AreEqual(0, picker.SelectedIndex);
+                    Call(window, "ApprovalPicker_SelectedIndexChanged", null, EventArgs.Empty);
+                    var settings = new LlmSettings(); Set(window, "settings", settings);
+                    foreach (var policy in new[] { "ReadOnly", "AskEachTime", "Automatic", "unknown" })
+                    {
+                        settings.VbeEditApproval = policy; Call(window, "RefreshApprovalSelection");
+                        Assert.AreEqual(policy == "ReadOnly" ? 2 : policy == "AskEachTime" ? 1 : policy == "Automatic" ? 0 : -1, picker.SelectedIndex);
+                        Assert.AreEqual(0, saves); Assert.IsFalse(Get<bool>(window, "refreshingApproval"));
+                    }
+                    settings.VbeEditApproval = "Automatic"; Call(window, "RefreshApprovalSelection");
+                    Set(window, "busy", true); picker.SelectedIndex = 2;
+                    Assert.AreEqual(0, picker.SelectedIndex); Assert.AreEqual(0, saves);
+                    Set(window, "busy", false); picker.SelectedIndex = -1;
+                    Assert.AreEqual(0, picker.SelectedIndex); Assert.AreEqual(0, saves);
+                    foreach (int index in new[] { 1, 2, 0 })
+                    { picker.SelectedIndex = index; Assert.AreEqual(index == 1 ? "AskEachTime" : index == 2 ? "ReadOnly" : "Automatic", settings.VbeEditApproval); }
+                    Assert.AreEqual(3, saves);
+                    ChatWindow.WriteSettings = value => { throw new IOException("policy persistence failed"); };
+                    picker.SelectedIndex = 2;
+                    Assert.AreEqual("Automatic", settings.VbeEditApproval); Assert.AreEqual(0, picker.SelectedIndex);
+                }
+            }
+            finally { ChatWindow.WriteSettings = save; }
+        }
+
         /// <summary>Checks repeated selector expansion after physical scaling and a font change while collapsed.</summary>
         [STATestMethod]
         public void ModelSelectorsFitScaledControlsAndFontsAfterRepeatedExpansion()

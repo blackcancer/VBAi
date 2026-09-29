@@ -99,8 +99,12 @@ namespace CodexVBE
         private static string FindSymbolFont()
         {
             using (var font = new Font("Segoe Fluent Icons", 12))
-                return font.Name == "Segoe Fluent Icons" ? font.Name : "Segoe MDL2 Assets";
+                return ChooseSymbolFont(font.Name);
         }
+        /// <summary>Selects the legacy symbol font when Windows substitutes the requested Fluent font.</summary>
+        /// <param name="resolvedName">Font name resolved by the native font subsystem.</param>
+        /// <returns>The installed Fluent font or the legacy Windows symbol font.</returns>
+        private static string ChooseSymbolFont(string resolvedName) => resolvedName == "Segoe Fluent Icons" ? resolvedName : "Segoe MDL2 Assets";
         /// <summary>Updates the tooltip when the caption is hidden.</summary>
         private void UpdateCaption()
         {
@@ -119,7 +123,7 @@ namespace CodexVBE
             if (IconOnly && Symbol != UiSymbol.None) return new Size(32 * DeviceDpi / 96, 30 * DeviceDpi / 96);
             // Measuring the caption directly avoids feeding the current auto-sized width
             // back into the next layout pass and adding the symbol width repeatedly.
-            var caption = TextRenderer.MeasureText(Text ?? "", Font);
+            var caption = TextRenderer.MeasureText(Text, Font);
             int extra = (Symbol == UiSymbol.None ? 20 : 44) * DeviceDpi / 96;
             return new Size(Math.Max(MinimumSize.Width, caption.Width + Padding.Horizontal + extra),
                 Math.Max(MinimumSize.Height, Math.Max(caption.Height + Padding.Vertical + 10 * DeviceDpi / 96, 30 * DeviceDpi / 96)));
@@ -146,7 +150,7 @@ namespace CodexVBE
         protected override void OnPaint(PaintEventArgs e)
         {
             if (Width < 2 || Height < 2) return;
-            bool contrast = SystemInformation.HighContrast;
+            bool contrast = UiTheme.HighContrast();
             Color background = Parent?.BackColor ?? BackColor;
             Color foreground = Enabled ? ForeColor : SystemColors.GrayText;
             Color fill = background;
@@ -180,7 +184,7 @@ namespace CodexVBE
             if (Symbol != UiSymbol.None)
             {
                 int width = IconOnly ? Width : 30 * DeviceDpi / 96;
-                int groupWidth = IconOnly ? Width : Math.Min(Width, TextRenderer.MeasureText(Text ?? "", Font).Width + width);
+                int groupWidth = IconOnly ? Width : Math.Min(Width, TextRenderer.MeasureText(Text, Font).Width + width);
                 int start = (Width - groupWidth) / 2;
                 var iconBounds = new Rectangle(RightToLeft == RightToLeft.Yes && !IconOnly ? start + groupWidth - width : start, 0, width, Height);
                 if (!UiCommandIcons.Draw(e.Graphics, Symbol, iconBounds, foreground, DeviceDpi))

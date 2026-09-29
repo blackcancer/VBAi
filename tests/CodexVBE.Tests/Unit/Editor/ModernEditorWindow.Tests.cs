@@ -8,6 +8,34 @@ namespace CodexVBE.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class ModernEditorWindowTests
     {
+        /// <summary>Ignores theme changes during disposal and dispatches worker notifications onto the editor thread.</summary>
+        [STATestMethod]
+        public void ThemeNotificationsRespectWindowLifetimeAndUiThreadOwnership()
+        {
+            using (var uncreated = new ModernEditorWindow())
+            { UiInvoke.Call(typeof(ModernEditorWindow), "ThemeChanged", uncreated); Assert.IsFalse(uncreated.IsHandleCreated); }
+            using (var fixture = new ModernEditorDebugFixture())
+            {
+                foreach (bool closing in new[] { true, false })
+                {
+                    fixture.Set("closing", closing); fixture.Scripts.Clear();
+                    var thread = new System.Threading.Thread(() => UiInvoke.Call(typeof(ModernEditorWindow), "ThemeChanged", fixture.Window));
+                    thread.Start(); Assert.IsTrue(thread.Join(5000));
+                    System.Windows.Forms.Application.DoEvents();
+                    Assert.AreEqual(closing ? 0 : 1, fixture.Scripts.Count(script => script.Item1 == "theme"));
+                }
+                bool refused = false;
+                fixture.Window.DispatchTheme = action => { refused = true; throw new System.InvalidOperationException("window closed during dispatch"); };
+                var closingThread = new System.Threading.Thread(() => UiInvoke.Call(typeof(ModernEditorWindow), "ThemeChanged", fixture.Window));
+                closingThread.Start(); Assert.IsTrue(closingThread.Join(5000)); Assert.IsTrue(refused);
+                var panel = new System.Windows.Forms.Panel(); fixture.Window.Controls.Add(panel);
+                panel.Disposed += (sender, args) => UiInvoke.Call(typeof(ModernEditorWindow), "ThemeChanged", fixture.Window);
+                fixture.Scripts.Clear(); fixture.Window.Dispose();
+                UiInvoke.Call(typeof(ModernEditorWindow), "ThemeChanged", fixture.Window);
+                Assert.AreEqual(0, fixture.Scripts.Count);
+            }
+        }
+
         /// <summary>Preserves visible conflict captions and scales command height for large fonts and long translations.</summary>
         [STATestMethod]
         public void ConflictChoicesKeepCaptionsAndFitScaledToolbar()

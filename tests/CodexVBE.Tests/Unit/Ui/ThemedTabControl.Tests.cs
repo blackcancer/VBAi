@@ -10,6 +10,21 @@ namespace CodexVBE.Tests.Unit
     [TestClass]
     public sealed class ThemedTabControlTests
     {
+        /// <summary>Skips native tab faces that cannot fit their outline at minimum dimensions.</summary>
+        [STATestMethod]
+        public void TinyTabFacesPaintWithoutDrawingInvalidOutlines()
+        {
+            foreach (var size in new[] { new Size(1, 20), new Size(20, 1) })
+            using (var tabs = new ThemedTabControl { SizeMode = TabSizeMode.Fixed, ItemSize = size, Size = new Size(40, 40) })
+            using (var image = new Bitmap(40, 40))
+            using (var graphics = Graphics.FromImage(image))
+            {
+                tabs.TabPages.Add("tiny"); var handle = tabs.Handle;
+                UiInvoke.Call(typeof(ThemedTabControl), "OnPaint", tabs, new PaintEventArgs(graphics, tabs.ClientRectangle));
+                Assert.AreEqual(1, tabs.TabCount); Assert.AreEqual(0, tabs.SelectedIndex);
+            }
+        }
+
         /// <summary>Checks tab and close-command hover transitions without selecting or closing a document.</summary>
         [STATestMethod]
         public void HoverAndCloseHoverRepaintWithoutChangingDocumentSelection()
@@ -69,6 +84,7 @@ namespace CodexVBE.Tests.Unit
                 Assert.AreEqual(form.BackColor.ToArgb(),bitmap.GetPixel(399,199).ToArgb());
                 tabs.TabPages.Add(new TabPage("first")); tabs.TabPages.Add(new TabPage("second") {Enabled=false});
                 form.Show(); tabs.Focus(); Assert.IsTrue(tabs.Focused);
+                NativeUiState.SendMessage(tabs.Handle, 0x128, new IntPtr(0x10002), IntPtr.Zero);
                 foreach(var dark in new[]{false,true})
                 {
                     ThemeScope.SetChoice(dark ? ThemeChoice.Dark : ThemeChoice.Light);

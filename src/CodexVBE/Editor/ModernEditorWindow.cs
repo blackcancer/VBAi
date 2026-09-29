@@ -93,6 +93,7 @@ namespace CodexVBE
         public ModernEditorWindow()
         {
             InitializeComponent();
+            DispatchTheme = action => BeginInvoke(action);
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
             Icon = VbeWindowIcons.Icon("assistant"); UiText.Apply(this, components); UiTheme.Attach(this);
             tabs.RightToLeft = RightToLeft.No;
@@ -512,6 +513,8 @@ public int column { get; set; } }
             finally { busy = false; }
         }
         /// <summary>Applique à Monaco les couleurs du thème hôte après un changement de thème.</summary>
+        internal Action<Action> DispatchTheme;
+        /// <summary>Applies host theme notifications on the editor thread while respecting window lifetime.</summary>
         private async void ThemeChanged()
         {
             if (IsDisposed || Disposing || closing || !IsHandleCreated) return;
@@ -519,7 +522,7 @@ public int column { get; set; } }
             // WebView2, tabs and their palette must be updated on the owning UI thread.
             if (InvokeRequired)
             {
-                try { BeginInvoke(new Action(ThemeChanged)); }
+                try { DispatchTheme(ThemeChanged); }
                 catch (InvalidOperationException) { /* Window closed during dispatch. */ }
                 return;
             }
