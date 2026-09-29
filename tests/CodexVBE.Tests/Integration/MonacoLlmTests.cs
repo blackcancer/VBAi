@@ -11,14 +11,22 @@ namespace CodexVBE.Tests.Integration
     [TestClass, TestCategory("MonacoRuntime")]
     public sealed class MonacoLlmTests : EditorUiTestFixture
     {
+        /// <summary>Finishes startup and pauses automatic work for manual synchronization scenarios.</summary>
+        private static void PauseAutomaticWork(ModernEditorWindow window)
+        {
+            MonacoRuntimeTests.Wait(() => window.Ready && UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer").Enabled);
+            foreach (string name in new[] { "timer", "streamTimer", "debugTimer" })
+                UiInvoke.Field<System.Windows.Forms.Timer>(window, name).Stop();
+            MonacoRuntimeTests.Wait(() => !UiInvoke.Field<bool>(window, "busy"));
+        }
+
         [STATestMethod]
         public void CompilationCapturesUnreportedDraftBeforeNativeDispatch()
         {
             using (var host = new EditorFixture())
             using (var window = new ModernEditorWindow { Drafts = new EditorDraftStore(host.Root) })
             {
-                window.Show(); MonacoRuntimeTests.Wait(() => window.Ready);
-                ((System.Windows.Forms.Timer)typeof(ModernEditorWindow).GetField("timer", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(window)).Stop();
+                window.Show(); PauseAutomaticWork(window);
                 var doc = MonacoRuntimeTests.Wait(window.OpenModule(host));
                 var tools = new LlmVbeTools(null, null, new LlmSettings { VbeEditApproval = "Automatic" })
                 { MonacoWindow = create => window, Execute = request => throw new InvalidOperationException("Native dispatch was reached") };
@@ -41,8 +49,7 @@ namespace CodexVBE.Tests.Integration
             using (var host = new EditorFixture())
             using (var window = new ModernEditorWindow { Drafts = new EditorDraftStore(host.Root) })
             {
-                window.Show(); MonacoRuntimeTests.Wait(() => window.Ready);
-                ((System.Windows.Forms.Timer)typeof(ModernEditorWindow).GetField("timer", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(window)).Stop();
+                window.Show(); PauseAutomaticWork(window);
                 var tools = new LlmVbeTools(null, null, new LlmSettings { VbeEditApproval = "Automatic" })
                 {
                     MonacoWindow = create => window, MonacoModule = (p, m) => host,
@@ -85,8 +92,7 @@ namespace CodexVBE.Tests.Integration
             using (var host = new EditorFixture())
             using (var window = new ModernEditorWindow { Drafts = new EditorDraftStore(host.Root) })
             {
-                window.Show(); MonacoRuntimeTests.Wait(() => window.Ready);
-                ((System.Windows.Forms.Timer)typeof(ModernEditorWindow).GetField("timer", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(window)).Stop();
+                window.Show(); PauseAutomaticWork(window);
                 var tools = new LlmVbeTools(null, null, new LlmSettings { VbeEditApproval = "Automatic" })
                 {
                     BoundProject = "P", MonacoWindow = create => window, MonacoModule = (p, m) => host,

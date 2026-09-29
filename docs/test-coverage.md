@@ -1,6 +1,14 @@
 # Couverture automatisée du complément
 
-## Reprise après revue Astra
+## Intégration de la PR #13
+
+La fusion `7232ceb` ajoute les deltas Monaco versionnés, la synchronisation pendant la saisie, les chemins rapides de débogage et l’index de langage incrémental. La mesure à 100 % ci-dessous précède ces changements : elle ne qualifie pas les nouvelles branches. Le protocole et les limites sont décrits dans [le bilan de performance](monaco-performance.md).
+
+La validation de la fusion compte **382 tests .NET réussis, 0 échec, 3 ignorés**, en **1 min 40 s** (`artifacts/pr13-integration/accepted/regressions.trx`), **30 tests JavaScript réussis**, **46 surfaces Designer validées**, et une compilation Debug sans erreur ni avertissement. Les trois scénarios manuels LLM attendent la fin du démarrage puis arrêtent les trois minuteries : leur ancienne préparation n’arrêtait que le cycle de réconciliation, ce qui permettait au streaming d’occuper l’éditeur pendant leurs appels. Le test distinct de streaming réel reste automatique.
+
+La version `main` fusionnée est réinstallée. Le parcours Excel visible confirme l’identité de la DLL chargée, le démarrage automatique, le code natif derrière Monaco, le redimensionnement et la disposition préservée de l’Explorateur d’objets (`artifacts/pr13-integration/excel-startup/monaco-startup.json`). Excel est fermé ensuite, sans exécution de macro. Ce contrôle de démarrage ne mesure pas les performances COM du streaming et ne qualifie pas SOLIDWORKS.
+
+## Historique : reprise après revue Astra, avant PR #13
 
 Le lot `eca1c08` reprend la couverture sur les corrections Astra et les interfaces de la PR #12. Huit nouveaux scénarios miroir couvrent les politiques d’approbation et leur rollback, les notifications de thème entre threads et la fermeture pendant leur dispatch, les sélecteurs et leurs pinceaux GDI, les activités anciennes ou dont la vue a été libérée, les boutons en contraste élevé et le repli de police, les palettes de prévisualisation, les ressources SVG absentes ou invalides et les onglets trop petits.
 

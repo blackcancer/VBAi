@@ -4,13 +4,13 @@ Couverture et documentation actualisées le **29 septembre 2026**, après intég
 
 ## Couverture et documentation
 
-La couverture a repris après les correctifs de la [revue Astra](audits/2026-09-29-astra-behavior-audit.md). Le passage global final `953c84f` inclut leurs régressions, les interfaces de la PR #12 et le correctif d’ordre des fenêtres Monaco.
+La couverture a repris après les correctifs de la [revue Astra](audits/2026-09-29-astra-behavior-audit.md). Le passage global `953c84f` inclut leurs régressions, les interfaces de la PR #12 et le correctif d’ordre des fenêtres Monaco. La PR #13 ajoute ensuite des branches de streaming, de cache et de débogage ; leur couverture globale reste à remesurer.
 
 | Travail | État actuel | Critère de fin |
 | --- | --- | --- |
-| Couverture du code de production | Suite globale : 1 867 réussis, 0 échec, 21 ignorés ; 100 % lignes (30 521/30 521), 100 % branches (31 195/31 195), sans exclusion | Cible atteinte pour l’assembly C# ; préserver la suite verte et les compteurs après chaque modification |
+| Couverture du code de production | Dernière mesure avant PR #13 : 1 867 réussis, 0 échec, 21 ignorés ; 100 % lignes (30 521/30 521), 100 % branches (31 195/31 195), sans exclusion | Remesurer et compléter les nouvelles branches de la PR #13 ; suite globale verte |
 | Organisation des tests | 240 miroirs pour 297 sources ; scénarios et fixtures complémentaires | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
-| Documentation IntelliSense | Complément : 5 356/5 356 déclarations documentées, audit intégré, aucune erreur syntaxique | Préserver les commentaires privés/publics et leurs paramètres ; documentation des tests distincte |
+| Documentation IntelliSense | Avant PR #13 : 5 356/5 356 déclarations documentées, audit intégré, aucune erreur syntaxique | Actualiser l’audit des nouvelles déclarations ; préserver les commentaires privés/publics et leurs paramètres |
 | Concepteurs WinForms | 46 surfaces WinForms et 412 contrôles enfants validés | Préserver cette accessibilité après chaque changement de structure ; qualifier aussi le rendu réel |
 
 Compléter chaque branche de couverture identifiée avant de passer à la suivante. Construire le lot de scénarios cohérent avant de le lancer, puis mesurer la suite globale. Les pourcentages actuels sont détaillés dans [le bilan de tests](test-coverage.md).
