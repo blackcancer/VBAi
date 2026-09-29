@@ -1,17 +1,19 @@
 # Travaux restants
 
-Couverture et documentation actualisées le **29 septembre 2026**, après intégration de la PR #11 et extension IntelliSense Monaco. La mesure actuelle et les anciens passages datés sont distingués dans [le bilan de tests](test-coverage.md). Ce document distingue les contrats présents de la qualification native manquante. Le [catalogue LLM](reference/vbe-tools.md) expose 204 outils ; les [archives](archive/README.md) conservent les expériences détaillées.
+Couverture et documentation actualisées le **29 septembre 2026**, après intégration de la PR #12 et correction de la récupération de palette native. La mesure actuelle et les anciens passages datés sont distingués dans [le bilan de tests](test-coverage.md). Ce document distingue les contrats présents de la qualification native manquante. Le [catalogue LLM](reference/vbe-tools.md) expose 204 outils ; les [archives](archive/README.md) conservent les expériences détaillées.
 
 ## Couverture et documentation
 
 | Travail | État actuel | Critère de fin |
 | --- | --- | --- |
-| Couverture du code de production | Suite globale : 1 834 réussis, 0 échec, 20 ignorés ; 100 % lignes et branches (29 712 / 30 845), sans exclusion ; 57 scénarios JavaScript et parcours Excel qualifiés séparément | 100 % lignes et branches mesurées sur toute l’assembly, sans masquer du code ; suite globale verte |
-| Organisation des tests | 237 miroirs pour 294 sources ; scénarios et fixtures complémentaires | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
-| Documentation IntelliSense | Complément : 5 216/5 216 déclarations documentées, audit intégré, aucune erreur syntaxique | Préserver les commentaires privés/publics et leurs paramètres ; documentation des tests distincte |
-| Concepteurs WinForms | 46 surfaces WinForms et 409 contrôles enfants validés | Préserver cette accessibilité après chaque changement de structure ; qualifier aussi le rendu réel |
+| Couverture du code de production | Suite globale : 1 847 réussis, 0 échec, 21 ignorés ; 99,90 % lignes (30 472/30 503), 99,75 % branches (31 093/31 171), sans exclusion ; 31 lignes et 78 branches UI restantes après PR #12 | 100 % lignes et branches mesurées sur toute l’assembly, sans masquer du code ; suite globale verte |
+| Organisation des tests | 239 miroirs pour 297 sources ; scénarios et fixtures complémentaires | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
+| Documentation IntelliSense | Complément : 5 352/5 352 déclarations documentées, audit intégré, aucune erreur syntaxique | Préserver les commentaires privés/publics et leurs paramètres ; documentation des tests distincte |
+| Concepteurs WinForms | 46 surfaces WinForms et 412 contrôles enfants validés | Préserver cette accessibilité après chaque changement de structure ; qualifier aussi le rendu réel |
 
 Compléter chaque branche de couverture identifiée avant de passer à la suivante. Construire le lot de scénarios cohérent avant de le lancer, puis mesurer la suite globale. Les pourcentages actuels sont détaillés dans [le bilan de tests](test-coverage.md).
+
+La récupération de palette native conserve les modifications manuelles et archive atomiquement l’ancien fichier. Les 36 tests ciblés, le cycle Excel natif et le chargement normal avec le fichier utilisateur sont qualifiés ; voir [le thème natif](native-dark-theme.md). Le rendu global et les cas SOLIDWORKS restent distincts de cette validation.
 
 ## Extensions fonctionnelles du 28 septembre
 

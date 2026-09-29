@@ -1,6 +1,35 @@
 # Couverture automatisée du complément
 
-## Mesure globale à 100 % après extension IntelliSense Monaco
+## Mesure courante après intégration de la PR #12
+
+Mesure du **29 septembre 2026**, source `2c2a7f8`, après fusion des interfaces compactes, complément de documentation XML et correction de l’assertion de palette Monaco. Le passage global corrigé, instrumenté sans exclusion de production, fournit :
+
+| Mesure | Résultat |
+| --- | --- |
+| Suite globale VSTest | **1 847 réussis, 0 échec, 21 ignorés**, 9 min 22 s |
+| Lignes C# | **30 472 / 30 503 — 99,90 %**, 31 lignes restantes |
+| Branches C# | **31 093 / 31 171 — 99,75 %**, 78 branches restantes |
+| Lot UI et renderer corrigé | **26 réussis, 0 échec, 0 ignoré** |
+| Matrice JavaScript Monaco | **57 scénarios réussis** |
+| Thèmes réels WebView2 | **9 cas réussis**, code, diff et retour au code |
+| Compilation de la solution | **0 erreur, 0 avertissement** |
+| Concepteurs et métadonnées | **46 surfaces, 412 contrôles enfants, 27 contrôles de projet** |
+| Organisation miroir | **239 miroirs pour 297 sources** |
+| Documentation IntelliSense | **5 352 / 5 352 déclarations**, aucune erreur syntaxique |
+
+Les pourcentages sont arrondis à partir des compteurs bruts. La cible **100 % n’est pas encore atteinte après cette PR**. Les nouveaux écarts portent sur le dispatch du thème Monaco, le modèle et les activités du chat, les onglets et leurs états de survol/fermeture, les boutons, les icônes, les sélecteurs et les couleurs des menus. La suite verte ne remplace pas les scénarios manquants.
+
+Preuves : `artifacts/pr12-integration/global-accepted/global.trx` et `32fc707c-9b16-49f4-a94a-0d1239ec8efa/coverage.cobertura.xml` et `coverage.json` dans ce même dossier. Les contrôles ciblés, Designers, métadonnées, thèmes WebView2 et miroirs sont dans `artifacts/pr12-integration/`. Le premier passage `global/global.trx` comportait un échec d’assertion sur l’ancienne couleur sombre ; il ne constitue pas la preuve de suite verte. Le passage corrigé ci-dessus le remplace.
+
+Les 21 scénarios conditionnels d’hôtes et de comptes sont ignorés dans cette mesure ; le parcours Excel de palette est qualifié séparément. Les mesures à 100 % ci-dessous décrivent les états antérieurs à la PR #12. Le C++, les processus hôtes et les branches JavaScript ne sont pas inclus dans les compteurs de l’assembly C# `CodexVBE`.
+
+## Historique : correctif de récupération de palette, avant PR #12
+
+Le **29 septembre 2026**, le correctif `8445e44` conserve **100 %** des lignes et branches de l’assembly C# : **29 743 / 29 743 lignes**, **30 859 / 30 859 branches**. La suite globale compte **1 836 réussis, 0 échec, 21 ignorés**, en 9 min 17 s. Preuves : `artifacts/palette-diagnostic/global-final/global.trx` et `45887997-9f9a-4e8f-8441-9281148b8700/coverage.cobertura.xml` dans ce même dossier.
+
+Le lot ciblé de palette compte **36 réussites** ; le parcours Excel natif séparé compte **1 réussite**, avec réconciliation, archivage et restauration relue. Le chargement normal de la DLL installée confirme aussi la réparation du fichier utilisateur, avec conservation de son ancienne version. Ces preuves sont sous `artifacts/palette-diagnostic/`. Les compteurs à 100 % de cette section précèdent les nouveaux contrôles de la PR #12.
+
+## Historique : mesure à 100 % après extension IntelliSense Monaco
 
 Mesure du **29 septembre 2026**, source `611f882`, après les références dynamiques, les métadonnées COM enrichies, les alias VBA et l’édition automatique. Un passage global final VSTest instrumenté, sans exclusion de production, fournit :
 

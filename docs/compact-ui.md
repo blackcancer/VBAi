@@ -85,6 +85,14 @@ Ces références guident les interactions ; le style conservé est celui du chat
 
 ## Validation
 
+### Intégration dans main — 29 septembre 2026
+
+La PR #12 est intégrée avec le correctif de récupération de palette native. Le lot corrigé compte **26 tests réussis, 0 échec**, dont les parcours réels WebView2 ; les **57 scénarios JavaScript** d’IntelliSense et d’édition restent verts. Les contrôles de structure passent : **46 concepteurs WinForms**, **27 éléments de métadonnées**, **239 miroirs pour 297 sources**. La documentation XML couvre **5 352 / 5 352 déclarations**, sans erreur syntaxique ; ses compléments ne modifient pas le code exécutable.
+
+Les neuf cas du renderer vérifient les thèmes clair, sombre puis clair dans le code, le diff et le retour au code. Le chargement normal de l’ensemble fusionné dans un Excel jetable confirme la récupération de palette utilisateur sans l’erreur signalée. Il ne constitue pas une qualification visuelle complète du chat ou de SOLIDWORKS. Preuves : `artifacts/pr12-integration/accepted/accepted.trx`, `designers/designers.json`, `metadata/project-items.json`, `editor-appearance/theme-validation.txt` et `artifacts/palette-diagnostic/normal-startup.log`. La mesure globale courante est détaillée dans [le bilan des tests](test-coverage.md).
+
+### Historique de la branche
+
 Les vérifications couvrent la compilation de l'add-in et de l'Updater, les états
 du chat, les icônes à 96 et 192 DPI, la stabilité des tailles, les champs natifs
 et les Designers. Les captures utilisent des données de démonstration locales ;
