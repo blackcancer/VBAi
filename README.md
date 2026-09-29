@@ -1,36 +1,88 @@
+<p align="center"><img src="assets/icons/assistant.png" width="88" alt="VBAi logo"></p>
+
 # VBAi
 
-**Your AI agent for VBA**
+**Your AI agent for VBA. A modern workspace inside the Visual Basic Editor.**
 
-Complément COM pour le **Visual Basic Editor 64 bits**, notamment Excel et SOLIDWORKS, ciblant **.NET Framework 4.8 x64**. Il intègre une conversation LLM et des outils de lecture, d’édition, de conception de UserForms et de débogage du projet VBA vivant. Codex est le fournisseur par défaut ; les autres fournisseurs se configurent dans le complément.
+VBAi brings AI-assisted development, a modern code editor and Git workflows into
+applications that host the **Visual Basic Editor (VBE)**. Work with the VBA project
+that is already open: understand existing code, review changes, build UserForms,
+and investigate problems without moving between a chatbot and your editor.
 
-Anciennement VBAi : les noms de solution, d’assembly, les identifiants COM et les répertoires de données sont conservés pour les installations existantes. L’interface dispose de 13 variantes linguistiques.
+The product targets the VBE, not a fixed pair of applications. Its shared VBIDE
+integration provides the core experience; host-specific compatibility layers add
+operations such as document persistence and procedure execution.
 
-## Documentation
+[Get started](docs/getting-started.md) · [Documentation](docs/README.md) ·
+[Compatibility](docs/compatibility.md) · [Contributing](CONTRIBUTING.md)
 
-- [Index de la documentation](docs/README.md)
-- [Installation et diagnostic](docs/installation.md)
-- [Éditeur Monaco](docs/modern-editor.md)
-- [Conversation et sessions](docs/chat-ui.md)
-- [Fournisseurs](docs/providers.md) et [GitHub](docs/github-integration.md)
-- [Architecture](docs/architecture.md) et [concepteurs WinForms](docs/winforms-designer.md)
-- [Catalogue des outils LLM](docs/reference/vbe-tools.md)
-- [Travaux restants](docs/roadmap.md) et [couverture des tests](docs/test-coverage.md)
+> **Development preview.** The current build targets Windows and 64-bit VBE hosts.
+> A standalone installer is planned for a later milestone. Developers and early
+> testers can use the [source-build setup](docs/installation.md). Architectural
+> compatibility is not a claim that every operation has been tested in every host.
 
-## État vérifié
+## What you can do
 
-Après intégration de la PR #4 et du lot IDE, mesure globale du code `27389a8` : **1 172 tests réussis, aucun échec, 1 test SOLIDWORKS ignoré**, couverture de **100 % des lignes et des branches**. Les trois tests Excel passent. Les **27 concepteurs WinForms** sont chargés et éditables via DesignSurface.
+| Capability | In practice |
+| --- | --- |
+| AI-assisted development | Discuss a project, plan an intervention, or let an agent use controlled tools against live VBA code. |
+| Modern editing | Edit in Monaco with completion, signature help, navigation, formatting and native compilation diagnostics. |
+| Review and recovery | Inspect code diffs, reject stale edits and undo supported changes without silently replacing newer work. |
+| UserForm development | Inspect forms, add controls, adjust layouts and work with events through the native designer. |
+| Native debugging | Use compilation, breakpoints and stepping through VBE services, subject to the host's capabilities. |
+| Git and GitHub | Version exported VBA sources, compare changes, create checkpoints and use branches and merges. |
+| Provider choice | Connect a supported cloud service, a CLI-backed provider or a compatible local model server. |
 
-Les tests réels Excel vérifient le chargement, le pont et la sauvegarde/relecture d’un classeur macro jetable. Les essais historiques dans SOLIDWORKS 2019 SP5 sur `test.swp` vérifient compilation, exécution, breakpoint, pas à pas et reprise, avec restauration du code initial. Ces scénarios ne qualifient pas chaque fonction dans chaque hôte ; les preuves et limites figurent dans [l’état du projet](docs/project.md).
+## A typical workflow
 
-## Développement
+1. Open a saved, backed-up project in its host application's VBE.
+2. Start in **Discussion** to understand the code and choose the context to share.
+3. Switch to **Agent** when ready, selecting the editing approval policy deliberately.
+4. Review the resulting changes, compile, and test the intended behavior safely.
+5. Save the document in its host application; commit or publish sources separately.
 
-Ouvrir `VBAi.sln` dans Visual Studio, plateforme **x64** :
+For example: *“Explain why this procedure fails when the input is empty. Propose a
+minimal correction and keep the public interface unchanged.”*
 
-```powershell
-dotnet build VBAi.sln -c Debug -p:Platform=x64
-```
+AI output is not a correctness guarantee. Compilation does not establish runtime
+correctness, and undoing code does not reverse a macro's external side effects.
+See [privacy and safety](docs/privacy.md) before sharing professional or sensitive
+projects with a provider.
 
-`src/VBAi/` contient le complément ; `tests/` contient le projet VSTest, ses miroirs et les diagnostics. `tools/` regroupe installation, contrôleur, sondes et essais natifs. `assets/` contient les ressources graphiques ; `artifacts/` contient les rapports locaux ignorés par Git.
+## Built for the VBE ecosystem
 
-Les essais autonomes utilisent une instance Excel visible et jetable. SOLIDWORKS et son VBE sont préchargés par l’utilisateur. Les raccourcis VBE et `SendKeys` sont proscrits ; les actions ciblent le projet et vérifient leurs révisions. Pour compiler pendant qu’un hôte charge la DLL, utiliser une sortie isolée plutôt que la sortie installée : voir [Architecture](docs/architecture.md).
+The shared layer works with projects, modules, references, code panes and native
+editor services. Application-specific adapters handle operations that VBIDE alone
+does not provide. A missing save adapter does not make a host irrelevant to the
+project; it limits that operation until an adapter is implemented and qualified.
+
+The [compatibility guide](docs/compatibility.md) separates platform requirements,
+implemented adapters and observed results. It includes the current Office and
+SOLIDWORKS test coverage without presenting those hosts as an exhaustive list.
+
+## Choose your AI connection
+
+Codex is the default provider. Other integrations include OpenAI API, Claude,
+GitHub Copilot, Gemini, Mistral, DeepSeek, OpenRouter, Azure OpenAI, Grok, Groq,
+Amazon Bedrock, Ollama, LM Studio and a custom OpenAI-compatible endpoint.
+
+Provider accounts, usage limits and any service charges are separate from VBAi.
+A listed integration does not guarantee that every model supports tool calling.
+Use the [provider guide](docs/providers.md) for authentication and configuration.
+
+## Project information
+
+- [Development guide](docs/development.md) and [architecture](docs/architecture.md).
+- [Testing](tests/README.md), [recorded validation](docs/test-coverage.md),
+  [changelog](CHANGELOG.md) and [roadmap](docs/roadmap.md).
+- [Help and voluntary support](SUPPORT.md), [security reporting](SECURITY.md)
+  and [community conduct](CODE_OF_CONDUCT.md).
+
+### License and third-party components
+
+A license for VBAi itself has not yet been selected in this repository. This
+README does not grant a software license. Bundled components retain their own
+terms; see [third-party notices](THIRD_PARTY_NOTICES.md).
+
+VBAi is an independent project, not an official product of Microsoft, OpenAI,
+GitHub or the vendors of applications that host the VBE.

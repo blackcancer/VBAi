@@ -1,41 +1,52 @@
-# Concepteur de formulaires VBE
+# UserForms and native designer data
 
-État du code après `2197c43`, le 28 septembre 2026. Ce guide décrit les UserForms VBA/MSForms ; l’édition des fenêtres de l’add-in dans Visual Studio est décrite dans [Concepteurs WinForms](../winforms-designer.md).
+VBAi works with the host's native VBA UserForm designer. It can inspect forms and
+containers, add supported controls, change typed properties, adjust geometry,
+work with events and perform bounded duplication/recovery operations. These
+capabilities do not imply universal support for every ActiveX control.
 
-## Lire avant de modifier
+## Identity and revisions
 
-`form_tree` expose l’arbre des contrôles et conteneurs avec leurs chemins canoniques. Frames, Pages de MultiPage et Tabs de TabStrip ont des chemins distincts. Utiliser la version d’arbre courante et le chemin retourné, plutôt qu’un nom supposé unique.
+Resolve the project, form and control from the live tree. Nested controls use
+canonical container/control paths rather than a caption alone. Layout and mutation
+operations require the relevant form/tree revision and the permitted VBE mode.
+Re-read after editing; an obsolete tree cannot safely identify the current target.
 
-Les commandes de propriétés utilisent les descripteurs réels et une conversion typée : chaînes, nombres, couleurs et énumérations. Les propriétés en lecture seule, objets sans membre modifiable et écritures protégées produisent une erreur explicite. `ReadOnly=False` dans un inventaire ne suffit pas pour autoriser toute valeur COM.
+Property discovery is not a writable-property guarantee. A COM property can be
+readable but read-only, inaccessible in the current mode, dependent on a control's
+state or different across hosts. Preserve types and treat errors as explicit results.
 
-| Besoin | Outils représentatifs |
-| --- | --- |
-| Inspecter | `form_tree`, `list_form_control_types`, `form_control_properties` |
-| Créer/modifier | `add_form_control`, `add_nested_form_control`, `set_form_property`, `set_form_node_property` |
-| Images | `set_form_picture`, `set_form_node_picture` ; chemin local explicitement fourni |
-| Disposition | Prévisualisation et application de plans, dimensions, alignement, espacement et ordre |
-| Événements | Inventaire des événements et création de procédure ; SHA du code et version d’arbre |
-| Copier/récupérer | Duplication bornée, presse-papiers et historique natifs, récupération de coupe conservée en mémoire |
-| Exécuter | `run_form`, `form_run_status`, `read_runtime_forms` ; relire l’état et les diagnostics |
+## Layout, events and resources
 
-Les noms exacts et champs requis de toutes les commandes figurent dans [le catalogue LLM](vbe-tools.md).
+Use preview/inspection before changing a form layout. MultiPage/Page, Frame and
+TabStrip containers have distinct semantics; removing a page can remove its child
+controls. Event-procedure creation changes code as well as designer state and
+must retain the corresponding revision checks.
 
-## Listes ComboBox et ListBox
+Images, fonts, list data and other properties can require special handling.
+Duplication is bounded by supported properties/control types; do not silently
+replace unsupported third-party controls with a different built-in control.
 
-`set_form_list_initializer` génère uniquement un bloc marqué de `UserForm_Initialize` pour une liste non liée. Fournir **soit `Items`, soit `Rows`**, avec le SHA courant du module et la version de l’arbre. `Rows` est une matrice rectangulaire de 0 à 64 lignes et de 1 à 10 colonnes, avec cellules de 256 caractères au maximum, sans caractères de contrôle. Le nombre de colonnes doit correspondre au contrôle. Un tableau vide efface la liste au runtime.
+Native form exports pair a `.frm` definition with `.frx` binary resources when
+present. Preserve the pair through Git operations and recovery. A controlled
+component replacement must preserve and verify the original designer data; host-owned
+document modules must not be replaced as ordinary imported components.
 
-La commande préserve le code utilisateur hors du bloc géré et refuse un bloc modifié. Elle ne peuple pas directement la liste du designer. Les liaisons de listes ont leurs commandes dédiées et dépendent des capacités de l’hôte ; ne pas annoncer une persistance d’`AddItem` en conception.
+A supported designer cut can offer a recovery action. This is distinct from text
+undo and does not establish an unlimited designer transaction history. Preserve
+exports when recovery cannot be confirmed.
 
-## Historique et récupération
+## Reference inventories
 
-La duplication COM, l’historique natif du concepteur et la récupération après coupe sont des mécanismes distincts. Une écriture COM ne rejoint pas nécessairement la pile Undo native. La récupération conserve les formats de presse-papiers lisibles dans la session et vérifie l’état du formulaire avant restauration ; elle ne prouve pas une fidélité universelle des formats binaires ou des contrôles tiers. Les gestionnaires d’événements ne sont pas transférés implicitement avec les contrôles.
+The following existing CSV files are retained as **historical Excel-host property
+inventories**, not universal writeability or compatibility specifications:
 
-Un statut de commande retournée n’est pas une preuve d’affichage, d’initialisation réussie ou de fermeture d’un formulaire modal. Vérifier les fenêtres runtime et les diagnostics dans une lecture distincte.
+- [Control properties](excel-control-properties.csv).
+- [UserForm properties](excel-userform-properties.csv).
 
-## Inventaires et preuves
+Use live discovery and operation-specific tests for the actual host. The
+[compatibility guide](../compatibility.md) includes later Office form scenarios;
+these do not qualify every control, property combination or runtime effect.
 
-- [Propriétés des contrôles Excel](excel-control-properties.csv) et [propriétés d’un UserForm](excel-userform-properties.csv) : captures historiques de types/descripteurs, pas un journal de chaque écriture validée.
-- [Exploration des propriétés](../archive/exploration/forms-property-coverage.md) : essais, refus et limites par propriété.
-- [Exploration des duplications](../archive/exploration/forms-duplication-coverage.md) : profils qualifiés et refus.
-- [Journal VBE](../archive/exploration/vbe-remaining-coverage.md) : qualifications natives des dispositions, listes, historiques et presse-papiers.
-- [Travaux restants](../roadmap.md) : qualification à compléter par type, valeur, persistance et hôte.
+See [modern-editor attribute recovery](../modern-editor.md),
+[Git import safety](../github-integration.md) and [tool discovery](vbe-tools.md).

@@ -1,114 +1,127 @@
-# Tests de VBAi
+# Testing VBAi
 
-Les trois projets de test et diagnostic sont regroupés ici et visibles dans `VBAi.sln`. Ils ciblent .NET Framework 4.8 x64 et référencent le véritable complément sous `src/VBAi`.
+The test suite covers the shared VBE core, provider protocols, storage, editor
+services and selected host integrations. A passing local suite is not a claim
+that every feature works in every application that embeds the VBE.
 
-## Organisation
+See [development setup](../docs/development.md), [recorded results](../docs/test-coverage.md)
+and the [compatibility matrix](../docs/compatibility.md). Run commands from the
+repository root in a Windows development environment.
 
-- `VBAi.Tests/Unit/` : miroir des dossiers **et des fichiers** de production, avec le suffixe `.Tests.cs`.
-- `VBAi.Tests/Scenarios/` : scénarios complémentaires qui vérifient plusieurs fichiers ensemble.
-- `VBAi.Tests/Infrastructure/Fixtures/` : doubles de test, utilitaires et initialisation partagés.
-- `VBAi.Tests/Integration/` : stockage local, Git, fournisseurs et hôtes Excel/SOLIDWORKS/Office.
-- `VBAi.Tests/Infrastructure/Hosts/` : fixtures hôtes et client du tube nommé.
-- `VBAi.Git.Smoke/` : scénarios Git partagés avec VSTest et exécutable `GitTests.exe`.
-- `VBAi.Providers.Smoke/` : scénarios fournisseurs partagés et exécutable `ProviderTests.exe`.
+## Build and run
 
-Les sources partagées apparaissent sous `Shared` dans VSTest. Les scripts PowerShell restent sous `tools/tests` et `tools/probes`, avec des liens sous `Manual/Debug` dans Visual Studio. Ils ne sont ni des tests MSTest ni du code livré dans le complément.
+Use a separate output directory while an application has the installed DLL loaded:
 
-### Convention miroir
+```powershell
+dotnet build VBAi.sln -c Debug -p:BuildOutputRoot="$PWD/artifacts/build"
+dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildOutputRoot="$PWD/artifacts/build"
+```
 
-| Production sous `src/VBAi/` | Tests sous `VBAi.Tests/Unit/` |
+An isolated build does not replace the registered add-in. Native tests must verify
+which assembly the target process actually loaded. Do not overwrite a loaded DLL
+or close unrelated applications to make a build succeed.
+
+For a category-specific pass, append `--filter "TestCategory=Unit"`. Some local tests
+create real Windows controls, WebView2 instances, temporary Git repositories and
+simulated provider processes. They require the relevant runtimes and an interactive
+Windows desktop; they are not all platform-independent pure unit tests.
+
+## Test organization
+
+| Location | Purpose |
 | --- | --- |
-| `Host/AddIn.cs` | `Host/AddIn.Tests.cs` |
-| `Llm/Chat/ChatWindow.Sessions.cs` | `Llm/Chat/ChatWindow.Sessions.Tests.cs` |
-| `Vbe/Forms/VbeForms.CheckBoxDuplication.cs` | `Vbe/Forms/VbeForms.CheckBoxDuplication.Tests.cs` |
+| `tests/VBAi.Tests/Unit/` | Contracts and branch behavior, with source-file mirrors. |
+| `tests/VBAi.Tests/Integration/` | Storage, processes, runtime controls and host boundaries. |
+| `tests/VBAi.Tests/Scenarios/` | Cross-component workflows and recovery scenarios. |
+| `tests/VBAi.Tests/Infrastructure/` | Shared doubles, fixtures and host helpers. |
+| `tests/VBAi.Git.Smoke/` | Standalone Git diagnostics; shared scenarios also run in VSTest. |
+| `tests/VBAi.Providers.Smoke/` | Provider diagnostics and a simulated CLI process. |
+| `tests/native/` | Native-renderer lifecycle and managed-loader checks. |
 
-Un nouveau test ciblé rejoint le fichier miroir de l’implémentation, y compris pour une classe partielle.
-Les parcours qui vérifient plusieurs surfaces ensemble restent dans `Scenarios` ; les parcours avec
-stockage ou hôte réel restent dans `Integration`. Les catégories et identifiants VSTest existants
-sont conservés. Les classes de test utilisent `partial` pour partager leurs auxiliaires sous
-`Infrastructure/Fixtures`, sans recopier les doubles COM ou renommer leurs types utilisés par réflexion.
-
-Il n’y a pas de fichier miroir vide pour simuler une couverture. L’absence de miroir dédié ne prouve
-pas l’absence de couverture par un scénario ; seule la mesure de couverture établit les lignes et
-branches exécutées. Pour contrôler la convention et obtenir l’inventaire des correspondances :
+Tests reference the production assembly rather than recompiling its sources.
+Mirrors follow production paths with a `.Tests.cs` suffix, including partial
+classes. Cross-cutting scenarios should complement those mirrors rather than
+create a second implementation of production logic.
 
 ```powershell
 powershell.exe -NoProfile -File tools/tests/Test-TestLayout.ps1 -ReportPath artifacts/test-layout/mirror-inventory.json
 ```
 
-## Suite locale
+Prompt files under `Infrastructure/Fixtures/Prompts/` and the test-environment skill
+under `tests/Infrastructure/.agents/` are test inputs, not user documentation.
+Preserve their contents unless deliberately changing the corresponding fixture.
 
-Depuis la racine du dépôt :
+## Native host tests are opt-in
 
-```powershell
-dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug
-```
+Use disposable documents and identify the intended process/project before any
+write. Record application version, architecture, language, DPI and loaded VBAi
+build. Restore temporary settings and verify that unrelated documents remain
+unchanged. Skip unavailable hosts honestly instead of treating a skip as a pass.
 
-Pour une compilation isolée, notamment quand Excel a chargé la DLL installée :
+| Opt-in variable | Scope |
+| --- | --- |
+| `VBAi_RUN_EXCEL_TESTS=1` | Excel integration tests (`TestCategory=Excel`). |
+| `VBAi_RUN_OFFICE_TESTS=1` | The additional Office host qualification fixtures. |
+| `VBAi_RUN_OUTLOOK_TESTS=1` | Outlook tests; a usable profile is also required. |
+| `VBAI_EDITOR_EXCEL_TEST=1` | Monaco/Excel roundtrip (`TestCategory=MonacoExcel`). |
+| `VBAI_EDITOR_LANGUAGE_EXCEL_TEST=1` | Language-service qualification (`FullyQualifiedName~MonacoLanguageExcelTests`). |
+| `VBAI_NATIVE_PALETTE_EXCEL_TEST=1` | Native palette (`TestCategory=NativePaletteExcel`); observe the fixture's other-host exclusions. |
+| `VBAi_SOLIDWORKS_PID` | PID of a user-preloaded SOLIDWORKS/VBE instance (`TestCategory=SolidWorks`). |
 
-```powershell
-dotnet build VBAi.sln -c Debug -p:BuildOutputRoot="$PWD/artifacts/build"
-dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildOutputRoot="$PWD/artifacts/build" --results-directory artifacts/test-results --logger "trx;LogFileName=tests.trx"
-```
+Set only the variables needed for the intended run and remove them afterward.
+The SOLIDWORKS workflow must not create or kill an application instance on the
+user's behalf. A host fixture can use its own native save helper; that result does
+not automatically qualify VBAi's `save_host_document` adapter.
 
-MSBuild copie automatiquement le processus CLI simulé dans la sortie VSTest. Les tests fournisseurs utilisent des réponses HTTP et des processus simulés ; les essais authentifiés ne sont pas lancés par défaut. Les tests WinForms nécessitent Windows et une session interactive. Les tests Git nécessitent `git.exe` et travaillent sur des dépôts temporaires locaux.
-
-Le filtre `--filter TestCategory=Unit` limite l’exécution aux tests unitaires. Une validation globale doit exécuter la suite complète sans ce filtre. Les résultats TRX font foi pour le nombre de tests exécutés, échoués et ignorés ; les anciens pourcentages ne sont pas des résultats actuels.
-
-## Couverture
-
-```powershell
-dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --collect:"XPlat Code Coverage" --results-directory artifacts/coverage -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Exclude=[ProviderTests]*
-```
-
-Le filtre exclut uniquement l’exécutable auxiliaire des mesures du complément. Aucun fichier, méthode ou branche de production ne doit être exclu pour atteindre la cible. Le code exécuté dans Excel ou SOLIDWORKS n’est pas mesuré par le collecteur du processus VSTest.
-
-## Autres hôtes Office
-
-Les autres hôtes Office disposent d'un lot conditionnel `TestCategory=Office`, activé par `VBAi_RUN_OFFICE_TESTS=1`. Outlook est séparément activé par `VBAi_RUN_OUTLOOK_TESTS=1` et nécessite un profil classique Office 16 configuré. Les détails, commandes de relance et limites sont dans [la qualification Office](../docs/office-host-qualification.md).
-
-## Excel automatisé — hôte prioritaire
+For example, after confirming that Excel tests are safe to run:
 
 ```powershell
 $env:VBAi_RUN_EXCEL_TESTS = '1'
-dotnet test tests/VBAi.Tests/VBAi.Tests.csproj --filter TestCategory=Excel
-Remove-Item Env:VBAi_RUN_EXCEL_TESTS
+try {
+    dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildOutputRoot="$PWD/artifacts/build" --filter "TestCategory=Excel"
+} finally {
+    Remove-Item Env:VBAi_RUN_EXCEL_TESTS -ErrorAction SilentlyContinue
+}
 ```
 
-`ExcelVbeFixture` crée une instance Excel visible et un classeur temporaire, ouvre le VBE par `CommandBars.ExecuteMso("VisualBasic")`, puis appelle le tube `VBAi.<PID>`. Les tests vérifient le chargement du complément, le projet ciblé et sa sauvegarde. Ils ferment uniquement leur propre classeur et processus. L’installation du complément est un prérequis ; les tests ne changent pas AccessVBOM. Une compilation isolée ne remplace pas la DLL installée.
+## JavaScript and native renderer
 
-### Services de langage Monaco dans Excel
-
-La matrice JavaScript est intégrée à VSTest par `MonacoLanguageScriptScenarios` et nécessite Node.js. Elle vérifie les références dynamiques, les membres, le survol, les signatures et les règles de blocs et de formatage :
+The editor's JavaScript tests use Node's test runner:
 
 ```powershell
 node --test tools/tests/Test-MonacoLanguage.mjs tests/VBAi.Tests/Infrastructure/Fixtures/Editor/MonacoEditing.Scenarios.mjs
 ```
 
-Le parcours `MonacoLanguageExcelTests` ouvre Excel et le véritable WebView Monaco, vérifie les objets et collections Excel, les fonctions et alias VBA (`Left`/`Left$`), ajoute puis retire les références Office et Scripting, vérifie le survol, crée des blocs, annule et formate. Sa minuterie de synchronisation est arrêtée après l’initialisation pour vérifier que les services de langage ne modifient pas le module natif. Aucun fichier utilisateur ni macro n’est exécuté. Il refuse de démarrer si une session Excel existe déjà.
+See [native renderer testing](native/README.md) for the C++ self-test and loader.
+These checks are distinct from real VBE rendering, host integration and measured
+native-code coverage.
+
+## Provider qualification
+
+Local provider tests use simulated HTTP or CLI transports. Do not use personal
+credentials, paid API calls or private project data without explicit permission.
+A successful model catalog lookup alone does not qualify streamed responses,
+tool execution, cancellation or recovery.
+
+For a live qualification, use synthetic content and a harmless tool first. Record
+the provider, model, CLI/protocol version and precisely what was exercised. Keep
+secrets out of fixtures, logs, screenshots and reports. See the
+[provider guide](../docs/providers.md).
+
+## Coverage and evidence
+
+A coverage run can use the installed collector:
 
 ```powershell
-$env:VBAI_EDITOR_LANGUAGE_EXCEL_TEST = '1'
-dotnet test tests/VBAi.Tests/VBAi.Tests.csproj --filter FullyQualifiedName~MonacoLanguageExcelTests
-Remove-Item Env:VBAI_EDITOR_LANGUAGE_EXCEL_TEST
+dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildOutputRoot="$PWD/artifacts/build" --collect:"XPlat Code Coverage" --results-directory artifacts/coverage
 ```
 
-### Palette native Excel
+Inspect the resulting report's assembly scope and filters. State numerator,
+denominator, tested commit, exclusions and skipped host tests. Coverlet results
+for the managed add-in do not measure C++, JavaScript or every native COM path.
+Do not exclude production code or weaken assertions to manufacture a target.
 
-`VbePaletteExcelTests` vérifie dans les véritables dialogues Options la réconciliation des couleurs modifiées, l’archive exacte de la récupération précédente, l’application puis la restauration relue de la palette initiale. Il utilise un fichier de récupération temporaire et désactive le service automatique de palette pour isoler le fichier utilisateur. Il refuse de démarrer si Excel ou SOLIDWORKS est ouvert, car les couleurs sont des préférences partagées. Son instance Excel est visible puis fermée, sans sauvegarde ni exécution de macro.
-
-```powershell
-$env:VBAI_NATIVE_PALETTE_EXCEL_TEST = '1'
-dotnet test tests/VBAi.Tests/VBAi.Tests.csproj --filter TestCategory=NativePaletteExcel
-Remove-Item Env:VBAI_NATIVE_PALETTE_EXCEL_TEST
-```
-
-## SOLIDWORKS préchargé
-
-```powershell
-$env:VBAi_SOLIDWORKS_PID = '<PID SLDWORKS existant>'
-dotnet test tests/VBAi.Tests/VBAi.Tests.csproj --filter TestCategory=SolidWorks
-Remove-Item Env:VBAi_SOLIDWORKS_PID
-```
-
-L’utilisateur doit avoir ouvert SOLIDWORKS, son VBE et le complément. Le test utilise la passerelle du PID fourni, vérifie le projet et le complément connecté, sans lancer ni fermer SOLIDWORKS. Sans activation explicite, les tests hôtes sont ignorés : ils restent `NOT_RUN`, pas validés par les simulations locales.
+Keep machine-local artifacts outside the maintained guide tree. Publish a concise,
+versioned summary in [recorded validation](../docs/test-coverage.md), separating
+unit/runtime tests, native host observations, Designer checks and live-provider
+runs. An old 100% result does not describe a later build.

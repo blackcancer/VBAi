@@ -1,271 +1,63 @@
-# Catalogue des outils LLM
+# Tool reference and discovery
 
-Catalogue intégré le 28 septembre 2026 après PR #7 et extensions classes/options : **206 outils**. Les catalogues Git, Editor et Monaco sont inclus ; ce tableau décrit les outils LLM et non toutes les commandes internes du pont.
+This page documents the tool contract, not a second hand-maintained copy of every
+schema. The authoritative catalog is constructed by `LlmVbeTools.Definitions` and
+its companion definitions in `src/VBAi/Llm/Chat/`.
 
-## Contrat
+## Discovery
 
-- Les noms et paramètres JSON sont sensibles à la casse.
-- `Project` désigne un projet résolu dans le VBE vivant ; lire son identité avant une action.
-- SHA, versions de projet, arbre, volet ou presse-papiers sont relus avant les mutations correspondantes.
-- « Inspection » signifie autorisé en Discussion/Plan selon `ReadOnlyTools` ; certaines inspections ouvrent une fenêtre ou compilent le projet et ont donc un effet local.
-- « Action » nécessite le mode Agent et reste soumise à la politique configurée et aux gardes de la commande.
-- Git et les opérations natives asynchrones passent par `InvokeAsync`. Une erreur ou un retour « pending » ne justifie pas de répéter une mutation.
+The model starts with a small core: live status, permitted project/module reads,
+Monaco access and catalog gateways. `discover_tools` exposes additional schemas
+by family:
 
-Les descriptions, les champs facultatifs, les types et les bornes font autorité dans [le catalogue principal](../../src/VBAi/Llm/Chat/LlmVbeTools.cs), [Editor](../../src/VBAi/Llm/Chat/LlmVbeTools.Editor.cs) et [Git](../../src/VBAi/Llm/Chat/LlmVbeTools.Git.cs).
+| Family | Operations |
+| --- | --- |
+| `code` | Modules, procedures, navigation, Monaco and guarded refactoring. |
+| `forms` | UserForms, controls, containers, layouts and events. |
+| `debug` | Compilation, execution and native debugger operations. |
+| `git` | Bound-repository inspection, commits, checkpoints, branches and merges. |
+| `environment` | Projects, references, editor options and other VBE services. |
+| `all` | All schemas permitted by the current mode, not additional permissions. |
 
-## Outils exposés
+For example, `discover_tools` accepts `{"Family":"code"}`. The invocation gateway
+uses `ToolName` and `ArgumentsJson`; the latter is the selected tool's serialized
+argument object. Invoke only a discovered tool with the exact returned schema.
 
-| Outil | Catégorie de permission | Paramètres requis |
-| --- | --- | --- |
-| `add_form_control` | Action | `Project`, `Form`, `ExpectedFormVersion`, `ControlType`, `Control`, `Left`, `Top`, `Width`, `Height` |
-| `add_form_page` | Action | `Project`, `Form`, `ParentPath`, `NewName`, `ExpectedTreeVersion` |
-| `add_form_tab` | Action | `Project`, `Form`, `ParentPath`, `NewName`, `ExpectedTreeVersion` |
-| `add_nested_form_control` | Action | `Project`, `Form`, `ParentPath`, `ExpectedTreeVersion`, `ControlType`, `Control`, `Left`, `Top`, `Width`, `Height` |
-| `add_reference_file` | Action | `Project`, `ExpectedReferencesVersion`, `Path` |
-| `add_reference_guid` | Action | `Project`, `ExpectedReferencesVersion`, `Guid`, `Major`, `Minor` |
-| `add_toolbar_command` | Action | `ObjectName`, `ExpectedToolbarControlsVersion`, `ControlId`, `ControlCaption` |
-| `add_watch` | Action | `Project`, `Module`, `ExpectedMode`, `Expression` |
-| `apply_class_member_rename` | Action | `Project`, `Module`, `Query`, `NewName`, `ExpectedSha256`, `StartLine`, `StartColumn`, `ProcKind`, `ExpectedProjectVersion`, `ExpectedMode` |
-| `apply_code_edit` | Action | `Project`, `Module`, `ExpectedSha256`, `StartLine`, `Count`, `Action` |
-| `apply_fit_form_content` | Action | `Project`, `Form`, `ExpectedTreeVersion`, `Action`, `Left`, `Top` |
-| `apply_form_layout` | Action | `Project`, `Form`, `ExpectedTreeVersion`, `Items`, `Action` |
-| `apply_local_rename` | Action | `Project`, `Module`, `Procedure`, `ProcKind`, `ExpectedSha256`, `ExpectedMode`, `StartLine`, `StartColumn`, `Query`, `NewName` |
-| `apply_parameter_rename` | Action | `Project`, `Module`, `Procedure`, `ProcKind`, `ExpectedSha256`, `ExpectedMode`, `StartLine`, `StartColumn`, `Query`, `NewName` |
-| `apply_procedure_rename` | Action | `Project`, `Module`, `Query`, `NewName`, `ExpectedSha256`, `StartLine`, `StartColumn`, `ProcKind`, `ExpectedProjectVersion`, `ExpectedMode` |
-| `arrange_editor_windows` | Action | `Action`, `ExpectedWindowVersion`, `ControlCaption` |
-| `certificate_trust` | Inspection | `CertificateThumbprint` |
-| `change_navigation_surface` | Inspection | `Pane`, `Control`, `Action`, `ExpectedWindowVersion` |
-| `close_standalone_project` | Action | `Project`, `ExpectedProjectVersion`, `ExpectedHostPath` |
-| `close_vbe_window` | Action | `WindowCaption`, `WindowType` |
-| `code_bookmark` | Inspection | `Project`, `Action` |
-| `code_pane_layout` | Inspection | `Project`, `Module` |
-| `code_panes` | Inspection | Aucun |
-| `compile_project` | Inspection | `Project`, `ExpectedMode` |
-| `component_properties` | Inspection | `Project`, `Module` |
-| `component_property_value` | Inspection | `Project`, `Module`, `Property` |
-| `copy_code` | Action | `Project`, `Module`, `ExpectedSha256`, `StartLine`, `StartColumn`, `EndLine`, `EndColumn` |
-| `create_class` | Action | `Project`, `Module`, `ExpectedMode` |
-| `create_event_procedure` | Action | `Project`, `Form`, `ObjectName`, `EventName`, `ExpectedSha256`, `ExpectedTreeVersion` |
-| `create_form` | Action | `Project`, `Form` |
-| `create_module` | Action | `Project`, `Module`, `ExpectedMode` |
-| `create_procedure` | Action | `Project`, `Module`, `Procedure`, `ProcKind`, `Text`, `ExpectedSha256` |
-| `create_standalone_project` | Action | `ExpectedProjectVersion` |
-| `create_toolbar` | Action | `ObjectName`, `ExpectedToolbarCollectionVersion` |
-| `cut_code` | Action | `Project`, `Module`, `ExpectedSha256`, `StartLine`, `StartColumn`, `EndLine`, `EndColumn` |
-| `debug_dialog` | Inspection | Aucun |
-| `debug_global` | Action | `Project`, `ExpectedMode`, `Action` |
-| `debug_item` | Inspection | `Pane`, `Action`, `PathSegments` |
-| `debug_state` | Inspection | `Project` |
-| `debug_windows` | Inspection | Aucun |
-| `edit_watch` | Action | `Project`, `ExpectedMode`, `Expression`, `Context`, `NewExpression` |
-| `editor_layout` | Inspection | Aucun |
-| `export_component` | Action | `Project`, `Module`, `ExpectedComponentVersion`, `Path` |
-| `find_code` | Inspection | `Project`, `Query` |
-| `focus_vbe_window` | Inspection | `WindowCaption`, `WindowType` |
-| `form_clipboard_state` | Inspection | `Project`, `Form` |
-| `form_control_properties` | Inspection | `Project`, `Form`, `Control` |
-| `form_event_catalog` | Inspection | `Project`, `Form` |
-| `form_list_items` | Inspection | `Project`, `Form`, `ControlPath` |
-| `form_properties` | Inspection | `Project`, `Form` |
-| `form_run_status` | Inspection | `Project`, `Query` |
-| `form_state` | Inspection | `Project`, `Form` |
-| `form_tree` | Inspection | `Project`, `Form` |
-| `git_branch_create` | Action | `Project`, `ExpectedState`, `Name` |
-| `git_branch_switch` | Action | `Project`, `ExpectedState`, `Name` |
-| `git_branch_track` | Action | `Project`, `ExpectedState`, `Name` |
-| `git_branches` | Inspection | `Project` |
-| `git_checkpoint_create` | Action | `Project`, `ExpectedState`, `Name` |
-| `git_checkpoint_restore` | Action | `Project`, `ExpectedState`, `Name` |
-| `git_checkpoints` | Inspection | `Project` |
-| `git_commit` | Action | `Project`, `ExpectedState`, `Text` |
-| `git_commit_read` | Inspection | `Project`, `Name` |
-| `git_commit_selected` | Action | `Project`, `ExpectedState`, `Name`, `Text`, `Choice` |
-| `git_conflict_read` | Inspection | `Project`, `Path` |
-| `git_conflicts` | Inspection | `Project` |
-| `git_fetch` | Action | `Project`, `ExpectedState` |
-| `git_history` | Inspection | `Project` |
-| `git_merge_abort` | Action | `Project`, `ExpectedState` |
-| `git_merge_begin` | Action | `Project`, `ExpectedState`, `Name` |
-| `git_merge_complete` | Action | `Project`, `ExpectedState`, `Text` |
-| `git_merge_resolve` | Action | `Project`, `ExpectedState`, `Path`, `Choice`, `Text` |
-| `git_module_restore` | Action | `Project`, `ExpectedState`, `Name`, `Path` |
-| `git_pr_prepare` | Action | `Project`, `ExpectedState`, `Name`, `Text`, `Choice` |
-| `git_pull` | Action | `Project`, `ExpectedState` |
-| `git_pull_requests` | Inspection | `Project` |
-| `git_push` | Action | `Project`, `ExpectedState` |
-| `git_remote_branches` | Action | `Project`, `ExpectedState` |
-| `git_rollback` | Action | `Project`, `ExpectedState` |
-| `git_status` | Inspection | `Project` |
-| `immediate_execute` | Action | `Project`, `ExpectedMode`, `Text` |
-| `import_component` | Action | `Project`, `ExpectedProjectVersion`, `Path` |
-| `insert_code_file` | Action | `Project`, `Module`, `Path`, `StartLine`, `ExpectedSha256` |
-| `inspect_code_file` | Inspection | `Path` |
-| `invoke_debug` | Action | `Project`, `Module`, `ExpectedSha256`, `StartLine`, `ExpectedMode`, `Action`, `ControlId`, `ControlCaption` |
-| `link_vbe_window` | Action | `WindowCaption`, `WindowType`, `ExpectedWindowVersion`, `Action` |
-| `list_addins` | Inspection | Aucun |
-| `list_commands` | Inspection | Aucun |
-| `list_form_control_types` | Inspection | Aucun |
-| `list_forms` | Inspection | `Project` |
-| `list_macros` | Inspection | `Project` |
-| `list_modules` | Inspection | `Project` |
-| `list_object_browser` | Inspection | `Pane` |
-| `list_procedures` | Inspection | `Project`, `Module` |
-| `list_projects` | Inspection | Aucun |
-| `list_reference_types` | Inspection | `Project`, `Guid`, `Major`, `Minor` |
-| `list_references` | Inspection | `Project` |
-| `list_signing_certificates` | Inspection | Aucun |
-| `list_toolbars` | Inspection | Aucun |
-| `list_type_members` | Inspection | `Project`, `Guid`, `Major`, `Minor`, `TypeIndex`, `TypeIdentity` |
-| `monaco_edit` | Action | `Project`, `Module`, `ExpectedVersion`, `Text` |
-| `monaco_navigate` | Inspection | `Project`, `Module`, `ExpectedVersion`, `StartLine`, `StartColumn`, `EndLine`, `EndColumn` |
-| `monaco_open` | Inspection | `Project`, `Module` |
-| `monaco_read` | Inspection | `Project`, `Module` |
-| `monaco_sync` | Action | `Project`, `Module`, `ExpectedVersion`, `ExpectedSha256` |
-| `native_code_history` | Action | `Project`, `Action`, `ExpectedMode`, `ExpectedProjectVersion`, `ControlCaption` |
-| `native_code_history_state` | Inspection | `Project` |
-| `native_code_navigation` | Action | `Action` |
-| `native_form_clipboard` | Action | `Project`, `Form`, `Action`, `ExpectedDesignerSelectionVersion`, `ExpectedClipboardVersion` |
-| `native_form_history` | Action | `Project`, `Form`, `Action`, `ExpectedTreeVersion` |
-| `navigate_code` | Inspection | `Project`, `Action` |
-| `open_debug_pane` | Inspection | `Action` |
-| `open_form` | Inspection | `Project`, `Form` |
-| `open_native_ide_dialog` | Inspection | `Project`, `ExpectedMode`, `ControlCaption`, `Action` |
-| `open_object_browser` | Inspection | Aucun |
-| `open_project_help` | Inspection | `Project`, `ExpectedProjectVersion` |
-| `open_standalone_project` | Action | `Path`, `ExpectedProjectVersion` |
-| `paste_code` | Action | `Project`, `Module`, `ExpectedSha256`, `ExpectedClipboardVersion`, `StartLine`, `StartColumn`, `EndLine`, `EndColumn` |
-| `preview_class_member_rename` | Inspection | `Project`, `Module`, `Query`, `NewName`, `ExpectedSha256`, `StartLine`, `StartColumn`, `ProcKind` |
-| `preview_code_edit` | Inspection | `Project`, `Module`, `ExpectedSha256`, `StartLine`, `Count`, `Action` |
-| `preview_fit_form_content` | Inspection | `Project`, `Form`, `ExpectedTreeVersion`, `Action`, `Left`, `Top` |
-| `preview_form_layout` | Inspection | `Project`, `Form`, `ExpectedTreeVersion`, `Items`, `Action` |
-| `preview_local_rename` | Inspection | `Project`, `Module`, `Procedure`, `ProcKind`, `ExpectedSha256`, `StartLine`, `StartColumn`, `Query`, `NewName` |
-| `preview_parameter_rename` | Inspection | `Project`, `Module`, `Procedure`, `ProcKind`, `ExpectedSha256`, `StartLine`, `StartColumn`, `Query`, `NewName` |
-| `preview_procedure_rename` | Inspection | `Project`, `Module`, `Query`, `NewName`, `ExpectedSha256`, `StartLine`, `StartColumn`, `ProcKind` |
-| `procedure_run_status` | Inspection | `Project`, `Query` |
-| `procedure_values_status` | Inspection | `Project`, `Query` |
-| `project_collection_state` | Inspection | Aucun |
-| `project_persistence_status` | Inspection | `Project` |
-| `project_properties` | Inspection | `Project` |
-| `project_signature_status` | Inspection | `Project` |
-| `project_symbols` | Inspection | `Project` |
-| `quick_watch` | Action | `Project`, `Module`, `ExpectedSha256`, `ExpectedMode`, `StartLine`, `StartColumn`, `EndColumn`, `Expression` |
-| `read_code_clipboard` | Inspection | Aucun |
-| `read_debug_options` | Inspection | Aucun |
-| `read_module` | Inspection | `Project`, `Module` |
-| `read_navigation_surface` | Inspection | `Pane` |
-| `read_object_browser` | Inspection | Aucun |
-| `read_project_protection` | Inspection | `Project`, `ExpectedProjectVersion`, `ExpectedMode`, `ControlCaption` |
-| `read_project_signature_dialog` | Inspection | `Project`, `ExpectedMode` |
-| `read_runtime_forms` | Inspection | Aucun |
-| `read_user_file` | Inspection | `Path` |
-| `read_vbe_options` | Inspection | Aucun |
-| `recover_form_cut` | Action | `Project`, `Form`, `DesignerClipboardRecoveryId`, `ExpectedDesignerSelectionVersion`, `ExpectedClipboardVersion` |
-| `redo_code_edit` | Action | `Project`, `Module`, `ExpectedSha256` |
-| `remove_component` | Action | `Project`, `Module`, `ExpectedProjectVersion`, `ExpectedComponentVersion` |
-| `remove_form_control` | Action | `Project`, `Form`, `ControlPath`, `ExpectedTreeVersion` |
-| `remove_form_page_tab` | Action | `Project`, `Form`, `ControlPath`, `ExpectedTreeVersion` |
-| `remove_procedure` | Action | `Project`, `Module`, `Procedure`, `ProcKind`, `ExpectedSha256` |
-| `remove_reference` | Action | `Project`, `ExpectedReferencesVersion`, `Guid`, `Major`, `Minor` |
-| `remove_toolbar` | Action | `ObjectName`, `ExpectedToolbarCollectionVersion`, `ExpectedToolbarControlsVersion` |
-| `remove_toolbar_command` | Action | `ObjectName`, `ExpectedToolbarControlsVersion`, `ControlId`, `ControlCaption`, `InsertIndex` |
-| `remove_watch` | Action | `Project`, `ExpectedMode`, `Expression`, `Context` |
-| `rename_component` | Action | `Project`, `Module`, `ExpectedComponentVersion`, `NewName` |
-| `rename_form_control` | Action | `Project`, `Form`, `ExpectedFormVersion`, `Control`, `NewName` |
-| `replace_lines` | Action | `Project`, `Module`, `ExpectedSha256`, `StartLine`, `Count`, `Text` |
-| `replace_procedure` | Action | `Project`, `Module`, `Procedure`, `ProcKind`, `Text`, `ExpectedSha256` |
-| `respond_debug_dialog` | Action | `Diagnostic`, `Button` |
-| `restore_form_clipboard` | Action | `Project`, `Form`, `DesignerClipboardRecoveryId`, `ExpectedDesignerSelectionVersion`, `ExpectedClipboardVersion` |
-| `run_form` | Action | `Project`, `Form`, `ExpectedMode`, `ExpectedSha256`, `ExpectedTreeVersion`, `ControlCaption` |
-| `run_procedure` | Action | `Project`, `Module`, `Procedure`, `ExpectedSha256`, `ExpectedMode`, `Arguments` |
-| `run_procedure_values` | Action | `Project`, `Module`, `Procedure`, `ExpectedSha256`, `ExpectedHostPath`, `ExpectedMode`, `Arguments` |
-| `run_sub` | Action | `Project`, `Module`, `Procedure`, `ExpectedSha256`, `ExpectedMode` |
-| `save_host_document` | Action | `Project`, `ExpectedProjectVersion`, `ExpectedHostPath` |
-| `save_host_document_as` | Action | `Project`, `ExpectedProjectVersion`, `Path` |
-| `scroll_code_pane` | Action | `Project`, `Module`, `Pane`, `ExpectedWindowVersion`, `ExpectedSha256`, `ExpectedMode`, `StartLine` |
-| `select_code` | Inspection | `Project`, `Module`, `ExpectedSha256`, `StartLine` |
-| `select_code_range` | Inspection | `Project`, `Module`, `ExpectedSha256`, `StartLine`, `StartColumn`, `EndLine`, `EndColumn` |
-| `select_form_controls` | Action | `Project`, `Form`, `Items`, `ExpectedDesignerSelectionVersion` |
-| `select_object_browser` | Inspection | Aucun |
-| `select_procedure` | Inspection | `Project`, `Module`, `Procedure`, `ProcKind`, `ExpectedSha256` |
-| `set_addin_connection` | Action | `ProgId`, `ExpectedAddInVersion`, `Action` |
-| `set_class_instancing` | Action | `Project`, `Module`, `ExpectedComponentVersion`, `Value` |
-| `set_code_split` | Action | `Project`, `Module`, `ExpectedSha256`, `StartLine`, `ExpectedMode`, `Action`, `ControlCaption` |
-| `set_code_view` | Action | `Project`, `Module`, `Pane`, `ExpectedWindowVersion`, `ExpectedSha256`, `ExpectedMode`, `StartLine`, `Action` |
-| `set_component_property` | Action | `Project`, `Module`, `ExpectedComponentVersion`, `Property`, `Value` |
-| `set_form_control_caption` | Action | `Project`, `Form`, `ExpectedFormVersion`, `Control`, `Caption` |
-| `set_form_control_font` | Action | `Project`, `Form`, `ExpectedFormVersion`, `Control`, `FontName`, `FontSize`, `FontBold` |
-| `set_form_control_geometry` | Action | `Project`, `Form`, `ExpectedFormVersion`, `Control`, `Left`, `Top`, `Width`, `Height` |
-| `set_form_list_binding` | Action | `Project`, `Form`, `ControlPath`, `ExpectedHostPath`, `ExpectedTreeVersion`, `ExpectedSha256`, `SheetName`, `RangeAddress` |
-| `set_form_list_initializer` | Action | `Project`, `Form`, `ControlPath`, `ExpectedTreeVersion`, `ExpectedSha256` |
-| `set_form_node_picture` | Action | `Project`, `Form`, `ControlPath`, `ExpectedTreeVersion`, `Property`, `Path` |
-| `set_form_node_property` | Action | `Project`, `Form`, `ControlPath`, `ExpectedTreeVersion`, `Property`, `Value` |
-| `set_form_picture` | Action | `Project`, `Form`, `ExpectedFormVersion`, `Path` |
-| `set_form_property` | Action | `Project`, `Form`, `ExpectedFormVersion`, `Property`, `Value` |
-| `set_form_tab_order` | Action | `Project`, `Form`, `ExpectedTreeVersion`, `Items` |
-| `set_project_property` | Action | `Project`, `ExpectedProjectVersion`, `Property`, `Value` |
-| `set_project_protection` | Action | `Project`, `ExpectedProjectVersion`, `ExpectedOptionsVersion`, `ExpectedMode`, `ControlCaption`, `Action` |
-| `set_toolbar_placement` | Action | `ObjectName`, `ExpectedToolbarLayoutVersion`, `Action` |
-| `set_toolbar_position` | Action | `ObjectName`, `ExpectedToolbarLayoutVersion`, `Action` |
-| `set_toolbar_visibility` | Action | `ObjectName`, `ExpectedWindowVersion`, `Action` |
-| `set_vbe_option` | Action | `Pane`, `Property`, `Value`, `ExpectedOptionsVersion` |
-| `set_window_bounds` | Action | `WindowCaption`, `WindowType`, `ExpectedWindowVersion`, `Left`, `Top`, `Width`, `Height` |
-| `set_window_state` | Action | `WindowCaption`, `WindowType`, `ExpectedWindowVersion`, `Action` |
-| `show_vbe_window` | Action | `WindowCaption`, `WindowType` |
-| `sign_project` | Action | `Project`, `ExpectedProjectVersion`, `ExpectedMode`, `CertificateThumbprint` |
-| `status` | Inspection | Aucun |
-| `toolbar_controls` | Inspection | `ObjectName` |
-| `undo_code_edit` | Action | `Project`, `Module`, `ExpectedSha256` |
-| `vbe_environment` | Inspection | Aucun |
-| `vbe_windows` | Inspection | Aucun |
-| `verify_vba_signature_file` | Inspection | `Path` |
-| `window_layout` | Inspection | `WindowCaption`, `WindowType` |
-| `window_linkage` | Inspection | `WindowCaption`, `WindowType` |
-| `z_order_form_control` | Action | `Project`, `Form`, `ControlPath`, `ExpectedTreeVersion`, `ZPosition` |
+HTTP conversations add discovered families up to a 64-schema request cap, keeping
+the core first. Other functions remain accessible through the gateway. Codex keeps
+the initial dynamic core stable and invokes discovered functions through the
+gateway. Recursive gateway calls are rejected.
 
-## Limites et vérification
+## Contract rules
 
-Consulter [l’état du projet](../project.md), [les travaux restants](../roadmap.md), [le concepteur](designer.md) et [la couverture mesurée](../test-coverage.md). Un outil exposé n’est pas une preuve de qualification dans tous les hôtes.
+Names and JSON field names are case-sensitive. Obtain live project identity before
+acting; use an unambiguous saved path when names collide. Do not manufacture SHA,
+project/tree/window/clipboard versions or Git `ExpectedState` values.
 
-## Extensions fonctionnelles
+Both direct tools and gateways retain chat-mode, project-access, shared-context,
+approval, protection and revision guards. Discovery is descriptive, not an
+authorization grant. Discussion/Plan expose inspection rather than unrestricted
+execution or mutation.
 
-Voir [les contrats, preuves et limites des nouvelles fonctions](../reference/functional-extensions.md). La personnalisation des barres accepte `Temporary=false` pour demander la persistance native ; celle-ci doit être relue après redémarrage.
+Some inspection tools open or select native UI or compile code. A pending response
+is not proof of completion. An error after a mutation can leave an uncertain or
+partial result; inspect it instead of repeating the action blindly.
 
-## Éditeur moderne Monaco
+Use `InvokeAsync` for asynchronous native, Git and Monaco dispatch. The full
+catalog is not identical to the bridge's internal command set. A successful tool
+response does not automatically establish disk persistence or runtime correctness.
 
-Ces cinq outils passent uniquement par `InvokeAsync` sur le thread UI du VBE. `Project` et `Module` sont obligatoires et résolus dans le projet vivant, jamais déduits du module actif. Même les lectures Monaco respectent le projet lié à la conversation.
+## Source of truth
 
-| Outil | Catégorie | Paramètres supplémentaires obligatoires |
-| --- | --- | --- |
-| `monaco_open` | Inspection | Aucun |
-| `monaco_read` | Inspection | Aucun |
-| `monaco_navigate` | Inspection | `ExpectedVersion`, `StartLine`, `StartColumn`, `EndLine`, `EndColumn` |
-| `monaco_edit` | Action | `ExpectedVersion`, `Text` |
-| `monaco_sync` | Action | `ExpectedVersion`, `ExpectedSha256` |
+The main, Editor, Git and Monaco partial definitions describe required/optional
+fields and types. The progressive catalog and privacy checks determine which
+schemas and operations are available in a conversation. Validate changes with
+the catalog/permission tests rather than updating a disconnected static count.
 
-- `monaco_open` peut retourner `Loading=true` : relire avec `monaco_read` après le chargement. Les autres outils exigent que le module exact soit déjà ouvert.
-- `monaco_read` distingue `Draft`, `Baseline` et `Native`, avec `Version`, `NativeSha256`, `Dirty`, `Conflict`, `Writable` et `Selection`. `read_module` continue de lire uniquement le code VBA natif.
-- `ExpectedVersion` est un entier strictement positif retourné par Monaco ; ce n'est pas le SHA du module. `ExpectedSha256` de `monaco_sync` est **NativeSha256 de monaco_read**, calculé avec fins de lignes LF ; ne pas substituer le SHA de `read_module`.
-- `monaco_edit` applique le texte complet par comparaison de version dans le moteur, puis synchronise en continu vers VBA. Un changement intervenu depuis la lecture refuse l'édition. `AppliedToDraft=true` et `Synchronized=false` signalent un brouillon appliqué mais une écriture native refusée : la réponse conserve l'erreur et le brouillon.
-- Les mutations respectent le mode Agent, la politique d'édition, le projet lié, le mode VBA design, la protection et les conflits. Aucune résolution de conflit implicite. La synchronisation n'enregistre pas le document hôte.
-- Les modifications natives réussies produisent le même diff dans le chat que les anciennes commandes. Le rollback du chat capture d'abord les saisies Monaco ; il refuse les brouillons non synchronisés, puis utilise la restauration native vérifiée par révision et rafraîchit Monaco sans écraser une frappe plus récente.
-- Les mutations natives/Git sont suspendues si un brouillon est en attente ou en conflit. Les appels asynchrones capturent d'abord le moteur pour ne pas manquer une saisie récente ; les appels synchrones utilisent l'état déjà reçu et ne bloquent jamais le thread UI en attendant WebView2.
+For a new tool, classify data scope explicitly. Tools without a `Project` argument
+may expose global context and must not become implicitly trusted. Add malformed
+argument, stale revision, wrong project, denied permission, interrupted execution
+and recovery cases where applicable.
 
-### Symboles, compilation et débogage avec Monaco
-
-Les cinq commandes Monaco restent centrées sur le document et sa sélection. `monaco_read` ne constitue pas un relevé des diagnostics affichés, des points d'arrêt ni de l'index d'autocomplétion. L'index de langage de l'interface peut inclure des brouillons ; `project_symbols` et `read_module` décrivent le code natif. Le modèle doit utiliser les outils existants `compile_project`, `debug_dialog` et `debug_state` pour observer les résultats natifs, sans déduire l'état du débogueur d'un marqueur visuel. Les compilations et actions de débogage n'ont pas été dupliquées dans le catalogue Monaco.
-
-La réconciliation après une écriture garde la version capturée avant COM : une frappe reçue pendant l'écriture est préservée. Le diff est capturé immédiatement après la synchronisation native, avant les attentes de réconciliation du moteur et de persistance. Une réponse `Synchronized=true` peut donc aussi porter `Dirty=true` si une nouvelle frappe est survenue après l'écriture ; elle sera traitée par la synchronisation continue.
-
-La compilation via compile_project capture aussi le moteur Monaco et refuse les brouillons non synchronisés ou conflictuels avant tout accès au compilateur natif. Son classement en inspection ne change pas : cette garde impose seulement que la compilation porte sur le code effectivement affiché et synchronisé.
-
-## Catalogue progressif
-
-Les 206 fonctions sont accessibles via découverte ; chaque requête ne transmet plus tous leurs schémas. Voir [Catalogue et reprise des tours](../chat-tool-workflow.md).
-
-| Outil | Catégorie | Paramètres requis |
-| --- | --- | --- |
-| `discover_tools` | Inspection | `Family` (`code`, `forms`, `debug`, `git`, `environment`, `all`) |
-| `invoke_tool` | Passerelle, permissions de la cible | `ToolName`, `ArgumentsJson` |
-
-Les deux commandes nécessitent `InvokeAsync`. Une passerelle ne change ni la portée de projet ni les autorisations de la fonction appelée.
-Politique de lecture : [confidentialité des projets](../project-privacy.md).
+See [architecture](../architecture.md), [conversations](../chat-ui.md),
+[privacy](../privacy.md) and [testing](../../tests/README.md).

@@ -1,340 +1,60 @@
-# Couverture automatisée du complément
+# Recorded validation
 
-## Fusion des branches de réactivité et documentation
+## Documentation baseline
 
-Le commit `fea0184` intègre `fix/ui-responsiveness-breakpoints` (`d75d761`) en conservant le lot Office de `99b5f25`. `docs/english-vbe-foundation` pointait déjà sur `99b5f25` : son contenu est inclus sans changement supplémentaire.
+This summary was consolidated on **2026-09-29** from repository evidence at
+**`99b5f25b39e32131b4c8486ff2d1ae467206b39e`**. It reports existing results; the
+documentation refactor did not execute Windows/COM, provider or host tests.
 
-La compilation finale Debug/x64 réussit sans erreur ni avertissement. La suite complète compte **2 004 réussites, 0 échec, 28 ignorés**, en **8 min 32 s** : `artifacts/branch-integration/final-tests/global-final.trx`. Le passage initial comptait 2 002 réussites et deux échecs : invocation synchrone d'outils réservés à `InvokeAsync` et notifications sans traduction dans les autres langues. Les contrats asynchrones gardent leurs assertions et la matrice synchrone vérifie désormais leur refus explicite. Les trois notifications sont traduites dans tous les catalogues. Le lot de régression associé compte **11 réussites, 0 échec, 0 ignoré** (`regressions/regressions.trx` sous le même dossier).
-
-Les **46 concepteurs WinForms**, **27 éléments de métadonnées Designer** et **17 fichiers Monaco reconstruits identiques octet par octet** passent leurs contrôles. Les quatre fichiers de tests complémentaires sans homologue de production sont déplacés sous `Scenarios` : **253 miroirs pour 312 sources**. Les ressources Monaco suivent les règles LF de leur nouveau `.gitattributes` ; le code C# et les traductions restent en UTF-8 sans BOM avec CRLF.
-
-Le binaire final est `artifacts/branch-integration/final-build/VBAi/Debug/net48/VBAi.dll`, MVID `013bd7f9-b625-4499-bac8-cfcf23cbd297`, SHA-256 `EBB1D03BA1AFFD4679761014A6C928896674D03DEE2C3856B22403F76168028C`. Il n'est pas installé pendant cette validation : des sessions Word utilisent encore la DLL précédente. Les 28 tests d'hôtes/comptes sont conditionnels ; leurs anciennes preuves natives ne qualifient pas automatiquement cette version. Aucune nouvelle collecte de couverture C# n'est annoncée pour cette fusion.
-
-## Qualification Office
-
-Le lot natif du 29 septembre compte **4 réussites, 0 échec, 1 ignoré**, en **53 secondes** : sept scénarios par hôte dans Word, PowerPoint, Access et Publisher ; Outlook attend un profil classique configuré. Les tests et leurs prérequis sont dans le projet VSTest. Ce lot Office a exercé la DLL validée après renommage, avant la fusion des correctifs de réactivité ; aucune nouvelle mesure de couverture C# n'est annoncée. Les adaptateurs de sauvegarde et les fonctions non qualifiées restent décrits dans [le bilan Office](office-host-qualification.md).
-
-## Renommage VBAi
-
-La solution et les namespaces sont renommés en VBAi. La suite complète après renommage compte **1 876 réussites, 0 échec, 21 ignorés**, en **8 min 8 s**, sans nouvelle collecte de couverture. Les 46 concepteurs et le démarrage Excel réel passent aussi. Les tests de performance sont rangés parmi les scénarios complémentaires : **242 miroirs pour 299 sources**. Voir [le bilan du renommage](rename-vbai.md) pour les preuves, la migration utilisateur et le nettoyage GitHub.
-
-## Intégration de la PR #13
-
-La fusion `7232ceb` ajoute les deltas Monaco versionnés, la synchronisation pendant la saisie, les chemins rapides de débogage et l’index de langage incrémental. La mesure à 100 % ci-dessous précède ces changements : elle ne qualifie pas les nouvelles branches. Le protocole et les limites sont décrits dans [le bilan de performance](monaco-performance.md).
-
-La validation de la fusion compte **382 tests .NET réussis, 0 échec, 3 ignorés**, en **1 min 40 s** (`artifacts/pr13-integration/accepted/regressions.trx`), **30 tests JavaScript réussis**, **46 surfaces Designer validées**, et une compilation Debug sans erreur ni avertissement. Les trois scénarios manuels LLM attendent la fin du démarrage puis arrêtent les trois minuteries : leur ancienne préparation n’arrêtait que le cycle de réconciliation, ce qui permettait au streaming d’occuper l’éditeur pendant leurs appels. Le test distinct de streaming réel reste automatique.
-
-La version `main` fusionnée est réinstallée. Le parcours Excel visible confirme l’identité de la DLL chargée, le démarrage automatique, le code natif derrière Monaco, le redimensionnement et la disposition préservée de l’Explorateur d’objets (`artifacts/pr13-integration/excel-startup/monaco-startup.json`). Excel est fermé ensuite, sans exécution de macro. Ce contrôle de démarrage ne mesure pas les performances COM du streaming et ne qualifie pas SOLIDWORKS.
-
-## Historique : reprise après revue Astra, avant PR #13
-
-Le lot `eca1c08` reprend la couverture sur les corrections Astra et les interfaces de la PR #12. Huit nouveaux scénarios miroir couvrent les politiques d’approbation et leur rollback, les notifications de thème entre threads et la fermeture pendant leur dispatch, les sélecteurs et leurs pinceaux GDI, les activités anciennes ou dont la vue a été libérée, les boutons en contraste élevé et le repli de police, les palettes de prévisualisation, les ressources SVG absentes ou invalides et les onglets trop petits.
-
-Les scénarios sont préparés par lot avant exécution. Le lot ciblé élargi compte **30 réussites, 0 échec, 0 ignoré** (`artifacts/coverage-resumed/matrix-complete/matrix.trx`). Le test réel Monaco attend désormais la fin de l’initialisation des documents, au-delà du seul indicateur `Ready`, avant d’ouvrir une comparaison. Le passage initial `baseline/global.trx` comportait cet échec de synchronisation ; il ne constitue pas une preuve de suite verte.
-
-La lecture des SVG et la sélection de la police de repli sont isolées sans modifier leur contrat. Les contrôles utilisent le détecteur de contraste existant, qui lit Windows par défaut. Le dispatch de thème conserve `BeginInvoke` par défaut. Les tests peuvent ainsi exercer les erreurs et états système sans changer les préférences Windows ; aucune exclusion de code de production n’est ajoutée. Les coalescences nulles redondantes de `Button.Text` sont retirées : un scénario vérifie que l’affectation de `null` est normalisée en chaîne vide par WinForms.
-
-Le passage global final, source `953c84f`, inclut le correctif d’ordre des fenêtres `0a2c3e4` : **1 867 réussites, 0 échec, 21 ignorés** en **10 min 52 s**, **30 521/30 521 lignes** et **31 195/31 195 branches**, soit **100 %**. Preuves : `artifacts/coverage-resumed/qualified-final/global.trx`, `9e5a11b4-ffae-4fd2-9d1d-a83fe6da2ced/coverage.cobertura.xml` et `coverage.json` dans ce même dossier. Toutes les classes instrumentées atteignent 100 %.
-
-Le passage `final-with-zorder` a été interrompu après un échec de synchronisation de la fixture de sauvegarde : vider sa file ne garantissait pas la fin de l’opération asynchrone. Le test attend désormais son achèvement réel avant de vérifier le résultat, sans retirer d’assertion. Les six régressions ciblées passent dans `save-and-zorder/regressions.trx`. Le passage global final ci-dessus remplace ce passage interrompu.
-
-Les constructions Debug et Release réussissent sans erreur ni avertissement ; **46 concepteurs WinForms** passent leur qualification. La documentation XML couvre **5 356/5 356 déclarations**, et **240 miroirs pour 297 sources** conservent les scénarios complémentaires séparés. La construction Debug destinée à l’installation est réalisée après fermeture des fixtures Excel ; la bibliothèque COM est réexportée et l’installation utilisateur pointe désormais sur `bin/Debug/net48/VBAi.dll` de `main`.
-
-Le parcours Excel visible réussit avec cette DLL : identité de l’assembly chargé, démarrage automatique de Monaco, fenêtre de code native derrière lui, remplissage et redimensionnement de la zone centrale, Explorateur d’objets visible avec parent et géométrie préservés. Preuve : `artifacts/coverage-resumed/excel-startup/monaco-startup.json`. Le test résout la fenêtre de code native par son nom lorsque VBE renvoie `HWnd=0`. Ses deux premiers essais ont expiré sur ce handle nul et ne constituent pas une preuve de défaut du correctif. Le classeur jetable et Excel sont fermés ; aucune macro n’est exécutée.
-
-Les 21 scénarios conditionnels d’hôtes et de comptes restent désactivés dans cette mesure. Les compteurs concernent l’assembly C# `VBAi` ; le C++, le JavaScript et toutes les combinaisons d’hôtes conservent leur qualification distincte.
-
-## Historique : arrêt à réception du rapport Astra
-
-Le chantier de couverture a été arrêté à réception du [rapport Astra](audits/2026-09-29-astra-behavior-audit.md), comme demandé. Les deux lots terminés auparavant comptent **20 tests réussis**, dont six nouveaux scénarios. Les correctifs du rapport sont vérifiés par des régressions fonctionnelles séparées ; **leur couverture globale n’a pas été remesurée**. Les compteurs ci-dessous décrivent le commit indiqué, avant ces corrections.
-
-## Historique : intégration de la PR #12
-
-Mesure du **29 septembre 2026**, source `2c2a7f8`, après fusion des interfaces compactes, complément de documentation XML et correction de l’assertion de palette Monaco. Le passage global corrigé, instrumenté sans exclusion de production, fournit :
-
-| Mesure | Résultat |
-| --- | --- |
-| Suite globale VSTest | **1 847 réussis, 0 échec, 21 ignorés**, 9 min 22 s |
-| Lignes C# | **30 472 / 30 503 — 99,90 %**, 31 lignes restantes |
-| Branches C# | **31 093 / 31 171 — 99,75 %**, 78 branches restantes |
-| Lot UI et renderer corrigé | **26 réussis, 0 échec, 0 ignoré** |
-| Matrice JavaScript Monaco | **57 scénarios réussis** |
-| Thèmes réels WebView2 | **9 cas réussis**, code, diff et retour au code |
-| Compilation de la solution | **0 erreur, 0 avertissement** |
-| Concepteurs et métadonnées | **46 surfaces, 412 contrôles enfants, 27 contrôles de projet** |
-| Organisation miroir | **239 miroirs pour 297 sources** |
-| Documentation IntelliSense | **5 352 / 5 352 déclarations**, aucune erreur syntaxique |
-
-Les pourcentages sont arrondis à partir des compteurs bruts. La cible **100 % n’est pas encore atteinte après cette PR**. Les nouveaux écarts portent sur le dispatch du thème Monaco, le modèle et les activités du chat, les onglets et leurs états de survol/fermeture, les boutons, les icônes, les sélecteurs et les couleurs des menus. La suite verte ne remplace pas les scénarios manquants.
-
-Preuves : `artifacts/pr12-integration/global-accepted/global.trx` et `32fc707c-9b16-49f4-a94a-0d1239ec8efa/coverage.cobertura.xml` et `coverage.json` dans ce même dossier. Les contrôles ciblés, Designers, métadonnées, thèmes WebView2 et miroirs sont dans `artifacts/pr12-integration/`. Le premier passage `global/global.trx` comportait un échec d’assertion sur l’ancienne couleur sombre ; il ne constitue pas la preuve de suite verte. Le passage corrigé ci-dessus le remplace.
-
-Les 21 scénarios conditionnels d’hôtes et de comptes sont ignorés dans cette mesure ; le parcours Excel de palette est qualifié séparément. Les mesures à 100 % ci-dessous décrivent les états antérieurs à la PR #12. Le C++, les processus hôtes et les branches JavaScript ne sont pas inclus dans les compteurs de l’assembly C# `VBAi`.
-
-## Historique : correctif de récupération de palette, avant PR #12
-
-Le **29 septembre 2026**, le correctif `8445e44` conserve **100 %** des lignes et branches de l’assembly C# : **29 743 / 29 743 lignes**, **30 859 / 30 859 branches**. La suite globale compte **1 836 réussis, 0 échec, 21 ignorés**, en 9 min 17 s. Preuves : `artifacts/palette-diagnostic/global-final/global.trx` et `45887997-9f9a-4e8f-8441-9281148b8700/coverage.cobertura.xml` dans ce même dossier.
-
-Le lot ciblé de palette compte **36 réussites** ; le parcours Excel natif séparé compte **1 réussite**, avec réconciliation, archivage et restauration relue. Le chargement normal de la DLL installée confirme aussi la réparation du fichier utilisateur, avec conservation de son ancienne version. Ces preuves sont sous `artifacts/palette-diagnostic/`. Les compteurs à 100 % de cette section précèdent les nouveaux contrôles de la PR #12.
-
-## Historique : mesure à 100 % après extension IntelliSense Monaco
-
-Mesure du **29 septembre 2026**, source `611f882`, après les références dynamiques, les métadonnées COM enrichies, les alias VBA et l’édition automatique. Un passage global final VSTest instrumenté, sans exclusion de production, fournit :
-
-| Mesure | Résultat |
-| --- | --- |
-| Suite globale VSTest | **1 834 réussis, 0 échec, 20 ignorés**, 9 min 27 s |
-| Lignes du complément C# | **29 712 / 29 712 — 100 %** |
-| Branches du complément C# | **30 845 / 30 845 — 100 %** |
-| Qualification ciblée finale | **10 réussis, 0 échec, 0 ignoré**, renderer WebView2, matrice JavaScript et parcours Excel réel |
-| Matrice JavaScript | **57 scénarios réussis**, références, survols, signatures, blocs et formatage |
-| Build de la solution | **0 erreur, 0 avertissement** |
-| Concepteurs WinForms | **46 surfaces validées** |
-| Métadonnées Visual Studio | **27 contrôles réussis** |
-| Organisation miroir | **237 miroirs pour 294 sources**, scénarios complémentaires séparés |
-| Documentation IntelliSense | **5 216 / 5 216 déclarations**, aucune erreur syntaxique |
-
-Preuves : `artifacts/monaco-language/global-final-results/global.trx`, `36b2284b-9307-4796-9f94-028820a3b402/coverage.cobertura.xml` et `coverage.json` dans le même répertoire. Toutes les classes instrumentées atteignent 100 % en lignes et branches. La qualification ciblée est sous `artifacts/monaco-language/native-final-results/native.trx` ; les contrôles de structure et documentation sont sous `artifacts/monaco-language/`.
-
-Deux passages antérieurs comportaient chacun un échec et ne servent pas de preuve de suite verte : chemin de cache Git trop long sous `global-build`, puis lecture du marqueur de connexion avant fermeture du fichier dans la fixture Copilot. La sortie courte et la publication atomique du marqueur corrigent ces causes. La mesure finale utilise ces corrections.
-
-Les 20 scénarios conditionnels d’hôtes et de comptes restent désactivés dans cette mesure. Le parcours Excel séparé vérifie les références Excel/VBA, l’ajout/retrait Office et Scripting, les chaînes et collections, les survols, les blocs, le formatage et l’annulation, avec le module natif inchangé ; voir [le bilan natif](reference/native-qualification.md). Les compteurs globaux concernent l’assembly C# `VBAi` ; les 57 scénarios JavaScript constituent une qualification fonctionnelle distincte, sans prétendre mesurer ses lignes ou branches. Le moteur C++ et les combinaisons d’hôtes non exécutées conservent leur qualification propre.
-
-## Mesure globale à 100 % après PR #11
-
-Mesure du **29 septembre 2026**, source `b20b46f`, après fusion de la PR #11 et qualification de la file de messages ainsi que des vues WinForms du transcript. Le commit `0642e1c` suivant ne change que l’indentation des commentaires XML ; Roslyn confirme l’équivalence du code. Un seul passage global final VSTest instrumenté, sans exclusion de production, fournit les compteurs suivants :
-
-| Mesure | Résultat |
-| --- | --- |
-| Suite globale VSTest | **1 828 réussis, 0 échec, 19 ignorés**, 9 min |
-| Lignes du complément C# | **29 663 / 29 663 — 100 %** |
-| Branches du complément C# | **30 793 / 30 793 — 100 %** |
-| Build de la solution | **0 erreur, 0 avertissement** |
-| Concepteurs WinForms | **46 surfaces et 409 contrôles enfants validés** |
-| Métadonnées Visual Studio | **27 contrôles réussis** |
-| Organisation miroir | **237 miroirs pour 294 sources**, scénarios complémentaires séparés |
-| Documentation IntelliSense | **5 208 / 5 208 déclarations**, aucune erreur syntaxique ni différence de code Roslyn |
-| Catalogues de langue | **14 catalogues, 763 textes obligatoires chacun**, aucune clé absente, vide ou dupliquée |
-
-Preuves : `artifacts/pr11/global-final-results/global.trx`, `badef2be-8c80-465f-85be-c7ccdd1201a3/coverage.cobertura.xml` et `coverage.json` dans le même répertoire. Toutes les classes instrumentées atteignent 100 % en lignes et branches. Les autres preuves sont sous `artifacts/pr11/designers-qualified/`, `metadata-qualified/`, `layout.json` et `intellisense-audit.txt`.
-
-La qualification a corrigé deux menus Designer sans nom et les onze catalogues auxquels manquaient les nouveaux libellés de la file. La surcharge `ChatTextContentView.Append` conserve ses appels existants tout en évitant le paramètre enum optionnel qui empêchait l’instrumentation Coverlet. Aucun filtre d’exclusion ni package de substitution n’a été ajouté. Le passage antérieur `global-qualified-results` comportait deux échecs et ne sert pas de preuve de suite verte.
-
-Les 19 scénarios conditionnels d’hôtes et de comptes restent désactivés dans cette mesure. Aucun hôte utilisateur n’a été fermé ni sa DLL chargée remplacée pour cette intégration ; les constructions utilisent des sorties isolées. Les qualifications natives antérieures restent datées dans [le bilan natif](reference/native-qualification.md). La mesure concerne l’assembly C# `VBAi` ; le moteur C++ et toutes les combinaisons d’hôtes, de DPI et de contrôles tiers nécessitent leur propre qualification.
-
-## Mesure globale à 100 % après PR #10
-
-Mesure du **28 septembre 2026**, source `48dfa88`, après intégration de la PR #10 et des matrices complémentaires. Un seul passage global VSTest instrumenté, sans exclusion de production, fournit les deux compteurs exacts :
-
-| Mesure | Résultat |
-| --- | --- |
-| Suite globale VSTest | **1 770 réussis, 0 échec, 19 ignorés**, 7 min 55 s |
-| Lignes du complément C# | **28 987 / 28 987 — 100 %** |
-| Branches du complément C# | **30 527 / 30 527 — 100 %** |
-| Build de la solution | **0 erreur, 0 avertissement** |
-| Concepteurs WinForms | **33 surfaces validées** |
-| Organisation miroir | **208 miroirs pour 265 sources**, scénarios complémentaires séparés |
-
-Preuves : `artifacts/cov/global-qualified-100-results/global.trx`, `ea683f23-fd08-461a-8e41-513991d2fe8e/coverage.cobertura.xml` et `coverage.json` dans le même répertoire. Les compteurs couverts et totaux sont égaux ; aucune classe instrumentée ne reste sous 100 %. Le passage `global-100` interrompu est obsolète et ne sert pas de preuve. Les anciens pourcentages ci-dessous sont historiques.
-
-Les 19 scénarios conditionnels nécessitant un hôte ou un compte connecté ne sont pas activés dans cette mesure. Les essais réels exécutés séparément comprennent cinq scénarios SOLIDWORKS (module, classe, formulaire, exécution et breakpoint), son test VSTest de connexion, deux tests fournisseurs connectés GitHub/Codex et le démarrage Monaco dans Excel. Leur détail et leurs limites restent dans [la qualification native](reference/native-qualification.md). Ces passages séparés ne sont pas ajoutés aux compteurs globaux.
-
-La couverture mesurée concerne l'assembly C# `VBAi`. Elle vérifie l'exécution des lignes et branches de ses contrats automatisés ; elle ne constitue pas une qualification universelle des combinaisons Office, COM, DPI, signatures et contrôles tiers. Le moteur C++ n'est pas instrumenté par Coverlet.
-
-## Après intégration de la PR #9 — diagnostics et attributs Monaco
-
-Mesure locale du **28 septembre 2026**, fusion de `d91ffb8` et garde supplémentaire du renommage concurrent. Construction isolée : **0 erreur, 0 avertissement**.
-
-| Mesure | Résultat |
-| --- | --- |
-| Suite globale VSTest | **1 388 réussis, 0 échec, 15 ignorés**, 6 min 25 s |
-| Lignes du complément C# | **25 883 / 27 930 — 92,67 %** |
-| Branches du complément C# | **26 501 / 29 523 — 89,76 %** |
-| Excel natif Monaco, passage séparé | **1 réussi, 0 échec, 0 ignoré** |
-| Concepteurs WinForms | **32 surfaces validées** |
-| Organisation miroir | **190 miroirs pour 254 fichiers de production** |
-| Catalogue LLM | **204 outils** |
-
-Il reste **2 047 lignes et 3 022 branches** C# non exécutées. Aucun code de production du complément n'est exclu. Les nouvelles opérations de remplacement ajoutent des chemins à couvrir ; l'objectif 100 % reste non atteint. Les 14 scénarios Excel et le scénario SOLIDWORKS sont désactivés dans la mesure globale. Le test Excel séparé ne contribue pas à ces pourcentages.
-
-Preuves finales : `artifacts/pr9-integration/qualified-global-final/global.trx`, `116dfc83-d9d5-4558-8e15-e3e6dfaf0e09/coverage.cobertura.xml`, `coverage-summary.json` et `coverage-inventory.csv` dans le même répertoire. Le rapport vide du premier passage exploratoire n'est pas une mesure de couverture. Le lot ciblé précédent compte **113 réussis, 0 échec, 1 ignoré** (`artifacts/pr9-integration/contracts/contracts.trx`) ; le correctif ultérieur est validé dans la suite finale et dans `artifacts/pr9-integration/native-final/excel.trx`. Les limites natives sont précisées dans [la qualification](reference/native-qualification.md).
-
-## Après intégration de la PR #8 — thème natif expérimental
-
-Mesure locale du **28 septembre 2026**, après Monaco et le thème natif jusqu'à `264e432`, avec les correctifs de fusion et d'arrêt. Build isolé : **0 erreur, 0 avertissement**.
-
-| Mesure | Résultat |
-| --- | --- |
-| Suite globale VSTest | **1 383 réussis, 0 échec, 15 ignorés**, 6 min 23 s |
-| Lignes du complément C# | **25 782 / 27 714 — 93,03 %** |
-| Branches du complément C# | **26 398 / 29 211 — 90,37 %** |
-| Concepteurs WinForms | **32 surfaces validées** |
-| Organisation miroir | **189 miroirs pour 253 fichiers de production** |
-| Catalogue LLM | **204 outils** |
-| Contrats ciblés thème/paramètres | **49 réussis, 0 échec, 0 ignoré** |
-| Moteur C++ | **20 cycles synthétiques réussis**, chargement/hash/ABI validés sans hooks Office |
-
-Il reste **1 932 lignes et 2 813 branches** C# non exécutées. Aucun code de production C# du complément n'est exclu. Le moteur C++ n'est pas instrumenté par Coverlet : ses tests synthétiques ne constituent pas une mesure de lignes/branches natives. Les pourcentages antérieurs sont historiques et l'objectif 100 % reste non atteint.
-
-Les 14 scénarios Excel restent désactivés pendant l'utilisation concurrente d'Excel ; SOLIDWORKS reste NOT_RUN. Les preuves visuelles natives de la branche auteur sont conservées comme telles, sans annoncer leur répétition sur main. Les limites du thème et les correctifs d'intégration sont dans [le bilan natif](native-dark-theme.md).
-
-Preuves : `artifacts/pr8-integration/qualified-global-final/global.trx`, `8c12c908-36f4-43cc-a5da-723cc8e9a251/coverage.cobertura.xml`, `coverage-summary.json` et `coverage-inventory.csv` dans le même répertoire ; tests ciblés `artifacts/pr8-integration/contracts/theme.trx` ; designers `artifacts/pr8-integration/designers/designers.json`.
-
-## Après intégration de la PR #7 Monaco
-
-Mesure locale du **28 septembre 2026**, branche Monaco intégrée jusqu'à `a4e3560`, avec les contrats IDE existants et le correctif de fermeture WinForms. Build isolé : **0 erreur, 0 avertissement**.
-
-| Mesure | Résultat |
-| --- | --- |
-| Suite globale VSTest | **1 358 réussis, 0 échec, 15 ignorés**, 6 min 1 s |
-| Lignes du complément | **25 249 / 26 359 — 95,78 %** |
-| Branches du complément | **25 995 / 27 897 — 93,18 %** |
-| Concepteurs WinForms | **32 surfaces validées** |
-| Organisation miroir | **184 miroirs pour 246 fichiers de production** |
-| Catalogue LLM | **204 outils** |
-
-Il reste **1 110 lignes et 1 902 branches** non exécutées. Aucun code de production n'est exclu. Les nouveaux adaptateurs Monaco ajoutent des chemins à couvrir ; les pourcentages ci-dessous sont historiques. Les 14 scénarios Excel (dont Monaco) sont désactivés pour éviter les essais concurrents ; le scénario SOLIDWORKS reste NOT_RUN. Les tests du véritable WebView2 passent dans cette suite, y compris les fermetures pendant l'initialisation et la création d'un contrôle d'état, avec conservation des brouillons sans écriture VBA.
-
-Preuves : `artifacts/pr7-integration/qualified-global/global.trx`, `8589ae6a-88d1-4b50-b986-c338cffd0f3a/coverage.cobertura.xml`, `coverage-summary.json` et `coverage-inventory.csv` dans le même répertoire. Les **93 tests ciblés réussis** précèdent le dernier delta de la branche, qui est couvert par ce passage global. Les mesures de la branche Monaco et les limites natives sont distinguées dans [la documentation de l'éditeur](modern-editor.md).
-
-## Lot complémentaire en qualification
-
-Les contrats ParamArray, renommage de membres privés de classe et options natives ajoutent du code après la mesure ci-dessous. Le build du projet de tests passe avec **0 erreur et 0 avertissement**. Après correction des fixtures pour utiliser un véritable dialogue Win32 #32770, leur matrice locale donne **127 réussis, 0 échec, 0 ignoré** (`artifacts/vbe-next/contracts-qualified-final/contracts.trx`). Les gardes de production restent inchangées. Ce lot ciblé ne constitue pas un bilan global. La structure conserve **174 miroirs pour 231 fichiers de production**.
-
-Le passage global local final donne **1 318 réussis, 0 échec, 14 ignorés**, en 5 min 48 s (`artifacts/vbe-next/qualified-local-final/global.trx`). Couverture du complément : **24 303 / 24 960 lignes — 97,36 %**, **25 316 / 26 377 branches — 95,97 %**. Aucun code de production n'est exclu. Les 13 scénarios Excel sont désactivés pour éviter les fermetures concurrentes ; SOLIDWORKS reste NOT_RUN. Il manque **657 lignes et 1 061 branches**. Les trois nouveaux fichiers de classes et ParamArray sont à **100 % lignes et branches** ; quatre méthodes du fichier des options restent incomplètes.
-
-Preuves : `2e065eb0-4302-43c8-b049-14f8fb397b11/coverage.cobertura.xml`, `coverage-summary.json` et `coverage-inventory.csv` dans le même répertoire final. Les passages exploratoires échoués ne remplacent pas ce résultat. Les nouveaux scénarios Excel et leurs interruptions sont décrits dans la [qualification native](reference/native-qualification.md). La couverture actuelle n'est pas annoncée à 100 % et la mesure après PR #6 reste un résultat historique.
-
-## Mesure après intégration de la PR #6 et complétion IDE
-
-Mesure du **28 septembre 2026**, après la fusion `c5f64eb` et le lot IDE décrit dans l'[inventaire](reference/vbe-capability-inventory.md). Compilation : **0 erreur, 0 avertissement**.
-
-| Mesure | Résultat |
-| --- | --- |
-| Suite globale VSTest | **1 281 réussis, 0 échec, 1 ignoré**, 8 min 7 s |
-| Lignes du complément | **23 821 / 24 469 — 97,35 %** |
-| Branches du complément | **24 724 / 25 769 — 95,94 %** |
-| Excel automatisé | **Dix scénarios réussis** |
-| SOLIDWORKS | **NOT_RUN**, aucune instance préchargée |
-| Concepteurs WinForms | **31 surfaces validées** après intégration PR #6 |
-| Organisation miroir | **171 miroirs pour 228 fichiers de production** |
-| Catalogue LLM | **197 outils**, dont 17 nouveaux contrats IDE |
-
-Il reste **648 lignes et 1 045 branches** non exécutées. Les nouveaux adaptateurs natifs et les mises à jour GitHub ajoutent du code à couvrir ; les mesures historiques à 100 % ne décrivent pas le code actuel. Aucun code du complément n'a été exclu. La couverture mesure l'assembly `VBAi` dans VSTest ; les qualifications Excel sont indépendantes, et l'installation réelle par `VBAi.Updater` reste NOT_RUN faute de release signée de test.
-
-Les dix scénarios Excel incluent la protection sauvegardée/réouverte, le renommage public intermodules et son annulation, l'ajustement UserForm, l'explorateur, les options Format/Ancrage restaurées, les pages Toolbox MSAA et les valeurs/tableaux retournés par une invocation unique. La [qualification native](reference/native-qualification.md) précise leurs limites.
-
-Preuves : `artifacts/vbe-completion/qualified-global/global.trx` et `136ec1d1-d534-432d-918d-64b5d9210601/coverage.cobertura.xml` dans ce même répertoire. `coverage-summary.json` et `coverage-inventory.csv` contiennent les compteurs et méthodes encore incomplètes. Organisation : `artifacts/vbe-completion/test-layout.json`. Designers : `artifacts/pr6-integration/designers/designers.json`. Les passages exploratoires échoués sont conservés séparément et ne constituent pas la validation finale.
-
-## Mesure après intégration de la PR #5
-
-Mesure du **28 septembre 2026**, code **`a151498`** : À propos et rapports de problème GitHub/Outlook intégrés avec les fonctionnalités IDE de main. Compilation : **0 erreur, 0 avertissement**.
-
-| Mesure | Résultat |
-| --- | --- |
-| Suite globale VSTest | **1 189 réussis, 0 échec, 1 ignoré**, 6 min 34 s |
-| Lignes | **21 578 / 21 658 — 99,63 %** |
-| Branches | **22 462 / 22 545 — 99,63 %** |
-| Excel automatisé | **Trois scénarios réussis** |
-| SOLIDWORKS | **NOT_RUN**, aucune instance préchargée |
-| Concepteurs WinForms | **29 surfaces validées** |
-| Organisation miroir | **146 miroirs pour 200 fichiers de production** |
-
-La PR ajoute du code dont la couverture reste à compléter : **80 lignes et 83 branches** non exécutées. Les 100 % du passage précédent ne sont pas la mesure actuelle. Aucun code de production n'a été exclu. Les publications GitHub et les livraisons Outlook sont simulées ; aucun rapport réel n'a été envoyé et ces parcours natifs ne sont pas qualifiés par cette suite.
-
-Preuves locales : `artifacts/pr5-integration/results/global.trx` et `artifacts/pr5-integration/results/9dc1e6ae-ad7b-4920-aac7-6046ca8aefd5/coverage.cobertura.xml`. Les contrôles Designer et miroir sont sous `artifacts/pr5-integration/`.
-
-## Mesure globale après intégration de la PR #4 et du lot IDE
-
-Mesure du **28 septembre 2026**, code **`27389a8`**, comprenant la PR WinForms `codex/chat-ux`, le renommage de paramètres, les appels nommés et le vérificateur de signatures. Compilation de la solution : **0 erreur, 0 avertissement**.
-
-| Mesure | Résultat |
-| --- | --- |
-| Lignes exécutables | **20 639 / 20 639 — 100 %** |
-| Branches | **22 223 / 22 223 — 100 %** |
-| Classes instrumentées incomplètes | **0** |
-| Suite globale VSTest | **1 172 réussis, 0 échec, 1 ignoré** ; 6 min 37 s |
-| Excel automatisé | **Trois scénarios réussis** dans la suite globale |
-| SOLIDWORKS | **NOT_RUN** : aucune instance utilisateur préchargée |
-| Organisation | **141 miroirs pour 193 sources**, scénarios et fixtures complémentaires |
-| Concepteurs WinForms | **27 DesignSurface** chargées, redimensionnées et éditées ; contrôles enfants sélectionnables |
-| Catalogue LLM | **180 outils** extraits de l'assembly reconstruite |
-
-## Scénarios du lot
-
-- Renommage de paramètre privé standard : déclaration, usages, appels nommés directs/qualifiés et imbriqués, continuations, collisions, compilation conditionnelle, SHA/mode, diff LLM et undo/redo.
-- Exécution publique avec noms de paramètres vérifiés, réordonnancement et omission d'optionnels ; requêtes/noms/valeurs capturés avant la livraison ; gardes de taille, type, identité et syntaxe.
-- Vérificateur Office : formats, disponibilité du SIP VBA, SHA et verrou de lecture, résultats HRESULT distincts, relecture du registre sans écriture et nettoyage WinVerifyTrust. Les résultats cryptographiques sont simulés localement ; leur qualification native demeure NOT_RUN tant que le SIP dédié n'est pas autorisé.
-- PR WinForms : propriétés et marges du moteur de saisie, sérialisation/reset, apparence, événements avec/sans abonnés, ressources Designer, et libération des diff natifs lors du recyclage du transcript.
-- Contrat du catalogue LLM : tous les champs requis/facultatifs, types et modes ; `ArgumentNames` validé comme tableau, sans modifier les politiques d'approbation.
-
-Excel vérifie indépendamment les cellules **42** et **named call** après renommage et appel nommé, puis la restauration exacte du code. Le document enregistré est copié pour la vérification : Excel garde un verrou d'écriture sur son fichier ouvert. Le SIP absent produit **VerifierUnavailable**, pas une signature valide. Les deux autres scénarios vérifient le chargement/pont et la sauvegarde en présence d'une autre instance Excel jetable, laissée inchangée.
-
-## Preuves et limites
-
-- Rapport global : `artifacts/pr4-integration/final-qualified/a7899ebd-1a42-41ce-9820-9ebf2faa2aa3/coverage.cobertura.xml` ; résumé `coverage-summary.json` adjacent.
-- Résultats globaux : `artifacts/pr4-integration/final-qualified/global.trx`.
-- Organisation miroir : `artifacts/pr4-integration/test-layout.json`, produite par `tools/tests/Test-TestLayout.ps1`.
-- Scripts Designer : `tools/tests/Test-WinFormsDesigners.ps1` et `tools/tests/Test-ChatDesigner.ps1`, exécutés sur l'assembly de la fusion.
-- [Mesure précédente à 100 %](archive/test-coverage-pre-winforms-pr4.md) : historique, distinct de ce passage.
-
-Aucune source du complément n'est exclue ; `ProviderTests.exe` est le seul exécutable de simulation exclu. Le collecteur mesure le processus VSTest, pas le code exécuté dans Excel ou SOLIDWORKS. Les doubles natifs vérifient les branches et erreurs du code ; 100 % de couverture ne qualifie pas toutes les fonctions dans tous les hôtes.
-
-L'[inventaire fonctionnel complet du VBE](reference/vbe-capability-inventory.md) précise les fonctions absentes ou partielles. Les [qualifications natives](reference/native-qualification.md) distinguent les preuves Excel, les essais historiques SOLIDWORKS et le digest VBA non qualifié. L'audit IntelliSense avec Luna reste indépendant et non intégré à cette mesure.
-
-## Reproduire la mesure
-
-Voir [le projet de tests](../tests/README.md) pour VSTest, la couverture et les hôtes opt-in. Les rapports détaillés restent locaux sous `artifacts/`, ignoré par Git.
-
-## Excel validation before development pause (2026-09-29)
-
-Source baseline: `5c860a34f79f0ec3eb6b7d48df87b4a966b08a00`, with the audit
-remediation changes on `fix/ui-responsiveness-breakpoints`. Debug/net48/x64
-candidate built in `artifacts/build/audit-source-followup`; add-in MVID
-`a188e95c-ba49-4fd0-ba50-09b9084fa413`, SHA-256
-`4DEF8B06A76BD4DF2ED3F4895355861038CFCECE64969098A5D1F1BCB7B3145D`.
-The complete solution compiled without warnings or errors. Subsequent test-only
-fixture rebuilds also passed and left the add-in hash unchanged.
-
-| Execution | Results | Evidence under `artifacts/test-results/excel-followup` |
+| Evidence set | Recorded result | Scope and limitation |
 | --- | --- | --- |
-| Changed chat/history, reconciliation, theme routing, Excel persistence and updater groups | 194 passed, 1 failed, 0 skipped | `excel-preflight.trx` |
-| Corrected chat fixture waits for asynchronous history before testing permissions | 1 passed, 0 failed, 0 skipped | `scope-permissions-fixed.trx` |
-| Native Excel: Monaco breakpoint, isolated persistence, scalar inspection | 2 passed, 1 failed, 0 skipped | `excel-native.trx` |
-| Scalar inspection with explicit native navigation readiness before one Run Sub | 1 passed, 0 failed, 0 skipped | `excel-scalars-navigation.trx` |
+| Post-rename global VSTest run | 1,876 passed, 0 failed, 21 skipped. | No new instrumented coverage collection in this run. |
+| Post-rename Designer checks | 46 surfaces validated. | Loading/editing/resizing/serialization is not full native UI qualification. |
+| Office host batch | 4 passed, 0 failed, 1 skipped. | Seven scenario groups per successful host: Word, PowerPoint, Access and Publisher. Outlook blocked by missing setup/profile. |
+| Post-rename Excel startup | Loaded DLL identity, automatic Monaco startup, native code behind Monaco, resize and Object Browser layout checked. | No macro execution; not a new qualification of every editor or other-host feature. |
+| Historical instrumented run, source `953c84f` | 30,521/30,521 lines and 31,195/31,195 branches; 1,867 passed, 0 failed, 21 skipped. | Predates PR #13 and the later rename changes. **Not current coverage.** |
 
-The first chat failure was a test fixture using the old synchronous startup
-assumption. Production loading guards were retained. The first scalar failure
-was a refused `run_sub`: the requested CodePane was not active. No macro ran;
-the project stayed in design mode and owned Excel exited normally. The follow-up
-fixture sends `select_code`, observes the correct active module, then sends Run
-Sub once. This passes the scalar inspection scenario but does **not** resolve or
-qualify direct execution immediately after cold navigation.
+**Current instrumented coverage after the latest changes is not established by
+these records.** Do not carry the historical 100% into a README badge or a current
+release claim.
 
-Native cases assert that the installed host MVID equals the test candidate.
-Monaco rejected declaration/comment lines without a message or marker; a valid
-breakpoint stopped native VBA at the requested line, removal and continuation
-returned to design mode, and source stayed unchanged. Single-fixture toggle
-observations were 175/169 ms for invalid lines, 786 ms to set and 518 ms to remove
-the valid breakpoint. These include fixture overhead and are not a latency
-percentile or a comparison against the previous build.
+The Office batch verifies common VBE behavior and helper-driven save/reopen. It
+does not qualify VBAi's own document-save adapter in every host. The
+[compatibility table](compatibility.md) retains each refusal, missing adapter and
+the PowerPoint HWND defect. A skipped Outlook test is not a pass.
 
-Persistence saved only the intended disposable workbook while another owned
-Excel workbook remained unsaved. Scalar inspection verified declared supported
-values, skipped unsupported declarations, preserved source, and restored
-selection/focus. Each fixture requires normal Close/Quit and native exit code 0;
-no Excel process remained after this batch. Save/reopen and event cancellation
-are not covered by this persistence case. SOLIDWORKS, mixed DPI and idle chat
-pixel correctness remain unqualified by this batch.
+## Provenance
 
-The guarded deployment verified 33 payload files, registration/type library and
-standalone COM activation. Local record:
-`artifacts/deployments/audit-20260929-150253/deployment.json`; the sibling
-`previous-net48` folder preserves the previous installation. Runtime connection
-was independently checked by the native fixtures.
+The pre-refactor records are preserved at the immutable baseline:
 
-The documentation checker still reports 10 existing workspace errors: two CSV
-links whose targets were removed by separate documentation work and eight
-fixture Markdown files lacking final newlines. Those unrelated changes are not
-part of this remediation commit. Raw TRX/diagnostic artifacts remain local;
-this section records the results without publishing workstation logs.
+- [Validation history](https://github.com/blackcancer/VBAi/blob/99b5f25b39e32131b4c8486ff2d1ae467206b39e/docs/test-coverage.md).
+- [Rename and migration validation](https://github.com/blackcancer/VBAi/blob/99b5f25b39e32131b4c8486ff2d1ae467206b39e/docs/rename-vbai.md).
+- [Office scenario details](https://github.com/blackcancer/VBAi/blob/99b5f25b39e32131b4c8486ff2d1ae467206b39e/docs/office-host-qualification.md).
+
+The referenced TRX, coverage and native reports under `artifacts/` were local,
+Git-ignored evidence. A path in a historical record is not a downloadable report
+in this repository. Relevant recorded locations include
+`artifacts/rename-vbai/accepted/global.trx`, `artifacts/rename-vbai/designers/`
+and `artifacts/office-hosts/vstest/office-hosts-complete.trx`.
+
+## Measurement boundaries
+
+C# coverage collected in VSTest does not instrument code executing in a separate
+Office/SOLIDWORKS process. It also does not measure the native C++ renderer or
+JavaScript branch coverage. Simulated provider exchanges are not authenticated
+service tests; a synthetic live-provider request is not a VBE workflow test.
+
+Prior SOLIDWORKS debugger checks and live OpenRouter synthetic checks retain their
+historical, limited scope. The presence of a tool or test fixture is not evidence
+that it ran successfully in every host or account.
+
+## Updating this page
+
+Run the appropriate checks from [testing](../tests/README.md). Replace the current
+summary with the tested source/build, date, exact commands, passed/failed/skipped
+counts and report location. Report partial or failed runs honestly. Keep old runs
+in Git history rather than appending another long chronology here.
+
+No production coverage exclusions may be added merely to reach a target. Keep the
+README free of hand-maintained test counters and use published evidence before
+adding any CI or coverage badge.

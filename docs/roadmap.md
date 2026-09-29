@@ -1,58 +1,49 @@
-# Travaux restants
+# Roadmap
 
-Couverture et documentation actualisées le **29 septembre 2026**, après intégration de la PR #12 et correction de la récupération de palette native. La mesure actuelle et les anciens passages datés sont distingués dans [le bilan de tests](test-coverage.md). Ce document distingue les contrats présents de la qualification native manquante. Le [catalogue LLM](reference/vbe-tools.md) expose 204 outils ; les [archives](archive/README.md) conservent les expériences détaillées.
+The roadmap describes direction, not promised delivery dates. Current behavior
+belongs in the guides and [compatibility](compatibility.md); verified results belong
+in [recorded validation](test-coverage.md).
 
-## Couverture et documentation
+## Shared VBE experience
 
-La couverture a repris après les correctifs de la [revue Astra](audits/2026-09-29-astra-behavior-audit.md). Le passage global `953c84f` inclut leurs régressions, les interfaces de la PR #12 et le correctif d’ordre des fenêtres Monaco. La PR #13 ajoute ensuite des branches de streaming, de cache et de débogage ; leur couverture globale reste à remesurer.
+Consolidate the modern editor, live-project agent workflows, code review/recovery,
+UserForm tooling and source versioning as one coherent workspace. Improve real
+workflow reliability, discoverability, accessibility and performance without
+weakening revision or permission checks.
 
-| Travail | État actuel | Critère de fin |
-| --- | --- | --- |
-| Couverture du code de production | Dernière mesure avant PR #13 : 1 867 réussis, 0 échec, 21 ignorés ; 100 % lignes (30 521/30 521), 100 % branches (31 195/31 195), sans exclusion | Remesurer et compléter les nouvelles branches de la PR #13 ; suite globale verte |
-| Organisation des tests | 242 miroirs pour 299 sources ; scénarios et fixtures complémentaires, validés après renommage VBAi | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
-| Documentation IntelliSense | Avant PR #13 : 5 356/5 356 déclarations documentées, audit intégré, aucune erreur syntaxique | Actualiser l’audit des nouvelles déclarations ; préserver les commentaires privés/publics et leurs paramètres |
-| Concepteurs WinForms | 46 surfaces WinForms et 412 contrôles enfants validés | Préserver cette accessibilité après chaque changement de structure ; qualifier aussi le rendu réel |
+## Host compatibility
 
-Compléter chaque branche de couverture identifiée avant de passer à la suivante. Construire le lot de scénarios cohérent avant de le lancer, puis mesurer la suite globale. Les pourcentages actuels sont détaillés dans [le bilan de tests](test-coverage.md).
+Continue qualifying the shared VBE layer in additional applications. Add or repair
+host-specific operations where VBIDE is insufficient, especially document identity,
+saving and execution. Close the known Office save-adapter gaps, qualify standalone
+macro persistence and broaden debugger, control, language and DPI evidence.
 
-La récupération de palette native conserve les modifications manuelles et archive atomiquement l’ancien fichier. Les 36 tests ciblés, le cycle Excel natif et le chargement normal avec le fichier utilisateur sont qualifiés ; voir [le thème natif](native-dark-theme.md). Le rendu global et les cas SOLIDWORKS restent distincts de cette validation.
+A host matrix should describe observed operations and prerequisites, not restrict
+the intended ecosystem to the first applications used for testing.
 
-Le correctif d’ordre des fenêtres conserve le code natif derrière Monaco. Le parcours Excel visible vérifie la DLL `main` réinstallée, son ouverture automatique, le redimensionnement et la disposition inchangée de l’Explorateur d’objets. Les autres combinaisons de fenêtres et SOLIDWORKS restent à qualifier ; voir [l’éditeur Monaco](modern-editor.md).
+## Quality and security
 
-## Extensions fonctionnelles du 28 septembre
+Maintain regression coverage for concurrent edits, interrupted operations, privacy
+boundaries, transport failures and recovery. Re-measure the current instrumented
+scope after implementation changes. Broaden authenticated-provider and real-host
+checks separately from simulated protocol tests.
 
-Les fonctions et les limites exactes sont détaillées dans [Extensions fonctionnelles VBE](reference/functional-extensions.md). Le lot initial ajoutait 11 outils ; le catalogue actuel en contient 204. Contrats historiques : exécution paramétrée, renommage local, personnalisation des barres, mutation bornée des options et confiance de certificat. Il étend aussi les déclarations/références, le renommage de projet Excel et la sauvegarde standalone `.swp`. Les tests SOLIDWORKS restent différés.
+Keep native appearance experimental until its lifecycle, recovery and rendering
+are qualified across the intended environments. Preserve usable fallback behavior.
 
-## Qualification de l’éditeur
+## Distribution — later milestone
 
-Le [lot Office du 29 septembre](office-host-qualification.md) qualifie les modules/classes, import/export, références dynamiques, UserForms avec label/police, compilation et persistance par les API natives dans Word, PowerPoint, Access et Publisher. Il reste à requalifier le contrôle de PID PowerPoint, désormais lu par l'interface COM officielle, développer les adaptateurs de sauvegarde Access/Publisher, qualifier la sauvegarde Word avec accès VBProject approuvé et compléter l'exécution/débogage dans ces hôtes. Outlook attend un profil classique configuré ; Visio n'est pas installé sur le poste de test.
+Develop and qualify the standalone installer after the current add-in work. Reuse
+the [existing update contract](updates.md) for signed payloads, occupied-host handling,
+upgrade, uninstall and rollback. This is not part of the documentation refactor.
 
-L'[inventaire fonctionnel complet](reference/vbe-capability-inventory.md) couvre désormais toutes les surfaces de l'éditeur. Le lot IDE `52cb537` ajoute trois contrats (180 outils au total), le renommage borné de paramètres privés et les arguments nommés de `run_procedure`. La vérification du fichier signé est implémentée mais son SIP natif attend une autorisation distincte. La PR #4 ajoute les structures fixes Designer ; elle est incluse dans la mesure globale `27389a8`, revenue à 100 % lignes et branches.
+Before a public release, choose the project license explicitly, complete the
+payload's third-party notice review and publish only genuine compatibility and
+validation information.
 
-| Surface | Ce qui reste à qualifier ou développer |
-| --- | --- |
-| Modules/classes | Cas d’erreur, encodages/imports et persistance dans les différents hôtes ; ne pas confondre catalogue de commandes et validation de toutes leurs combinaisons |
-| Projets | Renommage de projet Excel enregistré/non protégé disponible ; autres périmètres refusés. Sauvegarde standalone `.swp` implémentée mais non qualifiée dans SOLIDWORKS ; adaptateurs Word/PowerPoint exercés : refus de confiance Word et ancien défaut de lecture HWND PowerPoint, corrigé mais à requalifier ; sauvegardes Access/Publisher absentes ; cycle Add/Open/Remove standalone et protection ajoutés, protection sauvegardée/réouverte qualifiée dans Excel |
-| Signature | Première sélection du certificat dans Sécurité Windows, digest de la signature VBA et persistance SOLIDWORKS ; confiance de certificat disponible hors ligne ; l’état signé ne prouve pas la confiance du certificat |
-| Breakpoints | Inventaire indépendant des marqueurs et pointeur d’exécution ; la commande de basculement et l’arrêt effectif sont qualifiés, pas un inventaire exhaustif |
-| Variables/espions | Lecture des valeurs SOLIDWORKS, arbres COM/espions et variantes de langues ; tableau Excel de 1 000 éléments et sept types scalaires qualifiés en français, doublons UIA supprimés ; dernier essai SOLIDWORKS : zéro ligne exposée |
-| Exécution | Scalaires, appels nommés et transport Excel.Run à invocation unique pour tableaux/retours scalaires qualifiés dans Excel ; classes/objets COM/tableaux ByRef non couverts ; autres hôtes à qualifier |
-| UserForms | Propriétés réellement modifiables par type, persistance et effet runtime ; contrôles tiers ; fidélité des images, copies et récupérations ; événements et conteneurs complexes |
-| Listes | Initialisation multicolonne et liaisons implémentées ; qualifier les combinaisons de contrôles/conteneurs et les autres hôtes |
-| Fenêtres/barres d’outils | Persistance des barres Excel qualifiée via SQLite ; géométries/DPI/ancrage natifs au-delà du profil mesuré ; premier ancrage du chat à droite sur un profil vierge |
-| Explorateur d’objets | Lecture/sélection/pagination implémentées ; qualification SOLIDWORKS et variantes UI natives |
-| Options/boîte à outils | Éditeur/Général et cases Format/Ancrage qualifiés après réouverture et restauration ; choix de police/palettes et autres langues natives à qualifier. Personnalisation de la boîte à outils absente ; neuf MSComctl installés refusés par la politique native de confiance |
-| Thème natif | Onglets Propriétés dessinés directement. Moteur natif intégré et installé pour les barres enfants ; seconde recoloration retirée, libellés nets sur le scénario Excel et 203 captures Standard sans retour général au clair. Finaliser les autres barres/popups, rendu du code avant rasterisation, netteté, cycle de thème, DPI et qualification SOLIDWORKS ; voir le [bilan](native-theme-renderer-pilot.md) |
+## Community
 
-Les journaux anciens peuvent indiquer « manquant » pour des fonctions implémentées depuis : signets, navigation, mise en page, presse-papiers, historique, lancement UserForm, barres d’outils et lecture de l’Explorateur sont désormais dans le code.
-
-## Conversation, fournisseurs et intégration
-
-- Vérifier le rendu et les comportements dans les hôtes réels, au-delà des doubles COM et des captures de démonstration.
-- Qualifier les fournisseurs authentifiés et leurs contraintes de modèles/outils séparément des simulations locales ; les crédits ou services locaux ne sont pas supposés disponibles.
-- Qualifier interruption/reprise, erreurs de transport et récupération après modification native partielle.
-- Poursuivre la relecture linguistique des catalogues ; leur parité technique ne garantit pas la qualité de traduction.
-
-Excel reste l’hôte automatisé prioritaire. Les essais SOLIDWORKS utilisent une instance et un VBE préchargés par l’utilisateur, sans démarrer une nouvelle instance COM. Les essais d’écriture restent limités aux projets jetables identifiés.
-
-Voir le [bilan précis des qualifications natives](reference/native-qualification.md) pour les scénarios, preuves et conditions restantes.
+Keep documentation concise and maintained, provide reproducible issue templates,
+and accept voluntary support without exclusive functionality or a service
+commitment. A donation channel can be added once the maintainer provides its
+official destination; it is not a product subscription roadmap.

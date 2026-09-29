@@ -1,102 +1,102 @@
-# Organisation de la solution
+# Architecture
 
-Ouvrir `VBAi.sln` dans Visual Studio. Les cinq projets C# ciblent .NET Framework 4.8, C# 7.3 et x64 en Debug comme en Release. `Directory.Build.props` centralise ces paramètres et `.editorconfig` définit UTF-8, CRLF et les règles d’indentation.
+VBAi is an in-process COM add-in. It connects a shared VBE automation layer to a
+modern editor, an assistant and source-control workflows. Host-specific behavior
+is an additional compatibility concern, not the definition of the product.
 
-## Projets et dépendances
+## Solution structure
 
-| Projet | Responsabilité | Références de projet |
-| --- | --- | --- |
-| `src/VBAi/VBAi.csproj` | Complément COM chargé par Excel ou SOLIDWORKS. | Aucune. |
-| `src/VBAi.Updater/VBAi.Updater.csproj` | Programme de mise à jour externe, copié dans la livraison du complément. | Aucune. |
-| `tests/VBAi.Tests/VBAi.Tests.csproj` | Tests MSTest/VSTest unitaires, locaux et hôtes opt-in. | Complément et simulation des fournisseurs. |
-| `tests/VBAi.Git.Smoke/VBAi.Git.Smoke.csproj` | Diagnostic autonome Git et interface associée. | Complément. |
-| `tests/VBAi.Providers.Smoke/VBAi.Providers.Smoke.csproj` | Diagnostic des protocoles et processus CLI simulé. | Complément. |
+`VBAi.sln` contains the managed add-in, the independent updater and test/diagnostic
+projects. Common build properties target .NET Framework 4.8, C# 7.3 and x64.
+The native renderer is built by the add-in's build target using the C++ toolchain.
 
-Les trois projets de test référencent la DLL de production ; aucun ne recompile ses sources. `InternalsVisibleTo` leur donne accès aux membres internes. Les scénarios des diagnostics sont liés dans le projet MSTest sous `Shared`, pour tester la même DLL dans le processus mesuré.
-
-Les diagnostics conservent les noms `GitTests.exe` et `ProviderTests.exe`. Le second simule aussi un processus Copilot ; sa copie vers la sortie VSTest utilise le chemin résolu par MSBuild, y compris en compilation isolée.
-
-## Code du complément
-
-Les chemins suivants sont relatifs à `src/VBAi/`.
-
-| Dossier | Responsabilité |
+| Area | Responsibility |
 | --- | --- |
-| `Host` | Cycle de vie COM, menus VBE, volet latéral et journal. |
-| `Bridge` | Protocole local et serveur de commandes dans l’hôte. |
-| `Vbe` | Session VBE et résolution du projet ciblé. |
-| `Vbe/Code` | Navigation et modification des modules et procédures VBA. |
-| `Vbe/Debug` | Exécution, commandes natives du débogueur et lecture de ses fenêtres. |
-| `Vbe/Forms` | UserForms, contrôles, propriétés, conteneurs et événements. |
-| `Vbe/Projects` | Composants et références des projets. |
-| `Vbe/Windows` | Fenêtres et volets de code VBIDE. |
-| `Llm/Chat` | Conversations, contexte VBE et outils utilisables par les modèles. |
-| `Llm/Providers` | Protocoles, authentification et catalogues de modèles. |
-| `Llm/Settings` | Persistance des paramètres et formulaire de configuration. |
-| `Llm/Settings/Views` | Vues WinForms Fournisseur, Compte GitHub et Apparence. |
-| `Llm/Controls` | Contrôles nécessaires au concepteur du chat. |
-| `Llm/Controls/Transcript` | Vues WinForms éditables des messages, activités, cartes, suggestions et contenu Markdown. |
-| `Git` | Dépôts VBA, snapshots, synchronisation et interface GitHub. |
-| `Git/Views` | Vues WinForms des onglets Git et GitHub. |
-| `Editor` | Éditeur Monaco, synchronisation des modules, brouillons et navigation. |
-| `Ui` | Contrôles partagés, thèmes WinForms et thème VBE natif expérimental, Markdown et comparaison de code. |
-| `Localization` | Catalogues de traduction et résolution des textes. |
-| `Properties` | Identité de l’assembly et visibilité accordée aux tests. |
+| `src/VBAi/Host` | COM connection lifecycle, menus, native tool-window hosting and load diagnostics. |
+| `src/VBAi/Vbe` | Live project resolution and VBIDE operations for code, forms, references, windows and debugging. |
+| `src/VBAi/Bridge` | Named-pipe diagnostics and request dispatch in the host process. |
+| `src/VBAi/Editor` | Monaco hosting, document revisions, language services, synchronization and draft recovery. |
+| `src/VBAi/Llm/Chat` | Sessions, context permissions, workflow state and guarded tool dispatch. |
+| `src/VBAi/Llm/Providers` | Provider protocols, authentication integration and catalogs. |
+| `src/VBAi/Llm/Settings` | Saved configuration and settings views. |
+| `src/VBAi/Git` | Exported-source repositories, bindings, imports, checkpoints and GitHub views. |
+| `src/VBAi/Ui` and `Localization` | Shared presentation, native appearance, problem reports and translations. |
+| `src/VBAi/Updates` and `src/VBAi.Updater` | Update coordination and an out-of-process application step. |
+| `src/VBAi.Native` | Native renderer and hook lifecycle. |
+| `assets/editor` | Version-locked editor source and generated distribution. |
+| `tests` and `tools` | Tests, owned-host fixtures, build helpers and explicit diagnostics. |
 
-Les fichiers `.cs`, `.Designer.cs` et `.resx` restent réunis avec leurs métadonnées `SubType` et `DependentUpon` pour le concepteur WinForms. Les icônes restent sous `assets/icons/` avec leurs noms de ressources embarquées inchangés.
+The add-in remains one managed assembly. Folder separation is not an assertion
+that every layer has already been extracted behind a public extension interface.
+The updater deliberately does not reference the loaded add-in assembly.
 
-Les tests unitaires suivent les dossiers et fichiers sous `tests/VBAi.Tests/Unit/`, avec un suffixe `.Tests.cs` par fichier source, y compris les classes partielles. Les parcours transversaux sont sous `Scenarios/`, les intégrations avec stockage ou hôte sous `Integration/`, les doubles partagés sous `Infrastructure/Fixtures/`, et les fixtures Excel et le client de passerelle sous `Infrastructure/Hosts/`. Les sondes PowerShell restent sous `tools/`, avec des liens dans VSTest pour les diagnostics manuels. Voir [la convention miroir](../tests/README.md#convention-miroir).
+## Shared VBE services and host compatibility
 
-## Moteur de thème natif
+`VbeSession` resolves the live target and routes operations. Standard VBIDE objects
+provide projects, components, code modules, references and code panes. Native
+command and accessibility services provide operations not exposed as complete
+public VBIDE collections.
 
-`src/VBAi.Native/` contient le moteur C++ x64 des barres VBE. La solution expose ses sources dans un dossier ; le projet du complément déclenche `tools/build/Build-NativeRenderer.ps1` avant sa compilation et embarque la DLL produite. Le développeur doit disposer des outils C++ x64 Visual Studio et du SDK Windows ; le script respecte le dossier SDK déclaré dans le registre, y compris sur un autre disque. L'utilisateur final n'a pas besoin du compilateur ou d'un runtime C++ séparé.
+A document save, application-level procedure invocation or standalone project
+persistence can require a host-specific path. These adapters must identify the
+actual document and report an unsupported operation or failed prerequisite rather
+than simulate success. The [compatibility guide](compatibility.md) records outcomes
+per operation instead of maintaining a misleading all-or-nothing host whitelist.
 
-Les tests C# du chargeur et du thème suivent la convention miroir. `tests/native/` contient le programme de cycle C++ et la vérification de chargement ; sa fixture `VBE7.dll` est synthétique et reste dans les artefacts de test. Ces vérifications ne remplacent ni une mesure de couverture C++ ni les essais visuels Excel/SOLIDWORKS. Voir le [thème natif](native-dark-theme.md) et les [commandes des tests natifs](../tests/native/README.md).
+Adding a host means qualifying shared behavior first, then implementing and testing
+only the missing application-specific operations. Keep knowledge of a particular
+application out of provider protocols and reusable editor code where possible.
 
-## Compilation et installation
+## Threading and mutation lifecycle
 
-Depuis la racine du dépôt :
+COM/VBE, WinForms and WebView2 calls stay on their owning UI/STA threads. Background
+work prepares diffs, indexes snapshots, performs Git/network I/O and persists
+eligible data without treating COM objects as thread-safe values.
 
-```powershell
-dotnet build VBAi.sln -c Debug -p:Platform=x64
-dotnet build VBAi.sln -c Release -p:Platform=x64
-```
+Before an edit, resolve identity, verify permissions/mode/protection and compare
+the expected revision. Apply the operation, re-read the result and record recovery
+information. Concurrent changes invalidate stale plans. Native operations may be
+partially applied before failure; COM does not supply a general transaction for
+these workflows. A timeout is an uncertain outcome, not an automatic retry signal.
 
-La sortie habituelle du complément reste `bin/<Configuration>/net48/VBAi.dll`, pour préserver le chemin `CodeBase` de l’installation. Les sorties des tests restent dans leurs propres dossiers `bin/`. Les fichiers intermédiaires sont propres à chaque projet dans `obj/`.
+The editor uses versioned changes and reconciliation against native snapshots.
+A draft, a synchronized VBA module and a document saved on disk are distinct states.
 
-Pour compiler sans écraser une DLL chargée par un hôte, fournir un chemin absolu :
+## Assistant boundary
 
-```powershell
-dotnet build VBAi.sln -c Debug -p:BuildOutputRoot="$PWD/artifacts/build"
-dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildOutputRoot="$PWD/artifacts/build"
-```
+Provider transports normalize conversation and tool events. A small core discovers
+additional tool families or uses the guarded invocation gateway. All paths must
+retain project access, shared-context consent, chat mode, approval and revision
+checks. [Tool reference](reference/vbe-tools.md) describes the schema authority.
 
-Chaque projet dispose alors de sa sortie `artifacts/build/<NomProjet>/<Configuration>/net48/`. Éviter un `OutputPath` partagé entre projets. Voir [les tests](../tests/README.md) pour les scénarios hôtes opt-in.
+Conversation history, queued messages and workflow pauses are persisted separately
+from provider credentials. The permissions on a conversation are not permissions
+on the host process or the diagnostic bridge. See [privacy](privacy.md).
 
-## Identité COM et frontières
+## Local bridge
 
-Le nom `VBAi.dll`, le namespace `VBAi`, le ProgID, les GUID COM et les noms des ressources restent stables. La règle IDE0130 est désactivée sous `src` pour conserver ce namespace à travers les dossiers fonctionnels.
+The host exposes `VBAi.<PID>` as a named pipe with an access rule for the current
+Windows user. It accepts one UTF-8 JSON request per connection, terminated by LF
+(optionally CRLF), and returns a serialized response. It is a diagnostic interface,
+not an MCP server or the same permission boundary as the chat.
 
-Le complément reste une seule assembly : `VbeSession`, les outils LLM, les interfaces et les objets COM partagent encore des contrats internes. Extraire ces couches en bibliothèques exige de définir leurs interfaces puis de vérifier le déploiement des dépendances dans les deux hôtes. Cette organisation sépare les responsabilités et les tests sans changer ces contrats lors du déplacement des fichiers.
+The receiver bounds incoming data at **10 MiB** and **10 seconds total after
+connection**. A slow sender does not reset the deadline. Invalid UTF-8, missing
+line termination, excessive size and incomplete requests are refused; a failed
+client must not permanently occupy the single worker. The reception deadline is
+not an execution timeout for a VBE command.
 
-## Programme de mise à jour
+Use `tools/Invoke-VBAi.ps1` against an explicitly selected PID. Keep automation on
+disposable projects and never equate a successful protocol response with a verified
+runtime effect or successful disk save.
 
-`src/VBAi.Updater` produit une application WinForms .NET Framework 4.8 x64.
-`src/VBAi/Updates` contient le flux GitHub, les préférences, la coordination,
-les travaux persistants et leurs interfaces. Le projet externe lie les seules
-sources nécessaires et les catalogues ; il ne référence pas `VBAi.dll`, afin
-que l’installeur puisse remplacer le complément après fermeture des hôtes.
-La compilation du complément copie `VBAi.Updater.exe` et sa configuration dans
-son dossier de sortie. Le protocole complet figure dans [updates.md](updates.md).
+## Identity, storage and updates
 
-## Documentation IntelliSense
+Current names are `VBAi.dll`, namespace `VBAi`, `VBAi.AddIn`,
+`VBAi.ChatToolWindow` and `VBAi.<PID>`. The rename retained COM GUIDs and includes
+known legacy registration/data migration. Do not rename persisted Git refs or
+protocol fields for cosmetic consistency.
 
-Les commentaires XML couvrent les déclarations publiques et privées du complément : classes, fonctions, constructeurs, propriétés, champs, événements, délégués et valeurs d’énumération. Le 29 septembre 2026, l’audit des 294 sources compte **5 208 déclarations documentées sur 5 208**, sans commentaire invalide ni erreur syntaxique. Une comparaison Roslyn avec le code précédant le lot documentaire constate zéro différence hors commentaires et espaces.
-
-Pour conserver ce contrôle après une modification :
-
-```powershell
-dotnet run --project tools/XmlDocumentationAudit -- src/VBAi
-```
-
-Le mode `--compare <dossier-source-de-référence>` vérifie aussi l’équivalence syntaxique. Ces compteurs concernent le complément ; ils ne mesurent ni la couverture des tests ni la documentation de leurs fixtures.
+[Privacy](privacy.md) inventories persistent data. [The update contract](updates.md)
+explains why a separate process waits for loaded hosts before applying a future
+signed installer. No installer is implemented by this documentation work.

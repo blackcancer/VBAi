@@ -1,21 +1,31 @@
-# Window icons
+# Icon assets
 
-- `assistant.png`: generated VB monogram and violet AI sparkle on a graphite tile.
-- `settings.png`: generated matching adjustment sliders.
-- `github.png`: unmodified GitHub Invertocat Black Clearspace from the official
-  [GitHub brand toolkit](https://brand.github.com/foundations/logo), downloaded
-  from `https://brand.github.com/GitHub_Logos.zip` on 2026-09-27.
-  GitHub's mark identifies the GitHub integration only. It remains GitHub's trademark.
+VBAi uses the following source artwork for its Windows forms and project identity:
 
-The ICO files contain 16, 20, 24, 32, 48, 64, 128 and 256 pixel frames.
-Run `powershell -File tools/Build-WindowIcons.ps1` to regenerate the ICO files
-and the embedded `$this.Icon` form resources from the PNG sources.
-Each form's Icon property is assigned in InitializeComponent and remains editable
-in the Visual Studio WinForms designer. No runtime asset path is required.
+| File | Origin and purpose |
+| --- | --- |
+| `assistant.png` | Generated VB monogram with a violet AI accent on a graphite tile; VBAi product identity. |
+| `settings.png` | Generated adjustment sliders in the same visual family. |
+| `github.png` | Unmodified GitHub Invertocat Black Clearspace from the official GitHub brand toolkit, retrieved on September 27, 2026. |
 
-Product identity: **VBAi — Your AI agent for VBA**.
-COM identifiers and existing data paths retain their original names for compatibility.
+The GitHub mark identifies the GitHub integration. It remains GitHub's trademark
+and does not imply endorsement. Consult the [GitHub brand toolkit](https://brand.github.com/foundations/logo)
+and [project notices](../../THIRD_PARTY_NOTICES.md) before redistributing or changing it.
 
-Build with Visual Studio / .NET Framework MSBuild. The SDK-only `dotnet build`
-resource compiler cannot serialize WinForms Icon resources without additional
-runtime dependencies; the Visual Studio build uses the native framework resource compiler.
+## Regenerate Windows icons
+
+Run from the repository root:
+
+```powershell
+powershell.exe -NoProfile -File tools/Build-WindowIcons.ps1
+```
+
+ICO files contain 16, 20, 24, 32, 48, 64, 128 and 256 pixel frames. The script also
+updates embedded form icon resources. Keep each form's `Icon` assignment in its
+Designer so the property remains editable in Visual Studio. Runtime forms must
+not depend on paths to the source PNG files.
+
+Product-facing text uses **VBAi — Your AI agent for VBA**. Do not rename persistent
+COM GUIDs or migration identifiers as an artwork change. Use the current
+[source-build instructions](../../docs/installation.md); historical resource-compiler
+workarounds are not a separate build procedure.

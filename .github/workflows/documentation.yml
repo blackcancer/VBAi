@@ -1,0 +1,23 @@
+name: Documentation
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  documentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test documentation checker
+        run: python3 -m unittest discover -s tools/docs -p 'test_*.py'
+      - name: Check maintained Markdown
+        run: python3 tools/docs/check_docs.py

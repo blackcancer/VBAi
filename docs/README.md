@@ -1,46 +1,48 @@
-# Documentation VBAi
+# Documentation
 
-État vérifié le **28 septembre 2026**, après intégration de la PR #4 et du lot IDE, mesure globale du code `27389a8`. Le produit s’appelle VBAi ; la solution, l’assembly, le namespace et les identifiants COM conservent le nom VBAi.
+VBAi is a development workspace for applications that host the Visual Basic Editor.
+Start with the task you want to complete; the host compatibility layer is documented
+separately from the shared VBE features.
 
-## Utiliser le complément
+## Use VBAi
 
-| Document | Contenu |
+| Guide | What it answers |
 | --- | --- |
-| [État du projet](project.md) | Objectif, fonctionnalités disponibles et validation par hôte |
-| [Mises à jour](updates.md) | Releases GitHub, préférences, application différée et contrat installeur |
-| [Installation](installation.md) | Compilation, bibliothèque COM, inscription et diagnostic |
-| [Éditeur Monaco](modern-editor.md) | Édition moderne, synchronisation VBA, conflits, récupération et limites |
-| [Conversation](chat-ui.md) | Sessions, contexte, modes, modèles, raisonnement et retour arrière |
-| [Fournisseurs](providers.md) | Configuration, authentification, catalogues et limites des transports |
-| [GitHub](github-integration.md) | Compte, dépôts, commits, branches, fusions et import VBA |
+| [Getting started](getting-started.md) | How do I complete a first, controlled intervention? |
+| [Compatibility](compatibility.md) | What does the shared VBE layer cover, and what depends on the application? |
+| [Source-build setup](installation.md) | How do developers and early testers build and register the current preview? |
+| [Conversations](chat-ui.md) | How do context, modes, approvals, queues, recovery and session history work? |
+| [Providers](providers.md) | How do I configure authentication, endpoints and models? |
+| [Modern editor](modern-editor.md) | How do editing, synchronization, saving and native debugging interact? |
+| [Git and GitHub](github-integration.md) | How do source versioning, checkpoints and imports work? |
+| [UserForms](reference/designer.md) | How do native forms, controls and resource files behave? |
+| [Privacy and safety](privacy.md) | What is shared, what stays local, and what permissions mean? |
+| [Troubleshooting](troubleshooting.md) | How do I recover from setup, editing, provider or UI problems? |
 
-## Développer et vérifier
+## Develop and maintain
 
-| Document | Contenu |
+| Guide | Scope |
 | --- | --- |
-| [Architecture](architecture.md) | Projets, dossiers et convention miroir des tests |
-| [À propos et support](about.md) | Identité produit, détails techniques et ressources |
-| [Rapports de problème](crash-report.md) | Issues GitHub, Outlook, brouillons et capture managée |
-| [Concepteurs WinForms](winforms-designer.md) | Vues éditables et séparation entre disposition et données |
-| [Localisation](localization.md) | Langues, ressources et maintenance des traductions |
-| [Outils LLM](reference/vbe-tools.md) | Catalogue extrait du code : permissions et paramètres requis |
-| [Extensions IDE](reference/functional-extensions.md) | Nouveaux contrats et qualifications natives |
-| [Inventaire VBE complet](reference/vbe-capability-inventory.md) | Surfaces de l'éditeur, contrats présents et lacunes précises |
-| [Concepteur VBE](reference/designer.md) | Propriétés MSForms, conteneurs, listes et récupération |
-| [Couverture des tests](test-coverage.md) | Dernière mesure globale et preuves Excel/SOLIDWORKS |
-| [Qualification Office](office-host-qualification.md) | Parcours Word, PowerPoint, Access, Publisher et prérequis Outlook |
-| [Travaux restants](roadmap.md) | Lacunes de tests et de qualification native |
-| [Projet de tests](../tests/README.md) | Commandes VSTest et hôtes activés explicitement |
+| [Architecture](architecture.md) | Components, host boundaries, threading, local bridge and persistence. |
+| [Development](development.md) | Build conventions, UI design, localization and documentation maintenance. |
+| [Testing](../tests/README.md) | Local checks and explicit real-host test opt-ins. |
+| [Recorded validation](test-coverage.md) | Dated evidence, tested revisions and measurement boundaries. |
+| [Tool reference](reference/vbe-tools.md) | Discovery, invocation and authoritative schema locations. |
+| [Updates and release contract](updates.md) | Existing updater foundation and requirements for the future installer. |
+| [Roadmap](roadmap.md) | Planned work without delivery promises. |
 
-## Lire les états
+Repository policies: [contributing](../CONTRIBUTING.md),
+[security](../SECURITY.md), [support](../SUPPORT.md),
+[conduct](../CODE_OF_CONDUCT.md), [third-party notices](../THIRD_PARTY_NOTICES.md)
+and [changelog](../CHANGELOG.md).
 
-**Implémenté** signifie présent dans le code. **Validé** précise le scénario et l’hôte testés. **NOT_RUN** signifie non exécuté. Une couverture instrumentée de 100 % ne prouve pas la compatibilité de toutes les fonctions avec tous les hôtes.
+## Read status accurately
 
-Les [archives](archive/README.md) conservent les journaux d’exploration, les décisions de conception et les anciens inventaires. Elles servent de preuve historique ; les anciens chiffres et passages « à faire » ne remplacent pas les guides actuels. Les rapports détaillés sous `artifacts/` restent locaux et ne sont pas versionnés.
+**Implemented** describes code that exists. **Tested** describes an identified
+scenario on a particular build and environment. **Not run**, **blocked** and
+**not installed** are not successful tests. A coverage percentage measures only
+the instrumented scope.
 
-## Maintenir la documentation
-
-- Actualiser le guide concerné lorsqu’un comportement change ; conserver les expériences datées dans les archives.
-- Mettre à jour `test-coverage.md` depuis le rapport global, avec le commit testé et les limites natives.
-- Régénérer ou vérifier le catalogue des outils contre `LlmVbeTools.Definitions` après ajout d’une commande.
-- Vérifier les liens relatifs après un déplacement et conserver UTF-8 ainsi que les fins de ligne CRLF.
+Guides describe the maintained behavior. Detailed investigation logs, superseded
+plans and old test counters remain in Git history rather than a parallel archive
+of competing documentation. Non-Markdown reference data is retained where useful.

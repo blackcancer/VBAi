@@ -1,14 +1,36 @@
-# Installation et diagnostic
+# Source-build setup
 
-Le complément cible Windows et un hôte **VBE 64 bits**. Ouvrir `VBAi.sln` dans Visual Studio, avec Debug ou Release et la plateforme x64. Les scripts d’installation actuels attendent la sortie **Debug** sous `bin/Debug/net48/`.
+The standalone installer is planned for a later milestone. This page describes
+**developer registration of the current preview**, not an end-user installation
+experience or an installer implementation task.
 
-## Compiler et inscrire
+## Requirements
 
-Fermer les hôtes ayant chargé la DLL avant de reconstruire leur sortie installée. Pour continuer à compiler pendant qu’un hôte est ouvert, utiliser la sortie isolée décrite dans [Architecture](architecture.md).
+Use Windows and a compatible 64-bit VBE host. Install Visual Studio with the .NET
+desktop development tools, the .NET Framework 4.8 targeting/developer tools, the
+C++ x64 build tools and a Windows SDK. `TlbExp.exe` comes from the .NET Framework
+SDK. The build invokes the native renderer build and requires those C++ tools.
 
-La compilation utilise aussi la PIA `Microsoft.Office.Interop.PowerPoint` 15.0 pour lire le handle PowerPoint via son interface COM. Le projet la recherche dans les outils Office de Visual Studio puis dans le GAC ; un autre emplacement peut être fourni avec `-p:PowerPointInteropPath="chemin/Microsoft.Office.Interop.PowerPoint.dll"`. `EmbedInteropTypes=true` embarque les types nécessaires : cette PIA n'est pas une dépendance à livrer avec le complément.
+Monaco requires the WebView2 Runtime. Git workflows additionally require Git for
+Windows and suitable credentials. Provider requirements are separate; see
+[providers](providers.md). Do not download prerequisites from untrusted mirrors.
 
-Depuis un PowerShell de développement Visual Studio **64 bits**, à la racine du dépôt :
+## Build without replacing a loaded DLL
+
+From the repository root in a 64-bit Visual Studio development PowerShell:
+
+```powershell
+dotnet build VBAi.sln -c Debug -p:BuildOutputRoot="$PWD/artifacts/build"
+```
+
+This produces an isolated output under `artifacts/build/`. It does not register
+the add-in or replace the assembly currently loaded by an application. See
+[development](development.md) for output conventions.
+
+## Register a development build
+
+Save your work and close every host that has loaded the add-in. The current
+registration scripts expect the standard Debug output:
 
 ```powershell
 dotnet build VBAi.sln -c Debug -p:Platform=x64
@@ -17,39 +39,49 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Install-VBAi.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Test-VBAiInstallation.ps1
 ```
 
-`TlbExp.exe` provient du SDK .NET Framework installé avec les outils de développement. Garder toute la sortie de compilation, notamment les dépendances de rendu du chat. L’installeur refuse une bibliothèque de types absente ou plus ancienne que la DLL et vérifie l’identité COM attendue.
+Review scripts before running them. `ExecutionPolicy Bypass` above applies to the
+invoked PowerShell process; it is not an instruction to change the machine's
+permanent policy. Registration writes COM/VBE registry entries and may request
+elevation for the machine-view ProgID resolution used by the native pane.
 
-Le produit conserve le ProgID `VBAi.AddIn` et le contrôle COM `VBAi.ChatToolWindow`. L’inscription du complément est utilisateur ; le volet natif nécessite aussi une résolution de son ProgID dans la vue machine 64 bits de l’hôte testé.
+Keep the complete build output, including resources and dependencies. The scripts
+check the type library, COM identity and registration; a missing or stale TLB is
+not accepted. Do not copy only the managed DLL to another location after registration.
 
-## Registre et environnement Codex
+## Verify the loaded assembly
 
-Depuis un shell Codex identifié par `CODEX_SHELL=1`, les scripts passent par `Invoke-VBAi-OutsideSandbox.ps1` et une tâche planifiée temporaire. Cette voie écrit et vérifie la ruche Windows réelle, avec l’élévation nécessaire, puis supprime la tâche. Ne pas conclure qu’une inscription est correcte sur la seule lecture de la vue isolée du shell.
-
-Le chemin de découverte VBE qualifié sur ce poste est `HKCU\Software\Microsoft\VBA\VBE\6.0\Addins64`. L’installeur vérifie aussi le ProgID, le CLSID, le CodeBase, la bibliothèque de types et `LoadBehavior`.
-
-## Ouvrir et vérifier
-
-Dans Excel, ouvrir le VBE depuis la commande de l’application. Pour SOLIDWORKS, ouvrir une macro et son IDE manuellement. Le complément ajoute **Affichage → Assistant VBAi**, **Affichage → GitHub VBAi…** et **Outils → Configuration VBAi…**.
-
-Pour inspecter le pont d’un PID connu :
+Open the VBE normally from the host and check the VBAi menu entries. For a known
+host PID, inspect the bridge:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Invoke-VBAi.ps1 -HostProcessId 12345 -Command status
+powershell.exe -NoProfile -File .\tools\Invoke-VBAi.ps1 -HostProcessId 12345 -Command status
 ```
 
-Remplacer `12345` par le PID de l’hôte attendu. `status` donne le chemin de l’assembly chargée, son identifiant de compilation et l’état de connexion. Après mise à jour, redémarrer entièrement l’hôte : fermer une fenêtre VBE peut seulement la masquer et laisser la DLL chargée.
+Replace `12345` with the intended process ID. Check the loaded assembly path and
+build identity, not only whether a menu is visible. Close and restart the entire
+host after replacing a build; hiding the VBE window can leave the assembly loaded.
 
-Le VBE mémorise l’ancrage de son volet. Sur une disposition vierge, le premier placement à droite peut nécessiter un déplacement manuel ; la restauration à droite est qualifiée dans Excel.
+The registered identities are `VBAi.AddIn` and `VBAi.ChatToolWindow`; the named pipe
+is `VBAi.<PID>`. The VBE discovery location used by the tested setup is
+`HKCU\Software\Microsoft\VBA\VBE\6.0\Addins64`. Do not assume that a registry entry
+alone establishes successful loading in another host.
 
-## Désinstaller ou diagnostiquer un chargement
+## Sandboxed development shells
 
-Fermer les hôtes VBE avant `tools/Uninstall-VBAi.ps1`. En cas de complément absent ou impossible à charger, commencer par `Test-VBAiInstallation.ps1`, le chemin de DLL retourné par `status` lorsqu’il répond, l’architecture 64 bits et l’état du Gestionnaire de compléments. Les anciens essais et la cause de l’inscription isolée sont conservés dans [l’historique d’exploration](archive/exploration/project.md).
+When `CODEX_SHELL=1` is present, the scripts use
+`Invoke-VBAi-OutsideSandbox.ps1` and a temporary scheduled task to perform and
+verify registration in the real Windows registry. Inspect the result of that
+operation; an isolated shell's registry view is not loading evidence.
 
-## Mises à jour et livraison
+## Legacy installations and removal
 
-Le mécanisme [de mise à jour par releases GitHub](updates.md) est distinct de
-l’inscription de développement décrite ci-dessus. `tools/Prepare-Release.ps1`
-prépare un payload versionné pour le futur installeur, avec la TLB et le programme
-externe d’application. La version COM reste stable ; la propriété MSBuild
-`ProductVersion` pilote la version de livraison. L’installation autonome exige
-le marqueur du protocole et un installeur signé disponible dans une release.
+The VBAi rename retains COM GUIDs but updates names and ProgIDs. The registration
+migration recognizes the known legacy identity. User-data migration copies to
+VBAi locations without overwriting existing destination files; original data is
+retained and reparse links are refused. Back up configuration and history before
+manual maintenance.
+
+To unregister, close the hosts and run `tools/Uninstall-VBAi.ps1`. Do not delete
+history, recovery folders or unpushed Git objects as a generic cleanup step.
+See [troubleshooting](troubleshooting.md) for diagnostic paths and
+[updates](updates.md) for the future distribution contract.

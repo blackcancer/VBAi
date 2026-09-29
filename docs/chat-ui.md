@@ -1,105 +1,107 @@
-# Interface de conversation et sessions VBA
+# Conversations and agent workflows
 
-La structure fixe du chat est construite dans ChatWindow.Designer.cs et reste éditable avec le concepteur WinForms de Visual Studio. Les messages, activités, pièces jointes, diff, accueil et suggestions disposent de vues WinForms indépendantes dans le Designer ; seules leurs instances et leurs données varient. Le fil virtualisé héberge ces vues via WPF ; la saisie conserve son moteur WPF pour la correction orthographique. Voir [les concepteurs WinForms](winforms-designer.md). Les contrôles WinForms personnalisés conservent les boutons arrondis et la carte de saisie. Le constructeur sans paramètre initialise uniquement le designer, sans ouvrir de session ni de base SQLite. Le sélecteur de document détermine le projet auquel appartiennent les conversations. Les réglages sont regroupés sous le champ de saisie ; le menu supérieur donne accès à la configuration et au rafraîchissement des modèles.
+A conversation belongs to a selected VBA project. Saved projects use their document
+path as the durable scope; unsaved projects have a temporary scope. Select the
+intended project before attaching context or resuming work.
 
-Voir aussi [l’interface compacte et le style commun](compact-ui.md) pour les commandes par icônes, le sélecteur de modèle compact et la politique d’édition directement dans le chat.
+## Context and modes
 
-## Interactions disponibles
+Use `#` to find projects/modules, `@` to find procedures, and the selection action
+to attach code. Use `/` to choose an available command such as explanation,
+correction, refactoring, documentation or planning. Selecting a command can prepare
+a mode; verify the visible mode before sending.
 
-- Entrée envoie ; Maj+Entrée ajoute une ligne. Entrée ou Tab accepte d'abord une suggestion ouverte. La correction orthographique française reste active.
-- `#` recherche les projets et modules ; `@` recherche les Sub, Function et Property Get/Let/Set. La liste est filtrée au curseur. Les puces montrent le contexte joint et permettent de le retirer.
-- Les références sélectionnées sont cliquables dans les messages et les puces. La navigation relit le module et sélectionne la cible dans le VBE. Un projet ouvre la recherche de ses modules.
-- Les réponses Codex arrivent progressivement. Les activités des outils et résumés de réflexion consécutifs d'un même tour sont regroupés dans un seul bloc « Activité de l'agent », déplié pendant l’activité puis replié à la fin, sauf choix manuel de l’utilisateur. Un message ou un changement de tour démarre un autre bloc. Le détail reste disponible en dépliant le groupe ; les flux, le chargement des messages antérieurs et le rechargement de session conservent l'ordre et l'historique complet. Les événements de raisonnement brut ne sont pas affichés.
-- Pour Codex, le bloc présente une chronologie des étapes natives : sections de résumé distinctes, outils VBE, commandes et sorties, modifications de fichiers, recherches, images et appels de collaboration/MCP lorsqu'ils sont transmis. Chaque étape contient un titre, un état traduit et un détail dépliable ; la durée apparaît uniquement si le serveur la fournit. L'identité native empêche de dupliquer une action lors de ses mises à jour. Les cibles publiques des outils sont affichables ; leurs arguments secrets et leur code ne sont pas copiés dans les métadonnées d'activité. Un tour interrompu ou une erreur termine les états encore actifs. Une action sans résultat terminal reçu ne devient pas artificiellement réussie.
-- Avec la politique Automatique, les éditions s’appliquent sans dialogue répétitif, puis apparaissent sous forme de diff inline avec numéros de lignes, couleurs et bouton d’annulation. Le contrôle SHA empêche de remplacer des changements plus récents. Lecture seule interdit l’écriture ; Demander à chaque action conserve la validation configurée.
-- Le bouton Modifications permet de rejoindre une carte de diff dans la conversation. Il n'ouvre pas de fenêtre d'approbation.
-- Le bouton Arrêter interrompt le tour Codex ou la requête HTTP en cours. Une action VBE déjà exécutée reste dans l'historique et conserve son rollback.
-- Le défilement suit les nouveaux messages tant que l'utilisateur reste en bas ; Dernier message ramène au fil actif.
-- Nouveau ou Ctrl+N crée un chat. Le panneau Chats permet de chercher, reprendre, renommer, archiver et réactiver les conversations du document.
+Explicit references, selections and optional project notes appear in the context
+preview. Code revisions are checked before transmission; stale attachments must
+be refreshed. The displayed size describes explicit context, not all system
+instructions, tool schemas or provider history.
 
-## Parcours de travail enrichis
+| Mode | Intended use | Enforcement |
+| --- | --- | --- |
+| Discussion | Understand code and ask questions. | Inspection and permitted compilation; editing/execution tools are blocked. |
+| Plan | Prepare an approach before making changes. | The same mutation/execution restriction applies. |
+| Agent | Perform an intervention. | Project permissions, revisions, mode checks and approval policy still apply. |
 
-- **Discussion / Plan / Agent** : le sélecteur est conservé par conversation. Discussion et Plan autorisent l’inspection et la compilation, mais bloquent les outils de modification et d’exécution dans les chemins synchrones et asynchrones. Le mode est transmis au fournisseur à chaque demande. Agent respecte toujours la politique VBE configurée. Le changement de mode est désactivé pendant une réponse.
-- **Commandes `/`** : `/expliquer`, `/corriger`, `/refactoriser`, `/documenter`, `/tests`, `/plan`. Entrée ou Tab sélectionne une commande, puis ses paramètres restent éditables avant envoi. Accepter une suggestion choisit son mode ; saisir manuellement une commande conserve le mode visible. `/tests` demande de créer les tests et ne les exécute pas automatiquement.
-- **Contexte** : « Joindre la sélection » capture les lignes et colonnes du panneau de code actif, dans le document de la conversation. Sans sélection étendue, la ligne courante est utilisée. Le SHA est revérifié avant envoi. Chaque sélection peut être retirée. Le panneau dépliable montre les références résolues, la sélection, les notes opt-in et leur taille en caractères. Le message conserve les snapshots effectivement transmis. La taille affichée concerne le contexte explicite, pas l’historique serveur ni les instructions système.
-- **Historique** : recherche dans les titres, messages et snapshots de code ; épinglage ; export Markdown local ; « Créer une branche » depuis un message. Une branche copie le préfixe visible dans le même document et crée son propre contexte fournisseur, sans réutiliser le thread Codex ni dupliquer les droits de rollback des anciennes éditions.
-- **Rollback** : diff découpé en blocs ; annulation d’un bloc, d’une modification ou de toute l’intervention. Une prélecture prépare tous les modules et détecte les conflits avant la première écriture. Chaque écriture vérifie encore le SHA vivant. Un bloc déplacé est retrouvé seulement si son contenu et jusqu’à trois lignes de contexte correspondent de façon unique. Les modifications indépendantes sont conservées. Une erreur lors des écritures suivantes indique le nombre de modules déjà restaurés : ce n’est pas une transaction COM atomique.
-- **Vérification VBA** : bouton manuel et compilation après une intervention (case désactivable). Le résultat apparaît dans le chat. Une erreur localisable propose un lien vers le code et prépare une demande de correction. La correction reste un message à envoyer ; aucune macro ni batterie de tests n’est lancée automatiquement. « Aucun diagnostic natif observé » ne constitue pas une preuve d’exécution réussie des macros.
-- **Intégration VBE** : actions Expliquer/Corriger/Refactoriser dans le menu contextuel du code ; commande « Fenêtre ancrable / flottante » dans le menu du chat. Le contrôle COM `VBAi.ChatToolWindow` est créé par `VBIDE.Windows.CreateToolWindow` et s'ouvre au démarrage dans le VBE. L'installation enregistre sa classe pour l'utilisateur courant et son ProgID dans la vue machine 64 bits, nécessaire à sa résolution par le VBE testé. Le VBE restaure la disposition mémorisée sans rattachement forcé au cadre principal. Si la zone cliente native est plus petite que le minimum du chat, seul ce panneau est détaché et rétabli dans une fenêtre native flottante ancrable, dans la zone de travail de l’écran du VBE. Il peut ensuite être ancré manuellement ; une disposition utilisable est conservée. Voir [le diagnostic de placement](chat-persistence-investigation.md). Si la création échoue, le chat reste flottant et affiche le motif.
+Only the linked project is allowed by default. Additional read access and shared
+VBE context are separate permissions. See [privacy](privacy.md) before enabling them.
 
-Les nouvelles propriétés sont dans le payload JSON SQLite existant : les anciennes sessions restent lisibles, avec le mode Agent par défaut.
+## Editing approval
 
-## Persistance et portée
+**Read-only** refuses mutations. **Ask each time** uses the configured confirmation
+path. **Automatic** permits eligible actions without a dialog for each one; it does
+not disable scope, revision or other tool guards.
 
-`%APPDATA%/VBAi/chat.db` conserve les sessions dans SQLite, via le runtime Windows `winsqlite3.dll`. Aucun serveur SQL ni paquet natif supplémentaire n'est nécessaire.
+New settings currently start with Automatic; migration of older settings without
+an explicit policy uses Ask each time. Choose deliberately before the first agent
+request. Some native evaluation/execution tools require Automatic and are not
+available merely because the mode is Agent.
 
-Une session possède un identifiant indépendant et une clé de document fondée sur le chemin complet du projet VBA enregistré. Ses messages, références, brouillon, fournisseur, modèle, effort, diffs et snapshots de restauration sont persistés. Deux documents différents n'utilisent pas la même liste de conversations. Un document sans chemin reçoit une portée temporaire propre à cette ouverture ; son association ne survit pas à un redémarrage.
+Inspection is not synonymous with no local UI effect: navigation can select a
+pane and compilation can open a diagnostic dialog. The permission categories
+concern the tool contract, not an operating-system sandbox.
 
-`%APPDATA%/VBAi/settings.json` conserve aussi le fournisseur par défaut, le dernier modèle choisi pour chaque fournisseur et l'effort choisi pour chaque modèle. Une nouvelle conversation prend ces valeurs par défaut. Reprendre une conversation restaure ses propres choix sans modifier les valeurs par défaut. Au démarrage, le fournisseur et son catalogue sont chargés même si Excel n'a pas encore exposé le projet VBA ; celui-ci est recherché de nouveau jusqu'à son apparition.
+## Sending, stopping and queued messages
 
-Les chats Codex conservent aussi leur identifiant de thread. La reprise utilise `thread/resume` et retrouve le contexte serveur. Les autres fournisseurs conservent l'historique du protocole localement. Le changement de fournisseur démarre une conversation distincte.
+Enter sends and Shift+Enter inserts a line. A visible suggestion takes precedence
+when accepting it with Enter or Tab.
 
-La mémoire du document est une collection de notes éditables dans le panneau Chats. Elle est enregistrée localement dans une table séparée et n'est pas transmise par défaut. La case « Joindre les notes enregistrées au prochain message » ajoute explicitement ces notes au prochain envoi au fournisseur choisi. Le message conserve une section consultable des notes jointes.
+During an active intervention, an empty composer offers **Stop**. With text in the
+composer, sending queues that message and its captured context without stopping
+the current response. Queued messages can be edited, removed or prioritized with
+**Send now**. Prioritizing requests interruption and waits for cleanup before
+starting the selected message.
 
-Les clés API ne sont pas enregistrées dans cette base. Les contenus de conversation et les snapshots de code y sont stockés localement. En cas d'échec du stockage, l'interface indique que l'historique n'est pas enregistré.
+The queue is scoped to the session. Project permissions and code revisions are
+revalidated at dispatch; stale context leaves the message queued. An error, manual
+stop or workflow pause does not silently drain the remaining queue. Reopening a
+saved session displays queued messages without executing them automatically.
 
-## Vérification
+Stopping a response does not reverse a COM action already started. An action with
+no recorded terminal result is uncertain: inspect the live project before retrying.
 
-Les PR #2 et #3 sont intégrées. La mesure globale du code `fb166a4` atteint **100 % lignes et branches**, avec **1 151 tests réussis**, aucun échec et un scénario SOLIDWORKS non exécuté. Les deux essais Excel passent. Les 24 concepteurs WinForms ont été validés précédemment. Voir [le bilan courant](test-coverage.md). Les captures et essais d’interface ci-dessous sont des validations antérieures datées, avec leur propre périmètre.
+## Progressive tools and pauses
 
-Depuis le worktree :
+The model starts with a small core and discovers code, forms, debug, Git or
+environment tools as needed. Discovery does not grant permissions. The
+[tool reference](reference/vbe-tools.md) explains the common gateway.
 
-```powershell
-dotnet build src/VBAi/VBAi.csproj -c Debug -p:Platform=x64 -p:BuildOutputRoot="$PWD/artifacts/chat-build"
-powershell.exe -Sta -NoProfile -File tools/tests/Test-ChatDesigner.ps1
-powershell.exe -Sta -NoProfile -File tools/tests/Test-ChatUx.ps1
-powershell.exe -Sta -NoProfile -File tools/tests/Test-ChatWorkflow.ps1
-powershell.exe -Sta -NoProfile -File tools/tests/Render-ChatUx.ps1 -Mode Conversation
-powershell.exe -Sta -NoProfile -File tools/tests/Render-ChatUx.ps1 -Mode History
-powershell.exe -Sta -NoProfile -File tools/tests/Render-ChatUx.ps1 -Mode Reference -Width 460 -Height 850
-```
+For the HTTP workflow, eight consecutive tool-bearing responses without new
+successful results trigger a safety pause. A separate ceiling of 64 responses
+bounds one segment. Results and call IDs are retained; a pause is not an exception
+that discards completed work. Progress means a new tool/arguments/result tuple,
+not proof that the user's business objective is complete.
 
-Les tests utilisent un VBE simulé, une base SQLite temporaire réellement fermée puis rouverte, et des notifications du protocole injectées dans le client. Ils couvrent la navigation, le filtrage des procédures, les résumés, la non-duplication de la réponse finale, l'isolation des documents, plusieurs chats par document, le renommage, le brouillon, les références, les notes et les snapshots de rollback.
+Use the paused-turn resume action with the recorded provider/model/effort/mode.
+The project and permissions are checked again. Recorded tool-call IDs are not
+executed twice. A new text message starts a new request instead. Codex and SDK-backed
+providers retain their own internal orchestration; these HTTP limits are not a
+universal provider limit.
 
-Les tests Workflow couvrent en plus les refus d’outils synchrones/asynchrones en Discussion/Plan, l’interdiction d’écrire dans un autre projet, l’annulation par bloc et par intervention, les conflits, le code déplacé, la conservation d’éditions indépendantes, la recherche et l’export. Les tests UI vérifient la persistance du mode, de l’épinglage et des sélections, ainsi que la création d’une branche sans thread serveur partagé.
+## Review, recovery and verification
 
-Validation locale du 27 septembre 2026 : compilation sans erreur ni avertissement ; suites ChatUx et ChatWorkflow passantes. Dans Excel, le chat a affiché le projet VBA, le fournisseur Codex, sept modèles du catalogue, le modèle par défaut et son effort. Les deux fenêtres WinForms s'ouvrent dans le concepteur Visual Studio sans erreur. Avec le ProgID machine enregistré, `VBIDE.Windows.CreateToolWindow` héberge le chat. Le premier ancrage automatique du VBE était en bas ; après déplacement manuel à droite, le VBE a conservé ce côté au redémarrage. Une nouvelle compilation a ouvert automatiquement le chat à droite dans Excel PID 41812 ; le contenu remplit le volet natif. Cette validation ne couvre pas encore SOLIDWORKS ni le premier placement sur une nouvelle installation. Menus contextuels, capture native de sélection et compilation avec localisation d'erreur : **NOT_RUN** dans cet essai.
+The transcript groups agent activity without discarding individual outcomes.
+Code changes provide diffs and supported undo actions for a hunk, a change or a
+whole intervention. Current code is read before recovery; ambiguous or conflicting
+changes are refused rather than overwritten.
 
-Les captures modern-*.png composent le formulaire WinForms et ses deux zones WPF avec des données de démonstration sur le deuxième écran lorsqu'il est disponible. Elles ne constituent pas une validation dans Excel ou dans un hôte VBE réel. La reprise distante d'un thread authentifié et l'interruption d'une action COM en cours restent à valider dans l'hôte. Les fournisseurs compatibles et Claude affichent le texte progressivement par SSE ; Copilot utilise ses notifications. Bedrock affiche la réponse complète de Converse. Les résumés de réflexion progressifs restent propres à Codex. Voir providers.md pour les validations et limites.
+A multi-module recovery is not an atomic COM transaction. Partial recovery must
+be reported, and a code rollback cannot undo files, host data or other external
+effects caused by running VBA. UserForm designer recovery has its own boundaries.
 
-## Références de conception
+Compilation can be requested manually or after an intervention. The result and
+available source location are shown in the conversation. A suggested correction
+is still a message to send; compilation does not run all macros or tests.
 
-L’entrée **GitHub · synchroniser le VBA…** du menu du chat ouvre les vues Modifications Git et Historique,
-avec comparaison côte à côte et commandes commit/push/fetch/pull séparées. Le dépôt reste dans un cache privé
-sans fichiers adjacents à la macro. Voir [l’intégration GitHub](github-integration.md) pour le format VBA,
-les sauvegardes, la restauration et les limites de validation.
+## Sessions and local history
 
-- [Copilot Visual Studio : contexte, références et historique](https://learn.microsoft.com/en-us/visualstudio/ide/copilot-chat-context-references?view=visualstudio) : contexte explicite et navigation entre conversations.
-- [Codex App Server](https://learn.chatgpt.com/docs/app-server) : événements de réponse, résumés de réflexion, reprise et interruption des tours.
-- [Claude : artifacts](https://support.claude.com/en/articles/17153992-what-are-artifacts-and-how-do-i-use-them) : surfaces de travail consultables dans la conversation.
-- [OpenClaw Control UI](https://docs.openclaw.ai/web/control-ui) : organisation des contrôles de conversation.
-- [VBIDE CreateToolWindow](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/createtoolwindow-method) : contrat de création de la fenêtre native.
+Search, rename, pin, archive, restore or export conversations from the chat history.
+Forking a conversation copies relevant context but does not create a second owner
+of earlier rollback actions or reuse another session's Codex thread.
 
-Cette interface n’annonce pas une parité complète avec ces produits. Les images jointes et la complétion dans l’éditeur restent des travaux distincts. L’hébergement natif est présent ; le premier placement à droite sur une disposition vierge et les variantes d’hôtes/DPI restent à qualifier.
+`%APPDATA%\VBAi\chat.db` stores sessions, drafts, protocol history, queues, explicit
+context and recovery snapshots. Provider settings live separately. Project notes
+are local and are attached only when explicitly selected. A storage failure is
+reported; do not assume that an unsaved history will survive a crash.
 
-## Configuration, contexte et approbations
-
-**Outils → Configuration VBAi…** ouvre les onglets Fournisseur, Compte GitHub et Apparence, même lorsque le chat est fermé. Les champs sont contextuels au fournisseur ; le choix des modèles et du raisonnement reste dans le chat. **Affichage → Assistant VBAi** rouvre le panneau.
-
-La configuration propose Lecture seule, Demander à chaque action et Automatique. Les nouveaux paramètres ont Automatique comme valeur initiale ; une migration d’anciens paramètres sans politique explicite utilise Demander à chaque action. Les gardes de mode et de révision restent actives dans tous les cas. Discussion et Plan autorisent les inspections et la compilation, mais refusent les actions d’édition et d’exécution.
-
-Le contexte système décrit l’hôte VBE, les projets, le mode, la sélection et les contraintes d’encodage relevées. Les notifications des projets, composants et références rafraîchissent le contexte ; les identités sont encore relues avant les actions. Une conversation dont le projet est fermé ou ambigu refuse les actions correspondantes.
-
-Un chemin de fichier fourni par l’utilisateur peut être lu par un outil dédié, avec confirmation avant transmission au fournisseur. Cette lecture ne remplace pas le code vivant du VBE et ne dépend pas du niveau de raisonnement.
-
-Les coupes de contrôles peuvent produire une carte de récupération dans le chat. La capture est conservée dans la session native ; elle ne doit pas être présentée comme récupérable après redémarrage sur la seule persistance du message.
-
-## Catalogue et tours en pause
-
-Les familles d'outils sont découvertes à la demande (code, formulaires, débogage, Git, environnement). Discussion et Plan exposent uniquement les inspections ; les mêmes protections de projet s'appliquent à tous les fournisseurs.
-
-Pendant une intervention, le bouton arrête la réponse si le champ est vide ; avec du texte il met le message en attente. La file au-dessus du champ propose l'envoi immédiat après interruption, la modification et la suppression. Les messages et leur contexte sont persistés avec la session et revalidés au départ.
-
-La boucle HTTP peut dépasser huit tours en progressant. Huit tours consécutifs sans nouveau résultat réussi, ou le plafond de 64 réponses, déclenchent une pause de secours avec le bilan des actions et le travail restant. Le menu **Reprendre le tour en pause**, ou **Reprendre ▶** lorsque le compositeur est vide, continue le même tour à partir des résultats enregistrés. Le profil doit correspondre à celui de la pause. Les actions terminées ne sont pas rejouées et la vérification automatique différée se déroule à la fin du tour.
-
-Détails : [catalogue et reprise](chat-tool-workflow.md), [confidentialité des projets](project-privacy.md).
+[Privacy](privacy.md) covers permission changes, legacy-session migration and the
+limits of deleting or revoking already transmitted context.

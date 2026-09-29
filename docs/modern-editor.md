@@ -1,160 +1,110 @@
-# Éditeur Monaco
+# Modern editor
 
-## Utilisation
+VBAi embeds Monaco in the VBE document area. The native VBA compiler, debugger and
+UserForm designer remain the execution and design back ends; Monaco does not
+replace the VBA runtime.
 
-Double-cliquer un module dans l’explorateur de projet du VBE ouvre son onglet Monaco. Les dossiers et les UserForms conservent leur comportement d’expansion et de conception. **Affichage → Éditeur VBAi** ouvre aussi la fenêtre. La fenêtre de code native reste derrière Monaco et ferme avec son onglet. La croix de chaque onglet ferme le module associé et conserve son brouillon éventuel. La surface Monaco reste liée au VBE jusqu’à la fermeture de l’hôte.
+## Workspace and language assistance
 
-Monaco occupe toute la zone centrale des documents VBE, sans bordure, commandes de fenêtre ni bouton ancrer/détacher. Les Designers UserForm et l’explorateur d’objets gardent leur place native ; sélectionner leur panneau Propriétés ne réaffiche pas Monaco par-dessus. La disposition fixe reste dans `ModernEditorWindow.Designer.cs`. Le WebView et les onglets de documents sont les éléments dynamiques. Le Designer ne démarre ni navigateur, ni worker, ni COM.
+The editor opens with the add-in and follows the VBE document area. Double-clicking
+a code module opens its tab. Native code panes remain associated with the tabs;
+UserForm designers and the Object Browser retain their native surfaces.
 
-Le correctif `0a2c3e4` maintient la surface Monaco devant une fenêtre de code native qui vient de s’ouvrir : lorsque `ActiveWindow.Type` vaut `0`, le suivi ajuste l’ordre Win32 sans déplacement, redimensionnement ni activation. Les Designers et l’Explorateur d’objets ne déclenchent pas cette remise au premier plan ; le redimensionnement conserve leur ordre. Les cinq tests VSTest de l’hébergement passent dans `artifacts/coverage-resumed/native-zorder-accepted/zorder.trx`, avec de vraies fenêtres Win32 créées par les fixtures.
+Completion, signature help, hover and declaration navigation use project code and
+referenced COM type libraries. Open drafts participate in the index. Current
+services handle typed receivers, property/call chains, nested `With` blocks,
+several default-member cases and locally inferred `Set ... = New ...` types.
+Reference changes invalidate relevant results without requiring a code edit.
 
-Le parcours Excel visible du 29 septembre confirme le chargement de la DLL `main` installée, par comparaison de son identifiant d’assembly, puis l’ouverture automatique, le remplissage de la zone centrale, le redimensionnement et sa restauration. Après activation de `ThisWorkbook`, sa fenêtre native reste visible derrière Monaco. L’Explorateur d’objets masque Monaco et conserve son parent et sa géométrie. Preuve : `artifacts/coverage-resumed/excel-startup/monaco-startup.json`. Le classeur jetable et Excel sont fermés à la fin ; aucune macro n’est exécutée. Ce parcours ne constitue pas une nouvelle qualification SOLIDWORKS.
+The editor also supplies block completion, indentation/formatting, automatic
+parenthesis closing and VBA aliases such as `Left`/`Left$`. These services do not
+instantiate application objects to inspect their members.
 
-La synchronisation automatique est continue après une pause de saisie. **Elle ne sauvegarde pas le classeur ou la macro sur disque**. Ctrl+S synchronise les modifications puis déclenche la commande Enregistrer native pour le projet de l’onglet. Un conflit fait apparaître les actions de comparaison, rechargement et résolution. Une nouvelle modification native après comparaison interdit l’écrasement.
+This is not a full replacement for compiler semantics. Arbitrary late-bound
+`Object`/`Variant` expressions, ambiguous declarations and conditional compilation
+remain limited; unavailable COM metadata cannot supply completion. Old-revision
+responses are discarded.
 
-## Assistance VBA
+## Synchronization is not saving
 
-Monaco s’ouvre automatiquement au chargement du complément. Sa fenêtre WinForms sans bordure est attachée au `MDIClient` du VBE et remplit toute la zone des documents ; elle suit son redimensionnement. Le module natif actif est ouvert lorsqu’un panneau de code est disponible. Les concepteurs UserForm et l’explorateur d’objets restent accessibles dans cette même zone.
+Background synchronization applies eligible drafts to the live VBA project. It
+does **not** save the containing document to disk.
 
-- Suggestions des procédures, propriétés, variables, paramètres, constantes, types et champs déclarés dans le projet.
-- Résolution des portées locales, des déclarations privées et des récepteurs typés et chaînes de propriétés/appels (`objet.Methode(...).Membre`), y compris les blocs `With` imbriqués. Les brouillons ouverts remplacent les snapshots natifs dans l’index.
-- Signatures, survol et navigation F12 vers les déclarations VBA, y compris les modules non ouverts.
-- Suggestions des bibliothèques chargées, de leurs types, constantes, fonctions globales, méthodes et propriétés. Chaque nouvelle requête relit les références du projet : ajouter ou retirer une référence actualise les résultats, même sans modifier le module. Les requêtes simultanées de la même révision partagent leur résultat en cours.
-- Lecture des membres, types de retour et paramètres exposés par les bibliothèques COM référencées : types VBA, `Optional`, `ByVal` et `ByRef`, avec traitement des paramètres techniques COM. Les interfaces héritées et l’interface par défaut d’une coclasse sont parcourues. Aucun objet métier n’est instancié pour cette analyse.
-- `Debug.` propose `Print` et `Assert`. Les collections avec membre par défaut et les affectations locales `Set objet = New Bibliotheque.Classe` participent à la résolution des membres.
-- Les alias internes de la bibliothèque VBA sont présentés sous leur nom utilisable : `Left`, `Left$`, `Trim`, `Trim$`, etc. Les noms des bibliothèques tierces sont conservés.
-- Le survol et les suggestions affichent la déclaration, la documentation native disponible, la bibliothèque, son chemin et ses informations d’aide. Les chaînes et commentaires n’offrent pas de suggestions de code.
-- Entrée après un en-tête complet crée le bloc manquant (`End Sub`, `End Function`, `End Property`, `End If`, `Next`, `Loop`, `Wend`, `End With`, `End Select`, `End Type`, `End Enum`, `#End If`). Le curseur reste dans le corps indenté ; une fermeture déjà présente n’est pas dupliquée. L’en-tête multiligne doit être terminé.
-- Le formatage du document ou de la sélection recalcule l’indentation ; Entrée corrige aussi la ligne précédente et le collage déclenche le formatage. Les conditions de blocs deviennent `If (condition) Then` ou `ElseIf (condition) Then`. Les chaînes, commentaires, appels et `If` sur une seule ligne conservent leur syntaxe. Une parenthèse ouvrante se ferme automatiquement hors des chaînes et commentaires.
-- Les résultats d’une requête pour une ancienne révision sont rejetés.
+**Ctrl+S** first synchronizes, then requests the native Save command for the tab's
+project. Resolve host prompts and check the reported result. This native route is
+not the same as the `save_host_document` application adapter. See
+[compatibility](compatibility.md) for adapter-specific results.
 
-Ce résolveur suit les types de retour COM sur six niveaux et conserve leur bibliothèque pour distinguer les types explicitement qualifiés. Il ne remplace pas le compilateur : un `Object/Variant` sans affectation locale `New`, les expressions arbitraires et l’évaluation des branches conditionnelles restent limités. Les déclarations conditionnelles sont exclues des suggestions plutôt que présentées comme actives. Les noms et types de paramètres COM viennent des métadonnées ; les valeurs par défaut ne sont pas reconstituées. Une bibliothèque absente, rompue ou sans métadonnées lisibles ne fournit pas de membres.
+For important work, save in the host and reopen a disposable copy to verify
+persistence. Git source commits are another separate operation.
 
-## Actions IA
+Each write checks component identity, mode, protection and the expected prior
+revision. Conflicts offer comparison, reload and explicit resolution. Further
+native edits after a comparison invalidate an overwrite plan.
 
-Le menu contextuel et la palette Monaco proposent **Expliquer**, **Corriger**, **Refactoriser**. Les menus VBE correspondants utilisent aussi le document Monaco lorsqu’il est visible. La sélection, ou le module entier sans sélection, est attachée au chat du projet concerné ; aucune requête fournisseur n’est envoyée par le simple clic. Expliquer prépare le mode discussion ; corriger/refactoriser préparent le mode agent. Le lien de la pièce jointe revient au document Monaco. Un changement du brouillon invalide la pièce jointe avant envoi.
+In break mode, a supported single-line procedure-body correction can use
+`ReplaceLine` without resetting execution. Declaration changes, insertion and
+removal remain drafts until design mode. Incompatible Windows-code-page characters
+are refused rather than silently corrupted.
 
-## Compilation et débogage
+## AI actions
 
-Le menu contextuel et la palette de commandes proposent :
+Explain, Fix and Refactor prepare a message for the document's conversation and
+attach the selection, or the module when there is no selection. The action itself
+does not send a provider request. Review the context and mode before sending.
+A changed draft invalidates an older attachment.
 
-| Commande | Raccourci |
-|---|---|
-| Compiler le projet | Ctrl+Maj+B |
-| Basculer un point d’arrêt | F9 ou clic dans la marge |
-| Pas à pas détaillé | F8 |
-| Pas à pas principal | Maj+F8 |
-| Pas à pas sortant | Ctrl+Maj+F8 |
-| Afficher l’instruction suivante | Palette/menu contextuel |
+## Compilation and debugging
 
-La compilation est explicite, après synchronisation. Son premier diagnostic natif est reporté dans Monaco à la sélection laissée par le compilateur. Les marqueurs sont invalidés à la prochaine modification. La compilation LLM refuse également un brouillon non synchronisé. Aucune macro n’est exécutée par la synchronisation ou la compilation.
+| Action | Shortcut in Monaco |
+| --- | --- |
+| Compile project | Ctrl+Shift+B |
+| Request breakpoint toggle | F9 or the gutter action |
+| Step into | F8 |
+| Step over | Shift+F8 |
+| Step out | Ctrl+Shift+F8 |
+| Show next statement | Command palette/context menu |
 
-Le pas à pas nécessite le mode arrêt et utilise les commandes VBE identifiées, sans touches globales. La position affichée provient de la commande native **Afficher l’instruction suivante**, également demandée à l’entrée en mode arrêt ; ce n’est pas une lecture indépendante du pointeur d’exécution. Un changement de sélection native en mode arrêt relance le suivi ; la réapplication du marqueur après une correction synchronisée ne déplace pas le curseur Monaco. Une observation native échouée est réessayée.
+Compilation synchronizes first and reports the first available native diagnostic
+at the location supplied by VBE. Editing invalidates diagnostic markers. Compilation
+and synchronization do not themselves run a macro.
 
-**Limite VBIDE : aucune collection publique de points d’arrêt n’est disponible.** Le cercle creux signifie donc « demande de bascule envoyée », avec une info-bulle demandant une vérification native. Il n'affirme pas qu'un point d'arrêt est installé. Deux demandes successives retirent le marqueur local ; cela reste une représentation des demandes et non un inventaire confirmé du VBE. Le contrôle natif 51 est ciblé explicitement, sans confusion avec l’effacement global. Un essai Excel confirme que CommandBarButton.State reste à zéro avant/après bascule : cette propriété ne constitue pas une preuve utilisable. Les modifications du texte invalident ces marqueurs. Les concepteurs UserForm et le moteur de débogage restent natifs.
+Stepping requires the appropriate native break state. The execution marker follows
+native VBE observations, including Show Next Statement; it is not an independent
+read of the runtime instruction pointer.
 
-## Synchronisation, attributs et récupération
+VBIDE exposes no public complete breakpoint collection. Local gutter markers
+represent toggle requests, **not a verified inventory of installed breakpoints**.
+Check the native state when precision matters. A reload may lose native breakpoints
+and Undo history, which cannot be reconstructed exactly by this integration.
 
-Un thread dédié prépare les différences, analyse les snapshots et chiffre les brouillons. Les accès au VBE et à WebView2 restent sur leur STA d’interface. Les callbacks WebView sont quittés avant de modifier les fenêtres WinForms. Chaque écriture vérifie l’identité COM, l’existence du composant, le mode conception ou arrêt, la protection et le texte précédent. La réconciliation conserve la révision capturée avant l’écriture pour ne pas écraser une frappe reçue pendant un appel COM.
+## Attributes and recovery
 
-En mode arrêt, une correction d’une seule ligne de corps de procédure utilise `ReplaceLine` sans réinitialiser l’exécution. Les changements de déclaration, insertions et suppressions restent en brouillon jusqu’au retour en conception. Les erreurs de synchronisation sont conservées dans le statut.
+Hidden VBA attributes require more care than replacing visible text. Supported
+edits use native export, metadata verification and guarded reload. Multi-line
+attributed declarations may require a controlled component replacement: export,
+import under a temporary name, verify code/metadata/Designer resources, re-read the
+original, then replace it. Failure triggers a restoration attempt and preserves
+the original export if recovery cannot be confirmed.
 
-Les caractères incompatibles avec la page de codes Windows sont refusés. Les écritures utilisent un patch de lignes et une relecture du formatage natif. En cas d’échec, un patch inverse est tenté ; tout échec de restauration est signalé.
+Document modules are not replaced by importing a new component: their identity
+belongs to the host document. Ambiguous attribute associations, unsupported
+third-party controls and unverifiable Designer properties block replacement.
+Original `.frx` resources are retained where required.
 
-Les corps des procédures avec attributs masqués restent éditables. Le renommage et les modifications de signature sur une ligne sont pris en charge dans les modules standards, classes, modules de document et UserForms : export de sauvegarde, réassociation des attributs, rechargement du code seul dans le même composant et vérification du texte et des métadonnées par nouvel export. Les données du Designer ne sont pas rechargées. Les essais Excel vérifient notamment le membre par défaut et VB_PredeclaredId d'une classe, l'identité d'une feuille et le bouton d'un UserForm.
+Drafts are DPAPI-protected under `%LOCALAPPDATA%\VBAi\EditorDrafts`. Cleanup can remove
+older versions after 30 days but retains the latest draft per module and files
+belonging to a live process; reparse directories are ignored. An unsaved project's
+identity is temporary. A crash before the last edit is received/persisted can still
+lose that edit; drafts do not replace document backups.
 
-Les déclarations multilignes portant des attributs utilisent un [remplacement contrôlé autorisé](monaco-attribute-replacement-proposal.md) pour les modules standards, classes et UserForms : export complet, import sous un nom temporaire unique, contrôle du code et des métadonnées, réutilisation du FRX original et vérification des propriétés Designer lisibles, puis remplacement et reconnexion au nouvel objet COM. L'original est relu avant son retrait. Une erreur déclenche sa restauration ; les exports restent disponibles si la restauration échoue. Un essai Excel avec une panne injectée après retrait vérifie ce chemin de récupération. Les contrôles tiers ou propriétés Designer non vérifiables bloquent le remplacement. Les modules de document, dont l'identité appartient à une feuille ou au classeur, restent exclus de ce remplacement.
+## Appearance and editor assets
 
-Les associations ambiguës (branches conditionnelles, métadonnées de paramètres après changement de signature, suppression/ajout simultané de procédures) restent protégées. Les variables de module portant des attributs ne sont pas remplacées silencieusement.
+Monaco resources, workers and available translations are bundled rather than
+loaded from a CDN. WebView2 blocks external navigation, permissions, downloads,
+new windows and host-object exposure in this editor surface. Its installed runtime
+is a separate prerequisite from the bundled loader/assets.
 
-Un rechargement du code peut perdre les points d'arrêt natifs et l'historique Undo ; aucun inventaire public ne permet de les restaurer exactement. Si la restauration échoue, l'export original est conservé et son chemin est signalé.
-
-Les brouillons sont chiffrés avec DPAPI sous `%LocalAppData%\VBAi\EditorDrafts`, sans service externe. Le nettoyage quotidien supprime les anciennes versions de plus de 30 jours, en conservant toujours le dernier fichier par module et les fichiers appartenant à un processus vivant. Les répertoires/jonctions de réanalyse sont ignorés. Un projet jamais enregistré n’a pas d’identité durable entre redémarrages. Une interruption avant réception/sauvegarde de la dernière frappe peut encore la perdre.
-
-## Distribution
-
-Monaco **0.55.1**, ses ressources, son worker, ses traductions et licences sont embarqués dans `EditorAssets`, sans CDN. WebView2 bloque les navigations externes, les permissions, les téléchargements, les fenêtres secondaires et les objets hôtes. Les commandes sont traduites dans les treize catalogues VBAi, sans service de traduction externe. Les widgets Monaco utilisent les traductions officielles disponibles ; arabe et hindi restent en anglais dans ce moteur.
-
-Le paquet de release inclut Monaco, WebView2, ses loaders et `VBAi.Updater.exe`. Le futur installeur dispose des points d’entrée suivants :
-
-- `VBAi.Updater.exe --check-webview2` : contrôle sans interface, code 0 si présent, 1 si absent, 2 en cas d’erreur.
-- `VBAi.Updater.exe --ensure-webview2` : fenêtre WinForms de progression ; si nécessaire, téléchargement du bootstrapper Microsoft officiel, validation Authenticode et du signataire Microsoft, installation puis vérification de présence. Code de sortie 0 en cas de réussite, 1 en cas d’échec. Fermer la fenêtre termine le processus.
-
-Le bootstrapper adapte l’architecture et le niveau d’installation au contexte Windows. Son installation réelle n’est pas déclenchée par les tests sur ce poste déjà équipé. L’installeur global et sa signature de publication restent un chantier distinct ; seul le prérequis est fourni ici.
-
-Reconstruction reproductible des ressources : `tools/Build-MonacoAssets.ps1`, ou `-Offline` avec archives déjà en cache. Les versions et empreintes SHA-512 sont verrouillées.
-
-## Vérification
-
-Les tests unitaires couvrent les révisions, conflits, plans devenus obsolètes, snapshots immuables, attributs, rétention et refus d’exécution d’un prérequis non signé. Les tests `MonacoRuntime` chargent le vrai WebView2 : édition, diff, récupération, index de langage, marqueurs et contrats LLM avec frappes concurrentes.
-
-Le test `MonacoExcel`, activé par `VBAI_EDITOR_EXCEL_TEST=1`, utilise un classeur jetable : accents, synchronisation, conflit, sauvegarde/réouverture, renommage/suppression, récupération, conservation et renommage d'une procédure avec attribut masqué. Il valide aussi la compilation via Monaco, le marqueur de position native et le pas à pas sur la seule procédure jetable Debug.Print. Le probe de cycle de vie n'exécute aucune macro. Le probe enregistré vérifie séparément le double-clic, l’ancrage/détachement et la fermeture couplée. Les réglages COM et AccessVBOM temporaires sont restaurés. L’arbre VBE est identifié par HWND et lu par MSAA : certains hôtes exposent `Window.HWnd=0` et aucun enfant UIA pour cet arbre.
-
-Résultats détaillés locaux sous `artifacts/monaco/`. Les 32 Designers passent le chargement et le redimensionnement. Le parcours natif double-clic/ancrage/fermeture et le roundtrip Excel sont **PASS**. Les commandes de débogage/compilation utilisent les services natifs existants ; le parcours Excel de compilation sans erreur, instruction suivante, pas à pas et sortie est testé. Un vrai diagnostic de compilation Excel est également validé : identifiant non déclaré, sélection de la ligne native, marqueur Monaco, correction et disparition du marqueur. La capture des dialogues est isolée au PID propriétaire du VBE. Les autres hôtes restent à qualifier. SOLIDWORKS reste **NOT_RUN**, conformément à la demande.
-
-### Intégration dans main
-
-Les résultats ci-dessus appartiennent à la qualification de la branche Monaco. Le passage d'intégration sur `main` conserve les outils IDE existants et les cinq outils Monaco : **204 outils LLM**. Les tests d'attributs et de rétention sont rattachés aux miroirs `EditorVbeModule` et `EditorDraftStore` ; **184 miroirs pour 246 fichiers de production**. Les **32 surfaces WinForms** passent le chargement et le redimensionnement dans `artifacts/pr7-integration/designers/`.
-
-Le premier passage réel a révélé une exception WinForms lors d'une fermeture pendant la création de contrôles. La fermeture attend maintenant la fin de l'initialisation, des opérations de synchronisation et de la disposition des contrôles d'état ; les callbacks ne réactualisent plus l'interface après une demande de fermeture. Deux scénarios supplémentaires vérifient la fermeture durant l'initialisation et durant la création du bouton de conflit, ainsi que la conservation des brouillons sans écriture VBA. Les exceptions de boucle UI sont remontées à VSTest au lieu de laisser un dialogue JIT bloquant.
-
-Le lot ciblé avant le dernier delta de la branche donne **93 réussis, 0 échec, 1 ignoré** (`artifacts/pr7-integration/contracts-final/integration.trx`). La qualification globale et sa mesure de couverture sont suivies dans [le bilan de couverture](test-coverage.md). Les scénarios Excel sont désactivés dans ce passage d'intégration pour préserver les essais concurrents de l'autre session ; ce passage ne répète donc pas la preuve native de la branche. Les builds d'intégration utilisent `BuildOutputRoot` pour conserver la DLL chargée dans Excel.
-
-### Diagnostics et attributs après PR #9
-
-L'intégration conserve les **204 outils LLM** et compte **190 miroirs pour 254 fichiers de production**. Les **32 surfaces WinForms** passent leur qualification (`artifacts/pr9-integration/designers/designers.json`). La construction corrigée produit **0 erreur, 0 avertissement**.
-
-Le scénario Excel final est **PASS** (`artifacts/pr9-integration/native-final/excel.trx`) : diagnostic réel, marqueur, correction, pas à pas, attributs standards/classes/formulaires, restauration après retrait et conservation des changements concurrents. Le correctif de fusion protège aussi le nom du composant lors d'un refus : seul le nom temporaire créé par l'opération peut être restauré. Voir [la qualification native](reference/native-qualification.md) et [le remplacement contrôlé](monaco-attribute-replacement-proposal.md) pour les limites.
-
-## Enregistrement depuis Monaco
-
-`Ctrl+S` déclenche une action d'enregistrement distincte de la synchronisation automatique.
-Les brouillons ouverts sont d'abord synchronisés ; si un module du projet cible reste en conflit
-ou non synchronisé, l'enregistrement est refusé avec un état explicite. La commande Enregistrer
-native du VBE cible ensuite le projet de l'onglet, même si un autre classeur est actif.
-Un document jamais enregistré conserve le dialogue Enregistrer sous de son hôte.
-L'annulation ou l'échec ne supprime aucun onglet ni texte ; le statut reste visible jusqu'à une
-nouvelle modification ou un enregistrement réussi. Un succès exige un chemin existant,
-l'état `VBProject.Saved` et l'état enregistré du document hôte (`HostSaved`), sans assimiler
-la seule synchronisation au stockage sur disque. Si l'hôte ne permet pas de lire ce dernier
-état, le statut précise que l'enregistrement natif a été demandé mais ne peut pas être vérifié ;
-il n'affiche pas une confirmation « Saved ».
-
-Qualification Excel historique de la branche auteur : `MonacoSaveExcelTests` envoyait `Ctrl+S` à WebView2,
-contrôle le bon classeur malgré un second classeur actif, ferme puis rouvre le `.xlsm`
-et retrouve le changement sur disque (1 test réussi, aucun ignoré ;
-`artifacts/editor-save/results/editor-save-final.trx`). L'annulation d'un premier
-enregistrement et l'erreur de sauvegarde sont simulées à la frontière de commande native ;
-le dialogue Enregistrer sous n'a pas été automatisé dans cette qualification.
-Sur main, le scénario appelle désormais explicitement la commande `vbai.save`, sans simuler de raccourci clavier. L'ancien rapport ci-dessus ne prouve pas une nouvelle exécution de ce scénario modifié.
-
-## Sources techniques
-
-
-- [API publique Monaco](https://github.com/microsoft/monaco-editor) : contrats de fournisseurs de langage.
-- [Modèle d’objets VBIDE](https://learn.microsoft.com/en-us/office/vba/language/reference/visual-basic-add-in-model/objects-visual-basic-add-in-model) : code, volets et événements exposés.
-- [Attributs VBA et export/import](https://github.com/rubberduck-vba/Rubberduck/wiki/VB_Attribute-Annotations).
-- [Distribution WebView2](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution).
-
-- [Limites de l'API VBIDE concernant les points d'arrêt](https://rubberduckvba.blog/using-rubberduck/) : constat publié par le projet Rubberduck, cohérent avec les essais natifs de cette intégration.
-- [Thread STA et réentrance WebView2](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/threading-model).
-
-## Régressions interface (septembre 2026)
-
-- Commandes de débogage et synchronisation sérialisées avant les callbacks WebView ; cible d’onglet capturée avant les attentes asynchrones.
-- F9 traité par Monaco et par le routage clavier WinForms/WebView2 ; clic dans la marge ou les numéros de ligne.
-- Tests JavaScript : `node tools/tests/Test-MonacoLanguage.mjs` (11 cas, chaînes, portées, With et bibliothèques homonymes).
-- Tests Excel historiques de la branche auteur : F9 réel, exécution jusqu’au point demandé, clic de marge Chromium, correction en arrêt, compilation et actions IA sans fournisseur. Sur main, les scénarios utilisent les commandes explicites de Monaco ; ces anciens rapports ne prouvent pas une nouvelle exécution de leurs variantes modifiées.
-- Hébergement vérifié dans un MDI WinForms réel. Le script `Test-RegisteredMonaco.ps1` est adapté au nouveau parent MDI et aux croix d’onglets ; sa qualification dans Excel/VBE enregistré est réussie : parent MDIClient, remplissage de la zone, redimensionnement natif, double-clic projet et fermeture de l’onglet (`artifacts/monaco/host-integration-resize/monaco-host.json`). Les tests SOLIDWORKS restent différés.
-
-Qualification de ce lot : **205 tests .NET réussis, 0 échec, 0 ignoré** (`artifacts/monaco/tests/fixes-final.trx`) et **11 tests JavaScript réussis**. Ce résultat ne constitue pas une mesure de couverture globale du projet.
-
-La qualification historique de la branche auteur utilisait `artifacts/monaco/host-build` du worktree et sauvegardait les anciennes clés COM dans `registration-before.json`. Le correctif ci-dessous est maintenant déployé dans `bin/Debug/net48` de main ; son chargement réel est contrôlé par MVID.
-
-### Correctif de coexistence avec l'Explorateur d'objets
-
-Le timer d'ancrage redimensionne désormais Monaco avec `SWP_NOZORDER | SWP_NOACTIVATE` : il ne remonte plus sa surface devant les fenêtres natives pendant un changement de cadre. L'ouverture explicite de Monaco conserve son action de premier plan. Les **36 tests Host** passent, avec toutes les classes `AddIn` et `EditorWorkspaceHost` à **100 % lignes et branches** (`artifacts/cov/host-zorder-results/c5f4b6e7-bd91-421c-a1d0-5ba9d6f66313/coverage.cobertura.xml`). Une fenêtre native réellement placée devant Monaco conserve cet ordre après les passages du timer.
-
-La DLL de `bin/Debug/net48` est reconstruite. Dans Excel jetable, le scénario `MonacoStartup` vérifie son MVID, le remplissage/redimensionnement automatique puis l'ouverture réelle de l'Explorateur d'objets : Monaco s'efface, son parent et ses dimensions restent inchangés (`artifacts/pr10-start/native-browser/monaco-startup.json`).
-
-Dans SOLIDWORKS 2019 préouvert (PID 52124), le chargement de cette DLL est confirmé par le bridge. L'Explorateur d'objets est visible, sans cadre lié, et la préférence d'ancrage est décochée. L'utilisateur confirme que le blocage du changement d'ancrage a disparu. Le basculement n'est pas une preuve automatisée : la commande `set_vbe_option` a été refusée par la garde d'identité native du contrôle ; ce refus reste à diagnostiquer séparément. Lecture du cadre conservée dans `artifacts/solidworks-20260928/object-browser/layout.json`.
+The add-in's own appearance is separate from the **experimental native VBE dark
+theme**. Native palette recovery must not be deleted to silence an error. See
+[troubleshooting](troubleshooting.md#appearance-and-native-palette-recovery).
