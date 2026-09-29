@@ -1,5 +1,5 @@
 On Error Resume Next
-Set addin = CreateObject("CodexVBE.AddIn")
+Set addin = CreateObject("VBAi.AddIn")
 If Err.Number <> 0 Then
     WScript.Echo "CreateObject failed: " & Hex(Err.Number) & " " & Err.Description
     WScript.Quit 1

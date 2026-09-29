@@ -63,11 +63,11 @@ int wmain(int argc, wchar_t** argv) {
     HMODULE fixture = LoadLibraryExW(argv[2], nullptr, 0x1100); if (!fixture) return Fail("Fixture load");
     HMODULE module = LoadLibraryExW(argv[1], nullptr, 0x1100);
     if (!module) return Fail("Renderer load");
-    auto start = reinterpret_cast<WindowCall>(GetProcAddress(module, "CodexVbeThemeStart"));
-    auto add = reinterpret_cast<WindowCall>(GetProcAddress(module, "CodexVbeThemeRegister"));
-    auto refresh = reinterpret_cast<SimpleCall>(GetProcAddress(module, "CodexVbeThemeRefresh"));
-    stop = reinterpret_cast<SimpleCall>(GetProcAddress(module, "CodexVbeThemeStop"));
-    auto query = reinterpret_cast<Query>(GetProcAddress(module, "CodexVbeThemeStatus"));
+    auto start = reinterpret_cast<WindowCall>(GetProcAddress(module, "VBAiThemeStart"));
+    auto add = reinterpret_cast<WindowCall>(GetProcAddress(module, "VBAiThemeRegister"));
+    auto refresh = reinterpret_cast<SimpleCall>(GetProcAddress(module, "VBAiThemeRefresh"));
+    stop = reinterpret_cast<SimpleCall>(GetProcAddress(module, "VBAiThemeStop"));
+    auto query = reinterpret_cast<Query>(GetProcAddress(module, "VBAiThemeStatus"));
     if (!start || !add || !refresh || !stop || !query) return Fail("Exports");
     Status status{sizeof(Status)};
     if (query(&status) || status.abi != 1 || status.active || start(nullptr) == 0) return Fail("Initial ABI/state");

@@ -5,7 +5,7 @@ $hostProcess = Get-Process -Id $HostProcessId -ErrorAction Stop
 if ($hostProcess.ProcessName -ne 'EXCEL') { throw 'The probe requires Excel.' }
 function Invoke-Vbe([hashtable] $Request) {
     $json = ConvertTo-Json -InputObject $Request -Compress -Depth 8
-    $reply = & (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson $json | ConvertFrom-Json
+    $reply = & (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId -RequestJson $json | ConvertFrom-Json
     if (-not $reply.Ok) { throw "$($Request.Command): $($reply.Error)" }
     return $reply.Data
 }
@@ -45,7 +45,7 @@ if ($current.TotalRows -ne 4 -or $current.ListVersion -eq $stale.ListVersion) {
 $staleRequest = @{ Command = 'remove_form_list_item'; Project = $project;
     Form = $form; ControlPath = "Controls/$control"; RowIndex = 1;
     ExpectedTreeVersion = $current.TreeVersion; ExpectedListVersion = $stale.ListVersion }
-$staleReply = & (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson (ConvertTo-Json $staleRequest -Compress) | ConvertFrom-Json
+$staleReply = & (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId -RequestJson (ConvertTo-Json $staleRequest -Compress) | ConvertFrom-Json
 if ($staleReply.Ok -or $staleReply.Error -notmatch 'list changed') {
     throw 'A stale ListVersion was not refused before RemoveItem.'
 }

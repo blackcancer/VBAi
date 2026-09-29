@@ -7,7 +7,7 @@ if ((Get-Process -Id $HostProcessId -ErrorAction Stop).ProcessName -ne 'EXCEL') 
 
 function Invoke-VbeRaw([hashtable] $Request) {
     $payload = ConvertTo-Json -InputObject $Request -Compress -Depth 8
-    return (& (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson $payload |
+    return (& (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId -RequestJson $payload |
         ConvertFrom-Json)
 }
 
@@ -22,8 +22,8 @@ if ($projects.Count -ne 1 -or $projects[0].Mode -ne 2 -or $projects[0].FileName)
     throw 'Use one unsaved disposable design-mode VBA project.'
 }
 $project = [string]$projects[0].Name
-$path = Join-Path $env:TEMP ("CodexVBE-code-insert-{0}.bas" -f $HostProcessId)
-$ansiPath = Join-Path $env:TEMP ("CodexVBE-code-insert-ansi-{0}.bas" -f $HostProcessId)
+$path = Join-Path $env:TEMP ("VBAi-code-insert-{0}.bas" -f $HostProcessId)
+$ansiPath = Join-Path $env:TEMP ("VBAi-code-insert-ansi-{0}.bas" -f $HostProcessId)
 if ((Test-Path -LiteralPath $path) -or (Test-Path -LiteralPath $ansiPath)) {
     throw 'A disposable source path already exists.'
 }

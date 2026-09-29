@@ -6,7 +6,7 @@ if ((Get-Process -Id $HostProcessId -ErrorAction Stop).ProcessName -ne 'EXCEL') 
 }
 
 function Read-Options {
-    $response = & (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId `
+    $response = & (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId `
         -RequestJson '{"Command":"read_vbe_options"}' | ConvertFrom-Json
     if (-not $response.Ok) { throw $response.Error }
     return $response.Data

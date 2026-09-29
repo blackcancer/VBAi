@@ -1,13 +1,13 @@
 # Modifier les interfaces dans Visual Studio
 
-Ouvrir `CodexVBE.sln`, compiler la solution, puis ouvrir le fichier `.cs` voulu avec
+Ouvrir `VBAi.sln`, compiler la solution, puis ouvrir le fichier `.cs` voulu avec
 **Afficher le concepteur** (`Maj+F7`). Ouvrir le `.cs` principal, pas le
 `.Designer.cs`. Les fenêtres et sous-vues sont des composants WinForms ; les
 onglets restent regroupés dans leurs fenêtres habituelles.
 
 ## Git
 
-Les fichiers sont dans `src/CodexVBE/Git/Views/`.
+Les fichiers sont dans `src/VBAi/Git/Views/`.
 
 | Vue | Contenu éditable |
 | --- | --- |
@@ -37,7 +37,7 @@ hauteurs des lignes de la fenêtre principale.
 
 ## Paramètres et autres fenêtres
 
-Les vues de `src/CodexVBE/Llm/Settings/Views/` sont :
+Les vues de `src/VBAi/Llm/Settings/Views/` sont :
 
 - `ProviderSettingsView` : paramètres des fournisseurs et permissions d’édition ;
 - `GitHubAccountSettingsView` : compte GitHub des dépôts ;
@@ -55,7 +55,7 @@ du diff sont créées dans le Designer ; le mode unifié adapte leur présentati
 
 ## Fenêtre À propos
 
-`src/CodexVBE/Ui/AboutWindow.cs` est un formulaire indépendant. Son en-tête,
+`src/VBAi/Ui/AboutWindow.cs` est un formulaire indépendant. Son en-tête,
 logo, descriptif, tableau de métadonnées, liens, état et boutons sont déclarés
 explicitement dans `AboutWindow.Designer.cs`. Le logo est une ressource image
 WinForms éditable dans `AboutWindow.resx`. La version, l’hôte et la langue sont
@@ -66,14 +66,14 @@ Voir [À propos et support](about.md) pour les informations copiées et les lien
 
 ## Fenêtre de rapport de problème
 
-`src/CodexVBE/Ui/CrashReportWindow.cs` possède son `.Designer.cs` et son `.resx`.
+`src/VBAi/Ui/CrashReportWindow.cs` possède son `.Designer.cs` et son `.resx`.
 Ses 20 contrôles fixes (description, aperçu, destination, état, progression et boutons)
 sont éditables dans le concepteur. Le constructeur Designer ne charge aucun compte
 et n’appelle aucun transport. Voir [Rapports de problème](crash-report.md).
 
 ## Éléments réutilisables du chat
 
-Les vues suivantes sont dans `src/CodexVBE/Llm/Controls/`. Ouvrir chacune avec
+Les vues suivantes sont dans `src/VBAi/Llm/Controls/`. Ouvrir chacune avec
 **Afficher le concepteur** pour modifier ses contrôles internes.
 
 | Vue | Contenu éditable |
@@ -87,7 +87,7 @@ conserver le correcteur orthographique et les interactions clavier. Le construct
 Designer montre un champ WinForms et ne démarre pas ce moteur. `Font`, `ForeColor`,
 `InputPadding` et `SpellCheckEnabled` sont transmis au moteur.
 
-Le diff inline réutilise `src/CodexVBE/Ui/CodeDiffView.cs` : grille, colonnes,
+Le diff inline réutilise `src/VBAi/Ui/CodeDiffView.cs` : grille, colonnes,
 recherche, navigation et options sont construits dans son Designer. `ChatChangeCardView` contient ce contrôle dans son Designer. `ChatDesignerHost`
 adapte les vues natives au transcript virtualisé. Le mode
 unifié se règle via `UnifiedDiff`. Les hôtes de diff sont libérés lorsqu’une carte
@@ -124,7 +124,7 @@ contrôles nommés utilisés par le contrôleur sans adapter leurs références.
 
 ## Vérification
 
-`tools/tests/Test-WinFormsDesigners.ps1 -AssemblyPath <chemin de CodexVBE.dll>`
+`tools/tests/Test-WinFormsDesigners.ps1 -AssemblyPath <chemin de VBAi.dll>`
 valide **46 surfaces et 409 contrôles enfants** avec le moteur
 `System.ComponentModel.Design.DesignSurface` : chargement, redimensionnement,
 édition d’une propriété puis sérialisation et rechargement avec
@@ -161,7 +161,7 @@ SOLIDWORKS. Cette refonte ne modifie pas le thème du VBE.
 ## Mises à jour
 
 `Updates/UpdateWindow.cs` configure les mises à jour et affiche les notes de release.
-`src/CodexVBE/Updates/UpdateProgressWindow.cs` est partagée avec le programme de mise à jour
+`src/VBAi/Updates/UpdateProgressWindow.cs` est partagée avec le programme de mise à jour
 différée. Les deux formulaires possèdent leurs Designer et ressources. Le programme
 externe partage les sources et les catalogues, sans charger l’assembly COM. Les
 contrôles secondaires et principaux ont des zones distinctes ; la progression reste
@@ -169,7 +169,7 @@ dans une ligne dédiée. Voir [Mises à jour](updates.md) pour le protocole inst
 
 ## Cartes et suggestions du chat
 
-Les vues de `src/CodexVBE/Llm/Controls/Transcript/` sont réellement utilisées
+Les vues de `src/VBAi/Llm/Controls/Transcript/` sont réellement utilisées
 par `ChatWindow.Transcript.cs`, `.Activities.cs`, `.FormRecovery.cs` et `.Composer.cs`.
 Ouvrir leur fichier `.cs` avec **Afficher le concepteur** (`Maj+F7`).
 
@@ -210,7 +210,7 @@ pas une ouverture manuelle du projet dans le Designer de Visual Studio.
 `ModernEditorWindow.cs`, `UpdateWindow.cs` et `UpdateProgressWindow.cs` sont les
 entrées du Designer dans le projet principal. La progression est partagée avec
 le programme `VBAi.Updater`, mais sa surface s'édite uniquement dans
-`src/CodexVBE/Updates/`. Les liens de code dans l'Updater sont classés Code et la
+`src/VBAi/Updates/`. Les liens de code dans l'Updater sont classés Code et la
 ressource est incorporée à la compilation sans ajouter une deuxième surface
 Designer : l'ouverture de cette copie dans l'Updater échouait à charger sa
 ressource dans Visual Studio.

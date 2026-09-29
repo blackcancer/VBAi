@@ -5,7 +5,7 @@ if (Get-Process EXCEL -ErrorAction SilentlyContinue) { throw 'Excel must be clos
 
 $excelPath = 'C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE'
 if (-not (Test-Path -LiteralPath $excelPath)) { throw "Excel was not found: $excelPath" }
-$workbookPath = Join-Path $PSScriptRoot 'probes\CodexVBE-scratch.xlsx'
+$workbookPath = Join-Path $PSScriptRoot 'probes\VBAi-scratch.xlsx'
 if (-not (Test-Path -LiteralPath $workbookPath)) { throw "Scratch workbook was not found: $workbookPath" }
 $started = Get-Date
 $arguments = if ($NewInstance) { @('/x', $workbookPath) } else { @($workbookPath) }
@@ -29,7 +29,7 @@ if ($UseNewWorkbook) {
 $excel.CommandBars.ExecuteMso('VisualBasic')
 Start-Sleep -Seconds 3
 Write-Output "Workbook=$($book.Name)"
-$log = Join-Path $env:TEMP 'CodexVBE-load.log'
+$log = Join-Path $env:TEMP 'VBAi-load.log'
 if ((Test-Path -LiteralPath $log) -and (Get-Item -LiteralPath $log).LastWriteTime -ge $started) {
     Write-Output 'Fresh add-in log:'
     Get-Content -LiteralPath $log -Tail 8

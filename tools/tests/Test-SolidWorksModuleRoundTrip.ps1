@@ -7,7 +7,7 @@ if ((Get-Process -Id $HostProcessId -ErrorAction Stop).ProcessName -ne 'SLDWORKS
 
 function Invoke-Vbe([hashtable] $Request) {
     $payload = ConvertTo-Json -InputObject $Request -Compress -Depth 8
-    $response = & (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson $payload |
+    $response = & (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId -RequestJson $payload |
         ConvertFrom-Json
     if (-not $response.Ok) { throw "$($Request.Command): $($response.Error)" }
     return $response.Data
@@ -26,7 +26,7 @@ if (@($baseline | Where-Object { $_.Name -eq $module }).Count -ne 0) {
     throw 'The disposable module name already exists.'
 }
 $existing = Invoke-Vbe @{ Command = 'read_module'; Project = $project; Module = 'test1' }
-$path = Join-Path $env:TEMP ("CodexVBE-sw-module-{0}.bas" -f $HostProcessId)
+$path = Join-Path $env:TEMP ("VBAi-sw-module-{0}.bas" -f $HostProcessId)
 if (Test-Path -LiteralPath $path) { throw 'The disposable export path already exists.' }
 $roundTrip = $false
 $cleanupVerified = $false

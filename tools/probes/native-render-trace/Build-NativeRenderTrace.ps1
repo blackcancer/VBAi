@@ -26,7 +26,7 @@ try {
     $env:PATH = (Join-Path $compilerRoot.FullName 'bin/Hostx64/x64') + ';' + $previousPath
     $common = @('/nologo', '/std:c++17', '/W4', '/EHsc', '/MT', '/O2', '/Zi', '/guard:cf', '/utf-8', '/DUNICODE', '/D_UNICODE')
     & $compiler @common /LD (Join-Path $PSScriptRoot 'NativeRenderTrace.cpp') "/Fo$OutputDirectory/NativeRenderTrace.obj" "/Fd$OutputDirectory/compiler.pdb" `
-        /link /MACHINE:X64 /DYNAMICBASE /NXCOMPAT /DEBUG "/OUT:$OutputDirectory/CodexVbeNativeTrace.dll" "/IMPLIB:$OutputDirectory/CodexVbeNativeTrace.lib" user32.lib gdi32.lib comctl32.lib
+        /link /MACHINE:X64 /DYNAMICBASE /NXCOMPAT /DEBUG "/OUT:$OutputDirectory/VBAiNativeTrace.dll" "/IMPLIB:$OutputDirectory/VBAiNativeTrace.lib" user32.lib gdi32.lib comctl32.lib
     if ($LASTEXITCODE -ne 0) { throw "Native trace compilation failed ($LASTEXITCODE)." }
     if ($BuildSelfTest) {
         $selfTest = Join-Path $OutputDirectory 'selftest'
@@ -41,7 +41,7 @@ try {
             /link /MACHINE:X64 /DYNAMICBASE /NXCOMPAT /DEBUG "/OUT:$selfTest/PatternPilotSelfTest.exe" user32.lib gdi32.lib
         if ($LASTEXITCODE -ne 0) { throw "Pattern pilot test compilation failed ($LASTEXITCODE)." }
     }
-    Get-Item -LiteralPath (Join-Path $OutputDirectory 'CodexVbeNativeTrace.dll') | Select-Object FullName,Length
+    Get-Item -LiteralPath (Join-Path $OutputDirectory 'VBAiNativeTrace.dll') | Select-Object FullName,Length
 } finally {
     $env:INCLUDE = $previousInclude
     $env:LIB = $previousLib

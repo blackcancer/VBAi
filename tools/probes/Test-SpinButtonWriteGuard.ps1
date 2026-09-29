@@ -17,7 +17,7 @@ if ($hostProcess.ProcessName -ne 'EXCEL') {
 
 function Invoke-VbeRaw([hashtable] $Request) {
     $json = ConvertTo-Json -InputObject $Request -Compress -Depth 8
-    & (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson $json | ConvertFrom-Json
+    & (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId -RequestJson $json | ConvertFrom-Json
 }
 
 function Invoke-Vbe([hashtable] $Request) {

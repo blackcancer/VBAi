@@ -31,7 +31,7 @@ public static class VbeWindowApi
 function Invoke-Bridge {
     param([hashtable] $Request)
     $json = ConvertTo-Json -InputObject $Request -Compress
-    $pipe = [System.IO.Pipes.NamedPipeClientStream]::new('.', "CodexVBE.$HostProcessId", [System.IO.Pipes.PipeDirection]::InOut)
+    $pipe = [System.IO.Pipes.NamedPipeClientStream]::new('.', "VBAi.$HostProcessId", [System.IO.Pipes.PipeDirection]::InOut)
     try {
         $pipe.Connect(3000)
         $writer = [System.IO.StreamWriter]::new($pipe, [System.Text.UTF8Encoding]::new($false), 4096, $true)

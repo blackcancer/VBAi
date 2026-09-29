@@ -7,7 +7,7 @@ if ((Get-Process -Id $HostProcessId -ErrorAction Stop).ProcessName -ne 'EXCEL') 
 
 function Invoke-VbeRaw([hashtable] $Request) {
     $payload = ConvertTo-Json -InputObject $Request -Compress -Depth 6
-    return (& (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson $payload |
+    return (& (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId -RequestJson $payload |
         ConvertFrom-Json)
 }
 
@@ -15,7 +15,7 @@ $windows = Invoke-VbeRaw @{ Command = 'vbe_windows' }
 if (-not $windows.Ok) { throw $windows.Error }
 $browser = @($windows.Data.Windows | Where-Object { $_.Properties.Type -eq 2 -and $_.Properties.Visible })
 if ($browser.Count -ne 1) { throw 'Open exactly one visible Object Browser before this test.' }
-$self = Invoke-VbeRaw @{ Command = 'close_vbe_window'; WindowCaption = 'CodexVBE'; WindowType = 15 }
+$self = Invoke-VbeRaw @{ Command = 'close_vbe_window'; WindowCaption = 'VBAi'; WindowType = 15 }
 if ($self.Ok -or $self.Error -notmatch 'cannot close itself') {
     throw 'The add-in did not refuse closing its own tool window.'
 }

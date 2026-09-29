@@ -8,7 +8,7 @@ if ($hosts.Count -ne 1 -or $hosts[0].Id -ne $HostProcessId) {
 
 function Invoke-Vbe([hashtable] $Request) {
     $payload = ConvertTo-Json -InputObject $Request -Compress -Depth 8
-    $response = & (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson $payload |
+    $response = & (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId -RequestJson $payload |
         ConvertFrom-Json
     if (-not $response.Ok) { throw "$($Request.Command): $($response.Error)" }
     return $response.Data
@@ -23,8 +23,8 @@ if ($projects.Count -ne 1 -or $projects[0].Mode -ne 2) {
     throw 'Exactly one design-mode VBA project is required.'
 }
 $project = [string]$projects[0].Name
-$workbookPath = Join-Path $env:TEMP ("CodexVBE-code-persistence-{0}.xlsm" -f $HostProcessId)
-$sourcePath = Join-Path $env:TEMP ("CodexVBE-code-persistence-{0}.bas" -f $HostProcessId)
+$workbookPath = Join-Path $env:TEMP ("VBAi-code-persistence-{0}.xlsm" -f $HostProcessId)
+$sourcePath = Join-Path $env:TEMP ("VBAi-code-persistence-{0}.bas" -f $HostProcessId)
 if ((Test-Path -LiteralPath $workbookPath) -or (Test-Path -LiteralPath $sourcePath)) {
     throw 'A disposable test path already exists.'
 }

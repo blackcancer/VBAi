@@ -1,4 +1,4 @@
-﻿param([string]$AssemblyPath = 'artifacts/multilingual-tests/CodexVBE.dll')
+param([string]$AssemblyPath = 'artifacts/multilingual-tests/VBAi.dll')
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 [Windows.Forms.Application]::EnableVisualStyles()
@@ -10,9 +10,9 @@ public sealed class MultilingualVbe { public MultilingualBar[] CommandBars {get;
 $assembly = [Reflection.Assembly]::LoadFrom((Resolve-Path $AssemblyPath))
 $flags = [Reflection.BindingFlags]'Static,NonPublic,Public'
 $fields = [Reflection.BindingFlags]'Instance,NonPublic,Public'
-$localization = $assembly.GetType('CodexVBE.UiText')
+$localization = $assembly.GetType('VBAi.UiText')
 $initialize = $localization.GetMethod('Initialize',$flags)
-$languages = $assembly.GetType('CodexVBE.UiLanguages').GetField('All',$flags).GetValue($null)
+$languages = $assembly.GetType('VBAi.UiLanguages').GetField('All',$flags).GetValue($null)
 $output = Join-Path (Get-Location) 'artifacts/localization/multilingual-windows'
 New-Item -ItemType Directory -Force $output | Out-Null
 try {
@@ -24,7 +24,7 @@ try {
         $vbe = [MultilingualVbe]::new(); $vbe.CommandBars = @($bar)
         $initialize.Invoke($null,@($vbe))
         foreach ($name in @('ChatWindow','LlmSettingsWindow','GitWindow','VbeApprovalDialog')) {
-            $form = [Activator]::CreateInstance($assembly.GetType('CodexVBE.'+$name),$true)
+            $form = [Activator]::CreateInstance($assembly.GetType('VBAi.'+$name),$true)
             try {
                 $form.Show(); [Windows.Forms.Application]::DoEvents()
                 if ($form.RightToLeftLayout -ne ($culture -eq 'ar-SA')) { throw "$culture ${name}: incorrect direction" }

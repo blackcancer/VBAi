@@ -5,7 +5,7 @@ $hostProcess = Get-Process -Id $HostProcessId -ErrorAction Stop
 if ($hostProcess.ProcessName -ne 'EXCEL') { throw 'The probe requires Excel.' }
 function Invoke-Vbe([hashtable] $Request) {
     $json = ConvertTo-Json -InputObject $Request -Compress -Depth 8
-    $reply = & (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson $json | ConvertFrom-Json
+    $reply = & (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId -RequestJson $json | ConvertFrom-Json
     if (-not $reply.Ok) { throw "$($Request.Command): $($reply.Error)" }
     return $reply.Data
 }
@@ -30,7 +30,7 @@ if ($property.SetterStatus -ne 'BlockedAfterHostCrash') {
 $json = ConvertTo-Json -InputObject @{ Command = 'set_form_node_property'; Project = $project;
     Form = $form; ControlPath = 'Controls/cboProbe'; Property = 'ColumnCount';
     Value = 2; ExpectedTreeVersion = $before.TreeVersion } -Compress
-$reply = & (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson $json | ConvertFrom-Json
+$reply = & (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId -RequestJson $json | ConvertFrom-Json
 if ($reply.Ok -or $reply.Error -notmatch 'temporarily disabled') {
     throw 'ComboBox.ColumnCount was not blocked before COM.'
 }

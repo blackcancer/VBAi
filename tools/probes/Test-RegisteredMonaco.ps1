@@ -1,4 +1,4 @@
-﻿param([Parameter(Mandatory=$true)][string]$AssemblyPath,[Parameter(Mandatory=$true)][string]$OutputDirectory,[switch]$UseBridge,[switch]$AllowTemporaryVbaAccess)
+param([Parameter(Mandatory=$true)][string]$AssemblyPath,[Parameter(Mandatory=$true)][string]$OutputDirectory,[switch]$UseBridge,[switch]$AllowTemporaryVbaAccess)
 $ErrorActionPreference='Stop'
 if (-not $UseBridge -or @(Get-Process EXCEL -ErrorAction SilentlyContinue).Count) { throw 'An isolated Excel session is required.' }
 Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes,System.Drawing,Accessibility
@@ -73,7 +73,7 @@ function Close-ModuleTab {
 }
 try {
  if($originalAccess -ne 1){New-ItemProperty -LiteralPath $securityPath -Name AccessVBOM -Value 1 -PropertyType DWord -Force | Out-Null}
- $scratch=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'CodexVBE-scratch.xlsx'))
+ $scratch=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'VBAi-scratch.xlsx'))
  $probeProcess=Start-Process -FilePath 'C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE' -ArgumentList @('/x',('"'+$scratch+'"')) -WindowStyle Hidden -PassThru
  $excel=Wait-Condition {try{[Runtime.InteropServices.Marshal]::GetActiveObject('Excel.Application')}catch{}}
  if(@(Get-Process EXCEL).Count -ne 1 -or (Get-Process EXCEL).Id -ne $probeProcess.Id){throw 'Unexpected Excel ownership.'}
@@ -81,12 +81,12 @@ try {
  $excel.Visible=$true;$excel.DisplayAlerts=$false;$excel.EnableEvents=$false
  $vbe=$excel.GetType().InvokeMember('VBE',[Reflection.BindingFlags]::GetProperty,$null,$excel,$null)
  $vbe.MainWindow.Visible=$true
- $response=& (Join-Path $PSScriptRoot '../Invoke-CodexVBE.ps1') -HostProcessId $probeProcess.Id -RequestJson '{"Command":"status"}' -ResponseTimeoutSeconds 30 | ConvertFrom-Json
+ $response=& (Join-Path $PSScriptRoot '../Invoke-VBAi.ps1') -HostProcessId $probeProcess.Id -RequestJson '{"Command":"status"}' -ResponseTimeoutSeconds 30 | ConvertFrom-Json
  if(-not $response.Ok -or $response.Data.AssemblyModuleVersionId -ne $assembly.ManifestModule.ModuleVersionId.ToString('D')){throw 'Loaded assembly mismatch.'}
  $book=$excel.Workbooks.Add();$module=$book.VBProject.VBComponents.Add(1);$module.Name='MonacoDockProbe'
  $module.CodeModule.AddFromString("Option Explicit`r`nPublic Sub Probe()`r`n    Debug.Print 42`r`nEnd Sub")
  $module.CodeModule.CodePane.Show()
- $button=$vbe.CommandBars.FindControl(1,[Type]::Missing,'CodexVBE.ModernEditor',$false)
+ $button=$vbe.CommandBars.FindControl(1,[Type]::Missing,'VBAi.ModernEditor',$false)
  if($null -eq $button){throw 'Monaco View menu is absent.'}
  $button.Execute()
  Write-Output 'Menu executed; locating editor shell.'
@@ -101,7 +101,7 @@ try {
  [void](Wait-Condition {if(@($vbe.Windows | Where-Object {$_.Type -eq 0 -and $_.Caption -like '*MonacoDockProbe*'}).Count -eq 0){return $true}})
  Write-Output 'Native window closed; locating project tree.'
  $project= @($vbe.Windows | Where-Object {$_.Type -eq 6})[0];$project.Visible=$true;$project.SetFocus()
- $findTrees=$assembly.GetType('CodexVBE.EditorProjectNavigation').GetMethod('FindProjectTrees',[Reflection.BindingFlags]'Static,NonPublic')
+ $findTrees=$assembly.GetType('VBAi.EditorProjectNavigation').GetMethod('FindProjectTrees',[Reflection.BindingFlags]'Static,NonPublic')
  $treeHandle=Wait-Condition {@($findTrees.Invoke($null,@([int]$probeProcess.Id,[string]$project.Caption)))[0]}
  $tree=[Windows.Automation.AutomationElement]::FromHandle([IntPtr]$treeHandle)
  Write-Output 'Project tree found; locating module node.'

@@ -13,15 +13,15 @@ $output = [IO.Path]::GetFullPath($OutputDirectory)
 if (-not $output.StartsWith($repository + '\', [StringComparison]::OrdinalIgnoreCase)) { throw 'The release output must stay inside this checkout.' }
 if (Test-Path -LiteralPath $output) { throw 'Release output already exists. Choose another directory; preserve the previous package.' }
 $buildRoot = Join-Path $output 'build'
-& dotnet build (Join-Path $repository 'src\CodexVBE\CodexVBE.csproj') -c Release --nologo "-p:ProductVersion=$Version" "-p:BuildOutputRoot=$buildRoot" -v:q
+& dotnet build (Join-Path $repository 'src\VBAi\VBAi.csproj') -c Release --nologo "-p:ProductVersion=$Version" "-p:BuildOutputRoot=$buildRoot" -v:q
 if ($LASTEXITCODE -ne 0) { throw 'Release build failed.' }
-$binary = Join-Path $buildRoot 'CodexVBE\Release\net48'
-$assembly = Join-Path $binary 'CodexVBE.dll'
+$binary = Join-Path $buildRoot 'VBAi\Release\net48'
+$assembly = Join-Path $binary 'VBAi.dll'
 if ([Diagnostics.FileVersionInfo]::GetVersionInfo($assembly).ProductVersion -ne $Version) { throw 'Product version does not match the release.' }
 $typeExporter = Get-Command TlbExp.exe -ErrorAction SilentlyContinue
 $exportPath = if ($typeExporter) { $typeExporter.Source } else { Join-Path ${env:ProgramFiles(x86)} 'Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\x64\TlbExp.exe' }
 if (-not (Test-Path -LiteralPath $exportPath)) { throw 'The .NET Framework SDK TlbExp.exe is required to prepare the COM package.' }
-& $exportPath $assembly "/out:$(Join-Path $binary 'CodexVBE.tlb')" /nologo
+& $exportPath $assembly "/out:$(Join-Path $binary 'VBAi.tlb')" /nologo
 if ($LASTEXITCODE -ne 0) { throw 'Type library export failed.' }
 $package = Join-Path $output 'package'
 New-Item -ItemType Directory -Path $package | Out-Null

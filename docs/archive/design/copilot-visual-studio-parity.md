@@ -1,8 +1,8 @@
-﻿# Assistant CodexVBE : cible inspirée de Copilot dans Visual Studio
+# Assistant VBAi : cible inspirée de Copilot dans Visual Studio
 
 > Archive conservée le 28 septembre 2026. Ce document contient des observations et des décisions de sa période de rédaction ; ses états « à faire » et ses anciens chiffres ne constituent pas le bilan actuel. Voir [la documentation actuelle](../../README.md) et [les travaux restants](../../roadmap.md).
 
-État de la proposition : 27 septembre 2026. Les fonctionnalités de Copilot varient selon la version de Visual Studio et le compte ; cette liste décrit la cible produit de CodexVBE, pas une compatibilité déjà acquise. Le VBE reste la source de vérité pour le code VBA vivant.
+État de la proposition : 27 septembre 2026. Les fonctionnalités de Copilot varient selon la version de Visual Studio et le compte ; cette liste décrit la cible produit de VBAi, pas une compatibilité déjà acquise. Le VBE reste la source de vérité pour le code VBA vivant.
 
 Tranche implémentée localement : saisie Entrée pour envoyer et Maj+Entrée pour une nouvelle ligne, correction orthographique française WPF dans le champ, et suggestions `#` pour projet et module, et `@` pour Sub, Function et Property Get/Let/Set. La sélection ajoute le code VBA vivant au message lors de l'envoi ; une procédure dont le SHA a changé doit être sélectionnée à nouveau. L'index se construit par étapes sur le thread VBE. La conversation affiche des cartes et des blocs de code copiables. `replace_lines` applique le code sans dialogue préalable, puis affiche une carte avec le diff et une annulation contrôlée par SHA. La compilation et les essais isolés passent ; dans Excel, l'ouverture du chat, le catalogue Codex et les sélections initiales ont été vérifiés. Les autres parcours de ce tableau gardent leur propre état de validation.
 
@@ -10,7 +10,7 @@ Tranche implémentée localement : saisie Entrée pour envoyer et Maj+Entrée po
 
 La tranche actuelle est détaillée dans [Interface de conversation et sessions VBA](../../chat-ui.md) : surface WPF, diff et résumés inline, références `#` et `@`, historique multichat par document et mémoire locale SQLite.
 
-| Domaine | Expérience attendue dans CodexVBE | État du dépôt |
+| Domaine | Expérience attendue dans VBAi | État du dépôt |
 | --- | --- | --- |
 | Conversation | Panneau ancrable, réponses progressivement affichées, blocs de code copiables, navigation vers les cibles, états des outils, arrêt d'une réponse et relance | Surface WPF et panneau natif à droite testés dans Excel ; premier placement droit manuel puis restauré au redémarrage ; streaming Codex, résumés et outils dépliables, arrêt et navigation |
 | Modes | Demander (lecture seule), Plan (étapes révisables), Agent (outils et modifications selon la politique configurée) | Modes Discussion / Plan / Agent visibles et persistés ; blocage des mutations et exécutions en Discussion/Plan |
@@ -41,7 +41,7 @@ Les références de bibliothèque COM demandent un parcours distinct : `list_ref
 
 ## Diff et sécurité des modifications
 
-Le modèle produit une édition ciblée. CodexVBE lit le module actuel, vérifie le SHA de base et la plage, applique `replace_lines`, puis relit le résultat. Une carte dans la conversation donne accès au diff et à l'annulation ; l'historique conserve aussi la modification. Une divergence bloque l'application et demande un nouveau calcul ; elle ne déclenche pas de réessai automatique. Le mode Lecture seule interdit toujours l'écriture. Le mode Demander reste applicable aux autres actions VBE, tandis que `replace_lines` est immédiat pour éviter les validations répétées.
+Le modèle produit une édition ciblée. VBAi lit le module actuel, vérifie le SHA de base et la plage, applique `replace_lines`, puis relit le résultat. Une carte dans la conversation donne accès au diff et à l'annulation ; l'historique conserve aussi la modification. Une divergence bloque l'application et demande un nouveau calcul ; elle ne déclenche pas de réessai automatique. Le mode Lecture seule interdit toujours l'écriture. Le mode Demander reste applicable aux autres actions VBE, tandis que `replace_lines` est immédiat pour éviter les validations répétées.
 
 Un point de retour contient le texte exact avant/après, les empreintes, l'identité de la cible et l'identifiant de l'action. Restaurer est une nouvelle écriture VBE : vérifier le SHA courant, prévisualiser le diff inverse et respecter la politique d'approbation. Pour les UserForms, le code et l'arbre de contrôles ont des versions distinctes ; une restauration de conception exige un contrat spécifique avant d'être proposée.
 

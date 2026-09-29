@@ -1,9 +1,9 @@
-param([string]$AssemblyPath = 'artifacts/designer-build/CodexVBE.dll', [string]$OutputDirectory = 'artifacts/designer-validation')
+param([string]$AssemblyPath = 'artifacts/designer-build/VBAi.dll', [string]$OutputDirectory = 'artifacts/designer-validation')
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing, System.Design
 $assembly = [Reflection.Assembly]::LoadFrom((Resolve-Path $AssemblyPath))
 [IO.Directory]::CreateDirectory([IO.Path]::GetFullPath($OutputDirectory)) | Out-Null
-$sourceRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../src/CodexVBE'))
+$sourceRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../src/VBAi'))
 $designerSources = @{}
 foreach ($file in Get-ChildItem -LiteralPath $sourceRoot -Filter '*.Designer.cs' -Recurse) {
     $source = [IO.File]::ReadAllText($file.FullName)
@@ -11,7 +11,7 @@ foreach ($file in Get-ChildItem -LiteralPath $sourceRoot -Filter '*.Designer.cs'
 }
 $proof = @()
 $types = $assembly.GetTypes() | Where-Object {
-    -not $_.IsAbstract -and $_.Namespace -eq 'CodexVBE' -and
+    -not $_.IsAbstract -and $_.Namespace -eq 'VBAi' -and
     ([Windows.Forms.Form].IsAssignableFrom($_) -or [Windows.Forms.UserControl].IsAssignableFrom($_))
 }
 foreach ($type in $types) {
@@ -47,7 +47,7 @@ foreach ($type in $types) {
         if (-not $designerSources.ContainsKey($type.Name)) {
             # This layout base owns no fixed components; its concrete views have Designers.
             $declaredControls = @($type.GetFields([Reflection.BindingFlags]'DeclaredOnly,Instance,NonPublic,Public') | Where-Object { [Windows.Forms.Control].IsAssignableFrom($_.FieldType) })
-            if ($type.FullName -ne 'CodexVBE.ChatDesignerView' -or $subject.Controls.Count -ne 0 -or $declaredControls.Count -ne 0) { throw "$($type.Name): no Designer source" }
+            if ($type.FullName -ne 'VBAi.ChatDesignerView' -or $subject.Controls.Count -ne 0 -or $declaredControls.Count -ne 0) { throw "$($type.Name): no Designer source" }
             $designerSource = ''
         }
         foreach ($match in [regex]::Matches($designerSource, 'this\.(\w+) = new [\w.]+\(')) {

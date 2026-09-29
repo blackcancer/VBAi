@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$OutputDirectory = (Join-Path $PSScriptRoot '../../artifacts/vbe-native-dark-chrome'),
     [switch]$InProcessAddInExperiment,
     [switch]$OpenCodeWindow,
@@ -203,11 +203,11 @@ $settingsBackup = $null
 $initialNativeTheme = $false
 $initialPalettePath = $null
 $settingsCycleRestored = $false
-$settingsPath = Join-Path $env:APPDATA 'CodexVBE/settings.json'
+$settingsPath = Join-Path $env:APPDATA 'VBAi/settings.json'
 if ($SettingsThemeCycle) {
     if (-not (Test-Path -LiteralPath $settingsPath)) { throw 'This settings-cycle probe requires an existing settings file.' }
     $initialNativeTheme = [bool](Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json).NativeVbeDarkTheme
-    $paletteFiles = @(Get-ChildItem (Join-Path $env:LOCALAPPDATA 'CodexVBE/native-theme') -Filter '*.json' -ErrorAction SilentlyContinue)
+    $paletteFiles = @(Get-ChildItem (Join-Path $env:LOCALAPPDATA 'VBAi/native-theme') -Filter '*.json' -ErrorAction SilentlyContinue)
     if ($paletteFiles.Count -gt 1 -or (-not $initialNativeTheme -and $paletteFiles.Count)) { throw 'The initial palette recovery state is ambiguous.' }
     if ($initialNativeTheme) {
         if ($paletteFiles.Count -ne 1) { throw 'An enabled theme requires its original palette recovery file for this probe.' }
@@ -221,13 +221,13 @@ if ($SettingsThemeCycle) {
     $wpf = Join-Path ([Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()) 'WPF'
     Add-Type -Path (Join-Path $PSScriptRoot 'VbeThemeSettingsProbe.cs') -ReferencedAssemblies (Join-Path $wpf 'UIAutomationClient.dll'),(Join-Path $wpf 'UIAutomationTypes.dll'),(Join-Path $wpf 'WindowsBase.dll')
 }
-$previousExperiment = [Environment]::GetEnvironmentVariable('CODEXVBE_NATIVE_DARK_EXPERIMENT', 'Process')
-$previousLocalRefresh = [Environment]::GetEnvironmentVariable('CODEXVBE_NATIVE_LOCAL_REFRESH_EXPERIMENT', 'Process')
-if ($LocalRefreshExperiment) { [Environment]::SetEnvironmentVariable('CODEXVBE_NATIVE_LOCAL_REFRESH_EXPERIMENT', '1', 'Process') }
-else { [Environment]::SetEnvironmentVariable('CODEXVBE_NATIVE_LOCAL_REFRESH_EXPERIMENT', $null, 'Process') }
-if ($SettingsThemeCycle) { [Environment]::SetEnvironmentVariable('CODEXVBE_NATIVE_DARK_EXPERIMENT', $null, 'Process') }
+$previousExperiment = [Environment]::GetEnvironmentVariable('VBAi_NATIVE_DARK_EXPERIMENT', 'Process')
+$previousLocalRefresh = [Environment]::GetEnvironmentVariable('VBAi_NATIVE_LOCAL_REFRESH_EXPERIMENT', 'Process')
+if ($LocalRefreshExperiment) { [Environment]::SetEnvironmentVariable('VBAi_NATIVE_LOCAL_REFRESH_EXPERIMENT', '1', 'Process') }
+else { [Environment]::SetEnvironmentVariable('VBAi_NATIVE_LOCAL_REFRESH_EXPERIMENT', $null, 'Process') }
+if ($SettingsThemeCycle) { [Environment]::SetEnvironmentVariable('VBAi_NATIVE_DARK_EXPERIMENT', $null, 'Process') }
 if ($InProcessAddInExperiment) {
-    [Environment]::SetEnvironmentVariable('CODEXVBE_NATIVE_DARK_EXPERIMENT', '1', 'Process')
+    [Environment]::SetEnvironmentVariable('VBAi_NATIVE_DARK_EXPERIMENT', '1', 'Process')
 }
 
 function Export-WindowImage([IntPtr]$Handle, [string]$Name) {
@@ -307,11 +307,11 @@ function Export-PropertyTabState([IntPtr]$Handle, [IntPtr]$ParentHandle, [string
 }
 
 function Set-NativeThemeFromSettings([bool]$Enabled) {
-    $logPath = Join-Path $env:TEMP 'CodexVBE-load.log'
+    $logPath = Join-Path $env:TEMP 'VBAi-load.log'
     $expected = if ($Enabled) { 'Native editor palette applied and verified.' } else { 'Native editor palette restored and verified.' }
     $previous = @(Get-Content -LiteralPath $logPath -ErrorAction SilentlyContinue | Where-Object { $_.Contains($expected) }) | Select-Object -Last 1
     [VbeThemeSettingsProbe]::Begin($excelProcessId, $Enabled)
-    $settingsCommand = $excel.VBE.CommandBars.FindControl(1, [Type]::Missing, 'CodexVBE.Settings')
+    $settingsCommand = $excel.VBE.CommandBars.FindControl(1, [Type]::Missing, 'VBAi.Settings')
     if (-not $settingsCommand) { throw 'The add-in Settings command was not found.' }
     $settingsCommand.Execute()
     if (-not [VbeThemeSettingsProbe]::Wait() -or [VbeThemeSettingsProbe]::Error -or -not [VbeThemeSettingsProbe]::Saved) { throw ('Settings UI failed: ' + [VbeThemeSettingsProbe]::Error) }
@@ -329,7 +329,7 @@ function Set-NativeThemeFromSettings([bool]$Enabled) {
 }
 
 try {
-    $startupLogPath = Join-Path $env:TEMP 'CodexVBE-load.log'
+    $startupLogPath = Join-Path $env:TEMP 'VBAi-load.log'
     $startupMarker = 'Native editor palette applied and verified.'
     $previousStartup = @(Get-Content -LiteralPath $startupLogPath -ErrorAction SilentlyContinue | Where-Object { $_.Contains($startupMarker) }) | Select-Object -Last 1
     $excel = New-Object -ComObject Excel.Application
@@ -341,7 +341,7 @@ try {
     $book = $excel.Workbooks.Add()
     $excel.CommandBars.ExecuteMso('VisualBasic')
     if ($SettingsThemeCycle) {
-        $productionRecovery = Join-Path $env:LOCALAPPDATA ('CodexVBE/native-theme/palette-' + $excel.VBE.Version + '.json')
+        $productionRecovery = Join-Path $env:LOCALAPPDATA ('VBAi/native-theme/palette-' + $excel.VBE.Version + '.json')
         if ($initialNativeTheme) {
             if ($initialPalettePath -ne $productionRecovery) { throw 'The initial recovery file belongs to another VBE version.' }
             $startupWait = [Diagnostics.Stopwatch]::StartNew()
@@ -356,8 +356,8 @@ try {
         'Settings checkbox enabled; preference saved; deferred palette verified.' | Set-Content (Join-Path $OutputDirectory 'settings-enabled.txt')
     }
     if ($ProductionPalette) {
-        $paletteAssembly = [Reflection.Assembly]::LoadFrom((Join-Path $PSScriptRoot '../../bin/Debug/net48/CodexVBE.dll'))
-        $paletteChange = $paletteAssembly.GetType('CodexVBE.VbeNativePalette').GetMethod('Change', [Reflection.BindingFlags]'NonPublic,Static')
+        $paletteAssembly = [Reflection.Assembly]::LoadFrom((Join-Path $PSScriptRoot '../../bin/Debug/net48/VBAi.dll'))
+        $paletteChange = $paletteAssembly.GetType('VBAi.VbeNativePalette').GetMethod('Change', [Reflection.BindingFlags]'NonPublic,Static')
         $productionRecovery = Join-Path $OutputDirectory 'production-palette-recovery.json'
         [void]$paletteChange.Invoke($null, [object[]]@($excel.VBE.PSObject.BaseObject, $true, [string]$productionRecovery))
         'Applied and reopened verification succeeded.' | Set-Content (Join-Path $OutputDirectory 'production-palette-applied.txt')
@@ -755,8 +755,8 @@ finally {
     if ($SettingsThemeCycle -and -not $settingsCycleRestored -and $excel -and $productionRecovery -and
         (($initialNativeTheme -and $initialPalettePath -eq $productionRecovery) -or (-not $initialNativeTheme -and (Test-Path -LiteralPath $productionRecovery)))) {
         try {
-            $paletteAssembly = [Reflection.Assembly]::LoadFrom((Join-Path $PSScriptRoot '../../bin/Debug/net48/CodexVBE.dll'))
-            $paletteChange = $paletteAssembly.GetType('CodexVBE.VbeNativePalette').GetMethod('Change', [Reflection.BindingFlags]'NonPublic,Static')
+            $paletteAssembly = [Reflection.Assembly]::LoadFrom((Join-Path $PSScriptRoot '../../bin/Debug/net48/VBAi.dll'))
+            $paletteChange = $paletteAssembly.GetType('VBAi.VbeNativePalette').GetMethod('Change', [Reflection.BindingFlags]'NonPublic,Static')
             [void]$paletteChange.Invoke($null, [object[]]@($excel.VBE.PSObject.BaseObject, $initialNativeTheme, [string]$productionRecovery))
             if ($initialNativeTheme -and (Get-FileHash -LiteralPath $paletteSnapshot).Hash -ne (Get-FileHash -LiteralPath $productionRecovery).Hash) { throw 'The initial palette recovery was not restored exactly; the probe snapshot has been retained.' }
         } catch { $paletteRestoreError = $_; Write-Warning $_.Exception.Message }
@@ -795,8 +795,8 @@ finally {
     $dialogCommand = $null
     try { if ($excel) { $excel.Quit() } } catch { Write-Warning $_.Exception.Message }
     $excel = $null
-    [Environment]::SetEnvironmentVariable('CODEXVBE_NATIVE_DARK_EXPERIMENT', $previousExperiment, 'Process')
-    [Environment]::SetEnvironmentVariable('CODEXVBE_NATIVE_LOCAL_REFRESH_EXPERIMENT', $previousLocalRefresh, 'Process')
+    [Environment]::SetEnvironmentVariable('VBAi_NATIVE_DARK_EXPERIMENT', $previousExperiment, 'Process')
+    [Environment]::SetEnvironmentVariable('VBAi_NATIVE_LOCAL_REFRESH_EXPERIMENT', $previousLocalRefresh, 'Process')
     [GC]::Collect(); [GC]::WaitForPendingFinalizers(); [GC]::Collect(); [GC]::WaitForPendingFinalizers()
     if ($SettingsThemeCycle -and $settingsBackup -and (Test-Path -LiteralPath $settingsBackup)) {
         [IO.File]::Copy($settingsBackup, $settingsPath, $true)

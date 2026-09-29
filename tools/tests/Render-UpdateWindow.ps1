@@ -1,5 +1,5 @@
 param(
-    [string]$AssemblyPath = 'artifacts/updates/build-final/CodexVBE/Debug/net48/CodexVBE.dll',
+    [string]$AssemblyPath = 'artifacts/updates/build-final/VBAi/Debug/net48/VBAi.dll',
     [string]$Culture = 'fr-FR',
     [ValidateSet('Light', 'Dark')][string]$Theme = 'Light',
     [string]$OutputDirectory = 'artifacts/updates/screens'
@@ -8,16 +8,16 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 $assembly = [Reflection.Assembly]::LoadFrom((Resolve-Path $AssemblyPath))
 $staticFlags = [Reflection.BindingFlags]'Static,Public,NonPublic'
-$uiText = $assembly.GetType('CodexVBE.UiText')
+$uiText = $assembly.GetType('VBAi.UiText')
 $selectedCulture = $uiText.GetMethod('Supported', $staticFlags).Invoke($null, @([Globalization.CultureInfo]::GetCultureInfo($Culture)))
 $uiText.GetProperty('Culture', $staticFlags).SetValue($null, $selectedCulture)
 # Process-local appearance: do not write the user's theme preference.
-$uiTheme = $assembly.GetType('CodexVBE.UiTheme')
-$choice = [Enum]::Parse($assembly.GetType('CodexVBE.ThemeChoice'), $Theme)
+$uiTheme = $assembly.GetType('VBAi.UiTheme')
+$choice = [Enum]::Parse($assembly.GetType('VBAi.ThemeChoice'), $Theme)
 $uiTheme.GetField('<Choice>k__BackingField', $staticFlags).SetValue($null, $choice)
-$updatePaths = $assembly.GetType('CodexVBE.UpdatePaths')
+$updatePaths = $assembly.GetType('VBAi.UpdatePaths')
 $updatePaths.GetProperty('Root', $staticFlags).SetValue($null, [IO.Path]::GetFullPath('artifacts/updates/probe-cache'))
-$window = [Activator]::CreateInstance($assembly.GetType('CodexVBE.UpdateWindow'), $true)
+$window = [Activator]::CreateInstance($assembly.GetType('VBAi.UpdateWindow'), $true)
 try {
     $screen = [Windows.Forms.Screen]::AllScreens | Where-Object { -not $_.Primary } | Select-Object -First 1
     if (-not $screen) { $screen = [Windows.Forms.Screen]::PrimaryScreen }

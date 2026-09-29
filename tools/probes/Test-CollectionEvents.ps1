@@ -1,4 +1,4 @@
-﻿param(
+param(
     [Parameter(Mandatory = $true)][string]$AssemblyPath,
     [Parameter(Mandatory = $true)][string]$OutputDirectory,
     [switch]$AllowTemporaryVbaAccess
@@ -18,7 +18,7 @@ $probeProcess = $null
 $otherBook = $null
 $excel = $null; $book = $null; $form = $null; $session = $null
 function Invoke-Session([hashtable]$Fields) {
-    $request = New-Object CodexVBE.Request
+    $request = New-Object VBAi.Request
     foreach ($key in $Fields.Keys) { $request.$key = $Fields[$key] }
     $response = $script:session.Execute($request)
     if (-not $response.Ok) { throw $response.Error }
@@ -33,10 +33,10 @@ try {
     $book = $excel.Workbooks.Add()
     $vbe = $excel.GetType().InvokeMember('VBE', [Reflection.BindingFlags]::GetProperty, $null, $excel, $null)
     $vbe.MainWindow.Visible = $true
-    $session = [Activator]::CreateInstance($assembly.GetType('CodexVBE.VbeSession', $true), [object[]]@($vbe))
+    $session = [Activator]::CreateInstance($assembly.GetType('VBAi.VbeSession', $true), [object[]]@($vbe))
     $project = $book.VBProject
     $flags = [Reflection.BindingFlags]'Instance,NonPublic'
-    $eventType = $assembly.GetType('CodexVBE.VbeCollectionEvents', $true)
+    $eventType = $assembly.GetType('VBAi.VbeCollectionEvents', $true)
     Add-Type -AssemblyName System.Windows.Forms
     Add-Type -TypeDefinition 'public static class CollectionEventCounter { public static int Components; public static int Projects; public static void ComponentChanged() { Components++; } public static void ProjectChanged() { Projects++; } public static void Observe(object session, object listener, string method, string project) { var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic; var source = session.GetType().GetMethod(method, flags).Invoke(session, method == "ProjectsEventSource" ? new object[0] : new object[] { project }); listener.GetType().GetMethod("Observe", flags).Invoke(listener, new object[] { source }); } }'
     function Pump-Events { for ($i=0; $i -lt 10; $i++) { [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 50 } }

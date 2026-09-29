@@ -1,7 +1,7 @@
 # Loaded by the disposable native-theme probe. All execution goes through the
 # add-in's native VBE Run Sub command; the host Application.Run API is not used.
 function Invoke-RenderTraceProcedure($Context, [string]$Procedure, [string]$Cell) {
-    $bridge = Join-Path $PSScriptRoot '../../Invoke-CodexVBE.ps1'
+    $bridge = Join-Path $PSScriptRoot '../../Invoke-VBAi.ps1'
     $fields = @{ Command = 'read_module'; Project = $Context.Project; Module = $Context.Module }
     $read = & $bridge -HostProcessId $Context.HostProcessId -RequestJson ($fields | ConvertTo-Json -Compress) | ConvertFrom-Json
     if (-not $read.Ok) { throw ('Trace fixture read failed: ' + $read.Error) }
@@ -28,20 +28,20 @@ function Start-VbeRenderTrace {
     if ($library.Contains('"') -or $tracePath.Contains('"')) { throw 'Invalid quote in trace path.' }
     $component = $Workbook.VBProject.VBComponents.Add(1)
     $component.Name = 'NativeRenderTraceFixture'
-    $startDeclaration = 'Private Declare PtrSafe Function TraceStart Lib "' + $library + '" Alias "CodexVbeTraceStart" (ByVal editor As LongPtr, ByVal path As LongPtr, ByVal limit As Long) As Long'
+    $startDeclaration = 'Private Declare PtrSafe Function TraceStart Lib "' + $library + '" Alias "VBAiTraceStart" (ByVal editor As LongPtr, ByVal path As LongPtr, ByVal limit As Long) As Long'
     $startArguments = 'CLngPtr(' + $Editor.ToInt64() + '), StrPtr(outputPath), 100000'
     if ($SourceWindow -ne [IntPtr]::Zero) {
-        $startDeclaration = 'Private Declare PtrSafe Function TraceStart Lib "' + $library + '" Alias "CodexVbeTraceStartForWindow" (ByVal editor As LongPtr, ByVal source As LongPtr, ByVal path As LongPtr, ByVal limit As Long) As Long'
+        $startDeclaration = 'Private Declare PtrSafe Function TraceStart Lib "' + $library + '" Alias "VBAiTraceStartForWindow" (ByVal editor As LongPtr, ByVal source As LongPtr, ByVal path As LongPtr, ByVal limit As Long) As Long'
         $startArguments = 'CLngPtr(' + $Editor.ToInt64() + '), CLngPtr(' + $SourceWindow.ToInt64() + '), StrPtr(outputPath), 100000'
     }
     if ($PatternPilot) {
         if ($SourceWindow -eq [IntPtr]::Zero) { throw 'The pattern pilot requires one explicit toolbar window.' }
-        $startDeclaration = $startDeclaration.Replace('CodexVbeTraceStartForWindow', 'CodexVbeToolbarPatternStart')
+        $startDeclaration = $startDeclaration.Replace('VBAiTraceStartForWindow', 'VBAiToolbarPatternStart')
     }
     $component.CodeModule.AddFromString(@"
 Option Explicit
 $startDeclaration
-Private Declare PtrSafe Function TraceStop Lib "$library" Alias "CodexVbeTraceStop" () As Long
+Private Declare PtrSafe Function TraceStop Lib "$library" Alias "VBAiTraceStop" () As Long
 Public Sub StartNativeRenderTrace()
     Dim outputPath As String
     outputPath = "$tracePath"

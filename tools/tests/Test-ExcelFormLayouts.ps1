@@ -18,7 +18,7 @@ $probeProcess = $null
 $otherBook = $null
 $excel = $null; $book = $null; $form = $null; $session = $null
 function Invoke-Session([hashtable]$Fields) {
-    $request = New-Object CodexVBE.Request
+    $request = New-Object VBAi.Request
     foreach ($key in $Fields.Keys) { $request.$key = $Fields[$key] }
     $response = $script:session.Execute($request)
     if (-not $response.Ok) { throw $response.Error }
@@ -33,7 +33,7 @@ try {
     $book = $excel.Workbooks.Add()
     $vbe = $excel.GetType().InvokeMember('VBE', [Reflection.BindingFlags]::GetProperty, $null, $excel, $null)
     $vbe.MainWindow.Visible = $true
-    $session = [Activator]::CreateInstance($assembly.GetType('CodexVBE.VbeSession', $true), [object[]]@($vbe))
+    $session = [Activator]::CreateInstance($assembly.GetType('VBAi.VbeSession', $true), [object[]]@($vbe))
     $project = $book.VBProject
     $actions = @('align_left','align_right','align_top','align_bottom','align_centers','align_middles','same_width','same_height','same_size','center_horizontal','center_vertical','snap_grid','distribute_horizontal','distribute_vertical','space_horizontal','space_vertical','increase_horizontal_spacing','increase_vertical_spacing','decrease_horizontal_spacing','decrease_vertical_spacing')
     $proof = @(); $index = 0

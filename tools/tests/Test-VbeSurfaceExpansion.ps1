@@ -7,7 +7,7 @@ if ((Get-Process -Id $HostProcessId -ErrorAction Stop).ProcessName -ne 'EXCEL') 
 
 function Invoke-VbeRaw([hashtable] $Request) {
     $payload = ConvertTo-Json -InputObject $Request -Compress -Depth 8
-    return (& (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson $payload |
+    return (& (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId -RequestJson $payload |
         ConvertFrom-Json)
 }
 
@@ -28,7 +28,7 @@ if (-not $environment.Properties.Version -or $environment.Properties.ProjectCoun
     throw 'VBE environment readback is incomplete.'
 }
 $addIns = Invoke-Vbe @{ Command = 'list_addins' }
-$self = @($addIns.AddIns | Where-Object { $_.Properties.ProgId -eq 'CodexVBE.AddIn' })
+$self = @($addIns.AddIns | Where-Object { $_.Properties.ProgId -eq 'VBAi.AddIn' })
 if ($self.Count -ne 1 -or -not $self[0].Properties.Connect) {
     throw 'The connected VBE add-in was not read back.'
 }

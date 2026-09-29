@@ -10,10 +10,10 @@ Le [diagnostic corrigé](../chat-persistence-investigation.md) identifie dans Ex
 
 1. Relever l’hôte, sa version, l’architecture, la version de VBE et le SHA-256 de la DLL réellement enregistrée.
 2. À la première ouverture, attendre la fin de l’initialisation et capturer le VBE et le panneau. Vérifier l’accès au bas du chat (saisie, fournisseur, modèle), pas seulement sa présence dans `VBE.Windows`.
-3. Relever le rectangle natif de `GenericPane` « VBAi » et l’état `CodexVBE.AddIn.Connect`. Ne pas conclure à partir de `Window.Width/Height` quand il est ancré : ces valeurs peuvent décrire le cadre complet. `Window.HWnd` peut aussi valoir zéro pour le panneau personnalisé.
+3. Relever le rectangle natif de `GenericPane` « VBAi » et l’état `VBAi.AddIn.Connect`. Ne pas conclure à partir de `Window.Width/Height` quand il est ancré : ces valeurs peuvent décrire le cadre complet. `Window.HWnd` peut aussi valoir zéro pour le panneau personnalisé.
 4. Vérifier une disposition utilisable déjà mémorisée, puis une disposition trop étroite ou écrasée dans une session de test. La première doit être conservée ; la seconde récupérée.
 5. Fermer avec la croix du VBE, laisser l’hôte ouvert, puis rouvrir. Ne pas substituer `WM_CLOSE` à la croix : la sonde utilise `WM_SYSCOMMAND / SC_CLOSE`.
-6. Relever uniquement les lignes pertinentes de `%TEMP%/CodexVBE-load.log` (`OnConnection`, récupération du panneau, erreurs d’ancrage, `OnDisconnection`).
+6. Relever uniquement les lignes pertinentes de `%TEMP%/VBAi-load.log` (`OnConnection`, récupération du panneau, erreurs d’ancrage, `OnDisconnection`).
 7. Fermer normalement la session jetable. Ne pas forcer la reconnexion d’une ancienne référence COM.
 
 ## Sonde Excel

@@ -1,4 +1,4 @@
-﻿param(
+param(
     [Parameter(Mandatory = $true)][string]$AssemblyPath,
     [Parameter(Mandatory = $true)][string]$OutputDirectory,
     [switch]$AllowTemporaryVbaAccess
@@ -18,7 +18,7 @@ $probeProcess = $null
 $otherBook = $null
 $excel = $null; $book = $null; $form = $null; $session = $null
 function Invoke-Session([hashtable]$Fields) {
-    $request = New-Object CodexVBE.Request
+    $request = New-Object VBAi.Request
     foreach ($key in $Fields.Keys) { $request.$key = $Fields[$key] }
     $response = $script:session.Execute($request)
     if (-not $response.Ok) { throw $response.Error }
@@ -33,11 +33,11 @@ try {
     $book = $excel.Workbooks.Add()
     $vbe = $excel.GetType().InvokeMember('VBE', [Reflection.BindingFlags]::GetProperty, $null, $excel, $null)
     $vbe.MainWindow.Visible = $true
-    $session = [Activator]::CreateInstance($assembly.GetType('CodexVBE.VbeSession', $true), [object[]]@($vbe))
+    $session = [Activator]::CreateInstance($assembly.GetType('VBAi.VbeSession', $true), [object[]]@($vbe))
     $project = $book.VBProject
     $flags = [Reflection.BindingFlags]'Instance,NonPublic'
     $source = $session.GetType().GetMethod('ReferenceEventSource', $flags).Invoke($session, @($project.Name))
-    $eventType = $assembly.GetType('CodexVBE.VbeReferenceEvents', $true)
+    $eventType = $assembly.GetType('VBAi.VbeReferenceEvents', $true)
     Add-Type -AssemblyName System.Windows.Forms
     Add-Type -TypeDefinition 'public static class ReferenceEventCounter { public static int Count; public static void Changed() { Count++; } }'
     [ReferenceEventCounter]::Count = 0

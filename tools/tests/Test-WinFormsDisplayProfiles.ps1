@@ -1,4 +1,4 @@
-﻿param([Parameter(Mandatory=$true)][string]$AssemblyPath,[Parameter(Mandatory=$true)][string]$OutputDirectory)
+param([Parameter(Mandatory=$true)][string]$AssemblyPath,[Parameter(Mandatory=$true)][string]$OutputDirectory)
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName System.Windows.Forms,System.Drawing
 [Windows.Forms.Application]::EnableVisualStyles()
@@ -7,7 +7,7 @@ $output=[IO.Path]::GetFullPath($OutputDirectory);[IO.Directory]::CreateDirectory
 $rows=@()
 foreach($screen in [Windows.Forms.Screen]::AllScreens){
  foreach($name in @('ChatWindow','LlmSettingsWindow','GitWindow','VbeApprovalDialog')){
-  $form=[Activator]::CreateInstance($assembly.GetType('CodexVBE.'+$name),$true)
+  $form=[Activator]::CreateInstance($assembly.GetType('VBAi.'+$name),$true)
   try{
    $form.StartPosition=[Windows.Forms.FormStartPosition]::Manual
    $form.Location=[Drawing.Point]::new($screen.WorkingArea.Left+20,$screen.WorkingArea.Top+20)

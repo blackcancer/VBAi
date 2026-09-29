@@ -69,7 +69,7 @@ Les associations ambiguës (branches conditionnelles, métadonnées de paramètr
 
 Un rechargement du code peut perdre les points d'arrêt natifs et l'historique Undo ; aucun inventaire public ne permet de les restaurer exactement. Si la restauration échoue, l'export original est conservé et son chemin est signalé.
 
-Les brouillons sont chiffrés avec DPAPI sous `%LocalAppData%\CodexVBE\EditorDrafts`, sans service externe. Le nettoyage quotidien supprime les anciennes versions de plus de 30 jours, en conservant toujours le dernier fichier par module et les fichiers appartenant à un processus vivant. Les répertoires/jonctions de réanalyse sont ignorés. Un projet jamais enregistré n’a pas d’identité durable entre redémarrages. Une interruption avant réception/sauvegarde de la dernière frappe peut encore la perdre.
+Les brouillons sont chiffrés avec DPAPI sous `%LocalAppData%\VBAi\EditorDrafts`, sans service externe. Le nettoyage quotidien supprime les anciennes versions de plus de 30 jours, en conservant toujours le dernier fichier par module et les fichiers appartenant à un processus vivant. Les répertoires/jonctions de réanalyse sont ignorés. Un projet jamais enregistré n’a pas d’identité durable entre redémarrages. Une interruption avant réception/sauvegarde de la dernière frappe peut encore la perdre.
 
 ## Distribution
 

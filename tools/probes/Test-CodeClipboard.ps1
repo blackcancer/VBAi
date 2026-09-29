@@ -1,4 +1,4 @@
-﻿param(
+param(
     [Parameter(Mandatory = $true)][string]$AssemblyPath,
     [Parameter(Mandatory = $true)][string]$OutputDirectory,
     [switch]$AllowTemporaryVbaAccess
@@ -18,7 +18,7 @@ $probeProcess = $null
 $otherBook = $null
 $excel = $null; $book = $null; $form = $null; $session = $null
 function Invoke-Session([hashtable]$Fields) {
-    $request = New-Object CodexVBE.Request
+    $request = New-Object VBAi.Request
     foreach ($key in $Fields.Keys) { $request.$key = $Fields[$key] }
     Write-Output ("Request: " + $request.Command + " " + $request.Action) | Out-Host
     $response = $script:session.Execute($request)
@@ -47,14 +47,14 @@ try {
     $excel.Visible = $true
     $book = $excel.Workbooks.Add()
     $vbe = $excel.GetType().InvokeMember('VBE', [Reflection.BindingFlags]::GetProperty, $null, $excel, $null)
-    $session = [Activator]::CreateInstance($assembly.GetType('CodexVBE.VbeSession', $true), [object[]]@($vbe))
+    $session = [Activator]::CreateInstance($assembly.GetType('VBAi.VbeSession', $true), [object[]]@($vbe))
     $project = $book.VBProject
     $module = $project.VBComponents.Add(1); $module.Name = 'ClipboardProbe'
     $module.CodeModule.AddFromString("' alpha beta`r`n' second")
     $before = Invoke-Session @{ Command='read_module'; Project=$project.Name; Module=$module.Name }
-    $settings = [Activator]::CreateInstance($assembly.GetType('CodexVBE.LlmSettings'), $true)
+    $settings = [Activator]::CreateInstance($assembly.GetType('VBAi.LlmSettings'), $true)
     $settings.VbeEditApproval = 'Automatic'
-    $llm = [Activator]::CreateInstance($assembly.GetType('CodexVBE.LlmVbeTools'), [object[]]@($session,$null,$settings))
+    $llm = [Activator]::CreateInstance($assembly.GetType('VBAi.LlmVbeTools'), [object[]]@($session,$null,$settings))
     $llm.BoundProject = $project.Name
     Add-Type -TypeDefinition 'public static class ClipboardDiffCounter { public static int Count; public static void Changed(object change) { Count++; } }'
     $editedEvent = $llm.GetType().GetEvent('CodeEdited')

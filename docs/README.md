@@ -1,6 +1,6 @@
 # Documentation VBAi
 
-État vérifié le **28 septembre 2026**, après intégration de la PR #4 et du lot IDE, mesure globale du code `27389a8`. Le produit s’appelle VBAi ; la solution, l’assembly, le namespace et les identifiants COM conservent le nom CodexVBE.
+État vérifié le **28 septembre 2026**, après intégration de la PR #4 et du lot IDE, mesure globale du code `27389a8`. Le produit s’appelle VBAi ; la solution, l’assembly, le namespace et les identifiants COM conservent le nom VBAi.
 
 ## Utiliser le complément
 

@@ -28,7 +28,7 @@ les préversions sont ignorées. L’option Ignorer s’applique à la version s
 
 ## Dépôt privé, puis public
 
-La source produit est `blackcancer/CodexVBE`, indépendamment du dépôt d’une macro.
+La source produit est `blackcancer/VBAi`, indépendamment du dépôt d’une macro.
 La lecture commence sans authentification. Sur réponse 401/404, VBAi essaie une fois
 les identifiants Git Credential Manager du compte sélectionné dans les paramètres
 GitHub, sans ouvrir de connexion interactive. Quand le dépôt sera public, une
@@ -58,7 +58,7 @@ L’installeur doit :
 - Être signé avec une signature Authenticode embarquée reconnue par Windows.
   Le programme d’application revérifie le SHA-256 et la confiance Windows avant
   toute exécution, via [WinVerifyTrust](https://learn.microsoft.com/en-us/windows/win32/api/wintrust/nf-wintrust-winverifytrust).
-- Déployer `CodexVBE.dll`, sa TLB, toutes les dépendances de rendu, `VBAi.Updater.exe`
+- Déployer `VBAi.dll`, sa TLB, toutes les dépendances de rendu, `VBAi.Updater.exe`
   et sa configuration dans un répertoire d’installation stable.
 - Inscrire les identités COM actuelles et le complément VBE 64 bits, conserver les
   paramètres et données utilisateur, puis gérer les fichiers occupés et le rollback
@@ -92,7 +92,7 @@ mais ne démarrent aucune opération automatique et refusent l’application.
 
 `VBAi.Updater` est une application WinForms .NET Framework 4.8 x64 indépendante.
 Elle partage les sources du protocole, les langues et le thème, sans référence à
-`CodexVBE.dll`. Avant lancement, le complément copie son programme dans le cache,
+`VBAi.dll`. Avant lancement, le complément copie son programme dans le cache,
 pour que l’exécutable en cours n’empêche pas l’installeur de remplacer sa version
 déployée. Un mutex utilisateur empêche plusieurs programmes d’application concurrents.
 
@@ -110,7 +110,7 @@ de l’installation produit un état incertain au redémarrage du programme exte
 aucune relance automatique de cette version n’est effectuée. Les travaux en attente
 reprennent au chargement suivant ; les métadonnées terminées restent disponibles.
 
-Tout se conserve sous `%LocalAppData%\CodexVBE\Updates` : préférences, catalogue,
+Tout se conserve sous `%LocalAppData%\VBAi\Updates` : préférences, catalogue,
 inscriptions d’hôtes, installeurs vérifiés, travail en attente et programme externe.
 Aucun fichier n’est ajouté près d’une macro et aucun code VBA n’est transmis.
 

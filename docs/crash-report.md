@@ -9,7 +9,7 @@ E-mail et Fermer restent disponibles sans authentification.
 
 **Envoyer le rapport** utilise le compte GitHub sélectionné dans les paramètres
 et ses identifiants Git Credential Manager, sans ouvrir une connexion interactive.
-L’issue est créée dans `blackcancer/CodexVBE`, jamais dans le dépôt de la macro.
+L’issue est créée dans `blackcancer/VBAi`, jamais dans le dépôt de la macro.
 Ce dépôt était privé lors de la vérification du 28 septembre 2026 : le compte doit
 avoir accès aux issues. Le lien vers l’issue créée apparaît après une réponse valide.
 
@@ -40,7 +40,7 @@ VBA ne sont pas joints. La description saisie est incluse volontairement et visi
 dans l’aperçu ; elle peut donc contenir les informations que l’utilisateur y ajoute.
 
 Une copie Markdown est enregistrée avant tout envoi dans
-`%LocalAppData%\CodexVBE\CrashReports\<identifiant>.md`. Si cette sauvegarde échoue,
+`%LocalAppData%\VBAi\CrashReports\<identifiant>.md`. Si cette sauvegarde échoue,
 l’envoi est interrompu. Cette zone reste privée au profil Windows et ne crée aucun
 fichier autour de la macro. Aucune suppression automatique des copies n’est effectuée.
 
@@ -66,7 +66,7 @@ ou une terminaison forcée. Ce mécanisme ne remplace pas un dump natif.
 
 ## Designer, langues et validation
 
-`src/CodexVBE/Ui/CrashReportWindow.cs`, `.Designer.cs` et `.resx` constituent un
+`src/VBAi/Ui/CrashReportWindow.cs`, `.Designer.cs` et `.resx` constituent un
 formulaire standard avec 20 contrôles fixes. Seules les données, les états de livraison
 et les couleurs sont actualisés à l’exécution. Les textes sont traduits hors ligne
 dans les 13 catalogues existants ; les champs techniques restent de gauche à droite.

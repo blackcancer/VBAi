@@ -1,4 +1,4 @@
-﻿param(
+param(
     [Parameter(Mandatory = $true)][string]$AssemblyPath,
     [Parameter(Mandatory = $true)][string]$OutputDirectory,
     [switch]$AllowTemporaryVbaAccess
@@ -18,7 +18,7 @@ $probeProcess = $null
 $otherBook = $null
 $excel = $null; $book = $null; $form = $null; $session = $null
 function Invoke-Session([hashtable]$Fields) {
-    $request = New-Object CodexVBE.Request
+    $request = New-Object VBAi.Request
     foreach ($key in $Fields.Keys) { $request.$key = $Fields[$key] }
     $response = $script:session.Execute($request)
     if (-not $response.Ok) { throw $response.Error }
@@ -33,7 +33,7 @@ try {
     $book = $excel.Workbooks.Add()
     $vbe = $excel.GetType().InvokeMember('VBE', [Reflection.BindingFlags]::GetProperty, $null, $excel, $null)
     $vbe.MainWindow.Visible = $true
-    $session = [Activator]::CreateInstance($assembly.GetType('CodexVBE.VbeSession', $true), [object[]]@($vbe))
+    $session = [Activator]::CreateInstance($assembly.GetType('VBAi.VbeSession', $true), [object[]]@($vbe))
     $project = $book.VBProject
     $module = $project.VBComponents.Add(1); $module.Name = 'BreakpointStateProbe'
     $module.CodeModule.AddFromString("Public Sub ProbeState()`r`n    Debug.Print 1`r`n    Debug.Print 2`r`nEnd Sub")

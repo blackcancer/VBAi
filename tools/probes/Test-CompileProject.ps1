@@ -6,7 +6,7 @@ if ($hostProcess.ProcessName -ne 'EXCEL') { throw 'An isolated Excel process is 
 
 function Invoke-Vbe([hashtable] $Request) {
     $payload = ConvertTo-Json -InputObject $Request -Compress -Depth 8
-    $response = & (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson $payload |
+    $response = & (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId -RequestJson $payload |
         ConvertFrom-Json
     if (-not $response.Ok) { throw "$($Request.Command): $($response.Error)" }
     return $response.Data

@@ -15,7 +15,7 @@ Le chantier de couverture est arrêté à réception du rapport, conformément �
 | P2 | La sélection d’un autre document ferme le diff JavaScript sans remettre `showingDiff` à faux dans l’hôte. | Une sélection commune synchronise Monaco et l’hôte lors des changements d’onglet, réouvertures, navigation par outils et initialisation. L’ouverture d’un nouveau document remet aussi l’hôte en mode code. Les révisions examinées sont conservées. |
 | P2 | Les choix « Use edited version » et « Reload VBA version » deviennent des icônes seules, contrairement au contrat de l’interface compacte. | Les deux commandes conservent leur icône, leur texte visible et leur taille automatique. Le défilement horizontal permet les traductions longues. |
 
-Sources : [chat](../../src/CodexVBE/Llm/Chat/ChatWindow.cs), [sessions](../../src/CodexVBE/Llm/Chat/ChatWindow.Sessions.cs), [activités](../../src/CodexVBE/Llm/Chat/ChatWindow.Activities.cs), [Monaco](../../src/CodexVBE/Editor/ModernEditorWindow.cs), [outils Monaco](../../src/CodexVBE/Editor/ModernEditorWindow.Tools.cs), [Designer Monaco](../../src/CodexVBE/Editor/ModernEditorWindow.Designer.cs).
+Sources : [chat](../../src/VBAi/Llm/Chat/ChatWindow.cs), [sessions](../../src/VBAi/Llm/Chat/ChatWindow.Sessions.cs), [activités](../../src/VBAi/Llm/Chat/ChatWindow.Activities.cs), [Monaco](../../src/VBAi/Editor/ModernEditorWindow.cs), [outils Monaco](../../src/VBAi/Editor/ModernEditorWindow.Tools.cs), [Designer Monaco](../../src/VBAi/Editor/ModernEditorWindow.Designer.cs).
 
 ## Optimisation des fragments d’activité
 

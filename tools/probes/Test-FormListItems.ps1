@@ -6,7 +6,7 @@ if ($hostProcess.ProcessName -ne 'EXCEL') { throw 'The probe requires Excel.' }
 
 function Invoke-Vbe([hashtable] $Request) {
     $json = ConvertTo-Json -InputObject $Request -Compress -Depth 8
-    $reply = & (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson $json | ConvertFrom-Json
+    $reply = & (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId -RequestJson $json | ConvertFrom-Json
     if (-not $reply.Ok) { throw "$($Request.Command): $($reply.Error)" }
     return $reply.Data
 }
@@ -77,7 +77,7 @@ $results = foreach ($name in @('cboProbe', 'lstProbe')) {
 $invalid = @{ Command = 'form_list_items'; Project = $project; Form = $form;
     ControlPath = 'Controls/missing'; Offset = 0; Limit = 10 } |
     ConvertTo-Json -Compress
-$invalidReply = & (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson $invalid | ConvertFrom-Json
+$invalidReply = & (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId -RequestJson $invalid | ConvertFrom-Json
 if ($invalidReply.Ok -or $invalidReply.Error -notmatch 'canonical') {
     throw 'A noncanonical ControlPath was not refused.'
 }

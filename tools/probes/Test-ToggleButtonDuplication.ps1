@@ -12,7 +12,7 @@ if ($hostProcess.ProcessName -ne 'EXCEL') {
 
 function Invoke-Vbe([hashtable] $Request) {
     $json = ConvertTo-Json -InputObject $Request -Compress -Depth 8
-    $reply = & (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson $json | ConvertFrom-Json
+    $reply = & (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId -RequestJson $json | ConvertFrom-Json
     if (-not $reply.Ok) { throw "$($Request.Command): $($reply.Error)" }
     return $reply.Data
 }
@@ -38,7 +38,7 @@ $refused = @{ Command = 'set_form_node_property'; Project = $Project; Form = $Fo
     ControlPath = 'Controls/tglOriginal'; Property = 'Value'; Value = $true;
     ExpectedTreeVersion = $before.TreeVersion }
 $refusedJson = ConvertTo-Json -InputObject $refused -Compress -Depth 8
-$refusedReply = & (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson $refusedJson | ConvertFrom-Json
+$refusedReply = & (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId -RequestJson $refusedJson | ConvertFrom-Json
 $afterRefusal = Read-Tree
 if ($refusedReply.Ok -or $refusedReply.Error -notmatch 'temporarily disabled' -or
     $afterRefusal.TreeVersion -ne $before.TreeVersion) {

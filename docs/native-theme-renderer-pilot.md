@@ -58,7 +58,7 @@ Une expérience a limité les mises à jour de titres à leur HWND et le rattrap
 
 Cependant, les **153 captures exploitables** de la barre Standard pendant les changements de vue confirment le clignotement : les pixels clairs passent de **1,50 % à 35,00 %**. Plusieurs boutons et le champ de position deviennent clairs ; certains restent clairs dans la capture finale. La réduction des passes ne suffit donc pas et cette expérience n'est pas retenue par défaut. Deux essais précédents n'avaient aucune image exploitable à cause du contrôle de visibilité/masquage ; ils ne prouvent rien sur le rendu.
 
-Le chemin historique de rattrapage est rétabli par défaut, avec exclusion des onglets Propriétés déjà dessinés directement. L'expérience reste accessible uniquement via `CODEXVBE_NATIVE_LOCAL_REFRESH_EXPERIMENT=1` ; la sonde l'active avec `-LocalRefreshExperiment`, et force son absence pour un passage normal avant de restaurer l'environnement initial. La conversion existante évite maintenant la recopie du bitmap lorsqu'aucun pixel n'a changé. Le clignotement des barres **reste non résolu**.
+Le chemin historique de rattrapage est rétabli par défaut, avec exclusion des onglets Propriétés déjà dessinés directement. L'expérience reste accessible uniquement via `VBAi_NATIVE_LOCAL_REFRESH_EXPERIMENT=1` ; la sonde l'active avec `-LocalRefreshExperiment`, et force son absence pour un passage normal avant de restaurer l'environnement initial. La conversion existante évite maintenant la recopie du bitmap lorsqu'aucun pixel n'a changé. Le clignotement des barres **reste non résolu**.
 
 La prochaine investigation doit couvrir les dessins Office des boutons, non observés par la seule trace des imports VBE7, afin de choisir les couleurs avant leur dessin. La fermeture des quatre instances Excel de cette campagne est passée par fermeture du classeur et `Excel.Quit`, sans arrêt forcé.
 
@@ -66,7 +66,7 @@ La prochaine investigation doit couvrir les dessins Office des boutons, non obse
 
 ### Prototype des barres avant affichage — deuxième jalon
 
-Le prototype est désormais implémenté dans `tools/probes/native-render-trace/ToolbarPatternPilot.h`, avec une entrée explicite `CodexVbeToolbarPatternStart`. Il ne modifie encore aucune dépendance de la DLL produit. Le mode de trace par défaut reste sans recoloration.
+Le prototype est désormais implémenté dans `tools/probes/native-render-trace/ToolbarPatternPilot.h`, avec une entrée explicite `VBAiToolbarPatternStart`. Il ne modifie encore aucune dépendance de la DLL produit. Le mode de trace par défaut reste sans recoloration.
 
 Trois chemins distincts ont été nécessaires :
 
@@ -103,7 +103,7 @@ Résultats du passage final `excel-toolbar-trace-04` :
 
 Cette investigation modifie uniquement les outils de diagnostic. La DLL produit installée conserve l'empreinte ci-dessous ; aucun correctif de pinceau n'est encore installé. Artefacts de compilation/auto-test : `trace-toolbar-final` ; rapport des empreintes et restaurations : `excel-toolbar-trace-04/verification.json`.
 
-- Sources : `src/CodexVBE/Ui/VbeNativePropertyTabs.cs`, intégration dans `VbeNativeTheme.cs`.
+- Sources : `src/VBAi/Ui/VbeNativePropertyTabs.cs`, intégration dans `VbeNativeTheme.cs`.
 - Tests et preuves : `artifacts/native-renderer-pilot/tests`, `excel-run-01`, `excel-toolbar-04`, `trace/selftest-result-final`.
 - Synthèse de trace : `excel-run-01/native-render.summary.json` ; limites détaillées dans le README de la sonde.
 - Versions antérieures de la DLL conservées dans `installed-baseline` et `installed-pilot-01` avant remplacement.
@@ -115,7 +115,7 @@ La compilation finale avec l'expérience locale désactivée par défaut réussi
 
 ## Intégration dans l'add-in — 28 septembre 2026
 
-Le moteur des barres est maintenant dans `src/CodexVBE.Native`, appelé par
+Le moteur des barres est maintenant dans `src/VBAi.Native`, appelé par
 `VbeNativeRenderer` lors de l'activation et de la désactivation du thème.
 Le projet C# compile automatiquement la DLL native et l'embarque comme ressource.
 Le chargement utilise un cache local nommé par SHA-256 ; l'empreinte et l'ABI sont

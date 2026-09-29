@@ -1,7 +1,7 @@
 param([Parameter(Mandatory=$true)][string]$StopFile)
 $ErrorActionPreference='Stop'
 if(Get-Process EXCEL -ErrorAction SilentlyContinue) { throw 'Existing Excel session detected.' }
-$env:CODEXVBE_NATIVE_DARK_EXPERIMENT='1'
+$env:VBAi_NATIVE_DARK_EXPERIMENT='1'
 $excel=$null; $book=$null
 try {
  $excel=New-Object -ComObject Excel.Application

@@ -1,7 +1,7 @@
 param([Parameter(Mandatory=$true)][string]$AssemblyPath)
 $ErrorActionPreference = 'Stop'
 $assembly = [Reflection.Assembly]::LoadFrom([IO.Path]::GetFullPath($AssemblyPath))
-$type = $assembly.GetType('CodexVBE.VbeNativeRenderer', $true)
+$type = $assembly.GetType('VBAi.VbeNativeRenderer', $true)
 $flags = [Reflection.BindingFlags]'NonPublic,Static'
 $load = $type.GetMethod('EnsureLoaded', $flags)
 $load.Invoke($null, @())

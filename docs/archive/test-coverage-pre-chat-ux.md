@@ -3,7 +3,7 @@
 > Bilan historique. La mesure actuelle figure dans [test-coverage.md](../test-coverage.md).
 
 
-Cette mesure antérieure à la fusion porte sur l’assembly de production `CodexVBE`, avec la suite VSTest complète, sans filtre de tests ni exclusion de code de production. Elle couvre les lignes et les branches exécutables instrumentées par Coverlet ; elle ne constitue pas une preuve de compatibilité de chaque fonction avec tous les hôtes VBE. Les nouvelles sources apportées par `chat-ux` doivent être incluses dans une nouvelle mesure ; les 100 % ci-dessous ne leur sont pas attribués.
+Cette mesure antérieure à la fusion porte sur l’assembly de production `VBAi`, avec la suite VSTest complète, sans filtre de tests ni exclusion de code de production. Elle couvre les lignes et les branches exécutables instrumentées par Coverlet ; elle ne constitue pas une preuve de compatibilité de chaque fonction avec tous les hôtes VBE. Les nouvelles sources apportées par `chat-ux` doivent être incluses dans une nouvelle mesure ; les 100 % ci-dessous ne leur sont pas attribués.
 
 | Mesure | Résultat |
 | --- | --- |
@@ -31,7 +31,7 @@ Ces artefacts sont générés localement et ne sont pas ajoutés au dépôt.
 Depuis la racine du dépôt, dans PowerShell :
 
 ```powershell
-dotnet test tests/CodexVBE.Tests/CodexVBE.Tests.csproj -c Debug `
+dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug `
     '--collect:XPlat Code Coverage' `
     --results-directory artifacts/coverage/global `
     --logger 'trx;LogFileName=global.trx' `
@@ -44,7 +44,7 @@ dotnet test tests/CodexVBE.Tests/CodexVBE.Tests.csproj -c Debug `
 
 ## Vérification dans Excel
 
-La DLL et sa bibliothèque de types COM ont été reconstruites dans le chemin déjà enregistré, puis les tests ont été exécutés avec `CODEXVBE_RUN_EXCEL_TESTS=1` et le filtre `TestCategory=Excel`.
+La DLL et sa bibliothèque de types COM ont été reconstruites dans le chemin déjà enregistré, puis les tests ont été exécutés avec `VBAi_RUN_EXCEL_TESTS=1` et le filtre `TestCategory=Excel`.
 
 Les fixtures démarrent leurs propres instances Excel, affichent Excel et ouvrent le VBE par une commande native, sans raccourci ni coordonnées. Les tests vérifient le pont du complément, les projets, les fenêtres de débogage et la sauvegarde/relecture d’un classeur macro jetable. Ils ferment leurs classeurs et leurs processus après l’essai ; aucune instance Excel ne reste ouverte à l’issue de cette validation.
 

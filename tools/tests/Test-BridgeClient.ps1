@@ -10,7 +10,7 @@ public sealed class BridgeClientFixture : IDisposable {
     private readonly ManualResetEvent stop = new ManualResetEvent(false);
     private readonly Thread worker;
     public BridgeClientFixture(int id, string mode) {
-        pipe = new NamedPipeServerStream("CodexVBE." + id, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+        pipe = new NamedPipeServerStream("VBAi." + id, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
         worker = new Thread(() => {
             try {
                 pipe.WaitForConnection();
@@ -29,7 +29,7 @@ public sealed class BridgeClientFixture : IDisposable {
     public void Dispose() { stop.Set(); pipe.Dispose(); worker.Join(2000); stop.Dispose(); }
 }
 "@
-$client = Join-Path $PSScriptRoot '../Invoke-CodexVBE.ps1'
+$client = Join-Path $PSScriptRoot '../Invoke-VBAi.ps1'
 $testId = $PID
 foreach ($mode in @('reply','silent','close')) {
     $server = New-Object BridgeClientFixture($testId, $mode)

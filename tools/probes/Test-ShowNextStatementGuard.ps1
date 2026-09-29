@@ -3,7 +3,7 @@ param([Parameter(Mandatory = $true)] [int] $HostProcessId)
 $ErrorActionPreference = 'Stop'
 $excelProcess = Get-Process -Id $HostProcessId -ErrorAction Stop
 if ($excelProcess.ProcessName -ne 'EXCEL') { throw 'A disposable Excel process is required.' }
-$bridge = Join-Path (Split-Path -Parent $PSScriptRoot) 'Invoke-CodexVBE.ps1'
+$bridge = Join-Path (Split-Path -Parent $PSScriptRoot) 'Invoke-VBAi.ps1'
 function Invoke-Vbe([hashtable] $request) {
     $json = ConvertTo-Json -InputObject $request -Compress -Depth 8
     $response = & $bridge -HostProcessId $HostProcessId -RequestJson $json | ConvertFrom-Json

@@ -18,17 +18,17 @@ Dans **Paramètres du fournisseur**, sélectionner le fournisseur et renseigner 
 | DeepSeek | `https://api.deepseek.com/chat/completions` | `DEEPSEEK_API_KEY` |
 | OpenRouter | `https://openrouter.ai/api/v1/chat/completions` | `OPENROUTER_API_KEY` |
 | LM Studio | `http://localhost:1234/v1/chat/completions` | `LM_STUDIO_API_KEY` (facultative) |
-| Personnalisé (OpenAI) | URL complète à renseigner | `CODEXVBE_CUSTOM_API_KEY` (facultative) |
+| Personnalisé (OpenAI) | URL complète à renseigner | `VBAi_CUSTOM_API_KEY` (facultative) |
 | Azure OpenAI | `https://<ressource>.openai.azure.com/openai/v1/chat/completions` à renseigner | `AZURE_OPENAI_API_KEY` ou `AZURE_OPENAI_ENTRA_TOKEN` suivant le mode |
 | Grok | `https://api.x.ai/v1/chat/completions` | `XAI_API_KEY` |
 | Groq | `https://api.groq.com/openai/v1/chat/completions` | `GROQ_API_KEY` |
 | Amazon Bedrock | `https://bedrock-runtime.<région>.amazonaws.com` à renseigner | `AWS_BEARER_TOKEN_BEDROCK` |
 
-Les URL de secours suivent `CODEXVBE_<FOURNISSEUR>_ENDPOINT` avec les identifiants `OPENAI`, `OLLAMA`, `CLAUDE`, `GEMINI`, `MISTRAL`, `DEEPSEEK`, `OPENROUTER`, `LMSTUDIO`, `CUSTOM`, `AZURE`, `GROK`, `GROQ`, `BEDROCK`. Les réglages enregistrés ont priorité. Redémarrer l’hôte après une modification des variables d’environnement.
+Les URL de secours suivent `VBAi_<FOURNISSEUR>_ENDPOINT` avec les identifiants `OPENAI`, `OLLAMA`, `CLAUDE`, `GEMINI`, `MISTRAL`, `DEEPSEEK`, `OPENROUTER`, `LMSTUDIO`, `CUSTOM`, `AZURE`, `GROK`, `GROQ`, `BEDROCK`. Les réglages enregistrés ont priorité. Redémarrer l’hôte après une modification des variables d’environnement.
 
 ### Fournisseur personnalisé, Azure et Bedrock
 
-Ces trois entrées utilisent une liste de modèles explicite, un identifiant par ligne dans Configuration. Cette liste peut aussi provenir de `CODEXVBE_CUSTOM_MODEL`, `CODEXVBE_AZURE_MODEL` ou `CODEXVBE_BEDROCK_MODEL`. Le catalogue ne dépend donc pas d’un endpoint `/models` que certains serveurs n’exposent pas.
+Ces trois entrées utilisent une liste de modèles explicite, un identifiant par ligne dans Configuration. Cette liste peut aussi provenir de `VBAi_CUSTOM_MODEL`, `VBAi_AZURE_MODEL` ou `VBAi_BEDROCK_MODEL`. Le catalogue ne dépend donc pas d’un endpoint `/models` que certains serveurs n’exposent pas.
 
 Le fournisseur personnalisé permet de choisir un nom d’affichage et une URL compatible Chat Completions ; sa clé Bearer est facultative. Son identité persistée reste stable si son nom d’affichage change. Un seul profil personnalisé est actuellement proposé.
 
@@ -42,8 +42,8 @@ Les clés sont chiffrées avec DPAPI pour le compte Windows courant. Elles reste
 
 Les processus CLI de VBAi ont leur propre stockage local :
 
-- Codex : `%LOCALAPPDATA%\CodexVBE\Providers\Codex`, transmis comme `CODEX_HOME`.
-- Copilot : `%LOCALAPPDATA%\CodexVBE\Providers\Copilot`, transmis comme `COPILOT_HOME`.
+- Codex : `%LOCALAPPDATA%\VBAi\Providers\Codex`, transmis comme `CODEX_HOME`.
+- Copilot : `%LOCALAPPDATA%\VBAi\Providers\Copilot`, transmis comme `COPILOT_HOME`.
 
 Ces variables sont fixées seulement dans les processus enfants, y compris les commandes de connexion et de statut. Les clients habituels conservent leurs dossiers par défaut. L’historique SQLite de VBAi reste séparé du stockage interne de chaque CLI. Une connexion dans les paramètres de VBAi peut être nécessaire dans le nouveau dossier ; aucun fichier d’authentification personnel n’est copié.
 
@@ -57,7 +57,7 @@ Les emplacements suivent la [configuration officielle Codex](https://developers.
 
 Codex est le fournisseur par défaut. Le complément utilise le processus `codex app-server` et le compte ChatGPT authentifié par le CLI, sans clé OpenAI API. La configuration propose l’état du compte, la connexion et l’actualisation ; les champs de clé et d’endpoint des transports HTTP sont masqués pour ce mode.
 
-Le complément résout l’exécutable dans cet ordre : `CODEXVBE_CODEX_CLI` si elle est définie, l’ancien emplacement `%LOCALAPPDATA%\Programs\OpenAI\Codex\bin\codex.exe`, les sous-dossiers versionnés de `%LOCALAPPDATA%\OpenAI\Codex\bin` (exécutable le plus récent), puis `codex.exe` dans le `PATH` du processus hôte. Aucun identifiant de version propre à un poste n’est enregistré. Sur une installation non couverte par ces emplacements, définir `CODEXVBE_CODEX_CLI` vers le véritable exécutable natif et redémarrer Excel ou SOLIDWORKS. Un lanceur `.cmd` n’est pas pris en charge par ce transport sans shell.
+Le complément résout l’exécutable dans cet ordre : `VBAi_CODEX_CLI` si elle est définie, l’ancien emplacement `%LOCALAPPDATA%\Programs\OpenAI\Codex\bin\codex.exe`, les sous-dossiers versionnés de `%LOCALAPPDATA%\OpenAI\Codex\bin` (exécutable le plus récent), puis `codex.exe` dans le `PATH` du processus hôte. Aucun identifiant de version propre à un poste n’est enregistré. Sur une installation non couverte par ces emplacements, définir `VBAi_CODEX_CLI` vers le véritable exécutable natif et redémarrer Excel ou SOLIDWORKS. Un lanceur `.cmd` n’est pas pris en charge par ce transport sans shell.
 
 Le catalogue provient de `model/list`. Les niveaux de raisonnement disponibles et la valeur initiale proviennent des métadonnées du modèle. Le chat transmet le modèle et l’effort au prochain tour, conserve l’identifiant du thread par session et reprend celui-ci avec `thread/resume`.
 
@@ -75,7 +75,7 @@ Tous les modèles d’un catalogue ne prennent pas nécessairement en charge les
 
 Installer le CLI GitHub Copilot et utiliser **Se connecter à GitHub** dans les paramètres, en utilisant son espace privé. Le complément utilise l’authentification gérée par ce CLI ; il n’extrait pas de jeton d’une extension Visual Studio et ne remplace pas Copilot par GitHub Models.
 
-Le complément lance `copilot.exe --headless --stdio --no-auto-update --log-level error`. Si l’exécutable natif n’est pas dans PATH, renseigner son chemin dans `CODEXVBE_COPILOT_CLI`. Les lanceurs `.cmd` ne sont pas exécutés par un shell. Le catalogue provient de `models.list` ; le transport vérifie les versions de protocole 2 ou 3 et refuse les autres avec un diagnostic explicite.
+Le complément lance `copilot.exe --headless --stdio --no-auto-update --log-level error`. Si l’exécutable natif n’est pas dans PATH, renseigner son chemin dans `VBAi_COPILOT_CLI`. Les lanceurs `.cmd` ne sont pas exécutés par un shell. Le catalogue provient de `models.list` ; le transport vérifie les versions de protocole 2 ou 3 et refuse les autres avec un diagnostic explicite.
 
 Une session Copilot est créée pour chaque envoi avec l’historique local et les instructions système. Les appels d’outils et leurs résultats rejoignent cet historique. Aucun identifiant de session distante Copilot n’est réutilisé entre documents. Le CLI conserve son état dans le dossier privé Copilot de VBAi, distinct du dossier des autres clients et du stockage SQLite du complément.
 
@@ -84,8 +84,8 @@ Seuls les outils VBA déclarés sont exposés. Les demandes natives shell/fichie
 ## Vérification
 
 ```powershell
-dotnet build tests/CodexVBE.Providers.Smoke/CodexVBE.Providers.Smoke.csproj -c Debug -p:BuildOutputRoot="$PWD/artifacts/provider-tests"
-./artifacts/provider-tests/CodexVBE.Providers.Smoke/Debug/net48/ProviderTests.exe
+dotnet build tests/VBAi.Providers.Smoke/VBAi.Providers.Smoke.csproj -c Debug -p:BuildOutputRoot="$PWD/artifacts/provider-tests"
+./artifacts/provider-tests/VBAi.Providers.Smoke/Debug/net48/ProviderTests.exe
 ```
 
 Les tests utilisent des gestionnaires HTTP simulés et un processus CLI de test avec le véritable cadrage `Content-Length` : URLs, en-têtes, catalogues, pagination, appels/résultats d’outils, Unicode, métadonnées de continuation, stockage DPAPI, migration des réglages, brouillons du formulaire et annulation. Copilot couvre les protocoles 2/3, les permissions natives refusées, les outils enregistrés, les doublons, les sessions étrangères, une version inconnue et l’arrêt d’une réponse.

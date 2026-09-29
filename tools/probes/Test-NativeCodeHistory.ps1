@@ -1,4 +1,4 @@
-﻿param(
+param(
     [Parameter(Mandatory = $true)][string]$AssemblyPath,
     [Parameter(Mandatory = $true)][string]$OutputDirectory,
     [switch]$AllowTemporaryVbaAccess
@@ -18,7 +18,7 @@ $probeProcess = $null
 $otherBook = $null
 $excel = $null; $book = $null; $form = $null; $session = $null
 function Invoke-Session([hashtable]$Fields) {
-    $request = New-Object CodexVBE.Request
+    $request = New-Object VBAi.Request
     foreach ($key in $Fields.Keys) { $request.$key = $Fields[$key] }
     Write-Output ("Request: " + $request.Command + " " + $request.Action) | Out-Host
     $response = $script:session.Execute($request)
@@ -34,7 +34,7 @@ try {
     $book = $excel.Workbooks.Add()
     $vbe = $excel.GetType().InvokeMember('VBE', [Reflection.BindingFlags]::GetProperty, $null, $excel, $null)
     $vbe.MainWindow.Visible = $true
-    $session = [Activator]::CreateInstance($assembly.GetType('CodexVBE.VbeSession', $true), [object[]]@($vbe))
+    $session = [Activator]::CreateInstance($assembly.GetType('VBAi.VbeSession', $true), [object[]]@($vbe))
     $project = $book.VBProject
     $module = $project.VBComponents.Add(1); $module.Name = 'NativeHistoryProbe'
     $module.CodeModule.AddFromString("Option Explicit`r`nPublic Sub Example()`r`nEnd Sub")
@@ -47,9 +47,9 @@ try {
     $module.CodeModule.CodePane.Window.SetFocus()
     Add-Type -AssemblyName System.Windows.Forms
     for ($i=0; $i -lt 10; $i++) { [System.Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 50 }
-    $settings = [Activator]::CreateInstance($assembly.GetType('CodexVBE.LlmSettings'), $true)
+    $settings = [Activator]::CreateInstance($assembly.GetType('VBAi.LlmSettings'), $true)
     $settings.VbeEditApproval = 'Automatic'
-    $llm = [Activator]::CreateInstance($assembly.GetType('CodexVBE.LlmVbeTools'), [object[]]@($session,$null,$settings))
+    $llm = [Activator]::CreateInstance($assembly.GetType('VBAi.LlmVbeTools'), [object[]]@($session,$null,$settings))
     $llm.BoundProject = $project.Name
     Add-Type -TypeDefinition 'public static class HistoryDiffCounter { public static int Count; public static string Modules = ""; public static void Changed(object change) { Count++; Modules += change.GetType().GetProperty("Module").GetValue(change, null).ToString() + ";"; } }'
     $editedEvent = $llm.GetType().GetEvent('CodeEdited')

@@ -1,11 +1,11 @@
-﻿param(
+param(
     [ValidateSet('Conversation', 'History', 'Reference', 'Command', 'Welcome', 'Queue', 'Reasoning')][string]$Mode = 'Conversation',
     [int]$Width = 720,
     [int]$Height = 950,
     [switch]$ScrollToTop,
     [ValidateSet('System', 'Light', 'Dark')][string]$Theme = 'System',
     [string]$OutputDirectory = 'artifacts/chat-build',
-    [string]$AssemblyPath = 'artifacts/chat-build/CodexVBE/Debug/net48/CodexVBE.dll'
+    [string]$AssemblyPath = 'artifacts/chat-build/VBAi/Debug/net48/VBAi.dll'
 )
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing, PresentationFramework
@@ -19,13 +19,13 @@ public class RenderVbe { public object[] VBProjects { get { return new object[0]
 $assembly = [Reflection.Assembly]::LoadFrom((Resolve-Path $AssemblyPath))
 $flags = [Reflection.BindingFlags]'Instance,NonPublic,Public'
 # Process-local theme only: leave the user's stored preference unchanged.
-$themeType = $assembly.GetType('CodexVBE.UiTheme')
-$choice = [Enum]::Parse($assembly.GetType('CodexVBE.ThemeChoice'), $Theme)
+$themeType = $assembly.GetType('VBAi.UiTheme')
+$choice = [Enum]::Parse($assembly.GetType('VBAi.ThemeChoice'), $Theme)
 $themeType.GetField('<Choice>k__BackingField', [Reflection.BindingFlags]'Static,NonPublic').SetValue($null, $choice)
-function New-Internal([string]$Name) { [Activator]::CreateInstance($assembly.GetType("CodexVBE.$Name"), $true) }
+function New-Internal([string]$Name) { [Activator]::CreateInstance($assembly.GetType("VBAi.$Name"), $true) }
 function Field($object, [string]$name) { ,$object.GetType().GetField($name, $flags).GetValue($object) }
 function Call($object, [string]$name, [object[]]$arguments) { $object.GetType().GetMethod($name, $flags).Invoke($object, $arguments) }
-$session = [Activator]::CreateInstance($assembly.GetType('CodexVBE.VbeSession'), $flags, $null, @([RenderVbe]::new()), $null)
+$session = [Activator]::CreateInstance($assembly.GetType('VBAi.VbeSession'), $flags, $null, @([RenderVbe]::new()), $null)
 $window = New-Internal ChatWindow
 try {
     Call $window InitializeShell @()

@@ -7,7 +7,7 @@ if ((Get-Process -Id $HostProcessId -ErrorAction Stop).ProcessName -ne 'SLDWORKS
 }
 function Invoke-Vbe([hashtable] $Request) {
     $payload = ConvertTo-Json -InputObject $Request -Compress -Depth 8
-    $response = & (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson $payload |
+    $response = & (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId -RequestJson $payload |
         ConvertFrom-Json
     if (-not $response.Ok) { throw "$($Request.Command): $($response.Error)" }
     return $response.Data
@@ -30,7 +30,7 @@ if (@($baseline | Where-Object { $_.Name -eq $module }).Count -ne 0) {
 }
 $original = Invoke-Vbe @{ Command = 'read_module'; Project = $project; Module = 'test1' }
 $source = $null
-$outputPath = Join-Path $env:TEMP ("CodexVBE-sw-breakpoint-{0}.txt" -f $HostProcessId)
+$outputPath = Join-Path $env:TEMP ("VBAi-sw-breakpoint-{0}.txt" -f $HostProcessId)
 if (Test-Path -LiteralPath $outputPath) { throw 'The disposable output path already exists.' }
 $breakpointSet = $false
 $breakpointRemovalInvoked = $false

@@ -1,4 +1,4 @@
-﻿param(
+param(
     [Parameter(Mandatory = $true)][string]$AssemblyPath,
     [Parameter(Mandatory = $true)][string]$OutputDirectory,
     [switch]$UseBridge,
@@ -91,11 +91,11 @@ function Invoke-Session([hashtable]$Fields) {
     if ($UseBridge) {
         Write-Host ('Bridge request: ' + $Fields.Command)
         $requestTimeout = if ($Fields.Command -in @('read_object_browser', 'select_object_browser', 'list_object_browser')) { 30 } else { 5 }
-        $response = & (Join-Path $PSScriptRoot '../Invoke-CodexVBE.ps1') -HostProcessId $probeProcess.Id -RequestJson ($Fields | ConvertTo-Json -Compress) -ResponseTimeoutSeconds $requestTimeout | ConvertFrom-Json
+        $response = & (Join-Path $PSScriptRoot '../Invoke-VBAi.ps1') -HostProcessId $probeProcess.Id -RequestJson ($Fields | ConvertTo-Json -Compress) -ResponseTimeoutSeconds $requestTimeout | ConvertFrom-Json
         if (-not $response.Ok) { throw $response.Error }
         return $response.Data
     }
-    $request = New-Object CodexVBE.Request
+    $request = New-Object VBAi.Request
     foreach ($key in $Fields.Keys) { $request.$key = $Fields[$key] }
     $response = $script:session.Execute($request)
     if (-not $response.Ok) { throw $response.Error }
@@ -104,7 +104,7 @@ function Invoke-Session([hashtable]$Fields) {
 try {
     if ($priorAccess -ne 1) { New-ItemProperty -LiteralPath $securityPath -Name AccessVBOM -PropertyType DWord -Value 1 -Force | Out-Null }
     if ($UseBridge) {
-        $scratch = Join-Path $PSScriptRoot 'CodexVBE-scratch.xlsx'
+        $scratch = Join-Path $PSScriptRoot 'VBAi-scratch.xlsx'
         if (-not (Test-Path -LiteralPath $scratch)) { throw 'Native Excel scratch workbook is missing.' }
         $probeProcess = Start-Process -FilePath 'C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE' -ArgumentList @('/x', ('"' + $scratch + '"')) -WindowStyle Hidden -PassThru
         for ($attempt = 0; $attempt -lt 30 -and $null -eq $excel; $attempt++) {
@@ -123,7 +123,7 @@ try {
     $book = $excel.Workbooks.Add()
     $vbe = $excel.GetType().InvokeMember('VBE', [Reflection.BindingFlags]::GetProperty, $null, $excel, $null)
     $vbe.MainWindow.Visible = $true
-    $session = [Activator]::CreateInstance($assembly.GetType('CodexVBE.VbeSession', $true), [object[]]@($vbe))
+    $session = [Activator]::CreateInstance($assembly.GetType('VBAi.VbeSession', $true), [object[]]@($vbe))
     if ($UseBridge) {
         Get-Process -Id $probeProcess.Id -Module | Select-Object ModuleName,FileName | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $directory 'loaded-addin-modules.json') -Encoding UTF8
         $processInfo = Get-CimInstance Win32_Process -Filter "ProcessId=$($probeProcess.Id)"

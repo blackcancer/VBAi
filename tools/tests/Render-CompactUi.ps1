@@ -1,18 +1,18 @@
-﻿param([string]$AssemblyPath = 'bin/Debug/net48/CodexVBE.dll',
+param([string]$AssemblyPath = 'bin/Debug/net48/VBAi.dll',
     [ValidateSet('Light','Dark')][string]$Theme = 'Dark',
     [string]$OutputDirectory = 'artifacts/compact-ui')
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms,System.Drawing,System.Design
 $assembly = [Reflection.Assembly]::LoadFrom((Resolve-Path $AssemblyPath))
 $flags = [Reflection.BindingFlags]'Static,NonPublic'
-$themeType = $assembly.GetType('CodexVBE.UiTheme')
-$themeType.GetField('<Choice>k__BackingField',$flags).SetValue($null,[Enum]::Parse($assembly.GetType('CodexVBE.ThemeChoice'),$Theme))
+$themeType = $assembly.GetType('VBAi.UiTheme')
+$themeType.GetField('<Choice>k__BackingField',$flags).SetValue($null,[Enum]::Parse($assembly.GetType('VBAi.ThemeChoice'),$Theme))
 $directory = [IO.Path]::GetFullPath($OutputDirectory)
 [IO.Directory]::CreateDirectory($directory) | Out-Null
 [ComponentModel.LicenseManager]::CurrentContext = New-Object ComponentModel.Design.DesigntimeLicenseContext
 foreach ($name in @('GitWindow','LlmSettingsWindow','AboutWindow','CrashReportWindow','UpdateWindow','UpdateProgressWindow')) {
     [ComponentModel.LicenseManager]::CurrentContext = New-Object ComponentModel.Design.DesigntimeLicenseContext
-    $form = [Activator]::CreateInstance($assembly.GetType('CodexVBE.'+$name),$true)
+    $form = [Activator]::CreateInstance($assembly.GetType('VBAi.'+$name),$true)
     try {
         $themeType.GetMethod('Apply',$flags).Invoke($null,@($form))
         $form.ShowInTaskbar = $false

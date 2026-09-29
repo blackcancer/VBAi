@@ -4,7 +4,7 @@
 
 Complément COM pour le **Visual Basic Editor 64 bits**, notamment Excel et SOLIDWORKS, ciblant **.NET Framework 4.8 x64**. Il intègre une conversation LLM et des outils de lecture, d’édition, de conception de UserForms et de débogage du projet VBA vivant. Codex est le fournisseur par défaut ; les autres fournisseurs se configurent dans le complément.
 
-Anciennement CodexVBE : les noms de solution, d’assembly, les identifiants COM et les répertoires de données sont conservés pour les installations existantes. L’interface dispose de 13 variantes linguistiques.
+Anciennement VBAi : les noms de solution, d’assembly, les identifiants COM et les répertoires de données sont conservés pour les installations existantes. L’interface dispose de 13 variantes linguistiques.
 
 ## Documentation
 
@@ -25,12 +25,12 @@ Les tests réels Excel vérifient le chargement, le pont et la sauvegarde/relect
 
 ## Développement
 
-Ouvrir `CodexVBE.sln` dans Visual Studio, plateforme **x64** :
+Ouvrir `VBAi.sln` dans Visual Studio, plateforme **x64** :
 
 ```powershell
-dotnet build CodexVBE.sln -c Debug -p:Platform=x64
+dotnet build VBAi.sln -c Debug -p:Platform=x64
 ```
 
-`src/CodexVBE/` contient le complément ; `tests/` contient le projet VSTest, ses miroirs et les diagnostics. `tools/` regroupe installation, contrôleur, sondes et essais natifs. `assets/` contient les ressources graphiques ; `artifacts/` contient les rapports locaux ignorés par Git.
+`src/VBAi/` contient le complément ; `tests/` contient le projet VSTest, ses miroirs et les diagnostics. `tools/` regroupe installation, contrôleur, sondes et essais natifs. `assets/` contient les ressources graphiques ; `artifacts/` contient les rapports locaux ignorés par Git.
 
 Les essais autonomes utilisent une instance Excel visible et jetable. SOLIDWORKS et son VBE sont préchargés par l’utilisateur. Les raccourcis VBE et `SendKeys` sont proscrits ; les actions ciblent le projet et vérifient leurs révisions. Pour compiler pendant qu’un hôte charge la DLL, utiliser une sortie isolée plutôt que la sortie installée : voir [Architecture](docs/architecture.md).

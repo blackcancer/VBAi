@@ -1,0 +1,178 @@
+namespace VBAi
+{
+    /// <summary>Contrôles générés de la fenêtre de configuration LLM.</summary>
+    internal sealed partial class LlmSettingsWindow
+    {
+        /// <summary>Disposition principale des onglets et des boutons.</summary>
+        private System.Windows.Forms.TableLayoutPanel contentLayout;
+        /// <summary>Disposition des commandes de validation.</summary>
+        private System.Windows.Forms.FlowLayoutPanel buttons;
+        /// <summary>Commande d’enregistrement des paramètres.</summary>
+        private VBAi.UiActionButton saveButton;
+        /// <summary>Commande d’annulation et de fermeture.</summary>
+        private VBAi.UiActionButton cancelButton;
+        /// <summary>Conteneur à onglets des catégories de réglage.</summary>
+        private VBAi.ThemedTabControl settingsTabs;
+        /// <summary>Vue des paramètres de fournisseur et d’authentification Codex.</summary>
+        private VBAi.ProviderSettingsView providerSettingsView;
+        /// <summary>Onglet des paramètres fournisseur.</summary>
+        private System.Windows.Forms.TabPage providerSettingsViewTab;
+        /// <summary>Vue des paramètres du compte GitHub.</summary>
+        private VBAi.GitHubAccountSettingsView gitHubAccountSettingsView;
+        /// <summary>Onglet du compte GitHub.</summary>
+        private System.Windows.Forms.TabPage gitHubAccountSettingsViewTab;
+        /// <summary>Vue des préférences d’apparence.</summary>
+        private VBAi.AppearanceSettingsView appearanceSettingsView;
+        /// <summary>Onglet des préférences d’apparence.</summary>
+        private System.Windows.Forms.TabPage appearanceSettingsViewTab;
+        /// <summary>Initialise les onglets et boutons de la fenêtre de paramètres.</summary>
+        private void InitializeComponent()
+        {
+            this.buttons = new System.Windows.Forms.FlowLayoutPanel();
+            this.saveButton = new VBAi.UiActionButton();
+            this.cancelButton = new VBAi.UiActionButton();
+            this.contentLayout = new System.Windows.Forms.TableLayoutPanel();
+            this.settingsTabs = new VBAi.ThemedTabControl();
+            this.providerSettingsView = new VBAi.ProviderSettingsView();
+            this.providerSettingsViewTab = new System.Windows.Forms.TabPage();
+            this.gitHubAccountSettingsView = new VBAi.GitHubAccountSettingsView();
+            this.gitHubAccountSettingsViewTab = new System.Windows.Forms.TabPage();
+            this.appearanceSettingsView = new VBAi.AppearanceSettingsView();
+            this.appearanceSettingsViewTab = new System.Windows.Forms.TabPage();
+            this.contentLayout.SuspendLayout();
+            this.buttons.SuspendLayout();
+            this.settingsTabs.SuspendLayout();
+            this.providerSettingsView.SuspendLayout();
+            this.providerSettingsViewTab.SuspendLayout();
+            this.gitHubAccountSettingsView.SuspendLayout();
+            this.gitHubAccountSettingsViewTab.SuspendLayout();
+            this.appearanceSettingsView.SuspendLayout();
+            this.appearanceSettingsViewTab.SuspendLayout();
+            this.SuspendLayout();
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            this.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.ClientSize = new System.Drawing.Size(720, 600);
+            this.MinimumSize = new System.Drawing.Size(640, 480);
+            this.buttons.AutoSize = true;
+            this.buttons.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.buttons.Controls.Add(this.saveButton);
+            this.buttons.Controls.Add(this.cancelButton);
+            this.buttons.Dock = System.Windows.Forms.DockStyle.Top;
+            this.buttons.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
+            this.buttons.Location = new System.Drawing.Point(0, 256);
+            this.buttons.Margin = new System.Windows.Forms.Padding(0);
+            this.buttons.Name = "buttons";
+            this.buttons.Padding = new System.Windows.Forms.Padding(12, 4, 12, 12);
+            this.buttons.Size = new System.Drawing.Size(624, 45);
+            this.buttons.TabIndex = 1;
+            this.saveButton.Location = new System.Drawing.Point(492, 7);
+            this.saveButton.Name = "saveButton";
+            this.saveButton.Size = new System.Drawing.Size(105, 23);
+            this.saveButton.TabIndex = 0;
+            this.saveButton.Text = "Save";
+            this.cancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+            this.cancelButton.Location = new System.Drawing.Point(381, 7);
+            this.cancelButton.Name = "cancelButton";
+            this.cancelButton.Size = new System.Drawing.Size(105, 23);
+            this.cancelButton.TabIndex = 1;
+            this.cancelButton.Text = "Cancel";
+            this.saveButton.AutoSize = true;
+            this.cancelButton.AutoSize = true;
+            this.saveButton.MinimumSize = new System.Drawing.Size(105, 30);
+            this.cancelButton.MinimumSize = new System.Drawing.Size(105, 30);
+            this.saveButton.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
+            this.cancelButton.Padding = new System.Windows.Forms.Padding(6, 2, 6, 2);
+            this.settingsTabs.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.providerSettingsView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.providerSettingsViewTab.Text = "Provider";
+            this.providerSettingsViewTab.Name = "providerSettingsViewTab";
+            this.providerSettingsViewTab.Controls.Add(this.providerSettingsView);
+            this.settingsTabs.Controls.Add(this.providerSettingsViewTab);
+            this.gitHubAccountSettingsView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.gitHubAccountSettingsViewTab.Text = "GitHub account";
+            this.gitHubAccountSettingsViewTab.Name = "gitHubAccountSettingsViewTab";
+            this.gitHubAccountSettingsViewTab.Controls.Add(this.gitHubAccountSettingsView);
+            this.settingsTabs.Controls.Add(this.gitHubAccountSettingsViewTab);
+            this.appearanceSettingsView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.appearanceSettingsViewTab.Text = "Appearance";
+            this.appearanceSettingsViewTab.Name = "appearanceSettingsViewTab";
+            this.appearanceSettingsViewTab.Controls.Add(this.appearanceSettingsView);
+            this.settingsTabs.Controls.Add(this.appearanceSettingsViewTab);
+            this.contentLayout.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.contentLayout.ColumnCount = 1;
+            this.contentLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.contentLayout.RowCount = 2;
+            this.contentLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.contentLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.contentLayout.Controls.Add(this.settingsTabs, 0, 0);
+            this.contentLayout.Controls.Add(this.buttons, 0, 1);
+            this.buttons.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.Controls.Add(this.contentLayout);
+            this.AcceptButton = this.saveButton;
+            this.CancelButton = this.cancelButton;
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Name = "LlmSettingsWindow";
+            this.Text = "VBAi — Settings";
+            this.ShowInTaskbar = false;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+            this.contentLayout.Name = "contentLayout";
+            this.contentLayout.Location = new System.Drawing.Point(0, 0);
+            this.contentLayout.Size = new System.Drawing.Size(720, 600);
+            this.contentLayout.TabIndex = 0;
+            this.settingsTabs.Name = "settingsTabs";
+            this.settingsTabs.ItemSize = new System.Drawing.Size(0, 36);
+            this.settingsTabs.Padding = new System.Drawing.Point(12, 6);
+            this.settingsTabs.Location = new System.Drawing.Point(3, 3);
+            this.settingsTabs.Size = new System.Drawing.Size(714, 540);
+            this.settingsTabs.TabIndex = 0;
+            this.providerSettingsView.Name = "providerSettingsView";
+            this.providerSettingsView.Location = new System.Drawing.Point(0, 0);
+            this.providerSettingsView.Size = new System.Drawing.Size(200, 100);
+            this.providerSettingsView.TabIndex = 0;
+            this.providerSettingsViewTab.Location = new System.Drawing.Point(0, 0);
+            this.providerSettingsViewTab.Size = new System.Drawing.Size(200, 100);
+            this.providerSettingsViewTab.TabIndex = 0;
+            this.gitHubAccountSettingsView.Name = "gitHubAccountSettingsView";
+            this.gitHubAccountSettingsView.Location = new System.Drawing.Point(0, 0);
+            this.gitHubAccountSettingsView.Size = new System.Drawing.Size(200, 100);
+            this.gitHubAccountSettingsView.TabIndex = 0;
+            this.gitHubAccountSettingsViewTab.Location = new System.Drawing.Point(0, 0);
+            this.gitHubAccountSettingsViewTab.Size = new System.Drawing.Size(200, 100);
+            this.gitHubAccountSettingsViewTab.TabIndex = 1;
+            this.appearanceSettingsView.Name = "appearanceSettingsView";
+            this.appearanceSettingsView.Location = new System.Drawing.Point(0, 0);
+            this.appearanceSettingsView.Size = new System.Drawing.Size(200, 100);
+            this.appearanceSettingsView.TabIndex = 0;
+            this.appearanceSettingsViewTab.Location = new System.Drawing.Point(0, 0);
+            this.appearanceSettingsViewTab.Size = new System.Drawing.Size(200, 100);
+            this.appearanceSettingsViewTab.TabIndex = 2;
+            this.contentLayout.ResumeLayout(false);
+            this.contentLayout.PerformLayout();
+            this.buttons.ResumeLayout(false);
+            this.buttons.PerformLayout();
+            this.settingsTabs.ResumeLayout(false);
+            this.settingsTabs.PerformLayout();
+            this.providerSettingsView.ResumeLayout(false);
+            this.providerSettingsView.PerformLayout();
+            this.providerSettingsViewTab.ResumeLayout(false);
+            this.providerSettingsViewTab.PerformLayout();
+            this.gitHubAccountSettingsView.ResumeLayout(false);
+            this.gitHubAccountSettingsView.PerformLayout();
+            this.gitHubAccountSettingsViewTab.ResumeLayout(false);
+            this.gitHubAccountSettingsViewTab.PerformLayout();
+            this.appearanceSettingsView.ResumeLayout(false);
+            this.appearanceSettingsView.PerformLayout();
+            this.appearanceSettingsViewTab.ResumeLayout(false);
+            this.appearanceSettingsViewTab.PerformLayout();
+            this.saveButton.Symbol = VBAi.UiSymbol.Save;
+            this.saveButton.Primary = true;
+            this.cancelButton.Symbol = VBAi.UiSymbol.Close;
+            this.cancelButton.IconOnly = true;
+            this.cancelButton.AutoSize = false;
+            this.cancelButton.MinimumSize = System.Drawing.Size.Empty;
+            this.cancelButton.Size = new System.Drawing.Size(32, 30);
+            this.ResumeLayout(false);
+            this.PerformLayout();
+        }
+    }
+}

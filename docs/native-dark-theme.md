@@ -18,7 +18,7 @@ Contrôles effectués sur main : compilation isolée sans erreur ni avertissemen
 
 Correctifs d'intégration : découverte du SDK Windows par son emplacement enregistré (D: sur ce poste), conservation de l'éditeur Monaco actuel, lecture du HWND optionnel protégée dans le démarrage de l'add-in, complétion des quatre nouveaux textes dans les treize catalogues, et arrêt natif confirmé avant de détruire les ressources. Si l'arrêt échoue, palette, HWND, hooks et état actif sont conservés ; la désactivation signale l'échec au lieu d'annoncer une restauration réussie.
 
-Le mode `ForceDark`, global au processus, est réservé à `CODEXVBE_NATIVE_DARK_EXPERIMENT=1`. La case des paramètres applique les traitements ciblés aux fenêtres VBE sans imposer ce mode au processus Office. Le rendu de ce parcours modifié reste à qualifier dans les hôtes réels. Le moteur C++ possède ses propres vérifications et **n'est pas mesuré par Coverlet**, qui mesure le complément C# ; voir le [bilan courant](test-coverage.md).
+Le mode `ForceDark`, global au processus, est réservé à `VBAi_NATIVE_DARK_EXPERIMENT=1`. La case des paramètres applique les traitements ciblés aux fenêtres VBE sans imposer ce mode au processus Office. Le rendu de ce parcours modifié reste à qualifier dans les hôtes réels. Le moteur C++ possède ses propres vérifications et **n'est pas mesuré par Coverlet**, qui mesure le complément C# ; voir le [bilan courant](test-coverage.md).
 
 ## Historique de la branche — validation en cours
 
@@ -59,7 +59,7 @@ La classe `VbeNativeTheme` :
 - ne modifie pas les projets VBA ni les fichiers hôtes ; les couleurs de code sont appliquées via le dialogue Options et leur sauvegarde de récupération est conservée jusqu’à la restauration vérifiée ;
 - n’utilise aucun raccourci clavier et ne dépend pas du focus.
 
-Une variable `CODEXVBE_NATIVE_DARK_EXPERIMENT=1` reste disponible pour les sondes jetables sans modifier les préférences utilisateur.
+Une variable `VBAi_NATIVE_DARK_EXPERIMENT=1` reste disponible pour les sondes jetables sans modifier les préférences utilisateur.
 
 ## Résultat observé
 
@@ -113,7 +113,7 @@ La suite approuvée est décrite dans [le plan de l’éditeur moderne](modern-e
 
 ### Cycle complet depuis les paramètres
 
-La sonde `-SettingsThemeCycle -OpenCodeWindow` utilise le vrai menu `CodexVBE.Settings`, sélectionne la page Apparence, modifie la case native et enregistre. Elle n'utilise pas la variable d'expérience. Le réglage est relu sur disque et le test attend la vérification du service différé avant de poursuivre.
+La sonde `-SettingsThemeCycle -OpenCodeWindow` utilise le vrai menu `VBAi.Settings`, sélectionne la page Apparence, modifie la case native et enregistre. Elle n'utilise pas la variable d'expérience. Le réglage est relu sur disque et le test attend la vérification du service différé avant de poursuivre.
 
 Le cycle `artifacts/vbe-native-settings-cycle/` a réussi : activation depuis les paramètres, palette appliquée et relue, capture du VBE sombre, désactivation depuis les paramètres, palette restaurée et relue, puis retour visuel au VBE clair. Excel a quitté normalement. Le fichier de paramètres du poste a été sauvegardé à côté de l'original, restauré octet pour octet (empreintes comparées), puis sa copie temporaire a été supprimée. Aucun fichier de récupération de palette ne reste ; seul le fichier de verrou vide peut subsister.
 
@@ -143,7 +143,7 @@ Un rafraîchissement différé a aussi été ajouté après saisie, fin de séle
 
 `VbeNativePalette` est maintenant raccordé au réglage du thème par `VbeNativeTheme` et `AddIn`. Une demande est différée jusqu'à ce que le VBE soit visible et disponible, après fermeture des paramètres. À la déconnexion, le minuteur est arrêté : aucun dialogue n'est ouvert pendant la fermeture de l'hôte.
 
-Le fichier `%LOCALAPPDATA%/CodexVBE/native-theme/palette-{version VBE}.json` contient les dix catégories d'origine et la palette attendue. Il est créé avant toute modification, avec écriture temporaire vidée sur disque puis déplacement sans remplacement. Une validation du schéma, de la version, des catégories et des indices précède son utilisation. Un fichier verrouillé sérialise les opérations de lecture/modification/restauration.
+Le fichier `%LOCALAPPDATA%/VBAi/native-theme/palette-{version VBE}.json` contient les dix catégories d'origine et la palette attendue. Il est créé avant toute modification, avec écriture temporaire vidée sur disque puis déplacement sans remplacement. Une validation du schéma, de la version, des catégories et des indices précède son utilisation. Un fichier verrouillé sérialise les opérations de lecture/modification/restauration.
 
 La désactivation restaure les valeurs d'origine seulement si les valeurs actuelles correspondent à l'origine ou au thème enregistré. Une personnalisation intermédiaire provoque un signalement et conserve la sauvegarde. La suppression du fichier de récupération intervient uniquement après relecture des couleurs restaurées dans un dialogue Options rouvert. Le verrou sérialise les transactions ; le comportement de plusieurs hôtes simultanés partageant leurs préférences VBA reste à qualifier.
 

@@ -1,4 +1,4 @@
-﻿param(
+param(
     [Parameter(Mandatory = $true)][string]$AssemblyPath,
     [Parameter(Mandatory = $true)][string]$OutputDirectory,
     [switch]$AllowTemporaryVbaAccess
@@ -18,7 +18,7 @@ $probeProcess = $null
 $otherBook = $null
 $excel = $null; $book = $null; $form = $null; $session = $null
 function Invoke-Session([hashtable]$Fields) {
-    $request = New-Object CodexVBE.Request
+    $request = New-Object VBAi.Request
     foreach ($key in $Fields.Keys) { $request.$key = $Fields[$key] }
     $response = $script:session.Execute($request)
     if (-not $response.Ok) { throw $response.Error }
@@ -33,20 +33,20 @@ try {
     $book = $excel.Workbooks.Add()
     $vbe = $excel.GetType().InvokeMember('VBE', [Reflection.BindingFlags]::GetProperty, $null, $excel, $null)
     $vbe.MainWindow.Visible = $true
-    $session = [Activator]::CreateInstance($assembly.GetType('CodexVBE.VbeSession', $true), [object[]]@($vbe))
+    $session = [Activator]::CreateInstance($assembly.GetType('VBAi.VbeSession', $true), [object[]]@($vbe))
     $project = $book.VBProject
     $module = $project.VBComponents.Add(1); $module.Name = 'EditorCommandProbe'
     $module.CodeModule.AddFromString("Public Sub First()`r`n    Debug.Print 1`r`nEnd Sub`r`nPublic Sub Second()`r`n    Debug.Print 2`r`nEnd Sub")
     $pane = $module.CodeModule.CodePane; $pane.Show(); $pane.SetSelection(2, 1, 2, 1)
     $book.SaveAs($document, 52)
     $database = $document + '.sqlite'
-    $session = [Activator]::CreateInstance($assembly.GetType('CodexVBE.VbeSession', $true), [object[]]@($vbe, $database))
+    $session = [Activator]::CreateInstance($assembly.GetType('VBAi.VbeSession', $true), [object[]]@($vbe, $database))
     $code = Invoke-Session @{ Command = 'read_module'; Project = $document; Module = $module.Name }
     $added = Invoke-Session @{ Command = 'code_bookmark'; Project = $project.Name; Module = $module.Name; Action = 'add'; Query = "Entrée été"; ExpectedSha256 = $code.Sha256; StartLine = 2; StartColumn = 5 }
     if ($added.Persistence -ne 'SQLite') { throw 'Bookmark did not use persistent storage.' }
     $book.Close($false); $book = $null
     $book = $excel.Workbooks.Open($document)
-    $session = [Activator]::CreateInstance($assembly.GetType('CodexVBE.VbeSession', $true), [object[]]@($vbe, $database))
+    $session = [Activator]::CreateInstance($assembly.GetType('VBAi.VbeSession', $true), [object[]]@($vbe, $database))
     $listed = Invoke-Session @{ Command = 'code_bookmark'; Project = $document; Action = 'list' }
     if ($listed.Bookmarks.Count -ne 1) { throw 'Bookmark not found in new session.' }
     $null = Invoke-Session @{ Command = 'code_bookmark'; Project = $document; Action = 'go'; Query = 'Entrée été' }

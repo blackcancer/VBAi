@@ -2,7 +2,7 @@
 
 > Archive conservée le 28 septembre 2026. Ce document contient des observations et des décisions de sa période de rédaction ; ses états « à faire » et ses anciens chiffres ne constituent pas le bilan actuel. Voir [la documentation actuelle](../../README.md) et [les travaux restants](../../roadmap.md).
 
-Référence d'interaction : GitHub Copilot Chat dans Visual Studio. Son sélecteur de modèles se trouve dans la fenêtre de conversation ; la gestion des modèles et des fournisseurs s'ouvre depuis ce sélecteur. CodexVBE conserve aussi une entrée `Outils > Configuration CodexVBE…`, demandée pour rendre ces réglages accessibles depuis VBE.
+Référence d'interaction : GitHub Copilot Chat dans Visual Studio. Son sélecteur de modèles se trouve dans la fenêtre de conversation ; la gestion des modèles et des fournisseurs s'ouvre depuis ce sélecteur. VBAi conserve aussi une entrée `Outils > Configuration VBAi…`, demandée pour rendre ces réglages accessibles depuis VBE.
 
 ## Configuration du fournisseur
 
@@ -29,7 +29,7 @@ Référence d'interaction : GitHub Copilot Chat dans Visual Studio. Son sélecte
 
 ## Accès VBE
 
-- `Affichage > Assistant CodexVBE` rouvre l'assistant après fermeture. `Outils > Configuration CodexVBE…` ouvre directement les paramètres du fournisseur. Ces commandes sont ajoutées aux menus natifs du VBE et cherchées par leur intitulé selon la langue de l'hôte.
+- `Affichage > Assistant VBAi` rouvre l'assistant après fermeture. `Outils > Configuration VBAi…` ouvre directement les paramètres du fournisseur. Ces commandes sont ajoutées aux menus natifs du VBE et cherchées par leur intitulé selon la langue de l'hôte.
 - Le chat est hébergé dans une fenêtre outil native du VBE et s'ouvre au démarrage. Excel a validé le panneau à droite, son redimensionnement et la restauration de sa position après redémarrage. Le VBE choisit initialement le bas sur une disposition vierge ; le premier déplacement à droite reste manuel, car `LinkedWindows.Add` ne permet pas de désigner un côté.
 
 ## Niveaux d'approbation des commandes VBE

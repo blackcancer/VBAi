@@ -1,4 +1,4 @@
-﻿param([string]$AssemblyPath = 'bin/Debug/net48/CodexVBE.dll', [string]$OutputDirectory = 'artifacts/compact-ui/editor')
+param([string]$AssemblyPath = 'bin/Debug/net48/VBAi.dll', [string]$OutputDirectory = 'artifacts/compact-ui/editor')
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms,System.Drawing,System.Web.Extensions
 $assembly = [Reflection.Assembly]::LoadFrom((Resolve-Path $AssemblyPath))
@@ -6,8 +6,8 @@ $flags = [Reflection.BindingFlags]'Instance,NonPublic,Public'
 $static = [Reflection.BindingFlags]'Static,NonPublic,Public'
 $directory = [IO.Path]::GetFullPath($OutputDirectory)
 [IO.Directory]::CreateDirectory($directory) | Out-Null
-$theme = $assembly.GetType('CodexVBE.UiTheme')
-$window = [Activator]::CreateInstance($assembly.GetType('CodexVBE.ModernEditorWindow'),$true)
+$theme = $assembly.GetType('VBAi.UiTheme')
+$window = [Activator]::CreateInstance($assembly.GetType('VBAi.ModernEditorWindow'),$true)
 function Wait-Task($task) {
     $watch = [Diagnostics.Stopwatch]::StartNew()
     while (-not $task.IsCompleted) {
@@ -32,7 +32,7 @@ try {
     Script "window.vbai.open('appearance-probe', 'Option Explicit\nSub Example()\nEnd Sub')" | Out-Null
     $results = @()
     foreach ($choice in @('Light','Dark','Light')) {
-        $theme.GetField('<Choice>k__BackingField',$static).SetValue($null,[Enum]::Parse($assembly.GetType('CodexVBE.ThemeChoice'),$choice))
+        $theme.GetField('<Choice>k__BackingField',$static).SetValue($null,[Enum]::Parse($assembly.GetType('VBAi.ThemeChoice'),$choice))
         Wait-Task ($window.GetType().GetMethod('Theme',$flags).Invoke($window,@())) | Out-Null
         foreach ($mode in @('code','diff','code-after-diff')) {
             if ($mode -eq 'diff') { Script "window.vbai.compare('Option Explicit')" | Out-Null }

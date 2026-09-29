@@ -1,0 +1,2071 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="&#10;### Attached memory&#10;" xml:space="preserve">
+    <value>
+###Прикрепленная память
+</value>
+  </data>
+  <data name="&#10;Location unavailable: " xml:space="preserve">
+    <value>
+Место недоступно: </value>
+  </data>
+  <data name="&#10;Project identifier to use in tools: " xml:space="preserve">
+    <value>
+Идентификатор проекта для использования в инструментах: </value>
+  </data>
+  <data name=" Bedrock API key (Bearer), not an IAM secret key. URL: https://bedrock-runtime.&lt;region&gt;.amazonaws.com." xml:space="preserve">
+    <value> Bedrock API key (Bearer), а не секретный ключ IAM. URL: https://bedrock-runtime.&lt;region&gt;.amazonaws.com.</value>
+  </data>
+  <data name=" Optional key. Enter the full /chat/completions URL and model identifiers." xml:space="preserve">
+    <value> Дополнительный ключ. Введите полный URL /chat/completions и идентификаторы моделей.</value>
+  </data>
+  <data name=" URL: https://&lt;resource&gt;.openai.azure.com/openai/v1/chat/completions. Models are your deployment names. In Entra mode: AZURE_OPENAI_ENTRA_TOKEN." xml:space="preserve">
+    <value> URL: https://&lt;resource&gt;.openai.azure.com/openai/v1/chat/completions. Модели - ваши имена развертывания. В режиме Entra: AZURE_OPENAI_ENTRA_TOKEN.</value>
+  </data>
+  <data name=" account(s) available through Git Credential Manager. Repository access will be checked during synchronization." xml:space="preserve">
+    <value> Учетная запись (аккаунты), доступная через Git Credential Manager. Доступ к хранилищам будет проверяться во время синхронизации.</value>
+  </data>
+  <data name=" change(s) applied. Review the files and undo this turn below." xml:space="preserve">
+    <value> Пересмотрите файлы и отмените этот поворот ниже.</value>
+  </data>
+  <data name=" characters" xml:space="preserve">
+    <value> персонажи</value>
+  </data>
+  <data name=" characters. This conversation's history also accompanies the request." xml:space="preserve">
+    <value> История этого разговора также сопровождает просьбу.</value>
+  </data>
+  <data name=" failed. " xml:space="preserve">
+    <value> провалился. </value>
+  </data>
+  <data name=" file(s) changed since the last synchronization." xml:space="preserve">
+    <value> Файл(ы) изменился с момента последней синхронизации.</value>
+  </data>
+  <data name=" is stale. Remove it and attach the current selection." xml:space="preserve">
+    <value> Удалите его и прикрепите текущий отбор.</value>
+  </data>
+  <data name=" remote branch(es). Choose a name, then Track remote." xml:space="preserve">
+    <value> Удаленная ветвь(ы). Выберите имя, затем Отслеживайте удаленно.</value>
+  </data>
+  <data name=" · History not saved" xml:space="preserve">
+    <value> • История не спасена</value>
+  </data>
+  <data name=" · branch" xml:space="preserve">
+    <value> · филиал</value>
+  </data>
+  <data name=" · check the COM control installation." xml:space="preserve">
+    <value> • Проверка установки управления COM.</value>
+  </data>
+  <data name=" · selection L" xml:space="preserve">
+    <value> Выбор L</value>
+  </data>
+  <data name=" — ready" xml:space="preserve">
+    <value> готовый</value>
+  </data>
+  <data name=" — working" xml:space="preserve">
+    <value> - работающий</value>
+  </data>
+  <data name="+ New" xml:space="preserve">
+    <value>+ Новый</value>
+  </data>
+  <data name=". Analysis only; no edits or macro execution.&#10;" xml:space="preserve">
+    <value>Только анализ; никаких правок или макроисполнения.
+</value>
+  </data>
+  <data name=". Choose a version or edit the full content below." xml:space="preserve">
+    <value>Выберите версию или отредактируйте полный контент ниже.</value>
+  </data>
+  <data name=". Removing the saved key enables this fallback again." xml:space="preserve">
+    <value>Удаление сохраненного ключа позволяет снова получить этот запас.</value>
+  </data>
+  <data name=". Use Restore." xml:space="preserve">
+    <value>Восстановление.</value>
+  </data>
+  <data name=".vba files contain only the visible code of the host module." xml:space="preserve">
+    <value>Файлы .vba содержат только видимый код модуля хоста.</value>
+  </data>
+  <data name=": no edits or macro execution" xml:space="preserve">
+    <value>Без правок или макро-исполнения</value>
+  </data>
+  <data name="@ Function" xml:space="preserve">
+    <value>@ Function</value>
+  </data>
+  <data name="A checkpoint name of 1 to 160 characters is required." xml:space="preserve">
+    <value>Требуется имя контрольной точки от 1 до 160 символов.</value>
+  </data>
+  <data name="A commit message is required." xml:space="preserve">
+    <value>Требуется обязательное сообщение.</value>
+  </data>
+  <data name="A merge commit message is required." xml:space="preserve">
+    <value>Требуется сообщение о слиянии.</value>
+  </data>
+  <data name="A merge is already in progress." xml:space="preserve">
+    <value>Слияние уже происходит.</value>
+  </data>
+  <data name="API URL" xml:space="preserve">
+    <value>API URL</value>
+  </data>
+  <data name="API URL for " xml:space="preserve">
+    <value>API URL для </value>
+  </data>
+  <data name="Abort merge" xml:space="preserve">
+    <value>Слияние абортов</value>
+  </data>
+  <data name="Account used for subsequent macro fetch, pull and push operations. Does not change global Git configuration." xml:space="preserve">
+    <value>Учетная запись, используемая для последующих операций макрокетч, тяни и толкай. Не меняет глобальную конфигурацию Git.</value>
+  </data>
+  <data name="Add #aModule or @aFunction to work on your code." xml:space="preserve">
+    <value>Добавьте #aModule или @aFunction для работы над кодом.</value>
+  </data>
+  <data name="Add concise and useful VBA documentation to the code." xml:space="preserve">
+    <value>Добавьте в код краткую и полезную документацию VBA.</value>
+  </data>
+  <data name="Agent activity" xml:space="preserve">
+    <value>Агентская активность</value>
+  </data>
+  <data name="Agent: edits allowed by the VBE policy" xml:space="preserve">
+    <value>Агент: правки, разрешенные политикой VBE</value>
+  </data>
+  <data name="Applied" xml:space="preserve">
+    <value>прикладной</value>
+  </data>
+  <data name="Archive / restore" xml:space="preserve">
+    <value>Архив / Восстановление</value>
+  </data>
+  <data name="Archive the selected conversation or restore it if archived." xml:space="preserve">
+    <value>Архивируйте выбранный разговор или восстановите его, если он архивирован.</value>
+  </data>
+  <data name="Ask for other actions" xml:space="preserve">
+    <value>Просить о других действиях</value>
+  </data>
+  <data name="Attach selection" xml:space="preserve">
+    <value>Прикрепить выделенное</value>
+  </data>
+  <data name="Attach the code selected in the VBE; attach the current line when nothing is selected." xml:space="preserve">
+    <value>Прикрепите код, выбранный в VBE; прикрепите текущую строку, когда ничего не выбрано.</value>
+  </data>
+  <data name="Attach these notes to the next message sent to the selected provider" xml:space="preserve">
+    <value>Прикрепите эти примечания к следующему сообщению, отправленному выбранному провайдеру.</value>
+  </data>
+  <data name="Attached document memory" xml:space="preserve">
+    <value>Прикрепленная память документа</value>
+  </data>
+  <data name="Attached memory · ×" xml:space="preserve">
+    <value>Прикрепленная память · ×</value>
+  </data>
+  <data name="Authentication" xml:space="preserve">
+    <value>аутентификация</value>
+  </data>
+  <data name="Automatic" xml:space="preserve">
+    <value>Автоматически</value>
+  </data>
+  <data name="Automatic Git selection" xml:space="preserve">
+    <value>Автоматический выбор Git</value>
+  </data>
+  <data name="Automatically compile the project after agent edits." xml:space="preserve">
+    <value>Автоматически компилировать проект после изменений агента.</value>
+  </data>
+  <data name="Bedrock Runtime URL" xml:space="preserve">
+    <value>Bedrock Runtime URL</value>
+  </data>
+  <data name="Before import · " xml:space="preserve">
+    <value>перед импортом; </value>
+  </data>
+  <data name="Binary resource" xml:space="preserve">
+    <value>Бинарный ресурс</value>
+  </data>
+  <data name="Binary source or unresolved conflict: " xml:space="preserve">
+    <value>Бинарный источник или неразрешенный конфликт: </value>
+  </data>
+  <data name="Block " xml:space="preserve">
+    <value>блокировать </value>
+  </data>
+  <data name="Branch" xml:space="preserve">
+    <value>Ветка</value>
+  </data>
+  <data name="Branch conversation" xml:space="preserve">
+    <value>Ветвь беседы</value>
+  </data>
+  <data name="Branch history (context only; read the live code again):&#10;" xml:space="preserve">
+    <value>История филиала (только контекст; прочитайте живой код снова):
+</value>
+  </data>
+  <data name="Branch name to create or track" xml:space="preserve">
+    <value>Название филиала для создания или отслеживания</value>
+  </data>
+  <data name="Branch not linked" xml:space="preserve">
+    <value>Отделение не связано</value>
+  </data>
+  <data name="Branch to synchronize. Pushes are never forced." xml:space="preserve">
+    <value>Отделение для синхронизации. Пуши никогда не заставляют.</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="Change diff" xml:space="preserve">
+    <value>Изменить дифф</value>
+  </data>
+  <data name="Change undone" xml:space="preserve">
+    <value>Перемены отменяются</value>
+  </data>
+  <data name="Changes · " xml:space="preserve">
+    <value>Изменения · </value>
+  </data>
+  <data name="Changes · 0" xml:space="preserve">
+    <value>Изменения · 0</value>
+  </data>
+  <data name="Chat" xml:space="preserve">
+    <value>Чат</value>
+  </data>
+  <data name="Chat and Plan: no project changes" xml:space="preserve">
+    <value>Чат и план: никаких изменений в проекте</value>
+  </data>
+  <data name="ChatGPT account" xml:space="preserve">
+    <value>Аккаунт ChatGPT</value>
+  </data>
+  <data name="Check VBA" xml:space="preserve">
+    <value>Проверить VBA</value>
+  </data>
+  <data name="Checking ChatGPT connection…" xml:space="preserve">
+    <value>Проверка соединения ChatGPT...</value>
+  </data>
+  <data name="Checking ChatGPT…" xml:space="preserve">
+    <value>Проверка ChatGPT...</value>
+  </data>
+  <data name="Checking GitHub Copilot…" xml:space="preserve">
+    <value>Проверка GitHub Copilot</value>
+  </data>
+  <data name="Checkpoint name" xml:space="preserve">
+    <value>Имя контрольной точки</value>
+  </data>
+  <data name="Choose a block to undo while keeping other changes." xml:space="preserve">
+    <value>Выберите блок, чтобы отменить, сохраняя другие изменения.</value>
+  </data>
+  <data name="Choose a model offered by the selected provider." xml:space="preserve">
+    <value>Выберите модель, предложенную выбранным поставщиком.</value>
+  </data>
+  <data name="Choose an available model before sending." xml:space="preserve">
+    <value>Выберите доступную модель перед отправкой.</value>
+  </data>
+  <data name="Choose ours, theirs or text for a VBA text source." xml:space="preserve">
+    <value>Выбрать ours, theirs или text для одного VBA text Источник.</value>
+  </data>
+  <data name="Choose the AI provider for this conversation." xml:space="preserve">
+    <value>Выберите провайдера для этого разговора.</value>
+  </data>
+  <data name="Choose the VBA document associated with this context and its conversations." xml:space="preserve">
+    <value>Выберите документ VBA, связанный с этим контекстом и его разговорами.</value>
+  </data>
+  <data name="Choose the entire current-branch file for the selected conflict." xml:space="preserve">
+    <value>Выберите весь файл текущей ветви для выбранного конфликта.</value>
+  </data>
+  <data name="Choose the entire incoming-branch file for the selected conflict." xml:space="preserve">
+    <value>Выберите весь файл входящей ветви для выбранного конфликта.</value>
+  </data>
+  <data name="Code changed since the import; automatic restore refused." xml:space="preserve">
+    <value>Код изменился с момента ввоза; автоматическое восстановление отказало.</value>
+  </data>
+  <data name="Code restored" xml:space="preserve">
+    <value>Восстановленный код</value>
+  </data>
+  <data name="Codex — ready" xml:space="preserve">
+    <value>Codex - готово</value>
+  </data>
+  <data name="Codex — working" xml:space="preserve">
+    <value>Codex - работающий</value>
+  </data>
+  <data name="Command · Enter to choose · add your instructions" xml:space="preserve">
+    <value>Командир · Введите, чтобы выбрать · добавьте инструкции</value>
+  </data>
+  <data name="Commit all" xml:space="preserve">
+    <value>Коммит всех изменений</value>
+  </data>
+  <data name="Commit message" xml:space="preserve">
+    <value>Объявить сообщение</value>
+  </data>
+  <data name="Compare" xml:space="preserve">
+    <value>Сравнить</value>
+  </data>
+  <data name="Compare live VBA with the last synchronized state without network access." xml:space="preserve">
+    <value>Сравните Live VBA с последним синхронизированным состоянием без доступа к сети.</value>
+  </data>
+  <data name="Compilation error · see the diagnostic in the chat" xml:space="preserve">
+    <value>Ошибка компиляции · см. Диагностика в чате</value>
+  </data>
+  <data name="Compilation finished: no native diagnostics observed. Macros were not executed." xml:space="preserve">
+    <value>Компиляция закончена: никакой нативной диагностики не наблюдалось. Макрос не был выполнен.</value>
+  </data>
+  <data name="Compilation not verified" xml:space="preserve">
+    <value>Компиляция не проверена</value>
+  </data>
+  <data name="Compilation not verified: " xml:space="preserve">
+    <value>Компиляция не проверена: </value>
+  </data>
+  <data name="Compile after changes" xml:space="preserve">
+    <value>Компиляция после изменений</value>
+  </data>
+  <data name="Compile the VBA project and display diagnostics in the chat." xml:space="preserve">
+    <value>Составьте проект VBA и покажите диагностику в чате.</value>
+  </data>
+  <data name="Compiling VBA…" xml:space="preserve">
+    <value>Составление VBA...</value>
+  </data>
+  <data name="Complete GitHub sign-in in your browser…" xml:space="preserve">
+    <value>Заполните вход GitHub в вашем браузере...</value>
+  </data>
+  <data name="Complete merge" xml:space="preserve">
+    <value>Полное слияние</value>
+  </data>
+  <data name="Complete or abort the current merge." xml:space="preserve">
+    <value>Завершить или прервать текущее слияние.</value>
+  </data>
+  <data name="Component missing from the manifest." xml:space="preserve">
+    <value>Компонент отсутствует в манифесте.</value>
+  </data>
+  <data name="Configure providers and the GitHub account" xml:space="preserve">
+    <value>Настройка провайдеров и учетной записи GitHub</value>
+  </data>
+  <data name="Configure the provider, refresh models or change docking mode." xml:space="preserve">
+    <value>Настройка провайдера, обновление моделей или изменение режима стыковки.</value>
+  </data>
+  <data name="Configured models or deployments, one identifier per line" xml:space="preserve">
+    <value>Настроенные модели или развертывания, один идентификатор на строку</value>
+  </data>
+  <data name="Conflict: " xml:space="preserve">
+    <value>Конфликт: </value>
+  </data>
+  <data name="Conflicts" xml:space="preserve">
+    <value>Конфликты</value>
+  </data>
+  <data name="Connect an account to synchronize your VBA sources." xml:space="preserve">
+    <value>Подключите учетную запись для синхронизации источников VBA.</value>
+  </data>
+  <data name="Context exceeds 48,000 characters. Remove some items." xml:space="preserve">
+    <value>Контекст превышает 48,000 Персонажи, уберите некоторые вещи.</value>
+  </data>
+  <data name="Context unavailable" xml:space="preserve">
+    <value>контекст недоступен</value>
+  </data>
+  <data name="Context: " xml:space="preserve">
+    <value>Контекст: </value>
+  </data>
+  <data name="Conversation exported" xml:space="preserve">
+    <value>Переговоры экспортируются</value>
+  </data>
+  <data name="Conversation title" xml:space="preserve">
+    <value>Название беседы</value>
+  </data>
+  <data name="Conversation: messages, references and dynamic diffs" xml:space="preserve">
+    <value>Беседа: сообщения, ссылки и динамические диффы</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Копировать</value>
+  </data>
+  <data name="Copy code" xml:space="preserve">
+    <value>Код копирования</value>
+  </data>
+  <data name="Copy the message text to the clipboard." xml:space="preserve">
+    <value>Копировать сообщение text В буфер обмена.</value>
+  </data>
+  <data name="Copy this code block to the clipboard." xml:space="preserve">
+    <value>Скопируйте этот блок кода в буфер обмена.</value>
+  </data>
+  <data name="Create" xml:space="preserve">
+    <value>Создать</value>
+  </data>
+  <data name="Create a commit first." xml:space="preserve">
+    <value>Сначала создайте коммит.</value>
+  </data>
+  <data name="Create an independent conversation with the history up to this message." xml:space="preserve">
+    <value>Создайте независимую беседу с историей вплоть до этого сообщения.</value>
+  </data>
+  <data name="Create checkpoint" xml:space="preserve">
+    <value>Создать контрольную точку</value>
+  </data>
+  <data name="Create the named branch from the current commit without publishing it." xml:space="preserve">
+    <value>Создайте названную ветвь из текущего обязательства, не публикуя его.</value>
+  </data>
+  <data name="Credentials stay in Git Credential Manager. Sign-in takes effect immediately; Save keeps the chosen account for VBAi. Copilot authentication is configured separately." xml:space="preserve">
+    <value>Учётные данные хранятся в Git Credential Manager. Вход действует сразу; кнопка «Сохранить» сохраняет выбранную учётную запись для VBAi. Вход в Copilot настраивается отдельно.</value>
+  </data>
+  <data name="Current VBA" xml:space="preserve">
+    <value>Текущий VBA</value>
+  </data>
+  <data name="Current branch" xml:space="preserve">
+    <value>Нынешнее отделение</value>
+  </data>
+  <data name="Custom provider name" xml:space="preserve">
+    <value>Имя поставщика Custom</value>
+  </data>
+  <data name="Deployments (one per line)" xml:space="preserve">
+    <value>Развертывание (по одной линии)</value>
+  </data>
+  <data name="Diagnose and fix the problem while preserving the expected behavior." xml:space="preserve">
+    <value>Диагностировать и устранить проблему, сохраняя ожидаемое поведение.</value>
+  </data>
+  <data name="Discard only the prepared merge. VBA and commits remain intact." xml:space="preserve">
+    <value>Отбросьте только подготовленное слияние. VBA и фиксации остаются нетронутыми.</value>
+  </data>
+  <data name="Docked / floating window" xml:space="preserve">
+    <value>Плавающее окно / Floating window</value>
+  </data>
+  <data name="Docking unavailable: " xml:space="preserve">
+    <value>Стыковка недоступна: </value>
+  </data>
+  <data name="Document conversations" xml:space="preserve">
+    <value>Документальные разговоры</value>
+  </data>
+  <data name="Document memory" xml:space="preserve">
+    <value>Документы памяти</value>
+  </data>
+  <data name="Document memory saved locally" xml:space="preserve">
+    <value>Память документов сохранена локально</value>
+  </data>
+  <data name="Document modules do not match. Sheets and host modules must already exist with the same names." xml:space="preserve">
+    <value>Документные модули не совпадают. Листы и модули хоста должны уже существовать с одинаковыми названиями.</value>
+  </data>
+  <data name="Document the code" xml:space="preserve">
+    <value>Документировать код</value>
+  </data>
+  <data name="Download and import sources. Refuses unsynchronized local changes and divergent histories." xml:space="preserve">
+    <value>Отказывается от несинхронизированных локальных изменений и расходящихся историй.</value>
+  </data>
+  <data name="Duplicate component name." xml:space="preserve">
+    <value>Двойное название компонента.</value>
+  </data>
+  <data name="Empty or invalid code selection." xml:space="preserve">
+    <value>Пустой или недействительный выбор кода.</value>
+  </data>
+  <data name="Empty response." xml:space="preserve">
+    <value>Пустой ответ.</value>
+  </data>
+  <data name="Enter a title, then click Rename." xml:space="preserve">
+    <value>Введите заголовок, затем нажмите Rename.</value>
+  </data>
+  <data name="Enter notes to keep for this document, then save them." xml:space="preserve">
+    <value>Введите заметки, чтобы сохранить для этого документа, а затем сохранить их.</value>
+  </data>
+  <data name="Enter the repository's HTTPS GitHub URL without a token or password." xml:space="preserve">
+    <value>Введите URL-адрес HTTPS GitHub репозитория без маркера или пароля.</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="Error — you can resume the conversation" xml:space="preserve">
+    <value>Ошибка — вы можете возобновить разговор</value>
+  </data>
+  <data name="Explain" xml:space="preserve">
+    <value>Объяснить</value>
+  </data>
+  <data name="Explain a procedure" xml:space="preserve">
+    <value>Объясните процедуру</value>
+  </data>
+  <data name="Explain the code and its dependencies without changing it." xml:space="preserve">
+    <value>Объясните код и его зависимости, не изменяя его.</value>
+  </data>
+  <data name="Explicit context" xml:space="preserve">
+    <value>Явный контекст</value>
+  </data>
+  <data name="Export Markdown" xml:space="preserve">
+    <value>экспорт Markdown</value>
+  </data>
+  <data name="Export and synchronize the current document's sources with a GitHub repository." xml:space="preserve">
+    <value>Экспорт и синхронизация источников текущего документа с репозиторием GitHub.</value>
+  </data>
+  <data name="Export sources and create a local commit of all changes. Push publishes them afterwards." xml:space="preserve">
+    <value>Экспортные источники и создание локального обязательства всех изменений. Push публикует их впоследствии.</value>
+  </data>
+  <data name="Exported identity does not match the manifest: " xml:space="preserve">
+    <value>Экспортируемая идентичность не соответствует манифесту: </value>
+  </data>
+  <data name="Fallback: " xml:space="preserve">
+    <value>Обратная связь: </value>
+  </data>
+  <data name="Fetch the named remote branch without importing its VBA." xml:space="preserve">
+    <value>Fetch Названная дистанционная ветвь без импорта VBA..</value>
+  </data>
+  <data name="File/directory conflict: choose the parent directory first." xml:space="preserve">
+    <value>Конфликт между файлами и директориями: сначала выберите родительский каталог.</value>
+  </data>
+  <data name="First link: commit then push to publish, or pull to import the repository with a backup first." xml:space="preserve">
+    <value>Первая ссылка: сначала нажмите, чтобы опубликовать, или нажмите, чтобы импортировать репозиторий с резервной копией.</value>
+  </data>
+  <data name="Fix" xml:space="preserve">
+    <value>Исправить</value>
+  </data>
+  <data name="Fix an error" xml:space="preserve">
+    <value>Исправить ошибку</value>
+  </data>
+  <data name="French" xml:space="preserve">
+    <value>французский</value>
+  </data>
+  <data name="Full resolution content for the selected VBA file" xml:space="preserve">
+    <value>Полное разрешение для выбранного файла VBA</value>
+  </data>
+  <data name="Git Credential Manager did not finish the operation. Check its installation or sign in to GitHub again." xml:space="preserve">
+    <value>Git Credential Manager не закончил операцию. Проверьте его установку или снова войдите в GitHub.</value>
+  </data>
+  <data name="Git changes" xml:space="preserve">
+    <value>Git изменения</value>
+  </data>
+  <data name="Git did not respond within 120 seconds. Check the connection and GitHub authentication." xml:space="preserve">
+    <value>Git не ответил в течение 120 секунд. Проверьте соединение и аутентификацию GitHub.</value>
+  </data>
+  <data name="Git for Windows is required. Install it with Git Credential Manager, then reopen settings." xml:space="preserve">
+    <value>Требуется Git для Windows. Установите его с помощью Git Credential Manager, а затем снова откройте настройки.</value>
+  </data>
+  <data name="GitHub account" xml:space="preserve">
+    <value>Аккаунт GitHub</value>
+  </data>
+  <data name="GitHub account for VBA repositories" xml:space="preserve">
+    <value>Учетная запись GitHub для репозиториев VBA</value>
+  </data>
+  <data name="GitHub repository" xml:space="preserve">
+    <value>Репозиторий GitHub</value>
+  </data>
+  <data name="GitHub sign-in timed out. Start sign-in again from settings." xml:space="preserve">
+    <value>Запись на GitHub отключена. Запуск записи снова с настроек.</value>
+  </data>
+  <data name="GitHub · VBA sources" xml:space="preserve">
+    <value>GitHub · Источники VBA</value>
+  </data>
+  <data name="GitHub · repositories" xml:space="preserve">
+    <value>GitHub · репозитории</value>
+  </data>
+  <data name="GitHub · synchronize VBA…" xml:space="preserve">
+    <value>GitHub синхронизирует VBA</value>
+  </data>
+  <data name="Go to the latest message and follow new responses." xml:space="preserve">
+    <value>Перейдите к последнему сообщению и следуйте новым ответам.</value>
+  </data>
+  <data name="HTTPS URL, for example https://github.com/organization/macros.git. Do not paste a token." xml:space="preserve">
+    <value>URL HTTPS, например https://github.com/organization/macros.git. Не вставляйте токен.</value>
+  </data>
+  <data name="Histories diverge. Reconcile the branch before synchronizing; no forced push is performed." xml:space="preserve">
+    <value>Историки расходятся. Примирить ветвь перед синхронизацией; никакого форсированного толчка не производится.</value>
+  </data>
+  <data name="History" xml:space="preserve">
+    <value>История</value>
+  </data>
+  <data name="History not saved: " xml:space="preserve">
+    <value>История не сохранилась: </value>
+  </data>
+  <data name="History unavailable: " xml:space="preserve">
+    <value>История недоступна: </value>
+  </data>
+  <data name="Import interrupted: restore VBA before continuing. The backup is preserved in the cache." xml:space="preserve">
+    <value>Импорт прерван: восстановить VBA перед продолжением. Бэкап сохраняется в кэше.</value>
+  </data>
+  <data name="Import the remote state with Pull first." xml:space="preserve">
+    <value>Сначала импортируйте удаленное государство с помощью Pull.</value>
+  </data>
+  <data name="Import the selected branch with a checkpoint first. Uncommitted changes are refused." xml:space="preserve">
+    <value>Импорт выбранной ветки с контрольно-пропускным пунктом в первую очередь. Незавершенные изменения отклоняются.</value>
+  </data>
+  <data name="Improve the code" xml:space="preserve">
+    <value>Улучшить код</value>
+  </data>
+  <data name="Improve the structure" xml:space="preserve">
+    <value>Улучшить структуру</value>
+  </data>
+  <data name="Include archived conversations in the list." xml:space="preserve">
+    <value>Включите архивные разговоры в список.</value>
+  </data>
+  <data name="Include saved notes in the next message sent to the provider." xml:space="preserve">
+    <value>Включите сохраненные заметки в следующее сообщение, отправленное поставщику.</value>
+  </data>
+  <data name="Incoming branch" xml:space="preserve">
+    <value>Входящий филиал</value>
+  </data>
+  <data name="Incorrect filename casing." xml:space="preserve">
+    <value>Неправильное имя файла.</value>
+  </data>
+  <data name="Inspect and refresh references, selected code and notes to send." xml:space="preserve">
+    <value>Проверьте и обновите ссылки, выбранный код и заметки для отправки.</value>
+  </data>
+  <data name="Invalid Git merge result." xml:space="preserve">
+    <value>недействительный Git Слияние результатов.</value>
+  </data>
+  <data name="Invalid GitHub account." xml:space="preserve">
+    <value>Недействительный аккаунт GitHub.</value>
+  </data>
+  <data name="Keep incoming" xml:space="preserve">
+    <value>Держите вход</value>
+  </data>
+  <data name="Keep local" xml:space="preserve">
+    <value>Держите местный</value>
+  </data>
+  <data name="Last commit / import" xml:space="preserve">
+    <value>Последнее обязательство/импорт</value>
+  </data>
+  <data name="Leave the key blank to keep the current one. Encryption is tied to your Windows account. " xml:space="preserve">
+    <value>Оставьте ключ пустым, чтобы сохранить текущий. Шифрование привязано к вашей учетной записи Windows. </value>
+  </data>
+  <data name="Leave the key blank to keep the current one. Secrets are encrypted for this Windows account." xml:space="preserve">
+    <value>Оставьте ключ пустым, чтобы сохранить текущий. Секреты зашифрованы для этой учетной записи Windows.</value>
+  </data>
+  <data name="Link an existing GitHub repository to get started." xml:space="preserve">
+    <value>Свяжите существующий репозиторий GitHub, чтобы начать.</value>
+  </data>
+  <data name="Link repository" xml:space="preserve">
+    <value>Связать репозиторий</value>
+  </data>
+  <data name="Link this document to GitHub through the interface first. The agent does not choose a repository for you." xml:space="preserve">
+    <value>Свяжите этот документ с GitHub через интерфейс первым. Агент не выбирает для вас репозиторий.</value>
+  </data>
+  <data name="List GitHub repository branches in the name selector without importing VBA." xml:space="preserve">
+    <value>Перечислите филиалы репозитория GitHub в селекторе имен без импорта VBA.</value>
+  </data>
+  <data name="Loading provider models…" xml:space="preserve">
+    <value>Модели загрузочных провайдеров...</value>
+  </data>
+  <data name="Local branch · remote state unknown (Fetch)" xml:space="preserve">
+    <value>Местная ветвь · удаленное неизвестное государствоFetch)</value>
+  </data>
+  <data name="Local changes exist. Commit them, or create a checkpoint and restore a committed state before switching branches or merging." xml:space="preserve">
+    <value>Местные изменения существуют. Совершите их, или создайте контрольно-пропускной пункт и восстановите совершенный состояние перед переключением ветвей или слиянием.</value>
+  </data>
+  <data name="Local commit created. Use Push to publish it." xml:space="preserve">
+    <value>Используйте Push, чтобы опубликовать его.</value>
+  </data>
+  <data name="Local document notes" xml:space="preserve">
+    <value>Местные документы примечания</value>
+  </data>
+  <data name="Looking for saved GitHub accounts…" xml:space="preserve">
+    <value>Поиск сохраненных учетных записей GitHub</value>
+  </data>
+  <data name="Memory not saved: " xml:space="preserve">
+    <value>Память не сохранилась: </value>
+  </data>
+  <data name="Memory requires an available SQLite history store." xml:space="preserve">
+    <value>Для сохранения памяти необходим доступный магазин истории SQLite.</value>
+  </data>
+  <data name="Memory · " xml:space="preserve">
+    <value>Память · </value>
+  </data>
+  <data name="Merge" xml:space="preserve">
+    <value>Слить</value>
+  </data>
+  <data name="Merge prepared: resolve conflicts, then click Complete merge." xml:space="preserve">
+    <value>Слияние подготовлено: разрешайте конфликты, затем нажмите Полное слияние.</value>
+  </data>
+  <data name="Message with spell checking" xml:space="preserve">
+    <value>Сообщение с проверкой орфографии</value>
+  </data>
+  <data name="Missing VBA reference: fix it before synchronizing." xml:space="preserve">
+    <value>Отсутствующая ссылка на VBA: исправьте ее перед синхронизацией.</value>
+  </data>
+  <data name="Mode for this request: " xml:space="preserve">
+    <value>Режим для этого запроса: </value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>Модель</value>
+  </data>
+  <data name="Model list unavailable: " xml:space="preserve">
+    <value>Список моделей недоступен: </value>
+  </data>
+  <data name="Models (one per line)" xml:space="preserve">
+    <value>Модели (по одной линии)</value>
+  </data>
+  <data name="Models / profiles (one per line)" xml:space="preserve">
+    <value>Модели/профили (по одной строке)</value>
+  </data>
+  <data name="New OpenAI API key" xml:space="preserve">
+    <value>Новый OpenAI API ключ</value>
+  </data>
+  <data name="New conversation" xml:space="preserve">
+    <value>Новый разговор</value>
+  </data>
+  <data name="New conversation · Ctrl+N" xml:space="preserve">
+    <value>Новый разговор · Ctrl+N</value>
+  </data>
+  <data name="New key for " xml:space="preserve">
+    <value>Новый ключ для </value>
+  </data>
+  <data name="No CodexVBA manifest in this repository." xml:space="preserve">
+    <value>В этом репозитории нет манифеста CodexVBA.</value>
+  </data>
+  <data name="No VBE host connected." xml:space="preserve">
+    <value>VBE-хост не подключен.</value>
+  </data>
+  <data name="No commit to publish." xml:space="preserve">
+    <value>Никаких обязательств по публикации.</value>
+  </data>
+  <data name="No connected project." xml:space="preserve">
+    <value>Никакого связанного проекта.</value>
+  </data>
+  <data name="No local commit · use Fetch to inspect the remote repository" xml:space="preserve">
+    <value>Никаких локальных обязательств; используйте Fetch для проверки удаленного хранилища</value>
+  </data>
+  <data name="No local commit." xml:space="preserve">
+    <value>Никаких местных обязательств.</value>
+  </data>
+  <data name="No matching target" xml:space="preserve">
+    <value>Никаких совпадающих целей</value>
+  </data>
+  <data name="No models available for this provider." xml:space="preserve">
+    <value>Никаких моделей для этого провайдера нет.</value>
+  </data>
+  <data name="No saved GitHub account. Click Sign in." xml:space="preserve">
+    <value>Нет сохраненной учетной записи GitHub.</value>
+  </data>
+  <data name="No text response." xml:space="preserve">
+    <value>Нет. text Ответ.</value>
+  </data>
+  <data name="Ollama URL (optional)" xml:space="preserve">
+    <value>Ollama URL (необязательно)</value>
+  </data>
+  <data name="Open " xml:space="preserve">
+    <value>Открыть </value>
+  </data>
+  <data name="Open VBAi — Your AI agent for VBA" xml:space="preserve">
+    <value>Open VBAi — ваш ИИ-агент для VBA</value>
+  </data>
+  <data name="Open a VBA project to start a conversation." xml:space="preserve">
+    <value>Откройте проект VBA, чтобы начать разговор.</value>
+  </data>
+  <data name="Open in the VBE" xml:space="preserve">
+    <value>Открыть в VBE</value>
+  </data>
+  <data name="Open the modified module in the VBE." xml:space="preserve">
+    <value>Откройте модифицированный модуль в VBE.</value>
+  </data>
+  <data name="Open this reference in the VBE." xml:space="preserve">
+    <value>Откройте эту ссылку в VBE.</value>
+  </data>
+  <data name="OpenAI URL (optional)" xml:space="preserve">
+    <value>OpenAI URL (необязательно)</value>
+  </data>
+  <data name="Opens GitHub authentication in your browser. No token to copy into VBAi." xml:space="preserve">
+    <value>Открывает аутентификацию GitHub в вашем браузере. Нет токена для копирования в VBAi.</value>
+  </data>
+  <data name="Operation complete: " xml:space="preserve">
+    <value>Операция завершена: </value>
+  </data>
+  <data name="Operation in progress…" xml:space="preserve">
+    <value>Операция продолжается...</value>
+  </data>
+  <data name="Optional Ollama URL" xml:space="preserve">
+    <value>Дополнительный URL Ollama</value>
+  </data>
+  <data name="Optional OpenAI URL" xml:space="preserve">
+    <value>Дополнительный OpenAI URL</value>
+  </data>
+  <data name="Optional key for this local server. " xml:space="preserve">
+    <value>Опциональный ключ для локального сервера. </value>
+  </data>
+  <data name="Outgoing context · inspect and refresh" xml:space="preserve">
+    <value>Исходящий контекст · проверка и обновление</value>
+  </data>
+  <data name="Partially undone" xml:space="preserve">
+    <value>Частично отменено</value>
+  </data>
+  <data name="Path not found in conflicts." xml:space="preserve">
+    <value>Путь, не найденный в конфликтах.</value>
+  </data>
+  <data name="Pin / unpin" xml:space="preserve">
+    <value>Pin / unpin</value>
+  </data>
+  <data name="Pin the conversation to the top of the list or unpin it." xml:space="preserve">
+    <value>Нажмите на разговор в верхней части списка или отключите его.</value>
+  </data>
+  <data name="Prepare VBA tests" xml:space="preserve">
+    <value>Подготовьте тесты VBA</value>
+  </data>
+  <data name="Prepare a concrete plan with the affected modules and checks without changing the project." xml:space="preserve">
+    <value>Подготовьте конкретный план с затронутыми модулями и проверьте, не меняя проект.</value>
+  </data>
+  <data name="Prepare a fix" xml:space="preserve">
+    <value>Подготовьте исправление</value>
+  </data>
+  <data name="Prepare a merge from the selected branch into the current branch." xml:space="preserve">
+    <value>Подготовьте слияние из выбранной ветви в текущую ветвь.</value>
+  </data>
+  <data name="Prepare the steps" xml:space="preserve">
+    <value>Подготовьте шаги</value>
+  </data>
+  <data name="Preview limited to 2,000 lines" xml:space="preserve">
+    <value>Превью ограничено 2,000 линии</value>
+  </data>
+  <data name="Propose and create isolated VBA tests. Do not execute them without an explicit request; distinguish written tests from executed tests." xml:space="preserve">
+    <value>Предложите и создайте изолированные тесты VBA. Не выполняйте их без явного запроса; отличайте письменные тесты от выполненных тестов.</value>
+  </data>
+  <data name="Provider" xml:space="preserve">
+    <value>Провайдер</value>
+  </data>
+  <data name="Provider name" xml:space="preserve">
+    <value>Имя поставщика</value>
+  </data>
+  <data name="Publish local commits on the chosen branch. Does not publish uncommitted changes." xml:space="preserve">
+    <value>Публикует локальные обязательства по выбранному филиалу. Не публикует незавершенные изменения.</value>
+  </data>
+  <data name="Pull and import" xml:space="preserve">
+    <value>Pull и импорт</value>
+  </data>
+  <data name="Pull and import complete. Check and save the document." xml:space="preserve">
+    <value>Pull Проверь и сохрани документ.</value>
+  </data>
+  <data name="Push complete." xml:space="preserve">
+    <value>Push Полный.</value>
+  </data>
+  <data name="Read-only" xml:space="preserve">
+    <value>Только чтение</value>
+  </data>
+  <data name="Reads locally saved accounts; does not check repository permissions yet." xml:space="preserve">
+    <value>Читает локально сохраненные учетные записи; еще не проверяет разрешения репозитория.</value>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>Готово</value>
+  </data>
+  <data name="Reasoning" xml:space="preserve">
+    <value>Рассуждения</value>
+  </data>
+  <data name="Reasoning effort" xml:space="preserve">
+    <value>Глубина рассуждений</value>
+  </data>
+  <data name="Reasoning · summary" xml:space="preserve">
+    <value>Обоснование · Резюме</value>
+  </data>
+  <data name="Refactor" xml:space="preserve">
+    <value>Рефакторинг</value>
+  </data>
+  <data name="Refactor the code without changing its public behavior." xml:space="preserve">
+    <value>Рефакторинг кода без изменения его публичного поведения.</value>
+  </data>
+  <data name="Reference a Sub, Function or Property" xml:space="preserve">
+    <value>Ссылка a Sub, Function или Property</value>
+  </data>
+  <data name="Reference a project or module" xml:space="preserve">
+    <value>Ссылка на проект или модуль</value>
+  </data>
+  <data name="Refresh accounts" xml:space="preserve">
+    <value>Обновить счета</value>
+  </data>
+  <data name="Refresh models" xml:space="preserve">
+    <value>Обновить модели</value>
+  </data>
+  <data name="Refresh remote commits and counts without changing VBA." xml:space="preserve">
+    <value>Обновите удаленные сборы и подсчеты без изменения VBA.</value>
+  </data>
+  <data name="Remote branches" xml:space="preserve">
+    <value>Дистанционные ветви</value>
+  </data>
+  <data name="Remove notes from the next message" xml:space="preserve">
+    <value>Удалить заметки из следующего сообщения</value>
+  </data>
+  <data name="Remove saved API key" xml:space="preserve">
+    <value>Удалить сохраненный ключ API</value>
+  </data>
+  <data name="Remove this reference from the context" xml:space="preserve">
+    <value>Удалить эту ссылку из контекста</value>
+  </data>
+  <data name="Remove this selection" xml:space="preserve">
+    <value>Удалить этот выбор</value>
+  </data>
+  <data name="Rename" xml:space="preserve">
+    <value>переименование</value>
+  </data>
+  <data name="Replace the entire VBA text file with the text edited above." xml:space="preserve">
+    <value>Заменить весь VBA text файл с помощью text Отредактировано выше.</value>
+  </data>
+  <data name="Resolve all conflicts before completing the merge." xml:space="preserve">
+    <value>Решайте все конфликты до завершения слияния.</value>
+  </data>
+  <data name="Response interrupted. Changes already applied can still be undone in the chat." xml:space="preserve">
+    <value>Реакция прервана. Уже внесенные изменения все еще можно отменить в чате.</value>
+  </data>
+  <data name="Restore VBA" xml:space="preserve">
+    <value>Восстановить VBA</value>
+  </data>
+  <data name="Restore selection" xml:space="preserve">
+    <value>Восстановить выбор</value>
+  </data>
+  <data name="Restore the backup made before the last import if VBA has not changed since. Does not rewrite GitHub." xml:space="preserve">
+    <value>Восстановите резервную копию, сделанную до последнего импорта, если VBA не изменилась с тех пор. Не переписывает GitHub.</value>
+  </data>
+  <data name="Restore the code before this change after checking for conflicts." xml:space="preserve">
+    <value>Восстановите код до этого изменения после проверки на наличие конфликтов.</value>
+  </data>
+  <data name="Restore the interrupted import before continuing." xml:space="preserve">
+    <value>Восстановите прерванный импорт, прежде чем продолжить.</value>
+  </data>
+  <data name="Restore the selected checkpoint after backing up the current state. Does not rewrite GitHub." xml:space="preserve">
+    <value>Восстановите выбранный контрольный пункт после резервного копирования текущего состояния. Не переписывает GitHub.</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Сохранить</value>
+  </data>
+  <data name="Save all current VBA in a private checkpoint without committing to the published branch." xml:space="preserve">
+    <value>Сохраните все текущие VBA в закрытом контрольно-пропускном пункте, не связываясь с опубликованным филиалом.</value>
+  </data>
+  <data name="Save locally" xml:space="preserve">
+    <value>Экономить локально</value>
+  </data>
+  <data name="Save notes on this computer without sending them to the provider." xml:space="preserve">
+    <value>Сохраните заметки на этом компьютере, не отправляя их поставщику.</value>
+  </data>
+  <data name="Save the conversation as a Markdown file." xml:space="preserve">
+    <value>Сохраните разговор в виде файла Markdown.</value>
+  </data>
+  <data name="Save the document before linking it to GitHub." xml:space="preserve">
+    <value>Сохраните документ, прежде чем связать его с GitHub.</value>
+  </data>
+  <data name="Save the link for this document on this computer. Does not publish code." xml:space="preserve">
+    <value>Сохраните ссылку на этот документ на этом компьютере. Не публикует код.</value>
+  </data>
+  <data name="Save the macro before opening GitHub." xml:space="preserve">
+    <value>Сохраните макрос перед открытием GitHub.</value>
+  </data>
+  <data name="Save the new title of the selected conversation." xml:space="preserve">
+    <value>Сохраните новый заголовок выбранного разговора.</value>
+  </data>
+  <data name="Search conversations" xml:space="preserve">
+    <value>Поисковые разговоры</value>
+  </data>
+  <data name="Search titles, messages or code" xml:space="preserve">
+    <value>Поиск заголовков, сообщений или кода</value>
+  </data>
+  <data name="Searching the project…" xml:space="preserve">
+    <value>Поиск по проекту...</value>
+  </data>
+  <data name="Select a conversation to resume its history and draft." xml:space="preserve">
+    <value>Выберите разговор, чтобы возобновить его историю и набросок.</value>
+  </data>
+  <data name="Select a saved VBA project to open GitHub." xml:space="preserve">
+    <value>Выберите сохраненный проект VBA для открытия GitHub.</value>
+  </data>
+  <data name="Select code in the VBE." xml:space="preserve">
+    <value>Выберите код в VBE.</value>
+  </data>
+  <data name="Selection attached to the next message" xml:space="preserve">
+    <value>Выбор прилагается к следующему сообщению</value>
+  </data>
+  <data name="Selection: " xml:space="preserve">
+    <value>Выбор: </value>
+  </data>
+  <data name="Send the message and its context to the agent." xml:space="preserve">
+    <value>Отправьте сообщение и его контекст агенту.</value>
+  </data>
+  <data name="Send ↑" xml:space="preserve">
+    <value>Отправить ↑</value>
+  </data>
+  <data name="Set the model's reasoning effort, when supported." xml:space="preserve">
+    <value>Установите аргументацию модели, когда она поддерживается.</value>
+  </data>
+  <data name="Settings…" xml:space="preserve">
+    <value>Настройки…</value>
+  </data>
+  <data name="Show archived conversations" xml:space="preserve">
+    <value>Показать архивные разговоры</value>
+  </data>
+  <data name="Show or hide conversations for the selected document." xml:space="preserve">
+    <value>Показать или скрыть разговоры для выбранного документа.</value>
+  </data>
+  <data name="Show or hide local notes for this document." xml:space="preserve">
+    <value>Показать или скрыть местные заметки к этому документу.</value>
+  </data>
+  <data name="Sign in to ChatGPT" xml:space="preserve">
+    <value>Подписывайтесь на ChatGPT</value>
+  </data>
+  <data name="Sign in to GitHub" xml:space="preserve">
+    <value>Войти в GitHub</value>
+  </data>
+  <data name="Sign-in opened. Click Refresh after authenticating." xml:space="preserve">
+    <value>Откройте вход. Нажмите "Обновить" после аутентификации.</value>
+  </data>
+  <data name="Stop the current response. Changes already applied can still be undone in the chat." xml:space="preserve">
+    <value>Остановите текущий ответ. Изменения, уже примененные, все еще могут быть отменены в чате.</value>
+  </data>
+  <data name="Stop ■" xml:space="preserve">
+    <value>Остановить ■</value>
+  </data>
+  <data name="Stopped" xml:space="preserve">
+    <value>Остановиться</value>
+  </data>
+  <data name="Stopping…" xml:space="preserve">
+    <value>Остановка...</value>
+  </data>
+  <data name="Switch" xml:space="preserve">
+    <value>Переключить</value>
+  </data>
+  <data name="Synchronize the active VBA project and manage its branches and checkpoints" xml:space="preserve">
+    <value>Синхронизация активного VBA проектировать и управлять своими филиалами и контрольно-пропускными пунктами</value>
+  </data>
+  <data name="The # context exceeds 48,000 characters." xml:space="preserve">
+    <value>Контекст # превосходит 48,000 Персонажи.</value>
+  </data>
+  <data name="The Git/VBA state changed. Read git_status again before making changes." xml:space="preserve">
+    <value>Состояние Git/VBA изменилось. Перед изменениями снова прочитайте git_status.</value>
+  </data>
+  <data name="The URL must use HTTPS, or HTTP on localhost." xml:space="preserve">
+    <value>URL должен использовать HTTPS или HTTP на локальном хосте.</value>
+  </data>
+  <data name="The VBA document has changed. Reopen the chat to choose the current document." xml:space="preserve">
+    <value>Изменился документ VBA. Откройте чат, чтобы выбрать текущий документ.</value>
+  </data>
+  <data name="The VBA project must be unlocked and in design mode." xml:space="preserve">
+    <value>Проект VBA должен быть разблокирован и в дизайн-режиме.</value>
+  </data>
+  <data name="The VBA repository exceeds 32 MB." xml:space="preserve">
+    <value>Репозиторий VBA превышает 32 МБ.</value>
+  </data>
+  <data name="The VBE did not preserve the imported sources exactly. Use Restore or check the project." xml:space="preserve">
+    <value>The VBE Не сохранили импортные источники точно. Восстановите или проверьте проект.</value>
+  </data>
+  <data name="The branch changed since the merge started." xml:space="preserve">
+    <value>Ветвь изменилась с момента начала слияния.</value>
+  </data>
+  <data name="The linked document changed. Reopen GitHub integration." xml:space="preserve">
+    <value>Связанный документ изменился. Откройте интеграцию GitHub.</value>
+  </data>
+  <data name="The previous response was interrupted. Read the live code again before making further edits." xml:space="preserve">
+    <value>Предыдущий ответ был прерван. Прочитайте живой код еще раз, прежде чем вносить дальнейшие правки.</value>
+  </data>
+  <data name="The project for this conversation is closed or ambiguous." xml:space="preserve">
+    <value>Проект для этого разговора закрыт или двусмыслен.</value>
+  </data>
+  <data name="The response did not complete. Actions may already have been applied; read the live code again before continuing." xml:space="preserve">
+    <value>Возможно, уже были предприняты действия; прочитайте живой код еще раз, прежде чем продолжить.</value>
+  </data>
+  <data name="The selected account is no longer saved. Sign in again or choose another account." xml:space="preserve">
+    <value>Выбранная учетная запись больше не сохраняется. Войдите снова или выберите другую учетную запись.</value>
+  </data>
+  <data name="The selection belongs to another document. Choose its conversation." xml:space="preserve">
+    <value>Выбор принадлежит другому документу. Выберите его разговор.</value>
+  </data>
+  <data name="The target contains no VBA sources." xml:space="preserve">
+    <value>Целевой показатель не содержит источников VBA.</value>
+  </data>
+  <data name="The vba directory contains a link, subdirectory or unsupported file." xml:space="preserve">
+    <value>Каталог vba содержит ссылку, подкаталог или неподдерживаемый файл.</value>
+  </data>
+  <data name="The window's COM control was not created." xml:space="preserve">
+    <value>Контроль COM окна не был создан.</value>
+  </data>
+  <data name="This cache is already linked to another repository. Restore the previous URL." xml:space="preserve">
+    <value>Этот кэш уже связан с другим хранилищем. Восстановите предыдущий URL.</value>
+  </data>
+  <data name="This file is not listed in conflicts." xml:space="preserve">
+    <value>Этот файл не указан в конфликтах.</value>
+  </data>
+  <data name="This local branch already exists." xml:space="preserve">
+    <value>Местная ветвь уже существует.</value>
+  </data>
+  <data name="This provider is not implemented yet." xml:space="preserve">
+    <value>Данный провайдер пока не реализован.</value>
+  </data>
+  <data name="Tool" xml:space="preserve">
+    <value>Инструмент</value>
+  </data>
+  <data name="Track remote" xml:space="preserve">
+    <value>Удаленное отслеживание</value>
+  </data>
+  <data name="Turn" xml:space="preserve">
+    <value>Ход</value>
+  </data>
+  <data name="Unable to copy: " xml:space="preserve">
+    <value>Невозможно скопировать: </value>
+  </data>
+  <data name="Unable to export: " xml:space="preserve">
+    <value>Невозможность экспорта: </value>
+  </data>
+  <data name="Unable to merge: check common ancestors and Git 2.38 or later." xml:space="preserve">
+    <value>Невозможность слияния: проверьте общих предков и Git 2.38 или более поздней версии.</value>
+  </data>
+  <data name="Unable to navigate: " xml:space="preserve">
+    <value>Невозможность навигации: </value>
+  </data>
+  <data name="Unable to start Git." xml:space="preserve">
+    <value>Не удалось запустить Git.</value>
+  </data>
+  <data name="Unable to stop: " xml:space="preserve">
+    <value>Невозможно остановить: </value>
+  </data>
+  <data name="Unable to undo: " xml:space="preserve">
+    <value>Невозможно отменить: </value>
+  </data>
+  <data name="Understand the code" xml:space="preserve">
+    <value>Понять код</value>
+  </data>
+  <data name="Undo a block…" xml:space="preserve">
+    <value>Отменить блок…</value>
+  </data>
+  <data name="Undo change" xml:space="preserve">
+    <value>Отменить изменение</value>
+  </data>
+  <data name="Undo changes from this turn after checking for conflicts." xml:space="preserve">
+    <value>Отмените изменения после проверки на наличие конфликтов.</value>
+  </data>
+  <data name="Undo complete. Other changes in the module were preserved." xml:space="preserve">
+    <value>Отмена завершена. Другие изменения в модуле сохранены.</value>
+  </data>
+  <data name="Undo entire turn" xml:space="preserve">
+    <value>Отменить все изменения этого хода</value>
+  </data>
+  <data name="Undo turn" xml:space="preserve">
+    <value>Отменить изменения хода</value>
+  </data>
+  <data name="Unexpected Git Credential Manager response. Check its version." xml:space="preserve">
+    <value>Неожиданный ответ Git Credential Manager. Проверьте его версию.</value>
+  </data>
+  <data name="Unexpected VBE response." xml:space="preserve">
+    <value>Неожиданный ответ VBE.</value>
+  </data>
+  <data name="Unexpected identity after import: " xml:space="preserve">
+    <value>Неожиданная идентификация после импорта: </value>
+  </data>
+  <data name="Unknown command. Use the / suggestions." xml:space="preserve">
+    <value>Неизвестная команда. Используйте / предложения.</value>
+  </data>
+  <data name="Unknown local branch. Create it or fetch it from the remote repository." xml:space="preserve">
+    <value>Неизвестная местная ветвь. Создайте ее или возьмите из удаленного хранилища.</value>
+  </data>
+  <data name="Use a Microsoft Entra token (renew after expiration)" xml:space="preserve">
+    <value>Использование токена Microsoft Entra (обновление после истечения срока действия)</value>
+  </data>
+  <data name="Use this text" xml:space="preserve">
+    <value>Используйте это text</value>
+  </data>
+  <data name="VBA backup before import" xml:space="preserve">
+    <value>Резервное копирование VBA перед импортом</value>
+  </data>
+  <data name="VBA changed during synchronization. No import performed." xml:space="preserve">
+    <value>VBA Изменился во время синхронизации.</value>
+  </data>
+  <data name="VBA changed during the operation." xml:space="preserve">
+    <value>VBA Изменился во время операции.</value>
+  </data>
+  <data name="VBA changes become source files in the repository. No folder next to the macro.&#13;&#10;The first pull replaces VBA with a restorable backup.&#13;&#10;Sign in through Git Credential Manager; commit identity is configured in Git." xml:space="preserve">
+    <value>Изменения VBA сохраняются как исходные файлы в репозитории. Папка рядом с макросом не создаётся.
+Первый Pull заменяет VBA после создания восстанавливаемой резервной копии.
+Вход через Git Credential Manager; данные автора коммитов задаются в Git.</value>
+  </data>
+  <data name="VBA contains uncommitted local changes." xml:space="preserve">
+    <value>VBA содержит незавершенные местные изменения.</value>
+  </data>
+  <data name="VBA matches the last synchronized state." xml:space="preserve">
+    <value>VBA соответствует последнему синхронизированному состоянию.</value>
+  </data>
+  <data name="VBA project for this conversation: " xml:space="preserve">
+    <value>Проект VBA для этого разговора: </value>
+  </data>
+  <data name="VBA project · document history" xml:space="preserve">
+    <value>Проект VBA – история документов</value>
+  </data>
+  <data name="VBA references differ. Align them in Tools &gt; References before importing." xml:space="preserve">
+    <value>Ссылки VBA отличаются. Выравнивайте их в Инструментах &gt; Ссылки перед импортом.</value>
+  </data>
+  <data name="VBA restored. Check and save the document." xml:space="preserve">
+    <value>VBA Проверь и сохрани документ.</value>
+  </data>
+  <data name="VBA sources are incomplete, unexpected or too large (32 MB maximum)." xml:space="preserve">
+    <value>Источники VBA неполные, неожиданные или слишком большие (максимум 32 МБ).</value>
+  </data>
+  <data name="VBA state after import" xml:space="preserve">
+    <value>VBA после импорта</value>
+  </data>
+  <data name="VBA verification complete" xml:space="preserve">
+    <value>Проверка VBA завершена</value>
+  </data>
+  <data name="VBAi assistant" xml:space="preserve">
+    <value>Помощник VBAi</value>
+  </data>
+  <data name="VBAi settings" xml:space="preserve">
+    <value>Настройка VBAi</value>
+  </data>
+  <data name="VBAi settings…" xml:space="preserve">
+    <value>Настройки VBAi…</value>
+  </data>
+  <data name="VBAi — Settings" xml:space="preserve">
+    <value>VBAi — Настройки</value>
+  </data>
+  <data name="VBE edit permissions" xml:space="preserve">
+    <value>VBE Редактировать разрешения</value>
+  </data>
+  <data name="VBE edits" xml:space="preserve">
+    <value>VBE Редактировать</value>
+  </data>
+  <data name="Validate all files, create a merge commit, then import VBA with a backup." xml:space="preserve">
+    <value>Проверяйте все файлы, создайте слияние, затем импортируйте VBA с резервной копией.</value>
+  </data>
+  <data name="Verification" xml:space="preserve">
+    <value>Проверка</value>
+  </data>
+  <data name="View code changes and their undo actions." xml:space="preserve">
+    <value>Просмотр изменений кода и их отмену.</value>
+  </data>
+  <data name="Wait for the response to finish before preparing an action." xml:space="preserve">
+    <value>Дождитесь ответа, чтобы закончить, прежде чем готовиться к действию.</value>
+  </data>
+  <data name="Wait for the response to finish or stop the agent before changing settings." xml:space="preserve">
+    <value>Дождитесь ответа, чтобы закончить или остановить агента перед изменением настроек.</value>
+  </data>
+  <data name="What would you like to build?" xml:space="preserve">
+    <value>Что бы вы хотели построить?</value>
+  </data>
+  <data name="Working mode" xml:space="preserve">
+    <value>Режим работы</value>
+  </data>
+  <data name="You" xml:space="preserve">
+    <value>Вы</value>
+  </data>
+  <data name="Your message…" xml:space="preserve">
+    <value>Ваше сообщение...</value>
+  </data>
+  <data name="Your request; Enter to send, Shift+Enter for a new line" xml:space="preserve">
+    <value>Введите, чтобы отправить, Shift + Enter для новой строки</value>
+  </data>
+  <data name="[Binary resource or directory: choose local or incoming]" xml:space="preserve">
+    <value>[Бинарный ресурс или каталог: выберите локальный или входящий]</value>
+  </data>
+  <data name="[Non-UTF-8 content: choose local or incoming]" xml:space="preserve">
+    <value>[Содержание Non-UTF-8: выберите локальное или входящее]</value>
+  </data>
+  <data name="[Preview unavailable above 64 KiB: choose local or incoming]" xml:space="preserve">
+    <value>[Обзор недоступен выше 64 КБ: выберите местный или входящий]</value>
+  </data>
+  <data name="unsaved document" xml:space="preserve">
+    <value>несохраненный документ</value>
+  </data>
+  <data name="vba must be a Git directory." xml:space="preserve">
+    <value>VBA должен быть каталогом Git.</value>
+  </data>
+  <data name="↑ ↓ Browse · Enter Insert · Esc Close" xml:space="preserve">
+    <value>↑ ↓ Browse · Enter Insert · Esc Close</value>
+  </data>
+  <data name="↓ Latest message" xml:space="preserve">
+    <value>↓ Последнее сообщение</value>
+  </data>
+  <data name="Incomplete or filtered Bedrock response: " xml:space="preserve">
+    <value>Неполный или фильтрованный ответ Bedrock: </value>
+  </data>
+  <data name="Response too large." xml:space="preserve">
+    <value>Реакция слишком большая.</value>
+  </data>
+  <data name="The provider interrupted the response with an error." xml:space="preserve">
+    <value>Провайдер прервал ответ с ошибкой.</value>
+  </data>
+  <data name="Response interrupted, truncated or filtered; no partial tool call was executed." xml:space="preserve">
+    <value>Реакция прерывалась, усечена или фильтровалась; не было выполнено ни одного частичного вызова инструмента.</value>
+  </data>
+  <data name="Claude reached its response limit. Narrow the scope of your request." xml:space="preserve">
+    <value>Claude Уменьшите объем вашего запроса.</value>
+  </data>
+  <data name="Codex verification timed out." xml:space="preserve">
+    <value>Codex Проверка отсрочена.</value>
+  </data>
+  <data name="Not signed in to ChatGPT" xml:space="preserve">
+    <value>Не подписывается на ChatGPT</value>
+  </data>
+  <data name="Connected to ChatGPT" xml:space="preserve">
+    <value>Подключение к ChatGPT</value>
+  </data>
+  <data name="Codex is connected, but not through ChatGPT: " xml:space="preserve">
+    <value>Codex подключены, но не через ChatGPT: </value>
+  </data>
+  <data name="Codex did not provide its model list." xml:space="preserve">
+    <value>Codex Не предоставила свой модельный список.</value>
+  </data>
+  <data name="Codex app-server stopped." xml:space="preserve">
+    <value>Сервер приложений Codex остановился.</value>
+  </data>
+  <data name="Unable to start codex app-server." xml:space="preserve">
+    <value>Невозможно запустить Codex App-сервер.</value>
+  </data>
+  <data name="Codex: initializing the local server" xml:space="preserve">
+    <value>Codex: инициализация локального сервера</value>
+  </data>
+  <data name="Codex: checking the ChatGPT account" xml:space="preserve">
+    <value>Codex: проверка учетной записи ChatGPT</value>
+  </data>
+  <data name="Codex must be signed in through ChatGPT. No API key is used here." xml:space="preserve">
+    <value>Codex должны быть подписаны через ChatGPTНет. API Здесь используется ключ.</value>
+  </data>
+  <data name="Codex: opening the VBE conversation" xml:space="preserve">
+    <value>Codex: открытие VBE-разговора</value>
+  </data>
+  <data name="Codex connected through ChatGPT" xml:space="preserve">
+    <value>Codex подключенный через ChatGPT</value>
+  </data>
+  <data name="Codex finished without a text response." xml:space="preserve">
+    <value>Codex Завершенный без text Ответ.</value>
+  </data>
+  <data name=" · complete" xml:space="preserve">
+    <value> · Полностью</value>
+  </data>
+  <data name=" · failed" xml:space="preserve">
+    <value> • Неудача</value>
+  </data>
+  <data name=" models. Authentication is managed by the GitHub CLI." xml:space="preserve">
+    <value> Аутентификация управляется GitHub CLI.</value>
+  </data>
+  <data name="Unable to start Copilot." xml:space="preserve">
+    <value>Невозможно начать Copilot..</value>
+  </data>
+  <data name="Install GitHub Copilot CLI and set VBAi_COPILOT_CLI to its executable if needed." xml:space="preserve">
+    <value>Установите GitHub Copilot CLI и установите VBAi_COPILOT_CLI в исполняемый файл, если это необходимо.</value>
+  </data>
+  <data name="Incompatible Copilot protocol version (versions 2 and 3 supported)." xml:space="preserve">
+    <value>Несовместимая версия протокола Copilot (версии 2 и 3).</value>
+  </data>
+  <data name="Copilot VBA tools are not connected." xml:space="preserve">
+    <value>Инструменты Copilot VBA не подключены.</value>
+  </data>
+  <data name="Copilot did not finish its response within the time limit." xml:space="preserve">
+    <value>Copilot Он не завершил свой ответ в установленные сроки.</value>
+  </data>
+  <data name="Copilot is not responding to " xml:space="preserve">
+    <value>Copilot не реагирует на </value>
+  </data>
+  <data name=". Check the CLI connection." xml:space="preserve">
+    <value>Проверьте соединение CLI.</value>
+  </data>
+  <data name="Copilot stopped." xml:space="preserve">
+    <value>Copilot Остановился.</value>
+  </data>
+  <data name="Invalid Copilot header." xml:space="preserve">
+    <value>недействительный Copilot Заголовок</value>
+  </data>
+  <data name="Invalid Copilot message size." xml:space="preserve">
+    <value>недействительный Copilot Размер сообщения.</value>
+  </data>
+  <data name="Copilot refused the request. Check sign-in, subscription and model in the CLI." xml:space="preserve">
+    <value>Copilot Проверить регистрацию, подписку и модель в CLI.</value>
+  </data>
+  <data name="The Copilot session failed. Check its status in the CLI." xml:space="preserve">
+    <value>The Copilot Сеанс провалился, проверьте его статус в CLI.</value>
+  </data>
+  <data name="Custom (OpenAI)" xml:space="preserve">
+    <value>Custom (OpenAI)</value>
+  </data>
+  <data name=" (coming soon)" xml:space="preserve">
+    <value> (приближается скоро)</value>
+  </data>
+  <data name=" then restart the host application." xml:space="preserve">
+    <value> Затем перезагрузите хост-приложение.</value>
+  </data>
+  <data name="Select a model in the conversation." xml:space="preserve">
+    <value>Выберите модель в разговоре.</value>
+  </data>
+  <data name=" in settings." xml:space="preserve">
+    <value> в настройках.</value>
+  </data>
+  <data name="Configure the API key for " xml:space="preserve">
+    <value>Настройка API-ключа для </value>
+  </data>
+  <data name=" in VBAi settings." xml:space="preserve">
+    <value> В настройках VBAi.</value>
+  </data>
+  <data name="Model list unavailable for this provider." xml:space="preserve">
+    <value>Список моделей недоступен для этого провайдера.</value>
+  </data>
+  <data name="Enter the " xml:space="preserve">
+    <value>Войдите в </value>
+  </data>
+  <data name="Azure deployments" xml:space="preserve">
+    <value>Развертывание Azure</value>
+  </data>
+  <data name="model identifiers" xml:space="preserve">
+    <value>идентификаторы моделей</value>
+  </data>
+  <data name=" in provider settings." xml:space="preserve">
+    <value> в настройках провайдера.</value>
+  </data>
+  <data name=" to load models." xml:space="preserve">
+    <value> Для загрузки моделей.</value>
+  </data>
+  <data name="Check credentials, URL and provider limits." xml:space="preserve">
+    <value>Проверьте учетные данные, URL и ограничения провайдера.</value>
+  </data>
+  <data name="The provider did not return a model list." xml:space="preserve">
+    <value>Провайдер не вернул модельный список.</value>
+  </data>
+  <data name="Invalid Claude model list pagination." xml:space="preserve">
+    <value>недействительный Claude Пагинация списка моделей.</value>
+  </data>
+  <data name="The model list exceeds the pagination limit." xml:space="preserve">
+    <value>Список моделей превышает предел пагинации.</value>
+  </data>
+  <data name=": check the key, model, URL and provider limits." xml:space="preserve">
+    <value>Проверьте ключ, модель, URL и ограничения провайдера.</value>
+  </data>
+  <data name="Response truncated or filtered; tool calls were not executed." xml:space="preserve">
+    <value>Реакция усечена или отфильтрована; вызовы инструментов не выполнялись.</value>
+  </data>
+  <data name="Select a module or procedure in this project to open its code." xml:space="preserve">
+    <value>Выберите модуль или процедуру в этом проекте, чтобы открыть код.</value>
+  </data>
+  <data name=" changed since selection. Remove the token and select it again with #." xml:space="preserve">
+    <value> Удалите токен и выберите его снова с помощью #.</value>
+  </data>
+  <data name="  (restored)" xml:space="preserve">
+    <value>  (восстановлено)</value>
+  </data>
+  <data name="Invalid replacement range." xml:space="preserve">
+    <value>Недействительный диапазон замены.</value>
+  </data>
+  <data name="No code difference." xml:space="preserve">
+    <value>Никакой разницы в коде.</value>
+  </data>
+  <data name="Configure a model for " xml:space="preserve">
+    <value>Настройка модели для </value>
+  </data>
+  <data name="Diagnose and fix" xml:space="preserve">
+    <value>Диагностика и исправление</value>
+  </data>
+  <data name="Unable to open SQLite history." xml:space="preserve">
+    <value>Невозможно открыть историю SQLite.</value>
+  </data>
+  <data name="Configure " xml:space="preserve">
+    <value>конфигурировать </value>
+  </data>
+  <data name="GitHub: " xml:space="preserve">
+    <value>GitHub: </value>
+  </data>
+  <data name="Git is limited to the document of this conversation." xml:space="preserve">
+    <value>Git ограничивается документом этого разговора.</value>
+  </data>
+  <data name="The VBE policy does not allow this Git operation." xml:space="preserve">
+    <value>Политика VBE не позволяет этой операции Git.</value>
+  </data>
+  <data name="VBAi — Git operation" xml:space="preserve">
+    <value>VBAi — операция Git</value>
+  </data>
+  <data name="Git operation declined by the user." xml:space="preserve">
+    <value>Операция Git была отклонена пользователем.</value>
+  </data>
+  <data name="Mode " xml:space="preserve">
+    <value>Режим </value>
+  </data>
+  <data name=" does not allow this editing or execution tool: " xml:space="preserve">
+    <value> Не допускается использование этого инструмента редактирования или исполнения: </value>
+  </data>
+  <data name="VBE edits are disabled (Read-only mode)." xml:space="preserve">
+    <value>Редактирование VBE отключено (режим только для чтения).</value>
+  </data>
+  <data name="Unknown VBE edit policy; action refused." xml:space="preserve">
+    <value>Неизвестная политика редактирования VBE; действие отказалось.</value>
+  </data>
+  <data name="The module changed since the model read it." xml:space="preserve">
+    <value>Модуль изменился с тех пор, как его прочитала модель.</value>
+  </data>
+  <data name="These changes have already been undone." xml:space="preserve">
+    <value>Эти изменения уже были отменены.</value>
+  </data>
+  <data name="Undo stopped after " xml:space="preserve">
+    <value>Ундес остановился после </value>
+  </data>
+  <data name="Allow reading and sending to " xml:space="preserve">
+    <value>Разрешить чтение и отправку на </value>
+  </data>
+  <data name=" up to the first 64 KiB of this file?&#13;&#10;&#13;&#10;" xml:space="preserve">
+    <value> До первых 64 киб этого файла?
+
+
+
+</value>
+  </data>
+  <data name="The user declined sending the file." xml:space="preserve">
+    <value>Пользователь отказался отправить файл.</value>
+  </data>
+  <data name="The file appears to be binary; text reading refused." xml:space="preserve">
+    <value>файл выглядит двоичным; text Чтение отказалось.</value>
+  </data>
+  <data name="The user did not provide this exact path." xml:space="preserve">
+    <value>Пользователь не указал этот путь.</value>
+  </data>
+  <data name="The provided file could not be found." xml:space="preserve">
+    <value>Предоставленный файл найти не удалось.</value>
+  </data>
+  <data name="the active LLM provider" xml:space="preserve">
+    <value>Активный поставщик LLM</value>
+  </data>
+  <data name="VBAi — allow sending a file" xml:space="preserve">
+    <value>VBAi — позволяет отправлять файлы</value>
+  </data>
+  <data name="VBAi — approve edit" xml:space="preserve">
+    <value>VBAi — одобряет редактирование</value>
+  </data>
+  <data name="Allow" xml:space="preserve">
+    <value>Разрешить</value>
+  </data>
+  <data name="Deny" xml:space="preserve">
+    <value>Отклонить</value>
+  </data>
+  <data name="Refresh status" xml:space="preserve">
+    <value>Обновить статус</value>
+  </data>
+  <data name="Project" xml:space="preserve">
+    <value>Проект</value>
+  </data>
+  <data name="Branches" xml:space="preserve">
+    <value>Ветки</value>
+  </data>
+  <data name="Checkpoints" xml:space="preserve">
+    <value>Контрольные точки</value>
+  </data>
+  <data name="Plan" xml:space="preserve">
+    <value>План</value>
+  </data>
+  <data name="Agent" xml:space="preserve">
+    <value>Агент</value>
+  </data>
+  <data name="Conversation" xml:space="preserve">
+    <value>Разговор</value>
+  </data>
+  <data name="Assistant" xml:space="preserve">
+    <value>Ассистент</value>
+  </data>
+  <data name="# Context" xml:space="preserve">
+    <value># Контекст</value>
+  </data>
+  <data name="☰ Chats" xml:space="preserve">
+    <value>☰ Чаты</value>
+  </data>
+  <data name="A checkpoint protects this import." xml:space="preserve">
+    <value>Контрольно-пропускной пункт защищает этот импорт.</value>
+  </data>
+  <data name="After" xml:space="preserve">
+    <value>После</value>
+  </data>
+  <data name="Appearance" xml:space="preserve">
+    <value>внешний вид</value>
+  </data>
+  <data name="Before" xml:space="preserve">
+    <value>Прежде чем</value>
+  </data>
+  <data name="Check repository permissions or wait for the GitHub rate limit to reset." xml:space="preserve">
+    <value>Проверьте разрешения репозитория или дождитесь сбрасывания лимита скорости GitHub.</value>
+  </data>
+  <data name="Check the branch, title and repository name; a pull request may already exist." xml:space="preserve">
+    <value>Проверьте ветку, название и название хранилища; запрос на вытягивание может уже существовать.</value>
+  </data>
+  <data name="Check the connection, account and Git state, then retry." xml:space="preserve">
+    <value>Проверьте соединение, учетную запись и состояние Git, затем повторите попытку.</value>
+  </data>
+  <data name="Check the repository name and account access." xml:space="preserve">
+    <value>Проверьте имя хранилища и доступ к учетной записи.</value>
+  </data>
+  <data name="Checks" xml:space="preserve">
+    <value>Проверка</value>
+  </data>
+  <data name="Code" xml:space="preserve">
+    <value>Код</value>
+  </data>
+  <data name="Comments" xml:space="preserve">
+    <value>Комментарий</value>
+  </data>
+  <data name="Commit checked modules and their form resources. Push publishes them afterwards." xml:space="preserve">
+    <value>Выполняйте проверки модулей и их ресурсов формы. Push публикует их позже.</value>
+  </data>
+  <data name="Commit not found." xml:space="preserve">
+    <value>Обязательство не найдено.</value>
+  </data>
+  <data name="Commit selected" xml:space="preserve">
+    <value>Обязательство выбранное</value>
+  </data>
+  <data name="Commit status" xml:space="preserve">
+    <value>Статус участника</value>
+  </data>
+  <data name="Common ancestor" xml:space="preserve">
+    <value>Общий предок</value>
+  </data>
+  <data name="Compare returns to live VBA." xml:space="preserve">
+    <value>Сравните возвраты в живую VBA.</value>
+  </data>
+  <data name="Compare revisions" xml:space="preserve">
+    <value>Сравнить ревизии</value>
+  </data>
+  <data name="Connecting to GitHub…" xml:space="preserve">
+    <value>Подключение к GitHub...</value>
+  </data>
+  <data name="Create pull request" xml:space="preserve">
+    <value>Создать запрос pull</value>
+  </data>
+  <data name="Create repository" xml:space="preserve">
+    <value>Создать репозиторий</value>
+  </data>
+  <data name="Dark" xml:space="preserve">
+    <value>темный</value>
+  </data>
+  <data name="Details" xml:space="preserve">
+    <value>Подробности</value>
+  </data>
+  <data name="Draft" xml:space="preserve">
+    <value>Проект проекта</value>
+  </data>
+  <data name="Enter a title and a different target branch." xml:space="preserve">
+    <value>Введите название и другую целевую ветвь.</value>
+  </data>
+  <data name="Files" xml:space="preserve">
+    <value>Файлы</value>
+  </data>
+  <data name="Find" xml:space="preserve">
+    <value>Найти</value>
+  </data>
+  <data name="Fold context" xml:space="preserve">
+    <value>Складной контекст</value>
+  </data>
+  <data name="Form resources included" xml:space="preserve">
+    <value>Форменные ресурсы включены</value>
+  </data>
+  <data name="GitHub is unavailable. Try again later." xml:space="preserve">
+    <value>GitHub недоступен. Попробуй позже.</value>
+  </data>
+  <data name="Import summary" xml:space="preserve">
+    <value>Резюме импорта</value>
+  </data>
+  <data name="Invalid pull request draft." xml:space="preserve">
+    <value>Недействительный призыв к отставке.</value>
+  </data>
+  <data name="Invalid repository name." xml:space="preserve">
+    <value>Недействительное название хранилища.</value>
+  </data>
+  <data name="Light" xml:space="preserve">
+    <value>Свет</value>
+  </data>
+  <data name="Load earlier messages" xml:space="preserve">
+    <value>Загрузить более ранние сообщения</value>
+  </data>
+  <data name="Load prepared draft" xml:space="preserve">
+    <value>Загрузка подготовленный проект</value>
+  </data>
+  <data name="Load pull requests" xml:space="preserve">
+    <value>Запросы на вытягивание груза</value>
+  </data>
+  <data name="Load repositories" xml:space="preserve">
+    <value>Загруженные репозитории</value>
+  </data>
+  <data name="Merged" xml:space="preserve">
+    <value>слитый</value>
+  </data>
+  <data name="New pull request" xml:space="preserve">
+    <value>Новый запрос на Щелчок</value>
+  </data>
+  <data name="New repository name" xml:space="preserve">
+    <value>Новое имя репозитория</value>
+  </data>
+  <data name="Next change" xml:space="preserve">
+    <value>Следующее изменение</value>
+  </data>
+  <data name="No prepared draft for this branch." xml:space="preserve">
+    <value>Никакого подготовленного проекта для этой ветви.</value>
+  </data>
+  <data name="Only HTTP and HTTPS links can be opened." xml:space="preserve">
+    <value>Только HTTP и HTTPS ссылки могут быть открыты.</value>
+  </data>
+  <data name="Open on GitHub" xml:space="preserve">
+    <value>Открыть на GitHub</value>
+  </data>
+  <data name="Operation cancelled." xml:space="preserve">
+    <value>Операция отменена.</value>
+  </data>
+  <data name="Operation complete." xml:space="preserve">
+    <value>Операция завершена.</value>
+  </data>
+  <data name="Personal account" xml:space="preserve">
+    <value>Личный счет</value>
+  </data>
+  <data name="Preview import" xml:space="preserve">
+    <value>Предварительный просмотр импорта</value>
+  </data>
+  <data name="Preview only. Pull imports these changes with a checkpoint." xml:space="preserve">
+    <value>Только предварительный просмотр. Pull Импорт этих изменений с помощью контрольно-пропускного пункта.</value>
+  </data>
+  <data name="Previous change" xml:space="preserve">
+    <value>Предыдущие изменения</value>
+  </data>
+  <data name="Private" xml:space="preserve">
+    <value>частный</value>
+  </data>
+  <data name="Pull request description" xml:space="preserve">
+    <value>Описание запроса Pull</value>
+  </data>
+  <data name="Pull request title" xml:space="preserve">
+    <value>Заголовок запроса Pull</value>
+  </data>
+  <data name="Pull requests" xml:space="preserve">
+    <value>Pull просьбы</value>
+  </data>
+  <data name="References differ: align them in the VBE before importing." xml:space="preserve">
+    <value>Ссылки различаются: выравнивайте их в VBE перед импортом.</value>
+  </data>
+  <data name="Repositories" xml:space="preserve">
+    <value>Репозитории</value>
+  </data>
+  <data name="Repository owner" xml:space="preserve">
+    <value>Владелец репозитория</value>
+  </data>
+  <data name="Repository selected. Click Link repository to connect this document." xml:space="preserve">
+    <value>Выбран репозиторий. Нажмите репозитарий Link, чтобы подключить этот документ.</value>
+  </data>
+  <data name="Required VBA references" xml:space="preserve">
+    <value>Требуемые ссылки VBA</value>
+  </data>
+  <data name="Restore only the selected module from the reviewed revision, with a checkpoint first." xml:space="preserve">
+    <value>Восстановить только выбранный модуль из рассмотренного пересмотра, сначала с контрольной точки.</value>
+  </data>
+  <data name="Restore selected module" xml:space="preserve">
+    <value>Восстановление выбранного модуля</value>
+  </data>
+  <data name="Reviewing checkpoint" xml:space="preserve">
+    <value>Обзор контрольно-пропускного пункта</value>
+  </data>
+  <data name="Reviewing revision" xml:space="preserve">
+    <value>Пересмотренный вариант</value>
+  </data>
+  <data name="Search code" xml:space="preserve">
+    <value>Поисковый код</value>
+  </data>
+  <data name="Search repositories" xml:space="preserve">
+    <value>Репозитории поиска</value>
+  </data>
+  <data name="Select a commit from history." xml:space="preserve">
+    <value>Выберите обязательство из истории.</value>
+  </data>
+  <data name="Select a revision in History or Checkpoints, then a module to restore." xml:space="preserve">
+    <value>Выберите исправление в истории или контрольные точки, а затем модуль для восстановления.</value>
+  </data>
+  <data name="Select at least one module or the references." xml:space="preserve">
+    <value>Выберите хотя бы один модуль или ссылки.</value>
+  </data>
+  <data name="Select one commit for details, or two commits to compare their VBA sources." xml:space="preserve">
+    <value>Выберите одно обязательство для деталей, или два обязательства для сравнения их источников VBA.</value>
+  </data>
+  <data name="Show three context lines around each change." xml:space="preserve">
+    <value>Покажите три контекстные линии вокруг каждого изменения.</value>
+  </data>
+  <data name="Sign in to GitHub again in Settings." xml:space="preserve">
+    <value>Зарегистрируйтесь на GitHub снова в настройках.</value>
+  </data>
+  <data name="Source branch" xml:space="preserve">
+    <value>Источник:</value>
+  </data>
+  <data name="System" xml:space="preserve">
+    <value>Система</value>
+  </data>
+  <data name="Target branch" xml:space="preserve">
+    <value>Целевой филиал</value>
+  </data>
+  <data name="This document is already linked. Reopen GitHub to choose another repository." xml:space="preserve">
+    <value>Этот документ уже связан. Откройте GitHub, чтобы выбрать другой репозиторий.</value>
+  </data>
+  <data name="Unable to reach GitHub. Check your connection, then retry." xml:space="preserve">
+    <value>Невозможно связаться с GitHub, проверить соединение, затем повторить.</value>
+  </data>
+  <data name="Unified" xml:space="preserve">
+    <value>единый</value>
+  </data>
+  <data name="Unknown VBA module." xml:space="preserve">
+    <value>Неизвестный модуль VBA.</value>
+  </data>
+  <data name="Use repository" xml:space="preserve">
+    <value>Используйте репозиторий</value>
+  </data>
+  <data name="VBA references" xml:space="preserve">
+    <value>Ссылки на VBA</value>
+  </data>
+  <data name="GitHub sign-in completed. " xml:space="preserve">
+    <value>Вход в GitHub выполнен. </value>
+  </data>
+  <data name="Controls cut" xml:space="preserve"><value>Вырезанные элементы управления</value></data>
+  <data name="Restore cut controls" xml:space="preserve"><value>Восстановить вырезанные элементы</value></data>
+  <data name="Restore names, position, size and tab order. Replaces the clipboard. Refuses intervening changes." xml:space="preserve"><value>Восстанавливает имена, положение, размер и порядок перехода. Заменяет буфер обмена. Отклоняет промежуточные изменения.</value></data>
+  <data name="Controls restored; some properties could not be verified." xml:space="preserve"><value>Элементы восстановлены; некоторые свойства проверить не удалось.</value></data>
+  <data name="Recovery incomplete. Inspect the Designer before another action." xml:space="preserve"><value>Восстановление неполное. Проверьте конструктор перед следующим действием.</value></data>
+  <data name="Controls restored" xml:space="preserve"><value>Элементы восстановлены</value></data>
+  <data name="Recovery attempted" xml:space="preserve"><value>Восстановление предпринято</value></data>
+  <data name="Recovery unavailable" xml:space="preserve"><value>Восстановление недоступно</value></data>
+  <data name="About VBAi" xml:space="preserve"><value>О VBAi</value></data>
+  <data name="Understand, edit and version your VBA projects with AI." xml:space="preserve"><value>Изучайте, редактируйте и управляйте версиями проектов VBA с помощью ИИ.</value></data>
+  <data name="Version" xml:space="preserve"><value>Версия</value></data>
+  <data name="Host" xml:space="preserve"><value>Приложение-хост</value></data>
+  <data name="Platform" xml:space="preserve"><value>Платформа</value></data>
+  <data name="Interface language" xml:space="preserve"><value>Язык интерфейса</value></data>
+  <data name="Project on GitHub" xml:space="preserve"><value>Проект на GitHub</value></data>
+  <data name="Documentation" xml:space="preserve"><value>Документация</value></data>
+  <data name="Report an issue" xml:space="preserve"><value>Сообщить о проблеме</value></data>
+  <data name="Copy technical details" xml:space="preserve"><value>Копировать технические сведения</value></data>
+  <data name="Technical details copied." xml:space="preserve"><value>Технические сведения скопированы.</value></data>
+  <data name="Unable to copy technical details." xml:space="preserve"><value>Не удалось скопировать технические сведения.</value></data>
+  <data name="Unable to open the link." xml:space="preserve"><value>Не удалось открыть ссылку.</value></data>
+  <data name="Copy the version and environment information for support." xml:space="preserve"><value>Копировать версию и сведения о среде для службы поддержки.</value></data>
+  <data name="Version, technical details and project resources" xml:space="preserve"><value>Версия, технические сведения и ресурсы проекта</value></data>
+  <data name="Close" xml:space="preserve"><value>Закрыть</value></data>
+  <data name="VBAi · Report an issue" xml:space="preserve"><value>VBAi · Сообщить о проблеме</value></data>
+  <data name="Review before sending. No VBA, chat, credentials or file paths are collected automatically." xml:space="preserve"><value>Проверьте перед отправкой. Код VBA, чаты, учётные данные и пути файлов не собираются автоматически.</value></data>
+  <data name="What happened?" xml:space="preserve"><value>Что произошло?</value></data>
+  <data name="Report preview" xml:space="preserve"><value>Предпросмотр отчёта</value></data>
+  <data name="Open GitHub issue" xml:space="preserve"><value>Открыть обращение GitHub</value></data>
+  <data name="Send report" xml:space="preserve"><value>Отправить отчёт</value></data>
+  <data name="Save report" xml:space="preserve"><value>Сохранить отчёт</value></data>
+  <data name="GitHub first; Outlook if unavailable." xml:space="preserve"><value>Сначала GitHub; при недоступности — Outlook.</value></data>
+  <data name="Send with Outlook, or open an email draft." xml:space="preserve"><value>Отправить через Outlook или открыть черновик письма.</value></data>
+  <data name="Save the full report and copy its path." xml:space="preserve"><value>Сохранить полный отчёт и скопировать путь.</value></data>
+  <data name="Do not include confidential information in your description." xml:space="preserve"><value>Не включайте конфиденциальные данные в описание.</value></data>
+  <data name="Attach the saved report to this email." xml:space="preserve"><value>Прикрепите сохранённый отчёт к этому письму.</value></data>
+  <data name="Sending report…" xml:space="preserve"><value>Отправка отчёта…</value></data>
+  <data name="Report published on GitHub." xml:space="preserve"><value>Отчёт опубликован на GitHub.</value></data>
+  <data name="Report handed to Outlook for sending." xml:space="preserve"><value>Отчёт передан в Outlook для отправки.</value></data>
+  <data name="Email draft opened. Attach the saved report, then send it." xml:space="preserve"><value>Черновик открыт. Прикрепите сохранённый отчёт и отправьте письмо.</value></data>
+  <data name="Delivery is uncertain. Check GitHub or Outlook before trying again." xml:space="preserve"><value>Результат отправки неизвестен. Проверьте GitHub или Outlook перед повторной попыткой.</value></data>
+  <data name="Unable to send the report. The local copy is available." xml:space="preserve"><value>Не удалось отправить отчёт. Локальная копия доступна.</value></data>
+  <data name="Local report saved. Its path has been copied." xml:space="preserve"><value>Отчёт сохранён локально. Путь скопирован.</value></data>
+  <data name="Unable to save the report." xml:space="preserve"><value>Не удалось сохранить отчёт.</value></data>
+  <data name="Title" xml:space="preserve"><value>Заголовок</value></data>
+  <data name="Email" xml:space="preserve"><value>Эл. почта</value></data>
+  <data name="VBAi updates" xml:space="preserve"><value>Обновления VBAi</value></data>
+  <data name="Check automatically once a day" xml:space="preserve"><value>Проверять автоматически раз в день</value></data>
+  <data name="Download updates automatically" xml:space="preserve"><value>Автоматически загружать обновления</value></data>
+  <data name="Install automatically after closing VBA hosts" xml:space="preserve"><value>Устанавливать автоматически после закрытия хостов VBA</value></data>
+  <data name="Include prereleases" xml:space="preserve"><value>Включать предварительные версии</value></data>
+  <data name="Install update" xml:space="preserve"><value>Установить обновление</value></data>
+  <data name="Check for updates" xml:space="preserve"><value>Проверить обновления</value></data>
+  <data name="Skip version" xml:space="preserve"><value>Пропустить версию</value></data>
+  <data name="Waiting for VBA hosts to close." xml:space="preserve"><value>Ожидание закрытия хостов VBA.</value></data>
+  <data name="Installing update…" xml:space="preserve"><value>Установка обновления…</value></data>
+  <data name="Update installed. Restart the VBA host." xml:space="preserve"><value>Обновление установлено. Перезапустите хост VBA.</value></data>
+  <data name="Installation failed. Check the installer log." xml:space="preserve"><value>Установка не удалась. Проверьте журнал установщика.</value></data>
+  <data name="Update cancelled." xml:space="preserve"><value>Обновление отменено.</value></data>
+  <data name="Installation status is uncertain. Check the installed version." xml:space="preserve"><value>Состояние установки неизвестно. Проверьте установленную версию.</value></data>
+  <data name="Check for updates to get started." xml:space="preserve"><value>Для начала проверьте обновления.</value></data>
+  <data name="An installer-managed deployment is required." xml:space="preserve"><value>Требуется установка, управляемая установщиком.</value></data>
+  <data name="Unable to read the update state." xml:space="preserve"><value>Не удалось прочитать состояние обновления.</value></data>
+  <data name="Update preferences saved." xml:space="preserve"><value>Настройки обновлений сохранены.</value></data>
+  <data name="Unable to save update preferences." xml:space="preserve"><value>Не удалось сохранить настройки обновлений.</value></data>
+  <data name="Checking for updates…" xml:space="preserve"><value>Проверка обновлений…</value></data>
+  <data name="VBAi is up to date." xml:space="preserve"><value>VBAi обновлён.</value></data>
+  <data name="This release has no compatible verified installer." xml:space="preserve"><value>В этом выпуске нет совместимого проверяемого установщика.</value></data>
+  <data name="An update is available." xml:space="preserve"><value>Доступно обновление.</value></data>
+  <data name="Downloading update…" xml:space="preserve"><value>Загрузка обновления…</value></data>
+  <data name="Update downloaded and verified." xml:space="preserve"><value>Обновление загружено и проверено.</value></data>
+  <data name="Unable to download or verify the installer." xml:space="preserve"><value>Не удалось загрузить или проверить установщик.</value></data>
+  <data name="Unable to schedule the update." xml:space="preserve"><value>Не удалось запланировать обновление.</value></data>
+  <data name="This version will be skipped automatically." xml:space="preserve"><value>Эта версия будет автоматически пропущена.</value></data>
+  <data name="Unable to check for updates. Check the GitHub account or retry later." xml:space="preserve"><value>Не удалось проверить обновления. Проверьте учётную запись GitHub или повторите позже.</value></data>
+  <data name="Cancel scheduled update" xml:space="preserve"><value>Отменить запланированное обновление</value></data>
+  <data name="Update installed. Restart Windows to finish." xml:space="preserve"><value>Обновление установлено. Перезапустите Windows для завершения.</value></data>
+  <data name="Download" xml:space="preserve"><value>Загрузить</value></data>
+  <data name="Release notes" xml:space="preserve"><value>Примечания к выпуску</value></data>
+  <data name="VBAi editor" xml:space="preserve">
+    <value>Редактор VBAi</value>
+  </data>
+  <data name="Open active module" xml:space="preserve">
+    <value>Открыть активный модуль</value>
+  </data>
+  <data name="Synchronize with VBA" xml:space="preserve">
+    <value>Синхронизировать с VBA</value>
+  </data>
+  <data name="Compare with VBA" xml:space="preserve">
+    <value>Сравнить с VBA</value>
+  </data>
+  <data name="Reload VBA version" xml:space="preserve">
+    <value>Загрузить версию VBA</value>
+  </data>
+  <data name="Restore draft" xml:space="preserve">
+    <value>Восстановить черновик</value>
+  </data>
+  <data name="Use edited version" xml:space="preserve">
+    <value>Применить изменённую версию</value>
+  </data>
+  <data name="Close module" xml:space="preserve">
+    <value>Закрыть модуль</value>
+  </data>
+  <data name="Native editor" xml:space="preserve">
+    <value>Встроенный редактор</value>
+  </data>
+  <data name="Dock / detach" xml:space="preserve">
+    <value>Закрепить / открепить</value>
+  </data>
+  <data name="Automatic synchronization" xml:space="preserve">
+    <value>Автоматическая синхронизация</value>
+  </data>
+  <data name="Follow native code windows" xml:space="preserve">
+    <value>Следовать за окнами встроенного редактора</value>
+  </data>
+  <data name="Open a VBA module to start editing." xml:space="preserve">
+    <value>Откройте модуль VBA для редактирования.</value>
+  </data>
+  <data name="Changes pending synchronization with VBA." xml:space="preserve">
+    <value>Изменения ожидают синхронизации с VBA.</value>
+  </data>
+  <data name="Synchronized with VBA. Save the macro in its host application." xml:space="preserve">
+    <value>Синхронизировано с VBA. Сохраните макрос в приложении.</value>
+  </data>
+  <data name="The module changed in VBA. Resolve the conflict first." xml:space="preserve">
+    <value>Модуль изменён в VBA. Сначала разрешите конфликт.</value>
+  </data>
+  <data name="Loading editor…" xml:space="preserve">
+    <value>Загрузка редактора…</value>
+  </data>
+  <data name="The editor stopped. Drafts are preserved; reopen the editor." xml:space="preserve">
+    <value>Редактор остановлен. Черновики сохранены; откройте его снова.</value>
+  </data>
+  <data name="Editor unavailable. Install WebView2 Runtime or use the native editor." xml:space="preserve">
+    <value>Редактор недоступен. Установите WebView2 Runtime или используйте встроенный редактор.</value>
+  </data>
+  <data name="VBA is running, paused or unavailable. Your draft is preserved." xml:space="preserve">
+    <value>VBA выполняется, приостановлен или недоступен. Черновик сохранён.</value>
+  </data>
+  <data name="The module changed again. Compare with VBA before resolving." xml:space="preserve">
+    <value>Модуль снова изменён. Перед разрешением сравните его с VBA.</value>
+  </data>
+  <data name="This module has hidden procedure attributes. Use the native editor to preserve them." xml:space="preserve">
+    <value>В модуле есть скрытые атрибуты процедур. Используйте встроенный редактор для их сохранения.</value>
+  </data>
+  <data name="The VBA project is closed. Your draft is preserved." xml:space="preserve">
+    <value>Проект VBA закрыт. Черновик сохранён.</value>
+  </data>
+  <data name="The VBA module was removed. Your draft is preserved." xml:space="preserve">
+    <value>Модуль VBA удалён. Черновик сохранён.</value>
+  </data>
+  <data name="Open the last active native code module in a new tab." xml:space="preserve">
+    <value>Открыть последний активный модуль встроенного редактора в новой вкладке.</value>
+  </data>
+  <data name="Write checked changes to VBA. Save the macro separately in its host." xml:space="preserve">
+    <value>Применить проверенные изменения к VBA. Отдельно сохраните макрос в приложении.</value>
+  </data>
+  <data name="Keep a recovery draft, then load the current VBA source." xml:space="preserve">
+    <value>Сохранить резервный черновик и загрузить текущий код VBA.</value>
+  </data>
+  <data name="Show native source and the editor draft side by side." xml:space="preserve">
+    <value>Показать исходный код и черновик редактора рядом.</value>
+  </data>
+  <data name="Restore a previous draft without overwriting changed VBA code." xml:space="preserve">
+    <value>Восстановить предыдущий черновик, не перезаписывая изменённый код VBA.</value>
+  </data>
+  <data name="Return to the native editor for debugging and designers." xml:space="preserve">
+    <value>Вернуться во встроенный редактор для отладки и конструкторов.</value>
+  </data>
+  <data name="Follow activated code panes in design mode while this window is open." xml:space="preserve">
+    <value>Следовать за активными окнами кода в режиме разработки, пока это окно открыто.</value>
+  </data>
+  <data name="Synchronize after typing pauses; conflicts and run mode suspend writes." xml:space="preserve">
+    <value>Синхронизировать после паузы ввода; конфликты и режим выполнения приостанавливают запись.</value>
+  </data>
+  <data name="Attach the editor to the VBE or move it to another screen." xml:space="preserve">
+    <value>Закрепить редактор в VBE или перенести на другой экран.</value>
+  </data>
+  <data name="Find and replace in the current module." xml:space="preserve">
+    <value>Найти и заменить в текущем модуле.</value>
+  </data>
+  <data name="Return from the comparison to editing." xml:space="preserve">
+    <value>Вернуться из сравнения к редактированию.</value>
+  </data>
+  <data name="Apply your edited version after comparing; refuse if VBA changed again." xml:space="preserve">
+    <value>Применить отредактированную версию после сравнения; отказать, если VBA снова изменён.</value>
+  </data>
+  <data name="Close this tab and preserve unsynchronized changes as a recovery draft." xml:space="preserve">
+    <value>Закрыть вкладку и сохранить несинхронизированные изменения в резервном черновике.</value>
+  </data>
+  <data name="Compile project" xml:space="preserve"><value>Компилировать проект</value></data>
+  <data name="Toggle breakpoint" xml:space="preserve"><value>Переключить точку останова</value></data>
+  <data name="Show next statement" xml:space="preserve"><value>Показать следующую инструкцию</value></data>
+  <data name="Step into" xml:space="preserve"><value>Шаг с заходом</value></data>
+  <data name="Step over" xml:space="preserve"><value>Шаг с обходом</value></data>
+  <data name="Step out" xml:space="preserve"><value>Шаг с выходом</value></data>
+  <data name="Breakpoint request sent; verify in VBE." xml:space="preserve"><value>Запрос точки останова отправлен; проверьте в VBE.</value></data>
+  <data name="Native dark VBE (experimental)" xml:space="preserve"><value>Тёмная тема встроенного VBE (экспериментальная)</value></data>
+  <data name="Styles the VBE title bar, workspace, native panes and scrollbars. Menus and toolbars remain controlled by the legacy Office renderer." xml:space="preserve"><value>Применяет тёмное оформление к заголовку, рабочей области, встроенным панелям и полосам прокрутки VBE. Меню и панели инструментов остаются под управлением прежнего механизма отрисовки Office.</value></data>
+  <data name="Native editor colors could not be updated. See the log for details." xml:space="preserve"><value>Не удалось обновить цвета встроенного редактора. Подробности см. в журнале.</value></data>
+  <data name="Applies dark native surfaces and editor colors after Settings closes. Original editor colors are saved and restored when disabled. Some legacy controls remain experimental." xml:space="preserve"><value>Применяет тёмное оформление встроенных поверхностей и цвета редактора после закрытия настроек. Исходные цвета сохраняются и восстанавливаются при отключении. Некоторые устаревшие элементы управления остаются экспериментальными.</value></data>
+  <data name="In progress" xml:space="preserve">
+    <value>Выполняется</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>Завершено</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="Cancelled" xml:space="preserve">
+    <value>Прервано</value>
+  </data>
+  <data name="Declined" xml:space="preserve">
+    <value>Отклонено</value>
+  </data>
+  <data name="Project access" xml:space="preserve"><value>Доступ к проектам</value></data>
+  <data name="Project access…" xml:space="preserve"><value>Доступ к проектам…</value></data>
+  <data name="The bound project is always readable. Select additional projects for read access only. Changing access starts a new conversation; previously transmitted data cannot be recalled." xml:space="preserve"><value>Привязанный проект всегда доступен для чтения. Выберите дополнительные проекты только для чтения. Изменение доступа начинает новый разговор; уже переданные данные невозможно отозвать.</value></data>
+  <data name="Allow shared VBE and clipboard context" xml:space="preserve"><value>Разрешить общий контекст VBE и буфера обмена</value></data>
+  <data name="Shared tools may transmit data from any open project, debugger windows, native inventories and the system clipboard. This permission does not authorize edits in other projects." xml:space="preserve"><value>Общие инструменты могут передавать данные из любых открытых проектов, окон отладчика, списков собственных элементов приложения и системного буфера обмена. Это разрешение не позволяет изменять другие проекты.</value></data>
+  <data name="Apply to new chat" xml:space="preserve"><value>Применить к новому разговору</value></data>
+  <data name="Additional projects can be read, but only the bound project can be edited." xml:space="preserve"><value>Дополнительные проекты можно читать, но изменять можно только привязанный проект.</value></data>
+  <data name="Authorize unfiltered native debugger, window and clipboard data for this chat." xml:space="preserve"><value>Разрешить в этом разговоре нефильтрованные данные встроенного отладчика, окон и буфера обмена.</value></data>
+  <data name="Project access configured for the new conversation." xml:space="preserve"><value>Доступ к проектам настроен для нового разговора.</value></data>
+  <data name="Read access to another project is not authorized for this conversation." xml:space="preserve"><value>В этом разговоре не разрешено читать другой проект.</value></data>
+  <data name="This tool uses shared VBE context. Authorize shared context in Project access before using it." xml:space="preserve"><value>Этот инструмент использует общий контекст VBE. Перед использованием разрешите общий контекст в разделе «Доступ к проектам».</value></data>
+  <data name="Restore the paused provider, model, effort and mode before resuming." xml:space="preserve"><value>Перед продолжением восстановите поставщика, модель, уровень рассуждения и режим, использовавшиеся в момент приостановки.</value></data>
+  <data name=" — interrupted; verify live state before retrying" xml:space="preserve"><value> — прервано; перед повторной попыткой проверьте текущее состояние</value></data>
+  <data name="Resume paused turn" xml:space="preserve"><value>Продолжить приостановленный ход</value></data>
+  <data name="Continue from saved tool results without repeating completed actions." xml:space="preserve"><value>Продолжить с сохранённых результатов инструментов, не повторяя завершённые действия.</value></data>
+  <data name="Pending: automatic verification and final response." xml:space="preserve"><value>Осталось: автоматическая проверка и окончательный ответ.</value></data>
+  <data name="Continuation interrupted. Completed results were kept; verify live state before retrying." xml:space="preserve"><value>Продолжение прервано. Завершённые результаты сохранены; перед повторной попыткой проверьте текущее состояние.</value></data>
+  <data name="Choose which other projects this conversation may read." xml:space="preserve"><value>Выберите другие проекты, которые разрешено читать в этом разговоре.</value></data>
+  <data name=" — completed" xml:space="preserve"><value> — завершено</value></data>
+  <data name="Resume ▶" xml:space="preserve"><value>Продолжить ▶</value></data>
+  <data name=" — refused or failed" xml:space="preserve"><value> — отклонено или завершилось с ошибкой</value></data>
+  <data name="Paused — resume when ready" xml:space="preserve"><value>Приостановлено — продолжите, когда будете готовы</value></data>
+  <data name="Pending: final response." xml:space="preserve"><value>Осталось: окончательный ответ.</value></data>
+  <data name="Paused after 8 model rounds. Resume to continue from the saved results; completed actions will not be replayed." xml:space="preserve"><value>Приостановлено после 8 раундов взаимодействия с моделью. Продолжите с сохранённых результатов; завершённые действия не будут повторены.</value></data>
+  <data name=" — response received; inspect returned state" xml:space="preserve"><value> — ответ получен; проверьте возвращённое состояние</value></data>
+  <data name="This document has no native host to save." xml:space="preserve"><value>У этого документа нет собственного приложения для сохранения.</value></data>
+  <data name="The native save target changed. Select the module and retry." xml:space="preserve"><value>Цель сохранения в приложении изменилась. Выберите модуль и повторите попытку.</value></data>
+  <data name="The native Save command is unavailable." xml:space="preserve"><value>Команда сохранения приложения недоступна.</value></data>
+  <data name="Saved." xml:space="preserve"><value>Сохранено.</value></data>
+  <data name="Saving was cancelled or not completed. Your code remains in the editor and host document." xml:space="preserve"><value>Сохранение отменено или не завершено. Код остаётся в редакторе и документе приложения.</value></data>
+  <data name="The host document was not saved. Your code remains in the editor and host document." xml:space="preserve"><value>Документ приложения не сохранён. Код остаётся в редакторе и документе приложения.</value></data>
+  <data name="The native Save command finished, but the host document&apos;s saved state could not be verified." xml:space="preserve"><value>Команда сохранения приложения завершилась, но не удалось проверить, сохранён ли документ приложения.</value></data>
+  <data name="The document was not saved because some edits are still pending synchronization." xml:space="preserve"><value>Документ не сохранён, потому что некоторые изменения ещё ожидают синхронизации.</value></data>
+  <data name="Project privacy has been upgraded. Previous history remains available locally; the provider context starts fresh to avoid retransmitting previously shared project data." xml:space="preserve"><value>Защита данных проектов усилена. Предыдущая история остаётся доступной локально; контекст поставщика начинается заново, чтобы не передавать повторно ранее предоставленные данные проектов.</value></data>
+  <data name="This message predates the project privacy upgrade. Use current authorized references in a new conversation." xml:space="preserve"><value>Это сообщение создано до усиления защиты данных проектов. Используйте актуальные разрешённые ссылки в новом разговоре.</value></data>
+  <data name="Queue ↑" xml:space="preserve">
+    <value>В очередь ↑</value>
+  </data>
+  <data name="Queue this message after the current response." xml:space="preserve">
+    <value>Отправить это сообщение после текущего ответа.</value>
+  </data>
+  <data name="Send now" xml:space="preserve">
+    <value>Отправить сейчас</value>
+  </data>
+  <data name="Queued message" xml:space="preserve">
+    <value>Сообщение в очереди</value>
+  </data>
+  <data name="Stop the current response and send this message next." xml:space="preserve">
+    <value>Остановить текущий ответ и отправить это сообщение следующим.</value>
+  </data>
+  <data name="Move this queued message back to the composer." xml:space="preserve">
+    <value>Вернуть это сообщение из очереди в поле ввода.</value>
+  </data>
+  <data name="Remove this message from the queue." xml:space="preserve">
+    <value>Удалить это сообщение из очереди.</value>
+  </data>
+  <data name="Send or clear the current draft before editing a queued message." xml:space="preserve">
+    <value>Отправьте или очистите текущий черновик перед редактированием сообщения в очереди.</value>
+  </data>
+  <data name="Safety pause: repeated rounds without progress or the intervention ceiling was reached. Resume from saved results; completed actions will not be replayed." xml:space="preserve">
+    <value>Защитная пауза: несколько циклов без прогресса или достигнут предел вмешательства. Продолжите с сохранённых результатов; завершённые действия не будут повторены.</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Изменить</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="VBA edit approval" xml:space="preserve"><value>Разрешение изменений VBA</value></data>
+  <data name="Model and reasoning effort" xml:space="preserve"><value>Модель и уровень рассуждения</value></data>
+  <data name="Interrupted" xml:space="preserve">
+    <value>Прервано</value>
+  </data>
+</root>

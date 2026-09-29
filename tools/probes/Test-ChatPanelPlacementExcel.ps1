@@ -51,7 +51,7 @@ function Read-State([string]$stage) {
     $script:states.Add($state)
     $script:states | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $OutputDirectory 'states.json') -Encoding UTF8
     $state | ConvertTo-Json -Depth 6 -Compress
-    $connected = @($state.AddIns | Where-Object { $_.ProgId -eq 'CodexVBE.AddIn' -and $_.Connect })
+    $connected = @($state.AddIns | Where-Object { $_.ProgId -eq 'VBAi.AddIn' -and $_.Connect })
     if ($connected.Count -ne 1) { throw 'The add-in is not connected.' }
     if ($stage -eq 'closed') {
         if ($state.EditorVisible -or @($native | Where-Object Visible).Count) { throw 'SC_CLOSE did not hide the editor and its pane.' }

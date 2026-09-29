@@ -1,11 +1,11 @@
-﻿param([string]$AssemblyPath = 'artifacts/ui-product/CodexVBE.dll')
+param([string]$AssemblyPath = 'artifacts/ui-product/VBAi.dll')
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing, PresentationFramework
 $assembly = [Reflection.Assembly]::LoadFrom((Resolve-Path $AssemblyPath))
 $flags = [Reflection.BindingFlags]'Instance,Static,Public,NonPublic'
 function Field($target, $name) { ,$target.GetType().GetField($name,$flags).GetValue($target) }
 function Call($target,$name,[object[]]$arguments) { $target.GetType().GetMethod($name,$flags).Invoke($target,$arguments) }
-function New-Internal($name) { [Activator]::CreateInstance($assembly.GetType('CodexVBE.'+$name),$true) }
+function New-Internal($name) { [Activator]::CreateInstance($assembly.GetType('VBAi.'+$name),$true) }
 function Pump { 1..10 | ForEach-Object { [Windows.Forms.Application]::DoEvents(); Start-Sleep -Milliseconds 20 } }
 function Assert($value,$message) { if (-not $value) { throw $message } }
 $output = Join-Path (Get-Location) 'artifacts/ui-review/screenshots'
@@ -31,17 +31,17 @@ try {
     Call $chat ReceiveChatUpdate @('final','review-stream','A **completed** answer',$true)
     Pump
     Assert ((Field $chat transcriptEntries)[300].Text -eq 'A **completed** answer') 'Stream completion lost content.'
-    $markdown = $assembly.GetType('CodexVBE.ChatMarkdown').GetMethod('Render',$flags)
+    $markdown = $assembly.GetType('VBAi.ChatMarkdown').GetMethod('Render',$flags)
     $view = $markdown.Invoke($null,@("# Heading`n`n| A | B |`n|---|---|`n| 1 | 2 |`n`n[Link](https://github.com)",$null,$null,[Action[string]]{param($message) throw $message}))
     Assert (@($view.Document.Blocks | Where-Object { $_ -is [Windows.Documents.Table] }).Count -eq 1) 'Markdown table was not rendered as a table.'
     Write-Output "PASS Markdown table, streaming and virtualized transcript ($realized realized views / 300 messages)"
 } finally { $chat.Dispose() }
-$theme = $assembly.GetType('CodexVBE.UiTheme')
+$theme = $assembly.GetType('VBAi.UiTheme')
 $choice = $theme.GetProperty('Choice',$flags)
 $original = $choice.GetValue($null)
 try {
     foreach ($mode in @('Light','Dark')) {
-        $choice.SetValue($null,[Enum]::Parse($assembly.GetType('CodexVBE.ThemeChoice'),$mode))
+        $choice.SetValue($null,[Enum]::Parse($assembly.GetType('VBAi.ThemeChoice'),$mode))
         $git = New-Internal GitWindow
         try {
             $git.Show(); Pump

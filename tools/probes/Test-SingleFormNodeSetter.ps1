@@ -14,7 +14,7 @@ $value = ConvertFrom-Json -InputObject $ValueJson
 
 function Invoke-Vbe([hashtable] $Request) {
     $json = ConvertTo-Json -InputObject $Request -Compress -Depth 8
-    $reply = & (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson $json | ConvertFrom-Json
+    $reply = & (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId -RequestJson $json | ConvertFrom-Json
     if (-not $reply.Ok) { throw "$($Request.Command): $($reply.Error)" }
     return $reply.Data
 }

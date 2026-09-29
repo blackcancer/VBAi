@@ -1,4 +1,4 @@
-﻿param([string]$OutputDirectory = 'artifacts/designer-compatibility/metadata')
+param([string]$OutputDirectory = 'artifacts/designer-compatibility/metadata')
 $ErrorActionPreference = 'Stop'
 $repository = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
 $proof = @()
@@ -14,7 +14,7 @@ function Require-Item($items, $identity, $subtype, $parent) {
     if ($parent -and $entry[0].DependentUpon -ne $parent) { throw "$identity must depend on $parent" }
     return [pscustomobject]@{ File = $identity; SubType = $entry[0].SubType; Parent = $entry[0].DependentUpon; Result = 'PASS' }
 }
-$items = Read-Items (Join-Path $repository 'src/CodexVBE/CodexVBE.csproj')
+$items = Read-Items (Join-Path $repository 'src/VBAi/VBAi.csproj')
 foreach ($name in @('Editor\ModernEditorWindow','Updates\UpdateWindow','Updates\UpdateProgressWindow','Git\GitWindow','Llm\Settings\LlmSettingsWindow')) {
     $parent = ($name -split '\\')[-1] + '.cs'
     $proof += Require-Item $items.Compile ($name+'.cs') 'Form' $null
@@ -26,8 +26,8 @@ foreach ($entry in $items.Compile | Where-Object { $_.Identity -match '(ModernEd
     $proof += Require-Item $items.Compile $entry.Identity 'Code' $parent
 }
 $updater = Read-Items (Join-Path $repository 'src/VBAi.Updater/VBAi.Updater.csproj')
-$proof += Require-Item $updater.Compile '../CodexVBE/Updates/UpdateProgressWindow.cs' 'Code' $null
-$proof += Require-Item $updater.Compile '../CodexVBE/Updates/UpdateProgressWindow.Designer.cs' 'Code' 'UpdateProgressWindow.cs'
+$proof += Require-Item $updater.Compile '../VBAi/Updates/UpdateProgressWindow.cs' 'Code' $null
+$proof += Require-Item $updater.Compile '../VBAi/Updates/UpdateProgressWindow.Designer.cs' 'Code' 'UpdateProgressWindow.cs'
 $directory = [IO.Path]::GetFullPath((Join-Path $repository $OutputDirectory))
 [IO.Directory]::CreateDirectory($directory) | Out-Null
 $proof | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $directory 'project-items.json') -Encoding UTF8

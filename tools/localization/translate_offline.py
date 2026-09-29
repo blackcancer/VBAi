@@ -18,7 +18,7 @@ LANGUAGES = dict(es='Spanish', de='German', pt='Portuguese', it='Italian',
                  ja='Japanese', ko='Korean', zh='ChineseSimplified', zt='ChineseTraditional',
                  ru='Russian', ar='Arabic', hi='Hindi')
 TECHNICAL = re.compile(
-    r'https?://[^\s]+|\{\d+[^}]*\}|(?:CODEXVBE|AZURE|AWS|OPENAI)_[A-Z_]+|'
+    r'https?://[^\s]+|\{\d+[^}]*\}|(?:VBAi|AZURE|AWS|OPENAI)_[A-Z_]+|'
     r'\b[a-z]+_[a-z_]+\b|/chat/completions|\.vba|\.frx|\.frm|\.bas|\.cls|'
     r'\b(?:VBAi|VBA|VBE|GitHub Copilot|GitHub|Git Credential Manager|Git|CodexVBA|Codex|'
     r'OpenAI|ChatGPT|Copilot|Claude|Bedrock|Microsoft Entra|Microsoft|Windows|Ollama|'
@@ -33,7 +33,7 @@ def main():
     args = parser.parse_args()
     root = args.root.resolve()
     os.chdir(root)
-    folder = root / 'src/CodexVBE/Localization'
+    folder = root / 'src/VBAi/Localization'
     tree = ET.parse(folder / 'UiStrings.resx')
     entries = [(node.attrib['name'], node.findtext('value') or '') for node in tree.getroot().findall('data')]
     output = folder / ('UiStrings' + LANGUAGES[args.language] + '.resx')

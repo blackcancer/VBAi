@@ -10,7 +10,7 @@ if ((Get-Process -Id $HostProcessId -ErrorAction Stop).ProcessName -ne 'SLDWORKS
 
 function Invoke-Vbe([hashtable] $Request) {
     $payload = ConvertTo-Json -InputObject $Request -Compress -Depth 8
-    $response = & (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson $payload |
+    $response = & (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId -RequestJson $payload |
         ConvertFrom-Json
     if (-not $response.Ok) { throw "$($Request.Command): $($response.Error)" }
     return $response.Data
@@ -24,7 +24,7 @@ if (@($projects | Where-Object { $_.Name -eq $project -and $_.FileName -eq $proj
 }
 $name = if ($Kind -eq 'Class') { 'CodexSwClassRoundTrip' } else { 'CodexSwFormRoundTrip' }
 $extension = if ($Kind -eq 'Class') { '.cls' } else { '.frm' }
-$path = Join-Path $env:TEMP ("CodexVBE-sw-{0}-{1}{2}" -f $Kind.ToLowerInvariant(), $HostProcessId, $extension)
+$path = Join-Path $env:TEMP ("VBAi-sw-{0}-{1}{2}" -f $Kind.ToLowerInvariant(), $HostProcessId, $extension)
 $frx = [IO.Path]::ChangeExtension($path, '.frx')
 if ((Test-Path -LiteralPath $path) -or (Test-Path -LiteralPath $frx)) {
     throw 'A disposable export path already exists.'
@@ -52,12 +52,12 @@ try {
             Caption = 'SolidWorks probe' } | Out-Null
         $state = Invoke-Vbe @{ Command = 'form_state'; Project = $project; Form = $name }
         Invoke-Vbe @{ Command = 'set_form_property'; Project = $project; Form = $name;
-            ExpectedFormVersion = $state.Version; Property = 'Caption'; Value = 'CodexVBE form probe' } | Out-Null
+            ExpectedFormVersion = $state.Version; Property = 'Caption'; Value = 'VBAi form probe' } | Out-Null
         $state = Invoke-Vbe @{ Command = 'form_state'; Project = $project; Form = $name }
         Invoke-Vbe @{ Command = 'set_form_property'; Project = $project; Form = $name;
             ExpectedFormVersion = $state.Version; Property = 'Width'; Value = 240 } | Out-Null
         foreach ($entry in @(
-            @{ Property = 'Caption'; Value = 'Label from CodexVBE' },
+            @{ Property = 'Caption'; Value = 'Label from VBAi' },
             @{ Property = 'Font.Name'; Value = 'Arial' },
             @{ Property = 'Font.Size'; Value = 14 }
         )) {
@@ -68,8 +68,8 @@ try {
         }
         $state = Invoke-Vbe @{ Command = 'form_state'; Project = $project; Form = $name }
         $label = @($state.Controls | Where-Object { $_.Name -eq 'lblProbe' }) | Select-Object -First 1
-        if ($state.Caption -ne 'CodexVBE form probe' -or [Math]::Abs($state.Width - 240) -gt 0.1 -or
-            $label.Caption -ne 'Label from CodexVBE' -or $label.FontName -ne 'Arial' -or
+        if ($state.Caption -ne 'VBAi form probe' -or [Math]::Abs($state.Width - 240) -gt 0.1 -or
+            $label.Caption -ne 'Label from VBAi' -or $label.FontName -ne 'Arial' -or
             [Math]::Abs($label.FontSize - 14) -gt 0.1) {
             throw 'SOLIDWORKS did not retain the form/label designer properties.'
         }
@@ -101,8 +101,8 @@ try {
         $labelAfter = @($stateAfter.Controls | Where-Object { $_.Name -eq 'lblProbe' }) | Select-Object -First 1
         if ($treeAfter.TreeVersion -ne $treeBefore.TreeVersion -or
             @($treeAfter.Controls | Where-Object { $_.Name -eq 'lblProbe' }).Count -ne 1 -or
-            $stateAfter.Caption -ne 'CodexVBE form probe' -or [Math]::Abs($stateAfter.Width - 240) -gt 0.1 -or
-            $labelAfter.Caption -ne 'Label from CodexVBE' -or $labelAfter.FontName -ne 'Arial' -or
+            $stateAfter.Caption -ne 'VBAi form probe' -or [Math]::Abs($stateAfter.Width - 240) -gt 0.1 -or
+            $labelAfter.Caption -ne 'Label from VBAi' -or $labelAfter.FontName -ne 'Arial' -or
             [Math]::Abs($labelAfter.FontSize - 14) -gt 0.1) {
             throw 'The UserForm designer tree changed during export/import.'
         }

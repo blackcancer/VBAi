@@ -5,7 +5,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$client = Join-Path (Split-Path -Parent $PSScriptRoot) 'Invoke-CodexVBE.ps1'
+$client = Join-Path (Split-Path -Parent $PSScriptRoot) 'Invoke-VBAi.ps1'
 $hosts = @(Get-Process EXCEL -ErrorAction SilentlyContinue)
 if ($hosts.Count -ne 1 -or $hosts[0].Id -ne $HostProcessId) {
     throw 'The breakpoint probe requires one isolated Excel process matching HostProcessId.'

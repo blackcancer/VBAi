@@ -645,7 +645,7 @@ static DWORD StartTrace(HWND editorRoot, HWND sourceWindow, const wchar_t* outpu
     // Keep the pass-through hook code alive even if an already-fetched IAT target
     // is invoked after Stop. No hook can call into an unloaded diagnostic DLL.
     if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN,
-        reinterpret_cast<LPCWSTR>(&CodexVbeTraceStart), &self)) return GetLastError();
+        reinterpret_cast<LPCWSTR>(&VBAiTraceStart), &self)) return GetLastError();
     if (!GetModuleHandleExW(sourceModule ? GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS : 0,
         sourceModule ? reinterpret_cast<LPCWSTR>(sourceModule) : L"VBE7.DLL", &targetModule)) return GetLastError();
     try {
@@ -697,17 +697,17 @@ static DWORD StartTrace(HWND editorRoot, HWND sourceWindow, const wchar_t* outpu
         return ERROR_NOT_ENOUGH_MEMORY;
     }
 }
-DWORD __cdecl CodexVbeTraceStart(HWND editorRoot, const wchar_t* outputJsonl, DWORD maxEvents) {
+DWORD __cdecl VBAiTraceStart(HWND editorRoot, const wchar_t* outputJsonl, DWORD maxEvents) {
     return StartTrace(editorRoot, nullptr, outputJsonl, maxEvents);
 }
-DWORD __cdecl CodexVbeTraceStartForWindow(HWND editorRoot, HWND sourceWindow, const wchar_t* outputJsonl, DWORD maxEvents) {
+DWORD __cdecl VBAiTraceStartForWindow(HWND editorRoot, HWND sourceWindow, const wchar_t* outputJsonl, DWORD maxEvents) {
     if (!sourceWindow) return ERROR_INVALID_WINDOW_HANDLE;
     return StartTrace(editorRoot, sourceWindow, outputJsonl, maxEvents);
 }
-DWORD __cdecl CodexVbeToolbarPatternStart(HWND editorRoot, HWND sourceWindow, const wchar_t* outputJsonl, DWORD maxEvents) {
+DWORD __cdecl VBAiToolbarPatternStart(HWND editorRoot, HWND sourceWindow, const wchar_t* outputJsonl, DWORD maxEvents) {
     return StartTrace(editorRoot, sourceWindow, outputJsonl, maxEvents, true);
 }
-DWORD __cdecl CodexVbeTraceStop() {
+DWORD __cdecl VBAiTraceStop() {
     if (!sessionExists) return ERROR_INVALID_STATE;
     if (!IsOwnerThread()) return ERROR_INVALID_THREAD_ID;
     DWORD error = RemoveInstrumentation();
@@ -720,5 +720,5 @@ DWORD __cdecl CodexVbeTraceStop() {
     if (!error) { sessionExists = false; ReleaseToolbarTextModule(); FreeLibrary(targetModule); targetModule = nullptr; }
     return error ? error : reportError;
 }
-DWORD __cdecl CodexVbeTraceCount() { return IsOwnerThread() ? count : 0; }
-DWORD __cdecl CodexVbeTraceDropped() { return IsOwnerThread() ? dropped : 0; }
+DWORD __cdecl VBAiTraceCount() { return IsOwnerThread() ? count : 0; }
+DWORD __cdecl VBAiTraceDropped() { return IsOwnerThread() ? dropped : 0; }

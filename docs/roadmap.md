@@ -9,7 +9,7 @@ La couverture a repris après les correctifs de la [revue Astra](audits/2026-09-
 | Travail | État actuel | Critère de fin |
 | --- | --- | --- |
 | Couverture du code de production | Dernière mesure avant PR #13 : 1 867 réussis, 0 échec, 21 ignorés ; 100 % lignes (30 521/30 521), 100 % branches (31 195/31 195), sans exclusion | Remesurer et compléter les nouvelles branches de la PR #13 ; suite globale verte |
-| Organisation des tests | 240 miroirs pour 297 sources ; scénarios et fixtures complémentaires | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
+| Organisation des tests | 242 miroirs pour 299 sources ; scénarios et fixtures complémentaires, validés après renommage VBAi | Chaque surface exécutée couverte par son miroir ou un scénario justifié |
 | Documentation IntelliSense | Avant PR #13 : 5 356/5 356 déclarations documentées, audit intégré, aucune erreur syntaxique | Actualiser l’audit des nouvelles déclarations ; préserver les commentaires privés/publics et leurs paramètres |
 | Concepteurs WinForms | 46 surfaces WinForms et 412 contrôles enfants validés | Préserver cette accessibilité après chaque changement de structure ; qualifier aussi le rendu réel |
 

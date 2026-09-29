@@ -1,4 +1,4 @@
-﻿param(
+param(
     [Parameter(Mandatory=$true)][string]$AssemblyPath,
     [Parameter(Mandatory=$true)][string]$OutputDirectory,
     [switch]$AllowTemporaryVbaAccess
@@ -16,7 +16,7 @@ $initialAccess = $initial.AccessVBOM
 if ($initialAccess -ne 1 -and -not $AllowTemporaryVbaAccess) { throw 'Temporary AccessVBOM permission is required.' }
 $excel = $null; $book = $null; $otherBook = $null; $session = $null; $createdToolbar = $null
 function Invoke-Session([hashtable]$Fields) {
-    $request = New-Object CodexVBE.Request
+    $request = New-Object VBAi.Request
     foreach ($key in $Fields.Keys) { $request.$key = $Fields[$key] }
     $result = $script:session.Execute($request)
     if (-not $result.Ok) { throw $result.Error }
@@ -51,15 +51,15 @@ try {
         $renameTrials += [pscustomobject]@{ Name=$project.Name; Path=$project.FileName; OtherProjectName=$otherProject.Name; SourcePreserved=$true; FormName=$form.Name }
     }
     $renameTrials | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $outputRoot 'native-project-rename-trials.json') -Encoding UTF8
-    $testAssemblyPath = Join-Path ([IO.FileInfo]$AssemblyPath).Directory.Parent.Parent.Parent.FullName 'CodexVBE.Tests/Debug/net48/CodexVBE.Tests.dll'
+    $testAssemblyPath = Join-Path ([IO.FileInfo]$AssemblyPath).Directory.Parent.Parent.Parent.FullName 'VBAi.Tests/Debug/net48/VBAi.Tests.dll'
     $testAssembly = [Reflection.Assembly]::LoadFrom($testAssemblyPath)
-    $scopeProbe = [Activator]::CreateInstance($testAssembly.GetType('CodexVBE.Tests.Infrastructure.ScopedExcelHostProbe', $true))
+    $scopeProbe = [Activator]::CreateInstance($testAssembly.GetType('VBAi.Tests.Infrastructure.ScopedExcelHostProbe', $true))
     $scopeProbe.Application = $excel
     $scopeProbe.ProcessId = [int]$scopeProbe.WindowProcessId([IntPtr][int]$excel.Hwnd)
-    $formsService = [Activator]::CreateInstance($assembly.GetType('CodexVBE.VbeForms', $true), [object[]]@($vbe))
-    $projectService = [Activator]::CreateInstance($assembly.GetType('CodexVBE.VbeProjectComponents', $true), [Reflection.BindingFlags]'Instance, NonPublic', $null, [object[]]@($vbe,$formsService,$scopeProbe), $null)
+    $formsService = [Activator]::CreateInstance($assembly.GetType('VBAi.VbeForms', $true), [object[]]@($vbe))
+    $projectService = [Activator]::CreateInstance($assembly.GetType('VBAi.VbeProjectComponents', $true), [Reflection.BindingFlags]'Instance, NonPublic', $null, [object[]]@($vbe,$formsService,$scopeProbe), $null)
     $metadata = $projectService.ProjectProperties($document)
-    $nativeRenameRequest = New-Object CodexVBE.Request
+    $nativeRenameRequest = New-Object VBAi.Request
     $nativeRenameRequest.Project = $document; $nativeRenameRequest.Property = 'Name'; $nativeRenameRequest.Value = 'QualifiedServiceProbe'; $nativeRenameRequest.ExpectedProjectVersion = $metadata.Version
     $serviceRename = $projectService.SetProjectProperty($nativeRenameRequest)
     if (-not $serviceRename.Verified -or -not $serviceRename.SourcePreserved) { throw 'The production rename service did not verify its mutation.' }
@@ -68,7 +68,7 @@ try {
     $serviceRestore = $projectService.SetProjectProperty($nativeRenameRequest)
     if (-not $serviceRestore.Verified) { throw 'The production rename service did not restore the original project name.' }
     [pscustomobject]@{ Rename=$serviceRename; Restore=$serviceRestore; NativeHostProcessId=$scopeProbe.ProcessId; ExternalComProbe=$true } | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $outputRoot 'native-project-rename-service.json') -Encoding UTF8
-    $session = [Activator]::CreateInstance($assembly.GetType('CodexVBE.VbeSession', $true), [object[]]@($vbe))
+    $session = [Activator]::CreateInstance($assembly.GetType('VBAi.VbeSession', $true), [object[]]@($vbe))
     $symbols = Invoke-Session @{ Command='project_symbols'; Project=$document; Module=$component.Name; Query='value'; WholeWord=$true }
     if ($symbols.Total -ne 1) { throw 'The local declaration was not indexed uniquely.' }
     $local = $symbols.Symbols[0]

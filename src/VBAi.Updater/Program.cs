@@ -3,7 +3,7 @@ using System.IO;
 using System.Security.Principal;
 using System.Threading;
 using System.Windows.Forms;
-using CodexVBE;
+using VBAi;
 
 internal static class Program
 {

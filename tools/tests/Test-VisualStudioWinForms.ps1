@@ -1,4 +1,4 @@
-﻿param([Parameter(Mandatory=$true)][int]$VisualStudioProcessId,
+param([Parameter(Mandatory=$true)][int]$VisualStudioProcessId,
     [string]$OutputDirectory = 'artifacts/designer-compatibility/visual-studio')
 $ErrorActionPreference = 'Stop'
 $repository = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
@@ -29,19 +29,19 @@ public static class VisualStudioFormValidation {
  [System.Runtime.InteropServices.DllImport("user32.dll")] static extern bool ShowWindow(IntPtr window,int command);
  public static string Verify(object value,string root) {
   var dte=(DTE)value;
-  if(!string.Equals(dte.Solution.FullName,System.IO.Path.Combine(root,"CodexVBE.sln"),StringComparison.OrdinalIgnoreCase))
+  if(!string.Equals(dte.Solution.FullName,System.IO.Path.Combine(root,"VBAi.sln"),StringComparison.OrdinalIgnoreCase))
    throw new InvalidOperationException("The selected Visual Studio must have this checkout's solution open.");
   var output=new StringBuilder();
   bool wasVisible=dte.MainWindow.Visible; dte.MainWindow.Visible=true;
   try {
   foreach(var rel in new[]{"Llm/Chat/ChatWindow.cs","Editor/ModernEditorWindow.cs","Updates/UpdateWindow.cs","Updates/UpdateProgressWindow.cs","Git/GitWindow.cs","Llm/Settings/LlmSettingsWindow.cs"}) {
-   var path=System.IO.Path.Combine(root,"src/CodexVBE",rel.Replace('/','\\'));
+   var path=System.IO.Path.Combine(root,"src/VBAi",rel.Replace('/','\\'));
    var item=dte.Solution.FindProjectItem(path);
    if(item==null)throw new InvalidOperationException("Project item not loaded: "+rel);
    VerifyItem(item,output);
   }
   foreach(var rel in new[]{"Editor/ModernEditorWindow.Debug.cs","Editor/ModernEditorWindow.Language.cs","Editor/ModernEditorWindow.Save.cs","Editor/ModernEditorWindow.Tools.cs","Git/GitWindow.Review.cs","Git/GitWindow.Views.cs","Llm/Settings/LlmSettingsWindow.Views.cs"}) {
-   var item=dte.Solution.FindProjectItem(System.IO.Path.Combine(root,"src/CodexVBE",rel.Replace('/','\\')));
+   var item=dte.Solution.FindProjectItem(System.IO.Path.Combine(root,"src/VBAi",rel.Replace('/','\\')));
    if(item==null || !string.Equals((string)item.Properties.Item("SubType").Value,"Code",StringComparison.OrdinalIgnoreCase))
     throw new InvalidOperationException("Partial file is not classified as Code: "+rel);
    output.AppendLine("PASS Code: "+rel);

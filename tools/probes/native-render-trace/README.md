@@ -15,7 +15,7 @@ library or package download is used.
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\probes\native-render-trace\Build-NativeRenderTrace.ps1 -BuildSelfTest
 $trace = Join-Path $PWD 'artifacts\native-renderer-pilot\trace'
-& "$trace\selftest\TraceSelfTest.exe" "$trace\CodexVbeNativeTrace.dll" "$trace\selftest-result-fresh"
+& "$trace\selftest\TraceSelfTest.exe" "$trace\VBAiNativeTrace.dll" "$trace\selftest-result-fresh"
 ```
 
 The last directory must not already exist. The self-test runs in its own EXE,
@@ -28,11 +28,11 @@ page protection, and subclasses. It is not evidence of VBE compatibility.
 ## In-process ABI
 
 ```cpp
-DWORD __cdecl CodexVbeTraceStart(HWND editorRoot, const wchar_t* outputJsonl, DWORD maxEvents);
-DWORD __cdecl CodexVbeTraceStartForWindow(HWND editorRoot, HWND sourceWindow, const wchar_t* outputJsonl, DWORD maxEvents);
-DWORD __cdecl CodexVbeTraceStop();
-DWORD __cdecl CodexVbeTraceCount();
-DWORD __cdecl CodexVbeTraceDropped();
+DWORD __cdecl VBAiTraceStart(HWND editorRoot, const wchar_t* outputJsonl, DWORD maxEvents);
+DWORD __cdecl VBAiTraceStartForWindow(HWND editorRoot, HWND sourceWindow, const wchar_t* outputJsonl, DWORD maxEvents);
+DWORD __cdecl VBAiTraceStop();
+DWORD __cdecl VBAiTraceCount();
+DWORD __cdecl VBAiTraceDropped();
 ```
 
 The DLL must already be loaded inside the target host. Start and Stop must run
@@ -130,7 +130,7 @@ VBE extension contract for changing an Office module's live import table.
 
 ## Experimental toolbar rendering pilot
 
-`CodexVbeToolbarPatternStart(root, toolbar, path, limit)` uses the same lifecycle
+`VBAiToolbarPatternStart(root, toolbar, path, limit)` uses the same lifecycle
 but deliberately changes the drawing of exactly one live `MsoCommandBar` HWND.
 It also observes VBE7 imports because that module paints the position field.
 The report sets `colorsChanged: true` and identifies the module for each import

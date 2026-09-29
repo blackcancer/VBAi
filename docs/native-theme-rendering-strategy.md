@@ -12,7 +12,7 @@ La recherche ne démontre pas encore l'existence d'un moteur complet prêt à in
 
 ## 1. Ce que notre code fait actuellement
 
-Audit de `src/CodexVBE/Ui/VbeNativeChrome.cs` et `VbeNativeTheme.cs` dans le répertoire courant du projet :
+Audit de `src/VBAi/Ui/VbeNativeChrome.cs` et `VbeNativeTheme.cs` dans le répertoire courant du projet :
 
 | Constat dans le code | Conséquence ou risque |
 | --- | --- |
@@ -95,7 +95,7 @@ La réussite attendue est un dessin net et stable sur ces parcours, avec des cou
 
 ## 6. État du projet à la fin de la recherche
 
-Aucun nouveau code de rendu ni aucune DLL hôte n'ont été modifiés pour cette recherche. Les derniers correctifs du dialogue Options et des titres sont dans la DLL installée. Le correctif expérimental des pixels ClearType est compilé séparément et n'a pas été installé avant l'interruption : les empreintes de `bin/Debug/net48/CodexVBE.dll` et `artifacts/native-palette-dialog-check/CodexVBE.dll` diffèrent. La recherche recommande de réexaminer ce type de correction dans le cadre du changement de pipeline décrit ci-dessus.
+Aucun nouveau code de rendu ni aucune DLL hôte n'ont été modifiés pour cette recherche. Les derniers correctifs du dialogue Options et des titres sont dans la DLL installée. Le correctif expérimental des pixels ClearType est compilé séparément et n'a pas été installé avant l'interruption : les empreintes de `bin/Debug/net48/VBAi.dll` et `artifacts/native-palette-dialog-check/VBAi.dll` diffèrent. La recherche recommande de réexaminer ce type de correction dans le cadre du changement de pipeline décrit ci-dessus.
 
 ## 7. Mise en œuvre du premier prototype
 

@@ -87,7 +87,7 @@ L’authentification du fournisseur IA Copilot reste distincte.
 
 Aucun fichier ni dossier n’est ajouté à côté du classeur Excel ou de la macro SolidWorks.
 
-`%LocalAppData%\CodexVBE\Git\<empreinte du chemin du document>\` contient :
+`%LocalAppData%\VBAi\Git\<empreinte du chemin du document>\` contient :
 
 - `binding.json` : URL et branche, sans secret ;
 - un dépôt **bare** privé par liaison dépôt/branche, sans copie de travail ;
@@ -96,7 +96,7 @@ Aucun fichier ni dossier n’est ajouté à côté du classeur Excel ou de la ma
 Git reçoit les blobs, arbres et messages de commit via ses entrées/sorties standard.
 Les sources sont assemblées et comparées en mémoire. Les API natives `VBComponent.Export` et
 `VBComponents.Import` exigent cependant des fichiers : ceux-ci sont créés dans un sous-dossier unique
-de `%LocalAppData%\CodexVBE\GitTemporary`, puis supprimés. Un arrêt brutal peut laisser ce dossier temporaire.
+de `%LocalAppData%\VBAi\GitTemporary`, puis supprimés. Un arrêt brutal peut laisser ce dossier temporaire.
 
 La liaison est **locale à l’ordinateur et au chemin enregistré du document**. Elle n’est pas embarquée dans
 le classeur ou la macro. Après déplacement/renommage ou sur un autre ordinateur, relier le dépôt.
@@ -147,7 +147,7 @@ doit suivre le processus habituel de signature du projet.
 Le staging par fichier, le transport automatique des changements non commitées entre branches,
 les pull requests et la création de dépôts GitHub depuis l’interface restent hors de ce périmètre.
 
-`tests/CodexVBE.Git.Smoke/CodexVBE.Git.Smoke.csproj` teste de vrais dépôts Git locaux, les échanges push/fetch,
+`tests/VBAi.Git.Smoke/VBAi.Git.Smoke.csproj` teste de vrais dépôts Git locaux, les échanges push/fetch,
 les protections contre les divergences, les sauvegardes privées, le cycle complet des commandes WinForms,
 les erreurs COM simulées, les modules hôtes et les ressources de formulaires. Le formulaire est aussi chargé
 dans `DesignSurface` avec un constructeur sans services actifs. Les tests avancés effectuent une vraie fusion conflictuelle,

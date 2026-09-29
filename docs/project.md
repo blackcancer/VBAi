@@ -6,7 +6,7 @@
 
 Intégrer un assistant LLM au Visual Basic Editor pour lire, modifier et déboguer le projet VBA vivant, dans Excel comme dans SOLIDWORKS. Codex est le fournisseur par défaut et utilise l’authentification ChatGPT du CLI ; une clé OpenAI API n’est pas nécessaire pour ce mode. Les autres transports sont décrits dans [Fournisseurs](providers.md).
 
-Le complément cible **VBE 64 bits, .NET Framework 4.8 et Windows**. Le chat, les outils et la session VBE s’exécutent dans le complément COM ; il ne s’agit pas d’un serveur MCP. Le pont local `CodexVBE.<PID>` permet aussi les diagnostics et les tests externes.
+Le complément cible **VBE 64 bits, .NET Framework 4.8 et Windows**. Le chat, les outils et la session VBE s’exécutent dans le complément COM ; il ne s’agit pas d’un serveur MCP. Le pont local `VBAi.<PID>` permet aussi les diagnostics et les tests externes.
 
 ## Fonctionnalités présentes
 

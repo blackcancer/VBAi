@@ -52,7 +52,7 @@ de messages et les chemins de données restent compatibles avec les sessions exi
 
 ## Maintenance
 
-`src/CodexVBE/Localization/UiStrings.resx` contient les clés anglaises et
+`src/VBAi/Localization/UiStrings.resx` contient les clés anglaises et
 `UiStringsFrench.resx` leurs traductions françaises. Les autres catalogues suivent
 le même schéma et sont déclarés dans `UiLanguages.cs`. Tous les catalogues sont
 embarqués dans la DLL principale ; aucun assembly satellite à déployer.
@@ -69,7 +69,7 @@ Compiler avec Visual Studio ou `dotnet build`, puis lancer sous Windows PowerShe
 ```powershell
 powershell.exe -Sta -NoProfile -File tools/tests/Test-Localization.ps1
 powershell.exe -Sta -NoProfile -File tools/tests/Test-ChatDesigner.ps1
-powershell.exe -Sta -NoProfile -File tools/tests/Test-MultilingualWindows.ps1 -AssemblyPath artifacts/multilingual-tests/CodexVBE.dll
+powershell.exe -Sta -NoProfile -File tools/tests/Test-MultilingualWindows.ps1 -AssemblyPath artifacts/multilingual-tests/VBAi.dll
 ```
 
 Les tests couvrent les 13 variantes sur les quatre fenêtres, la priorité VBE/Windows,

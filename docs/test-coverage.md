@@ -1,5 +1,9 @@
 # Couverture automatisée du complément
 
+## Renommage VBAi
+
+La solution et les namespaces sont renommés en VBAi. La suite complète après renommage compte **1 876 réussites, 0 échec, 21 ignorés**, en **8 min 8 s**, sans nouvelle collecte de couverture. Les 46 concepteurs et le démarrage Excel réel passent aussi. Les tests de performance sont rangés parmi les scénarios complémentaires : **242 miroirs pour 299 sources**. Voir [le bilan du renommage](rename-vbai.md) pour les preuves, la migration utilisateur et le nettoyage GitHub.
+
 ## Intégration de la PR #13
 
 La fusion `7232ceb` ajoute les deltas Monaco versionnés, la synchronisation pendant la saisie, les chemins rapides de débogage et l’index de langage incrémental. La mesure à 100 % ci-dessous précède ces changements : elle ne qualifie pas les nouvelles branches. Le protocole et les limites sont décrits dans [le bilan de performance](monaco-performance.md).
@@ -20,11 +24,11 @@ Le passage global final, source `953c84f`, inclut le correctif d’ordre des fen
 
 Le passage `final-with-zorder` a été interrompu après un échec de synchronisation de la fixture de sauvegarde : vider sa file ne garantissait pas la fin de l’opération asynchrone. Le test attend désormais son achèvement réel avant de vérifier le résultat, sans retirer d’assertion. Les six régressions ciblées passent dans `save-and-zorder/regressions.trx`. Le passage global final ci-dessus remplace ce passage interrompu.
 
-Les constructions Debug et Release réussissent sans erreur ni avertissement ; **46 concepteurs WinForms** passent leur qualification. La documentation XML couvre **5 356/5 356 déclarations**, et **240 miroirs pour 297 sources** conservent les scénarios complémentaires séparés. La construction Debug destinée à l’installation est réalisée après fermeture des fixtures Excel ; la bibliothèque COM est réexportée et l’installation utilisateur pointe désormais sur `bin/Debug/net48/CodexVBE.dll` de `main`.
+Les constructions Debug et Release réussissent sans erreur ni avertissement ; **46 concepteurs WinForms** passent leur qualification. La documentation XML couvre **5 356/5 356 déclarations**, et **240 miroirs pour 297 sources** conservent les scénarios complémentaires séparés. La construction Debug destinée à l’installation est réalisée après fermeture des fixtures Excel ; la bibliothèque COM est réexportée et l’installation utilisateur pointe désormais sur `bin/Debug/net48/VBAi.dll` de `main`.
 
 Le parcours Excel visible réussit avec cette DLL : identité de l’assembly chargé, démarrage automatique de Monaco, fenêtre de code native derrière lui, remplissage et redimensionnement de la zone centrale, Explorateur d’objets visible avec parent et géométrie préservés. Preuve : `artifacts/coverage-resumed/excel-startup/monaco-startup.json`. Le test résout la fenêtre de code native par son nom lorsque VBE renvoie `HWnd=0`. Ses deux premiers essais ont expiré sur ce handle nul et ne constituent pas une preuve de défaut du correctif. Le classeur jetable et Excel sont fermés ; aucune macro n’est exécutée.
 
-Les 21 scénarios conditionnels d’hôtes et de comptes restent désactivés dans cette mesure. Les compteurs concernent l’assembly C# `CodexVBE` ; le C++, le JavaScript et toutes les combinaisons d’hôtes conservent leur qualification distincte.
+Les 21 scénarios conditionnels d’hôtes et de comptes restent désactivés dans cette mesure. Les compteurs concernent l’assembly C# `VBAi` ; le C++, le JavaScript et toutes les combinaisons d’hôtes conservent leur qualification distincte.
 
 ## Historique : arrêt à réception du rapport Astra
 
@@ -51,7 +55,7 @@ Les pourcentages sont arrondis à partir des compteurs bruts. La cible **100 % n
 
 Preuves : `artifacts/pr12-integration/global-accepted/global.trx` et `32fc707c-9b16-49f4-a94a-0d1239ec8efa/coverage.cobertura.xml` et `coverage.json` dans ce même dossier. Les contrôles ciblés, Designers, métadonnées, thèmes WebView2 et miroirs sont dans `artifacts/pr12-integration/`. Le premier passage `global/global.trx` comportait un échec d’assertion sur l’ancienne couleur sombre ; il ne constitue pas la preuve de suite verte. Le passage corrigé ci-dessus le remplace.
 
-Les 21 scénarios conditionnels d’hôtes et de comptes sont ignorés dans cette mesure ; le parcours Excel de palette est qualifié séparément. Les mesures à 100 % ci-dessous décrivent les états antérieurs à la PR #12. Le C++, les processus hôtes et les branches JavaScript ne sont pas inclus dans les compteurs de l’assembly C# `CodexVBE`.
+Les 21 scénarios conditionnels d’hôtes et de comptes sont ignorés dans cette mesure ; le parcours Excel de palette est qualifié séparément. Les mesures à 100 % ci-dessous décrivent les états antérieurs à la PR #12. Le C++, les processus hôtes et les branches JavaScript ne sont pas inclus dans les compteurs de l’assembly C# `VBAi`.
 
 ## Historique : correctif de récupération de palette, avant PR #12
 
@@ -80,7 +84,7 @@ Preuves : `artifacts/monaco-language/global-final-results/global.trx`, `36b2284b
 
 Deux passages antérieurs comportaient chacun un échec et ne servent pas de preuve de suite verte : chemin de cache Git trop long sous `global-build`, puis lecture du marqueur de connexion avant fermeture du fichier dans la fixture Copilot. La sortie courte et la publication atomique du marqueur corrigent ces causes. La mesure finale utilise ces corrections.
 
-Les 20 scénarios conditionnels d’hôtes et de comptes restent désactivés dans cette mesure. Le parcours Excel séparé vérifie les références Excel/VBA, l’ajout/retrait Office et Scripting, les chaînes et collections, les survols, les blocs, le formatage et l’annulation, avec le module natif inchangé ; voir [le bilan natif](reference/native-qualification.md). Les compteurs globaux concernent l’assembly C# `CodexVBE` ; les 57 scénarios JavaScript constituent une qualification fonctionnelle distincte, sans prétendre mesurer ses lignes ou branches. Le moteur C++ et les combinaisons d’hôtes non exécutées conservent leur qualification propre.
+Les 20 scénarios conditionnels d’hôtes et de comptes restent désactivés dans cette mesure. Le parcours Excel séparé vérifie les références Excel/VBA, l’ajout/retrait Office et Scripting, les chaînes et collections, les survols, les blocs, le formatage et l’annulation, avec le module natif inchangé ; voir [le bilan natif](reference/native-qualification.md). Les compteurs globaux concernent l’assembly C# `VBAi` ; les 57 scénarios JavaScript constituent une qualification fonctionnelle distincte, sans prétendre mesurer ses lignes ou branches. Le moteur C++ et les combinaisons d’hôtes non exécutées conservent leur qualification propre.
 
 ## Mesure globale à 100 % après PR #11
 
@@ -102,7 +106,7 @@ Preuves : `artifacts/pr11/global-final-results/global.trx`, `badef2be-8c80-465f-
 
 La qualification a corrigé deux menus Designer sans nom et les onze catalogues auxquels manquaient les nouveaux libellés de la file. La surcharge `ChatTextContentView.Append` conserve ses appels existants tout en évitant le paramètre enum optionnel qui empêchait l’instrumentation Coverlet. Aucun filtre d’exclusion ni package de substitution n’a été ajouté. Le passage antérieur `global-qualified-results` comportait deux échecs et ne sert pas de preuve de suite verte.
 
-Les 19 scénarios conditionnels d’hôtes et de comptes restent désactivés dans cette mesure. Aucun hôte utilisateur n’a été fermé ni sa DLL chargée remplacée pour cette intégration ; les constructions utilisent des sorties isolées. Les qualifications natives antérieures restent datées dans [le bilan natif](reference/native-qualification.md). La mesure concerne l’assembly C# `CodexVBE` ; le moteur C++ et toutes les combinaisons d’hôtes, de DPI et de contrôles tiers nécessitent leur propre qualification.
+Les 19 scénarios conditionnels d’hôtes et de comptes restent désactivés dans cette mesure. Aucun hôte utilisateur n’a été fermé ni sa DLL chargée remplacée pour cette intégration ; les constructions utilisent des sorties isolées. Les qualifications natives antérieures restent datées dans [le bilan natif](reference/native-qualification.md). La mesure concerne l’assembly C# `VBAi` ; le moteur C++ et toutes les combinaisons d’hôtes, de DPI et de contrôles tiers nécessitent leur propre qualification.
 
 ## Mesure globale à 100 % après PR #10
 
@@ -121,7 +125,7 @@ Preuves : `artifacts/cov/global-qualified-100-results/global.trx`, `ea683f23-fd0
 
 Les 19 scénarios conditionnels nécessitant un hôte ou un compte connecté ne sont pas activés dans cette mesure. Les essais réels exécutés séparément comprennent cinq scénarios SOLIDWORKS (module, classe, formulaire, exécution et breakpoint), son test VSTest de connexion, deux tests fournisseurs connectés GitHub/Codex et le démarrage Monaco dans Excel. Leur détail et leurs limites restent dans [la qualification native](reference/native-qualification.md). Ces passages séparés ne sont pas ajoutés aux compteurs globaux.
 
-La couverture mesurée concerne l'assembly C# `CodexVBE`. Elle vérifie l'exécution des lignes et branches de ses contrats automatisés ; elle ne constitue pas une qualification universelle des combinaisons Office, COM, DPI, signatures et contrôles tiers. Le moteur C++ n'est pas instrumenté par Coverlet.
+La couverture mesurée concerne l'assembly C# `VBAi`. Elle vérifie l'exécution des lignes et branches de ses contrats automatisés ; elle ne constitue pas une qualification universelle des combinaisons Office, COM, DPI, signatures et contrôles tiers. Le moteur C++ n'est pas instrumenté par Coverlet.
 
 ## Après intégration de la PR #9 — diagnostics et attributs Monaco
 
@@ -202,7 +206,7 @@ Mesure du **28 septembre 2026**, après la fusion `c5f64eb` et le lot IDE décri
 | Organisation miroir | **171 miroirs pour 228 fichiers de production** |
 | Catalogue LLM | **197 outils**, dont 17 nouveaux contrats IDE |
 
-Il reste **648 lignes et 1 045 branches** non exécutées. Les nouveaux adaptateurs natifs et les mises à jour GitHub ajoutent du code à couvrir ; les mesures historiques à 100 % ne décrivent pas le code actuel. Aucun code du complément n'a été exclu. La couverture mesure l'assembly `CodexVBE` dans VSTest ; les qualifications Excel sont indépendantes, et l'installation réelle par `VBAi.Updater` reste NOT_RUN faute de release signée de test.
+Il reste **648 lignes et 1 045 branches** non exécutées. Les nouveaux adaptateurs natifs et les mises à jour GitHub ajoutent du code à couvrir ; les mesures historiques à 100 % ne décrivent pas le code actuel. Aucun code du complément n'a été exclu. La couverture mesure l'assembly `VBAi` dans VSTest ; les qualifications Excel sont indépendantes, et l'installation réelle par `VBAi.Updater` reste NOT_RUN faute de release signée de test.
 
 Les dix scénarios Excel incluent la protection sauvegardée/réouverte, le renommage public intermodules et son annulation, l'ajustement UserForm, l'explorateur, les options Format/Ancrage restaurées, les pages Toolbox MSAA et les valeurs/tableaux retournés par une invocation unique. La [qualification native](reference/native-qualification.md) précise leurs limites.
 

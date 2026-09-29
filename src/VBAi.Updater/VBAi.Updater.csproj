@@ -2,35 +2,35 @@
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
     <OutputType>WinExe</OutputType><UseWindowsForms>true</UseWindowsForms>
-    <AssemblyName>VBAi.Updater</AssemblyName><RootNamespace>CodexVBE</RootNamespace>
+    <AssemblyName>VBAi.Updater</AssemblyName><RootNamespace>VBAi</RootNamespace>
     <ApplicationIcon>../../assets/icons/assistant.ico</ApplicationIcon>
     <OutputPath Condition="'$(BuildOutputRoot)' == ''">$(RepositoryRoot)bin/$(Configuration)/updater/</OutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <EmbeddedResource Include="../../assets/icons/commands/*.svg" LogicalName="CodexVBE.CommandIcons.%(Filename).svg" />
+    <EmbeddedResource Include="../../assets/icons/commands/*.svg" LogicalName="VBAi.CommandIcons.%(Filename).svg" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="../CodexVBE/Updates/WebViewRuntimePrerequisite.cs" Link="WebViewRuntimePrerequisite.cs" />
+    <Compile Include="../VBAi/Updates/WebViewRuntimePrerequisite.cs" Link="WebViewRuntimePrerequisite.cs" />
     <Reference Include="System.Net.Http" />
-    <Compile Include="../CodexVBE/Updates/UpdatePaths.cs" Link="UpdatePaths.cs" />
-    <Compile Include="../CodexVBE/Updates/UpdateRelease.cs" Link="UpdateRelease.cs" />
-    <Compile Include="../CodexVBE/Updates/UpdateInstallJob.cs" Link="UpdateInstallJob.cs" />
-    <Compile Include="../CodexVBE/Updates/UpdateInstallerRunner.cs" Link="UpdateInstallerRunner.cs" />
-    <Compile Include="../CodexVBE/Updates/UpdateProgressWindow.cs" Link="UpdateProgressWindow.cs"><SubType>Code</SubType></Compile>
-    <Compile Include="../CodexVBE/Updates/UpdateProgressWindow.Designer.cs" Link="UpdateProgressWindow.Designer.cs"><SubType>Code</SubType><DependentUpon>UpdateProgressWindow.cs</DependentUpon></Compile>
-    <Compile Include="../CodexVBE/Updates/UpdateText.cs" Link="UpdateText.cs" />
-    <Compile Include="../CodexVBE/Localization/UiLanguages.cs" Link="UiLanguages.cs" />
-    <Compile Include="../CodexVBE/Ui/UiCommandIcons.cs" Link="UiCommandIcons.cs" />
-    <Compile Include="../CodexVBE/Ui/UiActionButton.cs" Link="UiActionButton.cs" />
-    <Compile Include="../CodexVBE/Ui/UiInputControls.cs" Link="UiInputControls.cs" />
-    <Compile Include="../CodexVBE/Ui/UiTheme.cs" Link="UiTheme.cs" />
-    <EmbeddedResource Include="../CodexVBE/Localization/UiStrings*.resx" Link="Localization\%(Filename)%(Extension)"><LogicalName>CodexVBE.Localization.%(Filename).resources</LogicalName></EmbeddedResource>
+    <Compile Include="../VBAi/Updates/UpdatePaths.cs" Link="UpdatePaths.cs" />
+    <Compile Include="../VBAi/Updates/UpdateRelease.cs" Link="UpdateRelease.cs" />
+    <Compile Include="../VBAi/Updates/UpdateInstallJob.cs" Link="UpdateInstallJob.cs" />
+    <Compile Include="../VBAi/Updates/UpdateInstallerRunner.cs" Link="UpdateInstallerRunner.cs" />
+    <Compile Include="../VBAi/Updates/UpdateProgressWindow.cs" Link="UpdateProgressWindow.cs"><SubType>Code</SubType></Compile>
+    <Compile Include="../VBAi/Updates/UpdateProgressWindow.Designer.cs" Link="UpdateProgressWindow.Designer.cs"><SubType>Code</SubType><DependentUpon>UpdateProgressWindow.cs</DependentUpon></Compile>
+    <Compile Include="../VBAi/Updates/UpdateText.cs" Link="UpdateText.cs" />
+    <Compile Include="../VBAi/Localization/UiLanguages.cs" Link="UiLanguages.cs" />
+    <Compile Include="../VBAi/Ui/UiCommandIcons.cs" Link="UiCommandIcons.cs" />
+    <Compile Include="../VBAi/Ui/UiActionButton.cs" Link="UiActionButton.cs" />
+    <Compile Include="../VBAi/Ui/UiInputControls.cs" Link="UiInputControls.cs" />
+    <Compile Include="../VBAi/Ui/UiTheme.cs" Link="UiTheme.cs" />
+    <EmbeddedResource Include="../VBAi/Localization/UiStrings*.resx" Link="Localization\%(Filename)%(Extension)"><LogicalName>VBAi.Localization.%(Filename).resources</LogicalName></EmbeddedResource>
     <Reference Include="System.Web.Extensions" /><Reference Include="System.Windows.Forms" /><Reference Include="System.Drawing" />
   </ItemGroup>
   <!-- The editable resource belongs to the main project; compile it without a second Designer hierarchy. -->
   <Target Name="IncludeProgressResource" BeforeTargets="PrepareResources" Condition="'$(DesignTimeBuild)' != 'true'">
-    <ItemGroup><EmbeddedResource Include="../CodexVBE/Updates/UpdateProgressWindow.resx"><LogicalName>CodexVBE.UpdateProgressWindow.resources</LogicalName></EmbeddedResource></ItemGroup>
+    <ItemGroup><EmbeddedResource Include="../VBAi/Updates/UpdateProgressWindow.resx"><LogicalName>VBAi.UpdateProgressWindow.resources</LogicalName></EmbeddedResource></ItemGroup>
   </Target>
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
-  <ItemGroup><Compile Update="../CodexVBE/Updates/UpdateProgressWindow*.cs"><SubType>Code</SubType></Compile></ItemGroup>
+  <ItemGroup><Compile Update="../VBAi/Updates/UpdateProgressWindow*.cs"><SubType>Code</SubType></Compile></ItemGroup>
 </Project>

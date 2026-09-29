@@ -7,7 +7,7 @@ if ($hosts.Count -ne 1 -or $hosts[0].Id -ne $HostProcessId) {
 }
 function Invoke-Vbe([hashtable] $Request) {
     $payload = ConvertTo-Json -InputObject $Request -Compress -Depth 8
-    $response = & (Join-Path $PSScriptRoot '..\Invoke-CodexVBE.ps1') -HostProcessId $HostProcessId -RequestJson $payload |
+    $response = & (Join-Path $PSScriptRoot '..\Invoke-VBAi.ps1') -HostProcessId $HostProcessId -RequestJson $payload |
         ConvertFrom-Json
     if (-not $response.Ok) { throw "$($Request.Command): $($response.Error)" }
     return $response.Data
@@ -18,7 +18,7 @@ if ($projects.Count -ne 1 -or $projects[0].Mode -ne 2 -or $projects[0].FileName)
 }
 $project = [string]$projects[0].Name
 $module = 'CodexRunSubProbe'
-$outputPath = Join-Path $env:TEMP ("CodexVBE-run-sub-{0}.txt" -f $HostProcessId)
+$outputPath = Join-Path $env:TEMP ("VBAi-run-sub-{0}.txt" -f $HostProcessId)
 if (Test-Path -LiteralPath $outputPath) { throw 'The disposable output path already exists.' }
 try {
     $created = Invoke-Vbe @{ Command = 'create_module'; Project = $project; Module = $module; ExpectedMode = 2 }

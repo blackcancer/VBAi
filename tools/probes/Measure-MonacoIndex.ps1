@@ -1,5 +1,5 @@
-﻿param(
-    [string]$AssemblyPath = 'bin/Debug/net48/CodexVBE.dll',
+param(
+    [string]$AssemblyPath = 'bin/Debug/net48/VBAi.dll',
     [ValidateSet('Full', 'Unchanged', 'EditOne')][string]$Mode = 'Full',
     [int[]]$ModuleCounts = @(1, 10, 30, 100),
     [ValidateRange(5, 1000)][int]$Iterations = 30,
@@ -11,11 +11,11 @@ Add-Type -AssemblyName System.Web.Extensions
 $assemblyFile = (Resolve-Path -LiteralPath $AssemblyPath).Path
 $assembly = [Reflection.Assembly]::LoadFrom($assemblyFile)
 $flags = [Reflection.BindingFlags]'Static,NonPublic'
-$sourceType = $assembly.GetType('CodexVBE.EditorSource', $true)
-$build = $assembly.GetType('CodexVBE.EditorLanguageIndex', $true).GetMethod('Build', $flags)
+$sourceType = $assembly.GetType('VBAi.EditorSource', $true)
+$build = $assembly.GetType('VBAi.EditorLanguageIndex', $true).GetMethod('Build', $flags)
 $serializer = New-Object Web.Script.Serialization.JavaScriptSerializer
 $serializer.MaxJsonLength = [int]::MaxValue
-$cacheType = $assembly.GetType('CodexVBE.EditorLanguageCache')
+$cacheType = $assembly.GetType('VBAi.EditorLanguageCache')
 $cacheBuild = if ($cacheType) { $cacheType.GetMethod('Build', [Reflection.BindingFlags]'Instance,NonPublic') }
 function InternalField($item, [string]$name) { ,$item.GetType().GetField($name, [Reflection.BindingFlags]'Instance,NonPublic').GetValue($item) }
 $results = @()

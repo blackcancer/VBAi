@@ -4,11 +4,11 @@ param(
     [switch]$BuildSelfTest
 )
 $ErrorActionPreference = 'Stop'
-$sourceDirectory = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../src/CodexVBE.Native'))
+$sourceDirectory = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../src/VBAi.Native'))
 $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
 if (-not (Test-Path -LiteralPath $vswhere)) { throw 'Visual Studio Installer is required to compile the native renderer.' }
 $installation = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-if (-not $installation) { throw 'Install the Visual Studio Desktop development with C++ workload to build CodexVBE. End users do not need the compiler.' }
+if (-not $installation) { throw 'Install the Visual Studio Desktop development with C++ workload to build VBAi. End users do not need the compiler.' }
 $compilerRoot = Get-ChildItem -LiteralPath (Join-Path $installation 'VC/Tools/MSVC') -Directory | Sort-Object Name -Descending | Select-Object -First 1
 # Windows SDK installations can use a custom drive. Prefer the registered root.
 $sdkRoot = $null
@@ -34,7 +34,7 @@ try {
     # separate Visual C++ redistributable on the user's workstation.
     & $compiler /nologo /std:c++17 /W4 /WX /EHsc /MT /O2 /Zi /guard:cf /utf-8 /DUNICODE /D_UNICODE /LD `
         (Join-Path $sourceDirectory 'NativeTheme.cpp') "/Fo$OutputDirectory/NativeTheme.obj" "/Fd$OutputDirectory/compiler.pdb" `
-        /link /MACHINE:X64 /DYNAMICBASE /NXCOMPAT /OPT:REF /OPT:ICF /DEBUG "/OUT:$OutputDirectory/CodexVBE.Native.dll" "/IMPLIB:$OutputDirectory/CodexVBE.Native.lib" user32.lib gdi32.lib comctl32.lib
+        /link /MACHINE:X64 /DYNAMICBASE /NXCOMPAT /OPT:REF /OPT:ICF /DEBUG "/OUT:$OutputDirectory/VBAi.Native.dll" "/IMPLIB:$OutputDirectory/VBAi.Native.lib" user32.lib gdi32.lib comctl32.lib
     if ($LASTEXITCODE -ne 0) { throw "Native renderer compilation failed ($LASTEXITCODE)." }
     if ($BuildSelfTest) {
         # Synthetic fixture, isolated from installed Office/VBA binaries.
@@ -43,5 +43,5 @@ try {
         & $compiler /nologo /std:c++17 /W4 /WX /EHsc /MT /O2 /utf-8 (Join-Path $PSScriptRoot '../../tests/native/NativeRendererSelfTest.cpp') "/Fo$OutputDirectory/NativeRendererSelfTest.obj" /link "/OUT:$OutputDirectory/NativeRendererSelfTest.exe" user32.lib gdi32.lib
         if ($LASTEXITCODE -ne 0) { throw "Native lifecycle test compilation failed ($LASTEXITCODE)." }
     }
-    Write-Output "Native renderer built: $OutputDirectory/CodexVBE.Native.dll"
+    Write-Output "Native renderer built: $OutputDirectory/VBAi.Native.dll"
 } finally { $env:INCLUDE = $previousInclude; $env:LIB = $previousLib; $env:PATH = $previousPath }

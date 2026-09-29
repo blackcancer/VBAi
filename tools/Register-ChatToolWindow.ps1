@@ -2,8 +2,8 @@ param([switch]$Unregister, [switch]$MachineOnly)
 $ErrorActionPreference = 'Stop'
 if (-not [Environment]::Is64BitProcess) { throw 'Use 64-bit PowerShell.' }
 $chatClassId = '{0F4D723B-97D8-42E5-9B31-70646B97C8D2}'
-$chatProgId = 'CodexVBE.ChatToolWindow'
-$chatAssemblyPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'bin\Debug\net48\CodexVBE.dll'
+$chatProgId = 'VBAi.ChatToolWindow'
+$chatAssemblyPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'bin\Debug\net48\VBAi.dll'
 function Set-MachineProgId {
     $machine = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine, [Microsoft.Win32.RegistryView]::Registry64)
     try {
@@ -18,18 +18,28 @@ function Set-MachineProgId {
             finally { $existing.Dispose() }
         }
         if ($Unregister -and -not $registered) { return }
-        if (-not $Unregister -and $registered) { return }
         try {
             if ($Unregister) { $machine.DeleteSubKeyTree($path, $false) }
-            else {
+            elseif (-not $registered) {
                 $key = $machine.CreateSubKey("$path\CLSID")
                 try { $key.SetValue('', $chatClassId, [Microsoft.Win32.RegistryValueKind]::String) }
                 finally { $key.Dispose() }
             }
+            if (-not $Unregister) {
+                $legacyPath = 'Software\Classes\CodexVBE.ChatToolWindow'
+                $legacy = $machine.OpenSubKey("$legacyPath\CLSID")
+                if ($legacy) {
+                    try { $owned = $legacy.GetValue('') -eq $chatClassId } finally { $legacy.Dispose() }
+                    if ($owned) { $machine.DeleteSubKeyTree($legacyPath, $false) }
+                }
+            }
         }
         catch {
-            if ($_.Exception -isnot [System.UnauthorizedAccessException] -and
-                $_.Exception -isnot [System.Security.SecurityException]) { throw }
+            # PowerShell wraps .NET registry failures in MethodInvocationException.
+            $cause = $_.Exception
+            while ($cause.InnerException) { $cause = $cause.InnerException }
+            if ($cause -isnot [System.UnauthorizedAccessException] -and
+                $cause -isnot [System.Security.SecurityException]) { throw }
             if ($MachineOnly) { throw }
             $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"' + $PSCommandPath + '"'), '-MachineOnly')
             if ($Unregister) { $arguments += '-Unregister' }
@@ -49,7 +59,11 @@ try {
     }
     $existing = $registry.OpenSubKey("Software\Classes\CLSID\$chatClassId\InprocServer32")
     if ($existing) {
-        try { if (-not ([string]$existing.GetValue('Assembly')).StartsWith('CodexVBE,', [StringComparison]::Ordinal)) { throw 'Chat CLSID belongs to another assembly.' } }
+        try {
+            $identity = [string]$existing.GetValue('Assembly')
+            if (-not $identity.StartsWith('VBAi,', [StringComparison]::Ordinal) -and
+                -not $identity.StartsWith('CodexVBE,', [StringComparison]::Ordinal)) { throw 'Chat CLSID belongs to another assembly.' }
+        }
         finally { $existing.Dispose() }
     }
     if ($Unregister) {
@@ -60,7 +74,7 @@ try {
     }
     $chatAssemblyPath = (Resolve-Path -LiteralPath $chatAssemblyPath).Path
     $chatAssemblyName = [Reflection.AssemblyName]::GetAssemblyName($chatAssemblyPath).FullName
-    if (-not $chatAssemblyName.StartsWith('CodexVBE, Version=0.1.0.0,', [StringComparison]::Ordinal)) { throw 'Unexpected assembly identity.' }
+    if (-not $chatAssemblyName.StartsWith('VBAi, Version=0.1.0.0,', [StringComparison]::Ordinal)) { throw 'Unexpected assembly identity.' }
     $entries = @{
         "Software\Classes\$chatProgId\CLSID" = @{ '' = $chatClassId }
         "Software\Classes\CLSID\$chatClassId" = @{ '' = $chatProgId }
@@ -79,6 +93,6 @@ try {
         finally { $key.Dispose() }
     }
     Set-MachineProgId
-    Write-Output 'Registered CodexVBE native chat control for the current user.'
+    Write-Output 'Registered VBAi native chat control for the current user.'
 }
 finally { $registry.Dispose() }

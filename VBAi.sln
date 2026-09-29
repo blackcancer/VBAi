@@ -1,0 +1,72 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VBAi", "src\VBAi\VBAi.csproj", "{DF707C73-5B37-4507-97A3-0F3AF6A3A777}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VBAi.Tests", "tests\VBAi.Tests\VBAi.Tests.csproj", "{AE9DB930-B64F-4213-AC8B-BD198F8BA894}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VBAi.Git.Smoke", "tests\VBAi.Git.Smoke\VBAi.Git.Smoke.csproj", "{E9CF77AB-E4F8-4439-A34E-B028F55D0722}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VBAi.Providers.Smoke", "tests\VBAi.Providers.Smoke\VBAi.Providers.Smoke.csproj", "{C9D4CD79-825C-452E-8CA7-F045C29CB31E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{90EC58E5-6006-4715-B407-E90247B4DDAB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{24D3D7A7-844D-41AC-A957-64B6D22CDBE7}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		Directory.Build.props = Directory.Build.props
+		README.md = README.md
+		docs\architecture.md = docs\architecture.md
+		tests\README.md = tests\README.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VBAi.Updater", "src\VBAi.Updater\VBAi.Updater.csproj", "{FAD4FB2F-96CF-4359-8C0C-C030E5298CBF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "VBAi.Native", "VBAi.Native", "{1AF62396-65AD-4323-9DE9-5E9E231EC56B}"
+    ProjectSection(SolutionItems) = preProject
+        src\VBAi.Native\NativeTheme.cpp = src\VBAi.Native\NativeTheme.cpp
+        src\VBAi.Native\NativeTheme.h = src\VBAi.Native\NativeTheme.h
+        src\VBAi.Native\ImportTable.h = src\VBAi.Native\ImportTable.h
+        src\VBAi.Native\ToolbarDrawing.h = src\VBAi.Native\ToolbarDrawing.h
+        tools\build\Build-NativeRenderer.ps1 = tools\build\Build-NativeRenderer.ps1
+    EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DF707C73-5B37-4507-97A3-0F3AF6A3A777}.Debug|x64.ActiveCfg = Debug|x64
+		{DF707C73-5B37-4507-97A3-0F3AF6A3A777}.Debug|x64.Build.0 = Debug|x64
+		{DF707C73-5B37-4507-97A3-0F3AF6A3A777}.Release|x64.ActiveCfg = Release|x64
+		{DF707C73-5B37-4507-97A3-0F3AF6A3A777}.Release|x64.Build.0 = Release|x64
+		{AE9DB930-B64F-4213-AC8B-BD198F8BA894}.Debug|x64.ActiveCfg = Debug|x64
+		{AE9DB930-B64F-4213-AC8B-BD198F8BA894}.Debug|x64.Build.0 = Debug|x64
+		{AE9DB930-B64F-4213-AC8B-BD198F8BA894}.Release|x64.ActiveCfg = Release|x64
+		{AE9DB930-B64F-4213-AC8B-BD198F8BA894}.Release|x64.Build.0 = Release|x64
+		{E9CF77AB-E4F8-4439-A34E-B028F55D0722}.Debug|x64.ActiveCfg = Debug|x64
+		{E9CF77AB-E4F8-4439-A34E-B028F55D0722}.Debug|x64.Build.0 = Debug|x64
+		{E9CF77AB-E4F8-4439-A34E-B028F55D0722}.Release|x64.ActiveCfg = Release|x64
+		{E9CF77AB-E4F8-4439-A34E-B028F55D0722}.Release|x64.Build.0 = Release|x64
+		{C9D4CD79-825C-452E-8CA7-F045C29CB31E}.Debug|x64.ActiveCfg = Debug|x64
+		{C9D4CD79-825C-452E-8CA7-F045C29CB31E}.Debug|x64.Build.0 = Debug|x64
+		{C9D4CD79-825C-452E-8CA7-F045C29CB31E}.Release|x64.ActiveCfg = Release|x64
+		{C9D4CD79-825C-452E-8CA7-F045C29CB31E}.Release|x64.Build.0 = Release|x64
+		{FAD4FB2F-96CF-4359-8C0C-C030E5298CBF}.Debug|x64.ActiveCfg = Debug|x64
+		{FAD4FB2F-96CF-4359-8C0C-C030E5298CBF}.Debug|x64.Build.0 = Debug|x64
+		{FAD4FB2F-96CF-4359-8C0C-C030E5298CBF}.Release|x64.ActiveCfg = Release|x64
+		{FAD4FB2F-96CF-4359-8C0C-C030E5298CBF}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+        {1AF62396-65AD-4323-9DE9-5E9E231EC56B} = {90EC58E5-6006-4715-B407-E90247B4DDAB}
+		{DF707C73-5B37-4507-97A3-0F3AF6A3A777} = {90EC58E5-6006-4715-B407-E90247B4DDAB}
+		{AE9DB930-B64F-4213-AC8B-BD198F8BA894} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{E9CF77AB-E4F8-4439-A34E-B028F55D0722} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{C9D4CD79-825C-452E-8CA7-F045C29CB31E} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{FAD4FB2F-96CF-4359-8C0C-C030E5298CBF} = {90EC58E5-6006-4715-B407-E90247B4DDAB}
+	EndGlobalSection
+EndGlobal

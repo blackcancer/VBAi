@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateProgramFile>false</GenerateProgramFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.7.1" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.7.1" />
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Unit\**\*.cs" />
+    <Compile Include="Integration\**\*.cs" />
+    <Compile Include="Scenarios\**\*.cs" />
+    <Compile Include="Infrastructure\**\*.cs" />
+    <Compile Include="..\VBAi.Git.Smoke\GitTests.cs" Link="Shared\Git\GitTests.cs" />
+    <Compile Include="..\VBAi.Git.Smoke\AdvancedGitTests.cs" Link="Shared\Git\AdvancedGitTests.cs" />
+    <Compile Include="..\VBAi.Providers.Smoke\ProviderTests.cs" Link="Shared\Providers\ProviderTests.cs" />
+    <Compile Include="..\VBAi.Providers.Smoke\ExtendedProviderTests.cs" Link="Shared\Providers\ExtendedProviderTests.cs" />
+    <Compile Include="..\VBAi.Providers.Smoke\GitHubSettingsTests.cs" Link="Shared\Providers\GitHubSettingsTests.cs" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="Accessibility" />
+    <Reference Include="WindowsFormsIntegration" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Design" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="UIAutomationClient" />
+    <Reference Include="UIAutomationTypes" />
+    <Reference Include="UIAutomationProvider" />
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\tools\tests\Test-TestLayout.ps1" Link="Architecture\Test-TestLayout.ps1" />
+    <None Include="..\..\tools\tests\Test-SolidWorksDebug.ps1" Link="Manual\Debug\Test-SolidWorksDebug.ps1" />
+    <None Include="..\..\tools\tests\Test-SolidWorksBreakpoint.ps1" Link="Manual\Debug\Test-SolidWorksBreakpoint.ps1" />
+    <None Include="..\..\tools\tests\Test-VbeOptions.ps1" Link="Manual\Debug\Test-VbeOptions.ps1" />
+    <None Include="..\..\tools\probes\Test-CompileProject.ps1" Link="Manual\Debug\Test-CompileProject.ps1" />
+    <None Include="..\..\tools\probes\Test-RuntimeDialog.ps1" Link="Manual\Debug\Test-RuntimeDialog.ps1" />
+    <None Include="..\..\tools\probes\Test-QuickWatch.ps1" Link="Manual\Debug\Test-QuickWatch.ps1" />
+    <None Include="..\..\tools\probes\Test-EditWatchType.ps1" Link="Manual\Debug\Test-EditWatchType.ps1" />
+    <None Include="..\..\tools\probes\Test-NestedCallStack.ps1" Link="Manual\Debug\Test-NestedCallStack.ps1" />
+    <None Include="..\..\tools\probes\Test-StepOver.ps1" Link="Manual\Debug\Test-StepOver.ps1" />
+    <None Include="..\..\tools\probes\Test-ClearAllBreakpoints.ps1" Link="Manual\Debug\Test-ClearAllBreakpoints.ps1" />
+    <None Include="..\..\tools\probes\Test-ShowNextStatementGuard.ps1" Link="Manual\Debug\Test-ShowNextStatementGuard.ps1" />
+    <None Include="..\..\tools\probes\Inspect-DebugTree.ps1" Link="Manual\Debug\Inspect-DebugTree.ps1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\VBAi\VBAi.csproj" />
+    <ProjectReference Include="..\VBAi.Providers.Smoke\VBAi.Providers.Smoke.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <Target Name="CopyProviderFixture" AfterTargets="Build">
+    <MSBuild Projects="..\VBAi.Providers.Smoke\VBAi.Providers.Smoke.csproj" Targets="GetTargetPath" BuildInParallel="false">
+      <Output TaskParameter="TargetOutputs" ItemName="ProviderFixture" />
+    </MSBuild>
+    <Copy SourceFiles="@(ProviderFixture)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(ProviderFixture->'%(FullPath).config')" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" Condition="Exists('%(ProviderFixture.FullPath).config')" />
+  </Target>
+</Project>

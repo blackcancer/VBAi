@@ -1,4 +1,4 @@
-﻿param([Parameter(Mandatory=$true)][string]$AssemblyPath,[Parameter(Mandatory=$true)][string]$OutputDirectory,[switch]$UseBridge,[switch]$AllowTemporaryVbaAccess)
+param([Parameter(Mandatory=$true)][string]$AssemblyPath,[Parameter(Mandatory=$true)][string]$OutputDirectory,[switch]$UseBridge,[switch]$AllowTemporaryVbaAccess)
 $ErrorActionPreference='Stop'
 if (-not $UseBridge -or @(Get-Process EXCEL -ErrorAction SilentlyContinue).Count) { throw 'Registered bridge and an isolated Excel session are required.' }
 $assembly=[Reflection.Assembly]::LoadFrom((Resolve-Path -LiteralPath $AssemblyPath))
@@ -10,12 +10,12 @@ $hadAccess=$null -ne $initial.PSObject.Properties['AccessVBOM'];$initialAccess=$
 if($initialAccess -ne 1 -and -not $AllowTemporaryVbaAccess){throw 'Explicit temporary AccessVBOM opt-in is required.'}
 $excel=$null;$book=$null;$vbe=$null;$probeProcess=$null;$toolbarName=$null;$option=$null;$optionChanged=$false;$report=[ordered]@{};$cleanupErrors=@()
 function Invoke-Bridge([hashtable]$fields){
- $response=& (Join-Path $PSScriptRoot '../Invoke-CodexVBE.ps1') -HostProcessId $script:probeProcess.Id -RequestJson ($fields|ConvertTo-Json -Compress -Depth 12) -ResponseTimeoutSeconds 30 | ConvertFrom-Json
+ $response=& (Join-Path $PSScriptRoot '../Invoke-VBAi.ps1') -HostProcessId $script:probeProcess.Id -RequestJson ($fields|ConvertTo-Json -Compress -Depth 12) -ResponseTimeoutSeconds 30 | ConvertFrom-Json
  if(-not $response.Ok){throw "$($fields.Command): $($response.Error)"};return $response.Data
 }
 function Open-ProbeExcel{
  if(@(Get-Process EXCEL -ErrorAction SilentlyContinue).Count){throw 'Excel isolation was lost before launch.'}
- $scratch=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'CodexVBE-scratch.xlsx'))
+ $scratch=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'VBAi-scratch.xlsx'))
  $script:probeProcess=Start-Process -FilePath 'C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE' -ArgumentList @('/x',('"'+$scratch+'"')) -WindowStyle Hidden -PassThru
  $script:excel=$null
  for($i=0;$i -lt 150 -and $null -eq $script:excel;$i++){Start-Sleep -Milliseconds 200;try{$script:excel=[Runtime.InteropServices.Marshal]::GetActiveObject('Excel.Application')}catch{}}

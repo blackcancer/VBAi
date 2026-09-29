@@ -1,4 +1,4 @@
-﻿$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Stop'
 Add-Type -TypeDefinition @'
 using System;
 using System.Collections.Generic;
@@ -20,25 +20,25 @@ public class FakeComponent { public string Name { get { return "Module1"; } } pu
 public class FakeProject { public string Name { get { return "Projet"; } } public string FileName { get { return "probe.xlsm"; } } public int Mode { get { return 2; } } public FakeComponent[] VBComponents = new[] { new FakeComponent() }; }
 public class FakeVbe { public FakeProject[] VBProjects = new[] { new FakeProject() }; }
 '@
-$assembly = [Reflection.Assembly]::LoadFrom((Resolve-Path 'artifacts\chat-build\CodexVBE\Debug\net48\CodexVBE.dll'))
+$assembly = [Reflection.Assembly]::LoadFrom((Resolve-Path 'artifacts\chat-build\VBAi\Debug\net48\VBAi.dll'))
 $flags = [Reflection.BindingFlags]'Instance,NonPublic,Public'
 $vbe = [FakeVbe]::new()
-$sessionType = $assembly.GetType('CodexVBE.VbeSession')
+$sessionType = $assembly.GetType('VBAi.VbeSession')
 $session = [Activator]::CreateInstance($sessionType, $flags, $null, @($vbe), $null)
-$requestType = $assembly.GetType('CodexVBE.Request')
+$requestType = $assembly.GetType('VBAi.Request')
 $read = [Activator]::CreateInstance($requestType)
 $read.Command = 'read_module'; $read.Project = 'Projet'; $read.Module = 'Module1'
 $before = $sessionType.GetMethod('Execute').Invoke($session, @($read))
 if (-not $before.Ok) { throw $before.Error }
-$settingsType = $assembly.GetType('CodexVBE.LlmSettings')
+$settingsType = $assembly.GetType('VBAi.LlmSettings')
 $settings = [Activator]::CreateInstance($settingsType, $true)
 $settings.VbeEditApproval = 'AskEachTime'
-$toolsType = $assembly.GetType('CodexVBE.LlmVbeTools')
+$toolsType = $assembly.GetType('VBAi.LlmVbeTools')
 $tools = [Activator]::CreateInstance($toolsType, $flags, $null, @($session, $null, $settings), $null)
 $requestJson = [string](@{ Project = 'Projet'; Module = 'Module1'; ExpectedSha256 = $before.Data.Sha256; StartLine = 2; Count = 1; Text = '    Debug.Print 2' } | ConvertTo-Json -Compress)
 $result = $toolsType.GetMethod('Invoke').Invoke($tools, @([string]'replace_lines', [string]$requestJson)) | ConvertFrom-Json
 if (-not $result.Ok -or $vbe.VBProjects[0].VBComponents[0].CodeModule.Source[1] -ne '    Debug.Print 2') { throw 'replace_lines failed.' }
-$changeType = $assembly.GetType('CodexVBE.CodeChange')
+$changeType = $assembly.GetType('VBAi.CodeChange')
 $afterText = "Sub Hello()`r`n    Debug.Print 2`r`nEnd Sub"
 $change = [Activator]::CreateInstance($changeType, $flags, $null, @([string]'Projet', [string]'Module1', [string]$before.Data.Code, [string]$before.Data.Sha256, [string]$afterText, [string]$result.Data.Sha256, [int]3), $null)
 $rows = $changeType.GetProperty('Rows').GetValue($change)
@@ -52,9 +52,9 @@ if (-not $restore.Ok -or $vbe.VBProjects[0].VBComponents[0].CodeModule.Source[1]
 Write-Output 'PASS edit without approval in AskEachTime, structured diff, stale refusal, restore'
 
 function Assert($condition, [string]$message) { if (-not $condition) { throw $message } }
-function New-Internal([string]$name) { [Activator]::CreateInstance($assembly.GetType("CodexVBE.$name"), $true) }
-function Static([string]$type, [string]$method, [object[]]$arguments) { $assembly.GetType("CodexVBE.$type").GetMethod($method).Invoke($null, $arguments) }
-$modeType = $assembly.GetType('CodexVBE.ChatMode')
+function New-Internal([string]$name) { [Activator]::CreateInstance($assembly.GetType("VBAi.$name"), $true) }
+function Static([string]$type, [string]$method, [object[]]$arguments) { $assembly.GetType("VBAi.$type").GetMethod($method).Invoke($null, $arguments) }
+$modeType = $assembly.GetType('VBAi.ChatMode')
 foreach ($mode in @('Discussion', 'Plan')) {
     $tools.Mode = [Enum]::Parse($modeType, $mode)
     $denied = $toolsType.GetMethod('Invoke').Invoke($tools, @('replace_lines', $requestJson)) | ConvertFrom-Json

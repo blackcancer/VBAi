@@ -3,20 +3,20 @@ $ErrorActionPreference='Stop'
 Add-Type -AssemblyName System.Windows.Forms,PresentationFramework,PresentationCore,WindowsBase
 $assembly=[Reflection.Assembly]::LoadFrom((Resolve-Path $AssemblyPath))
 $flags=[Reflection.BindingFlags]'Instance,Static,Public,NonPublic'
-$theme=$assembly.GetType('CodexVBE.UiTheme').GetProperty('Choice',$flags)
+$theme=$assembly.GetType('VBAi.UiTheme').GetProperty('Choice',$flags)
 $oldTheme=$theme.GetValue($null)
 $directory=Join-Path (Get-Location) 'artifacts/vbe-completion/ui'
 [IO.Directory]::CreateDirectory($directory) | Out-Null
 try {
     foreach ($mode in @('Light','Dark')) {
-        $theme.SetValue($null,[Enum]::Parse($assembly.GetType('CodexVBE.ThemeChoice'),$mode))
-        $chat=[Activator]::CreateInstance($assembly.GetType('CodexVBE.ChatWindow'),$true)
+        $theme.SetValue($null,[Enum]::Parse($assembly.GetType('VBAi.ThemeChoice'),$mode))
+        $chat=[Activator]::CreateInstance($assembly.GetType('VBAi.ChatWindow'),$true)
         try {
             $chat.GetType().GetMethod('InitializeShell',$flags).Invoke($chat,@()) | Out-Null
             $chat.GetType().GetMethod('InitializeTranscript',$flags).Invoke($chat,@()) | Out-Null
             $panel=[Windows.Controls.StackPanel]::new(); $panel.Margin=[Windows.Thickness]::new(12)
             foreach ($state in @('Unavailable','Restored','Attempted')) {
-                $change=[Activator]::CreateInstance($assembly.GetType('CodexVBE.FormCutChange'),$true)
+                $change=[Activator]::CreateInstance($assembly.GetType('VBAi.FormCutChange'),$true)
                 $change.Project='TestProject'; $change.Form='UserForm1'; $change.ParentPath='Controls/Frame1'; $change.ControlCount=2
                 $change.Restored=$state -eq 'Restored'; $change.Attempted=$state -eq 'Attempted'
                 $view=$chat.GetType().GetMethod('RenderFormCut',$flags).Invoke($chat,@($change))

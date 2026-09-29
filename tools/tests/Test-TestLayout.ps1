@@ -2,8 +2,8 @@ param([string]$ReportPath)
 
 $ErrorActionPreference = 'Stop'
 $repository = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$productionRoot = Join-Path $repository 'src/CodexVBE'
-$unitRoot = Join-Path $repository 'tests/CodexVBE.Tests/Unit'
+$productionRoot = Join-Path $repository 'src/VBAi'
+$unitRoot = Join-Path $repository 'tests/VBAi.Tests/Unit'
 $sources = @{}
 foreach ($file in Get-ChildItem -LiteralPath $productionRoot -Filter '*.cs' -File -Recurse) {
     $relative = $file.FullName.Substring($productionRoot.Length + 1).Replace('\', '/')
@@ -22,7 +22,7 @@ foreach ($file in Get-ChildItem -LiteralPath $unitRoot -Filter '*.cs' -File -Rec
 }
 
 $entries = @($sources.Keys | Sort-Object | ForEach-Object {
-    [pscustomobject]@{ Source = 'src/CodexVBE/' + $_; Mirror = $sources[$_] }
+    [pscustomobject]@{ Source = 'src/VBAi/' + $_; Mirror = $sources[$_] }
 })
 $mirrors = @($entries | Where-Object { $null -ne $_.Mirror }).Count
 Write-Output "PASS: $mirrors dedicated test mirrors for $($entries.Count) production files."

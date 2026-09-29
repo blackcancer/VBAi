@@ -1,5 +1,5 @@
-﻿param(
-    [string]$AssemblyPath = 'artifacts/chat-designer/build/CodexVBE/Debug/net48/CodexVBE.dll',
+param(
+    [string]$AssemblyPath = 'artifacts/chat-designer/build/VBAi/Debug/net48/VBAi.dll',
     [string]$OutputDirectory = 'artifacts/chat-designer/render',
     [ValidateSet('Light','Dark')][string]$Theme = 'Light',
     [int]$Width = 720
@@ -15,9 +15,9 @@ public static class ChatPreviewCapture {
 "@
 $assembly = [Reflection.Assembly]::LoadFrom((Resolve-Path $AssemblyPath))
 $flags = [Reflection.BindingFlags]'Instance,NonPublic,Public'
-$themeType = $assembly.GetType('CodexVBE.UiTheme')
-$themeType.GetField('<Choice>k__BackingField',[Reflection.BindingFlags]'Static,NonPublic').SetValue($null,[Enum]::Parse($assembly.GetType('CodexVBE.ThemeChoice'),$Theme))
-function New-Internal($name) { [Activator]::CreateInstance($assembly.GetType('CodexVBE.' + $name),$true) }
+$themeType = $assembly.GetType('VBAi.UiTheme')
+$themeType.GetField('<Choice>k__BackingField',[Reflection.BindingFlags]'Static,NonPublic').SetValue($null,[Enum]::Parse($assembly.GetType('VBAi.ThemeChoice'),$Theme))
+function New-Internal($name) { [Activator]::CreateInstance($assembly.GetType('VBAi.' + $name),$true) }
 function Call($object,$name,$arguments) { $object.GetType().GetMethod($name,$flags).Invoke($object,$arguments) }
 function Field($object,$name) { $object.GetType().GetField($name,$flags).GetValue($object) }
 $window = New-Internal ChatWindow

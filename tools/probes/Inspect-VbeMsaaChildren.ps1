@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
-public static class CodexVbeMsaaProbe {
+public static class VBAiMsaaProbe {
     public delegate bool EnumWindowsProc(IntPtr handle, IntPtr data);
     [DllImport("user32.dll")] public static extern bool EnumWindows(EnumWindowsProc callback, IntPtr data);
     [DllImport("user32.dll")] public static extern bool EnumChildWindows(IntPtr parent, EnumWindowsProc callback, IntPtr data);
@@ -76,7 +76,7 @@ public static class CodexVbeMsaaProbe {
     }
 }
 '@
-$pane = [CodexVbeMsaaProbe]::FindPane([uint32]$HostProcessId, $PaneName)
+$pane = [VBAiMsaaProbe]::FindPane([uint32]$HostProcessId, $PaneName)
 if ($pane -eq [IntPtr]::Zero) { throw "Native pane not found: $PaneName" }
 Write-Output "PANE [$PaneName] HWND=$($pane.ToInt64())"
-[CodexVbeMsaaProbe]::Read($pane)
+[VBAiMsaaProbe]::Read($pane)

@@ -1,4 +1,4 @@
-﻿param([string]$AssemblyPath = "artifacts/chat-build/CodexVBE/Debug/net48/CodexVBE.dll")
+param([string]$AssemblyPath = "artifacts/chat-build/VBAi/Debug/net48/VBAi.dll")
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms, PresentationFramework
 Add-Type -TypeDefinition @'
@@ -29,7 +29,7 @@ public class ChatTestVbe { public ChatTestProject[] VBProjects = new[] { new Cha
 '@
 $assembly = [Reflection.Assembly]::LoadFrom((Resolve-Path $AssemblyPath))
 $flags = [Reflection.BindingFlags]'Instance,NonPublic,Public'
-function New-Internal([string]$Name) { [Activator]::CreateInstance($assembly.GetType("CodexVBE.$Name"), $true) }
+function New-Internal([string]$Name) { [Activator]::CreateInstance($assembly.GetType("VBAi.$Name"), $true) }
 function Field($object, [string]$name) { ,$object.GetType().GetField($name, $flags).GetValue($object) }
 function Set-Field($object, [string]$name, $value) { $object.GetType().GetField($name, $flags).SetValue($object, $value) }
 function Call($object, [string]$name, [object[]]$arguments) {
@@ -42,8 +42,8 @@ function Call($object, [string]$name, [object[]]$arguments) {
 function Assert($condition, [string]$message) { if (-not $condition) { throw $message } }
 
 $vbe = [ChatTestVbe]::new()
-$session = [Activator]::CreateInstance($assembly.GetType('CodexVBE.VbeSession'), $flags, $null, @($vbe), $null)
-$index = [Activator]::CreateInstance($assembly.GetType('CodexVBE.VbeChatReferences'), $flags, $null, @($session), $null)
+$session = [Activator]::CreateInstance($assembly.GetType('VBAi.VbeSession'), $flags, $null, @($vbe), $null)
+$index = [Activator]::CreateInstance($assembly.GetType('VBAi.VbeChatReferences'), $flags, $null, @($session), $null)
 $entries = $index.Entries
 for ($i = 0; $i -lt 50; $i++) {
     $module = New-Internal VbeChatReference
@@ -61,9 +61,9 @@ Write-Output 'PASS @ function filtering and VBE navigation'
 
 # Feed real protocol notifications to the client without starting an authenticated process.
 $settings = New-Internal LlmSettings
-$tools = [Activator]::CreateInstance($assembly.GetType('CodexVBE.LlmVbeTools'), $flags, $null, @($session, $null, $settings), $null)
+$tools = [Activator]::CreateInstance($assembly.GetType('VBAi.LlmVbeTools'), $flags, $null, @($session, $null, $settings), $null)
 $ui = [Windows.Forms.WindowsFormsSynchronizationContext]::new()
-$client = [Activator]::CreateInstance($assembly.GetType('CodexVBE.CodexAppServerClient'), $flags, $null,
+$client = [Activator]::CreateInstance($assembly.GetType('VBAi.CodexAppServerClient'), $flags, $null,
     @($ui, $tools, $null, $settings, [string]'test-thread'), $null)
 $events = [Collections.Generic.List[string]]::new()
 $handler = [Action[string,string,string,bool]] { param($kind, $id, $text, $complete) $events.Add("$kind|$id|$text|$complete") }
@@ -88,9 +88,9 @@ try {
 }
 finally { $client.Dispose() }
 
-$directory = Join-Path ([IO.Path]::GetTempPath()) ('CodexVBE-Chat-' + [guid]::NewGuid().ToString('N'))
+$directory = Join-Path ([IO.Path]::GetTempPath()) ('VBAi-Chat-' + [guid]::NewGuid().ToString('N'))
 $dbPath = Join-Path $directory 'chat.db'
-$storeType = $assembly.GetType('CodexVBE.ChatSessionStore')
+$storeType = $assembly.GetType('VBAi.ChatSessionStore')
 $store = [Activator]::CreateInstance($storeType, $flags, $null, @([string]$dbPath), $null)
 $window = New-Internal ChatWindow
 try {
@@ -99,7 +99,7 @@ try {
     Call $window InitializeTranscript @()
     Set-Field $window settings (New-Internal LlmSettings)
     Set-Field $window sessionStore $store
-    $providers = $assembly.GetType('CodexVBE.LlmProvider').GetField('All', [Reflection.BindingFlags]'Public,Static').GetValue($null)
+    $providers = $assembly.GetType('VBAi.LlmProvider').GetField('All', [Reflection.BindingFlags]'Public,Static').GetValue($null)
     foreach ($provider in $providers) { (Field $window providerPicker).Items.Add($provider) | Out-Null }
     $a = New-Internal ChatSessionState
     $a.Scope = 'C:\Macro-A.xlsm'; $a.Provider = 'Claude'; $a.Title = 'Macro A'
@@ -175,7 +175,7 @@ try {
 
     Call $window ActivateSession @($restoredA, $true)
     $restoredA.Pinned = $true
-    (Field $window modePicker).SelectedItem = [Enum]::Parse($assembly.GetType('CodexVBE.ChatMode'), 'Plan')
+    (Field $window modePicker).SelectedItem = [Enum]::Parse($assembly.GetType('VBAi.ChatMode'), 'Plan')
     $attachment = New-Internal ChatAttachment
     $attachment.Label = 'Captured selection'; $attachment.Text = 'Debug.Print 42'; $attachment.Sha256 = 'snapshot'
     (Field $window draftAttachments).Add($attachment)

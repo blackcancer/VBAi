@@ -77,7 +77,7 @@ try {
     $vbe=$excel.VBE; $vbe.MainWindow.Visible=$true; $vbe.MainWindow.SetFocus()
     [uint32]$ownerProcess=0
     [void][MonacoStartupWindow]::GetWindowThreadProcessId([IntPtr]$excel.Hwnd,[ref]$ownerProcess)
-    $response=& (Join-Path $PSScriptRoot '../Invoke-CodexVBE.ps1') -HostProcessId $ownerProcess -RequestJson '{"Command":"status"}' -ResponseTimeoutSeconds 30 | ConvertFrom-Json
+    $response=& (Join-Path $PSScriptRoot '../Invoke-VBAi.ps1') -HostProcessId $ownerProcess -RequestJson '{"Command":"status"}' -ResponseTimeoutSeconds 30 | ConvertFrom-Json
     $assembly=[Reflection.Assembly]::LoadFrom((Resolve-Path -LiteralPath $AssemblyPath).Path)
     if (-not $response.Ok -or $response.Data.AssemblyModuleVersionId -ne $assembly.ManifestModule.ModuleVersionId.ToString('D')) { throw ('Loaded assembly mismatch: ' + ($response.Data | ConvertTo-Json -Compress)) }
     $editorHandle=Wait-Startup { $handle=[MonacoStartupWindow]::FindEditor([IntPtr]$vbe.MainWindow.HWnd); if ($handle -ne [IntPtr]::Zero) { $handle } }

@@ -11,7 +11,7 @@ Catalogue intégré le 28 septembre 2026 après PR #7 et extensions classes/opti
 - « Action » nécessite le mode Agent et reste soumise à la politique configurée et aux gardes de la commande.
 - Git et les opérations natives asynchrones passent par `InvokeAsync`. Une erreur ou un retour « pending » ne justifie pas de répéter une mutation.
 
-Les descriptions, les champs facultatifs, les types et les bornes font autorité dans [le catalogue principal](../../src/CodexVBE/Llm/Chat/LlmVbeTools.cs), [Editor](../../src/CodexVBE/Llm/Chat/LlmVbeTools.Editor.cs) et [Git](../../src/CodexVBE/Llm/Chat/LlmVbeTools.Git.cs).
+Les descriptions, les champs facultatifs, les types et les bornes font autorité dans [le catalogue principal](../../src/VBAi/Llm/Chat/LlmVbeTools.cs), [Editor](../../src/VBAi/Llm/Chat/LlmVbeTools.Editor.cs) et [Git](../../src/VBAi/Llm/Chat/LlmVbeTools.Git.cs).
 
 ## Outils exposés
 
