@@ -1,8 +1,18 @@
 # Couverture automatisée du complément
 
+## Fusion des branches de réactivité et documentation
+
+Le commit `fea0184` intègre `fix/ui-responsiveness-breakpoints` (`d75d761`) en conservant le lot Office de `99b5f25`. `docs/english-vbe-foundation` pointait déjà sur `99b5f25` : son contenu est inclus sans changement supplémentaire.
+
+La compilation finale Debug/x64 réussit sans erreur ni avertissement. La suite complète compte **2 004 réussites, 0 échec, 28 ignorés**, en **8 min 32 s** : `artifacts/branch-integration/final-tests/global-final.trx`. Le passage initial comptait 2 002 réussites et deux échecs : invocation synchrone d'outils réservés à `InvokeAsync` et notifications sans traduction dans les autres langues. Les contrats asynchrones gardent leurs assertions et la matrice synchrone vérifie désormais leur refus explicite. Les trois notifications sont traduites dans tous les catalogues. Le lot de régression associé compte **11 réussites, 0 échec, 0 ignoré** (`regressions/regressions.trx` sous le même dossier).
+
+Les **46 concepteurs WinForms**, **27 éléments de métadonnées Designer** et **17 fichiers Monaco reconstruits identiques octet par octet** passent leurs contrôles. Les quatre fichiers de tests complémentaires sans homologue de production sont déplacés sous `Scenarios` : **253 miroirs pour 312 sources**. Les ressources Monaco suivent les règles LF de leur nouveau `.gitattributes` ; le code C# et les traductions restent en UTF-8 sans BOM avec CRLF.
+
+Le binaire final est `artifacts/branch-integration/final-build/VBAi/Debug/net48/VBAi.dll`, MVID `013bd7f9-b625-4499-bac8-cfcf23cbd297`, SHA-256 `EBB1D03BA1AFFD4679761014A6C928896674D03DEE2C3856B22403F76168028C`. Il n'est pas installé pendant cette validation : des sessions Word utilisent encore la DLL précédente. Les 28 tests d'hôtes/comptes sont conditionnels ; leurs anciennes preuves natives ne qualifient pas automatiquement cette version. Aucune nouvelle collecte de couverture C# n'est annoncée pour cette fusion.
+
 ## Qualification Office
 
-Le lot natif du 29 septembre compte **4 réussites, 0 échec, 1 ignoré**, en **53 secondes** : sept scénarios par hôte dans Word, PowerPoint, Access et Publisher ; Outlook attend un profil classique configuré. Les tests et leurs prérequis sont dans le projet VSTest. La DLL de production reste celle validée globalement après renommage ; aucune nouvelle mesure de couverture C# n'est annoncée. Les adaptateurs de sauvegarde et les fonctions non qualifiées restent décrits dans [le bilan Office](office-host-qualification.md).
+Le lot natif du 29 septembre compte **4 réussites, 0 échec, 1 ignoré**, en **53 secondes** : sept scénarios par hôte dans Word, PowerPoint, Access et Publisher ; Outlook attend un profil classique configuré. Les tests et leurs prérequis sont dans le projet VSTest. Ce lot Office a exercé la DLL validée après renommage, avant la fusion des correctifs de réactivité ; aucune nouvelle mesure de couverture C# n'est annoncée. Les adaptateurs de sauvegarde et les fonctions non qualifiées restent décrits dans [le bilan Office](office-host-qualification.md).
 
 ## Renommage VBAi
 

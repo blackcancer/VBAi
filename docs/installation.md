@@ -6,6 +6,8 @@ Le complément cible Windows et un hôte **VBE 64 bits**. Ouvrir `VBAi.sln` dans
 
 Fermer les hôtes ayant chargé la DLL avant de reconstruire leur sortie installée. Pour continuer à compiler pendant qu’un hôte est ouvert, utiliser la sortie isolée décrite dans [Architecture](architecture.md).
 
+La compilation utilise aussi la PIA `Microsoft.Office.Interop.PowerPoint` 15.0 pour lire le handle PowerPoint via son interface COM. Le projet la recherche dans les outils Office de Visual Studio puis dans le GAC ; un autre emplacement peut être fourni avec `-p:PowerPointInteropPath="chemin/Microsoft.Office.Interop.PowerPoint.dll"`. `EmbedInteropTypes=true` embarque les types nécessaires : cette PIA n'est pas une dépendance à livrer avec le complément.
+
 Depuis un PowerShell de développement Visual Studio **64 bits**, à la racine du dépôt :
 
 ```powershell
