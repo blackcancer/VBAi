@@ -78,6 +78,13 @@ represent toggle requests, **not a verified inventory of installed breakpoints**
 Check the native state when precision matters. A reload may lose native breakpoints
 and Undo history, which cannot be reconstructed exactly by this integration.
 
+The assistant's `debug` tools can inspect visible native panes and, with the
+required project, mode and approval checks, evaluate a selected expression or
+inspect a bounded set of simple local scalars while paused. These native reads
+may change selection or evaluate VBA and do not create an independent debugger
+state database. See [tool discovery](reference/vbe-tools.md) and the
+[recorded Excel checks](test-coverage.md) for their different validation limits.
+
 ## Attributes and recovery
 
 Hidden VBA attributes require more care than replacing visible text. Supported

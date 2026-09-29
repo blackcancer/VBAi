@@ -25,16 +25,17 @@ operation, language feature or UI surface.
 
 ## Recorded host evidence
 
-This table summarizes evidence available at documentation baseline
-`99b5f25` on **2026-09-29**. These are recorded project results, not new tests run
-as part of the documentation rewrite. Full provenance is in
+This table combines the Office batch at `99b5f25` with later recorded Excel checks
+and the Word/PowerPoint adapter correction merged at `fea0184`, all on
+**2026-09-29**. Each observation remains tied to its own build; no later host
+qualification is inferred from a code fix. Full provenance is in
 [recorded validation](test-coverage.md).
 
 | Host/environment | Observed scope | Important boundaries |
 | --- | --- | --- |
-| Excel x64 | Multiple recorded load, bridge, editing, persistence, UserForm and Monaco scenarios; separate native compilation/debugging checks. | Individual runs cover different features and revisions, not every combination. |
-| Word, Office 16 x64 | Disposable `.docm`: shared VBE inspection, module/class/form changes, compilation, native-helper save and reopen. | VBAi's save route was refused because programmatic project access was not trusted on the test machine. `Normal` was not modified. |
-| PowerPoint, Office 16 x64 | Disposable `.pptm`: the same shared VBE scenario set and native-helper persistence. | The VBAi save adapter attempted to read unavailable `Application.HWND`; that operation remains a known defect in this evidence. |
+| Excel x64 | Recorded load, bridge, editing, persistence, UserForm and Monaco scenarios; later native breakpoint and bounded scalar-inspection checks. | The scalar fixture required explicit code-pane navigation before Run Sub; direct execution after cold navigation was not qualified. Individual runs cover different builds and features. |
+| Word, Office 16 x64 | Disposable `.docm`: shared VBE inspection, module/class/form changes, compilation, native-helper save and reopen. | The recorded VBAi save attempt was refused because programmatic project access was not trusted on that machine. A Word save adapter exists, but this run did not qualify it. `Normal` was not modified. |
+| PowerPoint, Office 16 x64 | Disposable `.pptm`: the same shared VBE scenario set and native-helper persistence. | The Office batch observed a failure reading `Application.HWND`. The later `PowerPointWindow` correction uses the typed COM interface; saving with that corrected build still needs a native retest. |
 | Access, Office 16 x64 | Disposable `.accdb`: shared VBE scenarios, including an MSForms UserForm, and native-helper persistence. | VBAi document-save adapter absent; refusal verified. |
 | Publisher, Office 16 x64 | Disposable `.pub`: shared VBE scenarios and native-helper persistence. | VBAi document-save adapter absent; refusal verified. |
 | Classic Outlook | A read-only qualification path is prepared. | Blocked by first-run setup and the absence of a configured classic Outlook profile. No mail or user VBA project was modified. |

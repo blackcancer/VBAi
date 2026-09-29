@@ -1,17 +1,33 @@
 # Recorded validation
 
-## Documentation baseline
+## Latest recorded project checks
 
-This summary was consolidated on **2026-09-29** from repository evidence at
-**`99b5f25b39e32131b4c8486ff2d1ae467206b39e`**. It reports existing results; the
-documentation refactor did not execute Windows/COM, provider or host tests.
+At source **`fea0184`** on **2026-09-29**, the merged Debug/x64 solution built with
+no errors or warnings. The full VSTest run recorded **2,004 passed, 0 failed and
+28 conditional skips** in `artifacts/branch-integration/final-tests/global-final.trx`.
+The accepted run followed corrected asynchronous-tool test expectations and
+translations for three notifications in the initial pass; the initial pass is
+not the green result. The add-in DLL in
+`artifacts/branch-integration/final-build/VBAi/Debug/net48/` was built in an
+isolated output and was not installed for that run.
+
+The same integration validated **46 WinForms Designer surfaces**, **27 Designer
+metadata checks** and **17 Monaco distribution files** against their regenerated
+versions. The mirror inventory was **253 test mirrors for 312 production sources**.
+These checks do not establish native host behavior or current instrumented code
+coverage. No new C# coverage collection was recorded for this integration.
+
+## Earlier and host-specific evidence
+
+The following runs use different builds and must be read separately:
 
 | Evidence set | Recorded result | Scope and limitation |
 | --- | --- | --- |
-| Post-rename global VSTest run | 1,876 passed, 0 failed, 21 skipped. | No new instrumented coverage collection in this run. |
+| Post-rename global VSTest run, `5c860a3` | 1,876 passed, 0 failed, 21 skipped. | Precedes the responsiveness merge; no new instrumented coverage collection. |
 | Post-rename Designer checks | 46 surfaces validated. | Loading/editing/resizing/serialization is not full native UI qualification. |
 | Office host batch | 4 passed, 0 failed, 1 skipped. | Seven scenario groups per successful host: Word, PowerPoint, Access and Publisher. Outlook blocked by missing setup/profile. |
 | Post-rename Excel startup | Loaded DLL identity, automatic Monaco startup, native code behind Monaco, resize and Object Browser layout checked. | No macro execution; not a new qualification of every editor or other-host feature. |
+| Later Excel audit checkpoint, candidate from `d75d761` | Native breakpoint, isolated workbook persistence and bounded local-scalar inspection each passed after fixture follow-up. | First scalar attempt was refused because its code pane was not active; explicit navigation before Run Sub passed. Direct cold-navigation execution, save/reopen and other hosts were not qualified by these cases. |
 | Historical instrumented run, source `953c84f` | 30,521/30,521 lines and 31,195/31,195 branches; 1,867 passed, 0 failed, 21 skipped. | Predates PR #13 and the later rename changes. **Not current coverage.** |
 
 **Current instrumented coverage after the latest changes is not established by
@@ -20,14 +36,16 @@ release claim.
 
 The Office batch verifies common VBE behavior and helper-driven save/reopen. It
 does not qualify VBAi's own document-save adapter in every host. The
-[compatibility table](compatibility.md) retains each refusal, missing adapter and
-the PowerPoint HWND defect. A skipped Outlook test is not a pass.
+[compatibility table](compatibility.md) distinguishes recorded refusals, missing
+adapters and the historical PowerPoint HWND failure from its later unqualified
+code correction. A skipped Outlook test is not a pass.
 
 ## Provenance
 
 The pre-refactor records are preserved at the immutable baseline:
 
-- [Validation history](https://github.com/blackcancer/VBAi/blob/99b5f25b39e32131b4c8486ff2d1ae467206b39e/docs/test-coverage.md).
+- [Merged integration record](https://github.com/blackcancer/VBAi/blob/101a7cd/docs/test-coverage.md).
+- [Office and post-rename history](https://github.com/blackcancer/VBAi/blob/99b5f25b39e32131b4c8486ff2d1ae467206b39e/docs/test-coverage.md).
 - [Rename and migration validation](https://github.com/blackcancer/VBAi/blob/99b5f25b39e32131b4c8486ff2d1ae467206b39e/docs/rename-vbai.md).
 - [Office scenario details](https://github.com/blackcancer/VBAi/blob/99b5f25b39e32131b4c8486ff2d1ae467206b39e/docs/office-host-qualification.md).
 

@@ -19,6 +19,16 @@ by family:
 | `environment` | Projects, references, editor options and other VBE services. |
 | `all` | All schemas permitted by the current mode, not additional permissions. |
 
+The `debug` family includes native Locals, Watches and Immediate inspection,
+optional Call Stack capture, pane opening, breakpoint and stepping commands,
+watch editing, Quick Watch, and bounded scalar-local inspection. These are
+different operations with different effects: expression evaluation and Immediate
+execution can run VBA; `inspect_local_scalars` supports only declared simple
+scalars/parameters in a paused procedure and does not return a complete Locals
+snapshot. Shared VBE context permission and Automatic editing policy are required
+for the more sensitive reads or evaluations specified by each schema. A breakpoint
+toggle response is not a complete, verified breakpoint inventory.
+
 For example, `discover_tools` accepts `{"Family":"code"}`. The invocation gateway
 uses `ToolName` and `ArgumentsJson`; the latter is the selected tool's serialized
 argument object. Invoke only a discovered tool with the exact returned schema.

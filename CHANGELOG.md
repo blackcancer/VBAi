@@ -43,9 +43,11 @@ investigations and test transcripts belong in Git history and test artifacts.
 ### Known limitations
 
 A standalone installer is still planned. Qualification remains operation- and
-host-specific. The latest Office checks expose limitations in save adapters even
-when the shared VBE scenarios pass. The current revision does not have a new
-instrumented coverage result after the latest implementation changes.
+host-specific. The recorded Office batch did not qualify VBAi's Word/PowerPoint
+save paths; its PowerPoint handle failure was corrected in code afterward but has
+not been retested in that host. Access and Publisher still lack save adapters.
+The current revision does not have a new instrumented coverage result after the
+latest implementation changes.
 
 See [compatibility](docs/compatibility.md), [recorded validation](docs/test-coverage.md)
 and [the roadmap](docs/roadmap.md) for the current boundaries.
