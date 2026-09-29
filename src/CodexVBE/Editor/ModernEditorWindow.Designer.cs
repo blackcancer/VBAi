@@ -27,6 +27,10 @@ namespace CodexVBE
         private System.Windows.Forms.Label status;
         /// <summary>Minuterie de capture des révisions et de synchronisation périodique.</summary>
         private System.Windows.Forms.Timer timer;
+        /// <summary>Lightweight execution observation independent of document synchronization.</summary>
+        private System.Windows.Forms.Timer debugTimer;
+        /// <summary>Schedules small revisioned typing batches on the VBE owning thread.</summary>
+        private System.Windows.Forms.Timer streamTimer;
         /// <summary>Info-bulles descriptives des commandes de la barre d’outils.</summary>
         private System.Windows.Forms.ToolTip tips;
         /// <summary>Libère les ressources de WebView2, du worker et des fenêtres CodePane détenues.</summary>
@@ -47,6 +51,8 @@ namespace CodexVBE
             this.surface = new System.Windows.Forms.Panel();
             this.status = new System.Windows.Forms.Label();
             this.timer = new System.Windows.Forms.Timer(this.components);
+            this.debugTimer = new System.Windows.Forms.Timer(this.components);
+            this.streamTimer = new System.Windows.Forms.Timer(this.components);
             this.tips = new System.Windows.Forms.ToolTip(this.components);
             this.layout.SuspendLayout();
             this.toolbar.SuspendLayout();
@@ -116,6 +122,10 @@ namespace CodexVBE
             this.status.Dock = System.Windows.Forms.DockStyle.Fill;
             this.status.Padding = new System.Windows.Forms.Padding(9);
             this.status.Name = "status";
+            this.streamTimer.Interval = 40;
+            this.streamTimer.Tick += new System.EventHandler(this.StreamTimerTick);
+            this.debugTimer.Interval = 125;
+            this.debugTimer.Tick += new System.EventHandler(this.DebugTimerTick);
             this.timer.Interval = 900;
             this.timer.Tick += new System.EventHandler(this.TimerTick);
             this.tips.SetToolTip(this.tabs, "Close this tab and preserve unsynchronized changes as a recovery draft.");

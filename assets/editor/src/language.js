@@ -8,17 +8,29 @@ export function installLanguage(monaco, editor, models, send) {
     { Name: 'Print', Module: 'Debug', Kind: 'Procedure', TypeName: '', Parameters: ['expression As Variant'], Declaration: 'Debug.Print expression', Documentation: 'Displays expressions in the Immediate window.' },
     { Name: 'Assert', Module: 'Debug', Kind: 'Procedure', TypeName: '', Parameters: ['condition As Boolean'], Declaration: 'Debug.Assert condition', Documentation: 'Suspends execution when the condition is False.' }
   ].map(s => ({ Scope: 'Module', External: true, Library: 'VBA', Parameters: [], ...s }));
-  function request(model) {
+  function request(model, includeSources = false) {
     const entry = [...models.values()].find(e => e.model === model);
     if (!entry) return Promise.resolve(null);
     const version = model.getVersionId();
     // Coalesce simultaneous providers, but reread references on every subsequent request.
-    if (entry.languageVersion === version && entry.languagePromise) return entry.languagePromise;
-    const request = ++sequence; entry.languageVersion = version;
+    if (entry.languageVersion === version && entry.languageSources === includeSources && entry.languagePromise) return entry.languagePromise;
+    const request = ++sequence; entry.languageVersion = version; entry.languageSources = includeSources;
+    const cached = includeSources ? entry.definitionData : entry.languageData;
     const promise = new Promise(resolve => {
       const timeout = setTimeout(() => { pending.delete(request); resolve(null); }, 10000);
-      pending.set(request, data => { clearTimeout(timeout); resolve(!model.isDisposed() && model.getVersionId() === version ? data : null); });
-      send({ type: 'language', id: entry.id, version, request });
+      pending.set(request, data => {
+        clearTimeout(timeout);
+        if (model.isDisposed() || model.getVersionId() !== version || !models.has(entry.id)) { resolve(null); return; }
+        let result = data?.unchanged ? (cached?.key === data.key ? cached : null) : data;
+        if (result?.parts && !data?.unchanged) {
+          const previous = new Map((cached?.parts || []).map(part => [part.name, part]));
+          const parts = result.parts.map(part => part.symbols ? part : previous.get(part.name)?.key === part.key ? previous.get(part.name) : null);
+          result = parts.some(part => !part) ? null : { ...result, parts, symbols: parts.flatMap(part => part.symbols) };
+        }
+        if (result) { if (includeSources) entry.definitionData = result; else entry.languageData = result; }
+        resolve(result);
+      });
+      send({ type: 'language', id: entry.id, version, request, compact: true, includeSources, knownLanguage: cached?.key, knownParts: Object.fromEntries((cached?.parts || []).map(part => [part.name, part.key])) });
     });
     entry.languagePromise = promise;
     promise.finally(() => { if (entry.languagePromise === promise) entry.languagePromise = null; });
@@ -107,8 +119,8 @@ export function installLanguage(monaco, editor, models, send) {
   }
   const range = s => new monaco.Range(s.Line, s.Column, s.Line, s.Column + s.Name.length);
   const kind = s => ({ Procedure: 1, Property: 9, Variable: 4, Parameter: 4, Constant: 14, Module: 8, Class: 5, Type: 5, Enum: 15, EnumMember: 16, Field: 3 }[s.Kind] ?? 4);
-  async function resolve(model, position) {
-    const data = await request(model), word = model.getWordAtPosition(position);
+  async function resolve(model, position, includeSources = false) {
+    const data = await request(model, includeSources), word = model.getWordAtPosition(position);
     if (!word) return null;
     const prefix = model.getLineContent(position.lineNumber).slice(0, word.endColumn - 1);
     const symbol = visible(data, position, prefix, model).find(s => s.Name.toLowerCase() === word.word.toLowerCase());
@@ -116,12 +128,20 @@ export function installLanguage(monaco, editor, models, send) {
   }
   monaco.languages.registerCompletionItemProvider('vba', {
     triggerCharacters: ['.'],
-    async provideCompletionItems(model, position) {
-      const data = await request(model), word = model.getWordUntilPosition(position);
+    async provideCompletionItems(model, position, context, token) {
+      if (token?.isCancellationRequested) return { suggestions: [] };
+      const data = await request(model);
+      if (token?.isCancellationRequested || model.isDisposed() || !data) return { suggestions: [] };
+      const word = model.getWordUntilPosition(position);
       const prefix = model.getLineContent(position.lineNumber).slice(0, position.column - 1);
       return { suggestions: visible(data, position, prefix, model).map(s => ({ label: s.Name, kind: kind(s), detail: s.Declaration, insertText: s.Name,
-        documentation: { value: documentation(s).map(part => part.value).join('\n\n'), isTrusted: false },
+        vbaiSymbol: s,
         range: new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn) })) };
+    },
+    resolveCompletionItem(item, token) {
+      if (!token?.isCancellationRequested && item.vbaiSymbol)
+        item.documentation = { value: documentation(item.vbaiSymbol).map(part => part.value).join('\n\n'), isTrusted: false };
+      return item;
     }
   });
   async function provideHover(model, position) {
@@ -131,7 +151,7 @@ export function installLanguage(monaco, editor, models, send) {
   }
   monaco.languages.registerHoverProvider('vba', { provideHover });
   monaco.languages.registerDefinitionProvider('vba', { async provideDefinition(model, position) {
-    const found = await resolve(model, position); if (!found || found.symbol.External) return null;
+    const found = await resolve(model, position, true); if (!found || found.symbol.External) return null;
     if (found.symbol.Module === found.data.module) return { uri: model.uri, range: range(found.symbol) };
     const source = found.data.sources.find(s => s.Module === found.symbol.Module); if (!source) return null;
     const uri = monaco.Uri.parse('vbai-definition://module/' + encodeURIComponent(found.data.id) + '/' + encodeURIComponent(found.symbol.Module));

@@ -131,7 +131,7 @@ test('conditional members and other-class private members stay hidden on typed r
   assert.deepEqual(await complete('sheet.Missing.'), []);
 });
 
-function service(text, fixture = symbols) {
+function service(text, fixture = symbols, respond = null) {
   const lines = text.split('\n'); let provider, hover, signature, language, requests = 0, current = fixture, disposed = false, version = 1;
   const model = { getVersionId: () => version, isDisposed: () => disposed, getLineContent: line => lines[line - 1],
     getWordUntilPosition: position => ({ startColumn: position.column, endColumn: position.column }),
@@ -145,7 +145,7 @@ function service(text, fixture = symbols) {
     languages: { registerCompletionItemProvider: (_, value) => provider = value, registerHoverProvider: (_, value) => hover = value,
       registerDefinitionProvider() {}, registerSignatureHelpProvider: (_, value) => signature = value }, editor: { registerEditorOpener() {} } };
   language = installLanguage(monaco, {}, new Map([['doc', { id: 'doc', model }]]), message => {
-    requests++; queueMicrotask(() => language.reply(message.request, { id: 'doc', module: 'Main', symbols: current, sources: [] }));
+    requests++; queueMicrotask(() => language.reply(message.request, respond ? respond(message) : { id: 'doc', module: 'Main', symbols: current, sources: [] }));
   });
   return { model, provider, hover, signature, language, position: { lineNumber: lines.length, column: lines.at(-1).length + 1 },
     get requests() { return requests; }, set fixture(value) { current = value; }, set disposed(value) { disposed = value; }, set version(value) { version = value; } };
@@ -211,4 +211,47 @@ test('native VBA aliases expose usable Variant and String names without rewritin
   const signature = service('VBA.Strings.Left$("text", ', fixture.map(s => ({ ...s, Parameters: ['value', 'length'] })));
   assert.equal((await signature.signature.provideSignatureHelp(signature.model, signature.position)).value.signatures[0].label, 'Strings.Left$(value, length)');
   assert.deepEqual(await complete('Other.Strings.', fixture), ['_B_var_Custom']);
+});
+
+
+test('incremental replies reuse verified buckets and remove missing buckets', async () => {
+  let revision = 1, transfers = 0;
+  const requests = [];
+  const state = service('sheet.', symbols, message => {
+    requests.push(message);
+    const key = 'snapshot-' + revision;
+    if (message.knownLanguage === key) return { unchanged: true, key };
+    const buckets = [{ name: 'module', key: 'module1', symbols: symbols.filter(s => !s.External) }];
+    if (revision < 3) buckets.push({ name: 'external', key: 'ref-' + revision, symbols: symbols.filter(s => s.External).concat(revision === 2 ? [external('Name', 'Worksheet', 'String', 'Excel')] : []) });
+    return { id: 'doc', module: 'Main', key, parts: buckets.map(part => {
+      if (message.knownParts?.[part.name] === part.key) return { ...part, symbols: null };
+      transfers++; return part;
+    }), sources: [] };
+  });
+  const query = async () => (await state.provider.provideCompletionItems(state.model, state.position)).suggestions.map(s => s.label).sort();
+  assert.deepEqual(await query(), ['Cells', 'Range']); assert.equal(transfers, 2);
+  assert.deepEqual(await query(), ['Cells', 'Range']); assert.equal(transfers, 2);
+  revision = 2; assert.deepEqual(await query(), ['Cells', 'Name', 'Range']); assert.equal(transfers, 3);
+  revision = 3; assert.deepEqual(await query(), []); assert.equal(transfers, 3);
+  assert.ok(requests.every(request => request.compact && !request.includeSources));
+});
+
+test('completion details are lazy and cancelled completion publishes no suggestions', async () => {
+  const state = service('sheet.');
+  const result = await state.provider.provideCompletionItems(state.model, state.position);
+  assert.ok(result.suggestions.every(item => !item.documentation));
+  const item = state.provider.resolveCompletionItem(result.suggestions[0]);
+  assert.ok(item.documentation.value); assert.equal(item.documentation.isTrusted, false);
+  const count = state.requests;
+  assert.deepEqual(await state.provider.provideCompletionItems(state.model, state.position, {}, { isCancellationRequested: true }), { suggestions: [] });
+  assert.equal(state.requests, count);
+  const token = { isCancellationRequested: false };
+  const pending = state.provider.provideCompletionItems(state.model, state.position, {}, token);
+  token.isCancellationRequested = true;
+  assert.deepEqual(await pending, { suggestions: [] });
+});
+
+test('unknown cached bucket is rejected rather than displaying obsolete symbols', async () => {
+  const state = service('sheet.', symbols, () => ({ id: 'doc', module: 'Main', key: 'unowned', parts: [{ name: 'unknown', key: 'missing', symbols: null }] }));
+  assert.deepEqual((await state.provider.provideCompletionItems(state.model, state.position)).suggestions, []);
 });

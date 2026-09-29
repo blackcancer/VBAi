@@ -7,18 +7,29 @@ namespace CodexVBE
     /// <summary>Répond aux demandes de symboles et d’ouverture de définition de l’éditeur Monaco.</summary>
     internal sealed partial class ModernEditorWindow
     {
-        /// <summary>Construit l’index de langage du projet et renvoie symboles et sources à la révision demandée.</summary>
-        /// <param name="message">Demande Monaco avec l’identifiant, la révision et le numéro de requête.</param>
-        /// <returns>Tâche terminée après l’envoi éventuel de la réponse de langage.</returns>
+        /// <summary>Language work never queues behind draft persistence and synchronization.</summary>
+        private EditorSyncWorker languageWorker;
+        private readonly EditorLanguageCache languageCache = new EditorLanguageCache();
+        private readonly System.Collections.Generic.Dictionary<string, System.Threading.CancellationTokenSource> languageRequests = new System.Collections.Generic.Dictionary<string, System.Threading.CancellationTokenSource>();
+        private readonly System.Threading.SemaphoreSlim languageGate = new System.Threading.SemaphoreSlim(1, 1);
+        /// <summary>Reads fresh project state but only parses and transfers changed language data.</summary>
         private async Task LanguageRequest(EditorMessage message)
         {
             object response = null;
+            var cancellation = new System.Threading.CancellationTokenSource();
+            string id = message.id ?? "";
+            bool entered = false;
+            if (languageRequests.TryGetValue(id, out var previous)) previous.Cancel();
+            languageRequests[id] = cancellation;
             try
             {
+                await languageGate.WaitAsync(cancellation.Token); entered = true;
                 await CaptureDocuments();
-                if (!documents.TryGetValue(message.id ?? "", out var doc) || versions[doc.Id] != message.version) return;
+                cancellation.Token.ThrowIfCancellationRequested();
+                if (!documents.TryGetValue(id, out var doc) || versions[doc.Id] != message.version || closing || IsDisposed) return;
                 var native = doc.Module as EditorVbeModule;
-                var sources = native == null ? documents.Values.Where(d => !(d.Module is EditorVbeModule)).Select(d => new EditorSource { Module = d.Module.Name, Text = d.Text, ComponentType = 1 }).ToArray() : await native.Sources();
+                var sources = native == null ? documents.Values.Where(d => !(d.Module is EditorVbeModule)).Select(d => new EditorSource { Module = d.Module.Name, Text = d.Text, ComponentType = 1 }).ToArray() : await native.Sources(cancellation.Token);
+                cancellation.Token.ThrowIfCancellationRequested();
                 foreach (var entry in documents.Values)
                 {
                     var other = entry.Module as EditorVbeModule;
@@ -26,25 +37,32 @@ namespace CodexVBE
                     var source = sources.FirstOrDefault(s => s.Module == (other?.ModuleName ?? entry.Module.Name));
                     if (source != null) source.Text = entry.Text;
                 }
-                if (synchronizationWorker == null) synchronizationWorker = new EditorSyncWorker();
-                var symbols = await synchronizationWorker.Evaluate(() => EditorLanguageIndex.Build(sources));
+                var paths = new System.Collections.Generic.List<string>();
                 if (native != null)
-                {
-                    var paths = new System.Collections.Generic.List<string>();
                     foreach (dynamic reference in ((dynamic)native.Project).References)
                         if (!(bool)reference.IsBroken) paths.Add((string)reference.FullPath);
-                    string[] libraryPaths = paths.ToArray();
-                    // Include direct library/type receivers and late-bound New assignments as well as declared types.
-                    string[] types = symbols.Where(s => !string.IsNullOrEmpty(s.TypeName)).Select(s => s.TypeName)
-                        .Concat(sources.SelectMany(source => System.Text.RegularExpressions.Regex.Matches(source.Text, @"\b([\p{L}_][\p{L}\p{N}_]*)\s*\.").Cast<System.Text.RegularExpressions.Match>().Select(match => match.Groups[1].Value)))
-                        .Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(type => type, StringComparer.OrdinalIgnoreCase).ToArray();
-                    var external = await synchronizationWorker.Evaluate(() => EditorReferenceIndex.Read(libraryPaths, types));
-                    symbols = symbols.Concat(external).ToArray();
-                }
-                response = new { id = doc.Id, module = native?.ModuleName ?? doc.Module.Name, symbols, sources };
+                string[] libraryPaths = paths.ToArray();
+                if (languageWorker == null) languageWorker = new EditorSyncWorker("VBAi editor language");
+                var snapshot = await languageWorker.Evaluate(() => languageCache.Build(sources, libraryPaths, cancellation.Token));
+                cancellation.Token.ThrowIfCancellationRequested();
+                if (!documents.ContainsKey(id) || versions[id] != message.version || closing || IsDisposed) return;
+                string key = doc.Id + ":" + snapshot.Key + (message.includeSources ? ":sources" : "");
+                if (message.compact && message.knownLanguage == key) response = new { unchanged = true, key };
+                else if (message.compact) response = new { id = doc.Id, module = native?.ModuleName ?? doc.Module.Name, key,
+                    parts = snapshot.Parts.Select(part => new { name = part.Name, key = part.Key,
+                        symbols = message.knownParts != null && message.knownParts.TryGetValue(part.Name, out var known) && known == part.Key ? null : part.Symbols }).ToArray(),
+                    sources = message.includeSources ? sources : Array.Empty<EditorSource>() };
+                else response = new { id = doc.Id, module = native?.ModuleName ?? doc.Module.Name, key, symbols = snapshot.Symbols, sources };
             }
+            catch (OperationCanceledException) { }
             catch (Exception error) { LoadLog.Write("Monaco language service: " + error.Message); }
-            finally { if (Ready && !IsDisposed) await Script("languageReply", message.request, response); }
+            finally
+            {
+                if (entered) languageGate.Release();
+                if (languageRequests.TryGetValue(id, out var current) && current == cancellation) languageRequests.Remove(id);
+                cancellation.Dispose();
+                if (Ready && !closing && !IsDisposed) await Script("languageReply", message.request, response);
+            }
         }
         /// <summary>Ouvre le module qui définit le symbole demandé puis révèle sa ligne et sa colonne.</summary>
         /// <param name="message">Destination du symbole fournie par l’index de langage.</param>

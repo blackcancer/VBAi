@@ -32,9 +32,11 @@ namespace CodexVBE
         /// <summary>Thread de fond qui consomme la file jusqu’à sa fermeture.</summary>
         private readonly Thread thread;
         /// <summary>Démarre le consommateur de tâches propre à cet éditeur.</summary>
-        internal EditorSyncWorker()
+        internal EditorSyncWorker() : this("VBAi editor synchronization") { }
+        /// <summary>Names isolated queues so profiler traces distinguish language and synchronization.</summary>
+        internal EditorSyncWorker(string name)
         {
-            thread = new Thread(Run) { IsBackground = true, Name = "VBAi editor synchronization" };
+            thread = new Thread(Run) { IsBackground = true, Name = name };
             thread.Start();
         }
         /// <summary>Exécute les actions de la file jusqu’à la fin de son alimentation.</summary>

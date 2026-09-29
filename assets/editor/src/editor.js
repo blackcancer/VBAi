@@ -36,6 +36,8 @@ monaco.editor.defineTheme('vbai-dark', { base: 'vs-dark', inherit: true, rules: 
 } });
 monaco.editor.defineTheme('vbai-light', { base: 'vs', inherit: true, rules: [], colors: { 'editor.background': '#ffffff' } });
 const models = new Map();
+const pendingCommands = new Map();
+let commandSequence = 0;
 let active = null, suppress = false, diff = null, currentTheme = 'vbai-dark';
 const editor = monaco.editor.create(document.getElementById('editor'), {
   theme: currentTheme, autoDetectHighContrast: false, language: 'vba', automaticLayout: true, fontFamily: 'Cascadia Code, Consolas, monospace', fontSize: 14,
@@ -59,28 +61,35 @@ function hideDiff() {
 }
 window.vbai = {
   languageReply: language.reply,
+  commandFinished(request) {
+    const pending = pendingCommands.get(request); if (!pending) return;
+    const entry = models.get(pending.id); if (entry) entry.model.deltaDecorations(pending.decorations, []);
+    pendingCommands.delete(request);
+  },
   labels(value) { commandLabels = value; installNativeActions(); installAssistantActions(); },
   languageInspect(id, line, column) { return language.inspect(models.get(id).model, { lineNumber: line, column }); },
   languageHover(id, line, column) { return language.hover(models.get(id).model, { lineNumber: line, column }); },
   diagnostics(id, version, markers) { const entry = models.get(id); if (entry && entry.model.getVersionId() === version) monaco.editor.setModelMarkers(entry.model, 'VBA compiler', markers); },
+  executionBatch(id, line, reveal = true) { for (const entry of models.values()) window.vbai.execution(entry.id, entry.id === id ? line : 0, reveal); },
   execution(id, line, reveal = true) { const entry = models.get(id); if (!entry) return; entry.execution = entry.model.deltaDecorations(entry.execution || [], line > 0 ? [{ range: new monaco.Range(line, 1, line, 1), options: { isWholeLine: true, className: 'vbai-execution-line', glyphMarginClassName: 'vbai-execution', glyphMarginHoverMessage: { value: 'VBE: Show Next Statement' } } }] : []); if (line > 0 && reveal && active === id) editor.revealLineInCenter(line); },
   breakpointRequested(id, line) { const entry = models.get(id); if (!entry) return; entry.breakpoints ||= new Map(); if (entry.breakpoints.has(line)) { entry.model.deltaDecorations(entry.breakpoints.get(line), []); entry.breakpoints.delete(line); return; } entry.breakpoints.set(line, entry.model.deltaDecorations([], [{ range: new monaco.Range(line, 1, line, 1), options: { glyphMarginClassName: 'vbai-breakpoint-pending', glyphMarginHoverMessage: { value: commandLabels['Breakpoint request sent; verify in VBE.'] || 'Breakpoint request sent; verify in VBE.' } } }])); },
   open(id, text) {
     if (!models.has(id)) {
       const model = monaco.editor.createModel(text, 'vba', monaco.Uri.parse('vbai://module/' + id));
-      const entry = { id, model, view: null }; models.set(id, entry);
-      model.onDidChangeContent(() => {
+      const entry = { id, model, view: null, sentVersion: model.getVersionId() }; models.set(id, entry);
+      model.onDidChangeContent(event => {
+        const baseVersion = entry.sentVersion; entry.sentVersion = model.getVersionId();
         monaco.editor.setModelMarkers(model, 'VBA compiler', []);
         entry.execution = model.deltaDecorations(entry.execution || [], []);
         for (const decorations of entry.breakpoints?.values() || []) model.deltaDecorations(decorations, []);
         entry.breakpoints?.clear();
-        if (!suppress) send({ type: 'change', ...snapshot(entry) });
+        if (!suppress) send(event.isFlush ? { type: 'change', ...snapshot(entry) } : { type: 'change', id: entry.id, baseVersion, version: entry.sentVersion, changes: event.changes.map(({ rangeOffset, rangeLength, text }) => ({ rangeOffset, rangeLength, text })) });
       });
     }
     select(id); return models.get(id).model.getVersionId();
   },
-  close(id) { const entry = models.get(id); if (!entry) return; if (active === id) { hideDiff(); editor.setModel(null); active = null; } language.close(id); entry.model.dispose(); models.delete(id); },
-  select, snapshots: () => [...models.values()].map(snapshot),
+  close(id) { const entry = models.get(id); if (!entry) return; if (active === id) { hideDiff(); editor.setModel(null); active = null; } language.close(id); for (const [request, pending] of pendingCommands) if (pending.id === id) pendingCommands.delete(request); entry.model.dispose(); models.delete(id); },
+  select, snapshots: known => [...models.values()].filter(entry => !known || known[entry.id] !== entry.model.getVersionId()).map(snapshot),
   apply(id, version, text) {
     const entry = models.get(id); if (!entry || entry.model.getVersionId() !== version) return 0;
     if (entry.model.getValue() !== text) {
@@ -120,11 +129,17 @@ window.vbai = {
   insert(text) { editor.trigger('vbai', 'type', { text }); },
   // Monaco's source tag enables typing contributions; this does not send OS keystrokes.
   type(text) { editor.trigger('keyboard', 'type', { text }); },
-  testInfo() { return { language: editor.getModel()?.getLanguageId(), models: models.size, theme: document.body.style.background, themeName: currentTheme, version: monaco.editor?.getModels().length, diff: !!diff, pendingBreakpoints: models.get(active)?.breakpoints?.size || 0, executionMarkers: models.get(active)?.execution?.length || 0, markers: editor.getModel() ? monaco.editor.getModelMarkers({ resource: editor.getModel().uri }).length : 0 }; }
+  testInfo() { return { language: editor.getModel()?.getLanguageId(), models: models.size, theme: document.body.style.background, themeName: currentTheme, pendingCommands: pendingCommands.size, version: monaco.editor?.getModels().length, diff: !!diff, pendingBreakpoints: models.get(active)?.breakpoints?.size || 0, executionMarkers: models.get(active)?.execution?.length || 0, markers: editor.getModel() ? monaco.editor.getModelMarkers({ resource: editor.getModel().uri }).length : 0 }; }
 };
 editor.addAction({ id: 'vbai.save', label: 'Save', keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
   run: () => { if (active) send({ type: 'command', name: 'save', id: active }); } });
-function nativeCommand(name) { if (!active) return; const entry = models.get(active); send({ type: 'editorCommand', name, id: active, version: entry.model.getVersionId(), line: editor.getPosition()?.lineNumber || 1 }); }
+function nativeCommand(name) {
+  if (!active) return;
+  const entry = models.get(active), request = ++commandSequence, line = editor.getPosition()?.lineNumber || 1;
+  const decorations = name === 'toggle_breakpoint' ? entry.model.deltaDecorations([], [{ range: new monaco.Range(line, 1, line, 1), options: { glyphMarginClassName: 'vbai-command-pending' } }]) : [];
+  pendingCommands.set(request, { id: active, decorations });
+  send({ type: 'editorCommand', name, id: active, version: entry.model.getVersionId(), line, request });
+}
 function installNativeActions() {
   for (const action of nativeActions) action.dispose(); nativeActions = [];
   for (const [name, label, binding] of [
@@ -150,5 +165,5 @@ for (const [name, label] of [['expliquer', 'Explain'], ['corriger', 'Fix'], ['re
 }
 installAssistantActions();
 editor.onMouseDown(e => { if ([monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN, monaco.editor.MouseTargetType.GUTTER_LINE_NUMBERS].includes(e.target.type) && e.target.position) { editor.setPosition(e.target.position); nativeCommand('toggle_breakpoint'); } });
-const style = document.createElement('style'); style.textContent = '.vbai-breakpoint-pending::before { content:"○";color:#ef5350;font-size:20px;font-weight:bold; } .vbai-execution::before { content:"➜";color:#f7c948; } .vbai-execution-line { background:#f7c94826; }'; document.head.appendChild(style);
+const style = document.createElement('style'); style.textContent = '.vbai-command-pending::before { content:"…";color:#8997aa;font-weight:bold; } .vbai-breakpoint-pending::before { content:"○";color:#ef5350;font-size:20px;font-weight:bold; } .vbai-execution::before { content:"➜";color:#f7c948; } .vbai-execution-line { background:#f7c94826; }'; document.head.appendChild(style);
 send({ type: 'ready' });
