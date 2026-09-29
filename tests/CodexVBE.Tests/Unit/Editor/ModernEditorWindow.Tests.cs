@@ -491,7 +491,17 @@ namespace CodexVBE.Tests.Unit
                 f.Editor.Base.Ready(true); System.IO.Directory.CreateDirectory(f.Editor.Module.Root);
                 f.Editor.Base.Native.Project.Path = System.IO.Path.Combine(f.Editor.Module.Root, "owned.bas"); System.IO.File.WriteAllText(f.Editor.Base.Native.Project.Path, "owned");
                 int saves = 0; f.Window.NativeSave = native => saves++; f.Window.NativeHostSaved = native => true;
-                f.Message(f.Editor.Json.Serialize(new { type = "command", name = "save", id = f.Editor.Base.Document.Id })); dispatcher.Drain();
+                f.Message(f.Editor.Json.Serialize(new { type = "command", name = "save", id = f.Editor.Base.Document.Id }));
+                ModernEditorDebugFixture.Wait(System.Threading.Tasks.Task.Run(() =>
+                {
+                    var deadline = System.Diagnostics.Stopwatch.StartNew();
+                    while (System.Threading.Volatile.Read(ref saves) == 0 || f.Editor.Base.Get<bool>("busy"))
+                    {
+                        if (deadline.ElapsedMilliseconds > 5000) throw new System.TimeoutException("Owned save command did not complete.");
+                        System.Threading.Thread.Sleep(1);
+                    }
+                }));
+                dispatcher.Drain();
                 Assert.AreEqual(1, saves); Assert.AreEqual(UiText.Get("Saved."), f.Editor.Base.Get<System.Windows.Forms.Label>("status").Text);
                 f.Editor.Base.Set("lastSaveError", "save has priority"); f.Editor.Base.Set("synchronizationError", "sync failure"); f.Editor.Private("UpdateStatus");
                 Assert.AreEqual(UiText.Get("save has priority"), f.Editor.Base.Get<System.Windows.Forms.Label>("status").Text);
