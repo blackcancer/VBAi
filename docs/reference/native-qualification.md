@@ -2,6 +2,10 @@
 
 État du 29 septembre 2026. Les preuves ci-dessous portent sur des scénarios précis ; elles ne transforment pas les fonctions absentes ou bornées de [functional-extensions.md](functional-extensions.md) en une couverture universelle. Le rendu global du thème natif VBE reste hors de cette qualification.
 
+## Autres hôtes Office
+
+Le lot Office du 29 septembre ajoute les parcours documentaires Word, PowerPoint, Access et Publisher : modules/classes, import/export, références dynamiques, UserForm avec label/police, compilation et réouverture. Outlook reste bloqué par l'absence de profil et Visio est absent. Les lacunes des adaptateurs de sauvegarde restent explicites dans [le bilan Office](../office-host-qualification.md).
+
 ## Palette native : récupération après modification manuelle
 
 `artifacts/palette-diagnostic/native/native.trx` fournit **1 réussite, 0 échec, 0 ignoré** dans Excel visible. Le scénario crée un état de récupération incompatible avec les couleurs courantes, applique le thème par les véritables dialogues Options, relit la palette appliquée, vérifie l’archive exacte du fichier précédent et restaure toutes les couleurs natives initiales. Le fichier actif est supprimé uniquement après vérification de la restauration.

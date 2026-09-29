@@ -7,7 +7,7 @@ Les trois projets de test et diagnostic sont regroupés ici et visibles dans `VB
 - `VBAi.Tests/Unit/` : miroir des dossiers **et des fichiers** de production, avec le suffixe `.Tests.cs`.
 - `VBAi.Tests/Scenarios/` : scénarios complémentaires qui vérifient plusieurs fichiers ensemble.
 - `VBAi.Tests/Infrastructure/Fixtures/` : doubles de test, utilitaires et initialisation partagés.
-- `VBAi.Tests/Integration/` : stockage local, Git, fournisseurs et hôtes Excel/SOLIDWORKS.
+- `VBAi.Tests/Integration/` : stockage local, Git, fournisseurs et hôtes Excel/SOLIDWORKS/Office.
 - `VBAi.Tests/Infrastructure/Hosts/` : fixtures hôtes et client du tube nommé.
 - `VBAi.Git.Smoke/` : scénarios Git partagés avec VSTest et exécutable `GitTests.exe`.
 - `VBAi.Providers.Smoke/` : scénarios fournisseurs partagés et exécutable `ProviderTests.exe`.
@@ -62,6 +62,10 @@ dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --collect:"XPlat Code Co
 ```
 
 Le filtre exclut uniquement l’exécutable auxiliaire des mesures du complément. Aucun fichier, méthode ou branche de production ne doit être exclu pour atteindre la cible. Le code exécuté dans Excel ou SOLIDWORKS n’est pas mesuré par le collecteur du processus VSTest.
+
+## Autres hôtes Office
+
+Les autres hôtes Office disposent d'un lot conditionnel `TestCategory=Office`, activé par `VBAi_RUN_OFFICE_TESTS=1`. Outlook est séparément activé par `VBAi_RUN_OUTLOOK_TESTS=1` et nécessite un profil classique Office 16 configuré. Les détails, commandes de relance et limites sont dans [la qualification Office](../docs/office-host-qualification.md).
 
 ## Excel automatisé — hôte prioritaire
 

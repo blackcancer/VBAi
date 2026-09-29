@@ -28,6 +28,7 @@
 | [Inventaire VBE complet](reference/vbe-capability-inventory.md) | Surfaces de l'éditeur, contrats présents et lacunes précises |
 | [Concepteur VBE](reference/designer.md) | Propriétés MSForms, conteneurs, listes et récupération |
 | [Couverture des tests](test-coverage.md) | Dernière mesure globale et preuves Excel/SOLIDWORKS |
+| [Qualification Office](office-host-qualification.md) | Parcours Word, PowerPoint, Access, Publisher et prérequis Outlook |
 | [Travaux restants](roadmap.md) | Lacunes de tests et de qualification native |
 | [Projet de tests](../tests/README.md) | Commandes VSTest et hôtes activés explicitement |
 

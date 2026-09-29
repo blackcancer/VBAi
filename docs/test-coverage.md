@@ -1,5 +1,9 @@
 # Couverture automatisée du complément
 
+## Qualification Office
+
+Le lot natif du 29 septembre compte **4 réussites, 0 échec, 1 ignoré**, en **53 secondes** : sept scénarios par hôte dans Word, PowerPoint, Access et Publisher ; Outlook attend un profil classique configuré. Les tests et leurs prérequis sont dans le projet VSTest. La DLL de production reste celle validée globalement après renommage ; aucune nouvelle mesure de couverture C# n'est annoncée. Les adaptateurs de sauvegarde et les fonctions non qualifiées restent décrits dans [le bilan Office](office-host-qualification.md).
+
 ## Renommage VBAi
 
 La solution et les namespaces sont renommés en VBAi. La suite complète après renommage compte **1 876 réussites, 0 échec, 21 ignorés**, en **8 min 8 s**, sans nouvelle collecte de couverture. Les 46 concepteurs et le démarrage Excel réel passent aussi. Les tests de performance sont rangés parmi les scénarios complémentaires : **242 miroirs pour 299 sources**. Voir [le bilan du renommage](rename-vbai.md) pour les preuves, la migration utilisateur et le nettoyage GitHub.
