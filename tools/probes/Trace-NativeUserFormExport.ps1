@@ -34,12 +34,20 @@ if ([string]::IsNullOrWhiteSpace($DebuggerPreflightReport) -or -not [IO.Path]::I
     throw 'Execution requires an absolute measured CDB invasive -p/-pd preflight report; no attachment is attempted.'
 }
 $preflight = Get-Content -LiteralPath $DebuggerPreflightReport -Raw | ConvertFrom-Json
-if ($preflight.CdbSha256 -ne (Get-FileHash -LiteralPath $CdbPath -Algorithm SHA256).Hash -or
+$jsProvider = Join-Path ([IO.Path]::GetDirectoryName($CdbPath)) 'winext/JsProvider.dll'
+$script = Join-Path $PSScriptRoot 'NativeExportTrace.js'
+if (-not [IO.File]::Exists($jsProvider)) { throw 'Installed debugger JS provider is missing; no installation is performed.' }
+if ($preflight.State -ne 'PASS' -or
+    $preflight.CdbSha256 -ne (Get-FileHash -LiteralPath $CdbPath -Algorithm SHA256).Hash -or
+    $preflight.JsProviderSha256 -ne (Get-FileHash -LiteralPath $jsProvider -Algorithm SHA256).Hash -or
+    $preflight.TraceScriptSha256 -ne (Get-FileHash -LiteralPath $script -Algorithm SHA256).Hash -or
     $preflight.Mode -ne 'INVASIVE_P_PD' -or $preflight.AttachmentObserved -ne $true -or
     $preflight.DebuggerDetachedVerified -ne $true -or $preflight.TargetStayedAlive -ne $true -or
-    $preflight.TargetNormalShutdownVerified -ne $true -or $preflight.DetachOnExitAccepted -ne $true) {
+    $preflight.TargetNormalShutdownVerified -ne $true -or $preflight.DetachOnExitAccepted -ne $true -or
+    $preflight.DebuggerExitCode -ne 0 -or $preflight.DebuggerStopForced -eq $true -or $preflight.DetachOnExitUnsupportedObserved -eq $true) {
     throw 'CDB detach-on-exit preflight is absent/incomplete/different; no host attachment is attempted.'
 }
+if ($preflight.ScriptTraceVerified -ne $true) { throw 'Exact native syscall request/return tracing was not proven by the helper; no Office attachment is attempted.' }
 
 # Explicit execution only. Default invocation is a static plan and never attaches.
 $target = [Diagnostics.Process]::GetProcessById($targetPid)
@@ -51,6 +59,7 @@ Add-Type -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
 public static class VBAiNativeTraceLifecycle {
+    [DllImport("kernel32.dll")] public static extern uint GetACP();
     [DllImport("kernel32.dll", SetLastError=true)] public static extern IntPtr OpenProcess(uint access, bool inherit, int pid);
     [DllImport("kernel32.dll", SetLastError=true)] public static extern bool CloseHandle(IntPtr process);
     [DllImport("kernel32.dll", SetLastError=true)] public static extern bool DebugBreakProcess(IntPtr process);
@@ -67,18 +76,26 @@ if (-not [VBAiNativeTraceLifecycle]::CheckRemoteDebuggerPresent($query, [ref]$pr
 $log = Join-Path $directory 'trace.cdb.log'
 $commands = Join-Path $directory 'trace.commands.txt'
 $script = Join-Path $PSScriptRoot 'NativeExportTrace.js'
+$jsProvider = Join-Path ([IO.Path]::GetDirectoryName($CdbPath)) 'winext/JsProvider.dll'
+if (-not [IO.File]::Exists($jsProvider)) { throw 'Installed debugger JS provider is missing; no installation is performed.' }
 if ($script.Contains('"') -or $targetPath.Contains('"') -or $log.Contains('"')) { throw 'Unsupported quote in trace paths.' }
 $rootLiteral = ConvertTo-Json -InputObject $targetPath -Compress
+$logCommand = $log.Replace('\', '/'); $providerCommand = $jsProvider.Replace('\', '/'); $scriptCommand = $script.Replace('\', '/')
 $content = @"
-.logopen "$log"
-.scriptload "$script"
+.logopen /u "$logCommand"
+.load "$providerCommand"
+.scriptproviders
+.scriptload "$scriptCommand"
+.scriptlist
 dx @`$scriptContents.configure($targetPid, $rootLiteral)
 g
 "@
-[IO.File]::WriteAllText($commands, $content, [Text.Encoding]::Unicode)
+$commandCodePage = [int][VBAiNativeTraceLifecycle]::GetACP()
+$commandEncoding = [Text.Encoding]::GetEncoding($commandCodePage, [Text.EncoderFallback]::ExceptionFallback, [Text.DecoderFallback]::ExceptionFallback)
+[IO.File]::WriteAllBytes($commands, $commandEncoding.GetBytes($content))
 $info = New-Object Diagnostics.ProcessStartInfo
 $info.FileName = $CdbPath
-$info.Arguments = '-pd -p ' + $targetPid + ' -netsym:no -cf "' + $commands + '"'
+$info.Arguments = '-pd -p ' + $targetPid + ' -netsyms:no -cf "' + $commands + '"'
 $info.UseShellExecute = $false; $info.CreateNoWindow = $true
 $info.RedirectStandardInput = $true; $info.RedirectStandardOutput = $true; $info.RedirectStandardError = $true
 $debugger = New-Object Diagnostics.Process
@@ -86,6 +103,7 @@ $debugger.StartInfo = $info
 $lifecycle = $plan
 $lifecycle.Mode = 'EXECUTE'; $lifecycle.State = 'ATTACHING'; $lifecycle.DebuggerStopForced = $false
 $lifecycle.AttachmentObserved = $false; $lifecycle.InvasiveDetachPreflightReport = $DebuggerPreflightReport
+$lifecycle.CommandFileEncoding = "WindowsACP-$commandCodePage-noBOM"
 $started = $false; $primaryFailure = $null; $stopFailures = New-Object Collections.Generic.List[string]
 try {
     [void]$debugger.Start(); $started = $true

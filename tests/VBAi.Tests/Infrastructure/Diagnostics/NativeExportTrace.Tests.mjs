@@ -9,7 +9,9 @@ const logs = [], commands = [], memory = new Map();
 class Address {
     constructor(n) { this.n = n; }
     add(n) { return new Address(this.n + n); }
-    compareTo(value) { return this.n - (value instanceof Address ? value.n : value); }
+    // CDB's host comparison result is a boxed numeric value, unlike Node's
+    // primitive number. Strict comparison with 0 silently rejected equal RSPs.
+    compareTo(value) { return new Number(this.n - (value instanceof Address ? value.n : value)); }
     toString(base) { return this.n.toString(base); }
 }
 const registers = { r8: new Address(0x1000), rcx: new Address(0x1000), rdx: new Address(0x40000000), rsp: new Address(0x5000), rax: new Address(0xc0000022) };
@@ -28,7 +30,8 @@ const host = {
     getModuleSymbolAddress: (_module, name) => new Address(name === 'NtCreateFile' ? 0x10000 : 0x20000),
     namespace: { Debugger: { Utility: { Control: { ExecuteCommand: command => {
         commands.push(command);
-        if (command === 'bl') return ['100 e ntdll!NtCreateFile', '101 e ntdll!NtOpenFile', '102 e ntdll!NtQueryAttributesFile', '103 e ntdll!NtQueryFullAttributesFile'];
+        if (command === 'bl') return ['100 e 00007fff`10000000 ntdll!NtCreateFile', '101 e 00007fff`10000001 ntdll!NtOpenFile',
+            '102 e 00007fff`10000002 ntdll!NtQueryAttributesFile', '103 e 00007fff`10000003 ntdll!NtQueryFullAttributesFile'];
         if (command === 'kn 8') return ['0 1234 VBA!export+0x1'];
         return [];
     } } } } }
@@ -60,6 +63,9 @@ const returned = JSON.parse(logs.find(line => line.includes('"Stage":"RETURN"'))
 assert.equal(returned.NtStatus, '0xc0000022'); assert.equal(returned.NtSuccess, false);
 assert.equal(returned.Id, 1); assert.equal(returned.ThreadId, 7);
 assert.equal(context.trace.completed, 1);
+assert.equal(commands.includes('bc201'), true);
+assert.equal(commands.some(c => c.includes('/1')), false);
+assert.equal(commands.some(c => c.includes('/w')), false);
 assert.equal(context.isReturn(1), false);
 registers.rsp = new Address(0x5000); setName(root + '\\QualificationForm.frm'); context.enter(2);
 assert.equal(context.trace.calls[2].Api, 'NtQueryAttributesFile');

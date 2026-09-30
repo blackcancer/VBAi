@@ -22,20 +22,20 @@ function configure(pid, root) {
     if (Number(host.currentProcess.Id) !== Number(pid)) throw new Error("Exact PID mismatch; trace not armed.");
     if (!/\\[0-9a-f]{32}$/i.test(root)) throw new Error("Expected fresh GUID export child; trace not armed.");
     trace.pid = Number(pid); trace.root = root;
-    // Resolve first; a missing export is a preparation failure, never readiness.
-    var create = host.getModuleSymbolAddress("ntdll", "NtCreateFile");
-    var open = host.getModuleSymbolAddress("ntdll", "NtOpenFile");
-    var query = host.getModuleSymbolAddress("ntdll", "NtQueryAttributesFile");
-    var queryFull = host.getModuleSymbolAddress("ntdll", "NtQueryFullAttributesFile");
-    execute('bp100 ' + hex(create) + ' "dx @$scriptContents.enter(0); gc"');
-    execute('bp101 ' + hex(open) + ' "dx @$scriptContents.enter(1); gc"');
-    execute('bp102 ' + hex(query) + ' "dx @$scriptContents.enter(2); gc"');
-    execute('bp103 ' + hex(queryFull) + ' "dx @$scriptContents.enter(3); gc"');
+    // Use CDB's exported-symbol resolver; the JS typed-symbol API can return
+    // undefined when private/PDB types are unavailable. Never enable network symbols.
+    execute('bp100 ntdll!NtCreateFile "dx @$scriptContents.enter(0); gc"');
+    execute('bp101 ntdll!NtOpenFile "dx @$scriptContents.enter(1); gc"');
+    execute('bp102 ntdll!NtQueryAttributesFile "dx @$scriptContents.enter(2); gc"');
+    execute('bp103 ntdll!NtQueryFullAttributesFile "dx @$scriptContents.enter(3); gc"');
     var listing = [];
     for (var line of host.namespace.Debugger.Utility.Control.ExecuteCommand("bl")) listing.push(String(line));
     if (![100, 101, 102, 103].every(function (id) {
-        return listing.some(function (line) { return new RegExp("^\\s*" + id + "\\s+e\\b").test(line); });
-    })) throw new Error("Entry breakpoints not verified; trace not armed.");
+        return listing.some(function (line) { return new RegExp("^\\s*" + id + "\\s+e\\b.*[0-9a-f]{8}", "i").test(line); });
+    })) {
+        emit({ Stage: "ENTRY_BREAKPOINTS_UNRESOLVED", Listing: listing });
+        throw new Error("Resolved entry breakpoint addresses not verified; trace not armed.");
+    }
     host.diagnostics.debugLog("VBAI_TRACE_READY pid=" + trace.pid + "\n");
 }
 
@@ -44,7 +44,7 @@ function enter(kind) {
         if (Number(host.currentProcess.Id) !== trace.pid) throw new Error("PID changed.");
         var reg = registers(), attributes = kind < 2 ? reg.r8 : reg.rcx;
         var objectName = pointer(attributes.add(16));
-        if (objectName.compareTo(0) === 0) return;
+        if (Number(objectName.compareTo(0)) === 0) return;
         var length = scalar(objectName, 2);
         if (length > 2048 || (length & 1) !== 0) throw new Error("Object name exceeds bounded UTF16 read.");
         var buffer = pointer(objectName.add(8));
@@ -71,7 +71,7 @@ function enter(kind) {
         }
         if (kind === 0) call.CreateDisposition = scalar(reg.rsp.add(64), 4);
         trace.calls[id] = call;
-        execute('bp' + (200 + id) + ' /1 /w "@$scriptContents.isReturn(' + id + ')" ' + call.ReturnAddress +
+        execute('bp' + (200 + id) + ' ' + call.ReturnAddress +
             ' "dx @$scriptContents.recordReturn(' + id + '); gc"');
         var logged = Object.assign({}, call); delete logged.ReturnStack;
         logged.Stack = [];
@@ -84,16 +84,27 @@ function enter(kind) {
 }
 
 function isReturn(id) {
+    id = Number(id);
     var call = trace.calls[id];
     return call !== undefined && Number(host.currentProcess.Id) === trace.pid &&
-        Number(host.currentThread.Id) === call.ThreadId && registers().rsp.compareTo(call.ReturnStack) === 0;
+        Number(host.currentThread.Id) === call.ThreadId && Number(registers().rsp.compareTo(call.ReturnStack)) === 0;
 }
 function recordReturn(id) {
     // Snapshot EAX FIRST. Formatting, memory/string reads and debugger commands
     // cannot replace the syscall return with another API's LastError/HRESULT.
-    var status = u32(registers().rax), call = trace.calls[id];
-    if (!isReturn(id)) { trace.errors++; emit({ Stage: "UNPAIRED_RETURN", Id: id }); return; }
+    var status = u32(registers().rax); id = Number(id); var call = trace.calls[id];
+    // A shared return address can be hit by another call/thread. Evaluate the
+    // identity inside the action so CDB's /w expression cannot consume or hide
+    // the syscall result; unmatched hits produce no unrelated metadata.
+    if (!isReturn(id)) {
+        if (call !== undefined && Number(host.currentProcess.Id) === trace.pid && Number(host.currentThread.Id) === call.ThreadId) {
+            trace.errors++;
+            emit({ Stage: "RETURN_STACK_MISMATCH", Id: id, ExpectedStack: hex(call.ReturnStack), ActualStack: hex(registers().rsp) });
+        }
+        return;
+    }
     trace.completed++;
+    execute("bc" + (200 + id)); // Clear only after the matching thread/stack actually returned.
     emit({ Stage: "RETURN", Id: id, Api: call.Api, Path: call.Path,
         ProcessId: trace.pid, ThreadId: call.ThreadId, NtStatus: "0x" + ("00000000" + status.toString(16)).slice(-8),
         NtSuccess: (status & 0x80000000) === 0, NtPending: status === 0x103 });
