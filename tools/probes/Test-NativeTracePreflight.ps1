@@ -81,10 +81,10 @@ try {
         if ([VBAiPreflightLifecycle]::CheckRemoteDebuggerPresent($query, [ref]$present) -and $present) {
             $report.AttachmentObserved = $true; $report.DetachOnExitAccepted = $true
         }
-        if ([IO.File]::Exists($log) -and (Get-Content -LiteralPath $log -Raw) -match "VBAI_TRACE_READY pid=$($helper.Id)") { break }
+        if ([IO.File]::Exists($log) -and (Get-Content -LiteralPath $log -Raw -Encoding Unicode) -match "VBAI_TRACE_READY pid=$($helper.Id)") { break }
         Start-Sleep -Milliseconds 100
     }
-    if ($debugger.HasExited -or -not [IO.File]::Exists($log) -or (Get-Content -LiteralPath $log -Raw) -notmatch "VBAI_TRACE_READY pid=$($helper.Id)") { throw 'CDB/JS trace did not arm; no synthetic file open will be issued.' }
+    if ($debugger.HasExited -or -not [IO.File]::Exists($log) -or (Get-Content -LiteralPath $log -Raw -Encoding Unicode) -notmatch "VBAI_TRACE_READY pid=$($helper.Id)") { throw 'CDB/JS trace did not arm; no synthetic file open will be issued.' }
     $present = $false
     if (-not [VBAiPreflightLifecycle]::CheckRemoteDebuggerPresent($query, [ref]$present) -or -not $present) { throw 'Debugger attachment was not observed.' }
     $report.AttachmentObserved = $true; $report.DetachOnExitAccepted = $true

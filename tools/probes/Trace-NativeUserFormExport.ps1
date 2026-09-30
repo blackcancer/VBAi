@@ -10,7 +10,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 if (-not [IO.Path]::IsPathRooted($PendingReport)) { throw 'Pending report must be absolute.' }
-$pending = Get-Content -LiteralPath $PendingReport -Raw | ConvertFrom-Json
+$pending = Get-Content -LiteralPath $PendingReport -Raw -Encoding UTF8 | ConvertFrom-Json
 $directory = [IO.Path]::GetDirectoryName($PendingReport)
 $targetPid = [int] $pending.ProcessId
 $targetStart = [DateTime]::Parse($pending.ProcessStartedUtc).ToUniversalTime()
@@ -33,7 +33,7 @@ if (-not $Execute) { $plan | ConvertTo-Json -Depth 8; return }
 if ([string]::IsNullOrWhiteSpace($DebuggerPreflightReport) -or -not [IO.Path]::IsPathRooted($DebuggerPreflightReport)) {
     throw 'Execution requires an absolute measured CDB invasive -p/-pd preflight report; no attachment is attempted.'
 }
-$preflight = Get-Content -LiteralPath $DebuggerPreflightReport -Raw | ConvertFrom-Json
+$preflight = Get-Content -LiteralPath $DebuggerPreflightReport -Raw -Encoding UTF8 | ConvertFrom-Json
 $jsProvider = Join-Path ([IO.Path]::GetDirectoryName($CdbPath)) 'winext/JsProvider.dll'
 $script = Join-Path $PSScriptRoot 'NativeExportTrace.js'
 if (-not [IO.File]::Exists($jsProvider)) { throw 'Installed debugger JS provider is missing; no installation is performed.' }
@@ -112,10 +112,10 @@ try {
     $stdout = $debugger.StandardOutput.ReadToEndAsync(); $stderr = $debugger.StandardError.ReadToEndAsync()
     $watch = [Diagnostics.Stopwatch]::StartNew()
     while ($watch.Elapsed.TotalSeconds -lt 10 -and -not $debugger.HasExited) {
-        if ([IO.File]::Exists($log) -and (Get-Content -LiteralPath $log -Raw) -match "VBAI_TRACE_READY pid=$targetPid") { break }
+        if ([IO.File]::Exists($log) -and (Get-Content -LiteralPath $log -Raw -Encoding Unicode) -match "VBAI_TRACE_READY pid=$targetPid") { break }
         Start-Sleep -Milliseconds 100
     }
-    if ($debugger.HasExited -or -not [IO.File]::Exists($log) -or (Get-Content -LiteralPath $log -Raw) -notmatch "VBAI_TRACE_READY pid=$targetPid") {
+    if ($debugger.HasExited -or -not [IO.File]::Exists($log) -or (Get-Content -LiteralPath $log -Raw -Encoding Unicode) -notmatch "VBAI_TRACE_READY pid=$targetPid") {
         throw 'Trace was not armed; no export permission marker will be created.'
     }
     $present = $false
