@@ -87,9 +87,19 @@ Reviewed `solidworks-2025-v5-code.png` shows the selected synthetic class and
 workspace fit after resize and verified restoration of the original placement.
 The capture also shows a stale closed-project warning despite the selected live
 class. Its correction and complete embedded assistant/UI acceptance are pending.
-The host remains alive at this checkpoint: final cleanup and normal exit are
-**NOT_RUN**, and SOLIDWORKS 2019's separate abnormal termination is unresolved.
-Q-014 therefore remains open.
+The reviewed `solidworks-2025-v5-real-designer.png` shows the actual designer and
+persisted label after a successful `open_form` response. Earlier artifacts named
+`solidworks-2025-v5-designer` were mislabeled: their attempted command was unknown
+and code remained visible. The correction record preserves that failed setup.
+The resize helper measures Monaco bounds even when the designer is selected;
+its later successful resize is not a measured designer-resize pass.
+
+`solidworks-2025-v5-before-close.json` preserves both owned projects' live sources
+and form metadata before authorized discard. The exact owned instance then
+closes through one `ExitApp`, with no force termination and exit **0**, recorded
+in `solidworks-2025-v5-normal-close.json`. SOLIDWORKS 2019's separate abnormal
+termination, strict SWP preservation and complete debugger/assistant acceptance
+remain unresolved; Q-014 remains open.
 
 ### Current v5: terminal Access adapter campaign
 
@@ -120,6 +130,34 @@ pass. The exact disposable database is retained as
 `retained-reference-removal-Disposable.accdb`, SHA-256
 `FA91E9A79C1C6F3501054E4FB023DEB4D610BEA21BFD9E4BF9B49D06841E8EA3`.
 Q-012 remains partial; current-v5 Publisher acceptance is not established.
+
+### Current v5: Publisher recovered-document startup failure
+
+`publisher-adapter-v5/publisher-adapter-v5.trx` records **0 passed, 1 failed,
+5 skipped, 6 total**, runner exit **1**, on the same installed v5 product and
+initial test source `2e75161`. The first fixture fails before the adapter Save:
+its baseline module already exists in the selected project. Cleanup refuses a
+changed active-document identity; the other scenarios are not executed.
+
+Readonly native evidence identifies recovered Publisher **55000** and its child
+**57036**. The parent's document catalogue contains the prior owned
+`office-adapter-v4` publication and the new disposable `publisher-adapter-v5`
+publication. The visible titles distinguish recovered and newly saved documents.
+The parent's bridge exposes `pub4F7A.tmp`, not a proven association to the new
+file. Its startup fallback accepted the sole non-template project despite an
+unavailable host-document association. This is a qualification-fixture defect,
+not evidence that the product save adapter failed. No child bridge command is
+delivered: connection fails before request transmission.
+
+`retained-native-application-readonly.json`, the genuine owned-window snapshots
+and `before-owned-close.json` preserve the association and recovered sources.
+Two guarded close messages are posted once. The recovered publication's exact
+owned save prompt is discarded through its accessibility Invoke pattern;
+`authorized-discard-terminal.json` records parent exit **0**, no Save and no
+force termination. The child is absent after its close, but its exit code is
+**NOT_OBSERVED**. This cleanup does not qualify any skipped Publisher operation.
+The fixture must prove document/window/project association before mutations;
+automatic process rebinding and deleting recovery data are not corrections.
 
 ### Preceding v4: native export path trace
 

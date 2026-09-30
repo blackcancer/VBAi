@@ -45,9 +45,11 @@ reference removal cannot reach disk readback because initial Quit does not exit
 within the fixture deadline. That database is preserved and receives one
 authorized forced cleanup without Quit replay. Neither operation is qualified.
 HelpContextID and current-v5 Publisher metadata/reference scopes remain open.
-The complete current-v5 managed run fails on diagnosed harness defects; a
-corrected complete rerun is pending. No whole-host qualification follows from
-these scoped Access passes.
+The complete current-v5 managed rerun passes after tests-only harness corrections;
+the original failed run remains recorded separately. Publisher's new campaign
+stops during preparation because a recovered publication is mistaken for the
+new disposable document. Its save scopes remain unqualified. No whole-host
+qualification follows from these scoped Access passes.
 
 The preceding installed product is MVID
 `d5e25e25-e3b4-4be0-ad45-a2dceb7be6b1`, with deployment and backup records in
