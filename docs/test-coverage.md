@@ -1,6 +1,38 @@
 # Recorded validation
 
-## Corrected candidate: complete managed run (2026-09-30)
+## Latest corrected candidate: complete managed pass (2026-09-30)
+
+Product and test source `b77a782` adds the recovery-message catalogue correction
+and two conditional scalar diagnostic pages to the preceding candidate.
+The isolated `build-v4` assembly has MVID
+`d5e25e25-e3b4-4be0-ad45-a2dceb7be6b1` and SHA-256
+`06F9767B6970973B333E5D255210896335DA062C78F4F4116CBF150DD7E121EE`.
+Compilation completed with no warning or error. This assembly is not installed;
+its native Office and SOLIDWORKS acceptance remains pending.
+
+The complete instrumented default suite finished with **2,234 passed,
+0 failed, 83 conditionally skipped, 2,317 total**, in **9 minutes 24 seconds**.
+The individual TRX outcomes agree with the counters and the product SHA-256
+remains unchanged after execution. The previously failing catalogue scenario
+passes in this complete run. This closes the managed Q-015 scope for this
+compiled candidate; it does not qualify the conditional native scenarios.
+
+Evidence is under `artifacts/qualification-v1/followup-20260930/`:
+`candidate-v4.json`, `managed-v4/full-localization-corrected-managed.trx` and
+`managed-v4/45350edf-916f-446c-94cb-98992c6dea7c/coverage.cobertura.xml`.
+Coverage measures only managed `VBAi`: **33,343/33,529 lines (99.45%)** and
+**33,838/34,323 branches (98.59%)**, from the raw integer counters.
+Native Office/SOLIDWORKS and live-provider opt-ins were disabled; the native
+C++ renderer and JavaScript are outside this measurement.
+
+Separate checks on this source passed **60 JavaScript tests**, the embedded
+native-renderer extraction/hash/ABI/module-reuse contract, and test-layout
+validation (**265 dedicated mirrors for 323 production files**). Layout
+presence is not a coverage measurement. The later crossed-DACL fixture merge
+also compiles in an isolated tests-only output against this unchanged product,
+but is not included in the complete run's test source revision.
+
+## Preceding corrected candidate: complete managed failure (2026-09-30)
 
 Product and test source `fd65c57` includes guarded asynchronous Access save
 verification, preservation of import/recovery and option/restoration errors,
