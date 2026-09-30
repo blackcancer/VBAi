@@ -302,34 +302,29 @@ namespace VBAi.Tests.Integration
             report["DaclSyntheticBeforeVerified"] = true;
             report["DaclSyntheticEfsBefore"] = ReadProbeEfsMetadata(access);
 
-            var sourceAcl = Directory.GetAccessControl(source, AccessControlSections.Access);
-            var replacement = new DirectorySecurity();
-            replacement.SetAccessRuleProtection(true, false);
-            bool currentFullControl = false;
-            var copied = new List<object>();
-            foreach (FileSystemAccessRule rule in sourceAcl.GetAccessRules(true, true, typeof(SecurityIdentifier)))
-            {
-                var sid = (SecurityIdentifier)rule.IdentityReference;
-                replacement.AddAccessRule(new FileSystemAccessRule(sid, rule.FileSystemRights,
-                    rule.InheritanceFlags, rule.PropagationFlags, rule.AccessControlType));
-                copied.Add(new { Sid = sid.Value, Rights = rule.FileSystemRights.ToString(),
-                    Inheritance = rule.InheritanceFlags.ToString(), Propagation = rule.PropagationFlags.ToString(),
-                    Type = rule.AccessControlType.ToString(), SourceWasInherited = rule.IsInherited });
-                if (sid.Equals(owner) && rule.AccessControlType == AccessControlType.Allow &&
-                    (rule.PropagationFlags & PropagationFlags.InheritOnly) == 0 &&
-                    (rule.FileSystemRights & FileSystemRights.FullControl) == FileSystemRights.FullControl)
-                    currentFullControl = true;
-            }
-            Assert.IsTrue(currentFullControl, "Source-only DACL must already allow current SID FullControl; no extra ACE will be inserted.");
+            byte[] sourceBytes = NativeProbeDaclCopy.Bytes(NativeProbeDaclCopy.ReadAccessAndOwner(source));
+            var expected = NativeProbeDaclCopy.Create(sourceBytes,
+                NativeProbeDaclCopy.Bytes(NativeProbeDaclCopy.ReadAccessAndOwner(child)));
+            Assert.IsTrue(NativeProbeDaclCopy.SourceAllowsDirectFullControl(sourceBytes, owner),
+                "Source-only DACL must already allow current SID FullControl; no extra ACE will be inserted.");
             report["SourceCurrentSidFullControlVerified"] = true;
             report["DaclPermissionEscalations"] = 0;
-            report["CopiedSourceRules"] = copied;
-            report["ExpectedProtectedDaclSddl"] = replacement.GetSecurityDescriptorSddlForm(AccessControlSections.Access);
-            Directory.SetAccessControl(child, replacement);
+            report["SourceRawDaclHex"] = BitConverter.ToString(NativeProbeDaclCopy.Bytes(new RawSecurityDescriptor(sourceBytes, 0).DiscretionaryAcl));
+            report["ExpectedRawDaclHex"] = BitConverter.ToString(NativeProbeDaclCopy.Bytes(expected.DiscretionaryAcl));
+            report["ExpectedProtectedDaclSddl"] = expected.GetSddlForm(AccessControlSections.Access);
+            report["ExpectedDaclControlFlags"] = expected.ControlFlags.ToString();
+            NativeProbeDaclCopy.WriteProtectedAccess(child, expected);
             var after = Directory.GetAccessControl(child, AccessControlSections.Owner | AccessControlSections.Access);
+            var actual = NativeProbeDaclCopy.ReadAccessAndOwner(child);
             report["DaclChildAfter"] = DescribeProbeDirectory(child);
+            report["ActualRawDaclHex"] = BitConverter.ToString(NativeProbeDaclCopy.Bytes(actual.DiscretionaryAcl));
+            report["ActualProtectedDaclSddl"] = actual.GetSddlForm(AccessControlSections.Access);
+            report["ActualDaclControlFlags"] = actual.ControlFlags.ToString();
+            report["DaclControlFlagDifference"] = (expected.ControlFlags ^ actual.ControlFlags).ToString();
+            report["AutoInheritedAddedByWindows"] = (actual.ControlFlags & ControlFlags.DiscretionaryAclAutoInherited) != 0 &&
+                (expected.ControlFlags & ControlFlags.DiscretionaryAclAutoInherited) == 0;
+            NativeProbeDaclCopy.VerifyReadback(expected, actual);
             Assert.IsTrue(after.AreAccessRulesProtected);
-            Assert.AreEqual(report["ExpectedProtectedDaclSddl"], after.GetSecurityDescriptorSddlForm(AccessControlSections.Access));
             Assert.AreEqual(owner, after.GetOwner(typeof(SecurityIdentifier)));
             Assert.AreEqual(attributes, System.IO.File.GetAttributes(child), "DACL copy must not change EFS or any other attributes.");
             Assert.AreEqual(parentBefore, json.Serialize(DescribeProbeDirectory(parent)), "Existing target parent changed.");
