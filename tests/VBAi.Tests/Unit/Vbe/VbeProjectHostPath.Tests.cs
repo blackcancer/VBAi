@@ -74,7 +74,10 @@ namespace VBAi.Tests.Unit
             probe.OnState = null; document.Project = project; document.Path = "relative.docm";
             Assert.ThrowsException<InvalidOperationException>(() => VbeProjectHostPath.Read(project, probe));
             document.Path = ""; Assert.IsNull(VbeProjectHostPath.Read(project, probe));
-            probe.Kind = "PowerPoint"; Assert.AreEqual(project.FileName, VbeProjectHostPath.Read(project, probe));
+            probe.Kind = "PowerPoint";
+            string actualPath = VbeProjectHostPath.Read(project, probe);
+            Assert.IsTrue(string.Equals(project.FileName, actualPath, StringComparison.OrdinalIgnoreCase),
+                "The canonical Windows path must identify the same backing file regardless of directory casing. Actual: " + actualPath);
         }
 
         [TestMethod]

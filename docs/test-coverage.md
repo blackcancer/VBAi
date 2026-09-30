@@ -1,5 +1,376 @@
 # Recorded validation
 
+## Open qualification: managed failures and owner-thread corrections (2026-09-30)
+
+This checkpoint supersedes the older managed-run status below, without replacing
+its historical evidence. Paths in this section are relative to
+`artifacts/test-results/open-qualification/`. No native host acceptance or
+whole-suite pass is inferred from the focused follow-ups.
+
+### Latest diagnostic candidate and interrupted complete run
+
+The latest diagnostic product candidate is **installed**: MVID
+`ae8a0978-db91-40f3-b8f7-8957d1a6b7b7`, SHA-256
+`B80B6886DBAAEE61204B5FD6D91DE9752241B303F2833744C195A3C0CF740F26`,
+compiled under `artifacts/build/office-options-diagnostics/VBAi/Debug/net48/`.
+After the user closed SOLIDWORKS and absence of Office/SOLIDWORKS hosts was
+verified, installation completed with exit code **0**. Independent readback of
+`bin/Debug/net48/VBAi.dll` matches that SHA-256. The full preceding `95576771`
+payload, seven registry exports and installation log are retained under
+`artifacts/installation-backups/office-options-diagnostics-20260930/`.
+The log's final result is **Registration=OK**, **ComActivation=OK**,
+**OnConnection=NOT_TESTED**, **ChatMonaco=NOT_TESTED**. Installation and standalone
+COM activation do not establish native add-in or panel acceptance.
+
+`options-category-diagnostics.trx` records **20 passed, 0 failed, 0 skipped**
+in `WritableOptionsTests`: one new regression for the precise requested
+category, UI Automation readback and native-index diagnostic, plus 19 existing
+cases. Separately, `office-options-diagnostics.trx` records **38 passed,
+0 failed, 0 skipped**, all in `VbeOtherHostPersistenceTests`. A class-name
+filter mismatch excluded the options tests from that second run; its filename
+does not demonstrate options coverage. Neither group establishes a native
+format-options fix or successful Office persistence.
+
+The native-disabled complete managed run with the XPlat coverage collector was
+**INTERRUPTED at the maintainer's request** when development was paused. The
+runner received Ctrl+C and exited with code 1; no final
+`options-diagnostics-full-managed.trx`, complete counters or completed coverage
+result was produced. This is an incomplete run, not a passing qualification or
+a newly diagnosed test failure. The interruption record is
+`options-diagnostics-full-interruption.json`.
+`options-diagnostics-full-source-before.json` records **1,159 files**, the
+candidate SHA-256 above and baseline `ffb4984e24c18f793006d2a8a98ce816ccb54382`.
+The interruption comparison found **0 changed source inputs**. The six failures
+from the preceding complete run below remain recorded and Q-015 remains open.
+The planned Access and native options trials on this installed candidate were
+not started before the pause.
+
+### Final managed candidate and retained failures
+
+`final-full-managed.trx` completed with **2,140 passed, 6 failed,
+36 conditionally skipped, 2,182 total**. Individual TRX outcomes agree with these
+counters. The runner-reported duration is **28 minutes 27 seconds**; the TRX
+start/finish interval is approximately 28 minutes 49 seconds. This is a failed
+whole-suite result, with no release or universal compatibility acceptance.
+
+The compiled candidate is MVID `096b2e2b-73fb-4d97-8bd8-a4abda6d78eb`, SHA-256
+`C0516746881D3A7D94C8BC29C25209A6F4513D6DFD078794F90270C9B32B8BFC`.
+`final-source-manifest.json` identifies this binary and **813 source entries**
+against baseline `ffb4984e24c18f793006d2a8a98ce816ccb54382`. No source modification
+was recorded during the run. The candidate includes the subsequent
+`StartUiAction` UI-wrapper preparation correction; it is no longer a pending
+change outside the tested binary.
+
+`0b7811bc-257a-48de-8f74-4ef787376842/coverage.cobertura.xml` records
+**33,016/33,201 managed lines (99.44%)** and
+**33,489/33,927 managed branches (98.71%)**, calculated from the raw counters.
+Coverage belongs to this failed run and candidate. It excludes measurement of
+external Office/SOLIDWORKS processes, the C++ renderer and JavaScript.
+
+All six failures remain recorded; their causes have not been established by
+this run. In particular, a timeout is not classified as a harmless fixture
+failure without further evidence.
+
+| Failing scenario | Observed result |
+| --- | --- |
+| `ConflictPreviewAndOursTheirsTextResolutionMatrix` | Disposable GitWindow operation timed out. |
+| `NativeCredentialChildReceivesNoninteractiveInputAndNeverLaunchesGcm` | Expected `OperationCanceledException`, received `IOException`. |
+| `ResolveReloadAndRestoreWithoutAmbientContextKeepRendererOwnershipAndArchivedDraft` | Recovery action did not complete; the displayed status reported synchronization with VBA. |
+| `CommitSynchronizationStaleStateAndOperationStatusMatrix` | Disposable WinForms test thread timed out. |
+| `BranchCheckpointRemoteAndMergeActionsUseNativeGitAndReturnToLiveState` | The fixture cache path was in use by another process (`IOException`). |
+| `HistoryCheckpointAndModuleRestoreNavigateActualCommitSnapshots` | Disposable WinForms test thread timed out. |
+
+### Installation and first native Access attempt
+
+The later `office-identity-git-cancellation-verified.trx` focused run passed
+**31 tests, 0 failed, 0 skipped** on MVID
+`95576771-3adb-4991-99e6-d47e593a5fc6`, SHA-256
+`5CACC24A593FF763FDB2A6ED58FAF5F82112B18023B590B8B2440B5F03917E29`.
+It covers Office persistence identity/refusal contracts and Git credential-input
+cancellation. The native credential-child scenario and deterministic injected
+input failure both passed: an uncancelled IOException remains the same error,
+while cancellation returns OperationCanceledException. The preceding
+`office-identity-git-cancellation.trx` remains **30 passed, 1 failed**: killing a
+child did not deterministically cause an IOException on a buffered pipe; the
+revised regression injects that failure explicitly while retaining the real
+child integration scenario. This does not clear the complete-run gate.
+
+Candidate `95576771` was previously installed. The previous payload, seven registry
+exports and installation log are retained under
+`artifacts/installation-backups/office-followup-verified-20260930/`.
+The installation log records Registration and COM activation OK; its installed
+DLL SHA-256 was independently read back at that checkpoint as
+`5CACC24A593FF763FDB2A6ED58FAF5F82112B18023B590B8B2440B5F03917E29`.
+The historical native Access bridge below confirms its exact loaded MVID and PID. These
+checks do not imply successful native persistence or a passing complete suite.
+
+The later guard-diagnostic candidate is **compiled, not installed**: MVID
+`93e7596d-4950-41c7-b809-7d33dd573d75`, SHA-256
+`80DF77E6385A61B227528354E55A5BBC34A7083775A4AA07C7FAFD31FF484D2A`,
+under `artifacts/build/office-save-diagnostics/VBAi/Debug/net48/`.
+`office-save-diagnostics.trx` records **38 passed, 0 failed, 0 skipped**:
+29 existing cases and nine regressions for exact failed-guard reasons
+(`ProjectIdentity`, `ProjectPath`, `HostPath`, `HostSaved`, `ProjectSaved`,
+`SourceSha256`, `FileFormat`, `FileExists`, `FileLength`). The diagnostic change
+preserves ordered short-circuit verification and save guards, without replaying
+the mutation. It adds no native persistence acceptance. This candidate was not
+deployed; the later `ae8a0978` installation is recorded above.
+
+Installation of `93e7596d` was attempted, but the script refused the newly
+running SOLIDWORKS instance, PID **769136**, started at **17:07:35** on
+2026-09-30, before registration or installed-payload mutation. The directory
+`artifacts/installation-backups/office-save-diagnostics-20260930/` contains
+the copied prior payload, but installation is **NOT_RUN** and no installation
+log was produced. At this refused deployment, independent readback of the
+installed DLL still gave
+`5CACC24A593FF763FDB2A6ED58FAF5F82112B18023B590B8B2440B5F03917E29`.
+This refusal is separate from the subsequent successful `ae8a0978` installation.
+
+`native-access-bounded-dialogs.trx` records **0 passed, 1 failed, 0 skipped**.
+The detailed record is
+`native-access-bounded-dialogs/Access/487f93d3b7c34ed3a1bd8cf977254355/qualification.json`,
+owned PID **783612**, candidate `95576771`. Unlike the preceding blocked attempt,
+the bounded dialog worker stopped and the guarded adapter save was invoked
+**once**. Its response has `Ok=true`, `SaveInvoked=true`, **`Verified=false`** and
+**`Uncertain=true`**. Independent before/after observations retain
+`ProjectSaved=false`, with verified project/document identity and the same file
+length. A successful protocol response is therefore not proof of persistence.
+The owned process then failed to exit within the fixture's five-second cleanup
+deadline, and reopening was refused. No save retry or successful round-trip is
+claimed.
+
+The later `owned-disposable-access-recovery.json` in that same fixture directory
+records fresh confirmation of PID **783612** and its exact disposable database
+path before a single `Quit(acQuitSaveNone)`. The process exited normally with
+code **0**, without forced termination. This separate recovery does not change
+the failed native test or demonstrate that the adapter persisted its edits.
+
+The subsequent
+`persisted-inspection-3805a42b13704486a644a25ecadc46bd/inspection.json` in that same
+fixture directory records inspection of an exact copy of the retained database.
+The original and initial copy SHA-256 are both
+`9A761CD59740C55ADC65F62DF215A4E95E5591928A73AA613DAA93AA928ACA9D`, and
+`OriginalUnchanged=true`. Fresh Access **16.0**, owned PID **791016**, reopened
+the copy with `ProjectSaved=true`; inspection performed no save or compilation,
+then `Quit(acQuitSaveNone)` completed with normal exit code **0**.
+
+Both edited sources match their latest pre-save `read_module` records in
+`qualification.json`: `VBAiOfficeModule` has SHA-256
+`dba6dfe936c1263da64a2f23fd8f9a3fc3430d7039c3939bad15ad424fb390d1`, and
+`VBAiOfficeClass` has SHA-256
+`1eeed8d60e9d15eb42979777b2225c2af8aaff837b5e0a26f4f62e1d23efe7b5`.
+The inspection's `AdapterPendingEditPresent=false` for the class checks the
+module-specific marker; it is not evidence that the class edit is missing.
+The original campaign compiled the project after the uncertain adapter save
+and later quit Access. This snapshot proves the final retained source contents,
+but cannot isolate adapter-only persistence or explain the earlier
+`ProjectSaved=false`. The failed native trial and its qualification gate remain
+open. A test-fixture extension for delayed, read-only observations after an
+uncertain Access save now compiles; it has not been executed against the native
+host, and no delayed-state result is claimed.
+
+Two focused reruns of the four previously failing GitWindow scenarios completed:
+`git-window-retained-failures-diagnostic.trx` records **4 passed, 0 failed,
+0 skipped**, and `git-window-retained-failures-coverage.trx` records **4 passed,
+0 failed, 0 skipped** with the XPlat coverage collector enabled. They cover
+conflict resolution, branch/merge actions, checkpoint synchronization and
+history/module restoration. These are two runs of the same four scenarios, not
+eight distinct tests. Neither their isolated success nor the focused collector
+replaces `final-full-managed.trx`: its **six failures remain recorded**, their
+full-run causes unresolved, and the complete-suite acceptance gate remains open.
+No new global coverage percentage or current Access/Publisher adapter acceptance
+is inferred.
+
+The earlier `096b2e2b` candidate was deployed using the installation and verification
+scripts, with its TLB regenerated. The previous DLL payload and seven registry
+key exports are retained under
+`artifacts/installation-backups/20260930T111550Z-0a8e84657f204d70b0a74d83248d41e8/`.
+Its `deployment.json` and `installation.log` record **Registration=OK** and
+**ComActivation=OK**; initial **NativeOnConnection=NOT_TESTED** remains a separate
+gate. Registration and standalone COM activation do not prove native chat or
+Monaco initialization.
+
+`native-access-final.trx` records **0 passed, 1 failed, 0 skipped** for
+`AccessDatabaseRoundTrip`. Startup did not reach an identified VBA project; the
+original startup failure was obscured by cleanup errors (`CurrentProject`
+unavailable, then the owned process still alive). The unversioned
+`Access.Application` registration selected `Access.Application.8` through CurVer,
+and the launched binary had native file version **8.0.4122**. Microsoft 365 Access
+**16.0.20326.20158** and the versioned `Access.Application.16` registration are also
+installed. This attempt therefore does not qualify the installed Access 16
+adapter, nor establish its failure.
+
+The later recovery record
+`native-final/Access/3f6c90b4ed874f52bd1b97332ce13fec/owned-access-diagnostic.json`
+belongs to the freshly revalidated owned PID **742936**: no database was open,
+`Quit(acQuitSaveNone)` was invoked, and the process exited normally with code 0.
+It demonstrates recovery of the empty test instance without forced termination;
+it does not convert the failed native test into a pass. The completed native
+attempts below replace the previously pending statuses, while preserving this
+initial failure as separate evidence.
+
+### Completed native follow-up on the installed candidate
+
+The Office `status` replies in the JSON records below identify the installed
+`096b2e2b-73fb-4d97-8bd8-a4abda6d78eb` assembly, connected bridge and 64-bit host.
+They provide per-host connection evidence beyond the installation-time
+`NativeOnConnection=NOT_TESTED` snapshot. They do not establish complete UI or
+debugger compatibility. Counts describe separate runs and are not combined with
+the managed suite or historical native passes.
+
+| Evidence | Recorded result | Scope and boundary |
+| --- | --- | --- |
+| `native-word-powerpoint-accessible.trx` | **1 passed, 1 failed, 0 skipped** | PowerPoint document round-trip passed; Word failed after a native form request timed out. |
+| `native-excel-final.trx` | **1 passed, 2 failed, 2 skipped** | Native form fitting passed; Monaco diagnostic removal and native format-options selection failed. Save and language scenarios were skipped to preserve existing Excel processes. |
+| `native-access-publisher-ms365.trx` | **0 passed, 2 failed, 0 skipped** | Access did not reach the adapter-only save trial; Publisher refused document/project path binding and failed shutdown/reopen. |
+
+**PowerPoint:**
+`native-final/PowerPoint/0431a384903e48798619537570f12968/qualification.json`
+records PID **786336**, module/class/form editing, guarded adapter save,
+navigation/compilation and exact saved-presentation readback. The independent
+`BeforeAdapterSave`, `ImmediatelyAfterAdapterSave` and `AfterAdapterOnlyReopen`
+observations retain the same source SHA-256
+`55b66cebccc619827cf03e46c64191934b2cf390f1ded78ce2a3b250d0fd4684`;
+document/project Saved change from false to true and remain true after reopening.
+The owned process exited normally with code 0. This passes this PPTM scenario,
+not every PowerPoint feature or the entire Office campaign. An earlier
+`native-final/PowerPoint/d82ba2a55110405aa96966d37831a5fc/qualification.json`
+attempt failed on the programmatic-project-access prerequisite and remains
+separate evidence.
+
+**Word:** `native-final/Word/f1a0cfbba49543338a5b7f2d6ca76917/qualification.json`
+records PID **775964**. Inventory, references, module/class editing and stale-write
+guards passed before the `create_form` response deadline expired. Delivery was
+uncertain and the request was not retried. Later reads did not answer; cleanup
+received `RPC_E_CALL_REJECTED`, and the owned process was retained without forced
+termination at the end of this attempt. No save/reopen or native-form acceptance
+is inferred. The earlier project-access refusal in
+`native-final/Word/731d23aebe2c4fec8f99c67d12a0ac54/qualification.json` is distinct
+from this later failure.
+
+The user subsequently closed Word and reported a restart/debug crash window.
+`native-final/Word/f1a0cfbba49543338a5b7f2d6ca76917/shutdown-event.json` retains
+Application Error **1000**, recorded at **2026-09-30 15:50:32 +02:00**, for
+WINWORD.EXE 16.0.20326.20158. The event identifies PID **0xbd71c (775964)**,
+KERNELBASE.dll and exception **0xe0434352**, report
+`0112a1dd-cb98-4878-81f1-696d8d7dcb12`. The cause is **NOT_ESTABLISHED**.
+No agent forced termination occurred; the user's closure and recorded crash do
+not convert the failed native trial into normal-exit or operation acceptance.
+
+**Excel:** the Monaco scenario retained **one compiler diagnostic marker after
+the native source was corrected**, where zero was expected. Its TRX output also
+records abnormal shutdown of owned PID **778204**, exit code **0xE0000002**;
+the primary assertion and shutdown failure are both retained without assigning
+a crash cause. The format-options scenario reported that the native Code Colors
+category did not retain its selected value. Its baseline, command requests,
+outcomes and available restoration evidence are retained under
+`native-final/ExcelFormatOptions/options-evidence-cafec7c7fcf7418ba7640130cf9cd870/`
+for PID **778476**. That failure does not prove complete restoration. The native
+form-fitting pass does not qualify the failed Monaco/options scenarios, and the
+two skipped scenarios do not establish save or language acceptance.
+
+**Access 16:**
+`native-final/Access/e33c934c1fe54fb1bfb5e976464e5b92/qualification.json`
+records connected candidate `096b2e2b` in PIDs **764612**, then **776040**. The
+save-dialog handler did not stop before the required adapter-only mutation, so
+that guarded trial was not performed. The later helper-assisted reopen could
+not find `VBAiOfficeModule` and failed independently. Both owned processes exited
+normally with code 0. These observations do not demonstrate adapter persistence;
+they also do not turn the separate Access 8 startup failure into a pass.
+
+**Publisher:**
+`native-final/Publisher/03f6d549e2134a598edbd1e716337cf0/qualification.json`
+records PID **781804**. The persistence adapter returned `HostAvailable=false`
+because the document path did not identify the selected VBIDE project. A safe
+refusal does not pass the required save/reopen scenario. Although later project
+Saved readback was true, shutdown did not complete within the owned fixture's
+deadline; the process was retained without forced termination and reopening was
+refused. Native save/reopen and normal-exit acceptance therefore remain open.
+
+The partial current successes above do not replace failures from the same runs.
+Earlier Office passes later in this document remain tied to their own source
+manifests and binaries; they cannot be promoted to acceptance of this candidate.
+
+### Publisher pathless-project correction and later native refusal
+
+The subsequent Publisher candidate is MVID
+`de3c5a79-3962-49dd-9fe3-a65c18900e13`, SHA-256
+`C7429807E5A81647338FBA0A648DD9F462EB4806E5F28F6F016813FEE38F8327`.
+It was installed with the previous payload and registry exports retained under
+`artifacts/installation-backups/publisher-pathless-20260930/`. Its installation
+log records Registration and COM activation OK; native connection is separately
+confirmed by the later Publisher bridge replies. The installed DLL hash was
+read back for this documentation update. The preceding `096b2e2b` whole-suite
+and coverage results do not measure this newer binary.
+
+`publisher-pathless-contracts.trx` records **28 passed, 0 failed, 0 skipped** for
+the focused contracts. `native-publisher-pathless.trx` records **0 passed,
+1 failed, 0 skipped**, with test duration **28.07 seconds**. The native refusal
+occurred before the corrected pathless-project guard could be exercised:
+`HostAvailable=false`, with reason `No running Publisher application was
+verified as belonging to this VBE PID.` The run therefore neither qualifies the
+native pathless fix nor proves that this fix failed after application resolution.
+
+`native-publisher-pathless/Publisher/89dbc5059ae64d37b7ff8dea10e05163/qualification.json`
+records the exact candidate loaded in owned PIDs **775408**, then **786636**.
+Both processes exited normally with code **0**, without forced termination.
+The later native save/reopen subscenario reports PASS but also records
+`HelperSaveInvoked=true` and `AdapterOnlyClose=false`: it validates only that
+helper-assisted round-trip, not persistence through the production adapter.
+The overall native test remains failed, and the earlier Publisher binding and
+shutdown failures are retained as separate attempts. No new global pass or
+coverage measurement is claimed for this follow-up.
+
+### Earlier resource-guard candidate and focused owner-thread repairs
+
+The preceding full instrumented run `resource-guards-full-managed.trx` returned
+**2,131 passed, 12 failed, 36 conditionally skipped, 2,179 total**. These counts
+were checked against individual TRX outcomes as well as the summary counters.
+It tested candidate MVID `99ca80c4-2bbc-4ddd-b4d0-1d3957610ba4`, SHA-256
+`C74ABC336867F78160D19B11A8CA67E4C0953EA60C8ED82247037A25CAA65EFD`.
+`resource-guards-source-manifest.json` records baseline commit
+`ffb4984e24c18f793006d2a8a98ce816ccb54382`, the candidate identity and 813 source
+entries. The run remains failed; subsequent source changes and isolated successes
+do not turn it into a passing full-suite result.
+
+The associated
+`d33a8f97-ef32-46e9-8613-ce48fbfb18aa/coverage.cobertura.xml` reports
+**32,979/33,158 managed lines** and **33,468/33,919 managed branches**
+(approximately **99.46%** and **98.67%**). These are measurements of that failed
+run and compiled candidate, not of the later working tree. They do not measure
+the native renderer, JavaScript or code executing inside Office/SOLIDWORKS.
+
+The twelve failures include obsolete fake FRX data, a long-cache fixture path,
+a case-sensitive Word temporary-path expectation, browser mocks that did not
+follow the per-editor profile contract, and real Monaco UI ownership failures.
+The fixture corrections retain the production resource/path guards. Separate
+failing-before tests establish loss of the owning editor thread across awaits
+when no ambient synchronization context is available; this is a production
+defect, not a reason to dismiss all failures as fixture timing. The corrected
+paths cover Monaco tools, diff/close, conflict resolution, native reload and
+archived-draft restoration. The complete original TRX is retained.
+
+| Evidence | Recorded result | Scope and boundary |
+| --- | --- | --- |
+| `monaco-owner-thread-red.trx` | 0 passed, 1 failed | Reproduces renderer callbacks leaving the owning editor thread during a Monaco read without ambient context. |
+| `monaco-ui-callback-thread-red.trx` | 0 passed, 1 failed | Reproduces wrong-thread renderer access in the diff/close callback path. |
+| `monaco-recovery-thread-red.trx` | 0 passed, 1 failed | Reproduces the same ownership defect in recovery, beginning with conflict resolution. |
+| `suite-fixtures-owner-thread-green.trx` | 48 passed, 0 failed, 0 skipped | Git fake-FRX/long-path, Word identity/path, browser contracts and the initial owner-thread regression; a focused repair group. |
+| `webview-profile-lifecycle.trx` | 3 passed, 0 failed, 0 skipped | Profile lifetime and cleanup guards; not native Office acceptance. |
+| `monaco-tools-real-owner-thread.trx` | 3 passed, 0 failed, 0 skipped | Detached real WebView2/Monaco tool and synchronization scenarios after the owner-thread correction. |
+| `monaco-ui-owner-thread-final.trx` | 55 passed, 1 failed, 0 skipped | Intermediate group still timed out in `RealRendererEditsSynchronizesRejectsStaleReplacementsAndDisplaysDiff`; the filename does not imply success. |
+| `monaco-recovery-owner-thread-green.trx` | 57 passed, 0 failed, 0 skipped | Recovery, diff/close, tool contracts and detached real renderer scenarios, including the previously timing-out renderer case. Separate runs are not summed as unique coverage. |
+
+The completed recovery-focused group above tested
+`artifacts/build/open-qualification-recovery-final/VBAi/Debug/net48/VBAi.dll`,
+MVID `c7238910-aa98-4c9f-aa9d-afa5e45068f3`, SHA-256
+`E77D84759312F8FDACDF83683BE5B5AAB15506D9A8297A2274591077E02A393B`.
+The DLL hash was read back while documenting this checkpoint. This focused result
+is not a whole-suite or coverage measurement. The later `StartUiAction`
+UI-wrapper preparation correction is included in candidate `096b2e2b` and its
+failed full run recorded above. The earlier native results below remain tied to
+their own binaries.
+
 ## Full-branch publication check (2026-09-30)
 
 Source checkpoint: `b6778560e9370b0bc15da74d9d7426a71b93d89c`, including the
@@ -231,3 +602,189 @@ does not prove native mutation; a helper save does not prove the product adapter
 No production exclusions were added to improve the metric. Ignored local
 artifacts are not public downloadable reports; earlier records remain in Git
 history.
+
+## Open qualification follow-up (2026-09-30)
+
+Baseline `ffb4984`; work on `fix/open-qualification-gates`. The test project and
+its production dependencies built in Debug/net48/x64 with no warnings/errors at
+`artifacts/build/open-qualification`. Candidate MVID:
+`9924660b-8b89-46de-9910-6dcddad1d158`; SHA-256:
+`3A62B3C0D7F65367B05400AE08948C677901B0E0CA66FFC8D71EAA4ADFF69A62`.
+This isolated candidate was not installed into Office or SOLIDWORKS.
+
+`webview-profile-lifecycle.trx` records **3 passed, 0 failed, 0 skipped** under
+`artifacts/test-results/open-qualification`. Cases cover both retirement/exit
+orders, a wrong browser PID, a replacement browser invalidating old exit evidence,
+retention after uncertain initialization, a locked cache file, and preservation
+of another profile and unknown prior data. The real WebView2 case opens two Monaco
+windows, closes each normally, observes profile removal after runtime exit, and
+checks the other window remains ready with a responding renderer. Its VBE is
+simulated; this is real browser lifecycle evidence, not Office-host acceptance.
+Test layout and whitespace checks also passed. No full managed suite or coverage
+measurement was run for this change.
+
+An independent disposable Excel export diagnostic ran on Office 16.0 build
+20326, PID 734824. Native module and UserForm exports succeeded once to each of
+GitTemporary, system TEMP and a fresh artifact directory, with nonexisting output
+files. Excel exited through normal Close/Quit with exit code 0. Local evidence:
+`C:/Users/jvc/Documents/Codex/2026-09-25/bo/artifacts/open-qualification/export-paths/bdd7091d986b4ee79adee3bb5e20620d/export-paths.json`.
+No macro ran, no host trust setting changed and no existing user project was
+used. This diagnostic did not call the Git coordinator or qualify the Word path;
+Q-024/Q-027 remain open. Successful raw exports on this workstation do not explain
+the historical export failures on another qualification environment.
+
+### FRX preflight and scope follow-up
+
+The next isolated build is `artifacts/build/open-qualification-frx`, still based
+on `ffb4984` plus the uncommitted follow-up source. Debug/net48/x64 build passed
+without warnings/errors. Production candidate MVID:
+`7b2423c3-eb9b-4b25-a622-aaf48c03c9b4`; SHA-256:
+`EC2A0B469EB0AE49F69777F713A7EA75FAB85DC2A2C5F4F796D9541E8DCB1D81`.
+It is not installed. `frx-scope-options-focused.trx` records **19 passed,
+0 failed, 0 skipped** with this build: bounded OLE/CFB preflight and snapshot
+validation, detached real-control Send/Resume/Stop transitions and the existing
+options revision/category guards. The CFB cases include mini streams, normal
+version-4 streams, DIFAT extension, allocation aliasing/cycles, lengths and
+truncation. No full-suite or coverage result is claimed.
+
+The modified native options fixture compiled but was not rerun: it now retains
+requests, outcomes and successful before/after observations in a unique optional
+durable output directory and targets the exact observed category during palette
+restoration. This does not identify the historical revision drift or qualify the
+native restoration. The scope tests use a simulated VBE with real detached UI
+controls; embedded-host/UIA acceptance remains open.
+
+Local production-capture evidence is below
+`C:/Users/jvc/Documents/Codex/2026-09-25/bo/artifacts/open-qualification/`:
+
+- `production-git-excel/328828a277d14d629dd812d60bbb9715/qualification.json`:
+  candidate `9924660b`, Excel PID 748272, Office 16.0 build 20326; unedited
+  snapshots differ only in the FRX file, and guarded Apply refuses before import.
+- `production-git-excel-preflight/6c28bee352ad49dfbf7f20f3a8217f86/qualification.json`:
+  candidate `7b2423c3`, Excel PID 748240; native FRX exports pass structural
+  preflight, while the raw-comparison import remains refused.
+- `production-git-excel-preflight-corrupt/7335b7df267e41ecbef2dea0978223a3/qualification.json`:
+  the same candidate, Excel PID 752408; a nonempty native FRX with its CFB
+  signature deliberately damaged is rejected at snapshot construction, with the
+  synthetic Label caption unchanged. The intact exports remain byte-preserved.
+
+All three owned Excel processes exited normally through Close/Quit with exit
+code 0. They used disposable module/form controls and no macro execution. The
+isolated production assembly ran on an external STA against native COM; these
+results do not qualify the installed bridge, embedded Git UI, GitHub transport,
+successful import/recovery or persistence. An external Word harness could not
+obtain its project and did not reach production Capture; its owned processes
+closed normally, but it adds no Word acceptance. Q-024/Q-027 remain open.
+
+`git-synchronization-matrix-accepted-env.trx` separately records **1 passed** on
+candidate `9924660b` for the previously intermittent managed Git/UI matrix. Earlier
+attempts here failed before exercising that scenario: the launcher inherited
+both `PATH` and `Path`, then the sandbox refused GitTemporary creation. The
+successful isolated rerun uses a child-only normalized environment and the
+authorized scratch directory. It does not explain or override the historical
+full-suite restore failure.
+
+
+### Logical form comparison, native import and host/stream follow-up
+
+The isolated `open-qualification-logical-forms` build passed Debug/net48/x64
+without warnings/errors. Candidate MVID `3eda62bd-9a90-4c91-bb8a-d299e1c9cc15`,
+SHA-256 `EFF0AD2FE67011F15E2E571DA7D2DF74D7770D8952841912A53B109FDA84A3FC`.
+`logical-forms-host-stream-focused.trx` records **78 passed, 0 failed,
+0 skipped**: CFB/form comparison and snapshot/adapter guards, Git revision,
+stream/client protocols and Office save contracts. Its native Excel import
+restored controls but failed final FRM equality because VBIDE inserted a leading
+code line. This failure remains recorded, not replaced by the managed result.
+
+The next `open-qualification-form-import` candidate is MVID
+`a37d53f0-bff8-4bee-889c-e35e27f29777`. Its build passed without warnings/errors;
+`form-import-host-stream-focused.trx` records **82 passed, 0 failed, 0 skipped**,
+including the initial prefix fix, final Publisher pre-invocation guards and the
+detached HTTP/chat callback test. Native form import still failed: unlike the
+export, native CodeModule.Lines does not include the final export line terminator.
+A separate readback diagnostic established that exact difference. Pure fake
+modules had not reproduced this native representation, so their passing prefix
+tests alone were insufficient acceptance.
+
+The corrected `open-qualification-form-readback` build passed without
+warnings/errors. Candidate MVID `82942b5d-0369-4f4e-9247-25841e205b90`, SHA-256
+`9D6F8E1F3003BD6BBE6EAD4D55CF6F6E539FA37DAB06C68F130247FBB5B2AEDE`.
+`native-form-prefix-readback-focused.trx` records **10 passed, 0 failed,
+0 skipped**, limited to the changed project import adapter and its exact code,
+intentional blank-line, concurrent-change and identity guards. No full-suite or
+coverage result is claimed for these follow-ups; none is installed.
+
+Local native evidence is below
+`C:/Users/jvc/Documents/Codex/2026-09-25/bo/artifacts/open-qualification/`:
+
+- `production-git-excel-logical/6bebea026d8242a09bb4a162f59f6617/qualification.json`:
+  3eda62, Excel PID 754072; three unedited captures compare equal, native controls
+  restored, but final exact FRM equality fails on the extra code line.
+- `production-git-excel-form-import/f501e90f368543f7bac3745032192637/qualification.json`
+  and `production-git-excel-form-code-diagnostic/85eb36e9248c4e4a96d276ffaa8ed05c/qualification.json`:
+  a37d53, PIDs 753740/755696; retained prefix failures and precise native
+  CodeModule.Lines observations.
+- `production-git-excel-form-readback/bb3705fd489549aba695e580d2d45f2e/qualification.json`:
+  82942b, PID 753672; repeated captures, nonempty corrupted-FRX refusal, guarded
+  production Apply, exact FRM/logical FRX readback, native controls and helper
+  save/reopen all pass.
+- `production-git-excel-coordinator/741bf1f9c4ef4a2c8a2a95bafc6c5061/qualification.json`:
+  the same candidate, PID 756468; production local-Git checkpoint restore,
+  before-state backup, explicit rollback, final explicit restore, cleared
+  recovery marker and owning managed STA continuity pass. Original FRX bytes
+  survive checkpoint commit/read exactly. Helper save/reopen retains matching
+  snapshot and both native captions. No remote access or publication occurred.
+
+All these owned Excel processes used Office 16.0 build 20326 and exited normally
+through Close/Quit with exit code 0. Only disposable forms/modules were changed;
+no macro ran and no trust policy changed. The candidate assembly ran on an
+external owning STA against native COM. This does not qualify the installed
+bridge, embedded UI, current-candidate GitHub transfer, unsupported control
+layouts or historical export failures on another machine. Q-027 remains open
+for those separate requirements.
+
+Access/Publisher save adapters and stream diagnostics are compiled and covered
+by the stated contract/protocol tests, not native adapter/provider qualification.
+Access has no invented document Saved flag; first SaveAs remains unavailable.
+The diagnostics retain counters and filtered terminal metadata, excluding
+provider text/prompts/tool arguments, and add no automatic retry. Q-012/Q-028
+remain open until their native/historical acceptance requirements are met.
+
+### Workspace geometry and conservative resource guards
+
+The `open-qualification-office-ready` candidate, MVID
+`c7bda9b7-236f-4785-9b87-cab0f8bcbef0`, passed its isolated Debug build without
+warnings/errors. SHA-256
+`EAAAD53F7EC1F54062E604153E506773185218470441C701A5CDC911EFD8F8FD`.
+`form-class-identity-preflight-focused.trx` records **24 passed, 0 failed,
+0 skipped** for known-form CLSID gating, strict UTF-16 CFB names and snapshot
+comparison. Access/Publisher persistence fixtures compiled but were not run.
+
+`workspace-hidden-red.trx` reproduces stale hidden Monaco bounds with the native
+designer selected in a disposable detached Windows MDI fixture.
+`workspace-hidden-green.trx` records **9 passed, 0 failed, 0 skipped** after the
+geometry correction, including child ordering, focus and Object Browser behavior.
+This is not proof of the historical SOLIDWORKS 2019 failure mechanism or native
+acceptance in either required SOLIDWORKS version.
+
+An independent review found that opaque resources could start before an OLE blob,
+or use multiline declarations missed by the old comparison extraction.
+`opaque-resource-red.trx` demonstrates the false equality before correction.
+The comparison now falls back to raw FRX bytes for any opaque resource reference.
+`resource-workspace-guards-green.trx` records **34 passed, 0 failed, 0 skipped**
+across snapshot/form/revision guards and workspace geometry. The final isolated
+`open-qualification-resource-guards` build passed without warnings/errors:
+MVID `99ca80c4-2bbc-4ddd-b4d0-1d3957610ba4`, SHA-256
+`C74ABC336867F78160D19B11A8CA67E4C0953EA60C8ED82247037A25CAA65EFD`.
+It also compiles stronger adapter fixtures that change source immediately before
+Save and retain a created form expectation even if subsequent configuration fails.
+The subsequent Publisher fixture correction calls `Application.Quit` directly,
+exactly once, only after fresh verification of the saved VBA project and saved
+publication, sole document, expected path, retained PID and IUnknown identity.
+It does not call `Document.Close`, which could create a replacement blank
+publication. A failed guard or Quit retains the owned instance and COM references
+without retry or forced termination. At this resource-guards checkpoint, native
+Access/Publisher persistence and Publisher normal-exit acceptance were
+**NOT_RUN** for the corrected fixture. The later native attempts and failures
+are recorded separately above. The resource-guards candidate was not installed;
+the later installed candidate is identified in the current checkpoint.

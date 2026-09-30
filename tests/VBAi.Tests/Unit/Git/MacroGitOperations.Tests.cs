@@ -14,6 +14,25 @@ namespace VBAi.Tests.Unit
     [DoNotParallelize]
     public sealed partial class MacroGitOperationsTests
     {
+        [TestMethod]
+        public void RevisionUsesLogicalFormDataWithoutLosingRepositoryStateOrTransportBytes()
+        {
+            using (var f = new Fixture())
+            {
+                byte[] original = FormResourcePreflightTests.Resource();
+                byte[] other = (byte[])original.Clone(); other[24 + 1024 + 108] = 42;
+                var baseline = VbaGitSnapshotCoverageTests.LogicalForm(original);
+                var unchanged = VbaGitSnapshotCoverageTests.LogicalForm(other);
+                string revision = f.Operations.Revision(baseline);
+                Assert.AreEqual(revision, f.Operations.Revision(unchanged));
+                other[24 + 2048]++;
+                Assert.AreNotEqual(revision, f.Operations.Revision(VbaGitSnapshotCoverageTests.LogicalForm(other)));
+                File.WriteAllText(f.Repository.RecoveryFile, "qualification recovery marker");
+                Assert.AreNotEqual(revision, f.Operations.Revision(baseline));
+                CollectionAssert.AreEqual(original, baseline.Serialize()["Form1.frx"]);
+            }
+        }
+
         /// <summary>Vérifie la validation du binding et la propriété du verrou de session.</summary>
         [TestMethod]
         public void OpenBindingValidationLockOwnershipAndReleaseMatrix()

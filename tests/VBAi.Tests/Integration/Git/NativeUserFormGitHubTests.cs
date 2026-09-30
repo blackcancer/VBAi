@@ -112,7 +112,11 @@ namespace VBAi.Tests.Integration
                                 }
                                 var imported = targetProject.Capture();
                                 Assert.IsTrue(imported.SameAs(captured));
-                                CollectionAssert.AreEqual(captured.Files[form + ".frx"], imported.Files[form + ".frx"]);
+                                CollectionAssert.AreEqual(captured.ComparisonFiles()[form + ".frx"], imported.ComparisonFiles()[form + ".frx"]);
+                                // Native re-export may change CFB allocation/timestamps and documented
+                                // padding. The fetched transport bytes above still must be exact.
+                                report["RawReexportFrxMatchesTransport"] = captured.Files[form + ".frx"].SequenceEqual(imported.Files[form + ".frx"]);
+                                report["LogicalReexportFrxVerified"] = true;
                                 var targetView = target.ReadGitForm(form);
                                 target.CaptureGitFormDesigner(form, Path.Combine(output, "target-designer.png"));
                                 foreach (string key in sourceView.Keys) Assert.AreEqual(sourceView[key], targetView[key], "Native form mismatch: " + key);

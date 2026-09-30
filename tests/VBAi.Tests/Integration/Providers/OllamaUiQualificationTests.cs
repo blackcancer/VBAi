@@ -146,6 +146,7 @@ namespace VBAi.Tests.Unit
                 Busy = Get<bool>(window, "busy"), StopRequested = Get<bool>(window, "stopRequested"),
                 Status = Get<Forms.Label>(window, "status").Text, WindowVisible = window.Visible,
                 ActiveHttpClient = Get<LlmChatClient>(window, "activeHttpClient") != null,
+                StreamDiagnostics = (Get<LlmChatClient>(window, "activeHttpClient")?.LastStreamDiagnostics ?? Get<StreamDiagnostics>(window, "lastHttpStreamDiagnostics"))?.Snapshot(),
                 EntryCount = entries.Count, TranscriptCharacters = entries.Sum(entry => (entry.Text ?? "").Length),
                 EntryViews = Get<Dictionary<ChatEntry, FrameworkElement>>(window, "entryViews").Count,
                 PendingStreamCharacters = Get<Dictionary<ChatEntry, StringBuilder>>(window, "pendingStreamText").Values.Sum(text => text.Length),

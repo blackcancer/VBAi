@@ -47,6 +47,65 @@ namespace VBAi.Tests.Unit
     public sealed class VbaGitSnapshotCoverageTests
     {
         [TestMethod]
+        public void FormComparisonAndChangesUseLogicalDataWhileSerializedFrxRemainsExact()
+        {
+            byte[] firstBytes = FormResourcePreflightTests.Resource();
+            byte[] secondBytes = (byte[])firstBytes.Clone(); secondBytes[24 + 1024 + 108] = 42;
+            var first = LogicalForm(firstBytes); var second = LogicalForm(secondBytes);
+            Assert.IsTrue(first.SameAs(second)); Assert.IsTrue(first.SameFile(second, "Form1.frx"));
+            Assert.AreEqual(0, second.Changes(first).Length);
+            CollectionAssert.AreEqual(secondBytes, second.Serialize()["Form1.frx"]);
+            secondBytes[24 + 2048]++;
+            var changed = LogicalForm(secondBytes);
+            Assert.IsFalse(first.SameAs(changed)); CollectionAssert.AreEqual(new[] { "~ Form1.frx" }, changed.Changes(first));
+        }
+
+        [TestMethod]
+        public void OverlappingUnknownResourcesRetainExactFrxComparison()
+        {
+            byte[] firstBytes = FormResourcePreflightTests.Resource();
+            byte[] secondBytes = (byte[])firstBytes.Clone(); secondBytes[24 + 1024 + 108] = 42;
+            Assert.IsFalse(LogicalForm(firstBytes, " Picture = \"Form1.frx\":0003\n").SameAs(
+                LogicalForm(secondBytes, " Picture = \"Form1.frx\":0003\n")));
+        }
+
+        [TestMethod]
+        public void OpaqueResourceReferencesKeepRawComparisonAcrossOffsetsAndWhitespace()
+        {
+            foreach (string declaration in new[] {
+                " Picture = \"Form1.frx\":0000\n",
+                " Picture =\n \"Form1.frx\":0007\n",
+                " Picture = \"Form1.frx\":0007\n" })
+            {
+                byte[] original = FormResourcePreflightTests.Resource();
+                byte[] first = new byte[original.Length + 4];
+                Array.Copy(original, 0, first, 4, original.Length);
+                byte[] second = (byte[])first.Clone(); second[4 + 24 + 1024 + 108] = 42;
+                // Build directly so the OLE blob begins after the opaque reference.
+                VbaGitSnapshot shifted(byte[] bytes)
+                {
+                    var files = new Dictionary<string, byte[]> {
+                        ["Form1.frm"] = VbaGitSnapshot.Utf8.GetBytes("VERSION 5.00\nBegin SyntheticForm\n OleObjectBlob = \"Form1.frx\":0004\n" + declaration + "End\nAttribute VB_Name = \"Form1\"\n"),
+                        ["Form1.frx"] = bytes };
+                    return new VbaGitSnapshot(Manifest(3, "Form1", true), files);
+                }
+                var left = shifted(first); var right = shifted(second);
+                Assert.IsFalse(left.SameAs(right), declaration);
+                Assert.IsFalse(left.SameFile(right, "Form1.frx"), declaration);
+                CollectionAssert.AreEqual(new[] { "~ Form1.frx" }, right.Changes(left), declaration);
+                CollectionAssert.AreEqual(second, right.ComparisonFiles()["Form1.frx"], declaration);
+            }
+        }
+
+        internal static VbaGitSnapshot LogicalForm(byte[] resources, string extra = "")
+        {
+            return new VbaGitSnapshot(new VbaGitManifest { References = "", Components = new[] {
+                new VbaGitComponent { Name = "Form1", Type = 3, HasResources = true } } }, new Dictionary<string, byte[]> {
+                ["Form1.frm"] = VbaGitSnapshot.Utf8.GetBytes("VERSION 5.00\nBegin SyntheticForm\n OleObjectBlob = \"Form1.frx\":0000\n" + extra + "End\nAttribute VB_Name = \"Form1\"\n"),
+                ["Form1.frx"] = resources });
+        }
+
+        [TestMethod]
         public void FormResourcePreflightRejectsEmptyInvalidAndOutOfRangeOffsets()
         {
             foreach (var invalid in new[] {
@@ -78,10 +137,10 @@ namespace VBAi.Tests.Unit
                 " OleObjectBlob = \"Form1.frx\":0000\n Picture = \"Form1.frx\":0003\nEnd\n";
             string code = "Attribute VB_Name = \"Form1\"\n' Example: \"Form1.frx\":FFFF\n";
             var files = Files(header + code, "Form1.frm");
-            files["Form1.frx"] = new byte[] { 1, 2, 3, 4 };
+            files["Form1.frx"] = FormResourcePreflightTests.Resource();
             var accepted = new VbaGitSnapshot(Manifest(3, "Form1", true), files);
             CollectionAssert.AreEqual(files["Form1.frx"], accepted.Files["Form1.frx"]);
-            files["Form1.frm"] = VbaGitSnapshot.Utf8.GetBytes(header.Replace(":0003", ":0004") + code);
+            files["Form1.frm"] = VbaGitSnapshot.Utf8.GetBytes(header.Replace(":0003", ":" + files["Form1.frx"].Length.ToString("X4")) + code);
             Assert.ThrowsException<InvalidOperationException>(() => new VbaGitSnapshot(Manifest(3, "Form1", true), files));
         }
 

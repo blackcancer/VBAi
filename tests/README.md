@@ -69,6 +69,11 @@ unchanged. Skip unavailable hosts honestly instead of treating a skip as a pass.
 | `VBAi_SOLIDWORKS_PID` | PID of a user-preloaded SOLIDWORKS/VBE instance (`TestCategory=SolidWorks`). |
 
 Set only the variables needed for the intended run and remove them afterward.
+The formatting-options scenario can additionally use an absolute
+`VBAi_TEST_FORMAT_OPTIONS_OUTPUT` directory to retain request/response and
+before/after evidence independently of VSTest attachment retention, including
+successful runs. It creates a unique subdirectory and never retries a failed
+mutation to gather evidence.
 The SOLIDWORKS workflow must not create or kill an application instance on the
 user's behalf. A host fixture can use its own native save helper; that result does
 not automatically qualify VBAi's `save_host_document` adapter.

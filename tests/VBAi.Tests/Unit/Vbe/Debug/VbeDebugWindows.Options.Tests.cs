@@ -754,6 +754,25 @@ namespace VBAi.Tests.Unit
             }
         }
 
+        [TestMethod]
+        public void FailedCategorySelectionRetainsRequestedObservedAndNativeIndexWithoutReplay()
+        {
+            using (var fixture = new OwnedNativeOptionsControls())
+            {
+                var probe = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe"); probe.Tabs(fixture.Host.Handle);
+                var categories = (VbeDebugWindows.IFormatCategoriesOptionsProbe)probe;
+                var requested = fixture.CategoryItems[1];
+                requested.SelectedAction = () => {
+                    requested.Selected = false; fixture.CategoryItems[0].Selected = true;
+                };
+                var failure = Assert.ThrowsException<InvalidOperationException>(() => categories.SelectFormatCategory(fixture.Host.Handle, 0, "Comment"));
+                StringAssert.Contains(failure.Message, "Requested=Comment; Observed=Normal; NativeIndex=0; RequestedIndex=1.");
+                Assert.AreEqual(1, requested.SelectionCount, "An uncertain selection must not be replayed.");
+                Assert.AreEqual(1, fixture.Notifications.Count(x => x.Item1 == 4905 && x.Item2 == 1));
+                Assert.AreEqual("Normal", fixture.CurrentCategory);
+            }
+        }
+
         /// <summary>Les identités/patterns/sélections invalides des catégories et onglets échouent avant mutation des palettes.</summary>
         [TestMethod]
         public void OwnedNativeOptionsCategoryAndTabMatricesRefuseUnreadableOrAmbiguousProviders()

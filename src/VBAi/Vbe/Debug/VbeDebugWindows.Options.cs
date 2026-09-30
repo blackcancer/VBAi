@@ -175,8 +175,16 @@ namespace VBAi
                 NotifyOptionsListSelection(listHandle, identifier, parent,
                     (window, message, argument, value) => SendMessageInt(window, message, argument, value));
                 if (!Equals(before.Value, category)) PauseNative(15);
-                if (!Equals(ReadFormatCategoryList(dialog, list).Value, category))
-                    throw new InvalidOperationException("The native Code Colors category selection did not retain its value.");
+                var observed = ReadFormatCategoryList(dialog, list);
+                if (!Equals(observed.Value, category))
+                {
+                    GuardOptionsOwnedWindow(dialog, listHandle, "ListBox");
+                    int nativeIndex = SendMessageInt(listHandle, 0x188, IntPtr.Zero, IntPtr.Zero).ToInt32(); // LB_GETCURSEL; read only.
+                    int requestedIndex = Array.IndexOf(before.Choices.ToArray(), category);
+                    throw new InvalidOperationException("The native Code Colors category selection did not retain its value. " +
+                        "Requested=" + category + "; Observed=" + observed.Value + "; NativeIndex=" +
+                        nativeIndex.ToString(CultureInfo.InvariantCulture) + "; RequestedIndex=" + requestedIndex.ToString(CultureInfo.InvariantCulture) + ".");
+                }
             }
 
                         /// <summary>Relit une seule palette par son identité Win32, y compris si elle est désactivée pour cette catégorie.</summary>

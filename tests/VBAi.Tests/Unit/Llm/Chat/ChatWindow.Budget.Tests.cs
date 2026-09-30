@@ -132,6 +132,56 @@ namespace VBAi.Tests.Unit
         }
 
         [STATestMethod,TestCategory("Unit")]
+        public void SendAndResumeControlsRespectScopeDuringDraftBusyPauseAndStopTransitions()
+        {
+            foreach (string scopeState in new[] { "available", "closed", "loading" })
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            {
+                if (scopeState == "closed")
+                {
+                    runtime.Host = r => Response.Success(new object[0]);
+                    Assert.AreEqual(true, Call(window, "RefreshAvailableScopes", runtime.Session));
+                    Assert.AreEqual(-1, Get<ComboBox>(window, "scopePicker").SelectedIndex);
+                }
+                else
+                {
+                    Assert.IsNotNull(Get<ComboBox>(window, "scopePicker").SelectedItem);
+                }
+                Set(window, "loadingScope", scopeState == "loading");
+                var state = Get<ChatSessionState>(window, "currentSession");
+                var send = Get<Button>(window, "send");
+                var resume = Get<ToolStripMenuItem>(window, "resumeTurn");
+                bool available = scopeState == "available";
+                foreach (bool paused in new[] { false, true })
+                foreach (bool stopping in new[] { false, true })
+                foreach (bool busy in new[] { false, true })
+                foreach (string draft in new[] { "", "Owned synthetic draft", " \r\n" })
+                {
+                    string scenario = scopeState + "; paused=" + paused + "; stopping=" + stopping +
+                        "; busy=" + busy + "; draft=" + draft;
+                    state.BudgetPaused = paused;
+                    Set(window, "stopRequested", stopping);
+                    Question(window, "");
+                    Call(window, "SetBusy", busy);
+                    Assert.AreEqual(busy ? !stopping : available, send.Enabled,
+                        "An empty composer must preserve Stop and scope gating after a busy change: " + scenario);
+                    Question(window, draft);
+                    bool hasText = !string.IsNullOrWhiteSpace(draft);
+                    Assert.AreEqual(busy ? (hasText ? available : !stopping) : available, send.Enabled,
+                        "A real draft event must preserve scope gating and cancellation: " + scenario);
+                    Assert.AreEqual(available && !busy && paused, resume.Enabled,
+                        "Resume must require the selected, loaded scope: " + scenario);
+                    Assert.AreEqual(UiText.Get(busy ? (hasText ? "Queue ↑" : "Stop ■") :
+                        paused && !hasText ? "Resume ▶" : "Send ↑"), send.Text, scenario);
+                }
+                Set(window, "loadingScope", false);
+                Set(window, "stopRequested", false);
+                Call(window, "SetBusy", false);
+            }
+        }
+
+        [STATestMethod,TestCategory("Unit")]
         public void BudgetResumeRejectsEachChangedProviderModelModeEffortAndClosedScope()
         {
             using(var runtime=new RuntimeScope()) {

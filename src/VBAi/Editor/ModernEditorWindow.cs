@@ -79,6 +79,8 @@ namespace VBAi
         internal bool WorkspaceHosted { get; set; }
         /// <summary>Identifiant du document sélectionné dans les onglets.</summary>
         private string selected, synchronizationError;
+        /// <summary>Unique profile retained until controller disposal and the runtime exit notification.</summary>
+        private EditorBrowserProfile browserProfile;
         /// <summary>Heure du dernier changement de texte, utilisée pour différer la synchronisation automatique.</summary>
         private DateTime lastEdit;
         /// <summary>Beginning of the current stream batch and its latest accepted edit sequence.</summary>
@@ -168,14 +170,19 @@ namespace VBAi
             {
                 string folder = BrowserAssetsDirectory ?? Path.Combine(Path.GetDirectoryName(typeof(ModernEditorWindow).Assembly.Location), "EditorAssets");
                 if (!File.Exists(Path.Combine(folder, "index.html"))) throw new FileNotFoundException("Monaco assets are missing.");
-                Browser?.Dispose(); Browser = CreateBrowser();
+                Browser?.Dispose(); browserProfile?.Retire(); Browser = CreateBrowser();
                 surface.Controls.Add(Browser);
                 string cache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VBAi", "EditorWebView", System.Diagnostics.Process.GetCurrentProcess().Id.ToString());
-                var environment = await CreateBrowserEnvironment(cache);
+                var profile = new EditorBrowserProfile(cache);
+                browserProfile = profile;
+                profile.BrowserRequested();
+                var environment = await CreateBrowserEnvironment(profile.Path);
+                environment.BrowserProcessExited += (sender, args) => profile.BrowserExited(args.BrowserProcessId);
                 if (IsDisposed || Disposing || closing) return;
                 await EnsureBrowserEnvironment(Browser, environment);
                 if (IsDisposed || Disposing || closing) return;
                 var core = Browser.CoreWebView2;
+                profile.ObserveBrowser(core.BrowserProcessId);
                 string language = UiText.Culture.Name.ToLowerInvariant();
                 if (language != "pt-br" && !language.StartsWith("zh-")) language = UiText.Culture.TwoLetterISOLanguageName;
                 string translation = Path.Combine(folder, "nls.messages." + language + ".js");
@@ -522,22 +529,36 @@ public int column { get; set; } }
             tabs.SelectedTab = e.TabPage;
             CloseModuleClick(sender, EventArgs.Empty);
         }
+        /// <summary>Reports synchronous STA-dispatch preparation failures on the caller; clears only busy state owned by this action.</summary>
+        private Task<bool> StartUiAction(Func<Task<bool>> operation, bool ownsBusy)
+        {
+            try { return VbeUiTask.Run(operation); }
+            catch (Exception error)
+            {
+                try { Report(error); }
+                finally { if (ownsBusy) busy = false; }
+                return Task.FromResult(false);
+            }
+        }
         /// <summary>Capture l’état avant d’afficher la comparaison entre le brouillon et le code natif.</summary>
         /// <param name="sender">Bouton de comparaison.</param>
         /// <param name="e">Données de l’événement.</param>
         private async void DiffClick(object sender, EventArgs e)
         {
-            try
-            {
-                await ProcessDocuments(false);
-                if (Current != null)
+            await StartUiAction(async () => {
+                try
                 {
-                    reviewed[Current.Id] = Current.Native;
-                    await Script("compare", Current.Native);
-                    showingDiff = true; SetStatus();
+                    await ProcessDocuments(false);
+                    if (Current != null)
+                    {
+                        reviewed[Current.Id] = Current.Native;
+                        await Script("compare", Current.Native);
+                        showingDiff = true; SetStatus();
+                    }
                 }
-            }
-            catch (Exception error) { Report(error); }
+                catch (Exception error) { Report(error); }
+                return true;
+            }, false);
         }
         /// <summary>Applique le brouillon à la version native explicitement comparée par l’utilisateur.</summary>
         /// <param name="sender">Bouton de résolution du conflit.</param>
@@ -547,17 +568,20 @@ public int column { get; set; } }
             if (busy || Current == null || !reviewed.TryGetValue(Current.Id, out var revision)) return;
             var doc = Current;
             busy = true;
-            try
-            {
-                await CaptureDocuments(); Drafts.Save(doc);
-                string captured = doc.Text, actual = doc.ResolveWithDraft(revision);
-                int applied;
-                if (int.TryParse(await Script("apply", doc.Id, versions[doc.Id], actual), out applied) && applied > 0)
-                { doc.Acknowledge(actual, captured); versions[doc.Id] = Math.Max(versions[doc.Id], applied); }
-                reviewed.Remove(doc.Id); await Script("hideDiff"); showingDiff = false; SetStatus();
-            }
-            catch (Exception error) { Report(error); }
-            finally { busy = false; }
+            await StartUiAction(async () => {
+                try
+                {
+                    await CaptureDocuments(); Drafts.Save(doc);
+                    string captured = doc.Text, actual = doc.ResolveWithDraft(revision);
+                    int applied;
+                    if (int.TryParse(await Script("apply", doc.Id, versions[doc.Id], actual), out applied) && applied > 0)
+                    { doc.Acknowledge(actual, captured); versions[doc.Id] = Math.Max(versions[doc.Id], applied); }
+                    reviewed.Remove(doc.Id); await Script("hideDiff"); showingDiff = false; SetStatus();
+                }
+                catch (Exception error) { Report(error); }
+                finally { busy = false; }
+                return true;
+            }, true);
         }
         /// <summary>Ferme l’onglet sélectionné après capture et sauvegarde de son brouillon.</summary>
         /// <param name="sender">Bouton de fermeture du module.</param>
@@ -567,29 +591,32 @@ public int column { get; set; } }
             if (busy || Current == null) return;
             var doc = Current;
             busy = true;
-            try
-            {
-                await CaptureDocuments(); Drafts.Save(doc);
-                await Script("close", doc.Id);
-                if (selected == doc.Id) showingDiff = false;
-                var closed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                BeginInvoke(new Action(() =>
+            await StartUiAction(async () => {
+                try
                 {
-                    try
+                    await CaptureDocuments(); Drafts.Save(doc);
+                    await Script("close", doc.Id);
+                    if (selected == doc.Id) showingDiff = false;
+                    var closed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    BeginInvoke(new Action(() =>
                     {
-                        (doc.Module as EditorVbeModule)?.CloseNativeWindow();
-                        var page = tabs.TabPages.Cast<TabPage>().First(t => (string)t.Tag == doc.Id);
-                        if (selected == doc.Id) selected = null; tabs.TabPages.Remove(page); page.Dispose();
-                        if (tabs.SelectedTab != null) selected = (string)tabs.SelectedTab.Tag;
-                        documents.Remove(doc.Id); versions.Remove(doc.Id); reviewed.Remove(doc.Id); recovered.Remove(doc.Id); displayNames.Remove(doc.Id);
-                        SetStatus(); closed.SetResult(true);
-                    }
-                    catch (Exception error) { closed.SetException(error); }
-                }));
-                await closed.Task;
-            }
-            catch (Exception error) { Report(error); }
-            finally { busy = false; }
+                        try
+                        {
+                            (doc.Module as EditorVbeModule)?.CloseNativeWindow();
+                            var page = tabs.TabPages.Cast<TabPage>().First(t => (string)t.Tag == doc.Id);
+                            if (selected == doc.Id) selected = null; tabs.TabPages.Remove(page); page.Dispose();
+                            if (tabs.SelectedTab != null) selected = (string)tabs.SelectedTab.Tag;
+                            documents.Remove(doc.Id); versions.Remove(doc.Id); reviewed.Remove(doc.Id); recovered.Remove(doc.Id); displayNames.Remove(doc.Id);
+                            SetStatus(); closed.SetResult(true);
+                        }
+                        catch (Exception error) { closed.SetException(error); }
+                    }));
+                    await closed.Task;
+                }
+                catch (Exception error) { Report(error); }
+                finally { busy = false; }
+                return true;
+            }, true);
         }
         /// <summary>Masque la comparaison et revient à l’édition du brouillon.</summary>
         /// <param name="sender">Bouton d’édition.</param>
@@ -603,21 +630,24 @@ public int column { get; set; } }
             if (busy || Current == null) return;
             var doc = Current;
             busy = true;
-            try
-            {
-                await CaptureDocuments();
-                if (doc.Dirty)
+            await StartUiAction(async () => {
+                try
                 {
-                    new EditorDraftStore(Drafts.Root).Save(doc);
-                    recovered[doc.Id] = new EditorDraft { Key = doc.RecoveryKey, Baseline = doc.Baseline, Text = doc.Text };
+                    await CaptureDocuments();
+                    if (doc.Dirty)
+                    {
+                        new EditorDraftStore(Drafts.Root).Save(doc);
+                        recovered[doc.Id] = new EditorDraft { Key = doc.RecoveryKey, Baseline = doc.Baseline, Text = doc.Text };
+                    }
+                    string text = EditorDocument.Normalize(doc.Module.Read());
+                    int applied; if (int.TryParse(await Script("apply", doc.Id, versions[doc.Id], text), out applied) && applied > 0)
+                    { doc.AcceptRemote(text); versions[doc.Id] = applied; }
+                    SetStatus();
                 }
-                string text = EditorDocument.Normalize(doc.Module.Read());
-                int applied; if (int.TryParse(await Script("apply", doc.Id, versions[doc.Id], text), out applied) && applied > 0)
-                { doc.AcceptRemote(text); versions[doc.Id] = applied; }
-                SetStatus();
-            }
-            catch (Exception error) { Report(error); }
-            finally { busy = false; }
+                catch (Exception error) { Report(error); }
+                finally { busy = false; }
+                return true;
+            }, true);
         }
         /// <summary>Restaure dans Monaco le brouillon précédemment récupéré pour le document actif.</summary>
         /// <param name="sender">Bouton de restauration du brouillon.</param>
@@ -627,15 +657,18 @@ public int column { get; set; } }
             if (busy || Current == null || !recovered.TryGetValue(Current.Id, out var draft)) return;
             var doc = Current;
             busy = true;
-            try
-            {
-                await CaptureDocuments(); Drafts.Save(doc); int applied;
-                if (int.TryParse(await Script("apply", doc.Id, versions[doc.Id], EditorDocument.Normalize(draft.Text)), out applied) && applied > 0)
-                { doc.Restore(draft.Baseline, draft.Text); versions[doc.Id] = applied; recovered.Remove(doc.Id); }
-                SetStatus();
-            }
-            catch (Exception error) { Report(error); }
-            finally { busy = false; }
+            await StartUiAction(async () => {
+                try
+                {
+                    await CaptureDocuments(); Drafts.Save(doc); int applied;
+                    if (int.TryParse(await Script("apply", doc.Id, versions[doc.Id], EditorDocument.Normalize(draft.Text)), out applied) && applied > 0)
+                    { doc.Restore(draft.Baseline, draft.Text); versions[doc.Id] = applied; recovered.Remove(doc.Id); }
+                    SetStatus();
+                }
+                catch (Exception error) { Report(error); }
+                finally { busy = false; }
+                return true;
+            }, true);
         }
         /// <summary>Applique à Monaco les couleurs du thème hôte après un changement de thème.</summary>
         internal Action<Action> DispatchTheme;
@@ -694,7 +727,7 @@ public int column { get; set; } }
         {
             timer?.Stop(); debugTimer?.Stop(); streamTimer?.Stop(); PreserveDrafts(); synchronizationWorker?.Dispose();
             foreach (var request in languageRequests.Values.ToArray()) request.Cancel();
-            languageWorker?.Dispose(); UiTheme.Changed -= ThemeChanged; Browser?.Dispose();
+            languageWorker?.Dispose(); UiTheme.Changed -= ThemeChanged; Browser?.Dispose(); browserProfile?.Retire();
             foreach (var doc in documents.Values) (doc.Module as EditorVbeModule)?.CloseNativeWindow();
         }
     }

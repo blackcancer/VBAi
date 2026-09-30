@@ -23,9 +23,8 @@ namespace VBAi.Tests.Integration
             {
                 window.Drafts = new EditorDraftStore(first.Root);
                 var a = Wait(window.OpenModule(first)); window.Show();
-                Wait(() => window.Ready && UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer").Enabled);
+                WaitForStartupAndPauseAutomaticWork(window);
                 var b = Wait(window.OpenModule(second));
-                UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer").Stop();
                 Wait(window.OpenModule(first));
                 UiInvoke.Call(typeof(ModernEditorWindow), "DiffClick", window, null, EventArgs.Empty);
                 Wait(() => UiInvoke.Field<bool>(window, "showingDiff"));
@@ -99,6 +98,21 @@ namespace VBAi.Tests.Integration
                 StringAssert.Contains(Wait(window.Script("testInfo")), "\"executionMarkers\":0");
                 window.Close(); Wait(() => window.IsDisposed);
             }
+        }
+
+        /// <summary>Waits for the complete ready-message startup before freezing automatic reconciliation.</summary>
+        private static void WaitForStartupAndPauseAutomaticWork(ModernEditorWindow window)
+        {
+            Wait(() => window.Ready && UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer").Enabled &&
+                !UiInvoke.Field<bool>(window, "busy"));
+            PauseAutomaticWork(window);
+        }
+        /// <summary>Stops new automatic work and drains any operation already awaiting before an explicit action.</summary>
+        private static void PauseAutomaticWork(ModernEditorWindow window)
+        {
+            foreach (string name in new[] { "timer", "streamTimer", "debugTimer" })
+                UiInvoke.Field<System.Windows.Forms.Timer>(window, name).Stop();
+            Wait(() => !UiInvoke.Field<bool>(window, "busy") && !UiInvoke.Field<bool>(window, "observingDebug"));
         }
 
         internal static void Wait(Func<bool> complete, int seconds = 40)
@@ -193,8 +207,8 @@ namespace VBAi.Tests.Integration
             {
                 window.Drafts = new EditorDraftStore(host.Root);
                 var doc = Wait(window.OpenModule(host)); window.Show();
-                Wait(() => window.Ready); UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer").Stop();
-                Wait(() => Wait(window.Script("snapshots")).Contains(doc.Id)); UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer").Stop();
+                WaitForStartupAndPauseAutomaticWork(window);
+                Wait(() => Wait(window.Script("snapshots")).Contains(doc.Id));
                 var snapshot = new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<dynamic[]>(Wait(window.Script("snapshots")));
                 int version = (int)snapshot[0]["version"];
                 var markers = new[] { new { message = "Fixture compile diagnostic", startLineNumber = 3, startColumn = 1, endLineNumber = 3, endColumn = 2, severity = 8 } };
@@ -228,7 +242,7 @@ namespace VBAi.Tests.Integration
 
                 UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer").Start();
                 Wait(window.Script("insert", "\n' continuous synchronization")); Wait(() => host.Code.Contains("continuous synchronization"));
-                UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer").Stop();
+                PauseAutomaticWork(window);
                 Wait(window.Script("insert", "\n' resolve local")); Wait(() => doc.Dirty);
                 host.Code += "\n' native concurrent"; Wait(window.ProcessDocuments(false)); Assert.IsTrue(doc.Conflict);
                  Wait(() => UiInvoke.Field<Button>(window, "compare").Visible && !UiInvoke.Field<bool>(window, "busy")); UiInvoke.Field<Button>(window, "compare").PerformClick();
@@ -238,12 +252,27 @@ namespace VBAi.Tests.Integration
                 StringAssert.Contains(host.Code, "resolve local"); Assert.IsFalse(doc.Conflict);
                 Wait(window.Script("insert", "\n' reload recovery")); Wait(() => doc.Dirty);
                 host.Code += "\n' another native change"; Wait(window.ProcessDocuments(false));
-                Wait(() => UiInvoke.Field<Button>(window, "reload").Visible && !UiInvoke.Field<bool>(window, "busy")); UiInvoke.Field<Button>(window, "reload").PerformClick(); Wait(() => !doc.Dirty);
+                Wait(() => UiInvoke.Field<Button>(window, "reload").Visible && !UiInvoke.Field<bool>(window, "busy"));
+                UiInvoke.Field<Button>(window, "reload").PerformClick();
+                try { Wait(() => !doc.Dirty); }
+                catch (AssertFailedException error)
+                {
+                    throw new AssertFailedException("Reload failed: dirty=" + doc.Dirty + "; conflict=" + doc.Conflict +
+                        "; busy=" + UiInvoke.Field<bool>(window, "busy") +
+                        "; status=" + UiInvoke.Field<Control>(window, "status").Text, error);
+                }
                 Wait(window.ProcessDocuments(false));
                 StringAssert.Contains(window.Drafts.Recover(doc.RecoveryKey).Text, "reload recovery");
                 Wait(() => UiInvoke.Field<Button>(window, "restore").Visible && !UiInvoke.Field<bool>(window, "busy")); UiInvoke.Field<Button>(window, "restore").PerformClick(); Wait(() => doc.Text.Contains("reload recovery") && !UiInvoke.Field<bool>(window, "busy"));
 
-                Wait(() => !UiInvoke.Field<bool>(window, "busy")); UiInvoke.Call(typeof(ModernEditorWindow), "CloseModuleClick", window, window, EventArgs.Empty); Wait(() => !System.Linq.Enumerable.Any(window.Documents));
+                Wait(() => !UiInvoke.Field<bool>(window, "busy")); UiInvoke.Call(typeof(ModernEditorWindow), "CloseModuleClick", window, window, EventArgs.Empty);
+                try { Wait(() => !System.Linq.Enumerable.Any(window.Documents)); }
+                catch (AssertFailedException error)
+                {
+                    throw new AssertFailedException("Closing restored draft failed: documents=" + System.Linq.Enumerable.Count(window.Documents) +
+                        "; current=" + window.Current?.Id + "; busy=" + UiInvoke.Field<bool>(window, "busy") +
+                        "; status=" + UiInvoke.Field<Control>(window, "status").Text, error);
+                }
                 StringAssert.Contains(window.Drafts.Recover(doc.RecoveryKey).Text, "reload recovery");
 
                 window.Close(); Wait(() => window.IsDisposed);
@@ -276,9 +305,8 @@ namespace VBAi.Tests.Integration
             using (var window = new ModernEditorWindow())
             {
                 window.Drafts = new EditorDraftStore(first.Root);
-                var a = Wait(window.OpenModule(first)); window.Show(); Wait(() => window.Ready);
+                var a = Wait(window.OpenModule(first)); window.Show(); WaitForStartupAndPauseAutomaticWork(window);
                 var b = Wait(window.OpenModule(second)); Wait(window.OpenModule(first));
-                UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer").Stop();
                 UiInvoke.Call(typeof(ModernEditorWindow), "CloseModuleClick", window, window, EventArgs.Empty);
                 Wait(window.OpenModule(second));
                 Wait(() => !UiInvoke.Field<bool>(window, "busy"));

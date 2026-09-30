@@ -152,7 +152,7 @@ internal static partial class GitTests
         var host = new FakeProject { FileName = Path.Combine(root, "macro.xlsm") };
         host.VBComponents.Add(new FakeComponent("Module1", 1, "Attribute VB_Name = \"Module1\"\nOption Explicit\nPublic Const Value = 1\n"));
         var document = new FakeComponent("ThisWorkbook", 100, "Option Explicit\nPrivate Sub Workbook_Open()\nEnd Sub"); host.VBComponents.Add(document);
-        host.VBComponents.Add(new FakeComponent("Form1", 3, "VERSION 5.00\nBegin VB.UserForm Form1\n   OleObjectBlob = \"Form1.frx\":0000\nEnd\nAttribute VB_Name = \"Form1\"\n") { Resource = new byte[] { 0, 1, 2, 255 } });
+        host.VBComponents.Add(new FakeComponent("Form1", 3, "VERSION 5.00\nBegin VB.UserForm Form1\n   OleObjectBlob = \"Form1.frx\":0000\nEnd\nAttribute VB_Name = \"Form1\"\n") { Resource = SyntheticFormResource() });
         var project = new VbaGitProject(() => host, host.FileName);
         var before = project.Capture(); Assert(before.Files.ContainsKey("Form1.frx"), "Export FRX companion");
         var files = before.Serialize(); files["Module1.bas"] = Encoding.UTF8.GetBytes("Attribute VB_Name = \"Module1\"\nOption Explicit\nPublic Const Value = 2\n");
@@ -173,6 +173,46 @@ internal static partial class GitTests
         Assert(host.VBComponents.Count(x => x.Name == "Module1") == 1, "No duplicate component after uncertain import");
         host.Mode = 1; Reject(() => project.Capture(), "Reject running project"); host.Mode = 2;
         host.FileName += ".other"; Reject(() => project.Capture(), "Reject changed document identity");
+    }
+
+    /// <summary>Builds a bounded LB/08 and MS-CFB v3 resource containing an empty synthetic UserForm.</summary>
+    private static byte[] SyntheticFormResource()
+    {
+        const uint end = 0xfffffffe, free = 0xffffffff;
+        var resource = new byte[24 + 5 * 512];
+        Action<int, uint> write = (offset, value) => Buffer.BlockCopy(BitConverter.GetBytes(value), 0, resource, offset, 4);
+        resource[0] = 0x4c; resource[1] = 0x42; resource[2] = 8;
+        write(4, 5 * 512);
+        byte[] signature = { 0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1 };
+        Buffer.BlockCopy(signature, 0, resource, 24, signature.Length);
+        resource[48] = 0x3e; resource[50] = 3; resource[52] = 0xfe; resource[53] = 0xff;
+        resource[54] = 9; resource[56] = 6;
+        write(24 + 44, 1); write(24 + 48, 1); write(24 + 56, 4096);
+        write(24 + 60, 2); write(24 + 64, 1); write(24 + 68, end);
+        for (int i = 0; i < 109; i++) write(24 + 76 + i * 4, i == 0 ? 0u : free);
+        for (int i = 0; i < 128; i++)
+        {
+            write(24 + 512 + i * 4, i == 0 ? 0xfffffffd : i < 4 ? end : free);
+            write(24 + 1536 + i * 4, i == 0 ? end : free);
+        }
+        Action<int, string, byte, uint, uint, uint, uint> entry = (index, name, kind, child, right, start, size) => {
+            int position = 24 + 1024 + index * 128;
+            byte[] text = Encoding.Unicode.GetBytes(name + "\0");
+            Buffer.BlockCopy(text, 0, resource, position, text.Length);
+            resource[position + 64] = (byte)text.Length; resource[position + 66] = kind; resource[position + 67] = 1;
+            write(position + 68, free); write(position + 72, right); write(position + 76, child);
+            write(position + 116, start); write(position + 120, size);
+        };
+        entry(0, "Root Entry", 5, 1, free, 3, 64);
+        byte[] formClass = new Guid("C62A69F0-16DC-11CE-9E98-00AA00574A4F").ToByteArray();
+        Buffer.BlockCopy(formClass, 0, resource, 24 + 1024 + 80, formClass.Length);
+        entry(1, "f", 2, free, 2, 0, 22);
+        entry(2, "o", 2, free, free, end, 0);
+        resource[24 + 1024 + 2 * 128 + 67] = 0; // Red right child of the black f tree root.
+        // FormControl v4, required DrawBuffer, empty class table and zero sites.
+        byte[] form = { 0, 4, 8, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+        Buffer.BlockCopy(form, 0, resource, 24 + 2048, form.Length);
+        return resource;
     }
     /// <summary>Charge GitWindow dans le Designer et vérifie le rendu et les commandes visuelles.</summary>
     private static void Designer()

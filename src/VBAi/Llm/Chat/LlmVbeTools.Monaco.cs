@@ -111,36 +111,40 @@ namespace VBAi
                 var window = EditorWindow(name == "monaco_open");
                 if (window == null || window.IsDisposed) throw new InvalidOperationException("Open the modern editor with monaco_open first.");
                 if (window.InvokeRequired) throw new InvalidOperationException("Monaco tools must run on the owning VBE UI thread.");
-                EditorDocument doc;
-                if (name == "monaco_open")
-                {
-                    doc = await window.OpenModule(target);
-                    if (!window.Ready) return json.Serialize(Response.Success(new { Loading = true, doc.Id, Next = "monaco_read" }));
-                }
-                else doc = window.FindToolDocument(target);
-                object result;
-                if (name == "monaco_navigate") result = await window.NavigateForTool(doc, (int)values["ExpectedVersion"], (int)values["StartLine"], (int)values["StartColumn"], (int)values["EndLine"], (int)values["EndColumn"]);
-                else if (edit)
-                {
-                    var before = ReadCode(project, module);
-                    Action synchronizedSource = () =>
+                // Native hosts need not provide an ambient managed context. Pin the
+                // complete renderer/COM operation to the already verified owning STA.
+                return await VbeUiTask.Run(async () => {
+                    EditorDocument doc;
+                    if (name == "monaco_open")
                     {
-                        // Capture the native diff before renderer/draft-worker awaits can admit
-                        // unrelated user edits. A diff failure must not interrupt reconciliation.
-                        try
+                        doc = await window.OpenModule(target);
+                        if (!window.Ready) return json.Serialize(Response.Success(new { Loading = true, doc.Id, Next = "monaco_read" }));
+                    }
+                    else doc = window.FindToolDocument(target);
+                    object result;
+                    if (name == "monaco_navigate") result = await window.NavigateForTool(doc, (int)values["ExpectedVersion"], (int)values["StartLine"], (int)values["StartColumn"], (int)values["EndLine"], (int)values["EndColumn"]);
+                    else if (edit)
+                    {
+                        var before = ReadCode(project, module);
+                        Action synchronizedSource = () =>
                         {
-                            var after = ReadCode(project, module);
-                            if (before.Sha256 != after.Sha256)
-                                CodeEdited?.Invoke(new CodeChange(project, module, before.Code, before.Sha256, after.Code, after.Sha256, CodeRollback.Lines(after.Code).Length));
-                        }
-                        catch (Exception error) { WriteLog("Monaco code diff readback failed: " + error.Message); }
-                    };
-                    result = name == "monaco_edit"
-                        ? await window.EditForTool(doc, (int)values["ExpectedVersion"], (string)values["Text"], synchronizedSource)
-                        : await window.SynchronizeForTool(doc, (int)values["ExpectedVersion"], (string)values["ExpectedSha256"], synchronizedSource);
-                }
-                else result = await window.ReadForTool(doc);
-                return json.Serialize(Response.Success(result));
+                            // Capture the native diff before renderer/draft-worker awaits can admit
+                            // unrelated user edits. A diff failure must not interrupt reconciliation.
+                            try
+                            {
+                                var after = ReadCode(project, module);
+                                if (before.Sha256 != after.Sha256)
+                                    CodeEdited?.Invoke(new CodeChange(project, module, before.Code, before.Sha256, after.Code, after.Sha256, CodeRollback.Lines(after.Code).Length));
+                            }
+                            catch (Exception error) { WriteLog("Monaco code diff readback failed: " + error.Message); }
+                        };
+                        result = name == "monaco_edit"
+                            ? await window.EditForTool(doc, (int)values["ExpectedVersion"], (string)values["Text"], synchronizedSource)
+                            : await window.SynchronizeForTool(doc, (int)values["ExpectedVersion"], (string)values["ExpectedSha256"], synchronizedSource);
+                    }
+                    else result = await window.ReadForTool(doc);
+                    return json.Serialize(Response.Success(result));
+                });
             }
             catch (Exception error) { return json.Serialize(Response.Failure(error.Message)); }
         }

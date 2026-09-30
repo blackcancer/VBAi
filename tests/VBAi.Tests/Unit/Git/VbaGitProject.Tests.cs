@@ -11,6 +11,51 @@ namespace VBAi.Tests.Unit
     public sealed partial class VbaGitProjectTests
     {
         [TestMethod]
+        public void FormImportPrefixCorrectionPreservesVisibleBlankLinesAndHiddenAttributes()
+        {
+            foreach (string visible in new[] { "", "Option Explicit\n", "\nOption Explicit\n\n", "Public Sub Test()\nEnd Sub\n" })
+            {
+                string exported = "VERSION 5.00\nEnd\nAttribute VB_Name = \"Form1\"\nAttribute VB_PredeclaredId = True\n" + visible;
+                var module = new ModuleFixture("\n" + visible); int guards = 0;
+                VbaGitProject.RestoreFormImportCode(module, exported, () => guards++);
+                Assert.AreEqual(visible, module.Text); Assert.AreEqual(1, guards);
+                VbaGitProject.RestoreFormImportCode(module, exported, () => guards++);
+                Assert.AreEqual(visible, module.Text); Assert.AreEqual(1, guards, "Exact source must not be edited again.");
+            }
+            var procedure = new ModuleFixture("\nPublic Sub Test()\nEnd Sub\n");
+            VbaGitProject.RestoreFormImportCode(procedure, "Attribute VB_Name = \"Form1\"\nPublic Sub Test()\nAttribute Test.VB_Description = \"Synthetic\"\nEnd Sub\n", null);
+            Assert.AreEqual("Public Sub Test()\nEnd Sub\n", procedure.Text);
+        }
+
+        [TestMethod]
+        public void FormImportUnexpectedOrConcurrentCodeIsNeverSilentlyRewritten()
+        {
+            const string source = "Attribute VB_Name = \"Form1\"\nOption Explicit\n";
+            foreach (string text in new[] { "\n\nOption Explicit\n", "Option Explicit\n' changed\n", "\nOption Explici" })
+            {
+                var module = new ModuleFixture(text);
+                VbaGitProject.RestoreFormImportCode(module, source, () => Assert.Fail("Unexpected source reached mutation guard."));
+                Assert.AreEqual(text, module.Text);
+            }
+            var concurrent = new ModuleFixture("\nOption Explicit\n");
+            Assert.ThrowsException<InvalidOperationException>(() => VbaGitProject.RestoreFormImportCode(concurrent, source,
+                () => concurrent.Text = "\nOption Explicit\n' concurrently changed\n"));
+            Assert.AreEqual("\nOption Explicit\n' concurrently changed\n", concurrent.Text);
+        }
+
+        [TestMethod]
+        public void FormImportPrefixUsesNativeLinesWithoutConsumingIntentionalTrailingBlankLines()
+        {
+            foreach (string sourceCode in new[] { "Option Explicit\n", "Option Explicit\n\n", "\nOption Explicit\n\n\n" })
+            {
+                string nativeCode = sourceCode.Substring(0, sourceCode.Length - 1);
+                var module = new ModuleFixture("\n" + nativeCode);
+                VbaGitProject.RestoreFormImportCode(module, "Attribute VB_Name = \"Form1\"\n" + sourceCode, null);
+                Assert.AreEqual(nativeCode, module.Text);
+            }
+        }
+
+        [TestMethod]
         public void GitUsesVerifiedWordHostPathAndRejectsSaveAsWithoutTouchingBackingPath()
         {
             var host = new ProjectFixture { FileName = @"C:\Temp\~WRL0001.tmp" };

@@ -37,6 +37,8 @@ namespace VBAi
         /// <summary>Reçoit les fragments de texte émis pendant une réponse en flux.</summary>
         /// <value>Action appelée pour chaque fragment de texte reçu en flux, ou null si le flux est désactivé.</value>
         public Action<string> TextDelta { get; set; }
+        /// <summary>Last streamed response metadata; contains no request or response content.</summary>
+        internal StreamDiagnostics LastStreamDiagnostics { get; private set; }
         /// <summary>Traite un appel d’outil retourné par le fournisseur.</summary>
         /// <value>Délégué qui reçoit le nom et les arguments JSON d’un outil, ou null si aucun outil n’est disponible.</value>
         public Func<string, string, Task<string>> ToolHandler { get; set; }
@@ -161,6 +163,7 @@ namespace VBAi
         /// <returns>Message JSON normalisé produit par le fournisseur, avec les appels d’outil éventuels.</returns>
         public async Task<IDictionary<string, object>> CompleteAsync(IList<object> messages, object[] tools)
         {
+            LastStreamDiagnostics = null;
             if (copilot != null) { copilot.TextDelta = TextDelta; return await copilot.CompleteAsync(model, messages, tools, ToolHandler); }
             object payload;
             bool streaming = TextDelta != null && !provider.IsBedrock;
@@ -184,7 +187,10 @@ namespace VBAi
                     if (!response.IsSuccessStatusCode)
                         throw new InvalidOperationException(provider.Name + " HTTP " + (int)response.StatusCode + UiText.Get(": check the key, model, URL and provider limits."));
                     if (streaming && response.Content.Headers.ContentType?.MediaType == "text/event-stream")
-                        return await ChatStreamReader.ReadAsync(await response.Content.ReadAsStreamAsync(), provider.IsClaude, TextDelta, timeout.Token);
+                    {
+                        LastStreamDiagnostics = new StreamDiagnostics();
+                        return await ChatStreamReader.ReadAsync(await response.Content.ReadAsStreamAsync(), provider.IsClaude, TextDelta, timeout.Token, LastStreamDiagnostics);
+                    }
                     string body = await ChatStreamReader.ReadBodyAsync(await response.Content.ReadAsStreamAsync(), timeout.Token);
 
                     var root = json.DeserializeObject(body) as IDictionary<string, object>;

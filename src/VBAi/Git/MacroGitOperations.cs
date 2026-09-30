@@ -61,7 +61,7 @@ namespace VBAi
         {
             using (var hash = SHA256.Create())
             {
-                foreach (var file in snapshot.Serialize())
+                foreach (var file in snapshot.ComparisonFiles())
                 {
                     byte[] key = Encoding.UTF8.GetBytes(file.Key + "\0" + file.Value.Length + "\0");
                     hash.TransformBlock(key, 0, key.Length, null, 0);
