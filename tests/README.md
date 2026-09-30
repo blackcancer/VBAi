@@ -163,6 +163,23 @@ normalizer exception or coverage claim is added. No remote Git operation occurs.
 Run only while owning the desktop; retain failure artifacts and review the
 source/reopened designer captures separately. Normal host exit is required.
 
+The Image layout reads its actual content digest through the production
+`form_tree` descriptor inside Excel. It does not marshal a process-local OLE
+picture to the test process. That readback records the descriptor type and PNG
+content SHA-256, rather than an external picture handle or HIMETRIC dimensions.
+
+To diagnose native UserForm export failures separately, enable
+`VBAi_RUN_USERFORM_EXPORT_PROBES=1` and `VBAi_RUN_EXCEL_TESTS=1`, then filter on
+`FullyQualifiedName~NativeUserFormExportProbeTests`. The six disposable trials
+compare external STA and production host-bridge dispatch to fixture temporary,
+production `GitTemporary` and evidence directories. Each trial uses a new
+directory and the same form filename, attempts at most one export, records exact
+PID, loaded assembly, document/component identity and raw files, and requires
+normal owned-host exit. Failed exports are not retried or redirected. Partial
+files remain available for diagnosis. Use the same optional absolute
+`VBAi_TEST_USERFORM_LOCAL_GIT_OUTPUT` to retain reports. These probes do not
+qualify Git capture comparison, imports or recovery.
+
 Designer screenshots reobserve the COM window after bounded UI settlement. A
 zero designer HWND permits capture of the owned VBE root only after verifying
 the exact active project and designer COM identities, captions, type, visibility
