@@ -22,6 +22,16 @@ namespace VBAi.Tests.Integration
         [DataRow("HostBridge", "GitTemporary")]
         [DataRow("HostBridge", "EvidenceRoot")]
         public void SingleExportPreservesExactOwnedIdentityAndProducesFormAndResources(string dispatch, string location)
+        { RunSingleExport(dispatch, location, false); }
+
+        /// <summary>Compares fresh sibling directories differing only in EFS, without changing production storage.</summary>
+        [STATestMethod]
+        [DataRow("Plain")]
+        [DataRow("Encrypted")]
+        public void ControlledSiblingEfsExportPreservesIdentityAndRetainsRawEvidence(string variant)
+        { RunSingleExport("HostBridge", variant, true); }
+
+        private void RunSingleExport(string dispatch, string location, bool controlledEfs)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_EXPORT_PROBES") != "1" ||
                 Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
@@ -30,14 +40,16 @@ namespace VBAi.Tests.Integration
             if (string.IsNullOrWhiteSpace(root)) root = TestContext.TestRunResultsDirectory;
             if (string.IsNullOrWhiteSpace(root)) root = Path.Combine(Path.GetTempPath(), "VBAi-UserFormExports");
             Assert.IsTrue(Path.IsPathRooted(root));
+            bool rootExisted = Directory.Exists(root);
             string trial = Guid.NewGuid().ToString("N");
-            string output = Path.Combine(root, dispatch + "-" + location + "-" + trial);
+            string output = Path.Combine(root, controlledEfs ? "efs-" + trial : dispatch + "-" + location + "-" + trial);
             Assert.IsFalse(Directory.Exists(output)); Directory.CreateDirectory(output);
             string reportPath = Path.Combine(output, "native-export.json");
             var report = new Dictionary<string, object> {
-                ["Stage"] = "STARTED", ["Dispatch"] = dispatch, ["Location"] = location,
+                ["Stage"] = "STARTED", ["Dispatch"] = dispatch, ["Location"] = location, ["ControlledEfs"] = controlledEfs,
                 ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
                 ["NativeExportRequests"] = 0, ["MacroExecutions"] = 0, ["RemoteOperations"] = 0,
+                ["EvidenceRootExisted"] = rootExisted,
                 ["Scope"] = "One native UserForm Export per owned Excel process; dispatch/path diagnosis only. No Git import, capture comparison or recovery acceptance."
             };
             var json = new JavaScriptSerializer();
@@ -57,8 +69,35 @@ namespace VBAi.Tests.Integration
 
                     string baseDirectory = location == "GitTemporary" ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VBAi", "GitTemporary") :
                         location == "FixtureTemporary" ? host.Root : output;
-                    string destinationDirectory = Path.Combine(baseDirectory, trial);
-                    Assert.IsFalse(Directory.Exists(destinationDirectory)); Directory.CreateDirectory(destinationDirectory);
+                    string destinationDirectory;
+                    if (controlledEfs)
+                    {
+                        report["Stage"] = "CONTROLLED_EFS_PREPARATION";
+                        report["ParentAttributes"] = System.IO.File.GetAttributes(output).ToString();
+                        report["EnvironmentTempAttributes"] = System.IO.File.GetAttributes(Path.GetTempPath()).ToString();
+                        Assert.AreEqual((FileAttributes)0, System.IO.File.GetAttributes(output) & FileAttributes.Encrypted,
+                            "The fresh common parent must start unencrypted; do not remove inherited EFS to satisfy this test.");
+                        string plain = Path.Combine(output, "plain0"), encrypted = Path.Combine(output, "efs001");
+                        Assert.IsFalse(Directory.Exists(plain)); Assert.IsFalse(Directory.Exists(encrypted));
+                        Directory.CreateDirectory(plain); Directory.CreateDirectory(encrypted);
+                        Assert.AreEqual((FileAttributes)0, System.IO.File.GetAttributes(plain) & FileAttributes.Encrypted);
+                        Assert.AreEqual((FileAttributes)0, System.IO.File.GetAttributes(encrypted) & FileAttributes.Encrypted);
+                        // Encrypt only this empty disposable sibling. Never decrypt
+                        // a directory, change the user profile or alter VBAi storage.
+                        System.IO.File.Encrypt(encrypted);
+                        report["PlainAttributes"] = System.IO.File.GetAttributes(plain).ToString();
+                        report["EncryptedAttributes"] = System.IO.File.GetAttributes(encrypted).ToString();
+                        Assert.AreEqual((FileAttributes)0, System.IO.File.GetAttributes(plain) & FileAttributes.Encrypted);
+                        Assert.AreEqual(FileAttributes.Encrypted, System.IO.File.GetAttributes(encrypted) & FileAttributes.Encrypted,
+                            "The requested EFS sibling must actually be encrypted before any export.");
+                        destinationDirectory = location == "Encrypted" ? encrypted : plain;
+                        report["SiblingDirectories"] = new[] { plain, encrypted };
+                    }
+                    else
+                    {
+                        destinationDirectory = Path.Combine(baseDirectory, trial);
+                        Assert.IsFalse(Directory.Exists(destinationDirectory)); Directory.CreateDirectory(destinationDirectory);
+                    }
                     string destination = Path.Combine(destinationDirectory, form + ".frm");
                     report["Destination"] = destination; report["DestinationLength"] = destination.Length;
                     report["DestinationContainsNonAscii"] = destination.Any(character => character > 127);

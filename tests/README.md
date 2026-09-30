@@ -180,6 +180,15 @@ files remain available for diagnosis. Use the same optional absolute
 `VBAi_TEST_USERFORM_LOCAL_GIT_OUTPUT` to retain reports. These probes do not
 qualify Git capture comparison, imports or recovery.
 
+The separate `ControlledSiblingEfsExportPreservesIdentityAndRetainsRawEvidence`
+method runs two synthetic host-bridge trials with the same opt-ins. Each creates
+a fresh unencrypted parent under the evidence root and two ASCII-named sibling
+directories, encrypts only the empty `efs001` sibling, verifies both attributes,
+then exports once to the selected sibling. Setup failures remain failures before
+export. It records parent/temp attributes and retains both siblings; it never
+decrypts a directory or modifies the real VBAi profile. This isolates EFS from
+the production cache path without relocating any user's macro data.
+
 Designer screenshots reobserve the COM window after bounded UI settlement. A
 zero designer HWND permits capture of the owned VBE root only after verifying
 the exact active project and designer COM identities, captions, type, visibility
