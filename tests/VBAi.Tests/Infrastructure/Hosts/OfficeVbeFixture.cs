@@ -288,13 +288,13 @@ namespace VBAi.Tests.Integration
             ReopenCore();
         }
         /// <summary>Reopens the owned Office file without a helper save; discard-on-close cannot mask an adapter failure.</summary>
-        internal void ReopenFromDisk()
+        internal void ReopenFromDisk(Action afterOwnedClose = null)
         {
             Assert.IsTrue(File.Exists(DocumentPath), "The adapter must have left an existing native file.");
             Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), Data("status")["AssemblyModuleVersionId"]);
-            ReopenCore(true);
+            ReopenCore(true, afterOwnedClose);
         }
-        private void ReopenCore(bool adapterOnly = false)
+        private void ReopenCore(bool adapterOnly = false, Action afterOwnedClose = null)
         {
             dynamic app = application;
             if (Kind == "Word") { ((dynamic)document).Close(0); Release(document); document = null; document = CreateOrOpenDocument(true); }
@@ -307,6 +307,8 @@ namespace VBAi.Tests.Integration
                 int failuresBeforeClose = Failures.Count;
                 CloseOwnedHost(adapterOnly);
                 Assert.AreEqual(failuresBeforeClose, Failures.Count, "Cannot reopen after an unsuccessful host shutdown: " + string.Join(Environment.NewLine, Failures));
+                // Optional read-only disk evidence is captured after normal exit, before a fresh host can write.
+                afterOwnedClose?.Invoke();
                 var existing = Process.GetProcessesByName(Kind == "Access" ? "MSACCESS" : "MSPUB");
                 try { Assert.AreEqual(0, existing.Length, "An unrelated Office instance appeared; no reopen is permitted."); }
                 finally { foreach (var process in existing) process.Dispose(); }
