@@ -14,14 +14,15 @@ namespace VBAi.Tests.Integration
         private readonly string report;
         private readonly int processId;
         private readonly string fixtureRoot;
+        private readonly string scope;
         private readonly List<IDictionary<string, object>> commands = new List<IDictionary<string, object>>();
         private Exception primaryFailure, cleanupFailure;
         internal string Shutdown { get; set; } = "NotVerified; owned host may be retained";
         internal string PhaseTracePath { get; set; }
         internal object PhaseEvidence { get; set; }
 
-        internal ExcelScalarQualificationEvidence(string report, int processId, string fixtureRoot)
-        { this.report = report; this.processId = processId; this.fixtureRoot = fixtureRoot; }
+        internal ExcelScalarQualificationEvidence(string report, int processId, string fixtureRoot, string scope = "Owned disposable scalar test; synthetic requests only")
+        { this.report = report; this.processId = processId; this.fixtureRoot = fixtureRoot; this.scope = scope; }
 
         /// <summary>Persists intent before the only send, then persists its response, exception and elapsed time.</summary>
         internal IDictionary<string, object> Send(object request, Func<IDictionary<string, object>> execute,
@@ -74,7 +75,7 @@ namespace VBAi.Tests.Integration
             var payload = new {
                 HostProcessId = processId, FixtureRoot = fixtureRoot,
                 AssemblyMvid = typeof(VbeSession).Module.ModuleVersionId,
-                ObservedUtc = DateTime.UtcNow.ToString("o"), Scope = "Owned disposable scalar test; synthetic requests only",
+                ObservedUtc = DateTime.UtcNow.ToString("o"), Scope = scope,
                 Evidence = commands, PhaseTracePath, PhaseEvidence, Shutdown, PrimaryError = primaryFailure?.ToString(), CleanupError = cleanupFailure?.ToString()
             };
             System.IO.File.WriteAllText(report, new JavaScriptSerializer { MaxJsonLength = 4 * 1024 * 1024 }.Serialize(payload), new UTF8Encoding(false));

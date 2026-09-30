@@ -79,6 +79,8 @@ namespace VBAi
         private readonly Control dispatcher;
         /// <summary>Session qui traite les requêtes destinées au VBE.</summary>
         private readonly VbeSession session;
+        /// <summary>Host-only qualification opt-in, captured at connection and absent from the LLM catalogue.</summary>
+        private readonly PathVisibilityDiagnostic pathVisibility;
         /// <summary>Adaptateurs natifs du débogueur, remplaçables par instance à la frontière UI.</summary>
         internal readonly VbeToolNativeBoundary Native = new VbeToolNativeBoundary();
         /// <summary>Exécute une commande sur la session hôte, sans remplacer l’orchestration de l’outil.</summary>
@@ -116,6 +118,7 @@ namespace VBAi
         {
             this.dispatcher = dispatcher;
             this.session = session;
+            pathVisibility = new PathVisibilityDiagnostic(processId);
             Execute = request => session.Execute(request);
             ReadImmediateNative = request => session.ReadImmediateAsync(request);
             InspectLocalScalarsNative = request => session.InspectLocalScalarsAsync(request);
@@ -154,7 +157,12 @@ namespace VBAi
                             try
                             {
                                 var request = json.Deserialize<Request>(line);
-                                if (request != null && request.Command == "debug_windows")
+                                if (request != null && request.Command == PathVisibilityDiagnostic.CommandName)
+                                {
+                                    PathVisibilityDiagnostic.RequireParameterFree(line);
+                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => Response.Success(pathVisibility.Read())));
+                                }
+                                else if (request != null && request.Command == "debug_windows")
                                     response = Response.Success(Native.Capture(request.IncludeCallStack));
                                 else if (request != null && request.Command == "read_navigation_surface")
                                     response = Response.Success(Native.ReadNavigationSurface(request));

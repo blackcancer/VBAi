@@ -53,6 +53,40 @@ Preserve their contents unless deliberately changing the corresponding fixture.
 
 ## Native host tests are opt-in
 
+The Q-027 path-visibility diagnostic is a temporary, explicit host opt-in. Run
+only `ExcelPathVisibilityTests.OwnedOwnerStaObservesTwoTesthostCreatedGuidDirectoriesAndEffectiveToken`
+with `VBAi_RUN_EXCEL_PATH_VISIBILITY=1`, `VBAi_RUN_EXCEL_TESTS=1` and an absolute
+durable `VBAi_EXCEL_RESULTS` directory. The owned `/x /automation` bootstrap
+passes `VBAi_TEST_PATH_VISIBILITY_MANIFEST` explicitly to the child. The manifest
+contains only two direct GUID children of LocalAppData and TEMP. Fixed synthetic
+files and the manifest remain under read leases during observation and are
+retained as evidence. No personal file is read, no macro/export/source edit runs,
+and no ACL, attribute, trust policy or token is modified.
+
+The internal, parameter-free `diagnostic_path_visibility` bridge command is
+disabled unless the host received this manifest before add-in connection. It is
+absent from the LLM catalogue. It checks captured owner PID/native TID/STA and
+records managed existence/attribute results, explicit exception types/HRESULTs,
+native attributes and immediately captured LastError (meaningful only on native
+failure). Effective token evidence queries the thread with OpenAsSelf=true and
+falls back to the primary token only for ERROR_NO_TOKEN (1008); metadata is
+limited to SID, integrity, restricted/AppContainer state, type/impersonation and
+AuthenticationId/TokenId. Compare testhost before/after with the actual owner STA;
+do not label the testhost's STA as Excel's. Visibility differences are recorded,
+not assumed equal or attributed to a cause. Pending delivery/startup retains the
+host and read leases without replay or native cleanup. This diagnostic changes
+the product candidate; qualification of an earlier binary does not cover it.
+
+After deploying and verifying the matching candidate, run exactly one native
+observation (the command below is a recipe, not recorded execution):
+
+```powershell
+$env:VBAi_RUN_EXCEL_TESTS = '1'
+$env:VBAi_RUN_EXCEL_PATH_VISIBILITY = '1'
+$env:VBAi_EXCEL_RESULTS = "$PWD/artifacts/path-visibility-native"
+dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildOutputRoot="$PWD/artifacts/build" --filter 'FullyQualifiedName=VBAi.Tests.Integration.ExcelPathVisibilityTests.OwnedOwnerStaObservesTwoTesthostCreatedGuidDirectoriesAndEffectiveToken' --logger 'trx;LogFileName=path-visibility-native.trx' --results-directory "$PWD/artifacts/path-visibility-native"
+```
+
 For an owned-host scalar-inspection investigation, set `VBAi_VBE_INSPECTION_TRACE`
 to an absolute local JSONL file path in the host's environment before launching it.
 The parent directory must already exist. Tracing is disabled when absent or invalid;

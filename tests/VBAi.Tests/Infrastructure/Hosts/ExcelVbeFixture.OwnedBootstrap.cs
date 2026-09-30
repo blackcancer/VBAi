@@ -17,7 +17,7 @@ namespace VBAi.Tests.Integration
         private Func<string> ownedImagePath;
 
         /// <summary>Explicit environment-controlled launch used only by the scalar diagnostic pages.</summary>
-        internal static ExcelVbeFixture StartOwnedWithTrace(string tracePath)
+        internal static ExcelVbeFixture StartOwnedWithTrace(string tracePath, string pathVisibilityManifest = null)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
                 Assert.Inconclusive("Excel automation is opt-in. Set VBAi_RUN_EXCEL_TESTS=1.");
@@ -25,6 +25,11 @@ namespace VBAi.Tests.Integration
                 throw new InvalidOperationException("Owned Excel NativeOM attachment requires the test's STA thread.");
             int[] existingIds = ExistingExcelIds();
             ExcelOwnedBootstrapPlan.RequireFreshLaunch(existingIds);
+            if (pathVisibilityManifest != null)
+            {
+                pathVisibilityManifest = ExcelOwnedBootstrapPlan.RequireLocalAbsolutePath(pathVisibilityManifest);
+                if (!System.IO.File.Exists(pathVisibilityManifest)) throw new ArgumentException("The fixed path-visibility manifest must exist before launch.");
+            }
             string executable = ExcelOwnedBootstrapPlan.ResolveExecutable();
             string output = Environment.GetEnvironmentVariable("VBAi_EXCEL_RESULTS");
             string parent = ExcelOwnedBootstrapPlan.RequireLocalAbsolutePath(string.IsNullOrWhiteSpace(output)
@@ -48,6 +53,13 @@ namespace VBAi.Tests.Integration
                 using (var sha = SHA256.Create())
                 using (var bytes = System.IO.File.OpenRead(seed)) launch["SeedSha256"] = BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "");
                 var info = ExcelOwnedBootstrapPlan.CreateStartInfo(executable, seed, tracePath);
+                // Set only this child's opt-in. The default scalar/bootstrap environment remains unchanged.
+                if (pathVisibilityManifest != null)
+                {
+                    info.EnvironmentVariables[PathVisibilityDiagnostic.EnvironmentName] = pathVisibilityManifest;
+                    launch["DiagnosticEnvironmentName"] = PathVisibilityDiagnostic.EnvironmentName;
+                    launch["DiagnosticManifestPath"] = pathVisibilityManifest;
+                }
                 using (var trace = new FileStream(tracePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read))
                     if (trace.Length > VbeInspectionTrace.MaximumFileBytes - 65536)
                         throw new InvalidOperationException("Phase evidence has insufficient capacity; no Excel process was launched.");
