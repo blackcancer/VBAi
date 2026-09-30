@@ -17,18 +17,18 @@ namespace VBAi.Tests.Integration
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool SetFileSecurityW(string path, uint information, [In] byte[] descriptor);
 
-        /// <summary>Reads only the public owner and DACL, preserving raw ACE masks and flags without an ACL adapter.</summary>
+        /// <summary>Reads the public owner, group and DACL, preserving raw ACE masks and flags without an ACL adapter.</summary>
         internal static RawSecurityDescriptor ReadAccessAndOwner(string path)
         {
-            const uint ownerAndDacl = 0x00000005;
+            const uint ownerGroupAndDacl = 0x00000007;
             uint needed;
-            bool unexpectedSuccess = GetFileSecurityW(path, ownerAndDacl, null, 0, out needed);
+            bool unexpectedSuccess = GetFileSecurityW(path, ownerGroupAndDacl, null, 0, out needed);
             int error = Marshal.GetLastWin32Error();
             if (unexpectedSuccess || error != 122 || needed == 0 || needed > 65536)
-                throw new Win32Exception(error, "Native owner/DACL sizing failed or exceeded the disposable probe bound.");
+                throw new Win32Exception(error, "Native owner/group/DACL sizing failed or exceeded the disposable probe bound.");
             var bytes = new byte[needed];
-            if (!GetFileSecurityW(path, ownerAndDacl, bytes, (uint)bytes.Length, out needed))
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "Native owner/DACL read failed.");
+            if (!GetFileSecurityW(path, ownerGroupAndDacl, bytes, (uint)bytes.Length, out needed))
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "Native owner/group/DACL read failed.");
             return new RawSecurityDescriptor(bytes, 0);
         }
 
