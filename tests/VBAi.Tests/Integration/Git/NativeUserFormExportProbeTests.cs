@@ -60,6 +60,15 @@ namespace VBAi.Tests.Integration
         public void CrossedSourceOnlyDaclExportRetainsIdentityAndShutdownEvidence(string location, string daclSource)
         { RunSingleExport("HostBridge", location, false, null, true, daclSource); }
 
+        /// <summary>One fresh LocalAppData export held behind an explicit exact-PID diagnostic trace rendezvous.</summary>
+        [STATestMethod]
+        public void SingleLocalAppDataExportWithReviewedNativeTrace()
+        {
+            if (Environment.GetEnvironmentVariable("VBAi_TEST_USERFORM_EXPORT_TRACE_GATE") != "1")
+                Assert.Inconclusive("Enable the reviewed trace gate in addition to both native export/Excel opt-ins.");
+            RunSingleExport("HostBridge", "LocalAppData", false, null, true);
+        }
+
         private void RunSingleExport(string dispatch, string location, bool controlledEfs, string volume = null, bool probeAncestor = false,
             string daclSource = null)
         {
@@ -191,6 +200,7 @@ namespace VBAi.Tests.Integration
                         {
                             var state = Data(host.Command(new { Command = "component_properties", Project = before["ProjectName"], Module = form }));
                             report["ComponentBefore"] = state;
+                            NativeExportTraceGate.WaitArmed(host.ProcessId, destination, output, loaded, report);
                             report["NativeExportRequests"] = 1; report["Stage"] = "ONE_NATIVE_EXPORT_PENDING";
                             System.IO.File.WriteAllText(reportPath, json.Serialize(report));
                             var response = host.Command(new { Command = "export_component", Project = before["ProjectName"], Module = form,
@@ -200,6 +210,7 @@ namespace VBAi.Tests.Integration
                         }
                         else
                         {
+                            NativeExportTraceGate.WaitArmed(host.ProcessId, destination, output, loaded, report);
                             report["NativeExportRequests"] = 1; report["Stage"] = "ONE_NATIVE_EXPORT_PENDING";
                             System.IO.File.WriteAllText(reportPath, json.Serialize(report));
                             host.ExportGitFormOnce(form, destination);
@@ -216,6 +227,14 @@ namespace VBAi.Tests.Integration
                     catch (Exception error) { exportFailure = error; throw; }
                     finally
                     {
+                        Exception diagnosticFailure = null;
+                        try { NativeExportTraceGate.CompleteAndWaitDetached(host.ProcessId, output, Convert.ToString(loaded["AssemblyModuleVersionId"])); }
+                        catch (Exception traceFailure)
+                        {
+                            diagnosticFailure = traceFailure;
+                            report["DiagnosticDetachFailure"] = traceFailure.ToString();
+                            host.PreserveForDiagnosticRecovery = true;
+                        }
                         // Keep every partial/successful raw file. Do not retry an
                         // export that failed, switch destinations or repair it.
                         try
@@ -229,7 +248,8 @@ namespace VBAi.Tests.Integration
                         }
                         catch (Exception evidenceFailure)
                         {
-                            if (exportFailure != null) throw new AggregateException("Native export and raw evidence retention both failed.", exportFailure, evidenceFailure);
+                            if (exportFailure != null || diagnosticFailure != null) throw new AggregateException("Native export/diagnostic cleanup and raw evidence retention failed independently.",
+                                new[] { exportFailure, diagnosticFailure, evidenceFailure }.Where(error => error != null));
                             throw;
                         }
                         // Public EFS certificate hashes only; no key material or
@@ -242,9 +262,12 @@ namespace VBAi.Tests.Integration
                         }
                         catch (Exception metadataFailure)
                         {
-                            if (exportFailure != null) throw new AggregateException("Native export and EFS evidence readback both failed.", exportFailure, metadataFailure);
+                            if (exportFailure != null || diagnosticFailure != null) throw new AggregateException("Native export/diagnostic cleanup and EFS evidence readback failed independently.",
+                                new[] { exportFailure, diagnosticFailure, metadataFailure }.Where(error => error != null));
                             throw;
                         }
+                        if (diagnosticFailure != null) throw new AggregateException("Diagnostic detachment was not proven; any original native error is retained separately and host cleanup is suspended.",
+                            new[] { exportFailure, diagnosticFailure }.Where(error => error != null));
                     }
                 }, host => {
                     report["ShutdownDiagnostics"] = host.ShutdownDiagnostics;

@@ -44,6 +44,9 @@ namespace VBAi.Tests.Integration
         /// <summary>Retains exact owned-process shutdown observations after temporary-file cleanup.</summary>
         internal IDictionary<string, object> ShutdownDiagnostics { get; private set; }
 
+        /// <summary>Suspends Close/Quit when a diagnostic debugger has not been proven detached.</summary>
+        internal bool PreserveForDiagnosticRecovery { get; set; }
+
         /// <summary>Démarre Excel de façon isolée et vérifie la disponibilité du pont VBE.</summary>
         /// <returns>La fixture prête à envoyer des commandes au pont.</returns>
         /// <exception cref="AssertInconclusiveException">Les tests Excel sont désactivés, Excel est absent ou une session existante a été détectée.</exception>
@@ -172,6 +175,13 @@ namespace VBAi.Tests.Integration
             diagnostics["CommandCount"] = commandSequence;
             diagnostics["CommandRecordsOmitted"] = Math.Max(0, commandSequence - MaximumCommandRecords);
             ShutdownDiagnostics = diagnostics;
+            if (PreserveForDiagnosticRecovery)
+            {
+                diagnostics["CleanupSuspended"] = true;
+                diagnostics["Reason"] = "Diagnostic debugger detachment was not proven; no Close/Quit or forced termination was attempted.";
+                WriteShutdownDiagnostics(diagnostics);
+                throw new InvalidOperationException("Exact owned Excel host left untouched for diagnostic recovery. PID: " + ProcessId + "; fixture: " + Root);
+            }
             var watch = Stopwatch.StartNew();
             Exception closeFailure = null, quitFailure = null, evidenceFailure = null;
             Action writeDiagnostics = () => {
