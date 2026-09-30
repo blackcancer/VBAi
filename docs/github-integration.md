@@ -111,7 +111,9 @@ Before mutation, the workflow records a backup and recovery marker. Incoming sou
 are validated and read back. A COM error after partial application does not trigger
 an automatic repeat. An unresolved recovery state blocks further synchronization.
 If partial-state readback also fails, automatic recovery can be refused while the
-backup remains available for manual recovery.
+backup remains available for manual recovery. VBAi reports both the original
+import error and the failure to record the resulting state; it does not claim a
+verified after-state or retry the import.
 
 Private refs under `refs/codex/*`, including checkpoints and backup state, are not
 published by normal pushes. Their legacy spelling is a storage contract, not a

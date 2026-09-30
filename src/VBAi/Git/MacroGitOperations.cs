@@ -204,10 +204,22 @@ namespace VBAi
             if (!rollback) await Task.Run(() => { Repository.Checkpoint(expected, UiText.Get("Before import · ") + DateTime.Now.ToString("s")); Repository.PrepareRecovery(expected); });
             else File.WriteAllText(Repository.RecoveryFile, Repository.Resolve(MacroGitRepository.Backup));
             bool started = false;
+            Exception importFailure = null;
             try { project.Apply(target, expected, () => started = true); }
+            catch (Exception error) { importFailure = error; throw; }
             finally
             {
-                if (started) { var actual = project.Capture(); await Task.Run(() => Repository.RecordImportedState(actual)); }
+                if (started)
+                {
+                    try { var actual = project.Capture(); await Task.Run(() => Repository.RecordImportedState(actual)); }
+                    catch (Exception recoveryFailure) when (importFailure != null)
+                    {
+                        // Keep both failures and the pending recovery backup. Without
+                        // an observed post-import state, automatic rollback stays refused.
+                        throw new AggregateException(UiText.Get("VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring."),
+                            importFailure, recoveryFailure);
+                    }
+                }
                 else if (!rollback) Repository.CompleteRecovery();
             }
             Repository.CompleteRecovery();
