@@ -21,6 +21,11 @@ that same PID crashing in `combase.dll` with `0xc0000005`. It is **not** a norma
 shutdown pass. Request history, recovery stages and crash events are retained
 in the native TRX attachments, `local-scalars-recovery.json` and
 `local-scalars-crash-events.json`. No uncertain operation was replayed.
+The subsequently restored empty Excel PID **56748** was identified by its
+`/restore` command line and absence of a workbook window, then closed normally
+through the owned WindowPattern. Its exit code was zero, recorded in
+`restored-empty-excel-normal-close.json`; this does not change the original
+crashed process's result.
 
 The adapter-only Office batch on test source `558d73c` finished with **2 passed,
 1 failed, 1 skipped** in `office-adapter-only/adapter-only.trx`. Word PID
@@ -62,6 +67,58 @@ the Git fixture-cleanup regressions separately passed **3 tests**. These are
 not native-host acceptance. Both fixture-contract groups were also executed
 together in `fixture-evidence-followup/fixture-evidence.trx`, confirming the
 same pure scenarios against the parent test assembly.
+
+The second layout matrix on test source `cadfec3` finished with **0 passed,
+12 failed, 0 skipped** in `userform-layouts-v2/native-layouts-v2.trx`. Eleven
+cases reached production snapshot capture and failed at native Export with
+`0x800AC373`; Image failed at an external StdPicture getter after successful
+in-host image installation. The corrected Frame/MultiPage hierarchy checks
+passed their preparation stage. Every owned process exited normally with
+code zero. Import, recovery, comparison and remote Git acceptance were not
+reached.
+
+The dispatch/destination probes on test source `164d1da` finished with
+**4 passed, 2 failed, 0 skipped** in `export-probes/export-probes.trx`.
+External STA and in-host bridge Export both passed in fixture temporary and
+evidence directories, and both failed in the production GitTemporary location.
+Their detailed attachments are under the qualification worktree's own
+`artifacts/qualification-v1/followup-20260930/export-probes/` directory.
+The paired encrypted/plain sibling probes on test source `ab9d5eb` then passed
+**2 tests** in `efs-probes/efs-probes.trx`. These outcomes refute a general EFS
+incompatibility; they do not explain the production directory failure.
+The subsequent C/E volume and parent/leaf inheritance matrix on test source
+`eef343e` passed **4 tests**, with no failure or skip, in
+`efs-volume-probes/efs-volume.trx`. Both C and E destinations retained their
+encrypted attribute and exported successfully. The failure is specific to the
+existing production location; neither volume nor generic EFS inheritance is
+established as its cause. This tests-only assembly was built in the export
+probe worktree against the unchanged `7b5f11d8` product.
+
+The explicit SOLIDWORKS 2019 SP5 instance, PID **47344**, revision **27.5.0**,
+loaded the same `7b5f11d8` candidate. The native connection test passed
+**1 test**, with no failure or skip, in `solidworks-2019/vstest/solidworks-load.trx`.
+The disposable copied fixture's source/form/hash readback passed in
+`solidworks-2019/stage-1c168f3037ac4cda8a6b567f45af024d/`.
+Designer resize and exact restoration passed in that stage's
+`designer-resize.json`. The reviewed designer capture shows the synthetic
+label without clipping; the return-to-code capture reveals an empty Monaco
+shell despite correct native module selection. Captures are under
+`../solidworks-ui/followup-2019-designer-7b5/` and
+`../solidworks-ui/followup-2019-return-code-7b5/`.
+
+A distinct native-created macro passed module/class/form editing, stale-hash
+refusal, compilation and one verified adapter save. The synthetic marker ran
+once and unloaded; the strict scenario nevertheless failed because SWP bytes
+changed. Separate guarded native Edit Macro and source/class/label readback
+passed against the observed post-execution hash. Original failure evidence is
+retained, and no whole-binary preservation or standalone-project acceptance
+is claimed. These artifacts are under
+`../solidworks/type100-2019/followup-7b5/`, including
+`type100-qualification.json`, `native-open-after-runtime.json` and
+`post-runtime-shared-file-readback.json`.
+Normal SOLIDWORKS shutdown for this fresh session remains pending; the absence
+of CAD documents and the saved test-project states are recorded, but unsaved
+host-temporary Setup/Evaluation projects prevent treating shutdown as verified.
 
 The unchanged strict loopback Ollama scenarios passed **3 tests** with passive
 wire capture and **3 tests** without the capture wrapper, recorded in

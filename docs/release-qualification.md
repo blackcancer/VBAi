@@ -18,13 +18,38 @@ validation described below; they do not constitute complete current-candidate
 qualification. Q-015 has a fresh complete instrumented pass on clean source
 `0ddb0dd`, candidate `7b5f11d8`; exact results are in recorded validation.
 
-The native results below identify their own candidates. The historical
-SOLIDWORKS acceptance uses MVID `aaf3a555-76d4-4b18-ae09-1e7b3e085934`; the
-current Office follow-up uses `096b2e2b`, `de3c5a79` and `95576771`. Source changes made after
+The native results below identify their own candidates. Historical
+SOLIDWORKS acceptance uses MVID `aaf3a555-76d4-4b18-ae09-1e7b3e085934`;
+the fresh Office and SOLIDWORKS 2019 follow-up uses `7b5f11d8` from `0ddb0dd`.
+Earlier Office candidates remain historical evidence. Source changes made after
 each build are not covered by its results. The full qualification branch includes the
 implementation changes, tests and this register. Its publication checks are
 recorded separately in [recorded validation](test-coverage.md); they do not
 replace the operation-specific native acceptance or close the remaining gates.
+
+### Fresh SOLIDWORKS 2019 follow-up
+
+The maintainer authorized autonomous application launch for this campaign.
+An isolated Visual Studio utility profile opened SOLIDWORKS 2019 SP5, PID
+47344, revision 27.5.0, and the exact PID ROT plus loaded add-in MVID were
+independently verified. Native Edit Macro opened only a copied disposable
+fixture; module/class hashes, the form label and unchanged disk bytes passed
+readback. The designer resize and exact placement restoration passed.
+
+A separately host-created disposable macro passed module/class/form edits,
+stale-source refusal, compilation and one product save. Its synthetic marker
+ran once and the project unloaded. The strict execution trial still failed
+because SWP bytes changed; a distinct, guarded native reload verified retained
+source hashes and the label against the observed post-execution file hash.
+The cause of the binary change remains unproven. This is not whole-file
+preservation or standalone-project qualification.
+
+Returning from the designer using `select_code` activates the correct native
+module but reveals an empty Monaco shell. The missing active-code following
+path is under correction; the fresh result therefore keeps Q-014 open.
+SOLIDWORKS 2025, complete debugger and embedded assistant acceptance remain
+separate pending scopes. Exact results and evidence paths are in recorded
+validation.
 
 ## Required environment
 
