@@ -1299,7 +1299,21 @@ namespace VBAi
         /// <param name="native">Sonde du volet Immediate.</param>
         /// <returns>Texte et résultat observés avant et après.</returns>
         internal static object ExecuteImmediate(string command, IImmediateProbe native)
+        { return ExecuteImmediate(command, native, enter => enter()); }
+
+        /// <summary>Revalidates the owning VBE context and submits Enter through the caller's STA dispatcher.</summary>
+        /// <param name="command">The printable Immediate command.</param>
+        /// <param name="submitEnter">Synchronous owner-thread validation followed by exactly one Enter callback.</param>
+        internal static object ExecuteImmediateGuarded(string command, Action<Action> submitEnter)
+        { return ExecuteImmediate(command, new NativeImmediateProbe(), submitEnter); }
+
+        /// <summary>Requires exact echo before the caller revalidates context and submits Enter once.</summary>
+        /// <param name="command">The printable Immediate command.</param>
+        /// <param name="native">Native pane boundary.</param>
+        /// <param name="submitEnter">Synchronous validation and submission boundary.</param>
+        internal static object ExecuteImmediate(string command, IImmediateProbe native, Action<Action> submitEnter)
         {
+            if (submitEnter == null) throw new ArgumentNullException(nameof(submitEnter));
             if (string.IsNullOrWhiteSpace(command) || command.Length > 2048 ||
                 command.IndexOfAny(new[] { '\r', '\n', '\0' }) >= 0 ||
                 command.Any(character => char.IsControl(character)))
@@ -1321,8 +1335,21 @@ namespace VBAi
             }
             if (echoed != before + command && echoed != before + command + "\r\n")
                 throw new InvalidOperationException("The Immediate pane did not echo the exact command; Enter was not sent.");
-            if (!native.PostEnter(pane))
-                throw new InvalidOperationException("The native Immediate pane rejected Enter.");
+            bool enterAttempted = false;
+            try
+            {
+                submitEnter(() => {
+                    if (enterAttempted) throw new InvalidOperationException("Immediate Enter cannot be attempted twice.");
+                    enterAttempted = true;
+                    if (!native.PostEnter(pane))
+                        throw new InvalidOperationException("The native Immediate pane rejected Enter.");
+                });
+            }
+            catch (Exception error) when (!enterAttempted)
+            {
+                throw new InvalidOperationException("Immediate Enter was not sent; the typed command remains in the pane. " + error.Message, error);
+            }
+            if (!enterAttempted) throw new InvalidOperationException("Immediate Enter was not submitted; the typed command remains unexecuted.");
             string after = echoed;
             for (int attempt = 0; attempt < 40; attempt++)
             {

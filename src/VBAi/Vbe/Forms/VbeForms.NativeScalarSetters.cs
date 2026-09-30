@@ -23,6 +23,8 @@ namespace VBAi
                 case "top": native.Top = Convert.ToSingle(value); return;
                 case "width": native.Width = Convert.ToSingle(value); return;
                 case "height": native.Height = Convert.ToSingle(value); return;
+                case "scrollwidth": native.ScrollWidth = Convert.ToSingle(value); return;
+                case "scrollheight": native.ScrollHeight = Convert.ToSingle(value); return;
                 case "caption": native.Caption = Convert.ToString(value); return;
                 case "name": native.Name = Convert.ToString(value); return;
                 case "text": native.Text = Convert.ToString(value); return;
@@ -38,7 +40,7 @@ namespace VBAi
                 case "italic": native.Italic = Convert.ToBoolean(value); return;
                 case "underline": native.Underline = Convert.ToBoolean(value); return;
                 case "strikethrough": native.Strikethrough = Convert.ToBoolean(value); return;
-                default: descriptor.SetValue(target, value); return;
+                default: VbeScalarProperty.SetNative(target, descriptor.Name, value); return;
             }
         }
     }

@@ -23,6 +23,7 @@ namespace VBAi.Tests.Integration
         {
             using (var fixture = OfficeVbeFixture.Start(host))
             {
+                bool formCreated = false;
                 fixture.Scenario("IDE inventory", () => {
                     fixture.Data("project_properties"); fixture.Data("list_references");
                     fixture.Data("debug_state"); fixture.Data("vbe_environment");
@@ -96,17 +97,28 @@ namespace VBAi.Tests.Integration
                         "FontName", "Arial", "FontSize", 12, "FontBold", true,
                         "ExpectedFormVersion", fixture.Data("form_state", "Form", "VBAiOfficeForm")["Version"]);
                     AssertLabel(fixture);
+                    formCreated = true;
                 });
                 fixture.Scenario("Host save capability and policy guards", () => {
                     var persistence = fixture.Data("project_persistence_status");
+                    fixture.RecordNativePersistence("BeforeAdapterSave");
                     var saved = fixture.Response("save_host_document", "ExpectedHostPath", fixture.DocumentPath,
                         "ExpectedProjectVersion", fixture.Data("project_properties")["Version"]);
+                    fixture.RecordNativePersistence("ImmediatelyAfterAdapterSave");
                     if (Convert.ToBoolean(persistence["HostAvailable"]))
+                    {
                         Assert.AreEqual(true, saved["Ok"], Convert.ToString(saved["Error"]));
+                        var result = VbeBridgeClient.Object(saved["Data"]);
+                        Assert.AreEqual(true, result["Verified"], "The adapter must verify its native save; protocol success alone is insufficient.");
+                        Assert.AreEqual(false, result["Uncertain"], "An uncertain native save is not a qualified persistence result.");
+                        fixture.ReopenFromDisk();
+                        AssertPersistedContent(fixture, formCreated);
+                    }
                     else
                     {
                         Assert.AreEqual(false, saved["Ok"], "Unavailable host saving must fail closed.");
                         Assert.IsFalse(string.IsNullOrWhiteSpace(Convert.ToString(saved["Error"])));
+                        fixture.CompatibilityGap("save_host_document", Convert.ToString(persistence["Reason"]));
                     }
                 });
                 fixture.Scenario("Code navigation and native compilation", () => {
@@ -117,12 +129,17 @@ namespace VBAi.Tests.Integration
                 });
                 fixture.Scenario("Native save and reopen preserves VBA", () => {
                     fixture.Reopen();
-                    foreach (var name in new[] { "VBAiOfficeModule", "VBAiOfficeClass" })
-                        StringAssert.Contains((string)fixture.Data("read_module", "Module", name)["Code"], "VBAi office été");
-                    if (fixture.Items("list_modules").Any(m => (string)m["Name"] == "VBAiOfficeForm")) AssertLabel(fixture);
+                    AssertPersistedContent(fixture, formCreated);
                 });
                 Assert.AreEqual(0, fixture.Failures.Count, string.Join(Environment.NewLine, fixture.Failures));
             }
+        }
+
+        private static void AssertPersistedContent(OfficeVbeFixture fixture, bool expectForm)
+        {
+            foreach (var name in new[] { "VBAiOfficeModule", "VBAiOfficeClass" })
+                StringAssert.Contains((string)fixture.Data("read_module", "Module", name)["Code"], "VBAi office été");
+            if (expectForm) AssertLabel(fixture);
         }
 
         private static void AssertLabel(OfficeVbeFixture fixture)

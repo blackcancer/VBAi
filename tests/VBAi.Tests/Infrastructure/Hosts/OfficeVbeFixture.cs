@@ -12,10 +12,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace VBAi.Tests.Integration
 {
     /// <summary>Owns a visible Office instance and a disposable document; routes VBA operations through its installed add-in.</summary>
-    internal sealed class OfficeVbeFixture : IDisposable
+    internal sealed partial class OfficeVbeFixture : IDisposable
     {
         private object application, document;
         private bool owned;
+        private Process ownedProcess;
         private volatile bool stopDialogs;
         private Thread dialogThread;
         private readonly List<object> steps = new List<object>();
@@ -53,6 +54,7 @@ namespace VBAi.Tests.Integration
                     var candidates = launched.Where(p => !existing.Contains(p.Id)).ToArray();
                     Assert.AreEqual(1, candidates.Length, "No unique new Office process; no document mutation is permitted.");
                     result.ProcessId = candidates[0].Id; result.owned = true;
+                    result.CaptureOwnedProcess();
                 }
                 finally { foreach (var process in launched) process.Dispose(); }
                 if (kind == "Access" || kind == "Publisher") result.StartOwnedDialogHandler();
@@ -60,12 +62,12 @@ namespace VBAi.Tests.Integration
                 if (kind == "Word")
                 {
                     app.Visible = true; app.DisplayAlerts = 0; app.AutomationSecurity = 3;
-                    result.document = app.Documents.Add();
+                    result.document = result.CreateOrOpenDocument(false);
                 }
                 else if (kind == "PowerPoint")
                 {
                     app.Visible = -1; app.AutomationSecurity = 3;
-                    result.document = app.Presentations.Add(-1);
+                    result.document = result.CreateOrOpenDocument(false);
                 }
                 else if (kind == "Access")
                 {
@@ -73,11 +75,10 @@ namespace VBAi.Tests.Integration
                 }
                 else
                 {
-                    result.document = app.NewDocument(); app.ActiveWindow.Visible = true;
+                    result.document = app.NewDocument(); result.ShowPublisherWindow();
                 }
                 result.SaveNative();
-                if (kind == "Access") app.VBE.MainWindow.Visible = true;
-                else app.CommandBars.ExecuteMso("VisualBasic");
+                result.ShowVbe();
                 var status = result.Data("status");
                 Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), status["AssemblyModuleVersionId"], "Another add-in build is installed.");
                 Assert.AreEqual(result.ProcessId, Convert.ToInt32(status["HostProcessId"]));
@@ -92,6 +93,7 @@ namespace VBAi.Tests.Integration
                     result.Project = (string)candidates[0]["Name"];
                 }
                 result.Items("list_modules");
+                result.RecordNativeProjectPath();
                 return result;
             }
             catch { result.Dispose(); throw; }
@@ -128,6 +130,68 @@ namespace VBAi.Tests.Integration
             try { action(); steps.Add(new { Scenario = name, Result = "PASS" }); }
             catch (Exception error) { Failures.Add(name + ": " + error.Message); steps.Add(new { Scenario = name, Result = "FAIL", Error = error.Message }); }
         }
+
+        private void RecordNativeProjectPath()
+        {
+            if (Kind != "Word" && Kind != "PowerPoint") return;
+            object project = null;
+            try
+            {
+                project = ((dynamic)document).VBProject;
+                try { steps.Add(new { NativeProjectFileName = (string)((dynamic)project).FileName }); }
+                catch (Exception error)
+                {
+                    steps.Add(new { NativeProjectFileNameError = error.Message,
+                        ExceptionType = error.GetType().FullName, HResult = "0x" + unchecked((uint)error.HResult).ToString("X8") });
+                }
+            }
+            finally { Release(project); }
+        }
+
+        /// <summary>Records independent native save readback before any helper save can change the evidence.</summary>
+        internal void RecordNativePersistence(string phase)
+        {
+            if (Kind != "Word" && Kind != "PowerPoint") return;
+            var fields = new Dictionary<string, object> { ["NativePersistencePhase"] = phase };
+            object project = null, editor = null, selected = null;
+            try
+            {
+                dynamic nativeDocument = document;
+                fields["DocumentPath"] = (string)nativeDocument.FullName;
+                fields["DocumentSaved"] = Kind == "Word" ? (bool)nativeDocument.Saved : Convert.ToInt32(nativeDocument.Saved) == -1;
+                fields["DocumentReadOnly"] = Kind == "Word" ? (bool)nativeDocument.ReadOnly : Convert.ToInt32(nativeDocument.ReadOnly) != 0;
+                fields["DocumentFormat"] = Kind == "Word" ? (object)Convert.ToInt32(nativeDocument.SaveFormat) : null;
+                fields["FileLength"] = File.Exists(DocumentPath) ? new FileInfo(DocumentPath).Length : 0;
+                project = nativeDocument.VBProject;
+                fields["ProjectSaved"] = (bool)((dynamic)project).Saved;
+                try { fields["ProjectPath"] = (string)((dynamic)project).FileName; }
+                catch (Exception error) { fields["ProjectPathError"] = error.GetType().FullName + " / 0x" + unchecked((uint)error.HResult).ToString("X8") + ": " + error.Message; }
+                fields["SourceSha256"] = typeof(VbeProjectComponents).GetMethod("OtherHostSourceSha",
+                    System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).Invoke(null, new[] { project });
+                editor = ((dynamic)application).VBE;
+                selected = VbeProjectResolver.Resolve((dynamic)editor, Project);
+                IntPtr first = IntPtr.Zero, second = IntPtr.Zero;
+                try
+                {
+                    first = Marshal.GetIUnknownForObject(project); second = Marshal.GetIUnknownForObject(selected);
+                    fields["SelectedProjectIdentityMatches"] = first == second;
+                }
+                finally { if (second != IntPtr.Zero) Marshal.Release(second); if (first != IntPtr.Zero) Marshal.Release(first); }
+            }
+            catch (Exception error) { fields["ReadbackError"] = error.ToString(); }
+            finally
+            {
+                // Selected project and document.VBProject may share the same RCW; balance each acquisition.
+                foreach (var value in new[] { selected, editor, project })
+                    if (value != null && Marshal.IsComObject(value)) Marshal.ReleaseComObject(value);
+                steps.Add(fields);
+            }
+        }
+        /// <summary>Records unavailable product capabilities separately from successful fail-closed policy checks.</summary>
+        internal void CompatibilityGap(string capability, string reason)
+        {
+            steps.Add(new { Capability = capability, Result = "NOT_QUALIFIED", Reason = reason });
+        }
         /// <summary>Saves only the owned disposable document, independently of VBAi's save adapter.</summary>
         internal void SaveNative()
         {
@@ -140,21 +204,36 @@ namespace VBAi.Tests.Integration
         /// <summary>Reopens only the owned file and never executes VBA automatically.</summary>
         internal void Reopen()
         {
-            SaveNative(); dynamic app = application;
-            if (Kind == "Word") { ((dynamic)document).Close(0); Release(document); document = app.Documents.Open(DocumentPath); }
-            else if (Kind == "PowerPoint") { ((dynamic)document).Close(); Release(document); document = app.Presentations.Open(DocumentPath, 0, 0, -1); }
+            SaveNative();
+            ReopenCore();
+        }
+        /// <summary>Reopens a Word/PowerPoint file without a helper save, so only the adapter can have persisted edits.</summary>
+        internal void ReopenFromDisk()
+        {
+            if (Kind != "Word" && Kind != "PowerPoint")
+                throw new InvalidOperationException("Adapter-only reopen is qualified only for Word and PowerPoint.");
+            ReopenCore();
+        }
+        private void ReopenCore()
+        {
+            dynamic app = application;
+            if (Kind == "Word") { ((dynamic)document).Close(0); Release(document); document = null; document = CreateOrOpenDocument(true); }
+            else if (Kind == "PowerPoint") { ((dynamic)document).Saved = -1; ((dynamic)document).Close(); Release(document); document = null; document = CreateOrOpenDocument(true); }
             else
             {
                 // Publisher requires a new application for Open; Access can retain a VBIDE database reference.
+                int failuresBeforeClose = Failures.Count;
                 CloseOwnedHost();
+                Assert.AreEqual(failuresBeforeClose, Failures.Count, "Cannot reopen after an unsuccessful host shutdown: " + string.Join(Environment.NewLine, Failures));
                 application = Activator.CreateInstance(Type.GetTypeFromProgID(Kind + ".Application"));
                 var processes = Process.GetProcessesByName(Kind == "Access" ? "MSACCESS" : "MSPUB");
-                try { Assert.AreEqual(1, processes.Length); ProcessId = processes[0].Id; owned = true; }
+                try { Assert.AreEqual(1, processes.Length); ProcessId = processes[0].Id; owned = true; CaptureOwnedProcess(); }
                 finally { foreach (var process in processes) process.Dispose(); }
                 app = application;
                 StartOwnedDialogHandler();
-                if (Kind == "Publisher") { document = app.Open(DocumentPath, false, false); app.ActiveWindow.Visible = true; app.CommandBars.ExecuteMso("VisualBasic"); }
-                else { app.Visible = true; app.OpenCurrentDatabase(DocumentPath); app.VBE.MainWindow.Visible = true; }
+                if (Kind == "Publisher") { document = app.Open(DocumentPath, false, false); ShowPublisherWindow(); }
+                else { app.Visible = true; app.OpenCurrentDatabase(DocumentPath); }
+                ShowVbe();
                 Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), Data("status")["AssemblyModuleVersionId"]);
             }
         }
@@ -196,8 +275,59 @@ namespace VBAi.Tests.Integration
         /// <summary>Closes only the owned process and preserves evidence files.</summary>
         public void Dispose()
         {
-            CloseOwnedHost();
-            if (Root != null) File.WriteAllText(Path.Combine(Root, "qualification.json"), new JavaScriptSerializer { MaxJsonLength = 20 * 1024 * 1024 }.Serialize(new { Host = Kind, ProcessId, DocumentPath, Project, Failures, Steps = steps }));
+            try { CloseOwnedHost(); }
+            finally
+            {
+                if (Root != null) File.WriteAllText(Path.Combine(Root, "qualification.json"), new JavaScriptSerializer { MaxJsonLength = 20 * 1024 * 1024 }.Serialize(new { Host = Kind, ProcessId, DocumentPath, Project, Failures, Steps = steps }));
+            }
+            Assert.AreEqual(0, Failures.Count, string.Join(Environment.NewLine, Failures));
+        }
+        /// <summary>Releases the collection RCW explicitly instead of leaving a chained COM temporary alive.</summary>
+        private object CreateOrOpenDocument(bool reopen)
+        {
+            object collection = null;
+            try
+            {
+                collection = Kind == "Word" ? (object)((dynamic)application).Documents : (object)((dynamic)application).Presentations;
+                if (Kind == "Word") return reopen ? ((dynamic)collection).Open(DocumentPath) : ((dynamic)collection).Add();
+                return reopen ? ((dynamic)collection).Open(DocumentPath, 0, 0, -1) : ((dynamic)collection).Add(-1);
+            }
+            finally { Release(collection); }
+        }
+        private void ShowPublisherWindow()
+        {
+            object window = null;
+            try { window = ((dynamic)application).ActiveWindow; ((dynamic)window).Visible = true; }
+            finally { Release(window); }
+        }
+        private void ShowVbe()
+        {
+            object bars = null, editor = null, window = null;
+            try
+            {
+                if (Kind == "Access")
+                {
+                    editor = ((dynamic)application).VBE;
+                    window = ((dynamic)editor).MainWindow;
+                    ((dynamic)window).Visible = true;
+                }
+                else
+                {
+                    bars = ((dynamic)application).CommandBars;
+                    ((dynamic)bars).ExecuteMso("VisualBasic");
+                }
+            }
+            finally { Release(window); Release(editor); Release(bars); }
+        }
+        private void CaptureOwnedProcess()
+        {
+            ownedProcess = Process.GetProcessById(ProcessId);
+            _ = ownedProcess.Handle; // Preserve teardown/crash evidence after the process exits.
+        }
+        private void RecordCleanupFailure(string reason)
+        {
+            Failures.Add("Host cleanup: " + reason);
+            steps.Add(new { CleanupError = reason, Result = "FAIL" });
         }
         private void CloseOwnedHost()
         {
@@ -205,17 +335,41 @@ namespace VBAi.Tests.Integration
             {
                 try
                 {
-                    if (Kind == "Word") { if (document != null) ((dynamic)document).Close(0); ((dynamic)application).Quit(0); }
-                    else if (Kind == "PowerPoint") { if (document != null) { ((dynamic)document).Saved = -1; ((dynamic)document).Close(); } ((dynamic)application).Quit(); }
+                    if (Kind == "Word") { if (document != null) ((dynamic)document).Close(0); }
+                    else if (Kind == "PowerPoint") { if (document != null) { ((dynamic)document).Saved = -1; ((dynamic)document).Close(); } }
                     else if (Kind == "Access") { ((dynamic)application).CloseCurrentDatabase(); ((dynamic)application).Quit(2); }
-                    else { if (document != null) ((dynamic)document).Close(); ((dynamic)application).Quit(); }
+                    else { if (document != null) ((dynamic)document).Close(); }
                 }
-                catch (Exception error) { steps.Add(new { CleanupError = error.Message }); }
+                catch (Exception error) { RecordCleanupFailure(error.Message); }
             }
-            Release(document); Release(application); document = application = null;
-            if (owned)
-                try { using (var process = Process.GetProcessById(ProcessId)) if (!process.WaitForExit(5000)) { process.Kill(); process.WaitForExit(5000); } }
-                catch (ArgumentException) { }
+            try { Release(document); } catch (Exception error) { RecordCleanupFailure(error.Message); }
+            document = null;
+            if (owned && Kind != "Access")
+                try { if (Kind == "Word") ((dynamic)application).Quit(0); else ((dynamic)application).Quit(); }
+                catch (Exception error) { RecordCleanupFailure(error.Message); }
+            try { Release(application); } catch (Exception error) { RecordCleanupFailure(error.Message); }
+            application = null;
+            var process = ownedProcess;
+            ownedProcess = null;
+            if (process != null)
+                using (process)
+                    try
+                    {
+                        bool forced = !process.WaitForExit(5000);
+                        if (forced)
+                        {
+                            RecordCleanupFailure("The owned host did not exit after Quit and COM release; forced termination was required. PID=" + ProcessId);
+                            process.Kill();
+                        }
+                        if (!process.WaitForExit(5000)) RecordCleanupFailure("The owned host still has not exited. PID=" + ProcessId);
+                        else
+                        {
+                            steps.Add(new { ShutdownProcessId = ProcessId, ExitCode = process.ExitCode, ForcedTermination = forced });
+                            if (process.ExitCode != 0) RecordCleanupFailure("Abnormal exit code 0x" + unchecked((uint)process.ExitCode).ToString("X8") + ". PID=" + ProcessId);
+                        }
+                    }
+                    catch (Exception error) { RecordCleanupFailure(error.Message); }
+            else if (owned) RecordCleanupFailure("No retained process handle was available to verify host shutdown. PID=" + ProcessId);
             owned = false; stopDialogs = true;
             if (dialogThread != null) { dialogThread.Join(2000); dialogThread = null; }
         }

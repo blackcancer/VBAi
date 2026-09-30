@@ -16,6 +16,12 @@ namespace VBAi.Tests.Integration
         [STATestMethod]
         public void ConflictingPaletteReconcilesArchivesAndRestoresThroughNativeExcelOptions()
         {
+            ExcelScenarioLifetime.Run(RunScenario);
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static void RunScenario(ExcelScenarioLifetime lifetime)
+        {
             if (Environment.GetEnvironmentVariable("VBAI_NATIVE_PALETTE_EXCEL_TEST") != "1") Assert.Inconclusive("Explicit disposable Excel palette test opt-in required.");
             if (Process.GetProcessesByName("EXCEL").Length != 0 || Process.GetProcessesByName("SLDWORKS").Length != 0)
                 Assert.Inconclusive("Existing hosts must be preserved because native colors are shared preferences.");
@@ -30,6 +36,7 @@ namespace VBAi.Tests.Integration
                 // The disposable host must not consume the production recovery snapshot.
                 Environment.SetEnvironmentVariable("VBAi_NATIVE_DARK_EXPERIMENT", "1");
                 excel = Activator.CreateInstance(Type.GetTypeFromProgID("Excel.Application"));
+                lifetime.Capture((object)excel);
                 excel.Visible = true; excel.DisplayAlerts = false; excel.EnableEvents = false;
                 book = excel.Workbooks.Add(); excel.VBE.MainWindow.Visible = true;
                 object vbe = (object)excel.VBE;
@@ -62,7 +69,11 @@ namespace VBAi.Tests.Integration
                 finally
                 {
                     if ((object)book != null) { book.Close(false); Marshal.FinalReleaseComObject((object)book); }
-                    if ((object)excel != null) { excel.Quit(); Marshal.FinalReleaseComObject((object)excel); }
+                    if ((object)excel != null)
+                    {
+                        if (lifetime.OwnsApplication) excel.Quit();
+                        Marshal.FinalReleaseComObject((object)excel);
+                    }
                     Environment.SetEnvironmentVariable("VBAi_NATIVE_DARK_EXPERIMENT", experiment);
                 }
             }

@@ -14,6 +14,10 @@ namespace VBAi
         private readonly Func<object> resolve;
         /// <summary>Chemin absolu du document hôte auquel le cache Git est lié.</summary>
         private readonly string hostPath;
+        /// <summary>Project identity captured when this integration is opened.</summary>
+        private readonly object boundProject;
+        /// <summary>Reads the current persisted document path on the VBE thread.</summary>
+        private readonly Func<object, string> readHostPath;
         /// <summary>Retourne la page de codes ANSI du système Windows.</summary>
         /// <returns>Identifiant numérique de la page de codes ANSI active.</returns>
         [System.Runtime.InteropServices.DllImport("kernel32.dll")]
@@ -26,7 +30,16 @@ namespace VBAi
         /// <summary>Crée l’adaptateur associé au résolveur et au chemin hôte attendus.</summary>
         /// <param name="resolve">Fonction qui résout le projet COM au moment de l’opération.</param>
         /// <param name="hostPath">Chemin absolu attendu du document hôte.</param>
-        internal VbaGitProject(Func<object> resolve, string hostPath) { this.resolve = resolve; this.hostPath = hostPath; }
+        /// <param name="readHostPath">Optional owning-thread path reader for isolated host contracts.</param>
+        internal VbaGitProject(Func<object> resolve, string hostPath, Func<object, string> readHostPath = null)
+        {
+            this.resolve = resolve ?? throw new ArgumentNullException(nameof(resolve));
+            if (string.IsNullOrWhiteSpace(hostPath) || !Path.IsPathRooted(hostPath))
+                throw new InvalidOperationException("A saved absolute host document path is required for Git.");
+            this.hostPath = Path.GetFullPath(hostPath);
+            this.readHostPath = readHostPath ?? (project => VbeProjectHostPath.Read(project));
+            boundProject = resolve();
+        }
 
         /// <summary>Ouvre un module VBA au point fourni.</summary>
         /// <param name="name">Nom de l’outil Git à invoquer.</param>
@@ -45,7 +58,8 @@ namespace VBAi
         private object CheckedProject()
         {
             dynamic project = resolve();
-            if (!string.Equals(Path.GetFullPath((string)project.FileName), hostPath, StringComparison.OrdinalIgnoreCase))
+            if (!VbeProjectHostPath.SameProject(boundProject, (object)project) ||
+                !string.Equals(readHostPath((object)project), hostPath, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException(UiText.Get("The linked document changed. Reopen GitHub integration."));
             if ((int)project.Mode != 2 || (int)project.Protection != 0)
                 throw new InvalidOperationException(UiText.Get("The VBA project must be unlocked and in design mode."));

@@ -30,6 +30,13 @@ VBAi sets the child process's `CODEX_HOME` to
 in to another CLI data directory does not establish this connection. Existing
 personal CLI authentication files are not copied implicitly.
 
+VBAi records a local fingerprint of the developer instructions accepted for each
+Codex thread. A resumed thread receives updated instructions only when that
+fingerprint differs; unchanged turns do not send the full text again. Threads
+created before this tracking was added receive the current instructions once on
+their next resume. A failed update blocks the turn instead of continuing with
+instructions whose version is uncertain.
+
 Use `VBAi_CODEX_CLI` to specify the native `codex.exe` when automatic discovery
 cannot locate it. Otherwise VBAi checks known installed locations and PATH.
 A `.cmd` launcher is not accepted by this shell-free transport.

@@ -11,6 +11,10 @@ namespace VBAi.Tests.Infrastructure
         /// <summary>Mode du projet.</summary>
         /// <value>Code numérique du mode VBE.</value>
         public int Mode { get; set; }
+        public string Project { get; set; } = "P";
+        public string SelectedProject { get; set; } = "P";
+        public string SelectedProjectPath { get; set; } = @"C:\Temp\P.xlsm";
+        public string ActiveModule { get; set; } = "Module1";
     }
     /// <summary>Informations de signature renvoyées par l’hôte de test.</summary>
     public sealed class VbeToolSignature
@@ -57,7 +61,7 @@ namespace VBAi.Tests.Infrastructure
             native.ReadDebugDialog = () => new { Native = "dialog" };
             native.ChangeDebugItem = request => new { Native = "item", request.Action };
             native.RespondDebugDialog = request => new { Native = "respond", request.Button };
-            native.ExecuteImmediate = text => new { Native = "immediate", Text = text };
+            native.ExecuteImmediate = (text, submit) => { submit(() => { }); return new { Native = "immediate", Text = text }; };
             native.EnsureNoCompileDialog = () => { };
             native.AwaitCompileDialog = completed => { Assert.IsTrue(completed.Wait(5000)); return null; };
             native.CompleteAddWatch = request => new { Native = "add_watch" };

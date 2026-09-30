@@ -119,6 +119,37 @@ namespace VBAi.Tests.Unit.Editor
             }
         }
         [STATestMethod]
+        public void NativeReferenceAddRemoveAndReaddRefreshAfterTheCatalogCacheExpires()
+        {
+            using (var f = new ModernEditorToolFixture())
+            {
+                long clock = 10000;
+                f.Window.LanguageClock = () => clock;
+                var native = f.Base.Native;
+                native.Original.CodeModule.Raw += "\nPublic dictionary As Scripting.Dictionary";
+                f.Base.Document.AcceptRemote(native.Original.CodeModule.Raw);
+                var reference = new EditorVbeContract.Reference {
+                    FullPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "scrrun.dll") };
+                Func<string> payload = () => {
+                    f.Base.Scripts.Clear(); Call(f, "LanguageRequest", Message(f, id: f.Base.Document.Id));
+                    return LanguagePayload(f);
+                };
+                const string libraryMarker = "\"Library\":\"Scripting\"";
+                Assert.IsFalse(payload().Contains(libraryMarker));
+                native.Project.References.Add(reference);
+                Assert.IsFalse(payload().Contains(libraryMarker), "Reference addition shares the one-second catalog TTL.");
+                clock += 1001;
+                StringAssert.Contains(payload(), libraryMarker);
+                native.Project.References.Remove(reference);
+                StringAssert.Contains(payload(), libraryMarker, "Before TTL expiry, the previous snapshot is intentionally reused.");
+                clock += 1001;
+                Assert.IsFalse(payload().Contains(libraryMarker), "Removed library symbols must disappear after refresh.");
+                native.Project.References.Add(reference);
+                clock += 1001;
+                StringAssert.Contains(payload(), libraryMarker);
+            }
+        }
+        [STATestMethod]
         public void PendingDebugCommandReturnsNullWithoutReadingNativeCatalog()
         {
             using (var f = new ModernEditorToolFixture())

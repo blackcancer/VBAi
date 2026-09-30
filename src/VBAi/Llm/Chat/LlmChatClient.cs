@@ -116,6 +116,7 @@ namespace VBAi
                 : new Uri(chatEndpoint.AbsoluteUri.Replace(provider.IsClaude ? "/messages" : "/chat/completions", "/models"));
             var models = new List<LlmModelOption>();
             var cursors = new HashSet<string>();
+            using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
             using (var client = new HttpClient(handler ?? HttpHandlerFactory()) { Timeout = TimeSpan.FromSeconds(20) })
             for (int page = 0; page < 100; page++)
             {
@@ -124,12 +125,12 @@ namespace VBAi
                 if (string.IsNullOrWhiteSpace(key) && provider.RequiresKey)
                     throw new InvalidOperationException(UiText.Get("Configure the API key for ") + provider.Name + UiText.Get(" to load models."));
                 Authenticate(request, provider, key, settings.AzureUseEntraToken);
-                using (var response = await client.SendAsync(request).ConfigureAwait(false))
+                using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(false))
                 {
-                    string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                     if (!response.IsSuccessStatusCode)
                         throw new InvalidOperationException("Catalogue HTTP " + (int)response.StatusCode + ": " +
                             UiText.Get("Check credentials, URL and provider limits."));
+                    string body = await ChatStreamReader.ReadBodyAsync(await response.Content.ReadAsStreamAsync().ConfigureAwait(false), timeout.Token).ConfigureAwait(false);
                     var root = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 }.DeserializeObject(body) as IDictionary<string, object>;
                     object raw;
                     var data = root != null && root.TryGetValue(provider.IsOllama ? "models" : "data", out raw)
@@ -184,11 +185,8 @@ namespace VBAi
                         throw new InvalidOperationException(provider.Name + " HTTP " + (int)response.StatusCode + UiText.Get(": check the key, model, URL and provider limits."));
                     if (streaming && response.Content.Headers.ContentType?.MediaType == "text/event-stream")
                         return await ChatStreamReader.ReadAsync(await response.Content.ReadAsStreamAsync(), provider.IsClaude, TextDelta, timeout.Token);
-                    string body;
-                    using (var bodyStream = await response.Content.ReadAsStreamAsync())
-                    using (timeout.Token.Register(() => bodyStream.Dispose()))
-                    using (var reader = new System.IO.StreamReader(bodyStream, Encoding.UTF8)) body = await reader.ReadToEndAsync();
-                    timeout.Token.ThrowIfCancellationRequested();
+                    string body = await ChatStreamReader.ReadBodyAsync(await response.Content.ReadAsStreamAsync(), timeout.Token);
+
                     var root = json.DeserializeObject(body) as IDictionary<string, object>;
                     if (provider.IsBedrock) return BedrockProtocol.Response(root);
                     if (provider.IsClaude) return ClaudeProtocol.Response(root);

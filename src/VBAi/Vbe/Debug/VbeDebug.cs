@@ -27,6 +27,7 @@ namespace VBAi
             dynamic project = GetProject(projectName);
             string selectedProject = null;
             string selectedProjectPath = null;
+            string selectedHostPath = null;
             string activeModule = null;
             object selection = null;
             try
@@ -42,6 +43,7 @@ namespace VBAi
                     activeModule = (string)pane.CodeModule.Parent.Name;
                     selectedProject = (string)project.Name;
                     try { selectedProjectPath = (string)project.FileName; } catch { }
+                    try { selectedHostPath = VbeProjectHostPath.Read((object)project); } catch { }
                     int startLine = 0, startColumn = 0, endLine = 0, endColumn = 0;
                     pane.GetSelection(ref startLine, ref startColumn, ref endLine, ref endColumn);
                     selection = new { StartLine = startLine, StartColumn = startColumn,
@@ -53,7 +55,7 @@ namespace VBAi
                 selection = new { Error = ex.Message };
             }
             return new { Project = (string)project.Name, Mode = (int)project.Mode,
-                SelectedProject = selectedProject, SelectedProjectPath = selectedProjectPath,
+                SelectedProject = selectedProject, SelectedProjectPath = selectedProjectPath, SelectedHostPath = selectedHostPath,
                 ActiveModule = activeModule, Selection = selection };
         }
 

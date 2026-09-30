@@ -46,6 +46,69 @@ namespace VBAi.Tests.Unit
     [TestCategory("Unit")]
     public sealed class VbaGitSnapshotCoverageTests
     {
+        [TestMethod]
+        public void FormResourcePreflightRejectsEmptyInvalidAndOutOfRangeOffsets()
+        {
+            foreach (var invalid in new[] {
+                new { Length = 0, Offset = "0000" },
+                new { Length = 4, Offset = "0004" },
+                new { Length = 4, Offset = "FFFF" },
+                new { Length = 4, Offset = "FFFFFFFFFFFFFFFFFFFFFFFF" },
+                new { Length = 4, Offset = "000G" },
+                new { Length = 4, Offset = "-1" },
+                new { Length = 4, Offset = "" }
+            })
+            {
+                var files = Files("VERSION 5.00\nBegin VB.UserForm Form1\n" +
+                    "   OleObjectBlob = \"Form1.frx\":" + invalid.Offset +
+                    "\nEnd\nAttribute VB_Name = \"Form1\"\n", "Form1.frm");
+                files["Form1.frx"] = new byte[invalid.Length];
+                Assert.ThrowsException<InvalidOperationException>(() =>
+                    new VbaGitSnapshot(Manifest(3, "Form1", true), files), invalid.Offset);
+            }
+            var empty = Files("Attribute VB_Name = \"Form1\"\n", "Form1.frm");
+            empty["Form1.frx"] = new byte[0];
+            Assert.ThrowsException<InvalidOperationException>(() => new VbaGitSnapshot(Manifest(3, "Form1", true), empty));
+        }
+
+        [TestMethod]
+        public void FormResourcePreflightChecksEveryDesignerOffsetWithoutParsingVbaComments()
+        {
+            string header = "VERSION 5.00\nBegin VB.UserForm Form1\n" +
+                " OleObjectBlob = \"Form1.frx\":0000\n Picture = \"Form1.frx\":0003\nEnd\n";
+            string code = "Attribute VB_Name = \"Form1\"\n' Example: \"Form1.frx\":FFFF\n";
+            var files = Files(header + code, "Form1.frm");
+            files["Form1.frx"] = new byte[] { 1, 2, 3, 4 };
+            var accepted = new VbaGitSnapshot(Manifest(3, "Form1", true), files);
+            CollectionAssert.AreEqual(files["Form1.frx"], accepted.Files["Form1.frx"]);
+            files["Form1.frm"] = VbaGitSnapshot.Utf8.GetBytes(header.Replace(":0003", ":0004") + code);
+            Assert.ThrowsException<InvalidOperationException>(() => new VbaGitSnapshot(Manifest(3, "Form1", true), files));
+        }
+
+        [TestMethod]
+        public void FormResourcePreflightRequiresExactCompanionCasing()
+        {
+            var files = Files("Attribute VB_Name = \"Form1\"\n", "Form1.frm");
+            files["Form1.FRX"] = new byte[] { 1 };
+            Assert.ThrowsException<InvalidOperationException>(() => new VbaGitSnapshot(Manifest(3, "Form1", true), files));
+        }
+
+        [TestMethod]
+        public void DuplicateNamesAcrossComponentTypesAreRejectedBeforeImport()
+        {
+            foreach (string secondName in new[] { "Module1", "module1" })
+            foreach (int secondType in new[] { 2, 3, 100 })
+            {
+                var manifest = new VbaGitManifest { References = "", Components = new[] {
+                    new VbaGitComponent { Name = "Module1", Type = 1 },
+                    new VbaGitComponent { Name = secondName, Type = secondType } } };
+                var files = Files();
+                files.Add(manifest.Components[1].FileName, VbaGitSnapshot.Utf8.GetBytes(secondType == 100
+                    ? "Option Explicit\n" : "Attribute VB_Name = \"" + secondName + "\"\n"));
+                Assert.ThrowsException<InvalidOperationException>(() => new VbaGitSnapshot(manifest, files));
+            }
+        }
+
         /// <summary>Crée un manifeste minimal comportant un seul composant.</summary>
         /// <param name="type">Type VBE du composant.</param>
         /// <param name="name">Nom du composant.</param>

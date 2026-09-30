@@ -27,6 +27,7 @@ separately from the shared VBE features.
 | [Development](development.md) | Build conventions, UI design, localization and documentation maintenance. |
 | [Testing](../tests/README.md) | Local checks and explicit real-host test opt-ins. |
 | [Recorded validation](test-coverage.md) | Dated evidence, tested revisions and measurement boundaries. |
+| [Version 1.0.0 qualification](release-qualification.md) | Release gates, tracked defects and remaining native acceptance work. |
 | [Tool reference](reference/vbe-tools.md) | Discovery, invocation and authoritative schema locations. |
 | [Updates and release contract](updates.md) | Existing updater foundation and requirements for the future installer. |
 | [Roadmap](roadmap.md) | Planned work without delivery promises. |

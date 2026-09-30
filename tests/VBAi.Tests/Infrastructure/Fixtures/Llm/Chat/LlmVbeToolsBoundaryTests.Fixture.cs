@@ -29,6 +29,7 @@ namespace VBAi.Tests.Unit
             internal ToolFixture()
             {
                 Tools = new LlmVbeTools(new VbeSession(new VbeSessionTests.FakeVbe()), null, Settings);
+                Tools.ImmediateOwnerDispatch = action => action();
                 VbeToolBoundaryFixture.Configure(Tools.Native);
                 Tools.Execute = VbeToolBoundaryFixture.Execute;
                 Tools.PersistSignature = p => new VBAi.Tests.Infrastructure.VbeToolPersistence { Saved = true };

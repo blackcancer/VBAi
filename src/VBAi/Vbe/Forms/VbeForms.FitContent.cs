@@ -95,8 +95,8 @@ namespace VBAi
             if (preview) return new { ReadOnly = true, Plan = plan };
             try
             {
-                x.SetValue(container, Convert.ChangeType(afterX, x.PropertyType, CultureInfo.InvariantCulture));
-                y.SetValue(container, Convert.ChangeType(afterY, y.PropertyType, CultureInfo.InvariantCulture));
+                SetFitProperty(container, x, Convert.ChangeType(afterX, x.PropertyType, CultureInfo.InvariantCulture));
+                SetFitProperty(container, y, Convert.ChangeType(afterY, y.PropertyType, CultureInfo.InvariantCulture));
                 if (Math.Abs(ReadFitNumber(container, x) - afterX) > tolerance ||
                     Math.Abs(ReadFitNumber(container, y) - afterY) > tolerance)
                     throw new InvalidOperationException("Native dimension readback differs from the plan.");
@@ -120,6 +120,19 @@ namespace VBAi
                     Reason = error.Message, Plan = plan, RetryAllowed = false,
                     Limit = "Inspect the designer before another operation. No retry or automatic rollback was performed." };
             }
+        }
+
+        /// <summary>Writes fit dimensions through native dispatch while preserving root VBIDE design properties.</summary>
+        /// <param name="target">Designer container whose dimensions are changing.</param>
+        /// <param name="property">Validated dimension descriptor or root VBIDE property adapter.</param>
+        /// <param name="value">Value converted to the descriptor's numeric type.</param>
+        private static void SetFitProperty(object target, PropertyDescriptor property, object value)
+        {
+            // Root Width/Height belong to VBComponent.Properties, not the MSForms Designer.
+            // Other native dimensions must avoid Framework Com2PropertyDescriptor.SetValue:
+            // its 16-byte VARIANT allocation is too small for x64 marshaling (24 bytes).
+            if (property is FitComponentProperty) property.SetValue(target, value);
+            else SetDesignerScalar(target, property, value);
         }
 
                 /// <summary>Exige une propriété scalaire numérique native avant toute écriture.</summary>

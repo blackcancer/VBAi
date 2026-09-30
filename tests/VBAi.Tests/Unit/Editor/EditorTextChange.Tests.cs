@@ -10,6 +10,47 @@ namespace VBAi.Tests.Unit.Editor
     [TestClass, TestCategory("Unit")]
     public sealed class EditorTextChangeTests
     {
+        /// <summary>A valid atomic batch is bounded by its final size, not a temporary application order.</summary>
+        [TestMethod]
+        public void BatchAtSizeLimitCanInsertAtEndAndDeleteAtStart()
+        {
+            string source = new string('a', EditorDocument.MaxLength);
+            Assert.IsTrue(EditorTextChange.TryApply(source, new[] {
+                new EditorTextChange { rangeOffset = source.Length, text = "z" },
+                new EditorTextChange { rangeOffset = 0, rangeLength = 1, text = "" }
+            }, out var result));
+            Assert.AreEqual(source.Length, result.Length);
+            Assert.AreEqual(source.Substring(1) + "z", result);
+            Assert.IsFalse(EditorTextChange.TryApply(source, new[] {
+                new EditorTextChange { rangeOffset = source.Length, text = "z" }
+            }, out result));
+            Assert.AreEqual(source, result);
+        }
+
+        /// <summary>Deterministic disjoint edits agree with an independent right-to-left reference implementation.</summary>
+        [TestMethod]
+        public void DisjointBatchesPreserveOriginalOffsetsAndEqualOffsetInsertionOrder()
+        {
+            var random = new Random(20260929);
+            for (int sample = 0; sample < 100; sample++)
+            {
+                string source = "ab😀efghijklmnopqrstuvwxyz";
+                var changes = new System.Collections.Generic.List<EditorTextChange>();
+                for (int offset = 0; offset < source.Length; offset += 4)
+                    changes.Add(new EditorTextChange { rangeOffset = offset, rangeLength = random.Next(3), text = random.Next(2) == 0 ? "é😀" : "" });
+                string expected = source;
+                for (int i = changes.Count - 1; i >= 0; i--)
+                    expected = expected.Remove(changes[i].rangeOffset, changes[i].rangeLength).Insert(changes[i].rangeOffset, changes[i].text);
+                Assert.IsTrue(EditorTextChange.TryApply(source, changes.ToArray(), out var actual));
+                Assert.AreEqual(expected, actual);
+            }
+            Assert.IsTrue(EditorTextChange.TryApply("ab", new[] {
+                new EditorTextChange { rangeOffset = 1, text = "first" },
+                new EditorTextChange { rangeOffset = 1, text = "second" }
+            }, out var tied));
+            Assert.AreEqual("asecondfirstb", tied);
+        }
+
         [TestMethod]
         public void Utf16MulticursorEditsAreAtomicAndMalformedBatchesCannotPartiallyChangeText()
         {

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Text;
 
 namespace VBAi
 {
@@ -19,16 +20,29 @@ namespace VBAi
             if (changes == null || changes.Length == 0 || changes.Length > 10000) return false;
             long length = source.Length;
             int boundary = source.Length;
-            foreach (var change in changes.OrderByDescending(c => c?.rangeOffset ?? -1))
+            var ordered = changes.OrderByDescending(c => c?.rangeOffset ?? -1).ToArray();
+            foreach (var change in ordered)
             {
                 if (change == null || change.text == null || change.rangeOffset < 0 || change.rangeLength < 0 ||
                     change.rangeOffset > boundary || change.rangeLength > boundary - change.rangeOffset) return false;
                 length += (long)change.text.Length - change.rangeLength;
-                if (length > EditorDocument.MaxLength || change.text.IndexOf('\0') >= 0) return false;
+                if (change.text.IndexOf('\0') >= 0) return false;
                 boundary = change.rangeOffset;
             }
-            foreach (var change in changes.OrderByDescending(c => c.rangeOffset))
-                result = result.Remove(change.rangeOffset, change.rangeLength).Insert(change.rangeOffset, change.text);
+            if (length > EditorDocument.MaxLength) return false;
+            // Validate the complete atomic batch before allocating or publishing its result.
+            // Copy each unchanged span once, preserving right-to-left ordering for tied insertions.
+            var builder = new StringBuilder((int)length);
+            int position = 0;
+            for (int i = ordered.Length - 1; i >= 0; i--)
+            {
+                var change = ordered[i];
+                builder.Append(source, position, change.rangeOffset - position);
+                builder.Append(change.text);
+                position = change.rangeOffset + change.rangeLength;
+            }
+            builder.Append(source, position, source.Length - position);
+            result = builder.ToString();
             return true;
         }
     }

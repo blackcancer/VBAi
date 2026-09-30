@@ -338,7 +338,6 @@ namespace VBAi
             busy = value;
             modePicker.Enabled = !value;
             approvalPicker.Enabled = modelSummary.Enabled = !value;
-            send.Enabled = true;
             newChat.Enabled = scopePicker.Enabled = sessionList.Enabled =
                 providerPicker.Enabled = refreshModels.Enabled = configure.Enabled = projectAccess.Enabled = !value;
             modelPicker.Enabled = !value && modelPicker.Items.Count > 0;

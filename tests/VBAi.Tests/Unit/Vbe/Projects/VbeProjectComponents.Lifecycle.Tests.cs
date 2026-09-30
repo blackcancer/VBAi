@@ -60,6 +60,45 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(2, f.Vbe.VBProjects.Items.Count);
         }
 
+        [DataTestMethod, DataRow(false), DataRow(true)]
+        public void CreateReadsBackUnsavedStandalonePathErrorWithoutRetryingTheNativeAdd(bool clrMapped)
+        {
+            var f = Create();
+            var request = f.CollectionRequest();
+            f.Vbe.VBProjects.After = () => {
+                var added = f.Vbe.VBProjects.Items[1];
+                added.Saved = false;
+                added.FileNameError = unchecked((int)0x800A004C);
+                added.ClrPathNotFound = clrMapped;
+            };
+            dynamic result = f.Service.CreateStandaloneProject(request);
+            Assert.IsTrue((bool)result.Verified);
+            Assert.IsFalse((bool)result.Uncertain);
+            Assert.AreEqual("Added", (string)result.Project);
+            Assert.AreEqual("", (string)result.HostPath);
+            Assert.AreEqual(1, f.Vbe.VBProjects.Attempts);
+            dynamic reconciled = f.Service.ProjectCollectionState();
+            Assert.AreEqual(2, ((System.Collections.ICollection)reconciled.Projects).Count);
+        }
+
+        [TestMethod]
+        public void PathReadFailuresRemainBlockingForSavedHostAndOtherComErrors()
+        {
+            foreach (bool clrMapped in new[] { false, true })
+            foreach (string scenario in new[] { "saved", "host", "other-hresult" })
+            {
+                var f = Create();
+                var project = f.Vbe.VBProjects.Items[0];
+                project.Saved = scenario == "saved";
+                project.Type = scenario == "host" ? 100 : 101;
+                project.FileNameError = scenario == "other-hresult" ? unchecked((int)0x80004005) : unchecked((int)0x800A004C);
+                project.ClrPathNotFound = clrMapped && scenario != "other-hresult";
+                if (project.ClrPathNotFound) Assert.ThrowsException<System.IO.DirectoryNotFoundException>(() => f.Service.ProjectCollectionState(), scenario);
+                else Assert.ThrowsException<System.Runtime.InteropServices.COMException>(() => f.Service.ProjectCollectionState(), scenario);
+                Assert.AreEqual(0, f.Vbe.VBProjects.Attempts);
+            }
+        }
+
         [TestMethod]
         public void CreateReturnsUncertaintyForEveryNativeMutationOrReadbackFaultWithoutRecovery()
         {
@@ -83,6 +122,28 @@ namespace VBAi.Tests.Unit
                 Assert.IsFalse((bool)result.RetryAllowed);
                 Assert.AreEqual(1, collection.Attempts);
             }
+        }
+
+        [TestMethod]
+        public void SolidWorksOpenRefusesBeforeNativeCollectionAccessOrMutation()
+        {
+            var f = Create();
+            var probe = new VbeSolidWorksPersistenceTests.Probe();
+            f.Service.SolidWorksSaveProbe = () => probe;
+            string path = Path.Combine(Path.GetTempPath(), "VBAi-refused-open-" + Guid.NewGuid().ToString("N") + ".swp");
+            try
+            {
+                File.WriteAllText(path, "owned synthetic fixture");
+                var request = f.CollectionRequest(path);
+                f.Vbe.VBProjects.ThrowEnumeration = true;
+                var error = Assert.ThrowsException<NotSupportedException>(() => f.Service.OpenStandaloneProject(request));
+                StringAssert.Contains(error.Message, "SOLIDWORKS");
+                Assert.AreEqual(0, f.Vbe.VBProjects.Attempts);
+                Assert.AreEqual(0, probe.Saves);
+                Assert.AreEqual(0, probe.Selections);
+                Assert.AreEqual("owned synthetic fixture", File.ReadAllText(path));
+            }
+            finally { File.Delete(path); }
         }
 
         [TestMethod]

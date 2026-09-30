@@ -13,6 +13,12 @@ namespace VBAi.Tests.Integration
         [STATestMethod]
         public void RealExcelProjectsStayPrivateUntilReadGrantAndNeverBecomeWritable()
         {
+            ExcelScenarioLifetime.Run(RunScenario);
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static void RunScenario(ExcelScenarioLifetime lifetime)
+        {
             if (Environment.GetEnvironmentVariable("VBAI_EDITOR_EXCEL_TEST") != "1") Assert.Inconclusive("Explicit disposable Excel opt-in required.");
             if (Process.GetProcessesByName("EXCEL").Length != 0) Assert.Inconclusive("Close existing Excel processes before this isolated test.");
             dynamic excel = null, first = null, second = null;
@@ -22,6 +28,7 @@ namespace VBAi.Tests.Integration
             try
             {
                 excel = Activator.CreateInstance(Type.GetTypeFromProgID("Excel.Application"));
+                lifetime.Capture((object)excel);
                 excel.Visible = true; excel.DisplayAlerts = false; excel.EnableEvents = false;
                 first = excel.Workbooks.Add(); second = excel.Workbooks.Add();
                 first.VBProject.Name = projectA; second.VBProject.Name = projectB;
@@ -73,8 +80,7 @@ namespace VBAi.Tests.Integration
             {
                 if ((object)first != null) { try { first.Close(false); } catch (COMException) { } Marshal.FinalReleaseComObject((object)first); }
                 if ((object)second != null) { try { second.Close(false); } catch (COMException) { } Marshal.FinalReleaseComObject((object)second); }
-                if ((object)excel != null) { try { excel.Quit(); } catch (COMException) { } Marshal.FinalReleaseComObject((object)excel); }
-                GC.Collect(); GC.WaitForPendingFinalizers();
+                if ((object)excel != null) { try { if (lifetime.OwnsApplication) excel.Quit(); } catch (COMException) { } Marshal.FinalReleaseComObject((object)excel); }
             }
         }
     }

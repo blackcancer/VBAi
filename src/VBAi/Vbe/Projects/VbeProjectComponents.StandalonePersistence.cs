@@ -1,11 +1,29 @@
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace VBAi
 {
     /// <summary>Gère l’enregistrement natif des projets VBA autonomes de macros SWP.</summary>
     internal sealed partial class VbeProjectComponents
     {
+        /// <summary>Normalizes VBIDE's path-not-found state only for an unsaved standalone project.</summary>
+        private static string StandaloneAwareProjectPath(dynamic project)
+        {
+            try { return (string)project.FileName; }
+            catch (COMException error) when (error.ErrorCode == unchecked((int)0x800A004C) &&
+                (int)project.Type == 101 && !(bool)project.Saved)
+            {
+                // Newly added standalone projects may not expose FileName before their first SaveAs.
+                // Other HRESULTs, saved projects and host-document projects retain their failures.
+                return "";
+            }
+            catch (DirectoryNotFoundException error) when (error.HResult == unchecked((int)0x80070003) &&
+                (int)project.Type == 101 && !(bool)project.Saved)
+            {
+                return "";
+            }
+        }
                 /// <summary>Détecte uniquement un projet VBA autonome de macro SWP, jamais un projet intégré à un document Office.</summary>
                 /// <param name="project">Projet VBIDE à examiner.</param>
                 /// <returns><see langword="true"/> si le type et le chemin correspondent à une macro autonome SWP.</returns>
@@ -14,7 +32,7 @@ namespace VBAi
             try
             {
                 if ((int)project.Type != 101) return false; // vbext_pt_StandAlone
-                string path = (string)project.FileName;
+                string path = StandaloneAwareProjectPath((object)project);
                 return string.IsNullOrWhiteSpace(path) || Path.GetExtension(path).Equals(".swp", StringComparison.OrdinalIgnoreCase);
             }
             catch { return false; }
@@ -25,7 +43,7 @@ namespace VBAi
                 /// <returns>Un instantané sérialisable des indicateurs de sauvegarde et du fichier hôte.</returns>
         private static object StandalonePersistence(string selector, dynamic project)
         {
-            string path = (string)project.FileName;
+            string path = StandaloneAwareProjectPath((object)project);
             bool hasPath = !string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path);
             bool exists = hasPath && File.Exists(path);
             bool? readOnly = exists ? (bool?)((File.GetAttributes(path) & FileAttributes.ReadOnly) != 0) : null;
@@ -45,7 +63,7 @@ namespace VBAi
             if (!SupportsStandaloneMacro((object)project))
                 throw new InvalidOperationException("This host project has no supported save API. VBProject.SaveAs is only available for standalone SWP projects (Type=101).");
             AssertProjectVersion(request, project);
-            string original = (string)project.FileName;
+            string original = StandaloneAwareProjectPath((object)project);
             string destination;
             if (saveAs)
             {

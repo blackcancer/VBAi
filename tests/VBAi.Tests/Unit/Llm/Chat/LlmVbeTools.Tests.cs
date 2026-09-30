@@ -5,6 +5,193 @@ namespace VBAi.Tests.Unit
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     public sealed partial class LlmVbeToolsBoundaryTests
     {
+        private sealed class SaveQueueContext : System.Threading.SynchronizationContext
+        {
+            internal readonly System.Collections.Generic.Queue<System.Action> Pending = new System.Collections.Generic.Queue<System.Action>();
+            public override void Post(System.Threading.SendOrPostCallback callback, object state) { Pending.Enqueue(() => callback(state)); }
+            internal void Drain() { int limit = 100; while (Pending.Count > 0 && limit-- > 0) Pending.Dequeue()(); Assert.IsTrue(limit > 0); }
+        }
+        private static string InvokeSaveContract(ToolFixture fixture, string arguments)
+        {
+            var previous = System.Threading.SynchronizationContext.Current;
+            var context = new SaveQueueContext();
+            System.Threading.SynchronizationContext.SetSynchronizationContext(context);
+            try
+            {
+                var pending = fixture.Tools.InvokeAsync("save_host_document", arguments);
+                context.Drain();
+                Assert.IsTrue(pending.IsCompleted, "The injected save boundary must complete after dispatch.");
+                return pending.GetAwaiter().GetResult();
+            }
+            finally { System.Threading.SynchronizationContext.SetSynchronizationContext(previous); }
+        }
+        [DataTestMethod]
+        [DataRow(false)][DataRow(true)]
+        public void SaveHostDocumentDefersDirectAndCatalogDispatchThenRechecksApproval(bool catalog)
+        {
+            var previous = System.Threading.SynchronizationContext.Current;
+            var context = new SaveQueueContext();
+            System.Threading.SynchronizationContext.SetSynchronizationContext(context);
+            try
+            {
+                var fixture = new ToolFixture();
+                int saves = 0;
+                fixture.Tools.SaveHostDocumentNative = request => { saves++; return System.Threading.Tasks.Task.FromResult<object>(new { Saved = true }); };
+                string args = Json.Serialize(new { Project = "P", ExpectedProjectVersion = "version", ExpectedHostPath = @"C:\fixture\Owned.swp" });
+                string command = catalog ? "invoke_tool" : "save_host_document";
+                if (catalog) args = Json.Serialize(new { ToolName = "save_host_document", ArgumentsJson = args });
+                var pending = fixture.Tools.InvokeAsync(command, args);
+                Assert.IsFalse(pending.IsCompleted); Assert.AreEqual(0, saves);
+                fixture.Settings.VbeEditApproval = "ReadOnly";
+                context.Drain();
+                Failed(pending.GetAwaiter().GetResult(), "policy changed during deferred save");
+                Assert.AreEqual(0, saves);
+                fixture.Settings.VbeEditApproval = "Automatic";
+                pending = fixture.Tools.InvokeAsync(command, args);
+                Assert.IsFalse(pending.IsCompleted); Assert.AreEqual(0, saves);
+                context.Drain();
+                Success(pending.GetAwaiter().GetResult(), "deferred save"); Assert.AreEqual(1, saves);
+            }
+            finally { System.Threading.SynchronizationContext.SetSynchronizationContext(previous); }
+        }
+
+        [DataTestMethod]
+        [DataRow(false)][DataRow(true)]
+        public void SaveWaitsForNativeCompletionWithoutRepeatingDispatch(bool catalog)
+        {
+            var previous = System.Threading.SynchronizationContext.Current;
+            var context = new SaveQueueContext();
+            System.Threading.SynchronizationContext.SetSynchronizationContext(context);
+            try
+            {
+                var fixture = new ToolFixture();
+                int saves = 0;
+                var completion = new System.Threading.Tasks.TaskCompletionSource<object>();
+                fixture.Tools.SaveHostDocumentNative = request => { saves++; return completion.Task; };
+                string args = Json.Serialize(new { Project = "P", ExpectedProjectVersion = "version", ExpectedHostPath = @"C:\fixture\Owned.swp" });
+                Failed(fixture.Tools.Invoke("save_host_document", args), "synchronous save must refuse before invocation");
+                Assert.AreEqual(0, saves);
+                string command = catalog ? "invoke_tool" : "save_host_document";
+                if (catalog) args = Json.Serialize(new { ToolName = "save_host_document", ArgumentsJson = args });
+                var pending = fixture.Tools.InvokeAsync(command, args);
+                context.Drain();
+                Assert.AreEqual(1, saves); Assert.IsFalse(pending.IsCompleted);
+                completion.SetResult(new { SaveInvoked = true, Verified = true, Uncertain = false });
+                context.Drain();
+                Success(pending.GetAwaiter().GetResult(), "native completion");
+                Assert.AreEqual(1, saves);
+            }
+            finally { System.Threading.SynchronizationContext.SetSynchronizationContext(previous); }
+        }
+
+        [DataTestMethod]
+        [DataRow("project")][DataRow("mode")][DataRow("policy")]
+        public void SaveRechecksGuardsAfterApprovalDialog(string changed)
+        {
+            var previous = System.Threading.SynchronizationContext.Current;
+            var context = new SaveQueueContext();
+            System.Threading.SynchronizationContext.SetSynchronizationContext(context);
+            try
+            {
+                var fixture = new ToolFixture();
+                fixture.Settings.VbeEditApproval = "AskEachTime";
+                fixture.Tools.BoundProject = "P";
+                int saves = 0;
+                fixture.Tools.SaveHostDocumentNative = request => { saves++; return System.Threading.Tasks.Task.FromResult<object>(new { Saved = true }); };
+                fixture.Tools.ShowApproval = (dialog, owner) => {
+                    if (changed == "project") fixture.Tools.BoundProject = "Other";
+                    if (changed == "mode") fixture.Tools.Mode = ChatMode.Plan;
+                    if (changed == "policy") fixture.Settings.VbeEditApproval = "ReadOnly";
+                    return System.Windows.Forms.DialogResult.Yes;
+                };
+                var pending = fixture.Tools.InvokeAsync("save_host_document", Json.Serialize(new {
+                    Project = "P", ExpectedProjectVersion = "version", ExpectedHostPath = @"C:\fixture\Owned.swp" }));
+                context.Drain();
+                Failed(pending.GetAwaiter().GetResult(), "changed after approval: " + changed);
+                Assert.AreEqual(0, saves);
+            }
+            finally { System.Threading.SynchronizationContext.SetSynchronizationContext(previous); }
+        }
+
+        [DataTestMethod]
+        [DataRow("Other")][DataRow("")][DataRow(null)]
+        public void SaveDoesNotExposeResultAfterProjectScopeChangesWhilePending(string newBinding)
+        {
+            var previous = System.Threading.SynchronizationContext.Current;
+            var context = new SaveQueueContext();
+            System.Threading.SynchronizationContext.SetSynchronizationContext(context);
+            try
+            {
+                var fixture = new ToolFixture();
+                fixture.Tools.BoundProject = "P";
+                int saves = 0;
+                var completion = new System.Threading.Tasks.TaskCompletionSource<object>();
+                fixture.Tools.SaveHostDocumentNative = request => { saves++; return completion.Task; };
+                var pending = fixture.Tools.InvokeAsync("save_host_document", Json.Serialize(new {
+                    Project = "P", ExpectedProjectVersion = "version", ExpectedHostPath = @"C:\fixture\Owned.swp" }));
+                context.Drain(); Assert.AreEqual(1, saves);
+                fixture.Tools.BoundProject = newBinding;
+                completion.SetResult(new { SaveInvoked = true, Verified = true, HostPath = "private-path" });
+                context.Drain();
+                string result = pending.GetAwaiter().GetResult();
+                Success(result, "scope changed after invocation");
+                StringAssert.Contains(result, "\"Uncertain\":true");
+                StringAssert.Contains(result, "do not retry");
+                Assert.IsFalse(result.Contains("private-path")); Assert.AreEqual(1, saves);
+            }
+            finally { System.Threading.SynchronizationContext.SetSynchronizationContext(previous); }
+        }
+
+        [DataTestMethod]
+        [DataRow("project")]
+        [DataRow("mode")]
+        [DataRow("policy")]
+        public async System.Threading.Tasks.Task ImmediateRechecksContextAndPolicyAtNativeSubmission(string change)
+        {
+            var fixture = new ToolFixture();
+            var tools = fixture.Tools;
+            var state = new VBAi.Tests.Infrastructure.VbeToolMode { Mode = 2 };
+            int enters = 0;
+            tools.Execute = request => Response.Success(state);
+            tools.Native.ExecuteImmediate = (text, submit) => {
+                if (change == "project") state.SelectedProject = "Other";
+                if (change == "mode") state.Mode = 1;
+                if (change == "policy") fixture.Settings.VbeEditApproval = "Ask";
+                submit(() => enters++);
+                return new { Executed = true };
+            };
+            Failed(await tools.InvokeAsync("immediate_execute", Json.Serialize(new { Project = "P", ExpectedMode = 2, Text = "? 1" })), change);
+            Assert.AreEqual(0, enters);
+        }
+
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public async System.Threading.Tasks.Task ImmediateGatewayRefusesOtherActiveProjectEvenWithSharedContext()
+        {
+            var tools = new ToolFixture().Tools;
+            tools.BoundProject = @"C:\Temp\A.xlsm";
+            tools.SetReadAccess(new string[0], true);
+            int executions = 0;
+            tools.Native.ExecuteImmediate = (text, submit) => { submit(() => executions++); return new { Executed = true }; };
+            var state = new VBAi.Tests.Infrastructure.VbeToolMode {
+                Mode = 2, Project = "SameName", SelectedProject = "SameName",
+                SelectedProjectPath = @"C:\Temp\B.xlsm", ActiveModule = "Module1" };
+            tools.Execute = request => Response.Success(state);
+            string arguments = Json.Serialize(new { Project = tools.BoundProject, ExpectedMode = 2, Text = "Debug.Print 1" });
+            Failed(await tools.InvokeAsync("immediate_execute", arguments), "other active project");
+            Failed(await tools.InvokeAsync("invoke_tool", Json.Serialize(new { ToolName = "immediate_execute", ArgumentsJson = arguments })), "gateway other active project");
+            Assert.AreEqual(0, executions);
+            state.SelectedProject = null;
+            state.SelectedProjectPath = null;
+            state.ActiveModule = null;
+            Failed(await tools.InvokeAsync("immediate_execute", arguments), "native pane not in requested project");
+            Assert.AreEqual(0, executions);
+            state.SelectedProject = state.Project;
+            state.SelectedProjectPath = tools.BoundProject;
+            state.ActiveModule = "Module1";
+            Success(await tools.InvokeAsync("immediate_execute", arguments), "exact active project");
+            Assert.AreEqual(1, executions);
+        }
+
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
         public async System.Threading.Tasks.Task ProtectionAndNavigationAsyncRoutesPreserveSchedulingAndNativeResults()
         {
@@ -508,6 +695,8 @@ namespace VBAi.Tests.Unit
         {
             Assert.ThrowsException<ArgumentNullException>(() => new LlmVbeTools(null, null, null));
             var tools = Create();
+            var saveFixture = new ToolFixture();
+            saveFixture.Tools.SaveHostDocumentNative = request => System.Threading.Tasks.Task.FromResult<object>(new { Saved = true });
             tools.NoteUserRequest(null); tools.NoteUserRequest(" ");
             tools.NoteUserRequest(@"The supplied path is C:\Temp\fixture.bas");
             foreach (object definition in LlmVbeTools.Definitions)
@@ -528,24 +717,26 @@ namespace VBAi.Tests.Unit
                 var required = (object[])parameters["required"];
                 var fields = Dict(parameters["properties"]);
                 var values = Arguments(name);
-                Success(tools.Invoke(name, Json.Serialize(values)), name);
+                Func<string, string> invoke = arguments => name == "save_host_document"
+                    ? InvokeSaveContract(saveFixture, arguments) : tools.Invoke(name, arguments);
+                Success(invoke(Json.Serialize(values)), name);
                 foreach (string field in fields.Keys)
                 {
                     object original = values[field];
                     values[field] = null;
-                    Failed(tools.Invoke(name, Json.Serialize(values)), field);
+                    Failed(invoke(Json.Serialize(values)), field);
                     values[field] = new object[] { new object() };
-                    Failed(tools.Invoke(name, Json.Serialize(values)), name + ":" + field);
+                    Failed(invoke(Json.Serialize(values)), name + ":" + field);
                     values[field] = original;
                 }
                 foreach (string field in required.Cast<string>())
                 {
                     object original = values[field]; values.Remove(field);
-                    Failed(tools.Invoke(name, Json.Serialize(values)), name + ":missing:" + field);
+                    Failed(invoke(Json.Serialize(values)), name + ":missing:" + field);
                     values[field] = original;
                     if (original is string && field != "Text" && field != "Caption" && field != "Value")
                     {
-                        values[field] = " "; Failed(tools.Invoke(name, Json.Serialize(values)), field); values[field] = original;
+                        values[field] = " "; Failed(invoke(Json.Serialize(values)), field); values[field] = original;
                     }
                 }
             }

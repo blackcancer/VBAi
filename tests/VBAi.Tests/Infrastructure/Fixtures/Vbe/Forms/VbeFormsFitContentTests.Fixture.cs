@@ -18,6 +18,7 @@ namespace VBAi.Tests.Unit
             f.Target = nested ? new VbeFormsCoverageTests.Node { Name = "Frame1", ClassName = "Frame", Parent = f.Form.Designer } : f.Form.Designer;
             f.Children = new[] { new VbeFormsCoverageTests.Node { Name = "Label1", ClassName = "Label", Parent = f.Target } };
             f.Target.Controls = f.Children;
+            f.Target.ScalarWrite = f.Write;
             var child = f.Children[0];
             child.Metadata = new PropertyDescriptorCollection(new PropertyDescriptor[] {
                 new VbeFormsCoverageTests.LiveProperty("Left", typeof(double), () => f.ChildLeft),

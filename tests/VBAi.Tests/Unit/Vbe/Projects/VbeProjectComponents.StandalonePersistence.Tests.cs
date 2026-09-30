@@ -7,6 +7,51 @@ namespace VBAi.Tests.Unit
 
     public sealed partial class VbeProjectComponentsTests
     {
+        [DataTestMethod, DataRow(false), DataRow(true)]
+        public void UnsavedStandalonePathNotFoundAllowsOnlyExplicitFirstSaveAs(bool clrMapped)
+        {
+            string root = Path.Combine(Path.GetTempPath(), "StandaloneMissingPath-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(root);
+            try
+            {
+                var project = new FaultedStandaloneProject { Saved = false, FileName = "", FileNameError = unchecked((int)0x800A004C), ClrPathNotFound = clrMapped };
+                var service = Service(project);
+                dynamic state = service.PersistenceStatus(project.Name);
+                Assert.IsTrue((bool)state.HostAvailable);
+                Assert.IsFalse((bool)state.HostHasPath);
+                Assert.IsNull(state.HostPath);
+                dynamic metadata = service.ProjectProperties(project.Name);
+                string path = Path.Combine(root, "first-save.swp");
+                var request = new Request { Project = project.Name, ExpectedHostPath = path, Path = path, ExpectedProjectVersion = metadata.Version };
+                Assert.ThrowsException<InvalidOperationException>(() => service.SaveHostDocument(request));
+                Assert.AreEqual(0, project.Saves, "A pathless project requires explicit SaveAs, never inferred persistence.");
+                dynamic saved = service.SaveHostDocumentAs(request);
+                Assert.IsTrue((bool)saved.SaveAsInvoked);
+                Assert.IsTrue((bool)saved.ProjectSaved);
+                Assert.AreEqual(path, (string)saved.HostPath);
+                Assert.AreEqual(1, project.Saves);
+                Assert.IsTrue(File.Exists(path));
+            }
+            finally { Directory.Delete(root, true); }
+        }
+
+        [TestMethod]
+        public void StandaloneFirstSaveDoesNotSwallowSavedHostOrUnexpectedPathFailures()
+        {
+            foreach (bool clrMapped in new[] { false, true })
+            foreach (string scenario in new[] { "saved", "host", "other-hresult" })
+            {
+                var project = new FaultedStandaloneProject { Saved = scenario == "saved", Type = scenario == "host" ? 100 : 101,
+                    ClrPathNotFound = clrMapped && scenario != "other-hresult",
+                    FileNameError = scenario == "other-hresult" ? unchecked((int)0x80004005) : unchecked((int)0x800A004C) };
+                var service = Service(project);
+                dynamic metadata = service.ProjectProperties(project.Name);
+                var request = new Request { Project = project.Name, Path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".swp"), ExpectedProjectVersion = metadata.Version };
+                Assert.ThrowsException<InvalidOperationException>(() => service.SaveHostDocumentAs(request), scenario);
+                Assert.AreEqual(0, project.Saves, scenario);
+            }
+        }
+
         [TestMethod]
         public void StandaloneDetectionAndPersistenceDistinguishUnsavedRelativeMissingAndReadOnlyFiles()
         {

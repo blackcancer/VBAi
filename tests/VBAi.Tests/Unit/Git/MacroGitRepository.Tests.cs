@@ -31,6 +31,30 @@ namespace VBAi.Tests.Unit
             Assert.AreNotEqual(scope, MacroGitRepository.ScopeDirectory("Another disposable scope"));
         }
 
+        [TestMethod]
+        public void NativeLongCachePathCanInitializeCommitAndReadBackWithoutGlobalConfiguration()
+        {
+            using (var f = new MacroGitOperationsTests.Fixture())
+            {
+                string prefix = Path.Combine(f.Root, "long-cache-");
+                string cache = prefix + new string('x', Math.Max(1, 221 - Encoding.UTF8.GetByteCount(prefix)));
+                Assert.IsTrue(Encoding.UTF8.GetByteCount(cache) > 220);
+                var repository = new MacroGitRepository(cache, "main");
+                repository.Initialize(f.Remote);
+                Run(repository, new[] { "config", "user.name", "Qualification Fixture" });
+                Run(repository, new[] { "config", "user.email", "qualification@example.invalid" });
+                // Object paths extend beyond MAX_PATH even though the cache path itself is valid.
+                var snapshot = f.Project.Capture();
+                string commit = repository.Commit(snapshot, null, "Long cache qualification");
+                repository.SetRef(repository.Head, commit);
+                Assert.AreEqual(commit, repository.Resolve(repository.Head));
+                Assert.IsTrue(snapshot.SameAs(repository.Read(commit)));
+                repository.Initialize(f.Remote);
+                Assert.ThrowsException<InvalidOperationException>(() => repository.Initialize("other-origin"));
+                Assert.AreEqual(1, Run(repository, new[] { "config", "--local", "--get", "core.longpaths" }, allowFailure: true).ExitCode);
+            }
+        }
+
                 /// <summary>Initialise un dépôt Git et vérifie la récupération, la synchronisation et l’ascendance des commits.</summary>
 [TestMethod]
         public void NativeInitializeFetchSynchronizationAndAncestryMatrix()

@@ -32,6 +32,10 @@ namespace VBAi
         public object OpenStandaloneProject(Request request)
         {
             if (request == null) throw new ArgumentException("Request is required.");
+            // VBProjects.Open terminated the native SOLIDWORKS 2019 host during qualification.
+            // Refuse before accessing its collection; never retry through another native API.
+            if (SolidWorksSaveProbe().IsSolidWorks)
+                throw new NotSupportedException("Opening a standalone SWP through VBProjects.Open is disabled in SOLIDWORKS after an observed host termination. Use SOLIDWORKS Tools > Macro > Edit instead.");
             string path = RequireAbsolutePath(request.Path);
             if (!Path.GetExtension(path).Equals(".swp", StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("Only an absolute standalone .swp macro is supported.");
@@ -96,7 +100,7 @@ namespace VBAi
                 var row = extra[0];
                 if (row.Type != 101 || row.Mode != 2 || row.Protection != 0 ||
                     row.Name != (string)added.Name ||
-                    !string.Equals(row.Path, (string)added.FileName, StringComparison.OrdinalIgnoreCase) ||
+                    !string.Equals(row.Path, StandaloneAwareProjectPath((object)added), StringComparison.OrdinalIgnoreCase) ||
                     (path != null && !string.Equals(row.Path, path, StringComparison.OrdinalIgnoreCase)))
                     throw new InvalidOperationException("The native returned project does not match the standalone readback.");
                 return new { Verified = true, MutationInvoked = true, Uncertain = false,
@@ -135,7 +139,7 @@ namespace VBAi
             foreach (dynamic project in vbe.VBProjects)
             {
                 string name = (string)project.Name;
-                string path = (string)project.FileName;
+                string path = StandaloneAwareProjectPath((object)project);
                 var components = new List<object>();
                 if ((int)project.Protection == 0)
                     foreach (dynamic component in project.VBComponents)
@@ -173,7 +177,7 @@ namespace VBAi
         private static object LifecycleUncertain(string api, Exception error)
         {
             return new { Verified = false, MutationInvoked = true, Uncertain = true, NativeApi = api,
-                Reason = error.Message, RetryAllowed = false,
+                Reason = error.Message + " (" + error.GetType().FullName + ", HRESULT 0x" + unchecked((uint)error.HResult).ToString("X8") + ")", RetryAllowed = false,
                 Limit = "Inspect project_collection_state before deciding on another operation. No retry or rollback was performed." };
         }
 

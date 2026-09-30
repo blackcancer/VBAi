@@ -1,0 +1,163 @@
+{
+  "formatVersion": 1,
+  "scope": "Runtime NuGet closure resolved for net48; upstream texts copied verbatim. This manifest is provenance, not the VBAi license or a legal clearance.",
+  "packages": [
+    {
+      "package": "Markdig",
+      "version": "0.37.0",
+      "license": "BSD-2-Clause",
+      "packageUrl": "https://www.nuget.org/packages/Markdig/0.37.0",
+      "packageSha512": "biiu4MTPFjW55qw6v5Aphtj0MjDLJ14x8ndZwkJUHIeqvaSGKeqhLY7S7Vu/S3k7/c9KwhhnaCDP9hdFNUhcNA==",
+      "nuspecSha256": "53108B8B518532D4910028439BDB469689D592AF34740C4144EC7C007B9A4842",
+      "upstreamRepository": "https://github.com/xoofx/markdig",
+      "upstreamCommit": "1a1bbecc467a800dd6b39e68825df50309f6065c",
+      "directory": "Markdig-0.37.0",
+      "files": [
+        {
+          "file": "LICENSE.txt",
+          "sha256": "AE543293657B6782E3D4A76257DC4157210CE88A352EF8392065D3F04DCD88D1",
+          "source": "https://raw.githubusercontent.com/xoofx/markdig/1a1bbecc467a800dd6b39e68825df50309f6065c/license.txt"
+        }
+      ]
+    },
+    {
+      "package": "Microsoft.Web.WebView2",
+      "version": "1.0.4258.31",
+      "license": "Package LICENSE.txt and NOTICE.txt",
+      "packageUrl": "https://www.nuget.org/packages/Microsoft.Web.WebView2/1.0.4258.31",
+      "packageSha512": "sHVZ2MQrHT1J3q5/6csn0fIP27rzpTO/RRC+wPQDrZheB7T4t2n+vVbY6SdCKr4WRV9s/gmBM3PPMWWJtoDzMg==",
+      "nuspecSha256": "4D4CE4EABF07616747FDF8AB35E7D5EB8523F164B5827AEBA52FECAD4AE2FA8E",
+      "upstreamRepository": null,
+      "upstreamCommit": null,
+      "directory": "Microsoft.Web.WebView2-1.0.4258.31",
+      "files": [
+        {
+          "file": "LICENSE.txt",
+          "sha256": "0AF8F1B807512AAE39C2AC1AA4D0CAE65CABECB6FD554B8439A5162A0D6ECA55",
+          "source": "NuGet package root: LICENSE.txt"
+        },
+        {
+          "file": "NOTICE.txt",
+          "sha256": "106423785C5B7EBA0A8E61D1837F2132E9C828E20AD530F565D981C1DF60DD90",
+          "source": "NuGet package root: NOTICE.txt"
+        }
+      ]
+    },
+    {
+      "package": "System.Buffers",
+      "version": "4.5.1",
+      "license": "MIT; preserve bundled notices",
+      "packageUrl": "https://www.nuget.org/packages/System.Buffers/4.5.1",
+      "packageSha512": "Rw7ijyl1qqRS0YQD/WycNst8hUUMgrMH4FCn1nNm27M4VxchZ1js3fVjQaANHO5f3sN4isvP4a+Met9Y4YomAg==",
+      "nuspecSha256": "353A5C2810BFB22DE50B87616F426D4D2C8AAC2040802C68E2CAADEDBFE66B8E",
+      "upstreamRepository": null,
+      "upstreamCommit": null,
+      "directory": "System.Buffers-4.5.1",
+      "files": [
+        {
+          "file": "LICENSE.TXT",
+          "sha256": "D7A68596AB69B06F51CA278A6545148E4269A9381C26D597C13DF5D88E08CF5B",
+          "source": "NuGet package root: LICENSE.TXT"
+        },
+        {
+          "file": "THIRD-PARTY-NOTICES.TXT",
+          "sha256": "7864A01E2FDEF7E8FDF81B906EFB1466F083206AFFEA7BA7E6DADEA429754765",
+          "source": "NuGet package root: THIRD-PARTY-NOTICES.TXT"
+        }
+      ]
+    },
+    {
+      "package": "System.Memory",
+      "version": "4.5.5",
+      "license": "MIT; preserve bundled notices",
+      "packageUrl": "https://www.nuget.org/packages/System.Memory/4.5.5",
+      "packageSha512": "XIWiDvKPXaTveaB7HVganDlOCRoj03l+jrwNvcge/t8vhGYKvqV+dMv6G4SAX2NoNmN0wZfVPTAlFwZcZvVOUw==",
+      "nuspecSha256": "745BFA574A0FE397559DAD595FD0B73A38D7DDE40703BB8F0F1EBA82EDF99AA7",
+      "upstreamRepository": null,
+      "upstreamCommit": null,
+      "directory": "System.Memory-4.5.5",
+      "files": [
+        {
+          "file": "LICENSE.TXT",
+          "sha256": "D7A68596AB69B06F51CA278A6545148E4269A9381C26D597C13DF5D88E08CF5B",
+          "source": "NuGet package root: LICENSE.TXT"
+        },
+        {
+          "file": "THIRD-PARTY-NOTICES.TXT",
+          "sha256": "7864A01E2FDEF7E8FDF81B906EFB1466F083206AFFEA7BA7E6DADEA429754765",
+          "source": "NuGet package root: THIRD-PARTY-NOTICES.TXT"
+        }
+      ]
+    },
+    {
+      "package": "System.Numerics.Vectors",
+      "version": "4.5.0",
+      "license": "MIT; preserve bundled notices",
+      "packageUrl": "https://www.nuget.org/packages/System.Numerics.Vectors/4.5.0",
+      "packageSha512": "QQTlPTl06J/iiDbJCiepZ4H//BVraReU4O4EoRw1U02H5TLUIT7xn3GnDp9AXPSlJUDyFs4uWjWafNX6WrAojQ==",
+      "nuspecSha256": "E88AA01F9C9F763F66D643FC093EB3FA885141847F61FAC13C2A9AD7A60A29E9",
+      "upstreamRepository": null,
+      "upstreamCommit": null,
+      "directory": "System.Numerics.Vectors-4.5.0",
+      "files": [
+        {
+          "file": "LICENSE.TXT",
+          "sha256": "D7A68596AB69B06F51CA278A6545148E4269A9381C26D597C13DF5D88E08CF5B",
+          "source": "NuGet package root: LICENSE.TXT"
+        },
+        {
+          "file": "THIRD-PARTY-NOTICES.TXT",
+          "sha256": "7864A01E2FDEF7E8FDF81B906EFB1466F083206AFFEA7BA7E6DADEA429754765",
+          "source": "NuGet package root: THIRD-PARTY-NOTICES.TXT"
+        }
+      ]
+    },
+    {
+      "package": "System.Resources.Extensions",
+      "version": "8.0.0",
+      "license": "MIT; preserve bundled notices",
+      "packageUrl": "https://www.nuget.org/packages/System.Resources.Extensions/8.0.0",
+      "packageSha512": "psnQ6GRQOvt+evda5C4nD5EuV49mz2Tv0DD2JDVDEbE/TKoMukxSkGJcsBJ0pajpPuFRr67syFYlkJ4Wj6A5Zw==",
+      "nuspecSha256": "F2D1285F1CF888415800501B1F03026E4D8DE1E8BD96BBE9DE6E3C923A44C1E5",
+      "upstreamRepository": "https://github.com/dotnet/runtime",
+      "upstreamCommit": "5535e31a712343a63f5d7d796cd874e563e5ac14",
+      "directory": "System.Resources.Extensions-8.0.0",
+      "files": [
+        {
+          "file": "LICENSE.TXT",
+          "sha256": "D7A68596AB69B06F51CA278A6545148E4269A9381C26D597C13DF5D88E08CF5B",
+          "source": "NuGet package root: LICENSE.TXT"
+        },
+        {
+          "file": "THIRD-PARTY-NOTICES.TXT",
+          "sha256": "19C19DCAC9F3EE6302CFBC6745BB8E79F08EFC4C933EB8DC5509BF14B88347EC",
+          "source": "NuGet package root: THIRD-PARTY-NOTICES.TXT"
+        }
+      ]
+    },
+    {
+      "package": "System.Runtime.CompilerServices.Unsafe",
+      "version": "4.5.3",
+      "license": "MIT; preserve bundled notices",
+      "packageUrl": "https://www.nuget.org/packages/System.Runtime.CompilerServices.Unsafe/4.5.3",
+      "packageSha512": "3TIsJhD1EiiT0w2CcDMN/iSSwnNnsrnbzeVHSKkaEgV85txMprmuO+Yq2AdSbeVGcg28pdNDTPK87tJhX7VFHw==",
+      "nuspecSha256": "472FB74FE760F6F17487C40091D295BDAB63E961FF1B5594A9689AB1F5F2092D",
+      "upstreamRepository": null,
+      "upstreamCommit": null,
+      "directory": "System.Runtime.CompilerServices.Unsafe-4.5.3",
+      "files": [
+        {
+          "file": "LICENSE.TXT",
+          "sha256": "D7A68596AB69B06F51CA278A6545148E4269A9381C26D597C13DF5D88E08CF5B",
+          "source": "NuGet package root: LICENSE.TXT"
+        },
+        {
+          "file": "THIRD-PARTY-NOTICES.TXT",
+          "sha256": "7864A01E2FDEF7E8FDF81B906EFB1466F083206AFFEA7BA7E6DADEA429754765",
+          "source": "NuGet package root: THIRD-PARTY-NOTICES.TXT"
+        }
+      ]
+    }
+  ],
+  "additionalNotices": "Monaco notices remain under EditorAssets via assets/editor/dist."
+}

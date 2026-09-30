@@ -172,6 +172,12 @@ namespace VBAi
             return debugger.InspectLocalScalarsAsync(request);
         }
 
+        /// <summary>Allows queued native saves to finish without blocking the VBE message loop.</summary>
+        internal System.Threading.Tasks.Task<object> SaveHostDocumentAsync(Request request)
+        {
+            return components.SaveHostDocumentAsync(request);
+        }
+
         /// <summary>Exécute la commande demandée et encapsule son résultat dans une réponse.</summary>
         /// <param name="request">Paramètres de la commande à exécuter.</param>
         /// <returns>Réponse contenant le résultat de la commande ou son erreur de validation.</returns>
@@ -635,7 +641,7 @@ namespace VBAi
         internal string GitScope(string projectName)
         {
             dynamic project = GetProject(projectName);
-            string path = (string)project.FileName;
+            string path = VbeProjectHostPath.Read((object)project);
             if (string.IsNullOrWhiteSpace(path) || !Path.IsPathRooted(path)) throw new InvalidOperationException("Enregistrez le document avant d’utiliser Git.");
             return Path.GetFullPath(path);
         }
@@ -658,7 +664,11 @@ namespace VBAi
                 string fileName = null;
                 try { fileName = (string)project.FileName; }
                 catch (Exception) { } // An unsaved host document has no accessible path.
-                result.Add(new { Name = (string)project.Name, FileName = fileName, Mode = (int)project.Mode });
+                string hostPath = null, hostPathError = null;
+                try { hostPath = VbeProjectHostPath.Read((object)project); }
+                catch (Exception error) { hostPathError = error.Message; }
+                result.Add(new { Name = (string)project.Name, FileName = fileName, HostPath = hostPath,
+                    HostPathError = hostPathError, Mode = (int)project.Mode });
             }
             return result;
         }

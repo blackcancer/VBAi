@@ -107,7 +107,7 @@ namespace VBAi
             observingDebug = true;
             try { await ObserveDebugMode(); }
             catch (Exception error) { LoadLog.Write("Monaco debug observation: " + error.Message); }
-            finally { observingDebug = false; }
+            finally { observingDebug = false; SchedulePostStepObservation(); }
         }
         /// <summary>Flushes streamed drafts after 120 ms of idle, or 450 ms during sustained typing.</summary>
         private async void StreamTimerTick(object sender, EventArgs e) { await FlushStream(); }

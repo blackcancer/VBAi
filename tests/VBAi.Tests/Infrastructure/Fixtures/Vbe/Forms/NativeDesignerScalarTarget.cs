@@ -6,6 +6,8 @@ namespace VBAi.Tests.Infrastructure
         public float Top { get; set; }
         public float Width { get; set; }
         public float Height { get; set; }
+        public float ScrollWidth { get; set; }
+        public float ScrollHeight { get; set; }
         public string Caption { get; set; }
         public string Name { get; set; }
         public string Text { get; set; }

@@ -178,6 +178,9 @@ namespace VBAi
         {
             dynamic project = GetProject(projectName);
             bool projectSaved = (bool)project.Saved;
+            var solidWorks = SolidWorksSaveProbe();
+            if (!host.IsExcel && solidWorks.IsSolidWorks && (int)project.Type == 100)
+                return SolidWorksPersistence(projectName, (object)project, solidWorks);
             if (!host.IsExcel && SupportsStandaloneMacro((object)project)) return StandalonePersistence(projectName, (object)project);
             if (!host.IsExcel)
             {
@@ -220,6 +223,9 @@ namespace VBAi
                 throw new ArgumentException("ExpectedHostPath must be the absolute path read from project_persistence_status.");
             if (!host.IsExcel)
             {
+                var solidWorks = SolidWorksSaveProbe();
+                if (solidWorks.IsSolidWorks && (int)GetProject(request.Project).Type == 100)
+                    throw new InvalidOperationException("SOLIDWORKS host saves require SaveHostDocumentAsync on the owning UI thread.");
                 var other = OtherHostProbe();
                 return other.HostKind != null ? SaveOtherHost(request, false, other) : SaveStandaloneMacro(request, false);
             }
@@ -805,7 +811,7 @@ namespace VBAi
             else if (type.IsPrimitive || type == typeof(decimal))
                 converted = Convert.ChangeType(value, type, CultureInfo.InvariantCulture);
             else throw new InvalidOperationException("Property is not an editable scalar: " + name);
-            descriptor.SetValue(target, converted);
+            VbeScalarProperty.Set(target, descriptor, converted);
             object actual = descriptor.GetValue(target);
             if (!Equals(actual, converted) &&
                 !string.Equals(Convert.ToString(actual, CultureInfo.InvariantCulture),

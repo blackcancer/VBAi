@@ -41,7 +41,7 @@ namespace VBAi
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Func<Request, object> RespondDebugDialog = VbeDebugWindows.RespondDebugDialog;
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
-        internal Func<string, object> ExecuteImmediate = VbeDebugWindows.ExecuteImmediate;
+        internal Func<string, Action<Action>, object> ExecuteImmediate = VbeDebugWindows.ExecuteImmediateGuarded;
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
         internal Action EnsureNoCompileDialog = VbeDebugWindows.EnsureNoCompileDialog;
         /// <summary>Frontière native injectable, initialisée avec le comportement de production.</summary>
@@ -87,6 +87,8 @@ namespace VBAi
         internal Func<Request, Task<object>> ReadImmediateNative;
         /// <summary>Inspects declared scalar locals on the owning VBE UI thread.</summary>
         internal Func<Request, Task<object>> InspectLocalScalarsNative;
+        /// <summary>Saves and observes completion while yielding to the owning VBE STA.</summary>
+        internal Func<Request, Task<object>> SaveHostDocumentNative;
         /// <summary>Demande la sauvegarde de signature au document hôte.</summary>
         internal Func<string, object> PersistSignature;
         /// <summary>Crée le canal local avec la sécurité de l’utilisateur courant.</summary>
@@ -117,6 +119,7 @@ namespace VBAi
             Execute = request => session.Execute(request);
             ReadImmediateNative = request => session.ReadImmediateAsync(request);
             InspectLocalScalarsNative = request => session.InspectLocalScalarsAsync(request);
+            SaveHostDocumentNative = request => session.SaveHostDocumentAsync(request);
             PersistSignature = project => session.PersistProjectSignature(project);
             pipeName = "VBAi." + processId;
             OpenPipe = security => new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1,
@@ -181,7 +184,24 @@ namespace VBAi
                                     if (!state.Ok) response = state;
                                     else if ((int)((dynamic)state.Data).Mode != request.ExpectedMode)
                                         response = Response.Failure("Project mode changed before Immediate execution.");
-                                    else response = Response.Success(Native.ExecuteImmediate(request.Text));
+                                    else
+                                    {
+                                        VbeImmediateContext.RequireProject(request.Project, state.Data);
+                                        response = Response.Success(Native.ExecuteImmediate(request.Text, enter => dispatcher.Invoke(new Action(() => {
+                                            VbeImmediateContext.RequireCurrent(request.Project, request.ExpectedMode, Execute);
+                                            enter();
+                                        }))));
+                                    }
+                                }
+                                else if (request != null && request.Command == "save_host_document")
+                                {
+                                    // Defer on the owning STA outside the current native/UI callback.
+                                    var completion = new TaskCompletionSource<Response>(TaskCreationOptions.RunContinuationsAsynchronously);
+                                    dispatcher.BeginInvoke(new Action(async () => {
+                                        try { completion.TrySetResult(Response.Success(await SaveHostDocumentNative(request))); }
+                                        catch (Exception ex) { completion.TrySetResult(Response.Failure(ex.Message)); }
+                                    }));
+                                    response = completion.Task.GetAwaiter().GetResult();
                                 }
                                 else if (request != null && request.Command == "read_immediate")
                                 {

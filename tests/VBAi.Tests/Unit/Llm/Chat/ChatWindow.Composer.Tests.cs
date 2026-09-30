@@ -72,6 +72,39 @@ namespace VBAi.Tests.Unit
     /// <summary>Vérifie les interactions clavier et la résolution des références dans le compositeur.</summary>
     public sealed partial class ChatWindowStateTests
     {
+        [STATestMethod, TestCategory("Unit")]
+        public void ShiftTabLeavesSuggestionUnacceptedAndPlainTabStillAccepts()
+        {
+            var modifiers = ChatWindow.ReadModifiers;
+            try
+            {
+                using (var runtime = new RuntimeScope())
+                using (var window = LoadedWindow(runtime.Session))
+                {
+                    window.Show(); System.Windows.Forms.Application.DoEvents();
+                    var prompt = Get<TextBox>(window, "prompt");
+                    var popup = Get<Popup>(window, "referencePopup");
+                    var mode = Get<System.Windows.Forms.ComboBox>(window, "modePicker");
+                    object originalMode = mode.SelectedItem;
+                    prompt.Text = "/plan"; prompt.CaretIndex = prompt.Text.Length;
+                    Call(window, "UpdateReferences");
+                    Assert.IsTrue(popup.IsOpen);
+                    ChatWindow.ReadModifiers = () => ModifierKeys.Shift;
+                    Assert.IsFalse(RunKey(window, Key.Tab).Handled, "Backward focus navigation must remain routed to WPF/WinForms.");
+                    Assert.IsFalse(popup.IsOpen);
+                    Assert.AreEqual("/plan", prompt.Text);
+                    Assert.AreEqual(originalMode, mode.SelectedItem);
+                    Assert.AreEqual(0, Get<List<VbeChatReference>>(window, "selectedReferences").Count);
+                    ChatWindow.ReadModifiers = () => ModifierKeys.None;
+                    Call(window, "UpdateReferences");
+                    Assert.IsTrue(popup.IsOpen);
+                    Assert.IsTrue(RunKey(window, Key.Tab).Handled);
+                    Assert.AreEqual(ChatMode.Plan, mode.SelectedItem);
+                }
+            }
+            finally { ChatWindow.ReadModifiers = modifiers; }
+        }
+
         /// <summary>Parcourt les commandes et références du catalogue avec la fenêtre contextuelle réelle.</summary>
         [STATestMethod, TestCategory("Unit")]
         public void ComposerCommandReferencePopupAndKeyboardNavigationUseRealReferenceCatalogue()

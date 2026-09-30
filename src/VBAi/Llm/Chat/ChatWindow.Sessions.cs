@@ -112,7 +112,7 @@ namespace VBAi
                         for (int i = 0; i < scopePicker.Items.Count; i++)
                         {
                             var candidate = (MacroScope)scopePicker.Items[i];
-                            string selectedPath = data.ContainsKey("SelectedProjectPath")
+                            string selectedPath = data.ContainsKey("SelectedHostPath") ? Convert.ToString(data["SelectedHostPath"]) : VbeProjectHostPath.AllowsLegacyPath && data.ContainsKey("SelectedProjectPath")
                                 ? Convert.ToString(data["SelectedProjectPath"]) : null;
                             if (!candidate.Key.StartsWith("temporary:", StringComparison.Ordinal)
                                 ? string.Equals(candidate.Project, selectedPath, StringComparison.OrdinalIgnoreCase)
@@ -153,7 +153,7 @@ namespace VBAi
                 var project = raw as IDictionary<string, object>;
                 if (project == null) continue;
                 string name = Convert.ToString(project["Name"]);
-                string path = Convert.ToString(project["FileName"]);
+                string path = VbeProjectHostPath.FromFields(project);
                 bool saved = !string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path);
                 scopePicker.Items.Add(new MacroScope {
                     Project = saved ? Path.GetFullPath(path) : name,
@@ -452,11 +452,11 @@ namespace VBAi
             var matches = (projects ?? new object[0]).OfType<IDictionary<string, object>>()
                 .Where(item => scope.Key.StartsWith("temporary:", StringComparison.Ordinal)
                     ? Convert.ToString(item["Name"]) == scope.Project
-                    : string.Equals(Convert.ToString(item["FileName"]), scope.Project, StringComparison.OrdinalIgnoreCase)).ToArray();
+                    : string.Equals(VbeProjectHostPath.FromFields(item), scope.Project, StringComparison.OrdinalIgnoreCase)).ToArray();
             if (matches.Length != 1) throw new InvalidOperationException(UiText.Get("The project for this conversation is closed or ambiguous."));
             if (!scope.Key.StartsWith("temporary:", StringComparison.Ordinal))
             {
-                string path = Convert.ToString(matches[0]["FileName"]);
+                string path = VbeProjectHostPath.FromFields(matches[0]);
                 if (string.IsNullOrEmpty(path) || !string.Equals(Path.GetFullPath(path), scope.Key, StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException(UiText.Get("The VBA document has changed. Reopen the chat to choose the current document."));
             }
