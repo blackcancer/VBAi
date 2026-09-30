@@ -11,6 +11,32 @@ namespace VBAi.Tests.Unit
     /// <summary>Vérifie la traduction des contrôles et la détection de culture de l’interface.</summary>
     public sealed partial class UiLocalizationTests
     {
+        /// <summary>Requires genuine localized recovery warnings while preserving their exact English wording in en-US.</summary>
+        [TestMethod]
+        public void RecoveryWarningsHaveExplicitTranslationsAndKeepEnglishDiagnosticKeys()
+        {
+            string[] warnings = {
+                "VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring.",
+                "Inspection and restoration of the native Code Colors category both failed. The original category selection is unverified."
+            };
+            using (var scope = new VBAi.Tests.Infrastructure.LocalizationScope())
+            {
+                foreach (var language in UiLanguages.All)
+                {
+                    VBAi.Tests.Infrastructure.LocalizationScope.Set(language.CultureName);
+                    var catalogue = new System.Resources.ResourceManager("VBAi.Localization.UiStrings" + language.ResourceSuffix, typeof(UiText).Assembly);
+                    foreach (string warning in warnings)
+                    {
+                        string embedded = catalogue.GetString(warning, CultureInfo.InvariantCulture);
+                        Assert.IsFalse(string.IsNullOrWhiteSpace(embedded), language.CultureName);
+                        Assert.AreEqual(embedded, UiText.Get(warning), language.CultureName);
+                        if (language.CultureName == "en-US") Assert.AreEqual(warning, embedded);
+                        else Assert.AreNotEqual(warning, embedded, "A populated English fallback is not a translation: " + language.CultureName);
+                    }
+                }
+            }
+        }
+
         /// <summary>Donne priorité aux menus du VBE sans modifier la culture du thread hôte.</summary>
         [TestMethod]
         public void VbeMenuLanguageOverridesWindowsWithoutChangingTheHostCulture()

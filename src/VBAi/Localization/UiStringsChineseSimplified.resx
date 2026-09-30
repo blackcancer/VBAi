@@ -2071,4 +2071,6 @@ QQ 附加内存
   <data name="Installation outcome is uncertain. Check the installer and its log before attempting another update." xml:space="preserve"><value>安装结果不确定。再次尝试更新前，请检查安装程序及其日志。</value></data>
   <data name="Installation refused: no trusted VBAi publisher is configured or the publisher does not match." xml:space="preserve"><value>安装被拒绝：未配置受信任的 VBAi 发布者，或发布者不匹配。</value></data>
   <data name="Local history recovery copies are available. See the troubleshooting guide." xml:space="preserve"><value>本地历史记录的恢复副本可用。请参阅故障排除指南。</value></data>
+  <data name="VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring." xml:space="preserve"><value>VBA 导入失败，且无法记录其结果状态。恢复仍处于待处理状态；恢复前请检查保留的备份和当前项目。</value></data>
+  <data name="Inspection and restoration of the native Code Colors category both failed. The original category selection is unverified." xml:space="preserve"><value>检查和恢复原生代码颜色类别均失败。原始类别选择尚未验证。</value></data>
 </root>

@@ -2071,4 +2071,6 @@ Git Credential Manager でサインインします。コミットの作成者情
   <data name="Installation outcome is uncertain. Check the installer and its log before attempting another update." xml:space="preserve"><value>インストール結果を確認できません。更新を再試行する前に、インストーラーとそのログを確認してください。</value></data>
   <data name="Installation refused: no trusted VBAi publisher is configured or the publisher does not match." xml:space="preserve"><value>インストールが拒否されました。信頼された VBAi の発行元が設定されていないか、発行元が一致しません。</value></data>
   <data name="Local history recovery copies are available. See the troubleshooting guide." xml:space="preserve"><value>ローカル履歴の復元用コピーがあります。トラブルシューティングガイドを参照してください。</value></data>
+  <data name="VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring." xml:space="preserve"><value>VBA のインポートに失敗し、その結果の状態を記録できませんでした。復旧は保留中です。復元する前に、保持されたバックアップと現在のプロジェクトを確認してください。</value></data>
+  <data name="Inspection and restoration of the native Code Colors category both failed. The original category selection is unverified." xml:space="preserve"><value>ネイティブのコードの色カテゴリの検査と復元の両方に失敗しました。元のカテゴリ選択は検証されていません。</value></data>
 </root>
