@@ -229,6 +229,7 @@ namespace VBAi
                 list.Choices.Distinct(StringComparer.Ordinal).Count() != list.Choices.Count || list.Choices.Count(x => x == original) != 1)
                 throw new InvalidOperationException("The native Code Colors category catalogue is unreadable or ambiguous.");
             var categories = new List<OptionsFormatCategory>();
+            Exception inspectionFailure = null;
             try
             {
                 foreach (string category in list.Choices.ToArray())
@@ -242,7 +243,18 @@ namespace VBAi
                     categories.Add(new OptionsFormatCategory { Category = category, Palettes = palettes });
                 }
             }
-            finally { select(original); }
+            catch (Exception error) { inspectionFailure = error; throw; }
+            finally
+            {
+                try { select(original); }
+                catch (Exception restorationFailure) when (inspectionFailure != null)
+                {
+                    // Preserve both causes and make the failed selection restoration
+                    // explicit. Do not repeat it or claim the original state was recovered.
+                    throw new AggregateException(UiText.Get("Inspection and restoration of the native Code Colors category both failed. The original category selection is unverified."),
+                        inspectionFailure, restorationFailure);
+                }
+            }
             return categories;
         }
 

@@ -71,3 +71,10 @@ and recovery cases where applicable.
 
 See [architecture](../architecture.md), [conversations](../chat-ui.md),
 [privacy](../privacy.md) and [testing](../../tests/README.md).
+
+Inspecting native Options temporarily selects each Code Colors category and
+attempts to restore the original selection once. If both inspection and that
+restoration fail, the error retains both causes and identifies the original
+selection as unverified. This operation does not write palette preferences;
+neither an attempted restoration nor closing the dialog proves that the complete
+preferences baseline was restored.

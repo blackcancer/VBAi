@@ -95,6 +95,47 @@ namespace VBAi.Tests.Unit
             }
         }
 
+        /// <summary>Preserves both inspection and restoration errors without claiming restored selection.</summary>
+        [DataTestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public void FormatCategoryInspectionPreservesPrimaryAndRestorationFailures(bool selectionFails)
+        {
+            var list = new VbeDebugWindows.OptionsControl { Choices = new[] { "Original", "Other" }, Value = "Original" };
+            var primary = new InvalidOperationException(selectionFails ? "Category selection failed" : "Palette read failed");
+            var restoration = new System.IO.IOException("Original category could not be restored");
+            var selections = new List<string>();
+            int originalAttempts = 0;
+            var palettes = new[] { "Foreground", "Background", "Indicator" }.Select(name =>
+                new VbeDebugWindows.OptionsControl { Name = name, Type = "ControlType.ComboBox", Value = "Automatic" }).ToArray();
+
+            var error = Assert.ThrowsException<AggregateException>(() => VbeDebugWindows.CaptureOptionsFormatCategories(list, name => {
+                selections.Add(name);
+                if (name == "Original" && ++originalAttempts == 2) throw restoration;
+                if (selectionFails && name == "Other") throw primary;
+            }, () => { if (!selectionFails) throw primary; return palettes; }));
+
+            Assert.AreEqual(2, error.InnerExceptions.Count);
+            Assert.AreSame(primary, error.InnerExceptions[0]);
+            Assert.AreSame(restoration, error.InnerExceptions[1]);
+            CollectionAssert.AreEqual(selectionFails ? new[] { "Original", "Other", "Original" } : new[] { "Original", "Original" }, selections.ToArray());
+        }
+
+        /// <summary>A lone restoration failure remains the original exception after a successful inspection.</summary>
+        [TestMethod]
+        public void FormatCategoryInspectionPropagatesSoleRestorationFailure()
+        {
+            var list = new VbeDebugWindows.OptionsControl { Choices = new[] { "Original", "Other" }, Value = "Original" };
+            var restoration = new System.IO.IOException("Restoration failed after complete inspection");
+            var selections = new List<string>();
+            var palettes = new[] { "Foreground", "Background", "Indicator" }.Select(name =>
+                new VbeDebugWindows.OptionsControl { Name = name, Type = "ControlType.ComboBox", Value = "Automatic" }).ToArray();
+            var error = Assert.ThrowsException<System.IO.IOException>(() => VbeDebugWindows.CaptureOptionsFormatCategories(list,
+                name => { selections.Add(name); if (selections.Count == 3) throw restoration; }, () => palettes));
+            Assert.AreSame(restoration, error);
+            CollectionAssert.AreEqual(new[] { "Original", "Other", "Original" }, selections.ToArray());
+        }
+
         /// <summary>La version couvre les palettes d'autres catégories avant toute sélection ni écriture.</summary>
         [TestMethod]
         public void FormatCategoryColoursAreGloballyVersionedAndSelectedOnlyAfterGuard()
