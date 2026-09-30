@@ -215,6 +215,10 @@ Each child records inherited attributes and ACL, verifies a new synthetic text
 file can be written/read, and queries public EFS certificate hashes while keeping
 metadata access denial explicit. Each process then attempts exactly one native
 form export. Reports, raw and partial files are retained; no private key is read.
+The same four trials record the testhost and exact owned Excel process tokens:
+public user SID, session, integrity SID, elevation type, restricted-token flag and
+AppContainer flag. These observations use query-only handles, change no token or
+permission, and retain access failures as unverified metadata.
 
 Designer screenshots reobserve the COM window after bounded UI settlement. A
 zero designer HWND permits capture of the owned VBE root only after verifying

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -150,6 +151,9 @@ namespace VBAi.Tests.Integration
                     report["CurrentUserIdentity"] = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
                     if (probeAncestor)
                     {
+                        using (var testProcess = Process.GetCurrentProcess())
+                            report["ProcessTokens"] = new { TestHost = NativeProcessTokenObservation.Read(testProcess.Id),
+                                ExactOwnedExcel = NativeProcessTokenObservation.Read(host.ProcessId) };
                         string accessFile = Path.Combine(destinationDirectory, "probe-access.txt");
                         const string synthetic = "VBAi disposable inherited-storage probe. No macro or credentials.";
                         Assert.IsFalse(System.IO.File.Exists(accessFile));
