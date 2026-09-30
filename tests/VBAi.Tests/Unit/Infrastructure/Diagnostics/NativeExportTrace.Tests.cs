@@ -27,13 +27,9 @@ namespace VBAi.Tests
 
         private static string FindSource()
         {
-            foreach (string start in new[] { AppDomain.CurrentDomain.BaseDirectory, Environment.CurrentDirectory })
-                for (var directory = new DirectoryInfo(start); directory != null; directory = directory.Parent)
-                {
-                    string candidate = Path.Combine(directory.FullName, "tests", "VBAi.Tests", "Infrastructure", "Diagnostics", "NativeExportTrace.Tests.mjs");
-                    if (File.Exists(candidate)) return candidate;
-                }
-            throw new FileNotFoundException("Matching debugger script regression source is unavailable.");
+            string candidate = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tests", "VBAi.Tests", "Infrastructure", "Diagnostics", "NativeExportTrace.Tests.mjs");
+            if (File.Exists(candidate)) return candidate;
+            throw new FileNotFoundException("The matching debugger script regression fixture must be packaged beside this test assembly.", candidate);
         }
     }
 }

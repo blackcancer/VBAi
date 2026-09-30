@@ -38,8 +38,7 @@ internal static partial class GitTests
         System.Windows.Forms.Application.ThreadException += onUiError;
         // Regression: .NET Framework otherwise prepends this BOM to redirected binary stdin.
         Console.InputEncoding = new UTF8Encoding(true);
-        root = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "runs", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(root);
+        root = GitScratchDirectory.Create().Root;
         try
         {
             Snapshots(); Repositories(); ProjectImport(); Workflow(); Advanced(); Designer();

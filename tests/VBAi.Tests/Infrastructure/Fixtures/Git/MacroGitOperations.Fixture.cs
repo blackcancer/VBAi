@@ -14,7 +14,8 @@ namespace VBAi.Tests.Unit
         internal sealed class Fixture : IDisposable
         {
             /// <summary>Répertoire temporaire réservé au dépôt et au dépôt distant du test.</summary>
-            internal readonly string Root = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "git-branches", Guid.NewGuid().ToString("N"));
+            private readonly global::GitScratchDirectory scratch = global::GitScratchDirectory.Create();
+            internal string Root => scratch.Root;
             /// <summary>Chemins du dépôt local et du dépôt distant temporaire de la fixture.</summary>
             internal readonly string Cache, Remote;
             /// <summary>Projet VBA simulé par des composants en mémoire.</summary>
@@ -98,7 +99,8 @@ namespace VBAi.Tests.Unit
             public void Dispose()
             {
                 Operations.Dispose();
-                string boundary = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "git-branches")) + Path.DirectorySeparatorChar;
+                scratch.ValidateCleanupRoot(Root);
+                string boundary = scratch.Boundary + Path.DirectorySeparatorChar;
                 string fullRoot = Path.GetFullPath(Root);
                 Guid fixtureId;
                 if (!fullRoot.StartsWith(boundary, StringComparison.OrdinalIgnoreCase) ||
