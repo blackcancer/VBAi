@@ -116,23 +116,19 @@ namespace VBAi.Tests.Integration
                 }
                 else
                 {
-                    result.document = app.NewDocument(); result.ShowPublisherWindow();
+                    result.RecordPublisherActivationCanary();
+                    result.document = app.NewDocument();
+                    result.RequirePublisherPublication("AfterNewDocumentBeforeBootstrapSave", false);
+                    result.ShowPublisherWindow();
                 }
                 result.SaveNative();
+                if (kind == "Publisher") result.RequirePublisherPublication("AfterBootstrapSave", true);
                 result.ShowVbe();
                 var status = result.Data("status");
                 Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), status["AssemblyModuleVersionId"], "Another add-in build is installed.");
                 Assert.AreEqual(result.ProcessId, Convert.ToInt32(status["HostProcessId"]));
                 var projects = result.Items("list_projects");
-                var matched = projects.Where(p => string.Equals(p["FileName"] as string, result.DocumentPath, StringComparison.OrdinalIgnoreCase)).ToArray();
-                if (matched.Length == 1) result.Project = result.DocumentPath;
-                else
-                {
-                    // A fresh Word document / Publisher publication has one non-template project.
-                    var candidates = projects.Where(p => !string.Equals(p["Name"] as string, "Normal", StringComparison.OrdinalIgnoreCase)).ToArray();
-                    Assert.AreEqual(1, candidates.Length, "No unique disposable document project; no mutation is permitted.");
-                    result.Project = (string)candidates[0]["Name"];
-                }
+                result.BindStartupProject(projects);
                 result.Items("list_modules");
                 result.RecordNativeProjectPath();
                 return result;
@@ -141,7 +137,7 @@ namespace VBAi.Tests.Integration
             {
                 result.Failures.Add("Host startup: " + startupError);
                 result.steps.Add(new { StartupError = startupError.ToString(), HostProgId = progId, Result = "FAIL" });
-                if (preserveStartupFailure)
+                if (preserveStartupFailure || kind == "Publisher")
                 {
                     result.RetainUncertainOffice();
                     try { result.FlushAdapterEvidence(); }
@@ -151,6 +147,20 @@ namespace VBAi.Tests.Integration
                 try { result.Dispose(false); }
                 catch (Exception cleanupError) { throw new AggregateException("Office startup and cleanup both failed.", startupError, cleanupError); }
                 throw;
+            }
+        }
+
+        /// <summary>Binds the project used by the disposable baseline; kept separate for fake-native startup regressions.</summary>
+        internal void BindStartupProject(IDictionary<string, object>[] projects)
+        {
+            if (Kind == "Publisher") { BindPublisherStartupProject(projects); return; }
+            var matched = projects.Where(p => string.Equals(p["FileName"] as string, DocumentPath, StringComparison.OrdinalIgnoreCase)).ToArray();
+            if (matched.Length == 1) Project = DocumentPath;
+            else
+            {
+                var candidates = projects.Where(p => !string.Equals(p["Name"] as string, "Normal", StringComparison.OrdinalIgnoreCase)).ToArray();
+                Assert.AreEqual(1, candidates.Length, "No unique disposable document project; no mutation is permitted.");
+                Project = (string)candidates[0]["Name"];
             }
         }
 
@@ -337,12 +347,19 @@ namespace VBAi.Tests.Integration
                 finally { foreach (var process in processes) process.Dispose(); }
                 app = application;
                 StartOwnedDialogHandler();
-                if (Kind == "Publisher") { document = app.Open(DocumentPath, false, false); ShowPublisherWindow(); }
+                if (Kind == "Publisher")
+                {
+                    Project = null;
+                    document = app.Open(DocumentPath, false, false);
+                    RequirePublisherPublication("AfterFreshDiskOpen", true);
+                    ShowPublisherWindow();
+                }
                 else { app.Visible = true; app.OpenCurrentDatabase(DocumentPath); }
                 ShowVbe();
                 var status = Data("status");
                 Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), status["AssemblyModuleVersionId"]);
                 Assert.AreEqual(ProcessId, Convert.ToInt32(status["HostProcessId"]));
+                if (Kind == "Publisher") BindStartupProject(Items("list_projects"));
                 RequireOwnedDocument();
                 steps.Add(new { ReopenFromDisk = adapterOnly, HelperSaveInvoked = !adapterOnly, ProcessId, DocumentPath });
             }
