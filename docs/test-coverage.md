@@ -1,5 +1,30 @@
 # Recorded validation
 
+## Corrected candidate: complete managed run (2026-09-30)
+
+Product and test source `fd65c57` includes guarded asynchronous Access save
+verification, preservation of import/recovery and option/restoration errors,
+bounded scalar-inspection phase logging and observer reads, and native
+active-module following in Monaco. The isolated `build-v3` assembly has MVID
+`f04a35b8-1f1e-4b2a-9851-fe9e6afd79ab` and SHA-256
+`1ADFE986A1D2BA167AAF28749A0307DE1844B751EA16FEAE6882FE74723B56C1`.
+It is not installed and has no native-host acceptance yet.
+
+The complete instrumented default suite finished with **2,232 passed,
+1 failed, 81 conditionally skipped, 2,314 total**, in **9 minutes 14 seconds**.
+`AllLanguagesHaveCompleteEmbeddedCataloguesAndRecognizableMenus` failed on an
+untranslated new Git recovery message in the Spanish catalogue. This is a
+failed complete run; focused successes and the older complete pass do not
+qualify this candidate's Q-015 gate.
+
+Evidence is under `artifacts/qualification-v1/followup-20260930/`:
+`candidate-v3.json`, `managed-v3/full-corrected-managed.trx` and
+`managed-v3/c5f24eac-2120-4ab5-afbe-aada09afc2f6/coverage.cobertura.xml`.
+Coverage measures only managed `VBAi`: **33,343/33,529 lines (99.45%)** and
+**33,838/34,323 branches (98.59%)**, calculated from the raw integer counters.
+Native Office/SOLIDWORKS and live-provider opt-ins were disabled. Skipped
+scenarios, native C++ and JavaScript are not covered by this acceptance result.
+
 ## Native and fixture follow-up (2026-09-30)
 
 The installed product for this follow-up is the clean `0ddb0dd` build with
@@ -93,6 +118,16 @@ encrypted attribute and exported successfully. The failure is specific to the
 existing production location; neither volume nor generic EFS inheritance is
 established as its cause. This tests-only assembly was built in the export
 probe worktree against the unchanged `7b5f11d8` product.
+
+The four inherited-storage probes on test source `3f6e805` finished with
+**1 passed, 3 failed, 0 skipped**. Export passed in the user TEMP directory
+and failed beneath LocalAppData, LocalAppData/VBAi and GitTemporary. This
+widens the observed failing boundary beyond GitTemporary; it does not prove
+an encryption or permission cause. Each scenario retains query-only token
+observations for its testhost and exact owned Excel process. Its TRX and JSON
+are under the export-probe worktree's
+`artifacts/qualification-v1/followup-20260930/ancestor-probes/`, not the central
+evidence directory. No existing parent encryption, ACL or token was changed.
 
 The explicit SOLIDWORKS 2019 SP5 instance, PID **47344**, revision **27.5.0**,
 loaded the same `7b5f11d8` candidate. The native connection test passed

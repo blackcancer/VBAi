@@ -46,7 +46,8 @@ preservation or standalone-project qualification.
 
 Returning from the designer using `select_code` activates the correct native
 module but reveals an empty Monaco shell. The missing active-code following
-path is under correction; the fresh result therefore keeps Q-014 open.
+path is corrected in source `fd65c57`, with focused regression acceptance;
+native readback on that new assembly remains pending, so Q-014 stays open.
 SOLIDWORKS 2025, complete debugger and embedded assistant acceptance remain
 separate pending scopes. Exact results and evidence paths are in recorded
 validation.
