@@ -53,6 +53,16 @@ Preserve their contents unless deliberately changing the corresponding fixture.
 
 ## Native host tests are opt-in
 
+For an owned-host scalar-inspection investigation, set `VBAi_VBE_INSPECTION_TRACE`
+to an absolute local JSONL file path in the host's environment before launching it.
+The parent directory must already exist. Tracing is disabled when absent or invalid;
+unavailable logging never changes command execution. Evidence is bounded to 128
+events per inspection and 1 MiB per file. Rows contain correlation, fixed phase,
+PID, thread/apartment, elapsed time and exception type; they contain no project
+path, code, expression or inspected value. A client timeout does not cancel or
+authorize replay of a pending native command. Retain the host and phase evidence
+when the bridge stops responding.
+
 Use disposable documents and identify the intended process/project before any
 write. Record application version, architecture, language, DPI and loaded VBAi
 build. Restore temporary settings and verify that unrelated documents remain

@@ -2194,6 +2194,9 @@ namespace VBAi
         /// <param name="handle">Handle à interroger.</param>
         /// <returns>Texte observé, ou chaîne vide si la lecture échoue.</returns>
         private static string WindowText(IntPtr handle)
-        { var text = new StringBuilder(512); GetWindowText(handle, text, text.Capacity); return text.ToString(); }
+        {
+            if (observerTextDepth.Value != 0) return ReadObserverText(handle);
+            var text = new StringBuilder(512); GetWindowText(handle, text, text.Capacity); return text.ToString();
+        }
     }
 }

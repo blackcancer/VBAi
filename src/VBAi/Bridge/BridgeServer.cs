@@ -214,11 +214,23 @@ namespace VBAi
                                 }
                                 else if (request != null && request.Command == "inspect_local_scalars")
                                 {
+                                    var trace = VbeInspectionTrace.Begin();
+                                    trace?.Record(VbeInspectionTrace.Phase.Enqueue);
                                     var completion = new TaskCompletionSource<Response>(TaskCreationOptions.RunContinuationsAsynchronously);
-                                    dispatcher.BeginInvoke(new Action(async () => {
-                                        try { completion.TrySetResult(Response.Success(await InspectLocalScalarsNative(request))); }
-                                        catch (Exception ex) { completion.TrySetResult(Response.Failure(ex.Message)); }
-                                    }));
+                                    try
+                                    {
+                                        dispatcher.BeginInvoke(new Action(async () => {
+                                            using (trace?.Enter())
+                                            {
+                                                trace?.Record(VbeInspectionTrace.Phase.CallbackEntered);
+                                                Exception failure = null;
+                                                try { completion.TrySetResult(Response.Success(await InspectLocalScalarsNative(request))); }
+                                                catch (Exception ex) { failure = ex; completion.TrySetResult(Response.Failure(ex.Message)); }
+                                                finally { trace?.Record(VbeInspectionTrace.Phase.Terminal, failure); }
+                                            }
+                                        }));
+                                    }
+                                    catch (Exception ex) { trace?.Record(VbeInspectionTrace.Phase.Terminal, ex); throw; }
                                     response = completion.Task.GetAwaiter().GetResult();
                                 }
                                 else if (request != null && request.Command == "compile_project")
