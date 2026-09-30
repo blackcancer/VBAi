@@ -13,6 +13,8 @@ namespace VBAi.Tests.Integration
     {
         // Keep explicitly retained native objects/handles alive for diagnosis through this testhost's lifetime.
         private static readonly List<ExcelVbeFixture> retainedBootstraps = new List<ExcelVbeFixture>();
+        // Explicit launches retain the original native handle; startup evidence must use the same reader.
+        private Func<string> ownedImagePath;
 
         /// <summary>Explicit environment-controlled launch used only by the two scalar diagnostic pages.</summary>
         internal static ExcelVbeFixture StartOwnedWithTrace(string tracePath)
@@ -58,12 +60,15 @@ namespace VBAi.Tests.Integration
                 launch["Phase"] = "LaunchIntent"; launch["StartAttempts"] = 1; record();
                 fixture.ownedProcess = Process.Start(info);
                 if (fixture.ownedProcess == null) throw new InvalidOperationException("Process.Start returned no owned process; no COM activation fallback.");
-                _ = fixture.ownedProcess.Handle;
+                IntPtr retainedHandle = fixture.ownedProcess.Handle;
+                fixture.ownedImagePath = () => ExcelOwnedProcessImage.Read(retainedHandle);
                 fixture.ProcessId = fixture.ownedProcess.Id;
                 string processStart = fixture.ownedProcess.StartTime.ToUniversalTime().ToString("o");
                 launch["ProcessId"] = fixture.ProcessId; launch["ProcessStartUtc"] = processStart;
+                launch["ImageIdentityReader"] = "QueryFullProcessImageNameW";
+                launch["Phase"] = "ProcessImageIdentityPending"; record();
                 ExcelOwnedBootstrapPlan.VerifyAttachedIdentity(fixture.ProcessId, executable, processStart, fixture.ProcessId,
-                    fixture.ownedProcess.MainModule.FileName, fixture.ownedProcess.StartTime.ToUniversalTime().ToString("o"));
+                    fixture.ownedImagePath(), fixture.ownedProcess.StartTime.ToUniversalTime().ToString("o"));
                 launch["Phase"] = "NativeAttachmentPending"; record();
                 var elapsed = Stopwatch.StartNew();
                 while (elapsed.ElapsedMilliseconds < 20000)
@@ -82,7 +87,7 @@ namespace VBAi.Tests.Integration
                 uint actualPid;
                 GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(excel.Hwnd)), out actualPid);
                 ExcelOwnedBootstrapPlan.VerifyAttachedIdentity(fixture.ProcessId, executable, processStart, (int)actualPid,
-                    fixture.ownedProcess.MainModule.FileName, fixture.ownedProcess.StartTime.ToUniversalTime().ToString("o"));
+                    fixture.ownedImagePath(), fixture.ownedProcess.StartTime.ToUniversalTime().ToString("o"));
                 launch["ApplicationHwndProcessId"] = actualPid;
                 fixture.workbooks = excel.Workbooks;
                 Assert.AreEqual(1, Convert.ToInt32(((dynamic)fixture.workbooks).Count), "Only the command-line-owned macro-free seed workbook may be present.");
@@ -111,6 +116,7 @@ namespace VBAi.Tests.Integration
             catch (Exception primary)
             {
                 if (fixture.ownedProcess != null) lock (retainedBootstraps) retainedBootstraps.Add(fixture);
+                launch["FailedAtPhase"] = launch["Phase"];
                 launch["Phase"] = "FailedPreserved"; launch["Error"] = primary.ToString();
                 launch["Recovery"] = "No Close/Quit/termination was emitted. Inspect the recorded exact process, seed and evidence; never activate or relaunch as a fallback.";
                 try { record(); }

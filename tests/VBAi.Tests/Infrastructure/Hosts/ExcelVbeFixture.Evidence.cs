@@ -41,7 +41,7 @@ namespace VBAi.Tests.Integration
             startupEvidence["ExpectedAssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D");
             if (ownedProcess != null && !startupEvidence.ContainsKey("HostExecutable"))
             {
-                string executable = ownedProcess.MainModule.FileName;
+                string executable = ownedImagePath != null ? ownedImagePath() : ownedProcess.MainModule.FileName;
                 var version = FileVersionInfo.GetVersionInfo(executable);
                 startupEvidence["HostExecutable"] = executable;
                 startupEvidence["HostFileVersion"] = version.FileVersion;
