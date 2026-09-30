@@ -208,6 +208,14 @@ versus directly applied EFS is verified before the single export. All siblings,
 raw files and reports remain available. This changes no existing directory's
 encryption, decrypts nothing and does not qualify the actual GitTemporary cache.
 
+`InheritedStorageAncestorExportRetainsExactOwnedIdentity` runs four host-bridge
+trials in fresh children of the existing LocalAppData, LocalAppData/VBAi,
+GitTemporary and TEMP directories. It changes no parent's ACL or encryption.
+Each child records inherited attributes and ACL, verifies a new synthetic text
+file can be written/read, and queries public EFS certificate hashes while keeping
+metadata access denial explicit. Each process then attempts exactly one native
+form export. Reports, raw and partial files are retained; no private key is read.
+
 Designer screenshots reobserve the COM window after bounded UI settlement. A
 zero designer HWND permits capture of the owned VBE root only after verifying
 the exact active project and designer COM identities, captions, type, visibility

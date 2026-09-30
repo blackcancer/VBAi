@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Web.Script.Serialization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -40,7 +42,16 @@ namespace VBAi.Tests.Integration
         public void ControlledVolumeAndAncestorEfsExportRetainsOwnedIdentity(string volume, string encryptionScope)
         { RunSingleExport("HostBridge", encryptionScope, true, volume); }
 
-        private void RunSingleExport(string dispatch, string location, bool controlledEfs, string volume = null)
+        /// <summary>Locates an inherited storage boundary without altering any parent directory or encryption flag.</summary>
+        [STATestMethod]
+        [DataRow("LocalAppData")]
+        [DataRow("VbaiLocalAppData")]
+        [DataRow("GitTemporary")]
+        [DataRow("UserTemporary")]
+        public void InheritedStorageAncestorExportRetainsExactOwnedIdentity(string location)
+        { RunSingleExport("HostBridge", location, false, null, true); }
+
+        private void RunSingleExport(string dispatch, string location, bool controlledEfs, string volume = null, bool probeAncestor = false)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_EXPORT_PROBES") != "1" ||
                 Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
@@ -78,7 +89,9 @@ namespace VBAi.Tests.Integration
                     Assert.AreEqual(report["AssemblyMvid"], loaded["AssemblyModuleVersionId"]);
 
                     string baseDirectory = location == "GitTemporary" ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VBAi", "GitTemporary") :
-                        location == "FixtureTemporary" ? host.Root : output;
+                        location == "VbaiLocalAppData" ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VBAi") :
+                        location == "LocalAppData" ? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) :
+                        location == "UserTemporary" ? Path.GetTempPath() : location == "FixtureTemporary" ? host.Root : output;
                     string destinationDirectory;
                     if (controlledEfs)
                     {
@@ -128,8 +141,22 @@ namespace VBAi.Tests.Integration
                     }
                     else
                     {
+                        Assert.IsTrue(Directory.Exists(baseDirectory), "The probe must not create or alter an existing storage parent.");
+                        report["StorageParent"] = DescribeProbeDirectory(baseDirectory);
                         destinationDirectory = Path.Combine(baseDirectory, trial);
                         Assert.IsFalse(Directory.Exists(destinationDirectory)); Directory.CreateDirectory(destinationDirectory);
+                    }
+                    report["ExportDirectory"] = DescribeProbeDirectory(destinationDirectory);
+                    report["CurrentUserIdentity"] = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
+                    if (probeAncestor)
+                    {
+                        string accessFile = Path.Combine(destinationDirectory, "probe-access.txt");
+                        const string synthetic = "VBAi disposable inherited-storage probe. No macro or credentials.";
+                        Assert.IsFalse(System.IO.File.Exists(accessFile));
+                        System.IO.File.WriteAllText(accessFile, synthetic);
+                        Assert.AreEqual(synthetic, System.IO.File.ReadAllText(accessFile));
+                        report["SyntheticWriteReadVerified"] = true;
+                        report["SyntheticEfsMetadata"] = ReadProbeEfsMetadata(accessFile);
                     }
                     string destination = Path.Combine(destinationDirectory, form + ".frm");
                     report["Destination"] = destination; report["DestinationLength"] = destination.Length;
@@ -182,6 +209,19 @@ namespace VBAi.Tests.Integration
                             if (exportFailure != null) throw new AggregateException("Native export and raw evidence retention both failed.", exportFailure, evidenceFailure);
                             throw;
                         }
+                        // Public EFS certificate hashes only; no key material or
+                        // certificate export. Metadata denial is recorded as denial,
+                        // never interpreted as an absent key or a successful read.
+                        try
+                        {
+                            report["EfsMetadata"] = Directory.GetFiles(destinationDirectory)
+                                .Select(file => ReadProbeEfsMetadata(file)).ToArray();
+                        }
+                        catch (Exception metadataFailure)
+                        {
+                            if (exportFailure != null) throw new AggregateException("Native export and EFS evidence readback both failed.", exportFailure, metadataFailure);
+                            throw;
+                        }
                     }
                 });
                 report["NormalShutdownVerified"] = true; report["Stage"] = "PASS";
@@ -200,6 +240,47 @@ namespace VBAi.Tests.Integration
             object error; response.TryGetValue("Error", out error);
             Assert.AreEqual(true, response["Ok"], Convert.ToString(error));
             return VbeBridgeClient.Object(response["Data"]);
+        }
+
+        private static object DescribeProbeDirectory(string path)
+        {
+            var acl = Directory.GetAccessControl(path, AccessControlSections.Owner | AccessControlSections.Access);
+            return new { Path = Path.GetFullPath(path), Attributes = System.IO.File.GetAttributes(path).ToString(),
+                Sddl = acl.GetSecurityDescriptorSddlForm(AccessControlSections.Owner | AccessControlSections.Access),
+                acl.AreAccessRulesProtected };
+        }
+
+        [StructLayout(LayoutKind.Sequential)] private struct EfsHashList { internal uint Count; internal IntPtr Users; }
+        [StructLayout(LayoutKind.Sequential)] private struct EfsUserHash { internal uint Length; internal IntPtr Sid, Hash, Display; }
+        [StructLayout(LayoutKind.Sequential)] private struct EfsHashBlob { internal uint Length; internal IntPtr Data; }
+        [DllImport("advapi32.dll", CharSet = CharSet.Unicode)] private static extern uint QueryUsersOnEncryptedFile(string path, out IntPtr users);
+        [DllImport("advapi32.dll")] private static extern void FreeEncryptionCertificateHashList(IntPtr users);
+
+        private static object ReadProbeEfsMetadata(string path)
+        {
+            var result = new Dictionary<string, object> { ["Path"] = path, ["Attributes"] = System.IO.File.GetAttributes(path).ToString() };
+            if ((System.IO.File.GetAttributes(path) & FileAttributes.Encrypted) == 0) { result["State"] = "NOT_ENCRYPTED"; return result; }
+            IntPtr users;
+            uint error = QueryUsersOnEncryptedFile(path, out users);
+            result["Win32Error"] = error;
+            if (error != 0) { result["State"] = "UNREADABLE"; return result; }
+            try
+            {
+                var list = (EfsHashList)Marshal.PtrToStructure(users, typeof(EfsHashList));
+                Assert.IsTrue(list.Count <= 16, "EFS metadata exceeded the owned-probe bound.");
+                var hashes = new List<string>();
+                for (int i = 0; i < list.Count; i++)
+                {
+                    var user = (EfsUserHash)Marshal.PtrToStructure(Marshal.ReadIntPtr(list.Users, i * IntPtr.Size), typeof(EfsUserHash));
+                    var hash = (EfsHashBlob)Marshal.PtrToStructure(user.Hash, typeof(EfsHashBlob));
+                    Assert.IsTrue(hash.Length <= 128, "EFS certificate hash exceeded the owned-probe bound.");
+                    var bytes = new byte[hash.Length]; Marshal.Copy(hash.Data, bytes, 0, bytes.Length);
+                    hashes.Add(BitConverter.ToString(bytes).Replace("-", ""));
+                }
+                result["State"] = "READ"; result["CertificateHashes"] = hashes;
+            }
+            finally { FreeEncryptionCertificateHashList(users); }
+            return result;
         }
     }
 }
