@@ -27,6 +27,13 @@ namespace VBAi.Tests.Integration
             RunDiagnosticPage(0, 1);
         }
 
+        /// <summary>Inspects the complete declared page once, retaining native phase and shutdown evidence.</summary>
+        [STATestMethod, TestCategory("ExcelScalarDiagnostics")]
+        public void InstalledBridgeReadsFullScalarPageWithThreeNativeObservers()
+        {
+            RunDiagnosticPage(0, 6);
+        }
+
         /// <summary>Uses one owned host and one inspection request; uncertain native work retains the host.</summary>
         private void RunDiagnosticPage(int offset, int limit)
         {
@@ -105,32 +112,43 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(procedure, inspected["Procedure"]);
                 Assert.AreEqual(projectName + "." + module + "." + procedure, inspected["Context"]);
                 Assert.AreEqual(original["Sha256"], inspected["Sha256"]);
+                Assert.AreEqual("DeclaredScalarCandidatesOnly", inspected["Coverage"]);
+                Assert.IsNull(inspected["Error"], "No partial scalar failure may be accepted as a completed page.");
                 Assert.AreEqual(false, inspected["RuntimeInventoryComplete"]);
                 Assert.AreEqual(6, Convert.ToInt32(inspected["TotalCandidates"]));
                 Assert.AreEqual(3, Convert.ToInt32(inspected["EligibleCandidates"]));
                 Assert.AreEqual(offset, Convert.ToInt32(inspected["Offset"]));
                 Assert.AreEqual(limit, Convert.ToInt32(inspected["Items"] == null ? 0 : ((object[])inspected["Items"]).Length));
-                if (offset == 3) Assert.IsNull(inspected["NextOffset"]);
-                else Assert.AreEqual(1, Convert.ToInt32(inspected["NextOffset"]));
+                if (offset + limit >= 6) Assert.IsNull(inspected["NextOffset"]);
+                else Assert.AreEqual(offset + limit, Convert.ToInt32(inspected["NextOffset"]));
                 var rows = ((object[])inspected["Items"]).Select(VbeBridgeClient.Object).ToArray();
-                if (offset == 3)
+                string[] names = { "auditCount", "auditText", "auditFlag", "auditValues", "auditUnknown", "auditObject" };
+                string[] types = { "Long", "String", "Boolean", "Long", "Variant", "Object" };
+                string[] skipReasons = { null, null, null, "ArrayDeclaration", "NonScalarOrVariantType", "NonScalarOrVariantType" };
+                CollectionAssert.AreEqual(names.Skip(offset).Take(limit).ToArray(), rows.Select(row => (string)row["Name"]).ToArray());
+                for (int index = 0; index < rows.Length; index++)
                 {
-                    CollectionAssert.AreEqual(new[] { "auditValues", "auditUnknown", "auditObject" }, rows.Select(row => (string)row["Name"]).ToArray());
-                    foreach (var row in rows)
+                    var row = rows[index]; int candidate = offset + index;
+                    Assert.AreEqual(names[candidate], row["Expression"]);
+                    Assert.AreEqual("Variable", row["Kind"]);
+                    Assert.AreEqual(types[candidate], row["TypeName"]);
+                    Assert.AreEqual(candidate + 3, Convert.ToInt32(row["Line"]));
+                    Assert.AreEqual(9, Convert.ToInt32(row["Column"]));
+                    Assert.IsNull(row["Error"], names[candidate]);
+                    Assert.AreEqual(skipReasons[candidate], row["SkipReason"], names[candidate]);
+                    if (candidate >= 3)
                     {
                         Assert.AreEqual("Skipped", row["Status"]);
                         Assert.IsNull(row["Value"]);
-                        Assert.IsNull(row["Error"]);
-                        Assert.IsFalse(string.IsNullOrWhiteSpace(Convert.ToString(row["SkipReason"])));
                     }
-                }
-                else
-                {
-                    Assert.AreEqual("auditCount", rows[0]["Name"]);
-                    Assert.AreEqual("Long", rows[0]["TypeName"]);
-                    Assert.AreEqual("Read", rows[0]["Status"]);
-                    Assert.AreEqual("42", rows[0]["Value"]);
-                    Assert.IsNull(rows[0]["Error"]);
+                    else
+                    {
+                        Assert.AreEqual("Read", row["Status"]);
+                        if (candidate == 0) Assert.AreEqual("42", row["Value"]);
+                        if (candidate == 1) Assert.AreEqual("\"VBAi scalar page probe\"", row["Value"]);
+                        // The installed French VBE can display True as Vrai; neither False nor a missing value passes.
+                        if (candidate == 2) Assert.IsTrue(new[] { "True", "Vrai" }.Contains(Convert.ToString(row["Value"])), json.Serialize(row));
+                    }
                 }
                 Assert.AreEqual(true, inspected["SelectionRestored"]);
                 Assert.AreEqual(true, inspected["FocusRestored"]);
@@ -143,7 +161,7 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(original["Sha256"], unchanged["Sha256"]);
                 var phases = ReadTerminalPhases(tracePath, host.ProcessId, phaseStartedUtc);
                 evidence.PhaseEvidence = phases;
-                AssertScalarPagePhases(phases, offset == 3);
+                AssertScalarPagePhases(phases, Math.Max(0, Math.Min(offset + limit, 3) - offset));
             }, () =>
             {
                 // File reads cannot replay native work, including when the bridge is unavailable.
@@ -205,15 +223,15 @@ namespace VBAi.Tests.Integration
             return rows;
         }
 
-        private static void AssertScalarPagePhases(IDictionary<string, object>[] rows, bool skipped)
+        private static void AssertScalarPagePhases(IDictionary<string, object>[] rows, int eligibleScalars)
         {
             Assert.IsTrue(rows.Length > 0);
             Assert.AreEqual(1, rows.Select(row => (string)row["Correlation"]).Distinct().Count(), "The owned host must have exactly one inspection correlation.");
             var phases = rows.Select(row => (string)row["Phase"]).ToArray();
             foreach (string required in new[] { "Enqueue", "CallbackEntered", "OwnerSta", "CoreEntered", "ContextValidated", "CoreTerminal", "Terminal" })
                 Assert.IsTrue(phases.Contains(required), "Missing phase: " + required);
-            Assert.AreEqual(1, phases.Count(phase => phase == "Enqueue"));
-            Assert.AreEqual(1, phases.Count(phase => phase == "Terminal"));
+            foreach (string single in new[] { "Enqueue", "CallbackEntered", "OwnerSta", "CoreEntered", "CoreTerminal", "Terminal" })
+                Assert.AreEqual(1, phases.Count(phase => phase == single), "Exactly one inspection request is required: " + single);
             Assert.IsTrue(rows.All(row => row["ErrorType"] == null), "Successful inspection must not conceal a native phase error.");
             var callback = rows.Single(row => (string)row["Phase"] == "CallbackEntered");
             foreach (var row in rows.Where(row => new[] { "OwnerSta", "ContextValidated", "Command229Before", "Command229Returned", "CoreTerminal" }.Contains((string)row["Phase"])))
@@ -221,11 +239,11 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(callback["ThreadId"], row["ThreadId"]);
                 Assert.AreEqual("STA", row["Apartment"]);
             }
-            if (skipped)
+            if (eligibleScalars == 0)
                 Assert.IsFalse(phases.Any(phase => phase.StartsWith("Command229", StringComparison.Ordinal) || phase.StartsWith("Observer", StringComparison.Ordinal)), "Skipped declarations must never open Quick Watch.");
             else
                 foreach (string required in new[] { "Command229Before", "Command229Returned", "ObserverEntered", "ObserverDialogFound", "ObserverReadComplete", "ObserverTerminal" })
-                    Assert.AreEqual(1, phases.Count(phase => phase == required), "Exactly one native scalar observation is required: " + required);
+                    Assert.AreEqual(eligibleScalars, phases.Count(phase => phase == required), "Exactly one native observer cycle per eligible scalar is required: " + required);
         }
 
         [STATestMethod]

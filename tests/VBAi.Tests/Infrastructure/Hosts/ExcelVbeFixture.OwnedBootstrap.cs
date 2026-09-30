@@ -16,7 +16,7 @@ namespace VBAi.Tests.Integration
         // Explicit launches retain the original native handle; startup evidence must use the same reader.
         private Func<string> ownedImagePath;
 
-        /// <summary>Explicit environment-controlled launch used only by the two scalar diagnostic pages.</summary>
+        /// <summary>Explicit environment-controlled launch used only by the scalar diagnostic pages.</summary>
         internal static ExcelVbeFixture StartOwnedWithTrace(string tracePath)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
