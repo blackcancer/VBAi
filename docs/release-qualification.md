@@ -60,13 +60,31 @@ source writes or macro execution. The preservation and normal-close records
 do not prove fresh-disk reopen or acceptance of the subsequently installed
 `d5e25e25` product.
 
-Returning from the designer using `select_code` activates the correct native
-module but reveals an empty Monaco shell. The missing active-code following
-path is corrected in source `fd65c57`, with focused regression acceptance;
-native readback on that new assembly remains pending, so Q-014 stays open.
+The historical return-to-code trial activated the native module but showed an
+empty Monaco shell. Installed candidate `d5e25e25` now loads in a fresh owned
+2019 SP5 instance, PID 51376. Native Edit Macro and independent module/class/form
+readback preserve the copied file bytes. Designer and returned-code workspace
+resize/restoration pass, and reviewed captures show the selected module and
+class in Monaco. The class source then differs by an `on` prefix; the maintainer
+reports possible keyboard input diverted when the window gained focus. Its
+cause is not proven. The live source is retained without overwrite, save or
+execution, so strict unchanged-source and final cleanup acceptance is pending.
 SOLIDWORKS 2025, complete debugger and embedded assistant acceptance remain
-separate pending scopes. Exact results and evidence paths are in recorded
-validation.
+separate pending scopes; Q-014 stays open.
+
+The current Office campaign is blocked during owned Word form preparation.
+Its bridge timed out after a form-property request, and the old fixture entered
+native cleanup despite uncertain delivery. A noninvasive, nonsuspending stack
+observation finds the Word STA in FM20 overlay-window/visibility handling;
+this does not establish the cause. Source now records request intent before
+dispatch and retains native ownership after uncertain delivery, refusing further
+requests, save/reopen and Close/Quit. Existing blocked instances have not been
+force-terminated and are not retroactively qualified. Access save verification
+also reports a changed CurrentProject COM identity, while later read-only Saved
+observations are true. Removing that guard without establishing a stable Access
+identity would weaken dispatch safety. Project HelpContextID setters fail in
+Access and Publisher; metadata/reference acceptance remains incomplete.
+Exact evidence is in recorded validation.
 
 ## Required environment
 
@@ -96,7 +114,7 @@ operation can pass a refusal test while the capability remains unqualified.
 | Q-009 | P2 | NuGet runtime license/notice payloads were absent from the build output. | Deliver exact upstream texts with provenance and verify output hashes. | Payload added and final Debug/Release delivery hashes verified. |
 | Q-010 | P3 | WebView2 creates persistent per-PID profiles without a retention policy. | Define ownership and safe cleanup only after browser processes exit; preserve active/private state. | CLOSED for the newly owned editor-profile lifecycle on candidate `9924660b`: each editor has a unique environment folder; retirement and its matching BrowserProcessExited notification are both required before asynchronous cleanup. Detached real WebView2 acceptance verifies one editor can close and remove its profile while a second remains usable. Unknown legacy profiles, missing exit evidence, links and locked files are retained; no automatic legacy purge or crash recovery deletion is claimed. See recorded validation. |
 | Q-011 | P1 gate | Word/PowerPoint adapter acceptance required project-access prerequisites. | Run verified adapter-only save/reopen under a maintainer-approved host configuration. | CLOSED for adapter-only save/reopen on candidate `7b5f11d8`: Word and PowerPoint preserve the pending module/class sources and form/Label, with no post-adapter helper Save, verified disk readback and normal host exit. This scope does not explain the older Word form-creation failure or qualify every host operation. Exact evidence is in test-coverage.md. |
-| Q-012 | P1 gate | Access/Publisher host-document save adapters lacked native acceptance. | Implement and qualify an adapter, or explicitly narrow the release contract for this operation. | PARTIAL. Historical `7b5f11d8` Publisher adapter save/readback and normal exit passed. Its Access active-module-only and module-plus-class trials preserved exact disk-reopened sources and exited normally without post-adapter helper Save/compile, but their original responses remained uncertain as immediate ProjectSaved=false became true on the next read-only observation. Guarded asynchronous verification is implemented and regression-tested in installed `d5e25e25`. The current native adapter/property/reference campaign is running; final acceptance remains pending, and historical uncertainty is not rewritten as success. Exact evidence is in test-coverage.md. |
+| Q-012 | P1 gate | Access/Publisher host-document save adapters lacked native acceptance. | Implement and qualify an adapter, or explicitly narrow the release contract for this operation. | PARTIAL. Historical `7b5f11d8` Publisher adapter save/readback and normal exit passed. Its Access active-module-only and module-plus-class trials preserved exact disk-reopened sources and exited normally without post-adapter helper Save/compile, but their original responses remained uncertain as immediate ProjectSaved=false became true on the next read-only observation. Guarded asynchronous verification is implemented and regression-tested in installed `d5e25e25`. The current campaign reports Access document-identity verification refusal and Access/Publisher HelpContextID setter errors, then blocks during Word form preparation/cleanup. No final aggregate result is available. A tests-only containment correction retains uncertain native ownership; final acceptance remains pending and historical uncertainty is not rewritten as success. Exact evidence is in test-coverage.md. |
 | Q-013 | P1 gate | Classic Outlook initially had no configured profile. | Qualify a read-only scenario in an explicitly configured classic profile without modifying mail or production VBA. | CLOSED for read-only startup/metadata: `outlook-accepted/native.trx`, MVID `ce19a20c-9708-4c17-b998-f3415b8e6303`; exact PID, project inventory, scoped debug state and environment passed, normal exit 0. No account configured by automation, no mail read/sent or VBA mutation. |
 | Q-014 | P1 gate | SOLIDWORKS versions require independent native acceptance. | Qualify load, UI, disposable module/form operations, compile/debug, persistence and cleanup in each explicitly selected version. | PARTIAL on aaf3: existing Type100 save and saved-copy module/class/form readback passed separately in 2019 SP5 and 2025 (Q-021). Reviewed designer captures show the synthetic form and label without clipping; assistant behavior is outside those frames. The 2025 resize check passed before opening its form. The 2019 resize check after opening its form failed with `Editor did not adapt`, although original placement was restored; the historical cause remains unproven. Follow-up source updates hidden Monaco bounds even with a designer/Object Browser selected, skips unchanged native resizes and preserves child order/focus; detached Windows MDI regression reproduces the missing update before correction and passes afterward. Required native 2019/2025 acceptance remains open. Full debugger, focus/navigation and embedded assistant workflows remain open. The user authorized autonomous host close/relaunch and discarding open work; Both owned hosts exited normally with code 0. |
 | Q-015 | P2 gate | The initial instrumented suite timed out on post-step observation; its direct relationship to Q-005 is not proven. | Repeat the complete suite on the corrected source and retain failures/skips honestly. | CLOSED for source b77a782, candidate d5e25e25: the complete instrumented suite finished successfully after correcting the catalogue failure observed on f04a35b8. The preceding clean 0ddb0dd/7b5f11d8 pass remains candidate-specific historical evidence. Exact counters, assembly identity, scope and artifacts are in recorded validation. Historical failing and interrupted runs remain failures/incomplete evidence, and their causes are not retroactively attributed. Native/provider opt-in skips remain separate gates. |

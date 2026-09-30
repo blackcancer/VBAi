@@ -71,13 +71,35 @@ run above and do not constitute a new coverage measurement.
 | `scalar-v4-skipped/scalar-skipped.trx` | **0 passed, 1 failed, 0 skipped** | Fixture startup threw NullReferenceException before opening VBE or checking the loaded add-in. The explicit bootstrap records PID **50200**; its later absence is not an observed exit code. This remains failed preparation evidence. |
 | `scalar-v4-skipped-v2/scalar-skipped-v2.trx` | **1 passed, 0 failed, 0 skipped** | Owned Excel PID **8828**, Microsoft 365 x64 **16.0.20326.20158**, exact loaded MVID `d5e25e25`; array, Variant and object rows are skipped without QuickWatch. Native enqueue/STA/context/terminal phases, unchanged source, identity, selection and mode are verified. Normal owned Close/Quit, no forced termination, exit **0x00000000**. |
 | `scalar-v4-long/scalar-long.trx` | **1 passed, 0 failed, 0 skipped** | Owned Excel PID **59460**, same Office build and exact loaded MVID; one Long scalar is read through native QuickWatch. Command 229, observer read, continuation and terminal phases complete with unchanged source/identity/selection/mode; normal exit **0x00000000**, no forced termination. |
-| `office-adapter-v4/` | **RUNNING; final outcome pending** | Current-candidate adapter-only save/reopen and Access/Publisher metadata/reference campaign. Partial artifacts do not qualify Q-011/Q-012; no aggregate result is inferred before the final TRX and cleanup records. |
+| `office-adapter-v4/` | **BLOCKED; no terminal aggregate result** | Tests-only source `c68f85b`, installed candidate `d5e25e25`. Access metadata save responses refuse changed document identity; Access and Publisher HelpContextID setters fail. Word PID **60408** times out after form creation/property preparation and blocks native cleanup. Access **54632** and Publisher **58748** are also retained after cleanup refusal/timeout. Unreached cases remain NOT_RUN; no aggregate count is inferred. |
+| `solidworks-2019-v4-vstest/solidworks-load-v4.trx` | **1 passed, 0 failed, 0 skipped** | Owned 2019 SP5 PID **51376**, revision **27.5.0**, exact loaded `d5e25e25`; VBE inventory and VBAi.AddIn connected state verified. No macro execution or shutdown acceptance is included. |
 
 Each accepted scalar page retains its own `inspection.jsonl` plus exact owned
 `hosts/<fixture>/startup.json` and `shutdown.json`. The initial fixture failure
 was corrected by querying the process image through its retained native handle.
 The later page passes do not explain the historical `7b5f11d8` bridge stall or
 combase.dll crash, and do not cover the full scalar page. Q-006 remains open.
+
+Current SOLIDWORKS native bootstrap is retained in
+`solidworks-2019/stage-f4667f08b6b641b7ba00a0cc6d59bb71/`. The module/class/form
+readback and copied disk hash pass before UI navigation. Designer and code
+resize/restoration pass in `solidworks-2019-v4-designer-resize.json` and
+`solidworks-2019-v4-code-resize.json`; reviewed code/designer/returned-class
+PNG captures are recorded alongside them. The later class source has an `on`
+prefix, and the maintainer reports possible diverted keyboard input. The
+cause remains unproven. `solidworks-2019-v4-ui-evidence.json` preserves the
+changed source and records PARTIAL acceptance, with no harness source writes,
+macro executions or cleanup after drift.
+
+Word read-only CDB evidence is
+`office-adapter-v4/word-60408-readonly-stacks-v2.log` and its companion JSON.
+The nonsuspending/noninvasive inspection ends with debugger exit zero and the
+same host still alive; the STA snapshot is in FM20 overlay/visibility handling.
+It does not explain the native stall. Tests-only containment source `8d1ee9e`
+has **11 passed, 0 failed, 0 skipped** in the agent's
+`artifacts/test-results/office-adapter-containment/office-containment-final-pure.trx`.
+Those fake-dispatch regressions do not retroactively qualify the blocked batch
+or exercise a native host. The installed product hash remains unchanged.
 
 ## Historical native and fixture follow-up (2026-09-30)
 
