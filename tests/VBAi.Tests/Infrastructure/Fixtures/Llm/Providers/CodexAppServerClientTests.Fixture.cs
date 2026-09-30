@@ -11,10 +11,11 @@ namespace VBAi.Tests.Unit
 
     public sealed partial class CodexAppServerClientTests
     {
-        private static CodexAppServerClient Client(FakeTransport transport, string resumed = null)
+        private static CodexAppServerClient Client(FakeTransport transport, string resumed = null, string instructionsHash = null)
         {
             var settings = new LlmSettings();
-            return new CodexAppServerClient(new ImmediateContext(), new LlmVbeTools(null, null, settings), null, settings, resumed, transport);
+            return new CodexAppServerClient(new ImmediateContext(), new LlmVbeTools(null, null, settings), null,
+                settings, resumed, instructionsHash, transport);
         }
         private static string Method(IDictionary<string, object> message) { return message.ContainsKey("method") ? Convert.ToString(message["method"]) : null; }
 

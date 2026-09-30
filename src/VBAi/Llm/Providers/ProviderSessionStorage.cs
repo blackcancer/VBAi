@@ -28,6 +28,7 @@ namespace VBAi
             session.ResumeContext = session.ResumeContext + "\n\n" + ChatHistory.Export(session);
             session.CodexThreadId = null;
             session.CodexThreadHome = null;
+            session.CodexDeveloperInstructionsHash = null;
         }
     }
 }

@@ -18,12 +18,12 @@ namespace VBAi.Tests.Unit
                     Get<List<ChatEntry>>(window,"transcriptEntries").Clear();Get<List<object>>(window,"messages").Clear();
                     if(scenario==0) Get<List<ChatEntry>>(window,"transcriptEntries").Add(new ChatEntry{Text="local"});
                     if(scenario==1) Get<List<object>>(window,"messages").Add(new{role="user",content="old"});
-                    if(scenario==2) state.CodexThreadId="old";
+                    if(scenario==2) { state.CodexThreadId="old"; state.CodexDeveloperInstructionsHash="old-hash"; }
                     if(scenario==3) state.ResumeContext="old";
                     Set(window,"currentSession",state);
                     Call(window,"MigrateProviderPrivacy");
                     Assert.AreEqual(1,state.ReadAccessPolicyVersion);
-                    Assert.IsNull(state.CodexThreadId);Assert.IsNull(state.ResumeContext);
+                    Assert.IsNull(state.CodexThreadId);Assert.IsNull(state.CodexDeveloperInstructionsHash);Assert.IsNull(state.ResumeContext);
                     Assert.AreEqual(scenario==4?0:scenario==0?2:1,state.ProviderHistoryStartIndex);
                     Call(window,"MigrateProviderPrivacy");
                 }
