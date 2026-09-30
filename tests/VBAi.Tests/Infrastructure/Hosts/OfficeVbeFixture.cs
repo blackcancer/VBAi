@@ -63,6 +63,14 @@ namespace VBAi.Tests.Integration
         /// <summary>Creates only a new process; existing host sessions are preserved.</summary>
         internal static OfficeVbeFixture Start(string kind)
         {
+            return Start(kind, false);
+        }
+
+        /// <summary>Preserves an uncertain startup for a read-only identity investigation.</summary>
+        internal static OfficeVbeFixture StartAccessIdentityProbe() { return Start("Access", true); }
+
+        private static OfficeVbeFixture Start(string kind, bool preserveStartupFailure)
+        {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_OFFICE_TESTS") != "1")
                 Assert.Inconclusive("Set VBAi_RUN_OFFICE_TESTS=1 to qualify installed Office hosts.");
             string executable = kind == "Word" ? "WINWORD" : kind == "PowerPoint" ? "POWERPNT" : kind == "Access" ? "MSACCESS" : "MSPUB";
@@ -133,6 +141,13 @@ namespace VBAi.Tests.Integration
             {
                 result.Failures.Add("Host startup: " + startupError);
                 result.steps.Add(new { StartupError = startupError.ToString(), HostProgId = progId, Result = "FAIL" });
+                if (preserveStartupFailure)
+                {
+                    result.RetainUncertainOffice();
+                    try { result.FlushAdapterEvidence(); }
+                    catch (Exception evidenceError) { throw new AggregateException("Read-only startup and evidence persistence both failed; host retained.", startupError, evidenceError); }
+                    throw;
+                }
                 try { result.Dispose(false); }
                 catch (Exception cleanupError) { throw new AggregateException("Office startup and cleanup both failed.", startupError, cleanupError); }
                 throw;
