@@ -35,6 +35,20 @@ Access case was skipped because that instance still existed. These facts do
 not qualify Access persistence or retroactively turn the uncertain response
 into a verified save. Per-stage records are under `office-adapter-only/hosts/`.
 
+The second adapter-only batch on test source `d8c4747`, with balanced Access
+cleanup references, finished with **3 passed, 2 failed, 0 skipped** in
+`office-adapter-v2/adapter-v2.trx`. Word, Publisher and PowerPoint pass. The
+PowerPoint trial uses PID **35604** on the same Office build and product MVID,
+and exits with code zero. Both Access cases now complete fresh disk readback:
+active-module-only uses PIDs **48724/23984**; module-plus-class uses
+**34008/14508**. Each pending source hash survives without helper Save or
+compilation, and each process exits with code zero. Their only retained
+scenario failure is the original adapter's unverified response; later
+observations and persistence do not retroactively alter that response.
+The separate Word/PowerPoint save/reopen scope therefore closes Q-011 for
+this candidate, while the Access response correction and additional metadata
+scenarios remain open in Q-012.
+
 The first native local-Git layout matrix on test source `b286de1` finished with
 **0 passed, 12 failed, 0 skipped** in `userform-layouts/native-layouts.trx`.
 All owned Excel instances exited with `0x00000000`. Ten cases stopped before
@@ -45,7 +59,9 @@ not exercise or qualify the remaining Git/form operations. No remote action
 occurred. Corrected screenshot ownership and scalar-error evidence have
 separate pure regressions: **14 passed** and **5 passed**, respectively;
 the Git fixture-cleanup regressions separately passed **3 tests**. These are
-not native-host acceptance.
+not native-host acceptance. Both fixture-contract groups were also executed
+together in `fixture-evidence-followup/fixture-evidence.trx`, confirming the
+same pure scenarios against the parent test assembly.
 
 The unchanged strict loopback Ollama scenarios passed **3 tests** with passive
 wire capture and **3 tests** without the capture wrapper, recorded in
