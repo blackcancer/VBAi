@@ -1,5 +1,33 @@
 # Recorded validation
 
+## Complete managed qualification follow-up (2026-09-30)
+
+The clean source commit `0ddb0dda880a843be3fdc5c4dbb99c7d120034a7` was built in
+an isolated output. The tested assembly has MVID
+`7b5f11d8-f184-4302-834a-572e92a6ab81` and SHA-256
+`332C5B6FADFBB2247A38FE671FC352419E7415A995FA8EBC99CF33A90DD8F3F7`.
+The complete suite with XPlat coverage collection finished with **2,160 passed,
+0 failed, 36 conditionally skipped, 2,196 total**, in **8 minutes 30 seconds**.
+Every previously retained failing scenario passed in this complete run. This
+closes Q-015 for this candidate; the historical failure causes remain unproven.
+
+Evidence is local under `artifacts/qualification-v1/followup-20260930/`:
+`candidate.json`, `managed/full-managed.trx` and
+`managed/c390190e-2869-4f4b-8a8e-b63703a41244/coverage.cobertura.xml`.
+The TRX individual outcomes agree with the counters. The assembly hash remained
+unchanged and the source worktree was clean after execution.
+
+Coverage measures only the managed `VBAi` assembly: **33,090/33,267 lines
+(99.47%)** and **33,553/33,977 branches (98.75%)**, calculated from the raw
+integer counters. Native Office/SOLIDWORKS and authenticated/live-provider
+opt-ins were disabled; their skipped scenarios do not qualify those paths.
+The C++ renderer and JavaScript are outside this measurement.
+
+Separate checks passed on the same source: **60 JavaScript tests**, the synthetic
+native renderer's **20 start/stop cycles**, the managed/native loader contract,
+and documentation validation (**36 maintained Markdown files, 171 local links,
+0 errors**). These are separate boundaries from native host acceptance.
+
 ## Open qualification: managed failures and owner-thread corrections (2026-09-30)
 
 This checkpoint supersedes the older managed-run status below, without replacing
