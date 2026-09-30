@@ -163,6 +163,13 @@ normalizer exception or coverage claim is added. No remote Git operation occurs.
 Run only while owning the desktop; retain failure artifacts and review the
 source/reopened designer captures separately. Normal host exit is required.
 
+Designer screenshots reobserve the COM window after bounded UI settlement. A
+zero designer HWND permits capture of the owned VBE root only after verifying
+the exact active project and designer COM identities, captions, type, visibility
+and root PID. Each screenshot has a `.png.json` sidecar recording observations,
+capture scope and failures. A root capture covers the entire VBE with the exact
+designer active and must be reviewed with that scope; it is not a form-only crop.
+
 Local provider tests use simulated HTTP or CLI transports. Do not use personal
 credentials, paid API calls or private project data without explicit permission.
 A successful model catalog lookup alone does not qualify streamed responses,
