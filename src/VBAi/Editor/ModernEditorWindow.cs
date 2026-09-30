@@ -22,6 +22,8 @@ namespace VBAi
         private readonly Dictionary<string, EditorDocument> documents = new Dictionary<string, EditorDocument>();
         /// <summary>Dernières révisions Monaco observées pour chaque document.</summary>
         private readonly Dictionary<string, int> versions = new Dictionary<string, int>();
+        /// <summary>Last failed reconciliation for each open document; inactive failures never describe the selected module.</summary>
+        private readonly Dictionary<string, string> documentSynchronizationErrors = new Dictionary<string, string>();
         // Native captions are observed with the bounded document batch, never during layout.
         private readonly Dictionary<string, string> displayNames = new Dictionary<string, string>();
         /// <summary>Brouillons récupérés au chargement et proposés séparément du code natif.</summary>
@@ -78,7 +80,7 @@ namespace VBAi
         /// <value>The current value represented by this member.</value>
         internal bool WorkspaceHosted { get; set; }
         /// <summary>Identifiant du document sélectionné dans les onglets.</summary>
-        private string selected, synchronizationError;
+        private string selected;
         /// <summary>Unique profile retained until controller disposal and the runtime exit notification.</summary>
         private EditorBrowserProfile browserProfile;
         /// <summary>Heure du dernier changement de texte, utilisée pour différer la synchronisation automatique.</summary>
@@ -100,7 +102,7 @@ namespace VBAi
             lastEdit = DateTime.UtcNow;
             if (streamSequence == streamedSequence) firstStreamEdit = lastEdit;
             streamSequence++;
-            synchronizationError = null; lastSaveError = null; SetStatus();
+            documentSynchronizationErrors.Remove(doc.Id); lastSaveError = null; SetStatus();
         }
         /// <summary>Observes execution independently of draft persistence, without overlapping UI operations.</summary>
         private async void DebugTimerTick(object sender, EventArgs e)
@@ -407,7 +409,6 @@ public int column { get; set; } }
         {
             if (capture) await CaptureDocuments();
             if (IsDisposed || closing) return;
-            Exception lastFailure = null;
             foreach (var doc in backgroundBatch ?? documents.Values.ToArray())
             {
                 if (backgroundBatch != null)
@@ -436,12 +437,17 @@ public int column { get; set; } }
                         { doc.Acknowledge(native, captured); versions[doc.Id] = Math.Max(versions[doc.Id], applied); }
                     }
                     if (!doc.Dirty) Drafts.ClearOwn(doc);
+                    documentSynchronizationErrors.Remove(doc.Id);
                 }
-                catch (Exception error) { lastFailure = error; }
+                catch (Exception error)
+                {
+                    if (documents.TryGetValue(doc.Id, out var open) && ReferenceEquals(open, doc))
+                        documentSynchronizationErrors[doc.Id] = error.Message;
+                    // Keep background diagnostics without overwriting status after an asynchronous tab switch.
+                    LoadLog.Write("Monaco: " + error.GetType().Name);
+                }
             }
-            synchronizationError = lastFailure?.Message;
             SetStatus();
-            if (lastFailure != null) Report(lastFailure);
         }
         /// <summary>Traite les changements après un court délai de repos puis observe le mode de débogage VBE.</summary>
         /// <param name="sender">Minuterie de la fenêtre.</param>
@@ -525,6 +531,8 @@ public int column { get; set; } }
                 string title = name + (doc.Dirty ? " *" : "");
                 if (tab.Text != title) tab.Text = title;
             }
+            string synchronizationError = null;
+            if (Current != null) documentSynchronizationErrors.TryGetValue(Current.Id, out synchronizationError);
             status.Text = UiText.Get(lastSaveError ?? synchronizationError ?? (Current == null ? "Open a VBA module to start editing." : Current.Conflict ? "The module changed in VBA. Resolve the conflict first." : Current.Dirty ? "Changes pending synchronization with VBA." : "Synchronized with VBA. Save the macro in its host application."));
             }
             finally { activeStatusLayouts--; }
@@ -619,6 +627,7 @@ public int column { get; set; } }
                             if (selected == doc.Id) selected = null; tabs.TabPages.Remove(page); page.Dispose();
                             if (tabs.SelectedTab != null) selected = (string)tabs.SelectedTab.Tag;
                             documents.Remove(doc.Id); versions.Remove(doc.Id); reviewed.Remove(doc.Id); recovered.Remove(doc.Id); displayNames.Remove(doc.Id);
+                            documentSynchronizationErrors.Remove(doc.Id);
                             SetStatus(); closed.SetResult(true);
                         }
                         catch (Exception error) { closed.SetException(error); }
