@@ -227,6 +227,8 @@ namespace VBAi
                 if (solidWorks.IsSolidWorks && (int)GetProject(request.Project).Type == 100)
                     throw new InvalidOperationException("SOLIDWORKS host saves require SaveHostDocumentAsync on the owning UI thread.");
                 var other = OtherHostProbe();
+                if (other.HostKind == "Access")
+                    throw new InvalidOperationException("Access host saves require SaveHostDocumentAsync on the owning UI thread.");
                 return other.HostKind != null ? SaveOtherHost(request, false, other) : SaveStandaloneMacro(request, false);
             }
             dynamic project = GetDesignProject(request.Project);

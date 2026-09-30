@@ -82,6 +82,7 @@ namespace VBAi
         internal sealed class NativeOtherHostProbe : IOtherHostProbe
         {
             private object editor, boundProject, boundDocument, accessSaveControl;
+            private object accessExpectedPane, accessExpectedComponent;
             internal Func<object, object, bool> ReadIdentity = SameComIdentity;
             internal bool SaveInvocationStarted { get; private set; }
 
@@ -102,6 +103,14 @@ namespace VBAi
                 if (HostKind == "Access" || HostKind == "Publisher") boundDocument = document;
             }
 
+            /// <summary>Retains the exact async-approved Access selection for final pre-command revalidation.</summary>
+            internal void BindAccessSaveSelection(object pane, object component)
+            {
+                if (HostKind != "Access" || pane == null || component == null)
+                    throw new InvalidOperationException("An exact Access code selection is required.");
+                accessExpectedPane = pane; accessExpectedComponent = component;
+            }
+
             /// <summary>Prepares the existing native Save command without invoking it or compiling VBA.</summary>
             internal void PrepareSave(object document)
             {
@@ -112,6 +121,13 @@ namespace VBAi
                     !SameProject(boundProject, DocumentProject(document)) ||
                     !SameProject(boundProject, (object)((dynamic)editor).ActiveVBProject))
                     throw new InvalidOperationException("The built-in VBE Save command must target the matched Access project.");
+                if (accessExpectedPane != null)
+                {
+                    object currentPane = ((dynamic)editor).ActiveCodePane;
+                    if (currentPane == null || !SameProject(currentPane, accessExpectedPane) ||
+                        !SameProject((object)((dynamic)currentPane).CodeModule.Parent, accessExpectedComponent))
+                        throw new InvalidOperationException("The approved Access code selection changed before Save.");
+                }
             }
             /// <summary>Reads the real process kind by default; isolates host contracts during qualification.</summary>
             internal Func<string> ReadHostKind = CurrentHostKind;
