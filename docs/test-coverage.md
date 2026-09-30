@@ -1,5 +1,59 @@
 # Recorded validation
 
+## Native and fixture follow-up (2026-09-30)
+
+The installed product for this follow-up is the clean `0ddb0dd` build with
+MVID `7b5f11d8-f184-4302-834a-572e92a6ab81` and SHA-256
+`332C5B6FADFBB2247A38FE671FC352419E7415A995FA8EBC99CF33A90DD8F3F7`.
+Only the test assembly was rebuilt for the subsequent fixture commits; the
+product hash was independently rechecked. This installation supersedes the
+historical installed-candidate descriptions below. Evidence paths in this
+section are relative to `artifacts/qualification-v1/followup-20260930/`.
+
+The Excel core batch on test source `558d73c` finished with **13 passed,
+1 failed, 0 skipped** in `native-excel/excel-native-core.trx`. The successful
+fixtures retain startup identity and normal shutdown evidence. The scalar
+inspection case on owned PID **27704** reached break mode and opened Locals,
+then its bridge operation failed to respond. Its cleanup failure masked the
+original inspection error in the old harness. External COM recovery verified
+Reset to design mode before Close/Quit, but Windows event 1000 then records
+that same PID crashing in `combase.dll` with `0xc0000005`. It is **not** a normal
+shutdown pass. Request history, recovery stages and crash events are retained
+in the native TRX attachments, `local-scalars-recovery.json` and
+`local-scalars-crash-events.json`. No uncertain operation was replayed.
+
+The adapter-only Office batch on test source `558d73c` finished with **2 passed,
+1 failed, 1 skipped** in `office-adapter-only/adapter-only.trx`. Word PID
+**14600**, and Publisher PIDs **47216** then **56484**, loaded that exact product
+on Microsoft 365 x64 **16.0.20326.20158**. A single adapter save, source-hash
+comparison, form/Label preservation, disk readback without a post-save helper,
+and exit code zero were verified. Access PID **49324** returned an uncertain
+save result because its immediate Saved check was false; the next read-only
+observation and all delayed observations showed the project and components
+saved. Disk reopen was prevented by a fixture shutdown timeout. The second
+Access case was skipped because that instance still existed. These facts do
+not qualify Access persistence or retroactively turn the uncertain response
+into a verified save. Per-stage records are under `office-adapter-only/hosts/`.
+
+The first native local-Git layout matrix on test source `b286de1` finished with
+**0 passed, 12 failed, 0 skipped** in `userform-layouts/native-layouts.trx`.
+All owned Excel instances exited with `0x00000000`. Ten cases stopped before
+snapshot/import at the screenshot helper's zero designer HWND. Image stopped
+at its external Picture assignment; Frame/MultiPage stopped at a fixture
+control-count assumption. These results diagnose fixture preparation and do
+not exercise or qualify the remaining Git/form operations. No remote action
+occurred. Corrected screenshot ownership and scalar-error evidence have
+separate pure regressions: **14 passed** and **5 passed**, respectively;
+the Git fixture-cleanup regressions separately passed **3 tests**. These are
+not native-host acceptance.
+
+The unchanged strict loopback Ollama scenarios passed **3 tests** with passive
+wire capture and **3 tests** without the capture wrapper, recorded in
+`ollama/ollama-native-transport-ui.trx` and `ollama-unwrapped/ollama-unwrapped.trx`.
+They verify visible streaming, Stop and the next completed reply in detached
+controls with simulated VBE. They do not explain the historical ce19 empty
+response, whose failed wire payload was not retained; Q-028 remains open.
+
 ## Complete managed qualification follow-up (2026-09-30)
 
 The clean source commit `0ddb0dda880a843be3fdc5c4dbb99c7d120034a7` was built in
@@ -37,7 +91,7 @@ whole-suite pass is inferred from the focused follow-ups.
 
 ### Latest diagnostic candidate and interrupted complete run
 
-The latest diagnostic product candidate is **installed**: MVID
+At this historical checkpoint the diagnostic product candidate was **installed**: MVID
 `ae8a0978-db91-40f3-b8f7-8957d1a6b7b7`, SHA-256
 `B80B6886DBAAEE61204B5FD6D91DE9752241B303F2833744C195A3C0CF740F26`,
 compiled under `artifacts/build/office-options-diagnostics/VBAi/Debug/net48/`.
