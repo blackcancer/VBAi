@@ -1,6 +1,46 @@
 # Recorded validation
 
-## Current qualification checkpoint
+## Full-branch publication check (2026-09-30)
+
+Source checkpoint: `b6778560e9370b0bc15da74d9d7426a71b93d89c`, including the
+qualification changes and the merge of main's `b6eff51` correction. The merge
+introduced no additional production or test content relative to the compiled
+working tree. Debug solution compilation completed without warnings or errors:
+
+```powershell
+dotnet build VBAi.sln -c Debug -p:BuildOutputRoot="$PWD/artifacts/qualification-v1/pr-full-build" --no-restore -v:minimal
+dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildOutputRoot="$PWD/artifacts/qualification-v1/pr-full-build" --logger 'trx;LogFileName=qualification.trx' --results-directory artifacts/qualification-v1/pr-full-tests -v:minimal
+```
+
+The resulting `VBAi.dll` SHA-256 is
+`494567E025CAB4F3869FE82222CA4063582B56550A75C2FB9C227F99050B84BC`.
+The complete default run returned **2,107 passed, 1 failed, 36 conditionally
+skipped, 2,144 total**, in 8 minutes 37 seconds. These counts were verified against
+individual TRX outcomes, not only its summary counters. No coverage collector
+was enabled for this run.
+
+`CommitSynchronizationStaleStateAndOperationStatusMatrix` failed because the
+restore action reported that VBA changed during the operation instead of
+confirming restoration. One isolated rerun on the same binary passed (1 passed,
+0 failed, 0 skipped), recorded in `pr-full-git-recheck/git-restore.trx` using
+`--filter FullyQualifiedName~CommitSynchronizationStaleStateAndOperationStatusMatrix`.
+The cause is unresolved; the isolated success does not replace the failed full
+run or establish that the issue is only a test timing problem.
+
+Additional publication checks passed: 60 JavaScript tests, test-layout validation
+(258 dedicated mirrors for 316 production files), and syntax parsing of the
+17 added PowerShell probes. Probes were not executed against native hosts.
+The 13 upstream license/notice text payloads match their manifest hashes in Git;
+`.gitattributes` preserves their exact bytes. Whitespace validation excludes
+these verbatim upstream texts, which retain their original whitespace.
+
+Native Office/SOLIDWORKS and authenticated-provider acceptance were not repeated
+for this publication check. The conditional skips remain unqualified on this
+binary. The historical native results and coverage below remain tied to their
+own source manifests and compiled candidates. The branch PR does not change the
+release decision or close the outstanding qualification gates.
+
+## Native qualification campaign checkpoint
 
 Qualification on **2026-09-29–30** uses branch `qualification/v1-20260929`, based on
 **`9e43a9df3bd5b64b66c47490d7c4cf7ac284ab3a`** with uncommitted corrections.
