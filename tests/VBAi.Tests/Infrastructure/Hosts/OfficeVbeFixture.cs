@@ -441,7 +441,7 @@ namespace VBAi.Tests.Integration
         private void Dispose(bool includeExistingFailures)
         {
             int failuresBeforeCleanup = Failures.Count;
-            try { CloseOwnedHost(); }
+            try { CloseOwnedHost(adapterOnlyCleanup); }
             finally
             {
                 if (Root != null) File.WriteAllText(Path.Combine(Root, "qualification.json"), new JavaScriptSerializer { MaxJsonLength = 20 * 1024 * 1024 }.Serialize(new { Host = Kind, HostProgId = hostProgId, ProcessId, DocumentPath, Project, Failures, Steps = steps }));
