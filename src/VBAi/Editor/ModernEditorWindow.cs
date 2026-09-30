@@ -334,19 +334,29 @@ public int column { get; set; } }
         /// <exception cref="InvalidOperationException">La limite de documents ouverts est atteinte.</exception>
         internal async Task<EditorDocument> OpenModule(IEditorModule module)
         {
+            return await OpenModuleCore(module, true);
+        }
+
+        /// <summary>Opens an exact module, optionally preserving native visibility and keyboard focus during passive following.</summary>
+        private async Task<EditorDocument> OpenModuleCore(IEditorModule module, bool activateWindow)
+        {
             var existing = documents.Values.FirstOrDefault(d => ReferenceEquals(d.Module, module) ||
                 (d.Module is EditorVbeModule vm && module is EditorVbeModule other && vm.IsComponent(other.Component)));
             if (existing != null) { selected = existing.Id; SelectTab(existing.Id); if (Ready) await SelectEditorDocument(existing.Id); return existing; }
             if (documents.Count >= 30) throw new InvalidOperationException("Close the editor before opening more than 30 modules.");
             var document = new EditorDocument(module);
-            if (module is EditorVbeModule nativeModule) nativeModule.EnsureNativeWindow();
+            if (module is EditorVbeModule nativeModule)
+            {
+                if (activateWindow) nativeModule.EnsureNativeWindow();
+                else nativeModule.RetainNativeWindow();
+            }
             var draft = Drafts.Recover(module.Key);
             documents.Add(document.Id, document); versions[document.Id] = 1;
             if (draft != null && EditorDocument.Normalize(draft.Text) != document.Text) recovered[document.Id] = draft;
             string displayName = module.Name; displayNames[document.Id] = displayName;
             var tab = new TabPage(displayName) { Tag = document.Id }; tabs.TabPages.Add(tab); selected = document.Id; tabs.SelectedTab = tab;
             if (Ready) await RenderDocument(document);
-            SetStatus(); Activate(); return document;
+            SetStatus(); if (activateWindow) Activate(); return document;
         }
         /// <summary>Envoie le contenu d’un document nouvellement ouvert à Monaco et actualise sa révision.</summary>
         /// <param name="doc">Document à afficher.</param>
@@ -439,6 +449,8 @@ public int column { get; set; } }
         private async void TimerTick(object sender, EventArgs e)
         {
             if (busy || closing || debugCommands.CurrentCount == 0) return;
+            await FollowNativeActivation();
+            if (closing || IsDisposed || debugCommands.CurrentCount == 0) return;
             await ProcessBackgroundDocuments();
             try { if (!closing && !IsDisposed) await ObserveDebugMode(); } catch (Exception error) { LoadLog.Write("Monaco debug observation: " + error.Message); }
         }

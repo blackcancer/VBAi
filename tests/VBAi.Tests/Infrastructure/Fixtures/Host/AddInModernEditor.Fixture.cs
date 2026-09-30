@@ -9,9 +9,9 @@ namespace VBAi.Tests.Unit
     public sealed class AddInEditorActiveWindow { public int Type { get; set; } }
     internal static class OwnedMdiWorkspace { [System.Runtime.InteropServices.DllImport("user32.dll")] internal static extern IntPtr GetParent(IntPtr child); }
     public sealed class AddInEditorCollection { public object Parent { get; set; } }
-    public sealed class AddInEditorComponent { public string Name { get; set; } = "Module1"; public AddInEditorCollection Collection { get; set; } }
+    public sealed class AddInEditorComponent { public string Name { get; set; } = "Module1"; public int Type { get; set; } = 1; public AddInEditorCollection Collection { get; set; } }
     public sealed class AddInEditorCode { public object Parent { get; set; } }
-    public sealed class AddInEditorPane { public AddInEditorCode CodeModule { get; set; } }
+    public sealed class AddInEditorPane { public AddInEditorCode CodeModule { get; set; } public object Window { get; set; } }
     internal sealed class AddInModernEditorFixture : IDisposable
     {
         internal readonly HostUiScope Scope = new HostUiScope();
@@ -40,7 +40,7 @@ namespace VBAi.Tests.Unit
             Scope.Host.ActiveWindow = new AddInEditorActiveWindow();
             Scope.Host.Project.Mode = mode;
             var component = new AddInEditorComponent { Collection = new AddInEditorCollection { Parent = Scope.Host.Project } };
-            Scope.Host.ActiveCodePane = new AddInEditorPane { CodeModule = new AddInEditorCode { Parent = component } }; return component;
+            Scope.Host.ActiveCodePane = new AddInEditorPane { CodeModule = new AddInEditorCode { Parent = component }, Window = Scope.Host.ActiveWindow }; return component;
         }
         public void Dispose()
         { Scope.Close(Instance); foreach (var editor in Editors) editor.Dispose(); Scope.Dispose(); }
