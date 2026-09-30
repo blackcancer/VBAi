@@ -125,6 +125,51 @@ reopens the database. A returned Quit is insufficient; preserve the disposable
 database and report disk readback as NOT_RUN if exit is unverified. Do not replay
 Quit or native mutations to obtain a passing result.
 
+### Read-only Access metadata getter probe
+
+Set both `VBAi_RUN_OFFICE_TESTS=1` and
+`VBAi_RUN_OFFICE_METADATA_GETTER_PROBE=1` to enable this diagnostic. The
+`FreshAccessMetadataGetterContractsReadOnly` test starts a new owned disposable
+database through the existing Access fixture. Database creation and its initial
+fixture save remain prerequisites; the probe adds no setter, save, macro or help
+invocation. The baseline requires three successful, exactly equal getters and
+runtime getter/setter contracts for both DISPIDs. It does not qualify metadata
+persistence.
+
+The diagnostic reads `HelpFile` and `HelpContextID` on the exact mapped, selected
+VBProject through `PropertyDescriptor.GetValue`, CLR `InvokeMember` with
+`GetProperty`, and raw `IDispatch.Invoke` with `DISPATCH_PROPERTYGET`. The raw
+result uses the x64 24-byte VARIANT ABI, a checked boundary canary and OLE cleanup.
+Runtime `GetTypeInfo` records the getter/setter VARTYPEs for DISPIDs 116 and 117
+and the containing library identity. Reads run on the external fixture STA;
+COM marshaling dispatches them to the Office object's apartment. These are not
+in-process bridge getter observations.
+
+Each `metadata-getters-<phase>.json` retains candidate MVID and matching assembly
+file hashes, PID/start identity,
+project path/IUnknown identity, mode/protection/Saved state, getter outcomes and
+bounded exact BSTR bytes. No ANSI repair or value normalization is performed.
+A pending-read marker identifies an unfinished call. Normal owned process exit
+must be verified separately through the fixture's lifecycle evidence.
+
+With the same diagnostic opt-in, the existing Access HelpFile/HelpContextID
+adapter scenarios also record reads before and after their existing mutation,
+after their existing adapter save, and immediately after fresh-disk reopen.
+These hooks add no mutation or save. Getter disagreements remain observations;
+the original exact metadata assertions still decide adapter acceptance. An
+`OBSERVED` report does not mean its getters agree or persistence passed.
+
+Prepare a new durable evidence directory and use a test output referencing the
+exact installed candidate as described above. The following filter selects the
+complete diagnostic batch; no ordering between tests is assumed:
+
+```powershell
+$env:VBAi_RUN_OFFICE_TESTS = "1"
+$env:VBAi_RUN_OFFICE_METADATA_GETTER_PROBE = "1"
+$env:VBAi_OFFICE_RESULTS = "$PWD/artifacts/metadata-getter-evidence"
+dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildOutputRoot="$PWD/artifacts/build" --filter "FullyQualifiedName=VBAi.Tests.Integration.OfficeMetadataGetterProbeTests.FreshAccessMetadataGetterContractsReadOnly|FullyQualifiedName=VBAi.Tests.Integration.OfficeAdapterOnlyMetadataQualificationTests.Access16HelpFilePathAdapterSaveReopen|FullyQualifiedName=VBAi.Tests.Integration.OfficeAdapterOnlyMetadataQualificationTests.Access16HelpContextIdAdapterSaveReopen" --results-directory "$PWD/artifacts/metadata-getter-evidence" --logger "trx;LogFileName=metadata-getters.trx"
+```
+
 ### Controlled native export tracing
 
 `tools/probes/Trace-NativeUserFormExport.ps1` defaults to a prepare-only plan.

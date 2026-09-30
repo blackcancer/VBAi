@@ -40,7 +40,9 @@ namespace VBAi.Tests.Integration
                 var baselineHashes = ReadHashes(fixture);
                 fixture.RecordAdapterStage("ProjectBaseline", new { SourceHashes = baselineHashes,
                     Properties = fixture.Data("project_properties"), References = fixture.Data("list_references") });
+                if (scenario.StartsWith("Metadata.", StringComparison.Ordinal)) fixture.RecordMetadataGetterProbe("BeforeExistingMutation");
                 mutate(fixture);
+                if (scenario.StartsWith("Metadata.", StringComparison.Ordinal)) fixture.RecordMetadataGetterProbe("AfterExistingMutation");
                 CollectionAssert.AreEqual(baselineHashes, ReadHashes(fixture), "Metadata/reference mutations must preserve synthetic source.");
                 verify(fixture);
                 // A new source edit guarantees the native Save is exercised even when the host writes metadata immediately.
@@ -67,6 +69,7 @@ namespace VBAi.Tests.Integration
                 try { AssertOriginalResponse(response, host); }
                 catch (Exception error) { originalOutcome = error; }
                 fixture.ObserveAdapterOutcome(response);
+                if (scenario.StartsWith("Metadata.", StringComparison.Ordinal)) fixture.RecordMetadataGetterProbe("AfterExistingSave");
                 CollectionAssert.AreEqual(expectedHashes, ReadHashes(fixture), "Save must preserve every synthetic source hash.");
                 AssertReferencesEqual(expectedReferences, fixture.Data("list_references"));
                 CollectionAssert.AreEqual(expectedMetadata, ReadMetadata(fixture), "Save must preserve all project name/description/help metadata.");
@@ -81,6 +84,7 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(path, fixture.DocumentPath);
                 Assert.AreEqual(project, fixture.Project);
                 fixture.RecordAdapterObservation("ProjectFreshDiskReopen");
+                if (scenario.StartsWith("Metadata.", StringComparison.Ordinal)) fixture.RecordMetadataGetterProbe("FreshDiskReopen");
                 fixture.RecordAdapterStage("ProjectFreshDiskState", new { SourceHashes = ReadHashes(fixture),
                     Properties = fixture.Data("project_properties"), References = fixture.Data("list_references"),
                     PreviousProcessId = originalPid, ReopenProcessId = fixture.ProcessId });
