@@ -118,6 +118,39 @@ diagnose an identity getter. A read-only identity trial with normal exit does
 not qualify adapter persistence. Adapter/property/reference acceptance requires
 its own verified save and fresh-disk reopen without post-save helper saving.
 
+For Access save/reopen, preserve the exact live and reopened metadata strings,
+not only a successful Save response or Saved flag. Reference-removal acceptance
+requires the initial owned process to exit normally before a fresh process
+reopens the database. A returned Quit is insufficient; preserve the disposable
+database and report disk readback as NOT_RUN if exit is unverified. Do not replay
+Quit or native mutations to obtain a passing result.
+
+### Controlled native export tracing
+
+`tools/probes/Trace-NativeUserFormExport.ps1` defaults to a prepare-only plan.
+Its explicit `-Execute` path requires the absolute pending report, expected
+MVID/SHA-256 and a measured `-DebuggerPreflightReport` from
+`tools/probes/Test-NativeTracePreflight.ps1`. That preflight uses only a new
+disposable non-Office helper and must prove paired native tracing, attachment,
+target survival, normal shutdown and debugger detach with the exact CDB,
+JsProvider and trace-script hashes. It does not qualify native Office export.
+
+Trace execution validates the owned Excel PID/start identity and existing
+absolute GUID export child, refuses a preexisting trace output or attached
+debugger, and arms the export permission marker only after attachment is proven.
+The bounded capture records paired syscall arguments/statuses and its detach
+lifecycle; it does not issue exports or change ACLs, EFS, tokens or trust. The
+fixture issues one export only. If setup fails before arming, preserve zero-export
+evidence; if a native export fails, retain its original response and do not replay
+it. Record detach and owned-host shutdown independently from export acceptance.
+
+Pending/preflight JSON is read explicitly as UTF-8, including accented repository
+paths. CDB command files intentionally use the active Windows ANSI code page
+without a BOM; debugger logs use Unicode. These are separate encoding contracts.
+A native path/name-not-found status despite a successful synthetic root write
+localizes the observed failure but does not prove an EFS, ACL or token cause.
+Exact candidates and measured results belong in recorded validation.
+
 If a native campaign aborts, retain the final TRX and reconcile individual
 outcomes with its raw counters and the planned scenario inventory. An in-flight
 scenario absent from the TRX and unreached cases are NOT_RUN; NotExecuted is not

@@ -1,16 +1,103 @@
 # Recorded validation
 
-## Latest corrected candidate: complete managed pass (2026-09-30)
+## Current installed v5: failed complete managed run (2026-10-01)
+
+Product and test source `2e751618aa8d5be08ca0fa84d6ceff4d0b1312dc`
+implements the stable Access application/database-path/mapped-project identity
+guard while retaining owner-PID, VBE, selection, mode/protection, source and
+metadata checks. The isolated build completed without warnings or errors.
+Candidate `f9a36c85-1d9c-4a53-8645-06c99617b12c`, SHA-256
+`76524AC884247BEBC03B0A73E36AA1C96414CB650D98E9E74F11BCA5A4D068D1`, is now
+installed; `candidate-v5.json` and `deployment-v5.json` retain exact provenance
+and deployment/backup records.
+
+The initial complete instrumented run is terminal **FAILED: 2,279 passed,
+8 failed, 88 conditional skips, 2,375 total**, in **484.103 seconds**.
+`managed-access-guard/full-managed.trx`, `summary.json` and `terminal.json`
+retain the individual outcomes, nonzero runner exit and unchanged product hash.
+The failures are a missing debugger-script regression fixture and seven local
+Git scenarios whose nested bare-remote paths exceed the usable Git path length.
+These diagnosed harness failures remain failures of the complete run; a
+harness correction and full rerun are pending, and current-v5 Q-015 is open.
+
+The failed run measured managed `VBAi` only:
+**33,359/33,564 lines (99.39%)** and **33,826/34,347 branches (98.48%)**,
+from raw integer counters in the summary and
+`managed-access-guard/e295ba72-cd41-4381-8d60-0441b45bd84b/coverage.cobertura.xml`.
+Native/live-provider opt-ins were disabled; C++ renderer, JavaScript and external
+host processes are not measured. Coverage does not convert this failed run
+into acceptance, and historical percentages below are not current-v5 metrics.
+
+### Current v5: terminal Access adapter campaign
+
+`access-adapter-v5/access-adapter-v5.trx` and `terminal.json` record
+**5 passed, 2 failed, 0 skipped, 7 total**, runner exit **1**, on source
+`2e75161` and the exact installed v5 MVID/hash above. The Microsoft 365 Access
+executable version is **16.0.20326.20158**. Each scope preserves the original
+adapter response, source/property/reference snapshots and owning-process identity
+in `hosts/Access/<fixture>/adapter-only-progress.json` and `qualification.json`.
+Exactly one adapter Save follows the prepared mutation; no subsequent compile
+or helper save contaminates fresh disk readback.
+
+| Native scope | Outcome | Initial / fresh-reopen PID and cleanup |
+| --- | --- | --- |
+| Active-module-only edit | PASS | **15500 / 58004**; exact source hashes, both normal exits **0**. |
+| Module and class edits | PASS | **53808 / 51736**; distinct pending module/class hashes retained on disk, both normal exits **0**. |
+| Description | PASS | **5436 / 59200**; source and exact metadata readback, both normal exits **0**. |
+| Scripting reference addition by GUID | PASS | **41548 / 47852**; exact source and installed reference identity readback, both normal exits **0**. |
+| Scripting reference addition by file | PASS | **36380 / 38676**; exact source and installed reference identity readback, both normal exits **0**. |
+| HelpFile path | FAIL | **49492 / 55512**; adapter Save and normal closes/reopen complete, but fresh metadata contains `㩅` where `E` was expected at index 9. Both normal exits **0** do not qualify changed metadata. |
+| Scripting reference removal | FAIL | **52940 / NOT_RUN**; Quit returned but the initial host did not exit before the fixture deadline. No fresh reopen or disk-persistence acceptance. |
+
+The successful scopes establish the stable Access save guard on this candidate;
+they do not qualify HelpFile, HelpContextID or reference removal. For the retained
+removal fixture, `authorized-retained-host-cleanup.json` records one explicitly
+authorized force termination, exit **-1**, no Quit replay and no qualification
+pass. The exact disposable database is retained as
+`retained-reference-removal-Disposable.accdb`, SHA-256
+`FA91E9A79C1C6F3501054E4FB023DEB4D610BEA21BFD9E4BF9B49D06841E8EA3`.
+Q-012 remains partial; current-v5 Publisher acceptance is not established.
+
+### Preceding v4: native export path trace
+
+The integrated disposable non-Office debugger preflight
+`cdb-preflight-integrated/592180985be8419bab03d52907cd56b5/preflight.json`
+is **PASS**: paired synthetic native file-call tracing, exact debugger/script
+hashes, observed attachment and verified detach, helper survival and normal
+helper/debugger exits. This is tool qualification, not an Office export result.
+The subsequent tests/tool correction `54cd6e8` reads pending/preflight JSON as
+UTF-8 explicitly, preserving accented paths in Windows PowerShell. That source
+correction is not another native export trial or a passing product result.
+
+| Evidence relative to `artifacts/qualification-v1/followup-20260930/` | Outcome | Exact scope |
+| --- | --- | --- |
+| `native-export-trace-v4/native-export-trace-v4.trx` | **0 passed, 1 failed, 0 skipped** | Owned Excel **49660**, preceding product `d5e25e25`; UTF-8 JSON path decoding failed during trace setup before any debugger attachment or native export. `setup-failure-reconciliation.json` preserves zero attachment/export attempts. The separate `authorized-normal-cleanup.json` records one NativeOM Close/Quit, normal exit **0**, no force; it does not turn the test into a pass. |
+| `native-export-trace-v4-v2/native-export-trace-v4.trx` | **0 passed, 1 failed, 0 skipped** | Fresh Excel **52952**, exact preceding `d5e25e25` MVID/hash, tests-only source `2e75161`; exactly one native export returns `Objet spécifié introuvable.` No successful FRM/FRX capture is established. CDB **4496** detaches verifiably with exit **0**, no forced stop; owned Excel closes normally with exit **0**. |
+
+The fresh trial retains `native-export.json`, `trace.cdb.log` and
+`trace.lifecycle.json` under
+`native-export-trace-v4-v2/exports/HostBridge-LocalAppData-8f3de0909bbe41c1845ba70e0f3bf185/`.
+Six paired native calls report **0xc000003a (path not found)** or
+**0xc0000034 (name not found)**, including VBE's `CreateFileA` path and managed
+parent opens. The exact ASCII GUID child still exists and root synthetic
+write/read succeeds; parent/child encrypted attributes are retained, while the
+synthetic EFS metadata query itself reports access denied. This localizes the
+observed failure to path visibility in that host, without proving its cause or
+attributing it to EFS, ACLs or tokens. The controlled export is not replayed.
+Q-027 remains open, and this preceding-product trace is not v5 native acceptance.
+
+## Preceding v4 candidate: complete managed pass (2026-09-30)
 
 Product and test source `b77a782` adds the recovery-message catalogue correction
 and two conditional scalar diagnostic pages to the preceding candidate.
 The isolated `build-v4` assembly has MVID
 `d5e25e25-e3b4-4be0-ad45-a2dceb7be6b1` and SHA-256
 `06F9767B6970973B333E5D255210896335DA062C78F4F4116CBF150DD7E121EE`.
-Compilation completed with no warning or error. This assembly is now installed:
+Compilation completed with no warning or error. This assembly was installed:
 `deployment-v4.json` records the matching installed SHA-256, previous payload
 backup and registry exports. Native loaded-MVID acceptance is recorded below;
-deployment alone does not qualify Office or SOLIDWORKS operations.
+deployment alone does not qualify Office or SOLIDWORKS operations. It has now
+been replaced by the v5 candidate above.
 
 The complete instrumented default suite finished with **2,234 passed,
 0 failed, 83 conditionally skipped, 2,317 total**, in **9 minutes 24 seconds**.
@@ -59,9 +146,9 @@ Coverage measures only managed `VBAi`: **33,343/33,529 lines (99.45%)** and
 Native Office/SOLIDWORKS and live-provider opt-ins were disabled. Skipped
 scenarios, native C++ and JavaScript are not covered by this acceptance result.
 
-## Current installed candidate: native follow-up (2026-09-30/2026-10-01)
+## Preceding installed v4: native follow-up (2026-09-30/2026-10-01)
 
-The accepted scalar pages use installed product `d5e25e25` and tests-only
+The accepted scalar pages used then-installed product `d5e25e25` and tests-only
 source `c68f85b`, followed by the complete-page scenario from `b81b317`.
 The earlier startup failure is retained separately.
 The source changes after `b77a782` are not included in the complete managed
@@ -85,7 +172,7 @@ but does not explain the historical `7b5f11d8` bridge stall or combase.dll crash
 It does not enumerate every runtime local type or qualify another host. Q-006
 remains open for unresolved historical failure and host lifecycle evidence.
 
-Current SOLIDWORKS native bootstrap is retained in
+Preceding-v4 SOLIDWORKS native bootstrap is retained in
 `solidworks-2019/stage-f4667f08b6b641b7ba00a0cc6d59bb71/`. The module/class/form
 readback and copied disk hash pass before UI navigation. Designer and code
 resize/restoration pass in `solidworks-2019-v4-designer-resize.json` and
@@ -96,7 +183,7 @@ cause remains unproven. `solidworks-2019-v4-ui-evidence.json` preserves the
 changed source and records PARTIAL acceptance, with no harness source writes,
 macro executions or source restoration after drift.
 
-The current 2019 instance did not exit normally. After the authorized single
+The preceding-v4 2019 instance did not exit normally. After the authorized single
 ExitApp request, PID **51376** remained stopped in its native debugger at heap
 corruption **0xc0000374**. Address/module observations include `ntdll.dll`,
 `ucrtbase.dll`, `mfc140u.dll` and `sldappu.dll`, without resolved symbols; these
@@ -148,7 +235,7 @@ MVID `7b5f11d8-f184-4302-834a-572e92a6ab81` and SHA-256
 `332C5B6FADFBB2247A38FE671FC352419E7415A995FA8EBC99CF33A90DD8F3F7`.
 Only the test assembly was rebuilt for the subsequent fixture commits; the
 product hash was independently rechecked. It has since been replaced by the
-installed `d5e25e25` candidate above. Evidence paths in this
+preceding installed `d5e25e25` candidate above. Evidence paths in this
 section are relative to `artifacts/qualification-v1/followup-20260930/`.
 
 The Excel core batch on test source `558d73c` finished with **13 passed,

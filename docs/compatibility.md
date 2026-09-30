@@ -33,7 +33,23 @@ candidate beginning `F3C48EAEA590`. These are separate build observations, not a
 blanket qualification of v1.0.0. Full provenance and test totals belong in
 [recorded validation](test-coverage.md).
 
-The currently installed product is MVID
+The currently installed product, source `2e75161`, is MVID
+`f9a36c85-1d9c-4a53-8645-06c99617b12c`, SHA-256
+`76524AC884247BEBC03B0A73E36AA1C96414CB650D98E9E74F11BCA5A4D068D1`.
+`followup-20260930/deployment-v5.json` retains deployment and backup evidence.
+The stable Access application/PID, database-path and mapped/selected-project
+guard now passes adapter-only module/class, Description and Scripting-reference
+addition save/reopen, with exact source/metadata/reference readback and normal
+owned-process exits. HelpFile changes to garbled Unicode after fresh reopen;
+reference removal cannot reach disk readback because initial Quit does not exit
+within the fixture deadline. That database is preserved and receives one
+authorized forced cleanup without Quit replay. Neither operation is qualified.
+HelpContextID and current-v5 Publisher metadata/reference scopes remain open.
+The complete current-v5 managed run fails on diagnosed harness defects; a
+corrected complete rerun is pending. No whole-host qualification follows from
+these scoped Access passes.
+
+The preceding installed product is MVID
 `d5e25e25-e3b4-4be0-ad45-a2dceb7be6b1`, with deployment and backup records in
 `followup-20260930/deployment-v4.json`. Its Excel declared-scalar page passes
 native Long/String/Boolean readback, unsupported array/Variant/object refusal,
@@ -42,22 +58,31 @@ normal owned-process exit. This is a declared-page result, not complete runtime
 Locals enumeration or acceptance in another host; the historical scalar stall
 and crash cause remain open in Q-006.
 
-On this same product, the Office adapter/property/reference campaign is terminal
+On this preceding product, the Office adapter/property/reference campaign is terminal
 after authorized forced cleanup. Publisher Description passed, while Access
 save identity checks and Access/Publisher HelpContextID setters failed. Word
 stalled during form preparation, with no terminal scenario result; unexecuted
 cases remain NOT_RUN. The subsequent read-only Access diagnostic observes
 changing CurrentProject wrapper IUnknown identities with a stable database path
 and mapped/selected VBProject, followed by normal exit. It qualifies diagnosis
-only; a guarded adapter correction and new save/reopen acceptance remain pending.
+only; the subsequent stable guard and scoped v5 acceptance are described above.
 
-Current SOLIDWORKS 2019 SP5 load, copied Edit Macro/source/form readback, Monaco
+Preceding-product SOLIDWORKS 2019 SP5 load, copied Edit Macro/source/form readback, Monaco
 return-to-code and designer/code resize passed. Later class-source drift remains
 unproven and unmodified. ExitApp stalled at native heap corruption `0xc0000374`;
 authorized force/debugger cleanup ended the retained target without an observed
 normal exit code. That cleanup does not qualify lifecycle behavior or establish
-the crash cause. Current-candidate SOLIDWORKS 2025 acceptance remains NOT_RUN.
+the crash cause. Current-v5 SOLIDWORKS 2019/2025 acceptance remains NOT_RUN.
 Exact provenance and terminal outcomes belong in recorded validation.
+
+A controlled UserForm export on preceding `d5e25e25` still fails under the
+LocalAppData parent. Paired native tracing observes VBE `CreateFileA` and managed
+parent-open path/name-not-found statuses for the exact existing GUID child,
+despite a root synthetic write/read succeeding. A disposable non-Office CDB
+preflight and verified debugger detach qualify the diagnostic tool only;
+normal Excel exit is not export acceptance. The trace does not establish an
+EFS, ACL or token cause and adds no current-v5 export qualification. Q-027
+remains open.
 
 The later `office-prerequisites-ready` and `outlook-ready` runs used loaded MVID
 `3553ced4-f24c-4982-8a33-a593681d867e`, with DLL SHA-256 beginning
@@ -97,7 +122,7 @@ binary, not the later edits listed in the coverage summary.
 | Excel x64 | Earlier builds covered load/bridge, save, protection, debugger inspection, Monaco, palette and Ollama tool read. On candidate 353d, `scalar-excel-native` passes complete UserForm fitting, arrays and persistence with normal exits. Independent scroll-only and generic scalar trials also pass: project Description, module Name with unchanged code, and Label BackColor verified through native getters and a reviewed designer capture. | Q-025's tested fitting/scalar paths are corrected; earlier crashes and abnormal exits remain recorded. This does not qualify every control, all Git workflows or other hosts. Format-options revision drift remains Q-026 despite a later successful rerun and verified preference restoration. |
 | Word, Office 16 x64 | `office-accepted` verifies disposable DOCM editing, references, module/class/form content and adapter-only save/reopen; PID 35984 exited normally. On 353d, two-document native evidence (local artifact: `artifacts/qualification-v1/word-git-native/353-native-03/hosts/Word/2cb46193741e415ab5773c1539745096/qualification.json`) verifies same-name project resolution by canonical document paths, native selection, refusal of the old Git binding after owned SaveAs, and unchanged source in the other document; PID 50144 exited normally. | The path contract preserves raw `VBProject.FileName` and uses PID/IUnknown-matched `Document.FullName`. Complete Git remains blocked (**Q-024**): production Capture receives 0x800AC35C during export into GitTemporary, despite successful byte-identical bridge/external exports to artifact paths. The suite remains failed. Native chat/Git UI opening, every SaveAs/cancellation path and template support are not qualified; `Normal` was not modified. |
 | PowerPoint, Office 16 x64 | `office-accepted`, disposable `.pptm`: shared VBE scenarios and VBAi adapter save passed, with `Verified=true`, `Uncertain=false`, followed by close/reopen without a helper save and module/class/form readback. Owned PID `50432` exited with code 0. | This supersedes the earlier trust-blocked save observation. It qualifies the tested existing-document save path, not every SaveAs, event cancellation, execution or Git workflow. |
-| Access, Office 16 x64 | `office-accepted`, disposable `.accdb`: shared VBE inspection/editing, references, compilation, an MSForms UserForm and native-helper save/reopen passed. Owned PIDs `36512` and `57496` exited with code 0. | The follow-up source includes an existing-document adapter; native adapter save/reopen remains `NOT_QUALIFIED`. Access matches CurrentProject.FullName to a unique injected-VBE project and uses the built-in VBE Save command only for the exact active project. It does not compile implicitly or invent a document Saved flag; first SaveAs is unavailable. |
+| Access, Office 16 x64 | `office-accepted`, disposable `.accdb`: shared VBE inspection/editing, references, compilation, an MSForms UserForm and native-helper save/reopen passed. Owned PIDs `36512` and `57496` exited with code 0. | The existing-document adapter now has scoped v5 module/class, Description and reference-addition save/reopen acceptance above; HelpFile, HelpContextID and reference-removal acceptance remain incomplete. Access matches CurrentProject.FullName to a unique injected-VBE project and uses stable Application/PID and mapped/selected-project guards before the built-in VBE Save command for the exact active project. It does not compile implicitly or invent a document Saved flag; first SaveAs is unavailable. |
 | Publisher, Office 16 x64 | `office-accepted`, disposable `.pub`: shared VBE inspection/editing, references, compilation, UserForm and native-helper save/reopen passed. Owned PIDs `30152` and `27104` exited with code 0. | The follow-up source includes an existing-document adapter; native adapter save/reopen remains `NOT_QUALIFIED`. Publisher matches Document.FullName to a unique injected-VBE project and invokes Document.Save once after final identity/path/format/writable checks. First SaveAs is unavailable. |
 | Classic Outlook, Office 16 x64 | `outlook-accepted`: startup, exact loaded MVID/PID, project inventory, explicit-project debug state and VBE environment passed using the existing profile. Owned PID `37044` exited with code 0. | Read-only metadata qualification only. No profile was configured, mail read/sent, or user VBA code modified. Persistence, macro execution and full Outlook UI workflows remain unqualified. |
 | New Outlook for Windows | Installed; **NOT_APPLICABLE** to the VBE add-in. | Microsoft documents that [new Outlook does not support VBA/macros](https://learn.microsoft.com/en-us/microsoft-365-apps/outlook/get-started/vba-alternatives). |
