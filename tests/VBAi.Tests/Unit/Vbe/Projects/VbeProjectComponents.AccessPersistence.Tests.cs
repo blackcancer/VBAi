@@ -12,6 +12,85 @@ namespace VBAi.Tests.Unit
     /// <summary>Checks deferred Access saved notifications with fake native objects on an owned STA.</summary>
     public sealed partial class VbeOtherHostPersistenceTests
     {
+        /// <summary>Models Access's native factory getters while keeping every true project/context guard observable.</summary>
+        [STATestMethod]
+        [DataRow("unchanged"), DataRow("reopenedproject"), DataRow("mappedproject"), DataRow("application")]
+        [DataRow("path"), DataRow("pid"), DataRow("owner"), DataRow("documentmissing"), DataRow("documentduplicate")]
+        [DataRow("source"), DataRow("metadata"), DataRow("references"), DataRow("readonly"), DataRow("format")]
+        [DataRow("mode"), DataRow("protected"), DataRow("pane")]
+        public void AccessFactoryDocumentIdentityUsesApprovedApplicationPathAndMappedProject(string change)
+        {
+            var f = new AsyncAccessFixture();
+            object application = new object(), mappedProject = f.Probe.Project;
+            var wrappers = new List<AccessFactoryDocument>();
+            var stateReads = new List<AccessFactoryDocument>();
+            bool absent = false, duplicate = false;
+            int ownerThread = Thread.CurrentThread.ManagedThreadId;
+            f.Probe.ReadApplication = () => application;
+            f.Probe.ReadDocuments = app => {
+                Assert.AreEqual(ownerThread, Thread.CurrentThread.ManagedThreadId);
+                var wrapper = new AccessFactoryDocument { Project = mappedProject, Path = f.Probe.Observation.Path,
+                    Format = f.Probe.Observation.Format, ReadOnly = f.Probe.Observation.ReadOnly };
+                wrappers.Add(wrapper);
+                if (wrappers.Count >= 4) f.Probe.Project.Saved = true;
+                return absent ? new List<object>() : duplicate ? new List<object> { wrapper, wrapper } : new List<object> { wrapper };
+            };
+            f.Probe.ReadDocumentProject = document => ((AccessFactoryDocument)document).Project;
+            f.Probe.ReadDocumentState = document => {
+                var wrapper = (AccessFactoryDocument)document;
+                stateReads.Add(wrapper);
+                return new VbeProjectComponents.OtherHostDocumentState { Path = wrapper.Path,
+                    Format = wrapper.Format, ReadOnly = wrapper.ReadOnly, Saved = null };
+            };
+            f.Probe.AfterInvocation = () => { f.Probe.Observation.Format = 12; f.Probe.Project.Saved = false; };
+            var pending = f.Service.SaveHostDocumentAsync(f.Probe.Request());
+            Assert.IsFalse(pending.IsCompleted);
+            var replacement = new OtherProject { Name = "P", FileName = f.Probe.Project.FileName, Saved = true };
+            switch (change)
+            {
+                case "reopenedproject": f.Editor.VBProjects[0] = replacement; f.Editor.ActiveVBProject = replacement; mappedProject = replacement; break;
+                case "mappedproject": mappedProject = replacement; break;
+                case "application": application = new object(); break; // Same PID is insufficient to substitute the approved application.
+                case "path": f.Probe.Observation.Path = @"C:\fixture\Other.accdb"; break;
+                case "pid": f.Probe.ProcessId++; break;
+                case "owner": f.Probe.Owner++; break;
+                case "documentmissing": absent = true; break;
+                case "documentduplicate": duplicate = true; break;
+                case "source": f.Probe.Component.CodeModule.Source += "' changed"; break;
+                case "metadata": f.Probe.Project.Description = "Changed metadata"; break;
+                case "references": f.Probe.Project.References.Add(new AsyncAccessReference()); break;
+                case "readonly": f.Probe.Observation.ReadOnly = true; break;
+                case "format": f.Probe.Observation.Format = 99; break;
+                case "mode": f.Probe.Project.Mode = 1; break;
+                case "protected": f.Probe.Project.Protection = 1; break;
+                case "pane": f.Editor.ActiveCodePane = new AsyncAccessPane { CodeModule = new AsyncAccessCode { Parent = f.Probe.Component } }; break;
+            }
+            if (change != "unchanged") f.Probe.Project.Saved = true;
+            dynamic result = CompleteAccessSave(pending);
+            Assert.AreEqual(1, f.Probe.Attempts, "The pending Save must never be replayed.");
+            if (change == "unchanged")
+            {
+                Assert.IsTrue((bool)result.Verified); Assert.IsFalse((bool)result.Uncertain);
+                Assert.IsTrue(wrappers.Count >= 4, "Exercise at least two deferred factory observations.");
+                Assert.AreSame(wrappers[wrappers.Count - 1], stateReads[stateReads.Count - 1], "State must come from the current wrapper, not the retained original.");
+                for (int index = 1; index < wrappers.Count; index++) Assert.AreNotSame(wrappers[0], wrappers[index]);
+            }
+            else
+            {
+                Assert.IsFalse((bool)result.Verified, change); Assert.IsTrue((bool)result.Uncertain, change);
+                Assert.IsFalse(string.IsNullOrWhiteSpace((string)result.Reason));
+            }
+        }
+
+        /// <summary>A fresh getter result holds a snapshot; consulting the initial result hides later native path/state changes.</summary>
+        private sealed class AccessFactoryDocument
+        {
+            internal object Project;
+            internal string Path;
+            internal int? Format;
+            internal bool ReadOnly;
+        }
+
         /// <summary>Reproduces the single Save returning before Access processes its Saved notification.</summary>
         [STATestMethod]
         public void AccessSaveYieldsForDelayedOwnerThreadSavedReadbackWithoutInvokingAgain()
@@ -61,7 +140,7 @@ namespace VBAi.Tests.Unit
                 case "path": f.Probe.Observation.Path = @"C:\fixture\Other.accdb"; break;
                 case "projectpath": f.Probe.Project.FileName = @"C:\fixture\Other.accdb"; break;
                 case "projectidentity": f.Editor.VBProjects[0] = new OtherProject { Name = "P" }; break;
-                case "documentidentity": f.Probe.Items[0] = new object(); break;
+                case "documentidentity": f.Probe.Items[0] = new object(); f.Probe.ReadDocumentProject = value => ReferenceEquals(value, f.Probe) ? f.Probe.Project : null; break;
                 case "pane": f.Editor.ActiveCodePane = new AsyncAccessPane { CodeModule = new AsyncAccessCode { Parent = f.Probe.Component } }; break;
                 case "component": f.Editor.ActiveCodePane.CodeModule.Parent = new object(); break;
                 case "activeproject": f.Editor.ActiveVBProject = new object(); break;
@@ -105,6 +184,7 @@ namespace VBAi.Tests.Unit
         [STATestMethod]
         [DataRow("version"), DataRow("readonly"), DataRow("path"), DataRow("format")]
         [DataRow("owner"), DataRow("pane"), DataRow("selection"), DataRow("protected"), DataRow("mode")]
+        [DataRow("application"), DataRow("applicationfinal")]
         public void AccessAsyncPreflightRefusesUnsafeRequestsBeforeSave(string failure)
         {
             var f = new AsyncAccessFixture(); var request = f.Probe.Request();
@@ -119,6 +199,11 @@ namespace VBAi.Tests.Unit
                 case "selection": f.Editor.ActiveVBProject = null; break;
                 case "protected": f.Probe.Project.Protection = 1; break;
                 case "mode": f.Probe.Project.Mode = 1; break;
+                case "application":
+                case "applicationfinal":
+                    object originalApplication = new object(); int reads = 0;
+                    f.Probe.ReadApplication = () => ++reads <= (failure == "application" ? 2 : 3) ? originalApplication : new object();
+                    break;
             }
             Assert.ThrowsException<InvalidOperationException>(() => CompleteAccessSave(f.Service.SaveHostDocumentAsync(request)), failure);
             Assert.AreEqual(0, f.Probe.Attempts, failure);

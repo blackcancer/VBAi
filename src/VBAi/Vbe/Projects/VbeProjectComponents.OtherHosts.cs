@@ -415,102 +415,135 @@ namespace VBAi
                 /// <param name="request">Projet et préconditions de sauvegarde.</param>
                 /// <param name="saveAs">Indique si une opération SaveAs est demandée.</param>
                 /// <param name="native">Sonde des opérations hôte et du document associé.</param>
+                /// <param name="approvedApplication">Optional retained Access application required throughout save preflight.</param>
                 /// <returns>Résultat vérifié ou résultat incertain si une mutation a été appelée mais non confirmée.</returns>
-        internal object SaveOtherHost(Request request, bool saveAs, IOtherHostProbe native)
+        internal object SaveOtherHost(Request request, bool saveAs, IOtherHostProbe native, object approvedApplication = null)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.ExpectedProjectVersion)) throw new ArgumentException("ExpectedProjectVersion is required.");
             dynamic project = GetDesignProject(request.Project); AssertProjectVersion(request, project);
             if ((int)project.Protection != 0) throw new InvalidOperationException("The project is protected.");
-            object document = MatchOtherHost((object)project, native); var before = native.State(document);
-            if (saveAs && (native.HostKind == "Access" || native.HostKind == "Publisher"))
-                throw new InvalidOperationException("Access/Publisher project association requires an existing saved document; first SaveAs is unavailable.");
-            if (before.ReadOnly) throw new InvalidOperationException("The matched host document is read-only.");
-            string path; int format;
-            if (saveAs)
-            {
-                if (!string.IsNullOrEmpty(before.Path) || !string.IsNullOrEmpty(request.ExpectedHostPath) || !string.IsNullOrEmpty(OtherHostProjectPath((object)project)))
-                    throw new InvalidOperationException("SaveAs supports only the first save of an unsaved document and project.");
-                path = RequireAbsolutePath(request.Path); format = OtherHostFormat(native.HostKind, path);
-                if (native.FileExists(path) || native.DirectoryExists(path)) throw new IOException("The SaveAs destination already exists.");
-                if (!native.DirectoryExists(Path.GetDirectoryName(path))) throw new DirectoryNotFoundException("The SaveAs parent directory is absent.");
-            }
-            else
-            {
-                path = RequireAbsolutePath(request.ExpectedHostPath); format = OtherHostFormat(native.HostKind, path);
-                if (!OtherHostSamePath(before.Path, path) || !OtherHostProjectPathMatches((object)project, path, native.HostKind))
-                    throw new InvalidOperationException("The document or selected project's path changed since inspection.");
-                if (!native.FileExists(path)) throw new FileNotFoundException("The existing host document is absent.");
-                if (before.Format.HasValue && before.Format.Value != format) throw new InvalidOperationException("The native Office format does not match the supported document extension.");
-            }
-            string sourceSha = OtherHostSourceSha((object)project);
-            AssertProjectVersion(request, project);
-            if (native.ApplicationProcessId(native.Application()) != (uint)native.CurrentProcessId || !native.SameProject((object)project, native.DocumentProject(document)))
-                throw new InvalidOperationException("Host process or document/project identity changed before saving.");
-            var preflight = native.State(document);
-            if (preflight.ReadOnly || !string.Equals(preflight.Path, before.Path, StringComparison.OrdinalIgnoreCase) || preflight.Format != before.Format ||
-                OtherHostSourceSha((object)project) != sourceSha)
-                throw new InvalidOperationException("Host path, format, read-only state or live source changed during save preparation.");
-            if (native is NativeOtherHostProbe nativeProbe) nativeProbe.PrepareSave(document);
+            object document = MatchOtherHost((object)project, native, approvedApplication);
             try
             {
-                native.Save(document, saveAs, path, format);
-                var after = native.State(document);
-                if ((native.HostKind == "Access" || native.HostKind == "Publisher") &&
-                    native.ApplicationProcessId(native.Application()) != (uint)native.CurrentProcessId)
-                    throw new InvalidOperationException("The host process changed after saving.");
-                // Preserve short-circuit ordering: an uncertain earlier observation must not
-                // trigger additional COM reads. Report the exact failed check without source/path data.
-                if (!OtherHostSamePath(after.Path, path))
-                    throw new InvalidOperationException("Save verification failed: HostPath.");
-                if (!OtherHostProjectPathMatches((object)project, path, native.HostKind))
-                    throw new InvalidOperationException("Save verification failed: ProjectPath.");
-                if (native.HostKind != "Access" && after.Saved != true)
-                    throw new InvalidOperationException("Save verification failed: HostSaved.");
-                if (!(bool)project.Saved)
-                    throw new InvalidOperationException("Save verification failed: ProjectSaved.");
-                if (!native.FileExists(path))
-                    throw new InvalidOperationException("Save verification failed: FileExists.");
-                if (native.FileLength(path) < 1)
-                    throw new InvalidOperationException("Save verification failed: FileLength.");
-                if (after.Format.HasValue && after.Format.Value != format)
-                    throw new InvalidOperationException("Save verification failed: FileFormat.");
-                if (OtherHostSourceSha((object)project) != sourceSha)
-                    throw new InvalidOperationException("Save verification failed: SourceSha256.");
-                if (!native.SameProject((object)project, native.DocumentProject(document)))
-                    throw new InvalidOperationException("Save verification failed: ProjectIdentity.");
-                return new { Project = request.Project, Host = native.HostKind, HostPath = path, SaveAsInvoked = saveAs, SaveInvoked = !saveAs,
-                    Verified = true, Uncertain = false, MutationInvoked = true, HostSaved = after.Saved, ProjectSaved = true, Bytes = native.FileLength(path),
-                    SourceSha256 = sourceSha, CodePreserved = true, NativeFileFormatVerified = after.Format.HasValue,
-                    NativeQualification = "NOT_RUN", PersistenceReopenVerified = false,
-                    Limit = "Live code, available host state and file presence were verified. Access has no document Saved property. Reopen the native file to verify code persistence; native qualification remains NOT_RUN." };
+                var before = native.State(document);
+                if (saveAs && (native.HostKind == "Access" || native.HostKind == "Publisher"))
+                    throw new InvalidOperationException("Access/Publisher project association requires an existing saved document; first SaveAs is unavailable.");
+                if (before.ReadOnly) throw new InvalidOperationException("The matched host document is read-only.");
+                string path; int format;
+                if (saveAs)
+                {
+                    if (!string.IsNullOrEmpty(before.Path) || !string.IsNullOrEmpty(request.ExpectedHostPath) || !string.IsNullOrEmpty(OtherHostProjectPath((object)project)))
+                        throw new InvalidOperationException("SaveAs supports only the first save of an unsaved document and project.");
+                    path = RequireAbsolutePath(request.Path); format = OtherHostFormat(native.HostKind, path);
+                    if (native.FileExists(path) || native.DirectoryExists(path)) throw new IOException("The SaveAs destination already exists.");
+                    if (!native.DirectoryExists(Path.GetDirectoryName(path))) throw new DirectoryNotFoundException("The SaveAs parent directory is absent.");
+                }
+                else
+                {
+                    path = RequireAbsolutePath(request.ExpectedHostPath); format = OtherHostFormat(native.HostKind, path);
+                    if (!OtherHostSamePath(before.Path, path) || !OtherHostProjectPathMatches((object)project, path, native.HostKind))
+                        throw new InvalidOperationException("The document or selected project's path changed since inspection.");
+                    if (!native.FileExists(path)) throw new FileNotFoundException("The existing host document is absent.");
+                    if (before.Format.HasValue && before.Format.Value != format) throw new InvalidOperationException("The native Office format does not match the supported document extension.");
+                }
+                string sourceSha = OtherHostSourceSha((object)project);
+                AssertProjectVersion(request, project);
+                object preflightApplication = native.Application();
+                try
+                {
+                    if (native.ApplicationProcessId(preflightApplication) != (uint)native.CurrentProcessId ||
+                        (approvedApplication != null && !native.SameProject(approvedApplication, preflightApplication)) ||
+                        !native.SameProject((object)project, native.DocumentProject(document)))
+                        throw new InvalidOperationException("Host process or document/project identity changed before saving.");
+                }
+                finally { if (approvedApplication != null) ReleaseAccessObservation(preflightApplication); }
+                var preflight = native.State(document);
+                if (preflight.ReadOnly || !string.Equals(preflight.Path, before.Path, StringComparison.OrdinalIgnoreCase) || preflight.Format != before.Format ||
+                    OtherHostSourceSha((object)project) != sourceSha)
+                    throw new InvalidOperationException("Host path, format, read-only state or live source changed during save preparation.");
+                if (native is NativeOtherHostProbe nativeProbe) nativeProbe.PrepareSave(document);
+                try
+                {
+                    native.Save(document, saveAs, path, format);
+                    var after = native.State(document);
+                    if ((native.HostKind == "Access" || native.HostKind == "Publisher") &&
+                        native.ApplicationProcessId(native.Application()) != (uint)native.CurrentProcessId)
+                        throw new InvalidOperationException("The host process changed after saving.");
+                    // Preserve short-circuit ordering: an uncertain earlier observation must not
+                    // trigger additional COM reads. Report the exact failed check without source/path data.
+                    if (!OtherHostSamePath(after.Path, path))
+                        throw new InvalidOperationException("Save verification failed: HostPath.");
+                    if (!OtherHostProjectPathMatches((object)project, path, native.HostKind))
+                        throw new InvalidOperationException("Save verification failed: ProjectPath.");
+                    if (native.HostKind != "Access" && after.Saved != true)
+                        throw new InvalidOperationException("Save verification failed: HostSaved.");
+                    if (!(bool)project.Saved)
+                        throw new InvalidOperationException("Save verification failed: ProjectSaved.");
+                    if (!native.FileExists(path))
+                        throw new InvalidOperationException("Save verification failed: FileExists.");
+                    if (native.FileLength(path) < 1)
+                        throw new InvalidOperationException("Save verification failed: FileLength.");
+                    if (after.Format.HasValue && after.Format.Value != format)
+                        throw new InvalidOperationException("Save verification failed: FileFormat.");
+                    if (OtherHostSourceSha((object)project) != sourceSha)
+                        throw new InvalidOperationException("Save verification failed: SourceSha256.");
+                    if (!native.SameProject((object)project, native.DocumentProject(document)))
+                        throw new InvalidOperationException("Save verification failed: ProjectIdentity.");
+                    return new { Project = request.Project, Host = native.HostKind, HostPath = path, SaveAsInvoked = saveAs, SaveInvoked = !saveAs,
+                        Verified = true, Uncertain = false, MutationInvoked = true, HostSaved = after.Saved, ProjectSaved = true, Bytes = native.FileLength(path),
+                        SourceSha256 = sourceSha, CodePreserved = true, NativeFileFormatVerified = after.Format.HasValue,
+                        NativeQualification = "NOT_RUN", PersistenceReopenVerified = false,
+                        Limit = "Live code, available host state and file presence were verified. Access has no document Saved property. Reopen the native file to verify code persistence; native qualification remains NOT_RUN." };
+                }
+                catch (Exception ex)
+                {
+                    if (native is NativeOtherHostProbe invokedProbe && !invokedProbe.SaveInvocationStarted) throw;
+                    return new { Project = request.Project, Host = native.HostKind, HostPath = path, MutationInvoked = true,
+                        SaveAsInvoked = saveAs, SaveInvoked = !saveAs, Verified = false, Uncertain = true, NativeQualification = "NOT_RUN",
+                        Reason = ex.Message, Next = "Read project_persistence_status and inspect the file; do not retry automatically." };
+                }
             }
-            catch (Exception ex)
-            {
-                if (native is NativeOtherHostProbe invokedProbe && !invokedProbe.SaveInvocationStarted) throw;
-                return new { Project = request.Project, Host = native.HostKind, HostPath = path, MutationInvoked = true,
-                    SaveAsInvoked = saveAs, SaveInvoked = !saveAs, Verified = false, Uncertain = true, NativeQualification = "NOT_RUN",
-                    Reason = ex.Message, Next = "Read project_persistence_status and inspect the file; do not retry automatically." };
-            }
+            finally { if (approvedApplication != null) ReleaseAccessObservation(document); }
         }
 
                 /// <summary>Associe un seul document au projet IUnknown et refuse toute application d'un autre PID.</summary>
                 /// <param name="project">VBProject sélectionné par l’appelant.</param>
                 /// <param name="native">Sonde qui fournit l’application, ses documents et leurs identités.</param>
+                /// <param name="approvedApplication">Optional retained Access application whose COM identity must remain exact.</param>
                 /// <returns>Document unique dont le VBProject partage l’identité COM avec le projet demandé.</returns>
                 /// <exception cref="InvalidOperationException">L’hôte, le processus ou l’identité du document ne peut pas être vérifié de façon unique.</exception>
-        internal static object MatchOtherHost(object project, IOtherHostProbe native)
+        internal static object MatchOtherHost(object project, IOtherHostProbe native, object approvedApplication = null)
         {
             if (native == null || !new[] { "Word", "PowerPoint", "Access", "Publisher" }.Contains(native.HostKind)) throw new InvalidOperationException("This host has no Office document save adapter.");
             if (native is NativeOtherHostProbe nativeProbe) nativeProbe.BindProject(project);
             object application = native.Application();
-            if (native.CurrentProcessId <= 0 || native.ApplicationProcessId(application) != (uint)native.CurrentProcessId)
-                throw new InvalidOperationException("The application does not belong to this add-in process.");
-            var documents = native.Documents(application);
-            if (documents == null || documents.Count > 1000) throw new InvalidOperationException("The document collection is unreadable or oversized.");
-            var matches = documents.Where(document => native.SameProject(project, native.DocumentProject(document))).ToArray();
-            if (matches.Length != 1) throw new InvalidOperationException("No unique open document shares the selected VBProject COM identity.");
-            if (native is NativeOtherHostProbe matchedProbe) matchedProbe.BindDocument(matches[0]);
-            return matches[0];
+            IList<object> documents = null;
+            object matchedDocument = null;
+            try
+            {
+                if (approvedApplication != null && (native.HostKind != "Access" || !native.SameProject(approvedApplication, application)))
+                    throw new InvalidOperationException("Access Save verification failed: owning application identity changed.");
+                if (native.CurrentProcessId <= 0 || native.ApplicationProcessId(application) != (uint)native.CurrentProcessId)
+                    throw new InvalidOperationException("The application does not belong to this add-in process.");
+                documents = native.Documents(application);
+                if (documents == null || documents.Count > 1000) throw new InvalidOperationException("The document collection is unreadable or oversized.");
+                var matches = documents.Where(document => native.SameProject(project, native.DocumentProject(document))).ToArray();
+                if (matches.Length != 1) throw new InvalidOperationException("No unique open document shares the selected VBProject COM identity.");
+                if (native is NativeOtherHostProbe matchedProbe) matchedProbe.BindDocument(matches[0]);
+                matchedDocument = matches[0];
+                return matchedDocument;
+            }
+            finally
+            {
+                // Only the deferred Access route retains its own approved application acquisition.
+                if (approvedApplication != null)
+                {
+                    if (documents != null)
+                        foreach (object document in documents)
+                            if (!ReferenceEquals(document, matchedDocument)) ReleaseAccessObservation(document);
+                    ReleaseAccessObservation(application);
+                }
+            }
         }
                 /// <summary>Maps supported native document extensions to exact Microsoft file format constants.</summary>
                 /// <param name="kind">Word, PowerPoint, Access or Publisher.</param>
