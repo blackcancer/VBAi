@@ -13,6 +13,7 @@ namespace VBAi.Tests.Integration
     internal sealed partial class OfficeVbeFixture
     {
         private bool adapterOnlyCleanup;
+        private readonly List<object> retainedDiagnosticReferences = new List<object>();
 
         /// <summary>Requires discard-on-close for Access objects, including cleanup after a failed trial.</summary>
         internal void RequireAdapterOnlyCleanup() { adapterOnlyCleanup = true; }
@@ -38,12 +39,15 @@ namespace VBAi.Tests.Integration
                 new JavaScriptSerializer { MaxJsonLength = 20 * 1024 * 1024 }.Serialize(
                     new { Host = Kind, HostProgId = hostProgId, ProcessId, DocumentPath, Project,
                         ExpectedMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
+                        PendingCommand = commandContainment.Command, CommandPending = commandContainment.Pending,
+                        DeliveryUncertain = commandContainment.Uncertain,
                         AdapterOnlyCleanup = adapterOnlyCleanup, Failures, Steps = steps }));
         }
 
         /// <summary>Establishes the disposable baseline before final edits; never used after adapter invocation.</summary>
         internal void SaveAdapterBaseline(string[] modules)
         {
+            commandContainment.RequireTerminal();
             steps.Add(new { AdapterBaselineSaveStarting = true, Modules = modules });
             FlushAdapterEvidence();
             if (Kind == "Access")
@@ -71,6 +75,7 @@ namespace VBAi.Tests.Integration
         /// <summary>Captures native PID, selection and per-component Saved observations without changing them.</summary>
         internal IDictionary<string, object> RecordAdapterObservation(string phase)
         {
+            commandContainment.RequireTerminal();
             var observation = new Dictionary<string, object> {
                 ["AdapterOnlyPhase"] = phase, ["Utc"] = DateTime.UtcNow.ToString("O"),
                 ["ProcessId"] = ProcessId, ["DocumentPath"] = DocumentPath };
@@ -138,8 +143,13 @@ namespace VBAi.Tests.Integration
         }
 
         /// <summary>Balances only the reference acquired by this diagnostic, preserving retained fixture objects.</summary>
-        private static void ReleaseAdapterReference(object item)
+        private void ReleaseAdapterReference(object item)
         {
+            if (commandContainment.Pending || commandContainment.Uncertain)
+            {
+                if (item != null) retainedDiagnosticReferences.Add(item);
+                return;
+            }
             if (item != null && Marshal.IsComObject(item)) Marshal.ReleaseComObject(item);
         }
     }

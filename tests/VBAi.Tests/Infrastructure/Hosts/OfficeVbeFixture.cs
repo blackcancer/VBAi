@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Runtime.ExceptionServices;
 using System.Web.Script.Serialization;
 using System.Threading;
 using System.Windows.Automation;
@@ -48,6 +49,8 @@ namespace VBAi.Tests.Integration
         // Retain refused native instances explicitly; final RCW release could otherwise close them implicitly.
         private static readonly List<OfficeVbeFixture> retainedOfficeFixtures = new List<OfficeVbeFixture>();
         private readonly List<object> steps = new List<object>();
+        private readonly OfficeCommandContainment commandContainment = new OfficeCommandContainment();
+        internal Func<int, object, IDictionary<string, object>> Dispatch = (pid, request) => VbeBridgeClient.Read(pid, request);
         internal string Kind { get; private set; }
         private string hostProgId;
         internal int ProcessId { get; private set; }
@@ -157,10 +160,8 @@ namespace VBAi.Tests.Integration
             var request = new Dictionary<string, object> { ["Command"] = name };
             if (Project != null) request["Project"] = Project;
             for (int i = 0; i < pairs.Length; i += 2) request[(string)pairs[i]] = pairs[i + 1];
-            var reply = VbeBridgeClient.Read(ProcessId, request);
-            Assert.IsNotNull(reply, name + " did not answer.");
-            steps.Add(new { Command = name, Response = reply });
-            return reply;
+            return commandContainment.Send(name, request, record => steps.Add(record), FlushAdapterEvidence,
+                () => Dispatch(ProcessId, request), RetainUncertainOffice);
         }
         /// <summary>Requires a successful command and returns its object result.</summary>
         internal IDictionary<string, object> Data(string name, params object[] pairs)
@@ -203,6 +204,7 @@ namespace VBAi.Tests.Integration
         /// <summary>Records independent native save readback before any helper save can change the evidence.</summary>
         internal void RecordNativePersistence(string phase)
         {
+            commandContainment.RequireTerminal();
             if (Kind == "Access" || Kind == "Publisher")
             {
                 object current = null, database = null;
@@ -275,6 +277,7 @@ namespace VBAi.Tests.Integration
         /// <summary>Saves only the owned disposable document, independently of VBAi's save adapter.</summary>
         internal void SaveNative()
         {
+            commandContainment.RequireTerminal();
             if (document != null && File.Exists(DocumentPath)) ((dynamic)document).Save();
             else if (Kind == "Word") ((dynamic)document).SaveAs2(DocumentPath, 13);
             else if (Kind == "PowerPoint") ((dynamic)document).SaveAs(DocumentPath, 25);
@@ -296,6 +299,7 @@ namespace VBAi.Tests.Integration
         }
         private void ReopenCore(bool adapterOnly = false, Action afterOwnedClose = null)
         {
+            commandContainment.RequireTerminal();
             dynamic app = application;
             if (Kind == "Word") { ((dynamic)document).Close(0); Release(document); document = null; document = CreateOrOpenDocument(true); }
             else if (Kind == "PowerPoint") { ((dynamic)document).Saved = -1; ((dynamic)document).Close(); Release(document); document = null; document = CreateOrOpenDocument(true); }
@@ -443,13 +447,31 @@ namespace VBAi.Tests.Integration
         private void Dispose(bool includeExistingFailures)
         {
             int failuresBeforeCleanup = Failures.Count;
-            try { CloseOwnedHost(adapterOnlyCleanup); }
-            finally
+            Exception cleanupFailure = null;
+            try
             {
-                if (Root != null) File.WriteAllText(Path.Combine(Root, "qualification.json"), new JavaScriptSerializer { MaxJsonLength = 20 * 1024 * 1024 }.Serialize(new { Host = Kind, HostProgId = hostProgId, ProcessId, DocumentPath, Project, Failures, Steps = steps }));
+                CloseOwnedHost(adapterOnlyCleanup);
+                Assert.AreEqual(includeExistingFailures ? 0 : failuresBeforeCleanup, Failures.Count,
+                    string.Join(Environment.NewLine, includeExistingFailures ? Failures : Failures.Skip(failuresBeforeCleanup)));
             }
-            Assert.AreEqual(includeExistingFailures ? 0 : failuresBeforeCleanup, Failures.Count,
-                string.Join(Environment.NewLine, includeExistingFailures ? Failures : Failures.Skip(failuresBeforeCleanup)));
+            catch (Exception error)
+            {
+                cleanupFailure = commandContainment.Failure != null && commandContainment.Uncertain
+                    ? new AggregateException("The original Office dispatch and its cleanup refusal are both retained.", commandContainment.Failure, error)
+                    : error;
+            }
+            try
+            {
+                if (Root != null) File.WriteAllText(Path.Combine(Root, "qualification.json"), new JavaScriptSerializer { MaxJsonLength = 20 * 1024 * 1024 }.Serialize(new { Host = Kind, HostProgId = hostProgId, ProcessId, DocumentPath, Project,
+                    PendingCommand = commandContainment.Command, CommandPending = commandContainment.Pending,
+                    DeliveryUncertain = commandContainment.Uncertain, Failures, Steps = steps }));
+            }
+            catch (Exception evidence)
+            {
+                if (cleanupFailure != null) throw new AggregateException("Office cleanup/refusal and final evidence persistence both failed.", cleanupFailure, evidence);
+                throw;
+            }
+            if (cleanupFailure != null) ExceptionDispatchInfo.Capture(cleanupFailure).Throw();
         }
         /// <summary>Releases the collection RCW explicitly instead of leaving a chained COM temporary alive.</summary>
         private object CreateOrOpenDocument(bool reopen)
@@ -498,8 +520,24 @@ namespace VBAi.Tests.Integration
             Failures.Add("Host cleanup: " + reason);
             steps.Add(new { CleanupError = reason, Result = "FAIL" });
         }
+        /// <summary>Retains native ownership without invoking COM or waiting on a stalled host.</summary>
+        private void RetainUncertainOffice()
+        {
+            if (!hostTeardownRefused)
+            {
+                hostTeardownRefused = true;
+                lock (retainedOfficeFixtures) retainedOfficeFixtures.Add(this);
+            }
+            if (dialogWorker != null) dialogWorker.StopRequested = true;
+        }
         private void CloseOwnedHost(bool adapterOnly = false)
         {
+            if (commandContainment.Pending || commandContainment.Uncertain)
+            {
+                RetainUncertainOffice();
+                RecordCleanupFailure("Bridge delivery remains pending/uncertain; process, COM references and evidence retained. No Close/Quit/reset/release/reopen was emitted. PID=" + ProcessId);
+                return;
+            }
             if (hostTeardownRefused) return;
             bool nativeIdentityVerified = Kind != "Access" && Kind != "Publisher";
             if (owned)
@@ -578,8 +616,9 @@ namespace VBAi.Tests.Integration
             Assert.IsTrue(owned && ownedProcess != null && !ownedProcess.HasExited, "The retained Publisher process must be alive.");
             if (Project != null)
             {
-                var reply = VbeBridgeClient.Read("VBAi." + ProcessId,
-                    new { Command = "project_persistence_status", Project }, 5000, 250, 1, 0);
+                var request = new { Command = "project_persistence_status", Project };
+                var reply = commandContainment.Send("project_persistence_status", request, record => steps.Add(record), FlushAdapterEvidence,
+                    () => VbeBridgeClient.Read("VBAi." + ProcessId, request, 5000, 250, 1, 0), RetainUncertainOffice);
                 steps.Add(new { PublisherQuitProjectPersistence = reply, BridgeAvailable = reply != null });
                 Assert.IsNotNull(reply, "The identified Publisher project's bridge must be available before Quit.");
                 Assert.AreEqual(true, reply["Ok"], "Publisher project persistence must be readable before Quit.");
@@ -619,6 +658,7 @@ namespace VBAi.Tests.Integration
         /// <summary>Verifies the external COM application and disposable document before native close/reopen.</summary>
         private void RequireOwnedDocument()
         {
+            commandContainment.RequireTerminal();
             Assert.IsTrue(owned && ownedProcess != null && !ownedProcess.HasExited, "The retained owned process must still be alive.");
             object current = null, window = null;
             try
@@ -703,6 +743,14 @@ namespace VBAi.Tests.Integration
             }
             finally { Release(commands); Release(current); }
         }
-        private static void Release(object item) { if (item != null && Marshal.IsComObject(item)) Marshal.FinalReleaseComObject(item); }
+        private void Release(object item)
+        {
+            if (commandContainment.Pending || commandContainment.Uncertain)
+            {
+                if (item != null) retainedDiagnosticReferences.Add(item);
+                return;
+            }
+            if (item != null && Marshal.IsComObject(item)) Marshal.FinalReleaseComObject(item);
+        }
     }
 }
