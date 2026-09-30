@@ -199,6 +199,15 @@ export. It records parent/temp attributes and retains both siblings; it never
 decrypts a directory or modifies the real VBAi profile. This isolates EFS from
 the production cache path without relocating any user's macro data.
 
+`ControlledVolumeAndAncestorEfsExportRetainsOwnedIdentity` adds four synthetic
+host-bridge trials: C/E volumes crossed with encryption on a fresh parent before
+creating its children, or only on the empty export leaf. C trials use a unique
+owned directory under the existing C TEMP root; E trials require an explicit
+evidence root on E. The new parent must initially be unencrypted, and inherited
+versus directly applied EFS is verified before the single export. All siblings,
+raw files and reports remain available. This changes no existing directory's
+encryption, decrypts nothing and does not qualify the actual GitTemporary cache.
+
 Designer screenshots reobserve the COM window after bounded UI settlement. A
 zero designer HWND permits capture of the owned VBE root only after verifying
 the exact active project and designer COM identities, captions, type, visibility

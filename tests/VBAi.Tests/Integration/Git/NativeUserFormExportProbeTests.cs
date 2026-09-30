@@ -31,7 +31,16 @@ namespace VBAi.Tests.Integration
         public void ControlledSiblingEfsExportPreservesIdentityAndRetainsRawEvidence(string variant)
         { RunSingleExport("HostBridge", variant, true); }
 
-        private void RunSingleExport(string dispatch, string location, bool controlledEfs)
+        /// <summary>Separates volume and fresh-parent EFS inheritance from encryption applied only to an export leaf.</summary>
+        [STATestMethod]
+        [DataRow("C", "Parent")]
+        [DataRow("C", "Leaf")]
+        [DataRow("E", "Parent")]
+        [DataRow("E", "Leaf")]
+        public void ControlledVolumeAndAncestorEfsExportRetainsOwnedIdentity(string volume, string encryptionScope)
+        { RunSingleExport("HostBridge", encryptionScope, true, volume); }
+
+        private void RunSingleExport(string dispatch, string location, bool controlledEfs, string volume = null)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_EXPORT_PROBES") != "1" ||
                 Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
@@ -47,6 +56,7 @@ namespace VBAi.Tests.Integration
             string reportPath = Path.Combine(output, "native-export.json");
             var report = new Dictionary<string, object> {
                 ["Stage"] = "STARTED", ["Dispatch"] = dispatch, ["Location"] = location, ["ControlledEfs"] = controlledEfs,
+                ["ControlledVolume"] = volume,
                 ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
                 ["NativeExportRequests"] = 0, ["MacroExecutions"] = 0, ["RemoteOperations"] = 0,
                 ["EvidenceRootExisted"] = rootExisted,
@@ -73,24 +83,47 @@ namespace VBAi.Tests.Integration
                     if (controlledEfs)
                     {
                         report["Stage"] = "CONTROLLED_EFS_PREPARATION";
-                        report["ParentAttributes"] = System.IO.File.GetAttributes(output).ToString();
+                        string controlledParent = output;
+                        if (volume == "C")
+                        {
+                            Assert.AreEqual("C:\\", Path.GetPathRoot(Path.GetTempPath()), true,
+                                "The C volume control must use the owned TEMP root on C.");
+                            controlledParent = Path.Combine(Path.GetTempPath(), "vfq-efs-" + trial);
+                            Assert.IsFalse(Directory.Exists(controlledParent)); Directory.CreateDirectory(controlledParent);
+                        }
+                        else if (volume == "E")
+                            Assert.AreEqual("E:\\", Path.GetPathRoot(output), true,
+                                "The E volume control requires the explicit evidence root on E.");
+                        report["ControlledParent"] = controlledParent;
+                        report["ParentAttributesBefore"] = System.IO.File.GetAttributes(controlledParent).ToString();
                         report["EnvironmentTempAttributes"] = System.IO.File.GetAttributes(Path.GetTempPath()).ToString();
-                        Assert.AreEqual((FileAttributes)0, System.IO.File.GetAttributes(output) & FileAttributes.Encrypted,
+                        Assert.AreEqual((FileAttributes)0, System.IO.File.GetAttributes(controlledParent) & FileAttributes.Encrypted,
                             "The fresh common parent must start unencrypted; do not remove inherited EFS to satisfy this test.");
-                        string plain = Path.Combine(output, "plain0"), encrypted = Path.Combine(output, "efs001");
+                        bool encryptParent = volume != null && location == "Parent";
+                        if (encryptParent) System.IO.File.Encrypt(controlledParent);
+                        report["ParentAttributes"] = System.IO.File.GetAttributes(controlledParent).ToString();
+                        Assert.AreEqual(encryptParent ? FileAttributes.Encrypted : (FileAttributes)0,
+                            System.IO.File.GetAttributes(controlledParent) & FileAttributes.Encrypted);
+                        string plain = Path.Combine(controlledParent, volume == null ? "plain0" : "peer00"),
+                            encrypted = Path.Combine(controlledParent, volume == null ? "efs001" : "leaf00");
                         Assert.IsFalse(Directory.Exists(plain)); Assert.IsFalse(Directory.Exists(encrypted));
                         Directory.CreateDirectory(plain); Directory.CreateDirectory(encrypted);
-                        Assert.AreEqual((FileAttributes)0, System.IO.File.GetAttributes(plain) & FileAttributes.Encrypted);
-                        Assert.AreEqual((FileAttributes)0, System.IO.File.GetAttributes(encrypted) & FileAttributes.Encrypted);
-                        // Encrypt only this empty disposable sibling. Never decrypt
-                        // a directory, change the user profile or alter VBAi storage.
-                        System.IO.File.Encrypt(encrypted);
-                        report["PlainAttributes"] = System.IO.File.GetAttributes(plain).ToString();
+                        Assert.AreEqual(encryptParent ? FileAttributes.Encrypted : (FileAttributes)0,
+                            System.IO.File.GetAttributes(plain) & FileAttributes.Encrypted);
+                        Assert.AreEqual(encryptParent ? FileAttributes.Encrypted : (FileAttributes)0,
+                            System.IO.File.GetAttributes(encrypted) & FileAttributes.Encrypted);
+                        // The parent strategy proves inherited EFS without applying
+                        // Encrypt to the leaf. The leaf strategy encrypts only this
+                        // empty sibling. Neither strategy decrypts or changes VBAi.
+                        if (!encryptParent) System.IO.File.Encrypt(encrypted);
+                        report["PeerAttributes"] = System.IO.File.GetAttributes(plain).ToString();
+                        if (volume == null) report["PlainAttributes"] = report["PeerAttributes"];
                         report["EncryptedAttributes"] = System.IO.File.GetAttributes(encrypted).ToString();
-                        Assert.AreEqual((FileAttributes)0, System.IO.File.GetAttributes(plain) & FileAttributes.Encrypted);
+                        Assert.AreEqual(encryptParent ? FileAttributes.Encrypted : (FileAttributes)0,
+                            System.IO.File.GetAttributes(plain) & FileAttributes.Encrypted);
                         Assert.AreEqual(FileAttributes.Encrypted, System.IO.File.GetAttributes(encrypted) & FileAttributes.Encrypted,
                             "The requested EFS sibling must actually be encrypted before any export.");
-                        destinationDirectory = location == "Encrypted" ? encrypted : plain;
+                        destinationDirectory = volume != null || location == "Encrypted" ? encrypted : plain;
                         report["SiblingDirectories"] = new[] { plain, encrypted };
                     }
                     else
