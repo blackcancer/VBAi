@@ -1,8 +1,8 @@
 # Recorded validation
 
-## Current installed v5: failed complete managed run (2026-10-01)
+## Current installed v5: complete managed acceptance (2026-10-01)
 
-Product and test source `2e751618aa8d5be08ca0fa84d6ceff4d0b1312dc`
+Initial product and test source `2e751618aa8d5be08ca0fa84d6ceff4d0b1312dc`
 implements the stable Access application/database-path/mapped-project identity
 guard while retaining owner-PID, VBE, selection, mode/protection, source and
 metadata checks. The isolated build completed without warnings or errors.
@@ -11,6 +11,27 @@ Candidate `f9a36c85-1d9c-4a53-8645-06c99617b12c`, SHA-256
 installed; `candidate-v5.json` and `deployment-v5.json` retain exact provenance
 and deployment/backup records.
 
+After tests-only harness correction `f0874e6d85aa67c5d240b45bf332975585ef2026`,
+the complete unfiltered instrumented suite returned **2,294 passed, 0 failed,
+88 conditional skips, 2,382 total**, runner exit **0**, in **603.371 seconds**.
+Product source remains `2e751618aa8d5be08ca0fa84d6ceff4d0b1312dc`; the frozen
+product was copied into an isolated output, not rebuilt. Product and test hashes
+were unchanged after execution, and individual TRX outcomes match the counters.
+`managed-harness-complete/candidate.json`, `full-managed.trx`, `summary.json` and
+`terminal.json` retain exact product/test identities and terminal evidence, under
+`artifacts/qualification-v1/followup-20260930/`.
+
+Managed `VBAi` coverage is **33,378/33,564 lines (99.45%)** and
+**33,863/34,347 branches (98.59%)**, from raw integer counters in the summary and
+`managed-harness-complete/db754ce0-cea0-4b11-9a45-9545cd5a4afe/coverage.cobertura.xml`.
+Native/live-provider opt-ins were disabled. C++ renderer, JavaScript and external
+host processes are outside this measurement; conditional skips do not qualify
+those scopes. Q-015 is closed for this exact product/test pair. Coverage is below
+the requested complete line/branch target, and any subsequent product correction,
+including the pending Monaco status correction, requires a new complete gate.
+
+### Initial v5 complete run: explained harness failures
+
 The initial complete instrumented run is terminal **FAILED: 2,279 passed,
 8 failed, 88 conditional skips, 2,375 total**, in **484.103 seconds**.
 `managed-access-guard/full-managed.trx`, `summary.json` and `terminal.json`
@@ -18,7 +39,10 @@ retain the individual outcomes, nonzero runner exit and unchanged product hash.
 The failures are a missing debugger-script regression fixture and seven local
 Git scenarios whose nested bare-remote paths exceed the usable Git path length.
 These diagnosed harness failures remain failures of the complete run; a
-harness correction and full rerun are pending, and current-v5 Q-015 is open.
+tests-only correction packages the exact debugger-script fixtures and gives
+owned local Git fixtures shorter paths on the same volume. The subsequent
+complete run above passes without changing production or global Git settings;
+it does not change the original failed result.
 
 The failed run measured managed `VBAi` only:
 **33,359/33,564 lines (99.39%)** and **33,826/34,347 branches (98.48%)**,
@@ -26,7 +50,46 @@ from raw integer counters in the summary and
 `managed-access-guard/e295ba72-cd41-4381-8d60-0441b45bd84b/coverage.cobertura.xml`.
 Native/live-provider opt-ins were disabled; C++ renderer, JavaScript and external
 host processes are not measured. Coverage does not convert this failed run
-into acceptance, and historical percentages below are not current-v5 metrics.
+into acceptance, and historical percentages below do not replace the current
+successful-run metrics.
+
+### Current v5: partial SOLIDWORKS 2025 native qualification
+
+The explicitly selected SOLIDWORKS 2025 instance is **PID 35136**, actual COM
+revision **33.1.1**, with the exact installed v5 MVID/hash above. Launch and ROT
+records are `solidworks-2025-v5-launch.json` and `solidworks-2025-v5-rot.json`.
+The independent add-in loading check
+`solidworks-2025-v5-vstest/solidworks-2025-load-v5.trx` records **1 passed,
+0 failed, 0 skipped**; this is separate native evidence, not another complete
+suite or a lifecycle qualification.
+
+The host-created disposable fixture is
+`artifacts/qualification-v1/solidworks/type100-2025/v5-01/Qualification2025.swp`.
+Its `host-macro-creation.json` and `type100-qualification.json` retain ownership,
+module/class/form creation, stale-source refusal, compilation, one verified
+product Save and exact live source/label readback. Exactly one synthetic native
+run reports `Ran=true`, `Error=0`, a verified marker and observed project unload.
+The strict execution trial nevertheless **FAILED** whole-file preservation:
+the saved SWP SHA-256 changes from
+`5706B3F514ADB1835CE9B5ABAE053B3478AB73AD4556D302236B1EDE33AFC476` to
+`ADA1AB0B57F6AE39FF887CD5C0789C53D841045F874F32AF2A0A957F369FD0D2`.
+The cause of this binary change is not established.
+
+A separate, single native Edit Macro reload targets the observed post-runtime
+hash. `native-open-after-runtime.json` and
+`post-runtime-content-verification.json` in the fixture directory verify the
+original module/class source hashes and persisted label, with no additional
+mutation or macro run. This is content persistence evidence; the original strict
+trial remains failed and whole-file preservation is not qualified.
+
+Reviewed `solidworks-2025-v5-code.png` shows the selected synthetic class and
+`Value = 42` rendered in Monaco. `solidworks-2025-v5-code-resize.json` records
+workspace fit after resize and verified restoration of the original placement.
+The capture also shows a stale closed-project warning despite the selected live
+class. Its correction and complete embedded assistant/UI acceptance are pending.
+The host remains alive at this checkpoint: final cleanup and normal exit are
+**NOT_RUN**, and SOLIDWORKS 2019's separate abnormal termination is unresolved.
+Q-014 therefore remains open.
 
 ### Current v5: terminal Access adapter campaign
 

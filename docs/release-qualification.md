@@ -12,12 +12,15 @@ applies only to the stated operation, host and tested candidate; CLOSED does not
 qualify an entire application. OPEN and PARTIAL entries remain release gates
 where required by the agreed scope.
 
-The remaining completion gates are Q-006, Q-012, Q-014, Q-015, Q-020, Q-024,
+The remaining completion gates are Q-006, Q-012, Q-014, Q-020, Q-024,
 Q-026, Q-027, Q-028 and Q-030. The other findings have the scoped corrections and
 validation described below; they do not constitute complete current-candidate
-qualification. Current-v5 Q-015 remains open after a failed complete instrumented
-run on source `2e75161`; diagnosed harness corrections and a full rerun are pending.
-The preceding `b77a782` / `d5e25e25` complete pass remains historical evidence.
+qualification. Current-v5 Q-015 is closed for the frozen product from `2e75161`
+and tests-only harness correction `f0874e6`: the complete instrumented rerun
+passes. The original complete run remains failed with explained fixture-packaging
+and Git path-length defects. Any subsequent product correction, including the
+pending Monaco status correction, needs a new complete managed gate. The
+preceding `b77a782` / `d5e25e25` complete pass remains historical evidence.
 
 The current installed product is MVID
 `f9a36c85-1d9c-4a53-8645-06c99617b12c`, SHA-256
@@ -28,8 +31,12 @@ stable-identity save guard passes scoped module/class, Description and reference
 addition save/reopen trials. HelpFile readback is altered and reference-removal
 cleanup fails; those operations remain unqualified. The complete declared Excel
 scalar page passed on preceding `d5e25e25`, not this newly installed assembly.
-Current-v5 SOLIDWORKS lifecycle acceptance has not been run; the preceding
-candidate's abnormal termination remains unresolved.
+Current-v5 SOLIDWORKS 2025 loading, disposable module/class/form preparation,
+compile and verified Save have native evidence. One synthetic run succeeds,
+but its strict whole-file preservation trial fails; a separate native reload
+verifies persisted source and label without converting that failure into a pass.
+Final host cleanup, complete UI/debugger acceptance and the preceding 2019
+candidate's abnormal termination remain unresolved.
 
 The native results below identify their own candidates. Historical
 SOLIDWORKS acceptance uses MVID `aaf3a555-76d4-4b18-ae09-1e7b3e085934`;
@@ -82,8 +89,12 @@ subsequently stopped after exact utility-solution and sole-target validation.
 Final debugger design mode and no debug target are not normal ExitApp evidence;
 the exit code is NOT_OBSERVED. The earlier transient PID absence is not the final
 cleanup oracle.
-SOLIDWORKS 2025, complete debugger and embedded assistant acceptance remain
-separate pending scopes; Q-014 stays open.
+Current-v5 SOLIDWORKS 2025 has separate partial native evidence in recorded
+validation. Its selected class renders in Monaco and code workspace resize and
+restoration pass, but a stale closed-project warning is visible. Strict binary
+preservation remains failed despite successful post-runtime content readback;
+final host cleanup, complete debugger and embedded assistant acceptance remain
+pending. Q-014 stays open.
 
 The preceding v4 Office campaign aborted during owned Word form preparation.
 Its bridge timed out after a form-property request, and the old fixture entered
@@ -144,8 +155,8 @@ operation can pass a refusal test while the capability remains unqualified.
 | Q-011 | P1 gate | Word/PowerPoint adapter acceptance required project-access prerequisites. | Run verified adapter-only save/reopen under a maintainer-approved host configuration. | CLOSED for adapter-only save/reopen on candidate `7b5f11d8`: Word and PowerPoint preserve the pending module/class sources and form/Label, with no post-adapter helper Save, verified disk readback and normal host exit. This scope does not explain the older Word form-creation failure or qualify every host operation. Exact evidence is in test-coverage.md. |
 | Q-012 | P1 gate | Access/Publisher host-document save adapters lacked native acceptance. | Implement and qualify an adapter, or explicitly narrow the release contract for this operation. | PARTIAL. Historical `7b5f11d8` Publisher save/readback passed; Access disk sources persisted but original responses remained uncertain. Preceding `d5e25e25` deferred verification then refused transient CurrentProject wrapper identity in the interrupted Office campaign. The read-only diagnostic establishes stable database path and mapped/selected VBProject despite distinct retained wrapper IUnknowns. Product `2e75161` / installed `f9a36c85` corrects this guard without weakening owning-PID, VBE, mode, protection, selection or source/metadata checks. Fresh adapter-only module/class, Description and Scripting-reference addition by GUID/file pass exact save/reopen and normal exits. HelpFile is altered after reopen; reference removal fails initial host exit and disk reopen is NOT_RUN, with a preserved database and one authorized forced cleanup. Access/Publisher HelpContextID and current-v5 Publisher metadata/reference acceptance remain open. Exact terminal outcomes are in test-coverage.md. |
 | Q-013 | P1 gate | Classic Outlook initially had no configured profile. | Qualify a read-only scenario in an explicitly configured classic profile without modifying mail or production VBA. | CLOSED for read-only startup/metadata: `outlook-accepted/native.trx`, MVID `ce19a20c-9708-4c17-b998-f3415b8e6303`; exact PID, project inventory, scoped debug state and environment passed, normal exit 0. No account configured by automation, no mail read/sent or VBA mutation. |
-| Q-014 | P1 gate | SOLIDWORKS versions require independent native acceptance. | Qualify load, UI, disposable module/form operations, compile/debug, persistence and cleanup in each explicitly selected version. | PARTIAL. Historical aaf3 existing-Type100 save and saved-copy module/class/form readback passed independently in 2019 SP5 and 2025, with normal exits (Q-021); historical designer-resize failure remains recorded. Preceding `d5e25e25` passes 2019 load, copied native Edit Macro/source/form readback, Monaco return-to-code and designer/code resize. Later live class-source drift remains unproven and unmodified. Its ExitApp stalled at native heap corruption 0xc0000374; authorized forced/debugger cleanup is not normal shutdown, and exit code is NOT_OBSERVED. Full lifecycle, debugger/assistant workflows and current-candidate 2025 acceptance remain open. |
-| Q-015 | P2 gate | The initial instrumented suite timed out on post-step observation; its direct relationship to Q-005 is not proven. | Repeat the complete suite on the corrected source and retain failures/skips honestly. | OPEN for current source `2e75161` / installed `f9a36c85`: the complete instrumented run fails on a missing debugger-script fixture and local Git fixture path-length failures. Harness correction and full rerun are pending; diagnosed test-infrastructure defects do not convert the failed run into acceptance. The preceding `b77a782` / `d5e25e25` complete pass remains candidate-specific historical evidence. Exact counters, coverage scope and terminal artifacts are in recorded validation. Native/provider opt-in scopes remain separate gates. |
+| Q-014 | P1 gate | SOLIDWORKS versions require independent native acceptance. | Qualify load, UI, disposable module/form operations, compile/debug, persistence and cleanup in each explicitly selected version. | PARTIAL. Historical aaf3 existing-Type100 save and saved-copy module/class/form readback passed independently in 2019 SP5 and 2025, with normal exits (Q-021); historical designer-resize failure remains recorded. Preceding `d5e25e25` passes 2019 load, copied native Edit Macro/source/form readback, Monaco return-to-code and designer/code resize. Later live class-source drift remains unproven and unmodified. Its ExitApp stalled at native heap corruption 0xc0000374; authorized forced/debugger cleanup is not normal shutdown, and exit code is NOT_OBSERVED. Current `f9a36c85` passes 2025 load, disposable module/class/form preparation, compile and verified Save. One synthetic run and a separate native reload verify marker/source/label, but the original whole-file-preservation trial fails. Monaco code rendering and resize/restoration pass with a stale closed-project warning still visible. Final 2025 cleanup and complete lifecycle/debugger/assistant acceptance remain open. |
+| Q-015 | P2 gate | The initial instrumented suite timed out on post-step observation; its direct relationship to Q-005 is not proven. | Repeat the complete suite on the corrected source and retain failures/skips honestly. | CLOSED for product source `2e75161` / installed `f9a36c85` and test source `f0874e6`: the complete instrumented rerun passes after tests-only fixture packaging and shorter owned Git paths. The original complete run remains failed with those explained harness defects; production was not rebuilt and fingerprints remain unchanged. Exact counters, coverage scope and terminal artifacts are in recorded validation. Native/provider opt-ins remain separate gates, and any later product correction requires new complete managed acceptance. Earlier historical observation-timeout causes remain unproven. |
 | Q-016 | P2 | Shift+Tab accepted a composer suggestion instead of allowing backward keyboard navigation. | Leave backward navigation unhandled while preserving plain-Tab suggestion acceptance. | Fixed; focused regression passed. |
 | Q-017 | P2 | The French welcome card is clipped in the narrow native chat panel. | All welcome actions remain visible or reachable by normal scrolling, including after resize. | Fixed by measuring the Designer table at its available width; failing-before/passing-after geometry checks and inspected native recapture confirm all actions are visible. |
 | Q-018 | P2 | Monaco tests assumed immediate reference refresh, stopped only one of two synchronization timers and accepted an unrelated pending-edit refusal as a save cancellation. | Respect the bounded reference cache; isolate draft synchronization and prove the native save callback actually runs; verify exact native/readback text. | Stronger fixtures passed the final native batch, including exact VBE canonical readback and renderer reconciliation. |
