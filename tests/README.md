@@ -149,6 +149,20 @@ while it owns the desktop. Normal host shutdown is part of acceptance; a verifie
 transfer does not excuse a subsequent crash. These fixtures are not enabled by
 ordinary connected-account opt-ins.
 
+Native **local Git** UserForm layout qualification uses
+`VBAi_RUN_USERFORM_LOCAL_GIT_TESTS=1` and `VBAi_RUN_EXCEL_TESTS=1`, with optional
+absolute `VBAi_TEST_USERFORM_LOCAL_GIT_OUTPUT` for durable evidence. Filter on
+`FullyQualifiedName~NativeUserFormLocalGitTests`. Each layout owns a separate
+disposable Excel process and tests unchanged captures, a native property change,
+exact local Git transport, checkpoint import, measured explicit rollback and
+helper save/reopen with macros disabled. It covers Label/Button, TextBox,
+ComboBox, ListBox, CheckBox, OptionButton, ToggleButton, ScrollBar, SpinButton,
+TabStrip, an Image with a picture, and nested Frame/MultiPage. Unsupported
+comparison grammars are retained unchanged and may fail these scenarios; no
+normalizer exception or coverage claim is added. No remote Git operation occurs.
+Run only while owning the desktop; retain failure artifacts and review the
+source/reopened designer captures separately. Normal host exit is required.
+
 Local provider tests use simulated HTTP or CLI transports. Do not use personal
 credentials, paid API calls or private project data without explicit permission.
 A successful model catalog lookup alone does not qualify streamed responses,
