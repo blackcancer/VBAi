@@ -204,6 +204,53 @@ $env:VBAi_OFFICE_RESULTS = "$PWD/artifacts/metadata-getter-evidence"
 dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildOutputRoot="$PWD/artifacts/build" --filter "FullyQualifiedName=VBAi.Tests.Integration.OfficeMetadataGetterProbeTests.FreshAccessMetadataGetterContractsReadOnly|FullyQualifiedName=VBAi.Tests.Integration.OfficeAdapterOnlyMetadataQualificationTests.Access16HelpFilePathAdapterSaveReopen|FullyQualifiedName=VBAi.Tests.Integration.OfficeAdapterOnlyMetadataQualificationTests.Access16HelpContextIdAdapterSaveReopen" --results-directory "$PWD/artifacts/metadata-getter-evidence" --logger "trx;LogFileName=metadata-getters.trx"
 ```
 
+### One-shot Access metadata setter comparison
+
+The additional `VBAi_RUN_OFFICE_METADATA_SETTER_PROBE=1` opt-in enables four
+`OfficeMetadataSetterProbe` cases: HelpFile/HelpContextID, each through the
+existing production CLR `SetNative` implementation or raw `IDispatch` PROPERTYPUT.
+Every case creates a separate owned Access database, prepares the existing
+synthetic module/class baseline and attempts one metadata setter. A returned
+failure is followed only by read-only getter observations before the original
+error is rethrown. Independent read/cleanup failures are aggregated; uncertain
+bridge delivery refuses further native reads or mutations. There is no setter
+replay, rollback claim or post-failure save.
+
+Both new setter paths run from the same external fixture STA, use the exact
+selected project identity and current production revision, and require design
+mode, no project protection and the verified candidate MVID/assembly-file hashes.
+Their context differs from the in-process bridge path; include the existing
+adapter HelpFile/HelpContextID scenarios as separate controls. A difference
+between a bridge case and an external case alone does not establish a binder bug.
+
+The raw setter uses exact BSTR/I4 inputs without coercion, architecture-correct
+24-byte argument/result buffers, checked canaries and OLE cleanup. It passes one
+named `DISPID_PROPERTYPUT` argument, `DISPATCH_PROPERTYPUT` only and the invariant
+locale used by the CLR comparison. Microsoft documents that
+[PROPERTYPUT requires the named argument and ignores the result](https://learn.microsoft.com/en-us/windows/win32/api/oaidl/nf-oaidl-idispatch-invoke).
+`metadata-setter.json` retains the original native HRESULT and input/result
+buffer observations. Successful calls proceed through the unchanged adapter
+save, normal process exit and fresh-disk exact metadata assertions. Byte-packing
+is retained as observed; these diagnostics add no ANSI recovery heuristic.
+
+After preparing a matching frozen-candidate test output and a new evidence
+directory, run the four cases and both bridge controls together:
+
+```powershell
+$env:VBAi_RUN_OFFICE_TESTS = "1"
+$env:VBAi_RUN_OFFICE_METADATA_GETTER_PROBE = "1"
+$env:VBAi_RUN_OFFICE_METADATA_SETTER_PROBE = "1"
+$env:VBAi_OFFICE_RESULTS = "$PWD/artifacts/metadata-setter-evidence"
+dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildOutputRoot="$PWD/artifacts/build" --filter "TestCategory=OfficeMetadataSetterProbe|FullyQualifiedName=VBAi.Tests.Integration.OfficeAdapterOnlyMetadataQualificationTests.Access16HelpFilePathAdapterSaveReopen|FullyQualifiedName=VBAi.Tests.Integration.OfficeAdapterOnlyMetadataQualificationTests.Access16HelpContextIdAdapterSaveReopen" --results-directory "$PWD/artifacts/metadata-setter-evidence" --logger "trx;LogFileName=metadata-setters.trx"
+```
+
+The native project-properties dialog exposes these Help fields on its
+[General tab](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/project-properties-dialog-box).
+The existing guarded `queue_project_properties_dialog` command opens that
+dialog; it does not edit its controls. UI field discovery, a separately owned
+single-change trial and normal save/reopen proof are prerequisites for evaluating
+that alternative. No native dialog edit is included in this setter batch.
+
 ### Controlled native export tracing
 
 `tools/probes/Trace-NativeUserFormExport.ps1` defaults to a prepare-only plan.

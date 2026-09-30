@@ -41,8 +41,9 @@ namespace VBAi.Tests.Integration
                 fixture.RecordAdapterStage("ProjectBaseline", new { SourceHashes = baselineHashes,
                     Properties = fixture.Data("project_properties"), References = fixture.Data("list_references") });
                 if (scenario.StartsWith("Metadata.", StringComparison.Ordinal)) fixture.RecordMetadataGetterProbe("BeforeExistingMutation");
-                mutate(fixture);
-                if (scenario.StartsWith("Metadata.", StringComparison.Ordinal)) fixture.RecordMetadataGetterProbe("AfterExistingMutation");
+                if (scenario.StartsWith("Metadata.", StringComparison.Ordinal))
+                    OfficeMetadataMutationEvidence.Run(() => mutate(fixture), () => fixture.RecordMetadataGetterProbe("AfterExistingMutation"));
+                else mutate(fixture);
                 CollectionAssert.AreEqual(baselineHashes, ReadHashes(fixture), "Metadata/reference mutations must preserve synthetic source.");
                 verify(fixture);
                 // A new source edit guarantees the native Save is exercised even when the host writes metadata immediately.
@@ -108,7 +109,9 @@ namespace VBAi.Tests.Integration
                 {
                     try { fixture.Dispose(); }
                     catch (Exception cleanup) { failure = failure == null ? cleanup : new AggregateException("Project qualification and owned cleanup both failed.", failure, cleanup); }
-                    foreach (string file in new[] { "adapter-only-progress.json", "qualification.json" })
+                    foreach (string file in new[] { "adapter-only-progress.json", "qualification.json", "metadata-setter.json",
+                        "metadata-getters-BeforeExistingMutation.json", "metadata-getters-AfterExistingMutation.json",
+                        "metadata-getters-AfterExistingSave.json", "metadata-getters-FreshDiskReopen.json" })
                     {
                         string report = Path.Combine(fixture.Root, file);
                         try { if (File.Exists(report)) context?.AddResultFile(report); }
