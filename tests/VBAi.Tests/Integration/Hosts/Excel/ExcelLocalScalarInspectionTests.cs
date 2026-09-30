@@ -36,7 +36,7 @@ namespace VBAi.Tests.Integration
             Assert.IsTrue(Path.IsPathRooted(tracePath) && tracePath.Length > 2 && tracePath[1] == ':' &&
                 (tracePath[2] == '\\' || tracePath[2] == '/'), "An absolute local phase-evidence path is required.");
             var phaseStartedUtc = DateTime.UtcNow;
-            var host = ExcelVbeFixture.Start();
+            var host = ExcelVbeFixture.StartOwnedWithTrace(tracePath);
             string projectPath = host.File("ScalarPage" + offset + ".xlsm");
             string report = Path.Combine(TestContext.TestResultsDirectory, "excel-scalar-page-" + offset + "-" + host.ProcessId + "-" + Path.GetFileName(host.Root) + ".json");
             var evidence = new ExcelScalarQualificationEvidence(report, host.ProcessId, host.Root) { PhaseTracePath = tracePath };

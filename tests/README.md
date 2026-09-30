@@ -63,6 +63,31 @@ path, code, expression or inspected value. A client timeout does not cancel or
 authorize replay of a pending native command. Retain the host and phase evidence
 when the bridge stops responding.
 
+The two `ExcelScalarDiagnostics` scenarios use a dedicated explicit bootstrap,
+not the ordinary Excel COM-activation fixture. Set `VBAi_RUN_EXCEL_TESTS=1`,
+`VBAi_VBE_INSPECTION_TRACE` to an absolute local JSONL path with an existing parent
+directory, and `VBAi_EXCEL_RESULTS` to a durable local evidence directory. The
+bootstrap resolves the installed x64 Excel executable from HKLM App Paths and
+launches it once with `/x /automation` and an owned, empty, macro-free `.xlsx`
+seed. Microsoft documents that
+[/automation suppresses automatically opened files and auto-run macros](https://learn.microsoft.com/en-us/troubleshoot/microsoft-365-apps/excel/files-open-automatically).
+The trace variable is supplied explicitly in the child process environment;
+setting it only in the test process does not prove that COM activation inherited
+it. No machine/user environment setting is changed.
+
+NativeOM attachment accepts only the launched PID's `EXCEL7` document. Before
+any workbook/VBE mutation, the fixture checks the retained process handle,
+executable/start identity, application HWND/PID and an inventory containing only
+the exact seed workbook. It never falls back to COM activation or an active
+application. Startup, loaded add-in MVID and shutdown evidence remain in the
+fixture directory even on success. If attachment or startup is uncertain, the
+process is retained without Close, Quit, termination or another launch. Execute
+`InstalledBridgeSkipsUnsupportedScalarPageWithoutQuickWatch` first, then
+`InstalledBridgeReadsOneLongScalarWithNativePhaseEvidence`, using separate exact
+method filters; a category batch does not guarantee their order. Both require
+nonempty correlated host phase evidence and the installed product MVID must
+match the assembly referenced by the tests.
+
 Use disposable documents and identify the intended process/project before any
 write. Record application version, architecture, language, DPI and loaded VBAi
 build. Restore temporary settings and verify that unrelated documents remain
