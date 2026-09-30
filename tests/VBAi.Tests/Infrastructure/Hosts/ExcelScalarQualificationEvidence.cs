@@ -17,6 +17,8 @@ namespace VBAi.Tests.Integration
         private readonly List<IDictionary<string, object>> commands = new List<IDictionary<string, object>>();
         private Exception primaryFailure, cleanupFailure;
         internal string Shutdown { get; set; } = "NotVerified; owned host may be retained";
+        internal string PhaseTracePath { get; set; }
+        internal object PhaseEvidence { get; set; }
 
         internal ExcelScalarQualificationEvidence(string report, int processId, string fixtureRoot)
         { this.report = report; this.processId = processId; this.fixtureRoot = fixtureRoot; }
@@ -73,7 +75,7 @@ namespace VBAi.Tests.Integration
                 HostProcessId = processId, FixtureRoot = fixtureRoot,
                 AssemblyMvid = typeof(VbeSession).Module.ModuleVersionId,
                 ObservedUtc = DateTime.UtcNow.ToString("o"), Scope = "Owned disposable scalar test; synthetic requests only",
-                Evidence = commands, Shutdown, PrimaryError = primaryFailure?.ToString(), CleanupError = cleanupFailure?.ToString()
+                Evidence = commands, PhaseTracePath, PhaseEvidence, Shutdown, PrimaryError = primaryFailure?.ToString(), CleanupError = cleanupFailure?.ToString()
             };
             System.IO.File.WriteAllText(report, new JavaScriptSerializer { MaxJsonLength = 4 * 1024 * 1024 }.Serialize(payload), new UTF8Encoding(false));
         }
