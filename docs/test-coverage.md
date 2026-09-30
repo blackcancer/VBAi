@@ -7,8 +7,10 @@ and two conditional scalar diagnostic pages to the preceding candidate.
 The isolated `build-v4` assembly has MVID
 `d5e25e25-e3b4-4be0-ad45-a2dceb7be6b1` and SHA-256
 `06F9767B6970973B333E5D255210896335DA062C78F4F4116CBF150DD7E121EE`.
-Compilation completed with no warning or error. This assembly is not installed;
-its native Office and SOLIDWORKS acceptance remains pending.
+Compilation completed with no warning or error. This assembly is now installed:
+`deployment-v4.json` records the matching installed SHA-256, previous payload
+backup and registry exports. Native loaded-MVID acceptance is recorded below;
+deployment alone does not qualify Office or SOLIDWORKS operations.
 
 The complete instrumented default suite finished with **2,234 passed,
 0 failed, 83 conditionally skipped, 2,317 total**, in **9 minutes 24 seconds**.
@@ -57,14 +59,34 @@ Coverage measures only managed `VBAi`: **33,343/33,529 lines (99.45%)** and
 Native Office/SOLIDWORKS and live-provider opt-ins were disabled. Skipped
 scenarios, native C++ and JavaScript are not covered by this acceptance result.
 
-## Native and fixture follow-up (2026-09-30)
+## Current installed candidate: bounded native follow-up (2026-09-30)
 
-The installed product for this follow-up is the clean `0ddb0dd` build with
+The accepted scalar pages use installed product `d5e25e25` and tests-only
+source `c68f85b`; the earlier startup failure is retained separately.
+The source changes after `b77a782` are not included in the complete managed
+run above and do not constitute a new coverage measurement.
+
+| Evidence relative to `artifacts/qualification-v1/followup-20260930/` | Outcome | Exact scope |
+| --- | --- | --- |
+| `scalar-v4-skipped/scalar-skipped.trx` | **0 passed, 1 failed, 0 skipped** | Fixture startup threw NullReferenceException before opening VBE or checking the loaded add-in. The explicit bootstrap records PID **50200**; its later absence is not an observed exit code. This remains failed preparation evidence. |
+| `scalar-v4-skipped-v2/scalar-skipped-v2.trx` | **1 passed, 0 failed, 0 skipped** | Owned Excel PID **8828**, Microsoft 365 x64 **16.0.20326.20158**, exact loaded MVID `d5e25e25`; array, Variant and object rows are skipped without QuickWatch. Native enqueue/STA/context/terminal phases, unchanged source, identity, selection and mode are verified. Normal owned Close/Quit, no forced termination, exit **0x00000000**. |
+| `scalar-v4-long/scalar-long.trx` | **1 passed, 0 failed, 0 skipped** | Owned Excel PID **59460**, same Office build and exact loaded MVID; one Long scalar is read through native QuickWatch. Command 229, observer read, continuation and terminal phases complete with unchanged source/identity/selection/mode; normal exit **0x00000000**, no forced termination. |
+| `office-adapter-v4/` | **RUNNING; final outcome pending** | Current-candidate adapter-only save/reopen and Access/Publisher metadata/reference campaign. Partial artifacts do not qualify Q-011/Q-012; no aggregate result is inferred before the final TRX and cleanup records. |
+
+Each accepted scalar page retains its own `inspection.jsonl` plus exact owned
+`hosts/<fixture>/startup.json` and `shutdown.json`. The initial fixture failure
+was corrected by querying the process image through its retained native handle.
+The later page passes do not explain the historical `7b5f11d8` bridge stall or
+combase.dll crash, and do not cover the full scalar page. Q-006 remains open.
+
+## Historical native and fixture follow-up (2026-09-30)
+
+The product installed for the following historical trials was clean `0ddb0dd`, with
 MVID `7b5f11d8-f184-4302-834a-572e92a6ab81` and SHA-256
 `332C5B6FADFBB2247A38FE671FC352419E7415A995FA8EBC99CF33A90DD8F3F7`.
 Only the test assembly was rebuilt for the subsequent fixture commits; the
-product hash was independently rechecked. This installation supersedes the
-historical installed-candidate descriptions below. Evidence paths in this
+product hash was independently rechecked. It has since been replaced by the
+installed `d5e25e25` candidate above. Evidence paths in this
 section are relative to `artifacts/qualification-v1/followup-20260930/`.
 
 The Excel core batch on test source `558d73c` finished with **13 passed,
@@ -161,6 +183,18 @@ are under the export-probe worktree's
 `artifacts/qualification-v1/followup-20260930/ancestor-probes/`, not the central
 evidence directory. No existing parent encryption, ACL or token was changed.
 
+The crossed-DACL matrix on historical `7b5f11d8` finished with **1 passed,
+1 failed, 0 skipped** in central `crossed-dacl-v2/crossed-dacl-v2.trx`.
+The user TEMP destination with LocalAppData's raw DACL exported successfully
+(owned Excel PID **43636**); the LocalAppData destination with TEMP's raw DACL
+still failed (PID **59524**). Each disposable child retained its native parent,
+EFS metadata and verified copied DACL without permission escalation or changes
+to existing parents. Both processes exited normally with **0x00000000**.
+The precise descriptor, synthetic access check, original export response and
+shutdown are retained in each `HostBridge-*/native-export.json`. This rules out
+the observed child-DACL differences alone as the cause of the destination
+failure; it does not establish the underlying cause or qualify native Git.
+
 The explicit SOLIDWORKS 2019 SP5 instance, PID **47344**, revision **27.5.0**,
 loaded the same `7b5f11d8` candidate. The native connection test passed
 **1 test**, with no failure or skip, in `solidworks-2019/vstest/solidworks-load.trx`.
@@ -183,9 +217,14 @@ is claimed. These artifacts are under
 `../solidworks/type100-2019/followup-7b5/`, including
 `type100-qualification.json`, `native-open-after-runtime.json` and
 `post-runtime-shared-file-readback.json`.
-Normal SOLIDWORKS shutdown for this fresh session remains pending; the absence
-of CAD documents and the saved test-project states are recorded, but unsaved
-host-temporary Setup/Evaluation projects prevent treating shutdown as verified.
+The later authorized close completed normally with exit code **0** and no force
+termination, recorded in `solidworks-2019/normal-close.json`. Before closing,
+one fixture had a whitespace-only live-source difference and Saved=false.
+`solidworks-2019/preserve-before-close/preservation.json` retains the exact live
+sources and form before/after one verified product Save, with no source write
+or macro run. That save does not assert fresh-disk reopen or upgrade the earlier
+binary-preservation failure. This session still loaded historical `7b5f11d8`;
+it is not native SOLIDWORKS acceptance of the subsequently installed product.
 
 The unchanged strict loopback Ollama scenarios passed **3 tests** with passive
 wire capture and **3 tests** without the capture wrapper, recorded in
