@@ -667,9 +667,20 @@ namespace VBAi.Tests.Integration
                     try
                     {
                         collection = kind == 2 ? (object)((dynamic)current).AllForms : kind == 3 ? (object)((dynamic)current).AllReports : (object)((dynamic)current).AllModules;
-                        foreach (object item in (System.Collections.IEnumerable)collection)
-                            try { if ((bool)((dynamic)item).IsLoaded) names.Add((string)((dynamic)item).Name); }
+                        // A COM foreach creates an unnamed IEnumVARIANT acquisition that can
+                        // keep Access alive until testhost exits. Balance explicit indexed reads.
+                        int objectCount = Convert.ToInt32(((dynamic)collection).Count);
+                        Assert.IsTrue(objectCount >= 0 && objectCount <= 1000, "Unexpected owned Access object count.");
+                        for (int index = 0; index < objectCount; index++)
+                        {
+                            object item = null;
+                            try
+                            {
+                                item = ((dynamic)collection)[index]; // Access AllObjects collections are zero-based.
+                                if ((bool)((dynamic)item).IsLoaded) names.Add((string)((dynamic)item).Name);
+                            }
                             finally { Release(item); }
+                        }
                     }
                     finally { Release(collection); }
                     foreach (string name in names)

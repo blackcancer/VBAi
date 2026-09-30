@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
@@ -25,10 +26,16 @@ namespace VBAi.Tests.Integration
         [STATestMethod]
         public void WordAdapterOnlySaveReopen() { Qualify("Word", true, true); }
 
+        /// <summary>Requires a fresh native PowerPoint form and verified adapter-only save/reopen.</summary>
+        [STATestMethod]
+        public void PowerPointAdapterOnlySaveReopen() { Qualify("PowerPoint", true, true); }
+
         /// <summary>Creates a saved baseline, dirties only synthetic code, and preserves the original save outcome.</summary>
         private static void Qualify(string host, bool editClass, bool includeForm)
         {
-            using (var fixture = OfficeVbeFixture.Start(host))
+            var fixture = OfficeVbeFixture.Start(host);
+            Exception trialError = null, originalOutcomeError = null;
+            try
             {
                 fixture.RequireAdapterOnlyCleanup();
                 try
@@ -71,6 +78,8 @@ namespace VBAi.Tests.Integration
                         ExpectedHostPath = fixture.DocumentPath, ExpectedProjectVersion = expectedVersion, RetryAllowed = false });
                     var original = fixture.Response("save_host_document", "ExpectedHostPath", fixture.DocumentPath,
                         "ExpectedProjectVersion", expectedVersion);
+                    try { AssertVerifiedAdapterOutcome(original, host); }
+                    catch (Exception error) { originalOutcomeError = error; fixture.RecordAdapterFailure(error); }
                     fixture.ObserveAdapterOutcome(original);
                     foreach (var source in expectedHashes)
                         Assert.AreEqual(source.Value, fixture.Data("read_module", "Module", source.Key)["Sha256"], "Live source changed during the one save invocation.");
@@ -89,17 +98,39 @@ namespace VBAi.Tests.Integration
                         var label = ((object[])form["Controls"]).Select(VbeBridgeClient.Object).Single(c => (string)c["Name"] == "MarkerLabel");
                         Assert.AreEqual("Adapter-only baseline", label["Caption"]);
                     }
-                    Assert.AreEqual(true, original["Ok"], Convert.ToString(original["Error"]));
-                    var result = VbeBridgeClient.Object(original["Data"]);
-                    Assert.AreEqual(true, result["Verified"], "A delayed saved flag or persisted file cannot retroactively qualify an uncertain adapter result.");
-                    Assert.AreEqual(false, result["Uncertain"]);
-                    Assert.AreEqual(true, result["MutationInvoked"]);
-                    Assert.AreEqual(false, result["PersistenceReopenVerified"]);
-                    if (host == "Access") Assert.IsNull(result["HostSaved"]);
+                    if (originalOutcomeError != null) ExceptionDispatchInfo.Capture(originalOutcomeError).Throw();
                     fixture.FlushAdapterEvidence();
                 }
-                catch (Exception error) { fixture.RecordAdapterFailure(error); throw; }
+                catch (Exception error)
+                {
+                    trialError = originalOutcomeError != null && !ReferenceEquals(error, originalOutcomeError)
+                        ? new AggregateException("Original adapter result and subsequent adapter-only verification both failed.", originalOutcomeError, error)
+                        : error;
+                    fixture.RecordAdapterFailure(trialError);
+                }
             }
+            finally
+            {
+                try { fixture.Dispose(); }
+                catch (Exception cleanupError)
+                {
+                    trialError = trialError == null ? cleanupError : new AggregateException(
+                        "Adapter-only trial and owned host cleanup both failed.", trialError, cleanupError);
+                }
+            }
+            if (trialError != null) ExceptionDispatchInfo.Capture(trialError).Throw();
+        }
+
+        /// <summary>Validates only the original response; later observations never promote an uncertain save.</summary>
+        private static void AssertVerifiedAdapterOutcome(IDictionary<string, object> original, string host)
+        {
+            Assert.AreEqual(true, original["Ok"], Convert.ToString(original["Error"]));
+            var result = VbeBridgeClient.Object(original["Data"]);
+            Assert.AreEqual(true, result["Verified"], "The original adapter result is unverified; subsequent persistence cannot turn it into a verified response.");
+            Assert.AreEqual(false, result["Uncertain"]);
+            Assert.AreEqual(true, result["MutationInvoked"]);
+            Assert.AreEqual(false, result["PersistenceReopenVerified"]);
+            if (host == "Access") Assert.IsNull(result["HostSaved"]);
         }
 
         /// <summary>Replaces only synthetic code under the current source hash; never executes it.</summary>

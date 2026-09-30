@@ -86,6 +86,7 @@ namespace VBAi.Tests.Integration
                     observation["HostFileVersion"] = FileVersionInfo.GetVersionInfo(process.MainModule.FileName).FileVersion;
                 }
                 if (Kind == "Access") observation["ApplicationHwnd"] = Convert.ToInt64(((dynamic)application).hWndAccessApp());
+                else if (Kind == "PowerPoint") observation["ApplicationHwnd"] = PowerPointWindow.Read(application).ToInt64();
                 else
                 {
                     window = ((dynamic)application).ActiveWindow;
