@@ -19,21 +19,27 @@ namespace VBAi.Tests.Integration
         public void InstalledBridgeReadsDeclaredScalarsInOwnedPausedWorkbook()
         {
             var host = ExcelVbeFixture.Start();
-            var evidence = new List<object>();
             string projectPath = host.File("LocalScalars.xlsm");
+            string report = Path.Combine(TestContext.TestResultsDirectory, "excel-local-scalars-" + host.ProcessId + "-" + Path.GetFileName(host.Root) + ".json");
+            var evidence = new ExcelScalarQualificationEvidence(report, host.ProcessId, host.Root);
             bool canClose = true;
+            bool bridgeAvailable = true;
             const string module = "ScalarAudit";
             var json = new JavaScriptSerializer();
             Func<object, IDictionary<string, object>> send = request => {
-                var timing = Stopwatch.StartNew();
-                var response = VbeBridgeClient.Read("VBAi." + host.ProcessId, request, 20000);
-                evidence.Add(new { Request = request, Response = response, ElapsedMilliseconds = timing.ElapsedMilliseconds });
-                Assert.IsNotNull(response, "The owned host bridge did not respond.");
-                Assert.AreEqual(true, response["Ok"], json.Serialize(response));
-                return response;
+                try
+                {
+                    var result = evidence.Send(request, () => VbeBridgeClient.Read("VBAi." + host.ProcessId, request, 20000), response => {
+                        Assert.IsNotNull(response, "The owned host bridge did not respond.");
+                        Assert.AreEqual(true, response["Ok"], json.Serialize(response));
+                    });
+                    bridgeAvailable = true;
+                    return result;
+                }
+                catch { bridgeAvailable = false; throw; }
             };
             Func<IDictionary<string, object>> state = () => VbeBridgeClient.Object(send(new { Command = "debug_state", Project = projectPath })["Data"]);
-            try
+            evidence.Run(() =>
             {
                 // Save only the new owned workbook; all VBE references stay inside the installed add-in.
                 ((dynamic)UiInvoke.Field<object>(host, "workbook")).SaveAs(projectPath, 52);
@@ -86,38 +92,26 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(1, Convert.ToInt32(state()["Mode"]));
                 var after = VbeBridgeClient.Object(send(new { Command = "read_module", Project = projectPath, Module = module })["Data"]);
                 Assert.AreEqual(original["Sha256"], after["Sha256"]);
-            }
-            finally
+            }, () =>
             {
-                try
+                if (!canClose || !bridgeAvailable)
                 {
-                    if (!canClose)
+                    int mode = Convert.ToInt32(state()["Mode"]);
+                    if (mode == 1)
                     {
-                        int mode = Convert.ToInt32(state()["Mode"]);
-                        if (mode == 1)
-                        {
-                            send(new { Command = "debug_global", Project = projectPath, ExpectedMode = 1, Action = "reset" });
-                            WaitMode(state, 2);
-                            canClose = true;
-                        }
-                        else canClose = mode == 2;
+                        send(new { Command = "debug_global", Project = projectPath, ExpectedMode = 1, Action = "reset" });
+                        WaitMode(state, 2);
+                        canClose = true;
                     }
-                    if (canClose)
-                    {
-                        host.Dispose();
-                        evidence.Add(new { Shutdown = "CloseQuitAndExitCodeZero", HostProcessId = host.ProcessId });
-                    }
-                    else Assert.Fail("Owned Excel was left open because design mode was not verified. PID: " + host.ProcessId);
+                    else canClose = mode == 2;
                 }
-                finally
+                if (canClose)
                 {
-                    string report = Path.Combine(TestContext.TestResultsDirectory, "excel-local-scalars-" + host.ProcessId + ".json");
-                    Directory.CreateDirectory(TestContext.TestResultsDirectory);
-                    File.WriteAllText(report, json.Serialize(new { HostProcessId = host.ProcessId,
-                        AssemblyMvid = typeof(VBAi.VbeSession).Module.ModuleVersionId, Evidence = evidence }));
-                    TestContext.AddResultFile(report);
+                    host.Dispose();
+                    evidence.Shutdown = "CloseQuitAndExitCodeZero";
                 }
-            }
+                else Assert.Fail("Owned Excel was left open because design mode was not verified. PID: " + host.ProcessId);
+            }, () => TestContext.AddResultFile(report));
         }
 
         private static void WaitMode(Func<IDictionary<string, object>> state, int expected)
