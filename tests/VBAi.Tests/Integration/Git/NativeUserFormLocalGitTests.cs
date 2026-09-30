@@ -70,14 +70,33 @@ namespace VBAi.Tests.Integration
                         host.PrepareGitLayout(form, layout, path);
                         File.Copy(path, Path.Combine(output, "before-import.xlsm"));
                         var nativeBefore = host.ReadGitLayout(form, layout);
-                        Assert.AreEqual(layout == "LabelButton" ? 2 : 3, Convert.ToInt32(nativeBefore["ControlCount"]));
+                        report["NativeBefore"] = nativeBefore;
+                        WriteReport(output, report);
+                        string rootNames = layout == "LabelButton" ? "QualificationButton|QualificationLabel" :
+                            layout == "FrameMultiPage" ? "QualificationButton|QualificationExtra|QualificationLabel|QualificationMultiPage|QualificationNestedText" :
+                            "QualificationButton|QualificationExtra|QualificationLabel";
+                        Assert.AreEqual(rootNames, nativeBefore["Root.ControlNames"], "Exact native root collection, including descendant indexing.");
+                        Assert.AreEqual(layout == "LabelButton" ? "QualificationButton|QualificationLabel" : "QualificationButton|QualificationExtra|QualificationLabel",
+                            nativeBefore["Root.DirectControlNames"], "Only controls whose observed parent is the UserForm are direct root children.");
+                        Assert.AreEqual(true, nativeBefore["QualificationLabel.ParentVerified"]);
+                        Assert.AreEqual(true, nativeBefore["QualificationButton.ParentVerified"]);
+                        if (layout != "LabelButton") Assert.AreEqual(true, nativeBefore["QualificationExtra.ParentVerified"]);
                         if (layout == "FrameMultiPage")
                         {
-                            Assert.AreEqual(1, Convert.ToInt32(nativeBefore["Frame.ControlCount"]));
+                            Assert.AreEqual("QualificationMultiPage|QualificationNestedText", nativeBefore["Frame.ControlNames"], "Exact indexed Frame subtree.");
+                            Assert.AreEqual("QualificationMultiPage", nativeBefore["Frame.DirectControlNames"]);
+                            Assert.AreEqual(true, nativeBefore["MultiPage.ParentVerified"]);
+                            Assert.AreEqual(true, nativeBefore["NestedText.ParentVerified"]);
                             Assert.IsTrue(Convert.ToInt32(nativeBefore["MultiPage.PageCount"]) > 0);
-                            Assert.AreEqual(1, Convert.ToInt32(nativeBefore["MultiPage.Page.0.ControlCount"]));
+                            for (int i = 0; i < Convert.ToInt32(nativeBefore["MultiPage.PageCount"]); i++)
+                            {
+                                string pagePrefix = "MultiPage.Page." + i;
+                                Assert.AreEqual(true, nativeBefore[pagePrefix + ".ParentVerified"]);
+                                Assert.AreEqual(i == 0 ? "QualificationNestedText" : "", nativeBefore[pagePrefix + ".ControlNames"]);
+                                Assert.AreEqual(i == 0 ? "QualificationNestedText" : "", nativeBefore[pagePrefix + ".DirectControlNames"]);
+                            }
+                            Assert.AreEqual("Original nested text", nativeBefore["NestedText.Text"]);
                         }
-                        report["NativeBefore"] = nativeBefore;
                         host.CaptureGitFormDesigner(form, Path.Combine(output, "source-designer.png"));
                         report["DesignerCaptureAcceptance"] = "CAPTURED_PENDING_VISUAL_REVIEW";
                         host.WithGitProject(path, project => {

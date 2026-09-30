@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
-using System.Windows.Forms;
+using System.Drawing.Imaging;
+using System.Linq;
+using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
@@ -46,26 +49,49 @@ namespace VBAi.Tests.Integration
                                 ((dynamic)control).Min = 0; ((dynamic)control).Max = 100;
                                 ((dynamic)control).Value = 10; break;
                             case "TabStrip": SetGitLayoutTabCaption(control, "First synthetic tab"); break;
-                            case "Image":
-                                object picture = null;
-                                using (var bitmap = new Bitmap(4, 4))
-                                {
-                                    using (var graphics = Graphics.FromImage(bitmap)) graphics.Clear(Color.Crimson);
-                                    try
-                                    {
-                                        picture = GitLayoutPicture.ToPicture(bitmap);
-                                        ((dynamic)control).Picture = picture;
-                                    }
-                                    finally { Release(picture); }
-                                }
-                                break;
+                            case "Image": break; // The owning host loads its own OLE picture below.
                             case "FrameMultiPage": PrepareNestedGitLayout(control); break;
                             default: throw new ArgumentException("Unknown local Git form layout: " + layout);
                         }
                     }
                     finally { Release(control); Release(controls); }
                 });
+            if (layout == "Image") InstallGitLayoutPicture(form);
             ((dynamic)workbook).Save();
+        }
+
+        /// <summary>Loads a synthetic bitmap through the production command in Excel, without crossing a process-local GDI handle.</summary>
+        private void InstallGitLayoutPicture(string form)
+        {
+            string imagePath = File("local-git-layout-picture.bmp");
+            using (var bitmap = new Bitmap(4, 4))
+            {
+                using (var graphics = Graphics.FromImage(bitmap)) graphics.Clear(Color.Crimson);
+                bitmap.Save(imagePath, ImageFormat.Bmp);
+            }
+            object project = null;
+            string projectName;
+            try { project = ((dynamic)workbook).VBProject; projectName = ((dynamic)project).Name; }
+            finally { Release(project); }
+            var tree = GitLayoutCommandData(Command(new { Command = "form_tree", Project = projectName, Form = form }));
+            var image = ((object[])tree["Controls"]).Select(VbeBridgeClient.Object)
+                .Single(node => Convert.ToString(node["Name"]) == "QualificationExtra");
+            Assert.AreEqual("Control", image["Kind"]);
+            var installed = GitLayoutCommandData(Command(new { Command = "set_form_node_picture", Project = projectName,
+                Form = form, ControlPath = image["Path"], ExpectedTreeVersion = tree["TreeVersion"], Property = "Picture", Path = imagePath }));
+            Assert.AreEqual(image["Path"], installed["ControlPath"]);
+            Assert.AreEqual("Picture", installed["Property"]);
+            Assert.IsNotNull(installed["Tree"]);
+            // ReadGitLayout independently reads the installed native Picture's
+            // type and dimensions before any snapshot/recovery acceptance.
+        }
+
+        private static IDictionary<string, object> GitLayoutCommandData(IDictionary<string, object> response)
+        {
+            Assert.IsNotNull(response, "The production picture command must answer on the owned host bridge.");
+            object error; response.TryGetValue("Error", out error);
+            Assert.AreEqual(true, response["Ok"], "Native layout command failed: " + Convert.ToString(error));
+            return VbeBridgeClient.Object(response["Data"]);
         }
 
         /// <summary>Changes a native persisted value appropriate to the selected control layout.</summary>
@@ -98,7 +124,26 @@ namespace VBAi.Tests.Integration
             result["Layout"] = layout;
             WithGitLayoutDesigner(form, (component, designer) => {
                 result["ComponentCaption"] = ReadGitFormProperty(component, "Caption");
-                if (layout == "FrameMultiPage") ReadNestedGitLayout(designer, result);
+                object controls = null;
+                try
+                {
+                    controls = ((dynamic)designer).Controls;
+                    ReadGitLayoutCollection(controls, designer, form, "Root", result);
+                    foreach (string name in new[] { "QualificationLabel", "QualificationButton" })
+                    {
+                        object control = null;
+                        try { control = ((dynamic)controls).Item(name); ReadGitLayoutParent(control, designer, form, name, result); }
+                        finally { Release(control); }
+                    }
+                    if (layout != "LabelButton")
+                    {
+                        object control = null;
+                        try { control = ((dynamic)controls).Item("QualificationExtra"); ReadGitLayoutParent(control, designer, form, "QualificationExtra", result); }
+                        finally { Release(control); }
+                    }
+                }
+                finally { Release(controls); }
+                if (layout == "FrameMultiPage") ReadNestedGitLayout(designer, form, result);
             });
             WithGitLayoutControl(form, layout, control => {
                 ReadGitLayoutGeometry(control, "Control", result);
@@ -151,6 +196,9 @@ namespace VBAi.Tests.Integration
                             result["Control.Picture.Type"] = ((dynamic)picture).Type;
                             result["Control.Picture.Width"] = ((dynamic)picture).Width;
                             result["Control.Picture.Height"] = ((dynamic)picture).Height;
+                            Assert.AreEqual(1, Convert.ToInt32(result["Control.Picture.Type"]), "The synthetic BMP must be retained as a native bitmap.");
+                            Assert.IsTrue(Convert.ToInt32(result["Control.Picture.Width"]) > 0 && Convert.ToInt32(result["Control.Picture.Height"]) > 0,
+                                "The installed native picture must have positive HIMETRIC dimensions.");
                         }
                         finally { Release(picture); }
                         break;
@@ -244,7 +292,7 @@ namespace VBAi.Tests.Integration
             finally { Release(text); Release(pageControls); Release(page); Release(pages); Release(multi); Release(controls); }
         }
 
-        private static void ReadNestedGitLayout(object designer, IDictionary<string, object> result)
+        private static void ReadNestedGitLayout(object designer, string form, IDictionary<string, object> result)
         {
             object controls = null, frame = null, nestedControls = null, multi = null, pages = null;
             try
@@ -255,8 +303,10 @@ namespace VBAi.Tests.Integration
                 result["Frame.Caption"] = ((dynamic)frame).Caption;
                 nestedControls = ((dynamic)frame).Controls;
                 result["Frame.ControlCount"] = ((dynamic)nestedControls).Count;
+                ReadGitLayoutCollection(nestedControls, frame, form, "Frame", result);
                 multi = ((dynamic)nestedControls).Item("QualificationMultiPage");
                 ReadGitLayoutGeometry(multi, "MultiPage", result);
+                ReadGitLayoutParent(multi, frame, form, "MultiPage", result);
                 result["MultiPage.Value"] = ((dynamic)multi).Value;
                 pages = ((dynamic)multi).Pages;
                 int count = Convert.ToInt32(((dynamic)pages).Count);
@@ -271,6 +321,20 @@ namespace VBAi.Tests.Integration
                         result["MultiPage.Page." + i + ".Caption"] = ((dynamic)page).Caption;
                         pageControls = ((dynamic)page).Controls;
                         result["MultiPage.Page." + i + ".ControlCount"] = ((dynamic)pageControls).Count;
+                        ReadGitLayoutParent(page, multi, form, "MultiPage.Page." + i, result);
+                        ReadGitLayoutCollection(pageControls, page, form, "MultiPage.Page." + i, result);
+                        if (i == 0)
+                        {
+                            object leaf = null;
+                            try
+                            {
+                                leaf = ((dynamic)pageControls).Item("QualificationNestedText");
+                                ReadGitLayoutParent(leaf, page, form, "NestedText", result);
+                                ReadGitLayoutGeometry(leaf, "NestedText", result);
+                                result["NestedText.Text"] = ((dynamic)leaf).Text;
+                            }
+                            finally { Release(leaf); }
+                        }
                     }
                     finally { Release(pageControls); Release(page); }
                 }
@@ -278,11 +342,92 @@ namespace VBAi.Tests.Integration
             finally { Release(pages); Release(multi); Release(nestedControls); Release(frame); Release(controls); }
         }
 
-        /// <summary>Exposes WinForms' native StdPicture conversion without activating an ActiveX control.</summary>
-        private sealed class GitLayoutPicture : AxHost
+        /// <summary>Reads the exact collection membership and independently identifies direct children by their parents.</summary>
+        private static void ReadGitLayoutCollection(object controls, object owner, string form, string prefix,
+            IDictionary<string, object> result)
         {
-            private GitLayoutPicture() : base("00000000-0000-0000-0000-000000000000") { }
-            internal static object ToPicture(Image image) { return GetIPictureDispFromPicture(image); }
+            var names = new SortedSet<string>(StringComparer.Ordinal);
+            var direct = new SortedSet<string>(StringComparer.Ordinal);
+            string ownerPath = GitLayoutContainerIdentity(owner, form);
+            int count = Convert.ToInt32(((dynamic)controls).Count);
+            Assert.IsTrue(count >= 0 && count <= 32, "The disposable layout collection must remain bounded.");
+            for (int i = 0; i < count; i++)
+            {
+                object control = null, parent = null;
+                try
+                {
+                    control = ((dynamic)controls).Item(i);
+                    string name = ((dynamic)control).Name;
+                    Assert.IsTrue(names.Add(name), "Duplicate native layout control: " + name);
+                    parent = ((dynamic)control).Parent;
+                    if (VbeProjectHostPath.SameProject(parent, owner) || GitLayoutContainerIdentity(parent, form) == ownerPath)
+                        direct.Add(name);
+                }
+                finally
+                {
+                    // Parent may be an alias of an outer container RCW. Balance
+                    // this acquisition rather than final-releasing that container.
+                    ReleaseGitLayoutAlias(parent); Release(control);
+                }
+            }
+            result[prefix + ".ControlNames"] = string.Join("|", names);
+            result[prefix + ".DirectControlNames"] = string.Join("|", direct);
+        }
+
+        /// <summary>Verifies a native parent by COM identity or the complete typed container chain used by form_tree.</summary>
+        private static void ReadGitLayoutParent(object control, object expectedParent, string form, string prefix,
+            IDictionary<string, object> result)
+        {
+            object parent = null;
+            try
+            {
+                parent = ((dynamic)control).Parent;
+                string observed = GitLayoutContainerIdentity(parent, form);
+                string expected = GitLayoutContainerIdentity(expectedParent, form);
+                bool sameCom = VbeProjectHostPath.SameProject(parent, expectedParent);
+                Assert.IsTrue(sameCom || observed == expected, "Native parent changed for " + prefix + ": " + observed + ", expected " + expected);
+                result[prefix + ".Type"] = TypeDescriptor.GetClassName(control);
+                result[prefix + ".ParentPath"] = observed;
+                result[prefix + ".ExpectedParentPath"] = expected;
+                result[prefix + ".SameComParent"] = sameCom;
+                result[prefix + ".ParentVerified"] = true;
+            }
+            finally { ReleaseGitLayoutAlias(parent); }
+        }
+
+        private static string GitLayoutContainerIdentity(object container, string form)
+        {
+            var path = new List<string>();
+            object current = container;
+            bool acquired = false;
+            try
+            {
+                for (int depth = 0; depth < 16; depth++)
+                {
+                    Assert.IsNotNull(current, "A native container ancestry ended before the UserForm.");
+                    string type = TypeDescriptor.GetClassName(current);
+                    bool isForm = string.Equals(type, "UserForm", StringComparison.OrdinalIgnoreCase);
+                    string name;
+                    // The design-time UserForm wrapper can omit Name; the exact
+                    // VBComponent form identity is already held by the fixture.
+                    if (isForm) name = form;
+                    else name = ((dynamic)current).Name;
+                    Assert.IsFalse(string.IsNullOrWhiteSpace(type) || string.IsNullOrWhiteSpace(name), "Native container identity is incomplete.");
+                    path.Add(type + ":" + name);
+                    if (isForm) return string.Join("/", path);
+                    object next = ((dynamic)current).Parent;
+                    if (acquired) ReleaseGitLayoutAlias(current);
+                    current = next; acquired = true;
+                }
+                Assert.Fail("Native layout ancestry exceeds the bounded depth.");
+                return null;
+            }
+            finally { if (acquired) ReleaseGitLayoutAlias(current); }
+        }
+
+        private static void ReleaseGitLayoutAlias(object alias)
+        {
+            if (alias != null && Marshal.IsComObject(alias)) Marshal.ReleaseComObject(alias);
         }
     }
 }
