@@ -188,24 +188,38 @@ namespace VBAi.Tests.Integration
                         finally { Release(tabs); }
                         break;
                     case "Image":
-                        object picture = null;
-                        try
-                        {
-                            picture = ((dynamic)control).Picture;
-                            Assert.IsNotNull(picture, "The Image layout must retain an actual picture.");
-                            result["Control.Picture.Type"] = ((dynamic)picture).Type;
-                            result["Control.Picture.Width"] = ((dynamic)picture).Width;
-                            result["Control.Picture.Height"] = ((dynamic)picture).Height;
-                            Assert.AreEqual(1, Convert.ToInt32(result["Control.Picture.Type"]), "The synthetic BMP must be retained as a native bitmap.");
-                            Assert.IsTrue(Convert.ToInt32(result["Control.Picture.Width"]) > 0 && Convert.ToInt32(result["Control.Picture.Height"]) > 0,
-                                "The installed native picture must have positive HIMETRIC dimensions.");
-                        }
-                        finally { Release(picture); }
+                        // StdPicture is process-local; native v2 proved its GET
+                        // cannot marshal to the external test process. The
+                        // production tree reads the image inside Excel below.
                         break;
                     default: throw new ArgumentException("Unknown local Git form layout: " + layout);
                 }
             });
+            if (layout == "Image") ReadGitLayoutPicture(form, result);
             return result;
+        }
+
+        /// <summary>Reads the actual installed image content through the production in-host descriptor.</summary>
+        private void ReadGitLayoutPicture(string form, IDictionary<string, object> result)
+        {
+            object project = null;
+            string projectName;
+            try { project = ((dynamic)workbook).VBProject; projectName = ((dynamic)project).Name; }
+            finally { Release(project); }
+            var tree = GitLayoutCommandData(Command(new { Command = "form_tree", Project = projectName, Form = form }));
+            var image = ((object[])tree["Controls"]).Select(VbeBridgeClient.Object)
+                .Single(node => Convert.ToString(node["Name"]) == "QualificationExtra");
+            var picture = ((object[])image["Properties"]).Select(VbeBridgeClient.Object)
+                .Single(property => Convert.ToString(property["Name"]) == "Picture");
+            Assert.IsTrue(string.IsNullOrEmpty(Convert.ToString(picture["Error"])), "The in-host Picture descriptor failed: " + picture["Error"]);
+            Assert.AreEqual("object", picture["Kind"]);
+            Assert.AreEqual(typeof(Bitmap).FullName, picture["Type"]);
+            string digest = Convert.ToString(picture["Digest"]);
+            Assert.IsTrue(digest.Length == 64 && digest.All(character => "0123456789abcdef".Contains(character)),
+                "The in-host descriptor must hash the actual installed image, not report an empty or unreadable Picture.");
+            result["Control.Picture.Type"] = picture["Type"];
+            result["Control.Picture.Digest"] = digest;
+            result["Control.Picture.ReadbackScope"] = "Production form_tree in-host ImageDigest; PNG content SHA-256. No external OLE handle read.";
         }
 
         /// <summary>Saves the owned fixture and reopens it with macros/events disabled.</summary>
