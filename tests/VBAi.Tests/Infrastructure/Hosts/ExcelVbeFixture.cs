@@ -41,6 +41,9 @@ namespace VBAi.Tests.Integration
         /// <value>Chemin racine des fichiers temporaires de la fixture.</value>
         internal string Root { get; private set; }
 
+        /// <summary>Retains exact owned-process shutdown observations after temporary-file cleanup.</summary>
+        internal IDictionary<string, object> ShutdownDiagnostics { get; private set; }
+
         /// <summary>Démarre Excel de façon isolée et vérifie la disponibilité du pont VBE.</summary>
         /// <returns>La fixture prête à envoyer des commandes au pont.</returns>
         /// <exception cref="AssertInconclusiveException">Les tests Excel sont désactivés, Excel est absent ou une session existante a été détectée.</exception>
@@ -106,13 +109,13 @@ namespace VBAi.Tests.Integration
         }
 
         /// <summary>Preserves the scenario failure when cleanup independently fails.</summary>
-        internal static void Run(Action<ExcelVbeFixture> scenario)
+        internal static void Run(Action<ExcelVbeFixture> scenario, Action<ExcelVbeFixture> shutdownVerified = null)
         {
             var fixture = Start();
             Exception failure = null;
             try { scenario(fixture); }
             catch (Exception error) { failure = error; }
-            try { fixture.Dispose(); }
+            try { fixture.Dispose(); shutdownVerified?.Invoke(fixture); }
             catch (Exception cleanup)
             {
                 if (failure != null) throw new AggregateException("The Excel scenario and its shutdown both failed; both errors are retained.", failure, cleanup);
@@ -168,6 +171,7 @@ namespace VBAi.Tests.Integration
             diagnostics["DurableEvidence"] = retainEvidence;
             diagnostics["CommandCount"] = commandSequence;
             diagnostics["CommandRecordsOmitted"] = Math.Max(0, commandSequence - MaximumCommandRecords);
+            ShutdownDiagnostics = diagnostics;
             var watch = Stopwatch.StartNew();
             Exception closeFailure = null, quitFailure = null, evidenceFailure = null;
             Action writeDiagnostics = () => {

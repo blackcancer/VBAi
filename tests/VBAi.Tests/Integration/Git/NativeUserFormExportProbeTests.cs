@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Cryptography;
+using System.Security.Principal;
 using System.Web.Script.Serialization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -52,7 +53,15 @@ namespace VBAi.Tests.Integration
         public void InheritedStorageAncestorExportRetainsExactOwnedIdentity(string location)
         { RunSingleExport("HostBridge", location, false, null, true); }
 
-        private void RunSingleExport(string dispatch, string location, bool controlledEfs, string volume = null, bool probeAncestor = false)
+        /// <summary>Crosses only copied parent DACLs on fresh GUID children, retaining native EFS and owner unchanged.</summary>
+        [STATestMethod]
+        [DataRow("LocalAppData", "UserTemporary")]
+        [DataRow("UserTemporary", "LocalAppData")]
+        public void CrossedSourceOnlyDaclExportRetainsIdentityAndShutdownEvidence(string location, string daclSource)
+        { RunSingleExport("HostBridge", location, false, null, true, daclSource); }
+
+        private void RunSingleExport(string dispatch, string location, bool controlledEfs, string volume = null, bool probeAncestor = false,
+            string daclSource = null)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_EXPORT_PROBES") != "1" ||
                 Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
@@ -69,15 +78,18 @@ namespace VBAi.Tests.Integration
             var report = new Dictionary<string, object> {
                 ["Stage"] = "STARTED", ["Dispatch"] = dispatch, ["Location"] = location, ["ControlledEfs"] = controlledEfs,
                 ["ControlledVolume"] = volume,
+                ["DaclSource"] = daclSource,
                 ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
                 ["NativeExportRequests"] = 0, ["MacroExecutions"] = 0, ["RemoteOperations"] = 0,
                 ["EvidenceRootExisted"] = rootExisted,
                 ["Scope"] = "One native UserForm Export per owned Excel process; dispatch/path diagnosis only. No Git import, capture comparison or recovery acceptance."
             };
             var json = new JavaScriptSerializer();
+            ExcelVbeFixture observedHost = null;
             try
             {
                 ExcelVbeFixture.Run(host => {
+                    observedHost = host;
                     const string form = "QualificationForm";
                     string workbook = host.File("native-export-probe.xlsm");
                     host.PrepareGitLayout(form, "LabelButton", workbook);
@@ -146,6 +158,13 @@ namespace VBAi.Tests.Integration
                         report["StorageParent"] = DescribeProbeDirectory(baseDirectory);
                         destinationDirectory = Path.Combine(baseDirectory, trial);
                         Assert.IsFalse(Directory.Exists(destinationDirectory)); Directory.CreateDirectory(destinationDirectory);
+                        if (daclSource != null)
+                        {
+                            report["Stage"] = "SOURCE_ONLY_DACL_PREPARATION";
+                            string source = daclSource == "UserTemporary" ? Path.GetTempPath() :
+                                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                            CopyProbeDacl(baseDirectory, destinationDirectory, source, report, json);
+                        }
                     }
                     report["ExportDirectory"] = DescribeProbeDirectory(destinationDirectory);
                     report["CurrentUserIdentity"] = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
@@ -227,15 +246,101 @@ namespace VBAi.Tests.Integration
                             throw;
                         }
                     }
+                }, host => {
+                    report["ShutdownDiagnostics"] = host.ShutdownDiagnostics;
+                    Assert.AreEqual(host.ProcessId, Convert.ToInt32(host.ShutdownDiagnostics["ProcessId"]));
+                    Assert.AreEqual(true, host.ShutdownDiagnostics["Exited"]);
+                    Assert.AreEqual("0x00000000", host.ShutdownDiagnostics["ExitCodeHex"]);
+                    report["NormalShutdownVerified"] = true;
+                    report["NormalShutdownScope"] = "Exact owned Excel PID exited with code zero; Dispose succeeded before rethrowing any original scenario failure.";
                 });
                 report["NormalShutdownVerified"] = true; report["Stage"] = "PASS";
             }
             catch (Exception error) { report["Failure"] = error.ToString(); throw; }
             finally
             {
+                if (observedHost?.ShutdownDiagnostics != null)
+                    report["ShutdownDiagnostics"] = observedHost.ShutdownDiagnostics;
                 System.IO.File.WriteAllText(reportPath, json.Serialize(report));
                 TestContext.AddResultFile(reportPath);
             }
+        }
+
+        private static void CopyProbeDacl(string parent, string child, string source,
+            IDictionary<string, object> report, JavaScriptSerializer json)
+        {
+            // Only this freshly created GUID child is writable. No privilege
+            // adjustment, elevation, owner/SACL/EFS change or fallback is permitted.
+            Assert.AreEqual(Path.GetFullPath(parent).TrimEnd(Path.DirectorySeparatorChar),
+                Path.GetFullPath(Path.GetDirectoryName(child)).TrimEnd(Path.DirectorySeparatorChar), true);
+            Assert.IsTrue(Guid.TryParseExact(Path.GetFileName(child), "N", out _));
+            Assert.AreEqual(0, Directory.GetFileSystemEntries(child).Length);
+            using (var process = Process.GetCurrentProcess())
+            {
+                var token = NativeProcessTokenObservation.Read(process.Id);
+                report["DaclPreparationToken"] = token;
+                Assert.AreEqual("READ", token["State"]);
+                Assert.AreNotEqual(2, Convert.ToInt32(token["ElevationType"]), "This probe refuses an elevated token; do not elevate to apply a DACL.");
+                string integrity = Convert.ToString(token["IntegritySid"]);
+                Assert.IsTrue(int.TryParse(integrity.Substring(integrity.LastIndexOf('-') + 1), out int level) && level < 12288,
+                    "This probe refuses high-integrity/system tokens; do not elevate to apply a DACL.");
+            }
+            string parentBefore = json.Serialize(DescribeProbeDirectory(parent));
+            string sourceBefore = json.Serialize(DescribeProbeDirectory(source));
+            var before = Directory.GetAccessControl(child, AccessControlSections.Owner | AccessControlSections.Access);
+            var owner = (SecurityIdentifier)before.GetOwner(typeof(SecurityIdentifier));
+            using (var identity = WindowsIdentity.GetCurrent()) Assert.AreEqual(identity.User, owner);
+            FileAttributes attributes = System.IO.File.GetAttributes(child);
+            report["DaclChildBefore"] = DescribeProbeDirectory(child);
+            report["DaclParentBefore"] = DescribeProbeDirectory(parent);
+            report["DaclSourceBefore"] = DescribeProbeDirectory(source);
+            report["DaclEfsBefore"] = ReadProbeEfsMetadata(child);
+            string access = Path.Combine(child, "dacl-before-access.txt");
+            const string content = "VBAi disposable DACL control; no user data.";
+            System.IO.File.WriteAllText(access, content);
+            Assert.AreEqual(content, System.IO.File.ReadAllText(access));
+            report["DaclSyntheticBeforeVerified"] = true;
+            report["DaclSyntheticEfsBefore"] = ReadProbeEfsMetadata(access);
+
+            var sourceAcl = Directory.GetAccessControl(source, AccessControlSections.Access);
+            var replacement = new DirectorySecurity();
+            replacement.SetAccessRuleProtection(true, false);
+            bool currentFullControl = false;
+            var copied = new List<object>();
+            foreach (FileSystemAccessRule rule in sourceAcl.GetAccessRules(true, true, typeof(SecurityIdentifier)))
+            {
+                var sid = (SecurityIdentifier)rule.IdentityReference;
+                replacement.AddAccessRule(new FileSystemAccessRule(sid, rule.FileSystemRights,
+                    rule.InheritanceFlags, rule.PropagationFlags, rule.AccessControlType));
+                copied.Add(new { Sid = sid.Value, Rights = rule.FileSystemRights.ToString(),
+                    Inheritance = rule.InheritanceFlags.ToString(), Propagation = rule.PropagationFlags.ToString(),
+                    Type = rule.AccessControlType.ToString(), SourceWasInherited = rule.IsInherited });
+                if (sid.Equals(owner) && rule.AccessControlType == AccessControlType.Allow &&
+                    (rule.PropagationFlags & PropagationFlags.InheritOnly) == 0 &&
+                    (rule.FileSystemRights & FileSystemRights.FullControl) == FileSystemRights.FullControl)
+                    currentFullControl = true;
+            }
+            Assert.IsTrue(currentFullControl, "Source-only DACL must already allow current SID FullControl; no extra ACE will be inserted.");
+            report["SourceCurrentSidFullControlVerified"] = true;
+            report["DaclPermissionEscalations"] = 0;
+            report["CopiedSourceRules"] = copied;
+            report["ExpectedProtectedDaclSddl"] = replacement.GetSecurityDescriptorSddlForm(AccessControlSections.Access);
+            Directory.SetAccessControl(child, replacement);
+            var after = Directory.GetAccessControl(child, AccessControlSections.Owner | AccessControlSections.Access);
+            report["DaclChildAfter"] = DescribeProbeDirectory(child);
+            Assert.IsTrue(after.AreAccessRulesProtected);
+            Assert.AreEqual(report["ExpectedProtectedDaclSddl"], after.GetSecurityDescriptorSddlForm(AccessControlSections.Access));
+            Assert.AreEqual(owner, after.GetOwner(typeof(SecurityIdentifier)));
+            Assert.AreEqual(attributes, System.IO.File.GetAttributes(child), "DACL copy must not change EFS or any other attributes.");
+            Assert.AreEqual(parentBefore, json.Serialize(DescribeProbeDirectory(parent)), "Existing target parent changed.");
+            Assert.AreEqual(sourceBefore, json.Serialize(DescribeProbeDirectory(source)), "Existing source parent changed.");
+            report["DaclEfsAfter"] = ReadProbeEfsMetadata(child);
+            report["DaclSyntheticEfsAfter"] = ReadProbeEfsMetadata(access);
+            Assert.AreEqual(json.Serialize(report["DaclEfsBefore"]), json.Serialize(report["DaclEfsAfter"]));
+            Assert.AreEqual(json.Serialize(report["DaclSyntheticEfsBefore"]), json.Serialize(report["DaclSyntheticEfsAfter"]));
+            Assert.AreEqual(content, System.IO.File.ReadAllText(access));
+            report["DaclSyntheticAfterVerified"] = true;
+            report["DaclMutationScope"] = "Only fresh GUID child DACL: source ACEs copied as explicit, inheritance protected. Owner/SACL/token/parents/EFS unchanged. No elevation or permission retry.";
         }
 
         private static IDictionary<string, object> Data(IDictionary<string, object> response)
