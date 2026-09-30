@@ -289,10 +289,13 @@ namespace VBAi
             if (CommandOverride != null) return CommandOverride(args, input, useRepository, allowFailure);
             Progress?.Invoke(UiText.Get("Operation in progress…") + " · " + UiText.Get(args[0] == "push" ? "Push" :
                 args[0] == "fetch" || args[0] == "ls-remote" ? "Fetch" : args[0] == "log" || args[0] == "rev-list" ? "History" : "Git changes"));
-            var all = new List<string> { "-c", "core.hooksPath=" + Path.Combine(directory, "disabled-hooks"), "-c", "commit.gpgSign=false" };
+            var all = new List<string> { "-c", "core.hooksPath=" + Path.Combine(directory, "disabled-hooks"), "-c", "commit.gpgSign=false",
+                "-c", "core.longpaths=true" };
             if (!string.IsNullOrEmpty(account))
                 all.AddRange(new[] { "-c", "credential.helper=", "-c", "credential.helper=manager", "-c", "credential.https://github.com.username=" + account });
-            if (useRepository) all.Add("--git-dir=" + directory);
+            // The child already starts inside this bare cache. Git for Windows rejects an
+            // explicit absolute GIT_DIR over PATH_MAX - 40 even when core.longpaths is enabled.
+            if (useRepository) all.Add("--git-dir=.");
             all.AddRange(args);
             var start = new ProcessStartInfo("git.exe", string.Join(" ", all.Select(Quote))) {
                 UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true,

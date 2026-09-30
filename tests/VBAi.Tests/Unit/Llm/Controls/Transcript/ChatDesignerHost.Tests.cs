@@ -9,6 +9,45 @@ namespace VBAi.Tests.Unit
     public sealed class ChatDesignerHostContractTests
     {
         [STATestMethod]
+        public void FrenchWelcomeRetainsAllActionsWhenTranscriptWidthChanges()
+        {
+            using (var locale = new LocalizationScope())
+            using (var theme = new ThemeScope())
+            {
+                LocalizationScope.Set("fr-FR");
+                using (var card = new ChatWelcomeView())
+                using (var host = new ChatDesignerHost(card) { VerticalAlignment = System.Windows.VerticalAlignment.Top })
+                {
+                    var panel = new System.Windows.Controls.Grid();
+                    panel.Children.Add(host);
+                    var window = new System.Windows.Window { Content = panel, Width = 449, Height = 500, ShowInTaskbar = false };
+                    try
+                    {
+                        window.Show();
+                        foreach (int width in new[] { 409, 300, 520, 409 })
+                        {
+                            panel.Width = width;
+                            window.UpdateLayout(); Application.DoEvents(); window.UpdateLayout();
+                            var action = card.improve.RectangleToScreen(card.improve.ClientRectangle);
+                            for (Control parent = card.improve.Parent; parent != null; parent = parent.Parent)
+                            {
+                                Assert.IsTrue(parent.RectangleToScreen(parent.ClientRectangle).Contains(action),
+                                    "The final welcome action is clipped by " + parent.GetType().Name + " at width " + width +
+                                    "; action=" + action + "; parent=" + parent.RectangleToScreen(parent.ClientRectangle));
+                                if (ReferenceEquals(parent, card)) break;
+                            }
+                            double hostBottom = host.PointToScreen(new System.Windows.Point(0, host.ActualHeight)).Y;
+                            Assert.IsTrue(action.Bottom <= hostBottom + 1,
+                                "The native card extends beyond its WPF transcript slot at width " + width +
+                                "; action bottom=" + action.Bottom + "; host bottom=" + hostBottom);
+                        }
+                    }
+                    finally { window.Close(); }
+                }
+            }
+        }
+
+        [STATestMethod]
         public void AdapterBoundsWidthHeightAndRejectsMissingOrDisposedChildren()
         {
             using(var card=new ChatMessageView())

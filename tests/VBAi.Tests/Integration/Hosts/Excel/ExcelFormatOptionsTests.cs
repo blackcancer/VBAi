@@ -9,12 +9,13 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration.Hosts.Excel
 {
-    /// <summary>Qualification reproductible des choix Format via le vrai bridge Excel, avec restauration globale garantie.</summary>
+    /// <summary>Qualification des choix Format via le vrai bridge Excel, avec restauration vérifiée et preuves conservées en cas d'échec.</summary>
     [TestClass, TestCategory("Excel")]
     public sealed class ExcelFormatOptionsTests
     {
         /// <summary>Conserve les instantanés avant mutation même si la restauration échoue.</summary>
         public TestContext TestContext { get; set; }
+        private int evidenceSequence;
         /// <summary>Matrice fixée avant exécution : police, taille native ou refus, palettes, catégorie distincte, marge, garde et restauration.</summary>
         private static readonly string[] Scenarios = { "exact font", "size catalogue or honest refusal", "foreground", "background", "indicator",
             "nondefault category foreground", "margin indicator", "stale version refuses", "full options version restored" };
@@ -85,15 +86,30 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                 catch (Exception error) { primaryFailure = error; throw; }
                 finally
                 {
+                    var restorationErrors = new List<Exception>();
+                    // Preserve the earliest value for each preference, then compensate each distinct entry once.
+                    // A failed compensation must not prevent independent preferences from being restored.
+                    foreach (var item in restore.GroupBy(x => Tuple.Create(x.Item1, x.Item3)).Select(x => x.First()).Reverse())
+                    {
+                        try { Write(excel, tab, item.Item1, item.Item2, item.Item3, restoring: true); }
+                        catch (Exception error)
+                        {
+                            restorationErrors.Add(new InvalidOperationException("Restoration failed for " + item.Item1 +
+                                " (category: " + (item.Item3 ?? "current") + "); this entry was not retried.", error));
+                        }
+                    }
                     try
                     {
-                        foreach (var item in restore.AsEnumerable().Reverse()) Write(excel, tab, item.Item1, item.Item2, item.Item3);
-                        Assert.AreEqual(baseline["OptionsVersion"], Read(excel)["OptionsVersion"], "Every category and preference must return to the complete baseline.");
+                        var restored = Read(excel);
+                        AttachEvidence(excel.ProcessId, "restoration-readback", new { BaselineVersion = baseline["OptionsVersion"],
+                            Readback = restored, EntryFailures = restorationErrors.Select(x => x.ToString()).ToArray() });
+                        Assert.AreEqual(baseline["OptionsVersion"], restored["OptionsVersion"], "Every category and preference must return to the complete baseline.");
                     }
-                    catch (Exception restorationError)
+                    catch (Exception error) { restorationErrors.Add(error); }
+                    if (restorationErrors.Count != 0)
                     {
-                        if (primaryFailure != null) throw new AggregateException("The native scenario and its restoration both failed; baseline attached.", primaryFailure, restorationError);
-                        throw;
+                        if (primaryFailure != null) restorationErrors.Insert(0, primaryFailure);
+                        throw new AggregateException("Native scenario/restoration failures; baseline and available diagnostics attached. Each distinct restoration entry was attempted at most once.", restorationErrors);
                     }
                 }
             }
@@ -113,11 +129,56 @@ namespace VBAi.Tests.Integration.Hosts.Excel
         /// <summary>Extrait les seules valeurs proposées par le catalogue natif.</summary>
         private static string[] Choices(IDictionary<string, object> control) => ((object[])control["Choices"]).Cast<string>().ToArray();
         /// <summary>Écrit après inspection fraîche; la catégorie optionnelle appartient à cette unique mutation.</summary>
-        private static void Write(ExcelVbeFixture excel, string tab, string property, object value, string category)
+        private void Write(ExcelVbeFixture excel, string tab, string property, object value, string category, bool restoring = false)
         {
             var current = Read(excel);
-            var result = Data(excel.Command(new { Command = "set_vbe_option", Pane = tab, Property = property, Value = value, Query = category, ExpectedOptionsVersion = current["OptionsVersion"] }));
-            Assert.AreEqual(true, result["ControlValueVerified"]); Assert.AreEqual(true, result["DialogClosed"]);
+            if (restoring)
+            {
+                var format = Format(current);
+                IDictionary<string, object> control;
+                if (!string.IsNullOrEmpty(category))
+                {
+                    var categoryState = ((object[])format["FormatCategories"]).Select(VbeBridgeClient.Object)
+                        .Single(x => (string)x["Category"] == category);
+                    control = ((object[])categoryState["Palettes"]).Select(VbeBridgeClient.Object)
+                        .Single(x => (string)x["Name"] == property);
+                }
+                else control = Find(format, property);
+                object expected = value is bool check ? (object)(check ? "On" : "Off") : value;
+                if (Equals(control["Value"], expected)) return;
+            }
+            var request = new { Command = "set_vbe_option", Pane = tab, Property = property, Value = value,
+                Query = category, ExpectedOptionsVersion = current["OptionsVersion"] };
+            IDictionary<string, object> response = null;
+            try
+            {
+                response = excel.Command(request);
+                var result = Data(response);
+                Assert.AreEqual(true, result["ControlValueVerified"]); Assert.AreEqual(true, result["DialogClosed"]);
+            }
+            catch (Exception failure)
+            {
+                // This is observation only, including after uncertain transport outcomes; never resend the mutation.
+                IDictionary<string, object> after = null;
+                string afterReadError = null;
+                try { after = excel.Command("read_vbe_options"); }
+                catch (Exception error) { afterReadError = error.ToString(); }
+                try
+                {
+                    AttachEvidence(excel.ProcessId, restoring ? "restoration-failure" : "write-failure",
+                        new { Before = current, Request = request, Response = response, Failure = failure.ToString(),
+                            IndependentAfterRead = after, AfterReadError = afterReadError, MutationRetried = false });
+                }
+                catch (Exception error) { TestContext.WriteLine("Could not attach options diagnostic: " + error); }
+                throw;
+            }
+        }
+        /// <summary>Conserve les preuves hors du processus natif, sans modifier ni remplacer la baseline originale.</summary>
+        private void AttachEvidence(int processId, string kind, object evidence)
+        {
+            string path = Path.Combine(TestContext.TestRunDirectory, "options-" + kind + "-" + processId + "-" + (++evidenceSequence) + ".json");
+            File.WriteAllText(path, new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 }.Serialize(evidence), new UTF8Encoding(false));
+            TestContext.AddResultFile(path);
         }
     }
 }

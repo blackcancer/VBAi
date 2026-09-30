@@ -120,6 +120,9 @@ namespace VBAi
         /// <summary>Dossier privé auquel appartient le fil ; nul pour un ancien fil extérieur.</summary>
         /// <value>Chemin du stockage Codex ayant créé ce fil.</value>
         public string CodexThreadHome { get; set; }
+        /// <summary>Empreinte des consignes développeur effectivement appliquées au fil Codex.</summary>
+        /// <value>SHA-256 local, ou nul lorsque les consignes du fil ne sont pas connues.</value>
+        public string CodexDeveloperInstructionsHash { get; set; }
         /// <summary>Obtient ou définit le contexte nécessaire pour reprendre la conversation.</summary>
         /// <value>Contexte de reprise ou nul.</value>
         public string ResumeContext { get; set; }

@@ -15,6 +15,12 @@ namespace VBAi.Tests.Integration
         [STATestMethod]
         public void SaveSynchronizesAndPersistsTargetWorkbookAndPreservesCodeAfterCancellationOrFailure()
         {
+            ExcelScenarioLifetime.Run(RunScenario);
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static void RunScenario(ExcelScenarioLifetime lifetime)
+        {
             if (Environment.GetEnvironmentVariable("VBAI_EDITOR_EXCEL_TEST") != "1") Assert.Inconclusive("Explicit disposable Excel opt-in required.");
             if (Process.GetProcessesByName("EXCEL").Length != 0) Assert.Inconclusive("Close existing Excel processes before this isolated test.");
             dynamic excel = null, book = null, other = null;
@@ -24,6 +30,7 @@ namespace VBAi.Tests.Integration
                 Directory.CreateDirectory(fixture.Root);
                 string path = Path.Combine(fixture.Root, "SaveTarget.xlsm");
                 excel = Activator.CreateInstance(Type.GetTypeFromProgID("Excel.Application"));
+                lifetime.Capture((object)excel);
                 excel.Visible = true; excel.DisplayAlerts = false; excel.EnableEvents = false;
                 book = excel.Workbooks.Add();
                 dynamic component = book.VBProject.VBComponents.Add(1); component.Name = "SaveFixture";
@@ -43,14 +50,27 @@ namespace VBAi.Tests.Integration
                     window.NativeHostSaved = hostSaved;
                     window.Drafts = new EditorDraftStore(fixture.Root);
                     var doc = MonacoRuntimeTests.Wait(window.OpenModule(adapter)); window.Show();
-                    MonacoRuntimeTests.Wait(() => window.Ready);
-                    UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer").Stop();
+                    var synchronizationTimer = UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer");
+                    var streamTimer = UiInvoke.Field<System.Windows.Forms.Timer>(window, "streamTimer");
+                    // Ready precedes asynchronous initial rendering and deferred timer startup.
+                    // Own the save boundary only after startup; do not let automatic flushes
+                    // make a save test pass before SaveDocument performs synchronization.
+                    MonacoRuntimeTests.Wait(() => window.Ready && synchronizationTimer.Enabled && streamTimer.Enabled && !UiInvoke.Field<bool>(window, "busy"));
+                    synchronizationTimer.Stop(); streamTimer.Stop();
                     MonacoRuntimeTests.Wait(window.Script("reveal", 3, 1));
                     MonacoRuntimeTests.Wait(window.Script("insert", "    ' save fixture\n"));
+                    MonacoRuntimeTests.Wait(() => doc.Dirty && doc.Text.Contains("save fixture"));
+                    Assert.IsFalse(adapter.Read().Contains("save fixture"), "This scenario requires a draft that SaveDocument must synchronize itself.");
                     var nativeSave = window.NativeSave;
                     // Returning without changing Saved/path models dismissal of the native dialog.
-                    window.NativeSave = module => { };
-                    Assert.ThrowsException<InvalidOperationException>(() => MonacoRuntimeTests.Wait(window.SaveDocument(doc.Id)));
+                    int cancellationCalls = 0;
+                    window.NativeSave = module => {
+                        cancellationCalls++;
+                        StringAssert.Contains(adapter.Read(), "save fixture", "Native Save must only be invoked after synchronization.");
+                    };
+                    var cancellation = Assert.ThrowsException<InvalidOperationException>(() => MonacoRuntimeTests.Wait(window.SaveDocument(doc.Id)));
+                    StringAssert.Contains(cancellation.Message, "Saving was cancelled or not completed");
+                    Assert.AreEqual(1, cancellationCalls, "A pending-edit refusal must not count as an exercised native-save cancellation.");
                     StringAssert.Contains(doc.Text, "save fixture");
                     StringAssert.Contains(adapter.Read(), "save fixture");
                     window.NativeSave = module => { throw new IOException("simulated host failure"); };
@@ -75,6 +95,8 @@ namespace VBAi.Tests.Integration
                     window.NativeSave = module => { saves++; nativeSave(module); };
                     MonacoRuntimeTests.Wait(window.Script("reveal", 3, 1));
                     MonacoRuntimeTests.Wait(window.Script("insert", "    ' persisted by native save\n"));
+                    MonacoRuntimeTests.Wait(() => doc.Dirty && doc.Text.Contains("persisted by native save"));
+                    Assert.IsFalse(adapter.Read().Contains("persisted by native save"), "The Monaco Save action must perform the native synchronization.");
                     window.Activate(); window.Browser.Focus(); SetForegroundWindow(window.Handle);
                     MonacoRuntimeTests.Wait(() => window.ContainsFocus);
                     MonacoRuntimeTests.Wait(window.Script("command", "vbai.save"));
@@ -99,8 +121,7 @@ namespace VBAi.Tests.Integration
             {
                 if (book != null) { try { book.Close(false); } catch (COMException) { } Marshal.FinalReleaseComObject((object)book); }
                 if (other != null) { try { other.Close(false); } catch (COMException) { } Marshal.FinalReleaseComObject((object)other); }
-                if (excel != null) { try { excel.Quit(); } catch (COMException) { } Marshal.FinalReleaseComObject((object)excel); }
-                GC.Collect(); GC.WaitForPendingFinalizers();
+                if (excel != null) { try { if (lifetime.OwnsApplication) excel.Quit(); } catch (COMException) { } Marshal.FinalReleaseComObject((object)excel); }
             }
         }
     }

@@ -15,6 +15,12 @@ namespace VBAi.Tests.Integration
         [STATestMethod]
         public void DisposableExcelModuleRoundTripsRealMonacoChangesAndDetectsConcurrentNativeEdits()
         {
+            ExcelScenarioLifetime.Run(RunScenario);
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static void RunScenario(ExcelScenarioLifetime lifetime)
+        {
             if (Environment.GetEnvironmentVariable("VBAI_EDITOR_EXCEL_TEST") != "1") Assert.Inconclusive("Explicit disposable Excel opt-in required.");
             if (Process.GetProcessesByName("EXCEL").Length != 0) Assert.Inconclusive("Close existing Excel processes before this isolated test.");
             dynamic excel = null, workbook = null;
@@ -22,6 +28,7 @@ namespace VBAi.Tests.Integration
             try
             {
                 excel = Activator.CreateInstance(Type.GetTypeFromProgID("Excel.Application"));
+                lifetime.Capture((object)excel);
                 excel.Visible = true; excel.DisplayAlerts = false; excel.EnableEvents = false;
                 excel.VBE.MainWindow.Visible = true;
                 workbook = excel.Workbooks.Add();
@@ -275,8 +282,7 @@ namespace VBAi.Tests.Integration
             finally
             {
                 if ((object)workbook != null) { try { workbook.Close(false); } catch (Exception cleanup) { Console.WriteLine("Workbook cleanup: " + cleanup.Message); } Marshal.FinalReleaseComObject((object)workbook); }
-                if ((object)excel != null) { try { excel.Quit(); } catch (Exception cleanup) { Console.WriteLine("Excel cleanup: " + cleanup.Message); } Marshal.FinalReleaseComObject((object)excel); }
-                GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); GC.WaitForPendingFinalizers();
+                if ((object)excel != null) { try { if (lifetime.OwnsApplication) excel.Quit(); } catch (Exception cleanup) { Console.WriteLine("Excel cleanup: " + cleanup.Message); } Marshal.FinalReleaseComObject((object)excel); }
             }
         }
     }

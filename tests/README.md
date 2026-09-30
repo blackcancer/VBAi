@@ -98,6 +98,52 @@ native-code coverage.
 
 ## Provider qualification
 
+`VBAi_RUN_OLLAMA_TESTS=1` enables `TestCategory=Ollama` against the loopback
+server through the production HTTP client. `VBAi_TEST_OLLAMA_MODEL` selects an
+already-installed model (default `qwen2.5:3b`). These synthetic scenarios cover
+streamed text, a harmless tool roundtrip, cancellation and a subsequent request;
+they do not execute native VBE tools or read saved provider settings. Remove the
+opt-in variables after the run.
+
+`VBAi_RUN_OLLAMA_UI_TESTS=1` enables `TestCategory=OllamaUi` with the same
+model selector. It shows the real chat controls and checks send, rendered
+streaming, Stop and a subsequent completed response through the production
+loopback HTTP client. Settings and history are isolated; the VBE project is
+simulated and native tools are refused. This qualifies a detached chat workflow,
+not Office or SOLIDWORKS integration. Run it separately from native host UI tests
+to avoid competing for focus, then remove its opt-in variable.
+
+`VBAi_RUN_OLLAMA_EXCEL_TESTS=1` enables `TestCategory=OllamaExcel` using the
+fixed loopback endpoint and already-installed `qwen2.5:3b` model. It creates a disposable Excel module containing a
+random marker absent from the prompt, dispatches the model's `read_module` call
+through the real project-bound VBE tools, and verifies the final answer and
+unchanged source and normal exit of its owned Excel process. No macro runs.
+This covers production provider/tools/session code dispatching through native
+Excel COM from the test process, not the installed bridge or embedded assistant UI.
+Run it separately from other native host tests
+and remove the opt-in afterwards.
+
+Existing-account checks require both `VBAi_CONNECTED_PROVIDER_TESTS=1` and
+`VBAi_CONNECTED_SOURCE_TESTS=1`. The Git read check additionally requires
+`VBAi_TEST_GITHUB_MANIFEST` identifying an explicitly authorized synthetic private
+repository (URL, ID, verified ownership/private state and expected main commit).
+The Codex check requires `VBAi_TEST_SOLIDWORKS_MANIFEST` with `OwnedDisposable`,
+absolute `Path`, `FileSha256`, `Module`, `ModuleSha256`, `Marker`, `Pid` and `Mvid`.
+It accepts only the manifested disposable SWP under the qualification artifacts,
+uses an already-connected account and never signs in or copies authentication state.
+
+Native UserForm GitHub qualification is a separate explicit scope:
+`VBAi_RUN_USERFORM_GITHUB_TESTS=1`, `VBAi_RUN_EXCEL_TESTS=1`, the Git manifest and
+an absolute `VBAi_TEST_USERFORM_GIT_OUTPUT`. The fixture is constrained to the
+maintainer-authorized retained qualification repository and creates a dedicated
+branch containing synthetic exports. It verifies controls, code and FRX bytes,
+retains backups and captures the owned designer windows for visual review.
+`VBAi_RUN_USERFORM_CORRUPTION_TESTS=1` separately enables the local-only malformed
+FRX diagnostic; it must not publish corrupt content. Run either scenario only
+while it owns the desktop. Normal host shutdown is part of acceptance; a verified
+transfer does not excuse a subsequent crash. These fixtures are not enabled by
+ordinary connected-account opt-ins.
+
 Local provider tests use simulated HTTP or CLI transports. Do not use personal
 credentials, paid API calls or private project data without explicit permission.
 A successful model catalog lookup alone does not qualify streamed responses,

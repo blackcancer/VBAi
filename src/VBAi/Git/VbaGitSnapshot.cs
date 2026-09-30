@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -167,10 +168,12 @@ namespace VBAi
             if (Manifest == null || Manifest.Format != 1 || Manifest.Components == null || Manifest.Components.Length > 1024 || Manifest.References == null)
                 throw new InvalidOperationException("Manifeste VBA invalide ou version non prise en charge.");
             var expected = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var component in Manifest.Components)
             {
                 if (component == null) throw new InvalidOperationException(UiText.Get("Component missing from the manifest."));
                 ValidateName(component.Name);
+                if (!names.Add(component.Name)) throw new InvalidOperationException(UiText.Get("Duplicate component name."));
                 if (!expected.Add(component.FileName)) throw new InvalidOperationException(UiText.Get("Duplicate component name."));
                 if (component.HasResources && (component.Type != 3 || !expected.Add(component.Name + ".frx")))
                     throw new InvalidOperationException("Ressources de formulaire invalides.");
@@ -190,6 +193,23 @@ namespace VBAi
                     throw new InvalidOperationException(UiText.Get(".vba files contain only the visible code of the host module."));
                 if (component.Type == 3)
                 {
+                    byte[] resources = null;
+                    if (component.HasResources && (!Files.TryGetValue(component.Name + ".frx", out resources) || resources.Length == 0))
+                        throw new InvalidOperationException("Form resources are missing, empty or incorrectly cased: " + component.Name);
+                    // Only designer metadata contains resource offsets. VBA code and
+                    // comments following VB_Name are not resource declarations.
+                    int metadataLength = Regex.Match(text, "^Attribute VB_Name = ", RegexOptions.Multiline).Index;
+                    string metadata = text.Substring(0, metadataLength);
+                    foreach (Match resource in Regex.Matches(metadata, "=\\s*\"([^\"\\r\\n]+)\"[ \\t]*:[ \\t]*([^\\r\\n]*)"))
+                    {
+                        uint offset;
+                        if (!component.HasResources || resource.Groups[1].Value != component.Name + ".frx" ||
+                            !uint.TryParse(resource.Groups[2].Value.Trim(), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out offset) ||
+                            offset >= resources.Length)
+                            throw new InvalidOperationException("Invalid or out-of-range form resource offset: " + component.Name);
+                    }
+                    // These bounds are necessary, not a complete MS-OFORMS parser.
+                    // Preserve resource bytes and the existing import/recovery guards.
                     // A form must never address a companion file outside its snapshot.
                     foreach (Match match in Regex.Matches(text, "\"([^\"\\r\\n]+\\.frx)\"", RegexOptions.IgnoreCase))
                         if (!component.HasResources || !string.Equals(match.Groups[1].Value, component.Name + ".frx", StringComparison.OrdinalIgnoreCase))

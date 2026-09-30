@@ -21,6 +21,23 @@ namespace VBAi.Tests.Integration
             return MonacoRuntimeTests.Wait(window.Browser.CoreWebView2.ExecuteScriptAsync("window.languageProbe"));
         }
         private static string Read(ModernEditorWindow window, string id) => MonacoRuntimeTests.Wait(window.Script("read", id));
+        private static string WaitForReferenceSymbol(ModernEditorWindow window, string operation, string id,
+            int line, int column, string symbol, bool present)
+        {
+            // The native catalog has an intentional 1000 ms TTL. Observe real refresh without
+            // changing its clock, forcing invalidation or accepting a null language response.
+            var clock = Stopwatch.StartNew();
+            string payload = null;
+            MonacoRuntimeTests.Wait(() =>
+            {
+                payload = Query(window, operation, id, line, column);
+                var reply = Json.DeserializeObject(payload) as System.Collections.Generic.IDictionary<string, object>;
+                return reply != null && reply.TryGetValue("result", out var result) && result != null && payload.Contains(symbol) == present;
+            }, 3);
+            Assert.IsTrue(clock.ElapsedMilliseconds <= 3000, "Reference refresh exceeded 3 seconds: " + clock.ElapsedMilliseconds);
+            Console.WriteLine("REFERENCE REFRESH: symbol=" + symbol + "; present=" + present + "; elapsedMs=" + clock.ElapsedMilliseconds);
+            return payload;
+        }
         private static void Draft(ModernEditorWindow window, string id, string text)
         {
             var state = (System.Collections.Generic.IDictionary<string, object>)Json.DeserializeObject(Read(window, id));
@@ -30,6 +47,12 @@ namespace VBAi.Tests.Integration
         [STATestMethod]
         public void LiveReferencesHoverAndAutomaticEditingWorkInTheVisibleExcelRenderer()
         {
+            ExcelScenarioLifetime.Run(RunScenario);
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static void RunScenario(ExcelScenarioLifetime lifetime)
+        {
             if (Environment.GetEnvironmentVariable("VBAI_EDITOR_LANGUAGE_EXCEL_TEST") != "1") Assert.Inconclusive("Explicit isolated Excel language test opt-in required.");
             if (Process.GetProcessesByName("EXCEL").Length != 0) Assert.Inconclusive("An existing user Excel session must be preserved.");
             dynamic excel = null, workbook = null;
@@ -37,6 +60,7 @@ namespace VBAi.Tests.Integration
             try
             {
                 excel = Activator.CreateInstance(Type.GetTypeFromProgID("Excel.Application"));
+                lifetime.Capture((object)excel);
                 excel.Visible = true; excel.DisplayAlerts = false; excel.EnableEvents = false;
                 workbook = excel.Workbooks.Add(); excel.VBE.MainWindow.Visible = true;
                 dynamic project = workbook.VBProject;
@@ -50,8 +74,11 @@ namespace VBAi.Tests.Integration
                     window.Show(); MonacoRuntimeTests.Wait(() => window.Ready);
                     MonacoRuntimeTests.Wait(() => MonacoRuntimeTests.Wait(window.Script("snapshots")).Contains(document.Id));
                     var synchronizationTimer = UiInvoke.Field<System.Windows.Forms.Timer>(window, "timer");
-                    MonacoRuntimeTests.Wait(() => synchronizationTimer.Enabled);
-                    synchronizationTimer.Stop();
+                    var streamTimer = UiInvoke.Field<System.Windows.Forms.Timer>(window, "streamTimer");
+                    MonacoRuntimeTests.Wait(() => synchronizationTimer.Enabled && streamTimer.Enabled && !UiInvoke.Field<bool>(window, "busy"));
+                    // Reconciliation and streamed typing have independent synchronization timers.
+                    // Isolate language/renderer assertions, then exercise an explicit native flush.
+                    synchronizationTimer.Stop(); streamTimer.Stop();
                     foreach (var scenario in new[] {
                         new[] { "Dim app As Excel.Application", "app.", "Workbooks", "WorksheetFunction" },
                         new[] { "Dim sheet As Excel.Worksheet", "sheet.Range(\"A1\").", "Value2", "Font" },
@@ -80,9 +107,9 @@ namespace VBAi.Tests.Integration
                         string officePath = Array.Find(officePaths, File.Exists);
                         Assert.IsNotNull(officePath, "Installed Office type library must be available for the explicit reference test.");
                         dynamic officeReference = project.References.AddFromFile(officePath);
-                        Assert.IsTrue(Query(window, "languageInspect", document.Id, 2, 2).Contains("\"Name\":\"msoTrue\""));
+                        WaitForReferenceSymbol(window, "languageInspect", document.Id, 2, 2, "\"Name\":\"msoTrue\"", true);
                         project.References.Remove(officeReference);
-                        Assert.IsFalse(Query(window, "languageInspect", document.Id, 2, 2).Contains("\"Name\":\"msoTrue\""));
+                        WaitForReferenceSymbol(window, "languageInspect", document.Id, 2, 2, "\"Name\":\"msoTrue\"", false);
                     }
                     Draft(window, document.Id, "Sub Demo()\nVBA.Strings.Left$\nEnd Sub");
                     StringAssert.Contains(Query(window, "languageHover", document.Id, 2, 17), "Strings.Left$");
@@ -91,18 +118,20 @@ namespace VBAi.Tests.Integration
                     string missing = Query(window, "languageInspect", document.Id, 4, 16);
                     Assert.IsFalse(missing.Contains("\"Name\":\"Add\""));
                     dynamic reference = project.References.AddFromFile(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "scrrun.dll"));
-                    string loaded = Query(window, "languageInspect", document.Id, 4, 16);
+                    string loaded = WaitForReferenceSymbol(window, "languageInspect", document.Id, 4, 16, "\"Name\":\"Add\"", true);
                     StringAssert.Contains(loaded, "\"Name\":\"Add\""); StringAssert.Contains(loaded, "Scripting"); StringAssert.Contains(loaded, " As ");
                     project.References.Remove(reference);
-                    Assert.IsFalse(Query(window, "languageInspect", document.Id, 4, 16).Contains("\"Name\":\"Add\""));
+                    WaitForReferenceSymbol(window, "languageInspect", document.Id, 4, 16, "\"Name\":\"Add\"", false);
                     Draft(window, document.Id, "Sub Demo()\nDebug.Print\nEnd Sub");
                     StringAssert.Contains(Query(window, "languageInspect", document.Id, 2, 7), "\"Name\":\"Print\"");
                     StringAssert.Contains(Query(window, "languageHover", document.Id, 2, 10), "Immediate window");
                     reference = project.References.AddFromFile(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "scrrun.dll"));
                     Draft(window, document.Id, completionText.Replace("dictionary.\n", "dictionary.Add\n"));
-                    string hover = Query(window, "languageHover", document.Id, 4, 18);
+                    string hover = WaitForReferenceSymbol(window, "languageHover", document.Id, 4, 18, "Scripting", true);
                     StringAssert.Contains(hover, "Scripting"); StringAssert.Contains(hover, "scrrun.dll");
                     project.References.Remove(reference);
+                    Assert.AreEqual(nativeBefore, (string)component.CodeModule.Lines[1, component.CodeModule.CountOfLines],
+                        "Completion, hover and reference inspection must not rewrite native VBA.");
                     Draft(window, document.Id, "Sub Generated()");
                     MonacoRuntimeTests.Wait(window.Script("reveal", 1, 16)); MonacoRuntimeTests.Wait(window.Script("type", "\n"));
                     MonacoRuntimeTests.Wait(() => Read(window, document.Id).Contains("End Sub"));
@@ -120,14 +149,30 @@ namespace VBAi.Tests.Integration
                     MonacoRuntimeTests.Wait(() => Read(window, document.Id).Contains("If (value = 1) Then"));
                     state = (System.Collections.Generic.IDictionary<string, object>)Json.DeserializeObject(Read(window, document.Id));
                     StringAssert.Contains((string)state["text"], "        Debug.Print \"value(then)\" ' keep");
-                    Assert.AreEqual(nativeBefore, (string)component.CodeModule.Lines[1, component.CodeModule.CountOfLines], "Language services must not execute or rewrite native VBA during this inspection.");
+                    Assert.IsFalse(synchronizationTimer.Enabled); Assert.IsFalse(streamTimer.Enabled);
+                    Assert.AreEqual(nativeBefore, (string)component.CodeModule.Lines[1, component.CodeModule.CountOfLines],
+                        "Renderer formatting and generated blocks remain drafts while both synchronization timers are stopped.");
+                    MonacoRuntimeTests.Wait(() => !UiInvoke.Field<bool>(window, "busy"));
+                    MonacoRuntimeTests.Wait(window.ProcessDocuments(true));
+                    Assert.IsFalse(document.Dirty, "The explicit native synchronization must finish.");
+                    Assert.IsFalse(document.Conflict);
+                    string nativeAfter = component.CodeModule.Lines[1, component.CodeModule.CountOfLines];
+                    const string canonicalNative = "Sub Demo()\n    If (Value = 1) Then\n        Debug.Print \"value(then)\" ' keep\n    End If\nEnd Sub";
+                    Assert.AreEqual(canonicalNative, EditorDocument.Normalize(nativeAfter).TrimEnd('\n'),
+                        "VBE canonicalizes identifiers and keywords while preserving the exact string and comment.");
+                    Assert.AreEqual(EditorDocument.Normalize(nativeAfter), document.Text,
+                        "The managed draft must reconcile with the actual native readback.");
+                    var reconciled = (System.Collections.Generic.IDictionary<string, object>)Json.DeserializeObject(Read(window, document.Id));
+                    Assert.AreEqual(document.Text, (string)reconciled["text"],
+                        "The visible renderer must receive VBE's canonical source after synchronization.");
+                    Assert.AreEqual(2, (int)project.Mode, "Language and formatting operations must leave VBA in design mode.");
                     window.Close(); MonacoRuntimeTests.Wait(() => window.IsDisposed);
                 }
             }
             finally
             {
-                if ((object)workbook != null) { workbook.Close(false); Marshal.FinalReleaseComObject((object)workbook); }
-                if ((object)excel != null) { excel.Quit(); Marshal.FinalReleaseComObject((object)excel); }
+                if ((object)workbook != null) { try { workbook.Close(false); } catch (COMException cleanup) { Console.WriteLine("Workbook cleanup: " + cleanup.Message); } Marshal.FinalReleaseComObject((object)workbook); }
+                if ((object)excel != null) { try { if (lifetime.OwnsApplication) excel.Quit(); } catch (COMException cleanup) { Console.WriteLine("Excel cleanup: " + cleanup.Message); } Marshal.FinalReleaseComObject((object)excel); }
             }
         }
     }

@@ -106,8 +106,97 @@ namespace VBAi.Tests.Unit
         {
             using (var scope = new LlmBoundaryScope())
             {
-                LlmChatClient client = null; var handler = new LlmHttpFixture(Answer); handler.BeforeResponse = () => client.Dispose(); using (client = new LlmChatClient(LlmBoundaryScope.Provider("Ollama"), new LlmSettings(), "model", handler)) { await Assert.ThrowsExceptionAsync<ArgumentException>(() => client.CompleteAsync(History(), Tools())); Assert.AreEqual(1, handler.Uris.Count); }
+                LlmChatClient client = null;
+                var stream = new GeneratedHttpBody();
+                var handler = new StreamBodyHandler(stream, HttpStatusCode.OK) { BeforeResponse = () => client.Dispose() };
+                using (client = new LlmChatClient(LlmBoundaryScope.Provider("Ollama"), new LlmSettings(), "model", handler))
+                {
+                    client.TextDelta = _ => Assert.Fail("A cancelled request must not publish provider content.");
+                    await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => client.CompleteAsync(History(), Tools()));
+                    Assert.AreEqual(1, handler.RequestCount, "Cancellation must not retry the request.");
+                    Assert.AreEqual(0, stream.BytesRead, "Cancellation at the headers boundary must be observed before reading the body.");
+                    Assert.IsTrue(stream.Disposed, "The HTTP response must close its body even when cancellation precedes reading.");
+                }
             }
+        }
+        [TestMethod]
+        public async Task OversizedCompletionAndCatalogueBodiesStopBeforeTransportBuffering()
+        {
+            using (var scope = new LlmBoundaryScope())
+            foreach (bool catalogue in new[] { false, true })
+            {
+                var stream = new GeneratedHttpBody();
+                using (var handler = new StreamBodyHandler(stream, HttpStatusCode.OK))
+                {
+                    var provider = LlmBoundaryScope.Provider("Ollama");
+                    if (catalogue)
+                        await Assert.ThrowsExceptionAsync<System.IO.InvalidDataException>(() => LlmChatClient.ListModelsAsync(provider, new LlmSettings(), handler));
+                    else
+                        using (var client = new LlmChatClient(provider, new LlmSettings(), "model", handler))
+                            await Assert.ThrowsExceptionAsync<System.IO.InvalidDataException>(() => client.CompleteAsync(History(), Tools()));
+                    Assert.IsTrue(stream.BytesRead <= 10 * 1024 * 1024 + 1, "An oversized HTTP body must not be buffered before the limit is checked.");
+                    Assert.IsTrue(stream.Disposed);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task FailedHttpStatusDoesNotReadAnUntrustedBody()
+        {
+            using (var scope = new LlmBoundaryScope())
+            foreach (bool catalogue in new[] { false, true })
+            {
+                var stream = new GeneratedHttpBody();
+                using (var handler = new StreamBodyHandler(stream, HttpStatusCode.Forbidden))
+                {
+                    var provider = LlmBoundaryScope.Provider("Ollama");
+                    if (catalogue)
+                        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => LlmChatClient.ListModelsAsync(provider, new LlmSettings(), handler));
+                    else
+                        using (var client = new LlmChatClient(provider, new LlmSettings(), "model", handler))
+                            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => client.CompleteAsync(History(), Tools()));
+                    Assert.AreEqual(0, stream.BytesRead);
+                    Assert.IsTrue(stream.Disposed);
+                }
+            }
+        }
+
+        private sealed class StreamBodyHandler : HttpMessageHandler
+        {
+            private readonly System.IO.Stream stream;
+            private readonly HttpStatusCode status;
+            internal Action BeforeResponse;
+            internal int RequestCount;
+            internal StreamBodyHandler(System.IO.Stream stream, HttpStatusCode status) { this.stream = stream; this.status = status; }
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, System.Threading.CancellationToken cancellationToken)
+            {
+                RequestCount++; BeforeResponse?.Invoke();
+                return Task.FromResult(new HttpResponseMessage(status) { Content = new StreamContent(stream) });
+            }
+        }
+
+        private sealed class GeneratedHttpBody : System.IO.Stream
+        {
+            internal int BytesRead;
+            internal bool Disposed;
+            public override bool CanRead => !Disposed;
+            public override bool CanSeek => false;
+            public override bool CanWrite => false;
+            public override long Length => 10 * 1024 * 1024 + 8192;
+            public override long Position { get => BytesRead; set => throw new NotSupportedException(); }
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                int read = (int)Math.Min(count, Length - BytesRead);
+                for (int i = 0; i < read; i++) buffer[offset + i] = (byte)'x';
+                BytesRead += read; return read;
+            }
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken)
+            { cancellationToken.ThrowIfCancellationRequested(); return Task.FromResult(Read(buffer, offset, count)); }
+            protected override void Dispose(bool disposing) { Disposed = true; base.Dispose(disposing); }
+            public override void Flush() => throw new NotSupportedException();
+            public override long Seek(long offset, System.IO.SeekOrigin origin) => throw new NotSupportedException();
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         }
     }
 }

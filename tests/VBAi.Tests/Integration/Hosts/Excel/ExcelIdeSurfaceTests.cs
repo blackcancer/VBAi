@@ -173,7 +173,7 @@ namespace VBAi.Tests.Integration
         [STATestMethod]
         public void FormContentFittingUsesNativeInsideDimensionsAndRetainsItsChildren()
         {
-            using (var host = ExcelVbeFixture.Start())
+            ExcelVbeFixture.Run(host =>
             {
                 string project = Convert.ToString(VbeBridgeClient.Object(((object[])host.Command("list_projects")["Data"]).Single())["Name"]);
                 const string form = "ContentProbe";
@@ -196,7 +196,7 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(true, scroll["Verified"]);
                 Assert.AreEqual(140d, host.ReadDesignerMetric(form, "ScrollWidth"), 0.1);
                 Assert.AreEqual(90d, host.ReadDesignerMetric(form, "ScrollHeight"), 0.1);
-            }
+            });
         }
 
         /// <summary>Crée un module de test et relit sa source canonique avant les mutations versionnées.</summary>

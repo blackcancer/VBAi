@@ -9,9 +9,21 @@ namespace VBAi.Tests.Unit
         public sealed class FaultedStandaloneProject : FakeProject
         {
             public int Type{get;set;}=101;
+            public int? FileNameError { get; set; }
+            public bool ClrPathNotFound { get; set; }
+            public override string FileName
+            {
+                get
+                {
+                    if (ClrPathNotFound) throw new DirectoryNotFoundException("Path not found");
+                    if (FileNameError.HasValue) throw new System.Runtime.InteropServices.COMException("Path not found", FileNameError.Value);
+                    return base.FileName;
+                }
+                set { base.FileName = value; }
+            }
             public Action<string> Saving;
             public int Saves;
-            public void SaveAs(string destination){Saves++;if(Saving!=null)Saving(destination);else{File.WriteAllText(destination,"native fixture");FileName=destination;Saved=true;}}
+            public void SaveAs(string destination){Saves++;if(Saving!=null)Saving(destination);else{File.WriteAllText(destination,"native fixture");FileNameError=null;ClrPathNotFound=false;FileName=destination;Saved=true;}}
         }
     }
     public sealed partial class VbeProjectExcelHostTests

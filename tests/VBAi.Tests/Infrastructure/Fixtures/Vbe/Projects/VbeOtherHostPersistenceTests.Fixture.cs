@@ -18,7 +18,8 @@ namespace VBAi.Tests.Unit
         {
             public int Protection { get; set; }
             public bool ComPathUnavailable;
-            public override string FileName { get { if (ComPathUnavailable) throw new System.Runtime.InteropServices.COMException("Unsaved project"); return base.FileName; } set { base.FileName = value; } }
+            public Exception PathReadError;
+            public override string FileName { get { if (PathReadError != null) throw PathReadError; if (ComPathUnavailable) throw new System.Runtime.InteropServices.COMException("Unsaved project", unchecked((int)0x800A004C)); return base.FileName; } set { base.FileName = value; } }
         }
 
         /// <summary>Sonde complète de sauvegarde ne touchant aucun vrai document Office ni fichier.</summary>

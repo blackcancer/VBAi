@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.ExceptionServices;
+using System.Web.Script.Serialization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Integration
@@ -70,7 +72,9 @@ namespace VBAi.Tests.Integration
                 excel.DisplayAlerts = false;
                 fixture.workbooks = excel.Workbooks;
                 fixture.workbook = ((dynamic)fixture.workbooks).Add();
-                excel.CommandBars.ExecuteMso("VisualBasic");
+                object commandBars = null;
+                try { commandBars = excel.CommandBars; ((dynamic)commandBars).ExecuteMso("VisualBasic"); }
+                finally { Release(commandBars); }
                 var status = fixture.Command("status");
                 Assert.IsNotNull(status, "The isolated Excel VBE has no VBAi bridge.");
                 Assert.AreEqual(true, status["Ok"]);
@@ -79,11 +83,28 @@ namespace VBAi.Tests.Integration
                     "Excel loaded another build of the shared COM add-in; native tests must qualify this assembly.");
                 return fixture;
             }
-            catch
+            catch (Exception startup)
             {
-                fixture.Dispose();
+                try { fixture.Dispose(); }
+                catch (Exception cleanup) { throw new AggregateException("Excel startup and cleanup both failed.", startup, cleanup); }
                 throw;
             }
+        }
+
+        /// <summary>Preserves the scenario failure when cleanup independently fails.</summary>
+        internal static void Run(Action<ExcelVbeFixture> scenario)
+        {
+            var fixture = Start();
+            Exception failure = null;
+            try { scenario(fixture); }
+            catch (Exception error) { failure = error; }
+            try { fixture.Dispose(); }
+            catch (Exception cleanup)
+            {
+                if (failure != null) throw new AggregateException("The Excel scenario and its shutdown both failed; both errors are retained.", failure, cleanup);
+                throw;
+            }
+            if (failure != null) ExceptionDispatchInfo.Capture(failure).Throw();
         }
 
         /// <summary>Envoie une commande nommée au pont du processus Excel.</summary>
@@ -126,24 +147,45 @@ namespace VBAi.Tests.Integration
         /// <summary>Ferme les ressources COM et fichiers temporaires appartenant à cette fixture.</summary>
         public void Dispose()
         {
+            var diagnostics = new Dictionary<string, object> {
+                ["ProcessId"] = ProcessId, ["FixtureRoot"] = Root, ["StartedUtc"] = DateTime.UtcNow.ToString("o"),
+                ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"), ["ForcedTermination"] = false
+            };
+            var watch = Stopwatch.StartNew();
+            Exception closeFailure = null, quitFailure = null;
             if (owned && workbook != null)
-                try { ((dynamic)workbook).Close(false); } catch { }
+                try { ((dynamic)workbook).Close(false); }
+                catch (Exception error) { closeFailure = error; }
+            diagnostics["CloseElapsedMs"] = watch.ElapsedMilliseconds;
             if (owned && application != null)
-                try { ((dynamic)application).Quit(); } catch { }
+                try { ((dynamic)application).Quit(); }
+                catch (Exception error) { quitFailure = error; }
+            diagnostics["QuitElapsedMs"] = watch.ElapsedMilliseconds;
+            diagnostics["CloseError"] = closeFailure?.ToString();
+            diagnostics["QuitError"] = quitFailure?.ToString();
             Release(workbook);
             Release(workbooks);
             Release(application);
             workbook = workbooks = application = null;
+            diagnostics["ReleaseElapsedMs"] = watch.ElapsedMilliseconds;
             var process = ownedProcess;
             ownedProcess = null;
             if (process != null)
                 using (process)
                 {
-                    if (!process.WaitForExit(10000))
-                        Assert.Fail("Excel did not exit after Quit and COM release. PID: " + ProcessId + "; fixture: " + Root + ". The process was left running for diagnosis.");
+                    bool exited = process.WaitForExit(10000);
+                    diagnostics["Exited"] = exited;
+                    diagnostics["ElapsedMs"] = watch.ElapsedMilliseconds;
+                    if (exited) diagnostics["ExitCodeHex"] = "0x" + unchecked((uint)process.ExitCode).ToString("X8");
+                    WriteShutdownDiagnostics(diagnostics);
+                    if (!exited)
+                        Assert.Fail("Excel did not exit after Quit and COM release. PID: " + ProcessId + "; fixture: " + Root + ". The process was left running for diagnosis; shutdown.json preserves each phase.");
                     Assert.AreEqual(0, process.ExitCode, "Excel exited abnormally. PID: " + ProcessId +
                         "; exit code: 0x" + unchecked((uint)process.ExitCode).ToString("X8") + "; fixture: " + Root);
                 }
+            if (closeFailure != null || quitFailure != null)
+                throw new AggregateException("Excel Close/Quit reported errors; shutdown.json preserves diagnostics.",
+                    new[] { closeFailure, quitFailure }.Where(error => error != null));
             if (string.IsNullOrWhiteSpace(Root) || !Directory.Exists(Root)) return;
             try
             {
@@ -151,6 +193,14 @@ namespace VBAi.Tests.Integration
                     System.IO.File.Delete(file);
                 Directory.Delete(Root, false);
             }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
+
+        private void WriteShutdownDiagnostics(IDictionary<string, object> diagnostics)
+        {
+            if (string.IsNullOrWhiteSpace(Root) || !Directory.Exists(Root)) return;
+            try { System.IO.File.WriteAllText(Path.Combine(Root, "shutdown.json"), new JavaScriptSerializer().Serialize(diagnostics)); }
             catch (IOException) { }
             catch (UnauthorizedAccessException) { }
         }

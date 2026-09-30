@@ -16,6 +16,11 @@ namespace VBAi.Tests.Unit
             public bool FailParent { get; set; }
             public object Parent { get { if (FailParent) throw new InvalidOperationException("Parent unavailable"); return parent; } set { parent = value; } }
             public object Controls { get; set; } = new object[0];
+            public Action<string, object> ScalarWrite { get; set; }
+            public float Width { set { ScalarWrite?.Invoke("Width", value); } }
+            public float Height { set { ScalarWrite?.Invoke("Height", value); } }
+            public float ScrollWidth { set { ScalarWrite?.Invoke("ScrollWidth", value); } }
+            public float ScrollHeight { set { ScalarWrite?.Invoke("ScrollHeight", value); } }
             private object font;
             public bool FailFont { get; set; }
             public object Font { get { if (FailFont) throw new InvalidOperationException("Font unavailable"); return font; } set { font = value; } }

@@ -11,6 +11,31 @@ namespace VBAi.Tests.Unit
     public sealed partial class VbaGitProjectTests
     {
         [TestMethod]
+        public void GitUsesVerifiedWordHostPathAndRejectsSaveAsWithoutTouchingBackingPath()
+        {
+            var host = new ProjectFixture { FileName = @"C:\Temp\~WRL0001.tmp" };
+            string path = @"C:\Owned\First.docm";
+            var adapter = new VbaGitProject(() => host, path, project => path);
+            var snapshot = adapter.Capture();
+            host.FileName = null;
+            adapter.Apply(snapshot, snapshot);
+            path = @"C:\Owned\Second.docm";
+            Assert.ThrowsException<InvalidOperationException>(() => adapter.Capture());
+        }
+
+        [TestMethod]
+        public void GitRejectsReplacementProjectAtTheSameDocumentPath()
+        {
+            var first = new ProjectFixture();
+            var replacement = new ProjectFixture { FileName = first.FileName };
+            ProjectFixture selected = first;
+            var adapter = new VbaGitProject(() => selected, first.FileName);
+            adapter.Capture();
+            selected = replacement;
+            Assert.ThrowsException<InvalidOperationException>(() => adapter.Capture());
+        }
+
+        [TestMethod]
         public void OpenModuleGuardsAndLineSelectionPreserveLinkedProjectIdentity()
         {
             var host = new ProjectFixture(); var component = new ComponentFixture("Module1", 1, Code("Module1")); host.VBComponents.Items.Add(component);

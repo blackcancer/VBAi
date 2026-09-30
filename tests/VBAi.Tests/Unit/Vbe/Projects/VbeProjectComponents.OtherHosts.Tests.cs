@@ -9,6 +9,82 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed partial class VbeOtherHostPersistenceTests
     {
+        [DataTestMethod, DataRow(false), DataRow(true)]
+        public void WordTemporaryVbaStorageDoesNotReplaceMatchedDocumentPath(bool temporaryPathBeforeSave)
+        {
+            var fixture = new Fixture();
+            if (temporaryPathBeforeSave) fixture.Project.FileName = @"C:\fixture\~WRL0002.tmp";
+            else fixture.Project.PathReadError = new DirectoryNotFoundException("Path not found");
+            fixture.AfterInvocation = () => {
+                fixture.Project.PathReadError = null;
+                fixture.Project.FileName = @"C:\fixture\~WRL0002.tmp";
+            };
+            dynamic result = fixture.Service.SaveOtherHost(fixture.Request(), false, fixture);
+            Assert.IsTrue((bool)result.Verified);
+            Assert.IsFalse((bool)result.Uncertain);
+            Assert.AreEqual(@"C:\fixture\Document.docm", (string)result.HostPath);
+            Assert.AreEqual(1, fixture.Attempts);
+        }
+
+        [DataTestMethod, DataRow(false), DataRow(true)]
+        public void PowerPointStillRequiresItsProjectPathBeforeAndAfterSaving(bool temporaryPathBeforeSave)
+        {
+            var fixture = new Fixture { Kind = "PowerPoint" };
+            fixture.Observation.Path = @"C:\fixture\Document.pptm"; fixture.Observation.Format = null;
+            fixture.Project.FileName = temporaryPathBeforeSave ? @"C:\fixture\~WRL0002.tmp" : fixture.Observation.Path;
+            var request = fixture.Request();
+            fixture.AfterInvocation = () => fixture.Project.FileName = @"C:\fixture\~WRL0002.tmp";
+            if (temporaryPathBeforeSave)
+            {
+                Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.SaveOtherHost(request, false, fixture));
+                Assert.AreEqual(0, fixture.Attempts);
+            }
+            else
+            {
+                dynamic result = fixture.Service.SaveOtherHost(request, false, fixture);
+                Assert.IsFalse((bool)result.Verified); Assert.IsTrue((bool)result.Uncertain);
+                Assert.AreEqual(1, fixture.Attempts);
+            }
+        }
+
+        [TestMethod]
+        public void WordSaveUsesMatchedDocumentIdentityWhenItsProjectFilenameIsUnavailable()
+        {
+            foreach (Exception error in new Exception[] { new DirectoryNotFoundException("Path not found"),
+                new System.Runtime.InteropServices.COMException("Path not found", unchecked((int)0x800A004C)) })
+            {
+                var fixture = new Fixture(); fixture.Project.PathReadError = error;
+                dynamic result = fixture.Service.SaveOtherHost(fixture.Request(), false, fixture);
+                Assert.IsTrue((bool)result.Verified); Assert.IsFalse((bool)result.Uncertain);
+                Assert.AreEqual(1, fixture.Attempts); Assert.AreEqual(fixture.Observation.Path, (string)result.HostPath);
+            }
+        }
+
+        [TestMethod]
+        public void UnavailableWordProjectFilenameNeverBypassesNativeIdentityPathOrFormatGuards()
+        {
+            foreach (string fault in new[] { "path", "identity", "pid", "format", "duplicate" })
+            {
+                var fixture = new Fixture(); fixture.Project.PathReadError = new DirectoryNotFoundException("Path not found");
+                var request = fixture.Request();
+                if (fault == "path") request.ExpectedHostPath = @"C:\fixture\Other.docm";
+                if (fault == "identity") fixture.Identity = false;
+                if (fault == "pid") fixture.Owner = 43;
+                if (fault == "format") fixture.Observation.Format = 12;
+                if (fault == "duplicate") fixture.Items.Add(fixture);
+                Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.SaveOtherHost(request, false, fixture), fault);
+                Assert.AreEqual(0, fixture.Attempts, fault);
+            }
+            var denied = new Fixture { Kind = "PowerPoint" }; denied.Observation.Path = @"C:\fixture\Document.pptm"; denied.Observation.Format = null;
+            denied.Project.PathReadError = new System.Runtime.InteropServices.COMException("Access denied", unchecked((int)0x80070005));
+            Assert.ThrowsException<System.Runtime.InteropServices.COMException>(() => denied.Service.SaveOtherHost(denied.Request(), false, denied));
+            Assert.AreEqual(0, denied.Attempts);
+            var powerpoint = new Fixture { Kind = "PowerPoint" }; powerpoint.Observation.Path = @"C:\fixture\Document.pptm"; powerpoint.Observation.Format = null;
+            powerpoint.Project.PathReadError = new DirectoryNotFoundException("Path not found");
+            Assert.ThrowsException<InvalidOperationException>(() => powerpoint.Service.SaveOtherHost(powerpoint.Request(), false, powerpoint));
+            Assert.AreEqual(0, powerpoint.Attempts);
+        }
+
         [TestMethod]
         public void RemainingPersistenceGuardsRejectEveryPreflightTransitionWithoutInvokingSave()
         {
@@ -201,7 +277,11 @@ namespace VBAi.Tests.Unit
                 if (scenario == "read only") fixture.Observation.ReadOnly = true;
                 if (scenario == "stale version") request.ExpectedProjectVersion = "stale";
                 if (scenario == "wrong host path") request.ExpectedHostPath = @"C:\fixture\Other.docm";
-                if (scenario == "wrong project path") fixture.Project.FileName = @"C:\fixture\Other.docm";
+                if (scenario == "wrong project path")
+                {
+                    fixture.Kind = "PowerPoint"; fixture.Observation.Path = @"C:\fixture\Document.pptm"; fixture.Observation.Format = null;
+                    request = fixture.Request(); fixture.Project.FileName = @"C:\fixture\Other.pptm";
+                }
                 if (scenario == "missing file") fixture.Exists = false;
                 if (scenario == "native format") fixture.Observation.Format = 12;
                 if (scenario == "protected") fixture.Project.Protection = 1;
@@ -239,7 +319,13 @@ namespace VBAi.Tests.Unit
         {
             foreach (string scenario in AfterSaveFailures)
             {
-                var fixture = new Fixture(); var request = fixture.Request();
+                var fixture = new Fixture();
+                if (scenario == "project path")
+                {
+                    fixture.Kind = "PowerPoint"; fixture.Observation.Path = @"C:\fixture\Document.pptm";
+                    fixture.Project.FileName = fixture.Observation.Path; fixture.Observation.Format = null;
+                }
+                var request = fixture.Request();
                 fixture.AfterInvocation = () => {
                     if (scenario == "native error") fixture.Failure = "native error";
                     if (scenario == "host unsaved") fixture.Observation.Saved = false;

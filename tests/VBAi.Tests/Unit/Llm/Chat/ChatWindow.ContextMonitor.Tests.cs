@@ -46,6 +46,40 @@ namespace VBAi.Tests.Unit
         }
 
         [STATestMethod]
+        public void ClosedScopeStaysDisabledAfterDraftAndBusyUpdatesButStopRemainsAvailable()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            {
+                var picker = Get<ComboBox>(window, "scopePicker");
+                var selected = picker.SelectedItem;
+                runtime.Host = r => Response.Success(new object[0]);
+                Assert.AreEqual(true, Call(window, "RefreshAvailableScopes", runtime.Session));
+                var prompt = Get<System.Windows.Controls.TextBox>(window, "prompt");
+                var send = Get<Button>(window, "send");
+                prompt.Text = "Owned synthetic draft";
+                Assert.IsFalse(send.Enabled, "Typing must not reactivate Send without its project.");
+                Call(window, "SetBusy", false);
+                Assert.IsFalse(send.Enabled, "Finishing a turn must retain the unavailable scope state.");
+                prompt.Text = "";
+                Call(window, "SetBusy", true);
+                Assert.IsTrue(send.Enabled, "Stop must remain available even if the project closed.");
+                Set(window, "stopRequested", true);
+                Call(window, "UpdateBudgetControls");
+                Assert.IsFalse(send.Enabled);
+                prompt.Text = "Do not queue into a closed project";
+                Assert.IsFalse(send.Enabled);
+                Set(window, "stopRequested", false);
+                Call(window, "SetBusy", false);
+                Set(window, "loadingSession", true);
+                picker.Items.Add(selected); picker.SelectedItem = selected;
+                Set(window, "loadingSession", false);
+                Call(window, "UpdateBudgetControls");
+                Assert.IsTrue(send.Enabled, "A selected valid scope must retain normal draft sending.");
+            }
+        }
+
+        [STATestMethod]
         public void DirtyContextRetriesFailureAndInvalidatesTheReferenceIndex()
         {
             using (var runtime = new RuntimeScope())

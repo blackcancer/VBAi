@@ -19,6 +19,7 @@ namespace VBAi
             currentSession.MessagesJson = "[]";
             currentSession.CodexThreadId = null;
             currentSession.CodexThreadHome = null;
+            currentSession.CodexDeveloperInstructionsHash = null;
             currentSession.ResumeContext = null;
             currentSession.BudgetPaused = false;
             currentSession.ReadAccessPolicyVersion = 1;

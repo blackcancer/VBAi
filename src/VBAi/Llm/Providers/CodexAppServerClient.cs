@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -118,6 +119,10 @@ namespace VBAi
         private int nextId;
         /// <summary>Identifiant du fil Codex créé ou repris.</summary>
         private string threadId;
+        /// <summary>Empreinte des consignes confirmées pour le fil Codex courant.</summary>
+        private string appliedInstructionsHash;
+        /// <summary>Source des consignes, injectable pour vérifier leur changement entre deux tours.</summary>
+        internal Func<string> DeveloperInstructionSource = () => LlmVbeContext.DeveloperInstructions;
         /// <summary>Achèvement de la réponse du tour actif.</summary>
         private TaskCompletionSource<string> turnDone;
         /// <summary>Dernier texte final reçu pour le tour actif.</summary>
@@ -131,6 +136,8 @@ namespace VBAi
         /// <summary>Identifiant du fil courant.</summary>
         /// <value>Identifiant du fil, ou null avant sa création.</value>
         public string ThreadId { get { return threadId; } }
+        /// <summary>Empreinte des dernières consignes acceptées par l'app-server.</summary>
+        public string AppliedInstructionsHash { get { return appliedInstructionsHash; } }
         /// <summary>Survient quand le fil Codex est prêt à recevoir des tours.</summary>
         public event Action<string> ThreadReady;
         /// <summary>Publie le texte, le raisonnement et l’état des appels d’outils dans la conversation.</summary>
@@ -160,6 +167,18 @@ namespace VBAi
         /// <param name="transport">Transport app-server à utiliser.</param>
         internal CodexAppServerClient(SynchronizationContext ui, LlmVbeTools tools, Action<string> progress,
             LlmSettings settings, string resumeThreadId, ICodexAppServerTransport transport)
+            : this(ui, tools, progress, settings, resumeThreadId, null, transport) { }
+
+        /// <summary>Crée un client avec l'empreinte des consignes déjà appliquées au fil repris.</summary>
+        /// <param name="ui">Contexte du fil de l'interface.</param>
+        /// <param name="tools">Outils disponibles au processus Codex.</param>
+        /// <param name="progress">Callback de progression.</param>
+        /// <param name="settings">Réglages de session.</param>
+        /// <param name="resumeThreadId">Fil à reprendre, ou null pour en créer un.</param>
+        /// <param name="resumeInstructionsHash">Empreinte confirmée pour ce fil, ou null si inconnue.</param>
+        /// <param name="transport">Transport app-server à utiliser.</param>
+        internal CodexAppServerClient(SynchronizationContext ui, LlmVbeTools tools, Action<string> progress,
+            LlmSettings settings, string resumeThreadId, string resumeInstructionsHash, ICodexAppServerTransport transport)
         {
             this.ui = ui ?? throw new ArgumentNullException(nameof(ui));
             this.tools = tools ?? throw new ArgumentNullException(nameof(tools));
@@ -170,6 +189,16 @@ namespace VBAi
             this.transport.LineReceived += OnLine;
             this.transport.Exited += FailPending;
             threadId = resumeThreadId;
+            appliedInstructionsHash = resumeInstructionsHash;
+        }
+
+        /// <summary>Calcule l'empreinte locale des consignes sans transmettre leur texte au modèle.</summary>
+        /// <param name="instructions">Consignes à comparer octet par octet en UTF-8.</param>
+        /// <returns>SHA-256 hexadécimal de ces consignes.</returns>
+        internal static string InstructionsHash(string instructions)
+        {
+            using (var sha = SHA256.Create())
+                return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(instructions ?? ""))).Replace("-", "");
         }
 
         /// <summary>Interroge toutes les pages du catalogue Codex et convertit les efforts pris en charge.</summary>
@@ -229,6 +258,7 @@ namespace VBAi
             try
             {
                 if (!transportStarted) await StartAsync();
+                else await RefreshDeveloperInstructionsAsync();
                 if (interruptRequested) throw new OperationCanceledException();
                 var started = await RequestAsync("turn/start", new {
                     threadId,
@@ -279,19 +309,29 @@ namespace VBAi
                         description = (string)function.description, inputSchema = function.parameters };
                 }).ToArray();
                 progress(UiText.Get("Codex: opening the VBE conversation"));
+                string instructions = DeveloperInstructionSource();
+                string instructionsHash = InstructionsHash(instructions);
+                bool refreshOnResume = !string.Equals(appliedInstructionsHash, instructionsHash, StringComparison.Ordinal);
+                string expectedThreadId = threadId;
                 var started = !string.IsNullOrEmpty(threadId)
-                    ? await RequestAsync("thread/resume", new { threadId, approvalPolicy = "untrusted", sandbox = "read-only" })
+                    ? await RequestAsync("thread/resume", refreshOnResume
+                        ? (object)new { threadId, approvalPolicy = "untrusted", sandbox = "read-only", developerInstructions = instructions }
+                        : new { threadId, approvalPolicy = "untrusted", sandbox = "read-only" })
                     : await RequestAsync("thread/start", new {
                     ephemeral = false,
                     cwd = Path.GetTempPath(),
                     sandbox = "read-only",
                     approvalPolicy = "untrusted",
                     serviceName = "VBAi",
-                    developerInstructions = LlmVbeContext.DeveloperInstructions,
+                    developerInstructions = instructions,
                     dynamicTools = definitions
                 });
-                threadId = GetString(GetObject(GetObject(started, "result"), "thread"), "id");
-                if (string.IsNullOrWhiteSpace(threadId)) throw new InvalidOperationException("Codex did not create a thread.");
+                string returnedThreadId = GetString(GetObject(GetObject(started, "result"), "thread"), "id");
+                if (string.IsNullOrWhiteSpace(returnedThreadId)) throw new InvalidOperationException("Codex did not create a thread.");
+                if (!string.IsNullOrEmpty(expectedThreadId) && !string.Equals(expectedThreadId, returnedThreadId, StringComparison.Ordinal))
+                    throw new InvalidOperationException("Codex did not resume the expected thread.");
+                threadId = returnedThreadId;
+                appliedInstructionsHash = instructionsHash;
                 ThreadReady?.Invoke(threadId);
                 progress(UiText.Get("Codex connected through ChatGPT"));
             }
@@ -300,6 +340,25 @@ namespace VBAi
                 Dispose();
                 throw;
             }
+        }
+
+        /// <summary>Actualise un fil chargé seulement si ses consignes diffèrent des consignes courantes.</summary>
+        /// <returns>Tâche terminée après confirmation de la reprise, ou immédiatement sans changement.</returns>
+        private async Task RefreshDeveloperInstructionsAsync()
+        {
+            string instructions = DeveloperInstructionSource();
+            string hash = InstructionsHash(instructions);
+            if (string.Equals(appliedInstructionsHash, hash, StringComparison.Ordinal)) return;
+            string existingThreadId = threadId;
+            var response = await RequestAsync("thread/resume", new {
+                threadId = existingThreadId, approvalPolicy = "untrusted", sandbox = "read-only",
+                developerInstructions = instructions
+            });
+            string resumedId = GetString(GetObject(GetObject(response, "result"), "thread"), "id");
+            if (!string.Equals(existingThreadId, resumedId, StringComparison.Ordinal))
+                throw new InvalidOperationException("Codex did not resume the expected thread for updated instructions.");
+            appliedInstructionsHash = hash;
+            ThreadReady?.Invoke(threadId);
         }
 
         /// <summary>Envoie une requête JSON-RPC et retourne une tâche complétée à la réception de sa réponse.</summary>

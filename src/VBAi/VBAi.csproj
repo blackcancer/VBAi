@@ -47,6 +47,7 @@
     <PackageReference Include="Markdig" Version="0.37.0" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
     <Content Include="..\..\assets\editor\dist\**\*" Link="EditorAssets\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\assets\third-party\**\*" Link="ThirdPartyNotices\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <PackageReference Include="System.Resources.Extensions" Version="8.0.0" />
     <EmbeddedResource Include="..\..\assets\icons\assistant.ico" Link="Resources\Icons\assistant.ico" LogicalName="VBAi.Icons.assistant.ico" />
     <EmbeddedResource Include="..\..\assets\icons\github.ico" Link="Resources\Icons\github.ico" LogicalName="VBAi.Icons.github.ico" />

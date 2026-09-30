@@ -12,11 +12,12 @@ applies only to the stated operation, host and tested candidate; CLOSED does not
 qualify an entire application. OPEN and PARTIAL entries remain release gates
 where required by the agreed scope.
 
-The latest tested Debug candidate has MVID
+The last candidate with the native acceptance results below has MVID
 `aaf3a555-76d4-4b18-ae09-1e7b3e085934`. Concurrent source changes made after that
-build are not covered by its results. This documentation-only commit records the
-qualification findings; it does not include the pending implementation changes
-or establish qualification of the complete current working tree.
+build are not covered by its results. The full qualification branch includes the
+implementation changes, tests and this register. Its publication checks are
+recorded separately in [recorded validation](test-coverage.md); they do not
+replace the operation-specific native acceptance or close the remaining gates.
 
 ## Required environment
 

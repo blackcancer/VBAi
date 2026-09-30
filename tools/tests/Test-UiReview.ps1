@@ -10,6 +10,19 @@ function Pump { 1..10 | ForEach-Object { [Windows.Forms.Application]::DoEvents()
 function Assert($value,$message) { if (-not $value) { throw $message } }
 $output = Join-Path (Get-Location) 'artifacts/ui-review/screenshots'
 New-Item -ItemType Directory -Force $output | Out-Null
+$fixtureRoot = Join-Path (Get-Location) ('artifacts/ui-review/fixtures/' + [Guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Force $fixtureRoot | Out-Null
+$settingsPath = $assembly.GetType('VBAi.LlmSettings').GetField('StoragePathOverride',$flags)
+$historyPath = $assembly.GetType('VBAi.ChatWindow').GetField('HistoryPath',$flags)
+$themePath = $assembly.GetType('VBAi.UiTheme').GetField('FileName',$flags)
+$originalSettingsPath = $settingsPath.GetValue($null)
+$originalHistoryPath = $historyPath.GetValue($null)
+$originalThemePath = $themePath.GetValue($null)
+try {
+$settingsPath.SetValue($null,(Join-Path $fixtureRoot 'settings.json'))
+$isolatedHistory = Join-Path $fixtureRoot 'chat.db'
+$historyPath.SetValue($null,[Func[string]]({ $isolatedHistory }.GetNewClosure()))
+$themePath.SetValue($null,(Join-Path $fixtureRoot 'theme.txt'))
 $chat = New-Internal ChatWindow
 try {
     Call $chat InitializeShell @()
@@ -31,9 +44,21 @@ try {
     Call $chat ReceiveChatUpdate @('final','review-stream','A **completed** answer',$true)
     Pump
     Assert ((Field $chat transcriptEntries)[300].Text -eq 'A **completed** answer') 'Stream completion lost content.'
-    $markdown = $assembly.GetType('VBAi.ChatMarkdown').GetMethod('Render',$flags)
-    $view = $markdown.Invoke($null,@("# Heading`n`n| A | B |`n|---|---|`n| 1 | 2 |`n`n[Link](https://github.com)",$null,$null,[Action[string]]{param($message) throw $message}))
-    Assert (@($view.Document.Blocks | Where-Object { $_ -is [Windows.Documents.Table] }).Count -eq 1) 'Markdown table was not rendered as a table.'
+    $view = New-Internal ChatTextContentView
+    try {
+        $view.CreateControl()
+        Call $view ShowMarkdown @("# Heading`n`n| A | B |`n|---|---|`n| 1 | 2 |`n`n[Link](https://github.com)",$null,$null,[Action[string]]{param($message) throw $message})
+        $content = Field $view content
+        Assert ($content.ReadOnly) 'Markdown transcript must remain read-only.'
+        Assert ($content.Text.Contains("A`tB`t`n") -and $content.Text.Contains("1`t2`t`n")) 'Markdown table lost its native column or row separators.'
+        $content.Select($content.Text.IndexOf("A`tB"),1)
+        Assert ($null -ne $content.SelectionFont -and $content.SelectionFont.Bold) 'Markdown table header lost its bold formatting.'
+        $content.Select($content.Text.IndexOf("1`t2"),1)
+        Assert ($null -ne $content.SelectionFont -and -not $content.SelectionFont.Bold) 'Markdown table body incorrectly inherited header formatting.'
+        $linkCount = 0
+        foreach ($action in (Field $view actions)) { if ($null -ne (Field $action Invoke)) { $linkCount++ } }
+        Assert ($linkCount -eq 1) 'Markdown link action was not preserved.'
+    } finally { $view.Dispose() }
     Write-Output "PASS Markdown table, streaming and virtualized transcript ($realized realized views / 300 messages)"
 } finally { $chat.Dispose() }
 $theme = $assembly.GetType('VBAi.UiTheme')
@@ -89,7 +114,12 @@ try {
             try { $git.DrawToBitmap($bitmap,[Drawing.Rectangle]::new(0,0,$git.Width,$git.Height)); $bitmap.Save((Join-Path $output "$mode-narrow.png")) } finally { $bitmap.Dispose() }
             Write-Output "PASS $mode GitHub panels and diff refresh"
         } finally { $git.Dispose() }
-        $settings = New-Internal LlmSettingsWindow
+        # Populate the real settings controls with synthetic local-provider data.
+        # Suppress only first-show account discovery; no credentials or user history are needed for these UI checks.
+        $syntheticSettings = New-Internal LlmSettings
+        $syntheticSettings.ProviderName = 'Ollama'
+        $settings = [Activator]::CreateInstance($assembly.GetType('VBAi.LlmSettingsWindow'),$flags,$null,@($syntheticSettings),$null)
+        $settings.GetType().GetField('githubLoaded',$flags).SetValue($settings,$true)
         try {
             $settings.Show(); Pump
             $settingsTabs = Field $settings settingsTabs
@@ -102,3 +132,8 @@ try {
 
     }
 } finally { $choice.SetValue($null,$original) }
+} finally {
+    $settingsPath.SetValue($null,$originalSettingsPath)
+    $historyPath.SetValue($null,$originalHistoryPath)
+    $themePath.SetValue($null,$originalThemePath)
+}

@@ -61,7 +61,7 @@ namespace VBAi.Tests.Integration
         [STATestMethod]
         public void NativeVariantArraysRoundTripWithBoundsAndOneInvocation()
         {
-            using (var host = ExcelVbeFixture.Start())
+            ExcelVbeFixture.Run(host =>
             {
                 string project = Convert.ToString(VbeBridgeClient.Object(((object[])host.Command("list_projects")["Data"]).Single())["Name"]);
                 const string module = "ArrayProbe";
@@ -95,7 +95,7 @@ namespace VBAi.Tests.Integration
                 rows = (object[])matrix["Value"]; Assert.AreEqual(4, ((object[])rows[1])[1]);
                 Assert.AreEqual(2d, Convert.ToDouble(host.ReadCell("A1")));
                 Assert.AreEqual(inspected["Code"], Data(host.Command(new { Command = "read_module", Project = path, Module = module }))["Code"]);
-            }
+            });
         }
         /// <summary>Attend uniquement le statut jusqu'à la borne fixée, sans relancer la macro.</summary>
         private static IDictionary<string, object> Wait(ExcelVbeFixture host, string project, IDictionary<string, object> operation)

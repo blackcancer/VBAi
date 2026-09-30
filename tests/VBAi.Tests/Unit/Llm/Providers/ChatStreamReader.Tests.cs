@@ -191,3 +191,106 @@ namespace VBAi.Tests.Unit
         }
     }
 }
+
+namespace VBAi.Tests.Unit
+{
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using VBAi;
+
+    public sealed partial class StreamTests
+    {
+        [TestMethod]
+        public async Task UnterminatedLinesAndBlankFramesStopAtTheWireByteBudget()
+        {
+            const int limit = 10 * 1024 * 1024;
+            foreach (byte value in new[] { (byte)'x', (byte)'\n' })
+            using (var stream = new GeneratedSseStream(value, limit + 8192))
+            {
+                await Assert.ThrowsExceptionAsync<InvalidDataException>(() => ChatStreamReader.ReadAsync(stream, false, null, CancellationToken.None));
+                Assert.IsTrue(stream.BytesRead <= limit + 1, "The reader must stop at the limit before consuming an oversized line or ignored blank frames.");
+                Assert.IsTrue(stream.Disposed);
+            }
+        }
+
+        [TestMethod]
+        public async Task Utf8ResponseAtExactWireLimitCompletesAndExtraByteIsRejected()
+        {
+            const int limit = 10 * 1024 * 1024;
+            byte[] finish = Events(new { choices = new[] { new { delta = new { content = "été漢字" }, finish_reason = "stop" } } }, "[DONE]").ToArray();
+            foreach (int extra in new[] { 0, 1 })
+            {
+                // An ignored SSE comment pads the response without enlarging its JSON payload.
+                byte[] wire = new byte[limit + extra];
+                wire[0] = (byte)':';
+                for (int i = 1; i < wire.Length - finish.Length - 1; i++) wire[i] = (byte)'x';
+                wire[wire.Length - finish.Length - 1] = (byte)'\n';
+                Buffer.BlockCopy(finish, 0, wire, wire.Length - finish.Length, finish.Length);
+                using (var stream = new MemoryStream(wire))
+                {
+                    if (extra != 0)
+                        await Assert.ThrowsExceptionAsync<InvalidDataException>(() => ChatStreamReader.ReadAsync(stream, false, null, CancellationToken.None));
+                    else
+                        Assert.AreEqual("été漢字", (await ChatStreamReader.ReadAsync(stream, false, null, CancellationToken.None))["content"]);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task ManyFragmentsRemainPlainStringsAndPreserveRepeatedMetadata()
+        {
+            var frames = new List<object>();
+            var expected = new StringBuilder();
+            for (int i = 0; i < 4000; i++)
+            {
+                string part = i % 2 == 0 ? "é" : "漢";
+                expected.Append(part);
+                frames.Add(new { choices = new[] { new { delta = new { role = "assistant", type = "message", content = part,
+                    tool_calls = new[] { new { index = 0, type = "function", function = new { arguments = part } } } } } } });
+            }
+            frames.Add(new { choices = new[] { new { finish_reason = "tool_calls" } } }); frames.Add("[DONE]");
+            using (var stream = Events(frames.ToArray()))
+            {
+                var result = await ChatStreamReader.ReadAsync(stream, false, null, CancellationToken.None);
+                Assert.AreEqual(expected.ToString(), result["content"]);
+                Assert.AreEqual("assistant", result["role"]); Assert.AreEqual("message", result["type"]);
+                var call = Obj(((object[])result["tool_calls"])[0]);
+                Assert.AreEqual("function", call["type"]);
+                Assert.AreEqual(expected.ToString(), Obj(call["function"])["arguments"]);
+                Assert.IsTrue(Json.Serialize(result).Contains("arguments"));
+            }
+        }
+
+        private sealed class GeneratedSseStream : Stream
+        {
+            private readonly byte value;
+            private readonly int length;
+            internal int BytesRead;
+            internal bool Disposed;
+            internal GeneratedSseStream(byte value, int length) { this.value = value; this.length = length; }
+            public override bool CanRead => !Disposed;
+            public override bool CanSeek => false;
+            public override bool CanWrite => false;
+            public override long Length => length;
+            public override long Position { get => BytesRead; set => throw new NotSupportedException(); }
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                int read = Math.Min(count, length - BytesRead);
+                for (int i = 0; i < read; i++) buffer[offset + i] = value;
+                BytesRead += read; return read;
+            }
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            { cancellationToken.ThrowIfCancellationRequested(); return Task.FromResult(Read(buffer, offset, count)); }
+            protected override void Dispose(bool disposing) { Disposed = true; base.Dispose(disposing); }
+            public override void Flush() => throw new NotSupportedException();
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        }
+    }
+}

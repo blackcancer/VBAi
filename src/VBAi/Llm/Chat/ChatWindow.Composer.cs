@@ -91,7 +91,7 @@ namespace VBAi
         /// <param name="e">Informations sur la touche et état de traitement.</param>
         private void PromptKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Enter &&
+            if ((e.Key == Key.Enter || e.Key == Key.Tab) &&
                 (ReadModifiers() & System.Windows.Input.ModifierKeys.Shift) != 0)
             { HideReferences(); return; }
             if (referencePopup.IsOpen)

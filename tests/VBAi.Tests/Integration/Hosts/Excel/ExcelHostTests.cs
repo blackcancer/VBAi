@@ -36,7 +36,7 @@ namespace VBAi.Tests.Integration
             var root = Path.Combine(Path.GetTempPath(), "VBAi-VSTest", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(root);
             var path = Path.Combine(root, "isolated.xlsx");
-            object application = null, books = null, workbook = null, sheet = null, cell = null;
+            object application = null, books = null, workbook = null, sheets = null, sheet = null, cells = null, cell = null, commandBars = null;
             uint processId = 0;
             bool owned = false;
             Process ownedProcess = null;
@@ -55,13 +55,23 @@ namespace VBAi.Tests.Integration
                 excel.DisplayAlerts = false;
                 books = excel.Workbooks;
                 workbook = ((dynamic)books).Add();
-                sheet = ((dynamic)workbook).Worksheets[1];
-                cell = ((dynamic)sheet).Cells[1, 1];
+                sheets = ((dynamic)workbook).Worksheets;
+                sheet = ((dynamic)sheets)[1];
+                cells = ((dynamic)sheet).Cells;
+                cell = ((dynamic)cells)[1, 1];
                 ((dynamic)cell).Value2 = "VBAi été";
                 Assert.AreEqual("VBAi été", (string)((dynamic)cell).Value2);
                 ((dynamic)workbook).SaveAs(path, 51);
                 Assert.IsTrue(File.Exists(path));
-                excel.CommandBars.ExecuteMso("VisualBasic");
+                commandBars = excel.CommandBars;
+                ((dynamic)commandBars).ExecuteMso("VisualBasic");
+                var status = VbeBridgeClient.Read((int)processId, "status");
+                Assert.IsNotNull(status, "The native VBE command ran, but this Excel PID has no VBAi bridge.");
+                Assert.AreEqual(true, status["Ok"], Convert.ToString(status["Error"]));
+                var provenance = VbeBridgeClient.Object(status["Data"]);
+                Assert.AreEqual((int)processId, Convert.ToInt32(provenance["HostProcessId"]));
+                Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), provenance["AssemblyModuleVersionId"],
+                    "Excel loaded another add-in build; this test must qualify the candidate assembly.");
                 var environment = VbeBridgeClient.Read((int)processId, "vbe_environment");
                 Assert.IsNotNull(environment, "The native VBE command ran, but this Excel PID has no VBAi bridge.");
                 Assert.AreEqual(true, environment["Ok"]);
@@ -92,11 +102,16 @@ namespace VBAi.Tests.Integration
             }
             finally
             {
+                ReleaseSafely(commandBars); ReleaseSafely(cell); ReleaseSafely(cells); ReleaseSafely(sheet); ReleaseSafely(sheets);
+                commandBars = cell = cells = sheet = sheets = null;
                 if (owned && workbook != null)
                     try { ((dynamic)workbook).Close(false); } catch { }
+                ReleaseSafely(workbook); ReleaseSafely(books);
+                workbook = books = null;
                 if (owned && application != null)
                     try { ((dynamic)application).Quit(); } catch { }
-                ReleaseSafely(cell); ReleaseSafely(sheet); ReleaseSafely(workbook); ReleaseSafely(books); ReleaseSafely(application);
+                ReleaseSafely(application);
+                application = null;
                 if (ownedProcess != null)
                     using (ownedProcess)
                     {

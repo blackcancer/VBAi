@@ -285,7 +285,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
                 catch (COMException) { }
                 if (project == null) throw new InvalidOperationException(UiText.Get("Select a saved VBA project to open GitHub."));
                 string path = null;
-                try { path = (string)project.FileName; }
+                try { path = VbeProjectHostPath.Read((object)project); }
                 catch (System.IO.DirectoryNotFoundException) { }
                 catch (COMException) { }
                 if (string.IsNullOrWhiteSpace(path) || !System.IO.Path.IsPathRooted(path) ||

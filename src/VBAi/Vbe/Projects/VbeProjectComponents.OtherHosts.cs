@@ -284,7 +284,7 @@ namespace VBAi
             else
             {
                 path = RequireAbsolutePath(request.ExpectedHostPath); format = OtherHostFormat(native.HostKind, path);
-                if (!OtherHostSamePath(before.Path, path) || !OtherHostSamePath(OtherHostProjectPath((object)project), path))
+                if (!OtherHostSamePath(before.Path, path) || !OtherHostProjectPathMatches((object)project, path, native.HostKind))
                     throw new InvalidOperationException("The document or selected project's path changed since inspection.");
                 if (!native.FileExists(path)) throw new FileNotFoundException("The existing host document is absent.");
                 if (before.Format.HasValue && before.Format.Value != format) throw new InvalidOperationException("The native Word format does not match its macro-enabled extension.");
@@ -301,7 +301,7 @@ namespace VBAi
             {
                 native.Save(document, saveAs, path, format);
                 var after = native.State(document);
-                if (!OtherHostSamePath(after.Path, path) || !OtherHostSamePath(OtherHostProjectPath((object)project), path) ||
+                if (!OtherHostSamePath(after.Path, path) || !OtherHostProjectPathMatches((object)project, path, native.HostKind) ||
                     !after.Saved || !(bool)project.Saved || !native.FileExists(path) || native.FileLength(path) < 1 ||
                     (after.Format.HasValue && after.Format.Value != format) || OtherHostSourceSha((object)project) != sourceSha ||
                     !native.SameProject((object)project, native.DocumentProject(document)))
@@ -325,7 +325,7 @@ namespace VBAi
                 /// <param name="native">Sonde qui fournit l’application, ses documents et leurs identités.</param>
                 /// <returns>Document unique dont le VBProject partage l’identité COM avec le projet demandé.</returns>
                 /// <exception cref="InvalidOperationException">L’hôte, le processus ou l’identité du document ne peut pas être vérifié de façon unique.</exception>
-        private static object MatchOtherHost(object project, IOtherHostProbe native)
+        internal static object MatchOtherHost(object project, IOtherHostProbe native)
         {
             if (native == null || (native.HostKind != "Word" && native.HostKind != "PowerPoint")) throw new InvalidOperationException("This host has no Word/PowerPoint adapter.");
             object application = native.Application();
@@ -349,11 +349,26 @@ namespace VBAi
             if (kind == "PowerPoint") { if (extension == ".pptm") return 25; if (extension == ".potm") return 27; if (extension == ".ppsm") return 29; }
             throw new ArgumentException("Word requires .docm/.dotm; PowerPoint requires .pptm/.potm/.ppsm. Other formats are refused.");
         }
-                /// <summary>Lit FileName; son absence n'est acceptée que dans les gardes de première sauvegarde.</summary>
+                /// <summary>Lit FileName et distingue une absence de chemin d'une autre erreur native.</summary>
                 /// <param name="project">Projet VBA du document.</param>
                 /// <returns>Chemin du projet ou chaîne vide si l’hôte ne fournit pas FileName.</returns>
         private static string OtherHostProjectPath(object project)
-        { try { return (string)((dynamic)project).FileName; } catch (COMException) { return ""; } }
+        {
+            try { return (string)((dynamic)project).FileName; }
+            catch (COMException error) when (error.ErrorCode == unchecked((int)0x800A004C)) { return ""; }
+            catch (DirectoryNotFoundException error) when (error.HResult == unchecked((int)0x80070003)) { return ""; }
+        }
+
+        /// <summary>Vérifie le chemin VBIDE seulement lorsque ce chemin représente le document hôte.</summary>
+        private static bool OtherHostProjectPathMatches(object project, string expectedPath, string hostKind)
+        {
+            // MatchOtherHost and the final readback still require the same document/project COM identity,
+            // owning PID, native FullName, macro format, saved flags and file bytes. Word's FileName
+            // identifies VBA backing storage: it may throw before Save and become ~WRLxxxx.tmp after
+            // Save. Only the identity-matched Word Document.FullName identifies its persisted file.
+            if (hostKind == "Word") return true;
+            return OtherHostSamePath(OtherHostProjectPath(project), expectedPath);
+        }
                 /// <summary>Compare deux chemins pleinement qualifiés, sans accepter un nom de fichier relatif.</summary>
                 /// <param name="first">Premier chemin à comparer.</param>
                 /// <param name="second">Second chemin attendu.</param>

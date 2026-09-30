@@ -24,6 +24,7 @@ namespace VBAi.Tests.Unit
             public int RootReads, Prepares, Enters, Pauses;
             public char RejectChar;
             public bool EnterSucceeds = true;
+            public Action OnRead;
             public readonly List<string> Readbacks = new List<string>();
             private int readIndex;
             private string last = "> ";
@@ -54,6 +55,7 @@ namespace VBAi.Tests.Unit
 
             public string Text(IntPtr pane)
             {
+                OnRead?.Invoke();
                 if (readIndex < Readbacks.Count)
                     last = Readbacks[readIndex++];
                 return last;

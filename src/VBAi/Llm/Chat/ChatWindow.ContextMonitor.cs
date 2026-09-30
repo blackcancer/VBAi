@@ -97,7 +97,7 @@ namespace VBAi
             {
                 var fields = raw as IDictionary<string, object>;
                 if (fields == null) continue;
-                string name = Convert.ToString(fields["Name"]), path = Convert.ToString(fields["FileName"]);
+                string name = Convert.ToString(fields["Name"]), path = VbeProjectHostPath.FromFields(fields);
                 bool saved = !string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path);
                 string project = saved ? Path.GetFullPath(path) : name;
                 var previous = old.FirstOrDefault(x => string.Equals(x.Project, project, StringComparison.OrdinalIgnoreCase) && !updated.Contains(x));
@@ -116,9 +116,9 @@ namespace VBAi
                 scopePicker.Items.Clear(); scopePicker.Items.AddRange(updated.ToArray());
                 if (selected != null && updated.Contains(selected)) scopePicker.SelectedItem = selected;
                 else scopePicker.SelectedIndex = -1;
-                send.Enabled = scopePicker.SelectedItem != null;
             }
             finally { loadingSession = false; }
+            UpdateBudgetControls();
             // Never switch an existing conversation to a different macro implicitly.
             return true;
         }

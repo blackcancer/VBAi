@@ -129,6 +129,8 @@ namespace VBAi.Tests.Unit
                 Assert.AreEqual("read-only", arguments["sandbox"]);
                 Assert.AreEqual("untrusted", arguments["approvalPolicy"]);
                 Assert.IsTrue(((object[])arguments["dynamicTools"]).Length > 0);
+                Assert.AreEqual(LlmVbeContext.DeveloperInstructions, arguments["developerInstructions"]);
+                Assert.AreEqual(CodexAppServerClient.InstructionsHash(LlmVbeContext.DeveloperInstructions), client.AppliedInstructionsHash);
             }
 
             Assert.IsTrue(transport.Disposed);
@@ -149,7 +151,94 @@ namespace VBAi.Tests.Unit
                 var arguments = FakeTransport.Object(transport.Request("thread/resume")["params"]);
                 Assert.AreEqual("saved-thread", arguments["threadId"]);
                 Assert.AreEqual("read-only", arguments["sandbox"]);
+                Assert.AreEqual(LlmVbeContext.DeveloperInstructions, arguments["developerInstructions"]);
             }
+        }
+
+        /// <summary>Évite de renvoyer les consignes identiques et actualise un fil dès qu'elles changent.</summary>
+        /// <returns>Tâche terminée après les échanges simulés.</returns>
+        [TestMethod]
+        public async Task DeveloperInstructionsAreRefreshedOnlyWhenTheirFingerprintChanges()
+        {
+            var unchanged = new FakeTransport();
+            string knownHash = CodexAppServerClient.InstructionsHash(LlmVbeContext.DeveloperInstructions);
+            using (var client = Client(unchanged, "thread-1", knownHash))
+            {
+                await client.ListModelsAsync();
+                var resume = FakeTransport.Object(unchanged.Request("thread/resume")["params"]);
+                Assert.IsFalse(resume.ContainsKey("developerInstructions"));
+                Assert.AreEqual(knownHash, client.AppliedInstructionsHash);
+            }
+
+            var changed = new FakeTransport { CompleteTurn = true };
+            using (var client = Client(changed, "thread-1", "old-hash"))
+            {
+                string instructions = "first instructions";
+                client.DeveloperInstructionSource = () => instructions;
+                var readyHashes = new List<string>();
+                client.ThreadReady += _ => readyHashes.Add(client.AppliedInstructionsHash);
+                await client.ListModelsAsync();
+                Assert.AreEqual(instructions, FakeTransport.Object(changed.Request("thread/resume")["params"])["developerInstructions"]);
+                Assert.AreEqual(CodexAppServerClient.InstructionsHash(instructions), readyHashes.Single());
+
+                await client.TurnAsync("first request", null, null);
+                Assert.AreEqual(1, changed.Methods.Count(x => x == "thread/resume"));
+                instructions = "revised instructions";
+                await client.TurnAsync("second request", null, null);
+                Assert.AreEqual(2, changed.Methods.Count(x => x == "thread/resume"));
+                var latest = changed.Sent.Last(x => Method(x) == "thread/resume");
+                Assert.AreEqual(instructions, FakeTransport.Object(latest["params"])["developerInstructions"]);
+                Assert.AreEqual(CodexAppServerClient.InstructionsHash(instructions), client.AppliedInstructionsHash);
+                Assert.AreEqual(2, readyHashes.Count);
+                await client.TurnAsync("third request", null, null);
+                Assert.AreEqual(2, changed.Methods.Count(x => x == "thread/resume"));
+                Assert.AreEqual(3, changed.Methods.Count(x => x == "turn/start"));
+            }
+        }
+
+        /// <summary>Une mise à jour refusée ne démarre pas de tour et ne marque pas les consignes comme appliquées.</summary>
+        /// <returns>Tâche terminée après le refus simulé de l'app-server.</returns>
+        [TestMethod]
+        public async Task FailedDeveloperInstructionRefreshLeavesThreadUnchanged()
+        {
+            var transport = new FakeTransport();
+            using (var client = Client(transport, "thread-1", "old-hash"))
+            {
+                client.DeveloperInstructionSource = () => "first";
+                await client.ListModelsAsync();
+                string acceptedHash = client.AppliedInstructionsHash;
+                client.DeveloperInstructionSource = () => "second";
+                transport.Intercept = message => {
+                    if (Method(message) != "thread/resume") return false;
+                    transport.Emit(new { id = message["id"], error = new { message = "instruction update refused" } });
+                    return true;
+                };
+                var error = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => client.TurnAsync("request", null, null));
+                StringAssert.Contains(error.Message, "instruction update refused");
+                Assert.AreEqual(acceptedHash, client.AppliedInstructionsHash);
+                Assert.IsFalse(transport.Methods.Contains("turn/start"));
+            }
+        }
+
+        /// <summary>Refuse une reprise qui répond avec un autre fil, sans avancer l'empreinte locale.</summary>
+        /// <returns>Tâche terminée après le refus du fil incorrect.</returns>
+        [TestMethod]
+        public async Task MismatchedInstructionResumeIdentityFailsClosed()
+        {
+            var transport = new FakeTransport();
+            transport.Intercept = message => {
+                if (Method(message) != "thread/resume") return false;
+                transport.Emit(new { id = message["id"], result = new { thread = new { id = "another-thread" } } });
+                return true;
+            };
+            using (var client = Client(transport, "thread-1", "old-hash"))
+            {
+                var error = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => client.ListModelsAsync());
+                StringAssert.Contains(error.Message, "expected thread");
+                Assert.AreEqual("old-hash", client.AppliedInstructionsHash);
+                Assert.IsFalse(transport.Methods.Contains("model/list"));
+            }
+            Assert.AreEqual(CodexAppServerClient.InstructionsHash(""), CodexAppServerClient.InstructionsHash(null));
         }
 
         /// <summary>Arrête l’initialisation d’un compte non ChatGPT avant l’ouverture d’un fil.</summary>

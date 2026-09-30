@@ -47,11 +47,13 @@ namespace VBAi.Tests.Unit
             ProviderSessionStorage.PrepareCodexSession(isolated); Assert.AreEqual("private", isolated.CodexThreadId); Assert.IsNull(isolated.ResumeContext);
             foreach (string home in new[] { null, "external-store" })
             {
-                var legacy = new ChatSessionState { CodexThreadId = "old", CodexThreadHome = home, ResumeContext = "earlier branch" };
+                var legacy = new ChatSessionState { CodexThreadId = "old", CodexThreadHome = home,
+                    CodexDeveloperInstructionsHash = "old-hash", ResumeContext = "earlier branch" };
                 legacy.Entries.Add(new ChatEntry { Speaker = "Vous", Text = "question été" });
                 legacy.Entries.Add(new ChatEntry { Speaker = "Assistant", Text = "answer" });
                 ProviderSessionStorage.PrepareCodexSession(legacy);
                 Assert.IsNull(legacy.CodexThreadId); Assert.IsNull(legacy.CodexThreadHome);
+                Assert.IsNull(legacy.CodexDeveloperInstructionsHash);
                 StringAssert.Contains(legacy.ResumeContext, "earlier branch"); StringAssert.Contains(legacy.ResumeContext, "question été"); StringAssert.Contains(legacy.ResumeContext, "answer");
                 string context = legacy.ResumeContext; ProviderSessionStorage.PrepareCodexSession(legacy); Assert.AreEqual(context, legacy.ResumeContext);
                 Assert.AreEqual(2, legacy.Entries.Count);

@@ -315,7 +315,8 @@ namespace VBAi
             ProviderSessionStorage.PrepareCodexSession(currentSession);
             var ownerSession = currentSession;
             var client = new CodexAppServerClient(SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext(),
-                tools, SetStatus, settings, currentSession?.CodexThreadId, TransportFactory());
+                tools, SetStatus, settings, currentSession?.CodexThreadId,
+                currentSession?.CodexDeveloperInstructionsHash, TransportFactory());
             client.ChatUpdate += (kind, id, text, complete) =>
             {
                 if (currentSession == ownerSession && !IsDisposed && kind != "tool" && kind != "summary") ReceiveChatUpdate(kind, id, text, complete);
@@ -324,7 +325,8 @@ namespace VBAi
             client.ThreadReady += id =>
             {
                 if (currentSession == ownerSession && currentSession != null && !IsDisposed)
-                { currentSession.CodexThreadId = id; currentSession.CodexThreadHome = ProviderSessionStorage.CodexHome; SaveCurrentSession(); }
+                { currentSession.CodexThreadId = id; currentSession.CodexThreadHome = ProviderSessionStorage.CodexHome;
+                    currentSession.CodexDeveloperInstructionsHash = client.AppliedInstructionsHash; SaveCurrentSession(); }
             };
             return client;
         }
@@ -336,7 +338,6 @@ namespace VBAi
             busy = value;
             modePicker.Enabled = !value;
             approvalPicker.Enabled = modelSummary.Enabled = !value;
-            send.Enabled = true;
             newChat.Enabled = scopePicker.Enabled = sessionList.Enabled =
                 providerPicker.Enabled = refreshModels.Enabled = configure.Enabled = projectAccess.Enabled = !value;
             modelPicker.Enabled = !value && modelPicker.Items.Count > 0;

@@ -37,6 +37,18 @@ namespace VBAi.Tests.Unit
         {
             public int Type { get; set; } = 101;
             public int Protection { get; set; }
+            public int? FileNameError { get; set; }
+            public bool ClrPathNotFound { get; set; }
+            public override string FileName
+            {
+                get
+                {
+                    if (ClrPathNotFound) throw new System.IO.DirectoryNotFoundException("Path not found");
+                    if (FileNameError.HasValue) throw new System.Runtime.InteropServices.COMException("Path not found", FileNameError.Value);
+                    return base.FileName;
+                }
+                set { base.FileName = value; }
+            }
         }
         public sealed class LifecycleCollection : IEnumerable<LifecycleProject>
         {

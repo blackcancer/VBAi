@@ -13,6 +13,7 @@ namespace VBAi
         private int lastDebugMode = -1;
         private readonly SemaphoreSlim debugCommands = new SemaphoreSlim(1, 1);
         private bool observingDebug;
+        private bool postStepObservationPending;
         /// <summary>Orders user/native commands without collapsing repeated toggles or steps.</summary>
         private async Task EditorCommand(EditorMessage message)
         {
@@ -21,9 +22,23 @@ namespace VBAi
             try { await ExecuteEditorCommand(message); }
             finally
             {
-                debugCommands.Release(); Measure("debug." + message.name, timing);
+                debugCommands.Release();
+                SchedulePostStepObservation();
+                Measure("debug." + message.name, timing);
                 if (message.request > 0 && Ready && !closing && !IsDisposed) await Script("commandFinished", message.request);
             }
+        }
+        /// <summary>Starts pending observation only after user commands release their gate and busy state.</summary>
+        private void SchedulePostStepObservation()
+        {
+            // A queued user command owns the released permit before its continuation runs.
+            // Retain the request until that command completes instead of dropping a one-shot callback.
+            if (!postStepObservationPending || !Ready || !IsHandleCreated || busy || observingDebug ||
+                closing || IsDisposed || debugCommands.CurrentCount == 0) return;
+            postStepObservationPending = false;
+            // ObserveDebugMode acquires the same command gate synchronously. Its native
+            // command still yields before execution, outside the current UI callback.
+            DebugTimerTick(this, EventArgs.Empty);
         }
         /// <summary>Updates all execution decorations in one renderer round trip.</summary>
         private Task ExecutionState(string id, int line, bool reveal = true)
@@ -159,7 +174,7 @@ namespace VBAi
                     else
                     {
                         lastDebugMode = -1; await ExecutionState(null, 0);
-                        if (Ready && IsHandleCreated) BeginInvoke(new Action(() => DebugTimerTick(this, EventArgs.Empty)));
+                        postStepObservationPending = true;
                     }
                 }
                 if (!observation) { BringToFront(); Browser?.Focus(); }

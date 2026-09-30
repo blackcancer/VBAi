@@ -11,10 +11,11 @@ namespace VBAi
         /// <summary>Résout un unique projet et refuse les sélecteurs absents ou ambigus.</summary>
         /// <param name="vbe">Instance VBE dont les projets sont parcourus.</param>
         /// <param name="selector">Nom du projet, ou chemin absolu de son fichier.</param>
+        /// <param name="readHostPath">Optional owning-thread path reader for isolated host contracts.</param>
         /// <returns>Projet VBA correspondant au sélecteur.</returns>
         /// <exception cref="ArgumentException">Le sélecteur est vide ou blanc.</exception>
         /// <exception cref="InvalidOperationException">Aucun projet ou plusieurs projets correspondent.</exception>
-        public static dynamic Resolve(dynamic vbe, string selector)
+        public static dynamic Resolve(dynamic vbe, string selector, Func<object, string> readHostPath = null)
         {
             if (string.IsNullOrWhiteSpace(selector)) throw new ArgumentException("Project is required.");
             bool byPath = Path.IsPathRooted(selector);
@@ -29,7 +30,7 @@ namespace VBAi
                     continue;
                 }
                 string fileName;
-                try { fileName = (string)project.FileName; }
+                try { fileName = readHostPath == null ? VbeProjectHostPath.Read((object)project) : readHostPath((object)project); }
                 catch { continue; } // An unsaved VBProject may reject FileName.
                 if (string.IsNullOrWhiteSpace(fileName)) continue;
                 try
@@ -43,7 +44,7 @@ namespace VBAi
             }
             if (matches.Count != 1)
                 throw new InvalidOperationException("Project selector is absent or ambiguous: " + selector +
-                    ". Use the exact FileName from list_projects when names collide.");
+                    ". Use the exact HostPath from list_projects when names collide.");
             return matches[0];
         }
     }

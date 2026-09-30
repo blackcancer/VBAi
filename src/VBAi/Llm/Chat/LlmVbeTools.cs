@@ -55,10 +55,14 @@ namespace VBAi
         internal readonly VbeToolNativeBoundary Native = new VbeToolNativeBoundary();
         /// <summary>Exécute une commande sur la session hôte, sans remplacer l’orchestration de l’outil.</summary>
         internal Func<Request, Response> Execute;
+        /// <summary>Dispatches final Immediate validation and Enter to the owning chat/VBE thread.</summary>
+        internal Action<Action> ImmediateOwnerDispatch;
         /// <summary>Reads the native Immediate buffer asynchronously on the VBE STA.</summary>
         internal Func<Request, Task<object>> ReadImmediateNative;
         /// <summary>Inspects declared scalar locals asynchronously on the VBE STA.</summary>
         internal Func<Request, Task<object>> InspectLocalScalarsNative;
+        /// <summary>Saves and observes completion on the owning VBE STA.</summary>
+        internal Func<Request, Task<object>> SaveHostDocumentNative;
         /// <summary>Interroge la disponibilité native d’une récupération dans le concepteur VBE.</summary>
         internal Func<Request, bool> CanRecoverDesignerCut;
         /// <summary>Demande la sauvegarde de signature au document hôte.</summary>
@@ -101,9 +105,16 @@ namespace VBAi
             Execute = request => session.Execute(request);
             ReadImmediateNative = request => session.ReadImmediateAsync(request);
             InspectLocalScalarsNative = request => session.InspectLocalScalarsAsync(request);
+            SaveHostDocumentNative = request => session.SaveHostDocumentAsync(request);
             CanRecoverDesignerCut = request => session.CanRecoverFormCut(request);
             PersistSignature = project => session.PersistProjectSignature(project);
             this.owner = owner;
+            ImmediateOwnerDispatch = action => {
+                var control = owner as Control;
+                if (control == null || control.IsDisposed || !control.IsHandleCreated)
+                    throw new InvalidOperationException("The VBE UI owner is unavailable; Immediate Enter was not sent.");
+                if (control.InvokeRequired) control.Invoke(action); else action();
+            };
             this.settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
@@ -243,9 +254,9 @@ namespace VBAi
                 "Project", "Module", "Path", "StartLine", "ExpectedSha256", "SourceEncoding"),
             Definition("project_properties", "Read all exposed VBProject properties, component identities and a project revision.",
                 new[] { "Project" }, "Project"),
-            Definition("project_persistence_status", "Read VBProject.Saved and the exact Excel workbook, Word document, PowerPoint presentation or native standalone SWP project (Type=101) state. Documents are matched by native project identity and host PID. Unsupported hosts remain unavailable. Word/PowerPoint and SWP runtime qualification is pending. This does not write to disk.",
+            Definition("project_persistence_status", "Read VBProject.Saved and the exact Excel workbook, Word document, PowerPoint presentation, existing SOLIDWORKS SWP host project (Type=100), or standalone SWP project (Type=101) state. Documents are matched by native project identity and host PID. Unsupported hosts remain unavailable. Word/PowerPoint and SWP runtime qualification is pending. This does not write to disk.",
                 new[] { "Project" }, "Project"),
-            Definition("save_host_document", "Save the already-named writable Excel workbook, Word macro document, PowerPoint macro presentation or native standalone SWP project (Type=101) owning the exact design-mode VBE project. Requires ExpectedProjectVersion and ExpectedHostPath from project_persistence_status. Word/PowerPoint guard native identity, host PID and unchanged VBA after saving. Unsupported host projects and unsaved paths are refused. Word/PowerPoint and SWP runtime/reload qualification is pending; never treat saved flags as reload proof.",
+            Definition("save_host_document", "Save the already-named writable Excel workbook, Word macro document, PowerPoint macro presentation or existing SOLIDWORKS SWP host project (Type=100), or standalone SWP project (Type=101) owning the exact design-mode VBE project. Requires InvokeAsync, ExpectedProjectVersion and ExpectedHostPath from project_persistence_status. Word/PowerPoint and SOLIDWORKS Type100 guard native identity, host PID and unchanged VBA after saving. SOLIDWORKS invokes the built-in VBE Save command once on its owning UI thread, then yields while checking completion; timeout or changed state is Uncertain and must not trigger an automatic retry. Type100 SaveAs, unsupported host projects and unsaved paths are refused. Saved flags are not proof that code, resources or signatures survive reload.",
                 new[] { "Project", "ExpectedProjectVersion", "ExpectedHostPath" },
                 "Project", "ExpectedProjectVersion", "ExpectedHostPath"),
             Definition("save_host_document_as", "First-save an unsaved Excel VBA project as .xlsm, Word as .docm/.dotm, PowerPoint as .pptm/.potm/.ppsm, or a native standalone project (Type=101) as .swp to a new Path explicitly supplied by the user. Refuses overwrite and checks ExpectedProjectVersion, design mode, native identity and saved paths. Unsupported host projects are refused. Word/PowerPoint and SWP runtime/reload remains unqualified; reopen the file to prove persistence. VBE edit policy applies.",
@@ -380,6 +391,14 @@ namespace VBAi
         /// <returns>JSON d’une réponse réussie ou d’erreur.</returns>
         public string Invoke(string name, string arguments)
         {
+            if (name == "save_host_document")
+                return json.Serialize(Response.Failure("save_host_document requires InvokeAsync."));
+            // The synchronous path never reaches an await: native Save is async-only.
+            return InvokeCoreAsync(name, arguments, false).GetAwaiter().GetResult();
+        }
+
+        private async Task<string> InvokeCoreAsync(string name, string arguments, bool asyncSave)
+        {
             if (name == "read_immediate" || name == "inspect_local_scalars")
                 return json.Serialize(Response.Failure(name + " requires InvokeAsync."));
             if (name.StartsWith("monaco_", StringComparison.Ordinal)) return json.Serialize(Response.Failure("Monaco tools require InvokeAsync."));
@@ -484,6 +503,7 @@ namespace VBAi
                         return json.Serialize(Response.Failure(UiText.Get("The module changed since the model read it.")));
                     if (name == "replace_lines") CodeChange.PreviewRows(beforeCode.Code, request);
                 }
+                bool editApproved = false;
                 if (edit && settings.VbeEditApproval == "AskEachTime" && name != "replace_lines")
                 {
                     string summary = name + "\r\n\r\n" + json.Serialize(values);
@@ -491,14 +511,45 @@ namespace VBAi
                     {
                         if (ShowApproval(approval, owner) != DialogResult.Yes)
                             return json.Serialize(Response.Failure("User rejected the edit."));
+                        editApproved = true;
                     }
                 }
                 Response result;
                 try
                 {
+                    if (name == "save_host_document")
+                    {
+                        if (!asyncSave) return json.Serialize(Response.Failure("save_host_document requires InvokeAsync."));
+                        // Approval dialogs pump native messages; scope and policy may change there.
+                        GuardMode(name);
+                        GuardProject(name, arguments);
+                        GuardLegacyEditorMutation(name);
+                        if (settings.VbeEditApproval != "Automatic" && !(settings.VbeEditApproval == "AskEachTime" && editApproved))
+                            return json.Serialize(Response.Failure("VBE edit policy changed before Save."));
+                    }
+                    string saveBoundProject = BoundProject;
                     result = name == "status"
                         ? Response.Success(ScopedLiveSnapshot())
+                        : name == "save_host_document" && asyncSave
+                        ? Response.Success(await SaveHostDocumentNative(request))
                         : Execute(request);
+                    if (name == "save_host_document")
+                    {
+                        try
+                        {
+                            ValidateScope?.Invoke();
+                            if (!string.Equals(saveBoundProject, BoundProject, StringComparison.OrdinalIgnoreCase))
+                                throw new InvalidOperationException("The conversation project binding changed during Save.");
+                            GuardProject(name, arguments);
+                        }
+                        catch (Exception)
+                        {
+                            // Do not disclose a result after the conversation loses its project scope.
+                            return json.Serialize(Response.Success(new { SaveInvoked = true, MutationInvoked = true,
+                                Verified = false, Uncertain = true, Reason = "Project access changed while Save was pending.",
+                                Next = "Inspect the saved project locally; do not retry automatically." }));
+                        }
+                    }
                     result = FilterProjectResponse(name, result, request.Project);
                 }
                 catch (Exception error) when (name == "cut_code" || name == "paste_code" || name == "apply_procedure_rename" || name == "apply_class_member_rename")
@@ -621,6 +672,9 @@ namespace VBAi
             try { GuardMode(name); GuardProject(name, arguments); }
             catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             if (IsCatalogTool(name)) return await InvokeCatalogAsync(name, arguments);
+            // Unwind the WebView callback before potentially modal native Save. The
+            // regular Invoke pipeline below revalidates schema, scope and approval.
+            if (name == "save_host_document") await Task.Yield();
             if (name.StartsWith("monaco_", StringComparison.Ordinal)) return await InvokeMonacoAsync(name, arguments);
             try
             {
@@ -805,8 +859,16 @@ namespace VBAi
                     if (!state.Ok) return json.Serialize(state);
                     if ((int)((dynamic)state.Data).Mode != (int)values["ExpectedMode"])
                         return json.Serialize(Response.Failure("Project mode changed before Immediate execution."));
+                    VbeImmediateContext.RequireProject((string)values["Project"], state.Data);
                     return json.Serialize(Response.Success(await Task.Run(() =>
-                        Native.ExecuteImmediate((string)values["Text"]))));
+                        Native.ExecuteImmediate((string)values["Text"], enter => ImmediateOwnerDispatch(() => {
+                            GuardMode(name);
+                            GuardProject(name, arguments);
+                            if (settings.VbeEditApproval != "Automatic")
+                                throw new InvalidOperationException("Automatic VBE edit policy is required for Immediate execution.");
+                            VbeImmediateContext.RequireCurrent((string)values["Project"], (int)values["ExpectedMode"], Execute);
+                            enter();
+                        })))));
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             }
@@ -984,7 +1046,7 @@ namespace VBAi
                 }
                 catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             }
-            if (name != "debug_windows") return Invoke(name, arguments);
+            if (name != "debug_windows") return await InvokeCoreAsync(name, arguments, true);
             try
             {
                 var values = json.DeserializeObject(arguments) as IDictionary<string, object>;

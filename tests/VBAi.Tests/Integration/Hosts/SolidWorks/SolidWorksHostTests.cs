@@ -28,6 +28,14 @@ namespace VBAi.Tests.Integration
                     "The supplied PID must identify an existing SLDWORKS process.");
                 Assert.IsFalse(process.HasExited, "The supplied SLDWORKS process already exited.");
 
+                var status = VbeBridgeClient.Read(processId, "status");
+                Assert.IsNotNull(status, "The supplied SLDWORKS PID has no VBAi bridge; preload its VBE and add-in.");
+                Assert.AreEqual(true, status["Ok"], Convert.ToString(status["Error"]));
+                var provenance = VbeBridgeClient.Object(status["Data"]);
+                Assert.AreEqual(processId, Convert.ToInt32(provenance["HostProcessId"]));
+                Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), provenance["AssemblyModuleVersionId"],
+                    "SOLIDWORKS loaded another add-in build; this test must qualify the candidate assembly.");
+
                 var environment = VbeBridgeClient.Read(processId, "vbe_environment");
                 Assert.IsNotNull(environment, "The supplied SLDWORKS PID has no VBAi bridge; preload its VBE and add-in.");
                 Assert.AreEqual(true, environment["Ok"]);

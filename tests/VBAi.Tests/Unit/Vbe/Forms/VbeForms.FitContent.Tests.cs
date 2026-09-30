@@ -47,6 +47,36 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void NativeScrollFitBypassesUnsafeDescriptorSetterAndStillVerifiesReadback()
+        {
+            var previous = VbeForms.NativeDesignerObject;
+            var previousDpi = VbeForms.MeasureFitWindowDpi;
+            try
+            {
+                foreach (bool nested in new[] { false, true })
+                {
+                    var f = Create(nested);
+                    VbeForms.NativeDesignerObject = target => ReferenceEquals(target, f.Target);
+                    VbeForms.MeasureFitWindowDpi = _ => 96;
+                    int descriptorWrites = 0;
+                    f.Target.Metadata = new PropertyDescriptorCollection(f.Target.Metadata.Cast<PropertyDescriptor>().Select(property =>
+                        property.Name == "ScrollWidth" || property.Name == "ScrollHeight"
+                        ? new VbeFormsCoverageTests.LiveProperty(property.Name, typeof(double), () => property.GetValue(f.Target), value => {
+                            descriptorWrites++;
+                            throw new InvalidOperationException("Unsafe COM descriptor setter must never run.");
+                        }) : property).ToArray());
+                    dynamic result = f.Service.ApplyFitFormContent(f.Request("fit_scroll_extent"));
+                    Assert.IsTrue((bool)result.Verified, "Native scroll dimensions must use dispatch, then preserve the existing readback checks.");
+                    Assert.AreEqual(0, descriptorWrites);
+                    Assert.AreEqual(2, f.Writes);
+                    Assert.AreEqual(290d, f.ScrollWidth); Assert.AreEqual(170d, f.ScrollHeight);
+                    Assert.AreEqual(300d, f.Width); Assert.AreEqual(200d, f.Height);
+                }
+            }
+            finally { VbeForms.NativeDesignerObject = previous; VbeForms.MeasureFitWindowDpi = previousDpi; }
+        }
+
+        [TestMethod]
         public void FitRejectsInvalidRequestsStaleTreeAndRuntimeModeBeforeWriting()
         {
             var f = Create();
@@ -151,6 +181,9 @@ namespace VBAi.Tests.Unit
                 var descriptor = (PropertyDescriptor)FitCall("RequireFitProperty", f.Target, "Width", true, f.Form);
                 Assert.AreEqual(typeof(object), descriptor.ComponentType); Assert.AreEqual(typeof(double), descriptor.PropertyType); Assert.IsFalse(descriptor.IsReadOnly);
                 Assert.AreEqual(300d, descriptor.GetValue(f.Target)); descriptor.SetValue(f.Target, 123d); Assert.AreEqual(123d, f.Form.Properties.Item("Width").Stored);
+                FitCall("SetFitProperty", f.Target, descriptor, 124d);
+                Assert.AreEqual(124d, f.Form.Properties.Item("Width").Stored, "Root dimensions must remain on VBIDE properties, not Designer.Width.");
+                Assert.AreEqual(0, f.Writes);
                 Assert.IsFalse(descriptor.CanResetValue(f.Target)); Assert.IsFalse(descriptor.ShouldSerializeValue(f.Target)); Assert.ThrowsException<NotSupportedException>(() => descriptor.ResetValue(f.Target));
                 foreach (string fault in new[] { "absent", "indexed", "null", "type", "left" })
                 {

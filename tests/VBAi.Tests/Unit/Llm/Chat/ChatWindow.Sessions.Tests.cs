@@ -18,6 +18,33 @@ namespace VBAi.Tests.Unit
     public sealed partial class ChatWindowStateTests
     {
         [STATestMethod, TestCategory("Unit")]
+        public void WordDocumentScopesStayDistinctAndRejectChangedPathWithoutTransferringGrants()
+        {
+            using (var runtime = new RuntimeScope())
+            {
+                string secondPath = @"C:\Owned\Second.docm";
+                runtime.Host = r => Response.Success(r.Command == "list_projects" ? (object)new[] {
+                    new { Name = "Project", FileName = @"C:\Temp\~WRL0001.tmp", HostPath = @"C:\Owned\First.docm" },
+                    new { Name = "Project", FileName = @"C:\Temp\~WRL0002.tmp", HostPath = secondPath }
+                } : new { SelectedProject = "Project", SelectedProjectPath = @"C:\Temp\~WRL0002.tmp", SelectedHostPath = secondPath });
+                using (var window = LoadedWindow(runtime.Session))
+                {
+                    var scopes = Get<ComboBox>(window, "scopePicker");
+                    Assert.AreEqual(2, scopes.Items.Count);
+                    Assert.AreEqual(1, scopes.SelectedIndex);
+                    StringAssert.Contains(scopes.SelectedItem.ToString(), "Second.docm");
+                    Call(window, "EnsureCurrentScope");
+                    var original = Get<ChatSessionState>(window, "currentSession");
+                    secondPath = @"C:\Owned\Renamed.docm";
+                    Assert.ThrowsException<TargetInvocationException>(() => Call(window, "EnsureCurrentScope"));
+                    Call(window, "RefreshAvailableScopes", runtime.Session);
+                    Assert.AreEqual(-1, scopes.SelectedIndex);
+                    Assert.AreSame(original, Get<ChatSessionState>(window, "currentSession"));
+                }
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
         public void ScopeReadIgnoresStaleResultsAndKeepsActionsBlockedUntilLatestScopeLoads()
         {
             using (var runtime = new RuntimeScope())

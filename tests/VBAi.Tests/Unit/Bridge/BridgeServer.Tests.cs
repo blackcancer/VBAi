@@ -18,6 +18,36 @@ namespace VBAi.Tests.Unit
     public sealed partial class BridgeServerTests
     {
         [STATestMethod]
+        public void HostSaveDispatchRunsOnOwnerThreadAndReturnsUncertainResultWithoutRetry()
+        {
+            using (var dispatcher = new Control())
+            {
+                var handle = dispatcher.Handle;
+                int ownerThread = Thread.CurrentThread.ManagedThreadId;
+                int id = Guid.NewGuid().GetHashCode() & int.MaxValue;
+                using (var server = new BridgeServer(dispatcher, null, id))
+                {
+                    int saves = 0;
+                    server.SaveHostDocumentNative = async request => {
+                        Assert.AreEqual(ownerThread, Thread.CurrentThread.ManagedThreadId);
+                        Assert.AreEqual("save_host_document", request.Command);
+                        saves++;
+                        await Task.Yield();
+                        Assert.AreEqual(ownerThread, Thread.CurrentThread.ManagedThreadId);
+                        Assert.AreEqual(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
+                        return new { SaveInvoked = true, Verified = false, Uncertain = true };
+                    };
+                    server.Start();
+                    var result = SendWithMessagePump(id, "{\"Command\":\"save_host_document\",\"Project\":\"P\",\"ExpectedProjectVersion\":\"version\",\"ExpectedHostPath\":\"C:\\\\fixture\\\\Owned.swp\"}");
+                    Assert.AreEqual(true, result["Ok"]);
+                    var data = (IDictionary<string, object>)result["Data"];
+                    Assert.AreEqual(true, data["Uncertain"]); Assert.AreEqual(false, data["Verified"]);
+                    Assert.AreEqual(1, saves);
+                }
+            }
+        }
+
+        [STATestMethod]
         public void ImmediateCopyYieldsOnOwningUiThreadAndReportsAsyncFailure()
         {
             using (var dispatcher = new Control())
@@ -144,6 +174,48 @@ namespace VBAi.Tests.Unit
                     var result = SendWithMessagePump(id, "{\"Command\":\"immediate_execute\",\"ExpectedMode\":2,\"Text\":\"Debug.Print 1\"}");
                     Assert.AreEqual(false, result["Ok"]);
                     StringAssert.Contains((string)result["Error"], "Project and ExpectedMode");
+                }
+            }
+        }
+
+        [TestMethod]
+        [STATestMethod]
+        public void ImmediateCommandRequiresSelectedProjectPathBeforeNativeExecution()
+        {
+            using (var dispatcher = new Control())
+            {
+                var handle = dispatcher.Handle;
+                int id = Guid.NewGuid().GetHashCode() & int.MaxValue;
+                using (var server = new BridgeServer(dispatcher, null, id))
+                {
+                    var state = new Infrastructure.VbeToolMode { Mode = 2, Project = "SameName", SelectedProject = "SameName",
+                        SelectedProjectPath = @"C:\Temp\B.xlsm", ActiveModule = "Module1" };
+                    int ownerThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
+                    server.Execute = request => {
+                        Assert.AreEqual(ownerThread, System.Threading.Thread.CurrentThread.ManagedThreadId);
+                        return Response.Success(state);
+                    };
+                    int executions = 0;
+                    server.Native.ExecuteImmediate = (text, submit) => { submit(() => executions++); return new { Executed = true }; };
+                    server.Start();
+                    string requestJson = new JavaScriptSerializer().Serialize(new {
+                        Command = "immediate_execute", Project = @"C:\Temp\A.xlsm", ExpectedMode = 2, Text = "Debug.Print 1" });
+                    var refused = SendWithMessagePump(id, requestJson);
+                    Assert.AreEqual(false, refused["Ok"]);
+                    StringAssert.Contains((string)refused["Error"], "requested project must be active");
+                    Assert.AreEqual(0, executions);
+                    state.SelectedProjectPath = @"C:\Temp\A.xlsm";
+                    Assert.AreEqual(true, SendWithMessagePump(id, requestJson)["Ok"]);
+                    Assert.AreEqual(1, executions);
+                    server.Native.ExecuteImmediate = (text, submit) => {
+                        state.Mode = 1; // Native typing/echo completed while the approved mode changed.
+                        submit(() => executions++);
+                        return new { Executed = true };
+                    };
+                    var changed = SendWithMessagePump(id, requestJson);
+                    Assert.AreEqual(false, changed["Ok"]);
+                    StringAssert.Contains((string)changed["Error"], "mode changed");
+                    Assert.AreEqual(1, executions);
                 }
             }
         }

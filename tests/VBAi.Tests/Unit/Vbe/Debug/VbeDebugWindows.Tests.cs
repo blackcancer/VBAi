@@ -1011,6 +1011,41 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(0, fake.Enters);
         }
 
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void ImmediateRechecksContextAfterEchoAndNeverEntersWhenProjectOrModeChanges(bool changeMode)
+        {
+            var state = new VBAi.Tests.Infrastructure.VbeToolMode { Mode = 2 };
+            int reads = 0;
+            Func<Request, Response> execute = request => { reads++; return Response.Success(state); };
+            VbeImmediateContext.RequireCurrent("P", 2, execute);
+            var fake = Ready("? 1");
+            fake.OnRead = () => { if (changeMode) state.Mode = 1; else state.SelectedProject = "Other"; };
+            Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ExecuteImmediate("? 1", fake, enter => {
+                VbeImmediateContext.RequireCurrent("P", 2, execute);
+                enter();
+            }));
+            Assert.AreEqual(2, reads);
+            Assert.AreEqual(1, fake.Prepares);
+            Assert.AreEqual(1, fake.Pauses);
+            Assert.AreEqual(0, fake.Enters);
+        }
+
+        [TestMethod]
+        public void ImmediateSubmissionAllowsOneEnterAndRefusesMissingOrRepeatedSubmission()
+        {
+            var stable = Ready("? 1");
+            VbeDebugWindows.ExecuteImmediate("? 1", stable, enter => enter());
+            Assert.AreEqual(1, stable.Enters);
+            var missing = Ready("? 1");
+            Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ExecuteImmediate("? 1", missing, enter => { }));
+            Assert.AreEqual(0, missing.Enters);
+            var repeated = Ready("? 1");
+            Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ExecuteImmediate("? 1", repeated, enter => { enter(); enter(); }));
+            Assert.AreEqual(1, repeated.Enters);
+        }
+
         [TestMethod]
         public void ImmediateDistinguishesRejectedEnterPendingAndChangedOutput()
         {
