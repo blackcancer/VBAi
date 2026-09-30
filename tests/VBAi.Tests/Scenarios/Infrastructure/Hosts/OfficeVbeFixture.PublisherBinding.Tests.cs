@@ -48,6 +48,16 @@ namespace VBAi.Tests.Unit
             });
         }
 
+        [TestMethod]
+        public void SolePathlessVbeProjectBindsOnlyAfterExactNativePublicationAndAdapterProof()
+        {
+            InFixture("pathless-valid", (fixture, projects, sends) => {
+                fixture.BindStartupProject(projects);
+                Assert.AreEqual("Project", fixture.Project);
+                Assert.AreEqual(123, fixture.ProcessId); Assert.AreEqual(0, sends[0]);
+            });
+        }
+
         [DataTestMethod]
         [DataRow("doc-pid"), DataRow("app-pid"), DataRow("window-mismatch"), DataRow("multiple-documents"), DataRow("wrong-document")]
         public void UnsafeReturnedDocumentRefusesBeforeAnyBootstrapSaveOrBridgeCommand(string state)
@@ -66,6 +76,9 @@ namespace VBAi.Tests.Unit
         [DataRow("changed-during-readback"), DataRow("unsaved"), DataRow("active-window-pid"), DataRow("wrong-selected-projectpath")]
         [DataRow("wrong-host"), DataRow("run-mode"), DataRow("missing-owner"), DataRow("inventorypath-conflict")]
         [DataRow("retained-process-exited")]
+        [DataRow("pathless-foreign-proof"), DataRow("pathless-owner"), DataRow("pathless-extra-project")]
+        [DataRow("pathless-foreign-selected-path"), DataRow("pathless-selected-other"), DataRow("pathless-missing-proof")]
+        [DataRow("pathless-foreign-rawpath")]
         public void WrongWindowPathRecoveredProjectAndUnverifiedNativeAssociationRefuseBeforeBaseline(string state)
         {
             InFixture(state, (fixture, projects, sends) => {
@@ -123,6 +136,19 @@ namespace VBAi.Tests.Unit
                 if (state == "run-mode") selection["Mode"] = 1;
                 if (state == "missing-owner") persistence.Remove("OwnerProcessId");
                 if (state == "inventorypath-conflict") project["FileName"] = Path.Combine(root, "Recovered.tmp");
+                if (state.StartsWith("pathless-", StringComparison.Ordinal))
+                {
+                    project["FileName"] = project["HostPath"] = null;
+                    selection["SelectedProjectPath"] = selection["SelectedHostPath"] = null;
+                    if (state == "pathless-foreign-proof") persistence["HostPath"] = Path.Combine(root, "Recovered.pub");
+                    if (state == "pathless-owner") persistence["OwnerProcessId"] = 456;
+                    if (state == "pathless-extra-project") projects = new[] { project,
+                        new Dictionary<string, object> { ["Name"] = "Other", ["FileName"] = null, ["HostPath"] = null } };
+                    if (state == "pathless-foreign-selected-path") selection["SelectedProjectPath"] = Path.Combine(root, "Recovered.pub");
+                    if (state == "pathless-selected-other") selection["SelectedProject"] = "Other";
+                    if (state == "pathless-missing-proof") persistence["IdentityVerified"] = false;
+                    if (state == "pathless-foreign-rawpath") project["FileName"] = Path.Combine(root, "pubRecovered.tmp");
+                }
                 // The only injected seam is Win32 owner observation. The fake wrappers remain distinct objects.
                 fixture.ReadPublisherWindowOwner = hwnd => hwnd.ToInt64() == 999 ? 456u : 123u;
                 fixture.ReadPublisherProcessCanary = () => new object[] {

@@ -167,25 +167,37 @@ namespace VBAi.Tests.Integration
                 RequirePublisherPublication("BeforeProjectBinding", true);
                 var matched = projects.Where(p => SamePublicationPath(Field(p, "FileName") as string, DocumentPath) ||
                     SamePublicationPath(Field(p, "HostPath") as string, DocumentPath)).ToArray();
+                // Publisher can expose no VBIDE/catalog path at all. Only a sole pathless project
+                // is provisional: the adapter must independently prove the exact native document below.
+                bool solePathless = matched.Length == 0 && projects.Length == 1 &&
+                    string.IsNullOrWhiteSpace(Field(projects[0], "FileName") as string) &&
+                    string.IsNullOrWhiteSpace(Field(projects[0], "HostPath") as string);
+                if (solePathless) matched = projects;
                 Assert.AreEqual(1, matched.Length, "No unique exact Publisher project mapping; generic Project fallback is forbidden.");
                 var candidate = matched[0];
                 string inventoryPath = Field(candidate, "FileName") as string;
                 Assert.IsTrue(string.IsNullOrWhiteSpace(inventoryPath) || SamePublicationPath(inventoryPath, DocumentPath),
                     "Publisher inventory selected a recovered or foreign VBIDE path.");
+                string inventoryHostPath = Field(candidate, "HostPath") as string;
+                Assert.IsTrue(string.IsNullOrWhiteSpace(inventoryHostPath) || SamePublicationPath(inventoryHostPath, DocumentPath),
+                    "Publisher inventory mapped a foreign host path.");
                 string name = Field(candidate, "Name") as string;
                 Assert.IsFalse(string.IsNullOrWhiteSpace(name), "The mapped Publisher project has no name.");
                 // Use an explicit provisional selector without binding the baseline before verification succeeds.
                 string selector = SamePublicationPath(Field(candidate, "FileName") as string, DocumentPath) ? DocumentPath : name;
                 var persistence = Data("project_persistence_status", "Project", selector);
                 var selection = Data("debug_state", "Project", selector);
-                steps.Add(new { PublisherStartupProject = candidate, Persistence = persistence, Selection = selection, ProvisionalSelector = selector });
+                steps.Add(new { PublisherStartupProject = candidate, Persistence = persistence, Selection = selection,
+                    ProvisionalSelector = selector, SolePathlessProject = solePathless });
                 Assert.AreEqual(true, Field(persistence, "HostAvailable"), "Publisher's project host is unavailable.");
                 Assert.AreEqual(true, Field(persistence, "IdentityVerified"), "Publisher's project identity was not verified.");
                 Assert.AreEqual(ProcessId, Convert.ToInt32(Field(persistence, "OwnerProcessId")), "Publisher project belongs to another PID.");
                 Assert.AreEqual("Publisher", Field(persistence, "Host") as string, true);
                 Assert.IsTrue(SamePublicationPath(Field(persistence, "HostPath") as string, DocumentPath), "The adapter did not map the exact disposable publication.");
                 Assert.AreEqual(name, Field(selection, "SelectedProject") as string, true, "The active VBE project is not the mapped publication.");
-                Assert.IsTrue(SamePublicationPath(Field(selection, "SelectedHostPath") as string, DocumentPath), "VBE selected a recovered or foreign publication.");
+                string selectedHostPath = Field(selection, "SelectedHostPath") as string;
+                Assert.IsTrue((solePathless && string.IsNullOrWhiteSpace(selectedHostPath)) || SamePublicationPath(selectedHostPath, DocumentPath),
+                    "VBE selected a recovered or foreign publication.");
                 string selectedPath = Field(selection, "SelectedProjectPath") as string;
                 Assert.IsTrue(string.IsNullOrWhiteSpace(selectedPath) || SamePublicationPath(selectedPath, DocumentPath), "Selected VBIDE path disagrees with the publication.");
                 Assert.AreEqual(2, Convert.ToInt32(Field(selection, "Mode")), "The selected publication must be in design mode.");
