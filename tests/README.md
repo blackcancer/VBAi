@@ -63,7 +63,7 @@ path, code, expression or inspected value. A client timeout does not cancel or
 authorize replay of a pending native command. Retain the host and phase evidence
 when the bridge stops responding.
 
-The two `ExcelScalarDiagnostics` scenarios use a dedicated explicit bootstrap,
+The `ExcelScalarDiagnostics` scenarios use a dedicated explicit bootstrap,
 not the ordinary Excel COM-activation fixture. Set `VBAi_RUN_EXCEL_TESTS=1`,
 `VBAi_VBE_INSPECTION_TRACE` to an absolute local JSONL path with an existing parent
 directory, and `VBAi_EXCEL_RESULTS` to a durable local evidence directory. The
@@ -83,10 +83,48 @@ application. Startup, loaded add-in MVID and shutdown evidence remain in the
 fixture directory even on success. If attachment or startup is uncertain, the
 process is retained without Close, Quit, termination or another launch. Execute
 `InstalledBridgeSkipsUnsupportedScalarPageWithoutQuickWatch` first, then
-`InstalledBridgeReadsOneLongScalarWithNativePhaseEvidence`, using separate exact
-method filters; a category batch does not guarantee their order. Both require
+`InstalledBridgeReadsOneLongScalarWithNativePhaseEvidence`, and then
+`InstalledBridgeReadsFullScalarPageWithThreeNativeObservers`, using separate exact
+method filters; a category batch does not guarantee their order. Each requires
 nonempty correlated host phase evidence and the installed product MVID must
 match the assembly referenced by the tests.
+
+The full page issues one `inspect_local_scalars` request with Offset=0/Limit=6.
+It checks the exact Long/String/Boolean probe values, declaration order/type/
+position, and array/Variant/object rows skipped without a value or error. Native
+phase evidence must contain one correlation and terminal inspection, with a
+complete Command229/observer lifecycle for each eligible scalar. Selection,
+source and break mode are checked before and after; normal owned Close/Quit and
+exit are required. These synthetic runtime assertions do not establish complete
+Locals enumeration or explain a prior crash. Recorded acceptance and loaded
+candidate identity are in [validation results](../docs/test-coverage.md).
+
+For a tests-only follow-up against a frozen installed candidate, use a separate
+output containing hash-verified copies of its product/dependency binaries and
+build the test project with `BuildProjectReferences=false`. Verify the product
+hash again in the final test output; do not rebuild the product implicitly or
+overwrite a test assembly whose native campaign is still active. The exact full
+page filter is:
+
+```text
+FullyQualifiedName=VBAi.Tests.Integration.ExcelLocalScalarInspectionTests.InstalledBridgeReadsFullScalarPageWithThreeNativeObservers
+```
+
+Office adapter-only diagnostics distinguish transient Access CurrentProject
+wrapper identity from the database path and selected VBProject identity. Keep
+sampled objects alive across identity comparisons and balance their temporary
+IUnknown references; do not weaken native dispatch guards or invoke Save to
+diagnose an identity getter. A read-only identity trial with normal exit does
+not qualify adapter persistence. Adapter/property/reference acceptance requires
+its own verified save and fresh-disk reopen without post-save helper saving.
+
+If a native campaign aborts, retain the final TRX and reconcile individual
+outcomes with its raw counters and the planned scenario inventory. An in-flight
+scenario absent from the TRX and unreached cases are NOT_RUN; NotExecuted is not
+a successful fixture skip. Explicitly authorized forced cleanup is never normal
+host shutdown acceptance. Record native debugger ownership, any termination
+timeout and whether an exit code was actually observed; transient PID absence
+does not establish completed cleanup.
 
 Use disposable documents and identify the intended process/project before any
 write. Record application version, architecture, language, DPI and loaded VBAi

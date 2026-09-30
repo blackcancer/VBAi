@@ -6,7 +6,7 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Report scope
 
-Qualification checkpoint: 2026-09-30, following the 2026-09-29/30 campaign.
+Qualification checkpoint: 2026-10-01, following the 2026-09-29/30 campaign.
 The register below contains all 30 findings, Q-001 through Q-030. Each status
 applies only to the stated operation, host and tested candidate; CLOSED does not
 qualify an entire application. OPEN and PARTIAL entries remain release gates
@@ -22,9 +22,10 @@ The current installed product is MVID
 `d5e25e25-e3b4-4be0-ad45-a2dceb7be6b1`, SHA-256
 `06F9767B6970973B333E5D255210896335DA062C78F4F4116CBF150DD7E121EE`;
 `deployment-v4.json` retains installation and previous-payload backup evidence.
-Bounded Excel scalar-page acceptance is recorded for this assembly. The current
-Office adapter/property/reference campaign is still running; partial records
-are not a qualification result. Current SOLIDWORKS acceptance remains pending.
+The complete declared Excel scalar page is accepted on this assembly, including
+normal owned-process exit. The Office adapter/property/reference campaign is
+now interrupted and terminal after authorized forced cleanup; unexecuted cases
+remain unqualified. Current SOLIDWORKS lifecycle acceptance remains failed.
 
 The native results below identify their own candidates. Historical
 SOLIDWORKS acceptance uses MVID `aaf3a555-76d4-4b18-ae09-1e7b3e085934`;
@@ -68,21 +69,36 @@ resize/restoration pass, and reviewed captures show the selected module and
 class in Monaco. The class source then differs by an `on` prefix; the maintainer
 reports possible keyboard input diverted when the window gained focus. Its
 cause is not proven. The live source is retained without overwrite, save or
-execution, so strict unchanged-source and final cleanup acceptance is pending.
+execution, so strict unchanged-source acceptance remains unqualified.
+Its authorized ExitApp request stalled at native debugger heap corruption
+`0xc0000374`. Unresolved frame observations include ntdll/ucrtbase/mfc140u/sldappu
+but do not establish the originating defect. An authorized forced termination
+timed out while the debugger still held the target; the owned debugger was
+subsequently stopped after exact utility-solution and sole-target validation.
+Final debugger design mode and no debug target are not normal ExitApp evidence;
+the exit code is NOT_OBSERVED. The earlier transient PID absence is not the final
+cleanup oracle.
 SOLIDWORKS 2025, complete debugger and embedded assistant acceptance remain
 separate pending scopes; Q-014 stays open.
 
-The current Office campaign is blocked during owned Word form preparation.
+The current Office campaign aborted during owned Word form preparation.
 Its bridge timed out after a form-property request, and the old fixture entered
 native cleanup despite uncertain delivery. A noninvasive, nonsuspending stack
 observation finds the Word STA in FM20 overlay-window/visibility handling;
 this does not establish the cause. Source now records request intent before
 dispatch and retains native ownership after uncertain delivery, refusing further
-requests, save/reopen and Close/Quit. Existing blocked instances have not been
-force-terminated and are not retroactively qualified. Access save verification
+requests, save/reopen and Close/Quit. The retained testhost and Office instances
+have now received explicitly authorized forced cleanup; this is not normal
+shutdown or a qualification pass. The terminal TRX does not contain a result
+for the in-flight Word scenario, and unreached scenarios remain NOT_RUN.
+Access save verification
 also reports a changed CurrentProject COM identity, while later read-only Saved
 observations are true. Removing that guard without establishing a stable Access
-identity would weaken dispatch safety. Project HelpContextID setters fail in
+identity would weaken dispatch safety. A fresh read-only Access trial establishes
+that repeated CurrentProject getters produce distinct retained IUnknown wrappers
+while the database path and mapped/selected VBProject identity remain stable.
+Its normal exit qualifies the diagnostic only; a safe product identity correction
+and fresh save/reopen acceptance are pending. Project HelpContextID setters fail in
 Access and Publisher; metadata/reference acceptance remains incomplete.
 Exact evidence is in recorded validation.
 
@@ -108,15 +124,15 @@ operation can pass a refusal test while the capability remains unqualified.
 | Q-003 | P2 | An atomic editor batch at the size limit could be rejected because of a temporary intermediate length; repeated whole-text copying made multi-cursor batches expensive. | Validate final size atomically, preserve UTF-16 offsets/tied insertion order and benchmark production implementation. | Fixed; failing-before/passing-after regression and comparative benchmark recorded. |
 | Q-004 | P2 | SSE concatenation copied growing responses repeatedly; line/body limits were enforced after unbounded buffering. | Bound actual input bytes for SSE, JSON and catalogues; preserve complete tool arguments, cancellation and error semantics. | Fixed with generated-stream regressions and live local-model checks. |
 | Q-005 | P2 | A queued breakpoint could consume the only scheduled post-step UI observation. | Retain observation until command ownership is released, without replaying native commands or relying on the periodic timer. | Deterministic failing-before/passing-after regression recorded. |
-| Q-006 | P1 gate | Host tests could report success after uncertain saves, lost forms, stale loaded assemblies or forced termination. | Assert verified persistence, reopen without helper saving, retain form expectation, verify MVID and normal exit. | OPEN. Historical `7b5f11d8` Excel scalar inspection stalled in break mode; the old cleanup masked its original error, and Close/Quit after COM Reset was followed by a combase.dll access violation in the same PID. Current installed `d5e25e25` passes an unsupported-row page without QuickWatch and an independent Long-scalar page with terminal native phase traces, exact identity/source/selection/mode and normal exit. An earlier current-candidate fixture startup failure remains failed preparation evidence, with no observed exit code. The full scalar page and historical stall/crash cause remain unresolved; bounded page passes do not close this gate. Office persistence scopes remain operation-specific in Q-011/Q-012. Evidence: test-coverage.md. |
+| Q-006 | P1 gate | Host tests could report success after uncertain saves, lost forms, stale loaded assemblies or forced termination. | Assert verified persistence, reopen without helper saving, retain form expectation, verify MVID and normal exit. | OPEN. Historical `7b5f11d8` scalar inspection stalled in break mode and cleanup after COM Reset was followed by a combase.dll access violation. Installed `d5e25e25` now passes the complete declared scalar page: Long, String and Boolean values, unsupported array/Variant/object refusal, terminal native phase evidence, unchanged identity/source/selection/mode and normal exit. The earlier fixture startup failure remains failed preparation evidence. This closes the missing full-page trial but does not explain the historical stall/crash or qualify other runtime local types. Current Office forced cleanup and SOLIDWORKS abnormal termination remain failed lifecycle evidence. |
 | Q-007 | P2 | External COM temporaries in host fixtures could outlive Quit and obscure shutdown results. | Explicitly release owned collections/windows/commands and require normal exit; distinguish forced termination from an independent crash. | Corrected Office and Monaco fixtures passed normal-exit checks; no forced termination counted as success. |
 | Q-008 | P2 | An obsolete UI test called a removed Markdown rendering API. | Exercise the current native Markdown view, streaming, transcript virtualization, settings and Git views with isolated state. | Harness corrected; detached UI pass and captures recorded. |
 | Q-009 | P2 | NuGet runtime license/notice payloads were absent from the build output. | Deliver exact upstream texts with provenance and verify output hashes. | Payload added and final Debug/Release delivery hashes verified. |
 | Q-010 | P3 | WebView2 creates persistent per-PID profiles without a retention policy. | Define ownership and safe cleanup only after browser processes exit; preserve active/private state. | CLOSED for the newly owned editor-profile lifecycle on candidate `9924660b`: each editor has a unique environment folder; retirement and its matching BrowserProcessExited notification are both required before asynchronous cleanup. Detached real WebView2 acceptance verifies one editor can close and remove its profile while a second remains usable. Unknown legacy profiles, missing exit evidence, links and locked files are retained; no automatic legacy purge or crash recovery deletion is claimed. See recorded validation. |
 | Q-011 | P1 gate | Word/PowerPoint adapter acceptance required project-access prerequisites. | Run verified adapter-only save/reopen under a maintainer-approved host configuration. | CLOSED for adapter-only save/reopen on candidate `7b5f11d8`: Word and PowerPoint preserve the pending module/class sources and form/Label, with no post-adapter helper Save, verified disk readback and normal host exit. This scope does not explain the older Word form-creation failure or qualify every host operation. Exact evidence is in test-coverage.md. |
-| Q-012 | P1 gate | Access/Publisher host-document save adapters lacked native acceptance. | Implement and qualify an adapter, or explicitly narrow the release contract for this operation. | PARTIAL. Historical `7b5f11d8` Publisher adapter save/readback and normal exit passed. Its Access active-module-only and module-plus-class trials preserved exact disk-reopened sources and exited normally without post-adapter helper Save/compile, but their original responses remained uncertain as immediate ProjectSaved=false became true on the next read-only observation. Guarded asynchronous verification is implemented and regression-tested in installed `d5e25e25`. The current campaign reports Access document-identity verification refusal and Access/Publisher HelpContextID setter errors, then blocks during Word form preparation/cleanup. No final aggregate result is available. A tests-only containment correction retains uncertain native ownership; final acceptance remains pending and historical uncertainty is not rewritten as success. Exact evidence is in test-coverage.md. |
+| Q-012 | P1 gate | Access/Publisher host-document save adapters lacked native acceptance. | Implement and qualify an adapter, or explicitly narrow the release contract for this operation. | PARTIAL. Historical `7b5f11d8` Publisher adapter save/readback passed; its Access trials preserved disk-reopened sources and exited normally but retained uncertain save responses. Installed `d5e25e25` includes guarded deferred verification. Its interrupted Office campaign passes Publisher Description but fails Access document-identity checks and Access/Publisher HelpContextID setters; forced cleanup and unexecuted scenarios do not qualify persistence. Read-only Access evidence proves transient CurrentProject wrapper identity despite stable path and mapped/selected VBProject, with normal diagnostic exit. The product identity correction, successful current-candidate save/reopen and remaining metadata/reference acceptance are pending. Exact terminal outcomes are in test-coverage.md. |
 | Q-013 | P1 gate | Classic Outlook initially had no configured profile. | Qualify a read-only scenario in an explicitly configured classic profile without modifying mail or production VBA. | CLOSED for read-only startup/metadata: `outlook-accepted/native.trx`, MVID `ce19a20c-9708-4c17-b998-f3415b8e6303`; exact PID, project inventory, scoped debug state and environment passed, normal exit 0. No account configured by automation, no mail read/sent or VBA mutation. |
-| Q-014 | P1 gate | SOLIDWORKS versions require independent native acceptance. | Qualify load, UI, disposable module/form operations, compile/debug, persistence and cleanup in each explicitly selected version. | PARTIAL on aaf3: existing Type100 save and saved-copy module/class/form readback passed separately in 2019 SP5 and 2025 (Q-021). Reviewed designer captures show the synthetic form and label without clipping; assistant behavior is outside those frames. The 2025 resize check passed before opening its form. The 2019 resize check after opening its form failed with `Editor did not adapt`, although original placement was restored; the historical cause remains unproven. Follow-up source updates hidden Monaco bounds even with a designer/Object Browser selected, skips unchanged native resizes and preserves child order/focus; detached Windows MDI regression reproduces the missing update before correction and passes afterward. Required native 2019/2025 acceptance remains open. Full debugger, focus/navigation and embedded assistant workflows remain open. The user authorized autonomous host close/relaunch and discarding open work; Both owned hosts exited normally with code 0. |
+| Q-014 | P1 gate | SOLIDWORKS versions require independent native acceptance. | Qualify load, UI, disposable module/form operations, compile/debug, persistence and cleanup in each explicitly selected version. | PARTIAL. Historical aaf3 existing-Type100 save and saved-copy module/class/form readback passed independently in 2019 SP5 and 2025, with normal exits (Q-021); historical designer-resize failure remains recorded. Installed `d5e25e25` now passes 2019 load, copied native Edit Macro/source/form readback, Monaco return-to-code and designer/code resize. Later live class-source drift remains unproven and unmodified. Its ExitApp stalled at native heap corruption 0xc0000374; authorized forced/debugger cleanup is not normal shutdown, and exit code is NOT_OBSERVED. Full lifecycle, debugger/assistant workflows and current-candidate 2025 acceptance remain open. |
 | Q-015 | P2 gate | The initial instrumented suite timed out on post-step observation; its direct relationship to Q-005 is not proven. | Repeat the complete suite on the corrected source and retain failures/skips honestly. | CLOSED for source b77a782, candidate d5e25e25: the complete instrumented suite finished successfully after correcting the catalogue failure observed on f04a35b8. The preceding clean 0ddb0dd/7b5f11d8 pass remains candidate-specific historical evidence. Exact counters, assembly identity, scope and artifacts are in recorded validation. Historical failing and interrupted runs remain failures/incomplete evidence, and their causes are not retroactively attributed. Native/provider opt-in skips remain separate gates. |
 | Q-016 | P2 | Shift+Tab accepted a composer suggestion instead of allowing backward keyboard navigation. | Leave backward navigation unhandled while preserving plain-Tab suggestion acceptance. | Fixed; focused regression passed. |
 | Q-017 | P2 | The French welcome card is clipped in the narrow native chat panel. | All welcome actions remain visible or reachable by normal scrolling, including after resize. | Fixed by measuring the Designer table at its available width; failing-before/passing-after geometry checks and inspected native recapture confirm all actions are visible. |

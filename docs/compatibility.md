@@ -25,7 +25,7 @@ operation, language feature or UI surface.
 
 ## Recorded host evidence
 
-The observations below come from the **2026-09-29/30** qualification artifacts for
+The observations below come from the **2026-09-29 through 2026-10-01** qualification artifacts for
 Microsoft 365 **16.0.20326.20158 x64**. The `office-final`, `monaco-save`,
 `monaco-privacy`, `ui-native-startup`, `ui-native-placement` and `outlook` runs used
 the candidate with DLL SHA-256 beginning `482864942BAC`; `excel-final` used the
@@ -33,12 +33,38 @@ candidate beginning `F3C48EAEA590`. These are separate build observations, not a
 blanket qualification of v1.0.0. Full provenance and test totals belong in
 [recorded validation](test-coverage.md).
 
+The currently installed product is MVID
+`d5e25e25-e3b4-4be0-ad45-a2dceb7be6b1`, with deployment and backup records in
+`followup-20260930/deployment-v4.json`. Its Excel declared-scalar page passes
+native Long/String/Boolean readback, unsupported array/Variant/object refusal,
+correlated QuickWatch observer completion, unchanged source/selection/mode and
+normal owned-process exit. This is a declared-page result, not complete runtime
+Locals enumeration or acceptance in another host; the historical scalar stall
+and crash cause remain open in Q-006.
+
+On this same product, the Office adapter/property/reference campaign is terminal
+after authorized forced cleanup. Publisher Description passed, while Access
+save identity checks and Access/Publisher HelpContextID setters failed. Word
+stalled during form preparation, with no terminal scenario result; unexecuted
+cases remain NOT_RUN. The subsequent read-only Access diagnostic observes
+changing CurrentProject wrapper IUnknown identities with a stable database path
+and mapped/selected VBProject, followed by normal exit. It qualifies diagnosis
+only; a guarded adapter correction and new save/reopen acceptance remain pending.
+
+Current SOLIDWORKS 2019 SP5 load, copied Edit Macro/source/form readback, Monaco
+return-to-code and designer/code resize passed. Later class-source drift remains
+unproven and unmodified. ExitApp stalled at native heap corruption `0xc0000374`;
+authorized force/debugger cleanup ended the retained target without an observed
+normal exit code. That cleanup does not qualify lifecycle behavior or establish
+the crash cause. Current-candidate SOLIDWORKS 2025 acceptance remains NOT_RUN.
+Exact provenance and terminal outcomes belong in recorded validation.
+
 The later `office-prerequisites-ready` and `outlook-ready` runs used loaded MVID
 `3553ced4-f24c-4982-8a33-a593681d867e`, with DLL SHA-256 beginning
 `026640435307`. Word and PowerPoint project-access prerequisites were enabled
 and a classic Outlook profile was present for these runs.
 
-The latest `office-accepted` and `outlook-accepted` runs used MVID
+The historical `office-accepted` and `outlook-accepted` runs used MVID
 `ce19a20c-9708-4c17-b998-f3415b8e6303`, DLL SHA-256 beginning `581E9889F99E`.
 Every owned Office process in that batch exited normally with code 0; none was
 forcibly terminated. These results supersede the earlier Word save and Outlook
@@ -86,7 +112,7 @@ binary, not the later edits listed in the coverage summary.
 `save_host_document` tool.** Native VBE Save, an application adapter and the host's
 own save API are distinct paths.
 
-The current follow-up campaign does not inherit the historical Office successes
+The earlier follow-up campaigns do not inherit the historical Office successes
 in the table. Candidate `096b2e2b` passed the disposable PowerPoint adapter-only
 save/reopen path with normal exit. Word's form creation timed out after its
 project-access prerequisite was enabled; the later user closure produced a
@@ -141,9 +167,12 @@ close/reopen path; reopening through a SOLIDWORKS menu was not exercised.
 
 The later `solidworks-ui/sw2019-newmacro/vbe-47126866.png` shows a new native
 module selected while Monaco retains a closed project's draft. Current source
-opens a module at startup, through the editor command, or by double-clicking its
-native project-tree node; it does not follow every native selection change.
-The double-click path still needs native qualification for this scenario. Chat
+also follows native code-pane activation on the owning STA, with project,
+component, active-window, mode and protection guards and revalidation after
+renderer capture. It preserves an explicitly selected Monaco tab while the
+native pane is unchanged. The `d5e25e25` 2019 return-to-code captures verify the
+activated module/class in Monaco; a mere project-tree selection without native
+code activation is outside that following path. Chat
 project scope deliberately remains independent of editor selection; when its
 project closes, the scope should clear and sending should become unavailable.
 
@@ -169,8 +198,10 @@ The reviewed aaf3 frames in `solidworks-ui/sw2019-aaf3-form/` and
 clipping, with native panes preserved. Neither frame contains the assistant.
 `solidworks-2025-aaf3-resize.json` passes the layout check before form opening.
 `solidworks-2019-aaf3-resize.json` instead reports `Editor did not adapt` after
-form opening and verifies restoration of the original placement. This is an
-open UI gap, with no established cause; earlier passing layouts do not override it.
+form opening and verifies restoration of the original placement. This remains
+historical failed evidence with no established cause. The later `d5e25e25` native
+2019 designer/code resize and restoration pass for their recorded layout; they
+do not qualify another layout or current-candidate 2025 behavior.
 Both versions still require fuller code/designer/Object Browser switching,
 focus and command routing, visible debugger feedback, embedded assistant
 approval, streaming/cancellation and project privacy qualification. A bridge

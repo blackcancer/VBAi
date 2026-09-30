@@ -59,10 +59,11 @@ Coverage measures only managed `VBAi`: **33,343/33,529 lines (99.45%)** and
 Native Office/SOLIDWORKS and live-provider opt-ins were disabled. Skipped
 scenarios, native C++ and JavaScript are not covered by this acceptance result.
 
-## Current installed candidate: bounded native follow-up (2026-09-30)
+## Current installed candidate: native follow-up (2026-09-30/2026-10-01)
 
 The accepted scalar pages use installed product `d5e25e25` and tests-only
-source `c68f85b`; the earlier startup failure is retained separately.
+source `c68f85b`, followed by the complete-page scenario from `b81b317`.
+The earlier startup failure is retained separately.
 The source changes after `b77a782` are not included in the complete managed
 run above and do not constitute a new coverage measurement.
 
@@ -71,14 +72,18 @@ run above and do not constitute a new coverage measurement.
 | `scalar-v4-skipped/scalar-skipped.trx` | **0 passed, 1 failed, 0 skipped** | Fixture startup threw NullReferenceException before opening VBE or checking the loaded add-in. The explicit bootstrap records PID **50200**; its later absence is not an observed exit code. This remains failed preparation evidence. |
 | `scalar-v4-skipped-v2/scalar-skipped-v2.trx` | **1 passed, 0 failed, 0 skipped** | Owned Excel PID **8828**, Microsoft 365 x64 **16.0.20326.20158**, exact loaded MVID `d5e25e25`; array, Variant and object rows are skipped without QuickWatch. Native enqueue/STA/context/terminal phases, unchanged source, identity, selection and mode are verified. Normal owned Close/Quit, no forced termination, exit **0x00000000**. |
 | `scalar-v4-long/scalar-long.trx` | **1 passed, 0 failed, 0 skipped** | Owned Excel PID **59460**, same Office build and exact loaded MVID; one Long scalar is read through native QuickWatch. Command 229, observer read, continuation and terminal phases complete with unchanged source/identity/selection/mode; normal exit **0x00000000**, no forced termination. |
-| `office-adapter-v4/` | **BLOCKED; no terminal aggregate result** | Tests-only source `c68f85b`, installed candidate `d5e25e25`. Access metadata save responses refuse changed document identity; Access and Publisher HelpContextID setters fail. Word PID **60408** times out after form creation/property preparation and blocks native cleanup. Access **54632** and Publisher **58748** are also retained after cleanup refusal/timeout. Unreached cases remain NOT_RUN; no aggregate count is inferred. |
+| `scalar-v4-full/scalar-full.trx` | **1 passed, 0 failed, 0 skipped** | Complete page from tests-only source `b81b317`, compiled against frozen product `d5e25e25`, owned Excel PID **26384** on the same Office build. Exactly one Offset=0/Limit=6 request reads Long=42, the exact quoted String probe and Boolean=True/Vrai, then skips array/Variant/object with no values. One correlation records three Command229/observer/continuation cycles and a terminal outcome; identity, source, mode and selection remain unchanged. Normal exit **0x00000000**, no forced termination. |
+| `office-adapter-v4/office-adapter-v4.trx` | **ABORTED campaign; 17 planned, TRX total 9/executed 5: 1 passed, 4 failed; 4 individual NotExecuted rows** | Tests-only source `c68f85b`, installed `d5e25e25`. Publisher Description passes; Access Description/HelpFile save identity checks and Access/Publisher HelpContextID setters fail. Raw counters report notExecuted=0 despite the four individual NotExecuted rows, which remain unexecuted. In-flight Word has no result in the TRX; the remaining planned cases are NOT_RUN. Authorized termination of testhost **23892**, Word **60408**, Access **54632** and Publisher **58748** is cleanup, not a normal-exit pass. |
+| `access-identity-readonly/access-readonly-identity.trx` | **1 passed, 0 failed, 0 skipped** | Tests-only diagnostic `eb84f2b`, owned Access 16 PID **3156**, loaded product `d5e25e25`. Five simultaneously retained CurrentProject wrappers have distinct IUnknown identities while database path and mapped/selected VBProject identity remain stable; Application/VBE identity is also recorded. No source/property edit or adapter Save is invoked; balanced references and normal exit **0** are recorded. This is identity diagnosis, not persistence acceptance. |
 | `solidworks-2019-v4-vstest/solidworks-load-v4.trx` | **1 passed, 0 failed, 0 skipped** | Owned 2019 SP5 PID **51376**, revision **27.5.0**, exact loaded `d5e25e25`; VBE inventory and VBAi.AddIn connected state verified. No macro execution or shutdown acceptance is included. |
 
 Each accepted scalar page retains its own `inspection.jsonl` plus exact owned
 `hosts/<fixture>/startup.json` and `shutdown.json`. The initial fixture failure
 was corrected by querying the process image through its retained native handle.
-The later page passes do not explain the historical `7b5f11d8` bridge stall or
-combase.dll crash, and do not cover the full scalar page. Q-006 remains open.
+The complete-page trial closes the concrete missing declared-page test scope,
+but does not explain the historical `7b5f11d8` bridge stall or combase.dll crash.
+It does not enumerate every runtime local type or qualify another host. Q-006
+remains open for unresolved historical failure and host lifecycle evidence.
 
 Current SOLIDWORKS native bootstrap is retained in
 `solidworks-2019/stage-f4667f08b6b641b7ba00a0cc6d59bb71/`. The module/class/form
@@ -89,7 +94,29 @@ PNG captures are recorded alongside them. The later class source has an `on`
 prefix, and the maintainer reports possible diverted keyboard input. The
 cause remains unproven. `solidworks-2019-v4-ui-evidence.json` preserves the
 changed source and records PARTIAL acceptance, with no harness source writes,
-macro executions or cleanup after drift.
+macro executions or source restoration after drift.
+
+The current 2019 instance did not exit normally. After the authorized single
+ExitApp request, PID **51376** remained stopped in its native debugger at heap
+corruption **0xc0000374**. Address/module observations include `ntdll.dll`,
+`ucrtbase.dll`, `mfc140u.dll` and `sldappu.dll`, without resolved symbols; these
+frames do not establish the originating defect. The single authorized forced
+termination exceeded its ten-second wait while the debugger retained its target.
+An initial PID lookup reported absence, but process-name/debugger observations
+still showed termination pending; that lookup is not final shutdown proof.
+After verifying Visual Studio PID **49796**, its owned utility solution and sole
+debug target **51376**, `Debugger.Stop(false)` was invoked once and returned.
+The final `dte-readonly-49796-9a9faefd314049d995a6b814abb3ebb2.json` records design
+mode and an empty process collection, with no remaining SOLIDWORKS process by
+name confirmed in `solidworks-2019-v4-cleanup-terminal.json`. Exit code remains
+**NOT_OBSERVED**, and no additional kill was issued.
+Retained records are `solidworks-2019-v4-normal-close.json`,
+`solidworks-2019-v4-native-crash-frames.json`,
+`solidworks-2019-v4-authorized-forced-cleanup.json` and
+`solidworks-2019-v4-forced-cleanup-reconciliation.json` and
+`solidworks-2019-v4-debugger-cleanup.json` and
+`solidworks-2019-v4-cleanup-terminal.json`. None is normal shutdown
+acceptance; Q-014 and the relevant lifecycle gate remain open.
 
 Word read-only CDB evidence is
 `office-adapter-v4/word-60408-readonly-stacks-v2.log` and its companion JSON.
@@ -100,6 +127,19 @@ has **11 passed, 0 failed, 0 skipped** in the agent's
 `artifacts/test-results/office-adapter-containment/office-containment-final-pure.trx`.
 Those fake-dispatch regressions do not retroactively qualify the blocked batch
 or exercise a native host. The installed product hash remains unchanged.
+
+The Office run is now terminal after the maintainer-authorized forced cleanup,
+recorded in `office-adapter-v4/authorized-forced-cleanup.json` and
+`authorized-retained-host-cleanup.json`. The TRX ResultSummary is Failed;
+ABORTED describes the interrupted campaign, not a rewritten TRX outcome.
+An absent Word result and unexecuted cases do not become passes or fixture
+skips. The later read-only Access probe and normal exit are independent of the
+failed batch: `access-identity-readonly/hosts/Access/` retains
+`access-identity-probe.json` and its companion qualification/shutdown stages.
+It proves that CurrentProject wrapper identity can change without a database
+or selected VBProject change. A guarded product correction and fresh adapter
+save/reopen acceptance are still pending; no identity guard is removed by this
+diagnostic result.
 
 ## Historical native and fixture follow-up (2026-09-30)
 
