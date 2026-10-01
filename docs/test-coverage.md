@@ -1,5 +1,35 @@
 # Recorded validation
 
+## Local conversation lifetime (2026-10-02)
+
+Source `608c002d66e2eb46c735252c7c40f8a7fb8cb3a2` integrates local conversation
+deletion and memory-only history for unsaved projects. The isolated solution build
+has no warnings or errors. Its product MVID is
+`d2c3601b-893d-4e84-b9e3-c172da7e2437`, SHA-256
+`C4D095D9427379AC8F2A82D047C8780637A0E815173241976F2C86664E777644`;
+test assembly SHA-256 is
+`D96F9C4277415845642376C2A609114225FDDC4FA3EE99D382FEA5035178F573`.
+
+The integrated regression batch reports **190 passed, zero failed, one skipped**
+(`LocalOllamaShownChatStreamsStopsAndCompletesNextSend`, opt-in absent).
+`artifacts/session-history-validation/history-regression.trx` covers chat state,
+SQLite storage and its worker, initial-scope transactions, input controls,
+localization branches and WinForms Designer compatibility. Project objects and
+Codex transport are doubles; SQLite and Windows controls are real. This is not
+a native-host or authenticated-provider qualification and uses no coverage
+collector, so it does not establish a line/branch percentage.
+
+Scenarios verify memory-only temporary drafts and notes, deletion without SQLite,
+exact-object first-save transfer, same-name replacement and Save As isolation,
+notes/bookmark destination collisions, whole-batch rollback, competing SQLite
+connections and preservation after an unverified commit without automatic replay.
+The tested binaries were copied to the existing `bin/Debug/net48` installation
+path with all VBA hosts closed; previous binaries remain in
+`artifacts/session-history-validation/installed-backup`. `build-identity.json`
+and `deployment.json` in the same evidence directory record identity and scope.
+No registration changed or host launched; loading in an actual host remains a
+separate check. See [local data behavior](privacy.md#local-data).
+
 ## Q-027 UserForm follow-up (2026-10-02)
 
 Evidence is under `artifacts/native-qualification-20261001`. The current
@@ -16,7 +46,7 @@ restoration without relaxing the FRX comparison. The current source corrects one
 native accessibility ListBox external-selection cache and bounds owner names
 before path construction; it does not change font comparison semantics.
 
-The read-only `installed-baseline-refresh.json` records the currently installed
+The read-only `installed-baseline-refresh.json` records the installed baseline before these trials:
 `bin/Debug/net48/VBAi.dll` as MVID `2e671006-380b-41ff-98d2-5f0d9daa2cf7`,
 SHA-256 `18CF74184F453F4CBF8430D299954DC7A649D04D7EC1EEAE6D9666A0F9155C04`,
 last written `2026-10-01T19:48:04Z`. Its provenance is unknown; the earlier
@@ -82,7 +112,7 @@ guard refuses Quit. Separate forced cleanup then exits that exact owned macro-fr
 seed; its shared-read file hash is unchanged. This cleanup does not qualify the
 original TextBox scenario. The terminal records unchanged candidate hashes and
 no remaining Office host. Registration context 11 is restored and verified in
-both contexts; installed DLL SHA-256 remains `18CF74184F453F4CBF8430D299954DC7A649D04D7EC1EEAE6D9666A0F9155C04`.
+both contexts; the installed DLL SHA-256 at the end of these trials remained `18CF74184F453F4CBF8430D299954DC7A649D04D7EC1EEAE6D9666A0F9155C04`.
 
 ## Native qualification refresh (2026-10-01)
 
