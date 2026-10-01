@@ -3,7 +3,7 @@ using System;
 namespace VBAi
 {
     /// <summary>Canonicalizes only documented MS-OFORMS padding in supported logical f/o streams.</summary>
-    internal static class FormStreamPadding
+    internal static partial class FormStreamPadding
     {
         // Primary grammar: MS-OFORMS 2.1.1.2.4, 2.2.1, 2.2.4, 2.2.10 and 2.3.
         // https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-oforms/622ed335-0723-4491-b271-e4767d7453e3
@@ -133,7 +133,7 @@ namespace VBAi
             uint objectSize = block.Field(mask, 5, 4);
             block.Field(mask, 6, 2);
             uint type = block.Field(mask, 7, 2);
-            Require(type == 17 || type == 21);
+            Require(type == 17 || type == 21 || IsMorphType(type));
             block.Field(mask, 9, 2);
             uint tooltip = block.Field(mask, 11, 4), license = block.Field(mask, 12, 4);
             uint source = block.Field(mask, 13, 4), rows = block.Field(mask, 14, 4);
@@ -147,7 +147,8 @@ namespace VBAi
             if (Has(mask, 14)) block.String(rows);
             block.Finish();
             Reader control = objects.Section(objectSize);
-            ParseLeaf(control, type == 21);
+            if (IsMorphType(type)) ParseMorph(control, type);
+            else ParseLeaf(control, type == 21);
             control.Finish();
         }
 
