@@ -84,7 +84,7 @@ namespace VBAi.Tests.Integration
             object window = null;
             try
             {
-                observation["ApplicationVersion"] = Convert.ToString(((dynamic)application).Version);
+                observation["ApplicationVersion"] = ObserveGetter(() => Convert.ToString(((dynamic)application).Version), phase, "Application.Version");
                 using (var process = Process.GetProcessById(ProcessId))
                 {
                     observation["HostExecutable"] = process.MainModule.FileName;
@@ -94,8 +94,8 @@ namespace VBAi.Tests.Integration
                 else if (Kind == "PowerPoint") observation["ApplicationHwnd"] = PowerPointWindow.Read(application).ToInt64();
                 else
                 {
-                    window = ((dynamic)application).ActiveWindow;
-                    observation["ApplicationHwnd"] = Convert.ToInt64(((dynamic)window).Hwnd);
+                    window = ObserveGetter<object>(() => ((dynamic)application).ActiveWindow, phase, "Application.ActiveWindow");
+                    observation["ApplicationHwnd"] = ObserveGetter(() => Convert.ToInt64(((dynamic)window).Hwnd), phase, "ActiveWindow.Hwnd");
                 }
                 uint owner;
                 GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(observation["ApplicationHwnd"])), out owner);
@@ -126,6 +126,16 @@ namespace VBAi.Tests.Integration
                 FlushAdapterEvidence();
             }
             return observation;
+        }
+
+        /// <summary>Records each bounded retry of a named read-only getter without repeating an adapter action.</summary>
+        private T ObserveGetter<T>(Func<T> read, string phase, string name)
+        {
+            return OfficeObservationRead.Getter(read, (attempt, delay) => {
+                steps.Add(new { ReadOnlyGetterRetry = name, Phase = phase, Attempt = attempt, DelayMilliseconds = delay,
+                    HResult = "0x80010001", SaveRetryInvoked = false, Utc = DateTime.UtcNow.ToString("O") });
+                FlushAdapterEvidence();
+            });
         }
 
         /// <summary>Records the unchanged adapter result while yielding for delayed read-only native observations.</summary>
