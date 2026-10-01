@@ -213,6 +213,47 @@ namespace VBAi.Tests.Unit
                 Assert.AreEqual(0, application.QuitCount); Assert.AreEqual(0, document.CloseCount);
             });
         }
+        [TestMethod]
+        public void SettledScopeCollectionIsWordOptInAndRejectsUncertainOrUnownedFixtures()
+        {
+            string prior = Environment.GetEnvironmentVariable("VBAi_TEST_WORD_SETTLED_SCOPE_GC");
+            try
+            {
+                WithFakeFixture((fixture, application, document, process, root) => {
+                    int collections = 0; fixture.CollectSettledWordReferences = () => collections++;
+                    Environment.SetEnvironmentVariable("VBAi_TEST_WORD_SETTLED_SCOPE_GC", null);
+                    fixture.CollectSettledWordScopeDiagnostic(); Assert.AreEqual(0, collections);
+                    Environment.SetEnvironmentVariable("VBAi_TEST_WORD_SETTLED_SCOPE_GC", "1");
+                    SetProperty(fixture, "Kind", "Access");
+                    fixture.CollectSettledWordScopeDiagnostic(); Assert.AreEqual(0, collections);
+                    SetProperty(fixture, "Kind", "Word");
+                    fixture.NativeExecutionUnsettled = true;
+                    Assert.ThrowsException<AssertFailedException>(() => fixture.CollectSettledWordScopeDiagnostic());
+                    fixture.NativeExecutionUnsettled = false;
+                    SetField(fixture, "owned", false);
+                    Assert.ThrowsException<InvalidOperationException>(() => fixture.CollectSettledWordScopeDiagnostic());
+                    SetField(fixture, "owned", true);
+                    SetProperty(fixture, "ProcessId", process.Id + 1);
+                    Assert.ThrowsException<AssertFailedException>(() => fixture.CollectSettledWordScopeDiagnostic());
+                    SetProperty(fixture, "ProcessId", process.Id);
+                    Assert.AreEqual(0, collections);
+                    fixture.CollectSettledWordScopeDiagnostic(); Assert.AreEqual(1, collections);
+                    var report = Read(Path.Combine(root, "word-settled-scope-gc.json"));
+                    Assert.AreEqual(true, report["DiagnosticOnly"]); Assert.AreEqual(true, report["CollectCompleted"]);
+                    Assert.AreEqual(false, report["BridgePending"]); Assert.AreEqual(false, report["BridgeUncertain"]);
+                    Assert.AreEqual(0, application.QuitCount); Assert.AreEqual(0, document.CloseCount);
+                });
+                WithFakeFixture((fixture, application, document, process, root) => {
+                    int collections = 0; fixture.CollectSettledWordReferences = () => collections++;
+                    fixture.Dispatch = (_, __) => { throw new InvalidOperationException("Unconfirmed delivery"); };
+                    Assert.ThrowsException<InvalidOperationException>(() => fixture.Data("status"));
+                    Assert.ThrowsException<InvalidOperationException>(() => fixture.CollectSettledWordScopeDiagnostic());
+                    Assert.AreEqual(0, collections);
+                    Assert.IsFalse(File.Exists(Path.Combine(root, "word-settled-scope-gc.json")));
+                });
+            }
+            finally { Environment.SetEnvironmentVariable("VBAi_TEST_WORD_SETTLED_SCOPE_GC", prior); }
+        }
         private static void WithFakeFixture(Action<OfficeVbeFixture, FakeApplication, FakeDocument, Process, string> action)
         {
             string root = Path.Combine(Path.GetTempPath(), "VBAi-OwnedShutdown-" + Guid.NewGuid().ToString("N"));

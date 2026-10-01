@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Web.Script.Serialization;
@@ -41,105 +42,113 @@ namespace VBAi.Tests.Integration
             using (var fixture = OfficeVbeFixture.Start(host, host == "Access" ? "Access.Application.16" : null,
                 allowExistingHost: true, allowForcedTermination: false))
             {
-                try
-                {
-                Console.WriteLine("Registered Office qualification=" + fixture.Root);
-                var status = fixture.Data("status");
-                Save(fixture, "identity.json", new { CurrentSourceRevision = sourceRevision, SourceStatus = sourceStatus,
-                    Host = host, fixture.ProcessId, fixture.DocumentPath, fixture.Project, LoadedAssembly = status,
-                    ExecutionBoundary = "Registered in-process add-in with registered VBAi.TestRuntime callback" });
-                Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), status["AssemblyModuleVersionId"]);
-                Assert.AreEqual(fixture.ProcessId, Convert.ToInt32(status["HostProcessId"]));
-                Save(fixture, "callback-registration.json", RequireCallback((string)status["AssemblyPath"]));
+                ExecuteRegisteredOfficeQualification(fixture, host, sourceRevision, sourceStatus);
+                // The successful non-inlined scope has returned before the optional testhost-only collection.
+                fixture.CollectSettledWordScopeDiagnostic();
+            }
+        }
 
-                fixture.Data("create_module", "Module", ModuleName, "ExpectedMode", 2);
-                bool documentCoverage = host == "Word" || host == "PowerPoint";
-                if (documentCoverage)
-                {
-                    fixture.Data("create_module", "Module", ProductionModuleName, "ExpectedMode", 2);
-                    ReplaceSource(fixture, ProductionSource, ProductionModuleName);
-                }
-                ReplaceSource(fixture, documentCoverage ? DocumentCoverageSource : Source);
-                var original = fixture.Data("read_module", "Module", ModuleName);
-                File.WriteAllText(Path.Combine(fixture.Root, "synthetic-tests.bas"), (string)original["Code"], Utf8);
-                var before = fixture.Data("discover_vba_tests");
-                Save(fixture, "discovery-before.json", before);
-                AssertCatalogue(before);
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ExecuteRegisteredOfficeQualification(OfficeVbeFixture fixture, string host, string sourceRevision, string sourceStatus)
+        {
+            try
+            {
+            Console.WriteLine("Registered Office qualification=" + fixture.Root);
+            var status = fixture.Data("status");
+            Save(fixture, "identity.json", new { CurrentSourceRevision = sourceRevision, SourceStatus = sourceStatus,
+                Host = host, fixture.ProcessId, fixture.DocumentPath, fixture.Project, LoadedAssembly = status,
+                ExecutionBoundary = "Registered in-process add-in with registered VBAi.TestRuntime callback" });
+            Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), status["AssemblyModuleVersionId"]);
+            Assert.AreEqual(fixture.ProcessId, Convert.ToInt32(status["HostProcessId"]));
+            Save(fixture, "callback-registration.json", RequireCallback((string)status["AssemblyPath"]));
 
-                var preview = fixture.Data("preview_vba_test_support");
-                string support = (string)preview["Text"];
-                // Review the complete generated source against the source generator in this exact candidate build.
-                // Installation still requires both the exact preview text and its exact project revision.
-                Assert.AreEqual(VbaTestRuntimeSource.Generate(ReviewCatalogue(before)), support,
-                    "The installed candidate did not generate the exact reviewed support source.");
-                StringAssert.Contains(support, "CreateObject(\"VBAi.TestRuntime\")");
-                StringAssert.Contains(support, "Public Sub VBAiExecutePendingTest()");
-                Assert.IsFalse(support.Contains("Shell("), "Unexpected generated execution outside VBA.");
-                File.WriteAllText(Path.Combine(fixture.Root, "reviewed-support.bas"), support, Utf8);
-                Save(fixture, "support-preview.json", preview);
-                var installed = fixture.Data("install_vba_test_support", "ExpectedProjectVersion", preview["ExpectedProjectVersion"],
-                    "ExpectedMode", 2, "Text", support);
-                Save(fixture, "support-install.json", installed);
-                Assert.AreEqual(true, installed["Applied"]);
-                fixture.SaveNative();
-                var catalog = fixture.Data("discover_vba_tests");
-                Save(fixture, "discovery-ready.json", catalog);
-                var tests = AssertCatalogue(catalog);
-                Assert.IsTrue(string.IsNullOrEmpty(catalog["ExecutionUnavailableReason"] as string),
-                    "Registered execution is unavailable: " + catalog["ExecutionUnavailableReason"]);
-                string revision = (string)catalog["ExpectedProjectVersion"];
-                string[] ids = tests.OrderBy(test => (string)test["Procedure"], StringComparer.Ordinal).Select(test => (string)test["Id"]).ToArray();
-                Assert.AreEqual(4, ids.Distinct(StringComparer.Ordinal).Count());
+            fixture.Data("create_module", "Module", ModuleName, "ExpectedMode", 2);
+            bool documentCoverage = host == "Word" || host == "PowerPoint";
+            if (documentCoverage)
+            {
+                fixture.Data("create_module", "Module", ProductionModuleName, "ExpectedMode", 2);
+                ReplaceSource(fixture, ProductionSource, ProductionModuleName);
+            }
+            ReplaceSource(fixture, documentCoverage ? DocumentCoverageSource : Source);
+            var original = fixture.Data("read_module", "Module", ModuleName);
+            File.WriteAllText(Path.Combine(fixture.Root, "synthetic-tests.bas"), (string)original["Code"], Utf8);
+            var before = fixture.Data("discover_vba_tests");
+            Save(fixture, "discovery-before.json", before);
+            AssertCatalogue(before);
 
-                var batch = Run(fixture, revision, ids, "batch");
-                AssertReport(batch, revision, new[] { "ABooleanPass", "BBooleanFail", "CSwallowedAssertion", "DRuntimeError" });
-                AssertSource(fixture, original);
-                var passed = tests.Single(test => (string)test["Procedure"] == "ABooleanPass");
-                var single = Run(fixture, revision, new[] { (string)passed["Id"] }, "single");
-                AssertReport(single, revision, new[] { "ABooleanPass" });
-                AssertSource(fixture, original);
-                if (documentCoverage) QualifyOfficeDocumentCoverage(fixture, catalog, revision, passed);
+            var preview = fixture.Data("preview_vba_test_support");
+            string support = (string)preview["Text"];
+            // Review the complete generated source against the source generator in this exact candidate build.
+            // Installation still requires both the exact preview text and its exact project revision.
+            Assert.AreEqual(VbaTestRuntimeSource.Generate(ReviewCatalogue(before)), support,
+                "The installed candidate did not generate the exact reviewed support source.");
+            StringAssert.Contains(support, "CreateObject(\"VBAi.TestRuntime\")");
+            StringAssert.Contains(support, "Public Sub VBAiExecutePendingTest()");
+            Assert.IsFalse(support.Contains("Shell("), "Unexpected generated execution outside VBA.");
+            File.WriteAllText(Path.Combine(fixture.Root, "reviewed-support.bas"), support, Utf8);
+            Save(fixture, "support-preview.json", preview);
+            var installed = fixture.Data("install_vba_test_support", "ExpectedProjectVersion", preview["ExpectedProjectVersion"],
+                "ExpectedMode", 2, "Text", support);
+            Save(fixture, "support-install.json", installed);
+            Assert.AreEqual(true, installed["Applied"]);
+            fixture.SaveNative();
+            var catalog = fixture.Data("discover_vba_tests");
+            Save(fixture, "discovery-ready.json", catalog);
+            var tests = AssertCatalogue(catalog);
+            Assert.IsTrue(string.IsNullOrEmpty(catalog["ExecutionUnavailableReason"] as string),
+                "Registered execution is unavailable: " + catalog["ExecutionUnavailableReason"]);
+            string revision = (string)catalog["ExpectedProjectVersion"];
+            string[] ids = tests.OrderBy(test => (string)test["Procedure"], StringComparer.Ordinal).Select(test => (string)test["Id"]).ToArray();
+            Assert.AreEqual(4, ids.Distinct(StringComparer.Ordinal).Count());
 
-                var shown = fixture.Data("show_vba_test_explorer");
-                Save(fixture, "explorer.json", shown);
-                Assert.AreEqual(true, shown["Opened"]);
-                Assert.AreEqual(true, shown["Docked"]);
-                var window = new IntPtr(Convert.ToInt64(shown["Hwnd"]));
-                Assert.IsTrue(IsWindow(window), "Explorer handle is not a live window.");
-                uint owner; Assert.AreNotEqual(0u, GetWindowThreadProcessId(window, out owner));
-                Assert.AreEqual((uint)fixture.ProcessId, owner, "Explorer belongs to a different process.");
-                WindowRect bounds; Assert.IsTrue(GetWindowRect(window, out bounds));
-                Assert.IsTrue(bounds.Right > bounds.Left && bounds.Bottom > bounds.Top, "Explorer has no visible-sized bounds.");
-                Save(fixture, "explorer-native-window.json", new { Hwnd = window.ToInt64(), ProcessId = owner,
-                    bounds.Left, bounds.Top, bounds.Right, bounds.Bottom });
+            var batch = Run(fixture, revision, ids, "batch");
+            AssertReport(batch, revision, new[] { "ABooleanPass", "BBooleanFail", "CSwallowedAssertion", "DRuntimeError" });
+            AssertSource(fixture, original);
+            var passed = tests.Single(test => (string)test["Procedure"] == "ABooleanPass");
+            var single = Run(fixture, revision, new[] { (string)passed["Id"] }, "single");
+            AssertReport(single, revision, new[] { "ABooleanPass" });
+            AssertSource(fixture, original);
+            if (documentCoverage) QualifyOfficeDocumentCoverage(fixture, catalog, revision, passed);
 
-                if (host == "Access")
-                {
-                    // The final stale-revision edit must remain unsaved; discard owned Access objects on cleanup.
-                    fixture.StopAccessSaveDialogHandler();
-                    fixture.RequireAdapterOnlyCleanup();
-                }
-                ReplaceSource(fixture, ((string)original["Code"]).TrimEnd() + "\r\n' changed after verified native runs\r\n");
-                var changed = fixture.Data("read_module", "Module", ModuleName);
-                var refused = fixture.Response("run_vba_tests", "ExpectedProjectVersion", revision, "ExpectedMode", 2,
-                    "Items", new[] { (string)passed["Id"] });
-                Save(fixture, "stale-run-refusal.json", refused);
-                Assert.AreEqual(false, refused["Ok"], "A stale source revision was executed.");
-                StringAssert.Contains(Convert.ToString(refused["Error"]), "ExpectedProjectVersion");
-                AssertSource(fixture, changed);
-                var historical = fixture.Data("vba_test_run_status", "Query", single["run"], "Action", "compact");
-                Save(fixture, "historical-stale-report.json", historical);
-                Assert.AreEqual(true, historical["Stale"]);
-                Assert.AreEqual(false, historical["Pending"]);
-                Assert.AreEqual("Completed", historical["State"]);
-                // Publisher requires the disposable VBA project to be saved before its guarded Quit.
-                if (host == "Publisher") fixture.SaveNative();
-                }
-                catch (Exception error)
-                {
-                    Save(fixture, "qualification-body-error.json", new { Exception = error.ToString(), error.HResult, fixture.NativeExecutionUnsettled });
-                    throw;
-                }
+            var shown = fixture.Data("show_vba_test_explorer");
+            Save(fixture, "explorer.json", shown);
+            Assert.AreEqual(true, shown["Opened"]);
+            Assert.AreEqual(true, shown["Docked"]);
+            var window = new IntPtr(Convert.ToInt64(shown["Hwnd"]));
+            Assert.IsTrue(IsWindow(window), "Explorer handle is not a live window.");
+            uint owner; Assert.AreNotEqual(0u, GetWindowThreadProcessId(window, out owner));
+            Assert.AreEqual((uint)fixture.ProcessId, owner, "Explorer belongs to a different process.");
+            WindowRect bounds; Assert.IsTrue(GetWindowRect(window, out bounds));
+            Assert.IsTrue(bounds.Right > bounds.Left && bounds.Bottom > bounds.Top, "Explorer has no visible-sized bounds.");
+            Save(fixture, "explorer-native-window.json", new { Hwnd = window.ToInt64(), ProcessId = owner,
+                bounds.Left, bounds.Top, bounds.Right, bounds.Bottom });
+
+            if (host == "Access")
+            {
+                // The final stale-revision edit must remain unsaved; discard owned Access objects on cleanup.
+                fixture.StopAccessSaveDialogHandler();
+                fixture.RequireAdapterOnlyCleanup();
+            }
+            ReplaceSource(fixture, ((string)original["Code"]).TrimEnd() + "\r\n' changed after verified native runs\r\n");
+            var changed = fixture.Data("read_module", "Module", ModuleName);
+            var refused = fixture.Response("run_vba_tests", "ExpectedProjectVersion", revision, "ExpectedMode", 2,
+                "Items", new[] { (string)passed["Id"] });
+            Save(fixture, "stale-run-refusal.json", refused);
+            Assert.AreEqual(false, refused["Ok"], "A stale source revision was executed.");
+            StringAssert.Contains(Convert.ToString(refused["Error"]), "ExpectedProjectVersion");
+            AssertSource(fixture, changed);
+            var historical = fixture.Data("vba_test_run_status", "Query", single["run"], "Action", "compact");
+            Save(fixture, "historical-stale-report.json", historical);
+            Assert.AreEqual(true, historical["Stale"]);
+            Assert.AreEqual(false, historical["Pending"]);
+            Assert.AreEqual("Completed", historical["State"]);
+            // Publisher requires the disposable VBA project to be saved before its guarded Quit.
+            if (host == "Publisher") fixture.SaveNative();
+            }
+            catch (Exception error)
+            {
+                Save(fixture, "qualification-body-error.json", new { Exception = error.ToString(), error.HResult, fixture.NativeExecutionUnsettled });
+                throw;
             }
         }
 

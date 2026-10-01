@@ -76,6 +76,39 @@ namespace VBAi.Tests.Integration
                 pause((int)Math.Min(25, remaining));
             }
         }
+        internal Action CollectSettledWordReferences = () => {
+            GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        };
+
+        /// <summary>Optional testhost-only experiment after a successful non-inlined Word qualification scope.</summary>
+        internal void CollectSettledWordScopeDiagnostic()
+        {
+            if (Kind != "Word" || Environment.GetEnvironmentVariable("VBAi_TEST_WORD_SETTLED_SCOPE_GC") != "1") return;
+            RequireUsableOwnedHost();
+            Assert.IsFalse(NativeExecutionUnsettled, "Uncertain or pending Word execution must not be finalized by this diagnostic.");
+            Assert.AreEqual(shutdownOwnerThread, Thread.CurrentThread.ManagedThreadId);
+            Assert.IsTrue(owned); Assert.IsNotNull(ownedProcess); Assert.IsNotNull(shutdownEvidence);
+            Assert.AreEqual(ProcessId, ownedProcess.Id);
+            Assert.IsFalse(ownedProcess.HasExited, "The original owned Word process must still be alive before the diagnostic.");
+            Assert.AreEqual(shutdownEvidence.Record["ProcessStartedUtc"], ownedProcess.StartTime.ToUniversalTime().ToString("o"));
+            string handle = "0x" + unchecked((ulong)ownedProcess.Handle.ToInt64()).ToString("X16");
+            Assert.AreEqual(shutdownEvidence.Record["OriginalProcessHandle"], handle);
+            Assert.AreEqual(shutdownEvidence.Record["ProcessImage"], ExcelOwnedProcessImage.Read(ownedProcess.Handle));
+            var diagnostic = new System.Collections.Generic.Dictionary<string, object> {
+                ["DiagnosticOnly"] = true, ["ProcessId"] = ProcessId, ["OriginalProcessHandle"] = handle,
+                ["ScopeReturnedUtc"] = DateTime.UtcNow.ToString("o"), ["NativeExecutionUnsettled"] = false,
+                ["BridgePending"] = commandContainment.Pending, ["BridgeUncertain"] = commandContainment.Uncertain,
+                ["CollectionCountsBefore"] = new[] { GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2) },
+                ["CollectStartedUtc"] = DateTime.UtcNow.ToString("o"), ["CollectCompleted"] = false };
+            string path = Path.Combine(Root, "word-settled-scope-gc.json");
+            var serializer = new JavaScriptSerializer();
+            File.WriteAllText(path, serializer.Serialize(diagnostic));
+            CollectSettledWordReferences();
+            diagnostic["CollectCompleted"] = true;
+            diagnostic["CollectFinishedUtc"] = DateTime.UtcNow.ToString("o");
+            diagnostic["CollectionCountsAfter"] = new[] { GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2) };
+            File.WriteAllText(path, serializer.Serialize(diagnostic));
+        }
         private void PrepareOwnedShutdown()
         {
             Assert.IsNotNull(ownedProcess, "The original owned process handle must be retained before Close/Quit.");

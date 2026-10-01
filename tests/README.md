@@ -4,6 +4,17 @@ The test suite covers the shared VBE core, provider protocols, storage, editor
 services and selected host integrations. A passing local suite is not a claim
 that every feature works in every application that embeds the VBE.
 
+## Settled Word scope collection (qualification only)
+
+`VBAi_TEST_WORD_SETTLED_SCOPE_GC=1` enables a disabled-by-default testhost
+experiment in `RegisteredOfficeRunsBatchAndSingleWithVerifiedResults("Word")`.
+After its successful non-inlined qualification scope returns, the fixture verifies
+terminal bridge work, settled native execution and the original owned process
+before collecting unreachable testhost objects. `word-settled-scope-gc.json`
+records timestamps and collection counts. This does not prove an RCW leak or run
+collection in the product. Failed or uncertain scopes skip collection; the single
+Close/Quit sequence, original process handle and 5-second exit bound remain intact.
+
 ## Owned Excel teardown trace (qualification only)
 
 `VBAi_TEST_EXCEL_TEARDOWN_TRACE_GATE=1` enables a disabled-by-default diagnostic
