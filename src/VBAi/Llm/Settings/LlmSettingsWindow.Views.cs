@@ -51,6 +51,10 @@ namespace VBAi
         private System.Windows.Forms.TextBox customName;
         /// <summary>Option d’authentification Azure par jeton Entra.</summary>
         private System.Windows.Forms.CheckBox azureEntra;
+        /// <summary>Optional Ollama temperature entry.</summary>
+        private System.Windows.Forms.TextBox ollamaTemperature;
+        /// <summary>Optional Ollama top-p entry.</summary>
+        private System.Windows.Forms.TextBox ollamaTopP;
         /// <summary>Libellé de la section du compte GitHub.</summary>
         private System.Windows.Forms.Label githubLabel;
         /// <summary>État de la connexion GitHub.</summary>
@@ -106,6 +110,8 @@ namespace VBAi
             customNameLabel = providerSettingsView.customNameLabel;
             customName = providerSettingsView.customName;
             azureEntra = providerSettingsView.azureEntra;
+            ollamaTemperature = providerSettingsView.ollamaTemperature;
+            ollamaTopP = providerSettingsView.ollamaTopP;
             githubLabel = gitHubAccountSettingsView.githubLabel;
             githubStatus = gitHubAccountSettingsView.githubStatus;
             githubAccountLabel = gitHubAccountSettingsView.githubAccountLabel;

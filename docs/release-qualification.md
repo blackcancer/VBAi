@@ -26,7 +26,7 @@ Monaco-status candidate `d7a1c75` / `6a74af33` and earlier frozen v5 `2e75161` /
 v5 harness failure remains failed with explained packaging/Git path defects;
 none of those results qualifies a later product binary.
 
-The latest uninstalled combined candidate is source `b60996c`, MVID
+The earlier uninstalled combined candidate is source `b60996c`, MVID
 `e79c6288-d384-475c-b8bc-276d7caaaf00`, SHA-256
 `9ADBCFB96B1F2F4E4FA3066EA26F3CA2E0A2EC7996C85105070A3765BEFC8587`.
 Its complete default managed gate and separate JavaScript, synthetic native,
@@ -68,6 +68,18 @@ not the earlier responses without generated-token evidence. No product settings,
 parser or native dispatch policy changes are made, and no later result is used
 to erase an earlier failure. Q-028 remains open; exact scope, counts and evidence
 are in [recorded validation](test-coverage.md).
+
+A new detached Ollama aggregate uses product source main `2f28018`, MVID
+`044522a1-31cc-494c-98e6-46dee00af787`, SHA-256
+`1A5B036B899A88D1E4B5315E3082C0689BA810B2BADB87F92A24926E1D251B4F`,
+and tests-only source `f15c48a`. Cancellation/recovery and the strict synthetic
+tool roundtrip pass, but the visible chat receives another complete-empty SSE
+response and fails before its stop/next-send phases. The aggregate remains
+failed. The artifact driver's MVID read also prevents coverage instrumentation;
+its lock is verified on a disposable offline copy and a separate driver
+correction is prepared. Original payload hashes and installed DLL remain
+unchanged. These observations neither qualify the new native product nor
+close Q-028. See recorded validation for exact counters and evidence.
 
 The Git menu, chat and LLM tools now share a compatible lookup of the native
 document key and the former uppercase key. A single existing binding is reused

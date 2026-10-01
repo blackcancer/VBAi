@@ -48,6 +48,8 @@ namespace VBAi
         private readonly System.Collections.Generic.HashSet<string> clearedKeys = new System.Collections.Generic.HashSet<string>();
         /// <summary>Identifiants de modèles en cours de modification, indexés par fournisseur.</summary>
         private readonly System.Collections.Generic.Dictionary<string, string> modelDrafts = new System.Collections.Generic.Dictionary<string, string>();
+        /// <summary>Ollama generation drafts survive provider changes without altering saved settings.</summary>
+        private string ollamaTemperatureDraft, ollamaTopPDraft;
 
         /// <summary>Ajuste la hauteur du contenu et déclenche le premier chargement GitHub.</summary>
         /// <param name="e">Données de l’événement WinForms.</param>
@@ -107,6 +109,8 @@ namespace VBAi
             customName.Text = settings.CustomProviderName ?? "";
             if (!string.IsNullOrEmpty(settings.GitHubAccount)) { githubAccount.Items.Add(settings.GitHubAccount); githubAccount.SelectedItem = settings.GitHubAccount; }
             azureEntra.Checked = settings.AzureUseEntraToken;
+            ollamaTemperatureDraft = settings.OllamaTemperature?.ToString("R", System.Globalization.CultureInfo.InvariantCulture) ?? "";
+            ollamaTopPDraft = settings.OllamaTopP?.ToString("R", System.Globalization.CultureInfo.InvariantCulture) ?? "";
             nativeVbeDark.Checked = settings.NativeVbeDarkTheme;
             provider.Items.AddRange(LlmProvider.All);
             approvalPicker.Items.AddRange(new object[] { UiText.Get("Automatic"), UiText.Get("Ask for other actions"), UiText.Get("Read-only") });
@@ -154,9 +158,11 @@ namespace VBAi
             openAiKey.Text = keyDrafts.TryGetValue(selected.Name, out draft) ? draft : "";
             clearKey.Checked = clearedKeys.Contains(selected.Name);
             manualModels.Text = modelDrafts.TryGetValue(selected.Name, out draft) ? draft : settings.GetManualModels(selected) ?? "";
+            ollamaTemperature.Text = ollamaTemperatureDraft;
+            ollamaTopP.Text = ollamaTopPDraft;
             bool codex = selected.IsCodex;
             bool cli = codex || selected.IsCopilot;
-            bool[] visible = { true, cli, cli, !cli && !selected.Local, !cli && selected.Local, !cli, !cli, !cli, true, selected.ManualModels, selected.IsCustom, selected.IsAzure };
+            bool[] visible = { true, cli, cli, !cli && !selected.Local, !cli && selected.Local, !cli, !cli, !cli, true, selected.ManualModels, selected.IsCustom, selected.IsAzure, selected.IsOllama, selected.IsOllama };
             openAiEndpointLabel.Text = ollamaEndpointLabel.Text = UiText.Get("API URL");
             if (selected.IsBedrock) openAiEndpointLabel.Text = UiText.Get("Bedrock Runtime URL");
             manualModelsLabel.Text = selected.IsAzure ? UiText.Get("Deployments (one per line)") : selected.IsBedrock ? UiText.Get("Models / profiles (one per line)") : UiText.Get("Models (one per line)");
@@ -190,6 +196,11 @@ namespace VBAi
             endpointDrafts[displayedProvider.Name] = (displayedProvider.Local ? ollamaEndpoint.Text : openAiEndpoint.Text).Trim();
             keyDrafts[displayedProvider.Name] = openAiKey.Text.Trim();
             if (displayedProvider.ManualModels) modelDrafts[displayedProvider.Name] = manualModels.Text.Trim();
+            if (displayedProvider.IsOllama)
+            {
+                ollamaTemperatureDraft = ollamaTemperature.Text.Trim();
+                ollamaTopPDraft = ollamaTopP.Text.Trim();
+            }
             if (clearKey.Checked) clearedKeys.Add(displayedProvider.Name); else clearedKeys.Remove(displayedProvider.Name);
         }
 
@@ -289,6 +300,10 @@ namespace VBAi
             {
                 CaptureDraft();
                 foreach (var endpoint in endpointDrafts.Values) ValidateEndpoint(endpoint);
+                double? temperature = ParseOllamaSampling(ollamaTemperatureDraft, true);
+                double? topP = ParseOllamaSampling(ollamaTopPDraft, false);
+                settings.OllamaTemperature = temperature;
+                settings.OllamaTopP = topP;
                 settings.ProviderName = ((LlmProvider)provider.SelectedItem).Name;
                 settings.GitHubAccount = githubAccount.SelectedIndex > 0 ? Convert.ToString(githubAccount.SelectedItem) : null;
                 settings.CustomProviderName = customName.Text.Trim();
@@ -323,6 +338,23 @@ namespace VBAi
             {
                 ShowNotice(this, ex.Message, UiText.Get("VBAi settings"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        /// <summary>Parses optional finite sampling values using invariant or current decimal notation.</summary>
+        /// <param name="raw">Blank selects the server default.</param>
+        /// <param name="temperature">Selects temperature bounds instead of top-p bounds.</param>
+        /// <returns>A valid sampling override or null.</returns>
+        private static double? ParseOllamaSampling(string raw, bool temperature)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return null;
+            double value;
+            if ((!double.TryParse(raw, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out value) &&
+                 !double.TryParse(raw, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.CurrentCulture, out value)) ||
+                double.IsNaN(value) || double.IsInfinity(value) || value > (temperature ? 2 : 1) ||
+                (temperature ? value < 0 : value <= 0))
+                throw new ArgumentException(UiText.Get(temperature ? "Ollama temperature must be a finite number from 0 to 2, or blank for the server default." :
+                    "Ollama top-p must be a finite number above 0 and at most 1, or blank for the server default."));
+            return value;
         }
 
         /// <summary>Accepte HTTPS et HTTP uniquement pour une adresse locale.</summary>

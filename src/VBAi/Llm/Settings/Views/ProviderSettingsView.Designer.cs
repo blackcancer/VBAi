@@ -51,6 +51,14 @@ namespace VBAi
         internal VBAi.UiTextBox customName;
         /// <summary>Option d’authentification Azure par Entra.</summary>
         internal System.Windows.Forms.CheckBox azureEntra;
+        /// <summary>Label for the optional Ollama sampling temperature.</summary>
+        internal System.Windows.Forms.Label ollamaTemperatureLabel;
+        /// <summary>Optional temperature override; blank retains server behavior.</summary>
+        internal VBAi.UiTextBox ollamaTemperature;
+        /// <summary>Label for the optional Ollama nucleus sampling limit.</summary>
+        internal System.Windows.Forms.Label ollamaTopPLabel;
+        /// <summary>Optional top-p override; blank retains server behavior.</summary>
+        internal VBAi.UiTextBox ollamaTopP;
         /// <summary>Conteneur des composants WinForms non visuels.</summary>
         private System.ComponentModel.IContainer components;
         /// <summary>Info-bulles appartenant à la vue.</summary>
@@ -92,6 +100,10 @@ namespace VBAi
             this.customNameLabel = new System.Windows.Forms.Label();
             this.customName = new VBAi.UiTextBox();
             this.azureEntra = new System.Windows.Forms.CheckBox();
+            this.ollamaTemperatureLabel = new System.Windows.Forms.Label();
+            this.ollamaTemperature = new VBAi.UiTextBox();
+            this.ollamaTopPLabel = new System.Windows.Forms.Label();
+            this.ollamaTopP = new VBAi.UiTextBox();
             this.grid.SuspendLayout();
             this.codexActions.SuspendLayout();
             this.SuspendLayout();
@@ -121,12 +133,18 @@ namespace VBAi
             this.grid.Controls.Add(this.customNameLabel, 0, 10);
             this.grid.Controls.Add(this.customName, 1, 10);
             this.grid.Controls.Add(this.azureEntra, 1, 11);
+            this.grid.Controls.Add(this.ollamaTemperatureLabel, 0, 12);
+            this.grid.Controls.Add(this.ollamaTemperature, 1, 12);
+            this.grid.Controls.Add(this.ollamaTopPLabel, 0, 13);
+            this.grid.Controls.Add(this.ollamaTopP, 1, 13);
             this.grid.Dock = System.Windows.Forms.DockStyle.Top;
             this.grid.Location = new System.Drawing.Point(0, 0);
             this.grid.Margin = new System.Windows.Forms.Padding(0);
             this.grid.Name = "grid";
             this.grid.Padding = new System.Windows.Forms.Padding(12, 12, 12, 0);
-            this.grid.RowCount = 12;
+            this.grid.RowCount = 14;
+            this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
+            this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
             this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
             this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
             this.grid.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
@@ -166,6 +184,34 @@ namespace VBAi
             this.azureEntra.AutoSize = true;
             this.azureEntra.Dock = System.Windows.Forms.DockStyle.Fill;
             this.azureEntra.TabIndex = 9;
+            this.ollamaTemperatureLabel.Name = "ollamaTemperatureLabel";
+            this.ollamaTemperatureLabel.Text = "Temperature (0 to 2)";
+            this.ollamaTemperatureLabel.AutoSize = true;
+            this.ollamaTemperatureLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.ollamaTemperatureLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.ollamaTemperatureLabel.MinimumSize = new System.Drawing.Size(156, 0);
+            this.ollamaTemperatureLabel.Margin = new System.Windows.Forms.Padding(0, 4, 12, 8);
+            this.ollamaTemperature.Name = "ollamaTemperature";
+            this.ollamaTemperature.RightToLeft = System.Windows.Forms.RightToLeft.No;
+            this.ollamaTemperature.AccessibleName = "Ollama temperature; blank uses server default";
+            this.ollamaTemperature.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.ollamaTemperature.Margin = new System.Windows.Forms.Padding(0, 4, 12, 8);
+            this.ollamaTemperature.TabIndex = 10;
+            this.toolTips.SetToolTip(this.ollamaTemperature, "Optional. Blank uses the server default; 0 reduces sampling randomness. Use a decimal point or your local decimal separator.");
+            this.ollamaTopPLabel.Name = "ollamaTopPLabel";
+            this.ollamaTopPLabel.Text = "Top-p (above 0 to 1)";
+            this.ollamaTopPLabel.AutoSize = true;
+            this.ollamaTopPLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.ollamaTopPLabel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.ollamaTopPLabel.MinimumSize = new System.Drawing.Size(156, 0);
+            this.ollamaTopPLabel.Margin = new System.Windows.Forms.Padding(0, 4, 12, 8);
+            this.ollamaTopP.Name = "ollamaTopP";
+            this.ollamaTopP.RightToLeft = System.Windows.Forms.RightToLeft.No;
+            this.ollamaTopP.AccessibleName = "Ollama top-p; blank uses server default";
+            this.ollamaTopP.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.ollamaTopP.Margin = new System.Windows.Forms.Padding(0, 4, 12, 8);
+            this.ollamaTopP.TabIndex = 11;
+            this.toolTips.SetToolTip(this.ollamaTopP, "Optional nucleus sampling limit. Blank uses the server default. Use a decimal point or your local decimal separator.");
             this.providerLabel.Location = new System.Drawing.Point(15, 12);
             this.providerLabel.Name = "providerLabel";
             this.providerLabel.Size = new System.Drawing.Size(100, 29);

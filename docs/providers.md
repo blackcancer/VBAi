@@ -114,10 +114,15 @@ is governed by that provider and the selected account. See [privacy](privacy.md)
 
 ### Ollama configuration boundary
 
-VBAi currently sends Ollama the selected model, messages, tool schemas and the
-stream flag through `/v1/chat/completions`. It does not send temperature, top-p,
-seed or a context-size override. These generation controls are not currently
-exposed in VBAi settings. Model presence in the catalogue is not a guarantee of
+VBAi sends Ollama the selected model, messages, tool schemas and the
+stream flag through `/v1/chat/completions`. Ollama's settings view also exposes
+optional temperature and top-p overrides. Blank fields omit the corresponding
+request fields and preserve the server's behavior. Temperature must be finite
+and in `[0,2]`; top-p must be finite and in `(0,1]`. Entries accept an invariant
+decimal point or the current decimal separator. The overrides persist as
+`OllamaTemperature` and `OllamaTopP`; older settings leave them unset. A client
+captures these values when constructed, and other providers ignore them.
+Seed and context-size overrides are not sent. Model presence in the catalogue is not a guarantee of
 correct tool arguments or adherence to a request to answer without tools.
 
 On the tested diagnostic backend version `0.34.4`, the
@@ -128,9 +133,10 @@ Modelfile does not change what this converter supplies. Ollama's
 [OpenAI compatibility guide](https://docs.ollama.com/api/openai-compatibility#setting-the-local-context-size)
 describes configuring a model's context rather than sending `num_ctx` as an
 OpenAI chat field. Check the effective server settings and model capabilities
-when diagnosing a local provider. The captured configuration comparison in
-[recorded validation](test-coverage.md) does not establish a reliable configuration
-or close the remaining live-provider gate.
+when diagnosing a local provider. The qualification profile uses a separately
+selected model, an explicit server context and explicit request sampling; it
+does not overwrite personal configuration. See [testing](../tests/README.md)
+and [recorded validation](test-coverage.md) for the actual observed results.
 
 ## Validation
 

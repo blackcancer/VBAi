@@ -1,5 +1,73 @@
 # Recorded validation
 
+## Current-main Ollama aggregate before configuration correction (2026-10-01)
+
+The complete suite on test source `f15c48a` and product source main `2f28018`
+uses the exact product/test identities in the next section. The batch runs once
+against the isolated `qwen2.5:3b` cache with production sampling unchanged.
+It reports **3373 passed / 1 failed / 116 conditional skips / 3490 total**;
+runner exit is **1**. This is a failed aggregate, not a green managed gate.
+
+| Activated real-provider case | Actual result |
+| --- | --- |
+| First-fragment cancellation and fresh conversation | Passed |
+| Streamed greeting, exact synthetic tool call and result consumption | Passed; wire and pre-assertion ledger both retain scalar `marker=VB_AI_42` |
+| Visible chat streaming, stop and next send | Failed before first text; stop and next-send phases are not reached |
+
+The current UI request is 8261 bytes. Its captured SSE body is 433 bytes and
+already has empty deltas, `stop` and `[DONE]`, with no text or calls. Diagnostics
+record `complete-empty`, and the visible window displays `No text response.`
+before becoming ready. The passive tee does not observe transport EOF because
+the production parser stops at `[DONE]`; protocol completion is not reported as
+socket EOF. Generated tokens are not captured for this live trial, so its internal
+cause is not inferred from the separate seeded control.
+
+Coverage is **unavailable for this run**: the artifact driver loads the product
+with `ReflectionOnlyLoadFrom` in its own long-lived process to read the MVID.
+Coverlet cannot write the DLL while that process retains it and reports failed
+instrumentation. The original product and test file hashes remain unchanged at
+the terminal check. No percentage is reused from an earlier binary. A disposable
+offline copy proves writes succeed before load, fail while the metadata process
+lives, and succeed after its exit, with unchanged bytes. A separate corrected
+driver reads metadata in a child process that exits before collection; that
+correction emits no inference and does not alter this failed record.
+
+Evidence is `artifacts/qualification-v1/followup-20260930/ollama-main-current-capture/`
+(`full-managed-and-ollama.trx`, `offline-qualification-review.json`,
+`tests-terminal.json`, captured UI/headless bodies and shape ledgers).
+The terminal manifest confirms unchanged clean source and payloads. Owned helper
+PID `53100` exits after one verified helper-only force-stop with output pumps
+terminal; no backend is retained. The installed DLL still has its preceding
+`C900BA09...` hash. No native host or tool is exercised. Model/configuration
+correction and a subsequent complete acceptance batch remain required.
+
+## Shared Ollama synthetic capture contracts (2026-10-01)
+
+Tests-only source `f15c48a5cabf83ab2159b2b18bc3b092ae045ad9`, based on main
+`2f280183fec9572232f196a5b2c4f8f04640df3c`, replaces the fixture-private UI wire
+wrapper with shared, separately opted-in UI/headless capture. It adds argument
+shape ledgers before the existing scalar assertion, without changing prompts,
+sampling, provider parsing or native tool dispatch. All contract scenarios are
+implemented before the single focused batch is executed.
+
+The isolated full solution build succeeds with **0 warnings / 0 errors**.
+The helper/endpoint batch reports **86 passed / 0 failed / 0 skipped**; it uses
+no backend, model inference, native host or coverage collector. Contracts cover
+opt-in boundaries, routes/methods, redirect refusal, factory restoration,
+credential-header omission, UTF-8 bytes, bounds, synchronous/asynchronous reads,
+EOF versus zero-length/early/pending reads, disposal and error transparency,
+diagnostic I/O/serialization failure and scalar versus nested argument shapes.
+
+Product MVID is `044522a1-31cc-494c-98e6-46dee00af787`, SHA-256
+`1A5B036B899A88D1E4B5315E3082C0689BA810B2BADB87F92A24926E1D251B4F`;
+test SHA-256 is
+`5C52CF0997F607D9F1AC5BD44B2B36229C80EDBB7A0E91FF079CEC0AC5BB5419`.
+Both hashes are unchanged before/after the focused batch. Evidence is
+`artifacts/worktrees/qualification-headless-wire/artifacts/headless-wire-validation/`
+(`build.log`, `headless-wire-focused.trx`, `focused-terminal.json`). This is a
+detached diagnostic-contract gate, not complete managed or live-provider
+acceptance. The installed DLL is not replaced.
+
 ## Ollama sampling configuration comparison (2026-10-01)
 
 The checkout is synchronized to main `2f28018`. This independent backend
