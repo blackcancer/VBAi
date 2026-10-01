@@ -30,14 +30,17 @@ namespace VBAi.Tests.Integration
                 ((dynamic)window).Visible = true; ((dynamic)window).SetFocus();
                 editor = ((dynamic)application).VBE; mainWindow = ((dynamic)editor).MainWindow;
                 GitDesignerCaptureState state = null;
-                // DesignerWindow can expose HWnd=0. Observe it again after the
-                // owning UI has settled; never issue another focus/visibility action.
+                // HWnd=0 is an accepted root-capture fallback. Do not keep pumping
+                // after its exact active designer is ready: that gives unrelated
+                // UI activation a larger opportunity to replace the capture target.
                 for (int i = 0; i < 20; i++)
                 {
                     Application.DoEvents(); Thread.Sleep(30);
                     state = ReadGitDesignerCaptureState(project, window, editor, mainWindow);
                     observations.Add(state);
-                    if (state.DesignerHandle != 0 && state.ProjectIdentityMatches && state.DesignerIdentityMatches) break;
+                    if (state.MainHandle != 0 && state.ProjectIdentityMatches && state.DesignerIdentityMatches &&
+                        state.DesignerVisible && state.MainVisible && state.DesignerType == 1 && state.ActiveType == 1 &&
+                        !string.IsNullOrWhiteSpace(state.DesignerCaption) && state.DesignerCaption == state.ActiveCaption) break;
                 }
                 IntPtr handle = SelectGitDesignerCaptureTarget(state, (uint)ProcessId, target => {
                     uint owner; GetWindowThreadProcessId(target, out owner); return owner;
