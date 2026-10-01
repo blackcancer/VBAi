@@ -55,7 +55,7 @@ namespace VBAi.Tests.Integration
             Func<string, IDictionary<string, object>> state = path => VbeBridgeClient.Object(send("debug_state", new { Command = "debug_state", Project = path })["Data"]);
             Action<string, string, object> select = (path, module, sha) => {
                 send("select_code", new { Command = "select_code", Project = path, Module = module, StartLine = 1,
-                    StartColumn = 1, ExpectedSha256 = sha, ExpectedMode = 2 });
+                    EndLine = 1, StartColumn = 1, EndColumn = 1, ExpectedSha256 = sha, ExpectedMode = 2 });
                 var actual = state(path);
                 RequireSelectedScope(actual, path, module); phase("NativeSelection", actual);
             };
