@@ -146,7 +146,7 @@ namespace VBAi.Tests.Integration
                             {
                                 Phase(output, report, "production-checkpoint-restore");
                                 try { Await(operations.ExecuteAsync("checkpoint_restore", operations.Revision(changed), name: checkpoint)); }
-                                catch (InvalidOperationException error) when (error.Message.Contains("The VBE did not preserve imported sources exactly."))
+                                catch (InvalidOperationException error) when (error.Message == UiText.Get("The VBE did not preserve the imported sources exactly. Use Restore or check the project."))
                                 {
                                     // This specific terminal production refusal already retains
                                     // Backup/AfterImport. Observe the actual designer once; do not
