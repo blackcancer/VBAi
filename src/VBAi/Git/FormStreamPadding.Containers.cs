@@ -32,11 +32,8 @@ namespace VBAi
             if (streams == null || storageMetadata == null) return null;
             try
             {
-                List<StorageNode> nodes; ReadGraph(streams, storageMetadata, "", out nodes);
+                List<StorageNode> nodes; ReadGraph(streams, storageMetadata, "", out nodes, true);
                 Require(!nodes.Any(node => node.UnsupportedFont));
-                foreach (var node in nodes)
-                    foreach (var site in node.Sites.Where(site => !site.Streamed))
-                        Require(site.Name != null && System.Text.RegularExpressions.Regex.IsMatch(site.Name, @"^[A-Za-z_][A-Za-z0-9_]{0,39}$"));
                 return nodes.Where(node => node.Font != null)
                     .Select(node => new FormFontBinding(node.OwnerPath, node.Font, node.Type)).ToArray();
             }
@@ -54,7 +51,8 @@ namespace VBAi
         }
 
         private static StorageGraph ReadGraph(IReadOnlyDictionary<string, byte[]> streams,
-            IReadOnlyDictionary<string, byte[]> storageMetadata, string rootPath, out List<StorageNode> nodes)
+            IReadOnlyDictionary<string, byte[]> storageMetadata, string rootPath, out List<StorageNode> nodes,
+            bool collectOwnerPaths = false)
         {
             nodes = new List<StorageNode>();
             Require(streams.Count <= 16384 && storageMetadata.Count <= 4096);
@@ -76,8 +74,16 @@ namespace VBAi
                 {
                     Require(node.Depth < 64);
                     string name = "i" + site.Identity.ToString("D2", CultureInfo.InvariantCulture);
-                    string owner = node.OwnerPath + (node.OwnerPath.Length == 0 ? "" : "/") +
-                        (site.Type == 7 ? "Pages/" : "Controls/") + site.Name;
+                    string owner = "";
+                    if (collectOwnerPaths)
+                    {
+                        // Bound and validate each name before concatenating paths.
+                        // Comparison alone does not need native owner identities.
+                        Require(site.Name != null && site.Name.Length >= 1 && site.Name.Length <= 40 &&
+                            System.Text.RegularExpressions.Regex.IsMatch(site.Name, @"^[A-Za-z_][A-Za-z0-9_]*$"));
+                        owner = node.OwnerPath + (node.OwnerPath.Length == 0 ? "" : "/") +
+                            (site.Type == 7 ? "Pages/" : "Controls/") + site.Name;
+                    }
                     pending.Push(new StorageNode(node.Path + "/" + name, site.Type, site.Identity, node.Depth + 1, owner));
                 }
             }
