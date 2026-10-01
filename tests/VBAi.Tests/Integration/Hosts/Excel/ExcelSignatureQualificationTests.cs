@@ -40,9 +40,14 @@ namespace VBAi.Tests.Integration.Hosts.Excel
             string manifest = Environment.GetEnvironmentVariable("VBAi_TEST_SIGNING_CERTIFICATE_MANIFEST");
             if (string.IsNullOrEmpty(manifest)) Assert.Inconclusive("An explicitly owned synthetic certificate manifest is required.");
             var certificate = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(File.ReadAllText(manifest));
+            Assert.AreEqual(1, Convert.ToInt32(certificate["FormatVersion"]));
+            string nonce = Convert.ToString(certificate["Nonce"]);
+            Assert.IsTrue(System.Text.RegularExpressions.Regex.IsMatch(nonce, "^[A-F0-9]{32}$"));
+            Assert.AreEqual("CN=VBAi Disposable Signature Qualification " + nonce, certificate["Subject"]);
             Assert.AreEqual("CurrentUser/My", certificate["Store"]);
             Assert.AreEqual(false, certificate["TrustedRootInstalled"]);
             string thumbprint = Convert.ToString(certificate["Thumbprint"]);
+            Assert.IsTrue(System.Text.RegularExpressions.Regex.IsMatch(thumbprint, "^[A-F0-9]{40}$"));
             string path = null, sourceHash = null;
             int signedPid = 0;
             ExcelVbeFixture.Run(host => {
