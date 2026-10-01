@@ -65,6 +65,16 @@ inventory. These failed or unexecuted scopes do not qualify whole-host mutation 
 lifecycle behavior; see recorded validation for terminal outcomes and additive
 corrections preserving the original driver evidence.
 
+Current-v6 owned Excel also passes ordered unsupported, one-Long and complete
+declared scalar pages with terminal owner-STA traces, exact pagination and
+identity/source/selection/mode preservation, followed by normal exits. This is
+declared-page acceptance, not complete runtime Locals coverage or qualification
+in another host; historical scalar stall/crash causes remain open. Two native
+Monaco preparation attempts remain failed despite normal cleanup: a malformed
+selection request and a bare-module/decorated-tab caption mismatch prevent the
+closed-project/live-status scenario from running. That UI scope remains NOT_RUN.
+Exact product/test identities and terminal evidence are in recorded validation.
+
 On preceding v5, source `2e75161`, MVID `f9a36c85`, the stable Access
 application/PID, database-path and mapped/selected-project guard passes scoped
 module/class, Description and reference-addition save/reopen with exact readback

@@ -49,6 +49,52 @@ preceding `d5e25e25` export path/name-not-found observation in another owned Exc
 process, establish an EFS/ACL/token cause, or qualify native UserForm export.
 Q-027 remains open.
 
+### Current v6: ordered native scalar acceptance
+
+`scalar-v6/terminal.json` records the ordered native campaign on installed
+product source `8f2315d`, the v6 MVID/hash above, and tests source `304ee02`.
+Each stage's `scalar.trx` records **1 passed, 0 failed, 0 skipped**, runner exit
+**0**, in a fresh owned Excel 16.0.20326.20158 instance:
+
+| Stage | Owned PID | Page and native observer evidence | Inspection correlation |
+| --- | --- | --- | --- |
+| `01-unsupported` | 8284 | Offset 3 / Limit 3: array, Variant and object declarations are Skipped; no command 229 or Quick Watch observer runs. | `4813e824d9be481798d7b500f3438005` |
+| `02-one-long` | 44124 | Offset 0 / Limit 1: Long 42; exactly one command 229 / native observer cycle. | `acff5fe3512243d6a48ea246c285df4e` |
+| `03-full-page` | 57412 | Offset 0 / Limit 6: Long 42, expected String and true Boolean; three unsupported declarations remain Skipped, with exactly three observer cycles. | `815eaa8f3b4c4e07b3d4704f5884b450` |
+
+Each `native-phases.jsonl` has one correlated enqueue, owner-STA callback,
+validated context, CoreTerminal and Terminal, without phase errors. The
+per-host startup JSON confirms the loaded installed assembly and exact
+PID/executable/start identity; each shutdown JSON records Close/Quit, no force
+termination, and normal exit **0**. The passing tests assert pagination, project,
+module/procedure and source SHA, preserved selection/focus and break mode before
+the verified cleanup Reset. Each native inspection is issued once, without replay.
+
+This qualifies the declared scalar page on the current v6 product, not complete
+runtime Locals enumeration, other local types or another host. Historical
+`7b5f11d8` break-mode stalls and the post-Reset crash remain unexplained; Q-006
+remains open for those causes and the separate failed lifecycle scopes.
+
+### Current v6: failed native Monaco fixture attempts
+
+`monaco-native-v6/monaco-native-v6.trx` and
+`monaco-native-v6-v2/monaco-native-v6.trx` each record **0 passed, 1 failed,
+0 skipped**, runner exit **1**, on the same installed v6 product. The first
+tests source is `7a0d0e3`; source `304ee02` is the second attempt's actual source,
+recorded in its additive `test-source-correction.json`. The original second
+driver's invalid `TestSource={}` remains preserved.
+
+The first attempt is refused because its select_code request supplies only one
+of the paired StartColumn/EndColumn fields. The second reaches the real installed
+embedded editor: its retained UI observation identifies owned Excel **57348**,
+the visible editor and selected caption `VBAProject · ModuleClosedScope`. The
+test incorrectly compares this decorated caption with a bare module name and
+fails before closing the other project. The closed-project/live-status scenario
+is therefore **NOT_RUN**, not an accepted UI test. Owned Excel **57180** and
+**57348** both close normally with exit **0**, without replay or force termination.
+These preparation failures remain failed, and neither qualifies the subsequent
+closed-project status or complete embedded UI behavior.
+
 ### Current v6: Access metadata setter and persistence failures
 
 These native campaigns use the installed v6 product identified above and tests
