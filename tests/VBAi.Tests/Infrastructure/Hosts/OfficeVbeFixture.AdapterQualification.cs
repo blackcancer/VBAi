@@ -19,7 +19,9 @@ namespace VBAi.Tests.Integration
         internal void RequireAdapterOnlyCleanup()
         {
             adapterOnlyCleanup = true;
-            if (Kind == "Word" || Kind == "PowerPoint") OwnedExitWaitMilliseconds = 15000;
+            // Apply one declared observation bound to every adapter-only host.
+            // A longer read-only wait never permits another Close/Quit or Save.
+            OwnedExitWaitMilliseconds = 15000;
         }
 
         /// <summary>Records an assertion failure before cleanup so it survives a second cleanup exception.</summary>

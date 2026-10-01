@@ -118,11 +118,20 @@ namespace VBAi.Tests.Unit
             });
         }
 
-        [TestMethod]
-        public void AdapterOnlyWordWaitsOnceForItsDeclaredLongerBoundWithoutAnotherQuit()
+        [DataTestMethod]
+        [DataRow("Word")]
+        [DataRow("PowerPoint")]
+        [DataRow("Access")]
+        [DataRow("Publisher")]
+        public void AdapterOnlyHostPolicyWaitsOnceForItsDeclaredBoundWithoutAnotherQuit(string host)
         {
             WithFakeFixture((fixture, application, document, process, root) => {
+                SetProperty(fixture, "Kind", host);
                 fixture.RequireAdapterOnlyCleanup();
+                Assert.AreEqual(15000, fixture.OwnedExitWaitMilliseconds);
+                // Only the policy varies. The managed fake implements Word's
+                // discard/quit shape; it is not a native Access/Publisher proof.
+                SetProperty(fixture, "Kind", "Word");
                 int waits = 0;
                 fixture.WaitForOwnedExit = (observed, timeout) => {
                     Assert.AreSame(process, observed); Assert.AreEqual(15000, timeout); waits++; return true;
