@@ -64,7 +64,7 @@ namespace VBAi
             block.Finish();
             if (Has(mask, 20))
             {
-                ParseFormFont(form);
+                ParseFormFont(form, node);
             }
 
             // MS-OFORMS 2.2.10.6: only the empty class table is supported.
@@ -101,8 +101,9 @@ namespace VBAi
 
         // MS-OFORMS 2.4.6 / 2.4.12. Font bytes remain significant; only their exact
         // documented extent is consumed, so subsequent site padding can be parsed.
-        private static void ParseFormFont(Reader form)
+        private static void ParseFormFont(Reader form, StorageNode node = null)
         {
+            int start = form.Position;
             bool text = true, standard = true;
             for (int i = 0; i < TextFontGuid.Length; i++)
             {
@@ -110,7 +111,7 @@ namespace VBAi
                 text &= value == TextFontGuid[i];
                 standard &= value == StdFontGuid[i];
             }
-            if (text) { ParseText(form); return; }
+            if (text) { ParseText(form); if (node != null) node.UnsupportedFont = true; return; }
             Require(standard && form.Byte() == 1);
             form.UInt16(); // Signed charset, retained without interpreting its value.
             Require((form.Byte() & ~0x0e) == 0); // Bold and unused FONTFLAGS must be zero.
@@ -120,6 +121,7 @@ namespace VBAi
             int length = form.Byte();
             Require(length < 32);
             for (int i = 0; i < length; i++) Require(form.Byte() < 128);
+            if (node != null) node.Font = form.Copy(start + 16, form.Position - start - 16);
         }
 
         private static void ParseSite(Reader sites, Reader objects, StorageNode node = null)
@@ -220,6 +222,11 @@ namespace VBAi
             internal ushort UInt16() { uint a = Byte(); return (ushort)(a | ((uint)Byte() << 8)); }
             internal uint UInt32() { uint a = UInt16(); return a | ((uint)UInt16() << 16); }
             internal void Skip(int length) { Require(length >= 0 && length <= Remaining); Position += length; }
+            internal byte[] Copy(int start, int length)
+            {
+                Require(start >= 0 && length >= 0 && start <= bytes.Length - length);
+                var copy = new byte[length]; Buffer.BlockCopy(bytes, start, copy, 0, length); return copy;
+            }
             internal void Padding(int length)
             {
                 Require(length >= 0 && length <= Remaining);

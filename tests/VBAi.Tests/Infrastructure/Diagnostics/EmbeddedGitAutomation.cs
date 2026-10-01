@@ -86,6 +86,44 @@ namespace VBAi.Tests.Integration
             string before = Text("status"); Invoke("compare"); WaitTerminal("compare", before);
         }
 
+        /// <summary>Performs one version-guarded synthetic edit, then one actual owner-window checkpoint restore.</summary>
+        internal void MutateAndRestoreCheckpoint(string nonce, string tabName)
+        {
+            fixture.RequireEmbeddedProcess(scope);
+            var treeReply = fixture.Command(new { Command = "form_tree", Project = scope.Path, Form = "EmbeddedForm" });
+            if (treeReply == null) { Protocol.MarkUncertain("No terminal native tree response."); throw new InvalidOperationException("Native tree delivery is uncertain."); }
+            Assert.AreEqual(true, treeReply["Ok"]);
+            var tree = VbeBridgeClient.Object(treeReply["Data"]);
+            var label = ((object[])tree["Controls"]).Select(VbeBridgeClient.Object)
+                .Single(node => Convert.ToString(node["Name"]) == "QualificationLabel");
+            IDictionary<string, object> mutation = null;
+            Protocol.EmitOnce("synthetic-label-caption", () => mutation = fixture.Command(new { Command = "set_form_node_property",
+                Project = scope.Path, Form = "EmbeddedForm", ControlPath = label["Path"], ExpectedTreeVersion = tree["TreeVersion"],
+                Property = "Caption", Value = "Changed synthetic label " + nonce }));
+            if (mutation == null) { Protocol.MarkUncertain("Native edit has no terminal response."); throw new InvalidOperationException("Native edit delivery is uncertain."); }
+            bool ok = Convert.ToBoolean(mutation["Ok"]); Protocol.Terminal("synthetic-label-caption", true, ok);
+            Assert.IsTrue(ok, Convert.ToString(mutation["Error"]));
+            record(new { Phase = "SyntheticMutationTerminal", Response = mutation });
+
+            var list = Leaf("checkpointList"); RequireInteractive(list);
+            var items = list.FindAll(TreeScope.Children, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem))
+                .Cast<AutomationElement>().ToArray();
+            if (items.Length != 1 || items[0].Current.ProcessId != fixture.ProcessId || !items[0].Current.Name.Contains(nonce))
+                throw new InvalidOperationException("The sole exact owned checkpoint item was not observed.");
+            var select = Pattern<SelectionItemPattern>(items[0], SelectionItemPattern.Pattern);
+            string before = Text("status");
+            Protocol.EmitOnce("select-checkpoint", select.Select); WaitTerminal("select-checkpoint", before);
+            Assert.IsTrue(select.Current.IsSelected);
+            var tabs = Leaf("tabs"); var tab = tabs.FindAll(TreeScope.Children,
+                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem)).Cast<AutomationElement>()
+                .Single(item => item.Current.ProcessId == fixture.ProcessId && item.Current.Name == tabName);
+            var tabSelect = Pattern<SelectionItemPattern>(tab, SelectionItemPattern.Pattern);
+            Protocol.EmitOnce("return-to-checkpoints", tabSelect.Select);
+            Assert.IsTrue(tabSelect.Current.IsSelected); Protocol.Terminal("return-to-checkpoints", true, true);
+            before = Text("status"); Invoke("checkpointRestore"); WaitTerminal("checkpointRestore", before);
+            record(new { Phase = "OwnerCheckpointImportTerminal", Scope = "Exact checkpoint import only; no remote push or automatic recovery replay." });
+        }
+
         internal void Checkpoint(string remote, string branch, string nonce, string tabName)
         {
             var tabs = Leaf("tabs"); var items = tabs.FindAll(TreeScope.Children,
@@ -179,6 +217,8 @@ namespace VBAi.Tests.Integration
             if (Labels("Check the connection, account and Git state, then retry.").Any(x => text.EndsWith(x, StringComparison.Ordinal))) return -1;
             bool success = id == "checkpointCreate"
                 ? Labels("Operation complete: ").Any(x => text == x + "checkpoint_create")
+                : id == "checkpointRestore" ? Labels("VBA restored. Check and save the document.").Contains(text)
+                : id == "select-checkpoint" ? Labels("Reviewing checkpoint").Any(value => text.StartsWith(value + " · ", StringComparison.Ordinal))
                 : (id == "connect" || id == "compare") &&
                     (Labels("First link: commit then push to publish, or pull to import the repository with a backup first.").Contains(text)
                     || Labels("VBA matches the last synchronized state.").Contains(text)

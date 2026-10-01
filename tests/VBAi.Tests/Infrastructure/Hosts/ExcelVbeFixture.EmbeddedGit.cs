@@ -22,10 +22,12 @@ namespace VBAi.Tests.Integration
             internal Dictionary<string, string> Code;
             internal Dictionary<string, int> Types;
             internal VbaGitSnapshot Baseline;
+            internal string Layout;
+            internal IDictionary<string, object> NativeLayout, NativeFonts;
         }
 
         /// <summary>Prepares only the explicitly owned synthetic workbook; no macro is executed.</summary>
-        internal EmbeddedGitScope PrepareEmbeddedGitScope(string marker, Action<bool> pending, Action<object> evidence)
+        internal EmbeddedGitScope PrepareEmbeddedGitScope(string marker, Action<bool> pending, Action<object> evidence, string layout = null)
         {
             string path = File("EmbeddedGit.xlsm");
             string cache = MacroGitRepository.ScopeDirectory(Path.GetFullPath(path));
@@ -52,7 +54,8 @@ namespace VBAi.Tests.Integration
                 }
             }
             finally { Release(components); Release(project); }
-            PrepareGitForm("EmbeddedForm", "Synthetic embedded Git form", marker, path);
+            if (layout == null) PrepareGitForm("EmbeddedForm", "Synthetic embedded Git form", marker, path);
+            else PrepareGitLayout("EmbeddedForm", layout, path, persistedBaseline: true);
             pending(false);
             object editor = null, main = null, module = null, moduleCode = null, pane = null;
             try
@@ -70,7 +73,13 @@ namespace VBAi.Tests.Integration
                 uint pid; uint tid = GetWindowThreadProcessId(hwnd, out pid);
                 Assert.AreEqual((uint)ProcessId, pid); Assert.AreNotEqual(0u, tid);
                 var scope = new EmbeddedGitScope { Path = path, Marker = marker, VbeHandle = hwnd, ThreadId = tid,
-                    Cache = cache };
+                    Cache = cache, Layout = layout };
+                if (layout != null)
+                {
+                    scope.NativeLayout = ReadGitLayout("EmbeddedForm", layout);
+                    scope.NativeFonts = ReadGitLayoutFonts("EmbeddedForm", layout);
+                    evidence(new { Phase = "PersistedLayoutReadback", Layout = layout, Properties = scope.NativeLayout, Fonts = scope.NativeFonts });
+                }
                 scope.State = ReadEmbeddedState(scope, out scope.Code, out scope.Types, out scope.References);
                 scope.Baseline = ExportEmbeddedBaseline(scope, pending, evidence);
                 VerifyEmbeddedGitState(scope);
@@ -191,6 +200,24 @@ namespace VBAi.Tests.Integration
         {
             Assert.AreEqual(scope.State, ReadEmbeddedState(scope, out _, out _, out _),
                 "Embedded capture/checkpoint must preserve exact project identity, source, references, mode, selection and form state.");
+        }
+
+        /// <summary>Checks complete imported resources and measured native properties independently of UI status.</summary>
+        internal void VerifyEmbeddedImportedForm(EmbeddedGitScope scope, Action<object> evidence)
+        {
+            RequireEmbeddedProcess(scope);
+            WithGitProject(scope.Path, project => {
+                var actual = project.Capture();
+                evidence(new { Phase = "IndependentPostImportSnapshot", Exact = scope.Baseline.SameAs(actual),
+                    Changes = actual.Changes(scope.Baseline), Files = EmbeddedGitSnapshotOracle.Describe(actual) });
+                Assert.IsTrue(scope.Baseline.SameAs(actual), "Owner-dispatched import did not preserve the complete snapshot.");
+            });
+            var layout = ReadGitLayout("EmbeddedForm", scope.Layout);
+            var fonts = ReadGitLayoutFonts("EmbeddedForm", scope.Layout);
+            evidence(new { Phase = "IndependentPostImportNativeReadback", Properties = layout, Fonts = fonts });
+            foreach (var expected in scope.NativeLayout) Assert.AreEqual(expected.Value, layout[expected.Key], expected.Key);
+            foreach (var expected in scope.NativeFonts) Assert.AreEqual(expected.Value, fonts[expected.Key], expected.Key);
+            Assert.IsFalse(Convert.ToBoolean(((dynamic)workbook).Saved), "An import is an unsaved edit, even after exact checkpoint restoration.");
         }
 
         private string ReadEmbeddedState(EmbeddedGitScope scope, out Dictionary<string, string> source, out Dictionary<string, int> types, out string referenceRevision)

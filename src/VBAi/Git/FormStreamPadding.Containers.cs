@@ -19,31 +19,70 @@ namespace VBAi
             if (streams == null || storageMetadata == null || rootPath == null) return streams;
             try
             {
-                Require(streams.Count <= 16384 && storageMetadata.Count <= 4096);
-                long size = 0;
-                foreach (var stream in streams)
-                {
-                    Require(stream.Key != null && stream.Value != null && stream.Value.Length <= MaxStreamBytes);
-                    size += stream.Value.Length; Require(size <= MaxStreamBytes);
-                }
-                var graph = new StorageGraph(streams, storageMetadata);
-                var pending = new Stack<StorageNode>();
-                pending.Push(new StorageNode(rootPath, 7, 0, 0));
-                while (pending.Count != 0)
-                {
-                    StorageNode node = pending.Pop();
-                    graph.Parse(node);
-                    foreach (var site in node.Sites.Where(x => !x.Streamed))
-                    {
-                        Require(node.Depth < 64);
-                        string name = "i" + site.Identity.ToString("D2", CultureInfo.InvariantCulture);
-                        pending.Push(new StorageNode(node.Path + "/" + name, site.Type, site.Identity, node.Depth + 1));
-                    }
-                }
-                Require(graph.StorageClaims.Count == storageMetadata.Count && graph.StreamClaims.Count == streams.Count);
-                return graph.Comparison;
+                List<StorageNode> nodes;
+                return ReadGraph(streams, storageMetadata, rootPath, out nodes).Comparison;
             }
             catch (UnsupportedLayoutException) { return streams; }
+        }
+
+        /// <summary>Extracts declared standard fonts only when every storage and control in the graph validates.</summary>
+        internal static FormFontBinding[] ReadFontBindings(IReadOnlyDictionary<string, byte[]> streams,
+            IReadOnlyDictionary<string, byte[]> storageMetadata)
+        {
+            if (streams == null || storageMetadata == null) return null;
+            try
+            {
+                List<StorageNode> nodes; ReadGraph(streams, storageMetadata, "", out nodes);
+                Require(!nodes.Any(node => node.UnsupportedFont));
+                foreach (var node in nodes)
+                    foreach (var site in node.Sites.Where(site => !site.Streamed))
+                        Require(site.Name != null && System.Text.RegularExpressions.Regex.IsMatch(site.Name, @"^[A-Za-z_][A-Za-z0-9_]{0,39}$"));
+                return nodes.Where(node => node.Font != null)
+                    .Select(node => new FormFontBinding(node.OwnerPath, node.Font, node.Type)).ToArray();
+            }
+            catch (UnsupportedLayoutException) { return null; }
+        }
+
+        /// <summary>Associates an exact persisted font payload with its validated container hierarchy.</summary>
+        internal sealed class FormFontBinding
+        {
+            internal readonly string OwnerPath;
+            internal readonly byte[] Descriptor;
+            internal readonly uint Type;
+            internal FormFontBinding(string ownerPath, byte[] descriptor, uint type)
+            { OwnerPath = ownerPath; Descriptor = (byte[])descriptor.Clone(); Type = type; }
+        }
+
+        private static StorageGraph ReadGraph(IReadOnlyDictionary<string, byte[]> streams,
+            IReadOnlyDictionary<string, byte[]> storageMetadata, string rootPath, out List<StorageNode> nodes)
+        {
+            nodes = new List<StorageNode>();
+            Require(streams.Count <= 16384 && storageMetadata.Count <= 4096);
+            long size = 0;
+            foreach (var stream in streams)
+            {
+                Require(stream.Key != null && stream.Value != null && stream.Value.Length <= MaxStreamBytes);
+                size += stream.Value.Length; Require(size <= MaxStreamBytes);
+            }
+            var graph = new StorageGraph(streams, storageMetadata);
+            var pending = new Stack<StorageNode>();
+            pending.Push(new StorageNode(rootPath, 7, 0, 0));
+            while (pending.Count != 0)
+            {
+                StorageNode node = pending.Pop();
+                graph.Parse(node);
+                nodes.Add(node);
+                foreach (var site in node.Sites.Where(x => !x.Streamed))
+                {
+                    Require(node.Depth < 64);
+                    string name = "i" + site.Identity.ToString("D2", CultureInfo.InvariantCulture);
+                    string owner = node.OwnerPath + (node.OwnerPath.Length == 0 ? "" : "/") +
+                        (site.Type == 7 ? "Pages/" : "Controls/") + site.Name;
+                    pending.Push(new StorageNode(node.Path + "/" + name, site.Type, site.Identity, node.Depth + 1, owner));
+                }
+            }
+            Require(graph.StorageClaims.Count == storageMetadata.Count && graph.StreamClaims.Count == streams.Count);
+            return graph;
         }
 
         /// <summary>Reads design-surface metadata while retaining all property bytes and validating its optional extent.</summary>
@@ -76,13 +115,16 @@ namespace VBAi
         private sealed class StorageNode
         {
             internal readonly string Path;
+            internal readonly string OwnerPath;
+            internal byte[] Font;
+            internal bool UnsupportedFont;
             internal readonly uint Type, Identity;
             internal readonly int Depth;
             internal readonly List<StorageSite> Sites = new List<StorageSite>();
             private readonly HashSet<uint> identities = new HashSet<uint>();
             internal TabLinks Tabs;
-            internal StorageNode(string path, uint type, uint identity, int depth)
-            { Path = path; Type = type; Identity = identity; Depth = depth; }
+            internal StorageNode(string path, uint type, uint identity, int depth, string ownerPath = "")
+            { Path = path; Type = type; Identity = identity; Depth = depth; OwnerPath = ownerPath; }
 
             internal void AddSite(uint identity, uint type, uint flags, bool hasObjectSize, string name)
             {

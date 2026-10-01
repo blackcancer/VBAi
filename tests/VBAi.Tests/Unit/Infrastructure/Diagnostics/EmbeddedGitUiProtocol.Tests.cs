@@ -88,6 +88,10 @@ namespace VBAi.Tests.Unit
             const string after = "First link: commit then push to publish, or pull to import the repository with a backup first.";
             Assert.IsTrue(EmbeddedGitUiProtocol.IsTerminal(true, false, before, after));
             Assert.AreEqual(1, EmbeddedGitAutomation.ClassifyTerminal("compare", after));
+            Assert.AreEqual(1, EmbeddedGitAutomation.ClassifyTerminal("checkpointRestore", "VBA restored. Check and save the document."));
+            Assert.AreEqual(1, EmbeddedGitAutomation.ClassifyTerminal("select-checkpoint", "Reviewing checkpoint · Synthetic nonce"));
+            Assert.AreEqual(0, EmbeddedGitAutomation.ClassifyTerminal("checkpointRestore", "Operation in progress…"));
+            Assert.AreEqual(0, EmbeddedGitAutomation.ClassifyTerminal("select-checkpoint", "Operation in progress…"));
             Assert.AreEqual(0, EmbeddedGitAutomation.ClassifyTerminal("compare", before));
             Assert.IsFalse(EmbeddedGitUiProtocol.IsTerminal(true, false, after, after));
             Assert.AreEqual(-1, EmbeddedGitAutomation.ClassifyTerminal("connect", "Known failure · Check the connection, account and Git state, then retry."));

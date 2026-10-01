@@ -21,6 +21,23 @@ namespace VBAi.Tests.Integration
         [TestMethod]
         public void InstalledOwnerGitWindowCapturesSyntheticProjectAndCreatesLocalCheckpoint()
         {
+            RunInstalledOwner(null);
+        }
+
+        /// <summary>Qualifies the actual VBE owner-dispatched import for every prepared persisted native layout.</summary>
+        [TestMethod]
+        [DataRow("LabelButton")][DataRow("TextBox")][DataRow("ComboBox")][DataRow("ListBox")]
+        [DataRow("CheckBox")][DataRow("OptionButton")][DataRow("ToggleButton")][DataRow("ScrollBar")]
+        [DataRow("SpinButton")][DataRow("TabStrip")][DataRow("Image")][DataRow("FrameMultiPage")]
+        public void InstalledOwnerGitWindowRestoresPersistedFormCheckpoint(string layout)
+        {
+            if (Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_OWNER_RESTORE_TESTS") != "1")
+                Assert.Inconclusive("Explicit owned UserForm checkpoint import opt-in is required.");
+            RunInstalledOwner(layout);
+        }
+
+        private void RunInstalledOwner(string layout)
+        {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EMBEDDED_GIT_UI_TESTS") != "1" ||
                 Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_GITHUB_TESTS") != "1" ||
                 Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
@@ -31,6 +48,7 @@ namespace VBAi.Tests.Integration
             string manifestPath = ExcelOwnedBootstrapPlan.RequireLocalAbsolutePath(Environment.GetEnvironmentVariable("VBAi_TEST_GITHUB_MANIFEST"));
             var manifest = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(File.ReadAllText(manifestPath));
             var plan = ValidateManifest(manifest);
+            plan.Layout = layout;
             Guid expected = Guid.Parse(Environment.GetEnvironmentVariable("VBAi_TEST_EMBEDDED_GIT_MVID"));
             string hash = Environment.GetEnvironmentVariable("VBAi_TEST_EMBEDDED_GIT_SHA256");
             Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId, expected, "Tests must reference the exact frozen product candidate.");
@@ -38,7 +56,7 @@ namespace VBAi.Tests.Integration
             var context = new RunContext(Path.Combine(root, "embedded-git-" + Guid.NewGuid().ToString("N")), plan);
             context.Record(new { Phase = "Preflight", ExpectedMvid = expected.ToString("D"), ExpectedSha256 = hash,
                 Remote = plan.Remote, Branch = plan.Branch, BranchCommit = plan.Commit,
-                Scope = "Installed owner-dispatched capture and local checkpoint only. No push, import, recovery or native reopen acceptance." });
+                Layout = layout, Scope = layout == null ? "Owner-dispatched capture/checkpoint only." : "Owner-dispatched persisted UserForm checkpoint import with exact native snapshot and font readback; no remote push, recovery replay or save/reopen acceptance." });
             var owner = new Thread(() => Owner(context, expected, hash)) { IsBackground = true };
             owner.SetApartmentState(ApartmentState.STA); owner.Start();
             try
@@ -52,7 +70,7 @@ namespace VBAi.Tests.Integration
                 if (!context.UiDone.Wait(TimeSpan.FromSeconds(300))) throw new TimeoutException("UIA operation delivery/observation remains uncertain.");
                 if (!context.OwnerDone.Wait(TimeSpan.FromSeconds(30))) throw new TimeoutException("Modal Execute or native shutdown has no terminal evidence.");
                 var failures = new[] { context.UiError, context.OwnerError }.Where(x => x != null).ToArray();
-                context.Record(new { Phase = failures.Length == 0 ? "PASS" : "FAILED", NativeScope = "CaptureCheckpointOnly", Shutdown = context.Fixture.ShutdownDiagnostics });
+                context.Record(new { Phase = failures.Length == 0 ? "PASS" : "FAILED", NativeScope = layout == null ? "CaptureCheckpointOnly" : "PersistedFormCheckpointImport", Shutdown = context.Fixture.ShutdownDiagnostics });
                 if (failures.Length > 1) throw new AggregateException("Embedded Git UI and owner STA failed; original errors preserved.", failures);
                 if (failures.Length == 1) ExceptionDispatchInfo.Capture(failures[0]).Throw();
             }
@@ -97,7 +115,7 @@ namespace VBAi.Tests.Integration
                 var data = VbeBridgeClient.Object(status["Data"]);
                 ExcelVbeFixture.RequireMonacoCandidate(expected, typeof(VbeSession).Module.ModuleVersionId, context.Fixture.ProcessId, data);
                 Assert.AreEqual(hash, Sha(Convert.ToString(data["AssemblyPath"])), true, "Loaded installed bytes differ from the frozen candidate.");
-                context.Scope = context.Fixture.PrepareEmbeddedGitScope(context.Nonce, value => nativePending = value, context.Record);
+                context.Scope = context.Fixture.PrepareEmbeddedGitScope(context.Nonce, value => nativePending = value, context.Record, context.Plan.Layout);
                 nativePending = false;
                 context.WorkbookSha256 = Sha(context.Scope.Path);
                 context.Record(new { Phase = "Prepared", ProcessId = context.Fixture.ProcessId, context.Scope.ThreadId,
@@ -113,7 +131,8 @@ namespace VBAi.Tests.Integration
                 });
                 if (!context.UiDone.Wait(TimeSpan.FromSeconds(15))) throw new TimeoutException("Modal returned without terminal UIA closure observation.");
                 if (!context.ModalClosed) throw new InvalidOperationException("Modal returned without the exact known UIA close proof.");
-                context.Fixture.VerifyEmbeddedGitState(context.Scope);
+                if (context.Plan.Layout == null) context.Fixture.VerifyEmbeddedGitState(context.Scope);
+                else context.Fixture.VerifyEmbeddedImportedForm(context.Scope, context.Record);
                 Assert.AreEqual(context.WorkbookSha256, Sha(context.Scope.Path), "Owner-dispatched capture/checkpoint must not change the owned disk workbook.");
                 nativePending = true;
                 status = context.Fixture.Command("status"); Assert.IsNotNull(status);
@@ -170,6 +189,7 @@ namespace VBAi.Tests.Integration
                     throw new TimeoutException("No modal intent was emitted; UIA has no authority to invoke or close a window.");
                 automation.OpenedWindow(); automation.Link(context.Plan.Remote, context.Plan.Branch, context.Plan.Commit);
                 automation.Checkpoint(context.Plan.Remote, context.Plan.Branch, context.Nonce, context.Plan.TabName);
+                if (context.Plan.Layout != null) automation.MutateAndRestoreCheckpoint(context.Nonce, context.Plan.TabName);
                 automation.CompareOnce();
             }
             catch (Exception error) { context.UiError = error; }
@@ -186,7 +206,7 @@ namespace VBAi.Tests.Integration
             }
         }
 
-        internal sealed class TestPlan { internal string Remote, Branch, Commit, TabName; }
+        internal sealed class TestPlan { internal string Remote, Branch, Commit, TabName, Layout; }
         internal static TestPlan ValidateManifest(IDictionary<string, object> manifest)
         {
             string remote = Convert.ToString(manifest["repositoryUrl"]) + ".git";

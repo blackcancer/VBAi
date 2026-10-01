@@ -10,6 +10,20 @@ namespace VBAi.Tests.Unit
     public sealed partial class FormResourcePreflightTests
     {
         [TestMethod]
+        public void WholeResourceFontBindingsRetainExactNestedPrecisionWithoutChangingTransportBytes()
+        {
+            byte[] resources = FormStreamPaddingTests.ContainerResourceBefore();
+            byte[] before = (byte[])resources.Clone();
+            var bindings = FormResourcePreflight.ReadFontBindings(resources, 0);
+            Assert.AreEqual(2, bindings.Length);
+            Assert.AreEqual(82700u, BitConverter.ToUInt32(bindings.Single(binding => binding.OwnerPath == "Controls/QualificationExtra").Descriptor, 6));
+            CollectionAssert.AreEqual(before, resources);
+            byte[] unknown = (byte[])resources.Clone(); unknown[3048] ^= 1;
+            Assert.IsNull(FormResourcePreflight.ReadFontBindings(unknown, 0));
+            Assert.ThrowsException<InvalidOperationException>(() => FormResourcePreflight.ReadFontBindings(new byte[] { 0 }, 0));
+        }
+
+        [TestMethod]
         public void RetainedWholeFrameMultiPageResourcesHaveEqualComparisonAndExactRawTransport()
         {
             byte[] before = FormStreamPaddingTests.ContainerResourceBefore();

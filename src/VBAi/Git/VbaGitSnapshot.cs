@@ -133,6 +133,19 @@ namespace VBAi
                 RegexOptions.Multiline | RegexOptions.IgnoreCase);
         }
 
+        /// <summary>Prepares a bounded form-font plan only for one unambiguous supported native container.</summary>
+        internal FormStreamPadding.FormFontBinding[] FormFonts(VbaGitComponent component)
+        {
+            if (component.Type != 3 || !component.HasResources) return null;
+            string text = Utf8.GetString(Files[component.FileName]);
+            string metadata = text.Substring(0, Regex.Match(text, "^Attribute VB_Name = ", RegexOptions.Multiline).Index);
+            var declarations = OleBlobs(metadata).Cast<Match>().ToArray();
+            if (declarations.Length != 1 || ResourceReferences(metadata).Cast<Match>().Any(reference =>
+                reference.Index < declarations[0].Index || reference.Index + reference.Length > declarations[0].Index + declarations[0].Length)) return null;
+            int offset = checked((int)uint.Parse(declarations[0].Groups[1].Value, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture));
+            return FormResourcePreflight.ReadFontBindings(Files[component.Name + ".frx"], offset);
+        }
+
         /// <summary>Finds resource references with the same grammar for validation and comparison.</summary>
         private static MatchCollection ResourceReferences(string metadata)
         {

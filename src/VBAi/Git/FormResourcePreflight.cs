@@ -19,6 +19,13 @@ namespace VBAi
             Read(resources, offset).Validate();
         }
 
+        /// <summary>Reads font restoration bindings without activating or changing the exported resources.</summary>
+        internal static FormStreamPadding.FormFontBinding[] ReadFontBindings(byte[] resources, int offset)
+        {
+            var compound = Read(resources, offset); compound.Validate();
+            return compound.ReadFontBindings();
+        }
+
         // Comparison only. Transport, checkpoints and imported files keep their original bytes.
         internal static byte[] ComparisonBytes(byte[] resources, IEnumerable<int> offsets)
         {
@@ -219,6 +226,14 @@ namespace VBAi
                     }
                     return buffer.ToArray();
                 }
+            }
+
+            internal FormStreamPadding.FormFontBinding[] ReadFontBindings()
+            {
+                if (!entries[0].Metadata.Take(16).SequenceEqual(FormClassId)) return null;
+                var streams = entries.Where(x => x.Kind == 2).ToDictionary(x => x.Path, x => x.Data, StringComparer.Ordinal);
+                var metadata = entries.Where(x => x.Kind == 1 || x.Kind == 5).ToDictionary(x => x.Path, x => x.Metadata, StringComparer.Ordinal);
+                return FormStreamPadding.ReadFontBindings(streams, metadata);
             }
 
             private byte[] ReadChain(List<uint> chain, long size)

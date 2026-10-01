@@ -124,13 +124,14 @@ namespace VBAi
             using (var scratch = new Scratch())
             {
                 // Encode and materialize the entire import before touching the live project.
+                var formFonts = target.Manifest.Components.Where(component => component.Type == 3)
+                    .ToDictionary(component => component.Name, target.FormFonts, StringComparer.Ordinal);
                 foreach (var file in target.Files)
                     File.WriteAllBytes(Path.Combine(scratch.Path, file.Key), file.Key.EndsWith(".frx", StringComparison.Ordinal) ? file.Value :
                         NativeEncoding.GetBytes(VbaGitSnapshot.Utf8.GetString(file.Value).Replace("\n", "\r\n")));
                 dynamic project = CheckedProject();
                 var expectedFiles = expected.ComparisonFiles();
                 var targetFiles = target.ComparisonFiles();
-                beforeMutation?.Invoke();
                 var changed = new HashSet<string>(StringComparer.Ordinal);
                 foreach (var old in expected.Manifest.Components)
                 {
@@ -140,8 +141,13 @@ namespace VBAi
                         (!old.HasResources || expectedFiles[old.Name + ".frx"].SequenceEqual(targetFiles[next.Name + ".frx"]));
                     if (same) continue;
                     changed.Add(old.Name);
-                    if (old.Type != 100) project.VBComponents.Remove(project.VBComponents.Item(old.Name));
                 }
+                if (System.Runtime.InteropServices.Marshal.IsComObject((object)project) && formFonts.Any(pair =>
+                    pair.Value != null && pair.Value.Length != 0 && (changed.Contains(pair.Key) || !expected.Manifest.Components.Any(old => old.Name == pair.Key))))
+                    FormFontRestoration.RequireOwner((object)project);
+                beforeMutation?.Invoke();
+                foreach (var old in expected.Manifest.Components.Where(old => changed.Contains(old.Name) && old.Type != 100))
+                    project.VBComponents.Remove(project.VBComponents.Item(old.Name));
                 foreach (var next in target.Manifest.Components)
                 {
                     if (!changed.Contains(next.Name) && expected.Manifest.Components.Any(x => x.Name == next.Name)) continue;
@@ -160,15 +166,37 @@ namespace VBAi
                         if ((string)imported.Name != next.Name || (int)imported.Type != next.Type)
                             throw new InvalidOperationException(UiText.Get("Unexpected identity after import: ") + next.Name + UiText.Get(". Use Restore."));
                         if (next.Type == 3)
+                        {
                             RestoreFormImportCode((object)imported.CodeModule, VbaGitSnapshot.Utf8.GetString(target.Files[next.FileName]), () => {
                                 dynamic current = CheckedProject();
                                 if (!VbeProjectHostPath.SameProject((object)current.VBComponents.Item(next.Name), (object)imported))
                                     throw new InvalidOperationException("The imported form identity changed before code readback.");
                             });
+                            if (System.Runtime.InteropServices.Marshal.IsComObject((object)imported))
+                                FormFontRestoration.Restore((object)imported, formFonts[next.Name], () => RequireImportedForm(next.Name, (object)imported));
+                        }
                     }
                 }
             }
             if (!Capture().SameAs(target)) throw new InvalidOperationException(UiText.Get("The VBE did not preserve the imported sources exactly. Use Restore or check the project."));
+        }
+
+        /// <summary>Balances fresh identity readback references without releasing the imported component lease.</summary>
+        private void RequireImportedForm(string name, object imported)
+        {
+            object components = null, current = null;
+            try
+            {
+                dynamic project = CheckedProject(); components = project.VBComponents;
+                current = ((dynamic)components).Item(name);
+                if (!VbeProjectHostPath.SameProject(current, imported))
+                    throw new InvalidOperationException("The imported form identity changed before font restoration.");
+            }
+            finally
+            {
+                if (current != null && System.Runtime.InteropServices.Marshal.IsComObject(current)) System.Runtime.InteropServices.Marshal.ReleaseComObject(current);
+                if (components != null && System.Runtime.InteropServices.Marshal.IsComObject(components)) System.Runtime.InteropServices.Marshal.ReleaseComObject(components);
+            }
         }
 
         /// <summary>Removes only the single leading blank line added by VBIDE's native form import.</summary>
