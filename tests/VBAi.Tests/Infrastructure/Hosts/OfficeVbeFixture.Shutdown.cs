@@ -109,6 +109,15 @@ namespace VBAi.Tests.Integration
             diagnostic["CollectionCountsAfter"] = new[] { GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2) };
             File.WriteAllText(path, serializer.Serialize(diagnostic));
         }
+        private int ResolveOwnedExitWaitBound()
+        {
+            if (Kind != "Word") return 5000;
+            string configured = Environment.GetEnvironmentVariable("VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS");
+            if (string.IsNullOrEmpty(configured)) return 5000;
+            if (configured != "15000")
+                throw new InvalidOperationException("The Word exit-observation diagnostic accepts only VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS=15000; unset it for the default 5000 milliseconds.");
+            return 15000;
+        }
         private void PrepareOwnedShutdown()
         {
             Assert.IsNotNull(ownedProcess, "The original owned process handle must be retained before Close/Quit.");
@@ -117,7 +126,7 @@ namespace VBAi.Tests.Integration
             Assert.AreEqual(shutdownEvidence.Record["ProcessStartedUtc"], ownedProcess.StartTime.ToUniversalTime().ToString("o"));
             Assert.AreEqual(shutdownEvidence.Record["OriginalProcessHandle"], "0x" + unchecked((ulong)ownedProcess.Handle.ToInt64()).ToString("X16"));
             Assert.AreEqual(shutdownEvidence.Record["ProcessImage"], ExcelOwnedProcessImage.Read(ownedProcess.Handle));
-            shutdownEvidence.Record["WaitBoundMilliseconds"] = 5000;
+            shutdownEvidence.Record["WaitBoundMilliseconds"] = ResolveOwnedExitWaitBound();
             shutdownEvidence.Prepare(FlushShutdownEvidence);
         }
 

@@ -15,6 +15,15 @@ records timestamps and collection counts. This does not prove an RCW leak or run
 collection in the product. Failed or uncertain scopes skip collection; the single
 Close/Quit sequence, original process handle and 5-second exit bound remain intact.
 
+`VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS=15000` separately opts Word qualification
+into a 15-second exit observation after its single confirmed Quit and COM release.
+The fixture captures the bound before Close/Quit and records it with elapsed time,
+pump attempts and the original process handle. Other hosts and an unset variable
+retain the 5-second bound; any other configured Word value is refused before
+Close/Quit. This observation diagnostic neither enables scope collection nor
+replays native cleanup. An exit requires an observed code from the retained handle;
+a timeout preserves ownership and remains a failure.
+
 ## Owned Excel teardown trace (qualification only)
 
 `VBAi_TEST_EXCEL_TEARDOWN_TRACE_GATE=1` enables a disabled-by-default diagnostic

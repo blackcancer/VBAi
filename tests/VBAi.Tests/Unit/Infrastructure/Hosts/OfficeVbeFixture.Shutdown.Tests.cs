@@ -254,6 +254,63 @@ namespace VBAi.Tests.Unit
             }
             finally { Environment.SetEnvironmentVariable("VBAi_TEST_WORD_SETTLED_SCOPE_GC", prior); }
         }
+        [TestMethod]
+        public void WordExitDiagnosticCapturesFifteenSecondsBeforeQuitAndPreservesOtherHosts()
+        {
+            string prior = Environment.GetEnvironmentVariable("VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS");
+            try
+            {
+                Environment.SetEnvironmentVariable("VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS", "15000");
+                WithFakeFixture((fixture, application, document, process, root) => {
+                    IntPtr original = process.Handle;
+                    application.OnQuit = () => Environment.SetEnvironmentVariable("VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS", "0");
+                    fixture.WaitForOwnedExit = (observed, timeout) => {
+                        Assert.AreSame(process, observed); Assert.AreEqual(original, observed.Handle);
+                        Assert.AreEqual(15000, timeout, "The bound captured before Quit must survive subsequent environment changes.");
+                        return true;
+                    };
+                    fixture.ReadOwnedExitCode = observed => { Assert.AreSame(process, observed); return 0; };
+                    fixture.Dispose();
+                    var lifecycle = (IDictionary<string, object>)Read(Path.Combine(root, "shutdown-lifecycle.json"))["Lifecycle"];
+                    Assert.AreEqual(15000, lifecycle["WaitBoundMilliseconds"]);
+                    Assert.AreEqual(0, lifecycle["ExitCode"]); Assert.AreEqual(true, lifecycle["ProcessExitObserved"]);
+                    fixture.Dispose(); Assert.AreEqual(1, application.QuitCount); Assert.AreEqual(1, document.CloseCount);
+                });
+                foreach (string kind in new[] { "Access", "PowerPoint", "Publisher" })
+                WithFakeFixture((fixture, application, document, process, root) => {
+                    SetProperty(fixture, "Kind", kind);
+                    typeof(OfficeVbeFixture).GetMethod("PrepareOwnedShutdown", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(fixture, null);
+                    var lifecycle = (IDictionary<string, object>)Read(Path.Combine(root, "shutdown-lifecycle.json"))["Lifecycle"];
+                    Assert.AreEqual(5000, lifecycle["WaitBoundMilliseconds"], "Non-Word hosts must ignore this diagnostic.");
+                    Assert.AreEqual(0, application.QuitCount); Assert.AreEqual(0, document.CloseCount);
+                });
+            }
+            finally { Environment.SetEnvironmentVariable("VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS", prior); }
+        }
+
+        [TestMethod]
+        public void InvalidWordExitBoundRefusesBeforeAnyCloseQuitOrObservation()
+        {
+            string prior = Environment.GetEnvironmentVariable("VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS");
+            try
+            {
+                Environment.SetEnvironmentVariable("VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS", "0");
+                WithFakeFixture((fixture, application, document, process, root) => {
+                    fixture.WaitForOwnedExit = (_, __) => { Assert.Fail("Invalid configuration must emit no exit observation."); return false; };
+                    var failure = Assert.ThrowsException<AssertFailedException>(() => fixture.Dispose());
+                    StringAssert.Contains(failure.Message, "VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS=15000");
+                    Assert.AreEqual(0, application.QuitCount); Assert.AreEqual(0, document.CloseCount);
+                    Assert.AreSame(process, Field(fixture, "ownedProcess"));
+                    Assert.ThrowsException<AssertFailedException>(() => fixture.Dispose());
+                    Assert.AreEqual(0, application.QuitCount); Assert.AreEqual(0, document.CloseCount);
+                });
+                long elapsed = 0; int pumps = 0;
+                Assert.IsFalse(OfficeVbeFixture.WaitForWordExit(15000, () => elapsed, () => false,
+                    () => pumps++, milliseconds => elapsed += milliseconds));
+                Assert.AreEqual(15000L, elapsed); Assert.AreEqual(600, pumps);
+            }
+            finally { Environment.SetEnvironmentVariable("VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS", prior); }
+        }
         private static void WithFakeFixture(Action<OfficeVbeFixture, FakeApplication, FakeDocument, Process, string> action)
         {
             string root = Path.Combine(Path.GetTempPath(), "VBAi-OwnedShutdown-" + Guid.NewGuid().ToString("N"));
@@ -280,7 +337,7 @@ namespace VBAi.Tests.Unit
         private static void SetField(object target, string name, object value) => target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic).SetValue(target, value);
         private static void SetProperty(object target, string name, object value) => target.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.NonPublic).SetValue(target, value);
         private static IDictionary<string, object> Read(string path) => (IDictionary<string, object>)new JavaScriptSerializer().DeserializeObject(File.ReadAllText(path));
-        public sealed class FakeApplication { public int QuitCount; public Exception QuitError; public void Quit(int option) { QuitCount++; if (QuitError != null) throw QuitError; } }
+        public sealed class FakeApplication { public int QuitCount; public Exception QuitError; public Action OnQuit; public void Quit(int option) { QuitCount++; OnQuit?.Invoke(); if (QuitError != null) throw QuitError; } }
         public sealed class FakeDocument { public int CloseCount; public void Close(int option) { CloseCount++; } }
     }
 }

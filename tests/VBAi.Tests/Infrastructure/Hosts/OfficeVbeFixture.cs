@@ -743,7 +743,7 @@ namespace VBAi.Tests.Integration
                 try
                     {
                         int exitCode = 0;
-                        bool exited = shutdownEvidence.ObserveExit(() => WaitForShutdownExit(process, 5000, externalReferencesReleased),
+                        bool exited = shutdownEvidence.ObserveExit(() => WaitForShutdownExit(process, Convert.ToInt32(shutdownEvidence.Record["WaitBoundMilliseconds"]), externalReferencesReleased),
                             () => { exitCode = ReadOwnedExitCode(process); return exitCode; }, process.Dispose, FlushShutdownEvidence);
                         if (!exited)
                         {
