@@ -1,5 +1,43 @@
 # Recorded validation
 
+## Word qualification follow-up (2026-10-01)
+
+The code and test sources at `6fcf8c1f38ffcaa005d0ad5cd2c5078c501cf5c3`
+add the embedded Word PIA dispatch contract, exact unique-module ownership
+checks, balanced temporary COM references and two ignored optional arguments in
+the generated coverage runtime. The Word adapter supplies those arguments only
+for the generated reset and snapshot functions. It never changes host trust.
+
+| Check | Actual result | Evidence |
+| --- | --- | --- |
+| Isolated .NET Framework 4.8/x64 build | Passed, no errors; three NU1900 vulnerability-endpoint warnings | `artifacts/build-word-complete` |
+| Complete managed VBA testing scope | 510 passed, 0 failed, 0 skipped | `artifacts/coverage/word-final-managed/final.trx` |
+| Managed executable lines | **3743/3743 (100%)** | Companion Coverlet JSON and Cobertura |
+| All managed IL branches | **3706/3706 (100%)**, including 42/42 unmapped branches | `artifacts/coverage/word-final-managed/gate.json` |
+| Word registered batch and single execution | Passed on the disposable DOCM; expected pass, failure, swallowed assertion and runtime-error outcomes were retained | `artifacts/qualification-followup/native-word-final-office` |
+| Complete Word copy-based measurement and normal teardown | Pending; the preceding trial timed out while waiting for the copy's security decision and remains failed | Separate native follow-up evidence |
+
+The managed gate includes every `src/VBAi/Testing/*.cs` file and
+`src/VBAi/Llm/Chat/LlmVbeTools.Testing.cs`, including Designers and native adapters.
+It reconciles both reports from collection
+`fced4b96-f537-4817-9b92-c224cdd60893` without excluding source, generated classes
+or IL branches. Interface-only declarations have no executable sequence points.
+The manifest and restored post-collector assembly identities are retained beside
+the readable `gate.txt` and machine-readable `gate.json`.
+
+The production DLL has MVID `e0af060d-8ab6-4e8b-b169-0d0025fd201d`, SHA-256
+`3D263CFB84F31371A708A6861B12A1192A0098424FA8DEEC1D855026577F2C4C`.
+The test DLL has MVID `b252196d-c4b3-4019-9d9b-676cc0508d47`, SHA-256
+`D7F40D3E5E84669E61A38B9CBB274C2893FF3D582D8AB672D0A9F2BD9C7AEFBB`.
+Native diagnostic fixtures separately verified the Boolean and Boolean SAFEARRAY
+return values with explicit arguments. A zero-argument Word function executed its
+marker but returned null; these diagnostics do not constitute full acceptance.
+Failed runs, uncertain delivery and their owned cleanup evidence are preserved.
+
+The installed DLL remains unchanged. Temporary candidate registration is backed
+up and must be restored after the owned host has exited. No production macro,
+Ollama scenario, Visio or Microsoft Project qualification belongs to this follow-up.
+
 ## Managed VBA testing coverage gate (2026-10-01)
 
 Source revision `51454c61acaef02305ddc28ba6a6041b9532124f` on

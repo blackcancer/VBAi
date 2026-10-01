@@ -538,7 +538,12 @@ End Sub
         $bounds = New-Object VBAiExplorerWindowProbe+Rect
         Require ([VBAiExplorerWindowProbe]::IsWindow($window) -and $windowPid -eq $actualPid) 'Explorer HWND does not belong to the owned Excel PID.'
         Require ([VBAiExplorerWindowProbe]::GetWindowRect($window, [ref]$bounds) -and $bounds.Right -gt $bounds.Left -and $bounds.Bottom -gt $bounds.Top) 'Explorer window bounds are invalid.'
-        $report.ExplorerWindow = @{ Hwnd = [long]$window; Pid = $windowPid; Docked = $opened.Docked; Bounds = $bounds }
+        Add-Type -AssemblyName System.Windows.Forms
+        $firstOpenArea = [System.Windows.Forms.Screen]::FromHandle($window).WorkingArea
+        $firstOpenWidth = $bounds.Right - $bounds.Left
+        $firstOpenHeight = $bounds.Bottom - $bounds.Top
+        Require ($firstOpenWidth -ge [Math]::Min(820, $firstOpenArea.Width) -and $firstOpenHeight -ge [Math]::Min(480, $firstOpenArea.Height)) 'First native explorer opening is too small to use.'
+        $report.ExplorerWindow = @{ Hwnd = [long]$window; Pid = $windowPid; Docked = $opened.Docked; Bounds = $bounds; FirstOpenUsable = $true; FirstOpenWidth = $firstOpenWidth; FirstOpenHeight = $firstOpenHeight; WorkingArea = $firstOpenArea }
     } else { throw 'show_vba_test_explorer must return Hwnd for independent native-window qualification.' }
 
     # Showing the same explorer twice must reuse the exact owned native window.
