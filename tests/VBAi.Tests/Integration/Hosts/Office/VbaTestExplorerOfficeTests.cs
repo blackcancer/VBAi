@@ -111,6 +111,12 @@ namespace VBAi.Tests.Integration
                 Save(fixture, "explorer-native-window.json", new { Hwnd = window.ToInt64(), ProcessId = owner,
                     bounds.Left, bounds.Top, bounds.Right, bounds.Bottom });
 
+                if (host == "Access")
+                {
+                    // The final stale-revision edit must remain unsaved; discard owned Access objects on cleanup.
+                    fixture.StopAccessSaveDialogHandler();
+                    fixture.RequireAdapterOnlyCleanup();
+                }
                 ReplaceSource(fixture, ((string)original["Code"]).TrimEnd() + "\r\n' changed after verified native runs\r\n");
                 var changed = fixture.Data("read_module", "Module", ModuleName);
                 var refused = fixture.Response("run_vba_tests", "ExpectedProjectVersion", revision, "ExpectedMode", 2,
@@ -288,11 +294,14 @@ namespace VBAi.Tests.Integration
             // A mismatched registered application is refused before inspecting or activating any document.
             // Read only the synthetic getter, with the host's actual invocation shape and exact owned context.
             object application = Marshal.GetActiveObject(fixture.Kind + ".Application");
-            object documents = null, sourceDocument = null;
+            object documents = null, sourceDocument = null, sourceProject = null;
             try
             {
-                long handle = fixture.Kind == "PowerPoint" ? Convert.ToInt64(((dynamic)application).HWND) : Convert.ToInt64(((dynamic)application).Hwnd);
-                uint owner; Assert.AreNotEqual(0u, GetWindowThreadProcessId(new IntPtr(handle), out owner));
+                // PowerPoint HWND is a restricted vtable member; the shared reader uses the published PIA layout.
+                IntPtr handle = fixture.Kind == "PowerPoint" ? PowerPointWindow.Read(application)
+                    : new IntPtr(Convert.ToInt64(((dynamic)application).Hwnd));
+                Assert.AreNotEqual(IntPtr.Zero, handle, "Counter inspection requires a verifiable owned application window.");
+                uint owner; Assert.AreNotEqual(0u, GetWindowThreadProcessId(handle, out owner));
                 Assert.AreEqual((uint)fixture.ProcessId, owner, "Counter inspection resolved another " + fixture.Kind + " process.");
                 documents = fixture.Kind == "PowerPoint" ? ((dynamic)application).Presentations : ((dynamic)application).Documents;
                 var paths = new List<string>();
@@ -321,7 +330,8 @@ namespace VBAi.Tests.Integration
                     var transport = new VbaTestPowerPointValuesHost {
                         ReadProcessName = () => "POWERPNT", ReadProcessId = () => fixture.ProcessId,
                         ReadActiveApplication = unused => application };
-                    var target = transport.ResolveTarget((object)((dynamic)sourceDocument).VBProject, fixture.DocumentPath);
+                    sourceProject = ((dynamic)sourceDocument).VBProject;
+                    var target = transport.ResolveTarget(sourceProject, fixture.DocumentPath);
                     return Convert.ToString(transport.Invoke(target, ModuleName, "ReadCoverageCounters", new object[0]));
                 }
                 Assert.AreEqual("Word", fixture.Kind, "Counter inspection is not implemented for this host.");
@@ -338,6 +348,7 @@ namespace VBAi.Tests.Integration
             }
             finally
             {
+                if (sourceProject != null && Marshal.IsComObject(sourceProject)) Marshal.ReleaseComObject(sourceProject);
                 if (sourceDocument != null && Marshal.IsComObject(sourceDocument)) Marshal.ReleaseComObject(sourceDocument);
                 if (documents != null && Marshal.IsComObject(documents)) Marshal.ReleaseComObject(documents);
                 if (Marshal.IsComObject(application)) Marshal.ReleaseComObject(application);

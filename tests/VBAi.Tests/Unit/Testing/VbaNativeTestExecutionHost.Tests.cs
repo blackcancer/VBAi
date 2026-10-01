@@ -159,13 +159,13 @@ namespace VBAi.Tests.Unit
         }
         private sealed class Probe : VbaNativeTestExecutionHost.IProbe
         {
-            internal Action OnPrepare, OnRevalidate, OnExecute;
+            internal Action OnPrepare, OnRevalidate, OnExecute, OnReadMode;
             internal int Mode = 2, Invocations;
             public void RequireOwner(object vbe) { }
             public object Prepare(object vbe, object project, string source) { OnPrepare?.Invoke(); return new object(); }
             public void Revalidate(object vbe, object project, object prepared) { OnRevalidate?.Invoke(); }
             public void Execute(object prepared) { Invocations++; OnExecute?.Invoke(); }
-            public int ReadMode(object project) => Mode;
+            public int ReadMode(object project) { OnReadMode?.Invoke(); return Mode; }
         }
         private sealed class Cleanup : IDisposable
         {
@@ -224,6 +224,83 @@ namespace VBAi.Tests.Unit
             }
         }
 
+        [TestMethod]
+        public void DispatchReservesNativeSelectionAcrossReentrantAuthorityAndRuntimeCallbacks()
+        {
+            Assert.IsFalse(VbeDebugInspection.IsActive);
+            using (var f = new Fixture())
+            {
+                var stages = new List<string>();
+                Action<string> observe = stage =>
+                {
+                    Assert.IsTrue(VbeDebugInspection.IsActive, stage);
+                    using (new VbeDebugInspection()) Assert.IsTrue(VbeDebugInspection.IsActive, "Nested " + stage);
+                    Assert.IsTrue(VbeDebugInspection.IsActive, "Nested disposal must retain dispatch ownership.");
+                    stages.Add(stage);
+                };
+                f.Native.OnPrepare = () => observe("Prepare");
+                f.ValidateAction = () => { if (f.Guards > 1) observe("Authority"); };
+                f.Native.OnRevalidate = () => observe("Revalidate");
+                f.GuardAction = () => { if (f.Guards > 1) observe("Guard"); };
+                f.Native.OnExecute = () => { observe("Execute"); f.Publish(); };
+                f.Native.OnReadMode = () => observe("Observe");
+                Assert.AreEqual(VbaTestOutcome.Passed, f.Start().GetAwaiter().GetResult().Outcome);
+                foreach (string stage in new[] { "Prepare", "Authority", "Revalidate", "Guard", "Execute", "Observe" })
+                    Assert.IsTrue(stages.Contains(stage), stage + " was not exercised.");
+                Assert.AreEqual(1, f.Native.Invocations);
+                Assert.IsFalse(VbeDebugInspection.IsActive, "Successful dispatch must release selection ownership.");
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow("Prepare", false)]
+        [DataRow("Authority", false)]
+        [DataRow("Revalidate", false)]
+        [DataRow("Guard", false)]
+        [DataRow("Execute", true)]
+        [DataRow("Observe", true)]
+        public void ReentrantDispatchFailureReleasesSelectionAndRetainsAuthorityAndUncertainty(string stage, bool invoked)
+        {
+            Assert.IsFalse(VbeDebugInspection.IsActive);
+            using (var f = new Fixture())
+            {
+                Action refuse = () =>
+                {
+                    Assert.IsTrue(VbeDebugInspection.IsActive, stage);
+                    throw new InvalidOperationException("Reentrant " + stage + " authority refusal.");
+                };
+                if (stage == "Prepare") f.Native.OnPrepare = refuse;
+                if (stage == "Authority") f.ValidateAction = () => { if (f.Guards == 3) refuse(); };
+                if (stage == "Revalidate") f.Native.OnRevalidate = refuse;
+                if (stage == "Guard") f.GuardAction = () => { if (f.Guards == 4) refuse(); };
+                if (stage == "Execute") f.Native.OnExecute = refuse;
+                if (stage == "Observe") f.Native.OnReadMode = refuse;
+                var error = Assert.ThrowsException<VbaTestInvocationException>(() => f.Start().GetAwaiter().GetResult());
+                StringAssert.Contains(error.Message, stage);
+                Assert.AreEqual(invoked, error.Uncertain);
+                Assert.AreEqual(invoked ? 1 : 0, f.Native.Invocations);
+                Assert.IsFalse(VbeDebugInspection.IsActive, "A refusal must release selection ownership.");
+                Assert.ThrowsException<InvalidOperationException>(() => new VbaTestRuntime());
+            }
+        }
+
+        [TestMethod]
+        public void PendingNativeCompletionReleasesDispatchSelectionBeforeOwnerPolling()
+        {
+            using (var f = new Fixture())
+            {
+                f.Native.Mode = 0;
+                f.Native.OnReadMode = () => Assert.IsTrue(VbeDebugInspection.IsActive);
+                var task = f.Start();
+                Assert.IsFalse(task.IsCompleted);
+                Assert.IsFalse(VbeDebugInspection.IsActive, "A pending callback must not retain a thread-static inspection.");
+                f.Native.OnReadMode = () => Assert.IsFalse(VbeDebugInspection.IsActive);
+                f.Native.Mode = 2;
+                f.Tick();
+                Assert.AreEqual(VbaTestOutcome.Passed, task.GetAwaiter().GetResult().Outcome);
+                Assert.IsFalse(VbeDebugInspection.IsActive);
+            }
+        }
         [TestMethod]
         public void AReceivedVerdictWaitsForTheLiveProjectToReturnToDesignMode()
         {

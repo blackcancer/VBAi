@@ -17,12 +17,18 @@ namespace VBAi.Tests.Integration
     {
         private object application, item, inspector, commandBars;
         private Process process;
-        private bool baselineAbsent, baselineVerified, disposed, runPending;
+        private bool baselineAbsent, baselineVerified, disposed, runPending, hostTeardownRefused;
         private Exception startupFailure;
         private string referencesVersion;
         private IDictionary<string, object>[] baseline;
         private readonly Dictionary<string, string> ownedModules = new Dictionary<string, string>(StringComparer.Ordinal);
         private readonly List<object> evidence = new List<object>();
+        private readonly OfficeCommandContainment commandContainment = new OfficeCommandContainment();
+        // Retain every owned reference: final RCW release must not become implicit cleanup of unknown native work.
+        private static readonly List<OutlookVbaTestFixture> retainedOutlookFixtures = new List<OutlookVbaTestFixture>();
+        internal Func<int, object, IDictionary<string, object>> Dispatch = (pid, request) => VbeBridgeClient.Read(pid, request);
+        internal Action VerifyOwnedProcess;
+        internal OutlookVbaTestFixture() { VerifyOwnedProcess = RequireOnlyOwnedProcess; }
         internal string Root { get; private set; }
         internal int ProcessId { get; private set; }
         internal string Project { get; private set; }
@@ -127,16 +133,17 @@ namespace VBAi.Tests.Integration
 
         internal IDictionary<string, object> Response(string command, params object[] pairs)
         {
+            commandContainment.RequireTerminal();
+            if (hostTeardownRefused) throw new InvalidOperationException("Outlook ownership is retained after uncertain native work; no request or cleanup retry is permitted.");
             Assert.IsNotNull(process, "An owned Outlook process is required.");
             Assert.IsFalse(process.HasExited, "Owned Outlook exited before dispatch.");
-            RequireOnlyOwnedProcess();
+            VerifyOwnedProcess();
             var request = new Dictionary<string, object> { ["Command"] = command };
             if (Project != null) request["Project"] = Project;
             for (int index = 0; index < pairs.Length; index += 2) request[(string)pairs[index]] = pairs[index + 1];
             if (command == "run_vba_tests") runPending = true;
-            var reply = VbeBridgeClient.Read(ProcessId, request);
-            evidence.Add(new { Command = command, Response = reply });
-            Assert.IsNotNull(reply, "Bridge response missing. No emitted request was retried.");
+            var reply = commandContainment.Send(command, request, record => evidence.Add(record), FlushCommandEvidence,
+                () => Dispatch(ProcessId, request), RetainUncertainOutlook);
             if (command == "run_vba_tests" && Equals(reply["Ok"], false) &&
                 Convert.ToString(reply["Error"]).Contains("ExpectedProjectVersion")) runPending = false;
             if (command == "vba_test_run_status" && Equals(reply["Ok"], true))
@@ -190,6 +197,8 @@ namespace VBAi.Tests.Integration
             disposed = true;
             var failures = new List<string>();
             bool restored = false, exitedNormally = false;
+            if (runPending || commandContainment.Pending || commandContainment.Uncertain || hostTeardownRefused)
+                RetainAndFail(failures, restored, exitedNormally, "Native execution or bridge delivery remains pending/uncertain; no Close, Quit, COM release, exit wait or OTM recovery was attempted.");
             if (process != null)
             {
                 try
@@ -217,17 +226,26 @@ namespace VBAi.Tests.Integration
                     }
                     if (!restored) failures.Add("Project cleanup was not fully verified; any created OTM will be retained.");
                 }
-                catch (Exception error) { failures.Add("Module cleanup: " + error.Message); }
+                catch (Exception error)
+                {
+                    failures.Add("Module cleanup: " + error.Message);
+                    if (commandContainment.Pending || commandContainment.Uncertain || hostTeardownRefused)
+                        RetainAndFail(failures, restored, exitedNormally, "Module cleanup delivery is uncertain; original ownership and any OTM are retained without another native command.");
+                }
                 try
                 {
                     if (!process.HasExited)
                     {
-                        RequireOnlyOwnedProcess();
+                        VerifyOwnedProcess();
                         if (!runPending && inspector != null) ((dynamic)inspector).Close(1);
                         else if (runPending) failures.Add("Native run completion is unverified; inspector closure was refused and the owned process was retained.");
                     }
                 }
-                catch (Exception error) { failures.Add("Unsaved inspector discard: " + error.Message); }
+                catch (Exception error)
+                {
+                    failures.Add("Unsaved inspector discard: " + error.Message);
+                    RetainAndFail(failures, restored, exitedNormally, "Inspector closure failed with unknown native effect; no Quit or release was attempted.");
+                }
                 try
                 {
                     if (process.HasExited)
@@ -237,12 +255,16 @@ namespace VBAi.Tests.Integration
                     }
                     else
                     {
-                        RequireOnlyOwnedProcess();
+                        VerifyOwnedProcess();
                         if (!runPending && application != null) ((dynamic)application).Quit();
                         else failures.Add("Native run completion is unverified; Quit was refused and the owned process was retained.");
                     }
                 }
-                catch (Exception error) { failures.Add("Normal Quit: " + error.Message); }
+                catch (Exception error)
+                {
+                    failures.Add("Normal Quit: " + error.Message);
+                    RetainAndFail(failures, restored, exitedNormally, "Normal Quit failed with unknown native effect; no release, retry or OTM recovery was attempted.");
+                }
             }
             foreach (var value in new[] { commandBars, inspector, item, application })
                 if (value != null && Marshal.IsComObject(value)) try { Marshal.FinalReleaseComObject(value); }
@@ -260,10 +282,37 @@ namespace VBAi.Tests.Integration
                 catch (Exception error) { failures.Add("OTM recovery: " + error.Message); }
                 finally { process.Dispose(); }
             }
+            SaveLifecycle(failures, restored, exitedNormally);
+            if (failures.Count != 0) Assert.Fail(string.Join("\n", failures));
+        }
+
+        private void FlushCommandEvidence()
+        { Save("command-evidence.json", new { ProcessId, Project, runPending, commandContainment.Pending,
+            commandContainment.Uncertain, commandContainment.Command, Steps = evidence }); }
+
+        private void RetainUncertainOutlook()
+        {
+            hostTeardownRefused = true;
+            lock (retainedOutlookFixtures)
+                if (!retainedOutlookFixtures.Contains(this)) retainedOutlookFixtures.Add(this);
+        }
+
+        private void RetainAndFail(List<string> failures, bool restored, bool exitedNormally, string reason)
+        {
+            RetainUncertainOutlook();
+            failures.Add(reason + " Retained PID=" + ProcessId);
+            SaveLifecycle(failures, restored, exitedNormally);
+            Assert.Fail(string.Join("\n", failures));
+        }
+
+        private void SaveLifecycle(List<string> failures, bool restored, bool exitedNormally)
+        {
             Save("qualification-lifecycle.json", new { ProcessId, Project, OtmPath, InitiallyAbsent = baselineAbsent,
                 ProjectRestored = restored, ExitedNormally = exitedNormally, StartupFailure = startupFailure?.ToString(),
+                NativeExecutionUnsettled = runPending, BridgePending = commandContainment.Pending,
+                BridgeUncertain = commandContainment.Uncertain, OwnershipRetained = hostTeardownRefused,
+                ComReferencesRetained = hostTeardownRefused, ProcessHandleRetained = hostTeardownRefused && process != null,
                 Failures = failures, Steps = evidence });
-            if (failures.Count != 0) Assert.Fail(string.Join("\n", failures));
         }
 
         private void DeleteCreatedOtm()

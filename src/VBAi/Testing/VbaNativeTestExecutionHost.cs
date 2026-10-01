@@ -92,28 +92,32 @@ namespace VBAi
             if (!ReferenceEquals(active, call) || call.Completion.Task.IsCompleted) return;
             try
             {
-                Validate(call.Catalog);
-                call.Project = resolveProject(call.Catalog);
-                var support = call.Catalog.Project.Modules.Single(module => string.Equals(module.Name, VbaTestRuntimeSource.ModuleName, StringComparison.OrdinalIgnoreCase));
-                object prepared = Probe.Prepare(vbe, call.Project, support.Source);
-                // Showing a pane can pump messages. Revalidate all authority after selection.
-                Validate(call.Catalog);
-                if (Probe is NativeProbe nativeProbe && !nativeProbe.SameIdentity(call.Project, resolveProject(call.Catalog)))
-                    throw new InvalidOperationException("The selected project identity changed during native preparation.");
-                Probe.Revalidate(vbe, call.Project, prepared);
-                sink.Arm(call.Project, string.IsNullOrEmpty(call.Catalog.Project.HostPath) ? call.Catalog.Project.Id : call.Catalog.Project.HostPath,
-                    VbaTestRuntimeSource.Version, call.Catalog.Project.Revision, runId(), call.Test, call.Phase, signature(call.Catalog));
-                call.Armed = true;
-                Probe.Revalidate(vbe, call.Project, prepared);
-                executionGuard();
-                sink.BeginNative();
-                call.Invoked = true;
-                call.Clock.Restart();
-                call.Exposure = VbaTestRuntime.Expose(sink);
-                // Never infer macro success from Execute returning: callback and Design mode are required.
-                Probe.Execute(prepared);
-                Observe(call);
-                if (!call.Completion.Task.IsCompleted) call.Polling = StartPolling(() => Observe(call));
+                // Native selection can pump editor callbacks; reserve it through dispatch and immediate observation.
+                using (new VbeDebugInspection())
+                {
+                    Validate(call.Catalog);
+                    call.Project = resolveProject(call.Catalog);
+                    var support = call.Catalog.Project.Modules.Single(module => string.Equals(module.Name, VbaTestRuntimeSource.ModuleName, StringComparison.OrdinalIgnoreCase));
+                    object prepared = Probe.Prepare(vbe, call.Project, support.Source);
+                    // Showing a pane can pump messages. Revalidate all authority after selection.
+                    Validate(call.Catalog);
+                    if (Probe is NativeProbe nativeProbe && !nativeProbe.SameIdentity(call.Project, resolveProject(call.Catalog)))
+                        throw new InvalidOperationException("The selected project identity changed during native preparation.");
+                    Probe.Revalidate(vbe, call.Project, prepared);
+                    sink.Arm(call.Project, string.IsNullOrEmpty(call.Catalog.Project.HostPath) ? call.Catalog.Project.Id : call.Catalog.Project.HostPath,
+                        VbaTestRuntimeSource.Version, call.Catalog.Project.Revision, runId(), call.Test, call.Phase, signature(call.Catalog));
+                    call.Armed = true;
+                    Probe.Revalidate(vbe, call.Project, prepared);
+                    executionGuard();
+                    sink.BeginNative();
+                    call.Invoked = true;
+                    call.Clock.Restart();
+                    call.Exposure = VbaTestRuntime.Expose(sink);
+                    // Never infer macro success from Execute returning: callback and Design mode are required.
+                    Probe.Execute(prepared);
+                    Observe(call);
+                    if (!call.Completion.Task.IsCompleted) call.Polling = StartPolling(() => Observe(call));
+                }
             }
             catch (Exception error) { Finish(call, error); }
         }
