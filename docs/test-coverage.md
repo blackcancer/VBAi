@@ -95,6 +95,51 @@ is therefore **NOT_RUN**, not an accepted UI test. Owned Excel **57180** and
 These preparation failures remain failed, and neither qualifies the subsequent
 closed-project status or complete embedded UI behavior.
 
+### Current v6: terminal Excel core and editor batches
+
+`excel-core-v6/excel-core-v6.trx` records **10 passed, 5 failed, 35 conditional
+skips, 50 total**, runner exit **1**, on product `8f2315d` / installed v6 and
+tests `304ee02`. `terminal.json` retains the exact filter and identities; only
+`VBAi_RUN_EXCEL_TESTS` is enabled. The separate scalar and diagnostic scopes above
+are excluded. The editor/language/save/privacy wrappers and native export/Git
+probes lacking their additional opt-ins are skipped, not qualified or rejected
+because an existing host was detected in this batch.
+
+Passed scopes include owned workbook/bridge Save, public procedure and private
+parameter/class-member rename with native behavior/undo, matching-project native
+execution refusal, UserForm inside-dimension fitting, native format-choice options
+roundtrip/restoration, project-tree/protection-dialog observation and read-only
+toolbox pages. The complete batch remains failed:
+
+| Failed case | Exact observed limit |
+| --- | --- |
+| Project protection save/reopen | Excel 46192 does not exit within the bounded post-Quit wait. Later absence does not provide a normal exit code; no force termination is recorded. |
+| Native Variant array values | Excel 45228 returns both native operations and final source readback, then exits abnormally with `0xC0000409` during cleanup. |
+| Native ParamArray values | Excel 58352 returns the native value operations and final source readback, then exits abnormally with `0xC0000409` during cleanup. |
+| Extended options roundtrip | The pipe closes after emission; delivery is uncertain and the request is not retried. Later normal host exit does not qualify that mutation or full-state restoration. |
+| Monaco native breakpoint | The test times out waiting for the real WebView2/Monaco control; owned cleanup exits normally, but the breakpoint scenario is not accepted. |
+
+`exact-owned-excel-crash-events.json` matches both array-test PID creation times
+to their startup evidence. Application Error events identify exception
+`c0000409`, faulting module/path `unknown`, and the same fault address. Their
+matching WER records corroborate BEX64/StackHash, not a cause.
+`exact-owned-wer-availability.json` records only the two exact report archives:
+each retains Report.wer but no event-linked temporary minidump remains. Quit
+return and terminal value responses are not normal-exit evidence. No transport,
+fixture-release, theme or host defect is established by these records alone.
+
+The separately opted-in `excel-editor-v6/excel-editor-v6.trx`, tests `3fb1665`,
+records **0 passed, 1 failed, 3 conditional skips**, runner exit **1**.
+The first module-roundtrip wrapper owns Excel **36420** and reports final exit
+`0xE0000002`; its exact Application Error event instead records a prior
+`c0000005` in `combase.dll` 10.0.26100.9549, offset `0x19de28`. Both observations
+are preserved in `exact-owned-excel-editor-crash-events.json`; the exception
+and final exit codes are distinct. The remaining language/save/privacy cases
+are refused by existing-Excel guards while the process remains briefly visible.
+They are NOT_RUN, and this older scenario lifetime has no durable per-host
+shutdown JSON. Later process absence does not qualify normal exit. These are
+editor-wrapper results, not acceptance of the actual installed embedded UI.
+
 ### Current v6: Access metadata setter and persistence failures
 
 These native campaigns use the installed v6 product identified above and tests
@@ -167,6 +212,26 @@ PID/start/window, loaded MVID and exact saved-publication checks, with source
 inventory preserved. Owned PID 36568 exits normally with code **0**, without
 force termination, additional Save or macro execution. This later cleanup does
 not convert the startup failure into adapter save/reopen acceptance.
+
+### Current v6: Publisher adapter follow-up with harness failures
+
+`publisher-adapter-v6-v2/publisher-adapter-v6-v2.trx` records **1 passed,
+5 failed, 0 skipped, 6 total**, runner exit **1**, on the same installed product
+and tests `3fb1665`. The module/class adapter-only Save/reopen case passes with
+exact source readback and normal initial/fresh host exits. Each metadata/reference
+case records one verified product Save and a fresh-disk reopen, but fails the
+common harness assertion comparing original selector `Project` with the
+reopened canonical publication path. Description, HelpFile and reference
+addition by GUID/file/removal therefore stop before their final disk-state
+verification callbacks; their complete tests remain failed.
+
+Per-fixture ledgers under `hosts/Publisher/` record both owned normal exits with
+code **0** in every case, without forced termination or helper Save. This
+supersedes the earlier preparation-only limit for the module/class operation,
+not the original failed batch or the unverified metadata/reference readback.
+The selector mismatch is a tests-only qualification defect; it is not evidence
+that those native values were lost or that they persisted correctly. Q-012
+remains partial, with HelpContextID and the remaining adapter scopes open.
 
 ### Preceding Monaco-status candidate: complete managed acceptance
 

@@ -75,6 +75,18 @@ selection request and a bare-module/decorated-tab caption mismatch prevent the
 closed-project/live-status scenario from running. That UI scope remains NOT_RUN.
 Exact product/test identities and terminal evidence are in recorded validation.
 
+The broader current-v6 Excel core batch remains failed despite scoped rename,
+form-fitting and options passes. Array/ParamArray operations return before
+abnormal cleanup exits; protection cleanup, uncertain extended-option delivery
+and unready breakpoint UI remain failures. The separate editor wrapper records
+a combase access violation and a distinct abnormal final exit, with subsequent
+cases NOT_RUN. Publisher's later module/class adapter Save/reopen passes with
+normal initial/fresh exits; metadata/reference cases reach fresh reopen but fail
+a common original-name/canonical-path selector assertion before final readback.
+Those complete tests remain failed, without evidence of native value loss or
+successful metadata/reference persistence. See recorded validation for terminal
+and event scopes; whole-host compatibility is not qualified.
+
 On preceding v5, source `2e75161`, MVID `f9a36c85`, the stable Access
 application/PID, database-path and mapped/selected-project guard passes scoped
 module/class, Description and reference-addition save/reopen with exact readback

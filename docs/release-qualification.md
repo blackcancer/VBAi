@@ -57,6 +57,18 @@ crash causes remain open. The native Monaco attempts fail in fixture preparation
 cleanup does not qualify the still-unexecuted closed-project status scenario.
 Exact scope, source revisions and terminal records are in recorded validation.
 
+The broader current-v6 Excel campaign remains failed: the array/ParamArray
+procedure results return before abnormal cleanup exits, project-protection
+cleanup lacks a normal exit observation, extended-option delivery is uncertain,
+and the breakpoint control is not ready. A separate editor wrapper records a
+combase access violation and a distinct abnormal final exit; its subsequent
+cases are NOT_RUN. Current Publisher module/class adapter Save/reopen passes,
+while metadata/reference cases fail a common selector assertion after fresh
+reopen, before final readback verification. Normal Publisher exits do not convert
+those failures into accepted metadata/reference persistence. Counts and exact
+candidate/event scopes remain in recorded validation; lifecycle and remaining
+adapter/UI gates stay open.
+
 On preceding v5, the stable Access guard passes scoped module/class, Description
 and reference addition save/reopen. HelpFile fresh-disk readback remains altered
 through descriptor, CLR binder and raw IDispatch getters despite an intact
