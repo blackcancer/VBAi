@@ -55,14 +55,12 @@ namespace VBAi.Tests.Integration
                     before = host.ReadGitLayout(form, layout);
                     report["NativePrepared"] = before;
                     File.Copy(path, saved);
-                    host.WithGitProject(path, project => SaveSnapshot(output, "prepared", project.Capture()));
                     // PrepareGitLayout already saved once. Reopen closes without Save;
                     // neither export nor a second Save may repair the observed baseline.
                     Assert.AreEqual(0, host.ReopenAndReadProjectProtection(path));
                     sameProcess = host.ReadGitLayout(form, layout);
                     report["NativeSameProcessReopen"] = sameProcess;
                     report["SameProcessDifferences"] = DescribeNativeDifferences(before, sameProcess);
-                    host.WithGitProject(path, project => SaveSnapshot(output, "same-process-reopen", project.Capture()));
                     report["Stage"] = "same-process-observed";
                     write();
                 }, host => {
@@ -81,7 +79,6 @@ namespace VBAi.Tests.Integration
                     freshProcess = host.ReadGitLayout(form, layout);
                     report["NativeFreshProcessReopen"] = freshProcess;
                     report["FreshProcessDifferences"] = DescribeNativeDifferences(before, freshProcess);
-                    host.WithGitProject(saved, project => SaveSnapshot(output, "fresh-process-reopen", project.Capture()));
                     Assert.AreEqual(savedHash, BaselineFileHash(saved), "Read-only reopen/export must preserve the saved file.");
                     report["Stage"] = "fresh-process-observed";
                     write();
