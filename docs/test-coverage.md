@@ -42,6 +42,8 @@ including conditional scenarios.
 | `scalar-unsupported` | 1 | 0 | 0 |
 | `signature-native` | 0 | 2 | 0 |
 | `word-powerpoint` | 0 | 2 | 0 |
+| `word-powerpoint-fresh-process` | 15 | 2 | 0 |
+| `word-powerpoint-fresh-process-final` | 18 | 0 | 0 |
 | `word-powerpoint-real-registration` | 1 | 1 | 0 |
 | `word-read-only-corrected` | 11 | 0 | 0 |
 
@@ -57,8 +59,10 @@ are restored after the final owned candidate host exits.
 Corrected tests-only revisions are recorded in each `fixture-*-candidate.json`
 and run `plan.json`. Accepted modal Git scope uses tests `b8954ac`, SHA-256
 `EBB5C99C88E6DEE40B956E6EDD323EB3D67CFCDFE25AD8E1D9B37EE75618E89D`;
-accepted Word scope uses `e8f0888`, SHA-256
+the earlier same-process Word scope uses `e8f0888`, SHA-256
 `28EA0C6739DA5AAACE5999AACA9556D1B9339C14315E99C1ED53E7F4FD5760B5`.
+The accepted distinct-process Word/PowerPoint scope uses tests `81ade54`, SHA-256
+`B4EB7C1F23AB16374C5DEE26F948F5611CB5666533414FB86BE0D158390CE0D3`.
 Signature trials use `1f6f128`, SHA-256
 `60CC25D9D642791739BE1E8DF2FBBC224C3C017FFE955775A59E1FD8865040BF`.
 Final localized form diagnostics use `3a21984`, SHA-256
@@ -81,10 +85,18 @@ hash sharing and a destroyed modal handle check. A retained saved owned Excel
 from the modal-assertion failure was separately identity-checked and closed once
 normally; that cleanup did not change the failed scenario into a pass.
 
-PowerPoint and Word adapter-only save/reopen preserve pending module/class code
-and the form/Label without helper saving after the adapter. The first real Word
+The earlier Word/PowerPoint trials only closed/reopened the document in the same
+process; their passes do not prove fresh-process persistence. The strengthened
+contract first fails the Word original exit deadline and a fixture-only
+PowerPoint ActiveDocument getter. Both original failures remain failed. The final
+contract passes adapter-only save/reopen with pending module/class sources and
+the form/Label in distinct processes: Word 58844 to 63484, PowerPoint 8296 to
+41316. Each original/fresh retained process handle observes normal exit code 0,
+with separate original shutdown records. Word/PowerPoint now use one 15000 ms
+exit observation after the sole Quit; Access/Publisher retain their 5000 ms
+default. No close/save is retried or helper Save invoked after the adapter. The first real Word
 trial saved successfully but failed a rejected read-only Version getter;
-the subsequent run passes with bounded same-thread getter observation. It records
+the subsequent same-process run passes with bounded same-thread getter observation. It records
 no rejected getter, so this pass does not explain the earlier rejection or prove
 that waiting caused the native success. Only the known
 `RPC_E_CALL_REJECTED` getter is retried; Save/Close/Quit and bridge mutations are
