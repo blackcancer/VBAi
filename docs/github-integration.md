@@ -115,6 +115,19 @@ backup remains available for manual recovery. VBAi reports both the original
 import error and the failure to record the resulting state; it does not claim a
 verified after-state or retry the import.
 
+Only a definitely missing recovery marker permits normal synchronization.
+Metadata access and I/O errors propagate; an existing entry is pending even if it
+is a directory. Recovery refuses directories and filesystem links before native
+import. Preparing a new recovery independently checks the marker before replacing
+the backup or clearing the recorded after-state. These checks do not make external
+filesystem changes atomic.
+
+Completion requests deletion of a confirmed regular marker once and verifies its
+absence. Failed deletion, unreadable metadata or a replacement entry prevents a
+success report without another deletion or import attempt. If an import is refused
+before mutation and marker cleanup also fails, both errors are retained. A
+legitimate rollback of a completed import can still start with no pending marker.
+
 Private refs under `refs/codex/*`, including checkpoints and backup state, are not
 published by normal pushes. Their legacy spelling is a storage contract, not a
 reason to rename them in a documentation change.
