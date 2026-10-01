@@ -88,13 +88,23 @@ properties or third-party controls.
 Comparison uses logical CFB storage/stream contents rather than physical sector
 placement, unused allocation bytes or directory timestamps. Names, storage CLSIDs,
 state bits and all stream contents remain significant. Invalid UTF-16 directory
-names are refused instead of replacing characters during comparison. For flat
-forms identified by the UserForm storage CLSID and a recognized stream grammar,
-with Label/CommandButton controls and TextProps fonts, it also ignores padding
+names are refused instead of replacing characters during comparison. For a
+complete form graph identified by the UserForm storage CLSID and recognized
+stream grammars, comparison also ignores padding
 identified by Microsoft's [MS-OFORMS site-data grammar](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-oforms/f65e0b17-6383-4570-b030-7b868f2c07d5)
 and [alignment rules](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-oforms/622ed335-0723-4491-b271-e4767d7453e3).
-Unsupported controls, fonts, pictures, nesting or extensions retain exact logical
-stream comparison; no partial padding normalization is applied to that form.
+Recognized variants include Label, CommandButton, TextBox, ListBox, ComboBox,
+CheckBox, OptionButton, ToggleButton, SpinButton, ScrollBar, TabStrip and Image,
+plus nested Frame, MultiPage and Page storage graphs. Font readers recognize
+bounded TextProps and StdFont variants; selected picture-bearing controls retain
+their complete supported picture envelopes without decoding the payload.
+Recognition remains restricted by each reader's property masks, versions,
+lengths and storage relationships. This is not support for every property
+combination or third-party control.
+
+Unsupported controls, fonts, picture layouts, container relationships or
+extensions retain exact logical stream comparison for the **whole graph**;
+VBAi does not normalize recognized descendants of an unsupported parent.
 Any opaque resource declaration retains exact FRX comparison: its offset alone
 cannot establish its extent or exclude overlap with an OLE envelope. Validation
 and comparison share resource-reference extraction, including multiline values.
