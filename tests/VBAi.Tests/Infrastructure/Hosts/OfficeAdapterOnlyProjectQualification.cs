@@ -82,9 +82,16 @@ namespace VBAi.Tests.Integration
                             Sha256 = BitConverter.ToString(hash.ComputeHash(stream)).Replace("-", "").ToLowerInvariant(),
                             PreviousProcessId = originalPid, HostExitedBeforeHash = true });
                 });
-                Assert.AreEqual(path, fixture.DocumentPath);
-                Assert.AreEqual(project, fixture.Project);
-                fixture.RecordAdapterObservation("ProjectFreshDiskReopen");
+                var reopened = fixture.RecordAdapterObservation("ProjectFreshDiskReopen");
+                var freshMetadata = ReadMetadata(fixture);
+                var reopenIdentity = new OfficeProjectReopenIdentity.Evidence { Host = fixture.Kind,
+                    DocumentPath = fixture.DocumentPath, Selector = fixture.Project, ProcessId = fixture.ProcessId,
+                    Metadata = freshMetadata, Observation = reopened, Status = fixture.Data("status") };
+                fixture.RecordAdapterStage("ProjectSemanticReopenIdentity", new { PreviousSelector = project,
+                    PreviousProcessId = originalPid, ExpectedHost = host, ExpectedPath = path,
+                    ExpectedMetadata = expectedMetadata, Actual = reopenIdentity });
+                OfficeProjectReopenIdentity.Require(host, path, project, originalPid, expectedMetadata,
+                    typeof(VbeSession).Module.ModuleVersionId, reopenIdentity);
                 if (scenario.StartsWith("Metadata.", StringComparison.Ordinal)) fixture.RecordMetadataGetterProbe("FreshDiskReopen");
                 fixture.RecordAdapterStage("ProjectFreshDiskState", new { SourceHashes = ReadHashes(fixture),
                     Properties = fixture.Data("project_properties"), References = fixture.Data("list_references"),
