@@ -1,5 +1,72 @@
 # Recorded validation
 
+## Q-027 UserForm follow-up (2026-10-02)
+
+Evidence is under `artifacts/native-qualification-20261001`. The current
+isolated source `420b3da88bfb3e042a7ab7ed3710fc9994382a26` builds product
+MVID `49d7c21c-f394-4d45-b55f-fd71f235e684`, SHA-256
+`E5D8234F1C817CFB585227E32B7C925EE7E1BE101202B2C7F95FEC20A4C9EF64`,
+and test SHA-256
+`786082C371C589875984060E49DA5E3387AFCCC53B47195DA74CCD6526867BB8`
+(`owner-font-list-candidate.json`). Preceding source `198e0ec11de1d3350ce747646911a92747ba3dae`
+built product MVID `246c0fc2-5753-4250-97ed-511982bc6906`, SHA-256
+`6C000FD20666FFA792F369BD11690000E950B331CCA227F04CD85D210824D3EC`
+(`owner-font-candidate.json`). That source adds guarded, owning-thread exact-font
+restoration without relaxing the FRX comparison. The current source corrects one
+native accessibility ListBox external-selection cache and bounds owner names
+before path construction; it does not change font comparison semantics.
+
+The read-only `installed-baseline-refresh.json` records the currently installed
+`bin/Debug/net48/VBAi.dll` as MVID `2e671006-380b-41ff-98d2-5f0d9daa2cf7`,
+SHA-256 `18CF74184F453F4CBF8430D299954DC7A649D04D7EC1EEAE6D9666A0F9155C04`,
+last written `2026-10-01T19:48:04Z`. Its provenance is unknown; the earlier
+`C900BA09...` installed identity below is historical. No installed DLL was
+replaced for these isolated candidate trials.
+
+The following are separate terminal TRX results, parsed from each file's
+`ResultSummary/Counters`. Native matrix totals include eleven cases in each
+owner-window run refused before launch by an already owned Excel process. Only
+the first LabelButton case reached its respective UI failure; none reached
+native import. No totals are aggregated into a release-wide pass.
+
+| Evidence directory / terminal TRX | Passed | Failed | Not executed | Boundary |
+| --- | ---: | ---: | ---: | --- |
+| `forms-font-face-notification` | 0 | 6 | 0 | Original face notification trial. |
+| `forms-font-face-notification-second-launch` | 0 | 6 | 0 | Independent second launch. |
+| `forms-font-distinct-object` | 1 | 5 | 0 | External focus interference was observed. |
+| `forms-font-distinct-object-uninterrupted` | 2 | 4 | 0 | Uninterrupted object trial. |
+| `forms-font-source-identity` | 3 | 6 | 0 | Frame.Font.Size still changes from 8.27 to 8.25. |
+| `managed-owner-font-focused` | 179 | 0 | 0 | Preceding `198e0ec` focused gate. |
+| `managed-owner-font-complete` | 3,636 | 0 | 189 | Preceding `198e0ec` complete default managed gate. |
+| `forms-owner-font-checkpoint` | 0 | 12 | 0 | First case stops at an unclassified transient UI status before mutation or import. |
+| `forms-owner-font-known-status` | 0 | 12 | 0 | First case waits for selected-item review after one owned caption mutation, before import. |
+| `forms-owner-font-selection-ready` | 0 | 12 | 0 | CheckpointRestore was invoked; the UI timed out before import. A later pasted `ListBox.OnHandleDestroyed` `IndexOutOfRangeException` exposed a stale cached selection. |
+| `managed-list-selection-before-fix` | 4 | 2 | 0 | Independent UIA selection reproduction before the list-cache fix. |
+| `managed-owner-font-list-fix-focused` | 201 | 1 | 0 | Intermediate focused run; failure retained. |
+| `managed-owner-font-list-fix-confirmed` | 202 | 0 | 0 | Corrected focused run. |
+| `managed-owner-font-selection-proof` | 27 | 0 | 0 | Tests-only `ca0479e` fixture selection proof; test SHA-256 `1695C0F3D6FBF7CC79844CCC1353A5B4E366E3C27A0C5793BD64F04063ED95E6`, frozen `420b3da` product. |
+| `managed-owner-font-list-complete` | 3,640 | 1 | 189 | Current `420b3da` full gate failed one unchanged 512 MiB signature-size case with `System.IO.IOException` while C: had about 180 MiB free. |
+| `managed-signature-size-guard-e-temp` | 1 | 0 | 0 | Same unchanged size guard passes with process-local TEMP/TMP on E:. This is separate from the failed full suite. |
+| `forms-owner-font-list-cache-fixed` | 0 | 12 | 0 | First case reaches selected checkpoint, then UIA `ElementNotEnabledException` because review disables its tab; import is not reached. |
+
+The `forms-owner-font-selection-ready` terminal records the originally loaded
+test SHA-256 `7F86A239F5930B811CBC2642ABCA04DB437C7BD64C0FA5BE2245F4F493D59E6C`.
+That output path was subsequently rebuilt for the before-fix regression;
+`post-terminal-binary-change.json` records the change. Its original terminal
+identity remains evidence for that run, but the current bytes at the path are
+not an immutable copy of the old test binary. The independent UIA cached-selection
+reproduction is fixed in managed tests; the owner-window import matrix remains
+failed. The first three owner-window hosts were separately cleaned normally.
+The latest trial also reports no remaining Office host in its terminal manifest.
+Temporary registration context restoration and any subsequent native attempt
+must be evaluated from their own terminal evidence. Q-027 and release
+qualification remain open; no new coverage percentage is claimed.
+
+The tests-only `ca0479e` fixture prepares a fresh
+`forms-owner-font-selection-observed` native matrix against the frozen product.
+It is running at this checkpoint; no native result is inferred from its plan
+or the passing focused managed proof.
+
 ## Native qualification refresh (2026-10-01)
 
 The frozen product is source `4a32319651dadbc3c5d11eaf4eb7b0dfaa656772`,

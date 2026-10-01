@@ -4,14 +4,29 @@
 not a claim of universal Office compatibility. Test totals and measured coverage
 are maintained only in [recorded validation](test-coverage.md).
 
-## Current candidate checkpoint (2026-10-01)
+## Current candidate checkpoint (2026-10-02)
+
+The Q-027 follow-up candidate is source `420b3da`, MVID
+`49d7c21c-f394-4d45-b55f-fd71f235e684`, SHA-256
+`E5D8234F1C817CFB585227E32B7C925EE7E1BE101202B2C7F95FEC20A4C9EF64`.
+It corrects the native accessibility ListBox selection cache and bounds owner
+names before constructing font restoration paths. Its predecessor `198e0ec`
+added an owning-thread, guarded exact-font restoration path without relaxing
+FRX comparison. Focused managed regressions pass, but the complete managed
+gate has a disk-full signature-size failure and the latest native owner-window
+matrix stops in UI selection before import. Q-027 remains open. The currently
+installed DLL has a separate read-only identity in [recorded validation](test-coverage.md#q-027-userform-follow-up-2026-10-02);
+its provenance is unknown and it is not the tested candidate.
+
+### Earlier 2026-10-01 operation checkpoint
 
 Product source `4a323196`, MVID `25facee2-6b10-40fa-880c-cb9328333713`,
 SHA-256 `474E9C106E109C693AC47587BD13BF7239E617F31EA7F210B1208E4EA4678F7D`
 has a completed default managed gate and operation-specific native results in
 `artifacts/native-qualification-20261001`. Tests-only fixture corrections are
-integrated separately. The installed DLL is unchanged and both temporary COM
-registration contexts are restored from their guarded snapshots. See
+integrated separately. At that checkpoint the installed DLL was unchanged and
+both temporary COM registration contexts were restored from their guarded
+snapshots. See
 [recorded validation](test-coverage.md#native-qualification-refresh-2026-10-01)
 for exact counters, assembly identities, failed preparation and terminal runs.
 
@@ -29,13 +44,14 @@ for exact counters, assembly identities, failed preparation and terminal runs.
 No new coverage percentage or release-wide native acceptance is inferred. The
 VBA test explorer feature is outside this native qualification campaign.
 
-The latest UserForm diagnosis preserves exact raw recovery files and comparison
+That UserForm diagnosis preserves exact raw recovery files and comparison
 rules. The lost root and nested Frame font descriptors are meaningful data, not
 CFB allocation or documented padding. The guarded Font.Size refusal is retained;
 no rounding tolerance is widened to accept the changed size. Independent OLE
 font controls distinguish persistence before property getters from later native
-readback, but do not establish the VBE import cause. No production correction is
-claimed. Exact source/binary identities and all terminal diagnostic results are
+readback, but do not establish the VBE import cause. Subsequent guarded
+restoration and list-cache corrections have not reached native import acceptance.
+Exact source/binary identities and all terminal diagnostic results are
 in [recorded validation](test-coverage.md#native-qualification-refresh-2026-10-01).
 
 ## Report scope
@@ -49,7 +65,8 @@ where required by the agreed scope.
 The remaining completion gates are Q-006, Q-012, Q-014, Q-020, Q-024,
 Q-026, Q-027, Q-028 and Q-030. The other findings have the scoped corrections and
 validation described below; they do not constitute complete current-candidate
-qualification. The current installed product is source `8f2315d`, MVID
+qualification. The previously installed product at this checkpoint was source
+`8f2315d`, MVID
 `d8f31d57-8612-465e-871c-93a62f2b3eae`, SHA-256
 `C900BA09D92DA7CF50CC09033C63F5226DD04C18426CC386B30AF86EB0BA0941`.
 `deployment-v6.json` retains exact installation and previous-payload/registration

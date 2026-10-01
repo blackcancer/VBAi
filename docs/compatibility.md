@@ -27,6 +27,19 @@ operation, language feature or UI surface.
 
 ### Current operation-specific refresh
 
+Q-027's current isolated source `420b3da` adds guarded owner-thread exact-font
+restoration, bounded owner names and a native accessibility ListBox selection
+cache correction. Managed regressions verify those paths. The latest owned Excel
+owner-window trial stops at UI selection after the selected checkpoint becomes
+disabled; it does not reach import. Earlier attempts stop at transient UI status,
+review selection, or a stale selection-cache exception. These are distinct
+fixture and UI observations, not native UserForm import acceptance. Strict FRX
+comparison and the observed Frame font-size difference remain unresolved.
+The installed DLL has a separate read-only identity; see
+[recorded validation](test-coverage.md#q-027-userform-follow-up-2026-10-02).
+
+#### Earlier 2026-10-01 operation evidence
+
 The isolated source `4a323196` / MVID
 `25facee2-6b10-40fa-880c-cb9328333713` now has observed Excel core execution,
 declared-scalar inspection, Format restoration, embedded Monaco and actual Git
@@ -46,11 +59,10 @@ restoration paths do not establish a successful import;
 signature remains unqualified. The selected Ollama CPU profile passes its
 headless, shown detached-chat and real-Excel read-only scopes after commit-memory
 availability improves; this does not qualify the embedded-host assistant.
-SOLIDWORKS is not
-exercised in this refresh. The installed DLL remains unchanged and temporary
-registration selections are restored.
+SOLIDWORKS is not exercised in this earlier refresh. At that checkpoint the
+installed DLL was unchanged and temporary registration selections were restored.
 
-See the [current qualification checkpoint](release-qualification.md#current-candidate-checkpoint-2026-10-01)
+See the [current qualification checkpoint](release-qualification.md#current-candidate-checkpoint-2026-10-02)
 and [recorded validation](test-coverage.md#native-qualification-refresh-2026-10-01)
 for the exact tested scopes and identities. Historical observations below retain
 their original candidate boundaries.
@@ -65,7 +77,7 @@ candidate beginning `F3C48EAEA590`. These are separate build observations, not a
 blanket qualification of v1.0.0. Full provenance and test totals belong in
 [recorded validation](test-coverage.md).
 
-The currently installed product, source `8f2315d`, is MVID
+The previously installed product at that checkpoint, source `8f2315d`, was MVID
 `d8f31d57-8612-465e-871c-93a62f2b3eae`, SHA-256
 `C900BA09D92DA7CF50CC09033C63F5226DD04C18426CC386B30AF86EB0BA0941`.
 `followup-20260930/deployment-v6.json` retains deployment and backup evidence.
