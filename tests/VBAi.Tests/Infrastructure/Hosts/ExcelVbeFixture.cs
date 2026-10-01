@@ -54,6 +54,12 @@ namespace VBAi.Tests.Integration
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
                 Assert.Inconclusive("Excel automation is opt-in. Set VBAi_RUN_EXCEL_TESTS=1.");
+            if (Environment.GetEnvironmentVariable("VBAi_TEST_EXCEL_EXPLICIT_BOOTSTRAP") == "1")
+            {
+                string trace = ExplicitBootstrapTracePath(Environment.GetEnvironmentVariable("VBAi_EXCEL_RESULTS"));
+                Directory.CreateDirectory(Path.GetDirectoryName(trace));
+                return StartOwnedWithTrace(trace);
+            }
             var excelType = Type.GetTypeFromProgID("Excel.Application");
             if (excelType == null) Assert.Inconclusive("Excel.Application is unavailable.");
             var existing = Process.GetProcessesByName("EXCEL");
@@ -109,6 +115,13 @@ namespace VBAi.Tests.Integration
                 if (failures.Count > 1) throw new AggregateException("Excel startup, evidence or cleanup failed; all errors are retained.", failures);
                 throw;
             }
+        }
+
+        /// <summary>Requires durable local evidence before opting into an explicit owned Excel launch.</summary>
+        internal static string ExplicitBootstrapTracePath(string output)
+        {
+            string parent = ExcelOwnedBootstrapPlan.RequireLocalAbsolutePath(output);
+            return Path.Combine(parent, "explicit-bootstrap-" + Guid.NewGuid().ToString("N") + ".jsonl");
         }
 
         /// <summary>Preserves the scenario failure when cleanup independently fails.</summary>

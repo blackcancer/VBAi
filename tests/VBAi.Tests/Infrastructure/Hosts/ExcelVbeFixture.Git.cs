@@ -171,9 +171,20 @@ namespace VBAi.Tests.Integration
             finally { Release(property); Release(properties); }
         }
 
+        /// <summary>Owns a project wrapper independently of temporary native readback aliases.</summary>
+        private object OwnGitProjectRcw()
+        {
+            // Workbook.VBProject returns a shared RCW. Nested fixture reads can release
+            // that wrapper; only the unique wrapper acquired here belongs to this scope.
+            object borrowed = ((dynamic)workbook).VBProject;
+            IntPtr identity = Marshal.GetIUnknownForObject(borrowed);
+            try { return Marshal.GetUniqueObjectForIUnknown(identity); }
+            finally { Marshal.Release(identity); }
+        }
+
         internal void WithGitProject(string path, Action<VbaGitProject> action)
         {
-            object project = ((dynamic)workbook).VBProject;
+            object project = OwnGitProjectRcw();
             try { action(new VbaGitProject(() => project, path)); }
             finally { Release(project); }
         }

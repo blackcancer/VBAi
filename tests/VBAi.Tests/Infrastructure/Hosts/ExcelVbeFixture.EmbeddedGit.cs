@@ -195,7 +195,7 @@ namespace VBAi.Tests.Integration
             source = new Dictionary<string, string>(StringComparer.Ordinal); types = new Dictionary<string, int>(StringComparer.Ordinal);
             try
             {
-                project = ((dynamic)workbook).VBProject; components = ((dynamic)project).VBComponents;
+                project = OwnGitProjectRcw(); components = ((dynamic)project).VBComponents;
                 foreach (object component in (dynamic)components)
                     try
                     {
