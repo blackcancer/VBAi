@@ -33,6 +33,10 @@ namespace VBAi
         /// <summary>Obtient ou définit le modèle sélectionné pour Ollama.</summary>
         /// <value>Identifiant du modèle Ollama.</value>
         public string OllamaModel { get; set; }
+        /// <summary>Optional Ollama generation temperature; null preserves the backend's historical default.</summary>
+        public double? OllamaTemperature { get; set; }
+        /// <summary>Optional Ollama nucleus sampling probability; null preserves the backend's historical default.</summary>
+        public double? OllamaTopP { get; set; }
         /// <summary>Obtient ou définit le point de terminaison personnalisé de l’API OpenAI.</summary>
         /// <value>Adresse personnalisée, ou nul pour utiliser la valeur par défaut ou l’environnement.</value>
         public string OpenAiEndpoint { get; set; }

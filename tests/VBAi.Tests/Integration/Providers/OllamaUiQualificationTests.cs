@@ -24,14 +24,15 @@ namespace VBAi.Tests.Unit
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_OLLAMA_UI_TESTS") != "1")
                 Assert.Inconclusive("Set VBAi_RUN_OLLAMA_UI_TESTS=1 for detached real chat UI plus local Ollama; VBE remains simulated.");
-            string model = Environment.GetEnvironmentVariable("VBAi_TEST_OLLAMA_MODEL") ?? "qwen2.5:3b";
+            var profile = OllamaQualificationProfile.Resolve();
+            string model = profile.Model;
+            Console.WriteLine("Ollama qualification profile: " + profile.Describe());
             var provider = LlmProvider.All.Single(item => item.IsOllama);
             using (var runtime = new RuntimeScope())
             using (var wire = OllamaSyntheticWireCapture.ForUiFixture())
             {
                 runtime.Settings.ProviderName = provider.Name;
-                runtime.Settings.OllamaEndpoint = OllamaQualificationEndpoint.Resolve().AbsoluteUri;
-                runtime.Settings.OllamaModel = model;
+                profile.ApplyTo(runtime.Settings);
                 runtime.Settings.VbeEditApproval = "ReadOnly";
                 // This ephemeral value shadows any inherited API-key environment variable.
                 // It is sent only to the fixed loopback endpoint and never persisted as user settings.
@@ -116,7 +117,7 @@ namespace VBAi.Tests.Unit
                     {
                         primaryFailure = error;
                         observe("failure before cleanup");
-                        WriteOllamaUiFailure(window, model, error, observations, toolCalls);
+                        WriteOllamaUiFailure(window, profile, error, observations, toolCalls);
                         throw;
                     }
                     finally
@@ -156,7 +157,7 @@ namespace VBAi.Tests.Unit
             };
         }
 
-        private static void WriteOllamaUiFailure(ChatWindow window, string model, Exception error,
+        private static void WriteOllamaUiFailure(ChatWindow window, OllamaQualificationProfile profile, Exception error,
             List<object> observations, List<object> toolCalls)
         {
             try
@@ -175,7 +176,8 @@ namespace VBAi.Tests.Unit
                         Text = text.IsDisposed ? null : text.Text, Width = text.Width, Height = text.Height
                     }).ToArray()
                 }).ToArray();
-                var result = new { State = "FAIL", Model = model, Failure = error.ToString(),
+                var result = new { State = "FAIL", Model = profile.Model, Endpoint = profile.Endpoint.AbsoluteUri,
+                    Temperature = profile.Temperature, TopP = profile.TopP, Failure = error.ToString(),
                     Scope = "Detached synthetic ChatWindow, real loopback Ollama HTTP; no native host or tool execution",
                     Mvid = typeof(LlmChatClient).Module.ModuleVersionId.ToString("D"),
                     Observations = observations, Transcript = transcript, EntryViews = views, RefusedToolCalls = toolCalls };

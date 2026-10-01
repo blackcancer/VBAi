@@ -24,8 +24,11 @@ namespace VBAi.Tests.Integration
             using (var wire = OllamaSyntheticWireCapture.ForHeadlessFixture("cancellation-recovery"))
             {
                 var provider = LlmProvider.All.Single(p => p.IsOllama);
-                string model = Environment.GetEnvironmentVariable("VBAi_TEST_OLLAMA_MODEL") ?? "qwen2.5:3b";
-                var settings = new LlmSettings { OllamaEndpoint = OllamaQualificationEndpoint.Resolve().AbsoluteUri };
+                var profile = OllamaQualificationProfile.Resolve();
+                string model = profile.Model;
+                var settings = new LlmSettings();
+                profile.ApplyTo(settings);
+                TestContext.WriteLine("Ollama qualification profile: " + profile.Describe());
                 bool cancelled = false;
                 Exception failure = null;
                 using (var client = new LlmChatClient(provider, settings, model))
@@ -60,8 +63,11 @@ namespace VBAi.Tests.Integration
             using (var wire = OllamaSyntheticWireCapture.ForHeadlessFixture("synthetic-tool-roundtrip"))
             {
                 var provider = LlmProvider.All.Single(p => p.IsOllama);
-                string model = Environment.GetEnvironmentVariable("VBAi_TEST_OLLAMA_MODEL") ?? "qwen2.5:3b";
-                var settings = new LlmSettings { OllamaEndpoint = OllamaQualificationEndpoint.Resolve().AbsoluteUri };
+                var profile = OllamaQualificationProfile.Resolve();
+                string model = profile.Model;
+                var settings = new LlmSettings();
+                profile.ApplyTo(settings);
+                TestContext.WriteLine("Ollama qualification profile: " + profile.Describe());
                 wire.SetPhase("catalogue");
                 var models = await LlmChatClient.ListModelsAsync(provider, settings);
                 Assert.IsTrue(models.Any(m => m.Id == model), "The qualification model must already be installed.");
