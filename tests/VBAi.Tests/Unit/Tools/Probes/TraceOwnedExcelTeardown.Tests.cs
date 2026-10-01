@@ -63,6 +63,29 @@ namespace VBAi.Tests.Unit
         private static string Quote(string text) => "'" + text.Replace("'", "''") + "'";
 
         [TestMethod]
+        public void FirstAndSecondChanceUseTheSameBoundedExceptionCollector()
+        {
+            string common = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tools", "probes", "OwnedTeardownTrace.Common.ps1");
+            // Execute only the pure command generator, never start a debugger or target.
+            string command = "$ErrorActionPreference='Stop'; . " + Quote(common) +
+                ";$commands=Get-TeardownCommands 'C:\\Owned\\trace.log' 424242 '0123456789abcdef0123456789abcdef';" +
+                "$handler=[regex]::Match($commands,'(?m)^sxe -c \"([^\"]+)\" -c2 \"([^\"]+)\" 0xc0000409$');" +
+                "if(-not $handler.Success){throw 'Both exception chances must be armed'};" +
+                "if($handler.Groups[1].Value -cne $handler.Groups[2].Value){throw 'Chance collectors differ'};" +
+                "if($handler.Groups[1].Value -cne '.echo VBAI_TEARDOWN_EXCEPTION_BEGIN; .lastevent; .exr -1; .ecxr; kv; .echo VBAI_TEARDOWN_EXCEPTION_END; qd'){throw 'Collector scope changed'};" +
+                "if($commands -notmatch '(?m)^\\.echo VBAI_TEARDOWN_READY 424242 0123456789abcdef0123456789abcdef$'){throw 'Owned readiness identity missing'}";
+            string ps = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
+            var info = new ProcessStartInfo(ps, "-NoLogo -NoProfile -NonInteractive -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(command))) {
+                UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+            info.EnvironmentVariables["PSModulePath"] = Path.Combine(Path.GetDirectoryName(ps), "Modules");
+            using (var child = Process.Start(info))
+            {
+                var output = child.StandardOutput.ReadToEndAsync(); var error = child.StandardError.ReadToEndAsync();
+                Assert.IsTrue(child.WaitForExit(10000)); Assert.AreEqual(0, child.ExitCode, output.Result + error.Result);
+            }
+        }
+
+        [TestMethod]
         public void ExecutedExceptionRecordAndStackAreRequiredInsteadOfEchoedDebuggerCommands()
         {
             string common = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tools", "probes", "OwnedTeardownTrace.Common.ps1");

@@ -31,8 +31,11 @@ function Write-TeardownMarker([string]$path, $value) {
 function Get-TeardownCommands([string]$log, [int]$targetProcessId, [string]$nonce) {
     if ($log.Contains('"') -or $nonce -notmatch '^[a-f0-9]{32}$') { throw 'Unsupported debugger identity/path.' }
     $safeLog = $log.Replace('\','/')
+    # -c is first-chance only; failfast can arrive directly at second chance.
+    # https://learn.microsoft.com/en-us/windows-hardware/drivers/debuggercmds/sx--sxd--sxe--sxi--sxn--sxr--sx---set-exceptions-
+    $capture = '.echo VBAI_TEARDOWN_EXCEPTION_BEGIN; .lastevent; .exr -1; .ecxr; kv; .echo VBAI_TEARDOWN_EXCEPTION_END; qd'
     return ".logopen /u `"$safeLog`"`n" +
-        "sxe -c `".echo VBAI_TEARDOWN_EXCEPTION_BEGIN; .lastevent; .exr -1; .ecxr; kv; .echo VBAI_TEARDOWN_EXCEPTION_END; qd`" 0xc0000409`n" +
+        "sxe -c `"$capture`" -c2 `"$capture`" 0xc0000409`n" +
         ".echo VBAI_TEARDOWN_READY $targetProcessId $nonce`ng`n"
 }
 function Test-TeardownExceptionCapture([string]$text) {
