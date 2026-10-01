@@ -196,12 +196,14 @@ namespace VBAi.Tests.Integration
             {
                 string text = Text("status"); bool idle = Leaf("compare").Current.IsEnabled || Leaf("connect").Current.IsEnabled;
                 busy |= !idle;
-                if (EmbeddedGitUiProtocol.IsTerminal(idle, busy, before, text))
+                if (HasKnownTerminal(id, idle, busy, before, text))
                 {
-                    record(new { Phase = "UiTerminalObserved", Action = id, Status = text, BusyObserved = busy, Idle = idle });
                     int classification = ClassifyTerminal(id, text);
+                    // Enabled controls and a status provider can update in separate
+                    // UIA observations. Keep observing an unclassified/transient
+                    // label; never acknowledge or replay the native operation.
+                    record(new { Phase = "UiTerminalObserved", Action = id, Status = text, BusyObserved = busy, Idle = idle });
                     bool error = classification < 0;
-                    if (classification == 0) throw new InvalidOperationException("Unclassified UI terminal status; preserve rather than infer success or close.");
                     Protocol.Terminal(id, true, !error);
                     if (error) throw new InvalidOperationException("Embedded Git returned a known terminal error: " + text);
                     return;
@@ -211,6 +213,10 @@ namespace VBAi.Tests.Integration
             Protocol.MarkUncertain("No terminal operation evidence before bounded deadline.");
             throw new TimeoutException("Embedded Git operation remains uncertain; no replay or automatic Close/Quit.");
         }
+        /// <summary>Requires a recognized result in addition to independently observed enabled controls.</summary>
+        internal static bool HasKnownTerminal(string action, bool idle, bool busy, string before, string after)
+            => EmbeddedGitUiProtocol.IsTerminal(idle, busy, before, after) && ClassifyTerminal(action, after) != 0;
+
         internal static int ClassifyTerminal(string id, string text)
         {
             if (string.IsNullOrEmpty(text)) return 0;

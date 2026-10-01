@@ -9,6 +9,19 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class EmbeddedGitUiProtocolTests
     {
+        [TestMethod]
+        public void EnabledControlsWithTransientProgressCannotAcknowledgeConnectOrImport()
+        {
+            foreach (string action in new[] { "connect", "checkpointRestore", "select-checkpoint" })
+            {
+                Assert.IsFalse(EmbeddedGitAutomation.HasKnownTerminal(action, true, true, "Earlier label", "Operation in progress… · Git changes"));
+                Assert.IsFalse(EmbeddedGitAutomation.HasKnownTerminal(action, true, true, "Libellé précédent", "Opération en cours… · Modifications Git"));
+            }
+            Assert.IsTrue(EmbeddedGitAutomation.HasKnownTerminal("connect", true, true, "Earlier label", "VBA matches the last synchronized state."));
+            Assert.IsTrue(EmbeddedGitAutomation.HasKnownTerminal("checkpointRestore", true, true, "Earlier label", "VBA restored. Check and save the document."));
+            Assert.IsFalse(EmbeddedGitAutomation.HasKnownTerminal("checkpointRestore", false, true, "Earlier label", "VBA restored. Check and save the document."));
+        }
+
         [DataTestMethod, DataRow(true), DataRow(false)]
         public void KnownTerminalSuccessOrFailureAllowsNormalCloseButNeverReplay(bool success)
         {
