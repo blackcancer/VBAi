@@ -302,6 +302,24 @@ updater scaffolding does not establish signed installation/rollback acceptance.
 No release, license selection, publishing or credential migration is part of
 this qualification run.
 
+## Latest scoped follow-up
+
+Q-026 remains open. Fresh current-v6 disposable checkbox trials now verify
+Editor Format and Docking mutation, closed-dialog readback, guarded restoration
+and normal owned-host exit. The final trial retains complete baseline/restored
+options revisions in durable phase summaries. Earlier successful trials lack
+durable summaries, and one copied driver selected an older test build; the
+additive provenance correction preserves those original records. These outcomes
+do not explain the original pre-write connection EOF or qualify every category.
+
+Q-027 remains open. An uninstalled combined grammar prototype compares the
+retained flat-control exports consistently in an offline production-snapshot
+analysis. Frame/MultiPage requires complete storage-graph validation. This does
+not turn the failed installed-v6 native matrix into a pass or execute its later
+Git, import, recovery and persistence phases. The installed DLL is unchanged.
+Exact identities, counts and artifact paths are recorded in
+[test coverage](test-coverage.md).
+
 ## Evidence location
 
 Machine-local TRX, logs, screenshots, manifests and detailed delegated reviews

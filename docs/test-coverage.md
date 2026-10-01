@@ -519,6 +519,54 @@ suite, coverage measurement, native options rerun or deployed-candidate result.
 The preceding structural-only batch remains separately retained. Q-026 and Q-027
 remain open pending their native causes and complete acceptance scopes.
 
+### Current v6: guarded options mutation and durable restoration evidence
+
+The isolated `options-guard-native-v6` trial and the subsequent
+`options-durable-native-v6` trial each record **1 passed, 0 failed, 0 skipped**,
+runner exit **0**, against the unchanged installed v6 product. Owned Excel PIDs
+53912 and 48980 exit normally with code **0**. Their successful TestContext
+attachments were not retained durably. The second driver's copied build path
+also selected tests source `93bb870`, rather than its recorded `313e0b6`.
+`test-build-scope-correction.json` preserves that provenance correction without
+changing the original terminal/TRX; neither trial proves the durable-summary fix.
+
+The separately prepared `options-durable-native-v6-v2` trial uses frozen tests
+source `313e0b6`, test assembly SHA-256
+`A1D92AD7D9B366C0637EE2C00E9658E52B8D44CC39C7653DA4816D73CE6D094E`,
+and the same installed v6 MVID/hash. It records **1 passed, 0 failed, 0 skipped**,
+runner exit **0**. Excel PID 47212 exits normally with code **0**, with no
+Close/Quit errors or forced termination. Its owned GUID root retains 38 bounded
+phase summaries, including the complete baseline options revision
+`544477535d391a457fc66947a3ddb3da7ffb430e6212289c6586a6fcb65f3e05`.
+Editor Format margin indicators and Docking Immediate Window each change from
+checked to unchecked and back; both final full revisions match the baseline.
+All writes have verified closed/committed replies before guarded restoration.
+No token diagnostic or shared fixture lifecycle change is active.
+
+These fresh disposable trials qualify this installed-candidate checkbox scope.
+They do not explain the original pre-write EOF or qualify every option/category;
+Q-026 remains open. No uncertain request is replayed.
+
+### Uninstalled combined flat-control grammar prototype
+
+Source `317fa80` combines StdFont, six MorphData controls and ScrollBar,
+SpinButton, TabStrip and Image grammar. Its isolated product MVID is
+`c5e41581-6a45-4512-bfd9-b1f41106bf4a`, SHA-256
+`CA1A461F65C426605C9EDD530BFF59444EED518F6D207B95BE583358CF55ECBB`.
+The Debug/net48/x64 build reports no warnings or errors.
+`combined-controls-managed/combined-controls-managed.trx` records **115 passed,
+0 failed, 0 skipped**, runner exit **0**, in one prepared focused batch covering
+form padding grammar, snapshot guards and options qualification lifecycle guards.
+This is not a full-suite run or a coverage measurement.
+
+`frx-drift-analysis/combined-controls-comparison.json` invokes this actual assembly
+against all retained native before/unchanged snapshot pairs without COM activation.
+Eleven flat layouts compare equal. Frame/MultiPage still differs and retains
+unsupported container streams; complete graph validation remains outstanding.
+The prototype is **uninstalled**. This offline proof does not change the original
+failed native matrix, execute its later Git/import/recovery/persistence phases,
+or close Q-027. Raw exports remain intact and transport bytes are not normalized.
+
 ### Preceding Monaco-status candidate: complete managed acceptance
 
 Source `d7a1c75d90d840949cc78606f2ae55b14e93ec55`, MVID
