@@ -26,6 +26,15 @@ Monaco-status candidate `d7a1c75` / `6a74af33` and earlier frozen v5 `2e75161` /
 v5 harness failure remains failed with explained packaging/Git path defects;
 none of those results qualifies a later product binary.
 
+The latest uninstalled combined candidate is source `bdb57e0`, MVID
+`f6d47c82-d9d3-4a8e-9f28-79778ae112f1`, SHA-256
+`019EA9F7F4A72B3AE92EDC49F3C96A868CD3ED36A340031DF325BD816FD048CA`.
+Its complete default managed gate and separate JavaScript, synthetic native,
+managed-loader and detached Designer checks pass with unchanged product bytes
+and source. Q-015 is accepted for that exact managed scope; this is not an
+installed or native-qualified release. Exact counters and coverage are recorded
+only in [recorded validation](test-coverage.md).
+
 Current-v6 native evidence includes the explicitly authorized read-only
 owner-STA path/effective-token diagnostic in owned Excel. Both synthetic GUID
 directories and files are visible with attributes matching the testhost; normal
@@ -338,6 +347,23 @@ revision/EOF causes remain open. Private CFB guard contracts complete managed
 coverage of that preflight, without claiming native import/recovery acceptance.
 Exact identities, counts and artifact paths are recorded in
 [test coverage](test-coverage.md).
+
+The latest combined candidate additionally refuses uncertain recovery marker
+metadata and existing invalid entries before overwriting recovery refs or
+starting rollback. Completion deletes a confirmed regular marker once and
+verifies absence; original and completion errors remain distinct. Managed/local
+regressions reproduce the old directory-marker defects and pass on the fix.
+These safeguards are not a causal correction for historical native export,
+persistence or lifecycle failures. The installed DLL remains unchanged.
+
+A source/retained-evidence review confirms that the Word exact-path Git fixture
+executes `VbaGitProject.Capture` on the external test STA, as its original report
+explicitly states. The prepared sequential UserForm GitHub fixture also runs
+its coordinator on the test STA. These scopes cannot qualify the embedded
+owning-VBE-thread Git path. Both Word diagnostic exports succeeding through
+different routes/destinations do not establish a thread/path cause for the
+historical capture failures. Complete owner-dispatched production Git acceptance
+is still required for Q-024/Q-027; no native operation was replayed by this review.
 
 ## Evidence location
 

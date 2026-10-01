@@ -1,5 +1,61 @@
 # Recorded validation
 
+## Uninstalled recovery marker candidate: complete managed and local gates (2026-10-01)
+
+Source `bdb57e00c8763d84ece627601035b717c1008cf8`, MVID
+`f6d47c82-d9d3-4a8e-9f28-79778ae112f1`, SHA-256
+`019EA9F7F4A72B3AE92EDC49F3C96A868CD3ED36A340031DF325BD816FD048CA`
+includes the preceding Options/CFB corrections and guarded recovery marker
+metadata, preparation, rollback and completion. Test assembly SHA-256 is
+`6FD6C5625F84C8AB60F79EB35715E1B274459F42474C08CA816A145CB472ABC1`.
+
+`managed-v10-recovery-marker/full-managed.trx` records **2,888 passed, 0 failed,
+110 conditional skips, 2,998 total**, runner exit **0**, in **602.314 seconds**.
+Individual TRX outcomes independently match the totals. The terminal manifest
+confirms identical before/after product hashes and clean, unchanged source.
+The Debug solution build has no warnings or errors. Raw `[VBAi]*` managed
+coverage contains **34,034/34,228 lines (99.43%)** and
+**34,327/34,816 branch outcomes (98.60%, rounded from counts)**, leaving
+194 uncovered lines and 489 uncovered outcomes. The collector is
+`managed-v10-recovery-marker/79059fd6-eca6-4d1f-95c6-cf6ee52d0483/coverage.cobertura.xml`.
+It reports complete coverage for `FormResourcePreflight`, `CompoundFile`,
+`MacroGitOperations` and the `MacroGitRepository` partials. There are no new
+production coverage exclusions. Native/live-provider opt-ins were disabled;
+external host processes, native C++ and JavaScript are not measured by this
+collector. The whole-product coverage target remains open.
+
+The delegated recovery commit `f9a221b`, integrated as `035b87c`, prepares real
+file/directory markers and disposable local Git repositories, with doubles for
+VBE mutations and injected metadata/deletion failures. Five regressions fail on
+the two exact parent production files recompiled separately from `d4a0fd5`;
+this rebuilt old-source binary is not the historical candidate assembly.
+The final recompilation includes all scenarios and records **79 passed,
+0 failed, 0 skipped**, with product MVID
+`0ac7e107-6c48-4495-b7d4-0d4a8d21f92d`, SHA-256
+`7FFC259A243A6CA7D68A7BAC917C5CDF84C180BB58ABEC712D78A3D5643CE800`.
+Its proof is `artifacts/worktrees/qualification-recovery-marker/artifacts/recovery-source-proof.json`,
+with `recovery-red-results/recovery-parent-directory-red.trx` and
+`recovery-final-results/recovery-mirrors-final.trx` below that worktree's artifacts.
+The earlier focused run excludes the last prepared additions and is not their
+acceptance. These are managed/local-filesystem contracts, without ACL changes,
+COM/native import or a claim of atomic filesystem races.
+
+The complete candidate also passes the prepared local batch in
+`local-v10-recovery-marker/terminal.json`, runner exit **0**, with unchanged
+product bytes and source:
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| JavaScript | 61 passed, none failed/skipped | Editing, language and synthetic native-export-trace fixtures. |
+| Native C++ | 20 cycles passed | Fresh synthetic VBE fixture, scoped drawing, thread guard, destruction, import restoration and GDI balance. This standalone binary is distinct from the embedded payload. |
+| Managed native loader | PASS | Exact candidate embedded extraction/hash/ABI and module reuse; no real-host painting claim. |
+| WinForms Designer | 46 surfaces passed | Detached construction, resize, editable child properties and serialization roundtrip. |
+
+Q-015 has complete managed acceptance for this exact **uninstalled** candidate.
+The local checks do not qualify native Office/SOLIDWORKS, actual GitHub transport,
+embedded Git UI/threading or provider behavior. Historical native failures and
+the remaining release gates retain their original outcomes.
+
 ## Uninstalled exact Options lifetime candidate: complete managed gate (2026-10-01)
 
 Source `d4a0fd5a7662806c141f7e851be126feecb4ca9b`, MVID
