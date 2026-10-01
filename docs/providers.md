@@ -105,8 +105,9 @@ whether text or tools were received, the final marker, a filtered terminal reaso
 and a complete/empty/error outcome. These metadata exclude prompts, response
 content, tool names and arguments; they do not add a retry or change parsing.
 An empty terminal response remains distinct from a truncated response or a
-tool-only round. The historical intermittent Ollama empty response remains an
-open item in [qualification](release-qualification.md).
+tool-only round. The selected Ollama configuration passes its stated live test
+scope; historical intermittent empty responses and embedded-host acceptance
+remain separate items in [qualification](release-qualification.md).
 
 OpenAI requests include `store=false`; this is not a universal retention setting
 for every provider or a guarantee of zero retention. Provider-side data handling
@@ -137,6 +138,14 @@ when diagnosing a local provider. The qualification profile uses a separately
 selected model, an explicit server context and explicit request sampling; it
 does not overwrite personal configuration. See [testing](../tests/README.md)
 and [recorded validation](test-coverage.md) for the actual observed results.
+
+The accepted isolated profile selects `qwen2.5:7b-instruct`, temperature `0`,
+top-p `0.8`, server context `8192` and one parallel request. It passes exact
+synthetic tool arguments, shown chat streaming/cancellation/recovery and real
+read-only Excel inspection on the recorded candidate. These are explicit
+qualification settings, not new defaults for existing personal profiles; the
+candidate has not been deployed to the installed add-in. Other models, server
+versions and embedded host paths require their own acceptance evidence.
 
 ## Validation
 

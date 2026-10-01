@@ -1,5 +1,54 @@
 # Recorded validation
 
+## Ollama configured candidate acceptance (2026-10-01)
+
+Candidate `bbb6e6f5aca9e47e2b120538e055959ef530e068`, product MVID
+`f6f01687-c0a4-4b1c-acab-82cc1dfab2af`, SHA-256
+`35E94E67D30819E32790854E317C55D5736DC74EA7EB2461F8301E56F2E6B9D1`,
+passes the complete prepared batch: **3482 passed / 0 failed / 115 conditional
+skips / 3597 total**, exit **0**. Test assembly SHA-256 is
+`D58A5BF1D6B00D5EC8CA917C12C06A9E24CD97D1E5FF642520A19F2AE88925EB`.
+The isolated solution build reports no warnings or errors. Source, clean working
+tree and both assembly hashes are unchanged at the terminal check.
+
+The verified model is `qwen2.5:7b-instruct`, manifest digest
+`845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e`,
+on Ollama `0.34.4`, context 8192 and one parallel request. Seven captured chat
+bodies verify temperature 0 and top-p 0.8 explicitly sent by the production
+client, without logprobs. Cloud processing is disabled; the model cache and
+selected literal-loopback endpoint are isolated from personal configuration.
+
+All four activated real-provider scenarios pass with their strict assertions:
+exact scalar synthetic tool arguments and result consumption, first-fragment
+cancellation/recovery, shown chat streaming/Stop/next-send, and native read-only
+Excel module inspection. The language-catalogue completeness check and both
+sampling-save failure regressions pass. Failed writes or theme updates restore
+the shared in-memory sampling values and preserve the original error; this does
+not assert rollback of a partially written settings file.
+
+Excel PID 55000 reads a random marker absent from the prompt through exactly one
+real `read_module` call. Full source SHA-256 before, returned by the tool and after
+is `6890696832cbbeddce234f43fdea1f19f445e9c9bf95eb99ff2ff1230274030d`.
+No macro runs. The unsaved disposable workbook closes and the original process
+handle observes normal exit code 0. This is external test-STA dispatch through
+production tools, not qualification of the installed bridge or embedded assistant.
+The detached chat uses a simulated VBE; SOLIDWORKS and other providers are not
+activated in this batch. The installed DLL remains unchanged at `C900BA09...`.
+
+Coverage includes `[VBAi]*`: **98.38% lines / 96.60% branches**
+(37,385/37,998 lines and 37,324/38,634 branches). The two collector/deployment
+copies contain identical results and are not added together. Conditional native
+and authenticated-provider scenarios retain their explicit opt-ins. No coverage
+exclusion is added and this is not complete native-host or release qualification.
+
+Evidence is `artifacts/qualification-v1/followup-20260930/ollama-final-acceptance-v2/`
+(`full-managed-and-ollama.trx`, `offline-final-acceptance-review.json`, native
+Excel readback, synthetic wire captures, coverage and terminal manifests).
+The exact owned backend is stopped once after terminal requests; cleanup succeeds
+and no backend is retained. Earlier failed trials below remain failed. This
+acceptance establishes the selected configuration's stated scope without claiming
+the internal cause of historical unobserved generations or universal model reliability.
+
 ## Ollama configured integration before catalogue completion (2026-10-01)
 
 Candidate `799ccef288178d266b560158dd3171330b7313af`, product MVID
