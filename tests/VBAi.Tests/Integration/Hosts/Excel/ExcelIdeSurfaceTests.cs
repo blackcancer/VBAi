@@ -76,13 +76,16 @@ namespace VBAi.Tests.Integration
         [STATestMethod]
         public void ExtendedOptionsRoundTripAndRestoreTheCompleteNativeState()
         {
-            string results = TestContext?.TestResultsDirectory;
+            string results = Environment.GetEnvironmentVariable("VBAi_EXCEL_RESULTS") ?? TestContext?.TestResultsDirectory;
             if (string.IsNullOrWhiteSpace(results) || !Path.IsPathRooted(results))
                 throw new InvalidOperationException("An absolute durable test-results directory is required before opening Excel.");
             Directory.CreateDirectory(results);
             var host = ExcelVbeFixture.Start();
             int sequence = 0;
-            string prefix = Path.Combine(results, "options-qualification-" + host.ProcessId + "-" + Path.GetFileName(host.Root));
+            // Result attachments from successful tests may be omitted by the runner;
+            // retain phase summaries alongside this exact host's durable startup ledger.
+            string prefix = Path.Combine(host.Root, "options-qualification");
+            TestContext.WriteLine("Options phase evidence: " + prefix);
             var lifecycle = new ExcelOptionsQualification(host.Command, () => {
                 host.PreserveForDiagnosticRecovery = true;
                 lock (retainedOptionsHosts) if (!retainedOptionsHosts.Contains(host)) retainedOptionsHosts.Add(host);
