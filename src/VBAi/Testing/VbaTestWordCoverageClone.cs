@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace VBAi
 {
@@ -34,7 +35,7 @@ namespace VBAi
             Host.ValidateTarget(source);
             RequireSaved(source.Document);
             Directory.CreateDirectory(folder);
-            // A read-only source handle denies writers while copying; CreateNew forbids overwrite.
+            // Word retains a writer handle: share it, then protect and verify the saved bytes during copying.
             // Unsaved VBA changes are rejected by the service's full source/reference comparison.
             try { CopySavedFile(source.Path, copyPath); }
             catch (Exception error) { throw Uncertain("Copying the saved Word file", copyPath, error); }
@@ -82,10 +83,42 @@ namespace VBAi
         }
 
         private static void CopyFile(string source, string destination)
+        { CopyFile(source, destination, null); }
+
+        internal static void CopyFile(string source, string destination, Action<FileStream, FileStream> afterCopy)
         {
-            using (var input = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read))
-            using (var output = new FileStream(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-            { input.CopyTo(output); output.Flush(true); }
+            // Share existing Word writers without allowing deletion or replacement of this source path.
+            using (var input = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                // Lock beyond EOF as well, so a competing WriteFile cannot append during the snapshot.
+                input.Lock(0, long.MaxValue);
+                try
+                {
+                    long length = input.Length;
+                    DateTime modified = File.GetLastWriteTimeUtc(source);
+                    using (var hash = SHA256.Create())
+                    {
+                        byte[] expected = hash.ComputeHash(input);
+                        input.Position = 0;
+                        using (var output = new FileStream(destination, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None))
+                        {
+                            input.CopyTo(output);
+                            output.Flush(true);
+                            afterCopy?.Invoke(input, output);
+                            if (input.Length != length || output.Length != length || File.GetLastWriteTimeUtc(source) != modified)
+                                throw new IOException("The saved Word file metadata changed during copying; the destination was retained.");
+                            // Byte-range locks do not block mapped views; verify both source passes and copied bytes.
+                            input.Position = 0;
+                            byte[] current = hash.ComputeHash(input);
+                            output.Position = 0;
+                            byte[] copied = hash.ComputeHash(output);
+                            if (!expected.SequenceEqual(current) || !expected.SequenceEqual(copied))
+                                throw new IOException("The saved Word bytes changed during copying; the destination was retained.");
+                        }
+                    }
+                }
+                finally { input.Unlock(0, long.MaxValue); }
+            }
         }
         private static void RequireSaved(object document)
         {

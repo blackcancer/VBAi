@@ -209,7 +209,7 @@ namespace VBAi.Tests.Integration
 
             var originalModules = fixture.Items("list_modules").Select(module => (string)module["Name"])
                 .ToDictionary(name => name, name => fixture.Data("read_module", "Module", name), StringComparer.Ordinal);
-            byte[] originalDisk = File.ReadAllBytes(fixture.DocumentPath);
+            byte[] originalDisk = ReadOwnedDocumentBytes(fixture.DocumentPath);
             string[] openBefore;
             string countersBefore = ReadOfficeCounters(fixture, out openBefore);
             Assert.AreEqual("2,0", countersBefore, "Only the entered procedure should have run in the original batch and single test.");
@@ -258,7 +258,7 @@ namespace VBAi.Tests.Integration
                 fixture.Items("list_modules").Select(module => (string)module["Name"]).ToArray(),
                 "Instrumentation leaked into the original project.");
             foreach (var original in originalModules) AssertSource(fixture, original.Value, original.Key);
-            CollectionAssert.AreEqual(originalDisk, File.ReadAllBytes(fixture.DocumentPath), "Coverage saved or changed the original document file.");
+            CollectionAssert.AreEqual(originalDisk, ReadOwnedDocumentBytes(fixture.DocumentPath), "Coverage saved or changed the original document file.");
             string[] openAfter;
             string countersAfter = ReadOfficeCounters(fixture, out openAfter);
             Assert.AreEqual(countersBefore, countersAfter, "The coverage selection executed in the original project.");
@@ -313,6 +313,13 @@ namespace VBAi.Tests.Integration
             Assert.IsNotNull(coverage[percent]); Assert.AreEqual(50d, Convert.ToDouble(coverage[percent]));
         }
 
+        private static byte[] ReadOwnedDocumentBytes(string path)
+        {
+            // Word keeps the owned saved document open for writing even while Saved is true.
+            using (var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var bytes = new MemoryStream())
+            { input.CopyTo(bytes); return bytes.ToArray(); }
+        }
         private static string ReadOfficeCounters(OfficeVbeFixture fixture, out string[] openPaths)
         {
             // A mismatched registered application is refused before inspecting or activating any document.

@@ -142,7 +142,7 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(path, Path.GetFullPath((string)persistence["HostPath"]), true);
                 Assert.AreEqual(true, persistence["ProjectSaved"], "Save the blank disposable macro before qualification.");
                 baseline = ReadSources();
-                Assert.IsTrue(baseline.Length >= 1 && baseline.All(module => Convert.ToInt32(module["Type"]) == 1), "Only blank standard modules are accepted.");
+                Assert.IsTrue(baseline.Length >= 1 && baseline.All(module => Convert.ToInt32(module["Type"]) == 1 || (Convert.ToInt32(module["Type"]) == 100 && Equals(module["Name"], "ThisLibrary"))), "Only blank standard modules and the empty native ThisLibrary component are accepted.");
                 foreach (var module in baseline)
                     Assert.IsTrue(Regex.IsMatch((string)module["Code"], @"\A\s*(?:Option\s+Explicit\s*)?\z", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
                         "The selected macro must be blank: no procedures, comments or arbitrary existing code may be executed or edited.");

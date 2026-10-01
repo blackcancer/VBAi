@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Fixture = VBAi.Tests.Unit.VbaTestWordValuesHostTests.Fixture;
 using Document = VBAi.Tests.Unit.VbaTestWordValuesHostTests.Document;
@@ -139,19 +140,109 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
-        public void FileCopyRefusesWritersAndNeverOverwritesOrOpensPartialCopy()
+        public void SavedFileCopyAcceptsAnIdleWordWriterAndBlocksWritesIncludingAppendUntilVerificationEnds()
         {
-            using (var fixture = new Fixture())
-            using (var writer = new FileStream(fixture.Source.FullName, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
+            using (var f = new Fixture())
+            using (var writer = new FileStream(f.Source.FullName, FileMode.Open, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete, 1))
             {
-                var provider = new VbaTestWordCoverageClone { Host = fixture.Host };
-                var error = Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, Path.Combine(fixture.Folder, "Copy")));
-                Assert.IsTrue(error.Uncertain);
-                Assert.AreEqual(0, fixture.Application.Documents.OpenCalls);
-                Assert.AreEqual(0, fixture.Source.CloseCalls);
+                byte[] original = System.Text.Encoding.UTF8.GetBytes("Saved Word fixture bytes");
+                var provider = new VbaTestWordCoverageClone { Host = f.Host };
+                provider.CopySavedFile = (source, destination) => VbaTestWordCoverageClone.CopyFile(source, destination, (input, output) =>
+                {
+                    writer.Position = 0;
+                    Assert.ThrowsException<IOException>(() => writer.Write(new byte[] { 9, 9, 9, 9 }, 0, 4));
+                    writer.Position = writer.Length;
+                    Assert.ThrowsException<IOException>(() => writer.Write(new byte[] { 9, 9, 9, 9 }, 0, 4));
+                    Assert.ThrowsException<IOException>(() => File.Delete(source));
+                });
+                f.Application.Documents.OnOpen = path => new Document { FullName = path, Application = f.Application };
+                var clone = provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy"));
+                CollectionAssert.AreEqual(original, File.ReadAllBytes(clone.Path));
+                writer.Position = 0;
+                writer.Write(original, 0, original.Length); writer.Flush();
+                Assert.AreEqual(1, f.Application.Documents.OpenCalls);
+                clone.Dispose();
+                Assert.AreEqual(0, f.Source.SaveCalls + f.Source.SaveAsCalls + f.Source.CloseCalls);
             }
         }
 
+        [TestMethod]
+        public void ConflictingSourceRangeLockRefusesWithoutOpeningOrRetryingTheCopy()
+        {
+            using (var f = new Fixture())
+            using (var writer = new FileStream(f.Source.FullName, FileMode.Open, FileAccess.Write, FileShare.ReadWrite))
+            {
+                writer.Lock(0, 1);
+                try
+                {
+                    var provider = new VbaTestWordCoverageClone { Host = f.Host };
+                    var error = Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy")));
+                    Assert.IsTrue(error.Uncertain);
+                    Assert.AreEqual(0, f.Application.Documents.OpenCalls + f.Source.CloseCalls);
+                }
+                finally { writer.Unlock(0, 1); }
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow("source-length")]
+        [DataRow("output-length")]
+        [DataRow("metadata")]
+        [DataRow("mapped-source")]
+        [DataRow("output-bytes")]
+        [DataRow("callback")]
+        public void CopyVerificationFailureRetainsDestinationWithoutOpeningOrRetryingWord(string fault)
+        {
+            using (var f = new Fixture())
+            {
+                int copies = 0;
+                DateTime originalModified = File.GetLastWriteTimeUtc(f.Source.FullName);
+                var provider = new VbaTestWordCoverageClone { Host = f.Host };
+                provider.CopySavedFile = (source, destination) =>
+                {
+                    copies++;
+                    VbaTestWordCoverageClone.CopyFile(source, destination, (input, output) =>
+                    {
+                        if (fault == "source-length")
+                            using (var writer = new FileStream(source, FileMode.Open, FileAccess.Write, FileShare.ReadWrite)) writer.SetLength(0);
+                        if (fault == "output-length") output.SetLength(0);
+                        if (fault == "metadata") File.SetLastWriteTimeUtc(source, originalModified.AddMinutes(1));
+                        if (fault == "mapped-source")
+                        {
+                            using (var stream = new FileStream(source, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
+                            using (var map = MemoryMappedFile.CreateFromFile(stream, null, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false))
+                            using (var view = map.CreateViewAccessor()) { view.Write(0, (byte)9); view.Flush(); }
+                            File.SetLastWriteTimeUtc(source, originalModified);
+                        }
+                        if (fault == "output-bytes") { output.Position = 0; output.WriteByte(9); output.Flush(true); }
+                        if (fault == "callback") throw new IOException("Synthetic verification failure.");
+                    });
+                };
+                string folder = Path.Combine(f.Folder, "Copy");
+                var error = Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(f.Source.VBProject, f.Source.FullName, folder));
+                Assert.IsTrue(error.Uncertain, fault);
+                Assert.AreEqual(1, copies, fault);
+                StringAssert.Contains(error.Message, "Retained copy:");
+                Assert.IsTrue(File.Exists(Path.Combine(folder, "coverage.docm")), fault);
+                Assert.AreEqual(0, f.Application.Documents.OpenCalls + f.Source.CloseCalls, fault);
+                using (var probe = new FileStream(f.Source.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                { probe.Lock(0, long.MaxValue); probe.Unlock(0, long.MaxValue); }
+            }
+        }
+
+        [TestMethod]
+        public void ExclusiveDestinationCreationPreservesAnExistingFileAndReleasesTheSourceLock()
+        {
+            using (var f = new Fixture())
+            {
+                string destination = Path.Combine(f.Folder, "AlreadyExists.docm");
+                File.WriteAllText(destination, "Preserve existing bytes");
+                Assert.ThrowsException<IOException>(() => VbaTestWordCoverageClone.CopyFile(f.Source.FullName, destination, null));
+                Assert.AreEqual("Preserve existing bytes", File.ReadAllText(destination));
+                using (var probe = new FileStream(f.Source.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                { probe.Lock(0, long.MaxValue); probe.Unlock(0, long.MaxValue); }
+            }
+        }
         [TestMethod]
         public void UnsavedOriginalContentRefusesCoverageBeforeCreatingAnyCopyOrOpeningWord()
         {
