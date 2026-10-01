@@ -46,6 +46,7 @@ namespace VBAi.Tests.Integration
             using (var deadline = new CancellationTokenSource(TimeSpan.FromMinutes(3)))
             {
                 dispatcher.CreateControl(); SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
+                Exception primaryFailure = null;
                 try
                 {
                     var accounts = Await(new GitHubAccountService().ListAsync(deadline.Token));
@@ -112,7 +113,8 @@ namespace VBAi.Tests.Integration
                                 var before = project.Capture(); SaveSnapshot(output, "target-backup", before);
                                 using (var operations = new MacroGitOperations(project, fetchedRepository))
                                 {
-                                    Await(operations.ExecuteAsync("pull", operations.Revision(before)));
+                                    ExecuteGuardedImport(() => Await(operations.ExecuteAsync("pull", operations.Revision(before))),
+                                        () => fetchedRepository.RecoveryPending, () => RetainSequentialHost(target));
                                     Assert.AreEqual(ownerThread, Thread.CurrentThread.ManagedThreadId);
                                     Assert.IsFalse(fetchedRepository.RecoveryPending);
                                     Assert.IsTrue(fetchedRepository.Read(fetchedRepository.Resolve(MacroGitRepository.Backup)).SameAs(before));
@@ -142,14 +144,15 @@ namespace VBAi.Tests.Integration
                 }
                 catch (Exception error)
                 {
+                    primaryFailure = error;
                     report["Failure"] = error.ToString();
                     if (Equals(report["Stage"], "push-once")) report["RemotePushOutcomeMayBeUncertain"] = true;
-                    throw;
                 }
                 finally
                 {
-                    report["FinishedUtc"] = DateTime.UtcNow.ToString("o"); WriteReport(output, report);
-                    SynchronizationContext.SetSynchronizationContext(previousContext);
+                    CompleteSequentialEvidence(primaryFailure,
+                        () => { report["FinishedUtc"] = DateTime.UtcNow.ToString("o"); WriteReport(output, report); },
+                        () => SynchronizationContext.SetSynchronizationContext(previousContext));
                 }
             }
         }
@@ -170,10 +173,9 @@ namespace VBAi.Tests.Integration
             catch (Exception error)
             {
                 failure = error;
-                if (HasUncertainSequentialDelivery(error))
+                if (host.PreserveForDiagnosticRecovery || HasUncertainSequentialDelivery(error))
                 {
-                    host.PreserveForDiagnosticRecovery = true;
-                    RetainedSequentialHosts.Add(host);
+                    RetainSequentialHost(host);
                     ExceptionDispatchInfo.Capture(error).Throw(); // No further native call or cleanup.
                 }
             }
@@ -184,6 +186,40 @@ namespace VBAi.Tests.Integration
                 throw;
             }
             if (failure != null) ExceptionDispatchInfo.Capture(failure).Throw();
+        }
+
+        private static void RetainSequentialHost(ExcelVbeFixture host)
+        {
+            host.PreserveForDiagnosticRecovery = true;
+            if (!RetainedSequentialHosts.Contains(host)) RetainedSequentialHosts.Add(host);
+        }
+
+        internal static void ExecuteGuardedImport(Action operation, Func<bool> recoveryPending, Action retain)
+        {
+            try { operation(); }
+            catch (Exception primary)
+            {
+                bool mustRetain = HasUncertainSequentialDelivery(primary);
+                var errors = new List<Exception> { primary };
+                if (!mustRetain)
+                    try { mustRetain = recoveryPending(); }
+                    catch (Exception markerFailure) { mustRetain = true; errors.Add(markerFailure); }
+                if (mustRetain)
+                    try { retain(); }
+                    catch (Exception retentionFailure) { errors.Add(retentionFailure); }
+                if (errors.Count > 1) throw new AggregateException("Import, recovery observation and retention errors remain separate; no native replay.", errors);
+                throw;
+            }
+        }
+
+        internal static void CompleteSequentialEvidence(Exception primary, Action persist, Action restoreContext)
+        {
+            var errors = new List<Exception>();
+            if (primary != null) errors.Add(primary);
+            try { persist(); } catch (Exception recording) { errors.Add(recording); }
+            finally { try { restoreContext(); } catch (Exception contextFailure) { errors.Add(contextFailure); } }
+            if (errors.Count > 1) throw new AggregateException("Scenario, final evidence and context restoration errors remain separate.", errors);
+            if (errors.Count == 1) ExceptionDispatchInfo.Capture(errors[0]).Throw();
         }
 
         internal static bool HasUncertainSequentialDelivery(Exception error)
