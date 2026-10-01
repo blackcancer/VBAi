@@ -460,6 +460,74 @@ while it owns the desktop. Normal host shutdown is part of acceptance; a verifie
 transfer does not excuse a subsequent crash. These fixtures are not enabled by
 ordinary connected-account opt-ins.
 
+### Installed GitWindow capture and local checkpoint
+
+`NativeEmbeddedGitUi` is a separate, disabled-by-default scenario. It opens the
+installed add-in through exactly one existing CommandBarButton with tag
+`VBAi.GitHub`. A dedicated owner STA retains the owned Excel fixture and the modal
+COM `Execute` call. An MTA worker acknowledges readiness before that call, discovers
+only the exact owned window and native leaf controls, and requires the actual
+UIA Value, Invoke, SelectionItem and Window patterns before each action. It uses
+no coordinates, keyboard input, new product hook or external-STA Git capture.
+
+Enable all three explicit flags: `VBAi_RUN_EMBEDDED_GIT_UI_TESTS=1`,
+`VBAi_RUN_USERFORM_GITHUB_TESTS=1` and `VBAi_RUN_EXCEL_TESTS=1`. Set absolute
+`VBAi_EXCEL_RESULTS` and `VBAi_TEST_GITHUB_MANIFEST` paths. Set
+`VBAi_TEST_EMBEDDED_GIT_MVID` and `VBAi_TEST_EMBEDDED_GIT_SHA256` to the exact frozen
+product referenced by the tests and installed in Excel. Existing Excel processes
+refuse launch. The explicit `/x /automation` disposable seed bootstrap must attest
+the same PID, executable, start time and loaded candidate before preparation.
+Run only with the desktop available and an already-connected authorized account;
+the test neither signs in nor chooses a fallback repository.
+
+The manifest is constrained to the retained synthetic repository ID `1396566119`
+at `https://github.com/blackcancer/vbai-qualification-20260929203712-7267b1e6`.
+It additionally requires `embeddedBranch`, `embeddedBranchCommit` and the actual
+observed `checkpointTabName`. The retained branch
+`qualification-userform-20260929225354-93ed53dc` is accepted only at
+`f5fb1a004dcb287c4c820b4bf308c673ce3b64e6`. Alternatively, the maintainer can
+explicitly authorize an existing `qualification-embedded-ui-...` synthetic branch
+and exact forty-character lowercase commit. No branch is created by this test;
+`main`, `qualification-change` and arbitrary branches are refused. Preserve the
+original manifest and make a separately reviewed manifest for this scope.
+
+```powershell
+dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildProjectReferences=false -p:BuildOutputRoot="$PWD/artifacts/build-frozen-embedded-git" --filter 'FullyQualifiedName=VBAi.Tests.Integration.EmbeddedGitWindowTests.InstalledOwnerGitWindowCapturesSyntheticProjectAndCreatesLocalCheckpoint' --logger 'trx;LogFileName=embedded-git-ui.trx' --results-directory "$PWD/artifacts/embedded-git-ui"
+```
+
+Before opening the menu, independent `export_component` requests run through the
+installed owner-VBE bridge with current component versions. `inspect_code_file`
+attests the host ANSI code page; strict decoding produces the comparison snapshot.
+Original native exports, resource bytes, raw hashes and parsed FRM resource offsets
+remain durable. The local checkpoint must have the exact unique label/ref and
+match every baseline manifest/source file and logical FRX resource using the
+product's comparison rules. Those rules do not rewrite raw resources. Native
+readbacks also preserve project COM identity, active project/module, mode,
+protection, selection, references, source and form/control metadata. Idle UI alone
+cannot prove success. Linking an existing remote revision does not prove equality
+between the remote snapshot and the independent local baseline.
+
+Every action has a durable intent and is emitted once. Known terminal errors remain
+failures and permit a single normal modal close when no action is pending. Unknown
+ownership, a deadline, delivery failure or unclassified status retains the original
+workers/RCWs/owned host without another native action. Primary and cleanup failures
+remain separate. Successful acceptance requires observed normal Excel exit; a
+local checkpoint is not complete GitHub, import or recovery qualification.
+
+The remaining embedded UI matrix is deliberately unexecuted:
+
+| Operation | Required missing UI evidence and terminal oracle |
+| --- | --- |
+| Commit selection | The detached probe exposed `commitMessage` as Document/Text, without ValuePattern. A supported accessible editing route and checked-item selection/toggle patterns must be observed before any emission; do not invent a Value setter. Prove the exact selected source/ref and local commit contents. |
+| Push/fetch | Observe interactive button patterns, unique delivery and terminal status in the owned host, then verify only the authorized branch's remote commit/fetched ref and unchanged native source. Idle/enabled buttons do not prove transfer. |
+| Pull/import | Observe the actual import preview/report controls, exact selected revision, preserved backup refs and native mode/protection/revision guards; verify full designer/source state and save/reopen separately. |
+| Checkpoint restore | Observe the actual list SelectionItem pattern and exact checkpoint identity, then the guarded import preview and full native/backup readbacks. Creating a checkpoint does not qualify restoration. |
+| Recovery | Use separately authorized synthetic retained markers/backups and verify refusal plus explicit measured recovery. Do not manufacture a production failure or replay an uncertain mutation. |
+
+The targeted detached discovery artifact proves available patterns only. This
+prepared scenario and its pure helper checks are not evidence that the native
+embedded workflow has run, and do not close the full Q-024/Q-027 release gates.
+
 Native **local Git** UserForm layout qualification uses
 `VBAi_RUN_USERFORM_LOCAL_GIT_TESTS=1` and `VBAi_RUN_EXCEL_TESTS=1`, with optional
 absolute `VBAi_TEST_USERFORM_LOCAL_GIT_OUTPUT` for durable evidence. Filter on
