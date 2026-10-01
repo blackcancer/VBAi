@@ -138,6 +138,15 @@ Bindings and bare repositories live under `%LOCALAPPDATA%\VBAi\Git`, keyed by th
 saved document path. No sidecar is added next to the document. Native COM exports
 and imports use `%LOCALAPPDATA%\VBAi\GitTemporary`; a crash can leave temporary files.
 
+The VBE menu, chat and agent tools resolve the same binding from the native saved
+document path. Lookup also checks the former uppercase path key to preserve a
+single existing binding created by earlier chat/tool versions. It does not move,
+copy, merge or rewrite either cache, its commits or its private recovery refs.
+When neither binding exists, a new link uses the native path key. If both keys
+have bindings, or a binding entry is unreadable, a directory or a reparse point,
+lookup refuses automatic selection. Resolve the ambiguity while preserving both
+repositories; VBAi does not choose one history over the other.
+
 A binding is local to the machine and document path. Moving a document requires
 relinking it. **Do not purge the Git directory as disposable cache:** it can contain
 unpushed commits and recovery snapshots.
