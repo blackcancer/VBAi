@@ -168,7 +168,7 @@ namespace VBAi
             {
                 if (retained) return;
                 retained = true;
-                Source?.RetainOnUncertain();
+                Source.RetainOnUncertain();
                 Copy?.RetainOnUncertain();
                 VbaTestWordValuesHost.RetainAcquired(this);
             }

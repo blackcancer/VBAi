@@ -153,6 +153,25 @@ namespace VBAi.Tests.Unit
                 Assert.AreEqual(0, fixture.Source.CloseCalls);
             }
         }
+        [TestMethod]
+        public void NegativeDocumentCountAfterCloseIsUncertainAndDoesNotRetry()
+        {
+            using (var fixture = new Fixture())
+            {
+                Document copy = null;
+                fixture.Application.Documents.OnOpen = path => copy = new Document { FullName = path, Application = fixture.Application };
+                var provider = new VbaTestWordCoverageClone { Host = fixture.Host, CloseCopy = document => {
+                    ((Document)document).Close(0); fixture.Application.Documents.CountOverride = -1;
+                } };
+                var clone = provider.Create(fixture.Source.VBProject, fixture.Source.FullName, Path.Combine(fixture.Folder, "Copy"));
+                var error = Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose());
+                Assert.IsTrue(error.Uncertain);
+                StringAssert.Contains(error.Message, "Unexpected Word document count");
+                clone.Dispose();
+                Assert.AreEqual(1, copy.CloseCalls);
+                Assert.AreEqual(0, fixture.Source.CloseCalls);
+            }
+        }
         private static void Increment(Dictionary<object, int> values, object value)
         { values[value] = values.TryGetValue(value, out int count) ? count + 1 : 1; }
 

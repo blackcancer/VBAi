@@ -62,6 +62,78 @@ namespace VBAi.Tests.Unit
                 Assert.AreEqual(0, fixture.Host.Invocations);
             }
         }
+        [STATestMethod]
+        public void UncertainWordRuntimeRetainsTheOwnedCoverageCopyAndItsTargets()
+        {
+            string folder = Path.Combine(Path.GetTempPath(), "VBAi-Word-coverage-lease-" + Guid.NewGuid().ToString("N"));
+            using (var dispatcher = new System.Windows.Forms.Control())
+            {
+                var handle = dispatcher.Handle;
+                var application = new VbaTestWordValuesHostTests.Application();
+                var source = new WordCoverageProject { Name = "Original", FileName = Path.Combine(folder, "Original.docm") };
+                source.VBComponents.Add(new FakeComponent { Name = "TestsOne", Type = 1, CodeModule = new FakeCode {
+                    Source = "'@TestModule\n'@TestMethod\nPublic Sub Alpha()\nEnd Sub" } });
+                var originalDocument = new VbaTestWordValuesHostTests.Document { Application = application, FullName = source.FileName, VBProject = source };
+                application.Documents.Add(originalDocument); application.VBE.VBProjects.Add(source);
+                VbaTestWordValuesHost.OwnedTarget runtimeTarget = null;
+                int calls = 0, closes = 0;
+                var wordHost = new VbaTestWordValuesHost { ReadProcessName = () => "WINWORD", ReadProcessId = () => 123,
+                    ReadActiveApplication = _ => application, ReadWindowOwner = _ => 123,
+                    ReadDocumentItem = (documents, index) => ((VbaTestWordValuesHostTests.Documents)documents)[index - 1],
+                    RunProcedure = (_, macro, arguments) => {
+                        Assert.AreEqual(VbaCoverageInstrumentation.ModuleName + "." + VbaCoverageInstrumentation.ResetProcedure, macro);
+                        calls++; throw new InvalidOperationException("Word runtime completion was lost");
+                    } };
+                try
+                {
+                    using (var service = new VbeTestExplorerService(application.VBE, dispatcher) { Host = wordHost, IsExecutionHost = () => true,
+                        CoverageRoot = () => folder, CompileCoverageProject = _ => { } })
+                    {
+                        var catalog = service.Discover(service.ReadProjects().Single().Id);
+                        VbaTestWordValuesHostTests.Document copyDocument = null;
+                        service.CreateCoverageClone = (_, __, destination) => {
+                            var copy = new WordCoverageProject { Name = "Copy", FileName = Path.Combine(destination, "coverage.docm") };
+                            foreach (var component in source.VBComponents)
+                                copy.VBComponents.Add(new FakeComponent { Name = component.Name, Type = component.Type,
+                                    CodeModule = new FakeCode { Source = component.CodeModule.Source } });
+                            copyDocument = new VbaTestWordValuesHostTests.Document { Application = application, FullName = copy.FileName, VBProject = copy };
+                            application.Documents.Add(copyDocument); application.VBE.VBProjects.Add(copy);
+                            runtimeTarget = (VbaTestWordValuesHost.OwnedTarget)wordHost.ResolveTarget(copy, copy.FileName);
+                            return new VbaTestCoverageClone { Project = copy, Path = copy.FileName, Close = () => { closes++; runtimeTarget.Dispose(); copyDocument.Close(0); } };
+                        };
+                        var run = Pump(service.RunCoverageAsync(catalog, catalog.Tests.ToArray(), null, CancellationToken.None));
+                        Assert.IsTrue(run.OutcomeUnknown);
+                        Assert.IsFalse(run.Coverage.Available);
+                        StringAssert.Contains(run.Error, "Word runtime completion was lost");
+                        Assert.IsTrue(run.Coverage.Diagnostics.Any(item => item.Contains("retained open")));
+                        Assert.AreEqual(1, calls);
+                        Assert.AreEqual(0, closes);
+                        Assert.IsTrue(application.Documents.Contains(copyDocument));
+                        Assert.IsNotNull(runtimeTarget.Document);
+                        Assert.AreEqual(0, originalDocument.CloseCalls);
+                    }
+                }
+                finally { if (Directory.Exists(folder)) Directory.Delete(folder, true); }
+            }
+        }
+
+        public sealed class WordCoverageProject
+        {
+            public string Name { get; set; }
+            public string FileName { get; set; }
+            public int Protection => 0;
+            public int Mode => 2;
+            public WordCoverageComponents VBComponents { get; } = new WordCoverageComponents();
+            public List<FakeReference> References { get; } = new List<FakeReference>();
+        }
+        public sealed class WordCoverageComponents : VbaTestWordValuesHostTests.OneBasedCollection<FakeComponent>
+        {
+            public FakeComponent Add(int type)
+            {
+                var component = new FakeComponent { Name = "Module" + Count, Type = type, CodeModule = new FakeCode() };
+                Add(component); return component;
+            }
+        }
         private sealed class CoverageLeaseHost : VbeDebug.IProcedureValuesHost
         {
             private readonly ServiceWordLeaseRecorder leases;
