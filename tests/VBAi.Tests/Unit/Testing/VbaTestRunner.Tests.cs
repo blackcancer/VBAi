@@ -490,5 +490,94 @@ namespace VBAi.Tests.Unit
                 return Handler == null ? Task.FromResult(Result(procedure, phase)) : Handler(procedure, phase);
             }
         }
+        [TestMethod]
+        public async Task EverySelectionPreflightRejectsBeforeCallingTheHost()
+        {
+            Assert.ThrowsException<ArgumentNullException>(() => new VbaTestRunner(null));
+            var host = new RecordingHost(); var runner = new VbaTestRunner(host); var catalog = Catalog("Alpha");
+            await Assert.ThrowsExceptionAsync<ArgumentException>(() => runner.RunAsync(null, catalog.Modules[0].Tests, null, CancellationToken.None));
+            await Assert.ThrowsExceptionAsync<ArgumentException>(() => runner.RunAsync(new VbaTestCatalog(), catalog.Modules[0].Tests, null, CancellationToken.None));
+            foreach (var selection in new IReadOnlyList<VbaTestDescriptor>[] { null, new VbaTestDescriptor[0], new VbaTestDescriptor[10001], new VbaTestDescriptor[] { null }, new[] { Procedure("Foreign", "Test") } })
+                await Assert.ThrowsExceptionAsync<ArgumentException>(() => runner.RunAsync(catalog, selection, null, CancellationToken.None));
+            Assert.AreEqual(0, host.Validations); Assert.AreEqual(0, host.Calls.Count);
+        }
+
+        [TestMethod]
+        public async Task InFlightRunnerRejectsConcurrentUseAndReleasesAfterVerifiedCompletion()
+        {
+            var completion = new TaskCompletionSource<VbaTestResult>(); var catalog = Catalog("Alpha");
+            var host = new RecordingHost { Handler = (procedure,phase) => completion.Task }; var runner = new VbaTestRunner(host);
+            var running = runner.RunAsync(catalog, catalog.Modules[0].Tests, null, CancellationToken.None);
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => runner.RunAsync(catalog, catalog.Modules[0].Tests, null, CancellationToken.None));
+            completion.SetResult(Result(catalog.Modules[0].Tests[0], "Test"));
+            Assert.AreEqual(VbaTestOutcome.Passed, (await running).Results.Single().Outcome);
+            Assert.AreEqual(1, host.Calls.Count);
+        }
+
+        [TestMethod]
+        public async Task MalformedCompletionEvidenceIsUncertainEvenWithoutMessageOrDescriptor()
+        {
+            foreach (var invalid in new VbaTestResult[] { null, new VbaTestResult(), new VbaTestResult { Message = "reason" } })
+            {
+                var catalog = Catalog("Alpha"); var host = new RecordingHost { Handler = (procedure,phase) => Task.FromResult(invalid) };
+                var run = await new VbaTestRunner(host).RunAsync(catalog,catalog.Modules[0].Tests,null,CancellationToken.None);
+                Assert.IsTrue(run.OutcomeUnknown); Assert.AreEqual(1,host.Calls.Count);
+                StringAssert.Contains(run.Error, invalid?.Message ?? "verified completion evidence");
+            }
+        }
+
+        [TestMethod]
+        public async Task NativeValidationRefusalIsPreservedAndCleanupErrorWithoutNumberAppendsToSetupError()
+        {
+            var catalog = Catalog("Alpha");
+            var refused = new RecordingHost { Validation = () => { throw new VbaTestInvocationException("native preflight", false); } };
+            var run = await new VbaTestRunner(refused).RunAsync(catalog,catalog.Modules[0].Tests,null,CancellationToken.None);
+            Assert.IsFalse(run.OutcomeUnknown); Assert.AreEqual(0,refused.Calls.Count); StringAssert.Contains(run.Error,"native preflight");
+            AddFixtures(catalog.Modules[0]);
+            var host = new RecordingHost { Handler = (procedure,phase) => Task.FromResult(Result(procedure,phase,
+                phase == "ModuleInitialize" || phase == "ModuleCleanup" ? VbaTestOutcome.Error : VbaTestOutcome.Passed,"fixture refused")) };
+            run = await new VbaTestRunner(host).RunAsync(catalog,catalog.Modules[0].Tests,null,CancellationToken.None);
+            StringAssert.Contains(run.Error,"Module initialization failed"); StringAssert.Contains(run.Error,"Module cleanup failed");
+            Assert.IsFalse(run.Error.Contains("VBA error"));
+        }
+
+        [TestMethod]
+        public async Task SuccessfulInconclusiveEvidenceAndEmptyBodyMessageSurviveCleanupFailure()
+        {
+            var catalog = Catalog("Alpha"); AddFixtures(catalog.Modules[0]);
+            var host = new RecordingHost { Handler = (procedure,phase) => Task.FromResult(Result(procedure,phase,
+                phase == "Test" ? VbaTestOutcome.Inconclusive : phase == "TestCleanup" ? VbaTestOutcome.Error : VbaTestOutcome.Passed,
+                phase == "Test" ? null : "cleanup reason")) };
+            var run = await new VbaTestRunner(host).RunAsync(catalog,catalog.Modules[0].Tests,null,CancellationToken.None);
+            Assert.AreEqual(VbaTestOutcome.Error, run.Results.Single().Outcome); Assert.AreEqual(0,run.Results.Single().ErrorNumber);
+            StringAssert.Contains(run.Results.Single().Message,"TestCleanup: cleanup reason");
+        }
+        [TestMethod]
+        public async Task ProgressFailureRemainsExplicitWithoutChangingTheVerifiedTestOutcome()
+        {
+            var catalog=Catalog("Alpha");var host=new RecordingHost();
+            var run=await new VbaTestRunner(host).RunAsync(catalog,catalog.Modules[0].Tests,_ => {throw new InvalidOperationException("publication failed");},CancellationToken.None);
+            Assert.AreEqual(VbaTestOutcome.Passed,run.Results.Single().Outcome); Assert.IsFalse(run.OutcomeUnknown);
+            StringAssert.Contains(run.Error,"publication failed"); Assert.AreEqual(1,host.Calls.Count);
+        }
+
+        [TestMethod]
+        public async Task OwnerContinuationFailureStopsSchedulingAndNeverInvokesCleanup()
+        {
+            var catalog=Catalog("Alpha");var host=new RefusingContinuationHost();
+            var run=await new VbaTestRunner(host).RunAsync(catalog,catalog.Modules[0].Tests,null,CancellationToken.None);
+            Assert.AreEqual(VbaTestOutcome.Blocked,run.Results.Single().Outcome); Assert.IsFalse(run.OutcomeUnknown);
+            StringAssert.Contains(run.Error,"owner unavailable"); Assert.AreEqual(1,host.Calls);
+        }
+
+        private sealed class RefusingContinuationHost : IVbaTestExecutionHost, IVbaTestContinuationHost
+        {
+            private int awaits;
+            internal int Calls;
+            public void Validate(VbaTestCatalog catalog) { }
+            public Task<VbaTestResult> InvokeAsync(VbaTestCatalog catalog,VbaTestDescriptor procedure,string phase) { Calls++;return Task.FromResult(Result(procedure,phase)); }
+            public VbaTestOwnerAwaitable<T> AwaitOwner<T>(Task<T> task)
+            { if(++awaits==4) throw new InvalidOperationException("owner unavailable");return VbaTestOwnerAwaitable<T>.Unowned(task); }
+        }
     }
 }

@@ -74,6 +74,41 @@ namespace VBAi.Tests.Unit
             Assert.IsInstanceOfType(error, typeof(InvalidOperationException));
         }
 
+        [TestMethod]
+        public void AwaitableRejectsMissingTaskDispatcherOwnerAndContinuations()
+        {
+            var task = Task.FromResult(7);
+            Assert.ThrowsException<ArgumentNullException>(() => new VbaTestOwnerAwaitable<int>(null, _ => { }, () => { }));
+            Assert.ThrowsException<ArgumentNullException>(() => new VbaTestOwnerAwaitable<int>(task, null, () => { }));
+            Assert.ThrowsException<ArgumentNullException>(() => new VbaTestOwnerAwaitable<int>(task, _ => { }, null));
+            Assert.ThrowsException<ArgumentNullException>(() => VbaTestOwnerAwaitable<int>.Unowned(null));
+            var awaiter = VbaTestOwnerAwaitable<int>.Unowned(task).GetAwaiter();
+            Assert.ThrowsException<ArgumentNullException>(() => awaiter.OnCompleted(null));
+            Assert.ThrowsException<ArgumentNullException>(() => awaiter.UnsafeOnCompleted(null));
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void ExplicitContinuationRegistrationUsesTheOwnerQueueOrUnownedTask(bool owned)
+        {
+            foreach (bool unsafeRegistration in new[] { false, true })
+            using (var queue = new BlockingCollection<Action>())
+            {
+                int checks = 0, result = 0;
+                var source = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var awaiter = (owned ? new VbaTestOwnerAwaitable<int>(source.Task, queue.Add, () => checks++)
+                    : VbaTestOwnerAwaitable<int>.Unowned(source.Task)).GetAwaiter();
+                var done = new TaskCompletionSource<bool>();
+                Action continuation = () => { result = awaiter.GetResult(); done.SetResult(true); };
+                if (unsafeRegistration) awaiter.UnsafeOnCompleted(continuation); else awaiter.OnCompleted(continuation);
+                Assert.IsFalse(awaiter.IsCompleted);
+                source.SetResult(73);
+                if (owned) Pump(done.Task, queue); else Assert.IsTrue(done.Task.Wait(10000));
+                Assert.AreEqual(73, result); Assert.AreEqual(owned ? 1 : 0, checks);
+            }
+        }
+
         internal static void Pump(Task task, BlockingCollection<Action> queue)
         {
             var deadline = DateTime.UtcNow.AddSeconds(10);

@@ -325,6 +325,42 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(0, calls);
         }
 
+        [TestMethod]
+        public void TestingPreparationDefensivelyRejectsInvalidSelectionsModesActionsAndPreviewFields()
+        {
+            var tools = Create();
+            var prepare = typeof(LlmVbeTools).GetMethod("PrepareTestingRequest", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            foreach (var request in new[] {
+                new Request { Command = "run_vba_tests", Items = null },
+                new Request { Command = "run_vba_tests", Items = new string[0] },
+                new Request { Command = "run_vba_tests", Items = new[] { " " } },
+                new Request { Command = "run_vba_tests", Items = new[] { "a", "A" } },
+                new Request { Command = "navigate_vba_test", Items = new[] { "a", "b" } },
+                new Request { Command = "install_vba_test_support", ExpectedMode = 1 },
+                new Request { Command = "run_vba_tests", Items = new[] { "a" }, ExpectedMode = 2, Action = "execute" },
+                new Request { Command = "vba_test_run_status", Action = "execute" },
+                new Request { Command = "install_vba_test_support", ExpectedMode = 2, Text = " " },
+                new Request { Command = "install_vba_test_support", ExpectedMode = 2, Text = new string('x', 1024 * 1024 + 1) }
+            })
+            {
+                var error = Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => prepare.Invoke(tools, new object[] { request }));
+                Assert.IsInstanceOfType(error.InnerException, typeof(ArgumentException), request.Command);
+            }
+            var install = new Request { Command = "install_vba_test_support", ExpectedMode = 2, Text = SupportText, ExpectedProjectVersion = "revision", Project = "A" };
+            foreach (object preview in new object[] { null, "invalid", new { Text = SupportText }, new { ExpectedProjectVersion = "revision" } })
+            {
+                tools.Execute = _ => Response.Success(preview);
+                var error = Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => prepare.Invoke(tools, new object[] { install }));
+                Assert.IsInstanceOfType(error.InnerException, typeof(InvalidOperationException));
+            }
+            tools.Execute = _ => Response.Failure("Preview unavailable");
+            var failure = Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => prepare.Invoke(tools, new object[] { install }));
+            Assert.AreEqual("Preview unavailable", failure.InnerException.Message);
+            foreach (string action in new[] { null, "", "compact", "human" })
+                prepare.Invoke(tools, new object[] { new Request { Command = "vba_test_run_status", Action = action } });
+            prepare.Invoke(tools, new object[] { new Request { Command = "run_vba_tests", ExpectedMode = 2, Items = new[] { "a" }, Action = "coverage" } });
+        }
+
         private LlmVbeTools Create(LlmSettings settings = null) => new LlmVbeTools(null, null, settings ?? new LlmSettings { VbeEditApproval = "Automatic" }) { BoundProject = "A" };
         private Response Invoke(LlmVbeTools tools, string name) => json.Deserialize<Response>(tools.Invoke(name, json.Serialize(Arguments(name))));
         private async Task<Response> Gateway(LlmVbeTools tools, string name, Dictionary<string, object> arguments) => json.Deserialize<Response>(await tools.InvokeAsync("invoke_tool", json.Serialize(new { ToolName = name, ArgumentsJson = json.Serialize(arguments) })));

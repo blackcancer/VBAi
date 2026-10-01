@@ -36,5 +36,12 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(5, run.Results.Single().ErrorNumber);
             Assert.IsTrue(run.OutcomeUnknown);
         }
+        [TestMethod]
+        public void ProjectSnapshotRetainsHostPathAndReferencesIndependentlyFromSourceRevision()
+        {
+            var snapshot = new VbaTestProjectSnapshot { HostPath = @"C:\fixture\book.xlsm", ReferencesHash = "references", Revision = "source" };
+            Assert.AreEqual(@"C:\fixture\book.xlsm",snapshot.HostPath); Assert.AreEqual("references",snapshot.ReferencesHash);
+            Assert.AreEqual("source",snapshot.Revision);
+        }
     }
 }

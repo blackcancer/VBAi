@@ -292,5 +292,97 @@ namespace VBAi.Tests.Unit
             for (int index = 0; index < values.Length; index++) result.SetValue(values[index], index + 1);
             return result;
         }
+        [TestMethod]
+        public void MissingSnapshotsAndInvalidModuleNamesRefuseWithoutInventingAnEligibleDenominator()
+        {
+            Assert.ThrowsException<ArgumentNullException>(() => VbaCoverageInstrumentation.Create(null));
+            Assert.ThrowsException<ArgumentNullException>(() => VbaCoverageInstrumentation.Read(null,null));
+            Assert.ThrowsException<ArgumentNullException>(() => VbaCoverageInstrumentation.Unavailable(null,null));
+            var project = Project(null, Module(null,1,null), Module(null,1,"")); project.Selector = null; project.Id = null;
+            var plan = VbaCoverageInstrumentation.Create(project);
+            Assert.AreEqual(project.Name,plan.Original); Assert.IsFalse(plan.DenominatorKnown);
+            StringAssert.Contains(string.Join("\n",plan.Diagnostics),"missing");
+            StringAssert.Contains(string.Join("\n",plan.Diagnostics),"module identifier");
+            var empty = VbaCoverageInstrumentation.Create(new VbaTestProjectSnapshot { Modules = null });
+            Assert.IsTrue(empty.CanInstrument); Assert.AreEqual(0,empty.Probes.Count);
+            Assert.AreEqual(0,VbaCoverageInstrumentation.Unavailable(empty,null).Diagnostics.Count);
+            plan = VbaCoverageInstrumentation.Create(Project(Module(VbaCoverageInstrumentation.ResetProcedure,1,"")));
+            Assert.IsTrue(plan.Diagnostics.Any(message => message.Contains("module name conflicts")));
+        }
+
+        [DataTestMethod]
+        [DataRow("#Else\n", "Unmatched conditional compilation branch")]
+        [DataRow("#ElseIf True Then\n", "Unmatched conditional compilation branch")]
+        [DataRow("#Unsupported\n", "Unsupported conditional compilation directive")]
+        [DataRow("#If VBA7 Then\n", "Unterminated conditional compilation block")]
+        [DataRow("Public Property Strange()\nEnd Property\n", "accessor is ambiguous")]
+        [DataRow("Public Sub\nEnd Sub\n", "identifier is ambiguous")]
+        [DataRow("Public Sub 3Bad()\nEnd Sub\n", "identifier is ambiguous")]
+        [DataRow("Public Sub Good()", "header terminator")]
+        public void UnresolvedSyntaxBlocksInstrumentationWithExplicitReason(string source,string reason)
+        {
+            var plan = VbaCoverageInstrumentation.Create(Project(Module("Production",1,source)));
+            Assert.IsFalse(plan.CanInstrument); Assert.IsFalse(plan.DenominatorKnown);
+            StringAssert.Contains(string.Join("\n",plan.Diagnostics),reason);
+        }
+
+        [TestMethod]
+        public void LongPhysicalLinesAndUnclosedBracketNamesBlockOrPreserveTheirExactSource()
+        {
+            var source = "Public Sub Good()\nDebug.Print \"" + new string('x',1024) + "\"\nEnd Sub\n";
+            var plan = VbaCoverageInstrumentation.Create(Project(Module("Production",1,source)));
+            Assert.IsTrue(plan.Diagnostics.Any(message => message.Contains("physical line-length"))); Assert.IsTrue(plan.DenominatorKnown);
+            plan = VbaCoverageInstrumentation.Create(Project(Module("Production",1,"Public Sub Good()\nDebug.Print [VBAiReadCoverageHits\nEnd Sub\n")));
+            Assert.IsTrue(plan.Diagnostics.Any(message => message.Contains("reserved coverage runtime identifier")));
+            plan = VbaCoverageInstrumentation.Create(Project(Module("Production",1,"Public Sub Good() ' trailing header comment\nEnd Sub\n")));
+            Assert.IsTrue(plan.CanInstrument); Assert.AreEqual(1,plan.Probes.Count);
+            Assert.AreEqual(2,plan.Modules.Single().Edits.Single().OriginalLine);
+        }
+
+        [TestMethod]
+        public void ProbeCapacityRefusesOversizedProjectsWithoutDroppingSourceOrProcedures()
+        {
+            var source = new System.Text.StringBuilder();
+            for (int index=0;index<=VbaCoverageInstrumentation.MaximumProbes;index++) source.Append("Sub P").Append(index).Append("()\nEnd Sub\n");
+            var plan = VbaCoverageInstrumentation.Create(Project(Module("Production",1,source.ToString())));
+            Assert.IsFalse(plan.CanInstrument); Assert.AreEqual(VbaCoverageInstrumentation.MaximumProbes+1,plan.Probes.Count);
+            Assert.IsTrue(plan.Diagnostics.Any(message => message.Contains("probe capacity")));
+        }
+        [TestMethod]
+        public void PhysicalOffsetsMapBothLineStartsAndInteriorPositionsWithoutChangingTheSource()
+        {
+            Assert.AreEqual(0,VbaCoverageInstrumentation.PhysicalLine(new[] { 0,10,20 },0));
+            Assert.AreEqual(1,VbaCoverageInstrumentation.PhysicalLine(new[] { 0,10,20 },10));
+            Assert.AreEqual(1,VbaCoverageInstrumentation.PhysicalLine(new[] { 0,10,20 },19));
+            Assert.AreEqual(2,VbaCoverageInstrumentation.PhysicalLine(new[] { 0,10,20 },25));
+        }
+
+        [TestMethod]
+        public void UnmatchedEndsIncompleteHeadersAndModifiersDoNotProduceQualifiedCoverage()
+        {
+            foreach(var source in new[] { "#End If\n", "#\n", "Public\n", "Public Sub Good() \"literal\"\n", "Public Sub Good() ' comment without newline" })
+            {
+                var plan=VbaCoverageInstrumentation.Create(Project(Module("Production",1,source)));
+                if(source=="Public\n") Assert.AreEqual(0,plan.Probes.Count);
+                else Assert.IsFalse(plan.CanInstrument,source);
+            }
+        }
+
+        [TestMethod]
+        public void ConservativeTokenMappingRefusesUnsafeTerminatorsAndMalformedLiteralPositions()
+        {
+            var flags=System.Reflection.BindingFlags.Static|System.Reflection.BindingFlags.NonPublic;
+            var header=typeof(VbaCoverageInstrumentation).GetMethod("HeaderEndOffset",flags);
+            var tokens=new System.Collections.Generic.List<VbaDeclarationIndex.Token> {new VbaDeclarationIndex.Token {Text="X",Line=1,Column=1}};
+            Assert.AreEqual(-1,header.Invoke(null,new object[] { "X?",new[] {0},tokens }));
+            Assert.AreEqual(-1,header.Invoke(null,new object[] { "X  ",new[] {0},tokens }));
+            Assert.AreEqual(4,header.Invoke(null,new object[] { "X'c\n",new[] {0,4},tokens }));
+            var identifier=typeof(VbaCoverageInstrumentation).GetMethod("IdentifierTokens",flags);
+            var invalid=new VbaDeclarationIndex.Token {Text="<literal>",Line=1,Column=2};
+            var mapped=(System.Collections.Generic.IEnumerable<VbaDeclarationIndex.Token>)identifier.Invoke(null,new object[] { invalid,new[] { "X" } });
+            Assert.AreEqual(0,mapped.Count());
+            var hash=typeof(VbaCoverageInstrumentation).GetMethod("Hash",flags);
+            Assert.AreEqual(hash.Invoke(null,new object[] { "" }),hash.Invoke(null,new object[] { null }));
+        }
     }
 }

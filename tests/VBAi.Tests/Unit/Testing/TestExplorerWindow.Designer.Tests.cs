@@ -98,6 +98,19 @@ namespace VBAi.Tests.Unit
             finally { property.SetValue(null, choice); UiTheme.HighContrast = contrast; }
         }
 
+        [STATestMethod]
+        public void DesignerDisposalSupportsFinalizerStyleAndAlreadyAbsentComponents()
+        {
+            var window = new TestExplorerWindow();
+            typeof(TestExplorerWindow).GetMethod("Dispose", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(window, new object[] { false });
+            window.Dispose();
+            var noComponents = new TestExplorerWindow();
+            var field = typeof(TestExplorerWindow).GetField("components", BindingFlags.Instance | BindingFlags.NonPublic);
+            ((System.ComponentModel.IContainer)field.GetValue(noComponents)).Dispose();
+            field.SetValue(noComponents, null);
+            noComponents.Dispose();
+            Assert.IsTrue(noComponents.IsDisposed);
+        }
         private static T Field<T>(object target, string name) => (T)target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic).GetValue(target);
     }
 }

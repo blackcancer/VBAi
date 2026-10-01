@@ -32,7 +32,7 @@ namespace VBAi
                 var module = ReadModule(project, source, catalog.Diagnostics);
                 if (module != null) catalog.Modules.Add(module);
             }
-            foreach (var group in catalog.Modules.GroupBy(x => x.Name ?? "", StringComparer.OrdinalIgnoreCase).Where(x => x.Count() > 1))
+            foreach (var group in catalog.Modules.GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase).Where(x => x.Count() > 1))
                 foreach (var module in group)
                 {
                     module.Diagnostic = Append(module.Diagnostic, "Duplicate module identity.");

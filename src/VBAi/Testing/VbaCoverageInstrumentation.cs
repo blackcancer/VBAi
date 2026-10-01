@@ -213,7 +213,7 @@ namespace VBAi
                         if (offset < 0)
                         { Diagnose(plan, module.Name, tokens[0].Line, "The procedure header terminator cannot be mapped safely.", true); continue; }
                         string marker = ModuleName + "." + HitsVariable + "(" + probe.Index1Based.ToString(CultureInfo.InvariantCulture) + ") = True";
-                        bool inline = offset > 0 && normalized[offset - 1] == ':';
+                        bool inline = normalized[offset - 1] == ':';
                         if (inline)
                         {
                             const string reason = "An inline procedure header would require replacing its declaration; preservation of hidden member attributes is not qualified.";
@@ -222,12 +222,11 @@ namespace VBAi
                                 OriginalLine = probe.OriginalLine, Reason = reason + " This blocks project coverage.", Intentional = false });
                             continue;
                         }
-                        string text = inline ? " " + marker + ":" : "    " + marker + "\n";
+                        string text = "    " + marker + "\n";
                         edits.Add(new Insertion { Offset = offset, Text = text });
-                        int physicalLine = Array.BinarySearch(offsets, offset);
-                        if (physicalLine < 0) physicalLine = ~physicalLine - 1;
+                        int physicalLine = PhysicalLine(offsets, offset);
                         instrumented.Edits.Add(new VbaCoverageEdit { OriginalLine = physicalLine + 1,
-                            OriginalColumn = offset - offsets[physicalLine] + 1, Text = text.TrimEnd('\r', '\n'), IsWholeLine = !inline });
+                            OriginalColumn = offset - offsets[physicalLine] + 1, Text = text.TrimEnd('\r', '\n'), IsWholeLine = true });
                         continue;
                     }
                     if (Word(0) == "end" && (Word(1) == "sub" || Word(1) == "function" || Word(1) == "property"))
@@ -333,6 +332,12 @@ namespace VBAi
                 if (!char.IsWhiteSpace(source[offset])) return -1;
             }
             return -1;
+        }
+
+        internal static int PhysicalLine(int[] offsets, int offset)
+        {
+            int physicalLine = Array.BinarySearch(offsets, offset);
+            return physicalLine < 0 ? ~physicalLine - 1 : physicalLine;
         }
 
         private static string Runtime(int count)

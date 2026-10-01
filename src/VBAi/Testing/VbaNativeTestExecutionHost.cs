@@ -98,7 +98,7 @@ namespace VBAi
                 object prepared = Probe.Prepare(vbe, call.Project, support.Source);
                 // Showing a pane can pump messages. Revalidate all authority after selection.
                 Validate(call.Catalog);
-                if (!VbeDebug.NativeProcedureValuesHost.SameComIdentity(call.Project, resolveProject(call.Catalog)) && Probe is NativeProbe)
+                if (Probe is NativeProbe nativeProbe && !nativeProbe.SameIdentity(call.Project, resolveProject(call.Catalog)))
                     throw new InvalidOperationException("The selected project identity changed during native preparation.");
                 Probe.Revalidate(vbe, call.Project, prepared);
                 sink.Arm(call.Project, string.IsNullOrEmpty(call.Catalog.Project.HostPath) ? call.Catalog.Project.Id : call.Catalog.Project.HostPath,
@@ -332,43 +332,42 @@ namespace VBAi
                 + ",State=" + DiagnosticRead(() => ((dynamic)window).WindowState);
         }
 
-        private static class NativeWindowObservation
+        internal static class NativeWindowObservation
         {
             private delegate bool EnumWindow(IntPtr window, IntPtr unused);
             [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, EnumWindow callback, IntPtr unused);
-            [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr window);
-            [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
-            [DllImport("user32.dll")] private static extern IntPtr GetParent(IntPtr window);
-            [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr window, StringBuilder text, int count);
-            [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
 
             internal static string Read(IntPtr main)
+            { return Read(main, new VbaNativeTestWindowFocus.NativeWindows(), Enumerate); }
+
+            private static void Enumerate(IntPtr main, Func<IntPtr, bool> visit)
+            { EnumChildWindows(main, (window, unused) => visit(window), IntPtr.Zero); }
+
+            internal static string Read(IntPtr main, VbaNativeTestWindowFocus.IWindows windows, Action<IntPtr, Func<IntPtr, bool>> enumerate)
             {
-                uint owner;
-                uint thread = VbeDebugWindows.GetWindowThreadProcessId(main, out owner);
-                using (var process = Process.GetCurrentProcess())
-                    if (main == IntPtr.Zero || !IsWindow(main) || owner != (uint)process.Id || thread != GetCurrentThreadId())
-                        return "unavailable(owner mismatch)";
+                var root = windows.Read(main);
+                uint owner = root.Process;
+                if (main == IntPtr.Zero || !root.Exists || owner != windows.CurrentProcess || root.Thread != windows.CurrentThread)
+                    return "unavailable(owner mismatch)";
                 var result = new StringBuilder();
-                Append(result, main, owner);
+                Append(result, root, owner);
                 int count = 0;
-                EnumChildWindows(main, (window, unused) =>
+                enumerate(main, window =>
                 {
                     if (count++ >= 64) { result.Append("bounded"); return false; }
-                    uint childOwner;
-                    VbeDebugWindows.GetWindowThreadProcessId(window, out childOwner);
-                    if (childOwner == owner) Append(result, window, childOwner);
+                    var child = windows.Read(window);
+                    if (child.Process == owner) Append(result, child, child.Process);
                     return result.Length < 3900;
-                }, IntPtr.Zero);
+                });
                 return result.ToString();
             }
 
-            private static void Append(StringBuilder result, IntPtr window, uint owner)
+            private static void Append(StringBuilder result, VbaNativeTestWindowFocus.Window window, uint owner)
             {
-                var kind = new StringBuilder(96);
-                GetClassName(window, kind, kind.Capacity);
-                result.Append("{HWnd=" + window.ToInt64() + ",PID=" + owner + ",Class=" + kind
-                    + ",Parent=" + GetParent(window).ToInt64() + ",Visible=" + IsWindowVisible(window) + "}");
+                string kind = window.Class ?? "";
+                if (kind.Length > 95) kind = kind.Substring(0, 95);
+                result.Append("{HWnd=" + window.Handle.ToInt64() + ",PID=" + owner + ",Class=" + kind
+                    + ",Parent=" + window.Parent.ToInt64() + ",Visible=" + window.Visible + "}");
             }
         }
 
@@ -443,9 +442,8 @@ namespace VBAi
             catch (Exception error) { return "unavailable(" + error.GetType().Name + ")"; }
         }
 
-        private sealed class NativeProbe : IProbe
+        internal sealed class NativeProbe : IProbe
         {
-            [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
             private sealed class Prepared
             {
                 internal object Editor, Project, Module, Pane, Control;
@@ -454,17 +452,23 @@ namespace VBAi
                 internal VbaNativeTestWindowFocus.Target NativeFocus;
             }
 
-            private readonly VbaNativeTestWindowFocus.IWindows windows = new VbaNativeTestWindowFocus.NativeWindows();
+            private readonly VbaNativeTestWindowFocus.IWindows windows;
+            private readonly Func<object, object, bool> identity;
+            internal NativeProbe(VbaNativeTestWindowFocus.IWindows windows = null, Func<object, object, bool> identity = null)
+            {
+                this.windows = windows ?? new VbaNativeTestWindowFocus.NativeWindows();
+                this.identity = identity ?? VbeDebug.NativeProcedureValuesHost.SameComIdentity;
+            }
+
+            internal bool SameIdentity(object first, object second) => identity(first, second);
 
             public void RequireOwner(object editor)
             {
                 if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) throw new InvalidOperationException("Native VBE execution requires an STA.");
                 var window = new IntPtr(Convert.ToInt64(((dynamic)editor).MainWindow.HWnd));
-                uint process;
-                uint thread = VbeDebugWindows.GetWindowThreadProcessId(window, out process);
-                using (var current = Process.GetCurrentProcess())
-                    if (window == IntPtr.Zero || process != (uint)current.Id || thread != GetCurrentThreadId())
-                        throw new InvalidOperationException("The VBE window does not belong to this process and owning UI thread.");
+                var observed = windows.Read(window);
+                if (window == IntPtr.Zero || observed.Process != windows.CurrentProcess || observed.Thread != windows.CurrentThread)
+                    throw new InvalidOperationException("The VBE window does not belong to this process and owning UI thread.");
             }
 
             public object Prepare(object editorObject, object projectObject, string source)
@@ -484,7 +488,7 @@ namespace VBAi
                     throw new InvalidOperationException("An explicit public parameterless " + VbaTestRuntimeSource.PendingProcedure + " wrapper is required.");
                 string afterShow = null;
                 object pane;
-                try { pane = PrepareNativePane(editorObject, (object)module, line, shown => afterShow = DescribeNativeWindows(editorObject, shown, (object)module)); }
+                try { pane = PrepareNativePane(editorObject, (object)module, line, shown => afterShow = DescribeNativeWindows(editorObject, shown, (object)module), identity); }
                 catch (Exception error)
                 {
                     if (afterShow != null) throw new InvalidOperationException(error.Message + " Immediately after Show: " + afterShow, error);
@@ -493,7 +497,7 @@ namespace VBAi
                 RequireOwner(editorObject);
                 string afterFocus = DescribeNativeWindows(editorObject, pane, (object)module);
                 VbaNativeTestWindowFocus.Target nativeFocus;
-                try { nativeFocus = EnsureNativePaneFocus(editorObject, projectObject, (object)module, pane, line, windows); }
+                try { nativeFocus = EnsureNativePaneFocus(editorObject, projectObject, (object)module, pane, line, windows, identity); }
                 catch (Exception error)
                 {
                     throw new InvalidOperationException(error.Message
@@ -514,12 +518,12 @@ namespace VBAi
                 dynamic editor = editorObject, project = projectObject, control = plan.Control;
                 bool found = false;
                 foreach (object candidate in editor.VBProjects)
-                    if (VbeDebug.NativeProcedureValuesHost.SameComIdentity(candidate, projectObject)) { found = true; break; }
+                    if (identity(candidate, projectObject)) { found = true; break; }
                 if (!found || (int)project.Mode != 2 || ReadSource(plan.Module) != plan.Source)
                     throw new InvalidOperationException("The selected project, mode or support source changed before native dispatch.");
                 try
                 {
-                    ValidateNativePaneContext(editorObject, projectObject, plan.Module, plan.Pane, plan.Line);
+                    ValidateNativePaneContext(editorObject, projectObject, plan.Module, plan.Pane, plan.Line, identity);
                     ValidateRecoveredNativeFocus(editorObject, plan.Pane, windows, plan.NativeFocus);
                 }
                 catch (Exception error)

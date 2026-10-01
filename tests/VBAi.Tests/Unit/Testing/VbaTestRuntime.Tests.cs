@@ -91,5 +91,29 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(1, ((DispIdAttribute)Attribute.GetCustomAttribute(typeof(IVbaTestRuntime).GetMethod("Request"), typeof(DispIdAttribute))).Value);
             Assert.AreEqual(2, ((DispIdAttribute)Attribute.GetCustomAttribute(typeof(IVbaTestRuntime).GetMethod("Publish"), typeof(DispIdAttribute))).Value);
         }
+        [TestMethod]
+        public void ExposureRejectsNullNestedForeignThreadAndChangedPendingWhileOwnerCanRevokeTwice()
+        {
+            Assert.ThrowsException<ArgumentNullException>(() => VbaTestRuntime.Expose(null));
+            using (var sink = new VbaTestResultSink(ReferenceEquals))
+            {
+                Arm(sink);
+                var exposure = VbaTestRuntime.Expose(sink);
+                try
+                {
+                    Assert.ThrowsException<InvalidOperationException>(() => VbaTestRuntime.Expose(sink));
+                    Exception caught = null;
+                    var thread = new Thread(() => { try { exposure.Dispose(); } catch (Exception error) { caught = error; } });
+                    thread.Start(); thread.Join();
+                    Assert.IsInstanceOfType(caught, typeof(InvalidOperationException));
+                    var field = typeof(VbaTestRuntime).GetField("pending", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+                    field.SetValue(null, null);
+                    Assert.ThrowsException<InvalidOperationException>(() => exposure.Dispose());
+                    field.SetValue(null, sink);
+                }
+                finally { exposure.Dispose(); exposure.Dispose(); }
+                Assert.ThrowsException<InvalidOperationException>(() => new VbaTestRuntime());
+            }
+        }
     }
 }

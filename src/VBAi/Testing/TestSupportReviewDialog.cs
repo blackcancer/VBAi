@@ -13,13 +13,15 @@ namespace VBAi
             UiText.Apply(this, components);
         }
 
-        internal static bool Confirm(IWin32Window owner, string project, string before, string after)
+        internal static bool Confirm(IWin32Window owner, string project, string before, string after) => Confirm(owner, project, before, after, null);
+
+        internal static bool Confirm(IWin32Window owner, string project, string before, string after, Func<TestSupportReviewDialog, IWin32Window, DialogResult> show)
         {
             using (var dialog = new TestSupportReviewDialog())
             {
                 dialog.projectLabel.Text = UiText.Get("Project") + ": " + project;
                 dialog.diff.ShowDiff(before ?? "", after ?? "");
-                return dialog.ShowDialog(owner) == DialogResult.OK;
+                return (show == null ? dialog.ShowDialog(owner) : show(dialog, owner)) == DialogResult.OK;
             }
         }
     }

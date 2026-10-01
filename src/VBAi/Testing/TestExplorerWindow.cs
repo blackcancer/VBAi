@@ -24,7 +24,9 @@ namespace VBAi
         private string coverageUnavailableReason;
         private VbaCoverageReport lastCoverage;
         private TreeSelection treeSelection;
-        internal Func<IWin32Window, bool, string> ChooseReportExportPath = SelectReportExportPath;
+        internal Func<IWin32Window, bool, string> ChooseReportExportPath = (owner, compact) => SelectReportExportPath(owner, compact);
+        internal Action<string> WriteReportClipboard = Clipboard.SetText;
+        internal Func<Control> CreateRunDispatcher = () => new Control();
         internal Func<IWin32Window, string, bool> ConfirmCoverage = (owner, text) => MessageBox.Show(owner, text,
             UiText.Get("Review measured VBA procedure coverage"), MessageBoxButtons.YesNo,
             MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == DialogResult.Yes;
@@ -446,7 +448,7 @@ namespace VBAi
         private void InitializeRunContinuationDispatcher()
         {
             RequireRunOwner();
-            var control = new Control();
+            var control = CreateRunDispatcher();
             try { var handle = control.Handle; lock (runDispatchGate) runContinuationDispatcher = control; }
             catch { control.Dispose(); throw; }
         }
@@ -629,7 +631,7 @@ namespace VBAi
         private void CopyReport_Click(object sender, EventArgs e)
         {
             if (running || ReportText().Length == 0) return;
-            try { Clipboard.SetText(ReportText()); } catch (Exception ex) { status.Text = ex.Message; }
+            try { WriteReportClipboard(ReportText()); } catch (Exception ex) { status.Text = ex.Message; }
         }
         private void ExportReport_Click(object sender, EventArgs e)
         {
@@ -645,10 +647,10 @@ namespace VBAi
             catch (Exception ex) { if (!IsDisposed && !Disposing) status.Text = ex.Message; }
         }
 
-        private static string SelectReportExportPath(IWin32Window owner, bool compact)
+        internal static string SelectReportExportPath(IWin32Window owner, bool compact, Func<SaveFileDialog, IWin32Window, DialogResult> show = null)
         {
             using (var dialog = new SaveFileDialog { FileName = compact ? "vba-test-results.json" : "vba-test-results.txt", Filter = compact ? "JSON (*.json)|*.json" : "Text (*.txt)|*.txt" })
-                return dialog.ShowDialog(owner) == DialogResult.OK ? dialog.FileName : null;
+                return (show == null ? dialog.ShowDialog(owner) : show(dialog, owner)) == DialogResult.OK ? dialog.FileName : null;
         }
         private void InstallSupport_Click(object sender, EventArgs e)
         {

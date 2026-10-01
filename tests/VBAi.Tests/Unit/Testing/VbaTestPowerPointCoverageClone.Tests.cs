@@ -199,6 +199,64 @@ namespace VBAi.Tests.Unit
             }
         }
 
+        [TestMethod]
+        public void SameSourceExistingFileAndOpenCopyPathsAreRefusedBeforeSave()
+        {
+            foreach (string fault in new[] { "same", "file", "open" })
+            using (var f = new Fixture())
+            {
+                string folder = Path.Combine(f.Folder, "Copy"), path = Path.Combine(folder, "coverage.pptm");
+                if (fault == "same") { folder = f.Folder; f.Source.FullName = Path.Combine(folder, "coverage.pptm"); }
+                if (fault == "file") { Directory.CreateDirectory(folder); File.WriteAllText(path, "Existing"); }
+                if (fault == "open") f.Application.Presentations.Add(new Presentation { FullName = path });
+                var provider = new VbaTestPowerPointCoverageClone { Host = f.Host };
+                Assert.ThrowsException<InvalidOperationException>(() => provider.Create(f.Source.VBProject, f.Source.FullName, folder));
+                Assert.AreEqual(0, f.Source.SaveCopyCalls); Assert.AreEqual(0, f.Application.Presentations.OpenCalls);
+            }
+        }
+
+        [TestMethod]
+        public void InconsistentIdentityCannotAcceptTheCopyOrCloseTheOriginal()
+        {
+            foreach (string fault in new[] { "verify", "close", "discard" })
+            using (var f = new Fixture())
+            {
+                var provider = new VbaTestPowerPointCoverageClone { Host = f.Host };
+                Presentation copy = null;
+                f.Application.Presentations.OnOpen = path => copy = new Presentation { FullName = path };
+                if (fault == "verify")
+                {
+                    f.Host.SameIdentity = (a, b) => !(ReferenceEquals(a, copy) && ReferenceEquals(b, copy) && copy != null) && ReferenceEquals(a, b);
+                    Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy"))).Uncertain);
+                }
+                else
+                {
+                    var clone = provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy"));
+                    Action invalidate = () => f.Host.SameIdentity = (a, b) => ReferenceEquals(a, b) || (ReferenceEquals(a, copy) && ReferenceEquals(b, f.Source));
+                    if (fault == "close") invalidate(); else copy.OnSavedWrite = invalidate;
+                    if (fault == "close") Assert.ThrowsException<InvalidOperationException>(() => clone.Dispose());
+                    else Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose()).Uncertain);
+                }
+                Assert.AreEqual(0, copy.CloseCalls); Assert.AreEqual(0, f.Source.CloseCalls);
+            }
+        }
+
+        [TestMethod]
+        public void ProjectIdentityChangingAtEitherCloseGuardNeverClosesTheOriginal()
+        {
+            foreach (int refusalRead in new[] { 2, 4 })
+            using (var f = new Fixture())
+            {
+                var provider = new VbaTestPowerPointCoverageClone { Host = f.Host };
+                var clone = provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy"));
+                var copy = f.Application.Presentations[1]; int reads = 0;
+                f.Host.SameIdentity = (a, b) => ReferenceEquals(a, b) || (ReferenceEquals(a, copy.VBProject) && ReferenceEquals(b, f.Source.VBProject) && ++reads == refusalRead);
+                if (refusalRead == 2) Assert.ThrowsException<InvalidOperationException>(() => clone.Dispose());
+                else Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose()).Uncertain);
+                Assert.AreEqual(0, copy.CloseCalls); Assert.AreEqual(0, f.Source.CloseCalls);
+            }
+        }
+
         private sealed class Fixture : IDisposable
         {
             internal readonly string Folder = Path.Combine(Path.GetTempPath(), "VBAi-PowerPoint-Coverage-" + Guid.NewGuid().ToString("N"));
