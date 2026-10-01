@@ -115,21 +115,35 @@ namespace VBAi.Tests.Integration
             // the busy checkpoint operation. Selecting it again emits no change
             // event and must not require a new review-status message.
             bool alreadySelected = select.Current.IsSelected;
+            bool selectionApiError = false;
             record(new { Phase = "CheckpointSelectionObserved", AlreadySelected = alreadySelected, Name = items[0].Current.Name });
             if (!alreadySelected)
             {
-                Protocol.EmitOnce("select-checkpoint", select.Select);
-                Assert.IsTrue(select.Current.IsSelected);
-                Protocol.Terminal("select-checkpoint", true, true);
+                Protocol.EmitOnce("select-checkpoint", () => {
+                    try { select.Select(); }
+                    catch (ElementNotEnabledException error)
+                    {
+                        // The native proxy can focus/select first, then refuse
+                        // its remaining work after the review disables this tab.
+                        // Keep the error and require independent exact review
+                        // completion; never issue a second Select.
+                        selectionApiError = true;
+                        record(new { Phase = "SelectionApiReturnedError", Error = error.ToString(), ReplayAttempts = 0 });
+                    }
+                });
             }
             var ready = Stopwatch.StartNew(); int idleObservations = 0;
             while (ready.ElapsedMilliseconds < 60000 && idleObservations < 2)
             {
                 if (stop()) throw new InvalidOperationException("Coordinator stopped selection observation.");
-                idleObservations = Leaf("compare").Current.IsEnabled && select.Current.IsSelected ? idleObservations + 1 : 0;
+                idleObservations = HasProvenSelection(Leaf("compare").Current.IsEnabled, select.Current.IsSelected,
+                    selectionApiError, Text("status"), nonce) ? idleObservations + 1 : 0;
                 Thread.Sleep(50);
             }
             if (idleObservations < 2) { Protocol.MarkUncertain("Selected checkpoint did not reach an idle owned view."); throw new TimeoutException("Checkpoint selection/view remains pending."); }
+            if (!alreadySelected) Protocol.Terminal("select-checkpoint", true, true);
+            record(new { Phase = "CheckpointSelectionReadback", Selected = select.Current.IsSelected, SelectionApiError = selectionApiError,
+                Status = Text("status"), ReplayAttempts = 0 });
             var tabs = Leaf("tabs"); var tab = tabs.FindAll(TreeScope.Children,
                 new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem)).Cast<AutomationElement>()
                 .Single(item => item.Current.ProcessId == fixture.ProcessId && item.Current.Name == tabName);
@@ -232,6 +246,10 @@ namespace VBAi.Tests.Integration
         /// <summary>Requires a recognized result in addition to independently observed enabled controls.</summary>
         internal static bool HasKnownTerminal(string action, bool idle, bool busy, string before, string after)
             => EmbeddedGitUiProtocol.IsTerminal(idle, busy, before, after) && ClassifyTerminal(action, after) != 0;
+
+        internal static bool HasProvenSelection(bool idle, bool selected, bool apiError, string status, string nonce)
+            => idle && selected && (!apiError || !string.IsNullOrEmpty(nonce) &&
+                ClassifyTerminal("select-checkpoint", status) == 1 && status.EndsWith(" · " + nonce, StringComparison.Ordinal));
 
         internal static int ClassifyTerminal(string id, string text)
         {

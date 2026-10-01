@@ -10,6 +10,25 @@ namespace VBAi.Tests.Unit
     public sealed class EmbeddedGitUiProtocolTests
     {
         [TestMethod]
+        public void SelectionApiErrorRequiresExactCompletedCheckpointReviewAndIndependentSelection()
+        {
+            const string nonce = "EMBEDDED_owned";
+            foreach (bool idle in new[] { false, true })
+            foreach (bool selected in new[] { false, true })
+            {
+                Assert.AreEqual(idle && selected, EmbeddedGitAutomation.HasProvenSelection(idle, selected, true,
+                    "Reviewing checkpoint · " + nonce, nonce));
+                Assert.AreEqual(idle && selected, EmbeddedGitAutomation.HasProvenSelection(idle, selected, false,
+                    "Operation complete: checkpoint_create", nonce));
+                foreach (string text in new[] { null, "", "Operation in progress…", "Operation complete: checkpoint_create",
+                    "Reviewing checkpoint · OTHER", "Reviewing checkpoint · prefix" + nonce })
+                    Assert.IsFalse(EmbeddedGitAutomation.HasProvenSelection(idle, selected, true, text, nonce));
+            }
+            Assert.IsFalse(EmbeddedGitAutomation.HasProvenSelection(true, true, true, "Reviewing checkpoint · ", ""));
+            Assert.IsFalse(EmbeddedGitAutomation.HasProvenSelection(true, true, true, "Reviewing checkpoint · " + nonce, null));
+        }
+
+        [TestMethod]
         public void EnabledControlsWithTransientProgressCannotAcknowledgeConnectOrImport()
         {
             foreach (string action in new[] { "connect", "checkpointRestore", "select-checkpoint" })
