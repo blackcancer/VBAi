@@ -24,10 +24,11 @@ last written `2026-10-01T19:48:04Z`. Its provenance is unknown; the earlier
 replaced for these isolated candidate trials.
 
 The following are separate terminal TRX results, parsed from each file's
-`ResultSummary/Counters`. Native matrix totals include eleven cases in each
-owner-window run refused before launch by an already owned Excel process. Only
-the first LabelButton case reached its respective UI failure; none reached
-native import. No totals are aggregated into a release-wide pass.
+`ResultSummary/Counters`. The first four owner-window matrices each contain one
+UI failure and eleven cases refused before launch. The corrected selection
+matrix reaches one actual LabelButton import failure, one TextBox bootstrap
+failure and ten cases refused before launch. No totals are aggregated into a
+release-wide pass.
 
 | Evidence directory / terminal TRX | Passed | Failed | Not executed | Boundary |
 | --- | ---: | ---: | ---: | --- |
@@ -48,6 +49,7 @@ native import. No totals are aggregated into a release-wide pass.
 | `managed-owner-font-list-complete` | 3,640 | 1 | 189 | Current `420b3da` full gate failed one unchanged 512 MiB signature-size case with `System.IO.IOException` while C: had about 180 MiB free. |
 | `managed-signature-size-guard-e-temp` | 1 | 0 | 0 | Same unchanged size guard passes with process-local TEMP/TMP on E:. This is separate from the failed full suite. |
 | `forms-owner-font-list-cache-fixed` | 0 | 12 | 0 | First case reaches selected checkpoint, then UIA `ElementNotEnabledException` because review disables its tab; import is not reached. |
+| `forms-owner-font-selection-observed` | 0 | 12 | 0 | Tests-only `ca0479e`, frozen `420b3da` product. LabelButton reaches owner-dispatched import and fails exact FRX comparison; original normal exit is verified. TextBox fails native seed attachment, then ten cases refuse an existing owned Excel process before launch. |
 
 The `forms-owner-font-selection-ready` terminal records the originally loaded
 test SHA-256 `7F86A239F5930B811CBC2642ABCA04DB437C7BD64C0FA5BE2245F4F493D59E6C`.
@@ -62,10 +64,24 @@ Temporary registration context restoration and any subsequent native attempt
 must be evaluated from their own terminal evidence. Q-027 and release
 qualification remain open; no new coverage percentage is claimed.
 
-The tests-only `ca0479e` fixture prepares a fresh
-`forms-owner-font-selection-observed` native matrix against the frozen product.
-It is running at this checkpoint; no native result is inferred from its plan
-or the passing focused managed proof.
+The tests-only `ca0479e` fixture completes
+`forms-owner-font-selection-observed` against the frozen product. The independent
+post-import snapshot differs only in `EmbeddedForm.frx`; source files match.
+Retained Git target and after-import trees prove that the root `/f` stream loses
+the complete StdFont descriptor (Tahoma 8.25). Frozen-assembly parsing extracts
+the root binding, ruling out a missing extraction plan. No fractional Frame
+precision conclusion is drawn from this LabelButton trial. Root assignment
+returned without an exception, but persistence failed; a same-value setter
+explanation remains a hypothesis.
+
+LabelButton PID 64232 closes its exact modal and owned workbook normally and
+exits with code zero. TextBox PID 54716 is retained before form preparation because
+NativeOM attachment fails. Separate normal close does not exit it; the ROT owner
+guard refuses Quit. Separate forced cleanup then exits that exact owned macro-free
+seed; its shared-read file hash is unchanged. This cleanup does not qualify the
+original TextBox scenario. The terminal records unchanged candidate hashes and
+no remaining Office host. Registration context 11 is restored and verified in
+both contexts; installed DLL SHA-256 remains `18CF74184F453F4CBF8430D299954DC7A649D04D7EC1EEAE6D9666A0F9155C04`.
 
 ## Native qualification refresh (2026-10-01)
 

@@ -13,8 +13,11 @@ It corrects the native accessibility ListBox selection cache and bounds owner
 names before constructing font restoration paths. Its predecessor `198e0ec`
 added an owning-thread, guarded exact-font restoration path without relaxing
 FRX comparison. Focused managed regressions pass, but the complete managed
-gate has a disk-full signature-size failure and the latest native owner-window
-matrix stops in UI selection before import. Q-027 remains open. The currently
+gate has a disk-full signature-size failure. The corrected selection fixture
+reaches actual owner-dispatched LabelButton import: sources match but the root
+FRX font descriptor is omitted, so exact comparison correctly refuses success.
+Original normal exit is verified for that case. A subsequent seed attachment
+failure blocks the other layouts. Q-027 remains open. The currently
 installed DLL has a separate read-only identity in [recorded validation](test-coverage.md#q-027-userform-follow-up-2026-10-02);
 its provenance is unknown and it is not the tested candidate.
 

@@ -29,12 +29,15 @@ operation, language feature or UI surface.
 
 Q-027's current isolated source `420b3da` adds guarded owner-thread exact-font
 restoration, bounded owner names and a native accessibility ListBox selection
-cache correction. Managed regressions verify those paths. The latest owned Excel
-owner-window trial stops at UI selection after the selected checkpoint becomes
-disabled; it does not reach import. Earlier attempts stop at transient UI status,
-review selection, or a stale selection-cache exception. These are distinct
-fixture and UI observations, not native UserForm import acceptance. Strict FRX
-comparison and the observed Frame font-size difference remain unresolved.
+cache correction. Managed regressions verify those paths. After correcting the
+selection observation, the latest owned Excel trial reaches actual LabelButton
+import and normal original exit. Source files match, but the root FRX StdFont
+descriptor is omitted despite a decoded restoration binding and a nonthrowing
+assignment. Exact snapshot comparison refuses success. The following TextBox
+trial fails seed attachment before form construction; remaining layouts cannot
+launch. Earlier UI failures remain separate observations. Strict FRX comparison
+and the earlier Frame font-size difference remain unresolved; no complete
+UserForm import acceptance is claimed.
 The installed DLL has a separate read-only identity; see
 [recorded validation](test-coverage.md#q-027-userform-follow-up-2026-10-02).
 
