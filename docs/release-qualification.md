@@ -48,6 +48,16 @@ and the historical failure's cause remain unproven. No assertion is relaxed,
 request replayed to obtain a pass, or product correction claimed. Q-028 stays
 open; complete results and preparation failures are in recorded validation.
 
+Subsequent direct backend controls are terminal: the exact original request and
+its chosen-token variant deliver a recognized core-tool call; the nonstreaming
+variant delivers a call missing a required argument; the no-tools variant
+streams text. No tool is dispatched. An offline correction explains the separate
+diagnostic runner's PowerShell singleton-array failure without altering its
+original failed record or replaying requests. The exact owned helper is closed
+after independent terminal verification. These new generations do not explain
+the original empty response or qualify VBAi's provider integration. Q-028 stays
+open; byte-level evidence and scope are in recorded validation.
+
 The Git menu, chat and LLM tools now share a compatible lookup of the native
 document key and the former uppercase key. A single existing binding is reused
 without moving or rewriting caches; two bindings or uncertain metadata refuse

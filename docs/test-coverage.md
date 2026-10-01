@@ -1,5 +1,62 @@
 # Recorded validation
 
+## Direct Ollama controls and offline harness correction (2026-10-01)
+
+Four independent synthetic protocol controls use the same Ollama `0.34.4`
+binary, isolated `qwen2.5:3b` cache and digest recorded in the following section.
+No VBAi assembly, Office host or native tool is loaded or executed. The original
+UI request is retained byte-for-byte in A; B only adds `logprobs: true` and
+`top_logprobs: 0`, C only disables streaming, and D only supplies an empty tool
+array. No seed or temperature is added. These are diagnostic observations,
+not a VSTest pass or acceptance of the failed real-provider aggregate.
+
+| Control | Observed terminal response | Captured bytes |
+| --- | --- | ---: |
+| A: exact original request | `discover_tools` with `Family=all`, no text | 577 |
+| B: chosen-token diagnostics | Same recognized tool; 19 chosen tokens / 83 bytes reconstruct its complete `<tool_call>` text | 6,133 |
+| C: no streaming | `list_modules` with `{}`; required `Project` is missing; no dispatch | 457 |
+| D: no tools | Streamed text, `stop`, no tool calls; content adherence is not qualified | 209,194 |
+
+All four captured bodies have independently verified HTTP EOF and protocol
+terminal markers (a complete JSON choice for C, `[DONE]` for the streams).
+The original runner exits **1** after A/B: PowerShell 5.1 unrolls the chosen
+token's single-byte array `[10]` into a scalar and StrictMode rejects `.Count`.
+This is a proven artifact-parser defect, not an Ollama transport failure.
+Its original terminal manifest and incomplete token sidecar remain unchanged.
+A corrected copy wraps the entire conditional in an array; **8 offline checks
+pass**, including original/corrected captures and empty, single, multiple and
+absent-byte shapes. An independent Python review also verifies the original
+A/B bodies without contacting the backend.
+
+Only the never-sent C/D controls run subsequently, once each. That continuation
+exits **0**, using an explicitly reacquired handle for the exact retained backend
+PID `14364`, start UTC `2026-10-01T08:14:28.2686818Z`, image and loopback listener
+`127.0.0.1:58025`. The original runner's handle is unavailable and is not claimed
+as retained by the continuation. After all emitted requests are known terminal
+and no established connections remain, one verified force-stop observes helper
+exit `4294967295`; no Ollama process remains. This is not normal native-host
+shutdown acceptance. No A/B replay, download, authentication, profile edit or
+installed-DLL replacement occurs.
+
+Evidence is under `followup-20260930/ollama-controls-prepared/`:
+`protocol-controls-summary.json`, `runs/protocol-controls-20261001/`, and
+`runs/continuation-C-D-20261001/`. Offline correction evidence is
+`ollama-controls-parser-correction/offline-verification/867af08c10e149ca8a3b4f56d0be1e69/offline-report.json`
+under the same follow-up root. No coverage collector runs for these controls.
+The prior managed coverage and failed activated aggregate remain unchanged.
+
+These new generations do not reproduce the empty delivered response or reveal
+the original hidden tokens. Ollama's version-specific source has a generic tool
+parser that buffers tagged output and may return no remaining content when an
+XML-tagged call cannot be recognized; its HTTP route can emit chosen-token
+logprobs while that content is buffered. This establishes a possible mechanism,
+not the historical cause. See the official
+[tool parser](https://github.com/ollama/ollama/blob/v0.34.4/tools/tools.go#L374)
+and [chat route](https://github.com/ollama/ollama/blob/v0.34.4/server/routes.go#L2732).
+The valid call in B is recognized and delivered. C demonstrates a separate
+missing-argument output, not a VBAi coercion defect. No provider reliability
+correction or release-gate closure is claimed; Q-028 remains open.
+
 ## Frozen product: embedded Git preparation and real Ollama failures (2026-10-01)
 
 Product source remains `b60996cdf05d816a1f24bea99f2343c166a8bfac`, MVID
