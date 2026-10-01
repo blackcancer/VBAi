@@ -1,5 +1,71 @@
 # Recorded validation
 
+## Managed VBA testing coverage gate (2026-10-01)
+
+Source revision `51454c61acaef02305ddc28ba6a6041b9532124f` on
+`codex/vba-testing-coverage` was compiled and measured in an isolated
+.NET Framework 4.8/x64 output. This checkpoint covers the C# VBA testing
+subsystem: every `src/VBAi/Testing/*.cs` file and
+`src/VBAi/Llm/Chat/LlmVbeTools.Testing.cs`, including Designers, native adapters,
+UI handlers, deferred execution, registry verification and the nine LLM tools.
+The shared application foundation outside those files is outside this percentage.
+
+| Check | Actual result | Evidence |
+| --- | --- | --- |
+| Isolated managed build | Passed, no errors; three NU1900 vulnerability-endpoint warnings | `artifacts/build-vba-testing-coverage-final` |
+| Focused managed testing/LLM unit classes | 461 passed, 0 failed, 0 skipped | `artifacts/coverage/vba-testing-final/final.trx` |
+| Managed executable lines | **3596/3596 (100%)** | Companion Coverlet JSON and Cobertura |
+| All managed IL branches | **3608/3608 (100%)** | Raw JSON branch records, including generated classes and async state machines |
+| Branches without a mapped source line | 42/42 covered; included in the branch total above | Raw JSON and strict gate reconciliation |
+| Coverage gate regressions | 22 passed | `tools/testing-explorer/test_check_managed_coverage.py` |
+| Documentation checks | Passed | `python tools/docs/check_docs.py` |
+
+Coverlet collector 6.0.4 instrumented the complete managed assembly with
+`--collect:"XPlat Code Coverage"` and
+`DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura,json`.
+No exclusion configuration or production coverage exclusion was introduced.
+The gate requires both reports from collection
+`547b2b14-dd2d-472a-a4e8-cca2f08baf27`, reconciles their exact counters and
+inventories, and requires every method line and IL branch to be covered. It does
+not merge generated-class rows to hide an uncovered path. All 26 expected source
+files enter the check; `VbaTestExplorerService.cs` contains only interface
+declarations and has no executable sequence points, rather than being excluded.
+The readable summary is `artifacts/coverage/vba-testing-final/gate.txt`, and the
+machine-readable result is `artifacts/coverage/vba-testing-final/gate.json`.
+The [testing guide](../tests/README.md#managed-vba-testing-coverage-gate) records
+the build, test filter and strict gate commands.
+
+The uninstrumented production DLL has MVID
+`20a2f16c-c147-4e42-b1d3-a6f2e9415647`, SHA-256
+`9A3ABDCCD56B3708C249B6CF4F54C0E62B105EFB362B2EE2765568299CB0337E`.
+The test DLL has MVID `5b77c58c-feec-4967-a1e4-b7c53227ecb0`, SHA-256
+`4F3FEEE2F0ACFBD4A58BFE21277CD15E6EBA0E4A0A422DFE6F58147430A0BB88`.
+The post-collector identities are retained in
+`artifacts/coverage/vba-testing-final/assembly-identities.json`.
+The source manifest, recorded before this documentation-only checkpoint, is
+`artifacts/coverage/vba-testing-final/source-manifest.json`, SHA-256
+`7F5D2B3D0DB048C54B36DAECC10FE2EA1E0E5C612259BC40045FEFEBC91C4C36`.
+The raw JSON has SHA-256
+`27329E56C0493EA223F94BCD545F272AF22CE96A6918A6136CCFB4CC0FCE961B`;
+Cobertura has SHA-256
+`C64A0B31C0F1958F522876B974D3AF9326D2F81C43630AE09876FA7337F1F9CB`.
+
+New tests exercise rejection and recovery contracts, not just successful calls.
+Internal effect boundaries retain real Windows/COM/UI implementations by default;
+synthetic VBE objects and owned disposable test-process windows cover failures.
+Proven redundant conditions were simplified while preserving the original
+uncertain-outcome and cleanup guards. The generated support signature now accepts
+the null collections/descriptors already accepted by its generator, and a bounded
+serializer overload permits testing the size refusal without a huge allocation;
+the application's export limit is unchanged.
+
+This is managed code coverage, not production host qualification or coverage of
+user VBA statements/branches. No Office or SOLIDWORKS application was launched,
+no production macro ran, no COM registration changed, and no installed DLL was
+replaced for this checkpoint. The feature's previously recorded native acceptance
+and source-navigation limitations remain outstanding. Ollama qualification is
+outside this work and remains assigned to its separate branch.
+
 ## VBA test explorer integration with main (2026-10-01)
 
 The PR combines test-explorer commit
