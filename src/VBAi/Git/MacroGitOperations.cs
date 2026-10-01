@@ -123,6 +123,7 @@ namespace VBAi
             var live = project.Capture();
             if (expectedState != null && expectedState != await Task.Run(() => Revision(live))) throw new InvalidOperationException(UiText.Get("The Git/VBA state changed. Read git_status again before making changes."));
             if (action != "rollback") Ready(action.StartsWith("merge_", StringComparison.Ordinal));
+            else Repository.RequireValidRecoveryMarker();
             switch (action)
             {
                 case "pr_prepare": await Task.Run(() => Repository.SavePullDraft(name, text, choice)); break;
@@ -202,7 +203,11 @@ namespace VBAi
             if (expected.SameAs(target)) { if (rollback) Repository.CompleteRecovery(); return; }
             ImportPreview?.Invoke(target.ImportSummary(expected));
             if (!rollback) await Task.Run(() => { Repository.Checkpoint(expected, UiText.Get("Before import · ") + DateTime.Now.ToString("s")); Repository.PrepareRecovery(expected); });
-            else File.WriteAllText(Repository.RecoveryFile, Repository.Resolve(MacroGitRepository.Backup));
+            else
+            {
+                Repository.RequireValidRecoveryMarker();
+                File.WriteAllText(Repository.RecoveryFile, Repository.Resolve(MacroGitRepository.Backup));
+            }
             bool started = false;
             Exception importFailure = null;
             try { project.Apply(target, expected, () => started = true); }
@@ -220,7 +225,15 @@ namespace VBAi
                             importFailure, recoveryFailure);
                     }
                 }
-                else if (!rollback) Repository.CompleteRecovery();
+                else if (!rollback)
+                {
+                    try { Repository.CompleteRecovery(); }
+                    catch (Exception recoveryFailure) when (importFailure != null)
+                    {
+                        throw new AggregateException("VBA import was refused before its mutation boundary and recovery completion also failed; both errors are retained.",
+                            importFailure, recoveryFailure);
+                    }
+                }
             }
             Repository.CompleteRecovery();
         }
