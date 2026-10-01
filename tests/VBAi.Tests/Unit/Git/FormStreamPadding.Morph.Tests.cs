@@ -164,6 +164,49 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
+        [DataRow(23, true)]
+        [DataRow(24, false)]
+        public void OmittedScrollBarsUsesNoneDefaultAndRejectsTheListBoxConstraint(int type, bool supported)
+        {
+            // MS-OFORMS 2.5.74: the common file default is None(0), whereas ListBox requires Both(3).
+            // Build an actual absent-field payload, including the shifted scalar alignment and exact cb;
+            // merely clearing fScrollBars in a payload still containing its byte would test malformed data.
+            MorphSample sample = MakeMorph(type, true, omitScroll: true);
+            Assert.AreEqual(0u, BitConverter.ToUInt32(sample.Bytes, 4) & (1u << 5));
+            Assert.IsFalse(sample.Fields.ContainsKey(5));
+            Assert.AreEqual((byte)(type - 22), sample.Bytes[sample.Fields[6]]);
+            Assert.AreEqual(sample.FontStart - 4, (int)BitConverter.ToUInt16(sample.Bytes, 2));
+            byte[] form = MorphForm(new[] { type }, new[] { sample.Bytes.Length });
+            byte[] formBefore = (byte[])form.Clone(), objectBefore = (byte[])sample.Bytes.Clone();
+            byte[][] result = FormStreamPadding.Normalize(form, sample.Bytes);
+            if (supported)
+            {
+                Assert.AreNotSame(form, result[0]); Assert.AreNotSame(sample.Bytes, result[1]);
+                for (int i = 0; i < sample.Bytes.Length; i++)
+                    Assert.AreEqual(sample.Padding.Contains(i) ? (byte)0 : sample.Bytes[i], result[1][i]);
+            }
+            else
+            {
+                Assert.AreSame(form, result[0]); Assert.AreSame(sample.Bytes, result[1]);
+            }
+            CollectionAssert.AreEqual(formBefore, form); CollectionAssert.AreEqual(objectBefore, sample.Bytes);
+        }
+
+        [TestMethod]
+        public void OmittedAndExplicitTextBoxScrollBarsNonePreserveTheirDifferentDescriptors()
+        {
+            MorphSample omitted = MakeMorph(23, true, omitScroll: true), explicitNone = MakeMorph(23, true);
+            explicitNone.Bytes[explicitNone.Fields[5]] = 0;
+            byte[][] absent = FormStreamPadding.Normalize(MorphForm(new[] { 23 }, new[] { omitted.Bytes.Length }), omitted.Bytes);
+            byte[][] present = FormStreamPadding.Normalize(MorphForm(new[] { 23 }, new[] { explicitNone.Bytes.Length }), explicitNone.Bytes);
+            Assert.AreNotSame(omitted.Bytes, absent[1]); Assert.AreNotSame(explicitNone.Bytes, present[1]);
+            Assert.AreEqual(0u, BitConverter.ToUInt32(absent[1], 4) & (1u << 5));
+            Assert.AreEqual(1u << 5, BitConverter.ToUInt32(present[1], 4) & (1u << 5));
+            Assert.AreEqual((byte)0, present[1][explicitNone.Fields[5]]);
+            Assert.IsFalse(absent[1].SequenceEqual(present[1]), "Mask and stored default values remain significant.");
+        }
+
+        [DataTestMethod]
         [DataRow(24)] [DataRow(25)]
         public void MorphColumnsFollowTextPropertiesAndPreserveEverySignedWidth(int type)
         {
@@ -220,11 +263,12 @@ namespace VBAi.Tests.Unit
 
         /// <summary>Builds independent, explicitly typed scalar/extra/text/column sections from the Microsoft grammar.</summary>
         private static MorphSample MakeMorph(int type, bool rich, bool unicode = false, bool empty = false,
-            int extraBit = -1, bool omitStyle = false, int?[] widths = null)
+            int extraBit = -1, bool omitStyle = false, int?[] widths = null, bool omitScroll = false)
         {
             var sample = new MorphSample();
             var bits = new HashSet<int>(rich ? MorphFieldBits(type) : new[] { 6 });
             if (type == 24) bits.Add(5);
+            if (omitScroll) bits.Remove(5);
             if (omitStyle) bits.Remove(6);
             if (extraBit >= 0) bits.Add(extraBit);
             if (widths != null) bits.Add(15);
