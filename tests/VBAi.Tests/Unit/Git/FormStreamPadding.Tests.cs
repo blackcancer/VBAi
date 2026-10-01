@@ -7,7 +7,7 @@ namespace VBAi.Tests.Unit
 
     [TestClass]
     [TestCategory("Unit")]
-    public sealed class FormStreamPaddingTests
+    public sealed partial class FormStreamPaddingTests
     {
         // Logical streams from an owned, synthetic Excel UserForm export. All strings are test data.
         private const string NativeForm =

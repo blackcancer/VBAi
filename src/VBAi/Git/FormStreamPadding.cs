@@ -10,6 +10,7 @@ namespace VBAi
         // Property descriptors, lengths, masks, strings and extension bytes remain significant.
         private const int MaxStreamBytes = 32 * 1024 * 1024;
         private static readonly byte[] TextFontGuid = new Guid("AFC20920-DA4E-11CE-B943-00AA006887B4").ToByteArray();
+        private static readonly byte[] StdFontGuid = new Guid("0BE35203-8F91-11CE-9DE3-00AA004BB851").ToByteArray();
 
         /// <summary>
         /// Returns cloned streams with padding zeroed, or the original pair when any layout is unsupported.
@@ -63,8 +64,7 @@ namespace VBAi
             block.Finish();
             if (Has(mask, 20))
             {
-                for (int i = 0; i < TextFontGuid.Length; i++) Require(form.Byte() == TextFontGuid[i]);
-                ParseText(form);
+                ParseFormFont(form);
             }
 
             // MS-OFORMS 2.2.10.6: only the empty class table is supported.
@@ -96,6 +96,29 @@ namespace VBAi
             sites.Finish();
             form.Finish();
             objects.Finish();
+        }
+
+        // MS-OFORMS 2.4.6 / 2.4.12. Font bytes remain significant; only their exact
+        // documented extent is consumed, so subsequent site padding can be parsed.
+        private static void ParseFormFont(Reader form)
+        {
+            bool text = true, standard = true;
+            for (int i = 0; i < TextFontGuid.Length; i++)
+            {
+                byte value = form.Byte();
+                text &= value == TextFontGuid[i];
+                standard &= value == StdFontGuid[i];
+            }
+            if (text) { ParseText(form); return; }
+            Require(standard && form.Byte() == 1);
+            form.UInt16(); // Signed charset, retained without interpreting its value.
+            Require((form.Byte() & ~0x0e) == 0); // Bold and unused FONTFLAGS must be zero.
+            Require(form.UInt16() <= 1000);
+            uint height = form.UInt32();
+            Require(height > 0 && height <= 655350000);
+            int length = form.Byte();
+            Require(length < 32);
+            for (int i = 0; i < length; i++) Require(form.Byte() < 128);
         }
 
         private static void ParseSite(Reader sites, Reader objects)
