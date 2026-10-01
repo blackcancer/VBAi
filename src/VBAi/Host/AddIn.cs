@@ -72,6 +72,10 @@ namespace VBAi
         private static ModernEditorWindow CreateModernEditorNative() => new ModernEditorWindow();
         /// <summary>Fenêtre d’éditeur moderne réutilisée par les commandes de l’add-in.</summary>
         private ModernEditorWindow modernEditor;
+        private TestExplorerWindow testExplorerWindow;
+        private VbeTestExplorerService testExplorerService;
+        private object nativeTestWindow;
+        private ChatToolWindow nativeTestControl;
         /// <summary>Stores the editor workspace used by AddIn.</summary>
         private EditorWorkspaceHost editorWorkspace;
         /// <summary>Navigation VBE associée à l’éditeur moderne ouvert.</summary>
@@ -114,6 +118,13 @@ public void OnConnection(object application, int connectMode, object addInInstan
                 catch (Exception infoError) { WriteLog("AddInInst ProgId unavailable: " + infoError.Message); }
                 dispatcher = new Control();
                 var handle = dispatcher.Handle;
+                testExplorerService = new VbeTestExplorerService(vbe, dispatcher);
+                testExplorerService.ShowExplorer = projectId => {
+                    ShowTestExplorer();
+                    if (testExplorerWindow == null || testExplorerWindow.IsDisposed) throw new InvalidOperationException("The test explorer could not be opened.");
+                    testExplorerWindow.SelectProject(projectId);
+                    return new { Opened = true, Hwnd = testExplorerWindow.Handle.ToInt64(), Docked = !testExplorerWindow.TopLevel };
+                };
                 StartUpdateCheck();
                 crashReporter = CreateCrashReporter(report => CrashReportWindow.ShowReportForVbe(vbe, report));
                 server = new BridgeServer(dispatcher, CreateEditorSession(), process.Id);
@@ -208,6 +219,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
             try
             {
                 if (command == "/editor") { ShowModernEditor(); return; }
+                if (command == "/tests") { ShowTestExplorer(); return; }
                 if (modernEditor != null && !modernEditor.IsDisposed && modernEditor.Visible && modernEditor.Ready && modernEditor.Current != null)
                 { await modernEditor.Script("command", "vbai." + command.TrimStart('/')); return; }
                 ShowChat(); chat.PrepareEditorAction(command);
@@ -238,7 +250,46 @@ public void OnConnection(object application, int connectMode, object addInInstan
         }
         /// <summary>Crée une session VBE reliée au résolveur de la fenêtre d’éditeur moderne.</summary>
         /// <returns>Nouvelle session configurée pour obtenir l’éditeur moderne à la demande.</returns>
-        private VbeSession CreateEditorSession() => new VbeSession(vbe) { ModernEditor = GetModernEditor };
+        private VbeSession CreateEditorSession() => new VbeSession(vbe) { ModernEditor = GetModernEditor, TestExplorer = testExplorerService };
+
+        /// <summary>Opens the session test explorer using the shared live service.</summary>
+        private void ShowTestExplorer()
+        {
+            try
+            {
+                if (testExplorerWindow == null || testExplorerWindow.IsDisposed)
+                {
+                    testExplorerWindow = new TestExplorerWindow();
+                    testExplorerWindow.Configure(testExplorerService);
+                }
+                try
+                {
+                    if (nativeTestWindow == null)
+                    {
+                        object surface = null;
+                        object ownerAddIn = ((dynamic)vbe).AddIns.Item("VBAi.AddIn");
+                        // Reuse the registered generic Form container; the new layout ID is not a COM identity.
+                        nativeTestWindow = ((IVbeWindows)((dynamic)vbe).Windows).CreateToolWindow((IVbeAddIn)ownerAddIn,
+                            "VBAi.ChatToolWindow", UiText.Get("VBAi Test Explorer"), "{8C34CFFE-43A6-4D31-B8A1-709E44189849}", ref surface);
+                        nativeTestControl = surface as ChatToolWindow;
+                        if (nativeTestControl == null) throw new InvalidOperationException("The test explorer native container was not created.");
+                    }
+                    ((dynamic)nativeTestWindow).Visible = true;
+                    if (testExplorerWindow.TopLevel) nativeTestControl.Attach(testExplorerWindow);
+                    ((dynamic)nativeTestWindow).SetFocus();
+                }
+                catch (Exception dockingError)
+                {
+                    WriteLog("Test explorer docking unavailable: " + dockingError.Message);
+                    if (!testExplorerWindow.TopLevel && nativeTestControl != null) nativeTestControl.Detach(testExplorerWindow);
+                    try { if (nativeTestWindow != null) ((dynamic)nativeTestWindow).Close(); } catch (COMException) { }
+                    nativeTestWindow = null; nativeTestControl = null;
+                    if (!testExplorerWindow.Visible) testExplorerWindow.Show(VbeOwner());
+                    testExplorerWindow.Activate();
+                }
+            }
+            catch (Exception error) { ReportMenuError(error); }
+        }
         /// <summary>Ouvre un module dans l’éditeur moderne et rapporte les erreurs d’ouverture.</summary>
         /// <param name="module">Module à afficher.</param>
         private async void OpenModernModule(IEditorModule module)
@@ -420,6 +471,12 @@ public void OnBeginShutdown(ref object[] custom) { CleanupTemporaryToolbarComman
             editorNavigation?.Dispose(); editorNavigation = null;
             editorWorkspace?.Dispose(); editorWorkspace = null;
             modernEditor?.Dispose(); modernEditor = null;
+            if (nativeTestControl != null && testExplorerWindow != null && !testExplorerWindow.IsDisposed && !testExplorerWindow.TopLevel)
+                nativeTestControl.Detach(testExplorerWindow);
+            testExplorerWindow?.Dispose(); testExplorerWindow = null;
+            try { if (nativeTestWindow != null) ((dynamic)nativeTestWindow).Close(); } catch (COMException) { }
+            nativeTestWindow = null; nativeTestControl = null;
+            testExplorerService?.Dispose(); testExplorerService = null;
             StopUpdateCheck();
             crashReporter?.Dispose();
             crashReporter = null;

@@ -1,5 +1,100 @@
 # Recorded validation
 
+## VBA test explorer integration with main (2026-10-01)
+
+The PR combines test-explorer commit
+`146296dc0d349413ccbaec67f8cc954360378d3f` with main
+`afaa2e950f83e196210640428c57436e5f3ac109` at the maintainer's request.
+Documentation and all localization additions from both branches are preserved.
+The Office fixture retains main's one-shot shutdown/process-handle and uncertain
+command guards together with the test feature's ownership checks, unsettled-test
+retention and reviewed Access support prompt. Forced termination remains disabled.
+
+The isolated integration build used production MVID
+`ef740dad-5901-4ea3-9fef-4d0dc6d59aad`, SHA-256
+`6DEB90199EA6261C74E1B43344FE1327F04F0DFE1749159E36822221C01F3FC8`,
+and test MVID `a9b1c606-49db-4bfb-b35a-786619dfae73`, SHA-256
+`8C3AF7B0170EAFA836577834E934DBE26F2F27A16C4F9828361FF9FD420AAD10`.
+The source manifest is `artifacts/pr-preparation/integration-source-manifest.json`,
+SHA-256 `7C22420AAD336E9AF5914C7553DDAFEC3B2A282535A69924522271EF160622BD`.
+It records the code tree before this documentation-only checkpoint was added.
+
+| Check | Actual result | Evidence |
+| --- | --- | --- |
+| Isolated .NET Framework 4.8/x64 build | Passed, no errors; three NU1900 endpoint warnings | `artifacts/build-pr17-integration` |
+| Test-subsystem/LLM unit classes plus OfficeVbeFixtureShutdownTests and OfficeOwnedShutdownEvidenceTests | 337 passed, 0 failed, 0 skipped | `artifacts/test-results/vba-tests-pr17-integration.trx` |
+| Resource resolution | All keys and values from both sides retained, unique XML keys in each locale | Staged resource validation |
+| Documentation and conflict/diff checks | Passed | Documentation checker and Git index checks |
+
+The build command was `dotnet build tests/VBAi.Tests/VBAi.Tests.csproj -c Debug
+--no-restore -p:BuildOutputRoot="$PWD/artifacts/build-pr17-integration"`.
+The focused test command used that same output with `--no-build`. The two fixture
+regressions added during resolution use managed fake documents and the testhost's
+own query handle; they launch no Office process. Overlapping earlier filters are
+not additional tests of this tree and must not be added to these counts.
+
+This is source integration, not native production acceptance. No native host,
+production macro, COM registration change or installed-DLL replacement was used
+for these integration checks. The feature's native execution, coverage-host and
+Monaco-navigation limitations described below remain outstanding. Unrelated
+application qualification was not rerun.
+
+## VBA test explorer draft checkpoint (2026-10-01)
+
+This branch adds the VBA test subsystem; production acceptance remains incomplete.
+Its acceptance scope includes discovery, support installation, single/batch runs,
+fixtures, assertions, cooperative stop, procedure coverage, explorer actions,
+human/JSON reports and the corresponding LLM tools. Unrelated Git/editor workflows
+and the rest of VBAi are not acceptance gates for this feature. Visio and Project
+are excluded from the requested native test scope.
+
+The PR preparation build used production MVID
+`610648ad-a0fd-454c-bda5-5fedb553d743`, SHA-256
+`0095FCA1A201DAECBAC36123193850E291CFB988A3B6558C5748D801B2596208`,
+and test MVID `f1c3f07c-84c0-4fce-946c-04a0c6e0280b`, SHA-256
+`670D1961A80FDBB93F596031ECD5FBFFF91E3594D218A89D261FDB87A3F66667`.
+It compiled into `artifacts/build-pr-test-explorer` with no errors and three
+NU1900 warnings because the vulnerability endpoint was unavailable.
+
+| Check | Observed result | Evidence |
+| --- | --- | --- |
+| Before main integration: test-subsystem unit classes and LLM boundary | 324 passed, 0 failed, 0 skipped | `artifacts/test-results/vba-tests-pr.trx` |
+| Documentation links | Passed | `python tools/docs/check_docs.py` |
+| Last registered Excel trial, earlier candidate `692e236e-278e-41e8-92fd-a9fe88acbf7c` | Four Blocked results before Run; uncertainty false; native-window eligibility refused | `artifacts/test-results/native-explorer-692e236e/subsystem/0b049ed146a747c0b8ba1bab4d4ff84e/` |
+
+The focused unit filter selects VbaTest, VbaCoverage, VbaNativeTest,
+VbeTestExplorerService, TestExplorerWindow, TestSupportReviewDialog and
+LlmVbaTestingBoundary classes in `VBAi.Tests.Unit`. It excludes native opt-ins and
+unrelated application tests. These tests do not measure instrumented .NET coverage
+or establish real-host production readiness.
+
+The earlier native candidate has SHA-256
+`C9CBEB29D8BD96C4058CBB3AE43810CE6551D682108E6B9A41B150FCA002D329`.
+Its source manifest SHA-256 is
+`C8AB36014399F916F2AB6A1D05A84EB0A8B5F2FC79F748DC86DB6570F158DF18`.
+The executed script SHA-256 is
+`57FA19484DA3A79451DCCC7CF59442B7C27F10706FE84B469C49A950EC8C6A3F`.
+The explicit `TestSubsystemOnly` scope retained coverage and explorer/report
+assertions, while excluding the general Excel BeforeSave positive save control.
+That control was recorded as `NOT_TESTED_BY_SCOPE`, not as passing.
+
+No test was dispatched in that native trial. Measured coverage, native explorer
+actions and exports were not reached. Close and Quit returned with zero workbooks,
+but normal process exit remained unverified at fifteen seconds. No Quit retry or
+termination occurred. Temporary HKCU registration was restored and exact
+restoration verified. The current diagnostic refinement was not retested natively.
+
+Further acceptance requires real registered execution and the relevant explorer,
+report and coverage operations in disposable projects across the requested Excel,
+Word, PowerPoint, Access, Publisher, Outlook and user-selected preloaded SOLIDWORKS
+scope. Excel/Word/PowerPoint coverage-copy adapters exist; the other hosts have no
+implemented coverage-copy path. Native source navigation currently selects the
+VBIDE pane; synchronization of the visible Monaco document remains unfinished.
+Interrupted navigation fragments are preserved in ignored local artifacts and
+are excluded from this PR. Native screenshots are unavailable because the latest
+registered trial stopped before explorer actions. No native tests were restarted
+while preparing this draft.
+
 ## Direct Ollama controls and offline harness correction (2026-10-01)
 
 Four independent synthetic protocol controls use the same Ollama `0.34.4`

@@ -2071,6 +2071,98 @@ QQ 附加記憶體
   <data name="Installation outcome is uncertain. Check the installer and its log before attempting another update." xml:space="preserve"><value>安裝結果不確定。再次嘗試更新前，請檢查安裝程式及其記錄。</value></data>
   <data name="Installation refused: no trusted VBAi publisher is configured or the publisher does not match." xml:space="preserve"><value>安裝遭拒：未設定受信任的 VBAi 發行者，或發行者不符。</value></data>
   <data name="Local history recovery copies are available. See the troubleshooting guide." xml:space="preserve"><value>本機歷程記錄的復原副本可用。請參閱疑難排解指南。</value></data>
+  <data name="VBAi test explorer…" xml:space="preserve"><value>VBAi 測試總管…</value></data>
+  <data name="VBAi Test Explorer" xml:space="preserve"><value>VBAi 測試總管</value></data>
+  <data name="Refresh tests" xml:space="preserve"><value>重新整理測試</value></data>
+  <data name="Run selected tests" xml:space="preserve"><value>執行選取的測試</value></data>
+  <data name="Run visible scope" xml:space="preserve"><value>執行可見範圍</value></data>
+  <data name="Rerun failed tests" xml:space="preserve"><value>重新執行失敗的測試</value></data>
+  <data name="Stop after current test" xml:space="preserve"><value>目前測試結束後停止</value></data>
+  <data name="Open test source" xml:space="preserve"><value>開啟測試原始碼</value></data>
+  <data name="Install test support..." xml:space="preserve"><value>安裝測試支援…</value></data>
+  <data name="Copy result report" xml:space="preserve"><value>複製結果報告</value></data>
+  <data name="Export result report..." xml:space="preserve"><value>匯出結果報告…</value></data>
+  <data name="Name or category" xml:space="preserve"><value>名稱或類別</value></data>
+  <data name="Outcome" xml:space="preserve"><value>結果</value></data>
+  <data name="Group by" xml:space="preserve"><value>分組依據</value></data>
+  <data name="Project / module" xml:space="preserve"><value>專案 / 模組</value></data>
+  <data name="Category" xml:space="preserve"><value>類別</value></data>
+  <data name="Test details" xml:space="preserve"><value>測試詳細資料</value></data>
+  <data name="Readable report" xml:space="preserve"><value>易讀報告</value></data>
+  <data name="LLM report (JSON)" xml:space="preserve"><value>LLM 報告 (JSON)</value></data>
+  <data name="VBA code coverage: unavailable (execution instrumentation is not installed)." xml:space="preserve"><value>VBA 程式碼涵蓋範圍：無法使用（未安裝執行監測功能）。</value></data>
+  <data name="All outcomes" xml:space="preserve"><value>所有結果</value></data>
+  <data name="No accessible VBA project." xml:space="preserve"><value>沒有可存取的 VBA 專案。</value></data>
+  <data name="Uncategorized" xml:space="preserve"><value>未分類</value></data>
+  <data name="Previous revision" xml:space="preserve"><value>上一修訂</value></data>
+  <data name="Running tests..." xml:space="preserve"><value>正在執行測試…</value></data>
+  <data name="Test outcome is unknown. No automatic retry was performed." xml:space="preserve"><value>測試結果未知。未進行自動重試。</value></data>
+  <data name="Test run completed." xml:space="preserve"><value>測試執行已完成。</value></data>
+  <data name="Test run stopped." xml:space="preserve"><value>測試執行已停止。</value></data>
+  <data name="Tests" xml:space="preserve"><value>測試</value></data>
+  <data name="Pass rate" xml:space="preserve"><value>通過率</value></data>
+  <data name="Source line" xml:space="preserve"><value>原始碼行</value></data>
+  <data name="Categories" xml:space="preserve"><value>類別</value></data>
+  <data name="Duration" xml:space="preserve"><value>耗時</value></data>
+  <data name="Phase" xml:space="preserve"><value>階段</value></data>
+  <data name="Run revision" xml:space="preserve"><value>執行修訂</value></data>
+  <data name="VBA error" xml:space="preserve"><value>VBA 錯誤</value></data>
+  <data name="Result belongs to a previous source revision." xml:space="preserve"><value>此結果屬於上一原始碼修訂。</value></data>
+  <data name="Stopping after the current test; waiting for its verified result." xml:space="preserve"><value>目前測試結束後停止；正在等待已驗證的結果。</value></data>
+  <data name="Review VBA test support installation" xml:space="preserve"><value>檢閱 VBA 測試支援安裝</value></data>
+  <data name="Review the VBAiTestSupport module below. A source backup is preserved before the edit. Your project is revalidated before applying this change." xml:space="preserve"><value>請檢閱下方的 VBAiTestSupport 模組。編輯前會保留原始碼備份。套用此變更前會重新驗證專案。</value></data>
+  <data name="Apply test support" xml:space="preserve"><value>套用測試支援</value></data>
+  <data name="No test run results." xml:space="preserve"><value>沒有測試執行結果。</value></data>
+  <data name="VBA test results" xml:space="preserve"><value>VBA 測試結果</value></data>
+  <data name="Run: " xml:space="preserve"><value>執行：</value></data>
+  <data name="Revision: " xml:space="preserve"><value>修訂：</value></data>
+  <data name="Pass rate: " xml:space="preserve"><value>通過率：</value></data>
+  <data name="VBA code coverage: unavailable" xml:space="preserve"><value>VBA 程式碼涵蓋範圍：無法使用</value></data>
+  <data name="Run error: " xml:space="preserve"><value>執行錯誤：</value></data>
+  <data name="Execution outcome is uncertain. Inspect the host before any further run." xml:space="preserve"><value>執行結果不確定。再次執行前請檢查主應用程式。</value></data>
+  <data name="Phase: " xml:space="preserve"><value>階段：</value></data>
+  <data name="VBA error: " xml:space="preserve"><value>VBA 錯誤：</value></data>
+  <data name="NotRun" xml:space="preserve"><value>未執行</value></data>
+  <data name="Passed" xml:space="preserve"><value>通過</value></data>
+  <data name="Inconclusive" xml:space="preserve"><value>無法判定</value></data>
+  <data name="Skipped" xml:space="preserve"><value>已略過</value></data>
+  <data name="Blocked" xml:space="preserve"><value>已封鎖</value></data>
+  <data name="OutcomeUnknown" xml:space="preserve"><value>結果未知</value></data>
+  <data name="Test hierarchy" xml:space="preserve"><value>測試階層</value></data>
+  <data name="Test result details" xml:space="preserve"><value>測試結果詳細資料</value></data>
+  <data name="Human-readable test report" xml:space="preserve"><value>易讀測試報告</value></data>
+  <data name="Compact test report for LLM" xml:space="preserve"><value>供 LLM 使用的精簡測試報告</value></data>
+  <data name="Test grouping" xml:space="preserve"><value>測試分組</value></data>
+  <data name="Test outcome filter" xml:space="preserve"><value>測試結果篩選</value></data>
+  <data name="Test search" xml:space="preserve"><value>測試搜尋</value></data>
+  <data name="Test project selection" xml:space="preserve"><value>測試專案選取</value></data>
+  <data name="Select and refresh a VBA project." xml:space="preserve"><value>請選取並重新整理 VBA 專案。</value></data>
+  <data name="A native call has an uncertain outcome. Reconnect VBAi after inspecting the host; automatic retry is disabled." xml:space="preserve"><value>原生呼叫的結果不確定。檢查主應用程式後請重新連線 VBAi；已停用自動重試。</value></data>
+  <data name="Verified test execution currently requires the owned Excel host. Discovery remains available." xml:space="preserve"><value>已驗證的測試執行目前需要受控的 Excel 執行個體。測試探索仍可使用。</value></data>
+  <data name="Save the selected macro-enabled workbook before running tests." xml:space="preserve"><value>執行測試前，請將選取的活頁簿儲存為啟用巨集的格式。</value></data>
+  <data name="Review and install the project-local test support module before running tests." xml:space="preserve"><value>執行測試前，請檢閱並安裝專案內的測試支援模組。</value></data>
+  <data name="The test support module is outdated or changed. Review its update before running tests." xml:space="preserve"><value>測試支援模組已過期或遭修改。執行測試前請檢閱更新內容。</value></data>
+  <data name="Review measured VBA procedure coverage" xml:space="preserve"><value>檢閱 VBA 程序涵蓋範圍測量</value></data>
+  <data name="Run selected with coverage..." xml:space="preserve"><value>測量選取測試的涵蓋範圍…</value></data>
+  <data name="Run visible scope with coverage..." xml:space="preserve"><value>測量可見範圍的涵蓋範圍…</value></data>
+  <data name="VBA procedure coverage: not measured." xml:space="preserve"><value>VBA 程序涵蓋範圍：未測量。</value></data>
+  <data name="Measured procedure coverage is unavailable in this host." xml:space="preserve"><value>此主應用程式不支援程序涵蓋範圍測量。</value></data>
+  <data name="Source changed. Previous results are stale; no tests were run automatically." xml:space="preserve"><value>原始碼已變更。先前的結果已過期；未自動執行任何測試。</value></data>
+  <data name="This run measures procedure-entry coverage, not statement or branch coverage." xml:space="preserve"><value>此次執行測量程序進入點的涵蓋範圍，不測量陳述式或分支涵蓋範圍。</value></data>
+  <data name="Selected tests" xml:space="preserve"><value>選取的測試</value></data>
+  <data name="A separate host document copy is instrumented and executed in the host application. Original source is never instrumented. Application-level handlers and tests may have external side effects with the host&apos;s privileges." xml:space="preserve"><value>將對獨立的主應用程式文件副本插入監測程式碼，並在主應用程式中執行。原始程式碼絕不會被插入監測程式碼。應用程式事件處理常式與測試可能以主應用程式權限產生外部副作用。</value></data>
+  <data name="Copies and measurement files are retained in:" xml:space="preserve"><value>副本與測量檔案保留於：</value></data>
+  <data name="Run this reviewed coverage selection?" xml:space="preserve"><value>執行這項已檢閱的涵蓋範圍測試選取？</value></data>
+  <data name="The reviewed project changed. Review coverage again." xml:space="preserve"><value>已檢閱的專案發生變更。請重新檢閱涵蓋範圍執行。</value></data>
+  <data name="VBA procedure coverage" xml:space="preserve"><value>VBA 程序涵蓋範圍</value></data>
+  <data name="Unavailable" xml:space="preserve"><value>無法使用</value></data>
+  <data name="Unknown" xml:space="preserve"><value>未知</value></data>
+  <data name="Complete measurement" xml:space="preserve"><value>完整測量</value></data>
+  <data name="Partial measurement" xml:space="preserve"><value>部分測量</value></data>
+  <data name="Statement and branch coverage are not measured." xml:space="preserve"><value>不測量陳述式與分支涵蓋範圍。</value></data>
+  <data name="Measured coverage currently requires the owned Excel host." xml:space="preserve"><value>涵蓋範圍測量目前需要受控的 Excel 執行個體。</value></data>
+  <data name="Save the macro-enabled workbook before collecting coverage." xml:space="preserve"><value>收集涵蓋範圍前，請將活頁簿儲存為啟用巨集的格式。</value></data>
+  <data name="Coverage exclusions" xml:space="preserve"><value>涵蓋範圍排除項目</value></data>
   <data name="VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring." xml:space="preserve"><value>VBA 匯入失敗，且無法記錄其結果狀態。復原仍在等待處理；還原前請檢查保留的備份與目前專案。</value></data>
   <data name="Inspection and restoration of the native Code Colors category both failed. The original category selection is unverified." xml:space="preserve"><value>檢查與還原原生程式碼色彩類別均失敗。原始類別選擇尚未驗證。</value></data>
 </root>

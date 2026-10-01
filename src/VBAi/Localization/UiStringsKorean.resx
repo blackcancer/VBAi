@@ -2071,6 +2071,98 @@ Git Credential Manager로 로그인하며 커밋 작성자 정보는 Git에서 �
   <data name="Installation outcome is uncertain. Check the installer and its log before attempting another update." xml:space="preserve"><value>설치 결과를 확인할 수 없습니다. 업데이트를 다시 시도하기 전에 설치 프로그램과 로그를 확인하세요.</value></data>
   <data name="Installation refused: no trusted VBAi publisher is configured or the publisher does not match." xml:space="preserve"><value>설치가 거부되었습니다. 신뢰할 수 있는 VBAi 게시자가 설정되지 않았거나 게시자가 일치하지 않습니다.</value></data>
   <data name="Local history recovery copies are available. See the troubleshooting guide." xml:space="preserve"><value>로컬 기록의 복구 사본이 있습니다. 문제 해결 가이드를 참조하세요.</value></data>
+  <data name="VBAi test explorer…" xml:space="preserve"><value>VBAi 테스트 탐색기…</value></data>
+  <data name="VBAi Test Explorer" xml:space="preserve"><value>VBAi 테스트 탐색기</value></data>
+  <data name="Refresh tests" xml:space="preserve"><value>테스트 새로 고침</value></data>
+  <data name="Run selected tests" xml:space="preserve"><value>선택한 테스트 실행</value></data>
+  <data name="Run visible scope" xml:space="preserve"><value>표시된 범위 실행</value></data>
+  <data name="Rerun failed tests" xml:space="preserve"><value>실패한 테스트 다시 실행</value></data>
+  <data name="Stop after current test" xml:space="preserve"><value>현재 테스트 후 중지</value></data>
+  <data name="Open test source" xml:space="preserve"><value>테스트 소스 열기</value></data>
+  <data name="Install test support..." xml:space="preserve"><value>테스트 지원 설치…</value></data>
+  <data name="Copy result report" xml:space="preserve"><value>결과 보고서 복사</value></data>
+  <data name="Export result report..." xml:space="preserve"><value>결과 보고서 내보내기…</value></data>
+  <data name="Name or category" xml:space="preserve"><value>이름 또는 범주</value></data>
+  <data name="Outcome" xml:space="preserve"><value>결과</value></data>
+  <data name="Group by" xml:space="preserve"><value>그룹 기준</value></data>
+  <data name="Project / module" xml:space="preserve"><value>프로젝트 / 모듈</value></data>
+  <data name="Category" xml:space="preserve"><value>범주</value></data>
+  <data name="Test details" xml:space="preserve"><value>테스트 세부 정보</value></data>
+  <data name="Readable report" xml:space="preserve"><value>읽기 쉬운 보고서</value></data>
+  <data name="LLM report (JSON)" xml:space="preserve"><value>LLM용 보고서 (JSON)</value></data>
+  <data name="VBA code coverage: unavailable (execution instrumentation is not installed)." xml:space="preserve"><value>VBA 코드 커버리지: 사용할 수 없음(실행 계측 기능이 설치되지 않았습니다).</value></data>
+  <data name="All outcomes" xml:space="preserve"><value>모든 결과</value></data>
+  <data name="No accessible VBA project." xml:space="preserve"><value>접근 가능한 VBA 프로젝트가 없습니다.</value></data>
+  <data name="Uncategorized" xml:space="preserve"><value>범주 없음</value></data>
+  <data name="Previous revision" xml:space="preserve"><value>이전 리비전</value></data>
+  <data name="Running tests..." xml:space="preserve"><value>테스트 실행 중…</value></data>
+  <data name="Test outcome is unknown. No automatic retry was performed." xml:space="preserve"><value>테스트 결과를 알 수 없습니다. 자동 재시도는 수행하지 않았습니다.</value></data>
+  <data name="Test run completed." xml:space="preserve"><value>테스트 실행이 완료되었습니다.</value></data>
+  <data name="Test run stopped." xml:space="preserve"><value>테스트 실행이 중지되었습니다.</value></data>
+  <data name="Tests" xml:space="preserve"><value>테스트</value></data>
+  <data name="Pass rate" xml:space="preserve"><value>성공률</value></data>
+  <data name="Source line" xml:space="preserve"><value>소스 줄</value></data>
+  <data name="Categories" xml:space="preserve"><value>범주</value></data>
+  <data name="Duration" xml:space="preserve"><value>소요 시간</value></data>
+  <data name="Phase" xml:space="preserve"><value>단계</value></data>
+  <data name="Run revision" xml:space="preserve"><value>실행 리비전</value></data>
+  <data name="VBA error" xml:space="preserve"><value>VBA 오류</value></data>
+  <data name="Result belongs to a previous source revision." xml:space="preserve"><value>이 결과는 이전 소스 리비전에 해당합니다.</value></data>
+  <data name="Stopping after the current test; waiting for its verified result." xml:space="preserve"><value>현재 테스트 후 중지합니다. 검증된 결과를 기다리는 중입니다.</value></data>
+  <data name="Review VBA test support installation" xml:space="preserve"><value>VBA 테스트 지원 설치 검토</value></data>
+  <data name="Review the VBAiTestSupport module below. A source backup is preserved before the edit. Your project is revalidated before applying this change." xml:space="preserve"><value>아래 VBAiTestSupport 모듈을 검토하세요. 편집 전에 소스 백업을 보존합니다. 변경을 적용하기 전에 프로젝트를 다시 검증합니다.</value></data>
+  <data name="Apply test support" xml:space="preserve"><value>테스트 지원 적용</value></data>
+  <data name="No test run results." xml:space="preserve"><value>테스트 실행 결과가 없습니다.</value></data>
+  <data name="VBA test results" xml:space="preserve"><value>VBA 테스트 결과</value></data>
+  <data name="Run: " xml:space="preserve"><value>실행: </value></data>
+  <data name="Revision: " xml:space="preserve"><value>리비전: </value></data>
+  <data name="Pass rate: " xml:space="preserve"><value>성공률: </value></data>
+  <data name="VBA code coverage: unavailable" xml:space="preserve"><value>VBA 코드 커버리지: 사용할 수 없음</value></data>
+  <data name="Run error: " xml:space="preserve"><value>실행 오류: </value></data>
+  <data name="Execution outcome is uncertain. Inspect the host before any further run." xml:space="preserve"><value>실행 결과가 불확실합니다. 다시 실행하기 전에 호스트 애플리케이션을 확인하세요.</value></data>
+  <data name="Phase: " xml:space="preserve"><value>단계: </value></data>
+  <data name="VBA error: " xml:space="preserve"><value>VBA 오류: </value></data>
+  <data name="NotRun" xml:space="preserve"><value>미실행</value></data>
+  <data name="Passed" xml:space="preserve"><value>통과</value></data>
+  <data name="Inconclusive" xml:space="preserve"><value>판정 불가</value></data>
+  <data name="Skipped" xml:space="preserve"><value>건너뜀</value></data>
+  <data name="Blocked" xml:space="preserve"><value>차단됨</value></data>
+  <data name="OutcomeUnknown" xml:space="preserve"><value>결과 알 수 없음</value></data>
+  <data name="Test hierarchy" xml:space="preserve"><value>테스트 계층</value></data>
+  <data name="Test result details" xml:space="preserve"><value>테스트 결과 세부 정보</value></data>
+  <data name="Human-readable test report" xml:space="preserve"><value>읽기 쉬운 테스트 보고서</value></data>
+  <data name="Compact test report for LLM" xml:space="preserve"><value>LLM용 간결한 테스트 보고서</value></data>
+  <data name="Test grouping" xml:space="preserve"><value>테스트 그룹화</value></data>
+  <data name="Test outcome filter" xml:space="preserve"><value>테스트 결과 필터</value></data>
+  <data name="Test search" xml:space="preserve"><value>테스트 검색</value></data>
+  <data name="Test project selection" xml:space="preserve"><value>테스트 프로젝트 선택</value></data>
+  <data name="Select and refresh a VBA project." xml:space="preserve"><value>VBA 프로젝트를 선택하고 새로 고치세요.</value></data>
+  <data name="A native call has an uncertain outcome. Reconnect VBAi after inspecting the host; automatic retry is disabled." xml:space="preserve"><value>네이티브 호출 결과가 불확실합니다. 호스트를 확인한 후 VBAi에 다시 연결하세요. 자동 재시도는 비활성화되어 있습니다.</value></data>
+  <data name="Verified test execution currently requires the owned Excel host. Discovery remains available." xml:space="preserve"><value>검증된 테스트 실행에는 현재 제어 중인 Excel 인스턴스가 필요합니다. 테스트 검색은 계속 사용할 수 있습니다.</value></data>
+  <data name="Save the selected macro-enabled workbook before running tests." xml:space="preserve"><value>테스트 실행 전에 선택한 통합 문서를 매크로 지원 형식으로 저장하세요.</value></data>
+  <data name="Review and install the project-local test support module before running tests." xml:space="preserve"><value>테스트 실행 전에 프로젝트 내 테스트 지원 모듈을 검토하고 설치하세요.</value></data>
+  <data name="The test support module is outdated or changed. Review its update before running tests." xml:space="preserve"><value>테스트 지원 모듈이 오래되었거나 변경되었습니다. 테스트 실행 전에 업데이트를 검토하세요.</value></data>
+  <data name="Review measured VBA procedure coverage" xml:space="preserve"><value>VBA 프로시저 커버리지 측정 검토</value></data>
+  <data name="Run selected with coverage..." xml:space="preserve"><value>선택한 테스트를 커버리지와 함께 실행…</value></data>
+  <data name="Run visible scope with coverage..." xml:space="preserve"><value>표시 범위를 커버리지와 함께 실행…</value></data>
+  <data name="VBA procedure coverage: not measured." xml:space="preserve"><value>VBA 프로시저 커버리지: 측정되지 않음.</value></data>
+  <data name="Measured procedure coverage is unavailable in this host." xml:space="preserve"><value>이 호스트에서는 프로시저 커버리지 측정을 사용할 수 없습니다.</value></data>
+  <data name="Source changed. Previous results are stale; no tests were run automatically." xml:space="preserve"><value>소스가 변경되었습니다. 이전 결과는 오래된 상태이며 테스트는 자동 실행되지 않았습니다.</value></data>
+  <data name="This run measures procedure-entry coverage, not statement or branch coverage." xml:space="preserve"><value>이번 실행은 프로시저 진입을 측정하며 문장이나 분기 커버리지는 측정하지 않습니다.</value></data>
+  <data name="Selected tests" xml:space="preserve"><value>선택한 테스트</value></data>
+  <data name="A separate host document copy is instrumented and executed in the host application. Original source is never instrumented. Application-level handlers and tests may have external side effects with the host&apos;s privileges." xml:space="preserve"><value>호스트 문서의 별도 복사본에 계측 코드를 추가하고 호스트 애플리케이션에서 실행합니다. 원본 소스에는 계측 코드를 추가하지 않습니다. 애플리케이션 이벤트 처리기와 테스트는 호스트 권한으로 외부에 영향을 줄 수 있습니다.</value></data>
+  <data name="Copies and measurement files are retained in:" xml:space="preserve"><value>복사본과 측정 파일이 보존되는 위치:</value></data>
+  <data name="Run this reviewed coverage selection?" xml:space="preserve"><value>검토한 이 선택 항목의 커버리지를 측정할까요?</value></data>
+  <data name="The reviewed project changed. Review coverage again." xml:space="preserve"><value>검토한 프로젝트가 변경되었습니다. 커버리지 실행을 다시 검토하세요.</value></data>
+  <data name="VBA procedure coverage" xml:space="preserve"><value>VBA 프로시저 커버리지</value></data>
+  <data name="Unavailable" xml:space="preserve"><value>사용할 수 없음</value></data>
+  <data name="Unknown" xml:space="preserve"><value>알 수 없음</value></data>
+  <data name="Complete measurement" xml:space="preserve"><value>완전한 측정</value></data>
+  <data name="Partial measurement" xml:space="preserve"><value>부분 측정</value></data>
+  <data name="Statement and branch coverage are not measured." xml:space="preserve"><value>문장 및 분기 커버리지는 측정하지 않습니다.</value></data>
+  <data name="Measured coverage currently requires the owned Excel host." xml:space="preserve"><value>커버리지 측정에는 현재 제어 중인 Excel 인스턴스가 필요합니다.</value></data>
+  <data name="Save the macro-enabled workbook before collecting coverage." xml:space="preserve"><value>커버리지를 측정하기 전에 통합 문서를 매크로 지원 형식으로 저장하세요.</value></data>
+  <data name="Coverage exclusions" xml:space="preserve"><value>커버리지 제외 항목</value></data>
   <data name="VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring." xml:space="preserve"><value>VBA 가져오기에 실패했으며 결과 상태를 기록할 수 없습니다. 복구가 아직 보류 중입니다. 복원하기 전에 보존된 백업과 현재 프로젝트를 확인하세요.</value></data>
   <data name="Inspection and restoration of the native Code Colors category both failed. The original category selection is unverified." xml:space="preserve"><value>기본 코드 색상 범주의 검사와 복원에 모두 실패했습니다. 원래 범주 선택은 확인되지 않았습니다.</value></data>
 </root>

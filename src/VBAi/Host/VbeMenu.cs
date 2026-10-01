@@ -113,6 +113,13 @@ namespace VBAi
                     ((dynamic)modernButton).TooltipText = UiText.Get("Open active module");
                     ClickHandler modernHandler = (object control, ref bool cancel) => { cancel = true; editorAction("/editor"); };
                     editorButtons.Add(Tuple.Create(modernButton, modernHandler));
+                    dynamic testsButton = view.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
+                    testsButton.Caption = UiText.Get("VBAi test explorer…");
+                    testsButton.Tag = "VBAi.Tests";
+                    ClickHandler testsHandler = (object control, ref bool cancel) => { cancel = true; editorAction("/tests"); };
+                    editorButtons.Add(Tuple.Create((object)testsButton, testsHandler));
+                    this.subscribe((object)testsButton, ClickInterface, 1, testsHandler);
+                    this.applyIcon((object)testsButton, typeof(AboutWindow));
                     this.subscribe(modernButton, ClickInterface, 1, modernHandler);
                     this.applyIcon(modernButton, typeof(AboutWindow));
                 }

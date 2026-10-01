@@ -78,6 +78,46 @@ namespace VBAi.Tests.Unit
             });
         }
 
+        [TestMethod]
+        public void FixturePendingNativeTestRetainsAllOwnershipBeforeCloseOrQuitAndRejectsLaterCleanupRetry()
+        {
+            WithFakeFixture((fixture, application, document, process, root) => {
+                fixture.NativeExecutionUnsettled = true;
+                fixture.WaitForOwnedExit = (observed, timeout) => { Assert.Fail("A pending test must not enter shutdown observation."); return false; };
+                Assert.ThrowsException<AssertFailedException>(() => fixture.Dispose());
+                Assert.AreSame(process, Field(fixture, "ownedProcess"));
+                Assert.AreSame(application, Field(fixture, "application"));
+                Assert.AreSame(document, Field(fixture, "document"));
+                Assert.AreEqual(true, Field(fixture, "hostTeardownRefused"));
+                Assert.AreEqual(0, application.QuitCount); Assert.AreEqual(0, document.CloseCount);
+                Assert.AreEqual(true, Read(Path.Combine(root, "qualification.json"))["NativeExecutionUnsettled"]);
+                fixture.NativeExecutionUnsettled = false;
+                Assert.ThrowsException<AssertFailedException>(() => fixture.Dispose());
+                Assert.AreEqual(0, application.QuitCount); Assert.AreEqual(0, document.CloseCount);
+            });
+        }
+
+        [TestMethod]
+        public void ReviewedSupportApprovalCannotLatchWithoutItsOriginalLiveDialogGeneration()
+        {
+            WithFakeFixture((fixture, application, document, process, root) => {
+                var approve = typeof(OfficeVbeFixture).GetMethod("SetReviewedSupportSaveAllowed", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.IsInstanceOfType(Assert.ThrowsException<TargetInvocationException>(() => approve.Invoke(fixture, new object[] { true })).InnerException,
+                    typeof(AssertFailedException));
+                Assert.AreEqual(false, Field(fixture, "allowSupportSavePrompt"));
+                var workerType = typeof(OfficeVbeFixture).GetNestedType("OwnedDialogWorker", BindingFlags.NonPublic);
+                var worker = Activator.CreateInstance(workerType, BindingFlags.Instance | BindingFlags.NonPublic, null,
+                    new object[] { process, "Access" }, null);
+                SetField(worker, "StopRequested", true); SetField(fixture, "dialogWorker", worker);
+                Assert.IsInstanceOfType(Assert.ThrowsException<TargetInvocationException>(() => approve.Invoke(fixture, new object[] { true })).InnerException,
+                    typeof(AssertFailedException));
+                Assert.AreEqual(false, Field(fixture, "allowSupportSavePrompt"));
+                Assert.AreEqual(false, Field(worker, "ReviewedSupportSaveAllowed"));
+                approve.Invoke(fixture, new object[] { false });
+                SetField(fixture, "dialogWorker", null);
+            });
+        }
+
         private static void WithFakeFixture(Action<OfficeVbeFixture, FakeApplication, FakeDocument, Process, string> action)
         {
             string root = Path.Combine(Path.GetTempPath(), "VBAi-OwnedShutdown-" + Guid.NewGuid().ToString("N"));

@@ -44,7 +44,7 @@ namespace VBAi
         /// <summary>Détermine si l’outil dépend de la synchronisation entre l’éditeur et le code natif.</summary>
         /// <param name="name">Nom de l’outil à classer.</param>
         /// <returns><see langword="true"/> pour les opérations incompatibles avec un brouillon non synchronisé.</returns>
-        private static bool NeedsSynchronizedEditor(string name) => name == "compile_project" || !ReadOnlyTools.Contains(name);
+        private static bool NeedsSynchronizedEditor(string name) => name == "compile_project" || (name != "stop_vba_tests" && !ReadOnlyTools.Contains(name));
 
         /// <summary>Refuse une mutation native lorsque le brouillon Monaco contient des changements non synchronisés.</summary>
         /// <param name="name">Nom de l’outil dont la mutation est envisagée.</param>

@@ -722,6 +722,10 @@ namespace VBAi.Tests.Unit
         {
             Assert.ThrowsException<ArgumentNullException>(() => new LlmVbeTools(null, null, null));
             var tools = Create();
+            const string reviewedSupport = "Option Explicit\r\n' Reviewed test-support source\r\n";
+            tools.Execute = request => request.Command == "preview_vba_test_support"
+                ? Response.Success(new { ExpectedProjectVersion = "value", Text = reviewedSupport })
+                : VbeToolBoundaryFixture.Execute(request);
             var saveFixture = new ToolFixture();
             saveFixture.Tools.SaveHostDocumentNative = request => System.Threading.Tasks.Task.FromResult<object>(new { Saved = true });
             tools.NoteUserRequest(null); tools.NoteUserRequest(" ");
@@ -744,6 +748,11 @@ namespace VBAi.Tests.Unit
                 var required = (object[])parameters["required"];
                 var fields = Dict(parameters["properties"]);
                 var values = Arguments(name);
+                // These tools have semantic preconditions in addition to their JSON types.
+                if (name == "install_vba_test_support") values["Text"] = reviewedSupport;
+                if (name == "run_vba_tests" || name == "navigate_vba_test") values["Items"] = new[] { new string('a', 64) };
+                if (name == "vba_test_run_status") values["Action"] = "compact";
+                if (name == "run_vba_tests") values["Action"] = "coverage";
                 Func<string, string> invoke = arguments => name == "save_host_document"
                     ? InvokeSaveContract(saveFixture, arguments) : tools.Invoke(name, arguments);
                 Success(invoke(Json.Serialize(values)), name);

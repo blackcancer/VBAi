@@ -2071,6 +2071,98 @@ Anmeldung über Git Credential Manager; die Commit-Identität wird in Git festge
   <data name="Installation outcome is uncertain. Check the installer and its log before attempting another update." xml:space="preserve"><value>Das Installationsergebnis ist ungewiss. Prüfen Sie das Installationsprogramm und sein Protokoll, bevor Sie ein weiteres Update versuchen.</value></data>
   <data name="Installation refused: no trusted VBAi publisher is configured or the publisher does not match." xml:space="preserve"><value>Installation abgelehnt: Es ist kein vertrauenswürdiger VBAi-Herausgeber konfiguriert oder der Herausgeber stimmt nicht überein.</value></data>
   <data name="Local history recovery copies are available. See the troubleshooting guide." xml:space="preserve"><value>Wiederherstellungskopien des lokalen Verlaufs sind verfügbar. Lesen Sie die Anleitung zur Fehlerbehebung.</value></data>
+  <data name="VBAi test explorer…" xml:space="preserve"><value>VBAi-Test-Explorer…</value></data>
+  <data name="VBAi Test Explorer" xml:space="preserve"><value>VBAi-Test-Explorer</value></data>
+  <data name="Refresh tests" xml:space="preserve"><value>Tests aktualisieren</value></data>
+  <data name="Run selected tests" xml:space="preserve"><value>Ausgewählte Tests ausführen</value></data>
+  <data name="Run visible scope" xml:space="preserve"><value>Sichtbaren Bereich ausführen</value></data>
+  <data name="Rerun failed tests" xml:space="preserve"><value>Fehlgeschlagene Tests wiederholen</value></data>
+  <data name="Stop after current test" xml:space="preserve"><value>Nach aktuellem Test stoppen</value></data>
+  <data name="Open test source" xml:space="preserve"><value>Testquellcode öffnen</value></data>
+  <data name="Install test support..." xml:space="preserve"><value>Testunterstützung installieren…</value></data>
+  <data name="Copy result report" xml:space="preserve"><value>Ergebnisbericht kopieren</value></data>
+  <data name="Export result report..." xml:space="preserve"><value>Ergebnisbericht exportieren…</value></data>
+  <data name="Name or category" xml:space="preserve"><value>Name oder Kategorie</value></data>
+  <data name="Outcome" xml:space="preserve"><value>Ergebnis</value></data>
+  <data name="Group by" xml:space="preserve"><value>Gruppieren nach</value></data>
+  <data name="Project / module" xml:space="preserve"><value>Projekt / Modul</value></data>
+  <data name="Category" xml:space="preserve"><value>Kategorie</value></data>
+  <data name="Test details" xml:space="preserve"><value>Testdetails</value></data>
+  <data name="Readable report" xml:space="preserve"><value>Lesbarer Bericht</value></data>
+  <data name="LLM report (JSON)" xml:space="preserve"><value>LLM-Bericht (JSON)</value></data>
+  <data name="VBA code coverage: unavailable (execution instrumentation is not installed)." xml:space="preserve"><value>VBA-Codeabdeckung: nicht verfügbar (die Ausführungsinstrumentierung ist nicht installiert).</value></data>
+  <data name="All outcomes" xml:space="preserve"><value>Alle Ergebnisse</value></data>
+  <data name="No accessible VBA project." xml:space="preserve"><value>Kein zugängliches VBA-Projekt.</value></data>
+  <data name="Uncategorized" xml:space="preserve"><value>Ohne Kategorie</value></data>
+  <data name="Previous revision" xml:space="preserve"><value>Vorherige Revision</value></data>
+  <data name="Running tests..." xml:space="preserve"><value>Tests werden ausgeführt…</value></data>
+  <data name="Test outcome is unknown. No automatic retry was performed." xml:space="preserve"><value>Das Testergebnis ist unbekannt. Es wurde kein automatischer Wiederholungsversuch durchgeführt.</value></data>
+  <data name="Test run completed." xml:space="preserve"><value>Testlauf abgeschlossen.</value></data>
+  <data name="Test run stopped." xml:space="preserve"><value>Testlauf gestoppt.</value></data>
+  <data name="Tests" xml:space="preserve"><value>Tests</value></data>
+  <data name="Pass rate" xml:space="preserve"><value>Erfolgsquote</value></data>
+  <data name="Source line" xml:space="preserve"><value>Quellcodezeile</value></data>
+  <data name="Categories" xml:space="preserve"><value>Kategorien</value></data>
+  <data name="Duration" xml:space="preserve"><value>Dauer</value></data>
+  <data name="Phase" xml:space="preserve"><value>Phase</value></data>
+  <data name="Run revision" xml:space="preserve"><value>Revision des Testlaufs</value></data>
+  <data name="VBA error" xml:space="preserve"><value>VBA-Fehler</value></data>
+  <data name="Result belongs to a previous source revision." xml:space="preserve"><value>Das Ergebnis gehört zu einer vorherigen Quellcoderevision.</value></data>
+  <data name="Stopping after the current test; waiting for its verified result." xml:space="preserve"><value>Stopp nach dem aktuellen Test; sein verifiziertes Ergebnis wird abgewartet.</value></data>
+  <data name="Review VBA test support installation" xml:space="preserve"><value>Installation der VBA-Testunterstützung prüfen</value></data>
+  <data name="Review the VBAiTestSupport module below. A source backup is preserved before the edit. Your project is revalidated before applying this change." xml:space="preserve"><value>Prüfen Sie das folgende Modul VBAiTestSupport. Vor der Bearbeitung wird eine Quellcodesicherung aufbewahrt. Das Projekt wird vor dem Anwenden dieser Änderung erneut validiert.</value></data>
+  <data name="Apply test support" xml:space="preserve"><value>Testunterstützung anwenden</value></data>
+  <data name="No test run results." xml:space="preserve"><value>Keine Testlaufergebnisse.</value></data>
+  <data name="VBA test results" xml:space="preserve"><value>VBA-Testergebnisse</value></data>
+  <data name="Run: " xml:space="preserve"><value>Testlauf: </value></data>
+  <data name="Revision: " xml:space="preserve"><value>Revision: </value></data>
+  <data name="Pass rate: " xml:space="preserve"><value>Erfolgsquote: </value></data>
+  <data name="VBA code coverage: unavailable" xml:space="preserve"><value>VBA-Codeabdeckung: nicht verfügbar</value></data>
+  <data name="Run error: " xml:space="preserve"><value>Testlauffehler: </value></data>
+  <data name="Execution outcome is uncertain. Inspect the host before any further run." xml:space="preserve"><value>Das Ausführungsergebnis ist ungewiss. Prüfen Sie die Hostanwendung vor einem weiteren Testlauf.</value></data>
+  <data name="Phase: " xml:space="preserve"><value>Phase: </value></data>
+  <data name="VBA error: " xml:space="preserve"><value>VBA-Fehler: </value></data>
+  <data name="NotRun" xml:space="preserve"><value>Nicht ausgeführt</value></data>
+  <data name="Passed" xml:space="preserve"><value>Bestanden</value></data>
+  <data name="Inconclusive" xml:space="preserve"><value>Nicht eindeutig</value></data>
+  <data name="Skipped" xml:space="preserve"><value>Übersprungen</value></data>
+  <data name="Blocked" xml:space="preserve"><value>Blockiert</value></data>
+  <data name="OutcomeUnknown" xml:space="preserve"><value>Ergebnis unbekannt</value></data>
+  <data name="Test hierarchy" xml:space="preserve"><value>Testhierarchie</value></data>
+  <data name="Test result details" xml:space="preserve"><value>Details zum Testergebnis</value></data>
+  <data name="Human-readable test report" xml:space="preserve"><value>Lesbarer Testbericht</value></data>
+  <data name="Compact test report for LLM" xml:space="preserve"><value>Kompakter Testbericht für LLM</value></data>
+  <data name="Test grouping" xml:space="preserve"><value>Testgruppierung</value></data>
+  <data name="Test outcome filter" xml:space="preserve"><value>Testergebnisfilter</value></data>
+  <data name="Test search" xml:space="preserve"><value>Testsuche</value></data>
+  <data name="Test project selection" xml:space="preserve"><value>Auswahl des Testprojekts</value></data>
+  <data name="Select and refresh a VBA project." xml:space="preserve"><value>Wählen Sie ein VBA-Projekt aus und aktualisieren Sie es.</value></data>
+  <data name="A native call has an uncertain outcome. Reconnect VBAi after inspecting the host; automatic retry is disabled." xml:space="preserve"><value>Das Ergebnis eines nativen Aufrufs ist ungewiss. Verbinden Sie VBAi nach Prüfung der Hostanwendung erneut; automatische Wiederholungen sind deaktiviert.</value></data>
+  <data name="Verified test execution currently requires the owned Excel host. Discovery remains available." xml:space="preserve"><value>Verifizierte Testausführung benötigt derzeit die kontrollierte Excel-Instanz. Die Erkennung bleibt verfügbar.</value></data>
+  <data name="Save the selected macro-enabled workbook before running tests." xml:space="preserve"><value>Speichern Sie die ausgewählte Arbeitsmappe mit Makrounterstützung, bevor Sie Tests ausführen.</value></data>
+  <data name="Review and install the project-local test support module before running tests." xml:space="preserve"><value>Prüfen und installieren Sie das lokale Testunterstützungsmodul im Projekt, bevor Sie Tests ausführen.</value></data>
+  <data name="The test support module is outdated or changed. Review its update before running tests." xml:space="preserve"><value>Das Testunterstützungsmodul ist veraltet oder geändert. Prüfen Sie seine Aktualisierung vor der Testausführung.</value></data>
+  <data name="Review measured VBA procedure coverage" xml:space="preserve"><value>Messung der VBA-Prozedurabdeckung prüfen</value></data>
+  <data name="Run selected with coverage..." xml:space="preserve"><value>Auswahl mit Abdeckung ausführen…</value></data>
+  <data name="Run visible scope with coverage..." xml:space="preserve"><value>Sichtbaren Bereich mit Abdeckung ausführen…</value></data>
+  <data name="VBA procedure coverage: not measured." xml:space="preserve"><value>VBA-Prozedurabdeckung: nicht gemessen.</value></data>
+  <data name="Measured procedure coverage is unavailable in this host." xml:space="preserve"><value>Die Messung der Prozedurabdeckung ist in dieser Hostanwendung nicht verfügbar.</value></data>
+  <data name="Source changed. Previous results are stale; no tests were run automatically." xml:space="preserve"><value>Der Quellcode hat sich geändert. Vorherige Ergebnisse sind veraltet; Tests wurden nicht automatisch ausgeführt.</value></data>
+  <data name="This run measures procedure-entry coverage, not statement or branch coverage." xml:space="preserve"><value>Dieser Testlauf misst Prozedureintritte, keine Anweisungs- oder Zweigabdeckung.</value></data>
+  <data name="Selected tests" xml:space="preserve"><value>Ausgewählte Tests</value></data>
+  <data name="A separate host document copy is instrumented and executed in the host application. Original source is never instrumented. Application-level handlers and tests may have external side effects with the host&apos;s privileges." xml:space="preserve"><value>Eine separate Kopie des Hostdokuments wird instrumentiert und in der Hostanwendung ausgeführt. Der Originalquellcode wird niemals instrumentiert. Ereignishandler der Anwendung und Tests können mit den Rechten der Hostanwendung externe Nebenwirkungen haben.</value></data>
+  <data name="Copies and measurement files are retained in:" xml:space="preserve"><value>Kopien und Messdateien bleiben erhalten unter:</value></data>
+  <data name="Run this reviewed coverage selection?" xml:space="preserve"><value>Diese geprüfte Abdeckungsauswahl ausführen?</value></data>
+  <data name="The reviewed project changed. Review coverage again." xml:space="preserve"><value>Das geprüfte Projekt hat sich geändert. Prüfen Sie die Abdeckung erneut.</value></data>
+  <data name="VBA procedure coverage" xml:space="preserve"><value>VBA-Prozedurabdeckung</value></data>
+  <data name="Unavailable" xml:space="preserve"><value>Nicht verfügbar</value></data>
+  <data name="Unknown" xml:space="preserve"><value>Unbekannt</value></data>
+  <data name="Complete measurement" xml:space="preserve"><value>Vollständige Messung</value></data>
+  <data name="Partial measurement" xml:space="preserve"><value>Teilweise Messung</value></data>
+  <data name="Statement and branch coverage are not measured." xml:space="preserve"><value>Anweisungs- und Zweigabdeckung werden nicht gemessen.</value></data>
+  <data name="Measured coverage currently requires the owned Excel host." xml:space="preserve"><value>Die Abdeckungsmessung benötigt derzeit die kontrollierte Excel-Instanz.</value></data>
+  <data name="Save the macro-enabled workbook before collecting coverage." xml:space="preserve"><value>Speichern Sie die Arbeitsmappe mit Makrounterstützung vor der Abdeckungsmessung.</value></data>
+  <data name="Coverage exclusions" xml:space="preserve"><value>Ausnahmen von der Abdeckung</value></data>
   <data name="VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring." xml:space="preserve"><value>Der VBA-Import ist fehlgeschlagen und der daraus entstandene Zustand konnte nicht aufgezeichnet werden. Die Wiederherstellung steht weiterhin aus; prüfen Sie die aufbewahrte Sicherung und das aktuelle Projekt, bevor Sie es wiederherstellen.</value></data>
   <data name="Inspection and restoration of the native Code Colors category both failed. The original category selection is unverified." xml:space="preserve"><value>Sowohl die Prüfung als auch die Wiederherstellung der nativen Kategorie für Codefarben sind fehlgeschlagen. Die ursprüngliche Kategorieauswahl wurde nicht bestätigt.</value></data>
 </root>

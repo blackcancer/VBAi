@@ -2051,6 +2051,98 @@ Sign in through Git Credential Manager; commit identity is configured in Git.</v
   <data name="Installation outcome is uncertain. Check the installer and its log before attempting another update." xml:space="preserve"><value>Installation outcome is uncertain. Check the installer and its log before attempting another update.</value></data>
   <data name="Installation refused: no trusted VBAi publisher is configured or the publisher does not match." xml:space="preserve"><value>Installation refused: no trusted VBAi publisher is configured or the publisher does not match.</value></data>
   <data name="Local history recovery copies are available. See the troubleshooting guide." xml:space="preserve"><value>Local history recovery copies are available. See the troubleshooting guide.</value></data>
+  <data name="VBAi test explorer…" xml:space="preserve"><value>VBAi test explorer…</value></data>
+  <data name="VBAi Test Explorer" xml:space="preserve"><value>VBAi Test Explorer</value></data>
+  <data name="Refresh tests" xml:space="preserve"><value>Refresh tests</value></data>
+  <data name="Run selected tests" xml:space="preserve"><value>Run selected tests</value></data>
+  <data name="Run visible scope" xml:space="preserve"><value>Run visible scope</value></data>
+  <data name="Rerun failed tests" xml:space="preserve"><value>Rerun failed tests</value></data>
+  <data name="Stop after current test" xml:space="preserve"><value>Stop after current test</value></data>
+  <data name="Open test source" xml:space="preserve"><value>Open test source</value></data>
+  <data name="Install test support..." xml:space="preserve"><value>Install test support...</value></data>
+  <data name="Copy result report" xml:space="preserve"><value>Copy result report</value></data>
+  <data name="Export result report..." xml:space="preserve"><value>Export result report...</value></data>
+  <data name="Name or category" xml:space="preserve"><value>Name or category</value></data>
+  <data name="Outcome" xml:space="preserve"><value>Outcome</value></data>
+  <data name="Group by" xml:space="preserve"><value>Group by</value></data>
+  <data name="Project / module" xml:space="preserve"><value>Project / module</value></data>
+  <data name="Category" xml:space="preserve"><value>Category</value></data>
+  <data name="Test details" xml:space="preserve"><value>Test details</value></data>
+  <data name="Readable report" xml:space="preserve"><value>Readable report</value></data>
+  <data name="LLM report (JSON)" xml:space="preserve"><value>LLM report (JSON)</value></data>
+  <data name="VBA code coverage: unavailable (execution instrumentation is not installed)." xml:space="preserve"><value>VBA code coverage: unavailable (execution instrumentation is not installed).</value></data>
+  <data name="All outcomes" xml:space="preserve"><value>All outcomes</value></data>
+  <data name="No accessible VBA project." xml:space="preserve"><value>No accessible VBA project.</value></data>
+  <data name="Uncategorized" xml:space="preserve"><value>Uncategorized</value></data>
+  <data name="Previous revision" xml:space="preserve"><value>Previous revision</value></data>
+  <data name="Running tests..." xml:space="preserve"><value>Running tests...</value></data>
+  <data name="Test outcome is unknown. No automatic retry was performed." xml:space="preserve"><value>Test outcome is unknown. No automatic retry was performed.</value></data>
+  <data name="Test run completed." xml:space="preserve"><value>Test run completed.</value></data>
+  <data name="Test run stopped." xml:space="preserve"><value>Test run stopped.</value></data>
+  <data name="Tests" xml:space="preserve"><value>Tests</value></data>
+  <data name="Pass rate" xml:space="preserve"><value>Pass rate</value></data>
+  <data name="Source line" xml:space="preserve"><value>Source line</value></data>
+  <data name="Categories" xml:space="preserve"><value>Categories</value></data>
+  <data name="Duration" xml:space="preserve"><value>Duration</value></data>
+  <data name="Phase" xml:space="preserve"><value>Phase</value></data>
+  <data name="Run revision" xml:space="preserve"><value>Run revision</value></data>
+  <data name="VBA error" xml:space="preserve"><value>VBA error</value></data>
+  <data name="Result belongs to a previous source revision." xml:space="preserve"><value>Result belongs to a previous source revision.</value></data>
+  <data name="Stopping after the current test; waiting for its verified result." xml:space="preserve"><value>Stopping after the current test; waiting for its verified result.</value></data>
+  <data name="Review VBA test support installation" xml:space="preserve"><value>Review VBA test support installation</value></data>
+  <data name="Review the VBAiTestSupport module below. A source backup is preserved before the edit. Your project is revalidated before applying this change." xml:space="preserve"><value>Review the VBAiTestSupport module below. A source backup is preserved before the edit. Your project is revalidated before applying this change.</value></data>
+  <data name="Apply test support" xml:space="preserve"><value>Apply test support</value></data>
+  <data name="No test run results." xml:space="preserve"><value>No test run results.</value></data>
+  <data name="VBA test results" xml:space="preserve"><value>VBA test results</value></data>
+  <data name="Run: " xml:space="preserve"><value>Run: </value></data>
+  <data name="Revision: " xml:space="preserve"><value>Revision: </value></data>
+  <data name="Pass rate: " xml:space="preserve"><value>Pass rate: </value></data>
+  <data name="VBA code coverage: unavailable" xml:space="preserve"><value>VBA code coverage: unavailable</value></data>
+  <data name="Run error: " xml:space="preserve"><value>Run error: </value></data>
+  <data name="Execution outcome is uncertain. Inspect the host before any further run." xml:space="preserve"><value>Execution outcome is uncertain. Inspect the host before any further run.</value></data>
+  <data name="Phase: " xml:space="preserve"><value>Phase: </value></data>
+  <data name="VBA error: " xml:space="preserve"><value>VBA error: </value></data>
+  <data name="NotRun" xml:space="preserve"><value>NotRun</value></data>
+  <data name="Passed" xml:space="preserve"><value>Passed</value></data>
+  <data name="Inconclusive" xml:space="preserve"><value>Inconclusive</value></data>
+  <data name="Skipped" xml:space="preserve"><value>Skipped</value></data>
+  <data name="Blocked" xml:space="preserve"><value>Blocked</value></data>
+  <data name="OutcomeUnknown" xml:space="preserve"><value>OutcomeUnknown</value></data>
+  <data name="Test hierarchy" xml:space="preserve"><value>Test hierarchy</value></data>
+  <data name="Test result details" xml:space="preserve"><value>Test result details</value></data>
+  <data name="Human-readable test report" xml:space="preserve"><value>Human-readable test report</value></data>
+  <data name="Compact test report for LLM" xml:space="preserve"><value>Compact test report for LLM</value></data>
+  <data name="Test grouping" xml:space="preserve"><value>Test grouping</value></data>
+  <data name="Test outcome filter" xml:space="preserve"><value>Test outcome filter</value></data>
+  <data name="Test search" xml:space="preserve"><value>Test search</value></data>
+  <data name="Test project selection" xml:space="preserve"><value>Test project selection</value></data>
+  <data name="Select and refresh a VBA project." xml:space="preserve"><value>Select and refresh a VBA project.</value></data>
+  <data name="A native call has an uncertain outcome. Reconnect VBAi after inspecting the host; automatic retry is disabled." xml:space="preserve"><value>A native call has an uncertain outcome. Reconnect VBAi after inspecting the host; automatic retry is disabled.</value></data>
+  <data name="Verified test execution currently requires the owned Excel host. Discovery remains available." xml:space="preserve"><value>Verified test execution currently requires the owned Excel host. Discovery remains available.</value></data>
+  <data name="Save the selected macro-enabled workbook before running tests." xml:space="preserve"><value>Save the selected macro-enabled workbook before running tests.</value></data>
+  <data name="Review and install the project-local test support module before running tests." xml:space="preserve"><value>Review and install the project-local test support module before running tests.</value></data>
+  <data name="The test support module is outdated or changed. Review its update before running tests." xml:space="preserve"><value>The test support module is outdated or changed. Review its update before running tests.</value></data>
+  <data name="Review measured VBA procedure coverage" xml:space="preserve"><value>Review measured VBA procedure coverage</value></data>
+  <data name="Run selected with coverage..." xml:space="preserve"><value>Run selected with coverage...</value></data>
+  <data name="Run visible scope with coverage..." xml:space="preserve"><value>Run visible scope with coverage...</value></data>
+  <data name="VBA procedure coverage: not measured." xml:space="preserve"><value>VBA procedure coverage: not measured.</value></data>
+  <data name="Measured procedure coverage is unavailable in this host." xml:space="preserve"><value>Measured procedure coverage is unavailable in this host.</value></data>
+  <data name="Source changed. Previous results are stale; no tests were run automatically." xml:space="preserve"><value>Source changed. Previous results are stale; no tests were run automatically.</value></data>
+  <data name="This run measures procedure-entry coverage, not statement or branch coverage." xml:space="preserve"><value>This run measures procedure-entry coverage, not statement or branch coverage.</value></data>
+  <data name="Selected tests" xml:space="preserve"><value>Selected tests</value></data>
+  <data name="A separate host document copy is instrumented and executed in the host application. Original source is never instrumented. Application-level handlers and tests may have external side effects with the host's privileges." xml:space="preserve"><value>A separate host document copy is instrumented and executed in the host application. Original source is never instrumented. Application-level handlers and tests may have external side effects with the host's privileges.</value></data>
+  <data name="Copies and measurement files are retained in:" xml:space="preserve"><value>Copies and measurement files are retained in:</value></data>
+  <data name="Run this reviewed coverage selection?" xml:space="preserve"><value>Run this reviewed coverage selection?</value></data>
+  <data name="The reviewed project changed. Review coverage again." xml:space="preserve"><value>The reviewed project changed. Review coverage again.</value></data>
+  <data name="VBA procedure coverage" xml:space="preserve"><value>VBA procedure coverage</value></data>
+  <data name="Unavailable" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Complete measurement" xml:space="preserve"><value>Complete measurement</value></data>
+  <data name="Partial measurement" xml:space="preserve"><value>Partial measurement</value></data>
+  <data name="Statement and branch coverage are not measured." xml:space="preserve"><value>Statement and branch coverage are not measured.</value></data>
+  <data name="Measured coverage currently requires the owned Excel host." xml:space="preserve"><value>Measured coverage currently requires the owned Excel host.</value></data>
+  <data name="Save the macro-enabled workbook before collecting coverage." xml:space="preserve"><value>Save the macro-enabled workbook before collecting coverage.</value></data>
+  <data name="Coverage exclusions" xml:space="preserve"><value>Coverage exclusions</value></data>
   <data name="VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring." xml:space="preserve"><value>VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring.</value></data>
   <data name="Inspection and restoration of the native Code Colors category both failed. The original category selection is unverified." xml:space="preserve"><value>Inspection and restoration of the native Code Colors category both failed. The original category selection is unverified.</value></data>
 </root>

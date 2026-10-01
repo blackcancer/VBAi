@@ -24,6 +24,7 @@ separately from the shared VBE features.
 | Guide | Scope |
 | --- | --- |
 | [Architecture](architecture.md) | Components, host boundaries, threading, local bridge and persistence. |
+| [VBA test explorer](vba-testing.md) | Discover VBA tests, run explicit selections, inspect human/LLM results and understand coverage limits. |
 | [Development](development.md) | Build conventions, UI design, localization and documentation maintenance. |
 | [Testing](../tests/README.md) | Local checks and explicit real-host test opt-ins. |
 | [Recorded validation](test-coverage.md) | Dated evidence, tested revisions and measurement boundaries. |

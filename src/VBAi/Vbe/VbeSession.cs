@@ -14,6 +14,10 @@ namespace VBAi
     {
         /// <summary>Fournit la fenêtre d’éditeur moderne, en pouvant la créer à la demande.</summary>
         internal Func<bool, ModernEditorWindow> ModernEditor;
+        /// <summary>Session-owned testing service shared with the native explorer.</summary>
+        internal VbeTestExplorerService TestExplorer;
+        /// <summary>Per-dispatch assistant authorization captured by an asynchronous test batch.</summary>
+        internal Action TestExecutionGuard;
         /// <summary>Résout un composant du projet vers l’adaptateur de module VBE.</summary>
         /// <param name="projectName">Sélecteur du projet dans la session.</param>
         /// <param name="moduleName">Nom exact du composant à résoudre.</param>
@@ -188,6 +192,17 @@ namespace VBAi
 
             switch (request.Command)
             {
+                case "discover_vba_tests":
+                case "preview_vba_test_support":
+                case "install_vba_test_support":
+                case "run_vba_tests":
+                case "vba_test_run_status":
+                case "stop_vba_tests":
+                case "navigate_vba_test":
+                case "vba_test_coverage":
+                case "show_vba_test_explorer":
+                    if (TestExplorer == null) return Response.Failure("The session test explorer is unavailable.");
+                    return Response.Success(TestExplorer.Command(request, TestExecutionGuard));
                 case "status":
                     return Response.Success(new { Version = "0.1.0", Connected = true,
                         AssemblyPath = typeof(VbeSession).Assembly.Location,

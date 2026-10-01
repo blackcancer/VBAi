@@ -19,6 +19,11 @@ namespace VBAi.Tests.Integration
         private object application, document;
         private bool owned;
         private Process ownedProcess;
+        private Exception startupFailure;
+        private string reviewedSupport, reviewedSupportRevision, installedSupportHash;
+        private bool allowSupportSavePrompt;
+        /// <summary>Retains a dispatched test whose native completion is pending or uncertain.</summary>
+        internal bool NativeExecutionUnsettled { get; set; }
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
         private delegate bool DialogWindowCallback(IntPtr window, IntPtr parameter);
         [DllImport("user32.dll")] private static extern bool EnumWindows(DialogWindowCallback callback, IntPtr parameter);
@@ -39,6 +44,7 @@ namespace VBAi.Tests.Integration
             internal readonly Process HostProcess;
             internal readonly string Kind;
             internal volatile bool StopRequested;
+            internal volatile bool ReviewedSupportSaveAllowed;
             internal Thread Thread;
             internal Exception Failure;
             internal readonly HashSet<IntPtr> InvokedDialogs = new HashSet<IntPtr>();
@@ -61,15 +67,17 @@ namespace VBAi.Tests.Integration
         private OfficeVbeFixture() { }
 
         /// <summary>Creates only a new process; existing host sessions are preserved.</summary>
-        internal static OfficeVbeFixture Start(string kind)
+        internal static OfficeVbeFixture Start(string kind, string progId = null, bool allowExistingHost = false, bool allowForcedTermination = true)
         {
-            return Start(kind, false);
+            // Retain the feature's calling contract. Current shutdown policy never forcibly terminates a host,
+            // including when a legacy caller permits it; a nonexit retains the original query handle.
+            return Start(kind, false, progId, allowExistingHost);
         }
 
         /// <summary>Preserves an uncertain startup for a read-only identity investigation.</summary>
         internal static OfficeVbeFixture StartAccessIdentityProbe() { return Start("Access", true); }
 
-        private static OfficeVbeFixture Start(string kind, bool preserveStartupFailure)
+        private static OfficeVbeFixture Start(string kind, bool preserveStartupFailure, string requestedProgId = null, bool allowExistingHost = false)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_OFFICE_TESTS") != "1")
                 Assert.Inconclusive("Set VBAi_RUN_OFFICE_TESTS=1 to qualify installed Office hosts.");
@@ -77,8 +85,10 @@ namespace VBAi.Tests.Integration
             var processes = Process.GetProcessesByName(executable);
             int[] existing = processes.Select(p => p.Id).ToArray();
             foreach (var process in processes) process.Dispose();
-            if (existing.Length != 0 && kind != "Word") Assert.Inconclusive("Close existing " + kind + " instances before isolated qualification.");
-            string progId = ResolveHostProgId(kind);
+            if (existing.Length != 0 && kind == "Word")
+                Assert.Inconclusive("BLOCKED: existing Word instances prevent application ownership proof before document creation without reading the trust-protected VBE. No Word instance was activated.");
+            if (existing.Length != 0 && !allowExistingHost) Assert.Inconclusive("Close existing " + kind + " instances before isolated qualification.");
+            string progId = ResolveHostProgId(kind, requestedProgId);
             var type = Type.GetTypeFromProgID(progId);
             if (type == null) Assert.Inconclusive(kind + " is not installed.");
             var result = new OfficeVbeFixture { Kind = kind, hostProgId = progId };
@@ -94,7 +104,17 @@ namespace VBAi.Tests.Integration
                 {
                     var candidates = launched.Where(p => !existing.Contains(p.Id)).ToArray();
                     Assert.AreEqual(1, candidates.Length, "No unique new Office process; no document mutation is permitted.");
-                    result.ProcessId = candidates[0].Id; result.owned = true;
+                    result.ProcessId = candidates[0].Id;
+                    if (kind == "Word")
+                    {
+                        // The empty initial inventory and sole new process establish ownership without app.VBE.
+                        Assert.AreEqual(1, launched.Length, "Word ownership requires an empty initial inventory and exactly one process after activation.");
+                        result.steps.Add(new { ApplicationOwnershipVerifiedBeforeMutation = true, Method = "SoleWordProcessInventory",
+                            BeforeProcessIds = existing, AfterProcessIds = launched.Select(p => p.Id).ToArray(), result.ProcessId,
+                            StartedUtc = candidates[0].StartTime.ToUniversalTime() });
+                    }
+                    else result.RequireApplicationOwner();
+                    result.owned = true;
                     result.CaptureOwnedProcess();
                 }
                 finally { foreach (var process in launched) process.Dispose(); }
@@ -135,6 +155,7 @@ namespace VBAi.Tests.Integration
             }
             catch (Exception startupError)
             {
+                result.startupFailure = startupError;
                 result.Failures.Add("Host startup: " + startupError);
                 result.steps.Add(new { StartupError = startupError.ToString(), HostProgId = progId, Result = "FAIL" });
                 if (preserveStartupFailure || kind == "Publisher")
@@ -165,11 +186,11 @@ namespace VBAi.Tests.Integration
         }
 
         /// <summary>Accepts only the host's generic or numeric versioned ProgID, without changing registration.</summary>
-        private static string ResolveHostProgId(string kind)
+        private static string ResolveHostProgId(string kind, string requestedProgId = null)
         {
             Assert.IsTrue(new[] { "Word", "PowerPoint", "Access", "Publisher" }.Contains(kind), "Unknown Office host.");
             string generic = kind + ".Application";
-            string configured = Environment.GetEnvironmentVariable("VBAi_OFFICE_" + kind.ToUpperInvariant() + "_PROGID");
+            string configured = requestedProgId ?? Environment.GetEnvironmentVariable("VBAi_OFFICE_" + kind.ToUpperInvariant() + "_PROGID");
             if (configured == null) return generic;
             string prefix = generic + ".";
             bool versioned = configured.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) && configured.Length > prefix.Length &&
@@ -186,8 +207,36 @@ namespace VBAi.Tests.Integration
             var request = new Dictionary<string, object> { ["Command"] = name };
             if (Project != null) request["Project"] = Project;
             for (int i = 0; i < pairs.Length; i += 2) request[(string)pairs[i]] = pairs[i + 1];
-            return commandContainment.Send(name, request, record => steps.Add(record), FlushAdapterEvidence,
+            if (Kind == "Access" && (name == "preview_vba_test_support" || name == "install_vba_test_support"))
+                SetReviewedSupportSaveAllowed(false);
+            var reply = commandContainment.Send(name, request, record => steps.Add(record), FlushAdapterEvidence,
                 () => Dispatch(ProcessId, request), RetainUncertainOffice);
+            if (Kind == "Access" && Equals(reply["Ok"], true))
+            {
+                if (name == "preview_vba_test_support")
+                {
+                    var preview = VbeBridgeClient.Object(reply["Data"]);
+                    reviewedSupport = preview["Text"] as string;
+                    reviewedSupportRevision = preview["ExpectedProjectVersion"] as string;
+                }
+                else if (name == "install_vba_test_support")
+                {
+                    var installed = VbeBridgeClient.Object(reply["Data"]);
+                    if (Equals(installed["Applied"], true) && reviewedSupport != null && VbaTestRuntimeSource.IsOwned(reviewedSupport)
+                        && request.TryGetValue("Text", out object text) && Equals(text, reviewedSupport)
+                        && request.TryGetValue("ExpectedProjectVersion", out object revision) && Equals(revision, reviewedSupportRevision))
+                    {
+                        var source = Data("read_module", "Module", VbaTestRuntimeSource.ModuleName);
+                        Assert.AreEqual(CanonicalSource(reviewedSupport), CanonicalSource((string)source["Code"]),
+                            "Only the exact reviewed support module may have its Access save dialog accepted.");
+                        installedSupportHash = (string)source["Sha256"];
+                        SetReviewedSupportSaveAllowed(true);
+                        steps.Add(new { AccessSavePromptAuthorized = VbaTestRuntimeSource.ModuleName, Sha256 = installedSupportHash,
+                            ProcessId, Project, DocumentPath });
+                    }
+                }
+            }
+            return reply;
         }
         /// <summary>Requires a successful command and returns its object result.</summary>
         internal IDictionary<string, object> Data(string name, params object[] pairs)
@@ -414,11 +463,14 @@ namespace VBAi.Tests.Integration
                 IntPtr edit = GetDlgItem(window, 2020), button = GetDlgItem(window, 1);
                 if (!OwnedDialogControl(worker, edit, "Edit", 2020) || !OwnedDialogControl(worker, button, "Button", 1) || !IsWindowEnabled(button)) return true;
                 string name = BoundedDialogText(edit);
-                if (name != "VBAiOfficeModule" && name != "VBAiOfficeClass" && name != "VBAiOfficeForm") return true;
+                bool supportPrompt = name == VbaTestRuntimeSource.ModuleName && worker.ReviewedSupportSaveAllowed;
+                if (name != "VBAiOfficeModule" && name != "VBAiOfficeClass" && name != "VBAiOfficeForm" && !supportPrompt) return true;
                 if (BoundedDialogText(button) != "OK") return true;
                 if (worker.StopRequested || GetDlgItem(window, 2020) != edit || GetDlgItem(window, 1) != button ||
                     !OwnedDialogControl(worker, window, "#32770", null) || !OwnedDialogControl(worker, edit, "Edit", 2020) ||
-                    !OwnedDialogControl(worker, button, "Button", 1) || !IsWindowEnabled(button)) return true;
+                    !OwnedDialogControl(worker, button, "Button", 1) || !IsWindowEnabled(button) ||
+                    BoundedDialogText(edit) != name || BoundedDialogText(button) != "OK" ||
+                    (supportPrompt && !worker.ReviewedSupportSaveAllowed)) return true;
                 worker.InvokedDialogs.Add(window); // Never repeat an uncertain save-dialog mutation.
                 UIntPtr result;
                 if (SendDialogCommand(window, 0x0111, new UIntPtr(1), button, 0x23, 750, out result) == IntPtr.Zero)
@@ -472,6 +524,7 @@ namespace VBAi.Tests.Integration
         internal void StopAccessSaveDialogHandler()
         {
             if (Kind != "Access") return;
+            SetReviewedSupportSaveAllowed(false);
             StopOwnedDialogHandler();
         }
         /// <summary>Closes only the owned process and preserves evidence files.</summary>
@@ -497,6 +550,7 @@ namespace VBAi.Tests.Integration
             try
             {
                 if (Root != null) File.WriteAllText(Path.Combine(Root, "qualification.json"), new JavaScriptSerializer { MaxJsonLength = 20 * 1024 * 1024 }.Serialize(new { Host = Kind, HostProgId = hostProgId, ProcessId, DocumentPath, Project,
+                    NativeExecutionUnsettled, StartupFailure = startupFailure?.ToString(),
                     ShutdownLifecycle = shutdownEvidence?.Record,
                     PendingCommand = commandContainment.Command, CommandPending = commandContainment.Pending,
                     DeliveryUncertain = commandContainment.Uncertain, Failures, Steps = steps }));
@@ -553,6 +607,56 @@ namespace VBAi.Tests.Integration
                 typeof(VbeSession).Module.ModuleVersionId.ToString("D"));
             _ = ownedProcess.Handle; // Preserve teardown/crash evidence after the process exits.
         }
+        private void SetReviewedSupportSaveAllowed(bool allowed)
+        {
+            var worker = dialogWorker;
+            if (worker != null)
+            {
+                Assert.IsTrue(!allowed || (!worker.StopRequested && worker.Kind == "Access" &&
+                    ReferenceEquals(worker.HostProcess, ownedProcess) && worker.ProcessId == ProcessId && worker.HostAlive),
+                    "Support save-dialog approval requires the original live owned Access dialog generation.");
+                worker.ReviewedSupportSaveAllowed = allowed;
+            }
+            else Assert.IsFalse(allowed, "Support save-dialog approval requires an owned dialog worker.");
+            allowSupportSavePrompt = allowed;
+        }
+
+        private void RevalidateReviewedSupportBeforeAccessClose()
+        {
+            SetReviewedSupportSaveAllowed(false);
+            var source = Data("read_module", "Module", VbaTestRuntimeSource.ModuleName);
+            Assert.AreEqual(installedSupportHash, source["Sha256"], "The reviewed support changed; Access save-dialog acceptance is refused.");
+            Assert.AreEqual(CanonicalSource(reviewedSupport), CanonicalSource((string)source["Code"]));
+            RequireOwnedDocument();
+            SetReviewedSupportSaveAllowed(true);
+        }
+
+        private void RequireApplicationOwner()
+        {
+            object window = null;
+            try
+            {
+                dynamic app = application;
+                long handle;
+                if (Kind == "Word") throw new InvalidOperationException("Word fixture ownership requires its sole-process preactivation inventory proof.");
+                else if (Kind == "PowerPoint") handle = PowerPointWindow.Read(application).ToInt64();
+                else if (Kind == "Access") handle = Convert.ToInt64(app.hWndAccessApp());
+                else
+                {
+                    window = app.ActiveWindow;
+                    handle = Convert.ToInt64(((dynamic)window).Hwnd);
+                }
+                uint pid;
+                Assert.AreNotEqual(0L, handle, "The returned Office application has no verifiable window; no document mutation is permitted.");
+                Assert.AreNotEqual(0u, GetWindowThreadProcessId(new IntPtr(handle), out pid));
+                Assert.AreEqual((uint)ProcessId, pid, "The returned application belongs to another PID; no document mutation or Quit is permitted.");
+                steps.Add(new { ApplicationOwnershipVerifiedBeforeMutation = true, Hwnd = handle, ProcessId = pid });
+            }
+            finally { Release(window); }
+        }
+
+        private static string CanonicalSource(string source) => source.Replace("\r\n", "\n").Replace('\r', '\n').TrimEnd('\n');
+
         private void RecordCleanupFailure(string reason)
         {
             Failures.Add("Host cleanup: " + reason);
@@ -566,6 +670,7 @@ namespace VBAi.Tests.Integration
                 hostTeardownRefused = true;
                 lock (retainedOfficeFixtures) retainedOfficeFixtures.Add(this);
             }
+            SetReviewedSupportSaveAllowed(false);
             if (dialogWorker != null) dialogWorker.StopRequested = true;
         }
         private void CloseOwnedHost(bool adapterOnly = false)
@@ -577,6 +682,14 @@ namespace VBAi.Tests.Integration
                 return;
             }
             if (hostTeardownRefused) return;
+            if (NativeExecutionUnsettled)
+            {
+                RetainUncertainOffice();
+                RecordCleanupFailure("Native test execution remains pending or uncertain; Close, Quit and release were skipped. Inspect retained PID=" + ProcessId);
+                steps.Add(new { RetainedProcessId = ProcessId, NativeExecutionUnsettled, CloseAttempted = false,
+                    QuitAttempted = false, ForcedTermination = false, DocumentPath });
+                return;
+            }
             bool nativeIdentityVerified = Kind != "Access" && Kind != "Publisher";
             if (owned)
             {
@@ -586,7 +699,9 @@ namespace VBAi.Tests.Integration
                     if (Kind == "Access" || Kind == "Publisher")
                     {
                         RequireOwnedDocument(); nativeIdentityVerified = true;
-                        StopOwnedDialogHandler();
+                        if (Kind == "Access" && !adapterOnly && allowSupportSavePrompt)
+                            RevalidateReviewedSupportBeforeAccessClose();
+                        else StopOwnedDialogHandler();
                     }
                     if (Kind == "Word") { if (document != null) ((dynamic)document).Close(0); }
                     else if (Kind == "PowerPoint") { if (document != null) { ((dynamic)document).Saved = -1; ((dynamic)document).Close(); } }
@@ -597,7 +712,9 @@ namespace VBAi.Tests.Integration
                             StopAccessSaveDialogHandler();
                             CloseAccessObjectsWithoutSaving();
                         }
-                        ((dynamic)application).CloseCurrentDatabase(); QuitOwnedOnce(() => ((dynamic)application).Quit(2));
+                        ((dynamic)application).CloseCurrentDatabase();
+                        StopAccessSaveDialogHandler();
+                        QuitOwnedOnce(() => ((dynamic)application).Quit(2));
                     }
                     else if (Kind == "Publisher")
                     {

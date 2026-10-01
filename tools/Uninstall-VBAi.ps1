@@ -36,6 +36,7 @@ try {
         finally { $classKey.Dispose() }
     }
 
+    & (Join-Path $PSScriptRoot 'Register-VbaTestRuntime.ps1') -Unregister
     $registry.DeleteSubKeyTree("Software\Microsoft\VBA\VBE\6.0\Addins64\$progId", $false)
     $typeLibPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'bin\Debug\net48\VBAi.tlb'
     if (Test-Path -LiteralPath $typeLibPath) {

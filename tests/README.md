@@ -400,6 +400,133 @@ try {
 }
 ```
 
+### VBA test explorer native execution
+
+The `VbaTestExcel` category uses the Excel opt-in above and creates its own
+disposable macro-enabled workbook in a newly owned Excel process. Run this
+category alone to qualify the generated VBA wrapper, assertions, fixtures,
+results, stale-source refusal and the fixture-owned Excel coverage-copy path:
+
+```powershell
+$env:VBAi_RUN_EXCEL_TESTS = '1'
+try {
+    dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildOutputRoot="$PWD/artifacts/build" --filter "TestCategory=VbaTestExcel"
+} finally {
+    Remove-Item Env:VBAi_RUN_EXCEL_TESTS -ErrorAction SilentlyContinue
+}
+```
+
+The compiled service runs in the external STA test host with a fixture-owned
+Excel adapter. Its synthetic production module contains two eligible procedures,
+only one entered by the selected test bodies: the expected hand-calculated
+procedure coverage is 1/2 = 50%. This is an assertion in the fixture, not a claim
+that its current native run passed. It verifies original-source preservation and
+mapped measurement when execution completes. It does not measure statements or
+branches.
+
+This external fixture does not qualify installed in-process callback activation,
+native tool-window docking or other VBE hosts. The fixture records the assembly MVID
+and Excel version, verifies normal owned-process exit and preserves report
+examples under the test output's `test-explorer-native` directory. It does not
+change Trust Center settings or execute an existing user macro.
+
+For installed Excel qualification,
+[Test-RegisteredVbaTestExplorer.ps1](../tools/testing-explorer/Test-RegisteredVbaTestExplorer.ps1)
+checks the candidate assembly/MVID, registered add-in bytes and x64 callback
+registration before creating a host. Its required arguments are
+`CandidateAssemblyPath`, `ExpectedMvid` and `OutputDirectory`; use Windows
+PowerShell 5.1 x64 in STA mode. Without `ExecuteOwnedFixture`, it only performs
+preflight and reports that execution was not started. The explicit switch creates
+an owned disposable Excel fixture. The script neither installs/registers the
+candidate nor changes Office trust settings; deployment requires a separate
+reviewed decision.
+
+Use `-TestSubsystemOnly -ExecuteOwnedFixture` to qualify the VBA testing
+subsystem: discovery/support installation, the registered native batch, human and
+JSON reports, measured procedure coverage on a disposable copy, exact native
+explorer actions, report consistency and stale-revision refusal. This option
+skips the general Excel `Workbook_BeforeSave` positive save control and explicitly
+records `NOT_TESTED_BY_SCOPE`. The synthetic event remains an eligible coverage
+procedure; its counters and entry probe are retained as observations only, without
+claiming that an independently qualified handler was suppressed. Original source,
+probe mappings, coverage totals/percentage and exact `EnableEvents` restoration
+remain required assertions. The fixture is saved, then the event-counter baseline
+is read after the completed batch with owned PID/project/path/source checks.
+
+The legacy default additionally requires the positive save control.
+`-ExecutionAndUiOnly` skips that control **and measured coverage**; it cannot
+qualify coverage. These two scope switches are mutually exclusive and are rejected
+before any host activation if combined. None of these scenarios qualifies unrelated
+VBAi features or the LLM permission/approval boundary; run the focused testing-tool
+boundary regressions separately.
+
+Shared callback code recognizes known VBE host names, but recognition is not
+native qualification. The requested production scope includes Excel, Word,
+PowerPoint, Access, Publisher, Outlook and a user-preloaded, explicitly selected
+SOLIDWORKS instance; Visio and Project are excluded. Identify each loaded assembly,
+actual callback transport, host version and tested operation. Do not infer that a
+returned-value Excel fixture qualified the shared COM callback in another host.
+Record failures and skipped scenarios in [validation](../docs/test-coverage.md),
+not as successful host coverage.
+
+Excel, Word and PowerPoint returned-value and coverage-copy adapters exist in the
+source; that fact does not qualify those adapters or the shared callback natively.
+The fixture and installed qualification script above remain Excel-specific.
+PowerPoint qualification must independently verify its PIA argument-array
+invocation, macro-enabled presentation copy and application-level event behavior.
+Word qualification must verify saved DOCM/DOTM/DOC/DOT copying, refusal of unsaved
+VBA source/reference mismatches, exact owned activation and document-qualified
+positional invocation without retries after uncertain completion.
+
+`VbaTestOffice` uses `VBAi_RUN_OFFICE_TESTS=1` for registered in-process Office
+execution. Its Word/PowerPoint rows include a separate synthetic production module
+with two eligible functions, only one called by the selected test: the expected
+procedure measurement is 1/2 = 50%. This is a fixture assertion, not an observed
+passing result. It checks canonical IDs/revision/probes, human/compact reports,
+unchanged original source, file and counters, closed copies and retained artifacts.
+The fixture may coexist with existing hosts only after identifying exactly one
+new PID against its initial process inventory; it never reuses a user host.
+
+`VbaTestExcelLarge` requires `VBAi_RUN_EXCEL_LARGE_TESTS=1`. It builds a fresh
+catalogue spanning dispatcher leaf and route boundaries, verifies compilation of
+the complete support module through a returned VBA verdict, and executes only
+explicit boundary and failure selections. It uses the external STA Excel adapter;
+it does not qualify the registered callback or explorer UI. Sources, references,
+revisions and both reports are retained in its private temporary evidence folder.
+
+`VbaTestOutlook` requires `VBAi_RUN_OUTLOOK_TESTS=1`, a usable existing profile,
+no running Outlook process and an initially absent `VbaProject.OTM`. It creates
+only an unsaved disposable inspector. It never sends or saves a mail item,
+changes a profile, replaces an existing OTM or changes trust settings. An opaque
+FileName on a new unpersisted project is selected by its unique project name;
+the fixed per-user OTM path is used only for recovery. The fixture verifies its
+initial blank source/reference baseline, removes only its unchanged owned modules,
+and deletes a newly created OTM only after verified normal exit and retained backup.
+Unknown native completion prevents both inspector closure and Quit. All failures
+and retained recovery files are reported.
+
+`VbaTestSolidWorks` requires `VBAi_RUN_SOLIDWORKS_TEST_EXPLORER=1`,
+`VBAi_SOLIDWORKS_PID` and the absolute `VBAi_SOLIDWORKS_TEST_MACRO` path. The user
+must preload that process and open the selected disposable `.swp` manually through
+**Tools > Macro > Edit**. Save a blank macro containing only empty standard modules
+or `Option Explicit`; remove the default generated macro body before qualification.
+The fixture refuses other source, a different loaded candidate or an unsaved macro.
+It never opens or closes a macro, activates application COM, saves, launches or
+terminates SOLIDWORKS. Its own test/support modules are removed only after verified
+settled completion and unchanged ownership hashes. The macro remains open; its
+disk bytes remain unchanged, and the in-memory project may remain marked unsaved.
+Other projects' sources are not inspected. This scenario covers ordinary tests,
+reports, stale refusal and native window identity; it does not measure coverage.
+
+Coverage qualification must verify Excel/Word/PowerPoint clone identity, unchanged
+original live/disk source, original-source probes, explicit exclusions,
+unsafe-syntax refusal and incomplete/unknown measurements. Verify restored Excel
+event settings, Word AutoOpen/document/application/Normal-template effects and
+PowerPoint open/before-close handler effects, including
+cancelled closure and retained copies. These copies are not external-system
+sandboxes. Retained document copies and coverage plans can contain full private source and data. Keep evidence
+outside maintained documentation and follow [privacy](../docs/privacy.md).
+
 ## JavaScript and native renderer
 
 The editor's JavaScript tests use Node's test runner:
