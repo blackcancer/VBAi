@@ -29,16 +29,25 @@ namespace VBAi.Tests.Integration.Hosts.Excel
         [STATestMethod]
         public void NativeFormatChoicesRoundTripAndRestoreCompleteOptionsVersion()
         {
+            if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
+                Assert.Inconclusive("Excel automation is opt-in. Set VBAi_RUN_EXCEL_TESTS=1.");
             Assert.AreEqual(9, ExcelFormatOptionsQualification.Scenarios.Length);
             string output = Environment.GetEnvironmentVariable("VBAi_TEST_FORMAT_OPTIONS_OUTPUT");
             if (!string.IsNullOrEmpty(output) && !Path.IsPathRooted(output))
                 throw new ArgumentException("VBAi_TEST_FORMAT_OPTIONS_OUTPUT must be an absolute path.");
             evidenceDirectory = Path.Combine(string.IsNullOrEmpty(output) ? TestContext.TestRunDirectory : output,
                 "options-evidence-" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(evidenceDirectory);
-            TestContext.WriteLine("Retained options evidence: " + evidenceDirectory);
+            ExcelFormatOptionsQualification.RunOwned(Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") == "1",
+                Environment.GetEnvironmentVariable("VBAi_EXCEL_RESULTS"), evidenceDirectory,
+                Environment.GetEnvironmentVariable(PathVisibilityDiagnostic.EnvironmentName), () => {
+                    Directory.CreateDirectory(evidenceDirectory);
+                    TestContext.WriteLine("Retained options evidence: " + evidenceDirectory);
+                }, trace => ExcelVbeFixture.StartOwnedWithTrace(trace), QualifyReadyHost);
+        }
+
+        private void QualifyReadyHost(ExcelVbeFixture host)
+        {
             // No using/finally Dispose: uncertainty must retain this exact fixture and all owning COM references.
-            var host = ExcelVbeFixture.Start();
             DateTime startUtc = DateTime.MinValue;
             try { using (var process = Process.GetProcessById(host.ProcessId)) startUtc = process.StartTime.ToUniversalTime(); }
             catch (Exception identityFailure)
@@ -116,6 +125,8 @@ namespace VBAi.Tests.Integration.Hosts.Excel
             string path = Path.Combine(evidenceDirectory, "options-" + sequence.ToString("D4") + "-" + phase + "-" + host.ProcessId + ".json");
             var record = new { Phase = phase, Sequence = sequence, ObservedUtc = DateTime.UtcNow.ToString("o"),
                 host.ProcessId, ProcessStartUtc = startUtc.ToString("o"), FixtureRoot = host.Root, StartupEvidence = host.File("startup.json"),
+                OwnedBootstrapEvidence = host.File("owned-bootstrap.json"), PhaseTrace = Path.Combine(evidenceDirectory, "owned-bootstrap-phases.jsonl"),
+                LaunchContext = "ExplicitXAutomation", PathVisibilityManifestSupplied = false,
                 ProductMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"), TestMvid = typeof(ExcelFormatOptionsTests).Module.ModuleVersionId.ToString("D"),
                 EvidenceRoot = evidenceDirectory, Data = evidence };
             File.WriteAllText(path, new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 }.Serialize(record), new UTF8Encoding(false));

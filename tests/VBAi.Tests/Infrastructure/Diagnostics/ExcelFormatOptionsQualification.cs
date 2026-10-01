@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Text.RegularExpressions;
@@ -25,6 +26,22 @@ namespace VBAi.Tests.Integration
             Func<IDictionary<string, object>> observeClosure, Action preserve, Action cleanup, Action<string, object> evidence)
         { this.processId = processId; this.dispatch = dispatch; this.observeClosure = observeClosure;
             this.preserve = preserve; this.cleanup = cleanup; this.evidence = evidence; }
+
+        /// <summary>Validate the Format opt-in before preparation, then hand off only a successfully owned bootstrap.</summary>
+        internal static void RunOwned<T>(bool enabled, string ownedResults, string evidenceRoot, string inheritedDiagnosticManifest,
+            Action prepareEvidence, Func<string, T> bootstrap, Action<T> qualify) where T : class
+        {
+            if (!enabled) Assert.Inconclusive("Excel automation is opt-in. Set VBAi_RUN_EXCEL_TESTS=1.");
+            ExcelOwnedBootstrapPlan.RequireLocalAbsolutePath(ownedResults);
+            string exactEvidence = ExcelOwnedBootstrapPlan.RequireLocalAbsolutePath(evidenceRoot);
+            if (!string.IsNullOrEmpty(inheritedDiagnosticManifest))
+                throw new InvalidOperationException("Format qualification must not inherit a path-visibility/token manifest; no host was launched.");
+            prepareEvidence();
+            // StartOwnedWithTrace owns failure retention. Never wrap startup in a Close/Quit finally or activation fallback.
+            T host = bootstrap(Path.Combine(exactEvidence, "owned-bootstrap-phases.jsonl"));
+            if (host == null) throw new InvalidOperationException("The owned bootstrap returned no ready fixture; no qualification dispatch or cleanup is permitted.");
+            qualify(host);
+        }
 
         internal void Run()
         {

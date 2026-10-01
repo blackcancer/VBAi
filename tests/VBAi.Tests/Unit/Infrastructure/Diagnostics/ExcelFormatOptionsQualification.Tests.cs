@@ -136,6 +136,85 @@ namespace VBAi.Tests.Unit
             catch (AssertFailedException error) when (error.Message == "The original failure must not become acceptance.") { throw; }
             catch (Exception error) { return error; } return null; }
 
+        [TestMethod]
+        public void DisabledOwnedFormatBootstrapSkipsBeforeValidatingPathsPreparingFilesOrDispatching()
+        {
+            int prepared = 0, started = 0, qualified = 0;
+            Assert.ThrowsException<AssertInconclusiveException>(() => ExcelFormatOptionsQualification.RunOwned<object>(false,
+                null, null, "inherited-manifest", () => prepared++, trace => { started++; return new object(); }, host => qualified++));
+            Assert.AreEqual(0, prepared); Assert.AreEqual(0, started); Assert.AreEqual(0, qualified);
+        }
+
+        [DataTestMethod, DataRow(null), DataRow("relative"), DataRow("C:relative"), DataRow("\\\\server\\share\\results"), DataRow("C:\\results:stream")]
+        public void OwnedResultsMustBeAbsoluteAndLocalBeforeAnyEvidencePreparationOrStartup(string results)
+        {
+            int prepared = 0, started = 0, qualified = 0;
+            Assert.ThrowsException<ArgumentException>(() => ExcelFormatOptionsQualification.RunOwned<object>(true,
+                results, Path.GetTempPath(), null, () => prepared++, trace => { started++; return new object(); }, host => qualified++));
+            Assert.AreEqual(0, prepared); Assert.AreEqual(0, started); Assert.AreEqual(0, qualified);
+        }
+
+        [DataTestMethod, DataRow(null), DataRow("relative"), DataRow("C:relative"), DataRow("\\\\server\\share\\evidence"), DataRow("C:\\evidence:stream")]
+        public void EvidenceRootMustBeAbsoluteAndLocalBeforeAnyEvidencePreparationOrStartup(string evidence)
+        {
+            int prepared = 0, started = 0, qualified = 0;
+            Assert.ThrowsException<ArgumentException>(() => ExcelFormatOptionsQualification.RunOwned<object>(true,
+                Path.GetTempPath(), evidence, null, () => prepared++, trace => { started++; return new object(); }, host => qualified++));
+            Assert.AreEqual(0, prepared); Assert.AreEqual(0, started); Assert.AreEqual(0, qualified);
+        }
+
+        [DataTestMethod, DataRow("manifest.json"), DataRow(" ")]
+        public void InheritedPathVisibilityManifestIsRejectedWithoutReadingItOrLaunching(string manifest)
+        {
+            int prepared = 0, started = 0, qualified = 0;
+            StringAssert.Contains(Failure(() => ExcelFormatOptionsQualification.RunOwned<object>(true, Path.GetTempPath(),
+                Path.GetTempPath(), manifest, () => prepared++, trace => { started++; return new object(); }, host => qualified++)).Message, "must not inherit");
+            Assert.AreEqual(0, prepared); Assert.AreEqual(0, started); Assert.AreEqual(0, qualified);
+        }
+
+        [TestMethod]
+        public void EvidencePreparationFailureNeverEntersOwnedStartupOrOptionsLifecycle()
+        {
+            int started = 0, qualified = 0; var original = new IOException("evidence root unavailable");
+            var failure = Failure(() => ExcelFormatOptionsQualification.RunOwned<object>(true, Path.GetTempPath(), Path.GetTempPath(), null,
+                () => { throw original; }, trace => { started++; return new object(); }, host => qualified++));
+            Assert.AreSame(original, failure); Assert.AreEqual(0, started); Assert.AreEqual(0, qualified);
+        }
+
+        [DataTestMethod, DataRow("Timeout"), DataRow("IO"), DataRow("AssemblyIdentity")]
+        public void StartupStatusFailureNeverDispatchesFormatOptionsOrRunsCleanupAndKeepsOriginalFailure(string kind)
+        {
+            var probe = new Probe(); int prepared = 0, starts = 0, statusCalls = 0, qualified = 0;
+            Exception original = kind == "Timeout" ? (Exception)new TimeoutException("startup status pending") : kind == "IO"
+                ? (Exception)new IOException("startup status response lost") : new InvalidOperationException("loaded assembly identity differs");
+            var failure = Failure(() => ExcelFormatOptionsQualification.RunOwned<Probe>(true, Path.GetTempPath(), Path.GetTempPath(), null,
+                () => prepared++, trace => { starts++; statusCalls++; throw original; }, host => { qualified++; host.Create().Run(); }));
+            Assert.AreSame(original, failure); Assert.AreEqual(1, prepared); Assert.AreEqual(1, starts); Assert.AreEqual(1, statusCalls);
+            Assert.AreEqual(0, qualified); Assert.AreEqual(0, probe.Requests.Count); Assert.AreEqual(0, probe.Cleanup);
+        }
+
+        [TestMethod]
+        public void MissingReadyFixtureNeverConstructsTheOptionsLifecycleOrCleanup()
+        {
+            var probe = new Probe(); int starts = 0, qualified = 0;
+            StringAssert.Contains(Failure(() => ExcelFormatOptionsQualification.RunOwned<Probe>(true, Path.GetTempPath(), Path.GetTempPath(), null,
+                () => { }, trace => { starts++; return null; }, host => { qualified++; host.Create().Run(); })).Message, "no ready fixture");
+            Assert.AreEqual(1, starts); Assert.AreEqual(0, qualified); Assert.AreEqual(0, probe.Requests.Count); Assert.AreEqual(0, probe.Cleanup);
+        }
+
+        [DataTestMethod, DataRow(null), DataRow("")]
+        public void OneOwnedReadyBootstrapDelegatesOnceToFullMatrixWithFreshLocalTraceAndNoManifest(string manifest)
+        {
+            var probe = new Probe(); int prepared = 0, starts = 0, qualified = 0;
+            string root = Path.Combine(Path.GetTempPath(), "VBAi-format-contract-" + Guid.NewGuid().ToString("N"));
+            ExcelFormatOptionsQualification.RunOwned(true, Path.GetTempPath(), root, manifest, () => prepared++, trace => {
+                starts++; Assert.AreEqual(1, prepared); Assert.AreEqual(Path.Combine(Path.GetFullPath(root), "owned-bootstrap-phases.jsonl"), trace);
+                return probe;
+            }, host => { qualified++; Assert.AreSame(probe, host); host.Create().Run(); });
+            Assert.AreEqual(1, starts); Assert.AreEqual(1, qualified); Assert.AreEqual(1, probe.Cleanup);
+            Assert.AreEqual(probe.BaselineVersion, probe.Version());
+        }
+
         [DataTestMethod, DataRow(false), DataRow(true)]
         public void CompleteNineScenarioMatrixPreservesAllCategoriesAndRestoresBaseline(bool emptySizes)
         {
