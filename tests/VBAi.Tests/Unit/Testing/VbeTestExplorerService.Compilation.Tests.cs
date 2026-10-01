@@ -248,6 +248,74 @@ namespace VBAi.Tests.Unit
             }
         }
 
+        [STATestMethod]
+        public void ObserverRejectsMissingInputsNullCommandAndDestroyedDispatcherWithoutCompilationRetry()
+        {
+            using (var fixture = new Fixture())
+            {
+                Assert.ThrowsException<ArgumentNullException>(() => fixture.Service.VerifyCoverageCompilationAsync(null, () => { }));
+                Assert.ThrowsException<ArgumentNullException>(() => fixture.Service.VerifyCoverageCompilationAsync(fixture.Project, null));
+                fixture.Vbe.CommandBars.Control = null;
+                Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.CompileCoverageProject(fixture.Project));
+                fixture.Vbe.CommandBars.Control = fixture.Control;
+                typeof(Control).GetMethod("DestroyHandle", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(fixture.Dispatcher, null);
+                var observed = fixture.Service.VerifyCoverageCompilationAsync(fixture.Project, () => { });
+                Assert.ThrowsException<InvalidOperationException>(() => observed.GetAwaiter().GetResult());
+                Assert.AreEqual(0, fixture.Control.Executions);
+            }
+        }
+
+        [STATestMethod]
+        public void CompilationTimerDisposesOnStartupFailureAndDefaultTicksUseTheOwnedUiThread()
+        {
+            bool disposed = false;
+            var error = Assert.ThrowsException<InvalidOperationException>(() => VbeTestExplorerService.StartCompilationTimer(() => Assert.Fail("No tick on failed startup"), timer => {
+                timer.Disposed += (_, __) => disposed = true;
+                throw new InvalidOperationException("Timer startup failed");
+            }));
+            Assert.IsTrue(disposed); Assert.AreEqual("Timer startup failed", error.Message);
+            using (var fixture = new Fixture())
+            {
+                fixture.Control.State = false;
+                fixture.Service.StartCoverageCompilationTimer = tick => (IDisposable)typeof(VbeTestExplorerService)
+                    .GetMethod("StartCompilationTimer", BindingFlags.Static | BindingFlags.NonPublic, null, new[] { typeof(Action) }, null).Invoke(null, new object[] { tick });
+                var task = fixture.Service.VerifyCoverageCompilationAsync(fixture.Project, () => { });
+                var deadline = DateTime.UtcNow.AddSeconds(3);
+                while (!task.IsCompleted && DateTime.UtcNow < deadline) { Application.DoEvents(); System.Threading.Thread.Sleep(5); }
+                Assert.IsTrue(task.IsCompleted); Assert.IsTrue(task.GetAwaiter().GetResult());
+                Assert.AreEqual(0, fixture.Control.Executions);
+            }
+        }
+
+        [STATestMethod]
+        public void CompilationSkipsOtherModulesAndReentrantTimerCompletionDisposesTheReturnedTimer()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Project.VBComponents.Insert(0, new CompilerComponent { Name = "Other", CodeModule = new CompilerCode { CodePane = fixture.Pane } });
+                fixture.Control.State = false;
+                fixture.Service.CompileCoverageProject(fixture.Project);
+                fixture.Service.StartCoverageCompilationTimer = tick => { tick(); return fixture.Timer = new ManualTimer(tick); };
+                var task = fixture.Observe();
+                Assert.IsTrue(task.IsCompleted); Assert.IsTrue(task.GetAwaiter().GetResult()); Assert.IsTrue(fixture.Timer.Disposed);
+                fixture.Timer.Tick(); Assert.AreEqual(0, fixture.Control.Executions);
+            }
+        }
+
+        [STATestMethod]
+        public void MissingCoverageRuntimeCannotSelectAPaneOrExecuteCompilation()
+        {
+            foreach (bool otherModule in new[] { false, true })
+            using (var fixture = new Fixture())
+            {
+                fixture.Project.VBComponents.Clear();
+                if (otherModule) fixture.Project.VBComponents.Add(new CompilerComponent { Name = "Other", CodeModule = new CompilerCode { CodePane = fixture.Pane } });
+                var error = Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.CompileCoverageProject(fixture.Project));
+                StringAssert.Contains(error.Message, "runtime module is missing");
+                Assert.AreEqual(0, fixture.Pane.Shows); Assert.AreEqual(0, fixture.Control.Executions);
+            }
+        }
+
         private sealed class Fixture : IDisposable
         {
             internal readonly Control Dispatcher = new Control();
@@ -300,7 +368,7 @@ namespace VBAi.Tests.Unit
         }
         public sealed class CompilerComponent
         {
-            public string Name => VbaCoverageInstrumentation.ModuleName;
+            public string Name { get; set; } = VbaCoverageInstrumentation.ModuleName;
             public CompilerCode CodeModule { get; set; }
         }
         public sealed class CompilerCode

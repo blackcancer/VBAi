@@ -114,6 +114,96 @@ namespace VBAi.Tests.Unit
             }
         }
 
+        [TestMethod]
+        public void InvalidIdentityCollectionAndIdentifiersNeverDispatch()
+        {
+            using (var f = new Fixture())
+            {
+                Assert.ThrowsException<InvalidOperationException>(() => f.Host.ResolveTarget(null, f.Source.FullName));
+                Assert.ThrowsException<InvalidOperationException>(() => f.Host.Invoke(null, "Support", "Run", null));
+                var target = f.Resolve();
+                foreach (var pair in new[] { new[] { (string)null, "Run" }, new[] { "bad!", "Run" }, new[] { "Support", (string)null }, new[] { "Support", "bad!" } })
+                    Assert.ThrowsException<InvalidOperationException>(() => f.Host.Invoke(target, pair[0], pair[1], null));
+                f.Source.NameOverride = "Other.pptm";
+                Assert.ThrowsException<InvalidOperationException>(() => f.Host.Invoke(target, "Support", "Run", null));
+                f.Source.NameOverride = null;
+                f.Host.Invoke(target, "Support", "Run", null);
+                f.Host.ReadActiveApplication = _ => null;
+                Assert.ThrowsException<InvalidOperationException>(() => f.Host.ValidateTarget(target));
+                f.Host.ReadApplicationWindow = _ => new IntPtr(99);
+                f.Host.ReadActiveApplication = _ => new Application();
+                Assert.ThrowsException<InvalidOperationException>(() => f.Host.ValidateTarget(target));
+                f.Host.ReadActiveApplication = _ => f.Application;
+                var replacement = new Presentation { FullName = f.Source.FullName, VBProject = f.Source.VBProject };
+                f.Application.Presentations[0] = replacement;
+                Assert.ThrowsException<InvalidOperationException>(() => f.Host.ValidateTarget(target));
+                f.Application.Presentations.Add(f.Source);
+                Assert.ThrowsException<InvalidOperationException>(() => f.Resolve());
+                f.Application.Presentations.Clear(); f.Application.Presentations.Add(f.Source);
+                f.Source.PathOverride = " ";
+                Assert.ThrowsException<InvalidOperationException>(() => f.Resolve());
+                f.Source.PathOverride = null;
+                for (int i = 0; i < 1000; i++) f.Application.Presentations.Add(new Presentation());
+                Assert.ThrowsException<InvalidOperationException>(() => f.Resolve());
+                Assert.AreEqual(1, f.Invocations);
+            }
+            Assert.IsFalse(VbaTestPowerPointValuesHost.SamePath(null, @"C:\A.pptm"));
+            Assert.IsFalse(VbaTestPowerPointValuesHost.SamePath(@"C:\A.pptm", "A.pptm"));
+            Assert.IsFalse(VbaTestPowerPointValuesHost.SamePath(" ", null));
+        }
+
+        [TestMethod]
+        public void DefaultProcessAndWindowReadersObserveOnlyTheTestProcess()
+        {
+            var host = new VbaTestPowerPointValuesHost();
+            using (var process = System.Diagnostics.Process.GetCurrentProcess())
+            {
+                Assert.AreEqual(process.ProcessName, host.ReadProcessName());
+                Assert.AreEqual(process.Id, host.ReadProcessId());
+            }
+            Assert.AreEqual(0u, host.ReadWindowOwner(IntPtr.Zero));
+            Assert.IsFalse(host.SameIdentity(new object(), new object()));
+        }
+
+        private sealed class ApplicationProxy : System.Runtime.Remoting.Proxies.RealProxy
+        {
+            internal string Macro;
+            internal object[] Arguments;
+            internal readonly object Result = new object();
+            internal ApplicationProxy() : base(typeof(VbaTestPowerPointValuesHost).Assembly.GetType("Microsoft.Office.Interop.PowerPoint._Application", true)) { }
+            public override System.Runtime.Remoting.Messaging.IMessage Invoke(System.Runtime.Remoting.Messaging.IMessage message)
+            {
+                var call = (System.Runtime.Remoting.Messaging.IMethodCallMessage)message;
+                Assert.AreEqual("Run", call.MethodName);
+                Macro = (string)call.Args[0]; Arguments = (object[])call.Args[1];
+                return new System.Runtime.Remoting.Messaging.ReturnMessage(Result, call.Args, call.ArgCount, call.LogicalCallContext, call);
+            }
+        }
+
+        [TestMethod]
+        public void NativeRunUsesThePowerPointPiaReferenceArraySignature()
+        {
+            var host = new VbaTestPowerPointValuesHost();
+            var proxy = new ApplicationProxy(); object[] arguments = { "Tests", "Alpha" };
+            Assert.AreSame(proxy.Result, host.RunProcedure(proxy.GetTransparentProxy(), "Owned.pptm!Support.Run", arguments));
+            Assert.AreEqual("Owned.pptm!Support.Run", proxy.Macro);
+            Assert.AreSame(arguments, proxy.Arguments);
+            Assert.ThrowsException<InvalidCastException>(() => host.RunProcedure(new object(), "Owned.pptm!Support.Run", arguments));
+        }
+
+        [TestMethod]
+        public void AbsolutePathGuardsRejectRootRelativeDriveRelativeAndUnsafeFilename()
+        {
+            foreach (string path in new[] { (string)null, " ", "relative.pptm", @"\relative.pptm", @"C:relative.pptm" })
+                Assert.ThrowsException<InvalidOperationException>(() => VbaTestPowerPointValuesHost.RequireAbsolutePath(path));
+            using (var f = new Fixture())
+            {
+                f.Source.FullName = Path.Combine(f.Folder, "Unsafe!name.pptm");
+                Assert.ThrowsException<InvalidOperationException>(() => f.Host.Invoke(f.Resolve(), "Support", "Run", null));
+                Assert.AreEqual(0, f.Invocations);
+            }
+        }
+
         internal sealed class Fixture : IDisposable
         {
             internal readonly string Folder = Path.Combine(Path.GetTempPath(), "VBAi-PowerPoint-" + Guid.NewGuid().ToString("N"));
@@ -157,8 +247,9 @@ namespace VBAi.Tests.Unit
         {
             public object VBProject { get; set; } = new object();
             public string FullName { get; set; }
-            public string Name => System.IO.Path.GetFileName(FullName);
-            public string Path => System.IO.Path.GetDirectoryName(FullName);
+            public string NameOverride, PathOverride;
+            public string Name => NameOverride ?? System.IO.Path.GetFileName(FullName);
+            public string Path => PathOverride ?? System.IO.Path.GetDirectoryName(FullName);
             public int SaveCalls, SaveAsCalls, SaveCopyCalls, CloseCalls, LastFormat, EmbedFonts;
             public string LastCopyPath;
             public Action OnSaveCopy;

@@ -63,10 +63,10 @@ namespace VBAi
         // This handle outlives the external UI dispatcher while an active run settles.
         private Control continuationDispatcher;
 
-        private void InitializeOwnerContinuations()
+        private void InitializeOwnerContinuations(Func<Control> createControl)
         {
             RequireContinuationOwner();
-            var control = new Control();
+            var control = createControl();
             try { var handle = control.Handle; continuationDispatcher = control; }
             catch { control.Dispose(); throw; }
         }

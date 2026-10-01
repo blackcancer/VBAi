@@ -279,5 +279,49 @@ namespace VBAi.Tests.Unit
             catalog.Modules.Add(new VbaTestModule { Name = "TestsMath", Tests = tests.ToList() });
             return catalog;
         }
+        [TestMethod]
+        public void NullableCatalogueCollectionsAndDescriptorsCannotProduceUnsafeDispatch()
+        {
+            Assert.ThrowsException<ArgumentNullException>(() => VbaTestRuntimeSource.Generate(null));
+            var catalog = Catalog(Descriptor("Foreign", "Foreign"), Descriptor("TestsMath", null), Descriptor("TestsMath", "WrongKind", "Property"));
+            catalog.Modules[0].Tests.Add(null);
+            catalog.Modules.Add(new VbaTestModule { Name = null });
+            string source = VbaTestRuntimeSource.Generate(catalog);
+            Assert.IsFalse(source.Contains("Case LCase"));
+            catalog.Modules[0].Tests = null;
+            source = VbaTestRuntimeSource.Generate(catalog);
+            Assert.IsFalse(source.Contains("Case LCase"));
+            catalog.Modules = null;
+            Assert.IsFalse(VbaTestRuntimeSource.Generate(catalog).Contains("Case LCase"));
+        }
+
+        [TestMethod]
+        public void DuplicateExistingSupportModulesRefuseEvenWhenBothAreOwned()
+        {
+            var catalog = Catalog(Descriptor("TestsMath", "Good"));
+            string source = VbaTestRuntimeSource.Generate(catalog);
+            catalog.Project = new VbaTestProjectSnapshot { Modules = new[] {
+                new VbaTestModuleSnapshot { Name = VbaTestRuntimeSource.ModuleName, Source = source },
+                new VbaTestModuleSnapshot { Name = VbaTestRuntimeSource.ModuleName, Source = source } } };
+            Assert.ThrowsException<InvalidOperationException>(() => VbaTestRuntimeSource.Generate(catalog));
+        }
+
+        [TestMethod]
+        public void DecoderRejectsNullTestAndExcessiveStatusOrErrorText()
+        {
+            Assert.ThrowsException<ArgumentNullException>(() => VbaTestRuntimeSource.Decode(null, null));
+            foreach (var envelope in new[] { new object[] { null, "", "0" }, new object[] { new string('x',33), "", "0" }, new object[] { "Error", "", new string('1',13) } })
+                Assert.ThrowsException<InvalidOperationException>(() => VbaTestRuntimeSource.Decode(Descriptor("TestsMath", "Good"), envelope));
+        }
+        [TestMethod]
+        public void ShortSubCasesPartitionAtTheExactCaseCountBoundBeforeTheSourceBudget()
+        {
+            var catalog = Catalog(Enumerable.Range(0,129).Select(index => Descriptor("TestsMath","T" + index)).ToArray());
+            var leaves = DispatchHelpers(VbaTestRuntimeSource.Generate(catalog)).Where(pair => pair.Key.StartsWith("VBAiDispatchLeaf",StringComparison.Ordinal)).OrderBy(pair=>pair.Key).ToArray();
+            Assert.AreEqual(2,leaves.Length);
+            Assert.AreEqual(128,Regex.Matches(leaves[0].Value,@"Case LCase\$").Count);
+            Assert.AreEqual(1,Regex.Matches(leaves[1].Value,@"Case LCase\$").Count);
+            Assert.AreEqual(129,leaves.Sum(leaf=>Regex.Matches(leaf.Value,@"Case LCase\$").Count));
+        }
     }
 }

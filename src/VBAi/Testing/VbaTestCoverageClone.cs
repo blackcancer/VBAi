@@ -14,32 +14,43 @@ namespace VBAi
         internal Action Close { get; set; }
         public void Dispose() { var close = Close; Close = null; close?.Invoke(); }
 
-        internal static VbaTestCoverageClone CreateOwned(object project, string sourcePath, string folder)
+        internal sealed class HostBoundary
         {
-            using (var process = Process.GetCurrentProcess())
-            {
-                if (process.ProcessName.Equals("WINWORD", StringComparison.OrdinalIgnoreCase))
-                    return VbaTestWordCoverageClone.CreateWord(project, sourcePath, folder);
-                if (process.ProcessName.Equals("POWERPNT", StringComparison.OrdinalIgnoreCase))
-                    return VbaTestPowerPointCoverageClone.CreatePowerPoint(project, sourcePath, folder);
-            }
-            return CreateExcel(project, sourcePath, folder);
+            internal Func<string> ReadProcessName = () => { using (var process = Process.GetCurrentProcess()) return process.ProcessName; };
+            internal Func<int> ReadProcessId = () => { using (var process = Process.GetCurrentProcess()) return process.Id; };
+            internal Func<int, object> ResolveExcel = pid => ExcelOwnedApplication.Resolve(pid, () => Marshal.GetActiveObject("Excel.Application"));
+            internal Func<IntPtr, uint> ReadWindowOwner = hwnd => { uint owner; VbeDebugWindows.GetWindowThreadProcessId(hwnd, out owner); return owner; };
+            internal Func<object, object, bool> SameIdentity = VbeDebug.NativeProcedureValuesHost.SameComIdentity;
+            internal Func<object, string, string, VbaTestCoverageClone> CreateWord = VbaTestWordCoverageClone.CreateWord;
+            internal Func<object, string, string, VbaTestCoverageClone> CreatePowerPoint = VbaTestPowerPointCoverageClone.CreatePowerPoint;
         }
 
-        internal static VbaTestCoverageClone CreateExcel(object project, string sourcePath, string folder)
+        internal static VbaTestCoverageClone CreateOwned(object project, string sourcePath, string folder)
+        { return CreateOwned(project, sourcePath, folder, new HostBoundary()); }
+
+        internal static VbaTestCoverageClone CreateOwned(object project, string sourcePath, string folder, HostBoundary boundary)
         {
-            using (var process = Process.GetCurrentProcess())
+            boundary = boundary ?? new HostBoundary();
+            string name = boundary.ReadProcessName();
+            if (name.Equals("WINWORD", StringComparison.OrdinalIgnoreCase)) return boundary.CreateWord(project, sourcePath, folder);
+            if (name.Equals("POWERPNT", StringComparison.OrdinalIgnoreCase)) return boundary.CreatePowerPoint(project, sourcePath, folder);
+            return CreateExcel(project, sourcePath, folder, boundary);
+        }
+
+        internal static VbaTestCoverageClone CreateExcel(object project, string sourcePath, string folder, HostBoundary boundary = null)
+        {
+            boundary = boundary ?? new HostBoundary();
             {
-                if (!process.ProcessName.Equals("EXCEL", StringComparison.OrdinalIgnoreCase))
+                int processId = boundary.ReadProcessId();
+                if (!boundary.ReadProcessName().Equals("EXCEL", StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException("Coverage cloning requires the in-process Excel host.");
-                dynamic application = ExcelOwnedApplication.Resolve(process.Id, () => Marshal.GetActiveObject("Excel.Application"));
-                uint owner;
-                VbeDebugWindows.GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(application.Hwnd)), out owner);
-                if (owner != process.Id) throw new InvalidOperationException("The Excel application belongs to another PID.");
+                dynamic application = boundary.ResolveExcel(processId);
+                uint owner = boundary.ReadWindowOwner(new IntPtr(Convert.ToInt64(application.Hwnd)));
+                if (owner != processId) throw new InvalidOperationException("The Excel application belongs to another PID.");
                 object source = null;
                 foreach (dynamic book in application.Workbooks)
                 {
-                    if (!VbeDebug.NativeProcedureValuesHost.SameComIdentity(project, (object)book.VBProject)) continue;
+                    if (!boundary.SameIdentity(project, (object)book.VBProject)) continue;
                     if (source != null) throw new InvalidOperationException("The source workbook identity is ambiguous.");
                     if (!string.Equals(System.IO.Path.GetFullPath((string)book.FullName), System.IO.Path.GetFullPath(sourcePath), StringComparison.OrdinalIgnoreCase))
                         throw new InvalidOperationException("The source workbook path changed.");
@@ -62,7 +73,7 @@ namespace VBAi
                     if ((bool)application.EnableEvents) throw new InvalidOperationException("Excel events could not be disabled for coverage preparation.");
                     ((dynamic)source).SaveCopyAs(copyPath);
                     copy = application.Workbooks.Open(copyPath, UpdateLinks: 0, ReadOnly: false, AddToMru: false);
-                    if (VbeDebug.NativeProcedureValuesHost.SameComIdentity(project, (object)((dynamic)copy).VBProject))
+                    if (boundary.SameIdentity(project, (object)((dynamic)copy).VBProject))
                         throw new InvalidOperationException("Excel did not create a distinct coverage project.");
                     return new VbaTestCoverageClone { Project = ((dynamic)copy).VBProject, Path = copyPath,
                         Close = () => {
@@ -72,7 +83,7 @@ namespace VBAi
                                 if ((bool)application.EnableEvents) throw new InvalidOperationException("Excel events could not be disabled before closing the coverage copy.");
                                 ((dynamic)copy).Close(false);
                                 foreach (dynamic remaining in application.Workbooks)
-                                    if (VbeDebug.NativeProcedureValuesHost.SameComIdentity((object)remaining, copy))
+                                    if (boundary.SameIdentity((object)remaining, copy))
                                         throw new InvalidOperationException("The owned copy remains open after Close returned.");
                             }
                             catch (Exception error) { throw new VbaTestInvocationException("Closing the owned workbook copy is uncertain. Retained path: " + copyPath + ". " + error.Message, true, error); }

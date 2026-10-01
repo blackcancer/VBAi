@@ -216,5 +216,43 @@ namespace VBAi.Tests.Unit
             Id = "session/project", Selector = "path", Name = "Project", Revision = "revision",
             Modules = new[] { new VbaTestModuleSnapshot { Name = "Tests", Source = source, Hash = "hash", ComponentType = type } }
         };
+        [TestMethod]
+        public void MissingIdentitiesAndConflictingFixturesRemainConservative()
+        {
+            var project = Snapshot("'@TestModule\n'@ModuleInitialize\n'@ModuleCleanup\nPublic Sub Setup(): End Sub\n'@TestMethod\nPublic Sub: End Sub\n");
+            project.Id = null; project.Modules[0].Name = null;
+            project.Modules = new[] { null, project.Modules[0], new VbaTestModuleSnapshot { Name = null, ComponentType = 1, Source = "'@TestModule" } };
+            var catalog = VbaTestDiscovery.Discover(project);
+            Assert.AreEqual(2, catalog.Modules.Count);
+            Assert.IsTrue(catalog.Modules.All(module => module.Diagnostic.Contains("Duplicate module identity")));
+            Assert.IsTrue(catalog.Diagnostics.Any(message => message.Contains("conflicting")));
+            Assert.AreEqual("<missing>", catalog.Tests.Single().Procedure);
+        }
+
+        [DataTestMethod]
+        [DataRow("ModuleInitialize")]
+        [DataRow("TestInitialize")]
+        [DataRow("TestCleanup")]
+        public void DuplicateFixturesRetainFirstDefinitionAndBlockTheModule(string role)
+        {
+            var catalog = Discover("'@TestModule\n'@" + role + "\nPublic Sub One(): End Sub\n'@" + role + "\nPublic Sub Two(): End Sub");
+            StringAssert.Contains(catalog.Modules.Single().Diagnostic, "Multiple @" + role);
+        }
+
+        [TestMethod]
+        public void MarkerArgumentsWhitespaceMetadataAndUnknownCommentsNeverGrantExecution()
+        {
+            var catalog = Discover("'@TestModule argument\n'@Unknown ignored\n'@TestMethod\n'@Ignore \" \"\nPublic Sub Check(): End Sub\n'@Ignore \"One\"\n'@Ignore \"Two\"\n'@TestMethod\nPublic Sub Other(): End Sub\n");
+            StringAssert.Contains(catalog.Modules.Single().Diagnostic, "does not accept an argument");
+            StringAssert.Contains(catalog.Tests.Single(test => test.Procedure == "Check").Diagnostic, "nonempty");
+            StringAssert.Contains(catalog.Tests.Single(test => test.Procedure == "Other").Diagnostic, "Duplicate @Ignore");
+            Assert.AreEqual(2, catalog.Tests.Count());
+        }
+        [TestMethod]
+        public void MalformedDirectivesPtrSafeDeclarationsAndPropertyTerminatorsDoNotAuthorizeCalls()
+        {
+            var catalog = Discover("'@TestModule\n#\nEnd\nEnd Property\n'@TestMethod\nPublic Declare PtrSafe Function Native Lib \"x\" () As Boolean\n");
+            Assert.AreEqual(1,catalog.Tests.Count()); StringAssert.Contains(catalog.Tests.Single().Diagnostic,"require");
+        }
     }
 }

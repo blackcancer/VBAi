@@ -150,7 +150,7 @@ namespace VBAi
             string name = window.Class ?? "";
             for (int index = 0; index < name.Length && index < 96; index++)
                 kind.Append(char.IsControl(name[index]) ? '?' : name[index]);
-            return "native={role=" + role + ",HWnd=" + window.Handle.ToInt64() + ",Class=" + kind
+            return "native={role=" + role + ",HWnd=" + window.Handle.ToInt64() + ",Class=" + kind.ToString()
                 + ",Parent=" + window.Parent.ToInt64() + ",PID=" + window.Process + ",Thread=" + window.Thread
                 + ",Exists=" + window.Exists + ",Visible=" + window.Visible + ",Enabled=" + window.Enabled
                 + ",expectedPID=" + process + ",expectedThread=" + thread + ",failed=" + string.Join("|", failed) + "}";

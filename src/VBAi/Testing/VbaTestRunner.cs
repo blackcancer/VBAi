@@ -94,7 +94,6 @@ namespace VBAi
                                     testHasEntered = true;
                                     moduleHasEntered = true;
                                 }
-                                if (result.Outcome == VbaTestOutcome.OutcomeUnknown) safeCleanup = false;
                             }
                             catch (Exception error)
                             {

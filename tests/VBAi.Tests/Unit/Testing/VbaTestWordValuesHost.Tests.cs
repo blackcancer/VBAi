@@ -111,6 +111,78 @@ namespace VBAi.Tests.Unit
             }
         }
 
+        [TestMethod]
+        public void MissingOrForeignTargetsAndInvalidIdentifiersRefuseBeforeActivation()
+        {
+            using (var f = new Fixture())
+            {
+                Assert.ThrowsException<InvalidOperationException>(() => f.Host.ResolveTarget(null, f.Source.FullName));
+                Assert.ThrowsException<InvalidOperationException>(() => f.Host.Invoke(null, "Support", "Run", null));
+                Assert.ThrowsException<InvalidOperationException>(() => f.Host.Invoke(new VbaTestWordValuesHost.OwnedTarget { Owner = new VbaTestWordValuesHost() }, "Support", "Run", null));
+                var target = f.Resolve();
+                foreach (var pair in new[] { new[] { (string)null, "Run" }, new[] { "bad!", "Run" }, new[] { "Support", (string)null }, new[] { "Support", "bad!" } })
+                    Assert.ThrowsException<InvalidOperationException>(() => f.Host.Invoke(target, pair[0], pair[1], null));
+                f.Host.Invoke(target, "Support", "Run", null);
+                Assert.AreEqual(1, f.Application.RunCalls);
+            }
+        }
+
+        [TestMethod]
+        public void ChangedApplicationOrDocumentIdentityAndUnboundedCollectionAreRejected()
+        {
+            using (var f = new Fixture())
+            {
+                var target = f.Resolve();
+                f.Host.ReadActiveApplication = _ => null;
+                Assert.ThrowsException<InvalidOperationException>(() => f.Host.ValidateTarget(target));
+                f.Host.ReadActiveApplication = _ => new Application();
+                Assert.ThrowsException<InvalidOperationException>(() => f.Host.ValidateTarget(target));
+                f.Host.ReadActiveApplication = _ => f.Application;
+                var replacement = new Document { FullName = f.Source.FullName, VBProject = f.Source.VBProject, Application = f.Application };
+                f.Application.Documents[0] = replacement;
+                Assert.ThrowsException<InvalidOperationException>(() => f.Host.ValidateTarget(target));
+                f.Application.Documents.Add(f.Source);
+                Assert.ThrowsException<InvalidOperationException>(() => f.Resolve());
+                f.Application.Documents.Clear(); f.Application.Documents.Add(f.Source);
+                for (int i = 0; i < 1000; i++) f.Application.Documents.Add(new Document());
+                Assert.ThrowsException<InvalidOperationException>(() => f.Resolve());
+                Assert.AreEqual(0, f.Application.RunCalls);
+            }
+        }
+
+        [TestMethod]
+        public void NameAndPathValidationRejectUnsafeSavedMacroContexts()
+        {
+            using (var f = new Fixture())
+            {
+                f.Source.PathOverride = " ";
+                Assert.ThrowsException<InvalidOperationException>(() => f.Resolve());
+                f.Source.PathOverride = null;
+                var target = f.Resolve();
+                f.Source.NameOverride = "Other.docm";
+                Assert.ThrowsException<InvalidOperationException>(() => f.Host.Invoke(target, "Support", "Run", null));
+                Assert.AreEqual(0, f.Source.ActivateCalls);
+            }
+            Assert.IsFalse(VbaTestWordValuesHost.SamePath(null, @"C:\A.docm"));
+            Assert.IsFalse(VbaTestWordValuesHost.SamePath(@"C:\A.docm", "A.docm"));
+            Assert.IsFalse(VbaTestWordValuesHost.SamePath(@"\A.docm", @"C:\A.docm"));
+            Assert.IsFalse(VbaTestWordValuesHost.SamePath(@"C:A.docm", @"C:\A.docm"));
+            Assert.IsFalse(VbaTestWordValuesHost.SamePath(" ", null));
+        }
+
+        [TestMethod]
+        public void DefaultProcessAndWindowReadersObserveOnlyTheTestProcess()
+        {
+            var host = new VbaTestWordValuesHost();
+            using (var process = System.Diagnostics.Process.GetCurrentProcess())
+            {
+                Assert.AreEqual(process.ProcessName, host.ReadProcessName());
+                Assert.AreEqual(process.Id, host.ReadProcessId());
+            }
+            Assert.AreEqual(0u, host.ReadWindowOwner(IntPtr.Zero));
+            Assert.IsFalse(host.SameIdentity(new object(), new object()));
+        }
+
         internal sealed class Fixture : IDisposable
         {
             internal readonly string Folder = Path.Combine(Path.GetTempPath(), "VBAi-Word-" + Guid.NewGuid().ToString("N"));
@@ -162,9 +234,10 @@ namespace VBAi.Tests.Unit
         {
             public object VBProject { get; set; } = new object();
             public string FullName { get; set; }
-            public bool Saved { get; set; } = true;
-            public string Name => System.IO.Path.GetFileName(FullName);
-            public string Path => System.IO.Path.GetDirectoryName(FullName);
+            public object Saved { get; set; } = true;
+            public string NameOverride, PathOverride;
+            public string Name => NameOverride ?? System.IO.Path.GetFileName(FullName);
+            public string Path => PathOverride ?? System.IO.Path.GetDirectoryName(FullName);
             public Application Application;
             public Action OnActivate;
             public bool CancelClose;

@@ -24,19 +24,22 @@ namespace VBAi
         private RunEntry active;
         private readonly List<PendingCall> pendingCalls = new List<PendingCall>();
         internal Func<string> BackupRoot = () => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VBAi", "TestSupportBackups");
-        internal VbeDebug.IProcedureValuesHost Host = CreateReturnedValuesHost();
-        internal Func<bool> IsExecutionHost = () => { using (var process = Process.GetCurrentProcess()) return process.ProcessName.Equals("EXCEL", StringComparison.OrdinalIgnoreCase)
-            || process.ProcessName.Equals("POWERPNT", StringComparison.OrdinalIgnoreCase)
-            || process.ProcessName.Equals("WINWORD", StringComparison.OrdinalIgnoreCase); };
+        internal VbeDebug.IProcedureValuesHost Host = CreateReturnedValuesHost(CurrentProcessName());
+        internal Func<bool> IsExecutionHost = () => IsReturnedValuesHost(CurrentProcessName());
+        internal Func<string> NativeRuntimeReason = () => NativeRuntimeRegistrationReason();
 
-        private static VbeDebug.IProcedureValuesHost CreateReturnedValuesHost()
+        private static string CurrentProcessName()
+        { using (var process = Process.GetCurrentProcess()) return process.ProcessName; }
+
+        internal static bool IsReturnedValuesHost(string processName) => processName.Equals("EXCEL", StringComparison.OrdinalIgnoreCase)
+            || processName.Equals("POWERPNT", StringComparison.OrdinalIgnoreCase)
+            || processName.Equals("WINWORD", StringComparison.OrdinalIgnoreCase);
+
+        internal static VbeDebug.IProcedureValuesHost CreateReturnedValuesHost(string processName)
         {
-            using (var process = Process.GetCurrentProcess())
-            {
-                if (process.ProcessName.Equals("WINWORD", StringComparison.OrdinalIgnoreCase)) return new VbaTestWordValuesHost();
-                return process.ProcessName.Equals("POWERPNT", StringComparison.OrdinalIgnoreCase)
-                    ? (VbeDebug.IProcedureValuesHost)new VbaTestPowerPointValuesHost() : new VbeDebug.NativeProcedureValuesHost();
-            }
+            if (processName.Equals("WINWORD", StringComparison.OrdinalIgnoreCase)) return new VbaTestWordValuesHost();
+            return processName.Equals("POWERPNT", StringComparison.OrdinalIgnoreCase)
+                ? (VbeDebug.IProcedureValuesHost)new VbaTestPowerPointValuesHost() : new VbeDebug.NativeProcedureValuesHost();
         }
         internal Func<VbaTestCatalog, string, string, bool> ConfirmSupport;
         internal Func<string, object> ShowExplorer;
@@ -65,11 +68,11 @@ namespace VBAi
             internal bool Invoked;
         }
 
-        internal VbeTestExplorerService(object vbe, Control dispatcher)
+        internal VbeTestExplorerService(object vbe, Control dispatcher, Func<Control> continuationFactory = null)
         {
             this.vbe = vbe ?? throw new ArgumentNullException(nameof(vbe));
             this.dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
-            InitializeOwnerContinuations();
+            InitializeOwnerContinuations(continuationFactory ?? (() => new Control()));
             runner = new VbaTestRunner(this);
             defaultCompileCoverageDelegate = CompileCoverageClone;
             CompileCoverageProject = defaultCompileCoverageDelegate;
@@ -185,7 +188,7 @@ namespace VBAi
                 if (returnedValues) Host.ResolveTarget(ResolveLive(catalog.Project.Id), catalog.Project.HostPath);
                 else
                 {
-                    string registration = NativeRuntimeRegistrationReason();
+                    string registration = NativeRuntimeReason();
                     if (registration != null) return registration;
                     nativeExecutionHost.Validate(catalog);
                 }

@@ -114,9 +114,14 @@ namespace VBAi
 
         private static IDisposable StartCompilationTimer(Action tick)
         {
+            return StartCompilationTimer(tick, timer => timer.Start());
+        }
+
+        internal static IDisposable StartCompilationTimer(Action tick, Action<Timer> start)
+        {
             var timer = new Timer { Interval = 50 };
             timer.Tick += (sender, args) => tick();
-            try { timer.Start(); return timer; }
+            try { start(timer); return timer; }
             catch { timer.Dispose(); throw; }
         }
     }

@@ -63,7 +63,7 @@ namespace VBAi
                 body.Append(branch); cases++;
             }
             // An empty catalogue still has an explicit unknown-key path and no executable test cases.
-            if (cases > 0 || leaves.Count == 0) AppendLeaf(helpers, leaves, body);
+            AppendLeaf(helpers, leaves, body);
             string root = AppendRoutes(helpers, leaves);
             var source = new StringBuilder();
             source.Append(Header.Replace("\n", "\r\n"));
@@ -131,9 +131,9 @@ namespace VBAi
 
         internal static string DispatchSignature(VbaTestCatalog catalog)
         {
-            var entries = catalog.Modules.SelectMany(module => (module.Tests ?? new List<VbaTestDescriptor>()).Concat(
+            var entries = (catalog.Modules ?? new List<VbaTestModule>()).SelectMany(module => (module.Tests ?? new List<VbaTestDescriptor>()).Concat(
                 new[] { module.ModuleInitialize, module.ModuleCleanup, module.TestInitialize, module.TestCleanup }.Where(item => item != null)))
-                .Select(item => (item.Module + "." + item.Procedure + "|" + item.Kind + "|" + item.Diagnostic + "|" + item.IgnoreReason).ToLowerInvariant())
+                .Where(item => item != null).Select(item => (item.Module + "." + item.Procedure + "|" + item.Kind + "|" + item.Diagnostic + "|" + item.IgnoreReason).ToLowerInvariant())
                 .OrderBy(item => item, StringComparer.Ordinal).ToArray();
             return VbeTestExplorerService.Hash(string.Join("\n", entries));
         }

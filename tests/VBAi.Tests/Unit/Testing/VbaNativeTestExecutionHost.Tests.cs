@@ -86,6 +86,8 @@ namespace VBAi.Tests.Unit
             public bool Enabled { get; set; } = true;
             public string Caption { get; set; } = "Run Sub";
             public string OnAction { get; set; } = "";
+            public Action OnExecute;
+            public void Execute() { OnExecute?.Invoke(); }
         }
         public sealed class SelectionWindow
         {
@@ -95,13 +97,17 @@ namespace VBAi.Tests.Unit
             public int Type { get; set; }
             public long HWnd { get; set; }
             public string Caption { get; set; } = "Owned support (Code)";
+            public Action OnFocus;
             public SelectionWindow(List<string> events) { Events = events; }
             public bool Visible { get => visible; set { Events.Add("Visible"); visible = value && AllowVisibility; } }
-            public void SetFocus() { Events.Add(Type == 12 ? "MainFocus" : "Focus"); Assert.IsTrue(Visible); }
+            public void SetFocus() { Events.Add(Type == 12 ? "MainFocus" : "Focus"); Assert.IsTrue(Visible); OnFocus?.Invoke(); }
         }
         public sealed class SelectionEditor
         {
             public readonly List<string> Events = new List<string>();
+            public object VBProjects { get; set; }
+            public NativeCommandBars CommandBars { get; set; }
+            public object Windows { get; set; } = new object[0];
             public SelectionWindow MainWindow { get; }
             public object ActiveVBProject { get; set; }
             public object ActiveWindow { get; set; }
@@ -724,5 +730,293 @@ namespace VBAi.Tests.Unit
                 Assert.IsNull(f.Tick);
             }
         }
+        public sealed class NativeProject
+        {
+            public string Name { get; set; } = "Owned project";
+            public int Mode { get; set; } = 2;
+            public List<NativeComponent> VBComponents { get; } = new List<NativeComponent>();
+        }
+        public sealed class NativeComponent
+        {
+            public string Name { get; set; } = VbaTestRuntimeSource.ModuleName;
+            public int Type { get; set; } = 1;
+            public NativeModule CodeModule { get; set; }
+        }
+        public sealed class NativeLines
+        {
+            public string Source = "Public Sub " + VbaTestRuntimeSource.PendingProcedure + "()";
+            public string this[int line, int count] => Source;
+        }
+        public sealed class NativeModule
+        {
+            public NativeComponent Parent { get; set; }
+            public int CountOfLines { get; set; } = 1;
+            public NativeLines Lines { get; } = new NativeLines();
+            public SelectionPane CodePane { get; set; }
+            public SelectionBodyLine ProcBodyLine { get; set; }
+        }
+        public sealed class NativeCommandBars
+        {
+            public RunControl Control { get; } = new RunControl();
+            public object FindControl(int type, int id) { Assert.AreEqual(1, type); Assert.AreEqual(186, id); return Control; }
+        }
+        private static void RunOnSta(Action action)
+        {
+            Exception error = null;
+            var thread = new System.Threading.Thread(() => { try { action(); } catch (Exception caught) { error = caught; } });
+            thread.SetApartmentState(System.Threading.ApartmentState.STA); thread.Start(); thread.Join();
+            if (error != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw();
+        }
+        private sealed class NativeFixture
+        {
+            internal readonly SelectionEditor Editor = new SelectionEditor();
+            internal readonly NativeProject Project = new NativeProject();
+            internal readonly VbaNativeTestWindowFocusTests.Windows Windows = new VbaNativeTestWindowFocusTests.Windows();
+            internal readonly NativeModule Module;
+            internal readonly VbaNativeTestExecutionHost.NativeProbe Probe;
+            internal NativeFixture()
+            {
+                var pane = new SelectionPane(Editor); pane.StartLine = 1; pane.EndLine = 1; pane.StartColumn = pane.EndColumn = 1;
+                Module = new NativeModule { CodePane = pane, ProcBodyLine = new SelectionBodyLine(pane) };
+                pane.CodeModule = Module;
+                var component = new NativeComponent { CodeModule = Module }; Module.Parent = component;
+                Project.VBComponents.Add(component);
+                Editor.MainWindow.HWnd = 1;
+                Editor.ActiveVBProject = Project; Editor.ActiveWindow = pane.Window;
+                Editor.VBProjects = new object[] { new object(), Project };
+                Editor.CommandBars = new NativeCommandBars();
+                Probe = new VbaNativeTestExecutionHost.NativeProbe(Windows, ReferenceEquals);
+            }
+            internal object Prepare() => Probe.Prepare(Editor, Project, Module.Lines.Source);
+        }
+
+        [TestMethod]
+        public void NativeProbePreparesRevalidatesAndExecutesTheExactBuiltInCommandOnce()
+        {
+            RunOnSta(() =>
+            {
+                var f = new NativeFixture(); int executions = 0;
+                f.Editor.CommandBars.Control.OnExecute = () => executions++;
+                var plan = f.Prepare(); f.Probe.Revalidate(f.Editor, f.Project, plan); f.Probe.Execute(plan);
+                Assert.AreEqual(1, executions); Assert.AreEqual(2, f.Probe.ReadMode(f.Project));
+                f.Editor.VBProjects = new object[0];
+                Assert.ThrowsException<InvalidOperationException>(() => f.Probe.Revalidate(f.Editor, f.Project, plan));
+                f.Editor.VBProjects = new object[] { f.Project }; f.Project.Mode = 0;
+                Assert.ThrowsException<InvalidOperationException>(() => f.Probe.Revalidate(f.Editor, f.Project, plan));
+                f.Project.Mode = 2; f.Module.Lines.Source = "Changed";
+                Assert.ThrowsException<InvalidOperationException>(() => f.Probe.Revalidate(f.Editor, f.Project, plan));
+                Assert.AreEqual(1, executions);
+            });
+        }
+
+        [TestMethod]
+        public void NativeProbeRejectsUnavailableOwnerAndSupportBeforeDispatch()
+        {
+            RunOnSta(() =>
+            {
+                foreach (string fault in new[] { "zero", "pid", "thread", "duplicate", "missing", "type", "source", "negative", "huge", "empty", "wrapper", "main", "pane", "selection" })
+                {
+                    var f = new NativeFixture(); string expected = f.Module.Lines.Source;
+                    switch (fault)
+                    {
+                        case "zero": f.Editor.MainWindow.HWnd = 0; break;
+                        case "pid": f.Windows.Items[new IntPtr(1)].Process = 9; break;
+                        case "thread": f.Windows.Items[new IntPtr(1)].Thread = 9; break;
+                        case "duplicate": f.Project.VBComponents.Add(f.Project.VBComponents[0]); break;
+                        case "missing": f.Project.VBComponents.Clear(); break;
+                        case "type": f.Project.VBComponents[0].Type = 2; break;
+                        case "source": expected = "Other source"; break;
+                        case "negative": f.Module.CountOfLines = -1; break;
+                        case "huge": f.Module.CountOfLines = 200001; break;
+                        case "empty": f.Module.CountOfLines = 0; break;
+                        case "wrapper": expected = f.Module.Lines.Source = "Private Sub Wrong()"; break;
+                        case "main": f.Editor.MainWindow.AllowVisibility = false; break;
+                        case "pane": f.Module.CodePane.Window.Type = 1; break;
+                        case "selection": f.Module.CodePane.Window.OnFocus = () => f.Module.CodePane.StartColumn = 2; break;
+                    }
+                    Assert.ThrowsException<InvalidOperationException>(() => f.Probe.Prepare(f.Editor, f.Project, expected), fault);
+                    Assert.AreEqual(0, f.Windows.Activations, fault);
+                }
+                var valid = new NativeFixture(); var plan = valid.Prepare();
+                valid.Editor.ActiveVBProject = new object();
+                Assert.ThrowsException<InvalidOperationException>(() => valid.Probe.Revalidate(valid.Editor, valid.Project, plan));
+            });
+            var mta = new NativeFixture();
+            Exception refused = null;
+            var thread = new System.Threading.Thread(() => { try { mta.Probe.RequireOwner(mta.Editor); } catch (Exception e) { refused = e; } });
+            thread.SetApartmentState(System.Threading.ApartmentState.MTA); thread.Start(); thread.Join();
+            Assert.IsInstanceOfType(refused, typeof(InvalidOperationException));
+        }
+
+        [TestMethod]
+        public void ConstructorNullsAndInvalidPlansRefuseWithoutDispatch()
+        {
+            using (var dispatcher = new Control())
+            using (var sink = new VbaTestResultSink(ReferenceEquals))
+            {
+                for (int missing = 0; missing < 8; missing++)
+                {
+                    int argument = missing;
+                    Assert.ThrowsException<ArgumentNullException>(() => new VbaNativeTestExecutionHost(argument == 0 ? null : new object(), argument == 1 ? null : dispatcher,
+                        argument == 2 ? null : sink, argument == 3 ? (Func<VbaTestCatalog, object>)null : _ => new object(),
+                        argument == 4 ? (Action<VbaTestCatalog>)null : _ => { }, argument == 5 ? (Action)null : () => { },
+                        argument == 6 ? (Func<VbaTestCatalog, string>)null : _ => "signature", argument == 7 ? (Func<string>)null : () => "run"));
+                }
+            }
+            using (var f = new Fixture())
+            {
+                Assert.ThrowsException<ArgumentException>(() => f.Host.InvokeAsync(null, f.Test, "Test"));
+                Assert.ThrowsException<ArgumentException>(() => f.Host.InvokeAsync(new VbaTestCatalog(), f.Test, "Test"));
+                Assert.ThrowsException<ArgumentException>(() => f.Host.InvokeAsync(f.Catalog, null, "Test"));
+                f.Host.Post = _ => { throw new InvalidOperationException("Dispatch queue disconnected"); };
+                var task = f.Host.InvokeAsync(f.Catalog, f.Test, "Test");
+                Assert.IsFalse(Assert.ThrowsException<VbaTestInvocationException>(() => task.GetAwaiter().GetResult()).Uncertain);
+                f.Host.Dispose();
+                Assert.ThrowsException<VbaTestInvocationException>(() => f.Host.Validate(f.Catalog));
+            }
+        }
+
+        [TestMethod]
+        public void DuplicateQueuedCallbacksAndUnavailableModeCannotDispatchTwice()
+        {
+            using (var f = new Fixture())
+            {
+                f.Native.Mode = 0;
+                var task = f.Host.InvokeAsync(f.Catalog, f.Test, "Test"); var queued = f.Queued;
+                queued(); var tick = f.Tick;
+                f.Native.Mode = 2; tick();
+                Assert.AreEqual(VbaTestOutcome.Passed, task.GetAwaiter().GetResult().Outcome);
+                queued(); tick(); Assert.AreEqual(1, f.Native.Invocations);
+            }
+            using (var f = new Fixture())
+            {
+                f.Native.Mode = -1;
+                Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => f.Start().GetAwaiter().GetResult()).Uncertain);
+            }
+            using (var f = new Fixture())
+            {
+                Exception error = null;
+                var thread = new System.Threading.Thread(() => { try { f.Host.Validate(f.Catalog); } catch (Exception caught) { error = caught; } });
+                thread.Start(); thread.Join();
+                Assert.IsInstanceOfType(error, typeof(InvalidOperationException));
+            }
+        }
+
+        [System.Runtime.InteropServices.DllImport("ole32.dll")]
+        private static extern int CreateStreamOnHGlobal(IntPtr memory, bool deleteOnRelease, [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Interface)] out object stream);
+
+        [TestMethod]
+        public void ReadOnlyDiagnosticsBoundTextAndHandleNullComAndFailedIdentityReads()
+        {
+            var read = typeof(VbaNativeTestExecutionHost).GetMethod("DiagnosticRead", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            var matches = typeof(VbaNativeTestExecutionHost).GetMethod("DiagnosticMatches", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            Assert.AreEqual("null", read.Invoke(null, new object[] { new Func<object>(() => null) }));
+            Assert.AreEqual(new string('x', 256), read.Invoke(null, new object[] { new Func<object>(() => new string('x', 257)) }));
+            Assert.AreEqual("unavailable(InvalidOperationException)", read.Invoke(null, new object[] { new Func<object>(() => { throw new InvalidOperationException(); }) }));
+            object stream; Assert.AreEqual(0, CreateStreamOnHGlobal(IntPtr.Zero, true, out stream));
+            try { Assert.AreEqual("available", read.Invoke(null, new object[] { new Func<object>(() => stream) })); }
+            finally { System.Runtime.InteropServices.Marshal.ReleaseComObject(stream); }
+            Assert.AreEqual(false, matches.Invoke(null, new object[] { new Func<object, object, bool>((a, b) => { throw new InvalidOperationException(); }), new object(), new object() }));
+            Assert.AreEqual(false, matches.Invoke(null, new object[] { new Func<object, object, bool>(ReferenceEquals), null, new object() }));
+            var editor = new DiagnosticEditor { Windows = new DiagnosticWindow[13] };
+            string diagnostics = VbaNativeTestExecutionHost.DescribeNativeWindows(editor, null, null, nativeWindows: _ => null);
+            StringAssert.Contains(diagnostics, "bounded"); StringAssert.Contains(diagnostics, "ownedNative=[null]");
+            VbaNativeTestExecutionHost.DescribeNativeWindows(new object(), null, null);
+            VbaNativeTestExecutionHost.DescribeNativeSelection(editor, null, null, null, 1);
+            var selectionEditor = new SelectionEditor();
+            Assert.ThrowsException<InvalidOperationException>(() => VbaNativeTestExecutionHost.PrepareNativePane(selectionEditor, new SelectionModule(selectionEditor), 1));
+            Assert.ThrowsException<InvalidOperationException>(() => VbaNativeTestExecutionHost.ValidateNativePaneContext(new SelectionEditor(), new object(), new object(), new object(), 1));
+            Assert.ThrowsException<Microsoft.CSharp.RuntimeBinder.RuntimeBinderException>(() => VbaNativeTestExecutionHost.EnsureNativePaneFocus(new object(), new object(), new object(), new object(), 1, null));
+        }
+
+        [TestMethod]
+        public void NativeDiagnosticObservationBoundsCountAndLengthWithoutReadingForeignWindowTitles()
+        {
+            var f = new VbaNativeTestWindowFocusTests.Windows();
+            var root = f.Items[new IntPtr(1)];
+            Assert.AreEqual("unavailable(owner mismatch)", VbaNativeTestExecutionHost.NativeWindowObservation.Read(IntPtr.Zero, f, (_, __) => Assert.Fail()));
+            root.Exists = false;
+            Assert.AreEqual("unavailable(owner mismatch)", VbaNativeTestExecutionHost.NativeWindowObservation.Read(new IntPtr(1), f, (_, __) => Assert.Fail()));
+            root.Exists = true; root.Process = 9;
+            Assert.AreEqual("unavailable(owner mismatch)", VbaNativeTestExecutionHost.NativeWindowObservation.Read(new IntPtr(1), f, (_, __) => Assert.Fail()));
+            root.Process = 7; root.Thread = 9;
+            Assert.AreEqual("unavailable(owner mismatch)", VbaNativeTestExecutionHost.NativeWindowObservation.Read(new IntPtr(1), f, (_, __) => Assert.Fail()));
+            root.Thread = 8;
+            f.Add(5, 1, "Private"); f.Items[new IntPtr(5)].Process = 9;
+            string foreign = VbaNativeTestExecutionHost.NativeWindowObservation.Read(new IntPtr(1), f, (parent, visit) => visit(new IntPtr(5)));
+            Assert.IsFalse(foreign.Contains("Private")); Assert.AreEqual(0, f.CaptionReads.Count);
+            root.Class = null;
+            f.Items[new IntPtr(2)].Class = null;
+            string bounded = VbaNativeTestExecutionHost.NativeWindowObservation.Read(new IntPtr(1), f, (parent, visit) => { for (int i = 0; i < 80 && visit(new IntPtr(2)); i++) { } });
+            StringAssert.Contains(bounded, "bounded");
+            f.Items[new IntPtr(2)].Class = new string('x', 200);
+            int visits = 0;
+            string longText = VbaNativeTestExecutionHost.NativeWindowObservation.Read(new IntPtr(1), f, (parent, visit) => { while (visit(new IntPtr(2))) visits++; });
+            Assert.IsTrue(visits < 64); Assert.IsTrue(longText.Length >= 3900); Assert.IsFalse(longText.Contains(new string('x', 96)));
+            RunOnSta(() => {
+                using (var form = new Form())
+                using (var child = new Control())
+                {
+                    form.Controls.Add(child); var rootHandle = form.Handle; var childHandle = child.Handle;
+                    string native = VbaNativeTestExecutionHost.NativeWindowObservation.Read(rootHandle);
+                    StringAssert.Contains(native, "HWnd=" + rootHandle.ToInt64());
+                    StringAssert.Contains(native, "HWnd=" + childHandle.ToInt64());
+                }
+            });
+        }
+
+        [TestMethod]
+        public void NativeProbeHostRechecksIdentityAfterPanePreparationBeforeArming()
+        {
+            RunOnSta(() =>
+            {
+                foreach (bool changed in new[] { false, true })
+                {
+                    var f = new NativeFixture();
+                    var catalog = new VbaTestCatalog { Project = new VbaTestProjectSnapshot { Id = "owned", Revision = "revision", Modules = new[] { new VbaTestModuleSnapshot { Name = VbaTestRuntimeSource.ModuleName, Source = f.Module.Lines.Source } } } };
+                    var test = new VbaTestDescriptor { Id = "test", Module = "Tests", Procedure = "Alpha", Kind = "Sub" };
+                    int reads = 0, executions = 0;
+                    using (var sink = new VbaTestResultSink(ReferenceEquals))
+                    using (var dispatcher = new Control())
+                    using (var host = new VbaNativeTestExecutionHost(f.Editor, dispatcher, sink, _ => ++reads == 2 && changed ? new object() : f.Project, _ => { }, () => { }, _ => "signature", () => "run") { Probe = f.Probe, Post = action => action() })
+                    {
+                        f.Editor.CommandBars.Control.OnExecute = () => {
+                            executions++;
+                            var runtime = new VbaTestRuntime();
+                            var job = (object[])runtime.Request(VbaTestRuntimeSource.Version, "signature");
+                            runtime.Publish((string)job[0], (string)job[4], (string)job[5], (string)job[6], "Passed", "", 0);
+                        };
+                        var task = host.InvokeAsync(catalog, test, "Test");
+                        if (changed) Assert.IsFalse(Assert.ThrowsException<VbaTestInvocationException>(() => task.GetAwaiter().GetResult()).Uncertain);
+                        else Assert.AreEqual(VbaTestOutcome.Passed, task.GetAwaiter().GetResult().Outcome);
+                        Assert.AreEqual(changed ? 0 : 1, executions);
+                    }
+                }
+            });
+        }
+
+        [TestMethod]
+        public void ChangedFocusTargetContextCannotInvokeNativeRecovery()
+        {
+            foreach (string fault in new[] { "project", "module", "type", "visible" })
+            {
+                var f = new NativeFixture(); f.Module.CodePane.Window.Visible = true;
+                if (fault == "project") f.Editor.ActiveVBProject = new object();
+                if (fault == "module") f.Module.CodePane.CodeModule = new object();
+                if (fault == "type") f.Module.CodePane.Window.Type = 1;
+                if (fault == "visible") f.Module.CodePane.Window.Visible = false;
+                Assert.ThrowsException<InvalidOperationException>(() => VbaNativeTestExecutionHost.EnsureNativePaneFocus(f.Editor, f.Project, f.Module, f.Module.CodePane, 1, f.Windows, ReferenceEquals));
+                Assert.AreEqual(0, f.Windows.Activations); Assert.AreEqual(0, f.Windows.Focuses);
+            }
+            Assert.ThrowsException<InvalidOperationException>(() => VbaNativeTestExecutionHost.ValidateNativeRunControl(null));
+            var project = new DiagnosticProject();
+            var module = new DiagnosticModule { Parent = new DiagnosticComponent { Collection = new DiagnosticCollection() } };
+            var pane = new DiagnosticPane { CodeModule = module };
+            var editor = new DiagnosticEditor { ActiveCodePane = pane };
+            VbaNativeTestExecutionHost.DescribeNativeSelection(editor, project, module, pane, 1, ReferenceEquals);
+            pane.CodeModule = null;
+            VbaNativeTestExecutionHost.DescribeNativeSelection(editor, project, module, pane, 1, ReferenceEquals);
+        }
+
     }
 }

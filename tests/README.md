@@ -766,6 +766,64 @@ denominator, tested commit, exclusions and skipped host tests. Coverlet results
 for the managed add-in do not measure C++, JavaScript or every native COM path.
 Do not exclude production code or weaken assertions to manufacture a target.
 
+### Managed VBA testing coverage gate
+
+The managed testing subsystem has a strict coverage gate in
+[check_managed_coverage.py](../tools/testing-explorer/check_managed_coverage.py).
+Its scope is every `src/VBAi/Testing/*.cs` file, including Designers and native
+adapters, plus `src/VBAi/Llm/Chat/LlmVbeTools.Testing.cs`. The collector still
+instruments the complete assembly; the gate selects this subsystem from the
+result without excluding production code.
+
+Use a fresh isolated build directory for each collection. Run the focused test
+classes with both collector formats, leaving exclusion settings unset:
+
+```powershell
+$managedCoverageBuild = "$PWD/artifacts/build-vba-testing-managed-coverage"
+$managedTestFilter = @(
+    "FullyQualifiedName~VBAi.Tests.Unit.VbaTest",
+    "FullyQualifiedName~VBAi.Tests.Unit.VbaCoverage",
+    "FullyQualifiedName~VBAi.Tests.Unit.VbaNativeTest",
+    "FullyQualifiedName~VBAi.Tests.Unit.VbeTestExplorerService",
+    "FullyQualifiedName~VBAi.Tests.Unit.TestExplorerWindow",
+    "FullyQualifiedName~VBAi.Tests.Unit.TestSupportReviewDialog",
+    "FullyQualifiedName~VBAi.Tests.Unit.LlmVbaTestingBoundary"
+) -join "|"
+dotnet build tests/VBAi.Tests/VBAi.Tests.csproj -c Debug -p:BuildOutputRoot=$managedCoverageBuild
+dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildOutputRoot=$managedCoverageBuild --filter $managedTestFilter --collect:"XPlat Code Coverage" --results-directory artifacts/coverage/vba-testing-managed -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura,json
+```
+
+Use `coverage.cobertura.xml` and `coverage.json` from the **same collector UUID
+folder**. Replace `<collection-id>` below with the identifier reported by the
+test command:
+
+```powershell
+python tools/testing-explorer/check_managed_coverage.py artifacts/coverage/vba-testing-managed/<collection-id>/coverage.cobertura.xml --json artifacts/coverage/vba-testing-managed/gate.json
+python -m unittest discover -s tools/testing-explorer -p test_check_managed_coverage.py
+```
+
+The first command prints a readable per-file summary, saves the complete JSON
+result, and exits nonzero for any uncovered line or branch, missing expected
+source file, malformed report or disagreement between formats. The sole
+sequence-point exception is `VbaTestExplorerService.cs`, and only while its
+contents remain interface declarations without executable bodies. New source
+files automatically enter the gate's expected scope.
+
+Line totals retain each method's collector records, including generated classes
+and methods that share a physical source line. Branch totals retain every raw IL
+branch record, including repeated offsets and branches without an emitted source
+line. Cobertura line condition counters alone can omit such branches; the
+[Coverlet reporter implementation](https://github.com/coverlet-coverage/coverlet/blob/v6.0.4/src/coverlet.core/Reporters/CoberturaReporter.cs)
+explains why its companion JSON is required. The gate reconciles root counters,
+class and method rates, source-line records and visible condition counters across
+both formats before accepting the result.
+
+Reports do not encode the complete exclusion configuration or establish the
+compiled source revision. Preserve the collector command/settings, tested source
+revision and assembly identity with the validation evidence. This gate measures
+C# implementation coverage; it does not qualify native applications or measure
+line/branch coverage within a user's VBA macros.
+
 Keep machine-local artifacts outside the maintained guide tree. Publish a concise,
 versioned summary in [recorded validation](../docs/test-coverage.md), separating
 unit/runtime tests, native host observations, Designer checks and live-provider

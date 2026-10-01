@@ -57,6 +57,9 @@ namespace VBAi.Tests.Unit
                 service.Catalog.Project.Revision = "r2";
                 window.RefreshProjects();
                 Assert.IsFalse(Field<Button>(window, "rerunFailed").Enabled);
+                int previousRuns = service.Runs;
+                window.RerunFailedAsync().GetAwaiter().GetResult();
+                Assert.AreEqual(previousRuns, service.Runs, "An explicit rerun must refuse stale results as well as disabling its button.");
             }
         }
 
@@ -790,6 +793,452 @@ namespace VBAi.Tests.Unit
             }
         }
 
+        [STATestMethod]
+        public void CommandHandlersRespectAvailabilityAndDisplayNavigationOrInstallationFailures()
+        {
+            var service = new ExplorerDouble();
+            using (var window = new TestExplorerWindow())
+            {
+                Invoke(window, "Refresh_Click", window, EventArgs.Empty);
+                Invoke(window, "InstallSupport_Click", window, EventArgs.Empty);
+                Invoke(window, "Source_Click", window, EventArgs.Empty);
+                Assert.ThrowsException<ArgumentNullException>(() => window.Configure(null));
+                Assert.ThrowsException<ArgumentException>(() => window.SelectProject(""));
+                window.Configure(service);
+                Invoke(window, "Source_Click", window, EventArgs.Empty);
+                var tree = Field<TreeView>(window, "testTree");
+                var handle = tree.Handle;
+                tree.SelectedNode = tree.Nodes[0].Nodes[0].Nodes[0];
+                Invoke(window, "Source_Click", window, EventArgs.Empty);
+                Assert.AreEqual(1, service.Navigations);
+                service.NavigationError = new InvalidOperationException("Navigation failed");
+                Invoke(window, "TestTree_NodeMouseDoubleClick", tree, new TreeNodeMouseClickEventArgs(tree.SelectedNode, MouseButtons.Left, 2, 0, 0));
+                StringAssert.Contains(Field<Label>(window, "status").Text, "Navigation failed");
+                Invoke(window, "InstallSupport_Click", window, EventArgs.Empty);
+                Assert.AreEqual(1, service.Installations);
+                service.InstallError = new InvalidOperationException("Support rejected");
+                Invoke(window, "InstallSupport_Click", window, EventArgs.Empty);
+                StringAssert.Contains(Field<Label>(window, "status").Text, "Support rejected");
+                Invoke(window, "Refresh_Click", window, EventArgs.Empty);
+                service.ReadError = new InvalidOperationException("Projects closed");
+                window.RefreshProjects();
+                Assert.AreEqual(0, window.VisibleTests().Count);
+                StringAssert.Contains(Field<Label>(window, "status").Text, "Projects closed");
+                service.ReadError = null;
+                service.DiscoveryError = new InvalidOperationException("Discovery failed");
+                window.RefreshProjects();
+                Assert.IsNull(Field<object>(window, "catalog"));
+                StringAssert.Contains(Field<Label>(window, "status").Text, "Discovery failed");
+            }
+        }
+
+        [STATestMethod]
+        public void ClipboardAndExportEffectsUseCurrentReportAndDoNotEscapeAsUiErrors()
+        {
+            using (var window = new TestExplorerWindow())
+            {
+                Invoke(window, "CopyReport_Click", window, EventArgs.Empty);
+                Invoke(window, "ExportReport_Click", window, EventArgs.Empty);
+                window.Configure(new ExplorerDouble());
+                window.RunScopeAsync().GetAwaiter().GetResult();
+                var tabHandle = Field<TabControl>(window, "resultTabs").Handle;
+                Field<TabControl>(window, "resultTabs").SelectedTab = Field<TabPage>(window, "humanTab");
+                Assert.IsTrue(Field<Button>(window, "copyReport").Enabled);
+                string copied = null;
+                window.WriteReportClipboard = value => copied = value;
+                Invoke(window, "CopyReport_Click", window, EventArgs.Empty);
+                Assert.AreEqual(Field<TextBox>(window, "humanReport").Text, copied);
+                window.WriteReportClipboard = _ => { throw new InvalidOperationException("Clipboard busy"); };
+                Invoke(window, "CopyReport_Click", window, EventArgs.Empty);
+                StringAssert.Contains(Field<Label>(window, "status").Text, "Clipboard busy");
+                window.ChooseReportExportPath = (_, __) => null;
+                Invoke(window, "ExportReport_Click", window, EventArgs.Empty);
+                window.ChooseReportExportPath = (_, __) => { throw new IOException("Export denied"); };
+                Invoke(window, "ExportReport_Click", window, EventArgs.Empty);
+                StringAssert.Contains(Field<Label>(window, "status").Text, "Export denied");
+                Field<TabControl>(window, "resultTabs").SelectedIndex = -1;
+                Assert.AreEqual("", Invoke(window, "ReportText"));
+                Invoke(window, "CopyReport_Click", window, EventArgs.Empty);
+                window.ChooseReportExportPath = (_, __) => { window.Dispose(); throw new IOException("Disposed during export"); };
+                Field<TabControl>(window, "resultTabs").SelectedTab = Field<TabPage>(window, "humanTab");
+                Invoke(window, "ExportReport_Click", window, EventArgs.Empty);
+                Assert.IsTrue(window.IsDisposed);
+            }
+        }
+
+        [STATestMethod]
+        public void ButtonsDispatchTheirSingleAndBatchSelectionsAndIgnoreActionsDuringAnActiveRun()
+        {
+            var service = new CoverageDouble();
+            using (var window = new TestExplorerWindow())
+            {
+                window.Configure(service);
+                window.ConfirmCoverage = (_, __) => true;
+                var tree = Field<TreeView>(window, "testTree");
+                var handle = tree.Handle;
+                tree.SelectedNode = tree.Nodes[0].Nodes[0].Nodes[0];
+                Invoke(window, "RunSelected_Click", window, EventArgs.Empty);
+                Assert.AreEqual(1, service.Runs);
+                Invoke(window, "RunScope_Click", window, EventArgs.Empty);
+                Assert.AreEqual(2, service.Runs);
+                Invoke(window, "RerunFailed_Click", window, EventArgs.Empty);
+                Assert.AreEqual(3, service.Runs);
+                Invoke(window, "RunSelectedCoverage_Click", window, EventArgs.Empty);
+                Invoke(window, "RunScopeCoverage_Click", window, EventArgs.Empty);
+                Assert.AreEqual(2, service.CoverageRuns);
+                service.Pending = new TaskCompletionSource<VbaTestRun>();
+                var run = window.RunScopeAsync();
+                Assert.ThrowsException<InvalidOperationException>(() => window.Configure(service));
+                int reads = service.DiscoveryCalls;
+                window.RefreshProjects();
+                Invoke(window, "Source_Click", window, EventArgs.Empty);
+                Invoke(window, "InstallSupport_Click", window, EventArgs.Empty);
+                Invoke(window, "CopyReport_Click", window, EventArgs.Empty);
+                Invoke(window, "ExportReport_Click", window, EventArgs.Empty);
+                Invoke(window, "Filter_Changed", window, EventArgs.Empty);
+                window.RunScopeCoverageAsync().GetAwaiter().GetResult();
+                window.RunScopeAsync().GetAwaiter().GetResult();
+                Assert.AreEqual(reads, service.DiscoveryCalls);
+                Invoke(window, "Stop_Click", window, EventArgs.Empty);
+                Assert.IsTrue(service.Cancellation.IsCancellationRequested);
+                service.Pending.SetCanceled();
+                PumpOwner(run);
+                StringAssert.Contains(Field<Label>(window, "status").Text, UiText.Get("Test run stopped."));
+                Invoke(window, "Stop_Click", window, EventArgs.Empty);
+            }
+        }
+
+        [STATestMethod]
+        public void FreshnessCapabilityChangesAndEmptyProjectListsNeverTriggerExecution()
+        {
+            var service = new CoverageDouble();
+            using (var window = new TestExplorerWindow())
+            {
+                window.Configure(service); window.Show();
+                window.CheckFreshness();
+                service.Unavailable = "Execution trust changed";
+                window.CheckFreshness();
+                Assert.IsFalse(Field<Button>(window, "runScope").Enabled);
+                StringAssert.Contains(Field<Label>(window, "status").Text, service.Unavailable);
+                service.Unavailable = null;
+                service.CoverageUnavailable = "Coverage trust changed";
+                Invoke(window, "FreshnessTimer_Tick", window, EventArgs.Empty);
+                Assert.IsFalse(Field<Button>(window, "runScopeCoverage").Enabled);
+                service.NoProjects = true;
+                window.RefreshProjects();
+                Assert.AreEqual(-1, Field<ComboBox>(window, "projectList").SelectedIndex);
+                window.CheckFreshness();
+                Assert.AreEqual(0, window.ScopeTests().Count);
+                Assert.AreEqual(0, service.Runs);
+            }
+        }
+
+        [STATestMethod]
+        public void CoverageReviewFreezesRefreshAndRejectsChangedOrDisposedCatalogs()
+        {
+            foreach (bool dispose in new[] { false, true })
+            {
+                var service = new CoverageDouble();
+                using (var window = new TestExplorerWindow())
+                {
+                    window.Configure(service);
+                    window.ConfirmCoverage = (_, __) =>
+                    {
+                        int reads = service.DiscoveryCalls;
+                        window.RefreshProjects(); window.SelectProject("project");
+                        Assert.ThrowsException<InvalidOperationException>(() => window.SelectProject("other"));
+                        var closing = new FormClosingEventArgs(CloseReason.UserClosing, false);
+                        Invoke(window, "OnFormClosing", closing);
+                        Assert.IsTrue(closing.Cancel);
+                        Assert.AreEqual(reads, service.DiscoveryCalls);
+                        if (dispose) window.Dispose();
+                        else SetField(window, "catalog", new VbaTestCatalog { Project = service.Catalog.Project });
+                        return true;
+                    };
+                    window.RunScopeCoverageAsync().GetAwaiter().GetResult();
+                    Assert.AreEqual(0, service.CoverageRuns);
+                    if (!dispose) StringAssert.Contains(Field<Label>(window, "status").Text, UiText.Get("The reviewed project changed. Review coverage again."));
+                }
+            }
+        }
+
+        [STATestMethod]
+        public void BlockedIgnoredAndErrorTestsRetainDiagnosticsAndCoverageCompleteness()
+        {
+            var service = new ExplorerDouble();
+            var first = service.Catalog.Modules[0].Tests[0];
+            var second = service.Catalog.Modules[0].Tests[1];
+            first.Diagnostic = "Invalid signature"; first.Categories = null;
+            second.IgnoreReason = "Manual only";
+            service.Catalog.Modules.Add(new VbaTestModule { Name = "Blocked", Diagnostic = "Private module" });
+            using (var window = new TestExplorerWindow())
+            {
+                window.Configure(service);
+                var tree = Field<TreeView>(window, "testTree"); var handle = tree.Handle;
+                StringAssert.Contains(tree.Nodes[0].Nodes[0].Nodes[0].Text, UiText.Get("Blocked"));
+                Assert.AreEqual(UiTheme.Foreground, tree.Nodes[0].Nodes[0].Nodes[1].ForeColor);
+                tree.SelectedNode = tree.Nodes[0].Nodes[1];
+                Assert.AreEqual("Private module", Field<TextBox>(window, "details").Text);
+                tree.SelectedNode = tree.Nodes[0].Nodes[0].Nodes[0];
+                Field<TextBox>(window, "search").Text = "Adds";
+                Assert.AreEqual(1, window.VisibleTests().Count);
+                Invoke(window, "AcceptResult", new VbaTestResult { Test = first, Outcome = VbaTestOutcome.Error, ErrorNumber = 5, Message = "Runtime failure" }, "old");
+                StringAssert.Contains(Field<TextBox>(window, "details").Text, UiText.Get("VBA error") + ": 5");
+                StringAssert.Contains(Field<TextBox>(window, "details").Text, UiText.Get("Result belongs to a previous source revision."));
+                Invoke(window, "AcceptResult", null, "r1");
+                Invoke(window, "AcceptResult", new VbaTestResult(), "r1");
+                foreach (var report in new[] {
+                    new VbaCoverageReport { Available = true, Complete = true, Revision = "old", Percent = 100, Eligible = 1, Hit = 1, Diagnostics = new List<string> { "Coverage details" } },
+                    new VbaCoverageReport { Available = true, Revision = "r1", Percent = 100, Eligible = null, Hit = 1 },
+                    new VbaCoverageReport { Available = true, Revision = "r1", Percent = 100, Eligible = 1, Hit = null } })
+                {
+                    SetField(window, "lastCoverage", report); Invoke(window, "UpdateCoverage");
+                    if (report.Complete) StringAssert.Contains(Field<Label>(window, "coverage").Text, "Coverage details");
+                    else StringAssert.Contains(Field<Label>(window, "coverage").Text, UiText.Get("Unknown"));
+                }
+                SetField(window, "catalog", null); Invoke(window, "UpdateCoverage");
+                StringAssert.Contains(Field<Label>(window, "coverage").Text, UiText.Get("Previous revision"));
+                SetField(window, "lastCoverage", null);
+            }
+        }
+
+        [STATestMethod]
+        public void RunFailuresAndUnknownOutcomesAreDisplayedWithoutRetry()
+        {
+            foreach (bool unknown in new[] { false, true })
+            using (var window = new TestExplorerWindow())
+            {
+                var service = new ExplorerDouble { Pending = new TaskCompletionSource<VbaTestRun>() };
+                window.Configure(service);
+                service.Pending.SetResult(new VbaTestRun { Revision = "r1", Error = unknown ? null : "Run guard failed", OutcomeUnknown = unknown });
+                window.RunScopeAsync().GetAwaiter().GetResult();
+                StringAssert.Contains(Field<Label>(window, "status").Text, unknown ? UiText.Get("Test outcome is unknown. No automatic retry was performed.") : "Run guard failed");
+                Assert.AreEqual(1, service.Runs);
+            }
+            using (var window = new TestExplorerWindow())
+            {
+                var service = new ExplorerDouble { Pending = new TaskCompletionSource<VbaTestRun>() };
+                window.Configure(service);
+                service.Pending.SetException(new InvalidOperationException("Native call failed"));
+                service.AvailabilityError = new InvalidOperationException("Host disconnected");
+                window.RunScopeAsync().GetAwaiter().GetResult();
+                StringAssert.Contains(Field<Label>(window, "status").Text, "Native call failed");
+                Assert.IsFalse(Field<Button>(window, "runScope").Enabled);
+            }
+        }
+
+        [STATestMethod]
+        public void DispatcherCreationFailuresDisposeOwnedControlAndRejectWrongThreadUse()
+        {
+            using (var window = new TestExplorerWindow())
+            {
+                var control = new BrokenDispatcherControl();
+                window.CreateRunDispatcher = () => control;
+                var error = Assert.ThrowsException<TargetInvocationException>(() => Invoke(window, "InitializeRunContinuationDispatcher"));
+                Assert.IsInstanceOfType(error.InnerException, typeof(InvalidOperationException));
+                Assert.IsTrue(control.IsDisposed);
+                var missing = typeof(TestExplorerWindow).GetMethod("AwaitOwner", BindingFlags.Instance | BindingFlags.NonPublic).MakeGenericMethod(typeof(VbaTestRun));
+                Assert.IsInstanceOfType(Assert.ThrowsException<TargetInvocationException>(() => missing.Invoke(window, new object[] { Task.FromResult(new VbaTestRun()) })).InnerException, typeof(InvalidOperationException));
+                Exception wrongThread = null;
+                var worker = new Thread(() => { try { Invoke(window, "RequireRunOwner"); } catch (TargetInvocationException e) { wrongThread = e.InnerException; } });
+                worker.Start(); worker.Join();
+                Assert.IsInstanceOfType(wrongThread, typeof(InvalidOperationException));
+            }
+        }
+
+        [STATestMethod]
+        public void SaveDialogPreservesHumanOrJsonDefaultsAndReturnsCancellationWithoutWriting()
+        {
+            using (var owner = new Form())
+            foreach (bool compact in new[] { false, true })
+            foreach (var choice in new[] { DialogResult.Cancel, DialogResult.OK })
+            {
+                string value = TestExplorerWindow.SelectReportExportPath(owner, compact, (dialog, suppliedOwner) =>
+                {
+                    Assert.AreSame(owner, suppliedOwner);
+                    Assert.AreEqual(compact ? "vba-test-results.json" : "vba-test-results.txt", dialog.FileName);
+                    StringAssert.StartsWith(dialog.Filter, compact ? "JSON" : "Text");
+                    dialog.FileName = "reviewed-result";
+                    return choice;
+                });
+                Assert.AreEqual(choice == DialogResult.OK ? "reviewed-result" : null, value);
+            }
+        }
+
+        [STATestMethod]
+        public void NativeSaveDialogCancellationReturnsNoPath()
+        {
+            bool closedOwnedDialog = false;
+            using (var owner = new Form())
+            using (var timer = new System.Windows.Forms.Timer { Interval = 50 })
+            {
+                timer.Tick += (_, __) =>
+                {
+                    EnumThreadWindows(GetCurrentThreadId(), (handle, state) =>
+                    {
+                        var name = new StringBuilder(64);
+                        GetClassName(handle, name, name.Capacity);
+                        if (name.ToString() != "#32770") return true;
+                        timer.Stop(); closedOwnedDialog = true;
+                        PostMessage(handle, 0x0010, IntPtr.Zero, IntPtr.Zero);
+                        return false;
+                    }, IntPtr.Zero);
+                };
+                timer.Start();
+                Assert.IsNull(TestExplorerWindow.SelectReportExportPath(owner, false));
+                Assert.IsTrue(closedOwnedDialog, "Only a native dialog belonging to this test UI thread may be dismissed.");
+            }
+        }
+
+        private delegate bool EnumWindowCallback(IntPtr window, IntPtr state);
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool EnumThreadWindows(uint thread, EnumWindowCallback callback, IntPtr state);
+        [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+        private static extern uint GetCurrentThreadId();
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        private static extern int GetClassName(IntPtr window, StringBuilder value, int capacity);
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool PostMessage(IntPtr window, uint message, IntPtr wparam, IntPtr lparam);
+        [STATestMethod]
+        public void ThemeCallbacksMarshalToOwnerAndIgnoreDisposedOrUncreatedForeignThreadWindows()
+        {
+            using (var window = new TestExplorerWindow())
+            {
+                window.Configure(new ExplorerDouble());
+                Exception workerError = null;
+                var worker = new Thread(() => { try { Invoke(window, "TestThemeChanged"); } catch (Exception error) { workerError = error; } });
+                worker.Start(); worker.Join(); Assert.IsNull(workerError);
+                var handle = window.Handle;
+                worker = new Thread(() => { try { Invoke(window, "TestThemeChanged"); } catch (Exception error) { workerError = error; } });
+                worker.Start(); worker.Join(); Assert.IsNull(workerError);
+                Application.DoEvents();
+                Assert.AreEqual(2, window.VisibleTests().Count);
+                window.Dispose(); Invoke(window, "TestThemeChanged");
+            }
+        }
+
+        [STATestMethod]
+        public void SourceFormattingAndNoLongerPresentTreeScopesHaveSafeFallbacks()
+        {
+            var service = new ExplorerDouble();
+            using (var window = new TestExplorerWindow())
+            {
+                window.Configure(service);
+                foreach (string path in new[] { "", @"C:\Disposable\Tests.xlsm" })
+                {
+                    service.Catalog.Project.HostPath = path;
+                    var args = new ListControlConvertEventArgs("", typeof(string), service.Catalog.Project);
+                    Invoke(window, "ProjectList_Format", window, args);
+                    StringAssert.Contains((string)args.Value, "Disposable");
+                    if (path.Length > 0) StringAssert.Contains((string)args.Value, path);
+                }
+                var unrecognized = new ListControlConvertEventArgs("unchanged", typeof(string), new object());
+                Invoke(window, "ProjectList_Format", window, unrecognized);
+                Assert.AreEqual("unchanged", unrecognized.Value);
+                var tree = Field<TreeView>(window, "testTree"); var handle = tree.Handle;
+                tree.SelectedNode = tree.Nodes[0].Nodes[0].Nodes[0];
+                Assert.AreEqual(2, window.ScopeTests().Count);
+                Field<ComboBox>(window, "grouping").SelectedIndex = 2;
+                Assert.AreEqual("first", ((VbaTestDescriptor)tree.SelectedNode.Tag).Id);
+                Field<ComboBox>(window, "grouping").SelectedIndex = 0;
+                tree.SelectedNode = tree.Nodes[0].Nodes[0];
+                service.Catalog.Modules[0].Name = "Renamed";
+                window.RefreshProjects();
+                Assert.AreEqual(0, window.ScopeTests().Count);
+                service.Catalog.Project.Id = "replacement";
+                window.RefreshProjects();
+                Assert.AreEqual(2, window.ScopeTests().Count);
+                var detached = new TreeNode("Unrecognized");
+                var selectionMethod = typeof(TestExplorerWindow).GetMethod("ReadTreeSelection", BindingFlags.Static | BindingFlags.NonPublic);
+                Assert.IsNull(selectionMethod.Invoke(null, new object[] { detached }));
+                var emptyModule = new TreeNode("Empty") { Tag = new VbaTestModule() };
+                var root = tree.Nodes[0]; root.Nodes.Add(emptyModule);
+                Invoke(window, "UpdateGroupChecks"); Assert.IsFalse(emptyModule.Checked); Assert.IsFalse(root.Checked);
+                root.Nodes.Clear(); Invoke(window, "UpdateGroupChecks"); Assert.IsFalse(root.Checked);
+            }
+        }
+        [STATestMethod]
+        public void UnselectedAndUnavailableCatalogStatesKeepScopeAndNavigationEmpty()
+        {
+            using (var window = new TestExplorerWindow())
+            {
+                Assert.AreEqual(0, window.ScopeTests().Count);
+                var service = new ExplorerDouble(); window.Configure(service);
+                var tree = Field<TreeView>(window, "testTree"); var handle = tree.Handle;
+                tree.SelectedNode = null;
+                Invoke(window, "Source_Click", window, EventArgs.Empty);
+                Assert.AreEqual(0, service.Navigations);
+                var test = service.Catalog.Modules[0].Tests[0];
+                Field<Dictionary<string, string>>(window, "resultRevisions")[test.Id] = "r1";
+                SetField(window, "catalog", null);
+                Assert.AreEqual(true, Invoke(window, "IsStale", test));
+                SetField(window, "reviewingCoverage", true);
+                Assert.ThrowsException<TargetInvocationException>(() => Invoke(window, "SelectProject", "project"));
+                SetField(window, "reviewingCoverage", false);
+                service.DiscoveryError = new InvalidOperationException("Temporarily inaccessible");
+                window.RefreshProjects(); window.Show();
+                service.DiscoveryError = null;
+                window.CheckFreshness();
+                Assert.AreEqual(2, window.VisibleTests().Count);
+                Assert.AreEqual(0, service.Runs);
+            }
+        }
+
+        [STATestMethod]
+        public void SelectionResolverIgnoresUnrecognizedNodesAndRetainsOnlyMatchingModuleAndGroupKeys()
+        {
+            var type = typeof(TestExplorerWindow);
+            var selectionType = type.GetNestedType("TreeSelection", BindingFlags.NonPublic);
+            var groupType = type.GetNestedType("TestGroup", BindingFlags.NonPublic);
+            var find = type.GetMethod("FindSelection", BindingFlags.Static | BindingFlags.NonPublic);
+            var root = new TreeNode("Disposable");
+            var module = new TreeNode("Tests") { Tag = new VbaTestModule { Name = "Tests" } };
+            var wrongGroup = Activator.CreateInstance(groupType, true);
+            SetField(wrongGroup, "Grouping", 1); SetField(wrongGroup, "Key", "Failed");
+            var category = Activator.CreateInstance(groupType, true);
+            SetField(category, "Grouping", 2); SetField(category, "Key", "Regression");
+            var outcomeNode = new TreeNode("Failed") { Tag = wrongGroup };
+            var categoryNode = new TreeNode("Regression") { Tag = category };
+            root.Nodes.Add(new TreeNode("Unrecognized")); root.Nodes.Add(module); root.Nodes.Add(outcomeNode); root.Nodes.Add(categoryNode);
+            module.Nodes.Add(new TreeNode("Unrecognized child"));
+            module.Nodes.Add(new TreeNode("Adds") { Tag = new VbaTestDescriptor { Id = "first" } });
+            var selected = Activator.CreateInstance(selectionType, true);
+            SetField(selected, "TestId", "first");
+            Assert.AreSame(module.Nodes[1], find.Invoke(null, new[] { root, selected }));
+            SetField(selected, "TestId", null); SetField(selected, "Module", "Tests");
+            Assert.AreSame(module, find.Invoke(null, new[] { root, selected }));
+            SetField(selected, "Module", null); SetField(selected, "Grouping", 2); SetField(selected, "GroupKey", "Absent");
+            Assert.IsNull(find.Invoke(null, new[] { root, selected }));
+            SetField(selected, "GroupKey", "Regression");
+            Assert.AreSame(categoryNode, find.Invoke(null, new[] { root, selected }));
+        }
+
+        [STATestMethod]
+        public void ExportFailureDuringDisposingDoesNotMutateTheTearingDownUi()
+        {
+            using (var window = new TestExplorerWindow())
+            {
+                window.Configure(new ExplorerDouble()); window.RunScopeAsync().GetAwaiter().GetResult();
+                Field<TabControl>(window, "resultTabs").SelectedTab = Field<TabPage>(window, "humanTab");
+                string status = Field<Label>(window, "status").Text;
+                // Simulate the WinForms reentrant disposal phase without destroying user-owned native handles.
+                var setState = typeof(Control).GetMethod("SetState", BindingFlags.Instance | BindingFlags.NonPublic);
+                window.ChooseReportExportPath = (_, __) => { setState.Invoke(window, new object[] { 0x1000, true }); Assert.IsTrue(window.Disposing); throw new IOException("Disposal export failure"); };
+                try
+                {
+                    Invoke(window, "ExportReport_Click", window, EventArgs.Empty);
+                    Assert.AreEqual(status, Field<Label>(window, "status").Text);
+                }
+                finally { setState.Invoke(window, new object[] { 0x1000, false }); }
+            }
+        }
+        private sealed class BrokenDispatcherControl : Control
+        {
+            protected override void CreateHandle() => throw new InvalidOperationException("Dispatcher handle creation failed");
+        }
+
+        private static object Invoke(object target, string method, params object[] arguments) => target.GetType().GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic).Invoke(target, arguments);
+        private static void SetField(object target, string name, object value) => target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic).SetValue(target, value);
         private static T Field<T>(object target, string name) => (T)target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic).GetValue(target);
         private static string DescribeCallbackQueue(Control control)
         {
@@ -844,9 +1293,12 @@ namespace VBAi.Tests.Unit
             internal Exception DiscoveryError;
             internal int DiscoveryCalls;
             internal Action<VbaTestResult> SavedProgress;
-            public IReadOnlyList<VbaTestProjectSnapshot> ReadProjects() => new[] { Catalog.Project };
+            internal int Navigations, Installations;
+            internal Exception NavigationError, InstallError, ReadError, AvailabilityError;
+            internal bool NoProjects;
+            public IReadOnlyList<VbaTestProjectSnapshot> ReadProjects() { if (ReadError != null) throw ReadError; return NoProjects ? new VbaTestProjectSnapshot[0] : new[] { Catalog.Project }; }
             public VbaTestCatalog Discover(string projectId) { DiscoveryCalls++; if (DiscoveryError != null) throw DiscoveryError; return Catalog; }
-            public virtual string ExecutionUnavailableReason(VbaTestCatalog catalog) => Unavailable;
+            public virtual string ExecutionUnavailableReason(VbaTestCatalog catalog) { if (AvailabilityError != null) throw AvailabilityError; return Unavailable; }
             public virtual Task<VbaTestRun> RunAsync(VbaTestCatalog catalog, IReadOnlyList<VbaTestDescriptor> tests, Action<VbaTestResult> onResult, CancellationToken cancellation)
             {
                 Runs++;
@@ -864,15 +1316,16 @@ namespace VBAi.Tests.Unit
                 }
                 return Task.FromResult(run);
             }
-            public void Navigate(VbaTestCatalog catalog, VbaTestDescriptor test) { }
-            public void InstallSupport(VbaTestCatalog catalog) { }
+            public void Navigate(VbaTestCatalog catalog, VbaTestDescriptor test) { Navigations++; if (NavigationError != null) throw NavigationError; }
+            public void InstallSupport(VbaTestCatalog catalog) { Installations++; if (InstallError != null) throw InstallError; }
         }
 
         private sealed class CoverageDouble : ExplorerDouble, IVbaTestCoverageExplorerService
         {
             internal int CoverageRuns;
+            internal string CoverageUnavailable;
             internal VbaCoverageReport Report = new VbaCoverageReport { Available = true, Complete = false, DenominatorKnown = true, Revision = "r1", Eligible = 2, Hit = 1, Percent = 50 };
-            public string CoverageUnavailableReason(VbaTestCatalog catalog) => null;
+            public string CoverageUnavailableReason(VbaTestCatalog catalog) => CoverageUnavailable;
             public async Task<VbaTestRun> RunCoverageAsync(VbaTestCatalog catalog, IReadOnlyList<VbaTestDescriptor> tests, Action<VbaTestResult> onResult, CancellationToken cancellation)
             {
                 CoverageRuns++;

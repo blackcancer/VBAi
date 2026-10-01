@@ -246,5 +246,38 @@ namespace VBAi.Tests.Unit
                 });
             return run;
         }
+        [TestMethod]
+        public void CoverageDetailsRenderEveryHeaderAndExclusionWithoutInventingPercentages()
+        {
+            var run = Run(VbaTestOutcome.Passed);
+            run.Coverage = new VbaCoverageReport { Available = true, Complete = true, Eligible = 2, Hit = 1, Percent = 50 };
+            run.Coverage.Hits.Add(new VbaCoverageHit { Entered = true, Probe = new VbaCoverageProbe { Module = "Production", Procedure = "Hit", Kind = "Sub", OriginalLine = 1 } });
+            run.Coverage.Hits.Add(new VbaCoverageHit { Entered = false, Probe = new VbaCoverageProbe { Module = "Production", Procedure = "Miss", Kind = "Function", OriginalLine = 4 } });
+            run.Coverage.Exclusions.Add(new VbaCoverageExclusion { Module = "Tests", Reason = "Framework" });
+            run.Coverage.Exclusions.Add(new VbaCoverageExclusion { Module = "Production", Procedure = "Unsupported", Reason = "Ambiguous" });
+            run.Coverage.Diagnostics.Add("Diagnostic retained");
+            var full = VbaTestReports.Human(run);
+            StringAssert.Contains(full, "✓ Production.Hit"); StringAssert.Contains(full, "○ Production.Miss");
+            StringAssert.Contains(full, "Tests: Framework"); StringAssert.Contains(full, "Production.Unsupported: Ambiguous");
+            StringAssert.Contains(full, "Diagnostic retained");
+            StringAssert.Contains(VbaTestReports.HumanPage(run), "Coverage detail totals: probes=2; exclusions=2; diagnostics=1");
+            Assert.AreEqual(2, ((object[])((Dictionary<string, object>)Read(VbaTestReports.Compact(run))["coverage"])["probes"]).Length);
+            run.Coverage.Complete = false; run.Coverage.Percent = null;
+            StringAssert.Contains(VbaTestReports.CoverageText(run.Coverage), "—");
+            StringAssert.Contains(VbaTestReports.CoverageText(run.Coverage), UiText.Get("Partial measurement"));
+            run.Coverage.Available = false;
+            Assert.AreEqual(UiText.Get("VBA code coverage: unavailable"), VbaTestReports.CoverageText(run.Coverage));
+            Assert.IsNull(VbaTestReports.CoveragePage(null));
+        }
+
+        [TestMethod]
+        public void SerializerFailureKeepsCanonicalResultsAndExplainsPagedRecovery()
+        {
+            var run = Run(VbaTestOutcome.Failed); run.Results[0].Message = new string('x',1024);
+            var error = Assert.ThrowsException<InvalidOperationException>(() => VbaTestReports.Compact(run, 100));
+            StringAssert.Contains(error.Message, "Use paged run status"); Assert.IsNotNull(error.InnerException);
+            Assert.AreEqual(new string('x',1024), run.Results[0].Message);
+            Assert.AreEqual(run.Results[0].Message, ((Dictionary<string, object>)((object[])Read(VbaTestReports.CompactPage(run))["tests"])[0])["message"]);
+        }
     }
 }

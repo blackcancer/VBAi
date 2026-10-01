@@ -192,5 +192,63 @@ namespace VBAi.Tests.Unit
                 Assert.AreEqual(0, fixture.Source.SaveCalls + fixture.Source.SaveAsCalls + fixture.Source.CloseCalls);
             }
         }
+        [TestMethod]
+        public void ExistingDirectoryAndOpenCopyPathAreRejectedBeforeCopying()
+        {
+            using (var f = new Fixture())
+            {
+                var provider = new VbaTestWordCoverageClone { Host = f.Host };
+                Assert.ThrowsException<InvalidOperationException>(() => provider.Create(f.Source.VBProject, f.Source.FullName, f.Folder));
+                var folder = Path.Combine(f.Folder, "New");
+                f.Application.Documents.Add(new Document { FullName = Path.Combine(folder, "coverage.docm"), Application = f.Application });
+                Assert.ThrowsException<InvalidOperationException>(() => provider.Create(f.Source.VBProject, f.Source.FullName, folder));
+                Assert.IsFalse(Directory.Exists(folder)); Assert.AreEqual(0, f.Application.Documents.OpenCalls);
+                f.Source.Saved = "not a Boolean";
+                Assert.ThrowsException<InvalidOperationException>(() => provider.Create(f.Source.VBProject, f.Source.FullName, folder));
+            }
+        }
+
+        [TestMethod]
+        public void InconsistentCopyIdentityCannotBeAcceptedOrCloseTheOriginal()
+        {
+            foreach (string fault in new[] { "verify", "close" })
+            using (var f = new Fixture())
+            {
+                Document copy = null;
+                f.Application.Documents.OnOpen = path => copy = new Document { FullName = path, Application = f.Application };
+                var provider = new VbaTestWordCoverageClone { Host = f.Host };
+                if (fault == "verify")
+                {
+                    f.Host.SameIdentity = (a, b) => !(ReferenceEquals(a, copy) && ReferenceEquals(b, copy) && copy != null) && ReferenceEquals(a, b);
+                    Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy"))).Uncertain);
+                }
+                else
+                {
+                    var clone = provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy"));
+                    f.Host.SameIdentity = (a, b) => ReferenceEquals(a, b) || (ReferenceEquals(a, copy) && ReferenceEquals(b, f.Source));
+                    Assert.ThrowsException<InvalidOperationException>(() => clone.Dispose());
+                }
+                Assert.AreEqual(0, f.Source.CloseCalls); Assert.AreEqual(0, copy.CloseCalls);
+            }
+        }
+
+        [TestMethod]
+        public void CloseRechecksApplicationAndBoundsRemainingDocuments()
+        {
+            foreach (bool replaced in new[] { false, true })
+            using (var f = new Fixture())
+            {
+                f.Application.Documents.OnOpen = path => new Document { FullName = path, Application = f.Application };
+                var provider = new VbaTestWordCoverageClone { Host = f.Host, CloseCopy = copy => {
+                    f.Application.Documents.Remove((Document)copy);
+                    if (replaced) f.Host.ReadActiveApplication = _ => new VbaTestWordValuesHostTests.Application();
+                    else for (int i = 0; i < 1000; i++) f.Application.Documents.Add(new Document());
+                } };
+                var clone = provider.Create(f.Source.VBProject, f.Source.FullName, Path.Combine(f.Folder, "Copy"));
+                Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose()).Uncertain);
+                Assert.AreEqual(0, f.Source.CloseCalls);
+            }
+        }
+
     }
 }

@@ -58,11 +58,14 @@ namespace VBAi
             return text.ToString();
         }
 
-        internal static string Compact(VbaTestRun run)
+        internal static string Compact(VbaTestRun run) => Compact(run, 512 * 1024 * 1024);
+
+        // A smaller bound can validate failure reporting without constructing an oversized report.
+        internal static string Compact(VbaTestRun run, int maximum)
         {
-            try { return SerializeCompact(run, null, 0, 512 * 1024 * 1024); }
+            try { return SerializeCompact(run, null, 0, maximum); }
             catch (InvalidOperationException error)
-            { throw new InvalidOperationException("The complete local VBA test JSON report could not be serialized within its 536870912 serialized-character limit. Use paged run status; no messages were truncated and the canonical run remains retained. " + error.Message, error); }
+            { throw new InvalidOperationException("The complete local VBA test JSON report could not be serialized within its " + maximum.ToString(CultureInfo.InvariantCulture) + " serialized-character limit. Use paged run status; no messages were truncated and the canonical run remains retained. " + error.Message, error); }
         }
 
         internal static string CompactPage(VbaTestRun run, int offset = 0, int limit = 0)
