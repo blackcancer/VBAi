@@ -145,12 +145,12 @@ namespace VBAi.Tests.Integration
             Assert.AreEqual(true, historical["Stale"]);
             Assert.AreEqual(false, historical["Pending"]);
             Assert.AreEqual("Completed", historical["State"]);
-            // Publisher requires the disposable VBA project to be saved before its guarded Quit.
+            // Discard only this row's reviewed disposable sources; host persistence is outside test qualification.
             if (host == "Publisher")
             {
                 publisherSources.Add(ModuleName, (string)changed["Code"]);
                 publisherSources.Add(VbaTestRuntimeSource.ModuleName, support);
-                fixture.SaveReviewedPublisherProject(ModuleName, publisherSources);
+                fixture.AllowReviewedPublisherTestCleanup(ModuleName, publisherSources);
             }
             }
             catch (Exception error)
