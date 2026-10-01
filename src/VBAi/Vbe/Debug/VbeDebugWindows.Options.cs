@@ -422,6 +422,43 @@ namespace VBAi
             /// <param name="dialog">Handle du dialogue à confirmer.</param>
             void Accept(IntPtr dialog);
         }
+        /// <summary>Observes the exact captured Options handle, including hidden windows, without selecting another dialog.</summary>
+        internal interface IOptionsDialogLifetimeProbe
+        {
+            bool IsOpen(IntPtr dialog);
+        }
+
+        /// <summary>Cancels once and verifies closure of only the captured dialog; a changed dialog is never cancelled.</summary>
+        private static void CancelOwnedOptionsDialog(IOptionsProbe native, IntPtr dialog)
+        {
+            IntPtr current = native.Dialog();
+            if (current == IntPtr.Zero)
+            {
+                if (native is IOptionsDialogLifetimeProbe lifetime && lifetime.IsOpen(dialog))
+                    throw new InvalidOperationException("The captured Options dialog still exists but is no longer the visible dialog; Cancel was not sent.");
+                return;
+            }
+            if (current != dialog)
+                throw new InvalidOperationException("The Options dialog identity changed; Cancel was not sent to another dialog.");
+            native.Close(dialog);
+            for (int attempt = 0; attempt <= 40; attempt++)
+            {
+                if (native is IOptionsDialogLifetimeProbe lifetime)
+                {
+                    if (!lifetime.IsOpen(dialog)) return;
+                }
+                else
+                {
+                    current = native.Dialog();
+                    if (current == IntPtr.Zero) return;
+                    if (current != dialog)
+                        throw new InvalidOperationException("The Options dialog identity changed while verifying Cancel; no further cancellation was sent.");
+                }
+                if (attempt < 40) native.Pause(50);
+            }
+            throw new InvalidOperationException("The single native Options Cancel request did not close the captured dialog within the bounded observation period; do not retry automatically.");
+        }
+
                 /// <summary>Écrit une préférence reconnue d’édition/débogage, puis ferme par validation native.</summary>
                 /// <param name="request">Onglet, propriété, valeur et version attendue des options.</param>
                 /// <returns>Valeurs avant/après et indication de validation/fermeture du dialogue.</returns>
@@ -438,6 +475,9 @@ namespace VBAi
             for (int attempt = 0; attempt < 60 && dialog == IntPtr.Zero; attempt++) { native.Pause(50); dialog = native.Dialog(); }
             if (dialog == IntPtr.Zero) throw new InvalidOperationException("The native VBE Options dialog did not open.");
             bool commitRequested = false;
+            bool writePending = false;
+            object result = null;
+            Exception primary = null;
             try
             {
                 var before = CaptureOptionsTabs(native, dialog);
@@ -459,7 +499,9 @@ namespace VBAi
                 var selected = matches[0];
                 object writeValue = ValidateEditableOption(request.Pane, selected, request.Value);
                 object oldValue = selected.Value;
+                writePending = true;
                 native.Write(dialog, index, selected.Name, selected.Type, writeValue);
+                writePending = false;
                 var readback = native.Controls(dialog, index);
                 if (!string.IsNullOrEmpty(request.Query) && readback.Count(x => x.Type == "ControlType.List" && IsCodeColorList(x.Name) && Equals(x.Value, request.Query)) != 1)
                     throw new InvalidOperationException("The native Code Colors category changed during mutation; Cancel will be requested.");
@@ -471,15 +513,23 @@ namespace VBAi
                 native.Accept(dialog);
                 bool closed = false;
                 for (int attempt = 0; attempt < 40; attempt++) { if (native.Dialog() == IntPtr.Zero) { closed = true; break; } native.Pause(50); }
-                return new { request.Pane, request.Property, Category = request.Query, Before = oldValue, After = observed[0].Value,
+                result = new { request.Pane, request.Property, Category = request.Query, Before = oldValue, After = observed[0].Value,
                     CommitRequested = true, DialogClosed = closed, ControlValueVerified = true,
                     PersistenceVerified = false, NextRead = "read_vbe_options",
                     Limit = "Reopen Options to verify committed preferences. A requested OK or a closed dialog alone is not a restart persistence proof. Do not retry automatically." };
             }
-            finally
+            catch (Exception error) { primary = error; }
+            Exception cleanup = null;
+            if (!commitRequested && !writePending)
             {
-                if (!commitRequested || native.Dialog() != IntPtr.Zero) native.Close(dialog);
+                try { CancelOwnedOptionsDialog(native, dialog); }
+                catch (Exception error) { cleanup = error; }
             }
+            if (primary != null && cleanup != null)
+                throw new AggregateException("VBE Options failed and cancellation of its captured dialog could not be verified. The dialog may remain open; do not retry automatically.", primary, cleanup);
+            if (primary != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(primary).Throw();
+            if (cleanup != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(cleanup).Throw();
+            return result;
         }
                 /// <summary>Valide une préférence reconnue; les listes exigent un choix natif exact et unique.</summary>
                 /// <param name="tab">Nom natif de l’onglet.</param>

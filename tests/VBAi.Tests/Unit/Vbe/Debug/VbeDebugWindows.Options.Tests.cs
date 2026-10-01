@@ -357,7 +357,7 @@ namespace VBAi.Tests.Unit
             }
         }
         [TestMethod]
-        public void WritableOptionsReadbackAndAcceptFailureAlwaysRequestCancelWhenStillOpen()
+        public void WritableOptionsKnownReadbackFailureCancelsButUncertainAcceptRetainsDialog()
         {
             foreach(int scenario in Enumerable.Range(0,7))
             {
@@ -370,10 +370,12 @@ namespace VBAi.Tests.Unit
                 if(scenario==5)p.OnWrite=()=>p.Items[0].Enabled=false;
                 if(scenario==6)p.OnAccept=()=>{throw new InvalidOperationException("OK rejected");};
                 p.IgnoreWrite=scenario<6;
-                Assert.ThrowsException<InvalidOperationException>(()=>VbeDebugWindows.SetVbeOption(r,p));Assert.AreEqual(1,p.Closes);Assert.IsFalse(p.Open);
+                Assert.ThrowsException<InvalidOperationException>(()=>VbeDebugWindows.SetVbeOption(r,p));
+                Assert.AreEqual(scenario == 6 ? 0 : 1,p.Closes);
+                Assert.AreEqual(scenario == 6,p.Open);
             }
             var open=new WritableOptionsMatrixProbe{KeepOpen=true};var request=open.Request();
-            dynamic result=VbeDebugWindows.SetVbeOption(request,open);Assert.IsFalse((bool)result.DialogClosed);Assert.AreEqual(1,open.Closes);
+            dynamic result=VbeDebugWindows.SetVbeOption(request,open);Assert.IsFalse((bool)result.DialogClosed);Assert.AreEqual(0,open.Closes);Assert.IsTrue(open.Open);
             foreach(string type in new[]{"ControlType.RadioButton","ControlType.Edit"})
             {
                 var p=new WritableOptionsMatrixProbe();p.Names[0]=type.EndsWith("Edit")?"Editor":"General";

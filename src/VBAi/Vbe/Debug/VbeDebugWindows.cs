@@ -501,7 +501,7 @@ namespace VBAi
         }
 
         /// <summary>Implémente la lecture du dialogue Options avec UI Automation.</summary>
-        private sealed partial class NativeOptionsProbe : IWritableOptionsProbe
+        private sealed partial class NativeOptionsProbe : IWritableOptionsProbe, IOptionsDialogLifetimeProbe
         {
             /// <summary>Racine UI Automation du dialogue.</summary>
             private AutomationElement root;
@@ -683,7 +683,38 @@ namespace VBAi
             }
             /// <summary>Ferme le dialogue sans appliquer de choix.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
-            public void Close(IntPtr dialog) { CloseDialog(dialog); }
+            public void Close(IntPtr dialog)
+            {
+                uint ownPid = checked((uint)Process.GetCurrentProcess().Id);
+                uint dialogThread = GetWindowThreadProcessId(dialog, out uint dialogPid);
+                if (dialog == IntPtr.Zero || dialogThread == 0 || dialogPid != ownPid || ClassName(dialog) != "#32770" || Dialog() != dialog)
+                    throw new InvalidOperationException("The captured native Options dialog identity is no longer valid; Cancel was not sent.");
+                IntPtr cancel = GetDlgItem(dialog, 2);
+                uint cancelThread = GetWindowThreadProcessId(cancel, out uint cancelPid);
+                if (cancel == IntPtr.Zero || cancelThread != dialogThread || cancelPid != ownPid || ClassName(cancel) != "Button" || !OptionsWindowEnabled(cancel))
+                    throw new InvalidOperationException("The exact native Options Cancel button is unavailable; Cancel was not sent.");
+                if (!PostMessage(cancel, BmClick, IntPtr.Zero, IntPtr.Zero))
+                    throw new InvalidOperationException("The single native Options Cancel request could not be posted.");
+            }
+            /// <summary>Observes destruction of the exact captured handle, including hidden dialogs, without acting on another window.</summary>
+            public bool IsOpen(IntPtr dialog)
+            {
+                bool present = false;
+                bool identity = true;
+                uint ownPid = checked((uint)Process.GetCurrentProcess().Id);
+                if (!EnumWindows((handle, parameter) => {
+                    if (handle == dialog)
+                    {
+                        present = true;
+                        GetWindowThreadProcessId(handle, out uint pid);
+                        identity = pid == ownPid && ClassName(handle) == "#32770";
+                    }
+                    return true;
+                }, IntPtr.Zero))
+                    throw new InvalidOperationException("The captured Options dialog lifetime could not be enumerated.");
+                if (!identity) throw new InvalidOperationException("The captured Options handle has a different native owner or class.");
+                return present;
+            }
             /// <summary>Attend avant la lecture UI Automation suivante.</summary>
             /// <param name="milliseconds">Durée de l’attente.</param>
             public void Pause(int milliseconds) { PauseNative(milliseconds); }
