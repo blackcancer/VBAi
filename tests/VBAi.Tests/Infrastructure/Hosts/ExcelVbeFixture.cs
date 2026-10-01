@@ -229,7 +229,11 @@ namespace VBAi.Tests.Integration
                     bool exited = process.WaitForExit(10000);
                     diagnostics["Exited"] = exited;
                     diagnostics["ElapsedMs"] = watch.ElapsedMilliseconds;
-                    if (exited) diagnostics["ExitCodeHex"] = "0x" + unchecked((uint)process.ExitCode).ToString("X8");
+                    if (exited)
+                    {
+                        diagnostics["ExitCode"] = process.ExitCode;
+                        diagnostics["ExitCodeHex"] = "0x" + unchecked((uint)process.ExitCode).ToString("X8");
+                    }
                     writeDiagnostics();
                     try
                     {

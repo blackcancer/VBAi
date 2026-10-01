@@ -22,6 +22,7 @@ namespace VBAi.Tests.Integration
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr hwnd, StringBuilder text, int length);
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr hwnd, StringBuilder text, int length);
         [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hwnd);
+        [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr hwnd);
         private readonly ExcelVbeFixture fixture;
         private readonly ExcelVbeFixture.EmbeddedGitScope scope;
         private readonly Action<object> record;
@@ -120,8 +121,12 @@ namespace VBAi.Tests.Integration
             var watch = Stopwatch.StartNew();
             while (watch.ElapsedMilliseconds < 10000)
             {
-                uint pid; uint tid = GetWindowThreadProcessId(window, out pid);
-                if (tid == 0 && pid == 0) { Protocol.Terminal("window-close", true, true); return; }
+                uint pid = 0; uint tid = GetWindowThreadProcessId(window, out pid);
+                bool exists = IsWindow(window);
+                record(new { Phase = "WindowCloseObservation", Handle = window.ToInt64(), Exists = exists, ObservedPid = pid, ObservedTid = tid });
+                // A failed window query does not provide a valid owner PID. Confirm
+                // destruction explicitly; a live/reused handle still requires ownership.
+                if (tid == 0 && !exists) { Protocol.Terminal("window-close", true, true); return; }
                 EmbeddedGitUiProtocol.RequireOwner(fixture.ProcessId, scope.ThreadId, window.ToInt64(), (int)pid, tid, window.ToInt64());
                 Thread.Sleep(50);
             }
