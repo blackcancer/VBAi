@@ -25,6 +25,7 @@ if (-not [IO.File]::Exists($CdbPath)) { throw 'Existing debugger unavailable; no
 $plan=[ordered]@{Mode='PREPARE_ONLY';ProcessId=[int]$pending.ProcessId;ProcessStartedUtc=$pending.ProcessStartedUtc;
  Nonce=$pending.Nonce;AssemblyMvid=$ExpectedMvid.ToString();ExpectedAssemblySha256=$ExpectedAssemblySha256;
  Scenario=$pending.Scenario;CleanupCallsIssuedByController=0;MemoryDumps=0;HostTerminationCalls=0;RegisterCaptureMode='LiveEventThread';
+ CollectorProfile='AV_FIRSTCHANCE_FORWARD_AV_SECONDCHANCE_AND_FAILFAST';
  Scope='Exact owned disposable Excel; failfast exception/context/stack only. No COM calls, cleanup replay, full dump or global WER changes.'}
 if (-not $Execute) { $plan | ConvertTo-Json -Depth 5; return }
 . (Join-Path $PSScriptRoot 'OwnedTeardownTrace.Common.ps1')
@@ -32,7 +33,13 @@ if (-not [IO.Path]::IsPathRooted($DebuggerPreflightReport)) { throw 'Measured ex
 $preflight=Get-Content -LiteralPath $DebuggerPreflightReport -Raw -Encoding UTF8|ConvertFrom-Json
 $common=Join-Path $PSScriptRoot 'OwnedTeardownTrace.Common.ps1'
 if ($preflight.State -ne 'PASS' -or $preflight.Mode -ne 'TEARDOWN_EXCEPTION_PREFLIGHT' -or $preflight.ExceptionCaptureVerified -ne $true -or
-    $preflight.RegisterCaptureMode -ne 'LiveEventThread' -or $preflight.NormalDebuggerExitCode -ne 0 -or
+    $preflight.RegisterCaptureMode -ne 'LiveEventThread' -or $preflight.NormalDebuggerExitCode -ne 0 -or $preflight.NormalStopBreakpointVerified -ne $true -or
+    $preflight.CollectorProfile -ne 'AV_FIRSTCHANCE_FORWARD_AV_SECONDCHANCE_AND_FAILFAST' -or
+    $preflight.SecondChanceAvCaptureVerified -ne $true -or $preflight.FirstChanceAvForwardedVerified -ne $true -or
+    $preflight.secondchanceavHelperExitCodeHex -ne '0xC0000005' -or $preflight.secondchanceavHelperExitObserved -ne $true -or
+    $preflight.secondchanceavDebuggerExitCodeHex -notin @('0x00000000','0xC0000005') -or
+    $preflight.firstchanceavHelperExitCodeHex -ne '0x00000000' -or $preflight.firstchanceavDebuggerExitCodeHex -ne '0x00000000' -or
+    $preflight.firstchanceavHelperExitObserved -ne $true -or $preflight.SyntheticSecondChanceAvRequests -ne 1 -or $preflight.SyntheticFirstChanceAvRequests -ne 1 -or
     $preflight.failfastDebuggerExitCodeHex -notin @('0x00000000','0xC0000409') -or $preflight.failfastHelperExitObserved -ne $true -or
     $preflight.NormalHelperExitCode -ne 0 -or $preflight.NormalHelperDetachedVerified -ne $true -or
     $preflight.FailfastHelperExitCodeHex -ne '0xC0000409' -or $preflight.SyntheticFailfastRequests -ne 1 -or
@@ -66,6 +73,7 @@ try {
  $plan.AttachmentObserved=$true
  $watch=[Diagnostics.Stopwatch]::StartNew()
  while ($watch.Elapsed.TotalSeconds -lt $MaxSeconds -and -not $session.Process.HasExited) { Start-Sleep -Milliseconds 100 }
+ $plan.DeadlineExpired=(-not $session.Process.HasExited)
 } catch { $primary=$_.Exception.ToString();$plan.Failure=$primary }
 finally {
  if ($session -ne $null) {
@@ -83,16 +91,21 @@ finally {
    $plan.HostExitObserved=$target.HasExited
    if($target.HasExited){$plan.HostExitCodeHex='0x'+([uint32]([int64]$target.ExitCode -band 4294967295)).ToString('X8')}
    $plan.DebuggerFatalExitMatchedTarget=$session.FatalExitMatchedTarget
+   $plan.StopBreakpointVerified=$session.StopBreakpointVerified
+   $plan.StopAttempted=$session.StopAttempted
   }catch{
    $plan.ExitObservationFailure=$_.Exception.ToString()
    if($cleanup -eq $null){$cleanup=$plan.ExitObservationFailure}
   }
   if([IO.File]::Exists($session.Log)){
    $text=Get-Content -LiteralPath $session.Log -Raw -Encoding Unicode
-   $plan.ExceptionCaptureVerified=Test-TeardownExceptionCapture $text
+   $plan.CapturedExceptionCode=Get-TeardownCapturedCode $text $target.Id
+   $plan.ExceptionCaptureVerified=($null -ne $plan.CapturedExceptionCode)
+   $plan.FirstChanceAvForwardedObserved=Test-OwnedFirstChanceAv $text $target.Id $pending.Nonce
   }
  }
- $plan.State=if($primary -eq $null -and $cleanup -eq $null){'TERMINAL'}else{'FAILED_PRESERVED'}
+ $plan.State=if($primary -ne $null -or $cleanup -ne $null){'FAILED_PRESERVED'}elseif($plan.ExceptionCaptureVerified -eq $true -and $plan.HostExitObserved -eq $true -and
+   $plan.HostExitCodeHex -eq ('0x'+$plan.CapturedExceptionCode.ToUpperInvariant())){'TERMINAL_CAPTURED'}elseif($plan.HostExitObserved -eq $true -and $plan.HostExitCodeHex -ne '0x00000000'){'FAILED_EXIT_WITHOUT_CAPTURE'}else{'NOT_REPRODUCED'}
  $plan.CompletedUtc=[DateTime]::UtcNow.ToString('o')
  Write-TeardownJson (Join-Path $directory 'teardown-controller.json') $plan
 }

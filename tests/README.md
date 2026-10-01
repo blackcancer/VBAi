@@ -17,9 +17,11 @@ diagnostic variable is absent. The gate never replays a procedure or cleanup.
 Compile `tools/probes/OwnedTeardownTrace.Helper.cs` as a separate x64 executable
 named `VBAi.OwnedTeardown.Helper.exe`. The helper is not an Office host. First
 prepare, then explicitly execute `Test-OwnedExcelTeardownPreflight.ps1` with its
-absolute `-HelperPath` and `-OutputRoot`. Its two owned helper trials must prove
-normal detach/STOP/exit and the synthetic `c0000409` exception/context/stack
-handler. The earlier filesystem-trace preflight does not prove this new handler.
+absolute `-HelperPath` and `-OutputRoot`. Its four owned helper trials must prove
+normal detach/STOP/exit, synthetic terminal `c0000409` and `c0000005` collectors,
+and a software first-chance AV forwarded unhandled to the helper's local handler.
+These synthetic exceptions do not reproduce or explain an Office fault.
+The earlier filesystem-trace preflight does not prove these handlers.
 Default script invocation prepares a plan; `-Execute` is required to run it.
 
 The opted-in native test writes `teardown.pending.json` in its owned GUID root
@@ -27,11 +29,15 @@ immediately before its existing single Close/Quit sequence. Prepare
 `Trace-OwnedExcelTeardown.ps1 -PendingReport <absolute path> -ExpectedMvid <guid>
 -ExpectedAssemblySha256 <hash>`; then add `-DebuggerPreflightReport <absolute
 passing preflight.json> -Execute` for the exact same candidate/PID/start/nonce.
-Only exception record, register context and stack are captured, without full
+Only exception record, live event-thread registers and stack are captured, without full
 memory dumps, global WER policy or additional bridge/COM calls. A controller
-timeout attempts bounded debugger detachment and retains unresolved processes;
+timeout permits bounded debugger detachment only after proving the exact owned
+stop-breakpoint event; pending faults are retained without `qd`. A safe trial
+without a verified terminal fault is `NOT_REPRODUCED`, including a deadline;
 it never terminates Excel. Primary scenario and diagnostic cleanup errors remain
 separate failures. A captured crash does not turn the original case into a pass.
+A raw VSTest pass after detaching at a pending fault is invalid for crash
+qualification; preserve that result and its intervention evidence separately.
 
 See [development setup](../docs/development.md), [recorded results](../docs/test-coverage.md)
 and the [compatibility matrix](../docs/compatibility.md). Run commands from the

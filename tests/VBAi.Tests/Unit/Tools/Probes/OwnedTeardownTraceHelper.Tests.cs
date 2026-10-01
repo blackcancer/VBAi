@@ -29,6 +29,7 @@ namespace VBAi.Tests.Unit
 
         [DataTestMethod]
         [DataRow("Complete")]
+        [DataRow("AvComplete")]
         [DataRow("NoFlags")]
         [DataRow("NoArchitecture")]
         [DataRow("NoControl")]
@@ -49,19 +50,22 @@ namespace VBAi.Tests.Unit
                     Flags = flags, InstructionPointer = variation == "ZeroRip" ? 0UL : 0x102030UL,
                     StackPointer = variation == "ZeroRsp" ? 0UL : 0x405060UL };
                 Marshal.StructureToPtr(captured, context, false);
-                if (variation != "Complete")
+                if (variation != "Complete" && variation != "AvComplete")
                 {
                     IntPtr invalid = variation == "Unaligned" ? IntPtr.Add(context, 1) : context;
                     Assert.ThrowsException<InvalidOperationException>(() => OwnedTeardownTraceHelper.CreateRecord(invalid));
                     return;
                 }
-                var record = OwnedTeardownTraceHelper.CreateRecord(context);
-                Assert.AreEqual(0xc0000409U, record.Code);
+                uint code = variation == "AvComplete" ? 0xc0000005U : 0xc0000409U;
+                var record = OwnedTeardownTraceHelper.CreateRecord(context, code);
+                Assert.AreEqual(code, record.Code);
                 Assert.AreEqual(1U, record.Flags);
                 Assert.AreEqual(new IntPtr(0x102030), record.Address);
-                Assert.AreEqual(1U, record.NumberParameters);
+                Assert.AreEqual(variation == "AvComplete" ? 2U : 1U, record.NumberParameters);
                 Assert.AreEqual(15, record.Information.Length);
-                Assert.AreEqual(7UL, record.Information[0].ToUInt64());
+                Assert.AreEqual(variation == "AvComplete" ? 0UL : 7UL, record.Information[0].ToUInt64());
+                Assert.AreEqual(variation == "AvComplete" ? 1UL : 0UL, record.Information[1].ToUInt64());
+                Assert.ThrowsException<InvalidOperationException>(() => OwnedTeardownTraceHelper.CreateRecord(context, 0xe0000002));
                 Assert.AreEqual(IntPtr.Zero, record.Record);
                 Assert.ThrowsException<InvalidOperationException>(() => OwnedTeardownTraceHelper.CreateRecord(IntPtr.Zero));
             }

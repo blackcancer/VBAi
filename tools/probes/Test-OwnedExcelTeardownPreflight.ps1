@@ -9,12 +9,13 @@ if(-not [IO.Path]::IsPathRooted($HelperPath) -or -not [IO.Path]::IsPathRooted($O
 $common=Join-Path $PSScriptRoot 'OwnedTeardownTrace.Common.ps1'
 $report=[ordered]@{State='PREPARE_ONLY';Mode='TEARDOWN_EXCEPTION_PREFLIGHT';HelperPath=$HelperPath;HelperSha256=(Get-FileHash -LiteralPath $HelperPath).Hash;
  CdbPath=$CdbPath;CdbSha256=(Get-FileHash -LiteralPath $CdbPath).Hash;CommonScriptSha256=(Get-FileHash -LiteralPath $common).Hash;RegisterCaptureMode='LiveEventThread';
- Scope='Two newly owned non-Office helpers only: normal attach/detach/STOP, then one synthetic failfast. No Office, COM, dump or global policy.'}
+ CollectorProfile='AV_FIRSTCHANCE_FORWARD_AV_SECONDCHANCE_AND_FAILFAST';
+ Scope='Four newly owned non-Office helpers: normal detach/STOP, one failfast, one software second-chance AV, one locally handled software first-chance AV. No Office, COM, dump or global policy.'}
 if(-not $Execute){$report|ConvertTo-Json -Depth 4;return}
 . $common
 $trial=Join-Path $OutputRoot ([Guid]::NewGuid().ToString('N'));[void][IO.Directory]::CreateDirectory($trial)
 $primary=$null;$cleanup=New-Object Collections.Generic.List[string];$report.State='STARTED'
-foreach($mode in @('normal','failfast')){
+foreach($mode in @('normal','failfast','secondchanceav','firstchanceav')){
  $target=$null;$session=$null
  try{
   $dir=Join-Path $trial $mode;[void][IO.Directory]::CreateDirectory($dir)
@@ -34,6 +35,7 @@ foreach($mode in @('normal','failfast')){
   if($mode -eq 'normal'){
    Stop-OwnedTeardownDebugger $session $target
    $report.NormalHelperDetachedVerified=$true
+   $report.NormalStopBreakpointVerified=$session.StopBreakpointVerified
    $report.NormalDebuggerExitCode=$session.Process.ExitCode
    $target.StandardInput.WriteLine('STOP');$target.StandardInput.Flush()
    $stopped=$target.StandardOutput.ReadLineAsync()
@@ -41,19 +43,35 @@ foreach($mode in @('normal','failfast')){
    if(-not $target.WaitForExit(5000)){throw 'Normal helper did not exit; preserve without termination.'}
    $report.NormalHelperExitCode=$target.ExitCode
    if($target.ExitCode -ne 0){throw 'Normal helper exit is not zero.'}
+  }elseif($mode -eq 'firstchanceav'){
+   $report.SyntheticFirstChanceAvRequests=1
+   $target.StandardInput.WriteLine('FIRSTCHANCEAV');$target.StandardInput.Flush()
+   foreach($expected in @('FIRSTCHANCE_AV_REQUESTED','FIRSTCHANCE_AV_HANDLED')){
+    $line=$target.StandardOutput.ReadLineAsync()
+    if(-not $line.Wait(5000) -or $line.Result -ne $expected){throw 'Synthetic first-chance AV request/local-handler evidence missing.'}
+   }
+   if(-not $target.WaitForExit(5000) -or $target.ExitCode -ne 0 -or -not $session.Process.WaitForExit(5000)){throw 'Handled first-chance trial did not terminate normally.'}
+   Stop-OwnedTeardownDebugger $session $target
+   $text=Get-Content -LiteralPath $session.Log -Raw -Encoding Unicode
+   $report.FirstChanceAvForwardedVerified=Test-OwnedFirstChanceAv $text $target.Id $nonce
+   if(-not $report.FirstChanceAvForwardedVerified){throw 'Executed exact first-chance AV forwarding was not observed.'}
   }else{
-   $target.StandardInput.WriteLine('FAILFAST');$target.StandardInput.Flush();$report.SyntheticFailfastRequests=1
+   $command=if($mode -eq 'failfast'){'FAILFAST'}else{'SECONDCHANCEAV'}
+   $code=if($mode -eq 'failfast'){'c0000409'}else{'c0000005'}
+   $report[$mode+'SyntheticRequests']=1
+   if($mode -eq 'failfast'){$report.SyntheticFailfastRequests=1}else{$report.SyntheticSecondChanceAvRequests=1}
+   $target.StandardInput.WriteLine($command);$target.StandardInput.Flush()
    if(-not $session.Process.WaitForExit(10000)){throw 'Failfast debugger handler did not complete.'}
    Stop-OwnedTeardownDebugger $session $target
    if(-not $target.WaitForExit(5000)){throw 'Synthetic failfast target did not exit; preserve without termination.'}
-   $report.FailfastHelperExitCodeHex='0x'+([uint32]([int64]$target.ExitCode -band 4294967295)).ToString('X8')
    $text=Get-Content -LiteralPath $session.Log -Raw -Encoding Unicode
-   $report.ExceptionCaptureVerified=Test-TeardownExceptionCapture $text
-   if(-not $report.ExceptionCaptureVerified){throw 'Synthetic exception/context/stack handler was not verified.'}
+   $verified=Test-TeardownExceptionCapture $text $target.Id $code
+   if($mode -eq 'failfast'){$report.ExceptionCaptureVerified=$verified}else{$report.SecondChanceAvCaptureVerified=$verified}
+   if(-not $verified){throw 'Synthetic exact PID/code/live-register/stack handler was not verified.'}
   }
  }catch{$primary=$_.Exception.ToString();$report.Failure=$primary}
  finally{
-  if($session -ne $null -and -not $session.Process.HasExited){try{Stop-OwnedTeardownDebugger $session $target}catch{$cleanup.Add($_.Exception.ToString())}}
+  if($session -ne $null -and -not $session.Process.HasExited -and -not $session.StopAttempted){try{Stop-OwnedTeardownDebugger $session $target}catch{$cleanup.Add($_.Exception.ToString())}}
   try{
    if($session -ne $null -and $session.Process.HasExited){$report[$mode+'DebuggerExitCodeHex']='0x'+([uint32]([int64]$session.Process.ExitCode -band 4294967295)).ToString('X8')}
    if($target -ne $null){$report[$mode+'HelperExitObserved']=$target.HasExited;if($target.HasExited){$report[$mode+'HelperExitCodeHex']='0x'+([uint32]([int64]$target.ExitCode -band 4294967295)).ToString('X8')}}
@@ -64,9 +82,14 @@ foreach($mode in @('normal','failfast')){
  if($primary -ne $null -or $cleanup.Count -ne 0){break}
 }
 $report.State=if($primary -eq $null -and $cleanup.Count -eq 0 -and $report.ExceptionCaptureVerified -eq $true -and
- $report.NormalHelperExitCode -eq 0 -and $report.NormalDebuggerExitCode -eq 0 -and $report.NormalHelperDetachedVerified -eq $true -and
+ $report.NormalHelperExitCode -eq 0 -and $report.NormalDebuggerExitCode -eq 0 -and $report.NormalHelperDetachedVerified -eq $true -and $report.NormalStopBreakpointVerified -eq $true -and
  $report.FailfastHelperExitCodeHex -eq '0xC0000409' -and $report.failfastHelperExitObserved -eq $true -and
- $report.failfastDebuggerExitCodeHex -in @('0x00000000','0xC0000409')){'PASS'}else{'FAIL'}
+ $report.failfastDebuggerExitCodeHex -in @('0x00000000','0xC0000409') -and
+ $report.SecondChanceAvCaptureVerified -eq $true -and $report.secondchanceavHelperExitObserved -eq $true -and
+ $report.secondchanceavHelperExitCodeHex -eq '0xC0000005' -and $report.secondchanceavDebuggerExitCodeHex -in @('0x00000000','0xC0000005') -and
+ $report.FirstChanceAvForwardedVerified -eq $true -and $report.firstchanceavHelperExitObserved -eq $true -and
+ $report.firstchanceavHelperExitCodeHex -eq '0x00000000' -and $report.firstchanceavDebuggerExitCodeHex -eq '0x00000000' -and
+ $report.SyntheticFailfastRequests -eq 1 -and $report.SyntheticSecondChanceAvRequests -eq 1 -and $report.SyntheticFirstChanceAvRequests -eq 1){'PASS'}else{'FAIL'}
 $report.CompletedUtc=[DateTime]::UtcNow.ToString('o');Write-TeardownJson (Join-Path $trial 'preflight.json') $report
 Write-Output (Join-Path $trial 'preflight.json')
 if($report.State -ne 'PASS'){throw 'Owned helper preflight failed; do not attach to Office.'}
