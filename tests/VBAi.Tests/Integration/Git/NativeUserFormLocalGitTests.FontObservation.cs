@@ -105,7 +105,7 @@ namespace VBAi.Tests.Integration
                         report["FontDifferences"] = DescribeNativeDifferences(fontBefore, fontAfter);
                         if (restoreFonts)
                         {
-                            report["FontAssignmentsRequestedAfterImport"] = (layout == "FrameMultiPage" ? 2 : 1) * (useBridge ? 6 : 8);
+                            report["FontAssignmentsRequestedAfterImport"] = (layout == "FrameMultiPage" ? 2 : 1) * (persistedFont ? 2 : useBridge ? 6 : 8);
                             report["Stage"] = "one-explicit-font-restoration";
                             write();
                             if (persistedFont)
