@@ -452,7 +452,11 @@ production GitTemporary directory in this launch context, but logical revision
 stability fails. No meaningful-property-change, Git commit, checkpoint import,
 rollback or helper Save/reopen phase is reached. Those later phases are
 **NOT_RUN**, not failed native mutations or accepted recovery. No remote Git
-operation or macro execution occurs. Designer PNGs remain pending visual review.
+operation or macro execution occurs. The retained source-designer PNGs have now
+been visually reviewed: each synthetic form and target control is visible without
+an error dialog. `source-designer-visual-review.json` binds observations to each
+original image hash. This reviews the source layout only; it does not establish
+visual acceptance after import, recovery or reopen, which remain NOT_RUN.
 
 All per-host shutdown records verify normal exit **0**, without Close/Quit
 errors or forced termination. Owned PIDs are 49560, 45604, 57368, 51208, 41316,
