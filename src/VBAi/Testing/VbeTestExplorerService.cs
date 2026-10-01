@@ -278,6 +278,8 @@ namespace VBAi
             {
                 try
                 {
+                    // Return the query before native copy preparation enters the owning thread.
+                    if (measureCoverage) await AwaitOwner(QueueCoverageStart());
                     Action<VbaTestResult> publish = result => {
                         entry.Run.Results.Add(result);
                         if (result.Outcome == VbaTestOutcome.OutcomeUnknown) entry.Run.OutcomeUnknown = true;
@@ -305,7 +307,16 @@ namespace VBAi
             executionGuard?.Invoke();
             var task = BeginRun(catalog, selected, null, CancellationToken.None, executionGuard, measureCoverage);
             var entry = active ?? runs.Values.Single(item => ReferenceEquals(item.Completion, task));
-            return RunStatus(selector, entry.Run.Id, "compact");
+            // Do not re-enter COM discovery after publishing the preparation continuation.
+            return ReportRunStatus(catalog, entry.Run.Id, entry, "compact", 0, 0);
+        }
+
+        private Task<bool> QueueCoverageStart()
+        {
+            var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            try { continuationDispatcher.BeginInvoke(new Action(() => completion.TrySetResult(true))); }
+            catch (Exception error) { completion.TrySetException(error); }
+            return completion.Task;
         }
 
         internal object RunStatus(string selector, string id, string format, int offset = 0, int limit = 0)
@@ -314,6 +325,11 @@ namespace VBAi
             VbaTestReports.PageLimit(offset, limit);
             var catalog = DiscoverSelector(selector);
             if (!runs.TryGetValue(id ?? "", out RunEntry entry) || entry.ProjectId != catalog.Project.Id) throw new InvalidOperationException("Unknown test run in this project/session.");
+            return ReportRunStatus(catalog, id, entry, format, offset, limit);
+        }
+
+        private static object ReportRunStatus(VbaTestCatalog catalog, string id, RunEntry entry, string format, int offset, int limit)
+        {
             return new { Query = id, entry.State, Pending = entry.State == "Running" || entry.State == "StopRequested",
                 Stale = catalog.Project.Revision != entry.Run.Revision,
                 Report = format == "human" ? (object)VbaTestReports.HumanPage(entry.Run, offset, limit) : new System.Web.Script.Serialization.JavaScriptSerializer()

@@ -293,6 +293,144 @@ namespace VBAi.Tests.Unit
             => (Control)typeof(VbeTestExplorerService).GetField("continuationDispatcher", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(service);
 
         [STATestMethod]
+        public void CoverageStartReturnsItsReservedQueryBeforeAnyCopyPreparationOnTheOwner()
+        {
+            using (var fixture = new Fixture())
+            using (var coverage = new CoverageFixture(fixture))
+            {
+                int owner = Thread.CurrentThread.ManagedThreadId;
+                coverage.AfterCopy = _ => Assert.AreEqual(owner, Thread.CurrentThread.ManagedThreadId);
+                var catalog = fixture.Catalog();
+                dynamic start = fixture.Service.StartRun(fixture.Project.FileName, catalog.Project.Revision,
+                    catalog.Tests.Select(test => test.Id).ToArray(), null, true);
+                string query = start.Query;
+                Assert.IsFalse(string.IsNullOrEmpty(query));
+                Assert.AreEqual("Running", (string)start.State);
+                Assert.IsTrue((bool)start.Pending);
+                Assert.IsNull(coverage.Clone, "No copy may be opened before StartRun returns its query.");
+                Assert.AreEqual(0, coverage.Events.Count);
+                Assert.ThrowsException<InvalidOperationException>(() => fixture.Service.StartRun(fixture.Project.FileName,
+                    catalog.Project.Revision, catalog.Tests.Select(test => test.Id).ToArray(), null, true));
+                PumpMessagesUntil(() => !((bool)((dynamic)fixture.Service.RunStatus(fixture.Project.FileName, query, "compact")).Pending));
+                Assert.AreEqual("Completed", (string)((dynamic)fixture.Service.RunStatus(fixture.Project.FileName, query, "compact")).State);
+                CollectionAssert.AreEqual(new[] { "Compile", "Reset", "Test:Alpha", "Test:Beta", "Snapshot", "Close" }, coverage.Events);
+            }
+        }
+
+        [STATestMethod]
+        public void QueuedCoverageRevalidatesRevisionModeIdentityAndPermissionBeforeOpeningTheCopy()
+        {
+            foreach (string change in new[] { "source", "mode", "identity", "permission" })
+            using (var fixture = new Fixture())
+            using (var coverage = new CoverageFixture(fixture))
+            {
+                var catalog = fixture.Catalog();
+                bool allowed = true;
+                dynamic start = fixture.Service.StartRun(fixture.Project.FileName, catalog.Project.Revision,
+                    catalog.Tests.Select(test => test.Id).ToArray(), () => {
+                        if (!allowed) throw new InvalidOperationException("Coverage permission withdrawn.");
+                    }, true);
+                string query = start.Query;
+                var entries = (System.Collections.IDictionary)typeof(VbeTestExplorerService)
+                    .GetField("runs", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(fixture.Service);
+                var entry = entries[query];
+                var task = (Task<VbaTestRun>)entry.GetType().GetField("Completion", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(entry);
+                if (change == "source") fixture.Project.VBComponents[0].CodeModule.Source += "\n' changed before coverage preparation";
+                if (change == "mode") fixture.Project.Mode = 1;
+                if (change == "identity") fixture.Vbe.VBProjects[0] = Project(fixture.Project.Name, fixture.Project.FileName);
+                if (change == "permission") allowed = false;
+                var run = Pump(task);
+                Assert.IsNull(coverage.Clone, change);
+                Assert.AreEqual(0, coverage.Events.Count, change);
+                Assert.IsFalse(run.OutcomeUnknown, change);
+                Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Blocked), change);
+                Assert.AreEqual("Aborted", entry.GetType().GetField("State", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(entry), change);
+            }
+        }
+
+        [STATestMethod]
+        public void StopAndExternalCancellationBeforeQueuedCoveragePreparationDoNotOpenACopy()
+        {
+            foreach (bool external in new[] { false, true })
+            using (var fixture = new Fixture())
+            using (var coverage = new CoverageFixture(fixture))
+            using (var cancellation = new CancellationTokenSource())
+            {
+                var catalog = fixture.Catalog();
+                Task<VbaTestRun> task;
+                if (external)
+                {
+                    task = fixture.Service.RunCoverageAsync(catalog, catalog.Tests.ToArray(), null, cancellation.Token);
+                    cancellation.Cancel();
+                }
+                else
+                {
+                    dynamic start = fixture.Service.StartRun(fixture.Project.FileName, catalog.Project.Revision,
+                        catalog.Tests.Select(test => test.Id).ToArray(), null, true);
+                    string query = start.Query;
+                    fixture.Service.StopRun(fixture.Project.FileName, query);
+                    var entries = (System.Collections.IDictionary)typeof(VbeTestExplorerService)
+                        .GetField("runs", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(fixture.Service);
+                    var entry = entries[query];
+                    task = (Task<VbaTestRun>)entry.GetType().GetField("Completion", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(entry);
+                }
+                var run = Pump(task);
+                Assert.IsNull(coverage.Clone);
+                Assert.AreEqual(0, coverage.Events.Count);
+                Assert.IsFalse(run.OutcomeUnknown);
+                Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Cancelled));
+                Assert.AreEqual("Cancelled", (string)((dynamic)fixture.Service.RunStatus(fixture.Project.FileName, run.Id, "compact")).State);
+            }
+        }
+
+        [STATestMethod]
+        public void DisposedQueuedCoverageSettlesOnTheOwnerWithoutCopyPreparationOrAnOrphanedRun()
+        {
+            using (var fixture = new Fixture())
+            using (var coverage = new CoverageFixture(fixture))
+            {
+                int owner = Thread.CurrentThread.ManagedThreadId;
+                var catalog = fixture.Catalog();
+                var continuations = OwnerContinuations(fixture.Service);
+                var task = fixture.Service.RunCoverageAsync(catalog, catalog.Tests.ToArray(), _ =>
+                    Assert.AreEqual(owner, Thread.CurrentThread.ManagedThreadId), CancellationToken.None);
+                fixture.Service.Dispose();
+                fixture.Dispatcher.Dispose();
+                Assert.IsFalse(continuations.IsDisposed, "The posted start still needs its owned continuation handle.");
+                var run = Pump(task);
+                Assert.IsNull(coverage.Clone);
+                Assert.AreEqual(0, coverage.Events.Count);
+                Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Cancelled));
+                Assert.IsTrue(continuations.IsDisposed);
+                Assert.IsNull(typeof(VbeTestExplorerService).GetField("active", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(fixture.Service));
+            }
+        }
+
+        [STATestMethod]
+        public void FailedCoverageStartPublicationIsTerminalAndReleasesTheActiveReservationWithoutRetry()
+        {
+            using (var fixture = new Fixture())
+            using (var coverage = new CoverageFixture(fixture))
+            {
+                var catalog = fixture.Catalog();
+                OwnerContinuations(fixture.Service).Dispose();
+                dynamic start = fixture.Service.StartRun(fixture.Project.FileName, catalog.Project.Revision,
+                    catalog.Tests.Select(test => test.Id).ToArray(), null, true);
+                Assert.AreEqual("Aborted", (string)start.State);
+                Assert.IsFalse((bool)start.Pending);
+                Assert.IsFalse(string.IsNullOrEmpty((string)start.Query));
+                Assert.IsNull(coverage.Clone);
+                Assert.AreEqual(0, coverage.Events.Count);
+                Assert.IsNull(typeof(VbeTestExplorerService).GetField("active", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(fixture.Service));
+                var entries = (System.Collections.IDictionary)typeof(VbeTestExplorerService)
+                    .GetField("runs", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(fixture.Service);
+                var entry = entries[(string)start.Query];
+                var task = (Task<VbaTestRun>)entry.GetType().GetField("Completion", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(entry);
+                Assert.IsInstanceOfType(Assert.ThrowsException<InvalidOperationException>(() => task.GetAwaiter().GetResult()), typeof(InvalidOperationException));
+            }
+        }
+
+        [STATestMethod]
         public void SupportInstallRequiresExactReviewedSourcePreservesBackupAndNeverSavesWorkbook()
         {
             using (var fixture = new Fixture())

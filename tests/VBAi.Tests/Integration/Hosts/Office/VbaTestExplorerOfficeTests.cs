@@ -161,9 +161,11 @@ namespace VBAi.Tests.Integration
         {
             // Even a missing start response can conceal an already dispatched native attempt.
             fixture.NativeExecutionUnsettled = true;
+            // Original and copy can share VBProject.Name while a coverage run is pending.
+            string selector = coverage && fixture.Kind == "Word" ? fixture.DocumentPath : fixture.Project;
             var started = coverage
-                ? fixture.Data("run_vba_tests", "ExpectedProjectVersion", revision, "ExpectedMode", 2, "Items", ids, "Action", "coverage")
-                : fixture.Data("run_vba_tests", "ExpectedProjectVersion", revision, "ExpectedMode", 2, "Items", ids);
+                ? fixture.Data("run_vba_tests", "Project", selector, "ExpectedProjectVersion", revision, "ExpectedMode", 2, "Items", ids, "Action", "coverage")
+                : fixture.Data("run_vba_tests", "Project", selector, "ExpectedProjectVersion", revision, "ExpectedMode", 2, "Items", ids);
             Save(fixture, name + "-start.json", started);
             string query = (string)started["Query"];
             Assert.IsFalse(string.IsNullOrEmpty(query));
@@ -171,7 +173,7 @@ namespace VBAi.Tests.Integration
             IDictionary<string, object> state;
             do
             {
-                state = fixture.Data("vba_test_run_status", "Query", query, "Action", "compact");
+                state = fixture.Data("vba_test_run_status", "Project", selector, "Query", query, "Action", "compact");
                 object pending, reportValue, uncertain;
                 if (state.TryGetValue("Pending", out pending) && Equals(pending, false)
                     && state.TryGetValue("Report", out reportValue) && reportValue != null)
@@ -189,7 +191,7 @@ namespace VBAi.Tests.Integration
             Assert.AreEqual(false, state["Stale"]);
             var report = VbeBridgeClient.Object(state["Report"]);
             Save(fixture, name + "-compact.json", report);
-            var human = fixture.Data("vba_test_run_status", "Query", query, "Action", "human");
+            var human = fixture.Data("vba_test_run_status", "Project", selector, "Query", query, "Action", "human");
             File.WriteAllText(Path.Combine(fixture.Root, name + "-human.txt"), (string)human["Report"], Utf8);
             Assert.AreEqual(query, report["run"]);
             return report;
