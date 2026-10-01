@@ -327,6 +327,9 @@ namespace VBAi.Tests.Unit
             var known = new Dictionary<string, byte[]> { [""] = Metadata("C62A69F0-16DC-11CE-9E98-00AA00574A4F"),
                 ["/i01"] = Metadata("6E182020-F460-11CE-9BCD-00AA00608E01") };
             AssertGraphFallback(many, known); // 8193 + 8192 exceeds the whole graph limit although each form fits.
+            many["/i01/f"] = ManyLeavesForm(8191, false, out childObjects); many["/i01/o"] = childObjects;
+            Assert.AreNotSame(many, FormStreamPadding.NormalizeGraph(many, known),
+                "Exactly 16384 valid sites must be accepted, proving the refusal above is the aggregate boundary.");
         }
 
         private static byte[] ManyLeavesForm(int count, bool parent, out byte[] objects)
