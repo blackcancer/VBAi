@@ -1,5 +1,70 @@
 # Recorded validation
 
+## Uninstalled combined candidate: complete managed run (2026-10-01)
+
+Source `fa7955ff9957138924ba911df446a9270e377dc5` combines bounded,
+atomic UserForm storage-graph comparison and scalar-setter failure-phase
+diagnostics. Product MVID is `a8a35043-3353-4917-812a-6e020da7a049`, SHA-256
+`431F27F1507E1E0D50DEEFDE657885EF6B8601938CF048BB8B7BB09BC53BE6D4`.
+This candidate is **uninstalled**; the installed v6 identity below is unchanged.
+
+`managed-v7-final-combined/full-managed.trx` records **2,703 passed, 0 failed,
+110 conditional skips, 2,813 total**, runner exit **0**. The terminal manifest
+records **565.722 seconds** and identical before/after product hashes. The
+candidate manifest binds the compiled test assembly. Test-only guard edits made
+while this frozen run executed are qualified separately below; this run does
+not claim their compiled execution.
+
+Raw `[VBAi]*` managed coverage is **33,927/34,122 lines (99.42%)** and
+**34,238/34,756 branches (98.50%)**, in
+`managed-v7-final-combined/3c4c5213-fff3-4c60-8604-7eca5a71df61/coverage.cobertura.xml`.
+Native/live-provider opt-ins were disabled. Native C++, JavaScript and external
+host processes are outside this measurement. Q-015 has managed acceptance for
+this exact candidate; native release gates and the complete coverage target
+remain open.
+
+`frx-drift-analysis/final-combined-graph-comparison.json` invokes the actual
+production snapshot comparison in this assembly on all twelve retained native
+before/unchanged pairs. All compare equal, including Frame/MultiPage. Raw FRM/FRX
+files are unchanged. The graph parser rejects unknown, malformed, missing or
+extra streams atomically; picture payloads and meaningful properties remain
+significant. Unsupported layouts retain strict comparison. This offline result
+does not change the failed installed-v6 matrix or execute native import,
+recovery, persistence or authenticated transport.
+
+Tests source `2f186993a159b085f228d9c7f8b19a5ebffbbab9` is compiled separately
+against the unchanged frozen product above. Test SHA-256 is
+`BC256576C21842339CABDC81EE1A1C051B2F7F3E27E78FD6040D86A5FFEF42DD`.
+`combined-test-guards/guards.trx` records **215 passed, 0 failed, 0 skipped** in
+one prepared batch. This includes grammar, scalar failure phase, Format
+lifecycle/bootstrap and sequential import guards. A pending recovery marker or
+unreadable marker retains the native host after an import failure; final evidence
+failure cannot mask the scenario error or skip context restoration. Format uses
+explicit owned bootstrap and refuses inherited token manifests before launch.
+No host is launched by this focused batch. Neither test-only lifecycle correction
+changes the shared fixture or explains the original native failures.
+
+### Installed v6: full Format matrix stops at a retained native dialog
+
+`format-native-v6-corrected/format.trx` records **0 passed, 1 failed, 0 skipped**
+on installed v6, tests source `2f186993`. Explicit `/x /automation` bootstrap
+verifies owned Excel **48192**, start **2026-10-01T03:50:04.2993576Z**, and loaded
+MVID equal to the installed product. No path/token manifest is supplied. The
+tests-only payload references the original installed assembly; it cannot qualify
+the uninstalled combined candidate. An earlier driver path-decoding error
+occurred before preparation or host launch and is not a native attempt.
+
+The font write has a confirmed terminal reply and independent readback. The
+subsequent empty-size catalogue refuses `12` with the exact expected error, but
+independent complete native window enumeration finds the owned `Options`
+`#32770` dialog **visible**. The guard correctly stops dispatch and retains the
+host and COM references. Twenty durable phase records preserve the baseline,
+committed font restoration entry, refusal and native observation. Palette,
+category, margin, stale-revision and complete restoration phases are **NOT_RUN**.
+No restoration or Close/Quit follows the refusal. At this checkpoint the VSTest
+console has written its failed result, but the runner has not returned a terminal
+exit; do not treat the TRX as normal process completion. Q-026 remains open.
+
 ## Current installed v6: complete managed acceptance (2026-10-01)
 
 Product source `8f2315d04162f55b0956618f96b59d294a3fb681` includes the Monaco

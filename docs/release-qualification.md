@@ -311,12 +311,20 @@ options revisions in durable phase summaries. Earlier successful trials lack
 durable summaries, and one copied driver selected an older test build; the
 additive provenance correction preserves those original records. These outcomes
 do not explain the original pre-write connection EOF or qualify every category.
+The later full Format trial confirms a distinct defect: the empty-size refusal
+leaves its owned Options dialog visible. The guard retains the exact Excel
+without another dispatch, restoration or cleanup. Remaining Format phases are
+NOT_RUN; this refusal defect does not establish the earlier EOF's cause.
 
-Q-027 remains open. An uninstalled combined grammar prototype compares the
-retained flat-control exports consistently in an offline production-snapshot
-analysis. Frame/MultiPage requires complete storage-graph validation. This does
+Q-027 remains open. The uninstalled combined candidate now compares all retained
+layout pairs consistently in an offline production-snapshot analysis, including
+Frame/MultiPage through bounded atomic storage-graph validation. This does
 not turn the failed installed-v6 native matrix into a pass or execute its later
 Git, import, recovery and persistence phases. The installed DLL is unchanged.
+Its complete default managed gate passes. Native import/recovery, persistence
+and current-provider transport remain unexecuted for that candidate. Scalar
+failure-phase diagnostics preserve uncertain setter outcomes without replay;
+they do not establish a causal fix for the Access/Publisher metadata failures.
 Exact identities, counts and artifact paths are recorded in
 [test coverage](test-coverage.md).
 
