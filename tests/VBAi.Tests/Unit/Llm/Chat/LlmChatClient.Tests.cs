@@ -22,6 +22,124 @@ namespace VBAi.Tests.Unit
         {
             var settings = new LlmSettings(); settings.SetEndpoint(provider, provider.IsClaude ? "https://fixture.invalid/v1/messages" : "https://fixture.invalid/v1/chat/completions"); if (provider.RequiresKey) settings.SetKey(provider, "fixture-only-key"); return settings;
         }
+        [DataTestMethod]
+        [DataRow(null, null, false), DataRow(null, null, true)]
+        [DataRow(0.0, null, false), DataRow(0.0, null, true)]
+        [DataRow(null, 0.8, false), DataRow(null, 0.8, true)]
+        [DataRow(2.0, 1.0, false), DataRow(2.0, 1.0, true)]
+        [DataRow(0.0, 0.00001, false), DataRow(0.0, 0.00001, true)]
+        [DataRow(0.7, 0.8, false), DataRow(0.7, 0.8, true)]
+        public async Task OllamaSamplingPayloadPreservesNullPartialBoundsAndStreaming(double? temperature, double? topP, bool streaming)
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var handler = new LlmHttpFixture();
+                handler.Replies.Enqueue(new LlmHttpFixture.Reply(streaming ?
+                    "data: {\"choices\":[{\"delta\":{\"content\":\"answer\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n" : Answer) {
+                    MediaType = streaming ? "text/event-stream" : "application/json"
+                });
+                var settings = new LlmSettings { OllamaTemperature = temperature, OllamaTopP = topP };
+                using (var client = new LlmChatClient(LlmBoundaryScope.Provider("Ollama"), settings, "synthetic-model", handler))
+                {
+                    var chunks = new List<string>();
+                    if (streaming) client.TextDelta = chunks.Add;
+                    Assert.AreEqual("answer", (await client.CompleteAsync(History(), Tools()))["content"]);
+                    Assert.AreEqual(streaming, chunks.Count > 0);
+                    var body = LlmBoundaryScope.Object(new JavaScriptSerializer().DeserializeObject(handler.Bodies.Single()));
+                    Assert.AreEqual(temperature.HasValue, body.ContainsKey("temperature"));
+                    Assert.AreEqual(topP.HasValue, body.ContainsKey("top_p"));
+                    if (temperature.HasValue) Assert.AreEqual(temperature.Value, Convert.ToDouble(body["temperature"]));
+                    if (topP.HasValue) Assert.AreEqual(topP.Value, Convert.ToDouble(body["top_p"]));
+                    Assert.AreEqual(streaming, body.ContainsKey("stream"));
+                    Assert.IsFalse(body.ContainsKey("logprobs"));
+                    Assert.IsFalse(body.ContainsKey("top_logprobs"));
+                    Assert.IsFalse(body.ContainsKey("tool_choice"));
+                    CollectionAssert.AreEquivalent(new[] { "model", "messages", "tools" }
+                        .Concat(temperature.HasValue ? new[] { "temperature" } : new string[0])
+                        .Concat(topP.HasValue ? new[] { "top_p" } : new string[0])
+                        .Concat(streaming ? new[] { "stream" } : new string[0]).ToArray(), body.Keys.ToArray());
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task OllamaSamplingUsesTheValidatedClientSnapshotAcrossLaterSettingsChanges()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var settings = new LlmSettings { OllamaTemperature = 0, OllamaTopP = 0.8 };
+                var handler = new LlmHttpFixture(Answer, Answer);
+                using (var client = new LlmChatClient(LlmBoundaryScope.Provider("Ollama"), settings, "model", handler))
+                {
+                    settings.OllamaTemperature = Double.NaN; settings.OllamaTopP = Double.PositiveInfinity;
+                    await client.CompleteAsync(History(), Tools());
+                    settings.OllamaTemperature = null; settings.OllamaTopP = null;
+                    await client.CompleteAsync(History(), Tools());
+                    Assert.AreEqual(2, handler.Bodies.Count);
+                    foreach (string request in handler.Bodies) {
+                        var body = LlmBoundaryScope.Object(new JavaScriptSerializer().DeserializeObject(request));
+                        Assert.AreEqual(0.0, Convert.ToDouble(body["temperature"]));
+                        Assert.AreEqual(0.8, Convert.ToDouble(body["top_p"]));
+                    }
+                }
+                var absent = new LlmSettings(); var unchanged = new LlmHttpFixture(Answer);
+                using (var client = new LlmChatClient(LlmBoundaryScope.Provider("Ollama"), absent, "model", unchanged)) {
+                    absent.OllamaTemperature = 0; absent.OllamaTopP = 0.8;
+                    await client.CompleteAsync(History(), Tools());
+                    var body = LlmBoundaryScope.Object(new JavaScriptSerializer().DeserializeObject(unchanged.Bodies.Single()));
+                    Assert.IsFalse(body.ContainsKey("temperature")); Assert.IsFalse(body.ContainsKey("top_p"));
+                }
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(-0.001, null), DataRow(2.001, null), DataRow(Double.NaN, null)]
+        [DataRow(Double.PositiveInfinity, null), DataRow(Double.NegativeInfinity, null)]
+        [DataRow(null, 0.0), DataRow(null, -0.001), DataRow(null, 1.001)]
+        [DataRow(null, Double.NaN), DataRow(null, Double.PositiveInfinity), DataRow(null, Double.NegativeInfinity)]
+        public void InvalidOllamaSamplingIsRefusedBeforeFactoryOrSuppliedHandlerEmission(double? temperature, double? topP)
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var settings = new LlmSettings { OllamaTemperature = temperature, OllamaTopP = topP };
+                int factoryCalls = 0;
+                LlmChatClient.HttpHandlerFactory = () => { factoryCalls++; throw new InvalidOperationException("Factory must not be reached."); };
+                var provider = LlmBoundaryScope.Provider("Ollama");
+                var error = Assert.ThrowsException<InvalidOperationException>(() => new LlmChatClient(provider, settings, "model"));
+                StringAssert.Contains(error.Message, temperature.HasValue ? "OllamaTemperature" : "OllamaTopP");
+                Assert.AreEqual(0, factoryCalls);
+                using (var handler = new LlmHttpFixture(Answer)) {
+                    Assert.ThrowsException<InvalidOperationException>(() => new LlmChatClient(provider, settings, "model", handler));
+                    Assert.AreEqual(0, handler.Bodies.Count);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task OtherHttpProvidersIgnoreEvenInvalidOllamaSamplingWithoutChangingNativePayloads()
+        {
+            using (var scope = new LlmBoundaryScope())
+            foreach (var provider in LlmProvider.All.Where(item => !item.IsCodex && !item.IsCopilot && !item.IsOllama))
+            {
+                string response = provider.IsClaude ? "{\"content\":[{\"type\":\"text\",\"text\":\"answer\"}],\"stop_reason\":\"end_turn\"}" :
+                    provider.IsBedrock ? "{\"output\":{\"message\":{\"content\":[{\"text\":\"answer\"}]}},\"stopReason\":\"end_turn\"}" : Answer;
+                var baseline = Settings(provider); var withOllama = Settings(provider);
+                withOllama.OllamaTemperature = Double.NaN; withOllama.OllamaTopP = Double.PositiveInfinity;
+                var original = new LlmHttpFixture(response); var configured = new LlmHttpFixture(response);
+                using (var client = new LlmChatClient(provider, baseline, "model", original)) await client.CompleteAsync(History(), Tools());
+                using (var client = new LlmChatClient(provider, withOllama, "model", configured)) await client.CompleteAsync(History(), Tools());
+                Assert.AreEqual(original.Bodies.Single(), configured.Bodies.Single(), provider.Name);
+                var body = LlmBoundaryScope.Object(new JavaScriptSerializer().DeserializeObject(configured.Bodies.Single()));
+                Assert.IsFalse(body.ContainsKey("temperature"), provider.Name); Assert.IsFalse(body.ContainsKey("top_p"), provider.Name);
+            }
+            using (var scope = new LlmBoundaryScope()) {
+                scope.UseCopilot();
+                using (var client = new LlmChatClient(LlmBoundaryScope.Provider("GitHub Copilot"),
+                    new LlmSettings { OllamaTemperature = Double.NaN, OllamaTopP = Double.PositiveInfinity }, "model"))
+                    Assert.AreEqual("model @ GitHub Copilot", client.DisplayName);
+            }
+        }
+
         [TestMethod]
         public void ConstructorsValidateProviderSettingsModelEndpointAndKeysBeforeAnyRequest()
         {

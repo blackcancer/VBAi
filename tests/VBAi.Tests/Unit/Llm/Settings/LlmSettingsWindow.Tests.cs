@@ -76,6 +76,215 @@ namespace VBAi.Tests.Unit
 namespace VBAi.Tests.Unit
 {
     using System;
+    using System.Globalization;
+    using System.Windows.Forms;
+    using VBAi;
+    using VBAi.Tests.Infrastructure;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+    [TestClass, TestCategory("Unit")]
+    public sealed class OllamaSamplingSettingsWindowTests
+    {
+        [STATestMethod]
+        public void SamplingWriteFailureRestoresSharedValuesAndPreservesTheOriginalError()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var settings = new LlmSettings { ProviderName = "Ollama", OllamaTemperature = 0.7, OllamaTopP = 0.9 };
+                var original = new System.IO.IOException("Synthetic sampling settings write failure.");
+                int writes = 0;
+                LlmSettingsWindow.SelectNativeVbeTheme = enabled => { };
+                LlmSettingsWindow.WriteSettings = value => { writes++; throw original; };
+                using (var window = scope.Window(settings))
+                {
+                    LlmBoundaryScope.Get<TextBox>(window, "ollamaTemperature").Text = "0";
+                    LlmBoundaryScope.Get<TextBox>(window, "ollamaTopP").Text = "0.8";
+                    LlmBoundaryScope.Call(window, "Save");
+                    Assert.AreEqual(1, writes);
+                    Assert.AreEqual(0.7, settings.OllamaTemperature);
+                    Assert.AreEqual(0.9, settings.OllamaTopP);
+                    Assert.AreEqual(DialogResult.None, window.DialogResult);
+                    Assert.IsFalse(window.IsDisposed);
+                    Assert.AreEqual(1, scope.Notices.Count);
+                    Assert.AreEqual(original.Message, scope.Notices[0]);
+                }
+            }
+        }
+
+        [STATestMethod]
+        public void SamplingThemeFailureRestoresSharedValuesBeforeAnySettingsWrite()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var settings = new LlmSettings { ProviderName = "Ollama", OllamaTemperature = 0.7, OllamaTopP = 0.9 };
+                var original = new InvalidOperationException("Synthetic sampling theme failure.");
+                int selections = 0, writes = 0;
+                LlmSettingsWindow.SelectNativeVbeTheme = enabled => { selections++; throw original; };
+                LlmSettingsWindow.WriteSettings = value => { writes++; };
+                using (var window = scope.Window(settings))
+                {
+                    LlmBoundaryScope.Get<TextBox>(window, "ollamaTemperature").Text = "0";
+                    LlmBoundaryScope.Get<TextBox>(window, "ollamaTopP").Text = "0.8";
+                    LlmBoundaryScope.Call(window, "Save");
+                    Assert.AreEqual(0, writes);
+                    Assert.AreEqual(2, selections, "The existing theme rollback may fail once without masking the original error.");
+                    Assert.AreEqual(0.7, settings.OllamaTemperature);
+                    Assert.AreEqual(0.9, settings.OllamaTopP);
+                    Assert.AreEqual(DialogResult.None, window.DialogResult);
+                    Assert.IsFalse(window.IsDisposed);
+                    Assert.AreEqual(1, scope.Notices.Count);
+                    Assert.AreEqual(original.Message, scope.Notices[0]);
+                }
+            }
+        }
+
+        [STATestMethod]
+        public void SamplingRowsFollowOllamaAndRetainUnsavedDraftsAcrossProviders()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var settings = new LlmSettings { ProviderName = "Ollama", OllamaTemperature = 0.7, OllamaTopP = 0.8 };
+                using (var window = scope.Window(settings))
+                {
+                    window.Show(); Application.DoEvents();
+                    var temperature = LlmBoundaryScope.Get<TextBox>(window, "ollamaTemperature");
+                    var topP = LlmBoundaryScope.Get<TextBox>(window, "ollamaTopP");
+                    var provider = LlmBoundaryScope.Get<ComboBox>(window, "provider");
+                    Assert.IsTrue(temperature.Visible && topP.Visible);
+                    Assert.AreEqual("0.7", temperature.Text);
+                    Assert.AreEqual("0.8", topP.Text);
+                    temperature.Text = " 0 "; topP.Text = " 0.75 ";
+                    foreach (var other in new[] { "Codex", "OpenAI API", "LM Studio", "Claude" })
+                    {
+                        provider.SelectedItem = LlmBoundaryScope.Provider(other);
+                        Assert.IsFalse(temperature.Visible || topP.Visible, other);
+                        provider.SelectedItem = LlmBoundaryScope.Provider("Ollama");
+                        Assert.IsTrue(temperature.Visible && topP.Visible);
+                        Assert.AreEqual("0", temperature.Text);
+                        Assert.AreEqual("0.75", topP.Text);
+                    }
+                    Assert.AreEqual(0.7, settings.OllamaTemperature);
+                    Assert.AreEqual(0.8, settings.OllamaTopP);
+                    LlmBoundaryScope.Call(window, "Save");
+                    Assert.AreEqual(1, scope.Saves);
+                    Assert.AreEqual(0.0, settings.OllamaTemperature);
+                    Assert.AreEqual(0.75, settings.OllamaTopP);
+                }
+            }
+        }
+
+        [STATestMethod]
+        public void BlankSamplingEntriesClearOverridesWithoutChangingOtherProviders()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var settings = new LlmSettings { ProviderName = "Ollama", OllamaTemperature = 0, OllamaTopP = 0.8,
+                    OpenAiEndpoint = "https://fixture.invalid/v1/chat/completions" };
+                using (var window = scope.Window(settings))
+                {
+                    LlmBoundaryScope.Get<TextBox>(window, "ollamaTemperature").Text = " ";
+                    LlmBoundaryScope.Get<TextBox>(window, "ollamaTopP").Text = "";
+                    LlmBoundaryScope.Get<ComboBox>(window, "provider").SelectedItem = LlmBoundaryScope.Provider("OpenAI API");
+                    LlmBoundaryScope.Call(window, "Save");
+                    Assert.AreEqual(1, scope.Saves);
+                    Assert.IsNull(settings.OllamaTemperature);
+                    Assert.IsNull(settings.OllamaTopP);
+                    Assert.AreEqual("https://fixture.invalid/v1/chat/completions", settings.OpenAiEndpoint);
+                }
+            }
+        }
+
+        [DataRow("en-US", "0.25", "0.8")]
+        [DataRow("fr-FR", "0,25", "0,8")]
+        [DataRow("fr-FR", "0.25", "0.8")]
+        [STATestMethod]
+        public void SamplingAcceptsLocalAndInvariantDecimalNotation(string culture, string temperature, string topP)
+        {
+            var previous = CultureInfo.CurrentCulture;
+            try
+            {
+                using (var scope = new LlmBoundaryScope())
+                {
+                    CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(culture);
+                    var settings = new LlmSettings { ProviderName = "Ollama" };
+                    using (var window = scope.Window(settings))
+                    {
+                        LlmBoundaryScope.Get<TextBox>(window, "ollamaTemperature").Text = temperature;
+                        LlmBoundaryScope.Get<TextBox>(window, "ollamaTopP").Text = topP;
+                        LlmBoundaryScope.Call(window, "Save");
+                        Assert.AreEqual(1, scope.Saves);
+                        Assert.AreEqual(0.25, settings.OllamaTemperature);
+                        Assert.AreEqual(0.8, settings.OllamaTopP);
+                    }
+                }
+            }
+            finally { CultureInfo.CurrentCulture = previous; }
+        }
+
+        [DataRow("ollamaTemperature", "-0.1")]
+        [DataRow("ollamaTemperature", "2.1")]
+        [DataRow("ollamaTemperature", "NaN")]
+        [DataRow("ollamaTemperature", "Infinity")]
+        [DataRow("ollamaTemperature", "1e999")]
+        [DataRow("ollamaTemperature", "not-a-number")]
+        [DataRow("ollamaTopP", "0")]
+        [DataRow("ollamaTopP", "-0.1")]
+        [DataRow("ollamaTopP", "1.1")]
+        [DataRow("ollamaTopP", "NaN")]
+        [DataRow("ollamaTopP", "Infinity")]
+        [DataRow("ollamaTopP", "not-a-number")]
+        [STATestMethod]
+        public void InvalidSamplingRefusesSaveBeforeMutatingSettings(string field, string invalid)
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var settings = new LlmSettings { ProviderName = "Ollama", OllamaTemperature = 0.5, OllamaTopP = 0.8 };
+                using (var window = scope.Window(settings))
+                {
+                    LlmBoundaryScope.Get<TextBox>(window, field).Text = invalid;
+                    LlmBoundaryScope.Call(window, "Save");
+                    Assert.AreEqual(0, scope.Saves);
+                    Assert.AreEqual(1, scope.Notices.Count);
+                    Assert.AreEqual(DialogResult.None, window.DialogResult);
+                    Assert.AreEqual(0.5, settings.OllamaTemperature);
+                    Assert.AreEqual(0.8, settings.OllamaTopP);
+                }
+            }
+        }
+
+        [STATestMethod]
+        public void OptionalBoundsAndCancelledDraftsRemainSeparateFromPersistentSettings()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var settings = new LlmSettings { ProviderName = "Ollama" };
+                using (var window = scope.Window(settings))
+                {
+                    Assert.AreEqual("", LlmBoundaryScope.Get<TextBox>(window, "ollamaTemperature").Text);
+                    Assert.AreEqual("", LlmBoundaryScope.Get<TextBox>(window, "ollamaTopP").Text);
+                    LlmBoundaryScope.Get<TextBox>(window, "ollamaTemperature").Text = "2";
+                    LlmBoundaryScope.Get<TextBox>(window, "ollamaTopP").Text = "1";
+                    window.Close();
+                }
+                Assert.IsNull(settings.OllamaTemperature);
+                Assert.IsNull(settings.OllamaTopP);
+                Assert.AreEqual(0, scope.Saves);
+                using (var window = scope.Window(settings))
+                {
+                    LlmBoundaryScope.Get<TextBox>(window, "ollamaTemperature").Text = "2";
+                    LlmBoundaryScope.Get<TextBox>(window, "ollamaTopP").Text = "1";
+                    LlmBoundaryScope.Call(window, "Save");
+                    Assert.AreEqual(2.0, settings.OllamaTemperature);
+                    Assert.AreEqual(1.0, settings.OllamaTopP);
+                }
+            }
+        }
+    }
+}
+
+namespace VBAi.Tests.Unit
+{
+    using System;
     using System.Collections.Generic;
     using System.Reflection;
     using System.Runtime.InteropServices;

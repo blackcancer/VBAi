@@ -2165,4 +2165,12 @@ Conexão pelo Git Credential Manager; a identidade dos commits é configurada no
   <data name="Coverage exclusions" xml:space="preserve"><value>Exclusões da cobertura</value></data>
   <data name="VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring." xml:space="preserve"><value>A importação VBA falhou e não foi possível registrar o estado resultante. A recuperação continua pendente; inspecione o backup preservado e o projeto atual antes de restaurar.</value></data>
   <data name="Inspection and restoration of the native Code Colors category both failed. The original category selection is unverified." xml:space="preserve"><value>A inspeção e a restauração da categoria nativa de cores do código falharam. A seleção original da categoria não foi verificada.</value></data>
+  <data name="Temperature (0 to 2)" xml:space="preserve"><value>Temperatura (de 0 a 2)</value></data>
+  <data name="Top-p (above 0 to 1)" xml:space="preserve"><value>Top-p (maior que 0 e até 1)</value></data>
+  <data name="Ollama temperature; blank uses server default" xml:space="preserve"><value>Temperatura Ollama; vazio usa o padrão do servidor</value></data>
+  <data name="Ollama top-p; blank uses server default" xml:space="preserve"><value>Ollama top-p; vazio usa o padrão do servidor</value></data>
+  <data name="Optional. Blank uses the server default; 0 reduces sampling randomness. Use a decimal point or your local decimal separator." xml:space="preserve"><value>Opcional. Em branco usa o padrão do servidor; 0 reduz a aleatoriedade da amostragem. Use um ponto ou o separador decimal local.</value></data>
+  <data name="Optional nucleus sampling limit. Blank uses the server default. Use a decimal point or your local decimal separator." xml:space="preserve"><value>Limite opcional de amostragem top-p. Em branco usa o padrão do servidor. Use um ponto ou o separador decimal local.</value></data>
+  <data name="Ollama temperature must be a finite number from 0 to 2, or blank for the server default." xml:space="preserve"><value>A temperatura Ollama deve ser um número finito de 0 a 2; deixe em branco para usar o padrão do servidor.</value></data>
+  <data name="Ollama top-p must be a finite number above 0 and at most 1, or blank for the server default." xml:space="preserve"><value>Ollama top-p deve ser um número finito maior que 0 e no máximo 1; deixe em branco para usar o padrão do servidor.</value></data>
 </root>

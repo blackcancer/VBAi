@@ -38,14 +38,17 @@ namespace VBAi.Tests.Integration
             var excelType = Type.GetTypeFromProgID("Excel.Application");
             if (excelType == null) Assert.Inconclusive("Excel.Application is not installed.");
 
-            const string model = "qwen2.5:3b";
-            const string endpoint = "http://127.0.0.1:11434/v1/chat/completions";
+            var profile = OllamaQualificationProfile.Resolve();
+            string model = profile.Model;
+            string endpoint = profile.Endpoint.AbsoluteUri;
+            context.WriteLine("Ollama qualification profile: " + profile.Describe());
             const string moduleName = "OllamaReadFixture";
             string projectName = "OllamaFixture" + Guid.NewGuid().ToString("N").Substring(0, 12);
             string marker = "OBSERVED_" + Guid.NewGuid().ToString("N");
             var json = new JavaScriptSerializer();
             var report = new Dictionary<string, object> {
                 ["State"] = "RUNNING", ["Model"] = model, ["Endpoint"] = endpoint,
+                ["Temperature"] = profile.Temperature, ["TopP"] = profile.TopP,
                 ["Project"] = projectName, ["Module"] = moduleName,
                 ["MarkerSha256"] = EditorDocument.Hash(marker), ["StartedUtc"] = DateTime.UtcNow.ToString("o"),
                 ["AssemblyPath"] = typeof(LlmChatClient).Assembly.Location,
@@ -62,6 +65,7 @@ namespace VBAi.Tests.Integration
                 var provider = LlmProvider.All.Single(item => item.IsOllama);
                 var settings = new LlmSettings { ProviderName = provider.Name, OllamaEndpoint = endpoint,
                     OllamaModel = model, VbeEditApproval = "ReadOnly" };
+                profile.ApplyTo(settings);
                 // Shadow any inherited credential without loading or saving personal settings.
                 settings.SetKey(provider, "vbai-synthetic-loopback-excel-test");
                 var models = AwaitOnSta(LlmChatClient.ListModelsAsync(provider, settings), 125);

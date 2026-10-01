@@ -30,6 +30,8 @@ namespace VBAi
         private readonly CopilotClient copilot;
         /// <summary>Indique si l’authentification Azure Entra est activée.</summary>
         private readonly bool azureEntra;
+        /// <summary>Validated Ollama-only sampling snapshot for this client's lifetime.</summary>
+        private readonly double? ollamaTemperature, ollamaTopP;
         /// <summary>Source d’annulation liée à la durée de vie du client.</summary>
         private readonly CancellationTokenSource lifetime = new CancellationTokenSource();
         /// <summary>Empêche la libération répétée des clients et jetons.</summary>
@@ -67,6 +69,13 @@ namespace VBAi
             azureEntra = settings.AzureUseEntraToken;
             model = selectedModel;
             if (string.IsNullOrWhiteSpace(model)) throw new InvalidOperationException(UiText.Get("Select a model in the conversation."));
+            if (provider.IsOllama)
+            {
+                ollamaTemperature = settings.OllamaTemperature;
+                ollamaTopP = settings.OllamaTopP;
+                RequireOllamaSampling(ollamaTemperature, 0, 2, false, nameof(LlmSettings.OllamaTemperature));
+                RequireOllamaSampling(ollamaTopP, 0, 1, true, nameof(LlmSettings.OllamaTopP));
+            }
             if (provider.IsCopilot) { copilot = new CopilotClient(); return; }
             string raw = settings.ResolveEndpoint(provider);
             if (string.IsNullOrWhiteSpace(raw)) throw new InvalidOperationException("Configurez l’URL de " + provider.Name + UiText.Get(" in settings."));
@@ -80,6 +89,14 @@ namespace VBAi
                 throw new InvalidOperationException(UiText.Get("Configure the API key for ") + provider.Name + UiText.Get(" in VBAi settings."));
             http = handler == null ? new HttpClient(HttpHandlerFactory()) : new HttpClient(handler);
             http.Timeout = TimeSpan.FromSeconds(120);
+        }
+
+        /// <summary>Refuses nonfinite or out-of-range optional sampling before constructing an HTTP transport.</summary>
+        private static void RequireOllamaSampling(double? configured, double minimum, double maximum, bool excludeMinimum, string name)
+        {
+            if (configured.HasValue && (Double.IsNaN(configured.Value) || Double.IsInfinity(configured.Value) ||
+                configured.Value < minimum || configured.Value > maximum || (excludeMinimum && configured.Value == minimum)))
+                throw new InvalidOperationException(name + " must be finite and within the supported Ollama sampling range.");
         }
 
         /// <summary>Nom du modèle accompagné de l’hôte ou du fournisseur.</summary>
@@ -174,6 +191,11 @@ namespace VBAi
                 if (!provider.Local) data["tool_choice"] = "auto";
                 if (provider.Name == "OpenAI API") data["store"] = false;
                 if (streaming) data["stream"] = true;
+                if (provider.IsOllama)
+                {
+                    if (ollamaTemperature.HasValue) data["temperature"] = ollamaTemperature.Value;
+                    if (ollamaTopP.HasValue) data["top_p"] = ollamaTopP.Value;
+                }
                 payload = data;
             }
             using (var request = new HttpRequestMessage(HttpMethod.Post, endpoint))
