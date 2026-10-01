@@ -5,8 +5,6 @@ namespace VBAi.Tests.Unit
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
-    using System.Net;
-    using System.Net.Http;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -14,6 +12,7 @@ namespace VBAi.Tests.Unit
     using System.Windows;
     using VBAi;
     using VBAi.Tests.Integration;
+    using VBAi.Tests.Infrastructure.Diagnostics;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Forms = System.Windows.Forms;
 
@@ -28,7 +27,7 @@ namespace VBAi.Tests.Unit
             string model = Environment.GetEnvironmentVariable("VBAi_TEST_OLLAMA_MODEL") ?? "qwen2.5:3b";
             var provider = LlmProvider.All.Single(item => item.IsOllama);
             using (var runtime = new RuntimeScope())
-            using (var wire = new OllamaWireScope())
+            using (var wire = OllamaSyntheticWireCapture.ForUiFixture())
             {
                 runtime.Settings.ProviderName = provider.Name;
                 runtime.Settings.OllamaEndpoint = OllamaQualificationEndpoint.Resolve().AbsoluteUri;
@@ -204,140 +203,5 @@ namespace VBAi.Tests.Unit
             Assert.IsTrue(completed(), "Ollama UI timeout at " + stage + "; status=" + Get<Forms.Label>(window, "status").Text);
         }
 
-        // Optional qualification instrumentation. It observes bytes as the production parser reads
-        // them, without eagerly reading the response, replacing it, or logging authentication headers.
-        private sealed class OllamaWireScope : IDisposable
-        {
-            private readonly Func<HttpMessageHandler> previous = LlmChatClient.HttpHandlerFactory;
-            private readonly bool enabled = Environment.GetEnvironmentVariable("VBAi_OLLAMA_UI_CAPTURE_WIRE") == "1";
-            internal OllamaWireScope()
-            {
-                if (!enabled) return;
-                string root = Environment.GetEnvironmentVariable("VBAi_OLLAMA_UI_RESULTS") ??
-                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ollama-ui-diagnostics");
-                Directory.CreateDirectory(root);
-                LlmChatClient.HttpHandlerFactory = () => {
-                    var inner = previous();
-                    Assert.IsInstanceOfType<HttpClientHandler>(inner, "Wire capture must retain the real HTTP transport.");
-                    Assert.IsFalse(((HttpClientHandler)inner).AllowAutoRedirect);
-                    return new OllamaWireHandler(inner, root);
-                };
-            }
-            public void Dispose() { if (enabled) LlmChatClient.HttpHandlerFactory = previous; }
-        }
-
-        private sealed class OllamaWireHandler : DelegatingHandler
-        {
-            private readonly string root;
-            private readonly Uri selectedEndpoint;
-            internal OllamaWireHandler(HttpMessageHandler inner, string root) : base(inner)
-            { this.root = root; selectedEndpoint = OllamaQualificationEndpoint.Resolve(); }
-            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
-            {
-                OllamaQualificationEndpoint.RequireWireUri(request.RequestUri, selectedEndpoint);
-                string prefix = Path.Combine(root, "wire-" + Guid.NewGuid().ToString("N"));
-                if (request.Content != null)
-                {
-                    // The client creates StringContent; observing it does not consume the network stream.
-                    byte[] bytes = await request.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
-                    SaveWire(prefix + "-request.json", bytes.Take(OllamaTeeStream.Limit).ToArray());
-                }
-                var response = await base.SendAsync(request, token).ConfigureAwait(false);
-                SaveWire(prefix + "-metadata.json", Encoding.UTF8.GetBytes(new JavaScriptSerializer().Serialize(new {
-                    Utc = DateTime.UtcNow.ToString("o"), Method = request.Method.Method,
-                    Path = request.RequestUri.AbsolutePath, Status = (int)response.StatusCode,
-                    LoopbackPort = selectedEndpoint.Port,
-                    ContentType = response.Content?.Headers.ContentType?.ToString(),
-                    Mvid = typeof(LlmChatClient).Module.ModuleVersionId.ToString("D"),
-                    Scope = "Synthetic fixture bodies only; no headers, credentials or user history recorded",
-                    CaptureByteLimit = OllamaTeeStream.Limit
-                })));
-                if (response.Content != null) response.Content = new OllamaWireContent(response.Content, prefix);
-                return response;
-            }
-        }
-
-        private static void SaveWire(string path, byte[] bytes)
-        {
-            try { File.WriteAllBytes(path, bytes); }
-            catch (Exception error) { Console.WriteLine("Passive Ollama capture failed: " + error.GetType().Name); }
-        }
-
-        private sealed class OllamaWireContent : HttpContent
-        {
-            private readonly HttpContent original;
-            private readonly string prefix;
-            private Stream stream;
-            internal OllamaWireContent(HttpContent original, string prefix)
-            {
-                this.original = original; this.prefix = prefix;
-                foreach (var header in original.Headers) Headers.TryAddWithoutValidation(header.Key, header.Value);
-            }
-            protected override async Task<Stream> CreateContentReadStreamAsync()
-            {
-                return stream ?? (stream = new OllamaTeeStream(await original.ReadAsStreamAsync().ConfigureAwait(false), prefix));
-            }
-            protected override async Task SerializeToStreamAsync(Stream target, TransportContext context)
-            { await (await CreateContentReadStreamAsync().ConfigureAwait(false)).CopyToAsync(target).ConfigureAwait(false); }
-            protected override bool TryComputeLength(out long length) { length = 0; return false; }
-            protected override void Dispose(bool disposing)
-            {
-                if (disposing) { stream?.Dispose(); original.Dispose(); }
-                base.Dispose(disposing);
-            }
-        }
-
-        private sealed class OllamaTeeStream : Stream
-        {
-            internal const int Limit = 1024 * 1024;
-            private readonly Stream inner;
-            private readonly string prefix;
-            private readonly MemoryStream captured = new MemoryStream();
-            private readonly object captureGate = new object();
-            private long observed;
-            private bool ended, disposed;
-            internal OllamaTeeStream(Stream inner, string prefix) { this.inner = inner; this.prefix = prefix; }
-            private int Observe(byte[] buffer, int offset, int count)
-            {
-                lock (captureGate)
-                {
-                    if (disposed) return count;
-                    observed += count; ended |= count == 0;
-                    int keep = Math.Min(count, Limit - (int)captured.Length);
-                    if (keep > 0) captured.Write(buffer, offset, keep);
-                }
-                return count;
-            }
-            public override int Read(byte[] buffer, int offset, int count) { return Observe(buffer, offset, inner.Read(buffer, offset, count)); }
-            public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken token)
-            { return Observe(buffer, offset, await inner.ReadAsync(buffer, offset, count, token).ConfigureAwait(false)); }
-            protected override void Dispose(bool disposing)
-            {
-                if (disposing)
-                {
-                    lock (captureGate)
-                    {
-                        if (disposed) return;
-                        disposed = true;
-                        SaveWire(prefix + "-response.bin", captured.ToArray());
-                        SaveWire(prefix + "-read-summary.json", Encoding.UTF8.GetBytes(new JavaScriptSerializer().Serialize(new {
-                            ObservedBytes = observed, CapturedBytes = captured.Length, Truncated = observed > Limit, EndOfStreamObserved = ended
-                        })));
-                        captured.Dispose();
-                    }
-                    inner.Dispose();
-                }
-                base.Dispose(disposing);
-            }
-            public override bool CanRead => inner.CanRead;
-            public override bool CanSeek => false;
-            public override bool CanWrite => false;
-            public override long Length => throw new NotSupportedException();
-            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
-            public override void Flush() => inner.Flush();
-            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-            public override void SetLength(long value) => throw new NotSupportedException();
-            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-        }
     }
 }
