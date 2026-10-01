@@ -350,6 +350,29 @@ records no cleanup replay. Separately authorized owned cleanup preserves
 then observes forced exit **-1**. No additional Quit, setter or Save is issued;
 normal exit and metadata persistence remain unqualified.
 
+### Current v6: Word/PowerPoint adapter and diagnostic guard batches
+
+`word-powerpoint-v6/word-powerpoint-v6.trx` records **1 passed, 1 failed,
+0 skipped**, runner exit **1**, product `8f2315d` and tests `3605605`.
+PowerPoint module/class/form adapter-only Save and fresh disk reopen pass;
+owned cleanup records one Quit and normal exit **0**. Word also reaches its
+fresh source/form readback, but final owned Word **28700** fails the bounded
+exit wait after its single Quit and retains its original process handle.
+The original complete case stays failed. Subsequent process absence is
+recorded separately with exit code **NOT_OBSERVED**, no force termination or
+additional Quit/mutation; it does not qualify normal shutdown.
+
+`diagnostic-guards-v6/diagnostic-guards.trx` records **30 passed, 0 failed,
+0 skipped**, runner exit **0**, tests `28c0565` against the frozen installed
+product. These are detached paired-export and teardown-gate/controller guards,
+not native Office or global coverage evidence. The prepared CDB teardown
+preflight remains failed in both `teardown-preflight/` and
+`teardown-preflight-v2/`: the initial fatal handler is first-chance-only;
+the next helper exposes no exception context and exits zero after debugger
+detach. Normal helper detach/exit passes, but neither failed preflight permits
+Office attachment. Their original reports/logs remain preserved. No native
+array teardown diagnostic has run at this checkpoint.
+
 ### Preceding Monaco-status candidate: complete managed acceptance
 
 Source `d7a1c75d90d840949cc78606f2ae55b14e93ec55`, MVID

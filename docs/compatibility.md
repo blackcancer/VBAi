@@ -57,7 +57,9 @@ so fresh-disk reopen is NOT_RUN; authorized force cleanup and retained stable
 database copies do not qualify persistence. External HelpFile production CLR and
 raw IDispatch PUT setters both return normally, but both fresh-disk reopen values
 are altered through descriptor, CLR binder and raw IDispatch getters. Those hosts
-exit normally, yet exact metadata persistence fails. Raw HelpContextID is NOT_RUN;
+exit normally, yet exact metadata persistence fails. The later raw HelpContextID
+PUT returns HRESULT 0 and live value 321 after verified Save but fails bounded
+exit; disk reopen is NOT_RUN and authorized forced cleanup preserves the failure;
 the earlier HRESULTs and altered BSTR cause remain unexplained, without a
 conversion heuristic or causal product fix. The initial Publisher trial verifies the exact sole
 publication/persistence identity but fails the active-project startup guard with

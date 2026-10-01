@@ -42,7 +42,10 @@ external CLR setter case. Both initial hosts fail normal exit; fresh-disk reopen
 is NOT_RUN. Authorized force cleanup preserves stable database copies but does
 not qualify persistence. External HelpFile setters return through both production
 CLR and raw IDispatch PUT, yet both fresh-disk reopen values are altered through
-all three getters. Raw HelpContextID is NOT_RUN. No conversion heuristic or causal
+all three getters. The later raw HelpContextID PUT also returns successfully with
+live value 321 and verified Save, but fails bounded exit and disk reopen remains
+NOT_RUN. Its retained copy and authorized force cleanup do not qualify normal
+exit. No conversion heuristic or causal
 product fix is established. The initial current Publisher batch fails its active-project
 startup guard despite exact disposable-document/persistence identity, before
 baseline edits or product Save. Its independently guarded, authorized window
