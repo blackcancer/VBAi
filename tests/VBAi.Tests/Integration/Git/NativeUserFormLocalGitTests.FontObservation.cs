@@ -48,7 +48,7 @@ namespace VBAi.Tests.Integration
         }
 
         /// <summary>Separates the original refusal, read-only observation and optional single font correction in owned fixtures.</summary>
-        private void RunFontObservation(string layout, bool restoreFonts, bool assignOwner = false, bool useBridge = false, bool persistedFont = false)
+        private void RunFontObservation(string layout, bool restoreFonts, bool assignOwner = false, bool useBridge = false, bool persistedFont = false, bool distinctFace = false)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1" ||
                 Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_LOCAL_GIT_TESTS") != "1" ||
@@ -67,6 +67,7 @@ namespace VBAi.Tests.Integration
                 ["AssignNativeFontOwnerRequested"] = assignOwner,
                 ["OwnerStaFontCommandsRequested"] = useBridge,
                 ["PersistedFontLoadRequested"] = persistedFont,
+                ["DistinctFontFaceChangeAndRestorationRequested"] = distinctFace,
                 ["Scope"] = "Saved/reopened baseline; one native Apply attempt; read-only Font observation and optional single explicit font restoration. No repeated import, setter retry, post-import Save or macro execution. This diagnostic does not qualify successful production import."
             };
             string evidence = Path.Combine(output, "font-observation.json");
@@ -105,9 +106,11 @@ namespace VBAi.Tests.Integration
                         report["FontDifferences"] = DescribeNativeDifferences(fontBefore, fontAfter);
                         if (restoreFonts)
                         {
-                            report["FontAssignmentsRequestedAfterImport"] = (layout == "FrameMultiPage" ? 2 : 1) * (persistedFont ? 2 : useBridge ? 6 : 8);
+                            report["FontAssignmentsRequestedAfterImport"] = (layout == "FrameMultiPage" ? 2 : 1) *
+                                (distinctFace ? (persistedFont ? 4 : 2) : persistedFont ? 2 : useBridge ? 6 : 8);
                             report["Stage"] = "one-explicit-font-restoration";
                             write();
+                            if (distinctFace) host.RestoreGitFontFacesThroughDistinctValues(form, layout, fontBefore);
                             if (persistedFont)
                             {
                                 host.RestoreGitLayoutPersistedFonts(form, layout, fontBefore);
@@ -116,7 +119,7 @@ namespace VBAi.Tests.Integration
                                 write();
                             }
                             else if (useBridge) host.RestoreGitLayoutFontsViaBridge(form, layout, fontBefore);
-                            else host.RestoreGitLayoutFonts(form, layout, fontBefore, assignOwner);
+                            else if (!distinctFace) host.RestoreGitLayoutFonts(form, layout, fontBefore, assignOwner);
                             fontAfter = host.ReadGitLayoutFonts(form, layout);
                             report["NativeFontsAfterExplicitRestoration"] = fontAfter;
                             report["FontDifferencesAfterExplicitRestoration"] = DescribeNativeDifferences(fontBefore, fontAfter);
@@ -145,6 +148,19 @@ namespace VBAi.Tests.Integration
         public void NativePersistedFontLoadAfterOneImportPreservesExactSnapshot(string layout)
         {
             RunFontObservation(layout, true, persistedFont: true);
+        }
+
+        /// <summary>Separates an actual font change/restore notification from no-op property assignments.</summary>
+        [STATestMethod]
+        [DataRow("LabelButton", false)]
+        [DataRow("Image", false)]
+        [DataRow("FrameMultiPage", false)]
+        [DataRow("LabelButton", true)]
+        [DataRow("Image", true)]
+        [DataRow("FrameMultiPage", true)]
+        public void DistinctNativeFontFaceRestorationPreservesExactSnapshot(string layout, bool loadPersisted)
+        {
+            RunFontObservation(layout, true, persistedFont: loadPersisted, distinctFace: true);
         }
     }
 }

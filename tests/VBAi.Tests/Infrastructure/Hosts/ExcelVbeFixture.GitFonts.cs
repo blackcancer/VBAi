@@ -67,6 +67,35 @@ namespace VBAi.Tests.Integration
             }
         }
 
+        /// <summary>Diagnoses a declared face change and restoration, with fresh revisions and no setter replay.</summary>
+        internal void RestoreGitFontFacesThroughDistinctValues(string form, string layout, IDictionary<string, object> expected)
+        {
+            object project = null;
+            string projectName;
+            try { project = ((dynamic)workbook).VBProject; projectName = Convert.ToString(((dynamic)project).Name); }
+            finally { Release(project); }
+            string[] owners = layout == "FrameMultiPage" ? new[] { "Form", "Frame" } : new[] { "Form" };
+            foreach (string owner in owners)
+            {
+                string original = Convert.ToString(expected[owner + ".Font.Name"]);
+                string distinct = string.Equals(original, "Arial", StringComparison.OrdinalIgnoreCase) ? "Tahoma" : "Arial";
+                foreach (string value in new[] { distinct, original })
+                {
+                    var tree = GitLayoutCommandData(Command(new { Command = "form_tree", Project = projectName, Form = form }));
+                    if (owner == "Form")
+                        GitLayoutCommandData(Command(new { Command = "set_form_property", Project = projectName, Form = form,
+                            ExpectedFormVersion = tree["TreeVersion"], Property = "Font.Name", Value = value }));
+                    else
+                    {
+                        var frame = ((object[])tree["Controls"]).Select(VbeBridgeClient.Object)
+                            .Single(node => Convert.ToString(node["Name"]) == "QualificationExtra");
+                        GitLayoutCommandData(Command(new { Command = "set_form_node_property", Project = projectName, Form = form,
+                            ControlPath = frame["Path"], ExpectedTreeVersion = tree["TreeVersion"], Property = "Font.Name", Value = value }));
+                    }
+                }
+            }
+        }
+
         /// <summary>Assigns each declared native font member once; no setter is retried after an uncertain result.</summary>
         private static void AssignGitFontOnce(object owner, string prefix, IDictionary<string, object> expected, bool assignOwner)
         {
