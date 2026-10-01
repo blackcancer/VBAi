@@ -296,6 +296,8 @@ namespace VBAi
         /// <summary>Valide puis enregistre les réglages et ferme la fenêtre en cas de succès.</summary>
         private void Save()
         {
+            double? previousOllamaTemperature = settings?.OllamaTemperature;
+            double? previousOllamaTopP = settings?.OllamaTopP;
             try
             {
                 CaptureDraft();
@@ -336,6 +338,11 @@ namespace VBAi
             }
             catch (Exception ex)
             {
+                if (settings != null)
+                {
+                    settings.OllamaTemperature = previousOllamaTemperature;
+                    settings.OllamaTopP = previousOllamaTopP;
+                }
                 ShowNotice(this, ex.Message, UiText.Get("VBAi settings"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }

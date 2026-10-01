@@ -1,5 +1,48 @@
 # Recorded validation
 
+## Ollama configured integration before catalogue completion (2026-10-01)
+
+Candidate `799ccef288178d266b560158dd3171330b7313af`, product MVID
+`919d83d8-40a6-4f1c-8048-2072876c0aa9`, SHA-256
+`9B6A998776520FAA2C328A223E50EE604FDD9DA23E9E1245A9D290ED20F3744E`,
+uses the isolated verified `qwen2.5:7b-instruct` model, manifest digest
+`845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e`,
+Ollama `0.34.4`, context 8192, one parallel request, temperature 0 and top-p 0.8.
+Seven captured chat bodies independently verify the explicit sampling fields.
+No personal settings, credentials or macro source are used as inputs.
+
+All scenarios are prepared before the complete batch. It reports
+**3479 passed / 1 failed / 115 conditional skips / 3595 total**, exit **1**.
+All four real Ollama scenarios pass: exact scalar synthetic tool arguments and
+result consumption, first-fragment cancellation/recovery, shown chat streaming,
+Stop and next-send, and native read-only Excel module inspection. The aggregate
+fails the complete-language catalogue test because the new settings strings are
+not yet present in every language; it is not reported as a green managed gate.
+
+The Excel scenario reads a random marker absent from the prompt through exactly
+one real `read_module` call. The full source hashes are equal before and after;
+no macro runs and the unsaved disposable workbook is closed. The original handle
+observes Excel PID 37324 exiting normally with code 0 after COM release.
+This is external test-STA dispatch through production tools, not qualification
+of the installed bridge or embedded assistant. The installed DLL is unchanged.
+Coverage includes `[VBAi]*`: **98.38% lines / 96.61% branches**, with conditional
+native/authenticated-provider scenarios still excluded by their explicit opt-ins.
+No coverage exclusion is added.
+
+Evidence is `artifacts/qualification-v1/followup-20260930/ollama-final-acceptance/`
+(`full-managed-and-ollama.trx`, `offline-final-acceptance-review.json`, native
+Excel readback, bounded synthetic wire, coverage and terminal manifests).
+The source and product/test hashes remain unchanged; the exact owned helper
+is stopped once after terminal requests, with no backend retained.
+The later catalogue completion and sampling-save restoration require a new gate.
+
+The preceding Qwen3 4B aggregate remains failed: the shown chat and cancellation
+pass, but the exact echo marker is altered. The independent supported comparison
+also alters the marker with temperature 0 or 0.7 and top-p 0.8. The first
+logprobs comparison receives HTTP 400 because that model/backend refuses tools
+plus streaming plus logprobs; VBAi never sends this diagnostic option. These
+controls do not establish the cause of historical unobserved generations.
+
 ## Current-main Ollama aggregate before configuration correction (2026-10-01)
 
 The complete suite on test source `f15c48a` and product source main `2f28018`

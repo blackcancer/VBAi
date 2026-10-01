@@ -81,6 +81,18 @@ correction is prepared. Original payload hashes and installed DLL remain
 unchanged. These observations neither qualify the new native product nor
 close Q-028. See recorded validation for exact counters and evidence.
 
+Configured candidate `799ccef` adds optional persisted Ollama sampling and a
+shared qualification selector for the headless, detached UI and native Excel
+scenarios. The selected `qwen2.5:7b-instruct` profile explicitly sends temperature
+0 and top-p 0.8, using an isolated context of 8192 and one parallel request.
+Its four live scenarios pass, including a random unprompted marker read through
+the real Excel tools with unchanged source and normal owned-host shutdown.
+The aggregate still fails the language-catalogue completeness check. Completing
+the new translations and restoring in-memory sampling after a failed settings
+save require a subsequent complete gate. The installed product, embedded-host
+assistant and other model/provider combinations remain separate scopes. Earlier
+failed trials and their limits are retained in recorded validation.
+
 The Git menu, chat and LLM tools now share a compatible lookup of the native
 document key and the former uppercase key. A single existing binding is reused
 without moving or rewriting caches; two bindings or uncertain metadata refuse

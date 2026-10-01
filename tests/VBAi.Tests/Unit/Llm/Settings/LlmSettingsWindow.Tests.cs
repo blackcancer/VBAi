@@ -86,6 +86,59 @@ namespace VBAi.Tests.Unit
     public sealed class OllamaSamplingSettingsWindowTests
     {
         [STATestMethod]
+        public void SamplingWriteFailureRestoresSharedValuesAndPreservesTheOriginalError()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var settings = new LlmSettings { ProviderName = "Ollama", OllamaTemperature = 0.7, OllamaTopP = 0.9 };
+                var original = new System.IO.IOException("Synthetic sampling settings write failure.");
+                int writes = 0;
+                LlmSettingsWindow.SelectNativeVbeTheme = enabled => { };
+                LlmSettingsWindow.WriteSettings = value => { writes++; throw original; };
+                using (var window = scope.Window(settings))
+                {
+                    LlmBoundaryScope.Get<TextBox>(window, "ollamaTemperature").Text = "0";
+                    LlmBoundaryScope.Get<TextBox>(window, "ollamaTopP").Text = "0.8";
+                    LlmBoundaryScope.Call(window, "Save");
+                    Assert.AreEqual(1, writes);
+                    Assert.AreEqual(0.7, settings.OllamaTemperature);
+                    Assert.AreEqual(0.9, settings.OllamaTopP);
+                    Assert.AreEqual(DialogResult.None, window.DialogResult);
+                    Assert.IsFalse(window.IsDisposed);
+                    Assert.AreEqual(1, scope.Notices.Count);
+                    Assert.AreEqual(original.Message, scope.Notices[0]);
+                }
+            }
+        }
+
+        [STATestMethod]
+        public void SamplingThemeFailureRestoresSharedValuesBeforeAnySettingsWrite()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var settings = new LlmSettings { ProviderName = "Ollama", OllamaTemperature = 0.7, OllamaTopP = 0.9 };
+                var original = new InvalidOperationException("Synthetic sampling theme failure.");
+                int selections = 0, writes = 0;
+                LlmSettingsWindow.SelectNativeVbeTheme = enabled => { selections++; throw original; };
+                LlmSettingsWindow.WriteSettings = value => { writes++; };
+                using (var window = scope.Window(settings))
+                {
+                    LlmBoundaryScope.Get<TextBox>(window, "ollamaTemperature").Text = "0";
+                    LlmBoundaryScope.Get<TextBox>(window, "ollamaTopP").Text = "0.8";
+                    LlmBoundaryScope.Call(window, "Save");
+                    Assert.AreEqual(0, writes);
+                    Assert.AreEqual(2, selections, "The existing theme rollback may fail once without masking the original error.");
+                    Assert.AreEqual(0.7, settings.OllamaTemperature);
+                    Assert.AreEqual(0.9, settings.OllamaTopP);
+                    Assert.AreEqual(DialogResult.None, window.DialogResult);
+                    Assert.IsFalse(window.IsDisposed);
+                    Assert.AreEqual(1, scope.Notices.Count);
+                    Assert.AreEqual(original.Message, scope.Notices[0]);
+                }
+            }
+        }
+
+        [STATestMethod]
         public void SamplingRowsFollowOllamaAndRetainUnsavedDraftsAcrossProviders()
         {
             using (var scope = new LlmBoundaryScope())
