@@ -27,8 +27,18 @@ namespace VBAi.Tests.Integration
             RunFontObservation(layout, true);
         }
 
+        /// <summary>Transfers the restored StdFont to the native owner once and verifies every comparison byte.</summary>
+        [STATestMethod]
+        [DataRow("LabelButton")]
+        [DataRow("Image")]
+        [DataRow("FrameMultiPage")]
+        public void NativeOwnedFontAssignmentAfterOneImportPreservesExactSnapshot(string layout)
+        {
+            RunFontObservation(layout, true, true);
+        }
+
         /// <summary>Separates the original refusal, read-only observation and optional single font correction in owned fixtures.</summary>
-        private void RunFontObservation(string layout, bool restoreFonts)
+        private void RunFontObservation(string layout, bool restoreFonts, bool assignOwner = false)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1" ||
                 Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_LOCAL_GIT_TESTS") != "1" ||
@@ -41,9 +51,10 @@ namespace VBAi.Tests.Integration
             const string form = "QualificationForm";
             var report = new Dictionary<string, object> {
                 ["Layout"] = layout, ["Stage"] = "STARTED", ["NativeImports"] = 0,
-                ["FontAssignmentsAfterImport"] = 0, ["MacroExecutions"] = 0, ["RemoteOperations"] = 0,
+                ["FontAssignmentsRequestedAfterImport"] = 0, ["MacroExecutions"] = 0, ["RemoteOperations"] = 0,
                 ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
                 ["RestoreFontsRequested"] = restoreFonts,
+                ["AssignNativeFontOwnerRequested"] = assignOwner,
                 ["Scope"] = "Saved/reopened baseline; one native Apply attempt; read-only Font observation and optional single explicit font restoration. No repeated import, setter retry, post-import Save or macro execution. This diagnostic does not qualify successful production import."
             };
             string evidence = Path.Combine(output, "font-observation.json");
@@ -82,10 +93,10 @@ namespace VBAi.Tests.Integration
                         report["FontDifferences"] = DescribeNativeDifferences(fontBefore, fontAfter);
                         if (restoreFonts)
                         {
-                            report["FontAssignmentsAfterImport"] = layout == "FrameMultiPage" ? 16 : 8;
+                            report["FontAssignmentsRequestedAfterImport"] = layout == "FrameMultiPage" ? 16 : 8;
                             report["Stage"] = "one-explicit-font-restoration";
                             write();
-                            host.RestoreGitLayoutFonts(form, layout, fontBefore);
+                            host.RestoreGitLayoutFonts(form, layout, fontBefore, assignOwner);
                             fontAfter = host.ReadGitLayoutFonts(form, layout);
                             report["NativeFontsAfterExplicitRestoration"] = fontAfter;
                             report["FontDifferencesAfterExplicitRestoration"] = DescribeNativeDifferences(fontBefore, fontAfter);

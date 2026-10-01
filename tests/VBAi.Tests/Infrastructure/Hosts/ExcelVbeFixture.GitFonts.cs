@@ -25,24 +25,24 @@ namespace VBAi.Tests.Integration
         }
 
         /// <summary>Restores observed font values once on the owned synthetic form after a terminal import diagnostic.</summary>
-        internal void RestoreGitLayoutFonts(string form, string layout, IDictionary<string, object> expected)
+        internal void RestoreGitLayoutFonts(string form, string layout, IDictionary<string, object> expected, bool assignOwner = false)
         {
             WithGitLayoutDesigner(form, (component, designer) => {
-                AssignGitFontOnce(designer, "Form.Font", expected);
+                AssignGitFontOnce(designer, "Form.Font", expected, assignOwner);
                 if (layout != "FrameMultiPage") return;
                 object controls = null, frame = null;
                 try
                 {
                     controls = ((dynamic)designer).Controls;
                     frame = ((dynamic)controls).Item("QualificationExtra");
-                    AssignGitFontOnce(frame, "Frame.Font", expected);
+                    AssignGitFontOnce(frame, "Frame.Font", expected, assignOwner);
                 }
                 finally { Release(frame); Release(controls); }
             });
         }
 
         /// <summary>Assigns each declared native font member once; no setter is retried after an uncertain result.</summary>
-        private static void AssignGitFontOnce(object owner, string prefix, IDictionary<string, object> expected)
+        private static void AssignGitFontOnce(object owner, string prefix, IDictionary<string, object> expected, bool assignOwner)
         {
             object font = null;
             try
@@ -56,6 +56,9 @@ namespace VBAi.Tests.Integration
                 ((dynamic)font).Strikethrough = Convert.ToBoolean(expected[prefix + ".Strikethrough"]);
                 ((dynamic)font).Charset = Convert.ToInt16(expected[prefix + ".Charset"]);
                 ((dynamic)font).Weight = Convert.ToInt16(expected[prefix + ".Weight"]);
+                // An external StdFont can be marshalled by value. The owner setter
+                // transfers the modified descriptor back into the actual designer.
+                if (assignOwner) ((dynamic)owner).Font = font;
             }
             finally { Release(font); }
         }
