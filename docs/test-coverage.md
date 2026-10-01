@@ -1,13 +1,86 @@
 # Recorded validation
 
-## Current installed v5: complete managed acceptance (2026-10-01)
+## Current installed v6: complete managed acceptance (2026-10-01)
+
+Product source `8f2315d04162f55b0956618f96b59d294a3fb681` includes the Monaco
+active-document status correction and explicitly authorized, disabled-by-default
+path/effective-token diagnostic. Installed MVID is
+`d8f31d57-8612-465e-871c-93a62f2b3eae`, SHA-256
+`C900BA09D92DA7CF50CC09033C63F5226DD04C18426CC386B30AF86EB0BA0941`.
+`artifacts/qualification-v1/followup-20260930/deployment-v6.json` records the
+exact installed hash and previous-payload/registration backup. The complete
+instrumented run returned **2,324 passed, 0 failed, 90 conditional skips,
+2,414 total**, runner exit **0**, in **496.570 seconds**. Individual TRX outcomes
+match the counters; the product hash is unchanged after the run.
+`managed-v6-path-diagnostic/candidate.json`, `full-managed.trx` and `terminal.json`
+retain exact source/test identities and terminal evidence.
+
+Raw managed `VBAi` coverage is **33,562/33,755 lines (99.43%)** and
+**33,975/34,487 branches (98.52%)**, from
+`managed-v6-path-diagnostic/d25f9f82-6146-4466-8c24-de444ccf25de/coverage.cobertura.xml`.
+Native/live-provider opt-ins were disabled; native C++, JavaScript and external
+host processes are not measured. Q-015 closes for this exact source/MVID/hash,
+not the conditional host/provider scopes. Coverage remains below the complete
+line/branch target. Earlier complete passes retain their own candidate scope.
+
+### Current v6: terminal owner-STA path diagnostic
+
+`path-visibility-v6-native/path-visibility-native.trx` records **1 passed,
+0 failed, 0 skipped**, with runner exit **0** in `terminal.json`. Owned Excel
+**39452**, native owner thread **50268**, STA and loaded v6 MVID are verified.
+The testhost's independently recorded PID/thread are **47476 / 15440**.
+The retained `hosts/25af21d96c284f149922af9015ea4fdf/path-visibility.json`
+compares both contexts before/after the single read-only bridge observation.
+
+Both direct GUID directories below LocalAppData and TEMP, and both fixed
+synthetic files, are visible through managed/native attribute reads. Attributes
+match the testhost before and after; synthetic file hashes are unchanged.
+`Directory.Exists=false` for the file rows is expected directory-only API
+behavior, not invisibility. All four native attribute calls succeed; their
+LastError values are not failure evidence. Owner-thread OpenThreadToken returns
+ERROR_NO_TOKEN (1008), so the recorded effective token is the primary token.
+Testhost/owner user SID, medium integrity and AuthenticationId match; before/after
+metadata is retained without credentials or token mutation. Owned Close/Quit and
+normal exit **0** are recorded under `hosts/a1cfa70532ca45439cce49fa97f8b6e7/`.
+No macro, export, source write, policy or permission change is performed.
+
+This qualifies the diagnostic only. It does not reproduce or explain the
+preceding `d5e25e25` export path/name-not-found observation in another owned Excel
+process, establish an EFS/ACL/token cause, or qualify native UserForm export.
+Q-027 remains open.
+
+### Preceding Monaco-status candidate: complete managed acceptance
+
+Source `d7a1c75d90d840949cc78606f2ae55b14e93ec55`, MVID
+`6a74af33-b2fd-4ff9-9133-475b53ae9e42`, SHA-256
+`FD39665BE5CCB4E5DE8166526892F760D8D4DF4D240A63C5DC7EBB9D98A660FB`, passes
+its complete instrumented suite: **2,298 passed, 0 failed, 88 conditional skips,
+2,386 total**, runner exit **0**, in **515.164 seconds**. The product hash is
+unchanged after execution. `managed-monaco-document-status/candidate.json`,
+`full-managed.trx` and `terminal.json` retain exact provenance; this isolated
+candidate was not the installed product during that run.
+
+Raw managed `VBAi` coverage is **33,385/33,571 lines (99.45%)** and
+**33,866/34,351 branches (98.59%)**, from
+`managed-monaco-document-status/452f31de-8922-460c-8b51-a643e84dfd46/coverage.cobertura.xml`.
+Native/live-provider opt-ins were disabled; C++ renderer, JavaScript and external
+host processes are excluded. Q-015 closes only for this candidate; it does not
+qualify the later v6 diagnostic binary or achieve the complete line/branch target.
+
+Separate checks on this same source/product record **46 Designer views** passing
+load, resize, child-property edits and serialization roundtrip in
+`designer-monaco-document-status/designers.json`, and **60 passed JavaScript
+language/editing checks, 0 failed or skipped** in `monaco-status-js.log`.
+Those checks do not measure native VBE embedding or application lifecycle.
+
+## Preceding v5: complete managed acceptance (2026-10-01)
 
 Initial product and test source `2e751618aa8d5be08ca0fa84d6ceff4d0b1312dc`
 implements the stable Access application/database-path/mapped-project identity
 guard while retaining owner-PID, VBE, selection, mode/protection, source and
 metadata checks. The isolated build completed without warnings or errors.
 Candidate `f9a36c85-1d9c-4a53-8645-06c99617b12c`, SHA-256
-`76524AC884247BEBC03B0A73E36AA1C96414CB650D98E9E74F11BCA5A4D068D1`, is now
+`76524AC884247BEBC03B0A73E36AA1C96414CB650D98E9E74F11BCA5A4D068D1`, was
 installed; `candidate-v5.json` and `deployment-v5.json` retain exact provenance
 and deployment/backup records.
 
@@ -27,8 +100,9 @@ Managed `VBAi` coverage is **33,378/33,564 lines (99.45%)** and
 Native/live-provider opt-ins were disabled. C++ renderer, JavaScript and external
 host processes are outside this measurement; conditional skips do not qualify
 those scopes. Q-015 is closed for this exact product/test pair. Coverage is below
-the requested complete line/branch target, and any subsequent product correction,
-including the pending Monaco status correction, requires a new complete gate.
+the requested complete line/branch target, and any subsequent product correction
+requires a new complete gate. The subsequent Monaco-status candidate above
+has its own complete result; current-v6 managed acceptance is recorded above.
 
 ### Initial v5 complete run: explained harness failures
 
@@ -53,7 +127,7 @@ host processes are not measured. Coverage does not convert this failed run
 into acceptance, and historical percentages below do not replace the current
 successful-run metrics.
 
-### Current v5: partial SOLIDWORKS 2025 native qualification
+### Preceding v5: partial SOLIDWORKS 2025 native qualification
 
 The explicitly selected SOLIDWORKS 2025 instance is **PID 35136**, actual COM
 revision **33.1.1**, with the exact installed v5 MVID/hash above. Launch and ROT
@@ -86,7 +160,8 @@ Reviewed `solidworks-2025-v5-code.png` shows the selected synthetic class and
 `Value = 42` rendered in Monaco. `solidworks-2025-v5-code-resize.json` records
 workspace fit after resize and verified restoration of the original placement.
 The capture also shows a stale closed-project warning despite the selected live
-class. Its correction and complete embedded assistant/UI acceptance are pending.
+class. The later Monaco-status correction has detached acceptance above;
+complete embedded assistant/UI acceptance remains pending on current v6.
 The reviewed `solidworks-2025-v5-real-designer.png` shows the actual designer and
 persisted label after a successful `open_form` response. Earlier artifacts named
 `solidworks-2025-v5-designer` were mislabeled: their attempted command was unknown
@@ -101,7 +176,7 @@ in `solidworks-2025-v5-normal-close.json`. SOLIDWORKS 2019's separate abnormal
 termination, strict SWP preservation and complete debugger/assistant acceptance
 remain unresolved; Q-014 remains open.
 
-### Current v5: terminal Access adapter campaign
+### Preceding v5: terminal Access adapter campaign
 
 `access-adapter-v5/access-adapter-v5.trx` and `terminal.json` record
 **5 passed, 2 failed, 0 skipped, 7 total**, runner exit **1**, on source
@@ -129,9 +204,37 @@ authorized force termination, exit **-1**, no Quit replay and no qualification
 pass. The exact disposable database is retained as
 `retained-reference-removal-Disposable.accdb`, SHA-256
 `FA91E9A79C1C6F3501054E4FB023DEB4D610BEA21BFD9E4BF9B49D06841E8EA3`.
-Q-012 remains partial; current-v5 Publisher acceptance is not established.
+Q-012 remains partial; v5 Publisher acceptance is not established, and no
+current-v6 adapter acceptance follows from this campaign.
 
-### Current v5: Publisher recovered-document startup failure
+### Preceding v5: terminal Access metadata getter diagnostic
+
+`metadata-getters-v5/metadata-getters.trx` and `terminal.json` record **1 passed,
+2 failed, 0 skipped, 3 total**, runner exit **1**, in **38 seconds**, against
+frozen product `f9a36c85` / SHA-256 `76524AC884247BEBC03B0A73E36AA1C96414CB650D98E9E74F11BCA5A4D068D1`
+and tests-only source `7645a5d`. The fresh read-only baseline passes; HelpFile
+save/reopen and HelpContextID mutation remain failed scenarios.
+
+Before and after the existing single adapter Save in owned Access **54560**,
+the descriptor, CLR binder and raw IDispatch HelpFile getters agree on the exact
+synthetic path: **164 characters / 328 BSTR bytes**. Fresh disk reopen in **37504**
+returns **82 characters / 164 BSTR bytes** through all three getters, with the
+same garbled Unicode. Raw BSTR bytes match the original path's host ANSI encoding;
+the raw VARIANT canary remains intact. These observations localize the altered
+value beyond a single managed getter conversion; they do not establish the
+native persistence mechanism or justify heuristic string repair.
+
+Runtime type information in the HelpContextID scope **26652** confirms both
+getter and setter use **VT_I4**, consistent with descriptor `System.Int32`.
+The existing setter nevertheless fails with **0xD09072B8**. Fresh baseline
+**26204**, both HelpFile processes and the HelpContextID process exit normally
+with code **0**. Getter snapshots are retained under `metadata-getters-v5/hosts/Access/`,
+including BeforeExistingMutation, AfterExistingMutation, AfterExistingSave and
+FreshDiskReopen phases. The getter probe adds no mutation or save to the existing
+scenarios; no conversion heuristic or product fix is applied. Q-012 remains
+partial, and this preceding-product diagnostic does not qualify current v6.
+
+### Preceding v5: Publisher recovered-document startup failure
 
 `publisher-adapter-v5/publisher-adapter-v5.trx` records **0 passed, 1 failed,
 5 skipped, 6 total**, runner exit **1**, on the same installed v5 product and

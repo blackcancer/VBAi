@@ -33,25 +33,34 @@ candidate beginning `F3C48EAEA590`. These are separate build observations, not a
 blanket qualification of v1.0.0. Full provenance and test totals belong in
 [recorded validation](test-coverage.md).
 
-The currently installed product, source `2e75161`, is MVID
-`f9a36c85-1d9c-4a53-8645-06c99617b12c`, SHA-256
-`76524AC884247BEBC03B0A73E36AA1C96414CB650D98E9E74F11BCA5A4D068D1`.
-`followup-20260930/deployment-v5.json` retains deployment and backup evidence.
-The stable Access application/PID, database-path and mapped/selected-project
-guard now passes adapter-only module/class, Description and Scripting-reference
-addition save/reopen, with exact source/metadata/reference readback and normal
-owned-process exits. HelpFile changes to garbled Unicode after fresh reopen;
-reference removal cannot reach disk readback because initial Quit does not exit
-within the fixture deadline. That database is preserved and receives one
-authorized forced cleanup without Quit replay. Neither operation is qualified.
-HelpContextID and current-v5 Publisher metadata/reference scopes remain open.
-The complete current-v5 managed rerun passes after tests-only harness corrections;
-the original failed run remains recorded separately. Publisher's new campaign
-stops during preparation because a recovered publication is mistaken for the
-new disposable document. Its save scopes remain unqualified. No whole-host
-qualification follows from these scoped Access passes.
+The currently installed product, source `8f2315d`, is MVID
+`d8f31d57-8612-465e-871c-93a62f2b3eae`, SHA-256
+`C900BA09D92DA7CF50CC09033C63F5226DD04C18426CC386B30AF86EB0BA0941`.
+`followup-20260930/deployment-v6.json` retains deployment and backup evidence.
+Its complete instrumented suite passes with unchanged product hash. This is
+managed acceptance for this exact binary; native/provider skips remain separate
+scopes. Preceding Monaco-status `6a74af33` and v5 `f9a36c85` results retain their
+own candidate identities. The current
+native owner-STA diagnostic sees both fixed synthetic LocalAppData/TEMP GUID
+directories and files with attributes matching the testhost, effective primary
+token evidence and normal owned Excel exit. This read-only result does not
+explain the earlier export path-not-found observation or qualify export; Q-027
+remains open. No other current-v6 host mutation/lifecycle acceptance is claimed.
 
-The preceding installed product is MVID
+On preceding v5, source `2e75161`, MVID `f9a36c85`, the stable Access
+application/PID, database-path and mapped/selected-project guard passes scoped
+module/class, Description and reference-addition save/reopen with exact readback
+and normal exits. HelpFile is altered after fresh reopen through descriptor,
+CLR binder and raw IDispatch despite intact raw VARIANT canary. Native
+HelpContextID getter/setter type metadata confirms I4, but the setter fails.
+No heuristic getter repair or product correction is inferred. Reference removal
+cannot reach disk readback because initial Quit fails to exit; its preserved
+database and authorized forced cleanup do not qualify persistence. Publisher's
+campaign stops during preparation because a recovered publication is mistaken
+for the disposable document. HelpFile, HelpContextID, reference removal and
+Publisher save scopes remain unqualified; no whole-host qualification follows.
+
+The earlier v4 installed product is MVID
 `d5e25e25-e3b4-4be0-ad45-a2dceb7be6b1`, with deployment and backup records in
 `followup-20260930/deployment-v4.json`. Its Excel declared-scalar page passes
 native Long/String/Boolean readback, unsupported array/Variant/object refusal,
@@ -74,7 +83,12 @@ return-to-code and designer/code resize passed. Later class-source drift remains
 unproven and unmodified. ExitApp stalled at native heap corruption `0xc0000374`;
 authorized force/debugger cleanup ended the retained target without an observed
 normal exit code. That cleanup does not qualify lifecycle behavior or establish
-the crash cause. Current-v5 SOLIDWORKS 2019/2025 acceptance remains NOT_RUN.
+the crash cause. Preceding v5 `f9a36c85` separately passes scoped 2025 load,
+disposable source/form preparation, compile, verified Save, content reload and
+normal exit. Its strict post-execution SWP byte-preservation trial remains failed.
+A genuine reviewed designer capture is distinct from earlier mislabeled code
+captures, and the resize helper measures Monaco rather than designer geometry.
+Current-v6 SOLIDWORKS 2019/2025 acceptance remains NOT_RUN.
 Exact provenance and terminal outcomes belong in recorded validation.
 
 A controlled UserForm export on preceding `d5e25e25` still fails under the
@@ -83,7 +97,7 @@ parent-open path/name-not-found statuses for the exact existing GUID child,
 despite a root synthetic write/read succeeding. A disposable non-Office CDB
 preflight and verified debugger detach qualify the diagnostic tool only;
 normal Excel exit is not export acceptance. The trace does not establish an
-EFS, ACL or token cause and adds no current-v5 export qualification. Q-027
+EFS, ACL or token cause and adds no current-v6 export qualification. Q-027
 remains open.
 
 The later `office-prerequisites-ready` and `outlook-ready` runs used loaded MVID
@@ -199,7 +213,10 @@ component, active-window, mode and protection guards and revalidation after
 renderer capture. It preserves an explicitly selected Monaco tab while the
 native pane is unchanged. The `d5e25e25` 2019 return-to-code captures verify the
 activated module/class in Monaco; a mere project-tree selection without native
-code activation is outside that following path. Chat
+code activation is outside that following path. Source `d7a1c75` corrects a
+closed background document overwriting the selected Monaco tab's status, with
+separate detached/managed acceptance; current-v6 native UI acceptance of this
+correction remains open. Chat
 project scope deliberately remains independent of editor selection; when its
 project closes, the scope should clear and sending should become unavailable.
 
