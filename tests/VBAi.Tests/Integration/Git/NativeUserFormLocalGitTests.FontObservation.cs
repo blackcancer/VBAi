@@ -48,7 +48,7 @@ namespace VBAi.Tests.Integration
         }
 
         /// <summary>Separates the original refusal, read-only observation and optional single font correction in owned fixtures.</summary>
-        private void RunFontObservation(string layout, bool restoreFonts, bool assignOwner = false, bool useBridge = false, bool persistedFont = false, bool distinctFace = false)
+        private void RunFontObservation(string layout, bool restoreFonts, bool assignOwner = false, bool useBridge = false, bool persistedFont = false, bool distinctFace = false, bool distinctObject = false)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1" ||
                 Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_LOCAL_GIT_TESTS") != "1" ||
@@ -68,6 +68,7 @@ namespace VBAi.Tests.Integration
                 ["OwnerStaFontCommandsRequested"] = useBridge,
                 ["PersistedFontLoadRequested"] = persistedFont,
                 ["DistinctFontFaceChangeAndRestorationRequested"] = distinctFace,
+                ["DistinctFontObjectRequested"] = distinctObject,
                 ["Scope"] = "Saved/reopened baseline; one native Apply attempt; read-only Font observation and optional single explicit font restoration. No repeated import, setter retry, post-import Save or macro execution. This diagnostic does not qualify successful production import."
             };
             string evidence = Path.Combine(output, "font-observation.json");
@@ -113,7 +114,7 @@ namespace VBAi.Tests.Integration
                             if (distinctFace) host.RestoreGitFontFacesThroughDistinctValues(form, layout, fontBefore);
                             if (persistedFont)
                             {
-                                host.RestoreGitLayoutPersistedFonts(form, layout, fontBefore);
+                                host.RestoreGitLayoutPersistedFonts(form, layout, fontBefore, distinctObject);
                                 var withoutGetters = Capture(project, output, "after-persisted-font-before-getters");
                                 report["ExactSnapshotBeforeFontGetter"] = before.SameAs(withoutGetters);
                                 write();
@@ -161,6 +162,19 @@ namespace VBAi.Tests.Integration
         public void DistinctNativeFontFaceRestorationPreservesExactSnapshot(string layout, bool loadPersisted)
         {
             RunFontObservation(layout, true, persistedFont: loadPersisted, distinctFace: true);
+        }
+
+        /// <summary>Distinguishes a new font identity from in-place loads, with and without a change notification.</summary>
+        [STATestMethod]
+        [DataRow("LabelButton", false)]
+        [DataRow("Image", false)]
+        [DataRow("FrameMultiPage", false)]
+        [DataRow("LabelButton", true)]
+        [DataRow("Image", true)]
+        [DataRow("FrameMultiPage", true)]
+        public void DistinctPersistedFontObjectAssignmentPreservesExactSnapshot(string layout, bool primeFace)
+        {
+            RunFontObservation(layout, true, persistedFont: true, distinctFace: primeFace, distinctObject: true);
         }
     }
 }
