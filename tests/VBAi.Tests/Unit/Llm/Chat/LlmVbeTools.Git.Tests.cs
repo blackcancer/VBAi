@@ -140,5 +140,100 @@ namespace VBAi.Tests.Unit
                 finally { MacroGitOperations.CacheDirectory=prior; }
             }
         }
+
+        [DataTestMethod, DataRow("MixedCase\\Classeur.xlsm", false), DataRow("MixedCase\\Classeur.xlsm", true)]
+        [DataRow("Développement\\ClasseurÉté.xlsm", false), DataRow("Développement\\ClasseurÉté.xlsm", true)]
+        public async Task DefaultOpenGitReadsAndMutatesTheExistingUiCacheWithoutFactoryOrCaseRekeying(string suffix, bool legacy)
+        {
+            using (var f = new Fixture())
+            {
+                var priorOperations = MacroGitOperations.CacheDirectory; var priorUi = GitWindow.CacheDirectory;
+                try
+                {
+                    string nativeScope = Path.GetFullPath(Path.Combine(f.Root, suffix));
+                    Func<string, string> rawCache = key => Path.Combine(f.Root, "scope-cache", Path.GetFileName(MacroGitRepository.ScopeDirectory(key)));
+                    var lookups = new List<string>();
+                    GitWindow.CacheDirectory = key => MacroGitRepository.ResolveScopeDirectory(key, rawCache, File.GetAttributes);
+                    MacroGitOperations.CacheDirectory = key => { lookups.Add(key); return GitWindow.CacheDirectory(key); };
+                    string boundCache = rawCache(legacy ? nativeScope.ToUpperInvariant() : nativeScope);
+                    string alternate = rawCache(legacy ? nativeScope : nativeScope.ToUpperInvariant());
+                    Directory.CreateDirectory(boundCache);
+                    byte[] binding = System.Text.Encoding.UTF8.GetBytes(Json.Serialize(new { Remote = "https://github.com/fixture/repository.git", Branch = "main" }));
+                    File.WriteAllBytes(Path.Combine(boundCache, "binding.json"), binding);
+                    Assert.AreEqual(boundCache, GitWindow.CacheDirectory(nativeScope), "The UI and tools must find the same persisted binding.");
+                    var vbe = new ToolGitVbe(); var host = new ToolGitProject { Name = "P", FileName = nativeScope };
+                    host.VBComponents.Add(new global::FakeComponent("Module1", 1, "Attribute VB_Name = \"Module1\"\nOption Explicit\n")); vbe.VBProjects.Add(host);
+                    var tools = new LlmVbeTools(new VbeSession(vbe), null, new LlmSettings { VbeEditApproval = "Automatic" }) { BoundProject = "P" };
+                    Assert.IsNull(tools.GitOperationsFactory);
+                    string state = (string)(await Status(tools))["State"];
+                    var result = Response(await tools.InvokeAsync("git_pr_prepare", Json.Serialize(new { Project = "P", ExpectedState = state,
+                        Name = "main", Text = "Local disposable draft", Choice = "Synthetic body; never publish" })));
+                    Assert.IsTrue(result.Ok, result.Error);
+                    CollectionAssert.AreEqual(new[] { nativeScope, nativeScope }, lookups.ToArray());
+                    Assert.IsFalse(Directory.Exists(alternate), "Lookup must not create or migrate an alternate cache.");
+                    CollectionAssert.AreEqual(binding, File.ReadAllBytes(Path.Combine(boundCache, "binding.json")));
+                    string draftPath = Directory.GetFiles(boundCache, "codex-pr-draft.json", SearchOption.AllDirectories).Single();
+                    Assert.AreEqual("Local disposable draft", Json.Deserialize<GitPullDraft>(File.ReadAllText(draftPath)).Title);
+                    Assert.AreEqual(0, host.VBComponents.ImportAttempts); Assert.AreEqual(1, host.VBComponents.Cast<object>().Count());
+                }
+                finally { MacroGitOperations.CacheDirectory = priorOperations; GitWindow.CacheDirectory = priorUi; }
+            }
+        }
+
+        [DataTestMethod, DataRow("missing"), DataRow("ambiguous"), DataRow("directory")]
+        public async Task DefaultOpenGitRefusesMissingAmbiguousOrInvalidBindingWithoutCacheOrSourceMutation(string state)
+        {
+            using (var f = new Fixture())
+            {
+                var prior = MacroGitOperations.CacheDirectory;
+                try
+                {
+                    string nativeScope = Path.GetFullPath(Path.Combine(f.Root, "MixedCase", "ClasseurÉté.xlsm"));
+                    Func<string, string> rawCache = key => Path.Combine(f.Root, "scope-cache", Path.GetFileName(MacroGitRepository.ScopeDirectory(key)));
+                    MacroGitOperations.CacheDirectory = key => MacroGitRepository.ResolveScopeDirectory(key, rawCache, File.GetAttributes);
+                    string exact = rawCache(nativeScope), legacy = rawCache(nativeScope.ToUpperInvariant());
+                    foreach (string cache in state == "missing" ? new string[0] : new[] { exact, legacy })
+                    {
+                        Directory.CreateDirectory(cache);
+                        if (state == "directory" && cache == exact) Directory.CreateDirectory(Path.Combine(cache, "binding.json"));
+                        else File.WriteAllText(Path.Combine(cache, "binding.json"), Json.Serialize(new { Remote = "https://github.com/fixture/repository.git", Branch = "main" }));
+                    }
+                    var beforeFiles = Directory.GetFiles(f.Root, "*", SearchOption.AllDirectories).ToDictionary(path => path, File.ReadAllBytes);
+                    var beforeDirectories = Directory.GetDirectories(f.Root, "*", SearchOption.AllDirectories);
+                    var vbe = new ToolGitVbe(); var host = new ToolGitProject { Name = "P", FileName = nativeScope }; vbe.VBProjects.Add(host);
+                    var tools = new LlmVbeTools(new VbeSession(vbe), null, new LlmSettings { VbeEditApproval = "Automatic" }) { BoundProject = "P" };
+                    string fragment = state == "missing" ? "GitHub" : state == "ambiguous" ? "both" : "not a regular file";
+                    await Rejected(tools, "git_status", new { Project = "P" }, fragment);
+                    await Rejected(tools, "git_pr_prepare", new { Project = "P", ExpectedState = "unopened", Name = "main", Text = "Refused draft", Choice = "Synthetic" }, fragment);
+                    CollectionAssert.AreEquivalent(beforeDirectories, Directory.GetDirectories(f.Root, "*", SearchOption.AllDirectories));
+                    CollectionAssert.AreEquivalent(beforeFiles.Keys.ToArray(), Directory.GetFiles(f.Root, "*", SearchOption.AllDirectories));
+                    foreach (var file in beforeFiles) CollectionAssert.AreEqual(file.Value, File.ReadAllBytes(file.Key));
+                    Assert.AreEqual(0, host.VBComponents.ImportAttempts);
+                }
+                finally { MacroGitOperations.CacheDirectory = prior; }
+            }
+        }
+
+        [TestMethod]
+        public async Task DefaultOpenGitPreservesConversationGuardAndLiveDocumentIdentityAcrossCacheLookup()
+        {
+            using (var f = new Fixture())
+            {
+                var prior = MacroGitOperations.CacheDirectory;
+                try
+                {
+                    string nativeScope = Path.Combine(f.Root, "MixedCaseÉté.xlsm"), cache = Path.Combine(f.Root, "owned-bound-cache");
+                    Directory.CreateDirectory(cache); File.WriteAllText(Path.Combine(cache, "binding.json"), Json.Serialize(new { Remote = "https://github.com/fixture/repository.git", Branch = "main" }));
+                    var vbe = new ToolGitVbe(); var host = new ToolGitProject { Name = "P", FileName = nativeScope }; vbe.VBProjects.Add(host); int lookups = 0;
+                    MacroGitOperations.CacheDirectory = key => { lookups++; Assert.AreEqual(nativeScope, key); host.FileName = Path.Combine(f.Root, "Other.xlsm"); return cache; };
+                    var tools = new LlmVbeTools(new VbeSession(vbe), null, new LlmSettings { VbeEditApproval = "Automatic" }) { BoundProject = "P" };
+                    await Rejected(tools, "git_status", new { Project = "Other" }, "conversation"); Assert.AreEqual(0, lookups);
+                    await Rejected(tools, "git_status", new { Project = "P" }, UiText.Get("The linked document changed. Reopen GitHub integration."));
+                    Assert.AreEqual(1, lookups); Assert.AreEqual(0, host.VBComponents.ImportAttempts);
+                    Assert.AreEqual(0, Directory.GetFiles(cache, "codex-pr-draft.json", SearchOption.AllDirectories).Length);
+                }
+                finally { MacroGitOperations.CacheDirectory = prior; }
+            }
+        }
     }
 }

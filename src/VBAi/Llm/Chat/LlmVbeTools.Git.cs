@@ -109,7 +109,7 @@ namespace VBAi
         private MacroGitOperations OpenGit(string project)
         {
             string scope = session.GitScope(project);
-            return MacroGitOperations.Open(session.GitProject(project, scope), scope.ToUpperInvariant(), settings.GitHubAccount);
+            return MacroGitOperations.Open(session.GitProject(project, scope), scope, settings.GitHubAccount);
         }
     }
 }

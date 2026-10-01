@@ -21,7 +21,7 @@ namespace VBAi
         /// <summary>Callback facultatif appelé avant l’import pour présenter son résumé.</summary>
         internal Action<string> ImportPreview;
         /// <summary>Résout le répertoire de cache de la portée, notamment pour isoler les tests.</summary>
-        internal static Func<string, string> CacheDirectory = MacroGitRepository.ScopeDirectory;
+        internal static Func<string, string> CacheDirectory = MacroGitRepository.ResolveScopeDirectory;
         /// <summary>Crée un coordinateur pour le projet et le dépôt fournis.</summary>
         /// <param name="project">Projet VBA à lire ou modifier.</param>
         /// <param name="repository">Dépôt associé à ce projet.</param>
