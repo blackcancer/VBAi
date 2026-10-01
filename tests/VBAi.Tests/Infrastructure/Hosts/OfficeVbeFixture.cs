@@ -377,28 +377,41 @@ namespace VBAi.Tests.Integration
         {
             commandContainment.RequireTerminal();
             dynamic app = application;
-            if (Kind == "Word") { ((dynamic)document).Close(0); Release(document); document = null; document = CreateOrOpenDocument(true); }
-            else if (Kind == "PowerPoint") { ((dynamic)document).Saved = -1; ((dynamic)document).Close(); Release(document); document = null; document = CreateOrOpenDocument(true); }
+            if (Kind == "Word" && !adapterOnly) { ((dynamic)document).Close(0); Release(document); document = null; document = CreateOrOpenDocument(true); }
+            else if (Kind == "PowerPoint" && !adapterOnly) { ((dynamic)document).Saved = -1; ((dynamic)document).Close(); Release(document); document = null; document = CreateOrOpenDocument(true); }
             else
             {
                 // Full process exit removes stale Access VBIDE storage; Publisher Open requires a new instance.
                 Assert.IsFalse(hostTeardownRefused, "Cannot reopen an Office fixture whose previous shutdown was refused.");
                 StopOwnedDialogHandler();
+                int previousPid = ProcessId;
                 int failuresBeforeClose = Failures.Count;
                 CloseOwnedHost(adapterOnly);
                 Assert.AreEqual(failuresBeforeClose, Failures.Count, "Cannot reopen after an unsuccessful host shutdown: " + string.Join(Environment.NewLine, Failures));
+                File.Copy(Path.Combine(Root, "shutdown-lifecycle.json"), Path.Combine(Root, "shutdown-before-reopen-" + previousPid + ".json"), false);
                 // Optional read-only disk evidence is captured after normal exit, before a fresh host can write.
                 afterOwnedClose?.Invoke();
-                var existing = Process.GetProcessesByName(Kind == "Access" ? "MSACCESS" : "MSPUB");
+                string executable = Kind == "Word" ? "WINWORD" : Kind == "PowerPoint" ? "POWERPNT" : Kind == "Access" ? "MSACCESS" : "MSPUB";
+                var existing = Process.GetProcessesByName(executable);
                 try { Assert.AreEqual(0, existing.Length, "An unrelated Office instance appeared; no reopen is permitted."); }
                 finally { foreach (var process in existing) process.Dispose(); }
                 application = Activator.CreateInstance(Type.GetTypeFromProgID(hostProgId));
-                var processes = Process.GetProcessesByName(Kind == "Access" ? "MSACCESS" : "MSPUB");
-                try { Assert.AreEqual(1, processes.Length); ProcessId = processes[0].Id; owned = true; CaptureOwnedProcess(); }
+                var processes = Process.GetProcessesByName(executable);
+                try { Assert.AreEqual(1, processes.Length); ProcessId = processes[0].Id; Assert.AreNotEqual(previousPid, ProcessId, "Adapter qualification requires a distinct native process."); owned = true; CaptureOwnedProcess(); }
                 finally { foreach (var process in processes) process.Dispose(); }
                 app = application;
                 StartOwnedDialogHandler();
-                if (Kind == "Publisher")
+                if (Kind == "Word")
+                {
+                    app.Visible = true; app.DisplayAlerts = 0; app.AutomationSecurity = 3;
+                    document = CreateOrOpenDocument(true);
+                }
+                else if (Kind == "PowerPoint")
+                {
+                    app.Visible = -1; app.AutomationSecurity = 3;
+                    document = CreateOrOpenDocument(true);
+                }
+                else if (Kind == "Publisher")
                 {
                     Project = null;
                     document = app.Open(DocumentPath, false, false);
@@ -410,9 +423,9 @@ namespace VBAi.Tests.Integration
                 var status = Data("status");
                 Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), status["AssemblyModuleVersionId"]);
                 Assert.AreEqual(ProcessId, Convert.ToInt32(status["HostProcessId"]));
-                if (Kind == "Publisher") BindStartupProject(Items("list_projects"));
+                if (Kind != "Access") BindStartupProject(Items("list_projects"));
                 RequireOwnedDocument();
-                steps.Add(new { ReopenFromDisk = adapterOnly, HelperSaveInvoked = !adapterOnly, ProcessId, DocumentPath });
+                steps.Add(new { ReopenFromDisk = adapterOnly, HelperSaveInvoked = !adapterOnly, PreviousProcessId = previousPid, ProcessId, DocumentPath });
             }
         }
         /// <summary>Handles only owned test dialogs: Access component saves and Publisher macro disabling.</summary>
