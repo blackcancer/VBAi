@@ -20,6 +20,7 @@ The native renderer is built by the add-in's build target using the C++ toolchai
 | `src/VBAi/Llm/Providers` | Provider protocols, authentication integration and catalogs. |
 | `src/VBAi/Llm/Settings` | Saved configuration and settings views. |
 | `src/VBAi/Git` | Exported-source repositories, bindings, imports, checkpoints and GitHub views. |
+| `src/VBAi/Testing` | Annotated tests, versioned assertion/result support, guarded serial execution, native explorer, procedure coverage on Excel/Word/PowerPoint copies and human/LLM reports. |
 | `src/VBAi/Ui` and `Localization` | Shared presentation, native appearance, problem reports and translations. |
 | `src/VBAi/Updates` and `src/VBAi.Updater` | Update coordination and an out-of-process application step. |
 | `src/VBAi.Native` | Native renderer and hook lifecycle. |
@@ -48,6 +49,30 @@ only the missing application-specific operations. Keep knowledge of a particular
 application out of provider protocols and reusable editor code where possible.
 
 ## Threading and mutation lifecycle
+
+The test explorer uses the shared owning-thread project/revision guards. A
+registered x64 `VBAi.TestRuntime` COM callback binds only to an already authorized
+pending attempt on the VBA thread. Versioned project-local support publishes a
+bound verdict; a delivery acknowledgement or Immediate echo is not a test result.
+Ordinary native runs use the registered callback by default. Excel, Word and PowerPoint
+have returned-value fallback transports, also used for copy-based coverage.
+Recognized host names describe capability routing, not observed qualification.
+
+Procedure-entry coverage uses an explicit Excel, Word or PowerPoint document copy, validates separate
+project/path/source identity and instruments only that copy. Its denominator,
+original-source probes, exclusions and diagnostics feed both report formats.
+Unknown or incomplete measurements cannot become a complete project percentage.
+Statement and branch coverage are unavailable. Copy/plan artifacts retain private
+full source; the original document is not saved by measurement. Copies run in
+the same host application with its privileges. Excel restores temporary event
+suppression around copy opening/closing; PowerPoint application-level open and
+before-close handlers may execute. Word copies the saved document file and
+refuses source/reference mismatches, leaving AutoOpen, document/application
+handlers and the Normal template subject to the host's existing policies. Its returned-value path activates and
+revalidates the exact owned document before document-qualified invocation.
+Copying is not an external-system sandbox. See the
+[test contract](vba-testing-design.md), [usage guide](vba-testing.md) and
+[qualification evidence](test-coverage.md).
 
 COM/VBE, WinForms and WebView2 calls stay on their owning UI/STA threads. Background
 work prepares diffs, indexes snapshots, performs Git/network I/O and persists
@@ -93,7 +118,7 @@ runtime effect or successful disk save.
 ## Identity, storage and updates
 
 Current names are `VBAi.dll`, namespace `VBAi`, `VBAi.AddIn`,
-`VBAi.ChatToolWindow` and `VBAi.<PID>`. The rename retained COM GUIDs and includes
+`VBAi.ChatToolWindow`, `VBAi.TestRuntime` and `VBAi.<PID>`. The rename retained COM GUIDs and includes
 known legacy registration/data migration. Do not rename persisted Git refs or
 protocol fields for cosmetic consistency.
 

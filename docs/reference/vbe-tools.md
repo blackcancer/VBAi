@@ -15,6 +15,7 @@ by family:
 | `code` | Modules, procedures, navigation, Monaco and guarded refactoring. |
 | `forms` | UserForms, controls, containers, layouts and events. |
 | `debug` | Compilation, execution and native debugger operations. |
+| `testing` | VBA test discovery, reviewed support installation, guarded batches, results, stop, source navigation, procedure coverage and explorer opening. |
 | `git` | Bound-repository inspection, commits, checkpoints, branches and merges. |
 | `environment` | Projects, references, editor options and other VBE services. |
 | `all` | All schemas permitted by the current mode, not additional permissions. |
@@ -59,7 +60,43 @@ response does not automatically establish disk persistence or runtime correctnes
 
 ## Source of truth
 
-The main, Editor, Git and Monaco partial definitions describe required/optional
+The current testing family is defined in
+[LlmVbeTools.Testing](../../src/VBAi/Llm/Chat/LlmVbeTools.Testing.cs):
+
+| Tool | Operation boundary |
+| --- | --- |
+| `discover_vba_tests` | Inspect annotated tests/fixtures and the current project revision without execution. |
+| `preview_vba_test_support` | Return exact generated support source for review without installing it. |
+| `install_vba_test_support` | Apply only that reviewed source with revision, mode and approval guards; retain recovery evidence. |
+| `run_vba_tests` | Run an explicit project/test selection; `Action="coverage"` explicitly selects instrumented Excel/Word/PowerPoint document-copy measurement. |
+| `vba_test_run_status` | Read the same run by Query in human or compact form; do not execute again. |
+| `stop_vba_tests` | Request cooperative stop of that exact run; do not reset or terminate its host. |
+| `navigate_vba_test` | Open one discovered test after validating its current revision. |
+| `vba_test_coverage` | Preview procedures, exclusions and capability; Query reads measured coverage of the exact run. |
+| `show_vba_test_explorer` | Open the owned explorer on the exact authorized project, without running tests. |
+
+Obtain exact fields/types through live discovery. Use discovery's
+`ExpectedProjectVersion`, explicit test IDs in Items and `ExpectedMode=2` for a
+run or support mutation. Previewed coverage capability is not measured
+availability; a complete result reports actual entered/eligible **procedures**,
+original-source locations, exclusions and diagnostics. Statements and branches
+are not measured. Run status and both report formats use the same canonical data.
+
+Coverage creates and retains private document/source artifacts, does not
+instrument or save the original document, and cannot isolate external effects.
+Copies run in the host application with its privileges; PowerPoint application-level
+open/before-close handlers may execute and interfere with closure. Word copies
+the saved file and refuses source/reference mismatches before instrumentation;
+AutoOpen, document/application handlers and the Normal template are not disabled
+by the adapter and remain subject to existing host policies.
+Its returned-value path requires exact owned activation and document-qualified
+invocation, with no retry after uncertain completion. Trust policies are preserved.
+Inspect its preview and concrete execution scope before approval. The same
+project, privacy, mode, approval and revision checks remain in both direct and
+catalog invocation, including deferred native calls. See the
+[VBA test guide](../vba-testing.md) for review, storage and qualification limits.
+
+The main, Editor, Git, Monaco and Testing partial definitions describe required/optional
 fields and types. The progressive catalog and privacy checks determine which
 schemas and operations are available in a conversation. Validate changes with
 the catalog/permission tests rather than updating a disconnected static count.

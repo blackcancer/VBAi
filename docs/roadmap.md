@@ -25,6 +25,21 @@ the intended ecosystem to the first applications used for testing.
 
 ## Quality and security
 
+Extend the [VBA test explorer](vba-testing.md) beyond its annotated discovery,
+shared COM result channel, serial batches and human/LLM reports. Qualify native
+callback execution and installed tool-window workflows separately in Excel,
+Word, PowerPoint, Access, Publisher, Outlook and SOLIDWORKS. Visio and Project are
+outside the current requested qualification scope.
+
+Procedure-entry coverage is implemented on explicit Excel, Word and PowerPoint document copies.
+Qualify native copying, preserved original source, mapped probes, independently
+calculated counters, host-specific open/close event effects, recovery and incomplete measurements before claiming
+production readiness. Broader host-copy adapters and statement/branch coverage
+remain future work. UI/source implementation and known host names do not replace
+operation-specific evidence. Word saved-file/source matching and owned macro
+activation, and Word/PowerPoint open/close handler effects, require native
+qualification. Production acceptance remains pending.
+
 Maintain regression coverage for concurrent edits, interrupted operations, privacy
 boundaries, transport failures and recovery. Re-measure the current instrumented
 scope after implementation changes. Broaden authenticated-provider and real-host

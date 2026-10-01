@@ -16,20 +16,26 @@ namespace VBAi.Tests.Integration
     {
         private object application, document;
         private bool owned;
+        private bool forcedTerminationAllowed;
         private Process ownedProcess;
         private volatile bool stopDialogs;
         private Thread dialogThread;
+        private Exception startupFailure;
+        private string reviewedSupport, reviewedSupportRevision, installedSupportHash;
+        private volatile bool allowSupportSavePrompt;
         private readonly List<object> steps = new List<object>();
         internal string Kind { get; private set; }
         internal int ProcessId { get; private set; }
         internal string Root { get; private set; }
         internal string DocumentPath { get; private set; }
         internal string Project { get; private set; }
+        /// <summary>Opt-in preservation for a dispatched test whose native completion is pending or uncertain.</summary>
+        internal bool NativeExecutionUnsettled { get; set; }
         internal readonly List<string> Failures = new List<string>();
         private OfficeVbeFixture() { }
 
         /// <summary>Creates only a new process; existing host sessions are preserved.</summary>
-        internal static OfficeVbeFixture Start(string kind)
+        internal static OfficeVbeFixture Start(string kind, string progId = null, bool allowExistingHost = false, bool allowForcedTermination = true)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_OFFICE_TESTS") != "1")
                 Assert.Inconclusive("Set VBAi_RUN_OFFICE_TESTS=1 to qualify installed Office hosts.");
@@ -37,10 +43,12 @@ namespace VBAi.Tests.Integration
             var processes = Process.GetProcessesByName(executable);
             int[] existing = processes.Select(p => p.Id).ToArray();
             foreach (var process in processes) process.Dispose();
-            if (existing.Length != 0 && kind != "Word") Assert.Inconclusive("Close existing " + kind + " instances before isolated qualification.");
-            var type = Type.GetTypeFromProgID(kind + ".Application");
+            if (existing.Length != 0 && kind == "Word")
+                Assert.Inconclusive("BLOCKED: existing Word instances prevent application ownership proof before document creation without reading the trust-protected VBE. No Word instance was activated.");
+            if (existing.Length != 0 && !allowExistingHost) Assert.Inconclusive("Close existing " + kind + " instances before isolated qualification.");
+            var type = Type.GetTypeFromProgID(progId ?? kind + ".Application");
             if (type == null) Assert.Inconclusive(kind + " is not installed.");
-            var result = new OfficeVbeFixture { Kind = kind };
+            var result = new OfficeVbeFixture { Kind = kind, forcedTerminationAllowed = allowForcedTermination };
             string output = Environment.GetEnvironmentVariable("VBAi_OFFICE_RESULTS") ?? Path.Combine(Path.GetTempPath(), "VBAi-Office-tests");
             result.Root = Path.Combine(Path.GetFullPath(output), kind, Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(result.Root);
@@ -53,7 +61,17 @@ namespace VBAi.Tests.Integration
                 {
                     var candidates = launched.Where(p => !existing.Contains(p.Id)).ToArray();
                     Assert.AreEqual(1, candidates.Length, "No unique new Office process; no document mutation is permitted.");
-                    result.ProcessId = candidates[0].Id; result.owned = true;
+                    result.ProcessId = candidates[0].Id;
+                    if (kind == "Word")
+                    {
+                        // No other Word process can own this RCW; do not read trust-protected app.VBE to establish ownership.
+                        Assert.AreEqual(1, launched.Length, "Word ownership requires an empty initial inventory and exactly one process after activation.");
+                        result.steps.Add(new { ApplicationOwnershipVerifiedBeforeMutation = true, Method = "SoleWordProcessInventory",
+                            BeforeProcessIds = existing, AfterProcessIds = launched.Select(p => p.Id).ToArray(), result.ProcessId,
+                            StartedUtc = candidates[0].StartTime.ToUniversalTime() });
+                    }
+                    else result.RequireApplicationOwner();
+                    result.owned = true;
                     result.CaptureOwnedProcess();
                 }
                 finally { foreach (var process in launched) process.Dispose(); }
@@ -96,7 +114,20 @@ namespace VBAi.Tests.Integration
                 result.RecordNativeProjectPath();
                 return result;
             }
-            catch { result.Dispose(); throw; }
+            catch (Exception primary)
+            {
+                result.startupFailure = primary;
+                try { result.Dispose(); }
+                catch (Exception cleanup)
+                {
+                    try { File.WriteAllText(Path.Combine(result.Root, "startup-failure.json"), new JavaScriptSerializer
+                        { MaxJsonLength = 20 * 1024 * 1024 }.Serialize(new { Primary = primary.ToString(), Cleanup = cleanup.ToString() })); }
+                    catch (Exception recording)
+                    { throw new AggregateException("Office fixture startup failed; cleanup and evidence recording also failed.", primary, cleanup, recording); }
+                    throw new AggregateException("Office fixture startup failed; cleanup failure is reported separately.", primary, cleanup);
+                }
+                throw;
+            }
         }
 
         /// <summary>Reads a command response without retries after emission.</summary>
@@ -108,6 +139,32 @@ namespace VBAi.Tests.Integration
             var reply = VbeBridgeClient.Read(ProcessId, request);
             Assert.IsNotNull(reply, name + " did not answer.");
             steps.Add(new { Command = name, Response = reply });
+            if (Kind == "Access" && Equals(reply["Ok"], true))
+            {
+                if (name == "preview_vba_test_support")
+                {
+                    var preview = VbeBridgeClient.Object(reply["Data"]);
+                    reviewedSupport = preview["Text"] as string;
+                    reviewedSupportRevision = preview["ExpectedProjectVersion"] as string;
+                }
+                else if (name == "install_vba_test_support")
+                {
+                    allowSupportSavePrompt = false;
+                    var installed = VbeBridgeClient.Object(reply["Data"]);
+                    if (Equals(installed["Applied"], true) && reviewedSupport != null && VbaTestRuntimeSource.IsOwned(reviewedSupport)
+                        && request.TryGetValue("Text", out object text) && Equals(text, reviewedSupport)
+                        && request.TryGetValue("ExpectedProjectVersion", out object revision) && Equals(revision, reviewedSupportRevision))
+                    {
+                        var source = Data("read_module", "Module", VbaTestRuntimeSource.ModuleName);
+                        Assert.AreEqual(CanonicalSource(reviewedSupport), CanonicalSource((string)source["Code"]),
+                            "Only the exact reviewed support module may have its Access save dialog accepted.");
+                        installedSupportHash = (string)source["Sha256"];
+                        allowSupportSavePrompt = true;
+                        steps.Add(new { AccessSavePromptAuthorized = VbaTestRuntimeSource.ModuleName, Sha256 = installedSupportHash,
+                            ProcessId, Project, DocumentPath });
+                    }
+                }
+            }
             return reply;
         }
         /// <summary>Requires a successful command and returns its object result.</summary>
@@ -260,7 +317,9 @@ namespace VBAi.Tests.Integration
                             var edit = window.FindFirst(TreeScope.Descendants, new PropertyCondition(AutomationElement.AutomationIdProperty, "2020"));
                             if (edit == null) continue;
                             string name = ((ValuePattern)edit.GetCurrentPattern(ValuePattern.Pattern)).Current.Value;
-                            if (name != "VBAiOfficeModule" && name != "VBAiOfficeClass" && name != "VBAiOfficeForm") continue;
+                            bool reviewedSupportPrompt = name == VbaTestRuntimeSource.ModuleName && allowSupportSavePrompt
+                                && ownedProcess != null && !ownedProcess.HasExited;
+                            if (name != "VBAiOfficeModule" && name != "VBAiOfficeClass" && name != "VBAiOfficeForm" && !reviewedSupportPrompt) continue;
                             var button = window.FindFirst(TreeScope.Descendants, new PropertyCondition(AutomationElement.AutomationIdProperty, "1"));
                             if (button != null && button.Current.Name == "OK") ((InvokePattern)button.GetCurrentPattern(InvokePattern.Pattern)).Invoke();
                         }
@@ -278,7 +337,8 @@ namespace VBAi.Tests.Integration
             try { CloseOwnedHost(); }
             finally
             {
-                if (Root != null) File.WriteAllText(Path.Combine(Root, "qualification.json"), new JavaScriptSerializer { MaxJsonLength = 20 * 1024 * 1024 }.Serialize(new { Host = Kind, ProcessId, DocumentPath, Project, Failures, Steps = steps }));
+                if (Root != null) File.WriteAllText(Path.Combine(Root, "qualification.json"), new JavaScriptSerializer { MaxJsonLength = 20 * 1024 * 1024 }.Serialize(new { Host = Kind, ProcessId, DocumentPath, Project, NativeExecutionUnsettled,
+                    StartupFailure = startupFailure?.ToString(), Failures, Steps = steps }));
             }
             Assert.AreEqual(0, Failures.Count, string.Join(Environment.NewLine, Failures));
         }
@@ -324,6 +384,29 @@ namespace VBAi.Tests.Integration
             ownedProcess = Process.GetProcessById(ProcessId);
             _ = ownedProcess.Handle; // Preserve teardown/crash evidence after the process exits.
         }
+        private void RequireApplicationOwner()
+        {
+            object editor = null, window = null;
+            try
+            {
+                dynamic app = application;
+                long handle;
+                if (Kind == "Word") throw new InvalidOperationException("Word fixture ownership requires its sole-process preactivation inventory proof.");
+                else if (Kind == "PowerPoint") handle = PowerPointWindow.Read(application).ToInt64();
+                else if (Kind == "Access") handle = Convert.ToInt64(app.hWndAccessApp());
+                else
+                {
+                    window = app.ActiveWindow;
+                    handle = Convert.ToInt64(((dynamic)window).Hwnd);
+                }
+                uint pid;
+                Assert.AreNotEqual(0L, handle, "The returned Office application has no verifiable window; no document mutation is permitted.");
+                Assert.AreNotEqual(0u, VbeDebugWindows.GetWindowThreadProcessId(new IntPtr(handle), out pid));
+                Assert.AreEqual((uint)ProcessId, pid, "The returned application belongs to another PID; no document mutation or Quit is permitted.");
+                steps.Add(new { ApplicationOwnershipVerifiedBeforeMutation = true, Hwnd = handle, ProcessId = pid });
+            }
+            finally { Release(window); Release(editor); }
+        }
         private void RecordCleanupFailure(string reason)
         {
             Failures.Add("Host cleanup: " + reason);
@@ -331,7 +414,33 @@ namespace VBAi.Tests.Integration
         }
         private void CloseOwnedHost()
         {
-            if (owned)
+            bool preserve = NativeExecutionUnsettled;
+            string retentionReason = "Native test execution remains pending or uncertain";
+            if (owned && Kind == "Access" && !preserve && allowSupportSavePrompt)
+            {
+                try
+                {
+                    var source = Data("read_module", "Module", VbaTestRuntimeSource.ModuleName);
+                    Assert.AreEqual(installedSupportHash, source["Sha256"], "The reviewed support changed; Access save-dialog acceptance is refused.");
+                    Assert.AreEqual(CanonicalSource(reviewedSupport), CanonicalSource((string)source["Code"]));
+                }
+                catch (Exception error)
+                {
+                    allowSupportSavePrompt = false; preserve = true;
+                    retentionReason = "Reviewed Access support ownership could not be verified";
+                    RecordCleanupFailure("Reviewed Access support ownership could not be revalidated: " + error.Message);
+                }
+            }
+            if (preserve)
+            {
+                // Stop dialog automation before releasing references to the retained host.
+                stopDialogs = true;
+                if (dialogThread != null) { dialogThread.Join(2000); dialogThread = null; }
+                RecordCleanupFailure(retentionReason + "; Close, Quit and forced termination were skipped. Inspect retained PID=" + ProcessId);
+                steps.Add(new { RetainedProcessId = ProcessId, NativeExecutionUnsettled, RetentionReason = retentionReason,
+                    CloseAttempted = false, QuitAttempted = false, ForcedTermination = false, DocumentPath });
+            }
+            if (owned && !preserve)
             {
                 try
                 {
@@ -344,7 +453,7 @@ namespace VBAi.Tests.Integration
             }
             try { Release(document); } catch (Exception error) { RecordCleanupFailure(error.Message); }
             document = null;
-            if (owned && Kind != "Access")
+            if (owned && !preserve && Kind != "Access")
                 try { if (Kind == "Word") ((dynamic)application).Quit(0); else ((dynamic)application).Quit(); }
                 catch (Exception error) { RecordCleanupFailure(error.Message); }
             try { Release(application); } catch (Exception error) { RecordCleanupFailure(error.Message); }
@@ -355,17 +464,32 @@ namespace VBAi.Tests.Integration
                 using (process)
                     try
                     {
-                        bool forced = !process.WaitForExit(5000);
-                        if (forced)
+                        if (preserve)
                         {
-                            RecordCleanupFailure("The owned host did not exit after Quit and COM release; forced termination was required. PID=" + ProcessId);
-                            process.Kill();
+                            bool exited = process.HasExited;
+                            steps.Add(new { RetainedProcessId = ProcessId, HasExited = exited,
+                                ExitCode = exited ? (int?)process.ExitCode : null, ForcedTermination = false });
                         }
-                        if (!process.WaitForExit(5000)) RecordCleanupFailure("The owned host still has not exited. PID=" + ProcessId);
                         else
                         {
-                            steps.Add(new { ShutdownProcessId = ProcessId, ExitCode = process.ExitCode, ForcedTermination = forced });
-                            if (process.ExitCode != 0) RecordCleanupFailure("Abnormal exit code 0x" + unchecked((uint)process.ExitCode).ToString("X8") + ". PID=" + ProcessId);
+                            bool exited = process.WaitForExit(5000), forced = false;
+                            if (!exited && forcedTerminationAllowed)
+                            {
+                                RecordCleanupFailure("The owned host did not exit after Quit and COM release; forced termination was required. PID=" + ProcessId);
+                                process.Kill(); forced = true;
+                                exited = process.WaitForExit(5000);
+                            }
+                            if (!exited)
+                            {
+                                RecordCleanupFailure("The owned host has not exited; no Quit was retried. PID=" + ProcessId);
+                                steps.Add(new { RetainedProcessId = ProcessId, HasExited = false, ForcedTermination = forced,
+                                    ForcedTerminationAllowed = forcedTerminationAllowed, QuitRetried = false, DocumentPath });
+                            }
+                            else
+                            {
+                                steps.Add(new { ShutdownProcessId = ProcessId, ExitCode = process.ExitCode, ForcedTermination = forced });
+                                if (process.ExitCode != 0) RecordCleanupFailure("Abnormal exit code 0x" + unchecked((uint)process.ExitCode).ToString("X8") + ". PID=" + ProcessId);
+                            }
                         }
                     }
                     catch (Exception error) { RecordCleanupFailure(error.Message); }
@@ -374,5 +498,6 @@ namespace VBAi.Tests.Integration
             if (dialogThread != null) { dialogThread.Join(2000); dialogThread = null; }
         }
         private static void Release(object item) { if (item != null && Marshal.IsComObject(item)) Marshal.FinalReleaseComObject(item); }
+        private static string CanonicalSource(string source) => source.Replace("\r\n", "\n").Replace('\r', '\n').TrimEnd('\n');
     }
 }

@@ -1,5 +1,61 @@
 # Recorded validation
 
+## VBA test explorer draft checkpoint (2026-10-01)
+
+This branch adds the VBA test subsystem; production acceptance remains incomplete.
+Its acceptance scope includes discovery, support installation, single/batch runs,
+fixtures, assertions, cooperative stop, procedure coverage, explorer actions,
+human/JSON reports and the corresponding LLM tools. Unrelated Git/editor workflows
+and the rest of VBAi are not acceptance gates for this feature. Visio and Project
+are excluded from the requested native test scope.
+
+The PR preparation build used production MVID
+`610648ad-a0fd-454c-bda5-5fedb553d743`, SHA-256
+`0095FCA1A201DAECBAC36123193850E291CFB988A3B6558C5748D801B2596208`,
+and test MVID `f1c3f07c-84c0-4fce-946c-04a0c6e0280b`, SHA-256
+`670D1961A80FDBB93F596031ECD5FBFFF91E3594D218A89D261FDB87A3F66667`.
+It compiled into `artifacts/build-pr-test-explorer` with no errors and three
+NU1900 warnings because the vulnerability endpoint was unavailable.
+
+| Check | Observed result | Evidence |
+| --- | --- | --- |
+| Current test-subsystem unit classes and LLM boundary | 324 passed, 0 failed, 0 skipped | `artifacts/test-results/vba-tests-pr.trx` |
+| Documentation links | Passed | `python tools/docs/check_docs.py` |
+| Last registered Excel trial, earlier candidate `692e236e-278e-41e8-92fd-a9fe88acbf7c` | Four Blocked results before Run; uncertainty false; native-window eligibility refused | `artifacts/test-results/native-explorer-692e236e/subsystem/0b049ed146a747c0b8ba1bab4d4ff84e/` |
+
+The focused unit filter selects VbaTest, VbaCoverage, VbaNativeTest,
+VbeTestExplorerService, TestExplorerWindow, TestSupportReviewDialog and
+LlmVbaTestingBoundary classes in `VBAi.Tests.Unit`. It excludes native opt-ins and
+unrelated application tests. These tests do not measure instrumented .NET coverage
+or establish real-host production readiness.
+
+The earlier native candidate has SHA-256
+`C9CBEB29D8BD96C4058CBB3AE43810CE6551D682108E6B9A41B150FCA002D329`.
+Its source manifest SHA-256 is
+`C8AB36014399F916F2AB6A1D05A84EB0A8B5F2FC79F748DC86DB6570F158DF18`.
+The executed script SHA-256 is
+`57FA19484DA3A79451DCCC7CF59442B7C27F10706FE84B469C49A950EC8C6A3F`.
+The explicit `TestSubsystemOnly` scope retained coverage and explorer/report
+assertions, while excluding the general Excel BeforeSave positive save control.
+That control was recorded as `NOT_TESTED_BY_SCOPE`, not as passing.
+
+No test was dispatched in that native trial. Measured coverage, native explorer
+actions and exports were not reached. Close and Quit returned with zero workbooks,
+but normal process exit remained unverified at fifteen seconds. No Quit retry or
+termination occurred. Temporary HKCU registration was restored and exact
+restoration verified. The current diagnostic refinement was not retested natively.
+
+Further acceptance requires real registered execution and the relevant explorer,
+report and coverage operations in disposable projects across the requested Excel,
+Word, PowerPoint, Access, Publisher, Outlook and user-selected preloaded SOLIDWORKS
+scope. Excel/Word/PowerPoint coverage-copy adapters exist; the other hosts have no
+implemented coverage-copy path. Native source navigation currently selects the
+VBIDE pane; synchronization of the visible Monaco document remains unfinished.
+Interrupted navigation fragments are preserved in ignored local artifacts and
+are excluded from this PR. Native screenshots are unavailable because the latest
+registered trial stopped before explorer actions. No native tests were restarted
+while preparing this draft.
+
 ## Full-branch publication check (2026-09-30)
 
 Source checkpoint: `b6778560e9370b0bc15da74d9d7426a71b93d89c`, including the

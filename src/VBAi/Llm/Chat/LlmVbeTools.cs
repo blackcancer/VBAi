@@ -30,6 +30,7 @@ namespace VBAi
         public event Action<FormCutChange> FormCut;
         /// <summary>Noms des outils dont les opérations sont en lecture seule.</summary>
         private static readonly HashSet<string> ReadOnlyTools = new HashSet<string>(StringComparer.Ordinal) {
+            "discover_vba_tests", "preview_vba_test_support", "vba_test_run_status", "navigate_vba_test", "vba_test_coverage", "show_vba_test_explorer",
             "discover_tools", "invoke_tool", "monaco_open", "monaco_read", "monaco_navigate",
             "procedure_values_status", "preview_procedure_rename", "preview_class_member_rename", "read_project_protection", "open_native_ide_dialog", "preview_fit_form_content", "read_navigation_surface", "change_navigation_surface", "list_macros", "project_collection_state", "open_project_help", "certificate_trust", "verify_vba_signature_file", "preview_parameter_rename", "preview_local_rename", "toolbar_controls", "procedure_run_status", "form_clipboard_state", "list_toolbars", "read_runtime_forms", "read_code_clipboard", "native_code_history_state", "form_run_status", "list_object_browser", "select_object_browser", "read_object_browser", "code_pane_layout", "editor_layout", "window_layout", "project_symbols", "navigate_code", "code_bookmark", "preview_form_layout", "preview_code_edit", "status", "read_user_file", "list_projects", "list_modules", "list_references", "list_reference_types", "list_type_members", "read_module", "debug_state", "debug_windows", "debug_dialog", "debug_item", "read_debug_options", "read_vbe_options", "compile_project", "open_debug_pane", "list_commands", "select_code", "select_code_range",
             "project_properties", "project_persistence_status", "project_signature_status", "read_project_signature_dialog", "list_signing_certificates", "component_properties", "component_property_value", "vbe_windows", "vbe_environment", "list_addins", "focus_vbe_window", "window_linkage", "code_panes", "open_object_browser", "list_procedures", "find_code", "inspect_code_file", "select_procedure", "list_forms",
@@ -135,6 +136,8 @@ namespace VBAi
                     field == "PathSegments" ? (object)new { type = "array", items = new { type = "string" }, minItems = 1, maxItems = 16 } :
                     field == "Rows" ? (object)new { type = "array", items = new { type = "array", items = new { type = "string", maxLength = 256 }, minItems = 1, maxItems = 10 }, minItems = 0, maxItems = 64 } :
                     field == "ArgumentNames" ? (object)new { type = "array", items = new { type = "string", maxLength = 255 }, minItems = 0, maxItems = 30 } :
+                    field == "Items" && name == "run_vba_tests" ? (object)new { type = "array", items = new { type = "string", maxLength = 64 }, minItems = 1, maxItems = 10000, uniqueItems = true } :
+                    field == "Items" && name == "navigate_vba_test" ? (object)new { type = "array", items = new { type = "string", maxLength = 64 }, minItems = 1, maxItems = 1 } :
                     field == "Items" ? (object)new { type = "array", items = new { type = "string", maxLength = 256 }, minItems = 0, maxItems = 64 } :
                     new { type = field == "ExpectedVersion" || field == "StartLine" || field == "StartColumn" || field == "EndLine" || field == "EndColumn" || field == "Count" || field == "ExpectedMode" || field == "ControlId" || field == "WindowType" || field == "TargetWindowType" || field == "ProcKind" || field == "InsertIndex" ||
                         field == "ToolbarLeft" || field == "ToolbarTop" || field == "Offset" || field == "Limit" || field == "RowIndex" || field == "TypeIndex" || field == "ZPosition" ||
@@ -383,7 +386,7 @@ namespace VBAi
             Definition("set_form_control_geometry", "Place and size a UserForm control; requires form revision and VBE edit policy.",
                 new[] { "Project", "Form", "ExpectedFormVersion", "Control", "Left", "Top", "Width", "Height" },
                 "Project", "Form", "ExpectedFormVersion", "Control", "Left", "Top", "Width", "Height")
-        }.Concat(GitDefinitions).Concat(EditorDefinitions).Concat(MonacoDefinitions).Concat(CatalogDefinitions).ToArray(); } }
+        }.Concat(GitDefinitions).Concat(EditorDefinitions).Concat(MonacoDefinitions).Concat(TestingDefinitions).Concat(CatalogDefinitions).ToArray(); } }
 
         /// <summary>Valide les gardes puis exécute synchroniquement un outil et sérialise sa réponse.</summary>
         /// <param name="name">Nom de l’outil demandé.</param>
@@ -451,9 +454,11 @@ namespace VBAi
                     if (field == "Items")
                     {
                         var items = value as object[];
-                        if (items == null || items.Length > 64 || items.Any(item => !(item is string) ||
-                            ((string)item).Length > 256 || ((string)item).Any(char.IsControl)))
-                            throw new ArgumentException("Items must contain at most 64 single-line strings of at most 256 characters.");
+                        int maximum = name == "run_vba_tests" ? 10000 : name == "navigate_vba_test" ? 1 : 64;
+                        int length = IsTestingTool(name) ? 64 : 256;
+                        if (items == null || items.Length > maximum || items.Any(item => !(item is string) ||
+                            ((string)item).Length > length || ((string)item).Any(char.IsControl)))
+                            throw new ArgumentException("Items must contain at most " + maximum + " single-line strings of at most " + length + " characters.");
                         continue;
                     }
                     if (field == "Rows")
@@ -492,6 +497,8 @@ namespace VBAi
                     return json.Serialize(Response.Failure(UiText.Get("VBE edits are disabled (Read-only mode).")));
                 if (edit && settings.VbeEditApproval != "Automatic" && settings.VbeEditApproval != "AskEachTime")
                     return json.Serialize(Response.Failure(UiText.Get("Unknown VBE edit policy; action refused.")));
+                string testingBoundProject = IsTestingTool(name) ? BoundProject : null;
+                if (IsTestingTool(name)) PrepareTestingRequest(request);
                 Dictionary<string, CodeSnapshot> procedureRenameBefore = name == "apply_procedure_rename" || name == "apply_class_member_rename" ? ReadProcedureRenameBefore(request) : null;
                 CodeSnapshot beforeCode = null;
                 bool formCodeEdit = name == "set_form_list_initializer" || name == "set_form_list_binding";
@@ -517,6 +524,7 @@ namespace VBAi
                 Response result;
                 try
                 {
+                    if (IsTestingTool(name)) RevalidateTestingDispatch(name, arguments, editApproved, testingBoundProject);
                     if (name == "save_host_document")
                     {
                         if (!asyncSave) return json.Serialize(Response.Failure("save_host_document requires InvokeAsync."));
@@ -532,7 +540,24 @@ namespace VBAi
                         ? Response.Success(ScopedLiveSnapshot())
                         : name == "save_host_document" && asyncSave
                         ? Response.Success(await SaveHostDocumentNative(request))
+                        : IsTestingTool(name)
+                        ? ExecuteTestingRequest(request, name, arguments, editApproved, testingBoundProject)
                         : Execute(request);
+                    if (IsTestingTool(name))
+                    {
+                        try
+                        {
+                            GuardMode(name);
+                            if (!SameProject(testingBoundProject, BoundProject)) throw new InvalidOperationException("Project binding changed.");
+                            GuardProject(name, arguments);
+                        }
+                        catch (Exception)
+                        {
+                            return edit ? json.Serialize(Response.Success(new { MutationInvoked = true, Verified = false,
+                                OutcomeUnknown = true, Reason = "Project access changed during the test operation. Inspect locally; do not retry automatically." }))
+                                : json.Serialize(Response.Failure("Project access changed during the test inspection."));
+                        }
+                    }
                     if (name == "save_host_document")
                     {
                         try

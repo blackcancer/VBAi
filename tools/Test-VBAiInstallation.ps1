@@ -37,7 +37,9 @@ try {
         @{ Label = 'COM class'; Path = "Software\Classes\CLSID\$classId"; Values = @{ '' = $progId } },
         @{ Label = 'COM server'; Path = "Software\Classes\CLSID\$classId\InprocServer32"; Values = @{ '' = 'mscoree.dll'; ThreadingModel = 'Both'; Class = 'VBAi.AddIn'; RuntimeVersion = 'v4.0.30319'; CodeBase = $expectedCodeBase } },
         @{ Label = 'COM class type library'; Path = "Software\Classes\CLSID\$classId\TypeLib"; Values = @{ '' = $typeLibId } },
-        @{ Label = 'Registered type library'; Path = "Software\Classes\TypeLib\$typeLibId\0.1\0\win64"; Values = @{ '' = $typeLibPath } }
+        @{ Label = 'Registered type library'; Path = "Software\Classes\TypeLib\$typeLibId\0.1\0\win64"; Values = @{ '' = $typeLibPath } },
+        @{ Label = 'Test runtime ProgID'; Path = 'Software\Classes\VBAi.TestRuntime\CLSID'; Values = @{ '' = '{5AF2F40B-939B-4CC6-A06C-F0C79841C031}' } },
+        @{ Label = 'Test runtime server'; Path = 'Software\Classes\CLSID\{5AF2F40B-939B-4CC6-A06C-F0C79841C031}\InprocServer32'; Values = @{ '' = 'mscoree.dll'; Class = 'VBAi.VbaTestRuntime'; Assembly = $expectedAssemblyName; RuntimeVersion = 'v4.0.30319'; ThreadingModel = 'Both'; CodeBase = $expectedCodeBase } }
     )) {
         $key = $registry.OpenSubKey($entry.Path)
         if ($null -eq $key) {

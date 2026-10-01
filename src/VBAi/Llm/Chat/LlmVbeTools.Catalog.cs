@@ -15,14 +15,14 @@ namespace VBAi
         /// <summary>Stores the next family priority used by LlmVbeTools.</summary>
         private int nextFamilyPriority;
         /// <summary>Stores the families used by LlmVbeTools.</summary>
-        private static readonly string[] Families = { "code", "forms", "debug", "git", "environment" };
+        private static readonly string[] Families = { "code", "forms", "debug", "git", "environment", "testing" };
         /// <summary>Stores the core tools used by LlmVbeTools.</summary>
         private static readonly HashSet<string> CoreTools = new HashSet<string>(StringComparer.Ordinal)
         { "status", "list_projects", "list_modules", "read_module", "monaco_open", "monaco_read", "discover_tools", "invoke_tool" };
         /// <summary>Gets the catalog definitions.</summary>
         /// <value>The current value represented by this member.</value>
         private static object[] CatalogDefinitions => new[] {
-            Definition("discover_tools", "Discover complete tool schemas for one family: code, forms, debug, git or environment; Family=all lists every available schema. Discussion/Plan expose inspections only. HTTP also loads discovered families for following model rounds. All writes remain subject to Agent mode and project/privacy policies.", new[] { "Family" }, "Family"),
+            Definition("discover_tools", "Discover complete tool schemas for one family: code, forms, debug, git, environment or testing; Family=all lists every available schema. Discussion/Plan expose inspections only. HTTP also loads discovered families for following model rounds. All writes remain subject to Agent mode and project/privacy policies.", new[] { "Family" }, "Family"),
             Definition("invoke_tool", "Invoke an exact tool discovered with discover_tools. ToolName is its name and ArgumentsJson is its JSON argument object encoded as a string. All normal mode, project, privacy and approval guards apply. Never recursively invoke a catalogue gateway.", new[] { "ToolName", "ArgumentsJson" }, "ToolName", "ArgumentsJson")
         };
         /// <summary>Performs the is catalog tool operation for LlmVbeTools.</summary>
@@ -34,6 +34,7 @@ namespace VBAi
         /// <returns>The result produced by this operation.</returns>
         internal static string ToolFamily(string name)
         {
+            if (IsTestingTool(name)) return "testing";
             if (name.StartsWith("git_", StringComparison.Ordinal)) return "git";
             if (name.IndexOf("form", StringComparison.Ordinal) >= 0 || name.IndexOf("designer", StringComparison.Ordinal) >= 0) return "forms";
             if (name.IndexOf("debug", StringComparison.Ordinal) >= 0 || name.IndexOf("watch", StringComparison.Ordinal) >= 0 ||
@@ -74,7 +75,7 @@ namespace VBAi
                 {
                     if (values.Count != 1 || !values.TryGetValue("Family", out var value) || !(value is string)) throw new ArgumentException("Family is required.");
                     string family = (string)value;
-                    if (family != "all" && !Families.Contains(family)) throw new ArgumentException("Unknown tool family. Use code, forms, debug, git, environment or all.");
+                    if (family != "all" && !Families.Contains(family)) throw new ArgumentException("Unknown tool family. Use code, forms, debug, git, environment, testing or all.");
                     var selected = family == "all" ? Families : new[] { family };
                     foreach (string item in selected) { loadedFamilies.Add(item); familyPriority[item] = ++nextFamilyPriority; }
                     var definitions = Definitions.Where(raw => {

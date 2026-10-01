@@ -154,6 +154,7 @@ try {
 
     & (Join-Path $PSScriptRoot 'Register-VBAiTypeLib.ps1')
     & (Join-Path $PSScriptRoot 'Register-ChatToolWindow.ps1')
+    & (Join-Path $PSScriptRoot 'Register-VbaTestRuntime.ps1') -AssemblyPath $assemblyPath
 
     # Remove the old discovery entry only after the replacement is registered.
     foreach ($location in @('Software\Microsoft\VBA\VBE\6.0\Addins64', 'Software\Microsoft\VBA\VBE\6.0\Addins')) {

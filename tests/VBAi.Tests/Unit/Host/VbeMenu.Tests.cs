@@ -137,6 +137,7 @@ namespace VBAi.Tests.Unit
     using System.Collections;
     using System.Reflection;
     using System.Collections.Generic;
+    using System.Linq;
     using VBAi;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -175,7 +176,7 @@ namespace VBAi.Tests.Unit
                 host = Host(); Assert.ThrowsException<ArgumentException>(() => new VbeMenu(host, () => { }, () => { }, () => { }));
                 var nativeSubscription = VbeMenu.SubscribeDefault; try { VbeMenu.SubscribeDefault = (b, i, d, h) => { }; using (var publicMenu = new VbeMenu(Host(), () => { }, () => { }, () => { })) Assert.IsNotNull(publicMenu); } finally { VbeMenu.SubscribeDefault = nativeSubscription; }
                 host = Host(); var subscriptions = new List<object>(); using (var menu = new VbeMenu(host, () => { }, () => { }, () => { }, c => { }, (b, i, d, h) => subscriptions.Add(b), (b, i, d, h) => throw new InvalidOperationException("unsubscribe failed"), (b, t) => { })) { foreach (FakeButton button in subscriptions) button.RejectDelete = true; }
-                Assert.AreEqual(7, subscriptions.Count);
+                Assert.AreEqual(8, subscriptions.Count);
             }
         }
                 /// <summary>Vérifie le nettoyage partiel des menus face aux objets COM en lecture seule ou absents.</summary>
@@ -211,28 +212,17 @@ namespace VBAi.Tests.Unit
             var view = host.CommandBars[0].Controls.Items[0].Controls.Items;
             var tools = host.CommandBars[0].Controls.Items[1].Controls.Items;
             var editor = host.CommandBars[1].Controls.Items;
-            Assert.AreEqual("VBAi.Assistant", view[0].Tag);
-            Assert.AreEqual("VBAi.ModernEditor", view[1].Tag);
-            Assert.AreEqual("VBAi.GitHub", view[2].Tag);
-            Assert.AreEqual("VBAi.Settings", tools[0].Tag);
+            CollectionAssert.AreEquivalent(new[] { "VBAi.Assistant", "VBAi.ModernEditor", "VBAi.Tests", "VBAi.GitHub" }, view.Select(button => button.Tag).ToArray());
+            CollectionAssert.AreEquivalent(new[] { "VBAi.Settings" }, tools.Select(button => button.Tag).ToArray());
             Assert.AreEqual(3, editor.Count);
-            Assert.AreEqual("VBAi.expliquer", editor[0].Tag);
-            Assert.AreEqual("VBAi.corriger", editor[1].Tag);
-            Assert.AreEqual("VBAi.refactoriser", editor[2].Tag);
-            Assert.AreEqual(7, icons.Count);
-            foreach (var button in new[]
+            CollectionAssert.AreEquivalent(new[] { "VBAi.expliquer", "VBAi.corriger", "VBAi.refactoriser" }, editor.Select(button => button.Tag).ToArray());
+            Assert.AreEqual(8, icons.Count);
+            var buttons = view.Concat(tools).Concat(editor).ToDictionary(button => button.Tag);
+            var callbackTags = new[] { "VBAi.Assistant", "VBAi.Settings", "VBAi.GitHub", "VBAi.ModernEditor", "VBAi.Tests", "VBAi.expliquer", "VBAi.corriger", "VBAi.refactoriser" };
+            Assert.AreEqual(UiText.Get("VBAi test explorer…"), buttons["VBAi.Tests"].Caption);
+            foreach (string tag in callbackTags)
             {
-                view[0],
-                tools[0],
-                view[2],
-                view[1],
-                editor[0],
-                editor[1],
-                editor[2]
-            }
-
-            )
-            {
+                var button = buttons[tag];
                 var arguments = new object[]
                 {
                     button,
@@ -242,24 +232,13 @@ namespace VBAi.Tests.Unit
                 Assert.AreEqual(true, arguments[1], "The VBE default click action must be canceled.");
             }
 
-            CollectionAssert.AreEqual(new[] { "assistant", "settings", "github", "/editor", "/expliquer", "/corriger", "/refactoriser" }, actions);
+            CollectionAssert.AreEqual(new[] { "assistant", "settings", "github", "/editor", "/tests", "/expliquer", "/corriger", "/refactoriser" }, actions);
             menu.Dispose();
-            Assert.AreEqual(7, removed);
-            foreach (var button in new[]
-            {
-                view[0],
-                tools[0],
-                view[2],
-                view[1],
-                editor[0],
-                editor[1],
-                editor[2]
-            }
-
-            )
+            Assert.AreEqual(8, removed);
+            foreach (var button in buttons.Values)
                 Assert.AreEqual(1, button.DeleteCount);
             menu.Dispose();
-            Assert.AreEqual(7, removed, "Disposal must be idempotent.");
+            Assert.AreEqual(8, removed, "Disposal must be idempotent.");
         }
 
         /// <summary>Supprime les boutons déjà créés lorsque la création du bouton Git échoue.</summary>
@@ -307,7 +286,7 @@ namespace VBAi.Tests.Unit
             }, (button, iconType) =>
             {
             }))
-                Assert.AreEqual(4, subscribed);
+                Assert.AreEqual(5, subscribed);
         }
 
         /// <summary>Nettoie le bouton éditeur partiel sans retirer les commandes principales après échec d’abonnement.</summary>
@@ -328,19 +307,20 @@ namespace VBAi.Tests.Unit
             }, (button, iid, dispid, handler) =>
             {
                 subscriptions++;
-                if (subscriptions == 5)
+                if (((FakeButton)button).Tag == "VBAi.expliquer")
                     throw new InvalidOperationException("Editor event unavailable");
             }, (button, iid, dispid, handler) => removals++, (button, iconType) =>
             {
             }))
             {
-                Assert.AreEqual(5, subscriptions);
+                Assert.AreEqual(6, subscriptions);
                 Assert.AreEqual(1, host.CommandBars[1].Controls.Items.Count);
-                Assert.AreEqual(0, host.CommandBars[0].Controls.Items[0].Controls.Items[0].DeleteCount);
+                foreach (var button in host.CommandBars[0].Controls.Items[0].Controls.Items)
+                    Assert.AreEqual(0, button.DeleteCount, button.Tag);
             }
 
-            Assert.AreEqual(5, removals);
-            Assert.AreEqual(1, host.CommandBars[1].Controls.Items[0].DeleteCount);
+            Assert.AreEqual(6, removals);
+            Assert.AreEqual(1, host.CommandBars[1].Controls.Items.Single(button => button.Tag == "VBAi.expliquer").DeleteCount);
         }
     }
 }

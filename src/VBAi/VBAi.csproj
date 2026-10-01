@@ -88,6 +88,10 @@
     <Compile Update="Ui\CodeDiffView.Designer.cs"><DependentUpon>CodeDiffView.cs</DependentUpon></Compile>
     <EmbeddedResource Update="Localization\*.resx"><LogicalName>VBAi.Localization.%(Filename).resources</LogicalName></EmbeddedResource>
     <Compile Update="Git\GitWindow.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="Testing\TestExplorerWindow.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="Testing\TestExplorerWindow.Designer.cs"><DependentUpon>TestExplorerWindow.cs</DependentUpon></Compile>
+    <Compile Update="Testing\TestSupportReviewDialog.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="Testing\TestSupportReviewDialog.Designer.cs"><DependentUpon>TestSupportReviewDialog.cs</DependentUpon></Compile>
     <Compile Update="Git\GitWindow.Designer.cs"><DependentUpon>GitWindow.cs</DependentUpon></Compile>
     <Compile Update="Llm\Chat\ChatQueuedMessageView.cs"><SubType>UserControl</SubType></Compile>
     <Compile Update="Llm\Chat\ChatQueuedMessageView.Designer.cs"><DependentUpon>ChatQueuedMessageView.cs</DependentUpon></Compile>

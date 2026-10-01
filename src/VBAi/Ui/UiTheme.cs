@@ -81,6 +81,10 @@ namespace VBAi
         /// <summary>Secondary text without reducing disabled-state legibility.</summary>
         /// <value>The current value represented by this member.</value>
         internal static Color Muted => HighContrast() ? SystemColors.GrayText : Dark ? Color.FromArgb(155, 165, 180) : Color.FromArgb(94, 106, 124);
+        /// <summary>Semantic success foreground shared by status views, with a system-color fallback.</summary>
+        internal static Color Success => HighContrast() ? SystemColors.WindowText : Dark ? Color.LightGreen : Color.ForestGreen;
+        /// <summary>Semantic failure foreground shared by status views, with a system-color fallback.</summary>
+        internal static Color Error => HighContrast() ? SystemColors.WindowText : Dark ? Color.LightCoral : Color.Firebrick;
         /// <summary>Detects hosted Designer controls even after the design license context has ended.</summary>
         /// <param name="control">Control whose native palette and geometry are used.</param>
         /// <returns>The result produced by this operation.</returns>

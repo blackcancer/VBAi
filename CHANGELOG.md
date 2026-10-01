@@ -8,6 +8,10 @@ investigations and test transcripts belong in Git history and test artifacts.
 
 ### Added
 
+- A draft VBA test explorer with annotated discovery, guarded single/batch runs,
+  fixtures and assertions, themed result icons, human/JSON reports, LLM tools and
+  procedure coverage on Excel/Word/PowerPoint copies. Registered native execution
+  and production acceptance remain incomplete; see the VBA testing guide.
 - AI conversations with Discussion, Plan and Agent modes, explicit context,
   provider selection, project permissions and reviewable code changes.
 - Monaco-based editing with VBA and COM language assistance, native compilation
