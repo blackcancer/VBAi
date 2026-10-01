@@ -72,7 +72,8 @@ namespace VBAi.Tests.Unit
                 "$handler=[regex]::Match($commands,'(?m)^sxe -c \"([^\"]+)\" -c2 \"([^\"]+)\" 0xc0000409$');" +
                 "if(-not $handler.Success){throw 'Both exception chances must be armed'};" +
                 "if($handler.Groups[1].Value -cne $handler.Groups[2].Value){throw 'Chance collectors differ'};" +
-                "if($handler.Groups[1].Value -cne '.echo VBAI_TEARDOWN_EXCEPTION_BEGIN; .lastevent; .exr -1; .ecxr; kv; .echo VBAI_TEARDOWN_EXCEPTION_END; qd'){throw 'Collector scope changed'};" +
+                "if($handler.Groups[1].Value -cne '.echo VBAI_TEARDOWN_EXCEPTION_BEGIN; .lastevent; .exr -1; .ecxr; kv; .echo VBAI_TEARDOWN_EXCEPTION_END; gn'){throw 'Collector must preserve unhandled fatal semantics'};" +
+                "if($commands -notmatch '(?m)^sxn -c \"qd\" epr$'){throw 'Debugger may quit automatically only after process exit'};" +
                 "if($commands -notmatch '(?m)^\\.echo VBAI_TEARDOWN_READY 424242 0123456789abcdef0123456789abcdef$'){throw 'Owned readiness identity missing'}";
             string ps = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
             var info = new ProcessStartInfo(ps, "-NoLogo -NoProfile -NonInteractive -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(command))) {
@@ -91,9 +92,11 @@ namespace VBAi.Tests.Unit
             string common = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tools", "probes", "OwnedTeardownTrace.Common.ps1");
             string genuine = "VBAI_TEARDOWN_EXCEPTION_BEGIN\r\nExceptionCode: c0000409\r\nrip=0000000000000010 rsp=0000000000000020\r\nChild-SP RetAddr Call Site\r\nVBAI_TEARDOWN_EXCEPTION_END\r\n";
             string echo = "0:000> sxe -c \".echo VBAI_TEARDOWN_EXCEPTION_BEGIN; .exr -1; kv; .echo VBAI_TEARDOWN_EXCEPTION_END\" 0xc0000409";
+            string missingContext = genuine.Replace("rip=0000000000000010 rsp=0000000000000020", "Unable to get exception context, HRESULT 0x8000FFFF");
             string command = "$ErrorActionPreference='Stop'; . " + Quote(common) +
                 ";if(-not (Test-TeardownExceptionCapture " + Quote(genuine) + ")){throw 'Executed exception missing'};" +
-                "if(Test-TeardownExceptionCapture " + Quote(echo) + "){throw 'Command echo accepted'}";
+                "if(Test-TeardownExceptionCapture " + Quote(echo) + "){throw 'Command echo accepted'};" +
+                "if(Test-TeardownExceptionCapture " + Quote(missingContext) + "){throw 'Incomplete exception context accepted'}";
             string ps = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
             var info = new ProcessStartInfo(ps, "-NoLogo -NoProfile -NonInteractive -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(command))) {
                 UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };

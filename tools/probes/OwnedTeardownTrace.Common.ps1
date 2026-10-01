@@ -33,9 +33,12 @@ function Get-TeardownCommands([string]$log, [int]$targetProcessId, [string]$nonc
     $safeLog = $log.Replace('\','/')
     # -c is first-chance only; failfast can arrive directly at second chance.
     # https://learn.microsoft.com/en-us/windows-hardware/drivers/debuggercmds/sx--sxd--sxe--sxi--sxn--sxr--sx---set-exceptions-
-    $capture = '.echo VBAI_TEARDOWN_EXCEPTION_BEGIN; .lastevent; .exr -1; .ecxr; kv; .echo VBAI_TEARDOWN_EXCEPTION_END; qd'
+    # Continue fatal exceptions unhandled; qd would mark the outstanding event handled.
+    # https://learn.microsoft.com/en-us/windows-hardware/drivers/debuggercmds/gn--gn--go-with-exception-not-handled-
+    $capture = '.echo VBAI_TEARDOWN_EXCEPTION_BEGIN; .lastevent; .exr -1; .ecxr; kv; .echo VBAI_TEARDOWN_EXCEPTION_END; gn'
     return ".logopen /u `"$safeLog`"`n" +
         "sxe -c `"$capture`" -c2 `"$capture`" 0xc0000409`n" +
+        "sxn -c `"qd`" epr`n" +
         ".echo VBAI_TEARDOWN_READY $targetProcessId $nonce`ng`n"
 }
 function Test-TeardownExceptionCapture([string]$text) {

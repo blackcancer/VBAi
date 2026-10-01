@@ -15,6 +15,7 @@
     <Compile Include="Integration\**\*.cs" />
     <Compile Include="Scenarios\**\*.cs" />
     <Compile Include="Infrastructure\**\*.cs" />
+    <Compile Include="..\..\tools\probes\OwnedTeardownTrace.Helper.cs" Link="Infrastructure\Diagnostics\OwnedTeardownTrace.Helper.cs" />
     <Compile Include="..\VBAi.Git.Smoke\GitTests.cs" Link="Shared\Git\GitTests.cs" />
     <Compile Include="..\VBAi.Git.Smoke\GitScratchDirectory.cs" Link="Shared\Git\GitScratchDirectory.cs" />
     <Compile Include="..\VBAi.Git.Smoke\AdvancedGitTests.cs" Link="Shared\Git\AdvancedGitTests.cs" />
