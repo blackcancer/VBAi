@@ -730,19 +730,20 @@ namespace VBAi.Tests.Integration
                     return;
                 }
             }
-            try { Release(document); } catch (Exception error) { RecordCleanupFailure(error.Message); }
+            bool externalReferencesReleased = true;
+            try { Release(document); } catch (Exception error) { externalReferencesReleased = false; RecordCleanupFailure(error.Message); }
             document = null;
             if (owned && nativeIdentityVerified && Kind != "Access" && Kind != "Publisher")
                 try { QuitOwnedOnce(() => { if (Kind == "Word") ((dynamic)application).Quit(0); else ((dynamic)application).Quit(); }); }
                 catch (Exception error) { RetainUncertainOffice(); RecordCleanupFailure(error.Message); return; }
-            try { Release(application); } catch (Exception error) { RecordCleanupFailure(error.Message); }
+            try { Release(application); } catch (Exception error) { externalReferencesReleased = false; RecordCleanupFailure(error.Message); }
             application = null;
             var process = ownedProcess;
             if (process != null)
                 try
                     {
                         int exitCode = 0;
-                        bool exited = shutdownEvidence.ObserveExit(() => WaitForOwnedExit(process, 5000),
+                        bool exited = shutdownEvidence.ObserveExit(() => WaitForShutdownExit(process, 5000, externalReferencesReleased),
                             () => { exitCode = ReadOwnedExitCode(process); return exitCode; }, process.Dispose, FlushShutdownEvidence);
                         if (!exited)
                         {

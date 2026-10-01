@@ -1,6 +1,8 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
+using System.Windows.Forms;
 using System.Web.Script.Serialization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -12,16 +14,68 @@ namespace VBAi.Tests.Integration
         private OfficeOwnedShutdownEvidence shutdownEvidence;
         // Synthetic mirror tests replace only exit observation; they never launch
         // or terminate a host or change production COM behavior.
-        internal Func<Process, int, bool> WaitForOwnedExit = (process, timeout) => process.WaitForExit(timeout);
+        private static readonly Func<Process, int, bool> DefaultOwnedExitWait = (process, timeout) => process.WaitForExit(timeout);
+        internal Func<Process, int, bool> WaitForOwnedExit = DefaultOwnedExitWait;
+        internal Action PumpWordShutdownMessages = Application.DoEvents;
+        internal Func<Process, bool> ReadWordProcessExit = process => process.WaitForExit(0);
+        private readonly int shutdownOwnerThread = Thread.CurrentThread.ManagedThreadId;
         internal Func<Process, int> ReadOwnedExitCode = process => process.ExitCode;
 
         private void RequireUsableOwnedHost()
         {
             commandContainment.RequireTerminal();
-            if (hostTeardownRefused || (shutdownEvidence != null && !owned))
+            if (hostTeardownRefused || (shutdownEvidence != null && (!owned || (Kind == "Word" && Equals(shutdownEvidence.Record["TeardownPrepared"], true)))))
                 throw new InvalidOperationException("The original Office ownership scope is closed or unverified; no native request, Save, Close/Quit retry or reopen is permitted.");
         }
 
+        private bool WaitForShutdownExit(Process process, int timeout, bool externalReferencesReleased)
+        {
+            if (Kind != "Word" || !ReferenceEquals(WaitForOwnedExit, DefaultOwnedExitWait) || !externalReferencesReleased)
+                return WaitForOwnedExit(process, timeout);
+            Assert.AreEqual(shutdownOwnerThread, Thread.CurrentThread.ManagedThreadId, "Word shutdown observation must stay on its owning thread.");
+            Assert.AreSame(ownedProcess, process, "Only the originally retained Word process may be observed.");
+            Assert.AreEqual("RETURNED", shutdownEvidence.Record["QuitOutcome"]);
+            Assert.IsNull(application); Assert.IsNull(document);
+            string originalHandle = "0x" + unchecked((ulong)process.Handle.ToInt64()).ToString("X16");
+            Assert.AreEqual(shutdownEvidence.Record["OriginalProcessHandle"], originalHandle);
+            var clock = Stopwatch.StartNew();
+            int pumps = 0;
+            shutdownEvidence.Record["WordMessagePumpEnabled"] = true;
+            shutdownEvidence.Record["ExitObservationThread"] = shutdownOwnerThread;
+            try
+            {
+                return WaitForWordExit(timeout, () => clock.ElapsedMilliseconds,
+                    () => ReadWordProcessExit(process), () => { pumps++; PumpWordShutdownMessages(); }, Thread.Sleep);
+            }
+            finally
+            {
+                shutdownEvidence.Record["ExitWaitElapsedMilliseconds"] = clock.ElapsedMilliseconds;
+                shutdownEvidence.Record["WordMessagePumpAttempts"] = pumps;
+                shutdownEvidence.Record["ExitWaitProcessHandle"] = originalHandle;
+            }
+        }
+
+        /// <summary>Pumps only during one known shutdown observation; it never dispatches COM or repeats Close/Quit.</summary>
+        internal static bool WaitForWordExit(int timeout, Func<long> elapsed, Func<bool> exited, Action pump, Action<int> pause)
+        {
+            while (true)
+            {
+                if (elapsed() > timeout) return false;
+                bool observedExit = exited();
+                if (elapsed() > timeout) return false;
+                if (observedExit) return true;
+                long remaining = timeout - elapsed();
+                if (remaining <= 0) return false;
+                pump();
+                if (elapsed() > timeout) return false;
+                observedExit = exited();
+                if (elapsed() > timeout) return false;
+                if (observedExit) return true;
+                remaining = timeout - elapsed();
+                if (remaining <= 0) return false;
+                pause((int)Math.Min(25, remaining));
+            }
+        }
         private void PrepareOwnedShutdown()
         {
             Assert.IsNotNull(ownedProcess, "The original owned process handle must be retained before Close/Quit.");
