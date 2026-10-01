@@ -114,6 +114,8 @@ namespace VBAi.Tests.Unit
             internal bool FailModels, FailTurn, Complete = true;
             /// <summary>Action appelée avant les événements de fin du tour.</summary>
             internal Action BeforeComplete;
+            internal string NextThreadId = "thread";
+            internal readonly List<string> Requests = new List<string>();
             /// <summary>Modèles renvoyés par la requête de liste.</summary>
             internal object[] Models = { new { model = "model", displayName = "Model", isDefault = true, defaultReasoningEffort = "medium", supportedReasoningEfforts = new[] { new { reasoningEffort = "medium", description = "Medium" } } } };
             /// <summary>Marque le transport comme actif.</summary>
@@ -129,11 +131,12 @@ namespace VBAi.Tests.Unit
             /// <param name="line">Ligne JSON envoyée par le client.</param>
             public void Send(string line)
             {
+                Requests.Add(line);
                 var msg = (IDictionary<string, object>)json.DeserializeObject(line);
                 if (!msg.ContainsKey("id") || !msg.ContainsKey("method")) return;
                 var id = msg["id"]; var method = Convert.ToString(msg["method"]);
                 if (method == "model/list" && FailModels) { Emit(new { id, error = new { message = "models failed" } }); return; }
-                object result = method == "account/read" ? (object)new { account = new { type = "chatgpt" } } : method == "model/list" ? new { data = Models, nextCursor = (string)null } : method == "thread/start" || method == "thread/resume" ? (object)new { thread = new { id = "thread" } } : method == "turn/start" ? (object)new { turn = new { id = "turn" } } : new { };
+                object result = method == "account/read" ? (object)new { account = new { type = "chatgpt" } } : method == "model/list" ? new { data = Models, nextCursor = (string)null } : method == "thread/start" || method == "thread/resume" ? (object)new { thread = new { id = NextThreadId } } : method == "turn/start" ? (object)new { turn = new { id = "turn" } } : new { };
                 if (method == "turn/start") Emit(new { method = "turn/started", @params = new { threadId = "thread", turn = new { id = "turn" } } });
                 Emit(new { id, result });
                 if (method == "turn/start" && Complete) { BeforeComplete?.Invoke(); Emit(new { method = "item/agentMessage/delta", @params = new { threadId = "thread", itemId = "answer", delta = "answer" } }); Emit(new { method = "item/completed", @params = new { threadId = "thread", item = new { type = "agentMessage", phase = "final", id = "answer", text = "answer" } } }); Emit(new { method = "turn/completed", @params = new { threadId = "thread", turn = new { status = FailTurn ? "failed" : "completed", error = FailTurn ? new { message = "turn failed" } : null } } }); }

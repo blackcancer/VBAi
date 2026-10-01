@@ -32,7 +32,7 @@ namespace VBAi.Tests.Unit
                 {
                     var session = new ChatSessionState
                     {
-                        Scope = "temporary:test",
+                        Scope = @"C:\OWNED\PERSISTENCE.XLSM",
                         Title = "Essai éè"
                     };
                     Set(window, "sessionStore", store);
@@ -72,16 +72,16 @@ namespace VBAi.Tests.Unit
             try
             {
                 using (var store = new ChatSessionStore(path))
-                using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:A", Title = "A" }))
+                using (var window = ReadyCodexWindow(new ChatSessionState { Scope = @"C:\OWNED\SCOPEA.XLSM", Title = "A" }))
                 {
                     window.ModelCatalogueOverride = provider => Task.FromResult(new LlmModelOption[0]);
                     var original = Get<ChatSessionState>(window, "currentSession");
                     Get<List<ChatSessionState>>(window, "scopeSessions").Add(original);
                     var scopes = Get<ComboBox>(window, "scopePicker");
-                    AddScope(window, "temporary:A");
-                    AddScope(window, "temporary:B");
-                    store.Save(new ChatSessionState { Scope = "temporary:B", Title = "B", Draft = "Brouillon B" });
-                    store.SaveMemory("temporary:B", "Mémoire B");
+                    AddScope(window, @"C:\OWNED\SCOPEA.XLSM");
+                    AddScope(window, @"C:\OWNED\SCOPEB.XLSM");
+                    store.Save(new ChatSessionState { Scope = @"C:\OWNED\SCOPEB.XLSM", Title = "B", Draft = "Brouillon B" });
+                    store.SaveMemory(@"C:\OWNED\SCOPEB.XLSM", "Mémoire B");
                     Set(window, "sessionStore", store);
                     scopes.SelectedIndex = 1;
                     Call(window, "ChangeScope"); CompleteScopeLoad(window);

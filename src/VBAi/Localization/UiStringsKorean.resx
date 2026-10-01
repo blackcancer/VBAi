@@ -2179,4 +2179,6 @@ Git Credential Manager로 로그인하며 커밋 작성자 정보는 Git에서 �
   <data name="Conversation deleted from local history" xml:space="preserve"><value>로컬 기록에서 대화가 삭제되었습니다</value></data>
   <data name="Conversation not deleted: " xml:space="preserve"><value>대화가 삭제되지 않았습니다: </value></data>
   <data name="This conversation changed in another host. Reopen it before deleting." xml:space="preserve"><value>이 대화가 다른 호스트 앱에서 변경되었습니다. 삭제하기 전에 다시 여세요.</value></data>
+  <data name="Temporary document: VBAi history and project notes stay in memory until the document is saved." xml:space="preserve"><value>저장되지 않은 문서: 문서를 저장할 때까지 VBAi 기록과 프로젝트 메모는 메모리에만 유지됩니다.</value></data>
+  <data name="Local history is kept in memory because storage is unavailable." xml:space="preserve"><value>저장소를 사용할 수 없어 로컬 기록이 메모리에 유지됩니다.</value></data>
 </root>

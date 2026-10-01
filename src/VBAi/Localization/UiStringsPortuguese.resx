@@ -2179,4 +2179,6 @@ Conexão pelo Git Credential Manager; a identidade dos commits é configurada no
   <data name="Conversation deleted from local history" xml:space="preserve"><value>Conversa excluída do histórico local</value></data>
   <data name="Conversation not deleted: " xml:space="preserve"><value>Conversa não excluída: </value></data>
   <data name="This conversation changed in another host. Reopen it before deleting." xml:space="preserve"><value>Esta conversa foi alterada em outro aplicativo host. Abra-a novamente antes de excluí-la.</value></data>
+  <data name="Temporary document: VBAi history and project notes stay in memory until the document is saved." xml:space="preserve"><value>Documento não salvo: o histórico do VBAi e as notas do projeto ficam na memória até o documento ser salvo.</value></data>
+  <data name="Local history is kept in memory because storage is unavailable." xml:space="preserve"><value>O histórico local fica na memória porque o armazenamento não está disponível.</value></data>
 </root>

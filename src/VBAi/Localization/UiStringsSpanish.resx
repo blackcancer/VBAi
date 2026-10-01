@@ -2179,4 +2179,6 @@ Inicio de sesión mediante Git Credential Manager; la identidad de los commits s
   <data name="Conversation deleted from local history" xml:space="preserve"><value>Conversación eliminada del historial local</value></data>
   <data name="Conversation not deleted: " xml:space="preserve"><value>Conversación no eliminada: </value></data>
   <data name="This conversation changed in another host. Reopen it before deleting." xml:space="preserve"><value>Esta conversación cambió en otra aplicación anfitriona. Vuelva a abrirla antes de eliminarla.</value></data>
+  <data name="Temporary document: VBAi history and project notes stay in memory until the document is saved." xml:space="preserve"><value>Documento sin guardar: el historial de VBAi y las notas del proyecto permanecen en memoria hasta que se guarde el documento.</value></data>
+  <data name="Local history is kept in memory because storage is unavailable." xml:space="preserve"><value>El historial local se conserva en memoria porque el almacenamiento no está disponible.</value></data>
 </root>

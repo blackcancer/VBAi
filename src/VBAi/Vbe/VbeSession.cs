@@ -145,6 +145,8 @@ namespace VBAi
         /// <summary>Obtient la collection émettant les événements de projet.</summary>
         /// <returns>Collection VBProjects native.</returns>
         internal object ProjectsEventSource() { return vbe.VBProjects; }
+        /// <summary>Resolves a borrowed live project for private owning-thread conversation identity checks.</summary>
+        internal object ProjectScopeSource(string selector) => (object)GetProject(selector);
 
         /// <summary>Obtient la collection émettant les événements de composants.</summary>
         /// <param name="project">Projet ciblé.</param>

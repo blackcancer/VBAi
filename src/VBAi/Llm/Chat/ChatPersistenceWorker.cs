@@ -55,6 +55,7 @@ namespace VBAi
         internal void Enqueue(Snapshot snapshot)
         {
             if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
+            if (ChatSessionStore.IsTransientScope(snapshot.Scope)) return;
             lock (gate)
             {
                 if (stopping) throw new ObjectDisposedException(nameof(ChatPersistenceWorker));
@@ -73,6 +74,7 @@ namespace VBAi
         internal System.Threading.Tasks.Task<Exception> DeleteAsync(Snapshot snapshot)
         {
             if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
+            if (ChatSessionStore.IsTransientScope(snapshot.Scope)) return System.Threading.Tasks.Task.FromResult<Exception>(null);
             lock (gate)
             {
                 if (stopping) throw new ObjectDisposedException(nameof(ChatPersistenceWorker));
@@ -162,6 +164,7 @@ namespace VBAi
 
         private void WriteRecovery(Snapshot snapshot, string destination = null)
         {
+            if (ChatSessionStore.IsTransientScope(snapshot.Scope)) return;
             // Same local-data privacy boundary as chat.db; never replay this file automatically.
             Directory.CreateDirectory(RecoveryDirectory);
             var serializer = new JavaScriptSerializer { MaxJsonLength = 64 * 1024 * 1024 };

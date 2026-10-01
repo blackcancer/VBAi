@@ -154,6 +154,7 @@ namespace VBAi
     // Uses the SQLite runtime shipped with Windows. SQL values are always bound parameters.
     internal sealed partial class ChatSessionStore : IDisposable
     {
+        internal static bool IsTransientScope(string scope) => scope != null && scope.StartsWith("temporary:", StringComparison.Ordinal);
         /// <summary>Handle natif de la base SQLite ouverte.</summary>
         private IntPtr database;
         internal string DatabasePath { get; private set; }
@@ -187,6 +188,7 @@ namespace VBAi
         /// <param name="session">État de session à persister.</param>
         public void Save(ChatSessionState session)
         {
+            if (IsTransientScope(session.Scope)) return;
             string payload = json.Serialize(session);
             session.StorageVersion = SavePayload(session.Id, session.Scope, session.Title, payload, session.StorageVersion);
         }
@@ -194,6 +196,7 @@ namespace VBAi
         /// <summary>Writes an immutable UI snapshot on the connection's owning worker.</summary>
         internal string SavePayload(string id, string scope, string title, string payload, string expectedVersion)
         {
+            if (IsTransientScope(scope)) return null;
             string version = DateTime.UtcNow.ToString("O") + "-" + Guid.NewGuid().ToString("N");
             if (expectedVersion == null)
                 Execute("INSERT OR IGNORE INTO chat_sessions(id, scope, title, updated, payload) VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -209,6 +212,7 @@ namespace VBAi
         /// <summary>Deletes only the local conversation revision owned by this writer.</summary>
         internal void Delete(string id, string scope, string expectedVersion)
         {
+            if (IsTransientScope(scope)) return;
             if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(scope)) throw new ArgumentException("A conversation identity and scope are required.");
             Execute("DELETE FROM chat_sessions WHERE id = ?1 AND scope = ?2 AND updated = ?3", id, scope, expectedVersion);
             if (Native.sqlite3_changes(database) == 1) return;
@@ -223,6 +227,7 @@ namespace VBAi
         public List<ChatSessionState> List(string scope)
         {
             var result = new List<ChatSessionState>();
+            if (IsTransientScope(scope)) return result;
             using (var statement = Prepare("SELECT payload, updated FROM chat_sessions WHERE scope = ?1 ORDER BY updated DESC", scope))
             {
                 while (statement.Step() == 100)
@@ -238,6 +243,69 @@ namespace VBAi
             return result;
         }
 
+        internal bool HasSessions(string scope)
+        {
+            if (IsTransientScope(scope)) return false;
+            using (var statement = Prepare("SELECT 1 FROM chat_sessions WHERE scope = ?1 LIMIT 1", scope)) return statement.Step() == 100;
+        }
+
+        internal bool HasScopeData(string scope)
+        {
+            if (IsTransientScope(scope)) return false;
+            using (var statement = Prepare("SELECT 1 FROM chat_sessions WHERE scope = ?1 UNION ALL SELECT 1 FROM project_memory WHERE scope = ?1 UNION ALL SELECT 1 FROM code_bookmarks WHERE scope = ?1 LIMIT 1", scope))
+                return statement.Step() == 100;
+        }
+
+        internal sealed class PromotionRow
+        {
+            internal string Id, Title, Payload;
+        }
+        private sealed class ScopeOccupiedException : Exception { }
+        internal sealed class PromotionOutcomeUnverifiedException : IOException
+        {
+            internal PromotionOutcomeUnverifiedException(Exception error, Exception rollback) : base(
+                "History promotion failed and its database outcome is unverified. Reopen the conversation before saving again.",
+                rollback == null ? error : new AggregateException(error, rollback)) { }
+        }
+
+        /// <summary>Claims an empty saved scope and writes its initial conversations and notes atomically.</summary>
+        internal Dictionary<string, string> PromoteEmptyScope(string scope, IList<PromotionRow> rows, string memory)
+        {
+            if (IsTransientScope(scope) || !Path.IsPathRooted(scope)) throw new ArgumentException("A saved document scope is required.");
+            bool commitAttempted = false;
+            try
+            {
+                Execute("BEGIN IMMEDIATE");
+                if (HasScopeData(scope)) throw new ScopeOccupiedException();
+                var versions = new Dictionary<string, string>();
+                foreach (var row in rows) versions.Add(row.Id, SavePayload(row.Id, scope, row.Title, row.Payload, null));
+                if (memory != null) SaveMemory(scope, memory);
+                commitAttempted = true; Execute("COMMIT");
+                return versions;
+            }
+            catch (ScopeOccupiedException error)
+            {
+                if (!RollbackPromotion(out var rollback)) throw new PromotionOutcomeUnverifiedException(error, rollback);
+                return null;
+            }
+            catch (Exception error)
+            {
+                if (commitAttempted && Native.sqlite3_get_autocommit(database) != 0)
+                    throw new PromotionOutcomeUnverifiedException(error, null);
+                if (!RollbackPromotion(out var rollback)) throw new PromotionOutcomeUnverifiedException(error, rollback);
+                throw;
+            }
+        }
+
+        private bool RollbackPromotion(out Exception error)
+        {
+            error = null;
+            if (Native.sqlite3_get_autocommit(database) != 0) return true;
+            try { Execute("ROLLBACK"); }
+            catch (Exception failure) { error = failure; }
+            return Native.sqlite3_get_autocommit(database) != 0;
+        }
+
         internal sealed class ScopeSnapshot
         {
             internal List<ChatSessionState> Sessions;
@@ -247,6 +315,7 @@ namespace VBAi
         /// <summary>Owns the read connection and decoded objects entirely on a worker until publication.</summary>
         internal static System.Threading.Tasks.Task<ScopeSnapshot> ReadScopeAsync(string path, string scope, bool includeSessions)
         {
+            if (IsTransientScope(scope)) return System.Threading.Tasks.Task.FromResult(new ScopeSnapshot { Sessions = new List<ChatSessionState>(), Memory = "" });
             return System.Threading.Tasks.Task.Run(() => {
                 using (var store = new ChatSessionStore(path, true))
                     return new ScopeSnapshot {
@@ -282,6 +351,7 @@ namespace VBAi
         /// <returns>Contenu enregistré, ou une chaîne vide si aucune mémoire n’existe.</returns>
         public string ReadMemory(string scope)
         {
+            if (IsTransientScope(scope)) return "";
             using (var statement = Prepare("SELECT content FROM project_memory WHERE scope = ?1", scope))
                 return statement.Step() == 100 ? ReadText(Native.sqlite3_column_text(statement.Handle, 0)) : "";
         }
@@ -291,6 +361,7 @@ namespace VBAi
         /// <param name="content">Contenu à enregistrer ; une valeur nulle devient une chaîne vide.</param>
         public void SaveMemory(string scope, string content)
         {
+            if (IsTransientScope(scope)) return;
             Execute("INSERT OR REPLACE INTO project_memory(scope, content) VALUES (?1, ?2)", scope, content ?? "");
         }
 
@@ -380,6 +451,7 @@ namespace VBAi
             /// <param name="db">Handle de la base à fermer.</param>
             /// <returns>Code de résultat SQLite.</returns>
             [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int sqlite3_close_v2(IntPtr db);
+            [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int sqlite3_get_autocommit(IntPtr db);
             /// <summary>Définit le délai maximal d’attente d’un verrou SQLite.</summary>
             /// <param name="db">Handle de la base.</param>
             /// <param name="ms">Durée d’attente en millisecondes.</param>

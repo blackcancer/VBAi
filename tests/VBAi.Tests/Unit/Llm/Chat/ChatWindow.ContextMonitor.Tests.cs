@@ -38,6 +38,7 @@ namespace VBAi.Tests.Unit
                 Assert.AreEqual(true, Call(window, "RefreshAvailableScopes", runtime.Session));
                 Assert.AreEqual(-1, picker.SelectedIndex);
                 picker.SelectedIndex = 0;
+                CompleteScopeLoad(window);
                 runtime.Host = r => Response.Success(new object[0]);
                 Assert.AreEqual(true, Call(window, "RefreshAvailableScopes", runtime.Session));
                 Assert.AreEqual(-1, picker.SelectedIndex);

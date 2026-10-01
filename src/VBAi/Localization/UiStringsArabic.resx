@@ -2179,4 +2179,6 @@
   <data name="Conversation deleted from local history" xml:space="preserve"><value>تم حذف المحادثة من السجل المحلي</value></data>
   <data name="Conversation not deleted: " xml:space="preserve"><value>لم يتم حذف المحادثة: </value></data>
   <data name="This conversation changed in another host. Reopen it before deleting." xml:space="preserve"><value>تم تغيير هذه المحادثة في تطبيق مضيف آخر. أعد فتحها قبل حذفها.</value></data>
+  <data name="Temporary document: VBAi history and project notes stay in memory until the document is saved." xml:space="preserve"><value>مستند غير محفوظ: يبقى سجل VBAi وملاحظات المشروع في الذاكرة حتى يتم حفظ المستند.</value></data>
+  <data name="Local history is kept in memory because storage is unavailable." xml:space="preserve"><value>يبقى السجل المحلي في الذاكرة لأن التخزين غير متاح.</value></data>
 </root>

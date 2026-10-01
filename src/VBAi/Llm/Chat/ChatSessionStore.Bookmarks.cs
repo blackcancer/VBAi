@@ -34,6 +34,7 @@ namespace VBAi
         public List<CodeBookmark> ListBookmarks(string scope)
         {
             var result = new List<CodeBookmark>();
+            if (IsTransientScope(scope)) return result;
             using (var statement = Prepare("SELECT payload FROM code_bookmarks WHERE scope = ?1 ORDER BY name_key", scope.ToUpperInvariant()))
                 while (statement.Step() == 100) result.Add(json.Deserialize<CodeBookmark>(ReadText(Native.sqlite3_column_text(statement.Handle, 0))));
             return result;
@@ -43,6 +44,7 @@ namespace VBAi
         /// <param name="bookmark">Repère à enregistrer.</param>
         public void SaveBookmark(string scope, CodeBookmark bookmark)
         {
+            if (IsTransientScope(scope)) return;
             Execute("BEGIN IMMEDIATE");
             try
             {
@@ -61,6 +63,7 @@ namespace VBAi
         /// <returns><see langword="true"/> si une ligne a été supprimée.</returns>
         public bool RemoveBookmark(string scope, string name)
         {
+            if (IsTransientScope(scope)) return false;
             Execute("DELETE FROM code_bookmarks WHERE scope = ?1 AND name_key = ?2", scope.ToUpperInvariant(), name.ToUpperInvariant());
             using (var statement = Prepare("SELECT changes()"))
                 return statement.Step() == 100 && ReadText(Native.sqlite3_column_text(statement.Handle, 0)) == "1";

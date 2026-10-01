@@ -2179,4 +2179,6 @@
   <data name="Conversation deleted from local history" xml:space="preserve"><value>Беседа удалена из локальной истории</value></data>
   <data name="Conversation not deleted: " xml:space="preserve"><value>Беседа не удалена: </value></data>
   <data name="This conversation changed in another host. Reopen it before deleting." xml:space="preserve"><value>Эта беседа изменена в другом приложении. Откройте её заново перед удалением.</value></data>
+  <data name="Temporary document: VBAi history and project notes stay in memory until the document is saved." xml:space="preserve"><value>Несохранённый документ: история VBAi и заметки проекта остаются в памяти до сохранения документа.</value></data>
+  <data name="Local history is kept in memory because storage is unavailable." xml:space="preserve"><value>Локальная история остаётся в памяти, поскольку хранилище недоступно.</value></data>
 </root>

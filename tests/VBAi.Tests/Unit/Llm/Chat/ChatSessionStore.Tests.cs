@@ -12,6 +12,84 @@ namespace VBAi.Tests.Unit
     [TestCategory("Unit")]
     public sealed partial class ChatSessionStoreTests
     {
+        private static ChatSessionStore.PromotionRow Promotion(string scope, string text)
+        {
+            var session = new ChatSessionState { Scope = scope, Draft = text };
+            return new ChatSessionStore.PromotionRow { Id = session.Id, Title = session.Title, Payload = new JavaScriptSerializer().Serialize(session) };
+        }
+
+        [TestMethod]
+        public void PromotionClaimsDestinationAtomicallyAcrossTwoOwnedSqliteConnections()
+        {
+            using (var scope = new LlmBoundaryScope())
+            using (var ready = new System.Threading.ManualResetEventSlim())
+            using (var claiming = new System.Threading.ManualResetEventSlim())
+            using (var competing = new System.Threading.ManualResetEventSlim())
+            {
+                string path = Path.Combine(scope.Root, "claim.db"), key = @"C:\OWNED\ATOMIC.XLSM";
+                using (var first = new ChatSessionStore(path))
+                {
+                    var loser = Promotion(key, "competing host");
+                    var second = System.Threading.Tasks.Task.Run(() => {
+                        using (var store = new ChatSessionStore(path))
+                        {
+                            ready.Set(); Assert.IsTrue(claiming.Wait(5000)); competing.Set();
+                            return store.PromoteEmptyScope(key, new[] { loser }, "competing notes");
+                        }
+                    });
+                    Assert.IsTrue(ready.Wait(5000));
+                    var native = first.StepNative; int steps = 0;
+                    first.StepNative = statement => {
+                        int result = native(statement);
+                        if (++steps == 1) { claiming.Set(); Assert.IsTrue(competing.Wait(5000)); Assert.IsFalse(second.Wait(50), "A competing claim must wait for the first BEGIN IMMEDIATE transaction."); }
+                        return result;
+                    };
+                    var winner = Promotion(key, "winning host");
+                    try { Assert.IsNotNull(first.PromoteEmptyScope(key, new[] { winner }, "winning notes")); }
+                    finally { first.StepNative = native; claiming.Set(); }
+                    Assert.IsNull(second.GetAwaiter().GetResult());
+                    Assert.AreEqual(winner.Id, first.List(key).Single().Id); Assert.AreEqual("winning notes", first.ReadMemory(key));
+                }
+            }
+        }
+
+        [TestMethod]
+        public void PromotionRollsBackEveryInitialRowAndNotesWhenAnyWriteFails()
+        {
+            using (var scope = new LlmBoundaryScope())
+            using (var store = new ChatSessionStore(Path.Combine(scope.Root, "rollback.db")))
+            {
+                string key = @"C:\OWNED\ROLLBACK.XLSM"; var native = store.StepNative; int steps = 0;
+                var rows = new[] { Promotion(key, "first"), Promotion(key, "second") };
+                store.StepNative = statement => ++steps == 5 ? throw new IOException("Owned note failure after two inserts") : native(statement);
+                try { Assert.ThrowsException<IOException>(() => store.PromoteEmptyScope(key, rows, "notes")); }
+                finally { store.StepNative = native; }
+                Assert.AreEqual(0, store.List(key).Count); Assert.AreEqual("", store.ReadMemory(key));
+                Assert.IsNotNull(store.PromoteEmptyScope(key, rows, "notes"), "A confirmed rollback permits a fresh claim.");
+                Assert.AreEqual(2, store.List(key).Count); Assert.AreEqual("notes", store.ReadMemory(key));
+            }
+        }
+        [TestMethod]
+        public void TemporaryScopesNeverReadOrWriteSqliteIncludingNotesAndBookmarks()
+        {
+            using (var scope = new LlmBoundaryScope())
+            using (var store = new ChatSessionStore(Path.Combine(scope.Root, "transient.db")))
+            {
+                store.StepNative = statement => { Assert.Fail("A temporary scope reached SQLite."); return 0; };
+                var session = new ChatSessionState { Scope = "temporary:" + Guid.NewGuid().ToString("N"), Draft = "private" };
+                store.Save(session); Assert.IsNull(session.StorageVersion);
+                Assert.IsNull(store.SavePayload(session.Id, session.Scope, "title", "invalid json", null));
+                store.SaveMemory(session.Scope, "notes"); store.SaveBookmark(session.Scope, null);
+                store.Delete(session.Id, session.Scope, null);
+                Assert.AreEqual(0, store.List(session.Scope).Count); Assert.IsFalse(store.HasSessions(session.Scope));
+                Assert.IsFalse(store.HasScopeData(session.Scope));
+                Assert.AreEqual("", store.ReadMemory(session.Scope)); Assert.AreEqual(0, store.ListBookmarks(session.Scope).Count);
+                Assert.IsFalse(store.RemoveBookmark(session.Scope, "bookmark"));
+                var loaded = ChatSessionStore.ReadScopeAsync(Path.Combine(scope.Root, "does-not-exist.db"), session.Scope, true).GetAwaiter().GetResult();
+                Assert.AreEqual(0, loaded.Sessions.Count); Assert.AreEqual("", loaded.Memory);
+            }
+        }
+
         [TestMethod]
         public void DeleteRemovesOnlyTheMatchingConversationAndPreservesMemoryAndOtherScopes()
         {

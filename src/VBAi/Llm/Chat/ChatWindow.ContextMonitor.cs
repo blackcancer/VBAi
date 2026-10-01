@@ -86,6 +86,7 @@ namespace VBAi
         /// <returns><see langword="true"/> si la liste a pu être relue et actualisée.</returns>
         private bool RefreshAvailableScopes(VbeSession session)
         {
+            if (busy || loadingSession || loadingScope || runtimeDisposed || IsDisposed) return false;
             Response response = ReadHost(session, new Request { Command = "list_projects" });
             if (!response.Ok) return false;
             var entries = json.DeserializeObject(json.Serialize(response.Data)) as object[];
@@ -100,16 +101,31 @@ namespace VBAi
                 string name = Convert.ToString(fields["Name"]), path = VbeProjectHostPath.FromFields(fields);
                 bool saved = !string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path);
                 string project = saved ? Path.GetFullPath(path) : name;
-                var previous = old.FirstOrDefault(x => string.Equals(x.Project, project, StringComparison.OrdinalIgnoreCase) && !updated.Contains(x));
+                var previous = saved ? old.FirstOrDefault(x => !ChatSessionStore.IsTransientScope(x.Key) &&
+                    string.Equals(x.Project, project, StringComparison.OrdinalIgnoreCase) && !updated.Contains(x)) : null;
+                object live = TryReadScopeProject(session, project);
+                if (previous == null)
+                {
+                    var matches = old.Where(x => ChatSessionStore.IsTransientScope(x.Key) && !updated.Contains(x) && x.Identity?.Matches(live) == true).ToArray();
+                    if (matches.Length == 1) previous = matches[0];
+                }
                 if (previous != null)
                 {
+                    if (saved && ChatSessionStore.IsTransientScope(previous.Key) && !PromoteScope(previous, project, name)) previous = null;
+                }
+                if (previous != null)
+                {
+                    if (!saved) previous.Project = project;
                     previous.Name = name;
                     previous.Label = name + " · " + (saved ? Path.GetFileName(path) : UiText.Get("unsaved document"));
                 }
-                updated.Add(previous ?? new MacroScope { Project = project, Name = name,
+                var scope = previous ?? new MacroScope { Project = project, Name = name,
                     Key = saved ? project.ToUpperInvariant() : "temporary:" + Guid.NewGuid().ToString("N"),
-                    Label = name + " · " + (saved ? Path.GetFileName(path) : UiText.Get("unsaved document")) });
+                    Label = name + " · " + (saved ? Path.GetFileName(path) : UiText.Get("unsaved document")) };
+                if (previous == null && !saved) scope.Identity = CaptureScopeIdentity(session, project);
+                updated.Add(scope);
             }
+            foreach (var removed in old.Where(item => !updated.Contains(item))) removed.Identity?.Dispose();
             loadingSession = true;
             try
             {
@@ -119,6 +135,7 @@ namespace VBAi
             }
             finally { loadingSession = false; }
             UpdateBudgetControls();
+            UpdateDeleteSessionButton();
             // Never switch an existing conversation to a different macro implicitly.
             return true;
         }

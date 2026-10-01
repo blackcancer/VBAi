@@ -304,7 +304,7 @@ namespace VBAi
         {
             if (IsDisposed) return;
             if (InvokeRequired) { BeginInvoke(new Action(() => SetStatus(text))); return; }
-            status.Text = storageFailed ? text + UiText.Get(" · History not saved") : text;
+            status.Text = storageFailed && !ChatSessionStore.IsTransientScope(currentSession?.Scope) ? text + UiText.Get(" · History not saved") : text;
             toolTips.SetToolTip(status, status.Text);
         }
 
@@ -524,6 +524,7 @@ namespace VBAi
             CleanupRuntime(() => saveTimer?.Stop());
             CleanupRuntime(() => historySearchTimer?.Stop());
             CleanupRuntime(() => projectRetryTimer?.Stop());
+            CleanupRuntime(DisposeScopeIdentities);
             CleanupRuntime(() => persistenceWorker?.Dispose()); persistenceWorker = null;
             CleanupRuntime(() => sessionStore?.Dispose()); sessionStore = null;
             CleanupRuntime(() => activeHttpClient?.Dispose()); activeHttpClient = null;

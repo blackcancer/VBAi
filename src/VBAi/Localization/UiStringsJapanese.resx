@@ -2179,4 +2179,6 @@ Git Credential Manager でサインインします。コミットの作成者情
   <data name="Conversation deleted from local history" xml:space="preserve"><value>会話をローカル履歴から削除しました</value></data>
   <data name="Conversation not deleted: " xml:space="preserve"><value>会話を削除できませんでした：</value></data>
   <data name="This conversation changed in another host. Reopen it before deleting." xml:space="preserve"><value>この会話は別のホストアプリケーションで変更されました。削除する前に開き直してください。</value></data>
+  <data name="Temporary document: VBAi history and project notes stay in memory until the document is saved." xml:space="preserve"><value>未保存のドキュメント：ドキュメントを保存するまで、VBAi の履歴とプロジェクトメモはメモリに保持されます。</value></data>
+  <data name="Local history is kept in memory because storage is unavailable." xml:space="preserve"><value>ストレージが利用できないため、ローカル履歴はメモリに保持されます。</value></data>
 </root>

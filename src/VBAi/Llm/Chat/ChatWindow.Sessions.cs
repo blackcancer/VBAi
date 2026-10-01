@@ -32,6 +32,8 @@ namespace VBAi
         private readonly List<ChatSessionState> scopeSessions = new List<ChatSessionState>();
         /// <summary>Cache des sessions par portée de projet.</summary>
         private readonly Dictionary<string, List<ChatSessionState>> cachedScopes = new Dictionary<string, List<ChatSessionState>>();
+        private readonly Dictionary<string, string> transientMemory = new Dictionary<string, string>();
+        internal static Func<VbeSession, string, object> ReadScopeProject = (session, selector) => session.ProjectScopeSource(selector);
         /// <summary>Minuterie qui regroupe les sauvegardes rapprochées du brouillon.</summary>
         private DispatcherTimer saveTimer;
         private DispatcherTimer historySearchTimer;
@@ -51,9 +53,104 @@ namespace VBAi
             public string Project;
             /// <summary>Nom du projet VBE.</summary>
             public string Name;
+            public ScopeProjectLease Identity;
+            public string FirstSavedPath, PromotionError;
+            public bool PromotionBlocked;
             /// <summary>Retourne le libellé du sélecteur.</summary>
             /// <returns>Valeur de <see cref="Label"/>.</returns>
             public override string ToString() { return Label; }
+        }
+
+        /// <summary>Owns only its acquired IUnknown reference; shared project RCWs are never released.</summary>
+        private sealed class ScopeProjectLease : IDisposable
+        {
+            private object project;
+            private IntPtr unknown;
+            internal ScopeProjectLease(object project)
+            {
+                this.project = project;
+                if (System.Runtime.InteropServices.Marshal.IsComObject(project))
+                    unknown = System.Runtime.InteropServices.Marshal.GetIUnknownForObject(project);
+            }
+            internal bool Matches(object candidate)
+            {
+                try { return project != null && VbeProjectHostPath.SameProject(project, candidate); }
+                catch { return false; }
+            }
+            public void Dispose()
+            {
+                project = null;
+                if (unknown != IntPtr.Zero) { System.Runtime.InteropServices.Marshal.Release(unknown); unknown = IntPtr.Zero; }
+            }
+        }
+
+        private static object TryReadScopeProject(VbeSession session, string selector)
+        {
+            try { return ReadScopeProject(session, selector); }
+            catch { return null; }
+        }
+
+        private static ScopeProjectLease CaptureScopeIdentity(VbeSession session, string selector)
+        {
+            object project = TryReadScopeProject(session, selector);
+            if (project == null) return null;
+            try { return new ScopeProjectLease(project); }
+            catch { return null; }
+        }
+
+        private void DisposeScopeIdentities()
+        {
+            foreach (var scope in scopePicker.Items.OfType<MacroScope>()) scope.Identity?.Dispose();
+        }
+
+        /// <summary>Moves only the exact live unsaved project's in-memory state to its first saved path.</summary>
+        private bool PromoteScope(MacroScope scope, string project, string name)
+        {
+            string oldKey = scope.Key, newKey = project.ToUpperInvariant();
+            if (scope.FirstSavedPath != null && !string.Equals(scope.FirstSavedPath, project, StringComparison.OrdinalIgnoreCase)) return false;
+            scope.FirstSavedPath = project;
+            scope.Project = project;
+            // A previously managed saved scope must retain its separate conversation authority.
+            if (cachedScopes.TryGetValue(newKey, out var occupied) && occupied.Count != 0) return false;
+            if (sessionStore == null || scope.PromotionBlocked)
+            {
+                scope.PromotionError = scope.PromotionError ?? UiText.Get("Memory requires an available SQLite history store.");
+                SetStatus(UiText.Get("Local history is kept in memory because storage is unavailable."));
+                return true;
+            }
+            if (currentSession?.Scope == oldKey) SaveCurrentSession();
+            cachedScopes.TryGetValue(oldKey, out var cached);
+            var sessions = scopeSessions.Where(item => item.Scope == oldKey).Concat(cached ?? new List<ChatSessionState>())
+                .GroupBy(item => item.Id).Select(group => group.First()).ToList();
+            transientMemory.TryGetValue(oldKey, out var memory);
+            Dictionary<string, string> versions;
+            try
+            {
+                var rows = new List<ChatSessionStore.PromotionRow>();
+                foreach (var item in sessions)
+                {
+                    var fields = (Dictionary<string, object>)persistenceJson.DeserializeObject(persistenceJson.Serialize(item));
+                    fields[nameof(ChatSessionState.Scope)] = newKey;
+                    rows.Add(new ChatSessionStore.PromotionRow { Id = item.Id, Title = item.Title, Payload = persistenceJson.Serialize(fields) });
+                }
+                // No temporary writes enter the worker; the initial claim owns this UI connection.
+                versions = sessionStore.PromoteEmptyScope(newKey, rows, memory);
+            }
+            catch (Exception error)
+            {
+                // Keep the original snapshots and notes. Never replay an unverified initial claim.
+                scope.PromotionBlocked = error is ChatSessionStore.PromotionOutcomeUnverifiedException; scope.PromotionError = error.Message;
+                SetStatus(UiText.Get("Local history is kept in memory because storage is unavailable.") + " " + error.Message);
+                return true;
+            }
+            if (versions == null) return false;
+            foreach (var item in sessions) { item.Scope = newKey; item.StorageVersion = versions[item.Id]; }
+            cachedScopes.Remove(oldKey); cachedScopes[newKey] = sessions;
+            transientMemory.Remove(oldKey);
+            scope.Key = newKey; scope.Name = name;
+            scope.Label = name + " · " + Path.GetFileName(project);
+            scope.Identity?.Dispose(); scope.Identity = null;
+            return true;
         }
 
         /// <summary>Initialise le stockage, découvre les portées de projet et connecte les sélecteurs de session.</summary>
@@ -157,12 +254,14 @@ namespace VBAi
                 string name = Convert.ToString(project["Name"]);
                 string path = VbeProjectHostPath.FromFields(project);
                 bool saved = !string.IsNullOrWhiteSpace(path) && Path.IsPathRooted(path);
-                scopePicker.Items.Add(new MacroScope {
+                var scope = new MacroScope {
                     Project = saved ? Path.GetFullPath(path) : name,
                     Name = name,
                     Key = saved ? Path.GetFullPath(path).ToUpperInvariant() : "temporary:" + Guid.NewGuid().ToString("N"),
                     Label = name + " · " + (saved ? Path.GetFileName(path) : UiText.Get("unsaved document"))
-                });
+                };
+                if (!saved) scope.Identity = CaptureScopeIdentity(session, scope.Project);
+                scopePicker.Items.Add(scope);
             }
             return projects;
         }
@@ -194,7 +293,7 @@ namespace VBAi
             {
                 ChatSessionStore.ScopeSnapshot snapshot = null;
                 Exception failure = null;
-                if (path != null)
+                if (path != null && !ChatSessionStore.IsTransientScope(scope.Key))
                 {
                     try { snapshot = await ReadScope(path, scope.Key, cached == null); }
                     catch (Exception error) { failure = error; }
@@ -205,7 +304,8 @@ namespace VBAi
                 scopeSessions.Clear();
                 if (cached != null) scopeSessions.AddRange(cached);
                 else if (snapshot?.Sessions != null) scopeSessions.AddRange(snapshot.Sessions);
-                projectMemory = snapshot?.Memory ?? "";
+                projectMemory = transientMemory.TryGetValue(scope.Key, out var temporaryNotes)
+                    ? temporaryNotes : snapshot?.Memory ?? "";
                 memoryEditor.Text = projectMemory;
                 attachMemory.Checked = false;
                 if (!scopeSessions.Any(item => !item.Archived))
@@ -213,6 +313,9 @@ namespace VBAi
                 loadingScope = loadingSession = false;
                 ActivateSession(scopeSessions.First(item => !item.Archived), false);
                 if (failure != null) SetStatus(UiText.Get("History unavailable: ") + failure.Message);
+                else if (ChatSessionStore.IsTransientScope(scope.Key)) SetStatus(UiText.Get(scope.FirstSavedPath == null
+                    ? "Temporary document: VBAi history and project notes stay in memory until the document is saved."
+                    : "Local history is kept in memory because storage is unavailable."));
             }
             catch (Exception error)
             {
@@ -313,14 +416,15 @@ namespace VBAi
         private void UpdateDeleteSessionButton()
         {
             deleteSession.Enabled = !busy && !loadingSession && !loadingScope && !runtimeDisposed &&
-                sessionStore != null && sessionList.SelectedItem is ChatSessionState;
+                sessionList.SelectedItem is ChatSessionState selected && (ChatSessionStore.IsTransientScope(selected.Scope) || sessionStore != null);
         }
 
         /// <summary>Deletes a confirmed local history entry after its pending writes have finished.</summary>
         private async System.Threading.Tasks.Task DeleteSelectedSessionAsync()
         {
             var selected = sessionList.SelectedItem as ChatSessionState;
-            if (busy || loadingSession || loadingScope || runtimeDisposed || IsDisposed || selected == null || sessionStore == null) return;
+            if (busy || loadingSession || loadingScope || runtimeDisposed || IsDisposed || selected == null ||
+                (!ChatSessionStore.IsTransientScope(selected.Scope) && sessionStore == null)) return;
             if (ShowNotice(this, string.Format(UiText.Get("Delete conversation \"{0}\" from local history? This cannot be undone."), selected.DisplayTitle),
                 UiText.Get("Delete conversation"), System.Windows.Forms.MessageBoxButtons.YesNo,
                 System.Windows.Forms.MessageBoxIcon.Warning) != System.Windows.Forms.DialogResult.Yes) return;
@@ -337,9 +441,12 @@ namespace VBAi
             try
             {
                 Exception recoveryWarning = null;
-                if (persistenceWorker != null)
-                    recoveryWarning = await persistenceWorker.DeleteAsync(new ChatPersistenceWorker.Snapshot(selected, null));
-                else sessionStore.Delete(selected.Id, selected.Scope, selected.StorageVersion);
+                if (!ChatSessionStore.IsTransientScope(selected.Scope))
+                {
+                    if (persistenceWorker != null)
+                        recoveryWarning = await persistenceWorker.DeleteAsync(new ChatPersistenceWorker.Snapshot(selected, null));
+                    else sessionStore.Delete(selected.Id, selected.Scope, selected.StorageVersion);
+                }
                 deletedFromStore = true;
                 if (runtimeDisposed || IsDisposed) return;
                 scopeSessions.RemoveAll(item => item.Id == selected.Id && item.Scope == selected.Scope);
@@ -438,6 +545,7 @@ namespace VBAi
                 currentSession.DraftAttachments = draftAttachments.ToArray();
                 currentSession.DraftReferences = references;
                 if (codex != null && !string.IsNullOrEmpty(codex.ThreadId)) currentSession.CodexThreadId = codex.ThreadId;
+                if (ChatSessionStore.IsTransientScope(currentSession.Scope)) return;
                 // Only immutable strings cross this boundary; mutable activity/card models stay on the UI thread.
                 if (persistenceWorker != null)
                     persistenceWorker.Enqueue(new ChatPersistenceWorker.Snapshot(currentSession, persistenceJson.Serialize(currentSession)));
@@ -445,6 +553,15 @@ namespace VBAi
             }
             catch (Exception ex)
             {
+                if (ChatSessionStore.IsTransientScope(currentSession.Scope))
+                {
+                    LoadLog.Write("Temporary conversation snapshot failed without creating disk recovery: " + ex.GetType().Name);
+                    try { SetStatus(UiText.Get((scopePicker.SelectedItem as MacroScope)?.FirstSavedPath == null
+                        ? "Temporary document: VBAi history and project notes stay in memory until the document is saved."
+                        : "Local history is kept in memory because storage is unavailable.")); }
+                    catch { }
+                    return;
+                }
                 storageFailed = true;
                 LoadLog.Write("Chat history save failed: " + ex.Message);
                 try
@@ -514,10 +631,20 @@ namespace VBAi
         {
             var scope = scopePicker.SelectedItem as MacroScope;
             if (scope == null || busy || loadingScope) return;
+            if (ChatSessionStore.IsTransientScope(scope.Key))
+            {
+                transientMemory[scope.Key] = projectMemory = memoryEditor.Text;
+                RefreshContextChips();
+                SetStatus(UiText.Get(scope.FirstSavedPath == null
+                    ? "Temporary document: VBAi history and project notes stay in memory until the document is saved."
+                    : "Local history is kept in memory because storage is unavailable."));
+                return;
+            }
             if (sessionStore == null) { SetStatus(UiText.Get("Memory requires an available SQLite history store.")); return; }
             try
             {
                 sessionStore.SaveMemory(scope.Key, memoryEditor.Text);
+                transientMemory.Remove(scope.Key);
                 projectMemory = memoryEditor.Text;
                 RefreshContextChips();
                 SetStatus(UiText.Get("Document memory saved locally"));
@@ -543,10 +670,13 @@ namespace VBAi
             if (!response.Ok) throw new InvalidOperationException(response.Error);
             var projects = json.DeserializeObject(json.Serialize(response.Data)) as object[];
             var matches = (projects ?? new object[0]).OfType<IDictionary<string, object>>()
-                .Where(item => scope.Key.StartsWith("temporary:", StringComparison.Ordinal)
+                .Where(item => !Path.IsPathRooted(scope.Project)
                     ? Convert.ToString(item["Name"]) == scope.Project
                     : string.Equals(VbeProjectHostPath.FromFields(item), scope.Project, StringComparison.OrdinalIgnoreCase)).ToArray();
             if (matches.Length != 1) throw new InvalidOperationException(UiText.Get("The project for this conversation is closed or ambiguous."));
+            if (ChatSessionStore.IsTransientScope(scope.Key) && (scope.Identity == null ||
+                !scope.Identity.Matches(TryReadScopeProject(scopeSession, scope.Project))))
+                throw new InvalidOperationException(UiText.Get("The project for this conversation is closed or ambiguous."));
             if (!scope.Key.StartsWith("temporary:", StringComparison.Ordinal))
             {
                 string path = VbeProjectHostPath.FromFields(matches[0]);

@@ -28,6 +28,27 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void TemporarySnapshotsNeverOpenTheDatabaseOrCreateNormalOrShutdownRecovery()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                string path = Path.Combine(scope.Root, "not-created", "chat.db");
+                var session = new ChatSessionState { Scope = "temporary:" + Guid.NewGuid().ToString("N"), Draft = "private" };
+                int callbacks = 0;
+                using (var worker = new ChatPersistenceWorker(path, (snapshot, version, failure) => callbacks++))
+                {
+                    worker.Enqueue(Capture(session));
+                    Assert.IsNull(worker.DeleteAsync(Capture(session)).GetAwaiter().GetResult());
+                    Assert.IsTrue(worker.Flush(5000));
+                    typeof(ChatPersistenceWorker).GetMethod("WriteRecovery", BindingFlags.Instance | BindingFlags.NonPublic)
+                        .Invoke(worker, new object[] { Capture(session), Path.Combine(worker.RecoveryDirectory, "closing-test.json") });
+                    Assert.AreEqual(0, callbacks);
+                }
+                Assert.IsFalse(Directory.Exists(Path.GetDirectoryName(path)), "No database or recovery directory may be created for a temporary snapshot.");
+            }
+        }
+
+        [TestMethod]
         public void DeleteFollowsInFlightWriteSupersedesPendingSavesAndRejectsLaterSaves()
         {
             using (var scope = new LlmBoundaryScope())

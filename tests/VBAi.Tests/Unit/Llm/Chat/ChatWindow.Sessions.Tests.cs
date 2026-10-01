@@ -17,6 +17,334 @@ namespace VBAi.Tests.Unit
     /// <summary>Vérifie l’historique, la persistance locale et la réparation des conversations.</summary>
     public sealed partial class ChatWindowStateTests
     {
+        private static void UseLiveProjectCatalogue(RuntimeScope runtime)
+        {
+            runtime.Host = request => request.Command == "list_projects"
+                ? Response.Success(runtime.Vbe.VBProjects.ConvertAll(project => new {
+                    project.Name, HostPath = project.ThrowFileName ? null : project.FileName
+                }).ToArray()) : Response.Success(new { SelectedProject = "P" });
+        }
+
+        public sealed class BrokenTransientCapture
+        {
+            public string Content { get { throw new IOException("Owned synthetic capture failure"); } }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void TemporaryHistoryAndNotesSurviveSwitchingAndCanBeDeletedWithoutStorage()
+        {
+            using (var runtime = new RuntimeScope())
+            {
+                runtime.Vbe.VBProjects[0].FileName = "";
+                runtime.Vbe.VBProjects.Add(new VbeSessionTests.FakeProject { Name = "Q", FileName = "", Mode = 2 });
+                UseLiveProjectCatalogue(runtime);
+                ChatWindow.OpenHistory = path => { throw new IOException("Owned store unavailable"); };
+                using (var window = LoadedWindow(runtime.Session))
+                {
+                    window.ReadScope = (path, scope, include) => { Assert.Fail("Temporary scopes cannot read SQLite."); return null; };
+                    var first = Get<ChatSessionState>(window, "currentSession");
+                    var picker = Get<ComboBox>(window, "scopePicker");
+                    Get<System.Windows.Controls.TextBox>(window, "prompt").Text = "private draft";
+                    Call(window, "AddEntry", new ChatEntry { Speaker = "You", Text = "private transcript" });
+                    Call(window, "SaveCurrentSession");
+                    Get<TextBox>(window, "memoryEditor").Text = "private notes"; Call(window, "SaveProjectMemory");
+                    Call(window, "NewSession", (object)null);
+                    picker.SelectedIndex = 1; CompleteScopeLoad(window);
+                    var other = Get<ChatSessionState>(window, "currentSession");
+                    Assert.AreEqual("", Get<TextBox>(window, "memoryEditor").Text);
+                    picker.SelectedIndex = 0; CompleteScopeLoad(window);
+                    Assert.AreEqual("private notes", Get<TextBox>(window, "memoryEditor").Text);
+                    Get<ListBox>(window, "sessionList").SelectedItem = first;
+                    Assert.AreEqual("private draft", Get<System.Windows.Controls.TextBox>(window, "prompt").Text);
+                    Assert.AreEqual("private transcript", first.Entries[0].Text);
+                    Assert.IsTrue(Get<Button>(window, "deleteSession").Enabled);
+                    ChatWindow.ShowNotice = (owner, text, caption, buttons, icon) => DialogResult.Yes;
+                    CompleteOnSta((Task)Call(window, "DeleteSelectedSessionAsync"));
+                    Assert.AreNotSame(first, Get<ChatSessionState>(window, "currentSession"));
+                    picker.SelectedIndex = 1; CompleteScopeLoad(window);
+                    Assert.AreSame(other, Get<ChatSessionState>(window, "currentSession"));
+                    runtime.Vbe.VBProjects.Clear(); Call(window, "RefreshAvailableScopes", runtime.Session);
+                    window.Dispose();
+                    Assert.IsFalse(Directory.Exists(runtime.Root), "Abandoned temporary projects must leave no history or recovery files.");
+                }
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void TemporaryCaptureFailureKeepsTheLastSnapshotAndNeverWritesEmergencyRecovery()
+        {
+            using (var runtime = new RuntimeScope())
+            {
+                runtime.Vbe.VBProjects[0].FileName = ""; UseLiveProjectCatalogue(runtime);
+                using (var window = LoadedWindow(runtime.Session))
+                {
+                    var original = Get<ChatSessionState>(window, "currentSession");
+                    Get<System.Windows.Controls.TextBox>(window, "prompt").Text = "complete draft"; Call(window, "SaveCurrentSession");
+                    Get<List<object>>(window, "messages").Add(new BrokenTransientCapture());
+                    Get<System.Windows.Controls.TextBox>(window, "prompt").Text = "later private draft";
+                    Call(window, "SaveCurrentSession");
+                    Assert.AreEqual("complete draft", original.Draft);
+                    Assert.IsTrue(Get<ChatPersistenceWorker>(window, "persistenceWorker").Flush(5000));
+                    window.Dispose();
+                    Assert.IsFalse(Directory.Exists(ChatWindow.HistoryPath() + ".recovery"));
+                    using (var store = new ChatSessionStore(ChatWindow.HistoryPath())) Assert.IsFalse(store.HasSessions(original.Scope));
+                }
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void ExactLiveFirstSavePromotesAllSessionIdsDraftsAndNotesAndSaveAsStaysIsolated()
+        {
+            using (var runtime = new RuntimeScope())
+            {
+                var project = runtime.Vbe.VBProjects[0]; project.FileName = ""; UseLiveProjectCatalogue(runtime);
+                using (var window = LoadedWindow(runtime.Session))
+                {
+                    var first = Get<ChatSessionState>(window, "currentSession"); string transientKey = first.Scope;
+                    var picker = Get<ComboBox>(window, "scopePicker"); object exactScope = picker.SelectedItem;
+                    Get<System.Windows.Controls.TextBox>(window, "prompt").Text = "first draft"; Call(window, "SaveCurrentSession");
+                    Get<TextBox>(window, "memoryEditor").Text = "retained note"; Call(window, "SaveProjectMemory");
+                    Call(window, "NewSession", (object)null);
+                    var current = Get<ChatSessionState>(window, "currentSession"); current.ReadProjectGrants = new[] { "Foreign" };
+                    string originalThread = Get<CodexAppServerClient>(window, "codex").ThreadId;
+                    current.CodexThreadId = originalThread; current.CodexThreadHome = ProviderSessionStorage.CodexHome; current.ResumeContext = "owned fixture context";
+                    Get<System.Windows.Controls.TextBox>(window, "prompt").Text = "latest draft";
+                    project.FileName = @"C:\Owned\FirstSave.xlsm";
+                    Call(window, "RefreshAvailableScopes", runtime.Session);
+                    Assert.AreSame(exactScope, picker.SelectedItem); Assert.AreSame(current, Get<ChatSessionState>(window, "currentSession"));
+                    Assert.AreEqual(project.FileName.ToUpperInvariant(), first.Scope); Assert.AreEqual(first.Scope, current.Scope);
+                    Assert.AreEqual(originalThread, current.CodexThreadId); Assert.AreEqual(ProviderSessionStorage.CodexHome, current.CodexThreadHome);
+                    Assert.AreEqual("owned fixture context", current.ResumeContext);
+                    Assert.IsTrue(Get<ChatPersistenceWorker>(window, "persistenceWorker").Flush(5000));
+                    var store = Get<ChatSessionStore>(window, "sessionStore"); var persisted = store.List(first.Scope);
+                    Assert.AreEqual(2, persisted.Count); Assert.IsTrue(persisted.Exists(item => item.Id == first.Id && item.Draft == "first draft"));
+                    Assert.IsTrue(persisted.Exists(item => item.Id == current.Id && item.Draft == "latest draft"));
+                    Assert.AreEqual("retained note", store.ReadMemory(first.Scope)); Assert.AreEqual(0, store.List(transientKey).Count);
+                    Call(window, "EnsureCurrentScope");
+                    project.FileName = @"C:\Owned\SaveAs.xlsm";
+                    Call(window, "RefreshAvailableScopes", runtime.Session); Assert.AreEqual(-1, picker.SelectedIndex);
+                    Assert.AreEqual(@"C:\OWNED\FIRSTSAVE.XLSM", current.Scope);
+                    runtime.Transport.Requests.Clear(); runtime.Transport.NextThreadId = "fresh SaveAs thread";
+                    picker.SelectedIndex = 0; CompleteScopeLoad(window);
+                    var fresh = Get<ChatSessionState>(window, "currentSession");
+                    Assert.AreNotEqual(current.Id, fresh.Id); Assert.AreEqual(0, fresh.ReadProjectGrants.Length);
+                    Assert.AreEqual("fresh SaveAs thread", fresh.CodexThreadId); Assert.AreNotEqual(originalThread, fresh.CodexThreadId); Assert.IsNull(fresh.ResumeContext);
+                    Assert.IsTrue(runtime.Transport.Requests.Exists(line => line.Contains("thread/start")));
+                    Assert.IsFalse(runtime.Transport.Requests.Exists(line => line.Contains("thread/resume")));
+                    Assert.AreEqual("", Get<TextBox>(window, "memoryEditor").Text);
+                }
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void SameNameReplacementOrUnprovableIdentityCannotReuseOrPromotePrivateTemporaryHistory()
+        {
+            foreach (bool unavailable in new[] { false, true })
+                using (var runtime = new RuntimeScope())
+                {
+                    runtime.Vbe.VBProjects[0].FileName = ""; UseLiveProjectCatalogue(runtime);
+                    using (var window = LoadedWindow(runtime.Session))
+                    {
+                        var first = Get<ChatSessionState>(window, "currentSession");
+                        Get<System.Windows.Controls.TextBox>(window, "prompt").Text = "private old object"; Call(window, "SaveCurrentSession");
+                        if (unavailable) ChatWindow.ReadScopeProject = (session, selector) => { throw new IOException("Identity unavailable"); };
+                        else { runtime.Vbe.VBProjects.Clear(); runtime.Vbe.VBProjects.Add(new VbeSessionTests.FakeProject { Name = "P", FileName = "", Mode = 2 }); }
+                        Call(window, "RefreshAvailableScopes", runtime.Session);
+                        var picker = Get<ComboBox>(window, "scopePicker"); Assert.AreEqual(-1, picker.SelectedIndex);
+                        picker.SelectedIndex = 0; CompleteScopeLoad(window);
+                        var fresh = Get<ChatSessionState>(window, "currentSession");
+                        Assert.AreNotEqual(first.Scope, fresh.Scope); Assert.AreNotEqual(first.Id, fresh.Id);
+                        Assert.AreEqual("", Get<System.Windows.Controls.TextBox>(window, "prompt").Text);
+                        runtime.Vbe.VBProjects[0].FileName = @"C:\Owned\Replacement.xlsm";
+                        Call(window, "RefreshAvailableScopes", runtime.Session);
+                        Assert.IsTrue(ChatSessionStore.IsTransientScope(first.Scope));
+                        Assert.IsFalse(Get<ChatSessionStore>(window, "sessionStore").List(@"C:\OWNED\REPLACEMENT.XLSM").Exists(item => item.Id == first.Id));
+                    }
+                }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void PromotionWithUnavailableStorageDefersPersistenceAndRetainsNotesWithoutDiskRecovery()
+        {
+            using (var runtime = new RuntimeScope())
+            {
+                var project = runtime.Vbe.VBProjects[0]; project.FileName = ""; UseLiveProjectCatalogue(runtime);
+                ChatWindow.OpenHistory = path => { throw new IOException("History unavailable"); };
+                using (var window = LoadedWindow(runtime.Session))
+                {
+                    var session = Get<ChatSessionState>(window, "currentSession");
+                    string oldKey = session.Scope;
+                    Get<TextBox>(window, "memoryEditor").Text = "keep despite no store"; Call(window, "SaveProjectMemory");
+                    project.FileName = @"C:\Owned\OfflineSave.xlsm"; Call(window, "RefreshAvailableScopes", runtime.Session);
+                    Assert.AreEqual(oldKey, session.Scope);
+                    Call(window, "EnsureCurrentScope");
+                    var notes = Get<Dictionary<string, string>>(window, "transientMemory");
+                    Assert.AreEqual("keep despite no store", notes[oldKey]);
+                    var other = AddScope(window, @"C:\Owned\Other.xlsm");
+                    Get<ComboBox>(window, "scopePicker").SelectedItem = other; CompleteScopeLoad(window);
+                    Get<ComboBox>(window, "scopePicker").SelectedIndex = 0; CompleteScopeLoad(window);
+                    Assert.AreEqual("keep despite no store", Get<TextBox>(window, "memoryEditor").Text);
+                    StringAssert.Contains(Get<Label>(window, "status").Text, UiText.Get("Local history is kept in memory because storage is unavailable."));
+                    project.FileName = @"C:\Owned\OfflineSaveAs.xlsm"; Call(window, "RefreshAvailableScopes", runtime.Session);
+                    Assert.AreEqual(-1, Get<ComboBox>(window, "scopePicker").SelectedIndex);
+                    Assert.AreEqual(oldKey, session.Scope);
+                    Assert.IsFalse(Directory.Exists(runtime.Root));
+                }
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void SavedScopeCollisionRefusesTemporaryPromotionAndKeepsItsExistingHistory()
+        {
+            using (var runtime = new RuntimeScope())
+            {
+                var project = runtime.Vbe.VBProjects[0]; project.FileName = ""; UseLiveProjectCatalogue(runtime);
+                using (var window = LoadedWindow(runtime.Session))
+                {
+                    var temporary = Get<ChatSessionState>(window, "currentSession");
+                    var store = Get<ChatSessionStore>(window, "sessionStore");
+                    var old = new ChatSessionState { Scope = @"C:\OWNED\COLLISION.XLSM", Draft = "existing saved history" }; store.Save(old);
+                    project.FileName = @"C:\Owned\Collision.xlsm"; Call(window, "RefreshAvailableScopes", runtime.Session);
+                    Assert.IsTrue(ChatSessionStore.IsTransientScope(temporary.Scope)); Assert.AreEqual(-1, Get<ComboBox>(window, "scopePicker").SelectedIndex);
+                    Get<ComboBox>(window, "scopePicker").SelectedIndex = 0; CompleteScopeLoad(window);
+                    Assert.AreEqual(old.Id, Get<ChatSessionState>(window, "currentSession").Id); Assert.AreEqual(1, store.List(old.Scope).Count);
+                }
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void NotesOnlySavedScopeCollisionCannotOverwriteNotesOrInheritTemporaryProviderAuthority()
+        {
+            using (var runtime = new RuntimeScope())
+            {
+                var project = runtime.Vbe.VBProjects[0]; project.FileName = ""; UseLiveProjectCatalogue(runtime);
+                using (var window = LoadedWindow(runtime.Session))
+                {
+                    var temporary = Get<ChatSessionState>(window, "currentSession");
+                    temporary.CodexThreadId = "private original thread"; temporary.ReadProjectGrants = new[] { "Foreign" };
+                    Get<TextBox>(window, "memoryEditor").Text = "temporary notes"; Call(window, "SaveProjectMemory");
+                    var store = Get<ChatSessionStore>(window, "sessionStore"); string destination = @"C:\OWNED\NOTESONLY.XLSM";
+                    store.SaveMemory(destination, "existing separate notes"); Assert.IsFalse(store.HasSessions(destination)); Assert.IsTrue(store.HasScopeData(destination));
+                    project.FileName = @"C:\Owned\NotesOnly.xlsm"; Call(window, "RefreshAvailableScopes", runtime.Session);
+                    Assert.IsTrue(ChatSessionStore.IsTransientScope(temporary.Scope));
+                    runtime.Transport.Requests.Clear(); runtime.Transport.NextThreadId = "fresh notes-only thread";
+                    Get<ComboBox>(window, "scopePicker").SelectedIndex = 0; CompleteScopeLoad(window);
+                    var fresh = Get<ChatSessionState>(window, "currentSession");
+                    Assert.AreNotEqual(temporary.Id, fresh.Id); Assert.AreEqual("fresh notes-only thread", fresh.CodexThreadId); Assert.AreEqual(0, fresh.ReadProjectGrants.Length);
+                    Assert.IsNull(fresh.ResumeContext);
+                    Assert.IsTrue(runtime.Transport.Requests.Exists(line => line.Contains("thread/start")));
+                    Assert.IsFalse(runtime.Transport.Requests.Exists(line => line.Contains("thread/resume")));
+                    Assert.AreEqual("existing separate notes", Get<TextBox>(window, "memoryEditor").Text);
+                    Assert.AreEqual("existing separate notes", store.ReadMemory(destination));
+                }
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void FailedSqlitePromotionPreservesNotesAcrossSwitchesUntilTheirDurableSave()
+        {
+            using (var runtime = new RuntimeScope())
+            {
+                var project = runtime.Vbe.VBProjects[0]; project.FileName = ""; UseLiveProjectCatalogue(runtime);
+                using (var window = LoadedWindow(runtime.Session))
+                {
+                    var session = Get<ChatSessionState>(window, "currentSession");
+                    Get<TextBox>(window, "memoryEditor").Text = "retain failed notes"; Call(window, "SaveProjectMemory");
+                    var worker = Get<ChatPersistenceWorker>(window, "persistenceWorker"); Assert.IsTrue(worker.Flush(5000)); worker.Dispose(); Set(window, "persistenceWorker", null);
+                    var store = Get<ChatSessionStore>(window, "sessionStore"); var native = store.StepNative;
+                    int calls = 0;
+                    store.StepNative = statement => ++calls == 4 ? throw new IOException("Owned SQLite note write failure") : native(statement);
+                    try { project.FileName = @"C:\Owned\FailedSave.xlsm"; Call(window, "RefreshAvailableScopes", runtime.Session); }
+                    finally { store.StepNative = native; }
+                    Assert.IsTrue(ChatSessionStore.IsTransientScope(session.Scope));
+                    Assert.AreEqual("retain failed notes", Get<Dictionary<string, string>>(window, "transientMemory")[session.Scope]);
+                    Assert.AreEqual(0, store.List(project.FileName.ToUpperInvariant()).Count);
+                    Call(window, "EnsureCurrentScope");
+                    var other = AddScope(window, @"C:\Owned\Other.xlsm"); Get<ComboBox>(window, "scopePicker").SelectedItem = other; CompleteScopeLoad(window);
+                    Get<ComboBox>(window, "scopePicker").SelectedIndex = 0; CompleteScopeLoad(window);
+                    Assert.AreEqual("retain failed notes", Get<TextBox>(window, "memoryEditor").Text);
+                    Call(window, "RefreshAvailableScopes", runtime.Session);
+                    Assert.AreEqual(project.FileName.ToUpperInvariant(), session.Scope);
+                    Assert.AreEqual("retain failed notes", store.ReadMemory(session.Scope));
+                    Assert.IsFalse(Get<Dictionary<string, string>>(window, "transientMemory").ContainsKey(session.Scope));
+                }
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void SaturatedSaveQueueCannotPreventAtomicInitialPromotionAndLaterWorkerSavesUseItsRevisions()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var inFlight = new ManualResetEventSlim())
+            using (var release = new ManualResetEventSlim())
+            {
+                var project = runtime.Vbe.VBProjects[0]; project.FileName = ""; UseLiveProjectCatalogue(runtime);
+                using (var window = LoadedWindow(runtime.Session))
+                {
+                    var first = Get<ChatSessionState>(window, "currentSession"); string temporaryKey = first.Scope;
+                    Call(window, "NewSession", (object)null); var second = Get<ChatSessionState>(window, "currentSession");
+                    var previous = Get<ChatPersistenceWorker>(window, "persistenceWorker"); Assert.IsTrue(previous.Flush(5000)); previous.Dispose();
+                    int callbacks = 0;
+                    using (var worker = new ChatPersistenceWorker(ChatWindow.HistoryPath(), (snapshot, version, error) => {
+                        if (Interlocked.Increment(ref callbacks) == 1) { inFlight.Set(); release.Wait(10000); }
+                    }))
+                    {
+                        Set(window, "persistenceWorker", worker);
+                        var serializer = new JavaScriptSerializer();
+                        try
+                        {
+                            var blocking = new ChatSessionState { Scope = "queue-fixture" }; worker.Enqueue(new ChatPersistenceWorker.Snapshot(blocking, serializer.Serialize(blocking)));
+                            Assert.IsTrue(inFlight.Wait(5000));
+                            for (int i = 0; i < 64; i++)
+                            {
+                                var filler = new ChatSessionState { Scope = "queue-fixture" }; worker.Enqueue(new ChatPersistenceWorker.Snapshot(filler, serializer.Serialize(filler)));
+                            }
+                            Get<System.Windows.Controls.TextBox>(window, "prompt").Text = "retained after saturation";
+                            project.FileName = @"C:\Owned\QueueSave.xlsm"; Call(window, "RefreshAvailableScopes", runtime.Session);
+                            Assert.IsFalse(Get<bool>(window, "storageFailed"));
+                            var cache = Get<Dictionary<string, List<ChatSessionState>>>(window, "cachedScopes"); Assert.AreEqual(2, cache[second.Scope].Count);
+                            Assert.IsFalse(cache.ContainsKey(temporaryKey));
+                            string[] copies = Directory.GetFiles(worker.RecoveryDirectory, "capture-*.json"); Assert.AreEqual(0, copies.Length);
+                            Assert.AreEqual(2, Get<ChatSessionStore>(window, "sessionStore").List(second.Scope).Count);
+                        }
+                        finally { release.Set(); }
+                        Assert.IsTrue(worker.Flush(5000)); Call(window, "SaveCurrentSession"); Assert.IsTrue(worker.Flush(5000));
+                        Assert.AreEqual(second.Id, Get<ChatSessionStore>(window, "sessionStore").List(second.Scope)[0].Id);
+                        Assert.AreEqual("retained after saturation", second.Draft);
+                        Assert.AreEqual(second.Scope, first.Scope);
+                        Set(window, "persistenceWorker", null);
+                    }
+                }
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void UnverifiedPromotionCommitRetainsMemoryAndNeverAutomaticallyReplaysTheClaim()
+        {
+            using (var runtime = new RuntimeScope())
+            {
+                var project = runtime.Vbe.VBProjects[0]; project.FileName = ""; UseLiveProjectCatalogue(runtime);
+                using (var window = LoadedWindow(runtime.Session))
+                {
+                    var session = Get<ChatSessionState>(window, "currentSession"); string originalScope = session.Scope;
+                    Get<TextBox>(window, "memoryEditor").Text = "retained after uncertain acknowledgement"; Call(window, "SaveProjectMemory");
+                    var store = Get<ChatSessionStore>(window, "sessionStore"); var native = store.StepNative; int steps = 0;
+                    store.StepNative = statement => { int result = native(statement); if (++steps == 5) throw new IOException("Owned lost COMMIT acknowledgement"); return result; };
+                    try { project.FileName = @"C:\Owned\UnverifiedSave.xlsm"; Call(window, "RefreshAvailableScopes", runtime.Session); }
+                    finally { store.StepNative = native; }
+                    Assert.AreEqual(originalScope, session.Scope);
+                    Assert.AreEqual("retained after uncertain acknowledgement", Get<Dictionary<string, string>>(window, "transientMemory")[originalScope]);
+                    StringAssert.Contains(Get<Label>(window, "status").Text, "unverified");
+                    int repeatedSteps = 0; store.StepNative = statement => { repeatedSteps++; return native(statement); };
+                    try { Call(window, "RefreshAvailableScopes", runtime.Session); }
+                    finally { store.StepNative = native; }
+                    Assert.AreEqual(0, repeatedSteps); Assert.AreEqual(originalScope, session.Scope);
+                    Call(window, "EnsureCurrentScope");
+                    Assert.AreEqual(1, store.List(project.FileName.ToUpperInvariant()).Count, "Retain the real committed database result separately from its missing acknowledgement.");
+                    Assert.IsFalse(Directory.Exists(ChatWindow.HistoryPath() + ".recovery"));
+                }
+            }
+        }
         [STATestMethod, TestCategory("Unit")]
         public void DeleteSelectedConversationRemovesPersistedAndCachedHistoryAndSelectsAnotherSession()
         {
@@ -253,15 +581,15 @@ namespace VBAi.Tests.Unit
                 Set(window, "sessionStore", store);
                 var original = Get<ChatSessionState>(window, "currentSession");
                 Get<List<ChatSessionState>>(window, "scopeSessions").Add(original);
-                var b = AddScope(window, "temporary:B");
-                var c = AddScope(window, "temporary:C");
+                var b = AddScope(window, @"C:\Owned\ScopeB.xlsm");
+                var c = AddScope(window, @"C:\Owned\ScopeC.xlsm");
                 var scopes = Get<ComboBox>(window, "scopePicker");
                 var first = new TaskCompletionSource<ChatSessionStore.ScopeSnapshot>();
                 var latest = new TaskCompletionSource<ChatSessionStore.ScopeSnapshot>();
                 var requested = new List<string>();
                 window.ReadScope = (path, scope, includeSessions) => {
                     requested.Add(scope);
-                    return scope == "temporary:B" ? first.Task : latest.Task;
+                    return scope == @"C:\Owned\ScopeB.xlsm" ? first.Task : latest.Task;
                 };
                 try
                 {
@@ -276,13 +604,13 @@ namespace VBAi.Tests.Unit
                     scopes.SelectedItem = c;
                     Call(window, "ChangeScope");
                     first.SetResult(new ChatSessionStore.ScopeSnapshot {
-                        Sessions = new List<ChatSessionState> { new ChatSessionState { Scope = "temporary:B", Title = "Stale" } }, Memory = "stale memory"
+                        Sessions = new List<ChatSessionState> { new ChatSessionState { Scope = @"C:\Owned\ScopeB.xlsm", Title = "Stale" } }, Memory = "stale memory"
                     });
                     CompleteOnSta(staleLoad);
                     Assert.AreSame(original, Get<ChatSessionState>(window, "currentSession"));
                     Assert.IsTrue(Get<bool>(window, "loadingScope"));
-                    CollectionAssert.AreEqual(new[] { "temporary:B", "temporary:C" }, requested);
-                    var expected = new ChatSessionState { Scope = "temporary:C", Title = "Current" };
+                    CollectionAssert.AreEqual(new[] { @"C:\Owned\ScopeB.xlsm", @"C:\Owned\ScopeC.xlsm" }, requested);
+                    var expected = new ChatSessionState { Scope = @"C:\Owned\ScopeC.xlsm", Title = "Current" };
                     latest.SetResult(new ChatSessionStore.ScopeSnapshot { Sessions = new List<ChatSessionState> { expected }, Memory = "current memory" });
                     CompleteScopeLoad(window);
                     Assert.AreSame(expected, Get<ChatSessionState>(window, "currentSession"));
@@ -308,7 +636,7 @@ namespace VBAi.Tests.Unit
             {
                 Set(window, "sessionStore", store);
                 var original = Get<ChatSessionState>(window, "currentSession");
-                var target = AddScope(window, "temporary:B");
+                var target = AddScope(window, @"C:\Owned\ScopeB.xlsm");
                 Get<ComboBox>(window, "scopePicker").SelectedItem = target;
                 var read = new TaskCompletionSource<ChatSessionStore.ScopeSnapshot>();
                 window.ReadScope = (path, scope, includeSessions) => read.Task;
@@ -316,7 +644,7 @@ namespace VBAi.Tests.Unit
                 Task loading = Get<Task>(window, "scopeLoad");
                 window.Dispose();
                 read.SetResult(new ChatSessionStore.ScopeSnapshot {
-                    Sessions = new List<ChatSessionState> { new ChatSessionState { Scope = "temporary:B" } }, Memory = "ignored"
+                    Sessions = new List<ChatSessionState> { new ChatSessionState { Scope = @"C:\Owned\ScopeB.xlsm" } }, Memory = "ignored"
                 });
                 CompleteOnSta(loading);
                 Assert.AreSame(original, Get<ChatSessionState>(window, "currentSession"));
@@ -523,7 +851,18 @@ namespace VBAi.Tests.Unit
                     }
                 }
                 ChatWindow.OpenHistory = p => { throw new IOException("store unavailable"); }; runtime.Host = r => Response.Success(r.Command == "list_projects" ? (object)new[] { new { Name = "P", FileName = "" } } : new { SelectedProject = "P" });
-                using (var window = LoadedWindow(runtime.Session)) { Call(window, "SaveProjectMemory"); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, UiText.Get("Memory requires")); Call(window, "EnsureCurrentScope"); Get<System.Windows.Forms.ComboBox>(window, "scopePicker").SelectedIndex = -1; Call(window, "ChangeScope"); CompleteScopeLoad(window); var failure = Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => Call(window, "EnsureCurrentScope")); Assert.IsInstanceOfType(failure.InnerException, typeof(InvalidOperationException)); }
+                runtime.Vbe.VBProjects[0].FileName = "";
+                using (var window = LoadedWindow(runtime.Session))
+                {
+                    Get<System.Windows.Forms.TextBox>(window, "memoryEditor").Text = "available without SQLite";
+                    Call(window, "SaveProjectMemory");
+                    StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, UiText.Get("Temporary document: VBAi history and project notes stay in memory until the document is saved."));
+                    Assert.AreEqual("available without SQLite", Get<Dictionary<string, string>>(window, "transientMemory")[Get<ChatSessionState>(window, "currentSession").Scope]);
+                    Call(window, "EnsureCurrentScope");
+                    Get<System.Windows.Forms.ComboBox>(window, "scopePicker").SelectedIndex = -1; Call(window, "ChangeScope"); CompleteScopeLoad(window);
+                    var failure = Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => Call(window, "EnsureCurrentScope"));
+                    Assert.IsInstanceOfType(failure.InnerException, typeof(InvalidOperationException));
+                }
             }
         }
                 /// <summary>Active, restaure, renomme et archive des sessions puis persiste leur état localement.</summary>

@@ -2179,4 +2179,6 @@ Git Credential Manager से साइन-इन करें; कमिट ल
   <data name="Conversation deleted from local history" xml:space="preserve"><value>बातचीत स्थानीय इतिहास से हटा दी गई</value></data>
   <data name="Conversation not deleted: " xml:space="preserve"><value>बातचीत नहीं हटाई गई: </value></data>
   <data name="This conversation changed in another host. Reopen it before deleting." xml:space="preserve"><value>यह बातचीत किसी अन्य होस्ट अनुप्रयोग में बदल गई है। हटाने से पहले इसे फिर से खोलें।</value></data>
+  <data name="Temporary document: VBAi history and project notes stay in memory until the document is saved." xml:space="preserve"><value>असहेजा दस्तावेज़: दस्तावेज़ सहेजे जाने तक VBAi इतिहास और परियोजना नोट्स केवल स्मृति में रहते हैं।</value></data>
+  <data name="Local history is kept in memory because storage is unavailable." xml:space="preserve"><value>भंडारण उपलब्ध न होने के कारण स्थानीय इतिहास स्मृति में रखा गया है।</value></data>
 </root>

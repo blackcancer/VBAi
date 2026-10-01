@@ -41,6 +41,27 @@ must not silently reintroduce pre-migration context into a new provider thread.
 
 ## Local data
 
+For a project without a recorded absolute file path, VBAi keeps its conversations,
+drafts and project notes in memory. Switching between open projects retains this
+state, and local conversations can be deleted even when SQLite is unavailable.
+Temporary scopes never write SQLite history, notes, bookmarks or conversation
+recovery files. Closing an abandoned unsaved project leaves no VBAi local history
+entry for that project.
+
+The first save can persist this state only when VBAi verifies the exact same live
+native project object. A matching name is insufficient. VBAi claims an empty saved
+scope and writes the initial conversations and notes in one SQLite transaction.
+Existing conversations, notes or bookmarks at that path prevent the transfer;
+selecting that saved scope uses its separate history and provider context.
+Later Save As paths also remain separate. If storage is unavailable or a transaction
+rolls back, the original state stays in memory. A deferred first save remains bound
+to its first verified path. If the transaction outcome cannot be verified, VBAi
+retains the memory state and does not automatically repeat the claim; reopen the
+conversation and inspect its saved history before continuing persistence.
+
+This memory rule concerns VBAi local history and project notes. It does not prevent
+a selected provider from retaining exchanges remotely or in its own CLI state.
+
 The conversation history provides **Delete conversation** for the selected local
 session, with confirmation. Deletion is unavailable during an active response or
 while a document scope loads. Pending local writes finish before deletion, and a
