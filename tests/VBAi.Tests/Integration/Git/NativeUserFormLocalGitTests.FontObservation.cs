@@ -37,8 +37,18 @@ namespace VBAi.Tests.Integration
             RunFontObservation(layout, true, true);
         }
 
+        /// <summary>Diagnoses font restoration through version-guarded commands on the native host STA.</summary>
+        [STATestMethod]
+        [DataRow("LabelButton")]
+        [DataRow("Image")]
+        [DataRow("FrameMultiPage")]
+        public void NativeOwnerStaFontCommandsAfterOneImportPreserveExactSnapshot(string layout)
+        {
+            RunFontObservation(layout, true, useBridge: true);
+        }
+
         /// <summary>Separates the original refusal, read-only observation and optional single font correction in owned fixtures.</summary>
-        private void RunFontObservation(string layout, bool restoreFonts, bool assignOwner = false)
+        private void RunFontObservation(string layout, bool restoreFonts, bool assignOwner = false, bool useBridge = false)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1" ||
                 Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_LOCAL_GIT_TESTS") != "1" ||
@@ -55,6 +65,7 @@ namespace VBAi.Tests.Integration
                 ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
                 ["RestoreFontsRequested"] = restoreFonts,
                 ["AssignNativeFontOwnerRequested"] = assignOwner,
+                ["OwnerStaFontCommandsRequested"] = useBridge,
                 ["Scope"] = "Saved/reopened baseline; one native Apply attempt; read-only Font observation and optional single explicit font restoration. No repeated import, setter retry, post-import Save or macro execution. This diagnostic does not qualify successful production import."
             };
             string evidence = Path.Combine(output, "font-observation.json");
@@ -93,10 +104,11 @@ namespace VBAi.Tests.Integration
                         report["FontDifferences"] = DescribeNativeDifferences(fontBefore, fontAfter);
                         if (restoreFonts)
                         {
-                            report["FontAssignmentsRequestedAfterImport"] = layout == "FrameMultiPage" ? 16 : 8;
+                            report["FontAssignmentsRequestedAfterImport"] = (layout == "FrameMultiPage" ? 2 : 1) * (useBridge ? 6 : 8);
                             report["Stage"] = "one-explicit-font-restoration";
                             write();
-                            host.RestoreGitLayoutFonts(form, layout, fontBefore, assignOwner);
+                            if (useBridge) host.RestoreGitLayoutFontsViaBridge(form, layout, fontBefore);
+                            else host.RestoreGitLayoutFonts(form, layout, fontBefore, assignOwner);
                             fontAfter = host.ReadGitLayoutFonts(form, layout);
                             report["NativeFontsAfterExplicitRestoration"] = fontAfter;
                             report["FontDifferencesAfterExplicitRestoration"] = DescribeNativeDifferences(fontBefore, fontAfter);

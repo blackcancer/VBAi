@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace VBAi.Tests.Integration
 {
@@ -39,6 +40,31 @@ namespace VBAi.Tests.Integration
                 }
                 finally { Release(frame); Release(controls); }
             });
+        }
+
+        /// <summary>Writes known font members once through guarded commands on Excel's actual owning STA.</summary>
+        internal void RestoreGitLayoutFontsViaBridge(string form, string layout, IDictionary<string, object> expected)
+        {
+            object project = null;
+            string projectName;
+            try { project = ((dynamic)workbook).VBProject; projectName = Convert.ToString(((dynamic)project).Name); }
+            finally { Release(project); }
+            foreach (string member in new[] { "Name", "Size", "Bold", "Italic", "Underline", "Strikethrough" })
+            {
+                var tree = GitLayoutCommandData(Command(new { Command = "form_tree", Project = projectName, Form = form }));
+                GitLayoutCommandData(Command(new { Command = "set_form_property", Project = projectName, Form = form,
+                    ExpectedFormVersion = tree["TreeVersion"], Property = "Font." + member, Value = expected["Form.Font." + member] }));
+            }
+            if (layout != "FrameMultiPage") return;
+            foreach (string member in new[] { "Name", "Size", "Bold", "Italic", "Underline", "Strikethrough" })
+            {
+                var tree = GitLayoutCommandData(Command(new { Command = "form_tree", Project = projectName, Form = form }));
+                var frame = ((object[])tree["Controls"]).Select(VbeBridgeClient.Object)
+                    .Single(node => Convert.ToString(node["Name"]) == "QualificationExtra");
+                GitLayoutCommandData(Command(new { Command = "set_form_node_property", Project = projectName, Form = form,
+                    ControlPath = frame["Path"], ExpectedTreeVersion = tree["TreeVersion"], Property = "Font." + member,
+                    Value = expected["Frame.Font." + member] }));
+            }
         }
 
         /// <summary>Assigns each declared native font member once; no setter is retried after an uncertain result.</summary>
