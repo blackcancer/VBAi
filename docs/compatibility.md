@@ -45,7 +45,25 @@ native owner-STA diagnostic sees both fixed synthetic LocalAppData/TEMP GUID
 directories and files with attributes matching the testhost, effective primary
 token evidence and normal owned Excel exit. This read-only result does not
 explain the earlier export path-not-found observation or qualify export; Q-027
-remains open. No other current-v6 host mutation/lifecycle acceptance is claimed.
+remains open.
+
+Current-v6 Access HelpContextID bridge and external CLR setters return 321 through
+all three getters after one verified product Save. Both hosts fail normal exit,
+so fresh-disk reopen is NOT_RUN; authorized force cleanup and retained stable
+database copies do not qualify persistence. External HelpFile production CLR and
+raw IDispatch PUT setters both return normally, but both fresh-disk reopen values
+are altered through descriptor, CLR binder and raw IDispatch getters. Those hosts
+exit normally, yet exact metadata persistence fails. Raw HelpContextID is NOT_RUN;
+the earlier HRESULTs and altered BSTR cause remain unexplained, without a
+conversion heuristic or causal product fix. Publisher verifies the exact sole
+publication/persistence identity but fails the active-project startup guard with
+null SelectedProject/ActiveModule, before baseline edits or product Save. Its
+later guarded, authorized window close exits normally without force termination;
+the startup failure and unproven selection/guard cause remain. External Publisher
+VBE inventory observations are UNVERIFIED rather than evidence of an empty
+inventory. These failed or unexecuted scopes do not qualify whole-host mutation or
+lifecycle behavior; see recorded validation for terminal outcomes and additive
+corrections preserving the original driver evidence.
 
 On preceding v5, source `2e75161`, MVID `f9a36c85`, the stable Access
 application/PID, database-path and mapped/selected-project guard passes scoped

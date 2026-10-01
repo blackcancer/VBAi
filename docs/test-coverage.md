@@ -49,6 +49,79 @@ preceding `d5e25e25` export path/name-not-found observation in another owned Exc
 process, establish an EFS/ACL/token cause, or qualify native UserForm export.
 Q-027 remains open.
 
+### Current v6: Access metadata setter and persistence failures
+
+These native campaigns use the installed v6 product identified above and tests
+source `f39bb27`. `metadata-setters-v6/metadata-setters.trx` records **0 passed,
+1 failed, 5 conditional skips**, runner exit **1**. The bridge HelpContextID
+setter returns successfully for **321** in owned Access **49496**. Descriptor,
+CLR binder and raw IDispatch getters all return 321 after the planned setter and
+after the single verified product Save; the raw VARIANT canary remains intact.
+Quit returns, but the process does not exit after COM release. Fresh-disk reopen
+is **NOT_RUN**, and the original save/reopen test remains failed.
+
+`metadata-setters-v6/terminal.json` retains copied `METADATA_GETTER_BATCH_TERMINAL`
+and `ProbeAdditionalMutations=0` / `ProbeAdditionalSaves=0` labels from the earlier
+read-only driver. Those fields do not describe this setter campaign's planned
+work. The per-fixture `adapter-only-progress.json` ledger is authoritative: one
+planned setter and one verified `save_host_document`, with no replay.
+`terminal-label-correction.json` adds this correction while preserving the
+original driver JSON and failed TRX.
+
+The separate `metadata-setters-v6-external/metadata-setters.trx` records
+**0 passed, 3 failed, 1 conditional skip**, runner exit **1**. These setters run
+on the external fixture STA through the mapped COM object, rather than the
+in-process bridge. Each executed case has one setter and one verified product
+Save, with identity evidence before/after and no replay:
+
+| Case | Live setter/getter evidence | Fresh disk and lifecycle outcome |
+| --- | --- | --- |
+| HelpFile, production CLR setter | Access 42136 returns normally; all three getters agree on 173 characters / 346 BSTR bytes after mutation and Save. | Fresh Access 43812 returns an altered 86-character / 172-byte BSTR through all three getters. Both hosts exit normally with code 0; exact metadata persistence still fails. |
+| HelpFile, raw IDispatch PUT | Access 44760 records one PUT with HRESULT 0, VT_BSTR and intact argument/result VARIANT canaries; all three getters agree on the same live value. | Fresh Access 49364 returns the same altered BSTR shape as the CLR case, with exact getter equality and intact canary. Both hosts exit normally with code 0; persistence fails. |
+| HelpContextID, production CLR setter | Access 57628 returns normally; all three getters return 321 after mutation and Save. | Quit returns without process exit; fresh-disk reopen is NOT_RUN and the test fails. |
+| HelpContextID, raw IDispatch PUT | Conditional skip; setter NOT_RUN. | Persistence and normal exit are not qualified for this case. |
+
+The HelpFile failures are therefore not confined to the production CLR setter.
+The consistent raw/managed getter observations do not establish a conversion
+fix or justify decoding the altered BSTR. HelpContextID's successful live value
+does not qualify disk persistence or explain the earlier setter HRESULTs.
+
+Each nonexiting HelpContextID host has a separately authorized, terminal owned
+cleanup record. `metadata-setters-v6/authorized-owned-cleanup.json` records a
+stable retained database with SHA-256
+`AC43D9A45AB6EE36073656934A18EC9B3E0B27BE4062959D3286F5DC3103054F`;
+`metadata-setters-v6-external/authorized-owned-cleanup.json` records
+`3594DD1D3B40C34DB70A3B87966EF3629026E5B64998D7C2FB46692DB303723F`.
+Both retained copies are `retained-before-force.accdb`, observed stable before
+termination rather than claimed atomic snapshots. Forced exit is observed for
+49496 and 57628, but each exit code is null (**NOT_OBSERVED**); normal exit is
+not qualified. No additional Quit, mutation or Save is recorded. Cleanup does
+not promote either original failed test or add disk-reopen evidence. Q-006 and
+Q-012 remain open for these scopes.
+
+### Current v6: Publisher preparation failure
+
+`publisher-adapter-v6/publisher-adapter-v6.trx` records **0 passed, 1 failed,
+5 conditional skips**, runner exit **1**, on the same product/tests pair.
+The startup ledger verifies the sole disposable publication and owned PID
+**36568**, and `project_persistence_status` reports HostAvailable and
+IdentityVerified with the exact publication path. The sole VBE project is
+pathless `Project`; `debug_state` returns null SelectedProject and ActiveModule.
+The active-project startup guard fails before baseline binding, source/property
+edits or product Save. The fixture's initial publication bootstrap save is
+separate from adapter acceptance. `native-selection-inspection-correction.json`
+preserves the external read-only scripts but marks their project inventory
+UNVERIFIED: Publisher.Application.VBE is unavailable, so the earlier null-as-empty
+reports are not proof of an empty native inventory. The actual host bridge's
+project/persistence rows remain authoritative. Whether selection is missing or
+the fresh-project guard is too strict remains unproven; Q-012 stays open.
+
+`authorized-owned-window-close.json` then records one guarded WM_CLOSE after
+PID/start/window, loaded MVID and exact saved-publication checks, with source
+inventory preserved. Owned PID 36568 exits normally with code **0**, without
+force termination, additional Save or macro execution. This later cleanup does
+not convert the startup failure into adapter save/reopen acceptance.
+
 ### Preceding Monaco-status candidate: complete managed acceptance
 
 Source `d7a1c75d90d840949cc78606f2ae55b14e93ec55`, MVID
