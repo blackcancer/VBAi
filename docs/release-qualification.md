@@ -26,14 +26,30 @@ Monaco-status candidate `d7a1c75` / `6a74af33` and earlier frozen v5 `2e75161` /
 v5 harness failure remains failed with explained packaging/Git path defects;
 none of those results qualifies a later product binary.
 
-The latest uninstalled combined candidate is source `bdb57e0`, MVID
-`f6d47c82-d9d3-4a8e-9f28-79778ae112f1`, SHA-256
-`019EA9F7F4A72B3AE92EDC49F3C96A868CD3ED36A340031DF325BD816FD048CA`.
+The latest uninstalled combined candidate is source `b60996c`, MVID
+`e79c6288-d384-475c-b8bc-276d7caaaf00`, SHA-256
+`9ADBCFB96B1F2F4E4FA3066EA26F3CA2E0A2EC7996C85105070A3765BEFC8587`.
 Its complete default managed gate and separate JavaScript, synthetic native,
 managed-loader and detached Designer checks pass with unchanged product bytes
 and source. Q-015 is accepted for that exact managed scope; this is not an
 installed or native-qualified release. Exact counters and coverage are recorded
 only in [recorded validation](test-coverage.md).
+
+The Git menu, chat and LLM tools now share a compatible lookup of the native
+document key and the former uppercase key. A single existing binding is reused
+without moving or rewriting caches; two bindings or uncertain metadata refuse
+automatic selection. Managed regressions and the complete candidate gate pass.
+This corrects a source-proven entry-point mismatch, not the historical native
+export failures. Q-024/Q-027 still require the actual embedded owner-thread Git
+workflow; existing external-test-STA captures do not establish that acceptance.
+
+The retained current-v6 Format trial commits and verifies the font change, then
+refuses the requested size because the observed size catalogue is empty. Its
+captures do not identify the Win32/UIA branch, native handle/style or intermediate
+counts, so neither lazy list initialization nor a provider defect is proven.
+Later read-only evidence observes the Options window closed, without qualifying
+baseline font restoration. The original failed trial and pending recovery remain
+unchanged; no size write or uncertain action is replayed. Q-026 stays open.
 
 Current-v6 native evidence includes the explicitly authorized read-only
 owner-STA path/effective-token diagnostic in owned Excel. Both synthetic GUID

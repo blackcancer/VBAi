@@ -1,5 +1,57 @@
 # Recorded validation
 
+## Uninstalled compatible Git binding candidate: complete managed and local gates (2026-10-01)
+
+Source `b60996cdf05d816a1f24bea99f2343c166a8bfac`, MVID
+`e79c6288-d384-475c-b8bc-276d7caaaf00`, SHA-256
+`9ADBCFB96B1F2F4E4FA3066EA26F3CA2E0A2EC7996C85105070A3765BEFC8587`
+adds compatible native/legacy document binding lookup to the preceding recovery
+candidate. Test assembly SHA-256 is
+`BC2EAEDD813451A4A6EA42575EB308383D197312CA6BB5FFE7D38F8A6668CC47`.
+
+`managed-v11-git-scope/full-managed.trx` records **2,918 passed, 0 failed,
+110 conditional skips, 3,028 total**, runner exit **0**, in **579.751 seconds**.
+Individual `UnitTestResult` outcomes establish the skip count; the TRX summary
+reports total/executed/passed but leaves its `notExecuted` attribute zero.
+The terminal manifest verifies clean, unchanged source and identical before/after
+product hashes. The Debug solution build has no warnings or errors. Raw `[VBAi]*`
+coverage is **34,056/34,250 lines (99.43%)** and
+**34,333/34,824 branch outcomes (98.59%, rounded from counts)**, leaving
+194 uncovered lines and 491 uncovered outcomes. The collector is
+`managed-v11-git-scope/80e58a65-fa4a-401b-844b-6ae29909321d/coverage.cobertura.xml`.
+The new `MacroGitRepository.Scope` partial and the touched Git operations, LLM
+Git and chat-shell partials have complete measured line/branch coverage. No
+production coverage exclusion was added. Native/live-provider opt-ins are off;
+external hosts, native C++ and JavaScript are outside this managed measurement.
+The whole-product coverage target remains open.
+
+The delegated fix `793be32`, integrated as `923910a`, prepares the complete local
+matrix for native, legacy, missing and ambiguous bindings, unreadable metadata,
+directory/reparse entries, unchanged files and guarded chat/LLM callers. Its
+final batch records **109 passed, 0 failed, 0 skipped**, product MVID
+`71bc1d22-78bd-44cc-9044-dfaeb9406dcc`, SHA-256
+`C0E69F39AEA9315CA4D676477CE487D5FB1F84BBAF832CF934759A17A623BC07`.
+Proof is `artifacts/worktrees/qualification-git-scope-case/artifacts/scope-source-proof.json`;
+the green TRX is `scope-green-results/scope-compatible-mirrors-green.trx` below
+that worktree's artifacts. Six regressions fail with four exact parent call-site
+files from `38e3d8e` recompiled alongside the new pure resolver used by the tests.
+That binary is not the historical candidate or a complete old-source rebuild.
+Some legacy rows fail the exact native-scope assertion even when the old local
+action succeeds; the red batch is not six native-export failures. Neither batch
+uses Office, COM, real authentication or network transport.
+
+`local-v11-git-scope/terminal.json` records all prepared local checks passing,
+runner exit **0**, with unchanged candidate bytes and source: **61 JavaScript
+tests**, **20 synthetic native cycles**, exact candidate loader extraction/hash/
+ABI/reuse, and **46 detached WinForms Designer surfaces**. The separately built
+synthetic C++ binary is distinct from the embedded payload. These checks do not
+qualify real-host painting, embedded Git threading, GitHub transport or providers.
+
+Q-015 has managed acceptance for this exact **uninstalled** candidate. The
+installed product remains `8f2315d` / `d8f31d57` with its retained hash unchanged.
+The nine remaining release gates and all failed historical native results remain
+open in their stated scopes.
+
 ## Uninstalled recovery marker candidate: complete managed and local gates (2026-10-01)
 
 Source `bdb57e00c8763d84ece627601035b717c1008cf8`, MVID
