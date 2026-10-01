@@ -133,7 +133,7 @@ namespace VBAi
             uint objectSize = block.Field(mask, 5, 4);
             block.Field(mask, 6, 2);
             uint type = block.Field(mask, 7, 2);
-            Require(type == 17 || type == 21 || IsMorphType(type));
+            Require(type == 17 || type == 21 || IsMorphType(type) || type == 16 || type == 47 || type == 18 || type == 12);
             block.Field(mask, 9, 2);
             uint tooltip = block.Field(mask, 11, 4), license = block.Field(mask, 12, 4);
             uint source = block.Field(mask, 13, 4), rows = block.Field(mask, 14, 4);
@@ -148,7 +148,8 @@ namespace VBAi
             block.Finish();
             Reader control = objects.Section(objectSize);
             if (IsMorphType(type)) ParseMorph(control, type);
-            else ParseLeaf(control, type == 21);
+            else if (type == 17 || type == 21) ParseLeaf(control, type == 21);
+            else Require(ParseAdditionalControl(control, type));
             control.Finish();
         }
 
