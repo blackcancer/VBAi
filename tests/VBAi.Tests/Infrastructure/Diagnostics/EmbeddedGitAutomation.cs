@@ -111,16 +111,32 @@ namespace VBAi.Tests.Integration
             if (items.Length != 1 || items[0].Current.ProcessId != fixture.ProcessId || !items[0].Current.Name.Contains(nonce))
                 throw new InvalidOperationException("The sole exact owned checkpoint item was not observed.");
             var select = Pattern<SelectionItemPattern>(items[0], SelectionItemPattern.Pattern);
-            string before = Text("status");
-            Protocol.EmitOnce("select-checkpoint", select.Select); WaitTerminal("select-checkpoint", before);
-            Assert.IsTrue(select.Current.IsSelected);
+            // WinForms can select the sole item while refilling the list during
+            // the busy checkpoint operation. Selecting it again emits no change
+            // event and must not require a new review-status message.
+            bool alreadySelected = select.Current.IsSelected;
+            record(new { Phase = "CheckpointSelectionObserved", AlreadySelected = alreadySelected, Name = items[0].Current.Name });
+            if (!alreadySelected)
+            {
+                Protocol.EmitOnce("select-checkpoint", select.Select);
+                Assert.IsTrue(select.Current.IsSelected);
+                Protocol.Terminal("select-checkpoint", true, true);
+            }
+            var ready = Stopwatch.StartNew(); int idleObservations = 0;
+            while (ready.ElapsedMilliseconds < 60000 && idleObservations < 2)
+            {
+                if (stop()) throw new InvalidOperationException("Coordinator stopped selection observation.");
+                idleObservations = Leaf("compare").Current.IsEnabled && select.Current.IsSelected ? idleObservations + 1 : 0;
+                Thread.Sleep(50);
+            }
+            if (idleObservations < 2) { Protocol.MarkUncertain("Selected checkpoint did not reach an idle owned view."); throw new TimeoutException("Checkpoint selection/view remains pending."); }
             var tabs = Leaf("tabs"); var tab = tabs.FindAll(TreeScope.Children,
                 new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem)).Cast<AutomationElement>()
                 .Single(item => item.Current.ProcessId == fixture.ProcessId && item.Current.Name == tabName);
             var tabSelect = Pattern<SelectionItemPattern>(tab, SelectionItemPattern.Pattern);
             Protocol.EmitOnce("return-to-checkpoints", tabSelect.Select);
             Assert.IsTrue(tabSelect.Current.IsSelected); Protocol.Terminal("return-to-checkpoints", true, true);
-            before = Text("status"); Invoke("checkpointRestore"); WaitTerminal("checkpointRestore", before);
+            string before = Text("status"); Invoke("checkpointRestore"); WaitTerminal("checkpointRestore", before);
             record(new { Phase = "OwnerCheckpointImportTerminal", Scope = "Exact checkpoint import only; no remote push or automatic recovery replay." });
         }
 
