@@ -119,11 +119,16 @@ namespace VBAi.Tests.Integration
             record(new { Phase = "WindowClosePatternObserved", Pattern = WindowPattern.Pattern.ProgrammaticName });
             Protocol.EmitOnce("window-close", windowPattern.Close);
             var watch = Stopwatch.StartNew();
+            bool observed = false;
             while (watch.ElapsedMilliseconds < 10000)
             {
                 uint pid = 0; uint tid = GetWindowThreadProcessId(window, out pid);
                 bool exists = IsWindow(window);
-                record(new { Phase = "WindowCloseObservation", Handle = window.ToInt64(), Exists = exists, ObservedPid = pid, ObservedTid = tid });
+                if (!observed || !exists || pid != fixture.ProcessId || tid != scope.ThreadId)
+                {
+                    record(new { Phase = "WindowCloseObservation", Handle = window.ToInt64(), Exists = exists, ObservedPid = pid, ObservedTid = tid });
+                    observed = true;
+                }
                 // A failed window query does not provide a valid owner PID. Confirm
                 // destruction explicitly; a live/reused handle still requires ownership.
                 if (tid == 0 && !exists) { Protocol.Terminal("window-close", true, true); return; }
