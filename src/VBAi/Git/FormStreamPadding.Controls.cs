@@ -86,7 +86,7 @@ namespace VBAi
         }
 
         /// <summary>Validates all persisted tab arrays, text properties and per-tab flags within their declared extents.</summary>
-        private static void ParseTabStrip(Reader control)
+        private static void ParseTabStrip(Reader control, TabLinks links = null)
         {
             // MS-OFORMS 2.2.9: main cb excludes picture, TextProps and TabStripTabFlagData.
             // https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-oforms/26809262-3501-4dfd-8792-855981a4bc74
@@ -105,12 +105,13 @@ namespace VBAi
             if (Has(mask, 24)) Require(block.Field(mask, 24, 2) == 0xffff);
             block.Align(4); block.Skip(8);
             int count = -1;
-            if (Has(mask, 5)) count = ParseTabArray(block, items);
+            if (Has(mask, 5)) count = ParseTabArray(block, items, links?.Items);
             CheckTabArray(block, mask, 15, tips, ref count);
-            CheckTabArray(block, mask, 17, names, ref count);
+            CheckTabArray(block, mask, 17, names, ref count, links?.Names);
             CheckTabArray(block, mask, 21, tags, ref count);
             CheckTabArray(block, mask, 23, accelerators, ref count);
             if (Has(mask, 20) && count >= 0) Require(allocated >= (uint)count);
+            if (links != null) Require(Has(mask, 5) && Has(mask, 17) && Has(mask, 22));
             block.Finish();
             if (Has(mask, 24)) ParsePictureEnvelope(control);
             ParseText(control);
@@ -123,16 +124,16 @@ namespace VBAi
         }
 
         /// <summary>Checks that each optional persisted array has the same number of tabs.</summary>
-        private static void CheckTabArray(Reader block, uint mask, int bit, uint length, ref int count)
+        private static void CheckTabArray(Reader block, uint mask, int bit, uint length, ref int count, System.Collections.Generic.List<string> values = null)
         {
             if (!Has(mask, bit)) return;
-            int actual = ParseTabArray(block, length);
+            int actual = ParseTabArray(block, length, values);
             if (count < 0) count = actual;
             else Require(count == actual);
         }
 
         /// <summary>Parses character-count ArrayString entries and clears only their documented string padding.</summary>
-        private static int ParseTabArray(Reader block, uint size)
+        private static int ParseTabArray(Reader block, uint size, System.Collections.Generic.List<string> values = null)
         {
             // Ordinary fmString descriptors count BYTES; ArrayString descriptors count CHARACTERS.
             // https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-oforms/b9cf793f-2fd5-491e-9827-871ae47e9920
@@ -145,8 +146,12 @@ namespace VBAi
                 uint characters = descriptor & 0x7fffffffu;
                 ulong length = (descriptor & 0x80000000u) != 0 ? characters : (ulong)characters * 2;
                 Require(length <= (ulong)array.Remaining);
-                array.Skip((int)length);
-                array.Padding((int)((4 - (length & 3)) & 3));
+                if (values == null)
+                {
+                    array.Skip((int)length);
+                    array.Padding((int)((4 - (length & 3)) & 3));
+                }
+                else values.Add(array.StringValue((uint)length | (descriptor & 0x80000000u)));
                 count++;
             }
             array.Finish();

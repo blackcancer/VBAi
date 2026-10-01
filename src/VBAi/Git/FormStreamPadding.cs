@@ -39,7 +39,7 @@ namespace VBAi
         private static bool Has(uint mask, int bit) { return (mask & (1u << bit)) != 0; }
         private static void Require(bool condition) { if (!condition) throw new UnsupportedLayoutException(); }
 
-        private static void ParseForm(Reader form, Reader objects)
+        private static void ParseForm(Reader form, Reader objects, StorageNode node = null)
         {
             Reader block = form.Block(0x0400);
             uint mask = block.UInt32();
@@ -48,7 +48,7 @@ namespace VBAi
             Require(!Has(mask, 15) && !Has(mask, 21));
             block.Field(mask, 1, 4); block.Field(mask, 2, 4); block.Field(mask, 3, 4);
             uint flags = block.Field(mask, 6, 4, 4);
-            Require((flags & ~0x0000c004u) == 0 && (flags & 0x4000) == 0);
+            Require((flags & ~0x0000c004u) == 0 && (node != null || (flags & 0x4000) == 0));
             block.Field(mask, 7, 1); block.Field(mask, 8, 1); block.Field(mask, 9, 1);
             block.Field(mask, 13, 4); block.Field(mask, 16, 1); block.Field(mask, 17, 1);
             block.Field(mask, 18, 4);
@@ -77,7 +77,7 @@ namespace VBAi
             uint represented = 0;
             while (represented < count)
             {
-                Require(sites.Byte() == 0); // Flat leaf controls only.
+                Require(sites.Byte() == 0); // Direct children within this storage; nested parents have separate storages.
                 byte typeOrCount = sites.Byte();
                 if ((typeOrCount & 0x80) != 0)
                 {
@@ -92,8 +92,9 @@ namespace VBAi
                 }
             }
             sites.Padding((4 - ((sites.Position - depthStart) & 3)) & 3);
-            for (uint i = 0; i < count; i++) ParseSite(sites, objects);
+            for (uint i = 0; i < count; i++) ParseSite(sites, objects, node);
             sites.Finish();
+            if ((flags & 0x4000) != 0) ParseDesignExtender(form);
             form.Finish();
             objects.Finish();
         }
@@ -121,24 +122,31 @@ namespace VBAi
             for (int i = 0; i < length; i++) Require(form.Byte() < 128);
         }
 
-        private static void ParseSite(Reader sites, Reader objects)
+        private static void ParseSite(Reader sites, Reader objects, StorageNode node = null)
         {
             Reader block = sites.Block(0);
             uint mask = block.UInt32();
-            Require((mask & ~0x00007bffu) == 0 && Has(mask, 5) && Has(mask, 7));
+            Require((mask & ~0x00007bffu) == 0 && (node != null || Has(mask, 5)) && Has(mask, 7));
             uint name = block.Field(mask, 0, 4), tag = block.Field(mask, 1, 4);
-            block.Field(mask, 2, 4); block.Field(mask, 3, 4);
+            uint identity = block.Field(mask, 2, 4); block.Field(mask, 3, 4);
             uint flags = block.Field(mask, 4, 4, 0x33);
-            Require((flags & 0x10) != 0 && (flags & 0x40000) == 0);
+            bool streamed = (flags & 0x10) != 0;
+            Require(node != null || (streamed && (flags & 0x40000) == 0));
             uint objectSize = block.Field(mask, 5, 4);
             block.Field(mask, 6, 2);
             uint type = block.Field(mask, 7, 2);
-            Require(type == 17 || type == 21 || IsMorphType(type) || type == 16 || type == 47 || type == 18 || type == 12);
+            Require(type == 17 || type == 21 || IsMorphType(type) || type == 16 || type == 47 || type == 18 || type == 12 ||
+                (node != null && !streamed && (type == 14 || type == 57 || type == 7)));
             block.Field(mask, 9, 2);
             uint tooltip = block.Field(mask, 11, 4), license = block.Field(mask, 12, 4);
             uint source = block.Field(mask, 13, 4), rows = block.Field(mask, 14, 4);
             block.Align(4);
-            if (Has(mask, 0)) block.String(name);
+            string controlName = null;
+            if (Has(mask, 0))
+            {
+                if (node == null) block.String(name);
+                else controlName = block.StringValue(name);
+            }
             if (Has(mask, 1)) block.String(tag);
             if (Has(mask, 8)) block.Skip(8);
             if (Has(mask, 11)) block.String(tooltip);
@@ -146,9 +154,16 @@ namespace VBAi
             if (Has(mask, 13)) block.String(source);
             if (Has(mask, 14)) block.String(rows);
             block.Finish();
+            if (node != null) node.AddSite(identity, type, flags, Has(mask, 5), controlName);
+            if (!streamed) return;
             Reader control = objects.Section(objectSize);
             if (IsMorphType(type)) ParseMorph(control, type);
             else if (type == 17 || type == 21) ParseLeaf(control, type == 21);
+            else if (type == 18 && node?.Type == 57)
+            {
+                Require(node.Tabs == null);
+                ParseTabStrip(control, node.Tabs = new TabLinks());
+            }
             else Require(ParseAdditionalControl(control, type));
             control.Finish();
         }
@@ -223,6 +238,26 @@ namespace VBAi
                 Require(length <= (uint)Remaining && ((descriptor & 0x80000000u) != 0 || (length & 1) == 0));
                 Skip((int)length);
                 Padding((int)((4 - (length & 3)) & 3));
+            }
+            internal string StringValue(uint descriptor)
+            {
+                uint length = descriptor & 0x7fffffffu;
+                Require(length <= (uint)Remaining && ((descriptor & 0x80000000u) != 0 || (length & 1) == 0));
+                string value;
+                if ((descriptor & 0x80000000u) != 0)
+                {
+                    // Compressed fmString stores the low byte of each Unicode character, not ANSI bytes.
+                    var characters = new char[(int)length];
+                    for (int i = 0; i < characters.Length; i++) characters[i] = (char)bytes[Position + i];
+                    value = new string(characters);
+                }
+                else
+                {
+                    try { value = new System.Text.UnicodeEncoding(false, false, true).GetString(bytes, Position, (int)length); }
+                    catch (System.Text.DecoderFallbackException) { throw new UnsupportedLayoutException(); }
+                }
+                String(descriptor);
+                return value;
             }
             internal Reader Block(ushort version)
             {

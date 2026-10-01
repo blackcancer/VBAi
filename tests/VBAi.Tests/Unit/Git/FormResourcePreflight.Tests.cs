@@ -7,7 +7,7 @@ namespace VBAi.Tests.Unit
 
     [TestClass]
     [TestCategory("Unit")]
-    public sealed class FormResourcePreflightTests
+    public sealed partial class FormResourcePreflightTests
     {
         [TestMethod]
         public void BoundedCompoundStorageAndMiniStreamAreValidatedWithoutChangingRawBytes()

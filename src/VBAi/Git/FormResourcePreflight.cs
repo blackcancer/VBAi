@@ -198,17 +198,13 @@ namespace VBAi
                 // MS-CFB sector allocation, slack bytes, directory tree ordering and
                 // creation/modification timestamps do not describe control properties.
                 // Keep every logical stream, name, storage CLSID and state bit.
-                var streams = entries.Where(x => x.Kind == 2).ToDictionary(x => x.Path, StringComparer.Ordinal);
-                foreach (var storage in entries.Where(x => x.Kind == 1 || x.Kind == 5))
+                var streams = entries.Where(x => x.Kind == 2).ToDictionary(x => x.Path, x => x.Data, StringComparer.Ordinal);
+                var storageMetadata = entries.Where(x => x.Kind == 1 || x.Kind == 5).ToDictionary(x => x.Path, x => x.Metadata, StringComparer.Ordinal);
+                // Normalize exactly one complete UserForm graph. An unsupported parent prevents descendant normalization.
+                if (entries[0].Metadata.Take(16).SequenceEqual(FormClassId))
                 {
-                    // An unrelated OLE object's f/o streams can coincidentally match
-                    // this grammar. Its class identity must also identify a UserForm.
-                    if (!storage.Metadata.Take(16).SequenceEqual(FormClassId)) continue;
-                    Entry form, objects;
-                    if (!streams.TryGetValue(storage.Path + "/f", out form) ||
-                        !streams.TryGetValue(storage.Path + "/o", out objects)) continue;
-                    var normalized = FormStreamPadding.Normalize(form.Data, objects.Data);
-                    form.Data = normalized[0]; objects.Data = normalized[1];
+                    var normalized = FormStreamPadding.NormalizeGraph(streams, storageMetadata);
+                    foreach (var entry in entries.Where(x => x.Kind == 2)) entry.Data = normalized[entry.Path];
                 }
                 using (var buffer = new MemoryStream())
                 using (var writer = new BinaryWriter(buffer, Encoding.UTF8, true))
