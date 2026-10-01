@@ -41,6 +41,9 @@
     <None Include="Infrastructure\Diagnostics\NativeExportTrace.Tests.mjs" TargetPath="tests\VBAi.Tests\Infrastructure\Diagnostics\NativeExportTrace.Tests.mjs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\tools\probes\NativeExportTrace.js" TargetPath="tools\probes\NativeExportTrace.js" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\tools\probes\Trace-NativeUserFormExport.ps1" TargetPath="tools\probes\Trace-NativeUserFormExport.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\tools\probes\Trace-OwnedExcelTeardown.ps1" TargetPath="tools\probes\Trace-OwnedExcelTeardown.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\tools\probes\OwnedTeardownTrace.Common.ps1" TargetPath="tools\probes\OwnedTeardownTrace.Common.ps1" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\tools\probes\Test-OwnedExcelTeardownPreflight.ps1" TargetPath="tools\probes\Test-OwnedExcelTeardownPreflight.ps1" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\tools\tests\Test-TestLayout.ps1" Link="Architecture\Test-TestLayout.ps1" />
     <None Include="..\..\tools\tests\Test-SolidWorksDebug.ps1" Link="Manual\Debug\Test-SolidWorksDebug.ps1" />
     <None Include="..\..\tools\tests\Test-SolidWorksBreakpoint.ps1" Link="Manual\Debug\Test-SolidWorksBreakpoint.ps1" />

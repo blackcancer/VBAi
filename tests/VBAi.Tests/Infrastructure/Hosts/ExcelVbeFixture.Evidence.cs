@@ -69,6 +69,12 @@ namespace VBAi.Tests.Integration
         /// <summary>Records each synthetic request once, with no replay after an uncertain response or evidence error.</summary>
         private IDictionary<string, object> RecordCommand(object request, Func<IDictionary<string, object>> execute)
         {
+            return teardownTrace == null ? RecordCommandCore(request, execute) :
+                teardownTrace.Command(request, () => RecordCommandCore(request, execute));
+        }
+
+        private IDictionary<string, object> RecordCommandCore(object request, Func<IDictionary<string, object>> execute)
+        {
             if (!retainEvidence) return execute();
             int sequence = ++commandSequence;
             if (sequence > MaximumCommandRecords) return execute();

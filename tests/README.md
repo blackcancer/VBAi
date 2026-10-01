@@ -4,6 +4,35 @@ The test suite covers the shared VBE core, provider protocols, storage, editor
 services and selected host integrations. A passing local suite is not a claim
 that every feature works in every application that embeds the VBE.
 
+## Owned Excel teardown trace (qualification only)
+
+`VBAi_TEST_EXCEL_TEARDOWN_TRACE_GATE=1` enables a disabled-by-default diagnostic
+only in the two `ExcelProcedureValuesTests` native array/ParamArray cases.
+`VBAi_RUN_EXCEL_TESTS=1` and an absolute `VBAi_EXCEL_RESULTS` are required. Run one
+fresh disposable case, never the complete batch with this gate. Pending or
+uncertain bridge work, identity mismatch or the bounded arming deadline preserves
+the exact host without Close/Quit. The ordinary fixture is unchanged when the
+diagnostic variable is absent. The gate never replays a procedure or cleanup.
+
+Compile `tools/probes/OwnedTeardownTrace.Helper.cs` as a separate x64 executable
+named `VBAi.OwnedTeardown.Helper.exe`. The helper is not an Office host. First
+prepare, then explicitly execute `Test-OwnedExcelTeardownPreflight.ps1` with its
+absolute `-HelperPath` and `-OutputRoot`. Its two owned helper trials must prove
+normal detach/STOP/exit and the synthetic `c0000409` exception/context/stack
+handler. The earlier filesystem-trace preflight does not prove this new handler.
+Default script invocation prepares a plan; `-Execute` is required to run it.
+
+The opted-in native test writes `teardown.pending.json` in its owned GUID root
+immediately before its existing single Close/Quit sequence. Prepare
+`Trace-OwnedExcelTeardown.ps1 -PendingReport <absolute path> -ExpectedMvid <guid>
+-ExpectedAssemblySha256 <hash>`; then add `-DebuggerPreflightReport <absolute
+passing preflight.json> -Execute` for the exact same candidate/PID/start/nonce.
+Only exception record, register context and stack are captured, without full
+memory dumps, global WER policy or additional bridge/COM calls. A controller
+timeout attempts bounded debugger detachment and retains unresolved processes;
+it never terminates Excel. Primary scenario and diagnostic cleanup errors remain
+separate failures. A captured crash does not turn the original case into a pass.
+
 See [development setup](../docs/development.md), [recorded results](../docs/test-coverage.md)
 and the [compatibility matrix](../docs/compatibility.md). Run commands from the
 repository root in a Windows development environment.

@@ -188,6 +188,7 @@ namespace VBAi.Tests.Integration
                 try { WriteShutdownDiagnostics(diagnostics); }
                 catch (Exception error) { evidenceFailure = error; }
             };
+            BeginDiagnosticCleanup();
             if (owned && workbook != null)
                 try { ((dynamic)workbook).Close(false); }
                 catch (Exception error) { closeFailure = error; }
@@ -203,6 +204,18 @@ namespace VBAi.Tests.Integration
             Release(application);
             workbook = workbooks = application = null;
             diagnostics["ReleaseElapsedMs"] = watch.ElapsedMilliseconds;
+            if (teardownTrace != null)
+            {
+                try { teardownTrace.AfterCleanup(); }
+                catch (Exception traceFailure)
+                {
+                    diagnostics["DiagnosticFailure"] = traceFailure.ToString();
+                    writeDiagnostics();
+                    lock (retainedBootstraps) retainedBootstraps.Add(this);
+                    throw new AggregateException("Diagnostic cleanup failed; native cleanup is never replayed.",
+                        new[] { traceFailure, closeFailure, quitFailure, evidenceFailure }.Where(error => error != null));
+                }
+            }
             var process = ownedProcess;
             ownedProcess = null;
             if (process != null)
