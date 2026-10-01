@@ -330,6 +330,12 @@ they do not establish a causal fix for the Access/Publisher metadata failures.
 The later uninstalled Options cancellation candidate fails its complete managed
 gate on synthetic native-probe ownership fixtures. A focused pass does not
 qualify that assembly, and it is not deployed.
+Those fixture failures are explained and corrected without weakening ownership
+guards. The next combined candidate verifies exact closure for reads and Accept,
+preserves primary/cancellation errors and passes its complete default managed
+gate. It remains uninstalled: the original native Format failure and earlier
+revision/EOF causes remain open. Private CFB guard contracts complete managed
+coverage of that preflight, without claiming native import/recovery acceptance.
 Exact identities, counts and artifact paths are recorded in
 [test coverage](test-coverage.md).
 

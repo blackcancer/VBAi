@@ -1,5 +1,56 @@
 # Recorded validation
 
+## Uninstalled exact Options lifetime candidate: complete managed gate (2026-10-01)
+
+Source `d4a0fd5a7662806c141f7e851be126feecb4ca9b`, MVID
+`a25eae3f-47b6-45c3-999c-0ff05f630e36`, SHA-256
+`8ACE24B2BC85255B8274EE0FC6020228DDB26EE11612CCD8C2CD0A86B26B5798`
+combines the corrected native-probe fixtures, exact captured-handle closure for
+Options reads/Accept and the full CFB guard contracts. Test assembly SHA-256 is
+`432733B0B5D06471A1A7E0EB56B947FE7C8B917D0EBF14244B76104A0AC3D079`.
+
+`managed-v9-options-lifetime/full-managed.trx` records **2,839 passed, 0 failed,
+110 conditional skips, 2,949 total**, runner exit **0**, in **506.021 seconds**.
+The individual outcomes match the totals. The terminal manifest confirms clean,
+unchanged source and identical before/after product hashes. Solution build has
+no warnings or errors. Raw `[VBAi]*` managed coverage is
+**34,000/34,194 lines (99.43%)** and **34,316/34,808 branches (98.58%)**, in
+`managed-v9-options-lifetime/61c7e0b1-62a4-440f-8d4d-54aabcfde059/coverage.cobertura.xml`.
+Native/live-provider opt-ins are disabled; native C++, JavaScript and external
+host processes are outside this measurement. The complete coverage target
+remains open. Q-015 has managed acceptance for this exact uninstalled candidate,
+not native release acceptance or a later source revision.
+
+The delegated closure follow-up at source `c34877d`, integrated as `e386f00`,
+records **228 passed, 0 failed, 0 skipped** in
+`artifacts/worktrees/qualification-teardown-trace/artifacts/focused-options-read-lifetime/options-read-lifetime.trx`.
+It verifies both read paths preserve capture/cancellation errors, perform only
+one owned Cancel and observe exact destruction. Post-Accept performs observation
+only: hidden captured windows remain open; enumeration failures propagate;
+no Cancel or replay follows a started validation. Its tested isolated MVID is
+`b5d627ea-85da-4875-96b3-97163d33a6f8`, SHA-256
+`5E559A25263E43903BDAFA2C67A59A1BB9D3D117E7557B9D3DD7E848B2A2EF3B`.
+The global candidate above independently includes these regressions. The failed
+preceding full gate and original installed-v6 native Format failure remain
+preserved below. The installed DLL is unchanged; Q-026 remains open for native
+validation and the earlier unexplained revision/EOF scopes.
+
+The final CFB contract batch at tests-only source `8a3575a`, integrated as
+`d4a0fd5`, records **48 passed, 0 failed, 0 skipped** in
+`artifacts/worktrees/cfb-guards/artifacts/test-results/cfb-contracts/cfb-contracts.trx`.
+Its MVID is `96956356-0bd4-45ae-a2d3-a1b6a807d7ca`, SHA-256
+`CE6098CF80C357E6B9C4A9126D09E652E74CC2A34BD0E9596B5EA71D6E4EBF8C`.
+No production changes, exclusions or field rewriting are used. The five private
+defensive outcomes are exercised as direct helper contracts on a real validated
+resource: bounded reads cannot escape into existing envelope/trailing bytes;
+invalid sector indices are refused; invalid chain sizes reserve no free sector.
+Valid boundary neighbors are also checked. This is explicitly separate from
+public malformed-file reachability. The focused collector measures
+**38/38 lines and 24/24 branch outcomes** for `FormResourcePreflight`, and
+**181/181 lines and 196/196 branch outcomes** for `CompoundFile`.
+The complete global collector also reports 100% lines/branches for these two
+classes. It does not extend that result to the entire product or native hosts.
+
 ## Uninstalled Options cancellation candidate: complete gate failed (2026-10-01)
 
 Source `dc5d3d064882ab7220d9210e6616793c83550f31`, MVID
