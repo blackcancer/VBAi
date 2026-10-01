@@ -145,7 +145,33 @@ namespace VBAi.Tests.Integration
                             using (var operations = new MacroGitOperations(project, repository))
                             {
                                 Phase(output, report, "production-checkpoint-restore");
-                                Await(operations.ExecuteAsync("checkpoint_restore", operations.Revision(changed), name: checkpoint));
+                                try { Await(operations.ExecuteAsync("checkpoint_restore", operations.Revision(changed), name: checkpoint)); }
+                                catch (InvalidOperationException error) when (error.Message.Contains("The VBE did not preserve imported sources exactly."))
+                                {
+                                    // This specific terminal production refusal already retains
+                                    // Backup/AfterImport. Observe the actual designer once; do not
+                                    // retry Apply, Save, rollback or recovery to obtain a pass.
+                                    report["TerminalImportRefusal"] = error.ToString();
+                                    report["RecoveryPendingAfterRefusal"] = repository.RecoveryPending;
+                                    WriteReport(output, report);
+                                    try
+                                    {
+                                        var observed = host.ReadGitLayout(form, layout);
+                                        report["NativeAfterRefusedImport"] = observed;
+                                        report["NativeAfterRefusedImportDifferences"] = nativeBefore.Keys.Union(observed.Keys)
+                                            .Where(key => !nativeBefore.ContainsKey(key) || !observed.ContainsKey(key) || !Equals(nativeBefore[key], observed[key]))
+                                            .Select(key => new { Property = key, Expected = nativeBefore.ContainsKey(key) ? nativeBefore[key] : null,
+                                                Actual = observed.ContainsKey(key) ? observed[key] : null }).ToArray();
+                                        WriteReport(output, report);
+                                    }
+                                    catch (Exception observationError)
+                                    {
+                                        report["PostRefusalObservationError"] = observationError.ToString();
+                                        WriteReport(output, report);
+                                        throw new AggregateException("Terminal strict import refusal and its read-only observation both failed.", error, observationError);
+                                    }
+                                    throw;
+                                }
                                 var restored = Capture(project, output, "checkpoint-restored");
                                 Assert.IsTrue(restored.SameAs(before));
                                 AssertNativeState(nativeBefore, host.ReadGitLayout(form, layout), "checkpoint restore");
