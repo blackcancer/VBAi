@@ -189,18 +189,39 @@ namespace VBAi.Tests.Integration
                 var selection = Data("debug_state", "Project", selector);
                 steps.Add(new { PublisherStartupProject = candidate, Persistence = persistence, Selection = selection,
                     ProvisionalSelector = selector, SolePathlessProject = solePathless });
-                Assert.AreEqual(true, Field(persistence, "HostAvailable"), "Publisher's project host is unavailable.");
-                Assert.AreEqual(true, Field(persistence, "IdentityVerified"), "Publisher's project identity was not verified.");
-                Assert.AreEqual(ProcessId, Convert.ToInt32(Field(persistence, "OwnerProcessId")), "Publisher project belongs to another PID.");
-                Assert.AreEqual("Publisher", Field(persistence, "Host") as string, true);
-                Assert.IsTrue(SamePublicationPath(Field(persistence, "HostPath") as string, DocumentPath), "The adapter did not map the exact disposable publication.");
-                Assert.AreEqual(name, Field(selection, "SelectedProject") as string, true, "The active VBE project is not the mapped publication.");
+                RequirePublisherPersistenceProof(persistence, selector);
+                Assert.AreEqual(2, Convert.ToInt32(Field(selection, "Mode")), "The selected publication must be in design mode.");
+                if (Field(selection, "SelectedProject") == null)
+                {
+                    // State.SelectedProject describes an active CodePane, not ActiveVBProject.
+                    // A fresh publication may have no pane. Its exact singleton native COM/VBE
+                    // association is already verified by OtherHostPersistence/SolePublisherProject.
+                    Assert.AreEqual(1, projects.Length, "An absent code pane cannot disambiguate more than one native project.");
+                    Assert.AreEqual(name, Field(selection, "Project") as string, true, "The no-pane response belongs to another requested project.");
+                    foreach (string key in new[] { "SelectedProject", "SelectedProjectPath", "SelectedHostPath", "ActiveModule", "Selection" })
+                        Assert.IsTrue(selection.ContainsKey(key) && selection[key] == null, "The native pane context is partial, foreign or failed: " + key);
+                    var currentProjects = Items("list_projects");
+                    Assert.AreEqual(1, currentProjects.Length, "The native project catalog changed before binding the no-pane publication.");
+                    var currentProject = currentProjects[0];
+                    Assert.AreEqual(name, Field(currentProject, "Name") as string, true);
+                    Assert.AreEqual(2, Convert.ToInt32(Field(currentProject, "Mode")));
+                    foreach (string key in new[] { "FileName", "HostPath" })
+                    {
+                        string currentPath = Field(currentProject, key) as string;
+                        Assert.IsTrue(string.IsNullOrWhiteSpace(currentPath) || SamePublicationPath(currentPath, DocumentPath),
+                            "The no-pane native project acquired a foreign path: " + key);
+                    }
+                    var finalPersistence = Data("project_persistence_status", "Project", selector);
+                    steps.Add(new { PublisherNoCodePaneAssociation = true, CurrentProjects = currentProjects, FinalPersistence = finalPersistence,
+                        Proof = "Exact singleton native document/VBE association; no code-pane selection is inferred" });
+                    RequirePublisherPersistenceProof(finalPersistence, selector);
+                }
+                else Assert.AreEqual(name, Field(selection, "SelectedProject") as string, true, "The active VBE project is not the mapped publication.");
                 string selectedHostPath = Field(selection, "SelectedHostPath") as string;
-                Assert.IsTrue((solePathless && string.IsNullOrWhiteSpace(selectedHostPath)) || SamePublicationPath(selectedHostPath, DocumentPath),
+                Assert.IsTrue(((solePathless || Field(selection, "SelectedProject") == null) && string.IsNullOrWhiteSpace(selectedHostPath)) || SamePublicationPath(selectedHostPath, DocumentPath),
                     "VBE selected a recovered or foreign publication.");
                 string selectedPath = Field(selection, "SelectedProjectPath") as string;
                 Assert.IsTrue(string.IsNullOrWhiteSpace(selectedPath) || SamePublicationPath(selectedPath, DocumentPath), "Selected VBIDE path disagrees with the publication.");
-                Assert.AreEqual(2, Convert.ToInt32(Field(selection, "Mode")), "The selected publication must be in design mode.");
                 RequirePublisherPublication("AfterProjectBindingReadback", true);
                 Project = selector;
             }
@@ -210,6 +231,16 @@ namespace VBAi.Tests.Integration
                 steps.Add(new { PublisherStartupBindingError = error.ToString(), BaselineBound = false });
                 FlushAdapterEvidence(); throw;
             }
+        }
+
+        private void RequirePublisherPersistenceProof(IDictionary<string, object> proof, string selector)
+        {
+            Assert.AreEqual(selector, Field(proof, "Project") as string, true, "The adapter proof did not target the exact provisional project selector.");
+            Assert.AreEqual(true, Field(proof, "HostAvailable"), "Publisher's project host is unavailable.");
+            Assert.AreEqual(true, Field(proof, "IdentityVerified"), "Publisher's project identity was not verified.");
+            Assert.AreEqual(ProcessId, Convert.ToInt32(Field(proof, "OwnerProcessId")), "Publisher project belongs to another PID.");
+            Assert.AreEqual("Publisher", Field(proof, "Host") as string, true);
+            Assert.IsTrue(SamePublicationPath(Field(proof, "HostPath") as string, DocumentPath), "The adapter did not map the exact disposable publication.");
         }
 
         private static object[] ObservePublisherProcesses()

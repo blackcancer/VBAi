@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
@@ -58,6 +59,16 @@ namespace VBAi.Tests.Unit
             });
         }
 
+        [DataTestMethod, DataRow("pathless-no-pane-valid"), DataRow("mapped-no-pane-valid")]
+        public void FreshSolePublicationWithoutCodePaneBindsOnlyThroughVerifiedNativeProjectAssociation(string state)
+        {
+            InFixture(state, (fixture, projects, sends) => {
+                fixture.BindStartupProject(projects);
+                Assert.IsFalse(string.IsNullOrWhiteSpace(fixture.Project));
+                Assert.AreEqual(0, sends[0]);
+            });
+        }
+
         [DataTestMethod]
         [DataRow("doc-pid"), DataRow("app-pid"), DataRow("window-mismatch"), DataRow("multiple-documents"), DataRow("wrong-document")]
         public void UnsafeReturnedDocumentRefusesBeforeAnyBootstrapSaveOrBridgeCommand(string state)
@@ -79,6 +90,9 @@ namespace VBAi.Tests.Unit
         [DataRow("pathless-foreign-proof"), DataRow("pathless-owner"), DataRow("pathless-extra-project")]
         [DataRow("pathless-foreign-selected-path"), DataRow("pathless-selected-other"), DataRow("pathless-missing-proof")]
         [DataRow("pathless-foreign-rawpath")]
+        [DataRow("pathless-no-pane-other-request"), DataRow("pathless-no-pane-pane-context"), DataRow("pathless-no-pane-selection-error")]
+        [DataRow("pathless-no-pane-missing-field"), DataRow("pathless-no-pane-proof-lost"), DataRow("pathless-no-pane-other-selected")]
+        [DataRow("pathless-no-pane-other-mode"), DataRow("pathless-no-pane-foreign-host"), DataRow("pathless-no-pane-catalog-changed")]
         public void WrongWindowPathRecoveredProjectAndUnverifiedNativeAssociationRefuseBeforeBaseline(string state)
         {
             InFixture(state, (fixture, projects, sends) => {
@@ -105,14 +119,20 @@ namespace VBAi.Tests.Unit
                 var project = new Dictionary<string, object> { ["Name"] = "Project", ["FileName"] = path, ["HostPath"] = path, ["Mode"] = 2 };
                 var projects = new[] { (IDictionary<string, object>)project };
                 var persistence = new Dictionary<string, object> { ["HostAvailable"] = true, ["IdentityVerified"] = true, ["OwnerProcessId"] = 123, ["HostPath"] = path, ["Host"] = "Publisher" };
-                var selection = new Dictionary<string, object> { ["SelectedProject"] = "Project", ["SelectedProjectPath"] = path, ["SelectedHostPath"] = path, ["Mode"] = 2 };
+                var selection = new Dictionary<string, object> { ["Project"] = "Project", ["SelectedProject"] = "Project", ["SelectedProjectPath"] = path,
+                    ["SelectedHostPath"] = path, ["ActiveModule"] = "InitialOwnedModule", ["Selection"] = new { StartLine = 1 }, ["Mode"] = 2 };
                 int[] mutations = { 0 };
+                int persistenceReads = 0;
                 fixture.Dispatch = (pid, request) => {
                     var values = (IDictionary<string, object>)request;
                     string command = (string)values["Command"];
-                    if (command != "project_persistence_status" && command != "debug_state") { mutations[0]++; Assert.Fail("Unexpected mutation: " + command); }
+                    if (command != "project_persistence_status" && command != "debug_state" && command != "list_projects") { mutations[0]++; Assert.Fail("Unexpected mutation: " + command); }
                     if (state == "changed-during-readback" && command == "debug_state") active.FullName = Path.Combine(root, "Switched.pub");
-                    return new Dictionary<string, object> { ["Ok"] = true, ["Error"] = null, ["Data"] = command == "debug_state" ? selection : persistence };
+                    if (command == "project_persistence_status" && ++persistenceReads >= 2 && state == "pathless-no-pane-proof-lost") persistence["IdentityVerified"] = false;
+                    if (command == "project_persistence_status") persistence["Project"] = values["Project"];
+                    if (command == "list_projects" && state == "pathless-no-pane-catalog-changed") project["FileName"] = Path.Combine(root, "Recovered.tmp");
+                    object data = command == "list_projects" ? (object)projects.Cast<object>().ToArray() : command == "debug_state" ? selection : persistence;
+                    return new Dictionary<string, object> { ["Ok"] = true, ["Error"] = null, ["Data"] = data };
                 };
                 if (state == "recovered") project["FileName"] = project["HostPath"] = Path.Combine(root, "pubRecovered.tmp");
                 if (state == "wrong-document") active.FullName = Path.Combine(root, "OldRecovered.pub");
@@ -148,6 +168,17 @@ namespace VBAi.Tests.Unit
                     if (state == "pathless-selected-other") selection["SelectedProject"] = "Other";
                     if (state == "pathless-missing-proof") persistence["IdentityVerified"] = false;
                     if (state == "pathless-foreign-rawpath") project["FileName"] = Path.Combine(root, "pubRecovered.tmp");
+                }
+                if (state.Contains("no-pane"))
+                {
+                    foreach (string field in new[] { "SelectedProject", "SelectedProjectPath", "SelectedHostPath", "ActiveModule", "Selection" }) selection[field] = null;
+                    if (state == "pathless-no-pane-other-request") selection["Project"] = "Other";
+                    if (state == "pathless-no-pane-pane-context") selection["ActiveModule"] = "ForeignModule";
+                    if (state == "pathless-no-pane-selection-error") selection["Selection"] = new { Error = "The pane getter failed." };
+                    if (state == "pathless-no-pane-missing-field") selection.Remove("Selection");
+                    if (state == "pathless-no-pane-other-selected") selection["SelectedProject"] = "Other";
+                    if (state == "pathless-no-pane-other-mode") selection["Mode"] = 1;
+                    if (state == "pathless-no-pane-foreign-host") selection["SelectedHostPath"] = Path.Combine(root, "Recovered.pub");
                 }
                 // The only injected seam is Win32 owner observation. The fake wrappers remain distinct objects.
                 fixture.ReadPublisherWindowOwner = hwnd => hwnd.ToInt64() == 999 ? 456u : 123u;
