@@ -204,7 +204,27 @@ namespace VBAi.Tests.Integration
                 throw new InvalidOperationException("Explicit authorized synthetic branch/revision and observed Checkpoints tab caption are required; no fallback.");
             return result;
         }
-        private static string Sha(string path) { using (var bytes = File.OpenRead(path)) using (var hash = SHA256.Create()) return BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-", ""); }
+        private static string Sha(string path) { using (var bytes = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) using (var hash = SHA256.Create()) return BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-", ""); }
+        [TestMethod, TestCategory("Unit")]
+        public void OwnedSavedWorkbookHashSupportsAnExistingWriterWithoutChangingItsBytes()
+        {
+            string directory = Path.Combine(Path.GetTempPath(), "VBAi-WorkbookHash-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string path = Path.Combine(directory, "synthetic.bin");
+            byte[] expected = Encoding.UTF8.GetBytes("Synthetic saved workbook bytes");
+            try
+            {
+                File.WriteAllBytes(path, expected);
+                using (var owner = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.Read))
+                {
+                    Assert.AreEqual(ShaText("Synthetic saved workbook bytes"), Sha(path));
+                    Assert.AreEqual(expected.Length, owner.Length);
+                }
+                CollectionAssert.AreEqual(expected, File.ReadAllBytes(path));
+            }
+            finally { File.Delete(path); Directory.Delete(directory); }
+        }
+
         private static string ShaText(string text) { using (var hash = SHA256.Create()) return BitConverter.ToString(hash.ComputeHash(Encoding.UTF8.GetBytes(text))).Replace("-", ""); }
 
         private sealed class RunContext
