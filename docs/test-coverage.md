@@ -1,5 +1,85 @@
 # Recorded validation
 
+## Frozen product: embedded Git preparation and real Ollama failures (2026-10-01)
+
+Product source remains `b60996cdf05d816a1f24bea99f2343c166a8bfac`, MVID
+`e79c6288-d384-475c-b8bc-276d7caaaf00`, SHA-256
+`9ADBCFB96B1F2F4E4FA3066EA26F3CA2E0A2EC7996C85105070A3765BEFC8587`.
+These are tests-only changes against copied, frozen product outputs; no product
+rebuild, deployment or native host action occurred.
+
+Test source `a28be697085ddd42826e38f6f223b2d3b9cf2770` integrates the actual
+`VBAi.GitHub` menu/window scenario. Its complete default batch records
+**2,959 passed, 0 failed, 111 conditional skips, 3,070 total**, runner exit **0**,
+in **629.223 seconds**. Evidence is
+`followup-20260930/managed-v11-embedded-git-tests/full-managed.trx` and its
+terminal manifest. Test assembly SHA-256 is
+`FA31C7DB243248D740609F77DAE3C0642AAC03CA797A38205B7D9AE6382F3046`.
+Both runtime copies of the product and the test assembly are unchanged afterward;
+the source is clean and unchanged. The tests-only build has no warnings or errors.
+The embedded native scenario is NOT_RUN: owner-thread dispatch, checkpoint
+content, independent bridge exports and full FRX comparison are prepared, not
+Excel/Git acceptance. Remote publish, import, recovery and disk reopen remain
+separate unqualified operations.
+
+Test source `ce3d9da314d4a460a24e0b22084331339e058b05` adds an explicitly
+selected literal-loopback port to the detached Ollama cases. The default endpoint
+is unchanged; wire capture refuses other servers, credentials and unrelated
+routes. The complete prepared guard batch records **65 passed, 0 failed, 0 skipped**,
+in **574 ms**, in `followup-20260930/ollama-port-and-embedded-preflight/focused-tests.trx`.
+Its scope is the embedded Git protocol/oracle and Ollama endpoint helpers, not a
+complete product gate. Test assembly SHA-256 is
+`0B84DFC7339D5876AB17926B64889162D2408DDC19FC39E7D5FDF9FB1A51BAD3`.
+
+The subsequent complete suite with the three real Ollama cases activated records
+**2,984 passed, 2 failed, 108 conditional skips, 3,094 total**, runner exit **1**.
+Both failures are real-provider cases; the aggregate remains failed. The
+cancellation/subsequent-request case passes. The tool roundtrip refuses an object
+where the supplied schema requires the scalar `marker` value `VB_AI_42`, before
+any synthetic tool result is sent. Its response body was not captured, so a
+model/backend shape defect or assembly defect cannot be attributed from this
+assertion alone. The UI case fails at visible streaming; Stop and its subsequent
+send are NOT_RUN. No native tool is executed.
+
+Evidence is `followup-20260930/ollama-v11-reused-verified-model/`:
+`full-managed-and-ollama.trx`, `plan.json`, `tests-terminal.json`, `terminal.json`,
+`model-ready.json`, `server-stopped.json` and `synthetic-wire/`. The backend is
+Ollama `0.34.4`, selected endpoint `127.0.0.1:54579`, model `qwen2.5:3b`, digest
+`357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b`.
+The model cache is isolated under qualification artifacts; cloud features and
+startup pruning are disabled. Product/test hashes and clean source are unchanged
+at completion. The original owned helper exits after one explicit force-stop,
+exit **-1**; this is not normal Office/SOLIDWORKS exit evidence.
+
+The UI capture `wire-c7229a5235d54589b71f888307cc454c-response.bin` retains the
+complete observed **433 bytes**: an empty assistant-content delta, an empty delta
+with `finish_reason: stop`, then `[DONE]`, with no text or tool call. The capture
+is not truncated; its EOF-read flag is false because the parser stops on `[DONE]`.
+The failure snapshot records `complete-empty`, zero text/tool chunks and the
+visible `No text response.` fallback with ready status. This reproduces the
+observable empty-response defect and locates the empty delivered response at the
+Ollama HTTP boundary for this trial. Backend/model internals and the historical
+ce19 failure remain causally unproven. No reliability correction is claimed.
+
+Earlier preparation failures remain retained: default-port bind returns Windows
+socket error **10048** despite no observed listener or exclusion covering that
+port; a new owned port works. The first alternative-port attempt stopped at its
+premature readiness timeout. The bounded-readiness attempt prepared the model
+with a verified manifest digest but lacked its original CLI exit code; its
+failed harness result is preserved. The completed batch reuses that verified
+cache without replaying the download. None of these preparation results is a
+provider pass.
+
+Raw `[VBAi]*` coverage for both complete batches above is
+**34,056/34,250 lines (99.43%)** and
+**34,330/34,824 branch outcomes (98.58%, rounded from counts)**, leaving
+194 uncovered lines and 494 uncovered outcomes. Their collectors are
+`managed-v11-embedded-git-tests/d32694d3-bc35-42ea-8451-9e5373ef5c67/coverage.cobertura.xml`
+and `ollama-v11-reused-verified-model/3d97c12c-a384-4fcc-bddd-e4657c3d6717/coverage.cobertura.xml`
+below `followup-20260930/`. This managed measurement excludes external hosts,
+native C++ and JavaScript. Coverage from the failed live batch does not promote
+its failures; Q-028 and the whole-product coverage target remain open.
+
 ## Uninstalled compatible Git binding candidate: complete managed and local gates (2026-10-01)
 
 Source `b60996cdf05d816a1f24bea99f2343c166a8bfac`, MVID
