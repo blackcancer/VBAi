@@ -1,5 +1,86 @@
 # Recorded validation
 
+## Office testing subsystem qualification (2026-10-01)
+
+These trials reuse the frozen product built from
+`da664f06f8797faaddec0624b7ed3bb10312963b`: MVID
+`a799ad84-87a3-4518-9550-3cdda504ca98`, SHA-256
+`871104948963C208844F1F62E2C86CAF59F5D5F50CD30933DB7A31C27C140DB4`.
+Later changes through `b13ee55` affect qualification fixtures and documentation
+only. No production source or product binary changed after the managed coverage
+measurement in the Word checkpoint below. Native identity records attest this
+candidate in each owned process; fixture assemblies are identified separately.
+
+| Host and exact scope | Actual result | Procedure coverage | Evidence root under `artifacts/qualification-followup` |
+| --- | --- | --- | --- |
+| Excel, disposable XLSM, `TestSubsystemOnly` | `PASS_WITH_EXPLICIT_SCOPE`; registered batch, actual native explorer actions, reports, stale refusal and normal exit code 0 | Complete 1/3 (33.3333%); original source/probe mapping and event state preserved | `excel-final-testing-only/7eeca1219151492b9ab0a0ac757f0fb5` |
+| Word, disposable DOCM | Passed; batch, single, reports, explorer, stale refusal and normal exit code 0 | Complete 1/2 (50%); original preserved, copy closed | Word checkpoint below |
+| PowerPoint, disposable PPTM | 1 passed, 0 failed/skipped; batch, single, reports, explorer, stale refusal and normal exit code 0 | Complete 1/2 (50%); original source/revision/test IDs/disk bytes and counters preserved, copy closed | `native-powerpoint-verified-sources/PowerPoint/8f863565eac44b378ec1afff2fc14857` |
+| Access, disposable ACCDB | 1 passed, 0 failed/skipped; batch, single, reports, explorer, stale refusal and normal exit code 0; no manual intervention | Unavailable for this host; no measurement claimed | `native-access-autonomous-discard/Access/17b5fd9d859e4f93a801df62e33785b1` |
+| Publisher, disposable PUB | 1 passed, 0 failed/skipped; batch, single, reports, explorer, stale refusal and normal exit code 0 | Unavailable for this host; no measurement claimed | `native-publisher-reviewed-discard/Publisher/5cea70175149443f9a8eef078a6ae4bb` |
+| Outlook, initially absent personal OTM | 1 passed, 0 failed/skipped; batch, single, reports and stale refusal; original project restored and normal exit verified | Unavailable for this host; no measurement claimed | `outlook-final-testing-only` |
+
+The deliberate batch verdicts are one pass, two failures and one runtime error;
+qualification requires these exact outcomes. Both readable and compact JSON
+reports agree with the native results. The Excel screenshot attests the global
+dark style, green check marks, red crosses and a 1253 x 638 explorer. Its native UI
+batch uses the actual owned window and buttons. Other Office rows verify a live
+owned explorer window; they do not establish every UI action in each host. Outlook
+has no native explorer-action proof in this row. These bridge/UI scenarios do not
+exercise a live LLM conversation; the managed testing-tool permission/revision
+boundary is covered by the separate managed gate below.
+
+Excel's denominator includes `Workbook_BeforeSave`. Its positive save control is
+explicitly `NOT_TESTED_BY_SCOPE`; the event counter/probe observations do not
+qualify handler suppression. This testing-only pass does not exercise other VBAi
+application workflows. VBA statement and branch measurement remain unavailable.
+
+PowerPoint's security notice was enabled once for the exact owned synthetic copy.
+`SaveCopyAs` changed its VBA binary and package metadata; strict offline extraction
+verified all three complete module sources against the original and reviewed
+fixture before activation. Other package parts matched, and file hashes were
+rechecked immediately before the unique UI invocation. The local reader was
+[oletools 0.60.2](https://github.com/decalage2/oletools/wiki/olevba), installed only
+under ignored qualification artifacts. No global trust setting changed.
+
+Access records one bounded Cancel of the naming dialog for its successfully
+created `VBAiOfficeModule`, class `RichEdit20W`, with zero save entries. The dialog
+worker verifies original process/start/handle, exact controls/name/thread and
+terminal native work; an uncertain cancellation forbids replay or Quit. Publisher
+revalidates the complete reviewed source inventory, sole publication, original
+process/window ownership and bridge project association before its existing single
+Quit. It discards only this row's synthetic changes, invokes no final Save or Saved
+setter, and makes no Publisher persistence claim. Other fixtures retain their
+existing saved-project guard.
+
+The combined final fixture regression batch reports **33 passed, 0 failed,
+0 skipped** in `publisher-test-cleanup-managed/publisher-test-cleanup-managed-final.trx`.
+Its tests-only output is `artifacts/build-publisher-test-cleanup`: test MVID
+`8d4af179-7ea1-4c7d-88c4-0d83b3d44a99`, SHA-256
+`7C67263B71AB1DB7A5E8D1388057DBE48B3A25F2B5F3A918B75E308A82ABF906`.
+The Access native row used the earlier tests-only output
+`artifacts/build-access-discard-richedit`, MVID
+`8337f6cd-ba05-425a-841c-8fe6b03b6b0f`, SHA-256
+`AA187800A057A80ADB08895B149777A241EC54632A2E83703D18DC146D55AC6B`.
+Both outputs contain hash-verified copies of the same frozen product; no product
+rebuild, coverage exclusion or empty regression was introduced.
+
+Earlier PowerPoint security/deadline refusals and the unsupported Publisher fixture
+API failure remain failed evidence, even after authorized normal disposal. The
+initial Access pass records manual cancellation separately; only the later row
+above proves autonomous cleanup. Temporary HKCU/Registry64 registration was restored
+and verified after the owned trials, and the installed DLL hash stayed unchanged.
+The machine-readable campaign ledger is
+`artifacts/qualification-followup/testing-subsystem-final-report.json`.
+
+SOLIDWORKS acceptance on this candidate remains pending explicit selection of a
+preloaded instance and disposable SWP. An older candidate's pass is not transferred
+to this binary. Visio and Microsoft Project are outside the maintainer-selected
+scope; no Ollama qualification was run here. The global test-layout script stops
+at the pre-existing `Unit/Bridge/BridgeServer.PathVisibility.Tests.cs` mirror whose
+production counterpart is absent. That unrelated layout failure is retained and
+was not repaired as part of these testing-subsystem trials.
+
 ## Word qualification follow-up (2026-10-01)
 
 The code and test sources at `da664f06f8797faaddec0624b7ed3bb10312963b`
