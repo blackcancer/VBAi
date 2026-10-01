@@ -95,7 +95,9 @@ namespace VBAi.Tests.Unit
             private bool visible;
             public bool AllowVisibility = true;
             public int Type { get; set; }
-            public long HWnd { get; set; }
+            private object handle = 0L;
+            public Action OnReadHandle;
+            public object HWnd { get { OnReadHandle?.Invoke(); return handle; } set { handle = value; } }
             public string Caption { get; set; } = "Owned support (Code)";
             public Action OnFocus;
             public SelectionWindow(List<string> events) { Events = events; }
@@ -110,7 +112,9 @@ namespace VBAi.Tests.Unit
             public object Windows { get; set; } = new object[0];
             public SelectionWindow MainWindow { get; }
             public object ActiveVBProject { get; set; }
-            public object ActiveWindow { get; set; }
+            private object activeWindow;
+            public Action OnReadActiveWindow;
+            public object ActiveWindow { get { var observed = activeWindow; OnReadActiveWindow?.Invoke(); return observed; } set { activeWindow = value; } }
             private SelectionPane pane;
             public SelectionEditor() { MainWindow = new SelectionWindow(Events) { Type = 12 }; }
             public SelectionPane ActiveCodePane { get => pane; set { Events.Add("ActivePane"); pane = value; } }
@@ -883,6 +887,154 @@ namespace VBAi.Tests.Unit
                 f.Project.Mode = 2; f.Module.Lines.Source = "Changed";
                 Assert.ThrowsException<InvalidOperationException>(() => f.Probe.Revalidate(f.Editor, f.Project, plan));
                 Assert.AreEqual(1, executions);
+            });
+        }
+
+        [TestMethod]
+        public void NativeProbeRecoversOnlyLostZeroHandleWindowFocusBeforeArmingAndNeverRefocusesLater()
+        {
+            RunOnSta(() => {
+                foreach (bool missingWindow in new[] { false, true })
+                {
+                    var f = new NativeFixture(); f.Module.CodePane.Materialize = false;
+                    int executions = 0;
+                    f.Editor.CommandBars.Control.OnExecute = () => executions++;
+                    var plan = f.Prepare();
+                    Assert.AreEqual(0, f.Windows.Focuses);
+                    f.Editor.ActiveWindow = missingWindow ? null : (object)f.Editor.MainWindow;
+                    f.Windows.FocusAction = () => f.Editor.ActiveWindow = f.Module.CodePane.Window;
+                    f.Probe.RevalidateBeforeArming(f.Editor, f.Project, plan);
+                    f.Probe.Revalidate(f.Editor, f.Project, plan); f.Probe.Execute(plan);
+                    Assert.AreEqual(1, f.Windows.Focuses); Assert.AreEqual(1, f.Windows.Activations);
+                    Assert.AreEqual(1, executions);
+                    f.Editor.ActiveWindow = f.Editor.MainWindow;
+                    Assert.ThrowsException<InvalidOperationException>(() => f.Probe.RevalidateBeforeArming(f.Editor, f.Project, plan));
+                    Assert.ThrowsException<InvalidOperationException>(() => f.Probe.Execute(plan));
+                    Assert.AreEqual(1, f.Windows.Focuses); Assert.AreEqual(1, executions);
+                    f.Editor.ActiveWindow = f.Module.CodePane.Window;
+                    f.Windows.Focused = new IntPtr(1);
+                    Assert.ThrowsException<InvalidOperationException>(() => f.Probe.RevalidateBeforeArming(f.Editor, f.Project, plan));
+                    Assert.AreEqual(1, f.Windows.Focuses);
+                }
+            });
+        }
+
+        [TestMethod]
+        public void PreArmFocusRecoveryRejectsChangedContextAuthorityHandlesAndPreviouslyConsumedRecovery()
+        {
+            RunOnSta(() => {
+                foreach (string fault in new[] { "project", "mode", "source", "pane", "module", "line", "column", "wrapper", "type", "hidden",
+                    "nonzero", "null", "modeGetter", "sourceGetter", "projectGetter", "selectionGetter", "consumed" })
+                {
+                    var f = new NativeFixture(); f.Module.CodePane.Materialize = false;
+                    f.Windows.FocusAction = () => f.Editor.ActiveWindow = f.Module.CodePane.Window;
+                    if (fault == "consumed") f.Module.CodePane.Window.OnFocus = () => f.Editor.ActiveWindow = f.Editor.MainWindow;
+                    var plan = f.Prepare();
+                    int priorFocuses = f.Windows.Focuses;
+                    f.Editor.ActiveWindow = f.Editor.MainWindow;
+                    switch (fault)
+                    {
+                        case "project": f.Editor.ActiveVBProject = new object(); break;
+                        case "mode": f.Project.Mode = 0; break;
+                        case "source": f.Module.Lines.Source = "Changed"; break;
+                        case "pane": f.Editor.ActiveCodePane = null; break;
+                        case "module": f.Module.CodePane.CodeModule = new object(); break;
+                        case "line": f.Module.CodePane.EndLine = 2; break;
+                        case "column": f.Module.CodePane.StartColumn = 2; break;
+                        case "wrapper": f.Module.ProcBodyLine.Override = 2; break;
+                        case "type": f.Module.CodePane.Window.Type = 15; break;
+                        case "hidden": f.Module.CodePane.Window.Visible = false; break;
+                        case "nonzero": f.Module.CodePane.Window.HWnd = 123L; break;
+                        case "null": f.Module.CodePane.Window.HWnd = null; break;
+                        case "modeGetter": f.Module.CodePane.Window.OnReadHandle = () => f.Project.Mode = 0; break;
+                        case "sourceGetter": f.Module.CodePane.Window.OnReadHandle = () => f.Module.Lines.Source = "Changed"; break;
+                        case "projectGetter": f.Module.CodePane.Window.OnReadHandle = () => f.Editor.ActiveVBProject = new object(); break;
+                        case "selectionGetter": f.Module.CodePane.Window.OnReadHandle = () => f.Module.CodePane.EndColumn = 2; break;
+                    }
+                    Assert.ThrowsException<InvalidOperationException>(() => f.Probe.RevalidateBeforeArming(f.Editor, f.Project, plan), fault);
+                    Assert.AreEqual(priorFocuses, f.Windows.Focuses, fault);
+                    Assert.AreEqual(fault == "consumed" ? 1 : 0, f.Windows.Focuses, fault);
+                }
+            });
+        }
+
+        [TestMethod]
+        public void PreArmNativeActivationMustRevalidateSourceModeContextAndUniqueWindowOwnership()
+        {
+            RunOnSta(() => {
+                foreach (string fault in new[] { "source", "mode", "project", "pane", "selection", "owner" })
+                {
+                    var f = new NativeFixture(); f.Module.CodePane.Materialize = false;
+                    var plan = f.Prepare(); f.Editor.ActiveWindow = f.Editor.MainWindow;
+                    f.Windows.FocusAction = () => {
+                        f.Editor.ActiveWindow = f.Module.CodePane.Window;
+                        if (fault == "source") f.Module.Lines.Source = "Changed during focus";
+                        if (fault == "mode") f.Project.Mode = 0;
+                        if (fault == "project") f.Editor.ActiveVBProject = new object();
+                        if (fault == "pane") f.Editor.ActiveCodePane = null;
+                        if (fault == "selection") f.Module.CodePane.EndColumn = 2;
+                    };
+                    if (fault == "owner") f.Windows.Items[new IntPtr(3)].Process = 9;
+                    var error = Assert.ThrowsException<InvalidOperationException>(() => f.Probe.RevalidateBeforeArming(f.Editor, f.Project, plan), fault);
+                    StringAssert.Contains(error.Message, "Initial focus refusal:");
+                    StringAssert.Contains(error.Message, "activeWindowMatches=False");
+                    Assert.AreEqual(fault == "owner" ? 0 : 1, f.Windows.Focuses, fault);
+                    Assert.ThrowsException<InvalidOperationException>(() => f.Probe.Revalidate(f.Editor, f.Project, plan), fault);
+                    Assert.AreEqual(fault == "owner" ? 0 : 1, f.Windows.Focuses, fault);
+                }
+            });
+        }
+
+        [TestMethod]
+        public void FocusRefusalPreservesTheInitialWindowObservationEvenWhenLaterGettersRestoreTheContext()
+        {
+            RunOnSta(() => {
+                var f = new NativeFixture(); f.Module.CodePane.Materialize = false;
+                var plan = f.Prepare(); f.Editor.ActiveWindow = f.Editor.MainWindow;
+                f.Editor.OnReadActiveWindow = () => f.Editor.ActiveWindow = f.Module.CodePane.Window;
+                var error = Assert.ThrowsException<InvalidOperationException>(() => f.Probe.Revalidate(f.Editor, f.Project, plan));
+                StringAssert.Contains(error.Message, "Observed focus: activeWindowAvailable=True; activeWindowMatches=False; supportWindowType=0; supportWindowVisible=True");
+                Assert.AreSame(f.Module.CodePane.Window, f.Editor.ActiveWindow, "A later observation now sees the restored context.");
+                Assert.AreEqual(0, f.Windows.Focuses);
+            });
+        }
+
+        [TestMethod]
+        public void NativeHostRevalidatesAllAuthorityAfterPreArmFocusRecoveryBeforeExposingOrExecutingTheAttempt()
+        {
+            RunOnSta(() => {
+                foreach (string fault in new[] { "none", "catalog", "permission", "lostAgain" })
+                {
+                    var f = new NativeFixture(); f.Module.CodePane.Materialize = false;
+                    var catalog = new VbaTestCatalog { Project = new VbaTestProjectSnapshot { Id = "owned", Revision = "revision",
+                        Modules = new[] { new VbaTestModuleSnapshot { Name = VbaTestRuntimeSource.ModuleName, Source = f.Module.Lines.Source } } } };
+                    var test = new VbaTestDescriptor { Id = "test", Module = "Tests", Procedure = "Alpha", Kind = "Sub" };
+                    int validations = 0, executions = 0;
+                    bool permitted = true;
+                    f.Windows.FocusAction = () => { f.Editor.ActiveWindow = f.Module.CodePane.Window; if (fault == "permission") permitted = false; };
+                    using (var sink = new VbaTestResultSink(ReferenceEquals))
+                    using (var dispatcher = new Control())
+                    using (var host = new VbaNativeTestExecutionHost(f.Editor, dispatcher, sink, _ => f.Project, _ => {
+                        validations++;
+                        if (validations == 3) f.Editor.ActiveWindow = f.Editor.MainWindow;
+                        if (validations == 4 && fault == "catalog") throw new InvalidOperationException("Revision changed during focus recovery.");
+                        if (validations == 4 && fault == "lostAgain") f.Editor.ActiveWindow = f.Editor.MainWindow;
+                    }, () => { if (!permitted) throw new InvalidOperationException("Permission withdrawn during focus recovery."); }, _ => "signature", () => "run") { Probe = f.Probe, Post = action => action() })
+                    {
+                        f.Editor.CommandBars.Control.OnExecute = () => {
+                            executions++;
+                            var runtime = new VbaTestRuntime();
+                            var job = (object[])runtime.Request(VbaTestRuntimeSource.Version, "signature");
+                            runtime.Publish((string)job[0], (string)job[4], (string)job[5], (string)job[6], "Passed", "", 0);
+                        };
+                        var task = host.InvokeAsync(catalog, test, "TestCleanup");
+                        if (fault == "none") Assert.AreEqual(VbaTestOutcome.Passed, task.GetAwaiter().GetResult().Outcome);
+                        else Assert.IsFalse(Assert.ThrowsException<VbaTestInvocationException>(() => task.GetAwaiter().GetResult()).Uncertain);
+                        Assert.AreEqual(1, f.Windows.Focuses, fault);
+                        Assert.AreEqual(fault == "none" ? 1 : 0, executions, fault);
+                        Assert.ThrowsException<InvalidOperationException>(() => new VbaTestRuntime());
+                    }
+                }
             });
         }
 
