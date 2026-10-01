@@ -159,6 +159,17 @@ reopens the database. A returned Quit is insufficient; preserve the disposable
 database and report disk readback as NOT_RUN if exit is unverified. Do not replay
 Quit or native mutations to obtain a passing result.
 
+Office fixtures retain the original process handle, PID/start/image identity and
+shutdown failure when Quit returns but exit is not observed within the fixture
+deadline. `shutdown-lifecycle.json` records the single Quit outcome, bounded exit
+observation and handle disposition; the final qualification report retains this
+ledger too. An unverified shutdown refuses further native requests, saving,
+Close/Quit attempts and reopening. Later PID absence, manual termination or an
+eventual exit does not overwrite the original failed gate or establish an exit
+code that was not read. Releasing a client COM reference is not proof that every
+server reference disappeared. These retention checks do not diagnose a host's
+failure to exit.
+
 ### Read-only Access metadata getter probe
 
 Set both `VBAi_RUN_OFFICE_TESTS=1` and

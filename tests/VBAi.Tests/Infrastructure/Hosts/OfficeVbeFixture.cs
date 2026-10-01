@@ -182,6 +182,7 @@ namespace VBAi.Tests.Integration
         /// <summary>Reads a command response without retries after emission.</summary>
         internal IDictionary<string, object> Response(string name, params object[] pairs)
         {
+            RequireUsableOwnedHost();
             var request = new Dictionary<string, object> { ["Command"] = name };
             if (Project != null) request["Project"] = Project;
             for (int i = 0; i < pairs.Length; i += 2) request[(string)pairs[i]] = pairs[i + 1];
@@ -302,7 +303,7 @@ namespace VBAi.Tests.Integration
         /// <summary>Saves only the owned disposable document, independently of VBAi's save adapter.</summary>
         internal void SaveNative()
         {
-            commandContainment.RequireTerminal();
+            RequireUsableOwnedHost();
             if (document != null && File.Exists(DocumentPath)) ((dynamic)document).Save();
             else if (Kind == "Word") ((dynamic)document).SaveAs2(DocumentPath, 13);
             else if (Kind == "PowerPoint") ((dynamic)document).SaveAs(DocumentPath, 25);
@@ -318,6 +319,7 @@ namespace VBAi.Tests.Integration
         /// <summary>Reopens the owned Office file without a helper save; discard-on-close cannot mask an adapter failure.</summary>
         internal void ReopenFromDisk(Action afterOwnedClose = null)
         {
+            RequireUsableOwnedHost();
             Assert.IsTrue(File.Exists(DocumentPath), "The adapter must have left an existing native file.");
             Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), Data("status")["AssemblyModuleVersionId"]);
             ReopenCore(true, afterOwnedClose);
@@ -495,6 +497,7 @@ namespace VBAi.Tests.Integration
             try
             {
                 if (Root != null) File.WriteAllText(Path.Combine(Root, "qualification.json"), new JavaScriptSerializer { MaxJsonLength = 20 * 1024 * 1024 }.Serialize(new { Host = Kind, HostProgId = hostProgId, ProcessId, DocumentPath, Project,
+                    ShutdownLifecycle = shutdownEvidence?.Record,
                     PendingCommand = commandContainment.Command, CommandPending = commandContainment.Pending,
                     DeliveryUncertain = commandContainment.Uncertain, Failures, Steps = steps }));
             }
@@ -545,6 +548,9 @@ namespace VBAi.Tests.Integration
         private void CaptureOwnedProcess()
         {
             ownedProcess = Process.GetProcessById(ProcessId);
+            shutdownEvidence = new OfficeOwnedShutdownEvidence(ProcessId, ownedProcess.StartTime.ToUniversalTime().ToString("o"),
+                ExcelOwnedProcessImage.Read(ownedProcess.Handle), "0x" + unchecked((ulong)ownedProcess.Handle.ToInt64()).ToString("X16"),
+                typeof(VbeSession).Module.ModuleVersionId.ToString("D"));
             _ = ownedProcess.Handle; // Preserve teardown/crash evidence after the process exits.
         }
         private void RecordCleanupFailure(string reason)
@@ -576,6 +582,7 @@ namespace VBAi.Tests.Integration
             {
                 try
                 {
+                    PrepareOwnedShutdown();
                     if (Kind == "Access" || Kind == "Publisher")
                     {
                         RequireOwnedDocument(); nativeIdentityVerified = true;
@@ -590,54 +597,56 @@ namespace VBAi.Tests.Integration
                             StopAccessSaveDialogHandler();
                             CloseAccessObjectsWithoutSaving();
                         }
-                        ((dynamic)application).CloseCurrentDatabase(); ((dynamic)application).Quit(2);
+                        ((dynamic)application).CloseCurrentDatabase(); QuitOwnedOnce(() => ((dynamic)application).Quit(2));
                     }
                     else if (Kind == "Publisher")
                     {
                         Assert.IsNotNull(document, "The owned Publisher document must be identified before Quit.");
                         RequireSoleOwnedSavedPublisherBeforeQuit();
-                        ((dynamic)application).Quit();
+                        QuitOwnedOnce(() => ((dynamic)application).Quit());
                     }
                 }
                 catch (Exception error)
                 {
-                    if (Kind == "Publisher" || Kind == "Access")
-                    {
-                        hostTeardownRefused = true;
-                        lock (retainedOfficeFixtures) retainedOfficeFixtures.Add(this);
-                        RecordCleanupFailure(Kind + " close/Quit refused or failed; instance and COM references retained without retry: " + error.Message);
-                        if (dialogWorker != null) dialogWorker.StopRequested = true;
-                        return;
-                    }
-                    RecordCleanupFailure(error.Message);
+                    RetainUncertainOffice();
+                    RecordCleanupFailure(Kind + " close/Quit refused or failed; instance and COM references retained without retry: " + error);
+                    return;
                 }
             }
             try { Release(document); } catch (Exception error) { RecordCleanupFailure(error.Message); }
             document = null;
             if (owned && nativeIdentityVerified && Kind != "Access" && Kind != "Publisher")
-                try { if (Kind == "Word") ((dynamic)application).Quit(0); else ((dynamic)application).Quit(); }
-                catch (Exception error) { RecordCleanupFailure(error.Message); }
+                try { QuitOwnedOnce(() => { if (Kind == "Word") ((dynamic)application).Quit(0); else ((dynamic)application).Quit(); }); }
+                catch (Exception error) { RetainUncertainOffice(); RecordCleanupFailure(error.Message); return; }
             try { Release(application); } catch (Exception error) { RecordCleanupFailure(error.Message); }
             application = null;
             var process = ownedProcess;
-            ownedProcess = null;
             if (process != null)
-                using (process)
-                    try
+                try
                     {
-                        bool exited = process.WaitForExit(5000);
+                        int exitCode = 0;
+                        bool exited = shutdownEvidence.ObserveExit(() => WaitForOwnedExit(process, 5000),
+                            () => { exitCode = ReadOwnedExitCode(process); return exitCode; }, process.Dispose, FlushShutdownEvidence);
                         if (!exited)
                         {
+                            RetainUncertainOffice();
                             RecordCleanupFailure("The owned host did not exit after Quit and COM release; it was retained without forced termination. PID=" + ProcessId);
+                            return;
                         }
                         else
                         {
-                            steps.Add(new { ShutdownProcessId = ProcessId, ExitCode = process.ExitCode, ForcedTermination = false, AdapterOnlyClose = adapterOnly });
-                            if (process.ExitCode != 0) RecordCleanupFailure("Abnormal exit code 0x" + unchecked((uint)process.ExitCode).ToString("X8") + ". PID=" + ProcessId);
+                            ownedProcess = null;
+                            steps.Add(new { ShutdownProcessId = ProcessId, ExitCode = exitCode, ForcedTermination = false, AdapterOnlyClose = adapterOnly });
+                            if (exitCode != 0) RecordCleanupFailure("Abnormal exit code 0x" + unchecked((uint)exitCode).ToString("X8") + ". PID=" + ProcessId);
                         }
                     }
-                    catch (Exception error) { RecordCleanupFailure(error.Message); }
-            else if (owned) RecordCleanupFailure("No retained process handle was available to verify host shutdown. PID=" + ProcessId);
+                    catch (Exception error)
+                    {
+                        if (Equals(shutdownEvidence.Record["ProcessHandleRetained"], false)) { ownedProcess = null; owned = false; }
+                        else RetainUncertainOffice();
+                        RecordCleanupFailure(error.ToString()); return;
+                    }
+            else if (owned) { RetainUncertainOffice(); RecordCleanupFailure("No retained process handle was available to verify host shutdown. PID=" + ProcessId); return; }
             owned = false;
             StopOwnedDialogHandler();
         }
@@ -690,7 +699,7 @@ namespace VBAi.Tests.Integration
         /// <summary>Verifies the external COM application and disposable document before native close/reopen.</summary>
         private void RequireOwnedDocument()
         {
-            commandContainment.RequireTerminal();
+            RequireUsableOwnedHost();
             Assert.IsTrue(owned && ownedProcess != null && !ownedProcess.HasExited, "The retained owned process must still be alive.");
             object current = null, window = null;
             try
