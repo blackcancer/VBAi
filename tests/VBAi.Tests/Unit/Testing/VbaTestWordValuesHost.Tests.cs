@@ -183,6 +183,46 @@ namespace VBAi.Tests.Unit
             Assert.IsFalse(host.SameIdentity(new object(), new object()));
         }
 
+        [TestMethod]
+        public void ActiveWordWindowHandleIsRequiredBeforeDocumentsCanBeInspected()
+        {
+            using (var f = new Fixture())
+            {
+                Assert.IsNull(typeof(Application).GetProperty("Hwnd"), "The Word application model must not expose the nonexistent application HWND.");
+                Assert.AreEqual(new IntPtr(99), VbaTestWordValuesHost.ReadApplicationWindow(f.Application));
+                Assert.ThrowsException<InvalidOperationException>(() => VbaTestWordValuesHost.ReadApplicationWindow(null));
+                f.Application.ActiveWindow = null;
+                Assert.ThrowsException<InvalidOperationException>(() => f.Resolve());
+                f.Application.ActiveWindow = new Window();
+                Assert.ThrowsException<InvalidOperationException>(() => f.Resolve());
+                f.Application.ActiveWindow.Hwnd = 99;
+                f.Host.ReadWindowOwner = _ => 0;
+                Assert.ThrowsException<InvalidOperationException>(() => f.Resolve());
+                f.Host.ReadWindowOwner = _ => 999;
+                Assert.ThrowsException<InvalidOperationException>(() => f.Resolve());
+                Assert.AreEqual(0, f.Source.ActivateCalls + f.Application.RunCalls);
+            }
+        }
+
+        [TestMethod]
+        public void ActiveWordWindowOwnershipIsRecheckedAfterDocumentActivation()
+        {
+            foreach (string fault in new[] { "missing", "zero", "foreign" })
+            using (var f = new Fixture())
+            {
+                var target = f.Resolve();
+                f.Source.OnActivate = () =>
+                {
+                    if (fault == "missing") f.Application.ActiveWindow = null;
+                    if (fault == "zero") f.Application.ActiveWindow.Hwnd = 0;
+                    if (fault == "foreign") f.Host.ReadWindowOwner = _ => 999;
+                };
+                var error = Assert.ThrowsException<VbaTestInvocationException>(() => f.Host.Invoke(target, "Support", "Run", null));
+                Assert.IsTrue(error.Uncertain, fault);
+                Assert.AreEqual(1, f.Source.ActivateCalls, fault);
+                Assert.AreEqual(0, f.Application.RunCalls, fault);
+            }
+        }
         internal sealed class Fixture : IDisposable
         {
             internal readonly string Folder = Path.Combine(Path.GetTempPath(), "VBAi-Word-" + Guid.NewGuid().ToString("N"));
@@ -206,7 +246,7 @@ namespace VBAi.Tests.Unit
 
         public sealed class Application
         {
-            public int Hwnd => 99;
+            public Window ActiveWindow { get; set; } = new Window { Hwnd = 99 };
             public Documents Documents { get; } = new Documents();
             public Document ActiveDocument { get; set; }
             public object Result = new object();
@@ -215,6 +255,10 @@ namespace VBAi.Tests.Unit
             public int RunCalls;
             public object Run(string macro, object first = null, object second = null)
             { RunCalls++; LastMacro = macro; First = first; Second = second; return Result; }
+        }
+        public sealed class Window
+        {
+            public int Hwnd { get; set; }
         }
         public sealed class Documents : List<Document>
         {

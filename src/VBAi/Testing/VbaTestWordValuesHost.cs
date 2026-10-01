@@ -87,11 +87,21 @@ namespace VBAi
             if (!string.Equals(ReadProcessName(), "WINWORD", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("Word returned values require the in-process WINWORD host.");
             object application = ReadActiveApplication("Word.Application");
-            if (application == null || ReadWindowOwner(new IntPtr(Convert.ToInt64(((dynamic)application).Hwnd))) != (uint)ReadProcessId())
+            if (ReadWindowOwner(ReadApplicationWindow(application)) != (uint)ReadProcessId())
                 throw new InvalidOperationException("The registered Word application belongs to another PID.");
             return application;
         }
 
+        /// <summary>Reads Word's active document Window.Hwnd without activating or creating a window.</summary>
+        internal static IntPtr ReadApplicationWindow(object application)
+        {
+            if (application == null) throw new InvalidOperationException("The registered Word application is unavailable.");
+            object window = ((dynamic)application).ActiveWindow;
+            if (window == null) throw new InvalidOperationException("The registered Word application has no active document window.");
+            var handle = new IntPtr(Convert.ToInt64(((dynamic)window).Hwnd));
+            if (handle == IntPtr.Zero) throw new InvalidOperationException("The active Word document window has no native handle.");
+            return handle;
+        }
         private object FindDocument(object application, object project, string path)
         {
             object match = null; int count = 0;

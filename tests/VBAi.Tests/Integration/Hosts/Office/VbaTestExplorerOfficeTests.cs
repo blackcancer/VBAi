@@ -189,6 +189,7 @@ namespace VBAi.Tests.Integration
             string revision, IDictionary<string, object> selected)
         {
             // Exercise the installed service and real host copy adapter; the fixture does not inject a clone.
+            if (fixture.Kind == "PowerPoint") ConfigureOwnedPowerPointCoveragePolicy(fixture);
             var preview = fixture.Data("vba_test_coverage");
             Save(fixture, "coverage-preview.json", preview);
             Assert.AreEqual(false, preview["Available"], "A preview must not claim measured coverage.");
@@ -280,6 +281,29 @@ namespace VBAi.Tests.Integration
                 CopyClosed = true, RetainedFolder = retained[0], ExpectedEligible = 2, ExpectedHit = 1, ExpectedPercent = 50 });
         }
 
+        private static void ConfigureOwnedPowerPointCoveragePolicy(OfficeVbeFixture fixture)
+        {
+            // The fixture's initial ForceDisable applies to files opened later. ByUI respects the existing Trust Center policy.
+            // Change only this verified owned application; do not enable macros unconditionally or touch retained runs.
+            Assert.IsFalse(fixture.NativeExecutionUnsettled, "Coverage policy setup requires a confirmed settled owned fixture.");
+            object application = Marshal.GetActiveObject("PowerPoint.Application");
+            try
+            {
+                IntPtr window = PowerPointWindow.Read(application);
+                Assert.AreNotEqual(IntPtr.Zero, window);
+                uint owner; Assert.AreNotEqual(0u, GetWindowThreadProcessId(window, out owner));
+                Assert.AreEqual((uint)fixture.ProcessId, owner, "Coverage policy setup resolved another PowerPoint process.");
+                int before = Convert.ToInt32(((dynamic)application).AutomationSecurity);
+                fixture.NativeExecutionUnsettled = true;
+                ((dynamic)application).AutomationSecurity = 2; // msoAutomationSecurityByUI; never msoAutomationSecurityLow.
+                Assert.AreEqual(2, Convert.ToInt32(((dynamic)application).AutomationSecurity));
+                fixture.NativeExecutionUnsettled = false;
+                Save(fixture, "powerpoint-coverage-security.json", new { ProcessId = owner, Hwnd = window.ToInt64(),
+                    AutomationSecurityBefore = before, AutomationSecurityAfter = 2, Mode = "ByUI", TrustSettingsChanged = false });
+            }
+            finally { if (Marshal.IsComObject(application)) Marshal.ReleaseComObject(application); }
+        }
+
         private static void AssertMeasuredCoverage(IDictionary<string, object> coverage, string available, string complete,
             string revisionKey, string metric, string eligible, string hit, string percent, string revision)
         {
@@ -299,7 +323,7 @@ namespace VBAi.Tests.Integration
             {
                 // PowerPoint HWND is a restricted vtable member; the shared reader uses the published PIA layout.
                 IntPtr handle = fixture.Kind == "PowerPoint" ? PowerPointWindow.Read(application)
-                    : new IntPtr(Convert.ToInt64(((dynamic)application).Hwnd));
+                    : VbaTestWordValuesHost.ReadApplicationWindow(application);
                 Assert.AreNotEqual(IntPtr.Zero, handle, "Counter inspection requires a verifiable owned application window.");
                 uint owner; Assert.AreNotEqual(0u, GetWindowThreadProcessId(handle, out owner));
                 Assert.AreEqual((uint)fixture.ProcessId, owner, "Counter inspection resolved another " + fixture.Kind + " process.");
