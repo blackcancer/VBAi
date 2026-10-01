@@ -14,14 +14,17 @@ namespace VBAi.Tests.Unit
         private static extern int OwnedOptionsFixtureClass(IntPtr window, StringBuilder text, int capacity);
 
         /// <summary>Raccorde la scène Win32 à l'identité réelle du dialogue détenu, sans fabriquer une classe/PID pour la production.</summary>
-        private static void BindOwnedOptionsDialog(SystemScene scene, AutomationHost host)
+        private static SystemWindow BindOwnedOptionsDialog(SystemScene scene, AutomationHost host)
         {
-            OwnedOptionsFixtureProcess(host.Handle, out uint processId);
+            uint threadId = OwnedOptionsFixtureProcess(host.Handle, out uint processId);
             var text = new StringBuilder(128); OwnedOptionsFixtureClass(host.Handle, text, text.Capacity);
             Assert.AreNotEqual(IntPtr.Zero, host.Handle);
             Assert.AreEqual((uint)Process.GetCurrentProcess().Id, processId);
+            Assert.AreNotEqual(0u, threadId);
             Assert.AreEqual("#32770", text.ToString());
-            scene.Windows.Add(new SystemWindow { Handle = host.Handle, ProcessId = processId, Class = text.ToString(), Text = host.Root.Name });
+            var window = new SystemWindow { Handle = host.Handle, ProcessId = processId, ThreadId = threadId, Class = text.ToString(), Text = host.Root.Name };
+            scene.Windows.Add(window);
+            return window;
         }
     }
 }

@@ -109,7 +109,10 @@ namespace VBAi.Tests.Unit
                 scene.PostSucceeds = false; Assert.IsFalse(immediate.PostEnter(ok.Handle)); immediate.Pause(1);
                 Assert.AreEqual(0x0102, scene.Messages.First(item => item.Item3 == new IntPtr('x')).Item2);
                 var options = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe");
-                Assert.AreEqual(IntPtr.Zero, options.Dialog()); options.Pause(1); options.Close(dialog.Handle);
+                Assert.AreEqual(IntPtr.Zero, options.Dialog()); options.Pause(1);
+                int posted = scene.Messages.Count;
+                Assert.ThrowsException<InvalidOperationException>(() => options.Close(dialog.Handle));
+                Assert.AreEqual(posted, scene.Messages.Count, "Options cancellation must not act on a VBA diagnostic dialog.");
             }
         }
 
@@ -524,10 +527,10 @@ namespace VBAi.Tests.Unit
             root.Add(new AutomationNode { Name = "Disabled", Kind = System.Windows.Automation.ControlType.Edit, Enabled = false });
             root.Add(new AutomationNode { Name = "Offscreen", Kind = System.Windows.Automation.ControlType.Edit, Offscreen = true });
             root.Add(new AutomationNode { Name = "Bad value", Kind = System.Windows.Automation.ControlType.Edit, FailValue = true }.With(System.Windows.Automation.ValuePattern.Pattern));
-            using (var host = new AutomationHost(root))
+            using (var host = new AutomationHost(root, optionsDialog: true))
                 using (var scene = new SystemScene())
                 {
-                    var options = scene.Add("Options"); options.Handle = host.Handle;
+                    var options = BindOwnedOptionsDialog(scene, host);
                     var cancel = scene.Add("Cancel", "Button", options, 2);
                     scene.OnMessage = (window, message) => { if (window == cancel) options.Visible = false; };
                     var native = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe");
@@ -552,10 +555,10 @@ namespace VBAi.Tests.Unit
             root.Add(new AutomationNode { Name = "Break on All Errors", Kind = System.Windows.Automation.ControlType.RadioButton }.With(System.Windows.Automation.SelectionItemPattern.Pattern));
             root.Add(new AutomationNode { Name = "Break in Class Module", Kind = System.Windows.Automation.ControlType.RadioButton }.With(System.Windows.Automation.SelectionItemPattern.Pattern));
             root.Add(new AutomationNode { Name = "Break on Unhandled Errors", Kind = System.Windows.Automation.ControlType.RadioButton, Selected = true }.With(System.Windows.Automation.SelectionItemPattern.Pattern));
-            using (var host = new AutomationHost(root))
+            using (var host = new AutomationHost(root, optionsDialog: true))
                 using (var scene = new SystemScene())
                 {
-                    var options = scene.Add("Options"); options.Handle = host.Handle;
+                    var options = BindOwnedOptionsDialog(scene, host);
                     var cancel = scene.Add("Cancel", "Button", options, 2);
                     scene.OnMessage = (window, message) => { if (window == cancel) options.Visible = false; };
                     var native = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe");

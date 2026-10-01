@@ -216,6 +216,7 @@ namespace VBAi.Tests.Unit
         [DataTestMethod]
         [DataRow("zero")][DataRow("foreign dialog")][DataRow("wrong dialog class")][DataRow("changed dialog")]
         [DataRow("missing button")][DataRow("foreign button")][DataRow("wrong button class")][DataRow("disabled")][DataRow("post failure")]
+        [DataRow("zero dialog thread")][DataRow("wrong button thread")][DataRow("zero button thread")][DataRow("foreign cancel lookup")]
         public void NativeOptionsCancelRejectsInvalidIdentityOrButtonWithoutAlternateAction(string scenario)
         {
             var enabled = VbeDebugWindows.OptionsWindowEnabled;
@@ -228,12 +229,21 @@ namespace VBAi.Tests.Unit
                     var button = scene.Add("Annuler", "Button", dialog, 2);
                     VbeDebugWindows.OptionsWindowEnabled = _ => scenario != "disabled";
                     if (scenario == "foreign dialog") dialog.ProcessId++;
+                    if (scenario == "zero dialog thread") dialog.ThreadId = 0;
                     if (scenario == "wrong dialog class") dialog.Class = "other";
                     if (scenario == "changed dialog") { var other = scene.Add("Options"); scene.Windows.Remove(other); scene.Windows.Insert(0, other); }
                     if (scenario == "missing button") scene.Windows.Remove(button);
                     if (scenario == "foreign button") button.ProcessId++;
+                    if (scenario == "wrong button thread") button.ThreadId++;
+                    if (scenario == "zero button thread") button.ThreadId = 0;
                     if (scenario == "wrong button class") button.Class = "Edit";
                     if (scenario == "post failure") scene.PostSucceeds = false;
+                    if (scenario == "foreign cancel lookup")
+                    {
+                        var foreign = scene.Add("Other window"); foreign.ProcessId++;
+                        var foreignCancel = scene.Add("Cancel", "Button", foreign, 2);
+                        VbeDebugWindows.GetDlgItem = (handle, id) => foreignCancel.Handle;
+                    }
                     Assert.ThrowsException<InvalidOperationException>(() => native.Close(scenario == "zero" ? IntPtr.Zero : dialog.Handle));
                     Assert.AreEqual(scenario == "post failure" ? 1 : 0, scene.Messages.Count);
                 }
@@ -290,6 +300,26 @@ namespace VBAi.Tests.Unit
                 Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.EnsureNoDebugOptionsDialog());
                 Assert.AreEqual(0, scene.Messages.Count);
             }
+        }
+
+        [TestMethod]
+        public void OptionsSceneModelsUnknownHandlesAndInheritedOwnershipAndRestoresEnabledBoundary()
+        {
+            var previous = VbeDebugWindows.OptionsWindowEnabled;
+            using (var scene = new SystemScene())
+            {
+                Assert.IsFalse(VbeDebugWindows.OptionsWindowEnabled(new IntPtr(999)));
+                Assert.AreEqual(0u, VbeDebugWindows.GetWindowThreadProcessId(new IntPtr(999), out uint absentPid));
+                Assert.AreEqual(0u, absentPid);
+                var dialog = scene.Add("Options"); dialog.ThreadId = 123;
+                var cancel = scene.Add("Cancel", "Button", dialog, 2);
+                Assert.AreEqual(dialog.ThreadId, cancel.ThreadId);
+                Assert.AreEqual(dialog.ProcessId, cancel.ProcessId);
+                Assert.IsTrue(VbeDebugWindows.OptionsWindowEnabled(cancel.Handle));
+                cancel.Enabled = false;
+                Assert.IsFalse(VbeDebugWindows.OptionsWindowEnabled(cancel.Handle));
+            }
+            Assert.AreSame(previous, VbeDebugWindows.OptionsWindowEnabled);
         }
     }
 }

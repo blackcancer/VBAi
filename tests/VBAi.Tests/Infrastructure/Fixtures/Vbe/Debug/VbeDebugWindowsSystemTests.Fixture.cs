@@ -18,7 +18,9 @@ namespace VBAi.Tests.Unit
             public string Class = "#32770";
             public string Text;
             public bool Visible = true;
+            public bool Enabled = true;
             public uint ProcessId = (uint)Process.GetCurrentProcess().Id;
+            public uint ThreadId = 1;
             public int ControlId;
             public AccessibleObject Accessible;
         }
@@ -40,7 +42,7 @@ namespace VBAi.Tests.Unit
 
             public SystemScene()
             {
-                foreach (string name in new[] { "EnumWindows", "EnumChildWindows", "GetWindowThreadProcessId", "GetClassName", "GetWindowText", "GetDlgCtrlID", "GetDlgItem", "IsWindowVisible", "PostMessage", "SendMessageText", "SendMessageInt", "AccessibleObjectFromWindow", "PauseNative" })
+                foreach (string name in new[] { "EnumWindows", "EnumChildWindows", "GetWindowThreadProcessId", "GetClassName", "GetWindowText", "GetDlgCtrlID", "GetDlgItem", "IsWindowVisible", "OptionsWindowEnabled", "PostMessage", "SendMessageText", "SendMessageInt", "AccessibleObjectFromWindow", "PauseNative" })
                 {
                     var field = typeof(VbeDebugWindows).GetField(name, BindingFlags.Static | BindingFlags.NonPublic);
                     saved.Add(field, field.GetValue(null));
@@ -56,13 +58,16 @@ namespace VBAi.Tests.Unit
                     return true;
                 };
                 VbeDebugWindows.GetWindowThreadProcessId = (IntPtr handle, out uint processId) => {
-                    processId = Find(handle)?.ProcessId ?? 0; return 1;
+                    var window = Find(handle);
+                    processId = window?.ProcessId ?? 0;
+                    return window?.ThreadId ?? 0;
                 };
                 VbeDebugWindows.GetClassName = (handle, text, capacity) => { text.Append(Find(handle)?.Class); return text.Length; };
                 VbeDebugWindows.GetWindowText = (handle, text, capacity) => { text.Append(Find(handle)?.Text); return text.Length; };
                 VbeDebugWindows.GetDlgCtrlID = handle => Find(handle)?.ControlId ?? 0;
                 VbeDebugWindows.GetDlgItem = (dialog, id) => Windows.FirstOrDefault(w => w.Parent == dialog && w.ControlId == id)?.Handle ?? IntPtr.Zero;
                 VbeDebugWindows.IsWindowVisible = handle => Find(handle)?.Visible ?? false;
+                VbeDebugWindows.OptionsWindowEnabled = handle => Find(handle)?.Enabled ?? false;
                 VbeDebugWindows.PostMessage = (handle, message, wParam, lParam) => {
                     Messages.Add(Tuple.Create(handle, message, wParam, lParam));
                     OnMessage?.Invoke(Find(handle), message); return PostSucceeds;
@@ -90,7 +95,8 @@ namespace VBAi.Tests.Unit
             public SystemWindow Add(string text, string kind = "#32770", SystemWindow parent = null, int id = 0)
             {
                 var window = new SystemWindow { Handle = new IntPtr(100 + Windows.Count), Text = text,
-                    Class = kind, Parent = parent?.Handle ?? IntPtr.Zero, ControlId = id };
+                    Class = kind, Parent = parent?.Handle ?? IntPtr.Zero, ControlId = id,
+                    ProcessId = parent?.ProcessId ?? (uint)Process.GetCurrentProcess().Id, ThreadId = parent?.ThreadId ?? 1 };
                 Windows.Add(window); return window;
             }
 
