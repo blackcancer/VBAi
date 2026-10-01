@@ -2165,4 +2165,12 @@
   <data name="Coverage exclusions" xml:space="preserve"><value>Исключения из покрытия</value></data>
   <data name="VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring." xml:space="preserve"><value>Импорт VBA завершился ошибкой, и его итоговое состояние не удалось записать. Восстановление остаётся незавершённым; перед восстановлением проверьте сохранённую резервную копию и текущее состояние проекта.</value></data>
   <data name="Inspection and restoration of the native Code Colors category both failed. The original category selection is unverified." xml:space="preserve"><value>Проверка и восстановление встроенной категории цветов кода завершились ошибкой. Исходный выбор категории не подтверждён.</value></data>
+  <data name="Temperature (0 to 2)" xml:space="preserve"><value>Температура (от 0 до 2)</value></data>
+  <data name="Top-p (above 0 to 1)" xml:space="preserve"><value>Top-p (больше 0, не больше 1)</value></data>
+  <data name="Ollama temperature; blank uses server default" xml:space="preserve"><value>Температура Ollama; пустое поле — по умолчанию на сервере</value></data>
+  <data name="Ollama top-p; blank uses server default" xml:space="preserve"><value>Ollama top-p; пустое поле — по умолчанию на сервере</value></data>
+  <data name="Optional. Blank uses the server default; 0 reduces sampling randomness. Use a decimal point or your local decimal separator." xml:space="preserve"><value>Необязательно. Пустое поле использует значение сервера по умолчанию; 0 снижает случайность выборки. Используйте точку или десятичный разделитель вашей локали.</value></data>
+  <data name="Optional nucleus sampling limit. Blank uses the server default. Use a decimal point or your local decimal separator." xml:space="preserve"><value>Необязательный предел выборки top-p. Пустое поле использует значение сервера по умолчанию. Используйте точку или десятичный разделитель вашей локали.</value></data>
+  <data name="Ollama temperature must be a finite number from 0 to 2, or blank for the server default." xml:space="preserve"><value>Температура Ollama должна быть конечным числом от 0 до 2; оставьте поле пустым для значения сервера по умолчанию.</value></data>
+  <data name="Ollama top-p must be a finite number above 0 and at most 1, or blank for the server default." xml:space="preserve"><value>Ollama top-p должен быть конечным числом больше 0 и не больше 1; оставьте поле пустым для значения сервера по умолчанию.</value></data>
 </root>

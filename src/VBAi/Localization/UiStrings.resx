@@ -2145,4 +2145,12 @@ Sign in through Git Credential Manager; commit identity is configured in Git.</v
   <data name="Coverage exclusions" xml:space="preserve"><value>Coverage exclusions</value></data>
   <data name="VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring." xml:space="preserve"><value>VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring.</value></data>
   <data name="Inspection and restoration of the native Code Colors category both failed. The original category selection is unverified." xml:space="preserve"><value>Inspection and restoration of the native Code Colors category both failed. The original category selection is unverified.</value></data>
+  <data name="Temperature (0 to 2)" xml:space="preserve"><value>Temperature (0 to 2)</value></data>
+  <data name="Top-p (above 0 to 1)" xml:space="preserve"><value>Top-p (above 0 to 1)</value></data>
+  <data name="Ollama temperature; blank uses server default" xml:space="preserve"><value>Ollama temperature; blank uses server default</value></data>
+  <data name="Ollama top-p; blank uses server default" xml:space="preserve"><value>Ollama top-p; blank uses server default</value></data>
+  <data name="Optional. Blank uses the server default; 0 reduces sampling randomness. Use a decimal point or your local decimal separator." xml:space="preserve"><value>Optional. Blank uses the server default; 0 reduces sampling randomness. Use a decimal point or your local decimal separator.</value></data>
+  <data name="Optional nucleus sampling limit. Blank uses the server default. Use a decimal point or your local decimal separator." xml:space="preserve"><value>Optional nucleus sampling limit. Blank uses the server default. Use a decimal point or your local decimal separator.</value></data>
+  <data name="Ollama temperature must be a finite number from 0 to 2, or blank for the server default." xml:space="preserve"><value>Ollama temperature must be a finite number from 0 to 2, or blank for the server default.</value></data>
+  <data name="Ollama top-p must be a finite number above 0 and at most 1, or blank for the server default." xml:space="preserve"><value>Ollama top-p must be a finite number above 0 and at most 1, or blank for the server default.</value></data>
 </root>

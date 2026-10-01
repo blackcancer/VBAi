@@ -25,7 +25,7 @@ namespace VBAi.Tests.Unit
                 Control current = view.provider;
                 var forward = new Control[] { view.codexLogin, view.codexRefresh, view.openAiEndpoint,
                     view.ollamaEndpoint, view.openAiKey, view.clearKey, view.approvalPicker,
-                    view.manualModels, view.customName, view.azureEntra };
+                    view.manualModels, view.customName, view.azureEntra, view.ollamaTemperature, view.ollamaTopP };
                 foreach (var expected in forward)
                 {
                     Assert.IsTrue(form.SelectNextControl(current, true, true, true, false));

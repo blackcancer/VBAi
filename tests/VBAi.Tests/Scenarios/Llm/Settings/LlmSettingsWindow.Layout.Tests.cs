@@ -18,7 +18,7 @@ namespace VBAi.Tests.Unit
                 var grid = (TableLayoutPanel)typeof(LlmSettingsWindow).GetField("grid", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(window);
                 using (var label = new Label { Text = "Extension", Visible = false })
                 {
-                    grid.Controls.Add(label, 0, 12);
+                    grid.Controls.Add(label, 0, grid.RowCount);
                     LlmBoundaryScope.Call(window, "UpdateRows");
                     window.Show(); Assert.IsTrue(label.Visible);
                 }

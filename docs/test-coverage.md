@@ -1,5 +1,23 @@
 # Recorded validation
 
+## Ollama pull request after main synchronization (2026-10-01)
+
+Source `ccba639f151eaab238f6982d888922df930ab3d5` merges main `415e16f`
+into the Ollama branch. The report conflict preserves both independent
+validation records below. The isolated complete solution build succeeds with
+no warnings or errors. One focused batch reports **212 passed / 0 failed /
+0 skipped**, covering the Ollama wire/model/profile helpers, sampling settings,
+HTTP chat client, settings persistence, provider view and localization tests.
+Product SHA-256 is
+`1F785E7B7C2484FEFC5152E31F69AF333E93074274E9D5944FCB1AE305C9C76C`;
+test assembly SHA-256 is
+`14F25342792DDF2B2231831A27B95438D66D861DF23A509EBA30A72ED6688A4C`.
+Evidence is `artifacts/qualification-v1/followup-20260930/ollama-pr-review/ollama-pr-focused.trx`.
+This focused merge verification uses no backend, native host or coverage
+collector. The earlier complete and real-provider acceptance remains specific
+to candidate `bbb6e6f`; it is not reapplied to the merged binary. The installed
+product remains unchanged. A documentation-only publication commit follows.
+
 ## Managed VBA testing coverage gate (2026-10-01)
 
 Source revision `51454c61acaef02305ddc28ba6a6041b9532124f` on
@@ -65,6 +83,214 @@ no production macro ran, no COM registration changed, and no installed DLL was
 replaced for this checkpoint. The feature's previously recorded native acceptance
 and source-navigation limitations remain outstanding. Ollama qualification is
 outside this work and remains assigned to its separate branch.
+
+## Ollama configured candidate acceptance (2026-10-01)
+
+Candidate `bbb6e6f5aca9e47e2b120538e055959ef530e068`, product MVID
+`f6f01687-c0a4-4b1c-acab-82cc1dfab2af`, SHA-256
+`35E94E67D30819E32790854E317C55D5736DC74EA7EB2461F8301E56F2E6B9D1`,
+passes the complete prepared batch: **3482 passed / 0 failed / 115 conditional
+skips / 3597 total**, exit **0**. Test assembly SHA-256 is
+`D58A5BF1D6B00D5EC8CA917C12C06A9E24CD97D1E5FF642520A19F2AE88925EB`.
+The isolated solution build reports no warnings or errors. Source, clean working
+tree and both assembly hashes are unchanged at the terminal check.
+
+The verified model is `qwen2.5:7b-instruct`, manifest digest
+`845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e`,
+on Ollama `0.34.4`, context 8192 and one parallel request. Seven captured chat
+bodies verify temperature 0 and top-p 0.8 explicitly sent by the production
+client, without logprobs. Cloud processing is disabled; the model cache and
+selected literal-loopback endpoint are isolated from personal configuration.
+
+All four activated real-provider scenarios pass with their strict assertions:
+exact scalar synthetic tool arguments and result consumption, first-fragment
+cancellation/recovery, shown chat streaming/Stop/next-send, and native read-only
+Excel module inspection. The language-catalogue completeness check and both
+sampling-save failure regressions pass. Failed writes or theme updates restore
+the shared in-memory sampling values and preserve the original error; this does
+not assert rollback of a partially written settings file.
+
+Excel PID 55000 reads a random marker absent from the prompt through exactly one
+real `read_module` call. Full source SHA-256 before, returned by the tool and after
+is `6890696832cbbeddce234f43fdea1f19f445e9c9bf95eb99ff2ff1230274030d`.
+No macro runs. The unsaved disposable workbook closes and the original process
+handle observes normal exit code 0. This is external test-STA dispatch through
+production tools, not qualification of the installed bridge or embedded assistant.
+The detached chat uses a simulated VBE; SOLIDWORKS and other providers are not
+activated in this batch. The installed DLL remains unchanged at `C900BA09...`.
+
+Coverage includes `[VBAi]*`: **98.38% lines / 96.60% branches**
+(37,385/37,998 lines and 37,324/38,634 branches). The two collector/deployment
+copies contain identical results and are not added together. Conditional native
+and authenticated-provider scenarios retain their explicit opt-ins. No coverage
+exclusion is added and this is not complete native-host or release qualification.
+
+Evidence is `artifacts/qualification-v1/followup-20260930/ollama-final-acceptance-v2/`
+(`full-managed-and-ollama.trx`, `offline-final-acceptance-review.json`, native
+Excel readback, synthetic wire captures, coverage and terminal manifests).
+The exact owned backend is stopped once after terminal requests; cleanup succeeds
+and no backend is retained. Earlier failed trials below remain failed. This
+acceptance establishes the selected configuration's stated scope without claiming
+the internal cause of historical unobserved generations or universal model reliability.
+
+## Ollama configured integration before catalogue completion (2026-10-01)
+
+Candidate `799ccef288178d266b560158dd3171330b7313af`, product MVID
+`919d83d8-40a6-4f1c-8048-2072876c0aa9`, SHA-256
+`9B6A998776520FAA2C328A223E50EE604FDD9DA23E9E1245A9D290ED20F3744E`,
+uses the isolated verified `qwen2.5:7b-instruct` model, manifest digest
+`845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e`,
+Ollama `0.34.4`, context 8192, one parallel request, temperature 0 and top-p 0.8.
+Seven captured chat bodies independently verify the explicit sampling fields.
+No personal settings, credentials or macro source are used as inputs.
+
+All scenarios are prepared before the complete batch. It reports
+**3479 passed / 1 failed / 115 conditional skips / 3595 total**, exit **1**.
+All four real Ollama scenarios pass: exact scalar synthetic tool arguments and
+result consumption, first-fragment cancellation/recovery, shown chat streaming,
+Stop and next-send, and native read-only Excel module inspection. The aggregate
+fails the complete-language catalogue test because the new settings strings are
+not yet present in every language; it is not reported as a green managed gate.
+
+The Excel scenario reads a random marker absent from the prompt through exactly
+one real `read_module` call. The full source hashes are equal before and after;
+no macro runs and the unsaved disposable workbook is closed. The original handle
+observes Excel PID 37324 exiting normally with code 0 after COM release.
+This is external test-STA dispatch through production tools, not qualification
+of the installed bridge or embedded assistant. The installed DLL is unchanged.
+Coverage includes `[VBAi]*`: **98.38% lines / 96.61% branches**, with conditional
+native/authenticated-provider scenarios still excluded by their explicit opt-ins.
+No coverage exclusion is added.
+
+Evidence is `artifacts/qualification-v1/followup-20260930/ollama-final-acceptance/`
+(`full-managed-and-ollama.trx`, `offline-final-acceptance-review.json`, native
+Excel readback, bounded synthetic wire, coverage and terminal manifests).
+The source and product/test hashes remain unchanged; the exact owned helper
+is stopped once after terminal requests, with no backend retained.
+The later catalogue completion and sampling-save restoration require a new gate.
+
+The preceding Qwen3 4B aggregate remains failed: the shown chat and cancellation
+pass, but the exact echo marker is altered. The independent supported comparison
+also alters the marker with temperature 0 or 0.7 and top-p 0.8. The first
+logprobs comparison receives HTTP 400 because that model/backend refuses tools
+plus streaming plus logprobs; VBAi never sends this diagnostic option. These
+controls do not establish the cause of historical unobserved generations.
+
+## Current-main Ollama aggregate before configuration correction (2026-10-01)
+
+The complete suite on test source `f15c48a` and product source main `2f28018`
+uses the exact product/test identities in the next section. The batch runs once
+against the isolated `qwen2.5:3b` cache with production sampling unchanged.
+It reports **3373 passed / 1 failed / 116 conditional skips / 3490 total**;
+runner exit is **1**. This is a failed aggregate, not a green managed gate.
+
+| Activated real-provider case | Actual result |
+| --- | --- |
+| First-fragment cancellation and fresh conversation | Passed |
+| Streamed greeting, exact synthetic tool call and result consumption | Passed; wire and pre-assertion ledger both retain scalar `marker=VB_AI_42` |
+| Visible chat streaming, stop and next send | Failed before first text; stop and next-send phases are not reached |
+
+The current UI request is 8261 bytes. Its captured SSE body is 433 bytes and
+already has empty deltas, `stop` and `[DONE]`, with no text or calls. Diagnostics
+record `complete-empty`, and the visible window displays `No text response.`
+before becoming ready. The passive tee does not observe transport EOF because
+the production parser stops at `[DONE]`; protocol completion is not reported as
+socket EOF. Generated tokens are not captured for this live trial, so its internal
+cause is not inferred from the separate seeded control.
+
+Coverage is **unavailable for this run**: the artifact driver loads the product
+with `ReflectionOnlyLoadFrom` in its own long-lived process to read the MVID.
+Coverlet cannot write the DLL while that process retains it and reports failed
+instrumentation. The original product and test file hashes remain unchanged at
+the terminal check. No percentage is reused from an earlier binary. A disposable
+offline copy proves writes succeed before load, fail while the metadata process
+lives, and succeed after its exit, with unchanged bytes. A separate corrected
+driver reads metadata in a child process that exits before collection; that
+correction emits no inference and does not alter this failed record.
+
+Evidence is `artifacts/qualification-v1/followup-20260930/ollama-main-current-capture/`
+(`full-managed-and-ollama.trx`, `offline-qualification-review.json`,
+`tests-terminal.json`, captured UI/headless bodies and shape ledgers).
+The terminal manifest confirms unchanged clean source and payloads. Owned helper
+PID `53100` exits after one verified helper-only force-stop with output pumps
+terminal; no backend is retained. The installed DLL still has its preceding
+`C900BA09...` hash. No native host or tool is exercised. Model/configuration
+correction and a subsequent complete acceptance batch remain required.
+
+## Shared Ollama synthetic capture contracts (2026-10-01)
+
+Tests-only source `f15c48a5cabf83ab2159b2b18bc3b092ae045ad9`, based on main
+`2f280183fec9572232f196a5b2c4f8f04640df3c`, replaces the fixture-private UI wire
+wrapper with shared, separately opted-in UI/headless capture. It adds argument
+shape ledgers before the existing scalar assertion, without changing prompts,
+sampling, provider parsing or native tool dispatch. All contract scenarios are
+implemented before the single focused batch is executed.
+
+The isolated full solution build succeeds with **0 warnings / 0 errors**.
+The helper/endpoint batch reports **86 passed / 0 failed / 0 skipped**; it uses
+no backend, model inference, native host or coverage collector. Contracts cover
+opt-in boundaries, routes/methods, redirect refusal, factory restoration,
+credential-header omission, UTF-8 bytes, bounds, synchronous/asynchronous reads,
+EOF versus zero-length/early/pending reads, disposal and error transparency,
+diagnostic I/O/serialization failure and scalar versus nested argument shapes.
+
+Product MVID is `044522a1-31cc-494c-98e6-46dee00af787`, SHA-256
+`1A5B036B899A88D1E4B5315E3082C0689BA810B2BADB87F92A24926E1D251B4F`;
+test SHA-256 is
+`5C52CF0997F607D9F1AC5BD44B2B36229C80EDBB7A0E91FF079CEC0AC5BB5419`.
+Both hashes are unchanged before/after the focused batch. Evidence is
+`artifacts/worktrees/qualification-headless-wire/artifacts/headless-wire-validation/`
+(`build.log`, `headless-wire-focused.trx`, `focused-terminal.json`). This is a
+detached diagnostic-contract gate, not complete managed or live-provider
+acceptance. The installed DLL is not replaced.
+
+## Ollama sampling configuration comparison (2026-10-01)
+
+The checkout is synchronized to main `2f28018`. This independent backend
+comparison loads no VBAi assembly and does not qualify that product revision.
+It uses the previously verified Ollama `0.34.4` executable and isolated
+`qwen2.5:3b` manifest digest
+`357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b`.
+All cache blob lengths and hashes are verified before launch. No model download,
+profile edit, authentication or native tool dispatch occurs.
+
+All **12 requests** are prepared before execution: the exact headless echo
+prompt/tool schema and the retained detached-UI request, each with seeds 42/73
+and temperature omitted, 0 or 0.2. Every request also enables chosen-token
+logprobs; the comparison therefore does not recreate the earlier unseeded wire
+byte-for-byte. Each request is emitted once, with no retry. The single batch
+exits **0** with **12 known HTTP/protocol terminals**, not 12 VSTest passes.
+
+| Fixture | Temperature omitted | Temperature 0 | Temperature 0.2 |
+| --- | --- | --- | --- |
+| Echo, both seeds | Exact scalar `marker=VB_AI_42` | Exact scalar `marker=VB_AI_42` | Exact scalar `marker=VB_AI_42` |
+| UI, seed 42 | Streamed text | `read_module` with an invented module | `read_module` with missing required arguments |
+| UI, seed 73 | Complete-empty; malformed generated tool JSON | `read_module` with an invented module | `read_module` with an invented module |
+
+For the new empty response, chosen tokens reconstruct a `discover_tools` call
+whose `arguments` is a quoted JSON string containing unescaped inner quotes.
+The generated call is malformed JSON; delivered SSE contains neither text nor
+tool calls, ends with `stop` and `[DONE]`, and reaches HTTP EOF. This pairs the
+model generation with the empty response at the backend boundary. It does not
+establish the missing-token historical responses' cause or a VBAi parser defect.
+Lower temperature changes this observed outcome but does not establish safe,
+correct tool selection. No malformed arguments are repaired or dispatched.
+
+The actual server log confirms temperature **1** when omitted, top-p **1**,
+context **4096**, UI prompt **1673 tokens**, echo prompt **181 tokens** and no
+truncation. A short context does not explain these captured trials. The exact
+Ollama [OpenAI conversion](https://github.com/ollama/ollama/blob/v0.34.4/openai/openai.go#L644)
+sets temperature/top-p to 1 when absent from the request, overriding a model's
+sampling default for those fields.
+
+Evidence is under
+`artifacts/qualification-v1/followup-20260930/ollama-sampling-controls/runs/c455aa1094a54ef3bdbfc05d522fe8ff`:
+the terminal manifest, per-request bodies/hashes and chosen tokens,
+`offline-sampling-review.json`, and the server's sampling/context log.
+The original handle identifies owned helper PID `6024`; after all requests
+terminate and no established connections remain, one helper-only force-stop
+observes exit `4294967295`, with both output pumps terminal. No Ollama process
+remains. This is not native Office shutdown qualification. Q-028 stays open.
 
 ## VBA test explorer integration with main (2026-10-01)
 

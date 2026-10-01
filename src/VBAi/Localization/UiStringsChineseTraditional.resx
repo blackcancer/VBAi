@@ -2165,4 +2165,12 @@ QQ 附加記憶體
   <data name="Coverage exclusions" xml:space="preserve"><value>涵蓋範圍排除項目</value></data>
   <data name="VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring." xml:space="preserve"><value>VBA 匯入失敗，且無法記錄其結果狀態。復原仍在等待處理；還原前請檢查保留的備份與目前專案。</value></data>
   <data name="Inspection and restoration of the native Code Colors category both failed. The original category selection is unverified." xml:space="preserve"><value>檢查與還原原生程式碼色彩類別均失敗。原始類別選擇尚未驗證。</value></data>
+  <data name="Temperature (0 to 2)" xml:space="preserve"><value>溫度 (0 至 2)</value></data>
+  <data name="Top-p (above 0 to 1)" xml:space="preserve"><value>Top-p (大於 0，至多 1)</value></data>
+  <data name="Ollama temperature; blank uses server default" xml:space="preserve"><value>Ollama 溫度；留白使用伺服器預設值</value></data>
+  <data name="Ollama top-p; blank uses server default" xml:space="preserve"><value>Ollama top-p；留白使用伺服器預設值</value></data>
+  <data name="Optional. Blank uses the server default; 0 reduces sampling randomness. Use a decimal point or your local decimal separator." xml:space="preserve"><value>選填。留白使用伺服器預設值；0 可降低取樣的隨機性。請使用小數點或本地小數分隔符。</value></data>
+  <data name="Optional nucleus sampling limit. Blank uses the server default. Use a decimal point or your local decimal separator." xml:space="preserve"><value>選填的核取樣上限。留白使用伺服器預設值。請使用小數點或本地小數分隔符。</value></data>
+  <data name="Ollama temperature must be a finite number from 0 to 2, or blank for the server default." xml:space="preserve"><value>Ollama 溫度必須是 0 至 2 的有限數值；留白使用伺服器預設值。</value></data>
+  <data name="Ollama top-p must be a finite number above 0 and at most 1, or blank for the server default." xml:space="preserve"><value>Ollama top-p 必須是大於 0 且至多 1 的有限數值；留白使用伺服器預設值。</value></data>
 </root>

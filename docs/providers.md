@@ -105,12 +105,47 @@ whether text or tools were received, the final marker, a filtered terminal reaso
 and a complete/empty/error outcome. These metadata exclude prompts, response
 content, tool names and arguments; they do not add a retry or change parsing.
 An empty terminal response remains distinct from a truncated response or a
-tool-only round. The historical intermittent Ollama empty response remains an
-open item in [qualification](release-qualification.md).
+tool-only round. The selected Ollama configuration passes its stated live test
+scope; historical intermittent empty responses and embedded-host acceptance
+remain separate items in [qualification](release-qualification.md).
 
 OpenAI requests include `store=false`; this is not a universal retention setting
 for every provider or a guarantee of zero retention. Provider-side data handling
 is governed by that provider and the selected account. See [privacy](privacy.md).
+
+### Ollama configuration boundary
+
+VBAi sends Ollama the selected model, messages, tool schemas and the
+stream flag through `/v1/chat/completions`. Ollama's settings view also exposes
+optional temperature and top-p overrides. Blank fields omit the corresponding
+request fields and preserve the server's behavior. Temperature must be finite
+and in `[0,2]`; top-p must be finite and in `(0,1]`. Entries accept an invariant
+decimal point or the current decimal separator. The overrides persist as
+`OllamaTemperature` and `OllamaTopP`; older settings leave them unset. A client
+captures these values when constructed, and other providers ignore them.
+Seed and context-size overrides are not sent. Model presence in the catalogue is not a guarantee of
+correct tool arguments or adherence to a request to answer without tools.
+
+On the tested diagnostic backend version `0.34.4`, the
+[OpenAI request converter](https://github.com/ollama/ollama/blob/v0.34.4/openai/openai.go#L644)
+sets omitted temperature and top-p to 1. Changing only those defaults in a
+Modelfile does not change what this converter supplies. Ollama's
+[context setting](https://docs.ollama.com/context-length) is separate; its
+[OpenAI compatibility guide](https://docs.ollama.com/api/openai-compatibility#setting-the-local-context-size)
+describes configuring a model's context rather than sending `num_ctx` as an
+OpenAI chat field. Check the effective server settings and model capabilities
+when diagnosing a local provider. The qualification profile uses a separately
+selected model, an explicit server context and explicit request sampling; it
+does not overwrite personal configuration. See [testing](../tests/README.md)
+and [recorded validation](test-coverage.md) for the actual observed results.
+
+The accepted isolated profile selects `qwen2.5:7b-instruct`, temperature `0`,
+top-p `0.8`, server context `8192` and one parallel request. It passes exact
+synthetic tool arguments, shown chat streaming/cancellation/recovery and real
+read-only Excel inspection on the recorded candidate. These are explicit
+qualification settings, not new defaults for existing personal profiles; the
+candidate has not been deployed to the installed add-in. Other models, server
+versions and embedded host paths require their own acceptance evidence.
 
 ## Validation
 

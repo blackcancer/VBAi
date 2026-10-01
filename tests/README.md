@@ -543,18 +543,74 @@ native-code coverage.
 
 `VBAi_RUN_OLLAMA_TESTS=1` enables `TestCategory=Ollama` against the loopback
 server through the production HTTP client. `VBAi_TEST_OLLAMA_MODEL` selects an
-already-installed model (default `qwen2.5:3b`). These synthetic scenarios cover
+already-installed model (default `qwen2.5:7b-instruct`). The shared selector applies
+to the headless, detached UI and native Excel scenarios. An absent override uses
+the default; outer whitespace is trimmed, while an empty explicit override,
+internal whitespace or control characters are refused. It never loads or rewrites
+personal provider configuration, downloads a model or silently substitutes another
+model. These synthetic scenarios cover
 streamed text, a harmless tool roundtrip, cancellation and a subsequent request;
 they do not execute native VBE tools or read saved provider settings. Remove the
 opt-in variables after the run.
 
-The detached HTTP and chat UI cases accept `VBAi_TEST_OLLAMA_ENDPOINT` when an
+The headless HTTP, detached chat UI and native Excel cases accept
+`VBAi_TEST_OLLAMA_ENDPOINT` when an
 owned local server uses another port. Its default remains
 `http://127.0.0.1:11434/v1/chat/completions`. An override must be a canonical
 `http://127.0.0.1:<port>/v1/chat/completions` URL without credentials, query or
 fragment. Optional synthetic wire capture is restricted to that exact server's
 chat and `/api/tags` routes and records the selected port. Retain the backend
 version and model digest; another port does not prove the default port is usable.
+
+The qualification backend profile is an already-installed `qwen2.5:7b-instruct`
+model with `OLLAMA_CONTEXT_LENGTH=8192`, `OLLAMA_NUM_PARALLEL=1`,
+`OLLAMA_NO_CLOUD=1` and `OLLAMA_NOPRUNE=1`, passed only to an owned local backend.
+Attest the selected manifest/blob hashes and the backend's cloud-disabled startup
+state before running the enabled scenarios. Do not change personal/global
+environment. The shared test profile explicitly requests temperature `0` and
+`top_p=0.8` through isolated `LlmSettings`, selected by
+`VBAi_TEST_OLLAMA_TEMPERATURE` and `VBAi_TEST_OLLAMA_TOP_P` overrides when needed.
+The overrides use finite invariant-culture numbers: temperature is in `[0,2]`,
+and top-p is in `(0,1]`. The scenarios report the actual model, endpoint and
+sampling before requests; they do not rewrite user settings or change prompts or
+assertions. Production Ollama sampling properties remain nullable by default;
+old settings therefore retain the backend's previous request behavior, and other
+providers ignore these Ollama-only fields. This preparation is distinct from a passing
+provider qualification: the original scalar, tool, UI and native readback
+assertions remain required. The qualification requests do not add `logprobs` or
+`top_logprobs`; controls using those diagnostic fields remain separate protocol
+experiments and cannot replace the unmodified qualification request.
+
+Passive synthetic body capture requires a separate explicit flag. For the two
+headless scenarios, set `VBAi_OLLAMA_HEADLESS_CAPTURE_WIRE=1` and optionally
+`VBAi_OLLAMA_HEADLESS_RESULTS` to an absolute local evidence directory (default:
+`ollama-headless-diagnostics` under the test output). For the detached UI scenario,
+the existing `VBAi_OLLAMA_UI_CAPTURE_WIRE=1` and `VBAi_OLLAMA_UI_RESULTS` variables
+retain their behavior and `ollama-ui-diagnostics` default. The scenario opt-in is
+still required; enabling capture alone does not run a model.
+
+The shared `OllamaSyntheticWireCapture` helper requires the real production
+`HttpClientHandler` with redirects disabled and the exact selected IPv4 loopback
+port, POST chat or GET catalogue route. It observes buffered synthetic requests
+and response bytes only as the production reader consumes them. Each body capture
+is bounded to 1 MiB; read summaries distinguish observed EOF, early disposal,
+in-flight reads, read errors and truncation. SSE `[DONE]` can stop the production
+reader before physical EOF, so a false EOF flag alone is not a truncated-response
+claim. Headers, credentials and personal history are not recorded. Diagnostic
+write/serialization/wrapping failures do not replace the HTTP outcome.
+
+The headless tool scenario records raw argument JSON, parsed argument type and
+the marker's type/value before its existing scalar assertion. A nested object is
+preserved as an object; it is never flattened or accepted as the expected string.
+Evidence includes request intents, completion/error phases and the actually loaded
+product MVID. No native tool is dispatched, and later evidence does not establish
+the cause of an earlier response without its own captured wire.
+
+For a detached helper-only regression batch, use the filter
+`FullyQualifiedName~OllamaSyntheticWireCaptureTests|FullyQualifiedName~OllamaQualificationEndpointTests|FullyQualifiedName~OllamaQualificationModelTests|FullyQualifiedName~OllamaQualificationProfileTests`.
+These tests use memory streams and explicit fake production-client responses;
+they do not open sockets, run models or launch a native host. Remove the capture
+and scenario opt-ins after real qualification.
 
 `VBAi_RUN_OLLAMA_UI_TESTS=1` enables `TestCategory=OllamaUi` with the same
 model selector. It shows the real chat controls and checks send, rendered
@@ -565,7 +621,7 @@ not Office or SOLIDWORKS integration. Run it separately from native host UI test
 to avoid competing for focus, then remove its opt-in variable.
 
 `VBAi_RUN_OLLAMA_EXCEL_TESTS=1` enables `TestCategory=OllamaExcel` using the
-fixed loopback endpoint and already-installed `qwen2.5:3b` model. It creates a disposable Excel module containing a
+same guarded loopback endpoint and already-installed model selectors. It creates a disposable Excel module containing a
 random marker absent from the prompt, dispatches the model's `read_module` call
 through the real project-bound VBE tools, and verifies the final answer and
 unchanged source and normal exit of its owned Excel process. No macro runs.
