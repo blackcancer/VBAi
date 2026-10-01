@@ -200,9 +200,9 @@ namespace VBAi.Tests.Unit
                 SetProperty(fixture, "Kind", kind);
                 int dispatches = 0;
                 fixture.Dispatch = (pid, request) => {
-                    Assert.AreEqual(process.Id, pid); Assert.AreEqual("read_module", request["Command"]);
+                    Assert.AreEqual(process.Id, pid); Assert.AreEqual("read_module", ((IDictionary<string, object>)request)["Command"]);
                     dispatches++;
-                    return new Dictionary<string, object> { ["Ok"] = true, ["Data"] = new Dictionary<string, object> { ["Code"] = "synthetic reviewed support" } };
+                    return new Dictionary<string, object> { ["Ok"] = true, ["Error"] = null, ["Data"] = new Dictionary<string, object> { ["Code"] = "synthetic reviewed support" } };
                 };
                 typeof(OfficeVbeFixture).GetMethod("PrepareOwnedShutdown", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(fixture, null);
                 if (kind == "Word")
