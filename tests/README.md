@@ -45,6 +45,31 @@ repository root in a Windows development environment.
 
 ## Build and run
 
+### Disposable native Excel signature qualification
+
+`ExcelSignatureQualificationTests` requires `VBAi_RUN_EXCEL_TESTS=1`,
+`VBAi_RUN_EXCEL_SIGNATURE_TESTS=1` and an absolute `VBAi_EXCEL_RESULTS`.
+The first scenario saves synthetic nonexecuted code and checks native unsigned
+state plus the closed-file Windows Office SIP result. The signing scenario also
+requires `VBAi_TEST_SIGNING_CERTIFICATE_MANIFEST`, pointing to a JSON manifest
+with `FormatVersion: 1`, a 32-character uppercase hexadecimal `Nonce`,
+`Subject: "CN=VBAi Disposable Signature Qualification <Nonce>"`, an uppercase
+40-character `Thumbprint`, `Store: "CurrentUser/My"` and
+`TrustedRootInstalled: false`. Use an explicitly owned, short-lived synthetic
+code-signing certificate only; never borrow a personal signing certificate or
+change Root/TrustedPublisher stores or Office trust policies for a test.
+
+The protected Windows certificate selector requires the user to confirm the
+exact named certificate within the product deadline. The fixture sends one
+signing request and retains its owned host if the response is nonterminal;
+it never retries signing. Persistence requires a distinct fresh Excel process,
+read-only reopen with macros disabled, unchanged source/file hashes, and normal
+original-process exits without helper saving. Closed-file SIP verification
+distinguishes absence, untrusted-root and verifier-unavailable outcomes; a
+self-signed trust failure is never promoted to a valid/trusted signature.
+Remove only the exact owned certificate and its key after terminal cleanup.
+The recorded trial is failed; preparation of these scenarios is not acceptance.
+
 Use a separate output directory while an application has the installed DLL loaded:
 
 ```powershell

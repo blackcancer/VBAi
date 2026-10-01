@@ -1,5 +1,142 @@
 # Recorded validation
 
+## Native qualification refresh (2026-10-01)
+
+The frozen product is source `4a32319651dadbc3c5d11eaf4eb7b0dfaa656772`,
+MVID `25facee2-6b10-40fa-880c-cb9328333713`, SHA-256
+`474E9C106E109C693AC47587BD13BF7239E617F31EA7F210B1208E4EA4678F7D`.
+Evidence is under `artifacts/native-qualification-20261001`. This is an isolated
+candidate qualification; the installed DLL bytes are unchanged. No coverage
+collector was used and no new line/branch percentage is claimed. The VBA test
+explorer feature is outside the native campaign.
+
+The complete default managed gate uses the original test source `4a323196`,
+test MVID `cc88f51f-af87-486c-86db-48b531a55755`, SHA-256
+`A85583EE8C00ECEDAA9CF4FA864E398DCE55B12832CF09549262DEDE99DF2EF5`.
+Later fixture corrections are tests-only and continue referencing the same
+immutable product. The table preserves each terminal run separately; repeated
+scenarios, native opt-ins and focused managed regressions are not summed into a
+single suite result. `Not executed` is the TRX total minus executed count,
+including conditional scenarios.
+
+| Evidence directory / terminal TRX | Passed | Failed | Not executed |
+| --- | --- | --- | --- |
+| `access-publisher-real-registration` | 10 | 3 | 1 |
+| `embedded-git` | 0 | 1 | 0 |
+| `embedded-monaco` | 1 | 0 | 0 |
+| `excel-core` | 0 | 5 | 0 |
+| `excel-core-real-registration` | 5 | 0 | 0 |
+| `excel-corrected-batch` | 11 | 16 | 0 |
+| `excel-fixture-round2` | 11 | 2 | 0 |
+| `final-fixture-native` | 4 | 1 | 0 |
+| `format` | 1 | 0 | 0 |
+| `forms-after-import-observation` | 0 | 12 | 0 |
+| `forms-local-git` | 0 | 12 | 0 |
+| `forms-localized-import-observation` | 0 | 12 | 0 |
+| `git-modal-corrected` | 29 | 0 | 0 |
+| `managed-main` | 3615 | 0 | 119 |
+| `ollama-current-candidate` | 3 | 1 | 0 |
+| `ollama-current-cpu-profile` | 0 | 4 | 0 |
+| `scalar-long` | 1 | 0 | 0 |
+| `scalar-page` | 1 | 0 | 0 |
+| `scalar-unsupported` | 1 | 0 | 0 |
+| `signature-native` | 0 | 2 | 0 |
+| `word-powerpoint` | 0 | 2 | 0 |
+| `word-powerpoint-real-registration` | 1 | 1 | 0 |
+| `word-read-only-corrected` | 11 | 0 | 0 |
+
+Original startup failures in `excel-core` and `word-powerpoint` loaded the older
+installed MVID. The actual COM-activated hosts read a different HKCU context
+from the calling qualification shell. A temporary, same-user interactive task
+used the existing guarded registration tool to select the frozen candidate in
+that context; candidate MVID was then checked inside every new native host.
+The first failed wrapper attempts stopped during preview parsing before a
+registry mutation; their failure evidence remains. Both registration snapshots
+are restored after the final owned candidate host exits.
+
+Corrected tests-only revisions are recorded in each `fixture-*-candidate.json`
+and run `plan.json`. Accepted modal Git scope uses tests `b8954ac`, SHA-256
+`EBB5C99C88E6DEE40B956E6EDD323EB3D67CFCDFE25AD8E1D9B37EE75618E89D`;
+accepted Word scope uses `e8f0888`, SHA-256
+`28EA0C6739DA5AAACE5999AACA9556D1B9339C14315E99C1ED53E7F4FD5760B5`.
+Signature trials use `1f6f128`, SHA-256
+`60CC25D9D642791739BE1E8DF2FBBC224C3C017FFE955775A59E1FD8865040BF`.
+Final localized form diagnostics use `3a21984`, SHA-256
+`9861007A70F72F193BC794136A6429840606F3BD78EBC1727F687E9B386F64C0`.
+The original complete managed gate does not qualify later test assemblies as a
+complete suite; their focused/native results are recorded separately.
+
+Excel core execution, protection reopen, options restoration, breakpoint and
+ordered declared-scalar scopes pass with original normal host exit. Format
+qualification verifies font/category/color changes and exact full restoration;
+its empty font-size catalogue gives a verified unchanged refusal, not a passed
+font-size mutation. Embedded Monaco survives closure of another owned project.
+
+The actual owner-dispatched Git window links only the already authorized retained
+synthetic branch, captures, creates a local checkpoint and compares. Native
+source, references, selection, mode, saved-file SHA and normal exit are checked.
+This does not qualify remote push, import, recovery or disk reopen. Earlier
+failures exposed shared RCW release, unstable unleased native identity, open-file
+hash sharing and a destroyed modal handle check. A retained saved owned Excel
+from the modal-assertion failure was separately identity-checked and closed once
+normally; that cleanup did not change the failed scenario into a pass.
+
+PowerPoint and Word adapter-only save/reopen preserve pending module/class code
+and the form/Label without helper saving after the adapter. The first real Word
+trial saved successfully but failed a rejected read-only Version getter;
+the subsequent run passes with bounded same-thread getter observation. It records
+no rejected getter, so this pass does not explain the earlier rejection or prove
+that waiting caused the native success. Only the known
+`RPC_E_CALL_REJECTED` getter is retried; Save/Close/Quit and bridge mutations are
+never retried by this diagnostic.
+
+Access and Publisher reference addition by GUID/file and reference removal pass
+fresh-process source/reference readback. Access Description and module/class
+save/reopen pass; Publisher Description, HelpContextID and form save/reopen pass.
+Access HelpContextID/HelpFile original exit deadlines fail, preventing fresh
+reopen, and Publisher HelpFile returns altered metadata after fresh reopen.
+These failures remain release gates even though no Office process remains at
+terminal inspection. Later process absence is not original-handle exit proof.
+
+UserForm import remains failed. Unchanged captures and raw Git transport pass;
+strict post-import comparison refuses changed FRX content and retains recovery
+backup/after-import state. Final read-only designer observations independently
+record dimension changes, ComboBox/ListBox item loss and a changed picture digest, after terminal refusal.
+Only the declared observed properties are inspected; no claim about unmeasured
+property persistence is made. The earlier first diagnostic did not match the
+translated error and remains failed. No normalization rule is relaxed, unknown
+FRX bytes ignored, import/recovery replayed, or post-refusal helper Save invoked.
+
+Signature tests confirm native unsigned state and unchanged source, but the
+closed-file verifier reports `VerifierUnavailable` for the missing/unusable
+Office `msosipx.dll` registration. The one signing request is terminally cancelled
+because the certificate name read from VBE differs from the requested synthetic
+manifest. Signed persistence/fresh reopen are not reached. The unique synthetic
+certificate is created only in CurrentUser/My and removed with its private key
+after terminal cleanup; no Root/TrustedPublisher entry or Office trust setting is
+changed. Both owned Excel processes exit normally. This is failed signature
+qualification, not a trusted or cryptographically valid signature.
+
+Both Ollama batches use the original frozen test/product, verified existing
+`qwen2.5:7b-instruct` manifest/layer hashes, temperature 0, top-p 0.8, context 8192,
+one parallel request and isolated cloud-disabled loopback servers. Automatic
+device selection passes headless streaming/cancellation/tool roundtrip and
+shown detached chat, but the native Excel request gets terminal HTTP 500 before
+any tool dispatch after a CUDA_Host allocation failure. A separately prepared
+CPU-only profile also fails model allocations, including CPU_REPACK. The native
+Excel source is unchanged and owned Excel exits normally; each exact diagnostic
+server is force-stopped using its retained original handle and has terminal
+output/no remaining Ollama process. That backend cleanup is not native Office
+normal-exit acceptance. The later observed free virtual memory is approximately
+1.9 GiB, below the recorded 3.1 GB CPU allocation. Personal settings, downloaded
+model bytes, trust policies and unrelated processes are unchanged. The current
+aggregate fails; neither earlier `bbb6e6f` acceptance nor detached chat success
+qualifies the current embedded-host assistant or other provider profiles.
+
+SOLIDWORKS 2025 is present but no explicitly selected disposable VBE bridge is
+available in this campaign. No SOLIDWORKS macro, native Edit Macro or standalone
+save/reopen trial is executed; its existing process is preserved.
+
 ## Ollama pull request after main synchronization (2026-10-01)
 
 Source `ccba639f151eaab238f6982d888922df930ab3d5` merges main `415e16f`

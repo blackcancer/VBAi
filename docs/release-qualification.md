@@ -4,6 +4,31 @@
 not a claim of universal Office compatibility. Test totals and measured coverage
 are maintained only in [recorded validation](test-coverage.md).
 
+## Current candidate checkpoint (2026-10-01)
+
+Product source `4a323196`, MVID `25facee2-6b10-40fa-880c-cb9328333713`,
+SHA-256 `474E9C106E109C693AC47587BD13BF7239E617F31EA7F210B1208E4EA4678F7D`
+has a completed default managed gate and operation-specific native results in
+`artifacts/native-qualification-20261001`. Tests-only fixture corrections are
+integrated separately. The installed DLL is unchanged and both temporary COM
+registration contexts are restored from their guarded snapshots. See
+[recorded validation](test-coverage.md#native-qualification-refresh-2026-10-01)
+for exact counters, assembly identities, failed preparation and terminal runs.
+
+| Gate | Current candidate observation | Remaining acceptance |
+| --- | --- | --- |
+| Q-006 / Q-020 | Excel ParamArray/Variant arrays, protection reopen, breakpoint, options and the declared scalar page pass with normal owned-host exit. | Historical crashes and other runtime local types remain unresolved. |
+| Q-011 | Word and PowerPoint adapter-only source/class/form save and fresh-process reopen pass. The fixture now bounds retries of rejected read-only getters; no rejection occurs in the accepted Word run, and its original failed trial remains failed. | This qualifies the stated adapter operation only. |
+| Q-012 | Access/Publisher GUID/file reference addition and removal, Access Description/module/class and Publisher Description/HelpContextID/form persistence pass. | Access HelpContextID/HelpFile fail the original exit deadline; Publisher HelpFile is altered after fresh reopen. |
+| Q-024 / Q-027 | Actual owner-dispatched Git capture/local checkpoint/compare passes with native state, saved-file hash and normal exit. | UserForm import fails strict FRX readback. Native observations record changed dimensions, missing ComboBox/ListBox rows and a changed picture digest. Remote transfer, recovery and reopen are not qualified. |
+| Q-026 | Native Format font/category/color changes and complete restoration pass; an empty size catalogue is refused with unchanged state. | Font-size mutation and the historical incomplete trace remain unqualified. |
+| Signature | Native unsigned state is observed; the disk verifier reports unavailable Office SIP. The single signing request is cancelled on a mismatched certificate name, followed by normal exit and removal of the owned certificate/key. | Signature persistence, fresh reopen and cryptographic/trust verification remain failed or not reached. No trust policy is changed. |
+| Q-028 | The selected Ollama automatic-device batch passes detached chat/headless scopes but its real-Excel request fails model loading before tool dispatch. A separate CPU profile also fails allocations. | Current aggregate and embedded-host assistant remain unqualified; previous candidate passes are not carried forward. |
+| Q-014 / Q-030 | The preloaded SOLIDWORKS process is preserved; no selected disposable bridge is available for this campaign. | Current SOLIDWORKS save/reopen and native Edit Macro are NOT_RUN. Unsafe VBProjects.Open remains unavailable. |
+
+No new coverage percentage or release-wide native acceptance is inferred. The
+VBA test explorer feature is outside this native qualification campaign.
+
 ## Report scope
 
 Qualification checkpoint: 2026-10-01, following the 2026-09-29/30 campaign.

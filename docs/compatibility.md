@@ -25,6 +25,26 @@ operation, language feature or UI surface.
 
 ## Recorded host evidence
 
+### Current operation-specific refresh
+
+The isolated source `4a323196` / MVID
+`25facee2-6b10-40fa-880c-cb9328333713` now has observed Excel core execution,
+declared-scalar inspection, Format restoration, embedded Monaco and actual Git
+capture/checkpoint/compare results. Word/PowerPoint adapter-only source/class/form
+save and fresh-process reopen pass. Access/Publisher reference workflows and
+selected metadata saves pass, while Access help metadata exit and Publisher
+HelpFile readback remain failed. UserForm import has actual native property drift;
+signature and the current Ollama aggregate are unqualified. SOLIDWORKS is not
+exercised in this refresh. The installed DLL remains unchanged and temporary
+registration selections are restored.
+
+See the [current qualification checkpoint](release-qualification.md#current-candidate-checkpoint-2026-10-01)
+and [recorded validation](test-coverage.md#native-qualification-refresh-2026-10-01)
+for the exact tested scopes and identities. Historical observations below retain
+their original candidate boundaries.
+
+### Earlier candidate observations
+
 The observations below come from the **2026-09-29 through 2026-10-01** qualification artifacts for
 Microsoft 365 **16.0.20326.20158 x64**. The `office-final`, `monaco-save`,
 `monaco-privacy`, `ui-native-startup`, `ui-native-placement` and `outlook` runs used
