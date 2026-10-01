@@ -42,6 +42,7 @@ namespace VBAi.Tests.Integration
                 object application = Marshal.GetActiveObject("Word.Application");
                 object document = null, projectObject = null, variables = null, markerVariable = null;
                 int? originalSecurity = null;
+                VbaTestWordValuesHost.OwnedTarget target = null;
                 try
                 {
                     document = ((dynamic)application).ActiveDocument;
@@ -56,7 +57,7 @@ namespace VBAi.Tests.Integration
                     ((dynamic)application).AutomationSecurity = 2;
                     Assert.AreEqual(2, Convert.ToInt32(((dynamic)application).AutomationSecurity));
 
-                    var target = host.ResolveTarget(projectObject, fixture.DocumentPath);
+                    target = (VbaTestWordValuesHost.OwnedTarget)host.ResolveTarget(projectObject, fixture.DocumentPath);
                     string procedure = argumentCount == 0 ? "ReadZero" : "ReadTwo";
                     int matchingModules = 0;
                     foreach (var loaded in fixture.Items("list_projects"))
@@ -97,7 +98,10 @@ namespace VBAi.Tests.Integration
                             ((dynamic)application).AutomationSecurity = originalSecurity.Value;
                     }
                     finally {
-                        foreach (var item in new[] { markerVariable, variables, projectObject, document, application })
+                        target?.Dispose();
+                        var context = new[] { markerVariable, variables, projectObject, document, application };
+                        if (fixture.NativeExecutionUnsettled) VbaTestWordValuesHost.RetainAcquired(context);
+                        else foreach (var item in context)
                             if (item != null && Marshal.IsComObject(item)) Marshal.ReleaseComObject(item);
                     }
                 }

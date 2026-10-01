@@ -10,6 +10,72 @@ namespace VBAi.Tests.Unit
     public sealed partial class VbeTestExplorerServiceTests
     {
         [STATestMethod]
+        public void CoverageRuntimeWordLeasesReleaseKnownAndRetainUncertainCompletion()
+        {
+            foreach (string outcome in new[] { "passed", "predispatch", "unknown" })
+            using (var fixture = new Fixture())
+            using (var leases = new ServiceWordLeaseRecorder())
+            {
+                fixture.Host.TargetFactory = leases.Acquire;
+                var catalog = fixture.Catalog();
+                var method = typeof(VbeTestExplorerService).GetMethod("InvokeCoverageFunction", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                int checks = 0;
+                Action guard = () => { if (outcome == "predispatch" && ++checks == 2) throw new InvalidOperationException("Pre-dispatch authority revoked"); };
+                if (outcome == "passed")
+                {
+                    // The fake transport rejects the runtime module: use an explicit returned-value host.
+                    fixture.Service.Host = new CoverageLeaseHost(leases, false);
+                    Assert.AreEqual(true, method.Invoke(fixture.Service, new object[] { fixture.Service, catalog, VbaCoverageInstrumentation.ResetProcedure, guard }));
+                    Assert.AreEqual(1, leases.Released);
+                }
+                else
+                {
+                    fixture.Service.Host = new CoverageLeaseHost(leases, true);
+                    var failure = Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => method.Invoke(fixture.Service,
+                        new object[] { fixture.Service, catalog, VbaCoverageInstrumentation.ResetProcedure, guard }));
+                    Assert.AreEqual(outcome == "unknown", failure.InnerException is VbaTestInvocationException error && error.Uncertain);
+                    Assert.AreEqual(outcome == "unknown" ? 0 : 1, leases.Released);
+                    Assert.AreEqual(outcome == "unknown", leases.Targets.Single().IsRetained);
+                }
+            }
+        }
+
+        [STATestMethod]
+        public void WordCoverageAvailabilityDisposesItsDocumentForSavedRefusedAndInvalidState()
+        {
+            foreach (object saved in new object[] { true, false, "invalid" })
+            using (var fixture = new Fixture())
+            using (var leases = new ServiceWordLeaseRecorder())
+            {
+                fixture.Project.FileName = @"C:\Temp\Original.docm";
+                var application = new VbaTestWordValuesHostTests.Application();
+                var document = new VbaTestWordValuesHostTests.Document { Application = application,
+                    FullName = fixture.Project.FileName, VBProject = fixture.Project, Saved = saved };
+                application.Documents.Add(document); leases.RegisterDocument(document);
+                fixture.Service.Host = new VbaTestWordValuesHost {
+                    ReadProcessName = () => "WINWORD", ReadProcessId = () => 123,
+                    ReadActiveApplication = _ => application, ReadWindowOwner = _ => 123,
+                    ReadDocumentItem = (documents, index) => ((VbaTestWordValuesHostTests.Documents)documents)[index - 1] };
+                string reason = fixture.Service.CoverageUnavailableReason(fixture.Catalog());
+                Assert.AreEqual(saved is bool value && value, reason == null);
+                Assert.AreEqual(1, leases.Released, "The availability target must be disposed even for an early return or Saved conversion failure.");
+                Assert.AreEqual(0, fixture.Host.Invocations);
+            }
+        }
+        private sealed class CoverageLeaseHost : VbeDebug.IProcedureValuesHost
+        {
+            private readonly ServiceWordLeaseRecorder leases;
+            private readonly bool fail;
+            internal CoverageLeaseHost(ServiceWordLeaseRecorder leases, bool fail) { this.leases = leases; this.fail = fail; }
+            public object ResolveTarget(object project, string expectedHostPath) => leases.Acquire(project);
+            public object Invoke(object target, string module, string procedure, object[] arguments)
+            {
+                Assert.AreEqual(VbaCoverageInstrumentation.ModuleName, module);
+                if (fail) throw new InvalidOperationException("Native completion lost");
+                return true;
+            }
+        }
+        [STATestMethod]
         public void CoverageRejectsUnsupportedDocumentFormatBeforeCreatingOrInvokingACopy()
         {
             using (var fixture = new Fixture())

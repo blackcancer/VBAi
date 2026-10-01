@@ -327,6 +327,174 @@ namespace VBAi.Tests.Unit
             }
         }
 
+        [TestMethod]
+        public void NativeTargetOwnsEachAcquisitionAndDisposesOnlyOnce()
+        {
+            WithTrackedComReleases(released =>
+            {
+                using (var f = new Fixture(ownsApplication: true))
+                {
+                    var target = (VbaTestWordValuesHost.OwnedTarget)f.Resolve();
+                    released.Clear();
+                    f.Host.ValidateTarget(target);
+                    Assert.AreEqual(1, CountIdentity(released, f.Application), "Validation balances its temporary ROT acquisition.");
+                    Assert.AreEqual(1, CountIdentity(released, f.Source), "Validation balances its document index acquisition.");
+                    released.Clear();
+                    target.Dispose(); target.Dispose(); target.RetainOnUncertain();
+                    Assert.AreEqual(1, CountIdentity(released, f.Source));
+                    Assert.AreEqual(1, CountIdentity(released, f.Application));
+                    Assert.AreEqual(0, CountIdentity(released, f.Source.VBProject), "The supplied project is borrowed.");
+                    Assert.IsNull(target.Application); Assert.IsNull(target.Document); Assert.IsNull(target.Project);
+                    Assert.IsFalse(target.IsRetained);
+                    int reads = f.Reads;
+                    Assert.ThrowsException<InvalidOperationException>(() => f.Host.ValidateTarget(target));
+                    Assert.AreEqual(reads, f.Reads, "A released target cannot acquire more COM references.");
+                    var empty = new VbaTestWordValuesHost.OwnedTarget { Owner = f.Host };
+                    empty.Dispose(); empty.Dispose();
+                }
+                using (var f = new Fixture())
+                {
+                    var target = (VbaTestWordValuesHost.OwnedTarget)f.Resolve();
+                    released.Clear(); target.Dispose();
+                    Assert.AreEqual(1, CountIdentity(released, f.Source));
+                    Assert.AreEqual(0, CountIdentity(released, f.Application), "An injected application remains borrowed.");
+                }
+            });
+        }
+
+        [TestMethod]
+        public void NativeApplicationLeaseBalancesRefusalsAndBorrowedOverrides()
+        {
+            WithTrackedComReleases(released =>
+            {
+                using (var f = new Fixture(ownsApplication: true))
+                {
+                    f.Application.AutomationSecurity = 3;
+                    Assert.ThrowsException<InvalidOperationException>(() => f.Resolve());
+                    Assert.AreEqual(1, CountIdentity(released, f.Application));
+                    f.Application.AutomationSecurity = 2;
+                    released.Clear();
+                    Assert.ThrowsException<InvalidOperationException>(() => f.Host.ResolveTarget(new object(), f.Source.FullName));
+                    Assert.AreEqual(1, CountIdentity(released, f.Application));
+                    var target = (VbaTestWordValuesHost.OwnedTarget)f.Resolve();
+                    released.Clear();
+                    f.Host.SameIdentity = (left, right) => false;
+                    Assert.ThrowsException<InvalidOperationException>(() => f.Host.ValidateTarget(target));
+                    Assert.AreEqual(1, CountIdentity(released, f.Application));
+                    f.Host.SameIdentity = ReferenceEquals;
+                    f.Application.Documents.Clear();
+                    released.Clear();
+                    Assert.ThrowsException<InvalidOperationException>(() => f.Host.ValidateTarget(target));
+                    Assert.AreEqual(1, CountIdentity(released, f.Application));
+                    target.Dispose();
+                    f.Host.ReadActiveApplication = _ => f.Application;
+                    using (var lease = f.Host.ResolveApplicationLease())
+                    {
+                        Assert.AreSame(f.Application, lease.Application);
+                        released.Clear(); lease.Dispose(); lease.Dispose(); lease.RetainOnUncertain();
+                        Assert.AreEqual(0, CountIdentity(released, f.Application));
+                        Assert.IsNull(lease.Application);
+                    }
+                }
+            });
+        }
+
+        [TestMethod]
+        public void TargetAndApplicationDisposalRefuseForeignThreadsWithoutReleasing()
+        {
+            WithTrackedComReleases(released =>
+            {
+                using (var f = new Fixture(ownsApplication: true))
+                {
+                    var target = (VbaTestWordValuesHost.OwnedTarget)f.Resolve();
+                    var lease = f.Host.ResolveApplicationLease();
+                    released.Clear();
+                    Exception targetError = null, leaseError = null;
+                    var thread = new Thread(() =>
+                    {
+                        try { target.Dispose(); } catch (Exception error) { targetError = error; }
+                        try { lease.Dispose(); } catch (Exception error) { leaseError = error; }
+                    });
+                    thread.Start(); thread.Join();
+                    Assert.IsInstanceOfType(targetError, typeof(InvalidOperationException));
+                    Assert.IsInstanceOfType(leaseError, typeof(InvalidOperationException));
+                    Assert.AreEqual(0, released.Count);
+                    target.Dispose(); lease.Dispose();
+                    Assert.AreEqual(2, CountIdentity(released, f.Application));
+                    Assert.AreEqual(1, CountIdentity(released, f.Source));
+                }
+            });
+        }
+
+        [TestMethod]
+        public void UncertainInvocationRetainsTargetAndPreventsFurtherNativeDispatch()
+        {
+            WithTrackedComReleases(released =>
+            {
+                using (var f = new Fixture(ownsApplication: true))
+                {
+                    var target = (VbaTestWordValuesHost.OwnedTarget)f.Resolve();
+                    int attempts = 0;
+                    f.Host.RunProcedure = (application, macro, arguments) => { attempts++; throw new InvalidOperationException("Unknown native outcome"); };
+                    Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => f.Host.Invoke(target, "Support", "Run", null)).Uncertain);
+                    Assert.IsTrue(target.IsRetained);
+                    released.Clear();
+                    target.Dispose(); target.Dispose(); target.RetainOnUncertain();
+                    Assert.AreEqual(0, released.Count, "Unknown native targets must retain their application and document acquisitions.");
+                    Assert.AreSame(f.Application, target.Application); Assert.AreSame(f.Source, target.Document); Assert.AreSame(f.Source.VBProject, target.Project);
+                    Assert.ThrowsException<InvalidOperationException>(() => f.Host.Invoke(target, "Support", "Run", null));
+                    Assert.AreEqual(1, attempts);
+                    using (var lease = f.Host.ResolveApplicationLease())
+                    {
+                        released.Clear(); lease.RetainOnUncertain(); lease.RetainOnUncertain(); lease.Dispose();
+                        Assert.AreEqual(0, released.Count, "Unknown close verification retains its temporary application lease.");
+                        Assert.AreSame(f.Application, lease.Application);
+                    }
+                }
+                VbaTestWordValuesHost.RetainAcquired(null);
+            });
+        }
+
+        [TestMethod]
+        public void DocumentReleaseFailureStillBalancesApplicationWithoutRepeatingEitherRelease()
+        {
+            WithTrackedComReleases(released =>
+            {
+                using (var f = new Fixture(ownsApplication: true))
+                {
+                    var target = (VbaTestWordValuesHost.OwnedTarget)f.Resolve();
+                    released.Clear();
+                    VbaTestWordValuesHost.ReleaseComReference = value =>
+                    {
+                        released.Add(value);
+                        if (ReferenceEquals(value, f.Source)) throw new InvalidOperationException("Document release failed");
+                        return 0;
+                    };
+                    Assert.ThrowsException<InvalidOperationException>(() => target.Dispose());
+                    target.Dispose();
+                    Assert.AreEqual(1, CountIdentity(released, f.Source));
+                    Assert.AreEqual(1, CountIdentity(released, f.Application));
+                }
+            });
+        }
+
+        private static int CountIdentity(List<object> values, object expected)
+        { return values.FindAll(value => ReferenceEquals(value, expected)).Count; }
+
+        private static void WithTrackedComReleases(Action<List<object>> test)
+        {
+            var previousCheck = VbaTestWordValuesHost.IsComReference;
+            var previousRelease = VbaTestWordValuesHost.ReleaseComReference;
+            var released = new List<object>();
+            try
+            {
+                VbaTestWordValuesHost.IsComReference = value => true;
+                VbaTestWordValuesHost.ReleaseComReference = value => { released.Add(value); return 0; };
+                test(released);
+            }
+            finally { VbaTestWordValuesHost.IsComReference = previousCheck; VbaTestWordValuesHost.ReleaseComReference = previousRelease; }
+        }
+
         private sealed class ApplicationProxy : System.Runtime.Remoting.Proxies.RealProxy
         {
             internal string Macro;
@@ -415,10 +583,13 @@ namespace VBAi.Tests.Unit
             internal readonly string Folder = Path.Combine(Path.GetTempPath(), "VBAi-Word-" + Guid.NewGuid().ToString("N"));
             internal readonly Application Application = new Application();
             internal readonly Document Source;
-            internal readonly VbaTestWordValuesHost Host = new VbaTestWordValuesHost();
+            internal readonly VbaTestWordValuesHost Host;
             internal int Reads;
-            internal Fixture(string extension = ".docm")
+            internal Fixture(string extension = ".docm", bool ownsApplication = false)
             {
+                Func<string, object> reader = progId => { Reads++; Assert.AreEqual("Word.Application", progId); return Application; };
+                Host = ownsApplication ? new VbaTestWordValuesHost(reader) : new VbaTestWordValuesHost();
+                if (!ownsApplication) Host.ReadActiveApplication = reader;
                 Directory.CreateDirectory(Folder);
                 Source = new Document { FullName = Path.Combine(Folder, "Original" + extension), Application = Application };
                 File.WriteAllText(Source.FullName, "Saved Word fixture bytes");
@@ -427,7 +598,6 @@ namespace VBAi.Tests.Unit
                 Host.ReadDocumentItem = (documents, index) => ((Documents)documents)[index - 1];
                 Host.ReadProcessName = () => "WINWORD"; Host.ReadProcessId = () => 123;
                 Host.ReadWindowOwner = hwnd => { Assert.AreEqual(new IntPtr(99), hwnd); return 123; };
-                Host.ReadActiveApplication = progId => { Reads++; Assert.AreEqual("Word.Application", progId); return Application; };
                 Host.RunProcedure = (application, macro, arguments) =>
                 {
                     Assert.AreSame(Application, application);

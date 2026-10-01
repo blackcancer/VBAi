@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -12,7 +13,9 @@ namespace VBAi
     {
         internal Func<string> ReadProcessName = () => { using (var process = Process.GetCurrentProcess()) return process.ProcessName; };
         internal Func<int> ReadProcessId = () => { using (var process = Process.GetCurrentProcess()) return process.Id; };
-        internal Func<string, object> ReadActiveApplication = Marshal.GetActiveObject;
+        internal Func<string, object> ReadActiveApplication;
+        private readonly Func<string, object> nativeApplicationReader;
+        private static readonly ConcurrentBag<object> retainedReferences = new ConcurrentBag<object>();
         internal Func<IntPtr, uint> ReadWindowOwner = hwnd => { uint owner; VbeDebugWindows.GetWindowThreadProcessId(hwnd, out owner); return owner; };
         internal Func<object, object, bool> SameIdentity = (first, second) => ReferenceEquals(first, second) || VbeDebug.NativeProcedureValuesHost.SameComIdentity(first, second);
         internal Func<object, int, object> ReadDocumentItem = (documents, index) => ((dynamic)documents)[index];
@@ -23,20 +26,89 @@ namespace VBAi
         private readonly int ownerThread = Thread.CurrentThread.ManagedThreadId;
         private static readonly Regex Identifier = new Regex(@"\A\p{L}[\p{L}\p{N}_]{0,254}\z", RegexOptions.CultureInvariant);
 
-        internal sealed class OwnedTarget
+        internal VbaTestWordValuesHost() : this(Marshal.GetActiveObject) { }
+
+        // The stable native resolver identifies acquisitions owned by this transport.
+        // Replacing ReadActiveApplication injects a borrowed application instead.
+        internal VbaTestWordValuesHost(Func<string, object> nativeApplicationReader)
+        {
+            this.nativeApplicationReader = nativeApplicationReader;
+            ReadActiveApplication = nativeApplicationReader;
+        }
+
+        internal sealed class ApplicationLease : IDisposable
+        {
+            private readonly VbaTestWordValuesHost owner;
+            private readonly bool acquired;
+            private bool disposed, retained;
+            internal object Application { get; private set; }
+            internal ApplicationLease(VbaTestWordValuesHost owner, object application, bool acquired)
+            { this.owner = owner; Application = application; this.acquired = acquired; }
+            internal void RetainOnUncertain()
+            {
+                owner.RequireOwner();
+                if (disposed || retained) return;
+                retained = true;
+                RetainAcquired(this);
+            }
+            public void Dispose()
+            {
+                owner.RequireOwner();
+                if (disposed || retained) return;
+                disposed = true;
+                object application = Application;
+                Application = null;
+                if (acquired) ReleaseAcquired(application);
+            }
+        }
+
+        internal sealed class OwnedTarget : IDisposable
         {
             internal VbaTestWordValuesHost Owner;
             internal object Application, Document, Project;
             internal string Path;
+            internal ApplicationLease ApplicationOwnership;
+            private bool disposed;
+            internal bool IsRetained { get; private set; }
+            internal void RequireUsable()
+            {
+                if (disposed || IsRetained)
+                    throw new InvalidOperationException("The Word target has been released or retained after an uncertain operation.");
+            }
+            internal void RetainOnUncertain()
+            {
+                Owner.RequireOwner();
+                if (disposed || IsRetained) return;
+                IsRetained = true;
+                RetainAcquired(this);
+            }
+            public void Dispose()
+            {
+                Owner.RequireOwner();
+                if (disposed || IsRetained) return;
+                disposed = true;
+                object document = Document;
+                var application = ApplicationOwnership;
+                Application = Document = Project = null;
+                ApplicationOwnership = null;
+                try { ReleaseAcquired(document); }
+                finally { application?.Dispose(); }
+            }
         }
 
         public object ResolveTarget(object project, string expectedHostPath)
         {
             RequireOwner(); RequireAbsolutePath(expectedHostPath);
             if (project == null) throw new InvalidOperationException("An exact Word project is required.");
-            object application = ResolveApplication();
-            return new OwnedTarget { Owner = this, Application = application, Document = FindDocument(application, project, expectedHostPath),
-                Project = project, Path = Path.GetFullPath(expectedHostPath) };
+            string normalizedPath = Path.GetFullPath(expectedHostPath);
+            var application = ResolveApplicationLease();
+            try
+            {
+                return new OwnedTarget { Owner = this, Application = application.Application,
+                    Document = FindDocument(application.Application, project, normalizedPath),
+                    Project = project, Path = normalizedPath, ApplicationOwnership = application };
+            }
+            catch { application.Dispose(); throw; }
         }
 
         public object Invoke(object target, string module, string procedure, object[] arguments)
@@ -74,7 +146,7 @@ namespace VBAi
                 return RunProcedure(owned.Application, module + "." + procedure, arguments);
             }
             catch (Exception error)
-            { throw new VbaTestInvocationException("Word activation or macro completion is uncertain; no retry was attempted. " + error.Message, true, error); }
+            { owned.RetainOnUncertain(); throw new VbaTestInvocationException("Word activation or macro completion is uncertain; no retry was attempted. " + error.Message, true, error); }
         }
 
         internal OwnedTarget ValidateTarget(object target)
@@ -82,30 +154,38 @@ namespace VBAi
             RequireOwner();
             var owned = target as OwnedTarget;
             if (owned == null || !ReferenceEquals(owned.Owner, this)) throw new InvalidOperationException("An owned Word target is required.");
-            object application = ResolveApplication();
-            if (!SameIdentity(application, owned.Application)) throw new InvalidOperationException("The owned Word application identity changed.");
-            object document = FindDocument(application, owned.Project, owned.Path);
-            try
+            owned.RequireUsable();
+            using (var application = ResolveApplicationLease())
             {
-                if (!SameIdentity(document, owned.Document))
-                    throw new InvalidOperationException("The owned Word document identity changed.");
+                if (!SameIdentity(application.Application, owned.Application)) throw new InvalidOperationException("The owned Word application identity changed.");
+                object document = FindDocument(application.Application, owned.Project, owned.Path);
+                try
+                {
+                    if (!SameIdentity(document, owned.Document))
+                        throw new InvalidOperationException("The owned Word document identity changed.");
+                }
+                finally { ReleaseAcquired(document); }
             }
-            finally { ReleaseAcquired(document); }
             return owned;
         }
 
-        internal object ResolveApplication()
+        internal ApplicationLease ResolveApplicationLease()
         {
             RequireOwner();
             if (!string.Equals(ReadProcessName(), "WINWORD", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("Word returned values require the in-process WINWORD host.");
-            object application = ReadActiveApplication("Word.Application");
-            if (ReadWindowOwner(ReadApplicationWindow(application)) != (uint)ReadProcessId())
-                throw new InvalidOperationException("The registered Word application belongs to another PID.");
-            // Respect the host policy before dispatch or opening an instrumented coverage copy.
-            if (Convert.ToInt32(((dynamic)application).AutomationSecurity) == 3)
-                throw new InvalidOperationException("Word AutomationSecurity is ForceDisable; returned VBA values and coverage copies cannot execute under the current host policy.");
-            return application;
+            bool acquired = ReferenceEquals(ReadActiveApplication, nativeApplicationReader);
+            var lease = new ApplicationLease(this, ReadActiveApplication("Word.Application"), acquired);
+            try
+            {
+                if (ReadWindowOwner(ReadApplicationWindow(lease.Application)) != (uint)ReadProcessId())
+                    throw new InvalidOperationException("The registered Word application belongs to another PID.");
+                // Respect the host policy before dispatch or opening an instrumented coverage copy.
+                if (Convert.ToInt32(((dynamic)lease.Application).AutomationSecurity) == 3)
+                    throw new InvalidOperationException("Word AutomationSecurity is ForceDisable; returned VBA values and coverage copies cannot execute under the current host policy.");
+                return lease;
+            }
+            catch { lease.Dispose(); throw; }
         }
 
         /// <summary>Reads Word's active document Window.Hwnd without activating or creating a window.</summary>
@@ -131,7 +211,12 @@ namespace VBAi
             return count;
         }
 
-        private static void ReleaseAcquired(object value)
+        internal static void RetainAcquired(object value)
+        {
+            if (value != null) retainedReferences.Add(value);
+        }
+
+        internal static void ReleaseAcquired(object value)
         {
             // Balance this getter/indexer acquisition once, even when its RCW aliases a borrowed target.
             if (value != null && IsComReference(value)) ReleaseComReference(value);

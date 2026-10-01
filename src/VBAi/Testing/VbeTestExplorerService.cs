@@ -185,7 +185,7 @@ namespace VBAi
                 if (support == null) return "Review and install the project-local test support module before running tests.";
                 if (Canonical(support.Source) != Canonical(VbaTestRuntimeSource.Generate(catalog))) return "The test support module is outdated or changed. Review its update before running tests.";
                 Validate(catalog);
-                if (returnedValues) Host.ResolveTarget(ResolveLive(catalog.Project.Id), catalog.Project.HostPath);
+                if (returnedValues) ReleaseReturnedTarget(Host.ResolveTarget(ResolveLive(catalog.Project.Id), catalog.Project.HostPath), false);
                 else
                 {
                     string registration = NativeRuntimeReason();
@@ -220,13 +220,14 @@ namespace VBAi
             dispatcher.BeginInvoke(new Action(() => {
                 if (completion.Task.IsCompleted) return;
                 bool invoked = false;
+                object target = null;
                 try
                 {
                     entry.ExecutionGuard?.Invoke();
                     Validate(catalog);
                     string reason = ExecutionUnavailableReason(catalog);
                     if (reason != null) throw new VbaTestInvocationException(reason, false);
-                    object target = Host.ResolveTarget(ResolveLive(catalog.Project.Id), catalog.Project.HostPath);
+                    target = Host.ResolveTarget(ResolveLive(catalog.Project.Id), catalog.Project.HostPath);
                     Validate(catalog);
                     entry.ExecutionGuard?.Invoke();
                     if (entry.Stop.IsCancellationRequested && phase != "TestCleanup" && phase != "ModuleCleanup")
@@ -236,18 +237,30 @@ namespace VBAi
                     object returned = Host.Invoke(target, VbaTestRuntimeSource.ModuleName, VbaTestRuntimeSource.DispatcherProcedure, new object[] { procedure.Module, procedure.Procedure });
                     var result = VbaTestRuntimeSource.Decode(procedure, returned);
                     result.Phase = phase;
+                    ReleaseReturnedTarget(target, false); target = null;
                     completion.TrySetResult(result);
                 }
                 catch (Exception error)
                 {
                     if (invoked) outcomeUnknown = true;
-                    completion.TrySetException(new VbaTestInvocationException(error.Message, invoked, error));
+                    Exception failure = error;
+                    try { ReleaseReturnedTarget(target, invoked); }
+                    catch (Exception releaseError) { failure = new AggregateException(error.Message + Environment.NewLine + releaseError.Message, error, releaseError); }
+                    completion.TrySetException(new VbaTestInvocationException(failure.Message, invoked, failure));
                 }
                 finally { pendingCalls.Remove(pending); }
             }));
             return completion.Task;
         }
 
+        private static void ReleaseReturnedTarget(object target, bool uncertain)
+        {
+            if (target is VbaTestWordValuesHost.OwnedTarget word)
+            {
+                if (uncertain) word.RetainOnUncertain();
+                word.Dispose();
+            }
+        }
         public Task<VbaTestRun> RunAsync(VbaTestCatalog catalog, IReadOnlyList<VbaTestDescriptor> tests,
             Action<VbaTestResult> onResult, CancellationToken cancellation)
         { return BeginRun(catalog, tests, onResult, cancellation, null); }

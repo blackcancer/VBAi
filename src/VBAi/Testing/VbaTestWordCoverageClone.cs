@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 
@@ -10,8 +11,7 @@ namespace VBAi
     {
         internal VbaTestWordValuesHost Host = new VbaTestWordValuesHost();
         internal Action<string, string> CopySavedFile = CopyFile;
-        internal Func<object, string, object> OpenCopy = (application, path) => ((dynamic)application).Documents.Open(
-            FileName: path, ConfirmConversions: false, ReadOnly: false, AddToRecentFiles: false, Revert: false, Visible: false, OpenAndRepair: false);
+        internal Func<object, string, object> OpenCopy = OpenDocument;
         internal Action<object> CloseCopy = document => ((dynamic)document).Close(SaveChanges: 0);
 
         internal static VbaTestCoverageClone CreateWord(object project, string sourcePath, string folder)
@@ -19,69 +19,183 @@ namespace VBAi
 
         internal VbaTestCoverageClone Create(object project, string sourcePath, string folder)
         {
-            var source = (VbaTestWordValuesHost.OwnedTarget)Host.ResolveTarget(project, sourcePath);
-            RequireSaved(source.Document);
-            string extension = Path.GetExtension(sourcePath).ToLowerInvariant();
-            if (!new[] { ".docm", ".dotm", ".doc", ".dot" }.Contains(extension))
-                throw new InvalidOperationException("Word coverage requires a saved DOCM, DOTM, DOC or DOT file.");
-            VbaTestWordValuesHost.RequireAbsolutePath(folder);
-            string copyPath = Path.Combine(Path.GetFullPath(folder), "coverage" + extension);
-            if (VbaTestWordValuesHost.SamePath(copyPath, sourcePath) || File.Exists(copyPath))
-                throw new InvalidOperationException("The owned Word copy path is already occupied.");
-            if (Directory.Exists(folder)) throw new InvalidOperationException("Word coverage requires a new unique output directory.");
-            foreach (dynamic document in ((dynamic)source.Application).Documents)
-                if (VbaTestWordValuesHost.SamePath((string)document.FullName, copyPath))
-                    throw new InvalidOperationException("The Word copy path already belongs to an open document.");
-            Host.ValidateTarget(source);
-            RequireSaved(source.Document);
-            Directory.CreateDirectory(folder);
-            // Word retains a writer handle: share it, then protect and verify the saved bytes during copying.
-            // Unsaved VBA changes are rejected by the service's full source/reference comparison.
-            try { CopySavedFile(source.Path, copyPath); }
-            catch (Exception error) { throw Uncertain("Copying the saved Word file", copyPath, error); }
-            try { Host.ValidateTarget(source); RequireSaved(source.Document); }
-            catch (Exception error) { throw Uncertain("Verifying the original Word document after copying", copyPath, error); }
-            object copy;
-            // Word AutoOpen/Document_Open and application events may run here. No security,
-            // trust, EnableEvents or DisableAutoMacros settings are changed by this provider.
-            try { copy = OpenCopy(source.Application, copyPath); }
-            catch (Exception error) { throw Uncertain("Opening the Word copy", copyPath, error); }
+            var references = new CloneReferences();
+            bool transferred = false;
             try
             {
-                if (copy == null || Host.SameIdentity(copy, source.Document)
-                    || Host.SameIdentity((object)((dynamic)copy).VBProject, source.Project)
-                    || !VbaTestWordValuesHost.SamePath((string)((dynamic)copy).FullName, copyPath))
-                    throw new InvalidOperationException("The opened Word coverage document is not a verified distinct owned copy. It was not closed.");
-                var ownedCopy = (VbaTestWordValuesHost.OwnedTarget)Host.ResolveTarget((object)((dynamic)copy).VBProject, copyPath);
-                if (!Host.SameIdentity(ownedCopy.Document, copy)) throw new InvalidOperationException("The Word copy identity could not be verified. It was not closed.");
+                var source = references.Source = (VbaTestWordValuesHost.OwnedTarget)Host.ResolveTarget(project, sourcePath);
+                RequireSaved(source.Document);
+                string extension = Path.GetExtension(sourcePath).ToLowerInvariant();
+                if (!new[] { ".docm", ".dotm", ".doc", ".dot" }.Contains(extension))
+                    throw new InvalidOperationException("Word coverage requires a saved DOCM, DOTM, DOC or DOT file.");
+                VbaTestWordValuesHost.RequireAbsolutePath(folder);
+                string copyPath = Path.Combine(Path.GetFullPath(folder), "coverage" + extension);
+                if (VbaTestWordValuesHost.SamePath(copyPath, sourcePath) || File.Exists(copyPath))
+                    throw new InvalidOperationException("The owned Word copy path is already occupied.");
+                if (Directory.Exists(folder)) throw new InvalidOperationException("Word coverage requires a new unique output directory.");
+                InspectDocuments(source.Application, false, document => {
+                    if (VbaTestWordValuesHost.SamePath((string)((dynamic)document).FullName, copyPath))
+                        throw new InvalidOperationException("The Word copy path already belongs to an open document.");
+                });
                 Host.ValidateTarget(source);
                 RequireSaved(source.Document);
-                return new VbaTestCoverageClone { Project = ownedCopy.Project, Path = copyPath, Close = () =>
+                Directory.CreateDirectory(folder);
+                // Word retains a writer handle: share it, then protect and verify the saved bytes during copying.
+                try { CopySavedFile(source.Path, copyPath); }
+                catch (Exception error) { throw Uncertain("Copying the saved Word file", copyPath, error); }
+                try { Host.ValidateTarget(source); RequireSaved(source.Document); }
+                catch (Exception error) { throw Uncertain("Verifying the original Word document after copying", copyPath, error); }
+                // Word document events may execute here; host security and trust remain unchanged.
+                try { references.OpenedDocument = OpenCopy(source.Application, copyPath); }
+                catch (Exception error) { throw Uncertain("Opening the Word copy", copyPath, error); }
+                try
                 {
-                    var current = Host.ValidateTarget(ownedCopy);
-                    if (Host.SameIdentity(current.Document, source.Document) || Host.SameIdentity(current.Project, source.Project))
-                        throw new InvalidOperationException("Closing the original Word document is forbidden.");
-                    try
-                    {
-                        CloseCopy(current.Document);
-                        Host.RequireOwner();
-                        object application = Host.ResolveApplication();
-                        if (!Host.SameIdentity(application, current.Application)) throw new InvalidOperationException("The Word application identity changed during close.");
-                        int count = 0;
-                        foreach (dynamic document in ((dynamic)application).Documents)
-                        {
-                            if (++count > 1000) throw new InvalidOperationException("Unexpected Word document count after close.");
-                            if (Host.SameIdentity((object)document, current.Document))
-                                throw new InvalidOperationException("The owned Word copy remains open; close may have been cancelled.");
-                        }
-                    }
-                    catch (Exception error) { throw Uncertain("Closing the owned Word copy", copyPath, error); }
-                } };
+                    object copy = references.OpenedDocument;
+                    if (copy == null || Host.SameIdentity(copy, source.Document))
+                        throw new InvalidOperationException("The opened Word coverage document is not a verified distinct owned copy. It was not closed.");
+                    references.CopyProject = ((dynamic)copy).VBProject;
+                    if (Host.SameIdentity(references.CopyProject, source.Project)
+                        || !VbaTestWordValuesHost.SamePath((string)((dynamic)copy).FullName, copyPath))
+                        throw new InvalidOperationException("The opened Word coverage document is not a verified distinct owned copy. It was not closed.");
+                    var ownedCopy = references.Copy = (VbaTestWordValuesHost.OwnedTarget)Host.ResolveTarget(references.CopyProject, copyPath);
+                    if (!Host.SameIdentity(ownedCopy.Document, copy)) throw new InvalidOperationException("The Word copy identity could not be verified. It was not closed.");
+                    Host.ValidateTarget(source);
+                    RequireSaved(source.Document);
+                    var clone = new VbaTestCoverageClone { Project = ownedCopy.Project, Path = copyPath, Close = () => CloseOwnedCopy(references, copyPath) };
+                    transferred = true;
+                    return clone;
+                }
+                catch (Exception error) { throw Uncertain("Verifying ownership after opening the Word copy", copyPath, error); }
             }
-            catch (Exception error)
-            { throw Uncertain("Verifying ownership after opening the Word copy", copyPath, error); }
+            catch (VbaTestInvocationException error)
+            {
+                if (error.Uncertain) references.Retain();
+                throw;
+            }
+            finally { if (!transferred) references.Dispose(); }
         }
 
+        private void CloseOwnedCopy(CloneReferences references, string copyPath)
+        {
+            try
+            {
+                var current = Host.ValidateTarget(references.Copy);
+                if (Host.SameIdentity(current.Document, references.Source.Document) || Host.SameIdentity(current.Project, references.Source.Project))
+                    throw new InvalidOperationException("Closing the original Word document is forbidden.");
+                try
+                {
+                    CloseCopy(current.Document);
+                    Host.RequireOwner();
+                    using (var application = Host.ResolveApplicationLease())
+                    {
+                        try
+                        {
+                            if (!Host.SameIdentity(application.Application, current.Application)) throw new InvalidOperationException("The Word application identity changed during close.");
+                            InspectDocuments(application.Application, true, document => {
+                                if (Host.SameIdentity(document, current.Document))
+                                    throw new InvalidOperationException("The owned Word copy remains open; close may have been cancelled.");
+                            });
+                        }
+                        catch { application.RetainOnUncertain(); throw; }
+                    }
+                }
+                catch (Exception error) { throw Uncertain("Closing the owned Word copy", copyPath, error); }
+                // The copied project remains leased until both Close and absence are verified.
+                references.Dispose();
+            }
+            catch { references.Retain(); throw; }
+        }
+
+        private void InspectDocuments(object application, bool retainOnFailure, Action<object> inspect)
+        {
+            var acquired = new List<object>();
+            bool failed = false;
+            try
+            {
+                object documents = ((dynamic)application).Documents;
+                acquired.Add(documents);
+                int count = (int)((dynamic)documents).Count;
+                if (count < 0 || count > 1000) throw new InvalidOperationException("Unexpected Word document count.");
+                for (int index = 1; index <= count; index++)
+                {
+                    object document = Host.ReadDocumentItem(documents, index);
+                    acquired.Add(document);
+                    inspect(document);
+                }
+            }
+            catch { failed = retainOnFailure; throw; }
+            finally
+            {
+                try
+                {
+                    for (int index = acquired.Count - 1; index >= 0; index--)
+                        if (failed) VbaTestWordValuesHost.RetainAcquired(acquired[index]);
+                        else VbaTestWordValuesHost.ReleaseAcquired(acquired[index]);
+                }
+                catch { VbaTestWordValuesHost.RetainAcquired(acquired); throw; }
+            }
+        }
+
+        private static object OpenDocument(object application, string path)
+        {
+            object documents = ((dynamic)application).Documents;
+            bool uncertain = false;
+            object opened = null;
+            try
+            {
+                opened = ((dynamic)documents).Open(FileName: path, ConfirmConversions: false, ReadOnly: false,
+                    AddToRecentFiles: false, Revert: false, Visible: false, OpenAndRepair: false);
+                return opened;
+            }
+            catch { uncertain = true; throw; }
+            finally
+            {
+                if (uncertain) VbaTestWordValuesHost.RetainAcquired(documents);
+                else
+                {
+                    try { VbaTestWordValuesHost.ReleaseAcquired(documents); }
+                    catch { VbaTestWordValuesHost.RetainAcquired(opened); VbaTestWordValuesHost.RetainAcquired(documents); throw; }
+                }
+            }
+        }
+
+        private sealed class CloneReferences : IDisposable
+        {
+            internal VbaTestWordValuesHost.OwnedTarget Source, Copy;
+            internal object OpenedDocument, CopyProject;
+            private bool retained, disposed;
+            internal void Retain()
+            {
+                if (retained) return;
+                retained = true;
+                Source?.RetainOnUncertain();
+                Copy?.RetainOnUncertain();
+                VbaTestWordValuesHost.RetainAcquired(this);
+            }
+            private static void ReleaseOnce(ref object reference)
+            {
+                object acquired = reference;
+                reference = null;
+                try { VbaTestWordValuesHost.ReleaseAcquired(acquired); }
+                catch { VbaTestWordValuesHost.RetainAcquired(acquired); throw; }
+            }
+            public void Dispose()
+            {
+                if (retained || disposed) return;
+                disposed = true;
+                try { Copy?.Dispose(); }
+                finally
+                {
+                    try { ReleaseOnce(ref CopyProject); }
+                    finally
+                    {
+                        try { ReleaseOnce(ref OpenedDocument); }
+                        finally { Source?.Dispose(); }
+                    }
+                }
+                Copy = null; Source = null; CopyProject = null; OpenedDocument = null;
+            }
+        }
         private static void CopyFile(string source, string destination)
         { CopyFile(source, destination, null); }
 

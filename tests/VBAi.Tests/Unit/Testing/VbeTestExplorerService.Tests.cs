@@ -11,9 +11,85 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
-    [TestClass, TestCategory("Unit")]
+    [TestClass, TestCategory("Unit"), DoNotParallelize]
     public sealed partial class VbeTestExplorerServiceTests
     {
+        [STATestMethod]
+        public void ReturnedWordValidationAndDispatchBalanceKnownLeasesAndRetainUnknown()
+        {
+            foreach (string outcome in new[] { "passed", "predispatch", "unknown" })
+            using (var fixture = new Fixture())
+            using (var leases = new ServiceWordLeaseRecorder())
+            {
+                fixture.InstallFixtureSupport();
+                fixture.Host.TargetFactory = leases.Acquire;
+                Assert.IsNull(fixture.Service.ExecutionUnavailableReason(fixture.Catalog()));
+                Assert.AreEqual(leases.Targets.Count, leases.Released);
+                if (outcome == "predispatch") fixture.Host.Resolving = count => {
+                    if (count == 4) fixture.Project.Mode = 1;
+                };
+                fixture.Host.ThrowOnInvoke = outcome == "unknown";
+                var catalog = fixture.Catalog();
+                var run = Pump(fixture.Service.RunAsync(catalog, new[] { catalog.Tests.First() }, null, CancellationToken.None));
+                if (outcome == "unknown")
+                {
+                    Assert.IsTrue(run.OutcomeUnknown);
+                    Assert.AreEqual(1, leases.Targets.Count(target => target.IsRetained));
+                    Assert.AreEqual(leases.Targets.Count - 1, leases.Released);
+                    var retained = leases.Targets.Single(target => target.IsRetained);
+                    retained.Dispose(); Assert.IsNotNull(retained.Document);
+                }
+                else
+                {
+                    Assert.IsFalse(run.OutcomeUnknown);
+                    Assert.AreEqual(leases.Targets.Count, leases.Released);
+                    Assert.IsTrue(leases.Targets.All(target => target.Document == null));
+                }
+                Assert.AreEqual(outcome == "predispatch" ? 0 : 1, fixture.Host.Invocations);
+            }
+        }
+
+        [STATestMethod]
+        public void ReturnedWordReleaseFailureBeforeDispatchSettlesTheRunWithoutNativeRetry()
+        {
+            using (var fixture = new Fixture())
+            using (var leases = new ServiceWordLeaseRecorder())
+            {
+                fixture.InstallFixtureSupport();
+                fixture.Host.TargetFactory = leases.Acquire;
+                fixture.Host.Resolving = count => { if (count == 3) fixture.Project.Mode = 1; };
+                leases.ThrowOnRelease = 3;
+                var catalog = fixture.Catalog();
+                var run = Pump(fixture.Service.RunAsync(catalog, new[] { catalog.Tests.First() }, null, CancellationToken.None));
+                Assert.IsFalse(run.OutcomeUnknown);
+                Assert.AreEqual(0, fixture.Host.Invocations);
+                Assert.AreEqual(3, leases.Released);
+                StringAssert.Contains(run.Results.Single().Message, "design mode");
+                StringAssert.Contains(run.Results.Single().Message, "Release failed");
+                Assert.AreEqual(VbaTestOutcome.Blocked, run.Results.Single().Outcome);
+            }
+        }
+        private sealed class ServiceWordLeaseRecorder : IDisposable
+        {
+            private readonly Func<object, bool> priorCheck = VbaTestWordValuesHost.IsComReference;
+            private readonly Func<object, int> priorRelease = VbaTestWordValuesHost.ReleaseComReference;
+            internal readonly List<VbaTestWordValuesHost.OwnedTarget> Targets = new List<VbaTestWordValuesHost.OwnedTarget>();
+            private readonly HashSet<object> documents = new HashSet<object>();
+            internal int Released, ThrowOnRelease;
+            internal ServiceWordLeaseRecorder()
+            {
+                VbaTestWordValuesHost.IsComReference = value => documents.Contains(value);
+                VbaTestWordValuesHost.ReleaseComReference = value => { if (++Released == ThrowOnRelease) throw new InvalidOperationException("Release failed"); return 0; };
+            }
+            internal void RegisterDocument(object document) { documents.Add(document); }
+            internal object Acquire(object project)
+            {
+                var document = new VbaTestWordValuesHostTests.Document(); documents.Add(document);
+                var target = new VbaTestWordValuesHost.OwnedTarget { Owner = new VbaTestWordValuesHost(), Document = document, Project = project };
+                Targets.Add(target); return target;
+            }
+            public void Dispose() { VbaTestWordValuesHost.IsComReference = priorCheck; VbaTestWordValuesHost.ReleaseComReference = priorRelease; }
+        }
         [STATestMethod]
         public void ProjectIdentityIsStableAndAmbiguousNamesRequireExactPaths()
         {
@@ -1109,8 +1185,9 @@ namespace VBAi.Tests.Unit
             internal int Resolutions, Invocations;
             internal Action<int> Resolving;
             internal bool ThrowOnInvoke;
+            internal Func<object, object> TargetFactory;
             internal object Returned = new object[] { "Passed", "", "0" };
-            public object ResolveTarget(object project, string expectedHostPath) { Resolutions++; Resolving?.Invoke(Resolutions); return project; }
+            public object ResolveTarget(object project, string expectedHostPath) { Resolutions++; Resolving?.Invoke(Resolutions); return TargetFactory == null ? project : TargetFactory(project); }
             public object Invoke(object target, string module, string procedure, object[] arguments)
             {
                 Assert.AreEqual(VbaTestRuntimeSource.ModuleName, module);

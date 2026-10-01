@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.IO.MemoryMappedFiles;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Fixture = VBAi.Tests.Unit.VbaTestWordValuesHostTests.Fixture;
@@ -7,9 +8,169 @@ using Document = VBAi.Tests.Unit.VbaTestWordValuesHostTests.Document;
 
 namespace VBAi.Tests.Unit
 {
-    [TestClass, TestCategory("Unit")]
+    [TestClass, TestCategory("Unit"), DoNotParallelize]
     public sealed class VbaTestWordCoverageCloneTests
     {
+        [TestMethod]
+        public void CopyLeasesBalanceEveryDocumentAcquisitionOnlyAfterVerifiedClose()
+        {
+            using (var fixture = new Fixture(ownsApplication: true))
+            using (var releases = new WordReleaseRecorder())
+            {
+                var acquired = new Dictionary<object, int>();
+                var read = fixture.Host.ReadDocumentItem;
+                fixture.Host.ReadDocumentItem = (documents, index) => {
+                    object value = read(documents, index);
+                    Increment(acquired, value); return value;
+                };
+                Document copy = null;
+                fixture.Application.Documents.OnOpen = path => {
+                    copy = new Document { FullName = path, Application = fixture.Application };
+                    Increment(acquired, copy); // Documents.Open transfers its own acquisition.
+                    return copy;
+                };
+                var clone = new VbaTestWordCoverageClone { Host = fixture.Host }.Create(
+                    fixture.Source.VBProject, fixture.Source.FullName, Path.Combine(fixture.Folder, "Copy"));
+                Assert.AreEqual(acquired[fixture.Source] - 1, releases.Count(fixture.Source));
+                Assert.AreEqual(acquired[copy] - 2, releases.Count(copy));
+                Assert.AreEqual(fixture.Reads - 2, releases.Count(fixture.Application));
+                clone.Dispose();
+                foreach (var item in acquired) Assert.AreEqual(item.Value, releases.Count(item.Key));
+                Assert.AreEqual(fixture.Reads, releases.Count(fixture.Application));
+                int count = releases.Total;
+                clone.Dispose();
+                Assert.AreEqual(count, releases.Total);
+                Assert.AreEqual(1, copy.CloseCalls);
+                Assert.AreEqual(0, fixture.Source.CloseCalls);
+            }
+        }
+
+        [TestMethod]
+        public void CopyPreflightRefusalBalancesOwnedSourceWithoutReleasingItsBorrowedProject()
+        {
+            using (var fixture = new Fixture(".docx", true))
+            using (var releases = new WordReleaseRecorder())
+            {
+                Assert.ThrowsException<InvalidOperationException>(() => new VbaTestWordCoverageClone { Host = fixture.Host }.Create(
+                    fixture.Source.VBProject, fixture.Source.FullName, Path.Combine(fixture.Folder, "Copy")));
+                Assert.AreEqual(1, releases.Count(fixture.Source));
+                Assert.AreEqual(fixture.Reads, releases.Count(fixture.Application));
+                // Only FindDocument's VBProject getter is acquired; the caller's project is borrowed.
+                Assert.AreEqual(1, releases.Count(fixture.Source.VBProject));
+                Assert.AreEqual(0, fixture.Application.Documents.OpenCalls);
+            }
+        }
+
+        [TestMethod]
+        public void UnverifiedOpenAndCloseKeepLongLivedAcquisitionsWithoutRetry()
+        {
+            foreach (bool failOpen in new[] { false, true })
+            using (var fixture = new Fixture(ownsApplication: true))
+            using (var releases = new WordReleaseRecorder())
+            {
+                Document copy = null;
+                fixture.Application.Documents.OnOpen = path => {
+                    if (failOpen) throw new InvalidOperationException("Native open uncertain");
+                    return copy = new Document { FullName = path, Application = fixture.Application, CancelClose = true };
+                };
+                var acquired = new Dictionary<object, int>();
+                var read = fixture.Host.ReadDocumentItem;
+                fixture.Host.ReadDocumentItem = (documents, index) => { var value = read(documents, index); Increment(acquired, value); return value; };
+                var provider = new VbaTestWordCoverageClone { Host = fixture.Host };
+                string folder = Path.Combine(fixture.Folder, "Copy");
+                if (failOpen)
+                {
+                    Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder)).Uncertain);
+                    Assert.AreEqual(acquired[fixture.Source] - 1, releases.Count(fixture.Source));
+                    Assert.AreEqual(fixture.Reads - 1, releases.Count(fixture.Application));
+                }
+                else
+                {
+                    var clone = provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder);
+                    Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose()).Uncertain);
+                    int released = releases.Total;
+                    clone.Dispose();
+                    Assert.AreEqual(released, releases.Total);
+                    Assert.AreEqual(1, copy.CloseCalls);
+                    Assert.IsTrue(releases.Count(copy) < acquired[copy], "Open, target and failed absence-probe acquisitions must remain leased.");
+                    Assert.IsTrue(releases.Count(fixture.Application) < fixture.Reads);
+                }
+                Assert.AreEqual(1, fixture.Application.Documents.OpenCalls);
+                Assert.AreEqual(0, fixture.Source.CloseCalls);
+            }
+        }
+
+        [TestMethod]
+        public void VerifiedCloseReleaseFailurePreservesItsAcquisitionAndNeverRetriesCloseOrRelease()
+        {
+            using (var fixture = new Fixture(ownsApplication: true))
+            using (var releases = new WordReleaseRecorder())
+            {
+                Document copy = null;
+                fixture.Application.Documents.OnOpen = path => copy = new Document { FullName = path, Application = fixture.Application };
+                var clone = new VbaTestWordCoverageClone { Host = fixture.Host }.Create(
+                    fixture.Source.VBProject, fixture.Source.FullName, Path.Combine(fixture.Folder, "Copy"));
+                releases.ThrowReference = copy.VBProject;
+                releases.ThrowNth = releases.Count(copy.VBProject) + 2; // ValidateTarget getter, then clone-owned getter.
+                StringAssert.Contains(Assert.ThrowsException<InvalidOperationException>(() => clone.Dispose()).Message, "Release failed");
+                Assert.AreEqual(1, copy.CloseCalls);
+                Assert.IsFalse(fixture.Application.Documents.Contains(copy));
+                int count = releases.Total;
+                clone.Dispose(); Assert.AreEqual(count, releases.Total);
+                Assert.AreEqual(fixture.Reads, releases.Count(fixture.Application));
+                Assert.AreEqual(0, fixture.Source.CloseCalls);
+            }
+        }
+        [TestMethod]
+        public void ProbeOrOpenCollectionReleaseFailureRetainsReferencesWithoutMutationRetry()
+        {
+            foreach (bool failOpenRelease in new[] { false, true })
+            using (var fixture = new Fixture(ownsApplication: true))
+            using (var releases = new WordReleaseRecorder())
+            {
+                Document copy = null;
+                fixture.Application.Documents.OnOpen = path => copy = new Document { FullName = path, Application = fixture.Application };
+                releases.ThrowReference = fixture.Application.Documents;
+                // Resolve source, initial path probe, two validations, then Documents.Open.
+                releases.ThrowNth = failOpenRelease ? 5 : 2;
+                var provider = new VbaTestWordCoverageClone { Host = fixture.Host };
+                string folder = Path.Combine(fixture.Folder, "Copy");
+                if (failOpenRelease)
+                {
+                    Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder)).Uncertain);
+                    Assert.AreEqual(0, releases.Count(copy));
+                    Assert.IsTrue(fixture.Application.Documents.Contains(copy));
+                    Assert.AreEqual(1, fixture.Application.Documents.OpenCalls);
+                    Assert.AreEqual(0, copy.CloseCalls);
+                }
+                else
+                {
+                    Assert.ThrowsException<InvalidOperationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder));
+                    Assert.AreEqual(0, fixture.Application.Documents.OpenCalls);
+                    Assert.IsFalse(Directory.Exists(folder));
+                    Assert.AreEqual(fixture.Reads, releases.Count(fixture.Application));
+                }
+                Assert.AreEqual(0, fixture.Source.CloseCalls);
+            }
+        }
+        private static void Increment(Dictionary<object, int> values, object value)
+        { values[value] = values.TryGetValue(value, out int count) ? count + 1 : 1; }
+
+        private sealed class WordReleaseRecorder : IDisposable
+        {
+            private readonly Func<object, bool> priorCheck = VbaTestWordValuesHost.IsComReference;
+            private readonly Func<object, int> priorRelease = VbaTestWordValuesHost.ReleaseComReference;
+            private readonly Dictionary<object, int> released = new Dictionary<object, int>();
+            internal int Total, ThrowNth;
+            internal object ThrowReference;
+            internal WordReleaseRecorder()
+            {
+                VbaTestWordValuesHost.IsComReference = value => true;
+                VbaTestWordValuesHost.ReleaseComReference = value => { Increment(released, value); Total++; if (ReferenceEquals(value, ThrowReference) && Count(value) == ThrowNth) throw new InvalidOperationException("Release failed"); return 0; };
+            }
+            internal int Count(object value) => released.TryGetValue(value, out int count) ? count : 0;
+            public void Dispose() { VbaTestWordValuesHost.IsComReference = priorCheck; VbaTestWordValuesHost.ReleaseComReference = priorRelease; }
+        }
         [TestMethod]
         public void DefaultFileCopyAndOpenPreserveAllFourSavedFormatsAndOriginalBytes()
         {

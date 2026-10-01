@@ -367,6 +367,7 @@ namespace VBAi.Tests.Integration
             using (var bytes = new MemoryStream())
             { input.CopyTo(bytes); return bytes.ToArray(); }
         }
+        private static readonly List<object[]> retainedCounterContexts = new List<object[]>();
         private static string ReadOfficeCounters(OfficeVbeFixture fixture, out string[] openPaths)
         {
             // A mismatched registered application is refused before inspecting or activating any document.
@@ -383,8 +384,11 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual((uint)fixture.ProcessId, owner, "Counter inspection resolved another " + fixture.Kind + " process.");
                 documents = fixture.Kind == "PowerPoint" ? ((dynamic)application).Presentations : ((dynamic)application).Documents;
                 var paths = new List<string>();
-                foreach (object document in (System.Collections.IEnumerable)documents)
+                int documentCount = Convert.ToInt32(((dynamic)documents).Count);
+                Assert.IsTrue(documentCount > 0 && documentCount <= 1000, "The owned document inventory must be bounded.");
+                for (int documentIndex = 1; documentIndex <= documentCount; documentIndex++)
                 {
+                    object document = ((dynamic)documents)[documentIndex];
                     bool retained = false;
                     try
                     {
@@ -418,11 +422,13 @@ namespace VBAi.Tests.Integration
                     ReadProcessName = () => "WINWORD", ReadProcessId = () => fixture.ProcessId,
                     ReadActiveApplication = unused => application };
                 sourceProject = ((dynamic)sourceDocument).VBProject;
-                var wordTarget = wordTransport.ResolveTarget(sourceProject, fixture.DocumentPath);
-                fixture.NativeExecutionUnsettled = true;
-                string counters = Convert.ToString(wordTransport.Invoke(wordTarget, ModuleName, "ReadCoverageCounters", new object[] { false, false }));
-                fixture.NativeExecutionUnsettled = false;
-                return counters;
+                using (var wordTarget = (VbaTestWordValuesHost.OwnedTarget)wordTransport.ResolveTarget(sourceProject, fixture.DocumentPath))
+                {
+                    fixture.NativeExecutionUnsettled = true;
+                    string counters = Convert.ToString(wordTransport.Invoke(wordTarget, ModuleName, "ReadCoverageCounters", new object[] { false, false }));
+                    fixture.NativeExecutionUnsettled = false;
+                    return counters;
+                }
             }
             catch (Exception error)
             {
@@ -432,10 +438,18 @@ namespace VBAi.Tests.Integration
             }
             finally
             {
-                if (sourceProject != null && Marshal.IsComObject(sourceProject)) Marshal.ReleaseComObject(sourceProject);
-                if (sourceDocument != null && Marshal.IsComObject(sourceDocument)) Marshal.ReleaseComObject(sourceDocument);
-                if (documents != null && Marshal.IsComObject(documents)) Marshal.ReleaseComObject(documents);
-                if (Marshal.IsComObject(application)) Marshal.ReleaseComObject(application);
+                if (fixture.NativeExecutionUnsettled)
+                {
+                    // The uncertain target borrows this context; retain its independent acquisitions.
+                    lock (retainedCounterContexts) retainedCounterContexts.Add(new[] { sourceProject, sourceDocument, documents, application });
+                }
+                else
+                {
+                    if (sourceProject != null && Marshal.IsComObject(sourceProject)) Marshal.ReleaseComObject(sourceProject);
+                    if (sourceDocument != null && Marshal.IsComObject(sourceDocument)) Marshal.ReleaseComObject(sourceDocument);
+                    if (documents != null && Marshal.IsComObject(documents)) Marshal.ReleaseComObject(documents);
+                    if (Marshal.IsComObject(application)) Marshal.ReleaseComObject(application);
+                }
             }
         }
 
