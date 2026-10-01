@@ -1,5 +1,23 @@
 # Recorded validation
 
+## Ollama pull request after main synchronization (2026-10-01)
+
+Source `ccba639f151eaab238f6982d888922df930ab3d5` merges main `415e16f`
+into the Ollama branch. The report conflict preserves both independent
+validation records below. The isolated complete solution build succeeds with
+no warnings or errors. One focused batch reports **212 passed / 0 failed /
+0 skipped**, covering the Ollama wire/model/profile helpers, sampling settings,
+HTTP chat client, settings persistence, provider view and localization tests.
+Product SHA-256 is
+`1F785E7B7C2484FEFC5152E31F69AF333E93074274E9D5944FCB1AE305C9C76C`;
+test assembly SHA-256 is
+`14F25342792DDF2B2231831A27B95438D66D861DF23A509EBA30A72ED6688A4C`.
+Evidence is `artifacts/qualification-v1/followup-20260930/ollama-pr-review/ollama-pr-focused.trx`.
+This focused merge verification uses no backend, native host or coverage
+collector. The earlier complete and real-provider acceptance remains specific
+to candidate `bbb6e6f`; it is not reapplied to the merged binary. The installed
+product remains unchanged. A documentation-only publication commit follows.
+
 ## Managed VBA testing coverage gate (2026-10-01)
 
 Source revision `51454c61acaef02305ddc28ba6a6041b9532124f` on
