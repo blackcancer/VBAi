@@ -481,6 +481,44 @@ inference, not complete persisted revision proof. EOF alone does not identify
 a native UI call, serialization failure, deadlock or pipe-write timeout.
 The original scenario remains failed and Q-026 remains open.
 
+### Uninstalled StdFont prototype and options lifecycle guards
+
+Source correction `839550c` consumes the documented packed StdFont representation
+without normalizing any font property. The isolated pre-commit prototype is MVID
+`277e30ac-8f58-44e8-ac63-cd0dbf49b8b7`, SHA-256
+`CC3F30F52C6C9FFBC1CE7756F383385934D47AA0B11BF6D2127472E20F3A032A`.
+It remains **uninstalled**; the installed v6 binary is unchanged. Retained native
+exports are reanalysed with each actual managed assembly, without COM activation.
+On v6, every layout's comparison differs only in FRX. On the prototype, the
+Label/Button pair compares equal; all remaining layouts still retain the complete
+original logical streams when their grammar is unsupported.
+
+Every differing Label/Button raw byte is assigned to an already-excluded CFB
+timestamp or a documented site/name-padding region. Source, manifest, FRM,
+control-object data and font values remain unchanged. The bounded physical and
+logical maps, exact assembly comparisons and primary format references are in
+`frx-drift-analysis/diagnostic-report.md`. The original prototype JSON reused an
+installed-candidate scope label; its additive
+`prototype-comparison.identity-correction.json` corrects that label while
+preserving the original report and hash. No native prototype acceptance is claimed.
+
+Tests source `ff3925b` adds the test-local options helper without changing the
+shared Excel fixture. A pre-write failure emits no restoration write, and unknown
+delivery retains the exact host without another bridge/Close/Quit request.
+Only a verified closed/committed write permits revision-guarded restoration.
+Durable bounded semantic summaries preserve the full options revision separately
+from omitted catalogues and retain primary/restoration/cleanup failures.
+
+The prepared combined managed batch
+`std-font-options-managed/std-font-options-managed.trx` records **35 passed,
+0 failed, 0 skipped**, runner exit **0**, using this isolated prototype and tests
+source `ff3925b`. It checks documented StdFont limits, every font byte remaining
+significant, malformed/truncated/unknown layouts, input immutability and the
+options lifecycle/error guards. This is a focused managed batch, not a complete
+suite, coverage measurement, native options rerun or deployed-candidate result.
+The preceding structural-only batch remains separately retained. Q-026 and Q-027
+remain open pending their native causes and complete acceptance scopes.
+
 ### Preceding Monaco-status candidate: complete managed acceptance
 
 Source `d7a1c75d90d840949cc78606f2ae55b14e93ec55`, MVID
