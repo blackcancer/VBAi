@@ -33,6 +33,11 @@ including conditional scenarios.
 | `forms-after-import-observation` | 0 | 12 | 0 |
 | `forms-baseline-native-persistence` | 0 | 12 | 0 |
 | `forms-baseline-native-readback` | 0 | 12 | 0 |
+| `forms-font-explicit-restoration` | 0 | 3 | 0 |
+| `forms-font-native-owner-assignment` | 0 | 3 | 0 |
+| `forms-font-owner-sta-commands` | 0 | 3 | 0 |
+| `forms-font-persisted-load` | 0 | 3 | 0 |
+| `forms-font-readonly-observation` | 0 | 3 | 0 |
 | `forms-local-git` | 0 | 12 | 0 |
 | `forms-localized-import-observation` | 0 | 12 | 0 |
 | `forms-persisted-baseline-and-import` | 11 | 13 | 0 |
@@ -77,6 +82,16 @@ then `a1dd519`, SHA-256
 `E6AF74695DCF51BB92A978651B6F37AE8DFCCFFB03FFBD118EC89534B637BF16`.
 The persisted-baseline/import batch uses tests `7f4f9c9`, SHA-256
 `301B6F04269B1E6B612E1C8CDB1E0186BE92DE16D3806534DF4D79D6113193FD`.
+Font observation uses tests `c29b9dc`, SHA-256
+`D7E20D27DDAB38FCC37BF152ED9F7B15AFA9886E163405924ED1F5C769233DDC`;
+external member restoration uses `fd1e868`, SHA-256
+`7993C99B34B6053A74E031C5462DD82829F74A3F17AF4A21101AD257A6BBAEF3`;
+native owner assignment uses `688d8cd`, SHA-256
+`E51383CF61AC93613F28A83D8A31E3EC9F11B247A3D6ECE3B635A549FF1FF998`;
+guarded owner-STA commands use `941cde0`, SHA-256
+`443B2A8B4FE8EFDB695D58541CE26B8391978E6149518146BA40852749D3BDFE`;
+persisted-font Load/owner transfer uses `9c070c6`, SHA-256
+`AF47750218FAC352546DC90EC810DB6BB7D7E579E125E732A447C8F30812E2C6`.
 The original complete managed gate does not qualify later test assemblies as a
 complete suite; their focused/native results are recorded separately.
 
@@ -145,6 +160,39 @@ FRX comparison despite zero differences in their declared native property
 readback. Their recovery snapshots remain retained. Fixture preparation uses
 the initial SaveAs and configured-layout Save; there is no helper Save during
 either baseline readback. No blanket form persistence acceptance is inferred.
+
+Offline extraction of every retained persisted-baseline/recovery pair identifies
+the remaining difference in the root `/f` stream: the imported export drops the
+declared StdFont descriptor and its Font/padding field, reducing that stream by
+37 bytes. FrameMultiPage also loses the same descriptor in `/i03/f`. Other logical
+streams and storage metadata remain equal under the unchanged frozen comparison.
+The raw recovery files, hashes and logical stream dumps are retained under
+`forms-persisted-logical-analysis-vba-subtree`. Microsoft documents the
+[FormPropMask Font flag](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-oforms/d8d10b05-9ab5-4073-98f0-e4bec1f029e8)
+and the [StdFont descriptor](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-oforms/e219ce61-420f-403b-8216-63890c935aa1).
+Missing font data is not treated as padding or normalized away.
+
+Read-only native font diagnostics on LabelButton, Image and FrameMultiPage confirm
+unchanged root font members but a real Frame size change from 8.27 to 8.25.
+External member setters and explicit owner assignment do not restore that size
+or strict snapshot equality. Guarded owner-STA commands also fail Frame.Font.Size
+readback; the command reports that the VBE did not retain the object member.
+This establishes failure of the tested restoration paths, not its native cause
+or a production fix. Each diagnostic uses a new owned project and one import;
+the original refusal, snapshots and normal owned-process exit remain recorded.
+
+Independent OleAut32 controls find that Font creation/member readback rounds
+8.27 to 8.25 and 12.125 to 12; the requested default charset can also resolve to
+the installed font's actual charset. IPersistStream.Load followed immediately
+by Save preserves the synthetic descriptor bytes, while subsequent member
+getters change those bytes. These exploratory controls are outside VSTest and
+do not prove that VBE import has the same cause. In the native persisted-font
+diagnostic, LabelButton and Image still fail strict equality on captures made
+before another font getter. FrameMultiPage stops at the exact active-form guard
+during preparation, before import or font Load; its restoration phase is NOT_RUN.
+All owned Excel processes exit normally. Both temporary registration contexts
+are restored, with the installed DLL SHA-256 unchanged. No import, uncertain
+setter, protected signing request or post-import Save is replayed.
 
 Only the declared observed properties are inspected; no claim about unmeasured
 property persistence is made. The earlier first diagnostic did not match the

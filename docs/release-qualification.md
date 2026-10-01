@@ -20,7 +20,7 @@ for exact counters, assembly identities, failed preparation and terminal runs.
 | Q-006 / Q-020 | Excel ParamArray/Variant arrays, protection reopen, breakpoint, options and the declared scalar page pass with normal owned-host exit. | Historical crashes and other runtime local types remain unresolved. |
 | Q-011 | Word and PowerPoint adapter-only source/class/form save and fresh-process reopen pass. The final contract verifies distinct old/new PIDs and normal exit of all four processes with a 15000 ms observation bound; earlier same-process passes and failed fresh-process trials remain separate. Read-only getter retries are bounded without replaying Save/Close/Quit. | This qualifies the stated adapter operation only. |
 | Q-012 | Access/Publisher GUID/file reference addition and removal, Access Description/module/class and Publisher Description/HelpContextID/form persistence pass. | Access HelpContextID/HelpFile fail the original exit deadline; Publisher HelpFile is altered after fresh reopen. |
-| Q-024 / Q-027 | Actual owner-dispatched Git capture/local checkpoint/compare passes with native state, saved-file hash and normal exit. Independent no-import reopen reproduces the initial geometry/list/image differences. Saved/reopened baselines remain exact in the accepted scopes; their import readback preserves all declared native properties. | Strict FRX comparison still refuses import for every tested layout. One baseline scenario fails during Excel startup. Remote transfer, recovery and post-import reopen are not qualified. |
+| Q-024 / Q-027 | Actual owner-dispatched Git capture/local checkpoint/compare passes with native state, saved-file hash and normal exit. Independent no-import reopen reproduces the initial geometry/list/image differences. Saved/reopened baselines remain exact in the accepted scopes. Stream inspection then isolates missing font descriptors; expanded native readback finds Frame.Font.Size changing from 8.27 to 8.25. | Strict FRX comparison still refuses import. External setters, owner assignment and guarded owner-STA font commands do not restore the tested snapshots. Persisted-font Load also fails the reached root-form scopes; its Frame trial stops at the active-form guard before import. Remote transfer, recovery and post-import reopen are not qualified. |
 | Q-026 | Native Format font/category/color changes and complete restoration pass; an empty size catalogue is refused with unchanged state. | Font-size mutation and the historical incomplete trace remain unqualified. |
 | Signature | Native unsigned state is observed; the disk verifier reports unavailable Office SIP. The single signing request is cancelled on a mismatched certificate name, followed by normal exit and removal of the owned certificate/key. The official Microsoft x64 SIP payload and a reversible registration worker are prepared but not executed. | Signature persistence, fresh reopen and cryptographic/trust verification remain failed or not reached. Temporary administrator registration awaits the maintainer decision; no trust policy is changed. |
 | Q-028 | Earlier automatic-device/CPU batches fail model allocation. After authorized SOLIDWORKS closure and verified extra commit memory, the selected CPU profile passes headless tools, cancellation/recovery, shown detached chat and native Excel read-only inspection on this frozen candidate. | Acceptance applies to this explicit CPU/model/sampling profile and in-process native-tool dispatch. The embedded-host assistant, other device profiles and the historical intermittent cause remain unqualified. |
@@ -28,6 +28,15 @@ for exact counters, assembly identities, failed preparation and terminal runs.
 
 No new coverage percentage or release-wide native acceptance is inferred. The
 VBA test explorer feature is outside this native qualification campaign.
+
+The latest UserForm diagnosis preserves exact raw recovery files and comparison
+rules. The lost root and nested Frame font descriptors are meaningful data, not
+CFB allocation or documented padding. The guarded Font.Size refusal is retained;
+no rounding tolerance is widened to accept the changed size. Independent OLE
+font controls distinguish persistence before property getters from later native
+readback, but do not establish the VBE import cause. No production correction is
+claimed. Exact source/binary identities and all terminal diagnostic results are
+in [recorded validation](test-coverage.md#native-qualification-refresh-2026-10-01).
 
 ## Report scope
 

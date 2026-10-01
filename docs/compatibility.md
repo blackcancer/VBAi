@@ -35,7 +35,10 @@ save and fresh-process reopen pass. Access/Publisher reference workflows and
 selected metadata saves pass, while Access help metadata exit and Publisher
 HelpFile readback remain failed. Initial UserForm property differences also occur
 without Git import. Saved/reopened baseline properties remain exact in the
-accepted scopes, while import still fails strict FRX comparison;
+accepted scopes, while import still fails strict FRX comparison. Expanded
+diagnostics identify lost root/Frame font descriptors and a Frame size change
+from 8.27 to 8.25. The tested member-setter, owner-assignment and persisted-font
+restoration paths do not establish a successful import;
 signature remains unqualified. The selected Ollama CPU profile passes its
 headless, shown detached-chat and real-Excel read-only scopes after commit-memory
 availability improves; this does not qualify the embedded-host assistant.
