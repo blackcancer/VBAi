@@ -106,5 +106,35 @@ namespace VBAi.Tests.Unit
                 primary, () => { throw recording; }, () => { throw context; }));
             CollectionAssert.AreEqual(new Exception[] { primary, recording, context }, actual.InnerExceptions);
         }
+
+        [DataTestMethod, DataRow("missing"), DataRow("missing-parent"), DataRow("file"), DataRow("directory")]
+        public void RealRecoveryMetadataDistinguishesAbsenceFromAnyExistingEntry(string shape)
+        {
+            string root = Path.Combine(Path.GetTempPath(), "VBAi-RecoveryObserver-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(root);
+            try
+            {
+                string marker = Path.Combine(root, "recovery");
+                if (shape == "missing-parent") marker = Path.Combine(root, "absent", "recovery");
+                if (shape == "file") File.WriteAllText(marker, "backup-reference");
+                if (shape == "directory") Directory.CreateDirectory(marker);
+                Assert.AreEqual(shape == "file" || shape == "directory", NativeUserFormGitHubTests.ObserveSequentialRecovery(marker));
+            }
+            finally { Directory.Delete(root, true); }
+        }
+
+        [DataTestMethod, DataRow("access"), DataRow("io"), DataRow("invalid")]
+        public void RealObserverContractDoesNotConvertMetadataFailuresIntoMissingRecovery(string shape)
+        {
+            Exception observation = shape == "access" ? (Exception)new UnauthorizedAccessException("metadata") :
+                shape == "io" ? new IOException("metadata") : (Exception)new ArgumentException("metadata");
+            var primary = new COMException("mutation"); int retained = 0, observations = 0;
+            var actual = Assert.ThrowsException<AggregateException>(() => NativeUserFormGitHubTests.ExecuteGuardedImport(
+                () => { throw primary; }, () => NativeUserFormGitHubTests.ObserveSequentialRecovery(() => {
+                    observations++; throw observation;
+                }), () => retained++));
+            CollectionAssert.AreEqual(new Exception[] { primary, observation }, actual.InnerExceptions);
+            Assert.AreEqual(1, observations); Assert.AreEqual(1, retained);
+        }
     }
 }

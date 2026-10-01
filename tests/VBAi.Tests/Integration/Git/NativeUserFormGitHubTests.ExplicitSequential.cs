@@ -114,7 +114,7 @@ namespace VBAi.Tests.Integration
                                 using (var operations = new MacroGitOperations(project, fetchedRepository))
                                 {
                                     ExecuteGuardedImport(() => Await(operations.ExecuteAsync("pull", operations.Revision(before))),
-                                        () => fetchedRepository.RecoveryPending, () => RetainSequentialHost(target));
+                                        () => ObserveSequentialRecovery(fetchedRepository.RecoveryFile), () => RetainSequentialHost(target));
                                     Assert.AreEqual(ownerThread, Thread.CurrentThread.ManagedThreadId);
                                     Assert.IsFalse(fetchedRepository.RecoveryPending);
                                     Assert.IsTrue(fetchedRepository.Read(fetchedRepository.Resolve(MacroGitRepository.Backup)).SameAs(before));
@@ -210,6 +210,20 @@ namespace VBAi.Tests.Integration
                 if (errors.Count > 1) throw new AggregateException("Import, recovery observation and retention errors remain separate; no native replay.", errors);
                 throw;
             }
+        }
+
+        internal static bool ObserveSequentialRecovery(string marker)
+        {
+            return ObserveSequentialRecovery(() => File.GetAttributes(marker));
+        }
+
+        internal static bool ObserveSequentialRecovery(Func<FileAttributes> observe)
+        {
+            // File.Exists hides access/I/O failures. Any existing entry, even a directory,
+            // requires retention; only a definite missing entry establishes absence.
+            try { observe(); return true; }
+            catch (FileNotFoundException) { return false; }
+            catch (DirectoryNotFoundException) { return false; }
         }
 
         internal static void CompleteSequentialEvidence(Exception primary, Action persist, Action restoreContext)
