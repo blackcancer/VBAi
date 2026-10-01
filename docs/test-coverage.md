@@ -34,8 +34,8 @@ return values with explicit arguments. A zero-argument Word function executed it
 marker but returned null; these diagnostics do not constitute full acceptance.
 Failed runs, uncertain delivery and their owned cleanup evidence are preserved.
 
-The installed DLL remains unchanged. Temporary candidate registration is backed
-up and must be restored after the owned host has exited. No production macro,
+The installed DLL remains unchanged. Temporary candidate registration was backed
+up and restored with verification after normal owned-host exit. No production macro,
 Ollama scenario, Visio or Microsoft Project qualification belongs to this follow-up.
 
 ## Managed VBA testing coverage gate (2026-10-01)
