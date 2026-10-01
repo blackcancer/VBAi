@@ -16,7 +16,7 @@ namespace VBAi.Tests.Integration
 {
     /// <summary>Opt-in synthetic UserForm transfer through the retained private qualification repository.</summary>
     [TestClass, TestCategory("AuthenticatedIntegration"), DoNotParallelize]
-    public sealed class NativeUserFormGitHubTests
+    public sealed partial class NativeUserFormGitHubTests
     {
         public TestContext TestContext { get; set; }
         private static readonly JavaScriptSerializer Json = new JavaScriptSerializer();
