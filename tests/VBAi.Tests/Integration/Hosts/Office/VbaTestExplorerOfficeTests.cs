@@ -41,6 +41,8 @@ namespace VBAi.Tests.Integration
             using (var fixture = OfficeVbeFixture.Start(host, host == "Access" ? "Access.Application.16" : null,
                 allowExistingHost: true, allowForcedTermination: false))
             {
+                try
+                {
                 Console.WriteLine("Registered Office qualification=" + fixture.Root);
                 var status = fixture.Data("status");
                 Save(fixture, "identity.json", new { CurrentSourceRevision = sourceRevision, SourceStatus = sourceStatus,
@@ -132,6 +134,12 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual("Completed", historical["State"]);
                 // Publisher requires the disposable VBA project to be saved before its guarded Quit.
                 if (host == "Publisher") fixture.SaveNative();
+                }
+                catch (Exception error)
+                {
+                    Save(fixture, "qualification-body-error.json", new { Exception = error.ToString(), error.HResult, fixture.NativeExecutionUnsettled });
+                    throw;
+                }
             }
         }
 
@@ -188,6 +196,19 @@ namespace VBAi.Tests.Integration
         }
 
         private static void QualifyOfficeDocumentCoverage(OfficeVbeFixture fixture, IDictionary<string, object> catalog,
+            string revision, IDictionary<string, object> selected)
+        {
+            int? originalWordSecurity = fixture.Kind == "Word" ? SetOwnedWordCoveragePolicy(fixture, 2, "prepare") : (int?)null;
+            try { QualifyOfficeDocumentCoverageCore(fixture, catalog, revision, selected); }
+            finally
+            {
+                // Do not mutate a retained host after an uncertain native outcome. Owned cleanup remains a separate action.
+                if (originalWordSecurity.HasValue && !fixture.NativeExecutionUnsettled)
+                    SetOwnedWordCoveragePolicy(fixture, originalWordSecurity.Value, "restore");
+            }
+        }
+
+        private static void QualifyOfficeDocumentCoverageCore(OfficeVbeFixture fixture, IDictionary<string, object> catalog,
             string revision, IDictionary<string, object> selected)
         {
             // Exercise the installed service and real host copy adapter; the fixture does not inject a clone.
@@ -306,6 +327,28 @@ namespace VBAi.Tests.Integration
             finally { if (Marshal.IsComObject(application)) Marshal.ReleaseComObject(application); }
         }
 
+        private static int SetOwnedWordCoveragePolicy(OfficeVbeFixture fixture, int security, string phase)
+        {
+            // ByUI respects the existing Trust Center policy; only the disposable owned application is changed.
+            Assert.IsFalse(fixture.NativeExecutionUnsettled, "Coverage policy setup requires a confirmed settled owned fixture.");
+            object application = Marshal.GetActiveObject("Word.Application");
+            try
+            {
+                IntPtr window = VbaTestWordValuesHost.ReadApplicationWindow(application);
+                uint owner; Assert.AreNotEqual(0u, GetWindowThreadProcessId(window, out owner));
+                Assert.AreEqual((uint)fixture.ProcessId, owner, "Coverage policy setup resolved another Word process.");
+                int before = Convert.ToInt32(((dynamic)application).AutomationSecurity);
+                fixture.NativeExecutionUnsettled = true;
+                ((dynamic)application).AutomationSecurity = security;
+                Assert.AreEqual(security, Convert.ToInt32(((dynamic)application).AutomationSecurity));
+                fixture.NativeExecutionUnsettled = false;
+                Save(fixture, "word-coverage-security-" + phase + ".json", new { ProcessId = owner, Hwnd = window.ToInt64(),
+                    AutomationSecurityBefore = before, AutomationSecurityAfter = security, TrustSettingsChanged = false });
+                return before;
+            }
+            finally { if (Marshal.IsComObject(application)) Marshal.ReleaseComObject(application); }
+        }
+
         private static void AssertMeasuredCoverage(IDictionary<string, object> coverage, string available, string complete,
             string revisionKey, string metric, string eligible, string hit, string percent, string revision)
         {
@@ -369,15 +412,21 @@ namespace VBAi.Tests.Integration
                 }
                 Assert.AreEqual("Word", fixture.Kind, "Counter inspection is not implemented for this host.");
                 Assert.IsNotNull(sourceDocument);
-                ((dynamic)sourceDocument).Activate();
-                object active = ((dynamic)application).ActiveDocument;
-                try
-                {
-                    Assert.IsTrue(VbeDebug.NativeProcedureValuesHost.SameComIdentity(sourceDocument, active),
-                        "The exact owned Word document did not become the macro context.");
-                }
-                finally { if (Marshal.IsComObject(active)) Marshal.ReleaseComObject(active); }
-                return Convert.ToString(((dynamic)application).Run("'" + fileName + "'!" + ModuleName + ".ReadCoverageCounters"));
+                var wordTransport = new VbaTestWordValuesHost {
+                    ReadProcessName = () => "WINWORD", ReadProcessId = () => fixture.ProcessId,
+                    ReadActiveApplication = unused => application };
+                sourceProject = ((dynamic)sourceDocument).VBProject;
+                var wordTarget = wordTransport.ResolveTarget(sourceProject, fixture.DocumentPath);
+                fixture.NativeExecutionUnsettled = true;
+                string counters = Convert.ToString(wordTransport.Invoke(wordTarget, ModuleName, "ReadCoverageCounters", new object[] { false, false }));
+                fixture.NativeExecutionUnsettled = false;
+                return counters;
+            }
+            catch (Exception error)
+            {
+                Save(fixture, "counter-read-error.json", new { fixture.ProcessId, fixture.DocumentPath,
+                    fixture.NativeExecutionUnsettled, Error = error.ToString(), HResult = error.HResult });
+                throw;
             }
             finally
             {
@@ -489,7 +538,7 @@ namespace VBAi.Tests.Integration
         private static readonly string DocumentCoverageSource = Source.Replace(
             "ABooleanPass = mReady And (mInitialized = 1)",
             "ABooleanPass = mReady And (mInitialized = 1) And (VBAiOfficeProduction.EnteredFunction() = 5)") + @"
-Public Function ReadCoverageCounters() As String
+Public Function ReadCoverageCounters(Optional ByVal first As Variant, Optional ByVal second As Variant) As String
     ReadCoverageCounters = CStr(VBAiOfficeProduction.EnteredCalls) & "","" & CStr(VBAiOfficeProduction.UnenteredCalls)
 End Function
 ";

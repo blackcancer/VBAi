@@ -262,7 +262,8 @@ namespace VBAi.Tests.Unit
                 var document = new VbaTestWordValuesHostTests.Document { Application = app, FullName = fixture.Project.FileName, VBProject = fixture.Project, Saved = false };
                 app.Documents.Add(document);
                 fixture.Service.Host = new VbaTestWordValuesHost { ReadProcessName = () => "WINWORD", ReadProcessId = () => 123,
-                    ReadActiveApplication = _ => app, ReadWindowOwner = _ => 123, SameIdentity = ReferenceEquals };
+                    ReadActiveApplication = _ => app, ReadWindowOwner = _ => 123, SameIdentity = ReferenceEquals,
+                    ReadDocumentItem = (documents, index) => ((VbaTestWordValuesHostTests.Documents)documents)[index - 1] };
                 StringAssert.Contains(fixture.Service.CoverageUnavailableReason(fixture.Catalog()), "Word document changes");
                 document.Saved = true; Assert.IsNull(fixture.Service.CoverageUnavailableReason(fixture.Catalog()));
                 fixture.Service.Host = new VbaTestPowerPointValuesHost(); fixture.Project.FileName = "C:\\Temp\\Fixture.xlsx";

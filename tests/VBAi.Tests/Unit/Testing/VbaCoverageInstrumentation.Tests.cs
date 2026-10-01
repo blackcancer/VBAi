@@ -87,9 +87,32 @@ namespace VBAi.Tests.Unit
             Assert.IsFalse(plan.RuntimeSource.Contains("Err.Clear"));
             Assert.IsFalse(rewritten.Contains("Call VBAiCoverageSupport"));
             StringAssert.Contains(plan.RuntimeSource, "Public VBAiProcedureCoverageHits(1 To 1) As Boolean");
-            StringAssert.Contains(plan.RuntimeSource, "Public Function " + VbaCoverageInstrumentation.ResetProcedure + "() As Boolean");
-            StringAssert.Contains(plan.RuntimeSource, "Public Function " + VbaCoverageInstrumentation.SnapshotProcedure + "() As Variant");
+            StringAssert.Contains(plan.RuntimeSource, "Public Function " + VbaCoverageInstrumentation.ResetProcedure + "(Optional ByVal ignoredHostArgument1 As Variant, Optional ByVal ignoredHostArgument2 As Variant) As Boolean");
+            StringAssert.Contains(plan.RuntimeSource, "Public Function " + VbaCoverageInstrumentation.SnapshotProcedure + "(Optional ByVal ignoredHostArgument1 As Variant, Optional ByVal ignoredHostArgument2 As Variant) As Variant");
             Assert.IsFalse(plan.RuntimeSource.Contains("Function Reset("));
+        }
+
+        [DataTestMethod]
+        [DataRow(0)]
+        [DataRow(2)]
+        public void CoverageRuntimeAcceptsOptionalWordArgumentsWithoutUsingThemInProbeState(int count)
+        {
+            string source = string.Join("\n", Enumerable.Range(0, count)
+                .Select(index => "Public Sub Work" + index + "()\nEnd Sub"));
+            var plan = VbaCoverageInstrumentation.Create(Project(Module("Production", 1, source)));
+            Assert.IsTrue(plan.CanInstrument);
+            Assert.AreEqual(count, plan.Probes.Count);
+            const string arguments = "(Optional ByVal ignoredHostArgument1 As Variant, Optional ByVal ignoredHostArgument2 As Variant)";
+            StringAssert.Contains(plan.RuntimeSource, "Public Function " + VbaCoverageInstrumentation.ResetProcedure + arguments + " As Boolean\r\n");
+            StringAssert.Contains(plan.RuntimeSource, "Public Function " + VbaCoverageInstrumentation.SnapshotProcedure + arguments + " As Variant\r\n");
+            // Each ignored name occurs only in the two helper declarations, never in their executable bodies.
+            Assert.AreEqual(2, System.Text.RegularExpressions.Regex.Matches(plan.RuntimeSource, @"\bignoredHostArgument1\b").Count);
+            Assert.AreEqual(2, System.Text.RegularExpressions.Regex.Matches(plan.RuntimeSource, @"\bignoredHostArgument2\b").Count);
+            StringAssert.Contains(plan.RuntimeSource, "Public " + VbaCoverageInstrumentation.HitsVariable
+                + "(1 To " + Math.Max(1, count) + ") As Boolean\r\n");
+            var report = VbaCoverageInstrumentation.Read(plan, Native(new bool[Math.Max(1, count)]));
+            Assert.AreEqual(0, report.Hit);
+            Assert.AreEqual(count, report.Eligible);
         }
 
         [TestMethod]
