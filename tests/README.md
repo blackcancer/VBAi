@@ -4,6 +4,41 @@ The test suite covers the shared VBE core, provider protocols, storage, editor
 services and selected host integrations. A passing local suite is not a claim
 that every feature works in every application that embeds the VBE.
 
+## Owned Excel teardown trace (qualification only)
+
+`VBAi_TEST_EXCEL_TEARDOWN_TRACE_GATE=1` enables a disabled-by-default diagnostic
+only in the two `ExcelProcedureValuesTests` native array/ParamArray cases.
+`VBAi_RUN_EXCEL_TESTS=1` and an absolute `VBAi_EXCEL_RESULTS` are required. Run one
+fresh disposable case, never the complete batch with this gate. Pending or
+uncertain bridge work, identity mismatch or the bounded arming deadline preserves
+the exact host without Close/Quit. The ordinary fixture is unchanged when the
+diagnostic variable is absent. The gate never replays a procedure or cleanup.
+
+Compile `tools/probes/OwnedTeardownTrace.Helper.cs` as a separate x64 executable
+named `VBAi.OwnedTeardown.Helper.exe`. The helper is not an Office host. First
+prepare, then explicitly execute `Test-OwnedExcelTeardownPreflight.ps1` with its
+absolute `-HelperPath` and `-OutputRoot`. Its four owned helper trials must prove
+normal detach/STOP/exit, synthetic terminal `c0000409` and `c0000005` collectors,
+and a software first-chance AV forwarded unhandled to the helper's local handler.
+These synthetic exceptions do not reproduce or explain an Office fault.
+The earlier filesystem-trace preflight does not prove these handlers.
+Default script invocation prepares a plan; `-Execute` is required to run it.
+
+The opted-in native test writes `teardown.pending.json` in its owned GUID root
+immediately before its existing single Close/Quit sequence. Prepare
+`Trace-OwnedExcelTeardown.ps1 -PendingReport <absolute path> -ExpectedMvid <guid>
+-ExpectedAssemblySha256 <hash>`; then add `-DebuggerPreflightReport <absolute
+passing preflight.json> -Execute` for the exact same candidate/PID/start/nonce.
+Only exception record, live event-thread registers and stack are captured, without full
+memory dumps, global WER policy or additional bridge/COM calls. A controller
+timeout permits bounded debugger detachment only after proving the exact owned
+stop-breakpoint event; pending faults are retained without `qd`. A safe trial
+without a verified terminal fault is `NOT_REPRODUCED`, including a deadline;
+it never terminates Excel. Primary scenario and diagnostic cleanup errors remain
+separate failures. A captured crash does not turn the original case into a pass.
+A raw VSTest pass after detaching at a pending fault is invalid for crash
+qualification; preserve that result and its intervention evidence separately.
+
 See [development setup](../docs/development.md), [recorded results](../docs/test-coverage.md)
 and the [compatibility matrix](../docs/compatibility.md). Run commands from the
 repository root in a Windows development environment.
@@ -53,6 +88,282 @@ Preserve their contents unless deliberately changing the corresponding fixture.
 
 ## Native host tests are opt-in
 
+The Q-027 path-visibility diagnostic is a temporary, explicit host opt-in. Run
+only `ExcelPathVisibilityTests.OwnedOwnerStaObservesTwoTesthostCreatedGuidDirectoriesAndEffectiveToken`
+with `VBAi_RUN_EXCEL_PATH_VISIBILITY=1`, `VBAi_RUN_EXCEL_TESTS=1` and an absolute
+durable `VBAi_EXCEL_RESULTS` directory. The owned `/x /automation` bootstrap
+passes `VBAi_TEST_PATH_VISIBILITY_MANIFEST` explicitly to the child. The manifest
+contains only two direct GUID children of LocalAppData and TEMP. Fixed synthetic
+files and the manifest remain under read leases during observation and are
+retained as evidence. No personal file is read, no macro/export/source edit runs,
+and no ACL, attribute, trust policy or token is modified.
+
+The internal, parameter-free `diagnostic_path_visibility` bridge command is
+disabled unless the host received this manifest before add-in connection. It is
+absent from the LLM catalogue. It checks captured owner PID/native TID/STA and
+records managed existence/attribute results, explicit exception types/HRESULTs,
+native attributes and immediately captured LastError (meaningful only on native
+failure). Effective token evidence queries the thread with OpenAsSelf=true and
+falls back to the primary token only for ERROR_NO_TOKEN (1008); metadata is
+limited to SID, integrity, restricted/AppContainer state, type/impersonation and
+AuthenticationId/TokenId. Compare testhost before/after with the actual owner STA;
+do not label the testhost's STA as Excel's. Visibility differences are recorded,
+not assumed equal or attributed to a cause. Pending delivery/startup retains the
+host and read leases without replay or native cleanup. This diagnostic changes
+the product candidate; qualification of an earlier binary does not cover it.
+
+After deploying and verifying the matching candidate, run exactly one native
+observation (the command below is a recipe, not recorded execution):
+
+```powershell
+$env:VBAi_RUN_EXCEL_TESTS = '1'
+$env:VBAi_RUN_EXCEL_PATH_VISIBILITY = '1'
+$env:VBAi_EXCEL_RESULTS = "$PWD/artifacts/path-visibility-native"
+dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildOutputRoot="$PWD/artifacts/build" --filter 'FullyQualifiedName=VBAi.Tests.Integration.ExcelPathVisibilityTests.OwnedOwnerStaObservesTwoTesthostCreatedGuidDirectoriesAndEffectiveToken' --logger 'trx;LogFileName=path-visibility-native.trx' --results-directory "$PWD/artifacts/path-visibility-native"
+```
+
+The paired export diagnostic is separate from that read-only observation. Its
+two data rows create fresh GUID children of LocalAppData and TEMP, then bootstrap
+one fresh owned Excel per row with the same fixed-allowlist manifest. Production
+commands create only a disposable UserForm and Label. The parameter-free owner
+STA diagnostic immediately precedes one `export_component` request to
+`ASCIIForm.frm` in the selected GUID child. Both commands use the same exact
+PID pipe and production dispatcher; no COM call or host command intervenes.
+Their sequencing is not an atomic proof that a thread token cannot change.
+
+Evidence preserves actual owner native TID/STA, candidate MVID and SHA-256,
+project/component/design identity, source SHA-256, native Label properties,
+effective tokens, all four attribute outcomes and raw export responses/files.
+Visibility differences remain observations. A received `Ok=false` is a terminal
+failed export, with independent after-readback and normal-exit checks; it is not
+a transport timeout. Pending startup/delivery/export retains the exact host and
+manifest/synthetic read leases without Close/Quit, retry or target cleanup. No
+ACL, EFS, permission, trust policy or token changes are made. The GUID directories
+and original partial/successful FRM/FRX remain evidence. This does not qualify
+Git capture normalization/import/recovery or equate explicit bootstrap with
+historical COM-activation trials.
+
+Prepare a **separate frozen-candidate test output** as described below, verify
+its referenced product hash against the installed candidate, then run the whole
+two-row matrix with this exact filter. This recipe is not recorded execution;
+do not rebuild/deploy the product to run a tests-only diagnostic:
+
+```powershell
+$env:VBAi_RUN_EXCEL_TESTS = '1'
+$env:VBAi_RUN_EXCEL_PAIRED_EXPORT_PATH_VISIBILITY = '1'
+$env:VBAi_EXCEL_RESULTS = "$PWD/artifacts/paired-export-native"
+dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildProjectReferences=false -p:BuildOutputRoot="$PWD/artifacts/build-frozen-paired-export" --filter 'FullyQualifiedName=VBAi.Tests.Integration.ExcelPairedExportPathVisibilityTests.OwnerStaVisibilityImmediatelyPrecedesOneExportInOwnedGuidDirectory' --logger 'trx;LogFileName=paired-export-native.trx' --results-directory "$PWD/artifacts/paired-export-native"
+```
+
+For an owned-host scalar-inspection investigation, set `VBAi_VBE_INSPECTION_TRACE`
+to an absolute local JSONL file path in the host's environment before launching it.
+The parent directory must already exist. Tracing is disabled when absent or invalid;
+unavailable logging never changes command execution. Evidence is bounded to 128
+events per inspection and 1 MiB per file. Rows contain correlation, fixed phase,
+PID, thread/apartment, elapsed time and exception type; they contain no project
+path, code, expression or inspected value. A client timeout does not cancel or
+authorize replay of a pending native command. Retain the host and phase evidence
+when the bridge stops responding.
+
+The `ExcelScalarDiagnostics` scenarios use a dedicated explicit bootstrap,
+not the ordinary Excel COM-activation fixture. Set `VBAi_RUN_EXCEL_TESTS=1`,
+`VBAi_VBE_INSPECTION_TRACE` to an absolute local JSONL path with an existing parent
+directory, and `VBAi_EXCEL_RESULTS` to a durable local evidence directory. The
+bootstrap resolves the installed x64 Excel executable from HKLM App Paths and
+launches it once with `/x /automation` and an owned, empty, macro-free `.xlsx`
+seed. Microsoft documents that
+[/automation suppresses automatically opened files and auto-run macros](https://learn.microsoft.com/en-us/troubleshoot/microsoft-365-apps/excel/files-open-automatically).
+The trace variable is supplied explicitly in the child process environment;
+setting it only in the test process does not prove that COM activation inherited
+it. No machine/user environment setting is changed.
+
+NativeOM attachment accepts only the launched PID's `EXCEL7` document. Before
+any workbook/VBE mutation, the fixture checks the retained process handle,
+executable/start identity, application HWND/PID and an inventory containing only
+the exact seed workbook. It never falls back to COM activation or an active
+application. Startup, loaded add-in MVID and shutdown evidence remain in the
+fixture directory even on success. If attachment or startup is uncertain, the
+process is retained without Close, Quit, termination or another launch. Execute
+`InstalledBridgeSkipsUnsupportedScalarPageWithoutQuickWatch` first, then
+`InstalledBridgeReadsOneLongScalarWithNativePhaseEvidence`, and then
+`InstalledBridgeReadsFullScalarPageWithThreeNativeObservers`, using separate exact
+method filters; a category batch does not guarantee their order. Each requires
+nonempty correlated host phase evidence and the installed product MVID must
+match the assembly referenced by the tests.
+
+The full page issues one `inspect_local_scalars` request with Offset=0/Limit=6.
+It checks the exact Long/String/Boolean probe values, declaration order/type/
+position, and array/Variant/object rows skipped without a value or error. Native
+phase evidence must contain one correlation and terminal inspection, with a
+complete Command229/observer lifecycle for each eligible scalar. Selection,
+source and break mode are checked before and after; normal owned Close/Quit and
+exit are required. These synthetic runtime assertions do not establish complete
+Locals enumeration or explain a prior crash. Recorded acceptance and loaded
+candidate identity are in [validation results](../docs/test-coverage.md).
+
+For a tests-only follow-up against a frozen installed candidate, use a separate
+output containing hash-verified copies of its product/dependency binaries and
+build the test project with `BuildProjectReferences=false`. Verify the product
+hash again in the final test output; do not rebuild the product implicitly or
+overwrite a test assembly whose native campaign is still active. The exact full
+page filter is:
+
+```text
+FullyQualifiedName=VBAi.Tests.Integration.ExcelLocalScalarInspectionTests.InstalledBridgeReadsFullScalarPageWithThreeNativeObservers
+```
+
+Office adapter-only diagnostics distinguish transient Access CurrentProject
+wrapper identity from the database path and selected VBProject identity. Keep
+sampled objects alive across identity comparisons and balance their temporary
+IUnknown references; do not weaken native dispatch guards or invoke Save to
+diagnose an identity getter. A read-only identity trial with normal exit does
+not qualify adapter persistence. Adapter/property/reference acceptance requires
+its own verified save and fresh-disk reopen without post-save helper saving.
+
+For Access save/reopen, preserve the exact live and reopened metadata strings,
+not only a successful Save response or Saved flag. Reference-removal acceptance
+requires the initial owned process to exit normally before a fresh process
+reopens the database. A returned Quit is insufficient; preserve the disposable
+database and report disk readback as NOT_RUN if exit is unverified. Do not replay
+Quit or native mutations to obtain a passing result.
+
+Office fixtures retain the original process handle, PID/start/image identity and
+shutdown failure when Quit returns but exit is not observed within the fixture
+deadline. `shutdown-lifecycle.json` records the single Quit outcome, bounded exit
+observation and handle disposition; the final qualification report retains this
+ledger too. An unverified shutdown refuses further native requests, saving,
+Close/Quit attempts and reopening. Later PID absence, manual termination or an
+eventual exit does not overwrite the original failed gate or establish an exit
+code that was not read. Releasing a client COM reference is not proof that every
+server reference disappeared. These retention checks do not diagnose a host's
+failure to exit.
+
+### Read-only Access metadata getter probe
+
+Set both `VBAi_RUN_OFFICE_TESTS=1` and
+`VBAi_RUN_OFFICE_METADATA_GETTER_PROBE=1` to enable this diagnostic. The
+`FreshAccessMetadataGetterContractsReadOnly` test starts a new owned disposable
+database through the existing Access fixture. Database creation and its initial
+fixture save remain prerequisites; the probe adds no setter, save, macro or help
+invocation. The baseline requires three successful, exactly equal getters and
+runtime getter/setter contracts for both DISPIDs. It does not qualify metadata
+persistence.
+
+The diagnostic reads `HelpFile` and `HelpContextID` on the exact mapped, selected
+VBProject through `PropertyDescriptor.GetValue`, CLR `InvokeMember` with
+`GetProperty`, and raw `IDispatch.Invoke` with `DISPATCH_PROPERTYGET`. The raw
+result uses the x64 24-byte VARIANT ABI, a checked boundary canary and OLE cleanup.
+Runtime `GetTypeInfo` records the getter/setter VARTYPEs for DISPIDs 116 and 117
+and the containing library identity. Reads run on the external fixture STA;
+COM marshaling dispatches them to the Office object's apartment. These are not
+in-process bridge getter observations.
+
+Each `metadata-getters-<phase>.json` retains candidate MVID and matching assembly
+file hashes, PID/start identity,
+project path/IUnknown identity, mode/protection/Saved state, getter outcomes and
+bounded exact BSTR bytes. No ANSI repair or value normalization is performed.
+A pending-read marker identifies an unfinished call. Normal owned process exit
+must be verified separately through the fixture's lifecycle evidence.
+
+With the same diagnostic opt-in, the existing Access HelpFile/HelpContextID
+adapter scenarios also record reads before and after their existing mutation,
+after their existing adapter save, and immediately after fresh-disk reopen.
+These hooks add no mutation or save. Getter disagreements remain observations;
+the original exact metadata assertions still decide adapter acceptance. An
+`OBSERVED` report does not mean its getters agree or persistence passed.
+
+Prepare a new durable evidence directory and use a test output referencing the
+exact installed candidate as described above. The following filter selects the
+complete diagnostic batch; no ordering between tests is assumed:
+
+```powershell
+$env:VBAi_RUN_OFFICE_TESTS = "1"
+$env:VBAi_RUN_OFFICE_METADATA_GETTER_PROBE = "1"
+$env:VBAi_OFFICE_RESULTS = "$PWD/artifacts/metadata-getter-evidence"
+dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildOutputRoot="$PWD/artifacts/build" --filter "FullyQualifiedName=VBAi.Tests.Integration.OfficeMetadataGetterProbeTests.FreshAccessMetadataGetterContractsReadOnly|FullyQualifiedName=VBAi.Tests.Integration.OfficeAdapterOnlyMetadataQualificationTests.Access16HelpFilePathAdapterSaveReopen|FullyQualifiedName=VBAi.Tests.Integration.OfficeAdapterOnlyMetadataQualificationTests.Access16HelpContextIdAdapterSaveReopen" --results-directory "$PWD/artifacts/metadata-getter-evidence" --logger "trx;LogFileName=metadata-getters.trx"
+```
+
+### One-shot Access metadata setter comparison
+
+The additional `VBAi_RUN_OFFICE_METADATA_SETTER_PROBE=1` opt-in enables four
+`OfficeMetadataSetterProbe` cases: HelpFile/HelpContextID, each through the
+existing production CLR `SetNative` implementation or raw `IDispatch` PROPERTYPUT.
+Every case creates a separate owned Access database, prepares the existing
+synthetic module/class baseline and attempts one metadata setter. A returned
+failure is followed only by read-only getter observations before the original
+error is rethrown. Independent read/cleanup failures are aggregated; uncertain
+bridge delivery refuses further native reads or mutations. There is no setter
+replay, rollback claim or post-failure save.
+
+Both new setter paths run from the same external fixture STA, use the exact
+selected project identity and current production revision, and require design
+mode, no project protection and the verified candidate MVID/assembly-file hashes.
+Their context differs from the in-process bridge path; include the existing
+adapter HelpFile/HelpContextID scenarios as separate controls. A difference
+between a bridge case and an external case alone does not establish a binder bug.
+
+The raw setter uses exact BSTR/I4 inputs without coercion, architecture-correct
+24-byte argument/result buffers, checked canaries and OLE cleanup. It passes one
+named `DISPID_PROPERTYPUT` argument, `DISPATCH_PROPERTYPUT` only and the invariant
+locale used by the CLR comparison. Microsoft documents that
+[PROPERTYPUT requires the named argument and ignores the result](https://learn.microsoft.com/en-us/windows/win32/api/oaidl/nf-oaidl-idispatch-invoke).
+`metadata-setter.json` retains the original native HRESULT and input/result
+buffer observations. Successful calls proceed through the unchanged adapter
+save, normal process exit and fresh-disk exact metadata assertions. Byte-packing
+is retained as observed; these diagnostics add no ANSI recovery heuristic.
+
+After preparing a matching frozen-candidate test output and a new evidence
+directory, run the four cases and both bridge controls together:
+
+```powershell
+$env:VBAi_RUN_OFFICE_TESTS = "1"
+$env:VBAi_RUN_OFFICE_METADATA_GETTER_PROBE = "1"
+$env:VBAi_RUN_OFFICE_METADATA_SETTER_PROBE = "1"
+$env:VBAi_OFFICE_RESULTS = "$PWD/artifacts/metadata-setter-evidence"
+dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildOutputRoot="$PWD/artifacts/build" --filter "TestCategory=OfficeMetadataSetterProbe|FullyQualifiedName=VBAi.Tests.Integration.OfficeAdapterOnlyMetadataQualificationTests.Access16HelpFilePathAdapterSaveReopen|FullyQualifiedName=VBAi.Tests.Integration.OfficeAdapterOnlyMetadataQualificationTests.Access16HelpContextIdAdapterSaveReopen" --results-directory "$PWD/artifacts/metadata-setter-evidence" --logger "trx;LogFileName=metadata-setters.trx"
+```
+
+The native project-properties dialog exposes these Help fields on its
+[General tab](https://learn.microsoft.com/en-us/office/vba/language/reference/user-interface-help/project-properties-dialog-box).
+The existing guarded `queue_project_properties_dialog` command opens that
+dialog; it does not edit its controls. UI field discovery, a separately owned
+single-change trial and normal save/reopen proof are prerequisites for evaluating
+that alternative. No native dialog edit is included in this setter batch.
+
+### Controlled native export tracing
+
+`tools/probes/Trace-NativeUserFormExport.ps1` defaults to a prepare-only plan.
+Its explicit `-Execute` path requires the absolute pending report, expected
+MVID/SHA-256 and a measured `-DebuggerPreflightReport` from
+`tools/probes/Test-NativeTracePreflight.ps1`. That preflight uses only a new
+disposable non-Office helper and must prove paired native tracing, attachment,
+target survival, normal shutdown and debugger detach with the exact CDB,
+JsProvider and trace-script hashes. It does not qualify native Office export.
+
+Trace execution validates the owned Excel PID/start identity and existing
+absolute GUID export child, refuses a preexisting trace output or attached
+debugger, and arms the export permission marker only after attachment is proven.
+The bounded capture records paired syscall arguments/statuses and its detach
+lifecycle; it does not issue exports or change ACLs, EFS, tokens or trust. The
+fixture issues one export only. If setup fails before arming, preserve zero-export
+evidence; if a native export fails, retain its original response and do not replay
+it. Record detach and owned-host shutdown independently from export acceptance.
+
+Pending/preflight JSON is read explicitly as UTF-8, including accented repository
+paths. CDB command files intentionally use the active Windows ANSI code page
+without a BOM; debugger logs use Unicode. These are separate encoding contracts.
+A native path/name-not-found status despite a successful synthetic root write
+localizes the observed failure but does not prove an EFS, ACL or token cause.
+Exact candidates and measured results belong in recorded validation.
+
+If a native campaign aborts, retain the final TRX and reconcile individual
+outcomes with its raw counters and the planned scenario inventory. An in-flight
+scenario absent from the TRX and unreached cases are NOT_RUN; NotExecuted is not
+a successful fixture skip. Explicitly authorized forced cleanup is never normal
+host shutdown acceptance. Record native debugger ownership, any termination
+timeout and whether an exit code was actually observed; transient PID absence
+does not establish completed cleanup.
+
 Use disposable documents and identify the intended process/project before any
 write. Record application version, architecture, language, DPI and loaded VBAi
 build. Restore temporary settings and verify that unrelated documents remain
@@ -69,6 +380,11 @@ unchanged. Skip unavailable hosts honestly instead of treating a skip as a pass.
 | `VBAi_SOLIDWORKS_PID` | PID of a user-preloaded SOLIDWORKS/VBE instance (`TestCategory=SolidWorks`). |
 
 Set only the variables needed for the intended run and remove them afterward.
+The formatting-options scenario can additionally use an absolute
+`VBAi_TEST_FORMAT_OPTIONS_OUTPUT` directory to retain request/response and
+before/after evidence independently of VSTest attachment retention, including
+successful runs. It creates a unique subdirectory and never retries a failed
+mutation to gather evidence.
 The SOLIDWORKS workflow must not create or kill an application instance on the
 user's behalf. A host fixture can use its own native save helper; that result does
 not automatically qualify VBAi's `save_host_document` adapter.
@@ -104,6 +420,14 @@ already-installed model (default `qwen2.5:3b`). These synthetic scenarios cover
 streamed text, a harmless tool roundtrip, cancellation and a subsequent request;
 they do not execute native VBE tools or read saved provider settings. Remove the
 opt-in variables after the run.
+
+The detached HTTP and chat UI cases accept `VBAi_TEST_OLLAMA_ENDPOINT` when an
+owned local server uses another port. Its default remains
+`http://127.0.0.1:11434/v1/chat/completions`. An override must be a canonical
+`http://127.0.0.1:<port>/v1/chat/completions` URL without credentials, query or
+fragment. Optional synthetic wire capture is restricted to that exact server's
+chat and `/api/tags` routes and records the selected port. Retain the backend
+version and model digest; another port does not prove the default port is usable.
 
 `VBAi_RUN_OLLAMA_UI_TESTS=1` enables `TestCategory=OllamaUi` with the same
 model selector. It shows the real chat controls and checks send, rendered
@@ -143,6 +467,154 @@ FRX diagnostic; it must not publish corrupt content. Run either scenario only
 while it owns the desktop. Normal host shutdown is part of acceptance; a verified
 transfer does not excuse a subsequent crash. These fixtures are not enabled by
 ordinary connected-account opt-ins.
+
+### Installed GitWindow capture and local checkpoint
+
+`NativeEmbeddedGitUi` is a separate, disabled-by-default scenario. It opens the
+installed add-in through exactly one existing CommandBarButton with tag
+`VBAi.GitHub`. A dedicated owner STA retains the owned Excel fixture and the modal
+COM `Execute` call. An MTA worker acknowledges readiness before that call, discovers
+only the exact owned window and native leaf controls, and requires the actual
+UIA Value, Invoke, SelectionItem and Window patterns before each action. It uses
+no coordinates, keyboard input, new product hook or external-STA Git capture.
+
+Enable all three explicit flags: `VBAi_RUN_EMBEDDED_GIT_UI_TESTS=1`,
+`VBAi_RUN_USERFORM_GITHUB_TESTS=1` and `VBAi_RUN_EXCEL_TESTS=1`. Set absolute
+`VBAi_EXCEL_RESULTS` and `VBAi_TEST_GITHUB_MANIFEST` paths. Set
+`VBAi_TEST_EMBEDDED_GIT_MVID` and `VBAi_TEST_EMBEDDED_GIT_SHA256` to the exact frozen
+product referenced by the tests and installed in Excel. Existing Excel processes
+refuse launch. The explicit `/x /automation` disposable seed bootstrap must attest
+the same PID, executable, start time and loaded candidate before preparation.
+Run only with the desktop available and an already-connected authorized account;
+the test neither signs in nor chooses a fallback repository.
+
+The manifest is constrained to the retained synthetic repository ID `1396566119`
+at `https://github.com/blackcancer/vbai-qualification-20260929203712-7267b1e6`.
+It additionally requires `embeddedBranch`, `embeddedBranchCommit` and the actual
+observed `checkpointTabName`. The retained branch
+`qualification-userform-20260929225354-93ed53dc` is accepted only at
+`f5fb1a004dcb287c4c820b4bf308c673ce3b64e6`. Alternatively, the maintainer can
+explicitly authorize an existing `qualification-embedded-ui-...` synthetic branch
+and exact forty-character lowercase commit. No branch is created by this test;
+`main`, `qualification-change` and arbitrary branches are refused. Preserve the
+original manifest and make a separately reviewed manifest for this scope.
+
+```powershell
+dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildProjectReferences=false -p:BuildOutputRoot="$PWD/artifacts/build-frozen-embedded-git" --filter 'FullyQualifiedName=VBAi.Tests.Integration.EmbeddedGitWindowTests.InstalledOwnerGitWindowCapturesSyntheticProjectAndCreatesLocalCheckpoint' --logger 'trx;LogFileName=embedded-git-ui.trx' --results-directory "$PWD/artifacts/embedded-git-ui"
+```
+
+Before opening the menu, independent `export_component` requests run through the
+installed owner-VBE bridge with current component versions. `inspect_code_file`
+attests the host ANSI code page; strict decoding produces the comparison snapshot.
+Original native exports, resource bytes, raw hashes and parsed FRM resource offsets
+remain durable. The local checkpoint must have the exact unique label/ref and
+match every baseline manifest/source file and logical FRX resource using the
+product's comparison rules. Those rules do not rewrite raw resources. Native
+readbacks also preserve project COM identity, active project/module, mode,
+protection, selection, references, source and form/control metadata. Idle UI alone
+cannot prove success. Linking an existing remote revision does not prove equality
+between the remote snapshot and the independent local baseline.
+
+Every action has a durable intent and is emitted once. Known terminal errors remain
+failures and permit a single normal modal close when no action is pending. Unknown
+ownership, a deadline, delivery failure or unclassified status retains the original
+workers/RCWs/owned host without another native action. Primary and cleanup failures
+remain separate. Successful acceptance requires observed normal Excel exit; a
+local checkpoint is not complete GitHub, import or recovery qualification.
+
+The remaining embedded UI matrix is deliberately unexecuted:
+
+| Operation | Required missing UI evidence and terminal oracle |
+| --- | --- |
+| Commit selection | The detached probe exposed `commitMessage` as Document/Text, without ValuePattern. A supported accessible editing route and checked-item selection/toggle patterns must be observed before any emission; do not invent a Value setter. Prove the exact selected source/ref and local commit contents. |
+| Push/fetch | Observe interactive button patterns, unique delivery and terminal status in the owned host, then verify only the authorized branch's remote commit/fetched ref and unchanged native source. Idle/enabled buttons do not prove transfer. |
+| Pull/import | Observe the actual import preview/report controls, exact selected revision, preserved backup refs and native mode/protection/revision guards; verify full designer/source state and save/reopen separately. |
+| Checkpoint restore | Observe the actual list SelectionItem pattern and exact checkpoint identity, then the guarded import preview and full native/backup readbacks. Creating a checkpoint does not qualify restoration. |
+| Recovery | Use separately authorized synthetic retained markers/backups and verify refusal plus explicit measured recovery. Do not manufacture a production failure or replay an uncertain mutation. |
+
+The targeted detached discovery artifact proves available patterns only. This
+prepared scenario and its pure helper checks are not evidence that the native
+embedded workflow has run, and do not close the full Q-024/Q-027 release gates.
+
+Native **local Git** UserForm layout qualification uses
+`VBAi_RUN_USERFORM_LOCAL_GIT_TESTS=1` and `VBAi_RUN_EXCEL_TESTS=1`, with optional
+absolute `VBAi_TEST_USERFORM_LOCAL_GIT_OUTPUT` for durable evidence. Filter on
+`FullyQualifiedName~NativeUserFormLocalGitTests`. Each layout owns a separate
+disposable Excel process and tests unchanged captures, a native property change,
+exact local Git transport, checkpoint import, measured explicit rollback and
+helper save/reopen with macros disabled. It covers Label/Button, TextBox,
+ComboBox, ListBox, CheckBox, OptionButton, ToggleButton, ScrollBar, SpinButton,
+TabStrip, an Image with a picture, and nested Frame/MultiPage. Unsupported
+comparison grammars are retained unchanged and may fail these scenarios; no
+normalizer exception or coverage claim is added. No remote Git operation occurs.
+Run only while owning the desktop; retain failure artifacts and review the
+source/reopened designer captures separately. Normal host exit is required.
+
+The separate `ExplicitOwnedLayoutCaptureImportRecoveryAndReopenPreserveNativeState`
+matrix adds `VBAi_RUN_USERFORM_EXPLICIT_BOOTSTRAP=1` and requires an absolute
+`VBAi_EXCEL_RESULTS` directory. Filter on that exact method name to run its complete
+prepared layout set without the COM-activation cases. It reuses the existing
+`/x /automation` seed/bootstrap with exact PID, image, start-time and loaded-MVID
+checks; any existing Excel process refuses launch. No path-visibility/token
+manifest is passed. All native layout, capture, local Git, recovery and reopen
+assertions remain the same. Launch context and final shutdown observations are
+retained separately. A pass in this context does not explain a failed COM launch
+or qualify remote GitHub transfer. Timeout or I/O uncertainty preserves the host
+without a cleanup mutation or retry.
+
+The Image layout reads its actual content digest through the production
+`form_tree` descriptor inside Excel. It does not marshal a process-local OLE
+picture to the test process. That readback records the descriptor type and PNG
+content SHA-256, rather than an external picture handle or HIMETRIC dimensions.
+
+To diagnose native UserForm export failures separately, enable
+`VBAi_RUN_USERFORM_EXPORT_PROBES=1` and `VBAi_RUN_EXCEL_TESTS=1`, then filter on
+`FullyQualifiedName~NativeUserFormExportProbeTests`. The six disposable trials
+compare external STA and production host-bridge dispatch to fixture temporary,
+production `GitTemporary` and evidence directories. Each trial uses a new
+directory and the same form filename, attempts at most one export, records exact
+PID, loaded assembly, document/component identity and raw files, and requires
+normal owned-host exit. Failed exports are not retried or redirected. Partial
+files remain available for diagnosis. Use the same optional absolute
+`VBAi_TEST_USERFORM_LOCAL_GIT_OUTPUT` to retain reports. These probes do not
+qualify Git capture comparison, imports or recovery.
+
+The separate `ControlledSiblingEfsExportPreservesIdentityAndRetainsRawEvidence`
+method runs two synthetic host-bridge trials with the same opt-ins. Each creates
+a fresh unencrypted parent under the evidence root and two ASCII-named sibling
+directories, encrypts only the empty `efs001` sibling, verifies both attributes,
+then exports once to the selected sibling. Setup failures remain failures before
+export. It records parent/temp attributes and retains both siblings; it never
+decrypts a directory or modifies the real VBAi profile. This isolates EFS from
+the production cache path without relocating any user's macro data.
+
+`ControlledVolumeAndAncestorEfsExportRetainsOwnedIdentity` adds four synthetic
+host-bridge trials: C/E volumes crossed with encryption on a fresh parent before
+creating its children, or only on the empty export leaf. C trials use a unique
+owned directory under the existing C TEMP root; E trials require an explicit
+evidence root on E. The new parent must initially be unencrypted, and inherited
+versus directly applied EFS is verified before the single export. All siblings,
+raw files and reports remain available. This changes no existing directory's
+encryption, decrypts nothing and does not qualify the actual GitTemporary cache.
+
+`InheritedStorageAncestorExportRetainsExactOwnedIdentity` runs four host-bridge
+trials in fresh children of the existing LocalAppData, LocalAppData/VBAi,
+GitTemporary and TEMP directories. It changes no parent's ACL or encryption.
+Each child records inherited attributes and ACL, verifies a new synthetic text
+file can be written/read, and queries public EFS certificate hashes while keeping
+metadata access denial explicit. Each process then attempts exactly one native
+form export. Reports, raw and partial files are retained; no private key is read.
+The same four trials record the testhost and exact owned Excel process tokens:
+public user SID, session, integrity SID, elevation type, restricted-token flag and
+AppContainer flag. These observations use query-only handles, change no token or
+permission, and retain access failures as unverified metadata.
+
+Designer screenshots reobserve the COM window after bounded UI settlement. A
+zero designer HWND permits capture of the owned VBE root only after verifying
+the exact active project and designer COM identities, captions, type, visibility
+and root PID. Each screenshot has a `.png.json` sidecar recording observations,
+capture scope and failures. A root capture covers the entire VBE with the exact
+designer active and must be reviewed with that scope; it is not a form-only crop.
 
 Local provider tests use simulated HTTP or CLI transports. Do not use personal
 credentials, paid API calls or private project data without explicit permission.

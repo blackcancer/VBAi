@@ -50,9 +50,11 @@ namespace VBAi.Tests.Unit.Editor
         internal ModernEditorWindow Window => Editor.Window;
         internal readonly OwnedWebRaw Core = new OwnedWebRaw(OwnedWebRaw.Raw("ICoreWebView2_4"));
         internal readonly OwnedWebRaw Settings = new OwnedWebRaw(OwnedWebRaw.Raw("ICoreWebView2Settings"));
-        internal readonly OwnedWebRaw Environment = new OwnedWebRaw(OwnedWebRaw.Raw("ICoreWebView2Environment"));
+        internal readonly OwnedWebRaw Environment = new OwnedWebRaw(OwnedWebRaw.Raw("ICoreWebView2Environment5"));
         internal readonly OwnedWebRaw Controller = new OwnedWebRaw(OwnedWebRaw.Raw("ICoreWebView2Controller"));
         internal readonly string Assets;
+        internal const uint BrowserProcessId = 7301;
+        internal readonly List<EditorBrowserProfile> Profiles = new List<EditorBrowserProfile>();
         internal Action EnvironmentCreated, CoreEnsured, TranslationAdded;
         internal int Scripts, Executes, NativeCloses;
         internal string Navigation, Diagnostic;
@@ -62,7 +64,7 @@ namespace VBAi.Tests.Unit.Editor
             Assets = System.IO.Path.Combine(Editor.Module.Root, "assets"); System.IO.Directory.CreateDirectory(Assets); System.IO.File.WriteAllText(System.IO.Path.Combine(Assets, "index.html"), "owned local editor");
             Window.BrowserAssetsDirectory = Assets; Editor.Base.Ready(false);
             Settings.Values["AreDevToolsEnabled"] = Settings.Values["AreDefaultContextMenusEnabled"] = Settings.Values["IsStatusBarEnabled"] = Settings.Values["AreHostObjectsAllowed"] = 1;
-            Core.Values["Settings"] = Settings.Proxy; Core.Values["Source"] = ModernEditorWindow.Origin;
+            Core.Values["Settings"] = Settings.Proxy; Core.Values["Source"] = ModernEditorWindow.Origin; Core.Values["BrowserProcessId"] = BrowserProcessId;
             Core.Operation = (name, values) =>
             {
                 if (name == "AddHostObjectToScript") { Assert.IsNotNull(values[1]); return null; }
@@ -76,7 +78,16 @@ namespace VBAi.Tests.Unit.Editor
             Environment.Operation = (name, values) => { if (name != "CreateWebResourceResponse") throw new AssertFailedException("Unexpected owned environment " + name); Assert.AreEqual(403, values[1]); Assert.AreEqual("Forbidden", values[2]); CreatedResponse = new OwnedWebRaw(OwnedWebRaw.Raw("ICoreWebView2WebResourceResponse")); CreatedResponse.Values["StatusCode"] = values[1]; return CreatedResponse.Proxy; };
             Controller.Values["CoreWebView2"] = Core.Proxy; Controller.Values["IsVisible"] = 0; Controller.Values["Bounds"] = Activator.CreateInstance(OwnedWebRaw.Raw("tagRECT")); Controller.Values["ZoomFactor"] = 1d; Controller.Values["ParentWindow"] = IntPtr.Zero;
             Controller.Operation = (name, values) => { if (name == "Close") { NativeCloses++; return null; } if (name == "NotifyParentWindowPositionChanged" || name == "SetBoundsAndZoomFactor") return null; throw new AssertFailedException("Unexpected owned controller operation " + name); };
-            Window.CreateBrowserEnvironment = cache => { Assert.IsTrue(cache.EndsWith(System.Diagnostics.Process.GetCurrentProcess().Id.ToString())); EnvironmentCreated?.Invoke(); return Task.FromResult(OwnedWebRaw.Wrap<CoreWebView2Environment>(Environment.Proxy)); };
+            Window.CreateBrowserEnvironment = cache => {
+                string root = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
+                    "VBAi", "EditorWebView", System.Diagnostics.Process.GetCurrentProcess().Id.ToString());
+                Assert.AreEqual(root, System.IO.Path.GetDirectoryName(cache));
+                Assert.IsTrue(Guid.TryParseExact(System.IO.Path.GetFileName(cache), "N", out var identity), "Each owned editor must receive a unique profile directory.");
+                Assert.IsTrue(System.IO.Directory.Exists(cache));
+                var profile = LlmBoundaryScope.Get<EditorBrowserProfile>(Window, "browserProfile");
+                Assert.AreEqual(cache, profile.Path); Profiles.Add(profile);
+                EnvironmentCreated?.Invoke(); return Task.FromResult(OwnedWebRaw.Wrap<CoreWebView2Environment>(Environment.Proxy));
+            };
             Window.EnsureBrowserEnvironment = (browser, environment) => { try { Attach(browser); Assert.IsNotNull(browser.CoreWebView2); CoreEnsured?.Invoke(); return Task.CompletedTask; } catch (Exception error) { Diagnostic = error.ToString(); throw; } };
         }
         internal void Attach(WebView2 browser)
@@ -90,6 +101,18 @@ namespace VBAi.Tests.Unit.Editor
             var raw = new OwnedWebRaw(OwnedWebRaw.Raw("ICoreWebView2WebMessageReceivedEventArgs")); raw.Values["Source"] = source; raw.Values["webMessageAsJson"] = payload;
             Editor.Private("MessageReceived", null, OwnedWebRaw.Wrap<CoreWebView2WebMessageReceivedEventArgs>(raw.Proxy));
         }
-        public void Dispose() { Editor.Dispose(); }
+        internal void BrowserExited(uint processId)
+        {
+            var args = new OwnedWebRaw(OwnedWebRaw.Raw("ICoreWebView2BrowserProcessExitedEventArgs"));
+            args.Values["BrowserProcessId"] = processId;
+            Environment.Fire("BrowserProcessExited", Environment.Proxy, args.Proxy);
+        }
+        public void Dispose()
+        {
+            Editor.Dispose();
+            // These profiles belong to a raw mock: no Chromium process ever existed.
+            // Supply the owned exit during fixture teardown, including failed initialization.
+            foreach (var profile in Profiles) { profile.BrowserExited(BrowserProcessId); profile.Cleanup.GetAwaiter().GetResult(); }
+        }
     }
 }

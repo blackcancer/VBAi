@@ -501,7 +501,7 @@ namespace VBAi
         }
 
         /// <summary>Implémente la lecture du dialogue Options avec UI Automation.</summary>
-        private sealed partial class NativeOptionsProbe : IWritableOptionsProbe
+        private sealed partial class NativeOptionsProbe : IWritableOptionsProbe, IOptionsDialogLifetimeProbe
         {
             /// <summary>Racine UI Automation du dialogue.</summary>
             private AutomationElement root;
@@ -683,7 +683,38 @@ namespace VBAi
             }
             /// <summary>Ferme le dialogue sans appliquer de choix.</summary>
             /// <param name="dialog">Handle du dialogue.</param>
-            public void Close(IntPtr dialog) { CloseDialog(dialog); }
+            public void Close(IntPtr dialog)
+            {
+                uint ownPid = checked((uint)Process.GetCurrentProcess().Id);
+                uint dialogThread = GetWindowThreadProcessId(dialog, out uint dialogPid);
+                if (dialog == IntPtr.Zero || dialogThread == 0 || dialogPid != ownPid || ClassName(dialog) != "#32770" || Dialog() != dialog)
+                    throw new InvalidOperationException("The captured native Options dialog identity is no longer valid; Cancel was not sent.");
+                IntPtr cancel = GetDlgItem(dialog, 2);
+                uint cancelThread = GetWindowThreadProcessId(cancel, out uint cancelPid);
+                if (cancel == IntPtr.Zero || cancelThread != dialogThread || cancelPid != ownPid || ClassName(cancel) != "Button" || !OptionsWindowEnabled(cancel))
+                    throw new InvalidOperationException("The exact native Options Cancel button is unavailable; Cancel was not sent.");
+                if (!PostMessage(cancel, BmClick, IntPtr.Zero, IntPtr.Zero))
+                    throw new InvalidOperationException("The single native Options Cancel request could not be posted.");
+            }
+            /// <summary>Observes destruction of the exact captured handle, including hidden dialogs, without acting on another window.</summary>
+            public bool IsOpen(IntPtr dialog)
+            {
+                bool present = false;
+                bool identity = true;
+                uint ownPid = checked((uint)Process.GetCurrentProcess().Id);
+                if (!EnumWindows((handle, parameter) => {
+                    if (handle == dialog)
+                    {
+                        present = true;
+                        GetWindowThreadProcessId(handle, out uint pid);
+                        identity = pid == ownPid && ClassName(handle) == "#32770";
+                    }
+                    return true;
+                }, IntPtr.Zero))
+                    throw new InvalidOperationException("The captured Options dialog lifetime could not be enumerated.");
+                if (!identity) throw new InvalidOperationException("The captured Options handle has a different native owner or class.");
+                return present;
+            }
             /// <summary>Attend avant la lecture UI Automation suivante.</summary>
             /// <param name="milliseconds">Durée de l’attente.</param>
             public void Pause(int milliseconds) { PauseNative(milliseconds); }
@@ -1219,6 +1250,7 @@ namespace VBAi
             if (dialog == IntPtr.Zero) throw new InvalidOperationException("The native VBE Options dialog did not open.");
             string selected = null;
             string[] choices = null;
+            Exception primary = null;
             try
             {
                 IList<OptionsChoice> radios = native.ErrorChoices(dialog);
@@ -1243,14 +1275,8 @@ namespace VBAi
                 if (selected == null) throw new InvalidOperationException("No error trapping choice appears selected.");
                 choices = names.ToArray();
             }
-            finally { native.Close(dialog); }
-            bool closed = false;
-            for (int attempt = 0; attempt < 20; attempt++)
-            {
-                if (native.Dialog() == IntPtr.Zero) { closed = true; break; }
-                native.Pause(50);
-            }
-            if (!closed) throw new InvalidOperationException("The add-in read VBE Options but could not close its dialog.");
+            catch (Exception error) { primary = error; }
+            CompleteOptionsRead(native, dialog, primary);
             return new { Scope = "VBE", ErrorTrapping = selected, Choices = choices,
                 Verification = "NativeOptionsReadback", DialogClosed = true,
                 Limit = "This is the currently displayed VBE-wide preference, not a diagnosis of an active runtime error." };
@@ -1272,16 +1298,11 @@ namespace VBAi
             { native.Pause(50); dialog = native.Dialog(); }
             if (dialog == IntPtr.Zero)
                 throw new InvalidOperationException("The native VBE Options dialog did not open.");
-            List<object> tabs;
+            List<object> tabs = null;
+            Exception primary = null;
             try { tabs = CaptureOptionsTabs(native, dialog); }
-            finally { native.Close(dialog); }
-            bool closed = false;
-            for (int attempt = 0; attempt < 20; attempt++)
-            {
-                if (native.Dialog() == IntPtr.Zero) { closed = true; break; }
-                native.Pause(50);
-            }
-            if (!closed) throw new InvalidOperationException("The add-in read VBE Options but could not close its dialog.");
+            catch (Exception error) { primary = error; }
+            CompleteOptionsRead(native, dialog, primary);
             return new { Scope = "VBE", Tabs = tabs, Count = tabs.Count,
                 OptionsVersion = OptionsRevision(tabs), DialogClosed = true, Verification = "NativeOptionsReadback",
                 Limit = "Only visible native controls were observed; no settings were changed." };
@@ -2194,6 +2215,9 @@ namespace VBAi
         /// <param name="handle">Handle à interroger.</param>
         /// <returns>Texte observé, ou chaîne vide si la lecture échoue.</returns>
         private static string WindowText(IntPtr handle)
-        { var text = new StringBuilder(512); GetWindowText(handle, text, text.Capacity); return text.ToString(); }
+        {
+            if (observerTextDepth.Value != 0) return ReadObserverText(handle);
+            var text = new StringBuilder(512); GetWindowText(handle, text, text.Capacity); return text.ToString();
+        }
     }
 }

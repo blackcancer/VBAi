@@ -26,6 +26,10 @@ namespace VBAi
         internal Func<Process, int, bool> WaitForExit = (process, timeout) => process.WaitForExit(timeout);
         /// <summary>Interrompt le processus Git possédé par cette opération.</summary>
         internal Action<Process> StopProcess = process => process.Kill();
+        /// <summary>Reads only the recovery marker metadata; failures remain observable rather than meaning absence.</summary>
+        internal Func<string, FileAttributes> RecoveryAttributes = File.GetAttributes;
+        /// <summary>Deletes the confirmed regular recovery marker once, without retry after an uncertain outcome.</summary>
+        internal Action<string> DeleteRecoveryMarker = File.Delete;
         /// <summary>Branche locale active.</summary>
         /// <value>Branche locale active.</value>
         internal string Branch { get; private set; }
@@ -43,7 +47,29 @@ namespace VBAi
         internal string RecoveryFile { get { return Path.Combine(directory, "codex-recovery"); } }
         /// <summary>Indique si un marqueur de récupération est présent.</summary>
         /// <value>Indique si un marqueur de récupération est présent.</value>
-        internal bool RecoveryPending { get { return File.Exists(RecoveryFile); } }
+        internal bool RecoveryPending { get { return ObserveRecoveryMarker().HasValue; } }
+
+        /// <summary>Only a definite missing marker is absence; any access, I/O or other metadata error propagates.</summary>
+        private FileAttributes? ObserveRecoveryMarker()
+        {
+            try { return RecoveryAttributes(RecoveryFile); }
+            catch (FileNotFoundException) { return null; }
+            catch (DirectoryNotFoundException) { return null; }
+        }
+
+        /// <summary>Allows an absent or regular marker for rollback, never a directory or filesystem link.</summary>
+        internal void RequireValidRecoveryMarker()
+        {
+            var attributes = ObserveRecoveryMarker();
+            if (attributes.HasValue) RequireRegularRecoveryMarker(attributes.Value);
+        }
+
+        /// <summary>Rejects invalid marker types before any native import or marker deletion.</summary>
+        private static void RequireRegularRecoveryMarker(FileAttributes attributes)
+        {
+            if ((attributes & (FileAttributes.Directory | FileAttributes.ReparsePoint)) != 0)
+                throw new IOException("The recovery marker is not a regular file; recovery cannot continue automatically.");
+        }
 
         /// <summary>Crée ou configure le dépôt bare pour la branche et le compte donnés.</summary>
         /// <param name="directory">Répertoire du dépôt bare.</param>
@@ -224,6 +250,7 @@ namespace VBAi
         /// <param name="snapshot">État sérialisé des fichiers VBA.</param>
         internal void PrepareRecovery(VbaGitSnapshot snapshot)
         {
+            if (RecoveryPending) throw new InvalidOperationException(UiText.Get("Restore the interrupted import before continuing."));
             string backup = Commit(snapshot, Resolve(Backup), UiText.Get("VBA backup before import"));
             SetRef(Backup, backup);
             string previousAfter = Resolve(AfterImport);
@@ -239,7 +266,15 @@ namespace VBAi
         }
 
         /// <summary>Supprime le marqueur après une récupération terminée.</summary>
-        internal void CompleteRecovery() { if (File.Exists(RecoveryFile)) File.Delete(RecoveryFile); }
+        internal void CompleteRecovery()
+        {
+            var attributes = ObserveRecoveryMarker();
+            if (!attributes.HasValue) return;
+            RequireRegularRecoveryMarker(attributes.Value);
+            DeleteRecoveryMarker(RecoveryFile);
+            if (ObserveRecoveryMarker().HasValue)
+                throw new IOException("The recovery marker remains after its single deletion request; completion is unverified. Do not retry automatically.");
+        }
 
         /// <summary>Retourne les entrées directes de l’arbre Git.</summary>
         /// <param name="tree">Identifiant de commit ou arbre Git à lire.</param>

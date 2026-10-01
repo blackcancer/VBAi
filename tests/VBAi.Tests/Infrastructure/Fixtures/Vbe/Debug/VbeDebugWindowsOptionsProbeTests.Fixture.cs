@@ -24,7 +24,7 @@ namespace VBAi.Tests.Unit
             };
             public readonly List<VbeDebugWindows.OptionsControl> Items = new List<VbeDebugWindows.OptionsControl>();
             public readonly List<VbeDebugWindows.OptionsChoice> Choices = new List<VbeDebugWindows.OptionsChoice>();
-            public bool Open = true, CloseAfterRead;
+            public bool Open = true, CloseAfterRead = true;
             public int Closes, Pauses, ClosePolls;
             public IntPtr Dialog()
             {

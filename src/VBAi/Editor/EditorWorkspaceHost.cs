@@ -69,15 +69,21 @@ namespace VBAi
                 // Leave native designers and the Object Browser usable in the document area.
                 if (type == 1 || type == 2) nativeDocument = true;
                 else if (type == 0) nativeDocument = false;
-                if (nativeDocument) { editor.Hide(); return; }
+                if (nativeDocument) { editor.Hide(); ResizeBounds(); return; }
                 if (!editor.Visible) editor.Show();
                 // A newly opened CodePane can raise itself above the child editor.
                 // Reorder only for native code, preserving designers and docked panes.
                 if (type == 0 && GetWindow(workspace, 5) != editor.Handle)
                     SetWindowPos(editor.Handle, IntPtr.Zero, 0, 0, 0, 0, 0x0013);
             }
-            catch (COMException) { return; }
-            if (GetClientRect(workspace, out Rect r))
+            catch (COMException) { ResizeBounds(); return; }
+            ResizeBounds();
+        }
+        /// <summary>Updates workspace geometry without changing visibility, child ordering or focus.</summary>
+        private void ResizeBounds()
+        {
+            if (GetClientRect(workspace, out Rect r) &&
+                editor.Bounds != new System.Drawing.Rectangle(0, 0, r.Right, r.Bottom))
                 // Resize only: a timer must never raise Monaco above native panes
                 // while their containing frame is being docked or detached.
                 SetWindowPos(editor.Handle, IntPtr.Zero, 0, 0, r.Right, r.Bottom, 0x0014);

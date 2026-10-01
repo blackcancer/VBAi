@@ -22,7 +22,7 @@ namespace VBAi.Tests.Integration
                 Assert.Inconclusive("Set VBAi_RUN_OLLAMA_TESTS=1 to exercise local streaming cancellation.");
             var provider = LlmProvider.All.Single(p => p.IsOllama);
             string model = Environment.GetEnvironmentVariable("VBAi_TEST_OLLAMA_MODEL") ?? "qwen2.5:3b";
-            var settings = new LlmSettings { OllamaEndpoint = "http://127.0.0.1:11434/v1/chat/completions" };
+            var settings = new LlmSettings { OllamaEndpoint = OllamaQualificationEndpoint.Resolve().AbsoluteUri };
             bool cancelled = false;
             Exception failure = null;
             using (var client = new LlmChatClient(provider, settings, model))
@@ -55,7 +55,7 @@ namespace VBAi.Tests.Integration
                 Assert.Inconclusive("Set VBAi_RUN_OLLAMA_TESTS=1 to exercise the local Ollama server with synthetic content.");
             var provider = LlmProvider.All.Single(p => p.IsOllama);
             string model = Environment.GetEnvironmentVariable("VBAi_TEST_OLLAMA_MODEL") ?? "qwen2.5:3b";
-            var settings = new LlmSettings { OllamaEndpoint = "http://127.0.0.1:11434/v1/chat/completions" };
+            var settings = new LlmSettings { OllamaEndpoint = OllamaQualificationEndpoint.Resolve().AbsoluteUri };
             var models = await LlmChatClient.ListModelsAsync(provider, settings);
             Assert.IsTrue(models.Any(m => m.Id == model), "The qualification model must already be installed.");
             var json = new JavaScriptSerializer();

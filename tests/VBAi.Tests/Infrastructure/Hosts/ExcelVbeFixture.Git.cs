@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Web.Script.Serialization;
 using System.Windows.Forms;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -18,15 +19,32 @@ namespace VBAi.Tests.Integration
 
         internal void CaptureGitFormDesigner(string form, string path)
         {
-            object project = null, components = null, component = null, window = null;
+            object project = null, components = null, component = null, window = null, editor = null, mainWindow = null;
+            var evidence = new Dictionary<string, object> { ["Form"] = form, ["ExpectedProcessId"] = ProcessId,
+                ["State"] = "PENDING", ["CapturePath"] = path, ["Scope"] = "UNQUALIFIED" };
+            var observations = new List<object>(); evidence["Observations"] = observations;
             try
             {
                 project = ((dynamic)workbook).VBProject; components = ((dynamic)project).VBComponents;
                 component = ((dynamic)components).Item(form); window = ((dynamic)component).DesignerWindow();
                 ((dynamic)window).Visible = true; ((dynamic)window).SetFocus();
-                IntPtr handle = new IntPtr(Convert.ToInt64(((dynamic)window).HWnd));
+                editor = ((dynamic)application).VBE; mainWindow = ((dynamic)editor).MainWindow;
+                GitDesignerCaptureState state = null;
+                // DesignerWindow can expose HWnd=0. Observe it again after the
+                // owning UI has settled; never issue another focus/visibility action.
+                for (int i = 0; i < 20; i++)
+                {
+                    Application.DoEvents(); Thread.Sleep(30);
+                    state = ReadGitDesignerCaptureState(project, window, editor, mainWindow);
+                    observations.Add(state);
+                    if (state.DesignerHandle != 0 && state.ProjectIdentityMatches && state.DesignerIdentityMatches) break;
+                }
+                IntPtr handle = SelectGitDesignerCaptureTarget(state, (uint)ProcessId, target => {
+                    uint owner; GetWindowThreadProcessId(target, out owner); return owner;
+                });
+                evidence["Scope"] = state.DesignerHandle == 0 ? "OwnedVbeRootWithExactActiveDesigner" : "OwnedNativeDesignerWindow";
+                evidence["CaptureHandle"] = handle.ToInt64();
                 uint pid; GetWindowThreadProcessId(handle, out pid); Assert.AreEqual((uint)ProcessId, pid);
-                for (int i = 0; i < 10; i++) { Application.DoEvents(); Thread.Sleep(30); }
                 GitCaptureRect rectangle; Assert.IsTrue(GetWindowRect(handle, out rectangle));
                 int width = rectangle.Right - rectangle.Left, height = rectangle.Bottom - rectangle.Top;
                 Assert.IsTrue(width > 0 && height > 0 && width <= 4096 && height <= 4096);
@@ -38,8 +56,78 @@ namespace VBAi.Tests.Integration
                     finally { graphics.ReleaseHdc(dc); }
                     bitmap.Save(path, ImageFormat.Png);
                 }
+                var after = ReadGitDesignerCaptureState(project, window, editor, mainWindow);
+                observations.Add(after);
+                Assert.AreEqual(handle, SelectGitDesignerCaptureTarget(after, (uint)ProcessId, target => {
+                    uint owner; GetWindowThreadProcessId(target, out owner); return owner;
+                }), "The exact capture target changed while taking the screenshot.");
+                evidence["State"] = "CAPTURED_PENDING_VISUAL_REVIEW";
             }
-            finally { Release(window); Release(component); Release(components); Release(project); }
+            catch (Exception error) { evidence["State"] = "FAILED"; evidence["Failure"] = error.ToString(); throw; }
+            finally
+            {
+                try { System.IO.File.WriteAllText(path + ".json", new JavaScriptSerializer().Serialize(evidence)); }
+                finally { Release(mainWindow); Release(editor); Release(window); Release(component); Release(components); Release(project); }
+            }
+        }
+
+        /// <summary>Read-only observations used to qualify a designer capture or its owning VBE-root fallback.</summary>
+        internal sealed class GitDesignerCaptureState
+        {
+            public long DesignerHandle { get; set; }
+            public long MainHandle { get; set; }
+            public string DesignerCaption { get; set; }
+            public string ActiveCaption { get; set; }
+            public int DesignerType { get; set; }
+            public int ActiveType { get; set; }
+            public bool DesignerVisible { get; set; }
+            public bool MainVisible { get; set; }
+            public bool ProjectIdentityMatches { get; set; }
+            public bool DesignerIdentityMatches { get; set; }
+        }
+
+        private static GitDesignerCaptureState ReadGitDesignerCaptureState(object project, object window, object editor, object mainWindow)
+        {
+            object activeProject = null, activeWindow = null;
+            try
+            {
+                activeProject = ((dynamic)editor).ActiveVBProject;
+                activeWindow = ((dynamic)editor).ActiveWindow;
+                return new GitDesignerCaptureState {
+                    DesignerHandle = Convert.ToInt64(((dynamic)window).HWnd), MainHandle = Convert.ToInt64(((dynamic)mainWindow).HWnd),
+                    DesignerCaption = Convert.ToString(((dynamic)window).Caption),
+                    ActiveCaption = activeWindow == null ? null : Convert.ToString(((dynamic)activeWindow).Caption),
+                    DesignerType = Convert.ToInt32(((dynamic)window).Type), ActiveType = activeWindow == null ? -1 : Convert.ToInt32(((dynamic)activeWindow).Type),
+                    DesignerVisible = Convert.ToBoolean(((dynamic)window).Visible), MainVisible = Convert.ToBoolean(((dynamic)mainWindow).Visible),
+                    ProjectIdentityMatches = VbeProjectHostPath.SameProject(project, activeProject),
+                    DesignerIdentityMatches = VbeProjectHostPath.SameProject(window, activeWindow)
+                };
+            }
+            finally
+            {
+                // These getters can return the same RCWs held by the caller. Balance
+                // only the acquired references; FinalRelease would invalidate aliases.
+                if (activeWindow != null && Marshal.IsComObject(activeWindow)) Marshal.ReleaseComObject(activeWindow);
+                if (activeProject != null && Marshal.IsComObject(activeProject)) Marshal.ReleaseComObject(activeProject);
+            }
+        }
+
+        /// <summary>Pure capture boundary: HWnd=0 permits only the verified root and exact active designer identity.</summary>
+        internal static IntPtr SelectGitDesignerCaptureTarget(GitDesignerCaptureState state, uint expectedPid, Func<IntPtr, uint> owner)
+        {
+            Assert.IsNotNull(state); Assert.IsNotNull(owner); Assert.IsTrue(expectedPid != 0);
+            Assert.IsTrue(state.ProjectIdentityMatches && state.DesignerIdentityMatches, "The exact owned form/project is not active.");
+            Assert.IsTrue(state.DesignerVisible && state.MainVisible, "The owned designer/VBE root is not visible.");
+            Assert.AreEqual(1, state.DesignerType, "The requested VBIDE window is not a form designer.");
+            Assert.AreEqual(state.DesignerType, state.ActiveType);
+            Assert.IsFalse(string.IsNullOrWhiteSpace(state.DesignerCaption));
+            Assert.AreEqual(state.DesignerCaption, state.ActiveCaption);
+            var root = new IntPtr(state.MainHandle);
+            Assert.IsTrue(root != IntPtr.Zero, "The owning VBE root has no native handle.");
+            Assert.AreEqual(expectedPid, owner(root), "The VBE root belongs to another process.");
+            var target = state.DesignerHandle == 0 ? root : new IntPtr(state.DesignerHandle);
+            Assert.AreEqual(expectedPid, owner(target), "The native capture target belongs to another process.");
+            return target;
         }
 
         internal void PrepareGitForm(string form, string caption, string marker, string path)

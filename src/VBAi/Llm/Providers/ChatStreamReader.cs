@@ -9,6 +9,34 @@ using System.Web.Script.Serialization;
 
 namespace VBAi
 {
+    /// <summary>Retains fixed-size protocol metadata, never provider content or tool arguments.</summary>
+    internal sealed class StreamDiagnostics
+    {
+        public int JsonChunks { get; internal set; }
+        public int EmptyChoiceChunks { get; internal set; }
+        public int UsageChunks { get; internal set; }
+        public int MissingDeltaChunks { get; internal set; }
+        public int TextChunks { get; internal set; }
+        public int ToolCallChunks { get; internal set; }
+        public bool EndMarker { get; internal set; }
+        public string TerminalReason { get; private set; } = "missing";
+        public string Outcome { get; internal set; } = "reading";
+
+        /// <summary>Freezes the current scalar metadata for a point-in-time observation.</summary>
+        internal StreamDiagnostics Snapshot() { return (StreamDiagnostics)MemberwiseClone(); }
+
+        internal void SetTerminalReason(string reason)
+        {
+            switch (reason)
+            {
+                case null: TerminalReason = "missing"; break;
+                case "stop": case "tool_calls": case "length": case "content_filter":
+                case "end_turn": case "tool_use": case "stop_sequence": TerminalReason = reason; break;
+                default: TerminalReason = "unknown"; break;
+            }
+        }
+    }
+
     /// <summary>Lit les événements SSE des fournisseurs et assemble une réponse complète avant son utilisation.</summary>
     internal static class ChatStreamReader
     {
@@ -27,8 +55,27 @@ namespace VBAi
         /// <param name="claude">Vrai lorsque le flux suit le protocole Claude.</param>
         /// <param name="progress">Callback appelé pour chaque fragment textuel reçu, éventuellement null.</param>
         /// <param name="token">Jeton qui annule la lecture et ferme le flux.</param>
+        /// <param name="diagnostics">Optional bounded metadata receiver, excluding provider content.</param>
         /// <returns>Message assistant assemblé avec ses appels d’outils complets.</returns>
-        public static async Task<IDictionary<string, object>> ReadAsync(Stream stream, bool claude, Action<string> progress, CancellationToken token)
+        public static async Task<IDictionary<string, object>> ReadAsync(Stream stream, bool claude, Action<string> progress, CancellationToken token, StreamDiagnostics diagnostics = null)
+        {
+            diagnostics = diagnostics ?? new StreamDiagnostics();
+            try
+            {
+                var result = await ReadCoreAsync(stream, claude, progress, token, diagnostics);
+                diagnostics.Outcome = diagnostics.ToolCallChunks > 0 ? "complete-tools" :
+                    string.IsNullOrWhiteSpace(Convert.ToString(result["content"])) ? "complete-empty" : "complete-text";
+                return result;
+            }
+            catch (Exception error)
+            {
+                diagnostics.Outcome = token.IsCancellationRequested ? "cancelled" :
+                    error is IOException && !(error is InvalidDataException) ? "transport-error" : "protocol-error";
+                throw;
+            }
+        }
+
+        private static async Task<IDictionary<string, object>> ReadCoreAsync(Stream stream, bool claude, Action<string> progress, CancellationToken token, StreamDiagnostics diagnostics)
         {
             token.ThrowIfCancellationRequested();
             var json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
@@ -46,15 +93,17 @@ namespace VBAi
                     if (line.StartsWith("data:", StringComparison.Ordinal)) { if (data.Length > 0) data.Append('\n'); data.Append(line.Substring(5).TrimStart(' ')); continue; }
                     if (line.Length != 0 || data.Length == 0) continue;
                     string payload = data.ToString(); data.Clear();
-                    if (payload == "[DONE]") { ended = true; break; }
+                    if (payload == "[DONE]") { ended = true; diagnostics.EndMarker = true; break; }
+                    diagnostics.JsonChunks++;
                     var root = Obj(json.DeserializeObject(payload));
                     if (root.ContainsKey("error") || Text(root, "type") == "error") throw new InvalidOperationException(UiText.Get("The provider interrupted the response with an error."));
                     if (!claude) {
-                        var choices = ClaudeProtocol.Array(root, "choices"); if (choices.Length == 0) continue;
+                        var choices = ClaudeProtocol.Array(root, "choices"); if (choices.Length == 0) { diagnostics.EmptyChoiceChunks++; if (root.ContainsKey("usage")) diagnostics.UsageChunks++; continue; }
                         var choice = Obj(choices[0]);
-                        if (Text(choice, "finish_reason") != null) stop = Text(choice, "finish_reason");
-                        if (!choice.ContainsKey("delta")) continue;
+                        if (Text(choice, "finish_reason") != null) { stop = Text(choice, "finish_reason"); diagnostics.SetTerminalReason(stop); }
+                        if (!choice.ContainsKey("delta")) { diagnostics.MissingDeltaChunks++; continue; }
                         var delta = Obj(choice["delta"]);
+                        if (ClaudeProtocol.Array(delta, "tool_calls").Length > 0) diagnostics.ToolCallChunks++;
                         foreach (var rawCall in ClaudeProtocol.Array(delta, "tool_calls")) {
                             var call = Obj(rawCall); int index = Convert.ToInt32(call["index"]); call.Remove("index");
                             IDictionary<string, object> target;
@@ -62,26 +111,28 @@ namespace VBAi
                             Merge(target, call);
                         }
                         delta.Remove("tool_calls"); string text = Text(delta, "content"); Merge(message, delta);
-                        if (!string.IsNullOrEmpty(text)) progress?.Invoke(text);
+                        if (!string.IsNullOrEmpty(text)) { diagnostics.TextChunks++; progress?.Invoke(text); }
                     } else {
                         string type = Text(root, "type");
                         if (type == "content_block_start") {
                             int index = Convert.ToInt32(root["index"]); blocks[index] = Obj(root["content_block"]);
-                            if (Text(blocks[index], "type") == "text") { string initial = Text(blocks[index], "text"); if (!string.IsNullOrEmpty(initial)) progress?.Invoke(initial); }
+                            if (Text(blocks[index], "type") == "tool_use") diagnostics.ToolCallChunks++;
+                            if (Text(blocks[index], "type") == "text") { string initial = Text(blocks[index], "text"); if (!string.IsNullOrEmpty(initial)) { diagnostics.TextChunks++; progress?.Invoke(initial); } }
                         }
                         if (type == "content_block_delta") {
                             int index = Convert.ToInt32(root["index"]); var block = blocks[index]; var delta = Obj(root["delta"]); string kind = Text(delta, "type");
                             if (kind == "input_json_delta") { if (!inputs.TryGetValue(index, out var input)) inputs[index] = input = new StringBuilder(); input.Append(Text(delta, "partial_json")); }
-                            else if (kind == "text_delta") { string text = Text(delta, "text"); Append(block, "text", text); progress?.Invoke(text); }
+                            else if (kind == "text_delta") { string text = Text(delta, "text"); Append(block, "text", text); if (!string.IsNullOrEmpty(text)) diagnostics.TextChunks++; progress?.Invoke(text); }
                             else if (kind == "thinking_delta") Append(block, "thinking", Text(delta, "thinking"));
                             else if (kind == "signature_delta") Append(block, "signature", Text(delta, "signature"));
                         }
-                        if (type == "message_delta") stop = Text(Obj(root["delta"]), "stop_reason");
-                        if (type == "message_stop") ended = true;
+                        if (type == "message_delta") { stop = Text(Obj(root["delta"]), "stop_reason"); diagnostics.SetTerminalReason(stop); }
+                        if (type == "message_stop") { ended = true; diagnostics.EndMarker = true; }
                     }
                 }
             }
             token.ThrowIfCancellationRequested();
+            diagnostics.SetTerminalReason(stop);
             bool validStop = claude ? stop == "end_turn" || stop == "tool_use" || stop == "stop_sequence" : stop == "stop" || stop == "tool_calls";
             if (!ended || !validStop) throw new InvalidDataException(UiText.Get("Response interrupted, truncated or filtered; no partial tool call was executed."));
             if (claude) {

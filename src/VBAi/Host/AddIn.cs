@@ -226,7 +226,14 @@ public void OnConnection(object application, int connectMode, object addInInstan
             if (pane == null) return null;
             object component = pane.CodeModule.Parent;
             object project = ((dynamic)component).Collection.Parent;
-            if (followOnly && (int)((dynamic)project).Mode != 2) return null;
+            if (followOnly)
+            {
+                int type = (int)((dynamic)component).Type;
+                if ((type != 1 && type != 2 && type != 3 && type != 100) ||
+                    (int)((dynamic)project).Mode != 2 || (int)((dynamic)project).Protection != 0 ||
+                    host.ActiveVBProject == null || !EditorVbeModule.SameIdentity(project, (object)host.ActiveVBProject) ||
+                    !EditorVbeModule.SameIdentity((object)host.ActiveWindow, (object)pane.Window)) return null;
+            }
             return new EditorVbeModule(vbe, project, component);
         }
         /// <summary>Crée une session VBE reliée au résolveur de la fenêtre d’éditeur moderne.</summary>
@@ -249,6 +256,7 @@ public void OnConnection(object application, int connectMode, object addInInstan
             {
                 editorWorkspace?.Dispose();
                 modernEditor = CreateModernEditor();
+                modernEditor.ReadActiveModule = () => ActiveEditorModule(true);
                 modernEditor.AssistantAction += (command, attachment) => { ShowChat(); chat.PrepareMonacoAction(command, attachment); };
                 try { editorWorkspace = new EditorWorkspaceHost(vbe, modernEditor); }
                 catch { modernEditor.Dispose(); modernEditor = null; editorWorkspace = null; throw; }

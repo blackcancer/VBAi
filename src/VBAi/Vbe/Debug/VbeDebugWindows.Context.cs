@@ -44,12 +44,27 @@ namespace VBAi
         /// <summary>Waits for the owned dialog to close before another selected expression can be inspected.</summary>
         internal static object ReadScalarQuickWatch(Request request)
         {
+            var trace = VbeInspectionTrace.Current;
+            trace?.Record(VbeInspectionTrace.Phase.ObserverEntered);
+            observerTextDepth.Value++;
+            Exception failure = null;
+            try { return ReadScalarQuickWatchCore(request); }
+            catch (Exception error) { failure = error; throw; }
+            finally
+            {
+                observerTextDepth.Value--;
+                trace?.Record(VbeInspectionTrace.Phase.ObserverTerminal, failure);
+            }
+        }
+
+        private static object ReadScalarQuickWatchCore(Request request)
+        {
             // Watch the diagnostic too: a lost selection opens an error instead of Quick Watch.
             // Only acknowledge the exact diagnostic reproduced by this operation, after the absence preflight.
             bool opened = false;
             for (int attempt = 0; attempt < 60; attempt++)
             {
-                if (FindDialog("Espion express", "Quick Watch") != IntPtr.Zero) { opened = true; break; }
+                if (FindDialog("Espion express", "Quick Watch") != IntPtr.Zero) { opened = true; VbeInspectionTrace.Current?.Record(VbeInspectionTrace.Phase.ObserverDialogFound); break; }
                 IntPtr diagnostic = FindDialog("Microsoft Visual Basic pour Applications", "Microsoft Visual Basic for Applications", "Microsoft Visual Basic");
                 if (diagnostic != IntPtr.Zero)
                 {
@@ -69,7 +84,7 @@ namespace VBAi
             if (!opened) throw new InvalidOperationException("The Quick Watch dialog did not open.");
             object result = null;
             Exception readError = null;
-            try { result = CompleteQuickWatch(request); }
+            try { result = CompleteQuickWatch(request); VbeInspectionTrace.Current?.Record(VbeInspectionTrace.Phase.ObserverReadComplete); }
             catch (Exception ex) { readError = ex; }
             for (int attempt = 0; attempt < 40; attempt++)
             {

@@ -10,6 +10,8 @@ namespace VBAi
     {
         /// <summary>Stores the provider stream id used by ChatWindow.</summary>
         private string providerStreamId;
+        /// <summary>Retains only the latest HTTP stream protocol metadata for local diagnostics.</summary>
+        private StreamDiagnostics lastHttpStreamDiagnostics;
         /// <summary>Performs the execute budget tool operation for ChatWindow.</summary>
         /// <param name="name">Text containing the name.</param>
         /// <param name="arguments">Text containing the arguments.</param>
@@ -156,7 +158,10 @@ namespace VBAi
                             receivedText = true;
                             ReceiveChatUpdate("final", streamId, fragment, false);
                         };
-                        var message = await client.CompleteAsync(messages, tools.CatalogForProvider());
+                        IDictionary<string, object> message;
+                        lastHttpStreamDiagnostics = null;
+                        try { message = await client.CompleteAsync(messages, tools.CatalogForProvider()); }
+                        finally { lastHttpStreamDiagnostics = client.LastStreamDiagnostics; }
                         if (stopRequested) throw new OperationCanceledException();
                         if (receivedText) ReceiveChatUpdate("final", streamId, Convert.ToString(message["content"]), true);
                         providerStreamId = null;

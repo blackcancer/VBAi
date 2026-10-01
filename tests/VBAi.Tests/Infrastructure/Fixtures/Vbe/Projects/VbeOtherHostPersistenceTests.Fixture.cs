@@ -39,6 +39,10 @@ namespace VBAi.Tests.Unit
             internal Action BeforeSecondState;
             internal int ProcessId = 42, StateCalls, IdentityCalls;
             internal bool NullDocuments, ChangeIdentity;
+            internal Func<object> ReadApplication;
+            internal Func<object, IList<object>> ReadDocuments;
+            internal Func<object, object> ReadDocumentProject;
+            internal Func<object, VbeProjectComponents.OtherHostDocumentState> ReadDocumentState;
             public string HostKind => Kind;
             public int CurrentProcessId => ProcessId;
             internal Fixture()
@@ -54,12 +58,12 @@ namespace VBAi.Tests.Unit
                 return new Request { Project = "P", ExpectedProjectVersion = snapshot.Version,
                     ExpectedHostPath = unsaved ? "" : Observation.Path, Path = @"C:\fixture\New" + extension };
             }
-            public object Application() { if (Failure == "application") throw new InvalidOperationException("application unreadable"); return this; }
+            public object Application() { if (Failure == "application") throw new InvalidOperationException("application unreadable"); return ReadApplication == null ? this : ReadApplication(); }
             public uint ApplicationProcessId(object app) { Calls++; return Failure == "changed pid" && Calls > 1 ? 43 : Owner; }
-            public IList<object> Documents(object app) => NullDocuments ? null : Items;
-            public object DocumentProject(object document) { if (Failure == "identity read error") throw new InvalidOperationException("identity unreadable"); return Project; }
+            public IList<object> Documents(object app) => NullDocuments ? null : ReadDocuments == null ? Items : ReadDocuments(app);
+            public object DocumentProject(object document) { if (Failure == "identity read error") throw new InvalidOperationException("identity unreadable"); return ReadDocumentProject == null ? Project : ReadDocumentProject(document); }
             public bool SameProject(object first, object second) { IdentityCalls++; return Identity && !(ChangeIdentity && IdentityCalls > 1) && ReferenceEquals(first, second); }
-            public VbeProjectComponents.OtherHostDocumentState State(object document) { StateCalls++; if (StateCalls == 2) BeforeSecondState?.Invoke(); return new VbeProjectComponents.OtherHostDocumentState { Path = Observation.Path, Format = Observation.Format, Saved = Observation.Saved, ReadOnly = Observation.ReadOnly }; }
+            public VbeProjectComponents.OtherHostDocumentState State(object document) { StateCalls++; if (StateCalls == 2) BeforeSecondState?.Invoke(); return ReadDocumentState == null ? new VbeProjectComponents.OtherHostDocumentState { Path = Observation.Path, Format = Observation.Format, Saved = Observation.Saved, ReadOnly = Observation.ReadOnly } : ReadDocumentState(document); }
             public void Save(object document, bool saveAs, string path, int format)
             {
                 Attempts++; ActualPath = path; ChosenFormat = format;

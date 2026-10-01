@@ -95,6 +95,47 @@ namespace VBAi.Tests.Unit
             }
         }
 
+        /// <summary>Preserves both inspection and restoration errors without claiming restored selection.</summary>
+        [DataTestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public void FormatCategoryInspectionPreservesPrimaryAndRestorationFailures(bool selectionFails)
+        {
+            var list = new VbeDebugWindows.OptionsControl { Choices = new[] { "Original", "Other" }, Value = "Original" };
+            var primary = new InvalidOperationException(selectionFails ? "Category selection failed" : "Palette read failed");
+            var restoration = new System.IO.IOException("Original category could not be restored");
+            var selections = new List<string>();
+            int originalAttempts = 0;
+            var palettes = new[] { "Foreground", "Background", "Indicator" }.Select(name =>
+                new VbeDebugWindows.OptionsControl { Name = name, Type = "ControlType.ComboBox", Value = "Automatic" }).ToArray();
+
+            var error = Assert.ThrowsException<AggregateException>(() => VbeDebugWindows.CaptureOptionsFormatCategories(list, name => {
+                selections.Add(name);
+                if (name == "Original" && ++originalAttempts == 2) throw restoration;
+                if (selectionFails && name == "Other") throw primary;
+            }, () => { if (!selectionFails) throw primary; return palettes; }));
+
+            Assert.AreEqual(2, error.InnerExceptions.Count);
+            Assert.AreSame(primary, error.InnerExceptions[0]);
+            Assert.AreSame(restoration, error.InnerExceptions[1]);
+            CollectionAssert.AreEqual(selectionFails ? new[] { "Original", "Other", "Original" } : new[] { "Original", "Original" }, selections.ToArray());
+        }
+
+        /// <summary>A lone restoration failure remains the original exception after a successful inspection.</summary>
+        [TestMethod]
+        public void FormatCategoryInspectionPropagatesSoleRestorationFailure()
+        {
+            var list = new VbeDebugWindows.OptionsControl { Choices = new[] { "Original", "Other" }, Value = "Original" };
+            var restoration = new System.IO.IOException("Restoration failed after complete inspection");
+            var selections = new List<string>();
+            var palettes = new[] { "Foreground", "Background", "Indicator" }.Select(name =>
+                new VbeDebugWindows.OptionsControl { Name = name, Type = "ControlType.ComboBox", Value = "Automatic" }).ToArray();
+            var error = Assert.ThrowsException<System.IO.IOException>(() => VbeDebugWindows.CaptureOptionsFormatCategories(list,
+                name => { selections.Add(name); if (selections.Count == 3) throw restoration; }, () => palettes));
+            Assert.AreSame(restoration, error);
+            CollectionAssert.AreEqual(new[] { "Original", "Other", "Original" }, selections.ToArray());
+        }
+
         /// <summary>La version couvre les palettes d'autres catégories avant toute sélection ni écriture.</summary>
         [TestMethod]
         public void FormatCategoryColoursAreGloballyVersionedAndSelectedOnlyAfterGuard()
@@ -316,7 +357,7 @@ namespace VBAi.Tests.Unit
             }
         }
         [TestMethod]
-        public void WritableOptionsReadbackAndAcceptFailureAlwaysRequestCancelWhenStillOpen()
+        public void WritableOptionsKnownReadbackFailureCancelsButUncertainAcceptRetainsDialog()
         {
             foreach(int scenario in Enumerable.Range(0,7))
             {
@@ -329,10 +370,12 @@ namespace VBAi.Tests.Unit
                 if(scenario==5)p.OnWrite=()=>p.Items[0].Enabled=false;
                 if(scenario==6)p.OnAccept=()=>{throw new InvalidOperationException("OK rejected");};
                 p.IgnoreWrite=scenario<6;
-                Assert.ThrowsException<InvalidOperationException>(()=>VbeDebugWindows.SetVbeOption(r,p));Assert.AreEqual(1,p.Closes);Assert.IsFalse(p.Open);
+                Assert.ThrowsException<InvalidOperationException>(()=>VbeDebugWindows.SetVbeOption(r,p));
+                Assert.AreEqual(scenario == 6 ? 0 : 1,p.Closes);
+                Assert.AreEqual(scenario == 6,p.Open);
             }
             var open=new WritableOptionsMatrixProbe{KeepOpen=true};var request=open.Request();
-            dynamic result=VbeDebugWindows.SetVbeOption(request,open);Assert.IsFalse((bool)result.DialogClosed);Assert.AreEqual(1,open.Closes);
+            dynamic result=VbeDebugWindows.SetVbeOption(request,open);Assert.IsFalse((bool)result.DialogClosed);Assert.AreEqual(0,open.Closes);Assert.IsTrue(open.Open);
             foreach(string type in new[]{"ControlType.RadioButton","ControlType.Edit"})
             {
                 var p=new WritableOptionsMatrixProbe();p.Names[0]=type.EndsWith("Edit")?"Editor":"General";
@@ -751,6 +794,25 @@ namespace VBAi.Tests.Unit
                 Assert.ThrowsException<InvalidOperationException>(() => categories.FormatCategories(fixture.Host.Handle, 0));
                 Assert.AreEqual("Comment", fixture.CurrentCategory, "Native palette read failure restores the initial category.");
                 Assert.IsFalse(fixture.Palettes[0].Password);
+            }
+        }
+
+        [TestMethod]
+        public void FailedCategorySelectionRetainsRequestedObservedAndNativeIndexWithoutReplay()
+        {
+            using (var fixture = new OwnedNativeOptionsControls())
+            {
+                var probe = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe"); probe.Tabs(fixture.Host.Handle);
+                var categories = (VbeDebugWindows.IFormatCategoriesOptionsProbe)probe;
+                var requested = fixture.CategoryItems[1];
+                requested.SelectedAction = () => {
+                    requested.Selected = false; fixture.CategoryItems[0].Selected = true;
+                };
+                var failure = Assert.ThrowsException<InvalidOperationException>(() => categories.SelectFormatCategory(fixture.Host.Handle, 0, "Comment"));
+                StringAssert.Contains(failure.Message, "Requested=Comment; Observed=Normal; NativeIndex=0; RequestedIndex=1.");
+                Assert.AreEqual(1, requested.SelectionCount, "An uncertain selection must not be replayed.");
+                Assert.AreEqual(1, fixture.Notifications.Count(x => x.Item1 == 4905 && x.Item2 == 1));
+                Assert.AreEqual("Normal", fixture.CurrentCategory);
             }
         }
 

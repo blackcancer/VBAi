@@ -25,7 +25,7 @@ namespace VBAi.Tests.Unit
         internal Action OnClick;
         internal NativeDebugScene()
         {
-            foreach (string name in new[] { "EnumWindows", "EnumChildWindows", "GetWindowThreadProcessId", "GetClassName", "GetWindowText", "IsWindowVisible", "SendMessageInt", "ViewBounds", "RuntimeWindowOwner", "ObjectBrowserParent", "ObjectBrowserEnabled" })
+            foreach (string name in new[] { "EnumWindows", "EnumChildWindows", "GetWindowThreadProcessId", "GetClassName", "GetWindowText", "ReadObserverTextMessage", "IsWindowVisible", "SendMessageInt", "ViewBounds", "RuntimeWindowOwner", "ObjectBrowserParent", "ObjectBrowserEnabled" })
             {
                 FieldInfo field = typeof(VbeDebugWindows).GetField(name, BindingFlags.NonPublic | BindingFlags.Static);
                 saved.Add(field, field.GetValue(null));
@@ -43,6 +43,12 @@ namespace VBAi.Tests.Unit
             VbeDebugWindows.GetWindowThreadProcessId = (IntPtr handle, out uint pid) => { pid = Find(handle)?.Process ?? 0; return 1; };
             VbeDebugWindows.GetClassName = (handle, value, capacity) => { value.Append(Find(handle)?.Kind); return value.Length; };
             VbeDebugWindows.GetWindowText = (handle, value, capacity) => { value.Append(Find(handle)?.Caption); return value.Length; };
+            VbeDebugWindows.ReadObserverTextMessage = (IntPtr handle, uint message, IntPtr capacity, System.Text.StringBuilder value,
+                uint flags, uint milliseconds, out UIntPtr result) => {
+                value.Append(Find(handle)?.Caption);
+                result = new UIntPtr((uint)value.Length);
+                return new IntPtr(1);
+            };
             VbeDebugWindows.IsWindowVisible = handle => Find(handle)?.Visible ?? false;
             VbeDebugWindows.ObjectBrowserEnabled = handle => Find(handle)?.Enabled ?? false;
             VbeDebugWindows.ObjectBrowserParent = handle => Find(handle)?.Parent ?? IntPtr.Zero;

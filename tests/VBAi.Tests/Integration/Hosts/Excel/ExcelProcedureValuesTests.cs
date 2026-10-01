@@ -14,8 +14,9 @@ namespace VBAi.Tests.Integration
         [STATestMethod]
         public void NativeParamArrayCallsPreserveArityValuesAndSingleInvocation()
         {
-            using (var host = ExcelVbeFixture.Start())
+            ExcelVbeFixture.Run(host =>
             {
+                host.EnableProcedureValuesTeardownTrace(nameof(NativeParamArrayCallsPreserveArityValuesAndSingleInvocation));
                 string project = Convert.ToString(VbeBridgeClient.Object(((object[])host.Command("list_projects")["Data"]).Single())["Name"]);
                 const string module = "ParamArrayProbe";
                 var created = Data(host.Command(new { Command = "create_module", Project = project, Module = module, ExpectedMode = 2 }));
@@ -55,7 +56,7 @@ namespace VBAi.Tests.Integration
                     Arguments = new object[] { "native" }, ArgumentNames = new[] { "tag" } });
                 Assert.AreEqual(false, refused["Ok"]); Assert.AreEqual(calls, Convert.ToInt32(host.ReadCell("A1")));
                 Assert.AreEqual(inspected["Code"], Data(host.Command(new { Command = "read_module", Project = path, Module = module }))["Code"]);
-            }
+            });
         }
         /// <summary>Qualifie SAFEARRAY vector/matrix, bornes retournées, Null et unique effet de bord par invocation.</summary>
         [STATestMethod]
@@ -63,6 +64,7 @@ namespace VBAi.Tests.Integration
         {
             ExcelVbeFixture.Run(host =>
             {
+                host.EnableProcedureValuesTeardownTrace(nameof(NativeVariantArraysRoundTripWithBoundsAndOneInvocation));
                 string project = Convert.ToString(VbeBridgeClient.Object(((object[])host.Command("list_projects")["Data"]).Single())["Name"]);
                 const string module = "ArrayProbe";
                 var created = Data(host.Command(new { Command = "create_module", Project = project, Module = module, ExpectedMode = 2 }));

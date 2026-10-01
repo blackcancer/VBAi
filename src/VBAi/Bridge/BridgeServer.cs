@@ -79,6 +79,8 @@ namespace VBAi
         private readonly Control dispatcher;
         /// <summary>Session qui traite les requêtes destinées au VBE.</summary>
         private readonly VbeSession session;
+        /// <summary>Host-only qualification opt-in, captured at connection and absent from the LLM catalogue.</summary>
+        private readonly PathVisibilityDiagnostic pathVisibility;
         /// <summary>Adaptateurs natifs du débogueur, remplaçables par instance à la frontière UI.</summary>
         internal readonly VbeToolNativeBoundary Native = new VbeToolNativeBoundary();
         /// <summary>Exécute une commande sur la session hôte, sans remplacer l’orchestration de l’outil.</summary>
@@ -116,6 +118,7 @@ namespace VBAi
         {
             this.dispatcher = dispatcher;
             this.session = session;
+            pathVisibility = new PathVisibilityDiagnostic(processId);
             Execute = request => session.Execute(request);
             ReadImmediateNative = request => session.ReadImmediateAsync(request);
             InspectLocalScalarsNative = request => session.InspectLocalScalarsAsync(request);
@@ -154,7 +157,12 @@ namespace VBAi
                             try
                             {
                                 var request = json.Deserialize<Request>(line);
-                                if (request != null && request.Command == "debug_windows")
+                                if (request != null && request.Command == PathVisibilityDiagnostic.CommandName)
+                                {
+                                    PathVisibilityDiagnostic.RequireParameterFree(line);
+                                    response = (Response)dispatcher.Invoke(new Func<Response>(() => Response.Success(pathVisibility.Read())));
+                                }
+                                else if (request != null && request.Command == "debug_windows")
                                     response = Response.Success(Native.Capture(request.IncludeCallStack));
                                 else if (request != null && request.Command == "read_navigation_surface")
                                     response = Response.Success(Native.ReadNavigationSurface(request));
@@ -214,11 +222,23 @@ namespace VBAi
                                 }
                                 else if (request != null && request.Command == "inspect_local_scalars")
                                 {
+                                    var trace = VbeInspectionTrace.Begin();
+                                    trace?.Record(VbeInspectionTrace.Phase.Enqueue);
                                     var completion = new TaskCompletionSource<Response>(TaskCreationOptions.RunContinuationsAsynchronously);
-                                    dispatcher.BeginInvoke(new Action(async () => {
-                                        try { completion.TrySetResult(Response.Success(await InspectLocalScalarsNative(request))); }
-                                        catch (Exception ex) { completion.TrySetResult(Response.Failure(ex.Message)); }
-                                    }));
+                                    try
+                                    {
+                                        dispatcher.BeginInvoke(new Action(async () => {
+                                            using (trace?.Enter())
+                                            {
+                                                trace?.Record(VbeInspectionTrace.Phase.CallbackEntered);
+                                                Exception failure = null;
+                                                try { completion.TrySetResult(Response.Success(await InspectLocalScalarsNative(request))); }
+                                                catch (Exception ex) { failure = ex; completion.TrySetResult(Response.Failure(ex.Message)); }
+                                                finally { trace?.Record(VbeInspectionTrace.Phase.Terminal, failure); }
+                                            }
+                                        }));
+                                    }
+                                    catch (Exception ex) { trace?.Record(VbeInspectionTrace.Phase.Terminal, ex); throw; }
                                     response = completion.Task.GetAwaiter().GetResult();
                                 }
                                 else if (request != null && request.Command == "compile_project")
@@ -339,7 +359,7 @@ namespace VBAi
                             }
                             catch (Exception ex)
                             {
-                                response = Response.Failure(ex.Message);
+                                response = Response.Failure(VbeScalarProperty.FormatFailure(ex));
                             }
                             string payload;
                             try { payload = json.Serialize(response); }

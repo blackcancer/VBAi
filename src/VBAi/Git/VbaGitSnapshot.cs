@@ -95,13 +95,57 @@ namespace VBAi
             return result;
         }
 
-        /// <summary>Compare les manifestes et tous les octets des fichiers sérialisés.</summary>
+        /// <summary>Returns comparison data without altering serialized/exported resources.</summary>
+        internal SortedDictionary<string, byte[]> ComparisonFiles()
+        {
+            var result = Serialize();
+            foreach (var component in Manifest.Components.Where(x => x.Type == 3 && x.HasResources))
+            {
+                string text = Utf8.GetString(Files[component.FileName]);
+                string metadata = text.Substring(0, Regex.Match(text, "^Attribute VB_Name = ", RegexOptions.Multiline).Index);
+                var blobDeclarations = OleBlobs(metadata).Cast<Match>().ToArray();
+                var blobs = blobDeclarations.Select(x =>
+                    (int)uint.Parse(x.Groups[1].Value, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture)).Distinct().OrderBy(x => x).ToArray();
+                if (blobs.Length == 0) continue;
+                byte[] resources = Files[component.Name + ".frx"];
+                // Opaque resources have unknown extents. Their starting offsets cannot
+                // prove non-overlap, so any declaration outside a recognized OLE blob
+                // keeps the entire companion byte-exact, including multiline syntax.
+                bool opaque = ResourceReferences(metadata).Cast<Match>().Any(reference =>
+                    !blobDeclarations.Any(blob => reference.Index >= blob.Index &&
+                        reference.Index + reference.Length <= blob.Index + blob.Length));
+                bool overlap = blobs.Where((offset, index) => index > 0 && offset < blobs[index - 1] + 24 + BitConverter.ToUInt32(resources, blobs[index - 1] + 4)).Any();
+                if (!opaque && !overlap) result[component.Name + ".frx"] = FormResourcePreflight.ComparisonBytes(resources, blobs);
+            }
+            return result;
+        }
+
+        /// <summary>Compares one component file under the same rules used by revision guards.</summary>
+        internal bool SameFile(VbaGitSnapshot other, string file)
+        {
+            return other != null && ComparisonFiles().TryGetValue(file, out var left) &&
+                other.ComparisonFiles().TryGetValue(file, out var right) && left.SequenceEqual(right);
+        }
+
+        private static MatchCollection OleBlobs(string metadata)
+        {
+            return Regex.Matches(metadata, "^[ \\t]*OleObjectBlob[ \\t]*=[ \\t]*\"[^\"\\r\\n]+\"[ \\t]*:[ \\t]*([0-9a-f]+)[ \\t]*$",
+                RegexOptions.Multiline | RegexOptions.IgnoreCase);
+        }
+
+        /// <summary>Finds resource references with the same grammar for validation and comparison.</summary>
+        private static MatchCollection ResourceReferences(string metadata)
+        {
+            return Regex.Matches(metadata, "=\\s*\"([^\"\\r\\n]+)\"[ \\t]*:[ \\t]*([^\\r\\n]*)");
+        }
+
+        /// <summary>Compares exact text/manifest data and logical form resources without rewriting serialized files.</summary>
         /// <param name="other">Snapshot comparé à l’instance courante.</param>
-        /// <returns>true si les deux snapshots sérialisent les mêmes fichiers.</returns>
+        /// <returns>True when both snapshots describe the same sources and resource contents.</returns>
         internal bool SameAs(VbaGitSnapshot other)
         {
             if (other == null) return false;
-            var left = Serialize(); var right = other.Serialize();
+            var left = ComparisonFiles(); var right = other.ComparisonFiles();
             return left.Count == right.Count && left.All(x => right.ContainsKey(x.Key) && x.Value.SequenceEqual(right[x.Key]));
         }
 
@@ -110,8 +154,8 @@ namespace VBAi
         /// <returns>Libellés préfixés par +, − ou ~ pour chaque différence.</returns>
         internal string[] Changes(VbaGitSnapshot previous)
         {
-            var before = previous?.Serialize() ?? new SortedDictionary<string, byte[]>();
-            var after = Serialize();
+            var before = previous?.ComparisonFiles() ?? new SortedDictionary<string, byte[]>();
+            var after = ComparisonFiles();
             return before.Keys.Union(after.Keys).OrderBy(x => x, StringComparer.Ordinal).Where(x =>
                 !before.ContainsKey(x) || !after.ContainsKey(x) || !before[x].SequenceEqual(after[x]))
                 .Select(x => (!before.ContainsKey(x) ? "+ " : !after.ContainsKey(x) ? "− " : "~ ") + x).ToArray();
@@ -200,7 +244,7 @@ namespace VBAi
                     // comments following VB_Name are not resource declarations.
                     int metadataLength = Regex.Match(text, "^Attribute VB_Name = ", RegexOptions.Multiline).Index;
                     string metadata = text.Substring(0, metadataLength);
-                    foreach (Match resource in Regex.Matches(metadata, "=\\s*\"([^\"\\r\\n]+)\"[ \\t]*:[ \\t]*([^\\r\\n]*)"))
+                    foreach (Match resource in ResourceReferences(metadata))
                     {
                         uint offset;
                         if (!component.HasResources || resource.Groups[1].Value != component.Name + ".frx" ||
@@ -208,6 +252,9 @@ namespace VBAi
                             offset >= resources.Length)
                             throw new InvalidOperationException("Invalid or out-of-range form resource offset: " + component.Name);
                     }
+                    foreach (Match blob in OleBlobs(metadata))
+                        FormResourcePreflight.ValidateOleObjectBlob(resources,
+                            (int)uint.Parse(blob.Groups[1].Value, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture));
                     // These bounds are necessary, not a complete MS-OFORMS parser.
                     // Preserve resource bytes and the existing import/recovery guards.
                     // A form must never address a companion file outside its snapshot.

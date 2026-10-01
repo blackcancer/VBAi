@@ -39,7 +39,7 @@ namespace VBAi
         // Bridge, editor and chat have separate sessions on the same VBE owner thread.
         [ThreadStatic] private static bool solidWorksSavePending;
 
-        /// <summary>Yields only for the SOLIDWORKS adapter; other hosts retain their native save contract.</summary>
+        /// <summary>Yields for SOLIDWORKS and Access delayed Saved notifications on their owning VBE thread.</summary>
         internal Task<object> SaveHostDocumentAsync(Request request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.ExpectedHostPath) ||
@@ -50,6 +50,8 @@ namespace VBAi
                 var native = SolidWorksSaveProbe();
                 if (native.IsSolidWorks && (int)GetProject(request.Project).Type == 100)
                     return SaveSolidWorksMacroAsync(request, native);
+                var other = OtherHostProbe();
+                if (other.HostKind == "Access") return SaveAccessDocumentAsync(request, other);
             }
             return Task.FromResult(SaveHostDocument(request));
         }

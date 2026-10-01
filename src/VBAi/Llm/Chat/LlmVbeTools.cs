@@ -587,7 +587,7 @@ namespace VBAi
                 }
                 return json.Serialize(result);
             }
-            catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
+            catch (Exception ex) { return json.Serialize(Response.Failure(VbeScalarProperty.FormatFailure(ex))); }
         }
 
         /// <summary>Couple le contenu actuel d’un module à son empreinte de version.</summary>

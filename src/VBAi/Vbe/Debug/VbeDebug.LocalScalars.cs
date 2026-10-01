@@ -15,6 +15,7 @@ namespace VBAi
         /// <summary>Explicit, bounded inspection of declared scalar identifiers in one verified paused context.</summary>
         internal Task<object> InspectLocalScalarsAsync(Request request)
         {
+            VbeInspectionTrace.Current?.Record(VbeInspectionTrace.Phase.CoreEntered);
             return VbeUiTask.Run(() => InspectLocalScalarsCoreAsync(request));
         }
 
@@ -33,6 +34,7 @@ namespace VBAi
                 string expectedContext = projectName + "." + moduleName + "." + request.Procedure;
                 int ownerThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
                 Action validate = () => {
+                    VbeInspectionTrace.Current?.Record(VbeInspectionTrace.Phase.ContextValidation);
                     if (System.Threading.Thread.CurrentThread.ManagedThreadId != ownerThread)
                         throw new InvalidOperationException("Local inspection left the owning VBE thread.");
                     object activeProject = vbe.ActiveVBProject;
@@ -43,6 +45,7 @@ namespace VBAi
                         throw new InvalidOperationException("The module changed since it was read.");
                     if (!string.Equals(LocalContextReader(), expectedContext, StringComparison.OrdinalIgnoreCase))
                         throw new InvalidOperationException("The native Locals context differs from the requested procedure.");
+                    VbeInspectionTrace.Current?.Record(VbeInspectionTrace.Phase.ContextValidated);
                 };
                 validate();
                 EnsureScalarDialogAbsent();
@@ -123,6 +126,7 @@ namespace VBAi
                     }
                 }
                 if (interrupted == null) validate();
+                VbeInspectionTrace.Current?.Record(VbeInspectionTrace.Phase.CoreTerminal);
                 return new { Project = projectName, Module = moduleName, request.Procedure, Context = expectedContext,
                     Sha256 = request.ExpectedSha256, Coverage = "DeclaredScalarCandidatesOnly", RuntimeInventoryComplete = false,
                     TotalCandidates = candidates.Length, EligibleCandidates = candidates.Count(c => c.Eligible), request.Offset,
@@ -158,8 +162,10 @@ namespace VBAi
                 Procedure = request.Procedure, Expression = request.Expression };
             Task<object> reading = Task.Run(() => ReadScalarDialog(dialogRequest));
             Exception commandError = null;
+            VbeInspectionTrace.Current?.Record(VbeInspectionTrace.Phase.Command229Before);
             try { ((dynamic)command.Control).Execute(); }
             catch (Exception ex) { commandError = ex; }
+            VbeInspectionTrace.Current?.Record(VbeInspectionTrace.Phase.Command229Returned, commandError);
             object result = await reading;
             if (commandError != null) throw new InvalidOperationException("Quick Watch failed; its command was not retried.", commandError);
             return result;

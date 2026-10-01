@@ -53,7 +53,7 @@ namespace VBAi
                 bool? hostSaved = NativeHostSaved(native);
                 if (hostSaved == false)
                     throw new InvalidOperationException("The host document was not saved. Your code remains in the editor and host document.");
-                synchronizationError = null;
+                foreach (var savedDocument in projectDocuments) documentSynchronizationErrors.Remove(savedDocument.Id);
                 lastSaveError = hostSaved.HasValue ? null : "The native Save command finished, but the host document's saved state could not be verified.";
                 SetResultStatus(UiText.Get(lastSaveError ?? "Saved."));
             }

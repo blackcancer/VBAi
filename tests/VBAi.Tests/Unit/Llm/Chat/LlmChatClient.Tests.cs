@@ -73,6 +73,30 @@ namespace VBAi.Tests.Unit
             }
         }
         [TestMethod]
+        public async Task StreamMetadataSurvivesProtocolFailureWithoutRetryAndResetsForJsonResponse()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var handler = new LlmHttpFixture();
+                handler.Replies.Enqueue(new LlmHttpFixture.Reply("data: {\"choices\":[{\"delta\":{\"content\":\"private-text\"},\"finish_reason\":\"private-reason\"}]}\n\ndata: [DONE]\n\n") { MediaType = "text/event-stream" });
+                handler.Replies.Enqueue(new LlmHttpFixture.Reply(Answer));
+                using (var client = new LlmChatClient(LlmBoundaryScope.Provider("Ollama"), new LlmSettings(), "model", handler))
+                {
+                    client.TextDelta = _ => { };
+                    await Assert.ThrowsExceptionAsync<System.IO.InvalidDataException>(() => client.CompleteAsync(History(), Tools()));
+                    Assert.AreEqual(1, handler.Bodies.Count, "A failed stream must never replay the request.");
+                    Assert.AreEqual("protocol-error", client.LastStreamDiagnostics.Outcome);
+                    Assert.AreEqual("unknown", client.LastStreamDiagnostics.TerminalReason);
+                    Assert.AreEqual(1, client.LastStreamDiagnostics.TextChunks);
+                    Assert.IsFalse(new JavaScriptSerializer().Serialize(client.LastStreamDiagnostics).Contains("private"));
+                    Assert.AreEqual("answer", (await client.CompleteAsync(History(), Tools()))["content"]);
+                    Assert.IsNull(client.LastStreamDiagnostics, "A later JSON response must not reuse prior stream metadata.");
+                    Assert.AreEqual(2, handler.Bodies.Count);
+                }
+            }
+        }
+
+        [TestMethod]
         public async Task CataloguesCoverManualNativeCopilotPaginationMalformedDataAndLimits()
         {
             using (var scope = new LlmBoundaryScope())

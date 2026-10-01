@@ -294,3 +294,58 @@ namespace VBAi.Tests.Unit
         }
     }
 }
+namespace VBAi.Tests.Unit
+{
+    public sealed partial class StreamTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
+        public async System.Threading.Tasks.Task StreamDiagnosticsDistinguishTerminalEmptyStatisticsToolsAndProtocolFailure()
+        {
+            var diagnostic = new VBAi.StreamDiagnostics();
+            using (var stream = Events(new { choices = new object[0], usage = new { completion_tokens = 0 } },
+                new { choices = new[] { new { delta = new { content = "" }, finish_reason = "stop" } } }, "[DONE]"))
+            {
+                var result = await VBAi.ChatStreamReader.ReadAsync(stream, false, _ => Microsoft.VisualStudio.TestTools.UnitTesting.Assert.Fail("Empty text must not publish fragments."), System.Threading.CancellationToken.None, diagnostic);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("", result["content"]);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("complete-empty", diagnostic.Outcome);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(2, diagnostic.JsonChunks);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(1, diagnostic.EmptyChoiceChunks);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(1, diagnostic.UsageChunks);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, diagnostic.TextChunks);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("stop", diagnostic.TerminalReason);
+                var snapshot = diagnostic.Snapshot();
+                diagnostic.SetTerminalReason("secret-reason");
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("stop", snapshot.TerminalReason);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsTrue(diagnostic.EndMarker);
+            }
+            diagnostic = new VBAi.StreamDiagnostics();
+            using (var stream = Events(new { choices = new[] { new { delta = new { tool_calls = new[] { new { index = 0, id = "secret-id", function = new { name = "secret-tool", arguments = "secret-arguments" } } } }, finish_reason = "tool_calls" } } }, "[DONE]"))
+            {
+                var result = await VBAi.ChatStreamReader.ReadAsync(stream, false, _ => Microsoft.VisualStudio.TestTools.UnitTesting.Assert.Fail("Tool-only response must not publish text."), System.Threading.CancellationToken.None, diagnostic);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(1, ((object[])result["tool_calls"]).Length);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("complete-tools", diagnostic.Outcome);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(1, diagnostic.ToolCallChunks);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, diagnostic.TextChunks);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(diagnostic).Contains("secret"));
+            }
+            diagnostic = new VBAi.StreamDiagnostics();
+            using (var stream = Events(new { choices = new[] { new { message = new { content = "secret-body" }, finish_reason = "secret-reason" } } }, "[DONE]"))
+            {
+                await Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsExceptionAsync<System.IO.InvalidDataException>(() => VBAi.ChatStreamReader.ReadAsync(stream, false, null, System.Threading.CancellationToken.None, diagnostic));
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("protocol-error", diagnostic.Outcome);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("unknown", diagnostic.TerminalReason);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(1, diagnostic.MissingDeltaChunks);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(diagnostic).Contains("secret"));
+            }
+            diagnostic = new VBAi.StreamDiagnostics();
+            using (var stream = Events(new { choices = new[] { new { delta = new { content = "secret-text" }, finish_reason = "stop" } } }, "[DONE]"))
+            {
+                var result = await VBAi.ChatStreamReader.ReadAsync(stream, false, null, System.Threading.CancellationToken.None, diagnostic);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("secret-text", result["content"]);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual("complete-text", diagnostic.Outcome);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(1, diagnostic.TextChunks);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(diagnostic).Contains("secret"));
+            }
+        }
+    }
+}

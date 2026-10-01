@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace VBAi
 {
@@ -127,14 +128,16 @@ namespace VBAi
                     File.WriteAllBytes(Path.Combine(scratch.Path, file.Key), file.Key.EndsWith(".frx", StringComparison.Ordinal) ? file.Value :
                         NativeEncoding.GetBytes(VbaGitSnapshot.Utf8.GetString(file.Value).Replace("\n", "\r\n")));
                 dynamic project = CheckedProject();
+                var expectedFiles = expected.ComparisonFiles();
+                var targetFiles = target.ComparisonFiles();
                 beforeMutation?.Invoke();
                 var changed = new HashSet<string>(StringComparer.Ordinal);
                 foreach (var old in expected.Manifest.Components)
                 {
                     var next = target.Manifest.Components.FirstOrDefault(x => x.Name == old.Name);
                     bool same = next != null && next.Type == old.Type && next.HasResources == old.HasResources &&
-                        expected.Files[old.FileName].SequenceEqual(target.Files[next.FileName]) &&
-                        (!old.HasResources || expected.Files[old.Name + ".frx"].SequenceEqual(target.Files[next.Name + ".frx"]));
+                        expectedFiles[old.FileName].SequenceEqual(targetFiles[next.FileName]) &&
+                        (!old.HasResources || expectedFiles[old.Name + ".frx"].SequenceEqual(targetFiles[next.Name + ".frx"]));
                     if (same) continue;
                     changed.Add(old.Name);
                     if (old.Type != 100) project.VBComponents.Remove(project.VBComponents.Item(old.Name));
@@ -156,10 +159,44 @@ namespace VBAi
                         dynamic imported = project.VBComponents.Import(Path.Combine(scratch.Path, next.FileName));
                         if ((string)imported.Name != next.Name || (int)imported.Type != next.Type)
                             throw new InvalidOperationException(UiText.Get("Unexpected identity after import: ") + next.Name + UiText.Get(". Use Restore."));
+                        if (next.Type == 3)
+                            RestoreFormImportCode((object)imported.CodeModule, VbaGitSnapshot.Utf8.GetString(target.Files[next.FileName]), () => {
+                                dynamic current = CheckedProject();
+                                if (!VbeProjectHostPath.SameProject((object)current.VBComponents.Item(next.Name), (object)imported))
+                                    throw new InvalidOperationException("The imported form identity changed before code readback.");
+                            });
                     }
                 }
             }
             if (!Capture().SameAs(target)) throw new InvalidOperationException(UiText.Get("The VBE did not preserve the imported sources exactly. Use Restore or check the project."));
+        }
+
+        /// <summary>Removes only the single leading blank line added by VBIDE's native form import.</summary>
+        internal static void RestoreFormImportCode(object codeModule, string exported, Action revalidate)
+        {
+            string source = Normalize(exported);
+            var identity = Regex.Match(source, "^Attribute VB_Name = ", RegexOptions.Multiline);
+            if (!identity.Success) throw new InvalidOperationException("The imported form has no exported identity.");
+            // Hidden export attributes are not part of CodeModule.Lines. Preserve
+            // every visible character, including intentional blank lines and EOF.
+            string expected = string.Join("\n", source.Substring(identity.Index).Split('\n')
+                .Where(line => !Regex.IsMatch(line, "^Attribute[ \\t]+[^=\\r\\n]+=[^\\r\\n]*$")));
+            string observed = Code((dynamic)codeModule);
+            // Native Lines omits the final export line terminator. Select that
+            // representation only when the complete observed code proves it.
+            // Final snapshot readback still requires the target's exact FRM text.
+            if (observed != "\n" + expected && expected.EndsWith("\n", StringComparison.Ordinal) &&
+                observed == "\n" + expected.Substring(0, expected.Length - 1))
+                expected = expected.Substring(0, expected.Length - 1);
+            if (observed != "\n" + expected) return;
+            revalidate?.Invoke();
+            if (Code((dynamic)codeModule) != observed)
+                throw new InvalidOperationException("Imported form code changed before removing the native prefix.");
+            // One mutation, never replayed if COM throws. The final capture still
+            // checks every source/attribute and logical resource against the target.
+            ((dynamic)codeModule).DeleteLines(1, 1);
+            if (Code((dynamic)codeModule) != expected)
+                throw new InvalidOperationException("The native form import prefix was not removed exactly. Use Restore.");
         }
 
         /// <summary>Lit le texte visible d’un module et normalise ses fins de ligne.</summary>
