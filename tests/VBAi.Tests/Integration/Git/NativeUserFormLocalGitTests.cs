@@ -15,7 +15,7 @@ namespace VBAi.Tests.Integration
 {
     /// <summary>Opt-in native form-layout qualification through production local Git and guarded recovery.</summary>
     [TestClass, TestCategory("Excel"), TestCategory("NativeUserFormLocalGit"), DoNotParallelize]
-    public sealed class NativeUserFormLocalGitTests
+    public sealed partial class NativeUserFormLocalGitTests
     {
         public TestContext TestContext { get; set; }
         private static readonly JavaScriptSerializer Json = new JavaScriptSerializer();
@@ -35,6 +35,11 @@ namespace VBAi.Tests.Integration
         [DataRow("FrameMultiPage")]
         public void OwnedLayoutCaptureImportRecoveryAndReopenPreserveNativeState(string layout)
         {
+            RunLayout(layout, ExcelVbeFixture.Run, "ComActivation");
+        }
+
+        private void RunLayout(string layout, Action<Action<ExcelVbeFixture>, Action<ExcelVbeFixture>> run, string launchContext)
+        {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_LOCAL_GIT_TESTS") != "1")
                 Assert.Inconclusive("Set VBAi_RUN_USERFORM_LOCAL_GIT_TESTS=1 and VBAi_RUN_EXCEL_TESTS=1 for disposable native local-Git layout qualification.");
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
@@ -48,6 +53,7 @@ namespace VBAi.Tests.Integration
             Directory.CreateDirectory(output);
             var report = new Dictionary<string, object> {
                 ["Stage"] = "STARTED", ["Layout"] = layout, ["RemoteOperations"] = 0,
+                ["LaunchContext"] = launchContext,
                 ["EvidenceDirectory"] = output,
                 ["MacroExecutions"] = 0, ["ForcedTermination"] = false,
                 ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
@@ -61,8 +67,9 @@ namespace VBAi.Tests.Integration
                 SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
                 try
                 {
-                    ExcelVbeFixture.Run(host => {
+                    run(host => {
                         report["HostProcessId"] = host.ProcessId;
+                        report["FixtureRoot"] = host.Root;
                         report["HostStatus"] = host.Command("status");
                         string path = host.File("local-git-layout.xlsm");
                         const string form = "QualificationForm";
@@ -188,7 +195,7 @@ namespace VBAi.Tests.Integration
                         host.CaptureGitFormDesigner(form, Path.Combine(output, "reopened-designer.png"));
                         report["HelperSaveReopenVerified"] = true;
                         Phase(output, report, "awaiting-normal-owned-shutdown");
-                    });
+                    }, host => { report["Shutdown"] = host.ShutdownDiagnostics; });
                     report["NormalShutdownVerified"] = true;
                     report["Stage"] = "PASS";
                     TestContext.WriteLine("PASS native local-Git layout: " + layout + ". Designer captures require separate visual review. No remote activity.");

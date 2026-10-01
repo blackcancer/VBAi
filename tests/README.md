@@ -474,6 +474,18 @@ normalizer exception or coverage claim is added. No remote Git operation occurs.
 Run only while owning the desktop; retain failure artifacts and review the
 source/reopened designer captures separately. Normal host exit is required.
 
+The separate `ExplicitOwnedLayoutCaptureImportRecoveryAndReopenPreserveNativeState`
+matrix adds `VBAi_RUN_USERFORM_EXPLICIT_BOOTSTRAP=1` and requires an absolute
+`VBAi_EXCEL_RESULTS` directory. Filter on that exact method name to run its complete
+prepared layout set without the COM-activation cases. It reuses the existing
+`/x /automation` seed/bootstrap with exact PID, image, start-time and loaded-MVID
+checks; any existing Excel process refuses launch. No path-visibility/token
+manifest is passed. All native layout, capture, local Git, recovery and reopen
+assertions remain the same. Launch context and final shutdown observations are
+retained separately. A pass in this context does not explain a failed COM launch
+or qualify remote GitHub transfer. Timeout or I/O uncertainty preserves the host
+without a cleanup mutation or retry.
+
 The Image layout reads its actual content digest through the production
 `form_tree` descriptor inside Excel. It does not marshal a process-local OLE
 picture to the test process. That readback records the descriptor type and PNG
