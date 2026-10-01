@@ -571,6 +571,27 @@ The prototype is **uninstalled**. This offline proof does not change the origina
 failed native matrix, execute its later Git/import/recovery/persistence phases,
 or close Q-027. Raw exports remain intact and transport bytes are not normalized.
 
+The follow-up prepared batch at source `10484fe`,
+`prepared-sequential-guards/prepared-sequential-guards.trx`, records **125 passed,
+0 failed, 0 skipped**, runner exit **0**. It adds absent/default MorphData guards
+and nested timeout/I/O/cancellation classification for the new sequential native
+GitHub fixture. The actual uninstalled assembly is MVID
+`a9cf8552-de7a-4648-a26e-dff2049677da`, SHA-256
+`6509AC97B98B908FEFCA3D39FB9D9496F4F02DACA93EE78E1D551CE85ADC861D`;
+`prepared-sequential-guards/candidate.json` also binds the test assembly hash.
+An initial test namespace shadowed existing infrastructure names and failed
+compilation; the corrected source builds without warnings/errors before this
+single test batch. No coverage percentage or full-suite result is claimed.
+
+The new authenticated scenario is **NOT_RUN**. It prepares source capture and
+normal closure before fixed synthetic-repository push/fetch, then launches a
+distinct target for guarded import/backup, native readback and helper save/reopen.
+It verifies exact remote bytes and unchanged remote main. Uncertain native
+delivery retains the exact host without another dispatch or cleanup; uncertain
+push is never replayed. The case needs separate native/authenticated opt-ins and
+a matching installed candidate. Preparation/compilation is not Q-024/Q-027
+acceptance, and the existing simultaneous-host scenario remains separate.
+
 ### Preceding Monaco-status candidate: complete managed acceptance
 
 Source `d7a1c75d90d840949cc78606f2ae55b14e93ec55`, MVID
