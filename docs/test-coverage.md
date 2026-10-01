@@ -43,6 +43,8 @@ including conditional scenarios.
 | `forms-persisted-baseline-and-import` | 11 | 13 | 0 |
 | `git-modal-corrected` | 29 | 0 | 0 |
 | `managed-main` | 3615 | 0 | 119 |
+| `managed-office-exit-bound` | 9 | 0 | 0 |
+| `office-metadata-exit-bound` | 1 | 2 | 3 |
 | `ollama-cpu-after-solidworks-close` | 4 | 0 | 0 |
 | `ollama-current-candidate` | 3 | 1 | 0 |
 | `ollama-current-cpu-profile` | 0 | 4 | 0 |
@@ -92,6 +94,10 @@ guarded owner-STA commands use `941cde0`, SHA-256
 `443B2A8B4FE8EFDB695D58541CE26B8391978E6149518146BA40852749D3BDFE`;
 persisted-font Load/owner transfer uses `9c070c6`, SHA-256
 `AF47750218FAC352546DC90EC810DB6BB7D7E579E125E732A447C8F30812E2C6`.
+The common adapter-only exit-bound follow-up uses tests `a721792`, SHA-256
+`E9770F24BAEAE215C07734456A31F39B25FBCFE29CA5315602A7D47E4783DC5E`.
+Its focused managed shutdown contracts and complete prepared native metadata
+batch remain separate scopes on the frozen product.
 The original complete managed gate does not qualify later test assemblies as a
 complete suite; their focused/native results are recorded separately.
 
@@ -134,6 +140,31 @@ Access HelpContextID/HelpFile original exit deadlines fail, preventing fresh
 reopen, and Publisher HelpFile returns altered metadata after fresh reopen.
 These failures remain release gates even though no Office process remains at
 terminal inspection. Later process absence is not original-handle exit proof.
+
+Read-only analysis of the retained failed Publisher HelpFile document establishes
+that `/VBA/PROJECT` and both copies of the MS-OVBA PROJECTHELPFILEPATH record in
+the decompressed `/VBA/VBA/dir` preserve the exact CP1252 path. The document hash
+remains `94A48289F2B6F14961315F2D54B599482E2E6D4B7858DF71B4A67EDD8AC79BB5`.
+The observed fresh native string, encoded as UTF-16LE, matches the expected ANSI
+byte prefix with the final `6D` byte missing. Evidence is retained in
+`publisher-helpfile-storage/storage.json` and `help-record.json`.
+Microsoft specifies [PROJECTHELPFILEPATH](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-ovba/b1e1f51f-6bef-49fe-b6a9-76e174d51b0d)
+as MBCS paths. This narrows the observed failure to readback after reopen;
+the exact getter cause and a safe production correction are not established.
+No damaged string is repaired heuristically and no native call is made by this
+offline analysis.
+
+The next complete prepared metadata batch applies one declared 15000 ms exit
+observation to every adapter-only Office host. Publisher Description passes;
+Access Description fails its original-handle exit deadline before fresh reopen.
+Publisher HelpContextID returns a setter-phase COM error `0xE4223238`; its cleanup
+refuses Quit because ProjectSaved is false. The remaining cases are not executed
+while their hosts remain retained. A separate identity-checked cleanup forcibly
+terminates only those two owned disposable processes, recording original handles,
+starts, paths and forced exit codes. This cleanup does not qualify normal exit,
+promote either failure or explain the earlier metadata failures. Both temporary
+registration contexts are then verified restored and the installed DLL remains
+unchanged. Increasing the observation bound has not established a lifecycle fix.
 
 UserForm import remains failed. Unchanged captures and raw Git transport pass;
 strict post-import comparison refuses changed FRX content and retains recovery

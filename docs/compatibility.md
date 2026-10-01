@@ -32,8 +32,12 @@ The isolated source `4a323196` / MVID
 declared-scalar inspection, Format restoration, embedded Monaco and actual Git
 capture/checkpoint/compare results. Word/PowerPoint adapter-only source/class/form
 save and fresh-process reopen pass. Access/Publisher reference workflows and
-selected metadata saves pass, while Access help metadata exit and Publisher
-HelpFile readback remain failed. Initial UserForm property differences also occur
+selected metadata saves have passing scopes, while Access help metadata exit and
+Publisher HelpFile readback remain failed. The retained Publisher file stores
+the correct help path; fresh native readback is altered. A later metadata batch
+also fails Access Description exit and Publisher HelpContextID mutation, leaving
+its remaining scenarios unexecuted. A longer exit bound does not establish a
+lifecycle correction. Initial UserForm property differences also occur
 without Git import. Saved/reopened baseline properties remain exact in the
 accepted scopes, while import still fails strict FRX comparison. Expanded
 diagnostics identify lost root/Frame font descriptors and a Frame size change
