@@ -371,7 +371,32 @@ preflight remains failed in both `teardown-preflight/` and
 the next helper exposes no exception context and exits zero after debugger
 detach. Normal helper detach/exit passes, but neither failed preflight permits
 Office attachment. Their original reports/logs remain preserved. No native
-array teardown diagnostic has run at this checkpoint.
+array teardown diagnostic has run at that earlier checkpoint.
+
+The next `diagnostic-guards-v6-v3/diagnostic-guards-v3.trx` records
+**26 passed, 0 failed, 0 skipped**, runner exit **0**, tests `3a3c266`;
+these remain detached guards, not a new global coverage result.
+`teardown-preflight-v3/` still fails: CDB reports the fatal exit while `.ecxr`
+cannot provide live-event registers. The corrected live-register collector's
+`teardown-preflight-v4/4eeec955f15941d183729e0ed5f00edb/preflight.json`
+passes actual helper checks. Normal helper **47732** detaches and exits **0**;
+synthetic helper **56496** captures the exception record, live registers and
+stack, then both target and debugger exit **0xC0000409**. This matching fatal
+exit is separate from normal detach and does not qualify Office behavior.
+
+The subsequent single owned native array trial, tests `cc813dc`, records raw
+`excel-array-teardown-v6/excel-array-teardown-v6.trx` **1 passed, 0 failed,
+0 skipped**, runner exit **0**, with Excel **38036** exiting **0**.
+Its additive `diagnostic-validity-correction.json` marks qualification
+**INVALID_DIAGNOSTIC_INTERVENTION**, without rewriting the original TRX:
+default CDB settings stop at a first-chance access violation in `clr+0x72eb0`
+after the original Close/Quit/release sequence. The controller deadline then
+issues `qd`; detachment can mark the outstanding exception handled and affect
+its progression. No fatal stack is captured, no causal fix is established and
+the original uninstrumented array/ParamArray failures stay failed. There is no
+procedure or native-cleanup replay, host termination, full dump or global
+policy change. A corrected exception-forwarding preflight is required before
+further native diagnostic acceptance.
 
 ### Preceding Monaco-status candidate: complete managed acceptance
 
