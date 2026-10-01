@@ -312,7 +312,9 @@ durable summaries, and one copied driver selected an older test build; the
 additive provenance correction preserves those original records. These outcomes
 do not explain the original pre-write connection EOF or qualify every category.
 The later full Format trial confirms a distinct defect: the empty-size refusal
-leaves its owned Options dialog visible. The guard retains the exact Excel
+returns before its owned Options dialog is confirmed closed. The dialog is
+visible in the immediate observation and absent in a later read-only observation.
+The guard retains the exact Excel
 without another dispatch, restoration or cleanup. Remaining Format phases are
 NOT_RUN; this refusal defect does not establish the earlier EOF's cause.
 
@@ -325,6 +327,9 @@ Its complete default managed gate passes. Native import/recovery, persistence
 and current-provider transport remain unexecuted for that candidate. Scalar
 failure-phase diagnostics preserve uncertain setter outcomes without replay;
 they do not establish a causal fix for the Access/Publisher metadata failures.
+The later uninstalled Options cancellation candidate fails its complete managed
+gate on synthetic native-probe ownership fixtures. A focused pass does not
+qualify that assembly, and it is not deployed.
 Exact identities, counts and artifact paths are recorded in
 [test coverage](test-coverage.md).
 

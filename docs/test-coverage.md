@@ -1,5 +1,35 @@
 # Recorded validation
 
+## Uninstalled Options cancellation candidate: complete gate failed (2026-10-01)
+
+Source `dc5d3d064882ab7220d9210e6616793c83550f31`, MVID
+`a066b3d6-d211-42a1-b665-904f31d2c6d2`, SHA-256
+`76978BE05E394D525875291D3D2819608DF87DD0893F975126F98C52D73779F2`
+adds one guarded Options cancellation with bounded exact-handle closure
+verification. A throwing Write or started Accept is retained without cancellation;
+known pre-write failures preserve primary and cancellation errors separately.
+
+The delegated prepared focused batch at source `37bb0d7` records **57 passed,
+0 failed, 0 skipped** in
+`artifacts/worktrees/qualification-teardown-trace/artifacts/pure-options-cancel/options-cancel.trx`.
+That focused pass is not full acceptance: the combined candidate's
+`managed-v8-options-cancellation/full-managed.trx` records **2,764 passed,
+3 failed, 110 conditional skips, 2,877 total**, runner exit **1**, in
+**568.522 seconds**. Its terminal manifest confirms unchanged product bytes
+and a clean, unchanged source revision throughout the run. The Debug solution
+build has no warnings or errors. Native/live-provider opt-ins were disabled.
+
+The failures are `VbeDebugWindowsSystemTests` cases
+`NativeDialogCaptureReadsVisibleControlsAndNativeWatchMessages`,
+`UiaOptionsReadNativePatternsWithoutReadingPasswordsOrDisabledControls` and
+`UiaGeneralTabRequiresOneSelectableTabAndReadsEachRadioSelection`. Their
+Options/Cancel fixtures no longer satisfy the new native ownership guard.
+The guard/fixture contract requires correction and a new complete gate;
+neither the preceding focused pass nor the earlier candidate's full pass
+qualifies this assembly. This candidate is **uninstalled** and Q-015 is open
+for it. The installed v6 and preceding combined candidate retain only their
+separate acceptance scopes below.
+
 ## Uninstalled combined candidate: complete managed run (2026-10-01)
 
 Source `fa7955ff9957138924ba911df446a9270e377dc5` combines bounded,
@@ -75,6 +105,13 @@ category, margin, stale-revision and complete restoration phases are **NOT_RUN**
 No restoration or Close/Quit follows the refusal. At this checkpoint the VSTest
 console has written its failed result, but the runner has not returned a terminal
 exit; do not treat the TRX as normal process completion. Q-026 remains open.
+An additive independent read-only window observation at
+**2026-10-01T04:11:51.7847671Z** confirms the same owned PID/start and no remaining
+`#32770` dialog. The initial visible dialog was observed immediately after the
+refusal; it is not evidence of permanent failure to close. The original failed
+test and retained-host decision remain unchanged. No bridge, COM, input,
+restoration or cleanup occurs during this later observation, retained in
+`retained-dialog-later-observation.json`.
 
 ## Current installed v6: complete managed acceptance (2026-10-01)
 
