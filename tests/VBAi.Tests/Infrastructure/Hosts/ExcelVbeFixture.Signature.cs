@@ -22,8 +22,8 @@ namespace VBAi.Tests.Integration
             finally { if (!terminal) PreserveForDiagnosticRecovery = true; }
         }
 
-        /// <summary>Opens only the saved synthetic signature workbook, with events and macros disabled.</summary>
-        internal void OpenOwnedSignatureWorkbook(string path)
+        /// <summary>Opens only a saved synthetic workbook read-only, with events and macros disabled.</summary>
+        internal void OpenOwnedReadOnlyWorkbook(string path)
         {
             path = ExcelOwnedBootstrapPlan.RequireLocalAbsolutePath(path);
             Assert.IsTrue(System.IO.File.Exists(path));

@@ -73,7 +73,7 @@ namespace VBAi.Tests.Integration.Hosts.Excel
             Assert.IsNull(verification["SignatureValid"], "A trust failure must not be promoted to a valid signature result.");
             ExcelVbeFixture.Run(host => {
                 Assert.AreNotEqual(signedPid, host.ProcessId, "Reopen requires a new owned native process.");
-                host.OpenOwnedSignatureWorkbook(path);
+                host.OpenOwnedReadOnlyWorkbook(path);
                 var status = Data(host.Command(new { Command = "project_signature_status", Project = path }));
                 Assert.AreEqual(true, status["Available"]); Assert.AreEqual(true, status["Signed"]);
                 Assert.AreEqual(sourceHash, Data(host.Command(new { Command = "read_module", Project = path, Module }))["Sha256"]);
