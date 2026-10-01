@@ -44,6 +44,17 @@ explicit owned bootstrap and refuses inherited token manifests before launch.
 No host is launched by this focused batch. Neither test-only lifecycle correction
 changes the shared fixture or explains the original native failures.
 
+The read-only fixture review found that the actual recovery callback used
+`File.Exists`, which can hide access errors as absence despite the helper's
+simulated exception guard. Tests source `3a1076a` now observes real marker metadata:
+any existing file/directory requires retention; only FileNotFound or
+DirectoryNotFound establishes absence. Other metadata errors remain primary
+diagnostic evidence. `recovery-observer-guards/recovery-observer.trx` records
+**22 passed, 0 failed, 0 skipped**, runner exit **0**, including real synthetic
+file/directory/missing paths and simulated access/I/O failure propagation.
+Its candidate manifest binds the test hash and unchanged frozen product.
+The authenticated native scenario remains NOT_RUN.
+
 ### Installed v6: full Format matrix stops at a retained native dialog
 
 `format-native-v6-corrected/format.trx` records **0 passed, 1 failed, 0 skipped**
@@ -1813,7 +1824,8 @@ the [release qualification tracker](release-qualification.md).
 ## Measurement boundaries
 
 Build/test commands use isolated outputs as described in [testing](../tests/README.md).
-The current `sw-async-global/coverage-summary.json` identifies the successful
+The latest complete managed candidate is identified at the top of this page.
+The historical `sw-async-global/coverage-summary.json` identifies its own successful
 default suite, pre-run source manifest, detected later edits and canonical Cobertura output.
 Product binaries were not instrumented; collection used the test output copy.
 Historical checkpoints in the evidence table are not current-source measurements.
