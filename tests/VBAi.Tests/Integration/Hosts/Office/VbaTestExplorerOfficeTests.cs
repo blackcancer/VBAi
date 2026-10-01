@@ -62,6 +62,9 @@ namespace VBAi.Tests.Integration
             Assert.AreEqual(fixture.ProcessId, Convert.ToInt32(status["HostProcessId"]));
             Save(fixture, "callback-registration.json", RequireCallback((string)status["AssemblyPath"]));
 
+            var publisherSources = host == "Publisher" ? fixture.Items("list_modules").ToDictionary(
+                item => (string)item["Name"], item => (string)fixture.Data("read_module", "Module", item["Name"])["Code"],
+                StringComparer.OrdinalIgnoreCase) : null;
             fixture.Data("create_module", "Module", ModuleName, "ExpectedMode", 2);
             bool documentCoverage = host == "Word" || host == "PowerPoint";
             if (documentCoverage)
@@ -143,7 +146,12 @@ namespace VBAi.Tests.Integration
             Assert.AreEqual(false, historical["Pending"]);
             Assert.AreEqual("Completed", historical["State"]);
             // Publisher requires the disposable VBA project to be saved before its guarded Quit.
-            if (host == "Publisher") fixture.SaveNative();
+            if (host == "Publisher")
+            {
+                publisherSources.Add(ModuleName, (string)changed["Code"]);
+                publisherSources.Add(VbaTestRuntimeSource.ModuleName, support);
+                fixture.SaveReviewedPublisherProject(ModuleName, publisherSources);
+            }
             }
             catch (Exception error)
             {
