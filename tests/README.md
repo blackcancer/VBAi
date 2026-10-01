@@ -87,6 +87,39 @@ $env:VBAi_EXCEL_RESULTS = "$PWD/artifacts/path-visibility-native"
 dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildOutputRoot="$PWD/artifacts/build" --filter 'FullyQualifiedName=VBAi.Tests.Integration.ExcelPathVisibilityTests.OwnedOwnerStaObservesTwoTesthostCreatedGuidDirectoriesAndEffectiveToken' --logger 'trx;LogFileName=path-visibility-native.trx' --results-directory "$PWD/artifacts/path-visibility-native"
 ```
 
+The paired export diagnostic is separate from that read-only observation. Its
+two data rows create fresh GUID children of LocalAppData and TEMP, then bootstrap
+one fresh owned Excel per row with the same fixed-allowlist manifest. Production
+commands create only a disposable UserForm and Label. The parameter-free owner
+STA diagnostic immediately precedes one `export_component` request to
+`ASCIIForm.frm` in the selected GUID child. Both commands use the same exact
+PID pipe and production dispatcher; no COM call or host command intervenes.
+Their sequencing is not an atomic proof that a thread token cannot change.
+
+Evidence preserves actual owner native TID/STA, candidate MVID and SHA-256,
+project/component/design identity, source SHA-256, native Label properties,
+effective tokens, all four attribute outcomes and raw export responses/files.
+Visibility differences remain observations. A received `Ok=false` is a terminal
+failed export, with independent after-readback and normal-exit checks; it is not
+a transport timeout. Pending startup/delivery/export retains the exact host and
+manifest/synthetic read leases without Close/Quit, retry or target cleanup. No
+ACL, EFS, permission, trust policy or token changes are made. The GUID directories
+and original partial/successful FRM/FRX remain evidence. This does not qualify
+Git capture normalization/import/recovery or equate explicit bootstrap with
+historical COM-activation trials.
+
+Prepare a **separate frozen-candidate test output** as described below, verify
+its referenced product hash against the installed candidate, then run the whole
+two-row matrix with this exact filter. This recipe is not recorded execution;
+do not rebuild/deploy the product to run a tests-only diagnostic:
+
+```powershell
+$env:VBAi_RUN_EXCEL_TESTS = '1'
+$env:VBAi_RUN_EXCEL_PAIRED_EXPORT_PATH_VISIBILITY = '1'
+$env:VBAi_EXCEL_RESULTS = "$PWD/artifacts/paired-export-native"
+dotnet test tests/VBAi.Tests/VBAi.Tests.csproj -c Debug --no-build -p:BuildProjectReferences=false -p:BuildOutputRoot="$PWD/artifacts/build-frozen-paired-export" --filter 'FullyQualifiedName=VBAi.Tests.Integration.ExcelPairedExportPathVisibilityTests.OwnerStaVisibilityImmediatelyPrecedesOneExportInOwnedGuidDirectory' --logger 'trx;LogFileName=paired-export-native.trx' --results-directory "$PWD/artifacts/paired-export-native"
+```
+
 For an owned-host scalar-inspection investigation, set `VBAi_VBE_INSPECTION_TRACE`
 to an absolute local JSONL file path in the host's environment before launching it.
 The parent directory must already exist. Tracing is disabled when absent or invalid;
