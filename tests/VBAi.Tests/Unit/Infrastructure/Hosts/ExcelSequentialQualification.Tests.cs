@@ -3,7 +3,7 @@ using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
-namespace VBAi.Tests.Unit.Infrastructure.Hosts
+namespace VBAi.Tests.Unit
 {
     /// <summary>Guards the prepared sequential native matrix against cleanup after nested uncertain failures.</summary>
     [TestClass, TestCategory("Unit")]
