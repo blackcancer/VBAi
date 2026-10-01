@@ -91,6 +91,13 @@ class DocumentationChecks(unittest.TestCase):
         self.write('artifacts/test.md', 'unstructured output')
         self.assertEqual(check(self.root), (1, 0, []))
 
+    def test_isolated_worktrees_do_not_duplicate_editorial_scope(self):
+        self.write('README.md', '# Project\n[Guide](docs/guide.md)\n')
+        self.write('docs/guide.md', '# Guide\n')
+        self.write('.worktrees/parallel/docs/guide.md', 'unfinished parallel draft')
+        self.write('.worktrees/parallel/tests/VBAi.Tests/Infrastructure/Fixtures/input.md', 'not documentation')
+        self.assertEqual(check(self.root), (2, 1, []))
+
     def test_multiple_h1_is_error(self):
         self.write('README.md', '# First\n# Second\n')
         self.assertIn('exactly one', check(self.root)[2][0])
