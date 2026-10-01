@@ -48,7 +48,7 @@ namespace VBAi.Tests.Integration
         }
 
         /// <summary>Separates the original refusal, read-only observation and optional single font correction in owned fixtures.</summary>
-        private void RunFontObservation(string layout, bool restoreFonts, bool assignOwner = false, bool useBridge = false, bool persistedFont = false, bool distinctFace = false, bool distinctObject = false)
+        private void RunFontObservation(string layout, bool restoreFonts, bool assignOwner = false, bool useBridge = false, bool persistedFont = false, bool distinctFace = false, bool distinctObject = false, bool retainSource = false)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1" ||
                 Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_LOCAL_GIT_TESTS") != "1" ||
@@ -69,6 +69,7 @@ namespace VBAi.Tests.Integration
                 ["PersistedFontLoadRequested"] = persistedFont,
                 ["DistinctFontFaceChangeAndRestorationRequested"] = distinctFace,
                 ["DistinctFontObjectRequested"] = distinctObject,
+                ["RetainedSourceFontObjectRequested"] = retainSource,
                 ["Scope"] = "Saved/reopened baseline; one native Apply attempt; read-only Font observation and optional single explicit font restoration. No repeated import, setter retry, post-import Save or macro execution. This diagnostic does not qualify successful production import."
             };
             string evidence = Path.Combine(output, "font-observation.json");
@@ -84,56 +85,60 @@ namespace VBAi.Tests.Integration
                     host.CaptureGitFormDesigner(form, Path.Combine(output, "before-designer.png"));
                     var fontBefore = host.ReadGitLayoutFonts(form, layout);
                     report["NativeFontsBefore"] = fontBefore;
-                    host.WithGitProject(path, project => {
-                        var before = Capture(project, output, "before");
-                        host.MutateGitLayout(form, layout, persistedBaseline: true);
-                        var changed = Capture(project, output, "changed");
-                        Assert.IsFalse(before.SameAs(changed), "The single Apply must have a real native source change to undo.");
-                        report["Stage"] = "one-native-import";
-                        report["NativeImports"] = 1;
-                        write();
-                        try
-                        {
-                            project.Apply(before, changed);
-                            report["InitialStrictComparison"] = "PASSED";
-                        }
-                        catch (InvalidOperationException error) when (error.Message == UiText.Get("The VBE did not preserve the imported sources exactly. Use Restore or check the project."))
-                        {
-                            report["InitialStrictComparison"] = "REFUSED";
-                            report["InitialStrictRefusal"] = error.ToString();
-                        }
-                        var fontAfter = host.ReadGitLayoutFonts(form, layout);
-                        report["NativeFontsAfter"] = fontAfter;
-                        report["FontDifferences"] = DescribeNativeDifferences(fontBefore, fontAfter);
-                        if (restoreFonts)
-                        {
-                            report["FontAssignmentsRequestedAfterImport"] = (layout == "FrameMultiPage" ? 2 : 1) *
-                                (distinctFace ? (persistedFont ? 4 : 2) : persistedFont ? 2 : useBridge ? 6 : 8);
-                            report["Stage"] = "one-explicit-font-restoration";
+                    using (var sourceFonts = retainSource ? host.CaptureGitSourceFonts(form, layout, report) : null)
+                    {
+                        host.WithGitProject(path, project => {
+                            var before = Capture(project, output, "before");
+                            host.MutateGitLayout(form, layout, persistedBaseline: true);
+                            var changed = Capture(project, output, "changed");
+                            Assert.IsFalse(before.SameAs(changed), "The single Apply must have a real native source change to undo.");
+                            report["Stage"] = "one-native-import";
+                            report["NativeImports"] = 1;
                             write();
-                            if (distinctFace) host.RestoreGitFontFacesThroughDistinctValues(form, layout, fontBefore);
-                            if (persistedFont)
+                            try
                             {
-                                host.RestoreGitLayoutPersistedFonts(form, layout, fontBefore, distinctObject);
-                                var withoutGetters = Capture(project, output, "after-persisted-font-before-getters");
-                                report["ExactSnapshotBeforeFontGetter"] = before.SameAs(withoutGetters);
-                                write();
+                                project.Apply(before, changed);
+                                report["InitialStrictComparison"] = "PASSED";
                             }
-                            else if (useBridge) host.RestoreGitLayoutFontsViaBridge(form, layout, fontBefore);
-                            else if (!distinctFace) host.RestoreGitLayoutFonts(form, layout, fontBefore, assignOwner);
-                            fontAfter = host.ReadGitLayoutFonts(form, layout);
-                            report["NativeFontsAfterExplicitRestoration"] = fontAfter;
-                            report["FontDifferencesAfterExplicitRestoration"] = DescribeNativeDifferences(fontBefore, fontAfter);
-                        }
-                        var observed = Capture(project, output, "after-font-observation");
-                        report["ExactSnapshotAfterFontRead"] = before.SameAs(observed);
-                        report["RemainingChangedFiles"] = observed.Changes(before);
-                        report["NativeAfter"] = host.ReadGitLayout(form, layout);
-                        report["Stage"] = "OBSERVED";
-                        write();
-                        AssertNativeState(fontBefore, fontAfter, "Read-only post-import font observation");
-                        Assert.IsTrue(before.SameAs(observed), "Font observation did not restore the exact comparison snapshot; no import, Save or setter is repeated.");
-                    });
+                            catch (InvalidOperationException error) when (error.Message == UiText.Get("The VBE did not preserve the imported sources exactly. Use Restore or check the project."))
+                            {
+                                report["InitialStrictComparison"] = "REFUSED";
+                                report["InitialStrictRefusal"] = error.ToString();
+                            }
+                            var fontAfter = host.ReadGitLayoutFonts(form, layout);
+                            report["NativeFontsAfter"] = fontAfter;
+                            report["FontDifferences"] = DescribeNativeDifferences(fontBefore, fontAfter);
+                            if (restoreFonts)
+                            {
+                                report["FontAssignmentsRequestedAfterImport"] = (layout == "FrameMultiPage" ? 2 : 1) *
+                                    (retainSource ? 1 : distinctFace ? (persistedFont ? 4 : 2) : persistedFont ? 2 : useBridge ? 6 : 8);
+                                report["Stage"] = "one-explicit-font-restoration";
+                                write();
+                                if (distinctFace) host.RestoreGitFontFacesThroughDistinctValues(form, layout, fontBefore);
+                                if (persistedFont || retainSource)
+                                {
+                                    if (retainSource) host.RestoreGitSourceFonts(form, layout, sourceFonts);
+                                    else host.RestoreGitLayoutPersistedFonts(form, layout, fontBefore, distinctObject);
+                                    var withoutGetters = Capture(project, output, "after-persisted-font-before-getters");
+                                    report["ExactSnapshotBeforeFontGetter"] = before.SameAs(withoutGetters);
+                                    write();
+                                }
+                                else if (useBridge) host.RestoreGitLayoutFontsViaBridge(form, layout, fontBefore);
+                                else if (!distinctFace) host.RestoreGitLayoutFonts(form, layout, fontBefore, assignOwner);
+                                fontAfter = host.ReadGitLayoutFonts(form, layout);
+                                report["NativeFontsAfterExplicitRestoration"] = fontAfter;
+                                report["FontDifferencesAfterExplicitRestoration"] = DescribeNativeDifferences(fontBefore, fontAfter);
+                            }
+                            var observed = Capture(project, output, "after-font-observation");
+                            report["ExactSnapshotAfterFontRead"] = before.SameAs(observed);
+                            report["RemainingChangedFiles"] = observed.Changes(before);
+                            report["NativeAfter"] = host.ReadGitLayout(form, layout);
+                            report["Stage"] = "OBSERVED";
+                            write();
+                            AssertNativeState(fontBefore, fontAfter, "Read-only post-import font observation");
+                            Assert.IsTrue(before.SameAs(observed), "Font observation did not restore the exact comparison snapshot; no import, Save or setter is repeated.");
+                        });
+                    }
                 }, host => { report["Shutdown"] = host.ShutdownDiagnostics; write(); });
                 report["Stage"] = "PASSED_DIAGNOSTIC_ONLY";
             }
@@ -175,6 +180,16 @@ namespace VBAi.Tests.Integration
         public void DistinctPersistedFontObjectAssignmentPreservesExactSnapshot(string layout, bool primeFace)
         {
             RunFontObservation(layout, true, persistedFont: true, distinctFace: primeFace, distinctObject: true);
+        }
+
+        /// <summary>Distinguishes the original font implementation from a reconstructed OleAut32 StdFont.</summary>
+        [STATestMethod]
+        [DataRow("LabelButton")]
+        [DataRow("Image")]
+        [DataRow("FrameMultiPage")]
+        public void RetainedSourceFontObjectAssignmentPreservesExactSnapshot(string layout)
+        {
+            RunFontObservation(layout, true, retainSource: true);
         }
     }
 }
