@@ -12,7 +12,7 @@ namespace VBAi.Tests.Integration
     internal sealed partial class ExcelVbeFixture
     {
         /// <summary>Creates one owned native form layout with synthetic controls and inert code.</summary>
-        internal void PrepareGitLayout(string form, string layout, string path)
+        internal void PrepareGitLayout(string form, string layout, string path, bool persistedBaseline = false)
         {
             // Suppress host events and all document macros before saving/reopening
             // this owned fixture. No user application or trust setting is changed.
@@ -36,9 +36,14 @@ namespace VBAi.Tests.Integration
                             case "TextBox": ((dynamic)control).Text = "Original text"; break;
                             case "ComboBox":
                             case "ListBox":
-                                ((dynamic)control).AddItem("First synthetic row");
-                                ((dynamic)control).AddItem("Second synthetic row");
-                                ((dynamic)control).ListIndex = 0; break;
+                                if (persistedBaseline) ((dynamic)control).ColumnCount = 1;
+                                else
+                                {
+                                    ((dynamic)control).AddItem("First synthetic row");
+                                    ((dynamic)control).AddItem("Second synthetic row");
+                                    ((dynamic)control).ListIndex = 0;
+                                }
+                                break;
                             case "CheckBox":
                             case "OptionButton":
                             case "ToggleButton":
@@ -58,6 +63,11 @@ namespace VBAi.Tests.Integration
                 });
             if (layout == "Image") InstallGitLayoutPicture(form);
             ((dynamic)workbook).Save();
+            // Qualification on the exact saved designer must begin after native
+            // persistence. Independent baseline trials proved that initial geometry,
+            // PNG representation and AddItem runtime rows can change without any
+            // Git import. Never ignore those differences in snapshot comparison.
+            if (persistedBaseline) Assert.AreEqual(0, ReopenAndReadProjectProtection(path));
         }
 
         /// <summary>Loads a synthetic bitmap through the production command in Excel, without crossing a process-local GDI handle.</summary>
@@ -95,7 +105,7 @@ namespace VBAi.Tests.Integration
         }
 
         /// <summary>Changes a native persisted value appropriate to the selected control layout.</summary>
-        internal void MutateGitLayout(string form, string layout)
+        internal void MutateGitLayout(string form, string layout, bool persistedBaseline = false)
         {
             WithGitLayoutControl(form, layout, control => {
                 switch (layout)
@@ -104,7 +114,10 @@ namespace VBAi.Tests.Integration
                     case "TextBox":
                     case "FrameMultiPage": ((dynamic)control).Text = "Changed synthetic text"; break;
                     case "ComboBox":
-                    case "ListBox": ((dynamic)control).ListIndex = 1; break;
+                    case "ListBox":
+                        if (persistedBaseline) ((dynamic)control).ColumnCount = 2;
+                        else ((dynamic)control).ListIndex = 1;
+                        break;
                     case "CheckBox":
                     case "OptionButton":
                     case "ToggleButton": ((dynamic)control).Value = true; break;
@@ -158,6 +171,7 @@ namespace VBAi.Tests.Integration
                         int count = Convert.ToInt32(((dynamic)control).ListCount);
                         result["Control.ListCount"] = count;
                         result["Control.ListIndex"] = ((dynamic)control).ListIndex;
+                        result["Control.ColumnCount"] = ((dynamic)control).ColumnCount;
                         for (int i = 0; i < count; i++) result["Control.List." + i] = ((dynamic)control).List[i, 0];
                         break;
                     case "CheckBox":

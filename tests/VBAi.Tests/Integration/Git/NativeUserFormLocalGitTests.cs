@@ -74,7 +74,8 @@ namespace VBAi.Tests.Integration
                         string path = host.File("local-git-layout.xlsm");
                         const string form = "QualificationForm";
                         Phase(output, report, "prepare-native-layout");
-                        host.PrepareGitLayout(form, layout, path);
+                        host.PrepareGitLayout(form, layout, path, persistedBaseline: true);
+                        report["BaselineScope"] = "Native saved/reopened designer; ComboBox/ListBox use persisted ColumnCount, not runtime AddItem rows.";
                         File.Copy(path, Path.Combine(output, "before-import.xlsm"));
                         var nativeBefore = host.ReadGitLayout(form, layout);
                         report["NativeBefore"] = nativeBefore;
@@ -118,7 +119,7 @@ namespace VBAi.Tests.Integration
                             report["UnchangedCapturesVerified"] = true;
 
                             Phase(output, report, "native-meaningful-property-change");
-                            host.MutateGitLayout(form, layout);
+                            host.MutateGitLayout(form, layout, persistedBaseline: true);
                             var nativeChanged = host.ReadGitLayout(form, layout);
                             report["NativeChanged"] = nativeChanged;
                             Assert.IsTrue(nativeBefore.Any(pair => !Equals(pair.Value, nativeChanged[pair.Key])), "The fixture must actually change a persisted native value.");

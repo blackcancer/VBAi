@@ -25,6 +25,31 @@ namespace VBAi.Tests.Integration
         [DataRow("FrameMultiPage")]
         public void OwnedLayoutBaselineReopenPreservesNativeStateWithoutGitImport(string layout)
         {
+            RunPersistenceBaseline(layout, false);
+        }
+
+        /// <summary>Requires every saved designer baseline to remain exact across another document reopen and a fresh process.</summary>
+        [STATestMethod]
+        [DataRow("LabelButton")]
+        [DataRow("TextBox")]
+        [DataRow("ComboBox")]
+        [DataRow("ListBox")]
+        [DataRow("CheckBox")]
+        [DataRow("OptionButton")]
+        [DataRow("ToggleButton")]
+        [DataRow("ScrollBar")]
+        [DataRow("SpinButton")]
+        [DataRow("TabStrip")]
+        [DataRow("Image")]
+        [DataRow("FrameMultiPage")]
+        public void OwnedPersistedLayoutBaselineReopenPreservesNativeStateWithoutGitImport(string layout)
+        {
+            RunPersistenceBaseline(layout, true);
+        }
+
+        /// <summary>Records prepared and persisted baselines independently; all assertions remain exact.</summary>
+        private void RunPersistenceBaseline(string layout, bool persistedBaseline)
+        {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1" ||
                 Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_LOCAL_GIT_TESTS") != "1")
                 Assert.Inconclusive("Disposable Excel and native form qualification require both explicit opt-ins.");
@@ -38,6 +63,7 @@ namespace VBAi.Tests.Integration
             int originalPid = 0;
             var report = new Dictionary<string, object> {
                 ["Layout"] = layout, ["Stage"] = "STARTED", ["GitImports"] = 0,
+                ["PersistedBaseline"] = persistedBaseline,
                 ["MacroExecutions"] = 0, ["RemoteOperations"] = 0,
                 ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
                 ["Scope"] = "Independent native baseline persistence; one prepared Save, same-process document reopen, then read-only fresh Excel process; no Git import or repair."
@@ -51,7 +77,7 @@ namespace VBAi.Tests.Integration
                     report["OriginalProcessId"] = originalPid;
                     report["OriginalStatus"] = host.Command("status");
                     string path = host.File("baseline-source.xlsm");
-                    host.PrepareGitLayout(form, layout, path);
+                    host.PrepareGitLayout(form, layout, path, persistedBaseline);
                     before = host.ReadGitLayout(form, layout);
                     report["NativePrepared"] = before;
                     File.Copy(path, saved);
