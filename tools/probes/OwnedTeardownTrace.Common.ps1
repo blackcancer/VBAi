@@ -35,7 +35,9 @@ function Get-TeardownCommands([string]$log, [int]$targetProcessId, [string]$nonc
     # https://learn.microsoft.com/en-us/windows-hardware/drivers/debuggercmds/sx--sxd--sxe--sxi--sxn--sxr--sx---set-exceptions-
     # Continue fatal exceptions unhandled; qd would mark the outstanding event handled.
     # https://learn.microsoft.com/en-us/windows-hardware/drivers/debuggercmds/gn--gn--go-with-exception-not-handled-
-    $capture = '.echo VBAI_TEARDOWN_EXCEPTION_BEGIN; .lastevent; .exr -1; .ecxr; kv; .echo VBAI_TEARDOWN_EXCEPTION_END; gn'
+    # .ecxr is documented for minidumps, not this live exception event.
+    # https://learn.microsoft.com/en-us/windows-hardware/drivers/debuggercmds/r--registers-
+    $capture = '.echo VBAI_TEARDOWN_EXCEPTION_BEGIN; .lastevent; .exr -1; .echo VBAI_TEARDOWN_REGISTER_MODE LiveEventThread; r; kv; .echo VBAI_TEARDOWN_EXCEPTION_END; gn'
     return ".logopen /u `"$safeLog`"`n" +
         "sxe -c `"$capture`" -c2 `"$capture`" 0xc0000409`n" +
         "sxn -c `"qd`" epr`n" +
@@ -47,6 +49,16 @@ function Test-TeardownExceptionCapture([string]$text) {
     return $match.Success -and $match.Groups[1].Value -match '(?im)^\s*ExceptionCode:\s*c0000409\b' -and
         $match.Groups[1].Value -match '(?im)^\s*rip=[0-9a-f]+' -and
         $match.Groups[1].Value -match 'Child-SP\s+RetAddr'
+}
+function Test-OwnedTeardownFatalExit([int]$debuggerExit, [bool]$targetExited, [Nullable[int]]$targetExit, [string]$text) {
+    # A nonzero CDB exit is accepted only when it propagates this exact terminal target's fatal code.
+    return $targetExited -and $null -ne $targetExit -and $debuggerExit -eq -1073740791 -and
+        $targetExit -eq $debuggerExit -and (Test-TeardownExceptionCapture $text)
+}
+function Test-OwnedTeardownReady([string]$text, [int]$targetProcessId, [string]$nonce) {
+    if($targetProcessId -le 0 -or $nonce -notmatch '^[a-f0-9]{32}$'){return $false}
+    $line='VBAI_TEARDOWN_READY '+$targetProcessId+' '+$nonce
+    return [regex]::IsMatch($text,'(?m)^'+[regex]::Escape($line)+'\r?$')
 }
 function Start-OwnedTeardownDebugger([string]$cdb, $target, [string]$directory, [string]$nonce) {
     $commands = Join-Path $directory 'teardown.commands.txt'
@@ -69,7 +81,7 @@ function Wait-OwnedTeardownArmed($session,$target,[string]$nonce) {
     while ($watch.Elapsed.TotalSeconds -lt 10 -and -not $session.Process.HasExited -and -not $target.HasExited) {
         $present=$false
         if ([IO.File]::Exists($session.Log) -and
-            (Get-Content -LiteralPath $session.Log -Raw -Encoding Unicode).Contains("VBAI_TEARDOWN_READY $($target.Id) $nonce") -and
+            (Test-OwnedTeardownReady (Get-Content -LiteralPath $session.Log -Raw -Encoding Unicode) $target.Id $nonce) -and
             [VBAiOwnedTeardownNative]::CheckRemoteDebuggerPresent($target.Handle,[ref]$present) -and $present) { return }
         Start-Sleep -Milliseconds 100
     }
@@ -89,5 +101,13 @@ function Stop-OwnedTeardownDebugger($session,$target) {
             throw 'Debugger detachment is not proven; preserve host without further actions.'
         }
     }
-    if ($session.Process.ExitCode -ne 0) { throw ('Debugger returned nonzero: '+$session.Process.ExitCode) }
+    $session.DebuggerExitCode=$session.Process.ExitCode
+    $session.TargetExitObserved=$target.HasExited
+    $session.TargetExitCode=if($target.HasExited){$target.ExitCode}else{$null}
+    $session.FatalExitMatchedTarget=$false
+    if ($session.DebuggerExitCode -ne 0) {
+        $text=if([IO.File]::Exists($session.Log)){Get-Content -LiteralPath $session.Log -Raw -Encoding Unicode}else{''}
+        $session.FatalExitMatchedTarget=Test-OwnedTeardownFatalExit $session.DebuggerExitCode $session.TargetExitObserved $session.TargetExitCode $text
+        if(-not $session.FatalExitMatchedTarget){throw ('Debugger returned unverified nonzero: '+$session.DebuggerExitCode)}
+    }
 }

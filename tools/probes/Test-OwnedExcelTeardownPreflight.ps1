@@ -8,7 +8,7 @@ if(-not [IO.Path]::IsPathRooted($HelperPath) -or -not [IO.Path]::IsPathRooted($O
 }
 $common=Join-Path $PSScriptRoot 'OwnedTeardownTrace.Common.ps1'
 $report=[ordered]@{State='PREPARE_ONLY';Mode='TEARDOWN_EXCEPTION_PREFLIGHT';HelperPath=$HelperPath;HelperSha256=(Get-FileHash -LiteralPath $HelperPath).Hash;
- CdbPath=$CdbPath;CdbSha256=(Get-FileHash -LiteralPath $CdbPath).Hash;CommonScriptSha256=(Get-FileHash -LiteralPath $common).Hash;
+ CdbPath=$CdbPath;CdbSha256=(Get-FileHash -LiteralPath $CdbPath).Hash;CommonScriptSha256=(Get-FileHash -LiteralPath $common).Hash;RegisterCaptureMode='LiveEventThread';
  Scope='Two newly owned non-Office helpers only: normal attach/detach/STOP, then one synthetic failfast. No Office, COM, dump or global policy.'}
 if(-not $Execute){$report|ConvertTo-Json -Depth 4;return}
 . $common
@@ -34,6 +34,7 @@ foreach($mode in @('normal','failfast')){
   if($mode -eq 'normal'){
    Stop-OwnedTeardownDebugger $session $target
    $report.NormalHelperDetachedVerified=$true
+   $report.NormalDebuggerExitCode=$session.Process.ExitCode
    $target.StandardInput.WriteLine('STOP');$target.StandardInput.Flush()
    $stopped=$target.StandardOutput.ReadLineAsync()
    if(-not $stopped.Wait(5000) -or $stopped.Result -ne 'STOPPED'){throw 'Normal helper STOP handshake was not observed.'}
@@ -53,14 +54,19 @@ foreach($mode in @('normal','failfast')){
  }catch{$primary=$_.Exception.ToString();$report.Failure=$primary}
  finally{
   if($session -ne $null -and -not $session.Process.HasExited){try{Stop-OwnedTeardownDebugger $session $target}catch{$cleanup.Add($_.Exception.ToString())}}
+  try{
+   if($session -ne $null -and $session.Process.HasExited){$report[$mode+'DebuggerExitCodeHex']='0x'+([uint32]([int64]$session.Process.ExitCode -band 4294967295)).ToString('X8')}
+   if($target -ne $null){$report[$mode+'HelperExitObserved']=$target.HasExited;if($target.HasExited){$report[$mode+'HelperExitCodeHex']='0x'+([uint32]([int64]$target.ExitCode -band 4294967295)).ToString('X8')}}
+  }catch{$cleanup.Add($_.Exception.ToString())}
   $report.CleanupFailures=@($cleanup.ToArray())
   Write-TeardownJson (Join-Path $trial 'preflight.json') $report
  }
  if($primary -ne $null -or $cleanup.Count -ne 0){break}
 }
 $report.State=if($primary -eq $null -and $cleanup.Count -eq 0 -and $report.ExceptionCaptureVerified -eq $true -and
- $report.NormalHelperExitCode -eq 0 -and $report.NormalHelperDetachedVerified -eq $true -and
- $report.FailfastHelperExitCodeHex -eq '0xC0000409'){'PASS'}else{'FAIL'}
+ $report.NormalHelperExitCode -eq 0 -and $report.NormalDebuggerExitCode -eq 0 -and $report.NormalHelperDetachedVerified -eq $true -and
+ $report.FailfastHelperExitCodeHex -eq '0xC0000409' -and $report.failfastHelperExitObserved -eq $true -and
+ $report.failfastDebuggerExitCodeHex -in @('0x00000000','0xC0000409')){'PASS'}else{'FAIL'}
 $report.CompletedUtc=[DateTime]::UtcNow.ToString('o');Write-TeardownJson (Join-Path $trial 'preflight.json') $report
 Write-Output (Join-Path $trial 'preflight.json')
 if($report.State -ne 'PASS'){throw 'Owned helper preflight failed; do not attach to Office.'}

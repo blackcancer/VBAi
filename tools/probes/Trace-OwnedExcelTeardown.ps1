@@ -24,7 +24,7 @@ if ([Guid]$pending.AssemblyMvid -ne $ExpectedMvid -or
 if (-not [IO.File]::Exists($CdbPath)) { throw 'Existing debugger unavailable; no installation.' }
 $plan=[ordered]@{Mode='PREPARE_ONLY';ProcessId=[int]$pending.ProcessId;ProcessStartedUtc=$pending.ProcessStartedUtc;
  Nonce=$pending.Nonce;AssemblyMvid=$ExpectedMvid.ToString();ExpectedAssemblySha256=$ExpectedAssemblySha256;
- Scenario=$pending.Scenario;CleanupCallsIssuedByController=0;MemoryDumps=0;HostTerminationCalls=0;
+ Scenario=$pending.Scenario;CleanupCallsIssuedByController=0;MemoryDumps=0;HostTerminationCalls=0;RegisterCaptureMode='LiveEventThread';
  Scope='Exact owned disposable Excel; failfast exception/context/stack only. No COM calls, cleanup replay, full dump or global WER changes.'}
 if (-not $Execute) { $plan | ConvertTo-Json -Depth 5; return }
 . (Join-Path $PSScriptRoot 'OwnedTeardownTrace.Common.ps1')
@@ -32,6 +32,8 @@ if (-not [IO.Path]::IsPathRooted($DebuggerPreflightReport)) { throw 'Measured ex
 $preflight=Get-Content -LiteralPath $DebuggerPreflightReport -Raw -Encoding UTF8|ConvertFrom-Json
 $common=Join-Path $PSScriptRoot 'OwnedTeardownTrace.Common.ps1'
 if ($preflight.State -ne 'PASS' -or $preflight.Mode -ne 'TEARDOWN_EXCEPTION_PREFLIGHT' -or $preflight.ExceptionCaptureVerified -ne $true -or
+    $preflight.RegisterCaptureMode -ne 'LiveEventThread' -or $preflight.NormalDebuggerExitCode -ne 0 -or
+    $preflight.failfastDebuggerExitCodeHex -notin @('0x00000000','0xC0000409') -or $preflight.failfastHelperExitObserved -ne $true -or
     $preflight.NormalHelperExitCode -ne 0 -or $preflight.NormalHelperDetachedVerified -ne $true -or
     $preflight.FailfastHelperExitCodeHex -ne '0xC0000409' -or $preflight.SyntheticFailfastRequests -ne 1 -or
     $preflight.CdbSha256 -ne (Get-FileHash -LiteralPath $CdbPath -Algorithm SHA256).Hash -or
@@ -75,7 +77,16 @@ finally {
    Write-TeardownMarker (Join-Path $directory 'teardown.detached.json') @{Phase='Detached';ProcessId=$pending.ProcessId;
      ProcessStartedUtc=$pending.ProcessStartedUtc;Nonce=$pending.Nonce;AssemblyMvid=$pending.AssemblyMvid}
   } catch { $cleanup=$_.Exception.ToString();$plan.CleanupFailure=$cleanup }
-  if($session.Process.HasExited){$plan.DebuggerExitCode=$session.Process.ExitCode}
+  # Preserve both terminal observations even when stop validation itself fails.
+  try{
+   if($session.Process.HasExited){$plan.DebuggerExitCode=$session.Process.ExitCode}
+   $plan.HostExitObserved=$target.HasExited
+   if($target.HasExited){$plan.HostExitCodeHex='0x'+([uint32]([int64]$target.ExitCode -band 4294967295)).ToString('X8')}
+   $plan.DebuggerFatalExitMatchedTarget=$session.FatalExitMatchedTarget
+  }catch{
+   $plan.ExitObservationFailure=$_.Exception.ToString()
+   if($cleanup -eq $null){$cleanup=$plan.ExitObservationFailure}
+  }
   if([IO.File]::Exists($session.Log)){
    $text=Get-Content -LiteralPath $session.Log -Raw -Encoding Unicode
    $plan.ExceptionCaptureVerified=Test-TeardownExceptionCapture $text
