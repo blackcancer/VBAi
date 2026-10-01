@@ -13,6 +13,7 @@ namespace VBAi.Tests.Unit
     using System.Web.Script.Serialization;
     using System.Windows;
     using VBAi;
+    using VBAi.Tests.Integration;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Forms = System.Windows.Forms;
 
@@ -30,7 +31,7 @@ namespace VBAi.Tests.Unit
             using (var wire = new OllamaWireScope())
             {
                 runtime.Settings.ProviderName = provider.Name;
-                runtime.Settings.OllamaEndpoint = "http://127.0.0.1:11434/v1/chat/completions";
+                runtime.Settings.OllamaEndpoint = OllamaQualificationEndpoint.Resolve().AbsoluteUri;
                 runtime.Settings.OllamaModel = model;
                 runtime.Settings.VbeEditApproval = "ReadOnly";
                 // This ephemeral value shadows any inherited API-key environment variable.
@@ -228,11 +229,12 @@ namespace VBAi.Tests.Unit
         private sealed class OllamaWireHandler : DelegatingHandler
         {
             private readonly string root;
-            internal OllamaWireHandler(HttpMessageHandler inner, string root) : base(inner) { this.root = root; }
+            private readonly Uri selectedEndpoint;
+            internal OllamaWireHandler(HttpMessageHandler inner, string root) : base(inner)
+            { this.root = root; selectedEndpoint = OllamaQualificationEndpoint.Resolve(); }
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
             {
-                if (request.RequestUri.Scheme != "http" || !request.RequestUri.IsLoopback || request.RequestUri.Port != 11434)
-                    throw new InvalidOperationException("Synthetic wire capture requires the fixed local Ollama endpoint.");
+                OllamaQualificationEndpoint.RequireWireUri(request.RequestUri, selectedEndpoint);
                 string prefix = Path.Combine(root, "wire-" + Guid.NewGuid().ToString("N"));
                 if (request.Content != null)
                 {
@@ -244,6 +246,7 @@ namespace VBAi.Tests.Unit
                 SaveWire(prefix + "-metadata.json", Encoding.UTF8.GetBytes(new JavaScriptSerializer().Serialize(new {
                     Utc = DateTime.UtcNow.ToString("o"), Method = request.Method.Method,
                     Path = request.RequestUri.AbsolutePath, Status = (int)response.StatusCode,
+                    LoopbackPort = selectedEndpoint.Port,
                     ContentType = response.Content?.Headers.ContentType?.ToString(),
                     Mvid = typeof(LlmChatClient).Module.ModuleVersionId.ToString("D"),
                     Scope = "Synthetic fixture bodies only; no headers, credentials or user history recorded",

@@ -421,6 +421,14 @@ streamed text, a harmless tool roundtrip, cancellation and a subsequent request;
 they do not execute native VBE tools or read saved provider settings. Remove the
 opt-in variables after the run.
 
+The detached HTTP and chat UI cases accept `VBAi_TEST_OLLAMA_ENDPOINT` when an
+owned local server uses another port. Its default remains
+`http://127.0.0.1:11434/v1/chat/completions`. An override must be a canonical
+`http://127.0.0.1:<port>/v1/chat/completions` URL without credentials, query or
+fragment. Optional synthetic wire capture is restricted to that exact server's
+chat and `/api/tags` routes and records the selected port. Retain the backend
+version and model digest; another port does not prove the default port is usable.
+
 `VBAi_RUN_OLLAMA_UI_TESTS=1` enables `TestCategory=OllamaUi` with the same
 model selector. It shows the real chat controls and checks send, rendered
 streaming, Stop and a subsequent completed response through the production
