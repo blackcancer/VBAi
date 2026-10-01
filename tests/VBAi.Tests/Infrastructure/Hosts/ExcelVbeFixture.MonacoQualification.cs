@@ -266,7 +266,21 @@ namespace VBAi.Tests.Integration
             finally { BalanceMonacoGetter(main); BalanceMonacoGetter(editor); }
         }
 
-        internal static void RequireInstalledMonacoObservation(MonacoNativeObservation state, int pid, string closedModule, string liveModule, string synchronized)
+        internal static string MonacoTabCaption(string project, string module)
+        {
+            Assert.IsFalse(string.IsNullOrWhiteSpace(project)); Assert.IsFalse(string.IsNullOrWhiteSpace(module));
+            return project + " · " + module; // EditorVbeModule.Name, not a bare VBComponent name.
+        }
+
+        internal static string MonacoAccessibleSourceStatus(MonacoNativeObservation state)
+        {
+            string text = state?.RenderedText ?? "";
+            return new[] { "Option Explicit", "LiveValue", "42", "VBAi owned live scope probe" }.All(text.Contains)
+                ? "LIVE_SOURCE_MARKERS_OBSERVED" : "LIVE_SOURCE_NOT_EXPOSED_BY_ACCESSIBILITY";
+        }
+
+        /// <summary>Qualifies native status/tab ownership only; code rendering remains a separate genuine-image review.</summary>
+        internal static void RequireInstalledMonacoObservation(MonacoNativeObservation state, int pid, string closedTab, string liveTab, string synchronized)
         {
             Assert.IsNotNull(state); Assert.IsTrue(pid > 0);
             Assert.IsTrue(state.VbeHandle != 0 && state.EditorHandle != 0 && state.VbeHandle != state.EditorHandle);
@@ -279,11 +293,10 @@ namespace VBAi.Tests.Integration
             Assert.AreEqual(pid, state.StatusProcessId);
             Assert.IsTrue(state.StatusVisible);
             Assert.AreEqual(synchronized, state.StatusText, "Inactive closed-project error contaminated the live status, or live synchronization did not settle.");
-            Assert.IsTrue(state.Tabs.Contains(closedModule) && state.Tabs.Contains(liveModule), "Both genuine editor tabs must have been created and the closed draft retained.");
+            Assert.IsTrue(state.Tabs.Count(name => name == closedTab) == 1 && state.Tabs.Count(name => name == liveTab) == 1,
+                "The exact project/module captions must be unique, with the closed draft retained.");
             Assert.IsTrue(state.TabProcessIds.Length == state.Tabs.Length && state.TabProcessIds.All(owner => owner == pid));
-            CollectionAssert.AreEqual(new[] { liveModule }, state.SelectedTabs);
-            foreach (string marker in new[] { "Option Explicit", "LiveValue", "42", "VBAi owned live scope probe" })
-                StringAssert.Contains(state.RenderedText ?? "", marker, "Rendered code must be observed in the actual embedded provider, not merely read from VBIDE.");
+            CollectionAssert.AreEqual(new[] { liveTab }, state.SelectedTabs);
         }
 
         internal void CaptureInstalledMonaco(MonacoNativeObservation observed, string path)
@@ -291,7 +304,8 @@ namespace VBAi.Tests.Integration
             var evidence = new Dictionary<string, object> { ["Scope"] = "Actual installed embedded editor; no detached ModernEditorWindow",
                 ["ProcessId"] = ProcessId, ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
                 ["Observation"] = observed, ["State"] = "PENDING", ["Path"] = path, ["Method"] = "PrintWindow, flags=2",
-                ["VisualReview"] = "NOT_RUN" };
+                ["VisualReview"] = "NOT_RUN", ["AccessibilitySource"] = MonacoAccessibleSourceStatus(observed),
+                ["RenderedCodeVerified"] = false };
             try
             {
                 RequireMonacoOwner(); IntPtr handle = new IntPtr(observed.EditorHandle);

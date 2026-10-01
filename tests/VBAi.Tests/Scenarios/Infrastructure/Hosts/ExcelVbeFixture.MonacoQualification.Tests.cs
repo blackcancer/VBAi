@@ -10,7 +10,17 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class ExcelNativeMonacoObservationTests
     {
-        private const string Closed = "ModuleClosedScope", Live = "ModuleLiveScope";
+        private const string Closed = "VBAProject · ModuleClosedScope", Live = "VBAProject · ModuleLiveScope";
+
+        [TestMethod]
+        public void DecoratedInstalledStatusDoesNotMislabelAccessibilityChromeAsRenderedSource()
+        {
+            var actualShape = Valid();
+            actualShape.RenderedText = "Éditeur VBAi\nVBAProject · ModuleLiveScope\nVBAProject · ModuleClosedScope\nContenu de l'éditeur\n￼\nVBA editor";
+            actualShape.TextProviderProcessIds = new[] { 123, 456, 789 };
+            ExcelVbeFixture.RequireInstalledMonacoObservation(actualShape, 123, Closed, Live, ExcelVbeFixture.MonacoSynchronizedStatus);
+            Assert.AreEqual("LIVE_SOURCE_NOT_EXPOSED_BY_ACCESSIBILITY", ExcelVbeFixture.MonacoAccessibleSourceStatus(actualShape));
+        }
 
         [TestMethod]
         public void ActualEmbeddedOwnedLiveObservationAcceptsRetainedClosedTabAndBrowserProviderPid()
@@ -35,7 +45,7 @@ namespace VBAi.Tests.Unit
         [DataRow("no-editor"), DataRow("detached"), DataRow("vbe-owner"), DataRow("editor-owner"), DataRow("same-handle")]
         [DataRow("hidden"), DataRow("class"), DataRow("status-owner"), DataRow("status-hidden"), DataRow("status-id")]
         [DataRow("duplicate-status"), DataRow("warning"), DataRow("pending"), DataRow("missing-closed-tab"), DataRow("missing-live-tab")]
-        [DataRow("wrong-tab-owner"), DataRow("old-selected"), DataRow("two-selected"), DataRow("empty-render"), DataRow("old-render")]
+        [DataRow("wrong-tab-owner"), DataRow("old-selected"), DataRow("two-selected"), DataRow("foreign-caption"), DataRow("duplicate-caption")]
         [DataRow("truncated"), DataRow("provider-error")]
         public void ForeignDetachedStaleOrUnrenderedObservationCannotQualifyNativeMonaco(string fault)
         {
@@ -60,12 +70,24 @@ namespace VBAi.Tests.Unit
                 case "wrong-tab-owner": value.TabProcessIds = new[] { 123, 456 }; break;
                 case "old-selected": value.SelectedTabs = new[] { Closed }; break;
                 case "two-selected": value.SelectedTabs = new[] { Closed, Live }; break;
-                case "empty-render": value.RenderedText = ""; break;
-                case "old-render": value.RenderedText = "Option Explicit\n' VBAi owned closed scope probe\nPublic Function ClosedValue() As Long\nClosedValue = 17\nEnd Function"; break;
+                case "foreign-caption": value.Tabs = new[] { Closed, "OtherProject · ModuleLiveScope" }; break;
+                case "duplicate-caption": value.Tabs = new[] { Closed, Live, Live }; value.TabProcessIds = new[] { 123, 123, 123 }; break;
                 case "truncated": value.TreeTruncated = true; break;
                 case "provider-error": value.ObservationError = "The provider became unavailable."; break;
             }
             Assert.ThrowsException<AssertFailedException>(() => ExcelVbeFixture.RequireInstalledMonacoObservation(value, 123, Closed, Live, ExcelVbeFixture.MonacoSynchronizedStatus));
+        }
+
+        [DataTestMethod, DataRow("live"), DataRow("empty"), DataRow("old"), DataRow("chrome")]
+        public void AccessibilityAssessmentDoesNotPromoteEmptyOldOrChromeTextToLiveSourceProof(string shape)
+        {
+            var value = Valid();
+            if (shape == "empty") value.RenderedText = null;
+            if (shape == "old") value.RenderedText = "Option Explicit\nClosedValue = 17\nVBAi owned closed scope probe";
+            if (shape == "chrome") value.RenderedText = "VBAProject · ModuleLiveScope\nContenu de l'éditeur\nVBA editor";
+            Assert.AreEqual(shape == "live" ? "LIVE_SOURCE_MARKERS_OBSERVED" : "LIVE_SOURCE_NOT_EXPOSED_BY_ACCESSIBILITY",
+                ExcelVbeFixture.MonacoAccessibleSourceStatus(value));
+            Assert.AreEqual(Live, ExcelVbeFixture.MonacoTabCaption("VBAProject", "ModuleLiveScope"));
         }
 
         [TestMethod]

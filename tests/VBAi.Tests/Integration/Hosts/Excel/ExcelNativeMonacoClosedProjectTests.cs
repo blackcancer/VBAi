@@ -39,8 +39,11 @@ namespace VBAi.Tests.Integration
             var containment = new OfficeCommandContainment();
             string report = host.File("native-monaco-closed-project.json"), capture = host.File("native-monaco-live.png");
             string result = "RUNNING"; Exception failure = null;
+            CultureInfo culture = null; bool captureAttempted = false;
             Action persist = () => File.WriteAllText(report, json.Serialize(new { Result = result, HostProcessId = host.ProcessId,
                 ExpectedMvid = expected.ToString("D"), Source = "Actual installed embedded editor; detached forms do not qualify",
+                AcceptanceScope = "Active native status/tab ownership and unchanged VBIDE source/identity/selection, with normal exit. Code rendering requires separate genuine-image review.",
+                RenderedCodeVerified = false, VisualReview = "NOT_RUN",
                 ClosedPath = closedPath, LivePath = livePath, CommandPending = containment.Pending, DeliveryUncertain = containment.Uncertain,
                 Records = records, Shutdown = host.ShutdownDiagnostics }), new UTF8Encoding(false));
             Action<string, object> phase = (name, value) => { records.Add(new { Phase = name, Utc = DateTime.UtcNow.ToString("O"), Data = value }); persist(); };
@@ -60,13 +63,24 @@ namespace VBAi.Tests.Integration
                 RequireSelectedScope(actual, path, module); phase("NativeSelection", actual);
             };
             IDictionary<string, object> closedSource = null, liveSource = null;
+            Action<ExcelVbeFixture.MonacoNativeObservation, string> captureActual = (ui, image) => {
+                captureAttempted = true;
+                phase("CaptureActualInstalledWindowIntent", new { Capture = image, AccessibilitySource = ExcelVbeFixture.MonacoAccessibleSourceStatus(ui) });
+                host.CaptureInstalledMonaco(ui, image); phase("GenuineCaptureAvailableForVisualReview", new { Capture = image, RenderedCodeVerified = false });
+            };
             try
             {
                 persist(); phase("CreateOwnedBooksIntent", new { closedPath, livePath });
+                culture = host.ReadMonacoHostCulture();
                 containment.RequireTerminal(); host.PrepareMonacoBooks(closedPath, livePath);
                 var status = VbeBridgeClient.Object(send("status", new { Command = "status" })["Data"]);
                 ExcelVbeFixture.RequireMonacoCandidate(expected, typeof(VbeSession).Module.ModuleVersionId, host.ProcessId, status);
                 var projects = ((object[])send("list_projects", new { Command = "list_projects" })["Data"]).Select(VbeBridgeClient.Object).ToArray();
+                string closedTab = ExcelVbeFixture.MonacoTabCaption(Convert.ToString(projects.Single(item =>
+                    string.Equals(Convert.ToString(item["FileName"]), closedPath, StringComparison.OrdinalIgnoreCase))["Name"]), closedModule);
+                string liveTab = ExcelVbeFixture.MonacoTabCaption(Convert.ToString(projects.Single(item =>
+                    string.Equals(Convert.ToString(item["FileName"]), livePath, StringComparison.OrdinalIgnoreCase))["Name"]), liveModule);
+                phase("ExactExpectedEditorCaptions", new { Closed = closedTab, Live = liveTab });
                 foreach (string path in new[] { closedPath, livePath })
                 {
                     var project = projects.Single(item => string.Equals(Convert.ToString(item["FileName"]), path, StringComparison.OrdinalIgnoreCase));
@@ -86,14 +100,13 @@ namespace VBAi.Tests.Integration
                 phase("PreservedNativeBaselines", new { Closed = new { Path = closedPath, Sha256 = closedDiskHash },
                     Live = new { Path = livePath, Sha256 = ReadNativeBaselineHash(livePath) },
                     ClosedSourceSnapshot = host.File("closed-source-before-close.vba.txt"), LiveSourceSnapshot = host.File("live-source-before-close.vba.txt") });
-                CultureInfo culture = host.ReadMonacoHostCulture();
                 string synchronized = ExcelVbeFixture.MonacoLocalized(ExcelVbeFixture.MonacoSynchronizedStatus, culture);
                 phase("HostLocalization", new { Culture = culture.Name, Synchronized = synchronized,
                     ClosedWarning = ExcelVbeFixture.MonacoLocalized(ExcelVbeFixture.MonacoClosedStatus, culture) });
                 select(closedPath, closedModule, closedSource["Sha256"]);
-                WaitForTab(host, culture, closedModule, phase);
+                WaitForTab(host, culture, closedTab, phase, captureActual);
                 select(livePath, liveModule, liveSource["Sha256"]);
-                WaitForTab(host, culture, liveModule, phase);
+                WaitForTab(host, culture, liveTab, phase, captureActual);
                 // Close only the old registered owned workbook once, after exact source snapshots and native baselines exist.
                 phase("OldOwnedCloseWithoutSaveIntent", new { Path = closedPath, Code = closedSource, Save = false, Attempt = 1 });
                 containment.RequireTerminal(); host.CloseMonacoOldScopeWithoutSave(closedPath);
@@ -109,17 +122,16 @@ namespace VBAi.Tests.Integration
                     actualUi = host.ReadInstalledMonaco(culture); phase("ActualHostUiObservation", actualUi);
                     try
                     {
-                        ExcelVbeFixture.RequireInstalledMonacoObservation(actualUi, host.ProcessId, closedModule, liveModule, synchronized);
+                        ExcelVbeFixture.RequireInstalledMonacoObservation(actualUi, host.ProcessId, closedTab, liveTab, synchronized);
                         if (!stableSince.HasValue) stableSince = clock.ElapsedMilliseconds;
                         if (clock.ElapsedMilliseconds - stableSince.Value >= 3000) break; // More than three reconciliation timer periods.
                     }
                     catch (AssertFailedException error) { stableSince = null; lastFailure = error.Message; }
                     Thread.Sleep(250); // Read-only settlement; select/close/source mutations are never replayed.
                 } while (clock.ElapsedMilliseconds < 20000);
-                phase("CaptureActualInstalledWindowIntent", new { Capture = capture });
-                host.CaptureInstalledMonaco(actualUi, capture);
+                captureActual(actualUi, capture);
                 Assert.IsTrue(stableSince.HasValue && clock.ElapsedMilliseconds - stableSince.Value >= 3000,
-                    "Installed embedded Monaco never settled with visible live code and a scoped healthy status: " + lastFailure);
+                    "Installed embedded Monaco never settled with the exact live tab and a scoped healthy status: " + lastFailure);
                 var afterSource = read(livePath, liveModule); var afterState = state(livePath);
                 RequireSelectedScope(afterState, livePath, liveModule);
                 Assert.AreEqual(liveSource["Sha256"], afterSource["Sha256"]); Assert.AreEqual(liveSource["Code"], afterSource["Code"]);
@@ -130,7 +142,15 @@ namespace VBAi.Tests.Integration
                 phase("LiveScopeUnchanged", new { Source = afterSource, State = afterState, Projects = remaining });
                 result = "ASSERTIONS_PASS_CLEANUP_PENDING";
             }
-            catch (Exception error) { failure = error; result = "FAILED"; phase("OriginalFailure", error.ToString()); }
+            catch (Exception error)
+            {
+                failure = error; result = "FAILED"; phase("OriginalFailure", error.ToString());
+                // Read-only capture precedes owned cleanup, including early selection/tab failures.
+                // An uncertain native operation never receives additional UI/COM work.
+                if (!captureAttempted && culture != null && !containment.Pending && !containment.Uncertain && !host.PreserveForDiagnosticRecovery)
+                    try { captureActual(host.ReadInstalledMonaco(culture), host.File("native-monaco-failure.png")); }
+                    catch (Exception imageError) { phase("FailureCaptureErrorOriginalPreserved", imageError.ToString()); }
+            }
             try
             {
                 containment.RequireTerminal();
@@ -149,8 +169,8 @@ namespace VBAi.Tests.Integration
             finally
             {
                 persist(); TestContext.AddResultFile(report);
-                if (File.Exists(capture)) TestContext.AddResultFile(capture);
-                if (File.Exists(capture + ".json")) TestContext.AddResultFile(capture + ".json");
+                foreach (string image in Directory.GetFiles(host.Root, "native-monaco-*.png")) TestContext.AddResultFile(image);
+                foreach (string sidecar in Directory.GetFiles(host.Root, "native-monaco-*.png.json")) TestContext.AddResultFile(sidecar);
             }
             if (failure != null) ExceptionDispatchInfo.Capture(failure).Throw();
         }
@@ -167,16 +187,20 @@ namespace VBAi.Tests.Integration
             using (var sha = System.Security.Cryptography.SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "");
         }
 
-        private static void WaitForTab(ExcelVbeFixture host, CultureInfo culture, string module, Action<string, object> phase)
+        private static void WaitForTab(ExcelVbeFixture host, CultureInfo culture, string caption, Action<string, object> phase,
+            Action<ExcelVbeFixture.MonacoNativeObservation, string> capture)
         {
             var clock = Stopwatch.StartNew();
+            ExcelVbeFixture.MonacoNativeObservation last = null;
             do
             {
-                var ui = host.ReadInstalledMonaco(culture); phase("RealEditorTabCreationObservation", ui);
-                if (ui.EditorProcessId == host.ProcessId && ui.Tabs.Contains(module) && ui.SelectedTabs.Contains(module)) return;
+                var ui = host.ReadInstalledMonaco(culture); last = ui; phase("RealEditorTabCreationObservation", ui);
+                if (ui.EditorProcessId == host.ProcessId && ui.Tabs.Count(tab => tab == caption) == 1 && ui.SelectedTabs.SequenceEqual(new[] { caption })) return;
                 Thread.Sleep(250);
             } while (clock.ElapsedMilliseconds < 15000);
-            Assert.Fail("Native select_code did not create/select the real installed Monaco tab " + module + "; no detached window or command replay is substituted.");
+            try { capture(last, host.File("native-monaco-tab-timeout.png")); }
+            catch (Exception imageError) { phase("TabTimeoutCaptureErrorOriginalPreserved", imageError.ToString()); }
+            Assert.Fail("Native select_code did not create/select the unique real installed Monaco tab " + caption + "; no detached window or command replay is substituted.");
         }
     }
 }
