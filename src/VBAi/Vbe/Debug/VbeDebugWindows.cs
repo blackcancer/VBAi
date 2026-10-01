@@ -1250,6 +1250,7 @@ namespace VBAi
             if (dialog == IntPtr.Zero) throw new InvalidOperationException("The native VBE Options dialog did not open.");
             string selected = null;
             string[] choices = null;
+            Exception primary = null;
             try
             {
                 IList<OptionsChoice> radios = native.ErrorChoices(dialog);
@@ -1274,14 +1275,8 @@ namespace VBAi
                 if (selected == null) throw new InvalidOperationException("No error trapping choice appears selected.");
                 choices = names.ToArray();
             }
-            finally { native.Close(dialog); }
-            bool closed = false;
-            for (int attempt = 0; attempt < 20; attempt++)
-            {
-                if (native.Dialog() == IntPtr.Zero) { closed = true; break; }
-                native.Pause(50);
-            }
-            if (!closed) throw new InvalidOperationException("The add-in read VBE Options but could not close its dialog.");
+            catch (Exception error) { primary = error; }
+            CompleteOptionsRead(native, dialog, primary);
             return new { Scope = "VBE", ErrorTrapping = selected, Choices = choices,
                 Verification = "NativeOptionsReadback", DialogClosed = true,
                 Limit = "This is the currently displayed VBE-wide preference, not a diagnosis of an active runtime error." };
@@ -1303,16 +1298,11 @@ namespace VBAi
             { native.Pause(50); dialog = native.Dialog(); }
             if (dialog == IntPtr.Zero)
                 throw new InvalidOperationException("The native VBE Options dialog did not open.");
-            List<object> tabs;
+            List<object> tabs = null;
+            Exception primary = null;
             try { tabs = CaptureOptionsTabs(native, dialog); }
-            finally { native.Close(dialog); }
-            bool closed = false;
-            for (int attempt = 0; attempt < 20; attempt++)
-            {
-                if (native.Dialog() == IntPtr.Zero) { closed = true; break; }
-                native.Pause(50);
-            }
-            if (!closed) throw new InvalidOperationException("The add-in read VBE Options but could not close its dialog.");
+            catch (Exception error) { primary = error; }
+            CompleteOptionsRead(native, dialog, primary);
             return new { Scope = "VBE", Tabs = tabs, Count = tabs.Count,
                 OptionsVersion = OptionsRevision(tabs), DialogClosed = true, Verification = "NativeOptionsReadback",
                 Limit = "Only visible native controls were observed; no settings were changed." };

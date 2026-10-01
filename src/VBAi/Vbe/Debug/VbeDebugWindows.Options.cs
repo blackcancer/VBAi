@@ -429,7 +429,7 @@ namespace VBAi
         }
 
         /// <summary>Cancels once and verifies closure of only the captured dialog; a changed dialog is never cancelled.</summary>
-        private static void CancelOwnedOptionsDialog(IOptionsProbe native, IntPtr dialog)
+        private static void CancelOwnedOptionsDialog(IOptionsProbe native, IntPtr dialog, int maximumPauses = 40)
         {
             IntPtr current = native.Dialog();
             if (current == IntPtr.Zero)
@@ -441,22 +441,41 @@ namespace VBAi
             if (current != dialog)
                 throw new InvalidOperationException("The Options dialog identity changed; Cancel was not sent to another dialog.");
             native.Close(dialog);
-            for (int attempt = 0; attempt <= 40; attempt++)
+            if (!WaitForOptionsClosure(native, dialog, maximumPauses))
+                throw new InvalidOperationException("The single native Options Cancel request did not close the captured dialog within the bounded observation period; do not retry automatically.");
+        }
+
+        /// <summary>Observes destruction of the captured handle, including hidden windows, without sending an action.</summary>
+        private static bool WaitForOptionsClosure(IOptionsProbe native, IntPtr dialog, int maximumPauses)
+        {
+            for (int attempt = 0; attempt <= maximumPauses; attempt++)
             {
                 if (native is IOptionsDialogLifetimeProbe lifetime)
                 {
-                    if (!lifetime.IsOpen(dialog)) return;
+                    if (!lifetime.IsOpen(dialog)) return true;
                 }
                 else
                 {
-                    current = native.Dialog();
-                    if (current == IntPtr.Zero) return;
+                    IntPtr current = native.Dialog();
+                    if (current == IntPtr.Zero) return true;
                     if (current != dialog)
-                        throw new InvalidOperationException("The Options dialog identity changed while verifying Cancel; no further cancellation was sent.");
+                        throw new InvalidOperationException("The Options dialog identity changed while verifying captured closure; no further action was sent.");
                 }
-                if (attempt < 40) native.Pause(50);
+                if (attempt < maximumPauses) native.Pause(50);
             }
-            throw new InvalidOperationException("The single native Options Cancel request did not close the captured dialog within the bounded observation period; do not retry automatically.");
+            return false;
+        }
+
+        /// <summary>Closes a read-only scope once, retaining both capture and cancellation failures.</summary>
+        private static void CompleteOptionsRead(IOptionsProbe native, IntPtr dialog, Exception primary)
+        {
+            Exception cleanup = null;
+            try { CancelOwnedOptionsDialog(native, dialog, 20); }
+            catch (Exception error) { cleanup = error; }
+            if (primary != null && cleanup != null)
+                throw new AggregateException("VBE Options inspection failed and cancellation of its captured dialog could not be verified. Do not retry automatically.", primary, cleanup);
+            if (primary != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(primary).Throw();
+            if (cleanup != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(cleanup).Throw();
         }
 
                 /// <summary>Écrit une préférence reconnue d’édition/débogage, puis ferme par validation native.</summary>
@@ -511,8 +530,7 @@ namespace VBAi
                     throw new InvalidOperationException("The native option did not retain the requested value; Cancel will be requested.");
                 commitRequested = true;
                 native.Accept(dialog);
-                bool closed = false;
-                for (int attempt = 0; attempt < 40; attempt++) { if (native.Dialog() == IntPtr.Zero) { closed = true; break; } native.Pause(50); }
+                bool closed = WaitForOptionsClosure(native, dialog, 40);
                 result = new { request.Pane, request.Property, Category = request.Query, Before = oldValue, After = observed[0].Value,
                     CommitRequested = true, DialogClosed = closed, ControlValueVerified = true,
                     PersistenceVerified = false, NextRead = "read_vbe_options",

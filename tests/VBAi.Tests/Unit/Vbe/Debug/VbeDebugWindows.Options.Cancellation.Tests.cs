@@ -82,7 +82,7 @@ namespace VBAi.Tests.Unit
             var probe = new CancellationProbe(true) { ReplacementAfterCancel = true, CloseAfterPauses = int.MaxValue };
             var error = Assert.ThrowsException<AggregateException>(() => VbeDebugWindows.SetVbeOption(probe.Request, new WithoutLifetimeProbe(probe)));
             StringAssert.Contains(error.InnerExceptions[0].Message, "exact native choice is absent");
-            StringAssert.Contains(error.InnerExceptions[1].Message, "identity changed while verifying Cancel");
+            StringAssert.Contains(error.InnerExceptions[1].Message, "identity changed while verifying captured closure");
             Assert.AreEqual(1, probe.CancelEntries);
             Assert.AreEqual(0, probe.Inner.Writes);
             Assert.AreEqual(0, probe.AcceptEntries);
@@ -131,14 +131,125 @@ namespace VBAi.Tests.Unit
             Assert.IsTrue(probe.Inner.Open);
         }
 
+        [DataTestMethod, DataRow("hidden"), DataRow("enumeration"), DataRow("replacement"), DataRow("delayed")]
+        public void AcceptObservesExactLifetimeAndNeverCancelsAfterCommitStarts(string phase)
+        {
+            var probe = new CancellationProbe { KeepCommittedDialog = true };
+            var error = new IOException("synthetic enumeration failure");
+            if (phase == "hidden") probe.HiddenDuringCleanup = true;
+            if (phase == "enumeration") probe.CommitObservationError = error;
+            if (phase == "replacement") { probe.ReplacementAfterAccept = true; probe.KeepCommittedDialog = false; }
+            if (phase == "delayed") probe.AcceptCloseAfterPauses = 40;
+            if (phase == "enumeration")
+                Assert.AreSame(error, Assert.ThrowsException<IOException>(() => VbeDebugWindows.SetVbeOption(probe.Request, probe)));
+            else
+            {
+                dynamic result = VbeDebugWindows.SetVbeOption(probe.Request, probe);
+                Assert.AreEqual(phase != "hidden", (bool)result.DialogClosed);
+                if (phase == "delayed") Assert.AreEqual(40, probe.AcceptPauses);
+            }
+            Assert.AreEqual(1, probe.Inner.Writes);
+            Assert.AreEqual(1, probe.AcceptEntries);
+            Assert.AreEqual(0, probe.CancelEntries);
+        }
+
+        [DataTestMethod, DataRow(false), DataRow(true)]
+        public void AcceptFallbackRefusesReplacementWithoutCancellingIt(bool observationThrows)
+        {
+            var probe = new CancellationProbe { KeepCommittedDialog = true, ReplacementAfterAccept = !observationThrows };
+            var primary = new IOException("synthetic visible observer failure");
+            if (observationThrows) probe.CommitObservationError = primary;
+            Exception error = observationThrows
+                ? (Exception)Assert.ThrowsException<IOException>(() => VbeDebugWindows.SetVbeOption(probe.Request, new WithoutLifetimeProbe(probe)))
+                : Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.SetVbeOption(probe.Request, new WithoutLifetimeProbe(probe)));
+            if (observationThrows) Assert.AreSame(primary, error);
+            Assert.AreEqual(1, probe.AcceptEntries);
+            Assert.AreEqual(0, probe.CancelEntries);
+        }
+
+        [DataTestMethod]
+        [DataRow(false, "success")][DataRow(true, "success")]
+        [DataRow(false, "capture")][DataRow(true, "capture")]
+        [DataRow(false, "gone")][DataRow(true, "gone")]
+        public void ReadOptionsCancelsOnlyItsKnownScopeAndPreservesCaptureFailure(bool debug, string phase)
+        {
+            var probe = new CancellationProbe { CloseAfterPauses = 20, GoneDuringCapture = phase == "gone" };
+            var primary = new IOException("synthetic read failure");
+            if (phase == "capture") probe.CaptureError = primary;
+            if (phase == "capture") Assert.AreSame(primary, Assert.ThrowsException<IOException>(() => Read(debug, probe)));
+            else { dynamic result = Read(debug, probe); Assert.IsTrue((bool)result.DialogClosed); }
+            Assert.AreEqual(phase == "gone" ? 0 : 1, probe.CancelEntries);
+            Assert.AreEqual(phase == "gone" ? 0 : 20, probe.CancelPauses);
+            Assert.AreEqual(0, probe.Inner.Writes);
+            Assert.AreEqual(0, probe.AcceptEntries);
+        }
+
+        [DataTestMethod]
+        [DataRow(false, "cancel")][DataRow(true, "cancel")]
+        [DataRow(false, "lifetime")][DataRow(true, "lifetime")]
+        [DataRow(false, "timeout")][DataRow(true, "timeout")]
+        [DataRow(false, "hidden")][DataRow(true, "hidden")]
+        [DataRow(false, "replacement")][DataRow(true, "replacement")]
+        [DataRow(false, "fallback replacement")][DataRow(true, "fallback replacement")]
+        public void ReadCaptureAndCleanupErrorsRemainDistinctWithoutASecondCancel(bool debug, string phase)
+        {
+            var probe = new CancellationProbe();
+            var primary = new IOException("synthetic read failure");
+            var cleanup = new InvalidOperationException("synthetic cleanup failure");
+            probe.CaptureError = primary;
+            if (phase == "cancel") probe.CancelError = cleanup;
+            if (phase == "lifetime") probe.LifetimeError = cleanup;
+            if (phase == "timeout") probe.CloseAfterPauses = int.MaxValue;
+            if (phase == "hidden") probe.HiddenDuringCleanup = true;
+            if (phase == "replacement") probe.ChangedDuringCleanup = true;
+            if (phase == "fallback replacement") probe.ReplacementAfterCancel = true;
+            VbeDebugWindows.IOptionsProbe target = phase == "fallback replacement" ? (VbeDebugWindows.IOptionsProbe)new WithoutLifetimeProbe(probe) : probe;
+            var error = Assert.ThrowsException<AggregateException>(() => Read(debug, target));
+            Assert.AreEqual(2, error.InnerExceptions.Count);
+            Assert.AreSame(primary, error.InnerExceptions[0]);
+            if (phase == "cancel" || phase == "lifetime") Assert.AreSame(cleanup, error.InnerExceptions[1]);
+            if (phase == "timeout") Assert.AreEqual(20, probe.CancelPauses);
+            Assert.AreEqual(phase == "hidden" || phase == "replacement" ? 0 : 1, probe.CancelEntries);
+            Assert.AreEqual(0, probe.Inner.Writes);
+            Assert.AreEqual(0, probe.AcceptEntries);
+        }
+
+        [DataTestMethod, DataRow(false), DataRow(true)]
+        public void ReadHiddenExactHandleAfterPostedCancelIsNotClosure(bool debug)
+        {
+            var probe = new CancellationProbe { HideAfterCancel = true, CloseAfterPauses = int.MaxValue };
+            Assert.ThrowsException<InvalidOperationException>(() => Read(debug, probe));
+            Assert.AreEqual(1, probe.CancelEntries);
+            Assert.AreEqual(20, probe.CancelPauses);
+            Assert.IsTrue(probe.Inner.Open);
+        }
+
+        private static object Read(bool debug, VbeDebugWindows.IOptionsProbe probe) => debug
+            ? VbeDebugWindows.ReadDebugOptions(probe) : VbeDebugWindows.ReadVbeOptions(probe);
+
+        [DataTestMethod]
+        [DataRow(false, false)][DataRow(true, false)][DataRow(false, true)][DataRow(true, true)]
+        public void SuccessfulReadDoesNotMaskCancellationOrObservationFailure(bool debug, bool observation)
+        {
+            var error = new IOException("synthetic terminal cleanup error");
+            var probe = new CancellationProbe();
+            if (observation) probe.LifetimeError = error;
+            else probe.CancelError = error;
+            Assert.AreSame(error, Assert.ThrowsException<IOException>(() => Read(debug, probe)));
+            Assert.AreEqual(1, probe.CancelEntries);
+            Assert.AreEqual(0, probe.Inner.Writes);
+            Assert.AreEqual(0, probe.AcceptEntries);
+            Assert.IsTrue(probe.Inner.Open);
+        }
+
         private sealed class CancellationProbe : VbeDebugWindows.IWritableOptionsProbe, VbeDebugWindows.IOptionsDialogLifetimeProbe
         {
             internal readonly WritableOptionsMatrixProbe Inner = new WritableOptionsMatrixProbe();
             internal readonly Request Request;
             internal int CancelEntries, CancelPauses, AcceptEntries, DialogReads;
-            internal int CloseAfterPauses;
+            internal int CloseAfterPauses, AcceptCloseAfterPauses, AcceptPauses;
             internal Exception CaptureError, ReadbackError, CancelError, LifetimeError, WriteError, AcceptError, CommitObservationError;
-            internal bool ChangedDuringCleanup, HiddenDuringCleanup, KeepCommittedDialog, ReplacementAfterCancel;
+            internal bool ChangedDuringCleanup, HiddenDuringCleanup, KeepCommittedDialog, ReplacementAfterCancel, ReplacementAfterAccept, GoneDuringCapture, HideAfterCancel;
             internal CancellationProbe(bool emptySize = false)
             {
                 if (emptySize)
@@ -153,7 +264,9 @@ namespace VBAi.Tests.Unit
             {
                 DialogReads++;
                 if (AcceptEntries != 0 && CommitObservationError != null) throw CommitObservationError;
+                if (AcceptEntries != 0 && ReplacementAfterAccept) return new IntPtr(72);
                 if (CancelEntries != 0 && ReplacementAfterCancel) return new IntPtr(72);
+                if (CancelEntries != 0 && HideAfterCancel) return IntPtr.Zero;
                 if (DialogReads > 1 && HiddenDuringCleanup) return IntPtr.Zero;
                 if (DialogReads > 1 && ChangedDuringCleanup) return new IntPtr(72);
                 return Inner.Open ? new IntPtr(71) : IntPtr.Zero;
@@ -162,10 +275,18 @@ namespace VBAi.Tests.Unit
             public IList<VbeDebugWindows.OptionsControl> Controls(IntPtr dialog, int index)
             {
                 if (CaptureError != null) throw CaptureError;
+                if (GoneDuringCapture) Inner.Open = false;
                 if (Inner.Writes != 0 && ReadbackError != null) throw ReadbackError;
                 return Inner.Items;
             }
-            public IList<VbeDebugWindows.OptionsChoice> ErrorChoices(IntPtr dialog) => new VbeDebugWindows.OptionsChoice[0];
+            public IList<VbeDebugWindows.OptionsChoice> ErrorChoices(IntPtr dialog)
+            {
+                if (CaptureError != null) throw CaptureError;
+                if (GoneDuringCapture) Inner.Open = false;
+                return new[] { new VbeDebugWindows.OptionsChoice { Name = "Break on All Errors", Selected = true },
+                    new VbeDebugWindows.OptionsChoice { Name = "Break in Class Module" },
+                    new VbeDebugWindows.OptionsChoice { Name = "Break on Unhandled Errors" } };
+            }
             public void Write(IntPtr dialog, int index, string name, string type, object value)
             {
                 Inner.Write(dialog, index, name, type, value);
@@ -187,12 +308,14 @@ namespace VBAi.Tests.Unit
             public bool IsOpen(IntPtr dialog)
             {
                 Assert.AreEqual(new IntPtr(71), dialog);
+                if (AcceptEntries != 0 && CommitObservationError != null) throw CommitObservationError;
                 if (LifetimeError != null) throw LifetimeError;
                 return Inner.Open;
             }
             public void Pause(int milliseconds)
             {
                 if (CancelEntries != 0 && ++CancelPauses >= CloseAfterPauses) Inner.Open = false;
+                if (AcceptEntries != 0 && ++AcceptPauses == AcceptCloseAfterPauses) Inner.Open = false;
             }
         }
 
