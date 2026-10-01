@@ -3,7 +3,7 @@ using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VBAi.Tests.Integration;
 
-namespace VBAi.Tests.Unit.Infrastructure.Hosts
+namespace VBAi.Tests.Unit.Hosts
 {
     [TestClass, TestCategory("Unit")]
     public sealed class ExcelVbeFixtureTests
