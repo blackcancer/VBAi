@@ -30,6 +30,8 @@ namespace VBAi.Tests.Integration
 
         private static void RunExplicit(Action<ExcelVbeFixture> scenario, Action<ExcelVbeFixture> shutdownVerified)
         {
+            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(PathVisibilityDiagnostic.EnvironmentName)))
+                throw new InvalidOperationException("The layout matrix must not inherit a path-visibility/token manifest; no host was launched.");
             string output = ExcelOwnedBootstrapPlan.RequireLocalAbsolutePath(Environment.GetEnvironmentVariable("VBAi_EXCEL_RESULTS"));
             Directory.CreateDirectory(output);
             string trace = Path.Combine(output, "unused-inspection-" + Guid.NewGuid().ToString("N") + ".jsonl");
