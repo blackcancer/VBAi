@@ -24,6 +24,42 @@ namespace VBAi.Tests.Integration
             return result;
         }
 
+        /// <summary>Restores observed font values once on the owned synthetic form after a terminal import diagnostic.</summary>
+        internal void RestoreGitLayoutFonts(string form, string layout, IDictionary<string, object> expected)
+        {
+            WithGitLayoutDesigner(form, (component, designer) => {
+                AssignGitFontOnce(designer, "Form.Font", expected);
+                if (layout != "FrameMultiPage") return;
+                object controls = null, frame = null;
+                try
+                {
+                    controls = ((dynamic)designer).Controls;
+                    frame = ((dynamic)controls).Item("QualificationExtra");
+                    AssignGitFontOnce(frame, "Frame.Font", expected);
+                }
+                finally { Release(frame); Release(controls); }
+            });
+        }
+
+        /// <summary>Assigns each declared native font member once; no setter is retried after an uncertain result.</summary>
+        private static void AssignGitFontOnce(object owner, string prefix, IDictionary<string, object> expected)
+        {
+            object font = null;
+            try
+            {
+                font = ((dynamic)owner).Font;
+                ((dynamic)font).Name = Convert.ToString(expected[prefix + ".Name"]);
+                ((dynamic)font).Size = Convert.ToDecimal(expected[prefix + ".Size"]);
+                ((dynamic)font).Bold = Convert.ToBoolean(expected[prefix + ".Bold"]);
+                ((dynamic)font).Italic = Convert.ToBoolean(expected[prefix + ".Italic"]);
+                ((dynamic)font).Underline = Convert.ToBoolean(expected[prefix + ".Underline"]);
+                ((dynamic)font).Strikethrough = Convert.ToBoolean(expected[prefix + ".Strikethrough"]);
+                ((dynamic)font).Charset = Convert.ToInt16(expected[prefix + ".Charset"]);
+                ((dynamic)font).Weight = Convert.ToInt16(expected[prefix + ".Weight"]);
+            }
+            finally { Release(font); }
+        }
+
         /// <summary>Reads the known native font members once and releases only a COM wrapper if one was returned.</summary>
         private static void ReadGitFont(object owner, string prefix, IDictionary<string, object> result)
         {

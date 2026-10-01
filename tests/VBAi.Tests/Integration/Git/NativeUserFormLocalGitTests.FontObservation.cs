@@ -14,6 +14,22 @@ namespace VBAi.Tests.Integration
         [DataRow("FrameMultiPage")]
         public void ReadOnlyFontObservationAfterOneNativeImportPreservesExactSnapshot(string layout)
         {
+            RunFontObservation(layout, false);
+        }
+
+        /// <summary>Diagnoses one explicit font restoration after the terminal strict import refusal, retaining exact comparison.</summary>
+        [STATestMethod]
+        [DataRow("LabelButton")]
+        [DataRow("Image")]
+        [DataRow("FrameMultiPage")]
+        public void NativeFontRestorationAfterOneImportPreservesExactSnapshot(string layout)
+        {
+            RunFontObservation(layout, true);
+        }
+
+        /// <summary>Separates the original refusal, read-only observation and optional single font correction in owned fixtures.</summary>
+        private void RunFontObservation(string layout, bool restoreFonts)
+        {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1" ||
                 Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_LOCAL_GIT_TESTS") != "1" ||
                 Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_EXPLICIT_BOOTSTRAP") != "1")
@@ -27,7 +43,8 @@ namespace VBAi.Tests.Integration
                 ["Layout"] = layout, ["Stage"] = "STARTED", ["NativeImports"] = 0,
                 ["FontAssignmentsAfterImport"] = 0, ["MacroExecutions"] = 0, ["RemoteOperations"] = 0,
                 ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
-                ["Scope"] = "Saved/reopened baseline; one native Apply attempt; read-only native Font observation and one comparison capture. No retry, repair or post-import Save. This diagnostic does not qualify successful import."
+                ["RestoreFontsRequested"] = restoreFonts,
+                ["Scope"] = "Saved/reopened baseline; one native Apply attempt; read-only Font observation and optional single explicit font restoration. No repeated import, setter retry, post-import Save or macro execution. This diagnostic does not qualify successful production import."
             };
             string evidence = Path.Combine(output, "font-observation.json");
             Action write = () => File.WriteAllText(evidence, Json.Serialize(report));
@@ -63,6 +80,16 @@ namespace VBAi.Tests.Integration
                         var fontAfter = host.ReadGitLayoutFonts(form, layout);
                         report["NativeFontsAfter"] = fontAfter;
                         report["FontDifferences"] = DescribeNativeDifferences(fontBefore, fontAfter);
+                        if (restoreFonts)
+                        {
+                            report["FontAssignmentsAfterImport"] = layout == "FrameMultiPage" ? 16 : 8;
+                            report["Stage"] = "one-explicit-font-restoration";
+                            write();
+                            host.RestoreGitLayoutFonts(form, layout, fontBefore);
+                            fontAfter = host.ReadGitLayoutFonts(form, layout);
+                            report["NativeFontsAfterExplicitRestoration"] = fontAfter;
+                            report["FontDifferencesAfterExplicitRestoration"] = DescribeNativeDifferences(fontBefore, fontAfter);
+                        }
                         var observed = Capture(project, output, "after-font-observation");
                         report["ExactSnapshotAfterFontRead"] = before.SameAs(observed);
                         report["RemainingChangedFiles"] = observed.Changes(before);
