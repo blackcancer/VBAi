@@ -434,6 +434,53 @@ process identity. This accepts the current-product standalone scopes only.
 The earlier core batch and its exact crash events remain failed and unexplained;
 an isolated pass does not make the full campaign green or close Q-006.
 
+### Current v6: complete prepared explicit-launch form layout matrix
+
+`userform-explicit-localgit-v6/userform-explicit-localgit-v6.trx` records
+**0 passed, 12 failed, 0 skipped**, runner exit **1**, on tests source `8480aea`
+and the unchanged installed/referenced v6 product MVID/hash above. All prepared
+layouts were executed in separately owned `/x /automation` Excel instances:
+Label/Button, TextBox, ComboBox, ListBox, CheckBox, OptionButton, ToggleButton,
+ScrollBar, SpinButton, TabStrip, Image and Frame/MultiPage. This test-local launch
+selection does not change the shared Excel fixture or activate token reading.
+
+Each case verifies its synthetic native layout and captures the genuine designer,
+then fails the first comparison of two unchanged production `VbaGitProject.Capture`
+snapshots. In the retained Label/Button pair, sources, manifest and FRM hashes
+are identical; the same-length FRX hashes differ. Captures therefore reach the
+production GitTemporary directory in this launch context, but logical revision
+stability fails. No meaningful-property-change, Git commit, checkpoint import,
+rollback or helper Save/reopen phase is reached. Those later phases are
+**NOT_RUN**, not failed native mutations or accepted recovery. No remote Git
+operation or macro execution occurs. Designer PNGs remain pending visual review.
+
+All per-host shutdown records verify normal exit **0**, without Close/Quit
+errors or forced termination. Owned PIDs are 49560, 45604, 57368, 51208, 41316,
+15220, 48004, 20548, 23068, 56920, 23632 and 54756; startup records bind each to
+its distinct image/start/MVID. The terminal report and raw before/unchanged files
+remain under `artifacts/qualification-v1/followup-20260930/userform-explicit-localgit-v6/`.
+This reproduces a comparison failure beyond the previously scoped single-export
+passes; Q-027 remains open. No normalization rule is relaxed by this scenario.
+
+### Current v6: options failure located before its intended mutation
+
+Read-only analysis of the original `excel-core-v6` command ledger locates the
+ExtendedOptions failure in owned Excel **17592**, start
+`2026-10-01T00:29:48.3078893Z`, loaded v6 MVID. Sequence 3 is `read_vbe_options`,
+emitted at `00:29:53.3080108Z`; the connection closes at `00:30:38.5511464Z`,
+after 45.243 seconds. The intended checkbox toggle is never emitted, and the
+Docking iteration is **NOT_RUN**. Its existing finally block reads successfully,
+requests the already-selected margin-indicator value (On to On), then reads
+successfully; the host exits normally with code **0**.
+
+The successful response records are truncated before their `OptionsVersion`
+field, so identical retained prefixes do not independently establish complete
+baseline equality. Source control flow implies the in-memory restoration
+assertion completed without replacing the original read failure; this is an
+inference, not complete persisted revision proof. EOF alone does not identify
+a native UI call, serialization failure, deadlock or pipe-write timeout.
+The original scenario remains failed and Q-026 remains open.
+
 ### Preceding Monaco-status candidate: complete managed acceptance
 
 Source `d7a1c75d90d840949cc78606f2ae55b14e93ec55`, MVID
