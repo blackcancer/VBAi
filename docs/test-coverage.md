@@ -30,6 +30,39 @@ qualifies this assembly. This candidate is **uninstalled** and Q-015 is open
 for it. The installed v6 and preceding combined candidate retain only their
 separate acceptance scopes below.
 
+The failures are explained by the injected scene contract: it omitted the
+`OptionsWindowEnabled` seam for simulated Cancel handles; its thread/PID model
+also needed faithful unknown-handle behavior. The third test passed a VBA error
+dialog to Options.Close, which the new identity guard correctly rejects.
+Tests-only commit `45a9511`, integrated as `d1c960c`, models the genuine UIA
+dialog root and injected child ownership, restores all modified delegates and
+asserts refusal without a posted message for non-Options dialogs. The complete
+prepared focused batch records **120 passed, 0 failed, 0 skipped**, including
+all three failed methods, in
+`artifacts/worktrees/qualification-teardown-trace/artifacts/focused-options-fixture/options-fixture-full-focused.trx`.
+It uses unchanged frozen product `ced62724` from source `37bb0d7`. It is not a
+new complete gate. A read-only review additionally identifies visible-only
+closure checks after Accept and in both reads, plus read-error masking by
+finally Close; these still require correction before deployment.
+
+### Compound-file guard coverage follow-up
+
+Tests-only source `2c6d9b2`, integrated as `083db3c`, prepares all reachable
+missing `CompoundFile` outcomes through real public resource preflight and
+comparison. Its single instrumented focused batch records **35 passed,
+0 failed, 0 skipped** in
+`artifacts/worktrees/cfb-guards/artifacts/test-results/cfb/cfb.trx`. Product MVID
+is `7b103e8f-06c6-4060-ac60-e811f2c7f96d`, SHA-256
+`8EADB7EFA462D8E5DCB6C41CF940B91BEAA7FAD370F26915B24913284AB25093`;
+no production code or exclusion changes. The collector under
+`5debd30c-b055-4e32-940f-3a5b81008381/coverage.cobertura.xml` measures this
+focused scope only: `CompoundFile` has **0 uncovered lines and 191/196 branch
+outcomes**. It covers 22 previously missing outcomes; the five remaining are
+defensive size/sector/field-bound guards unreachable from the public path after
+its preceding checks, with explicit proofs in `artifacts/cfb-review/evidence.json`.
+Those outcomes remain reported rather than excluded. This is not whole-product
+coverage or native acceptance.
+
 ## Uninstalled combined candidate: complete managed run (2026-10-01)
 
 Source `fa7955ff9957138924ba911df446a9270e377dc5` combines bounded,
