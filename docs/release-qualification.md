@@ -30,7 +30,11 @@ Current-v6 native evidence includes the explicitly authorized read-only
 owner-STA path/effective-token diagnostic in owned Excel. Both synthetic GUID
 directories and files are visible with attributes matching the testhost; normal
 exit is verified. This neither reproduces nor explains the earlier export
-path-not-found observation, and Q-027 remains open.
+path-not-found observation, and Q-027 remains open. Subsequent paired owner-STA
+observations and single exports pass below LocalAppData and TEMP in explicitly
+bootstrapped Excel, with normal exits. Fresh COM-activation trials on this same
+product still fail below LocalAppData/VBAi/GitTemporary. Launch-context
+differences do not establish a cause or complete Git capture acceptance.
 
 Current-v6 Access HelpContextID returns 321 through all three native/managed
 getters after a bridge setter and one verified Save, and also in the separate
@@ -39,7 +43,7 @@ is NOT_RUN. Authorized force cleanup preserves stable database copies but does
 not qualify persistence. External HelpFile setters return through both production
 CLR and raw IDispatch PUT, yet both fresh-disk reopen values are altered through
 all three getters. Raw HelpContextID is NOT_RUN. No conversion heuristic or causal
-product fix is established. The current Publisher batch fails its active-project
+product fix is established. The initial current Publisher batch fails its active-project
 startup guard despite exact disposable-document/persistence identity, before
 baseline edits or product Save. Its independently guarded, authorized window
 close later exits normally without force termination; the startup failure remains
@@ -52,9 +56,11 @@ Current-v6 ordered Excel scalar trials now pass the unsupported-declaration page
 one Long value and the complete declared scalar page, with correlated owner-STA
 phase evidence, unchanged identity/source/selection/mode and normal owned exits.
 This supersedes the current-v6 NOT_RUN scalar status, while historical stalls and
-crash causes remain open. The native Monaco attempts fail in fixture preparation
+crash causes remain open. The initial native Monaco attempts fail in fixture preparation
 (a malformed selection request, then a decorated-tab caption mismatch); normal
-cleanup does not qualify the still-unexecuted closed-project status scenario.
+cleanup does not qualify those attempts. After correcting the fixture, the
+actual installed embedded editor passes the closed-project/live-status scenario
+with exact source/identity preservation, normal exit and a reviewed native capture.
 Exact scope, source revisions and terminal records are in recorded validation.
 
 The broader current-v6 Excel campaign remains failed: the array/ParamArray
@@ -62,10 +68,15 @@ procedure results return before abnormal cleanup exits, project-protection
 cleanup lacks a normal exit observation, extended-option delivery is uncertain,
 and the breakpoint control is not ready. A separate editor wrapper records a
 combase access violation and a distinct abnormal final exit; its subsequent
-cases are NOT_RUN. Current Publisher module/class adapter Save/reopen passes,
-while metadata/reference cases fail a common selector assertion after fresh
+cases are NOT_RUN. Initial Publisher metadata/reference cases fail a common selector assertion after fresh
 reopen, before final readback verification. Normal Publisher exits do not convert
-those failures into accepted metadata/reference persistence. Counts and exact
+those failures into accepted metadata/reference persistence. A later semantic
+identity guard accepts the legitimate selector change and qualifies current
+Publisher module/class/form, Description and reference addition/removal with
+exact fresh-disk readback and normal exits. HelpFile still changes after reopen.
+HelpContextID returns an error despite changing the live value; the unsaved
+state is preserved before separately authorized discard and normal cleanup,
+without setter replay or subsequent Save. Counts and exact
 candidate/event scopes remain in recorded validation; lifecycle and remaining
 adapter/UI gates stay open.
 

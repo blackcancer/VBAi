@@ -233,6 +233,123 @@ The selector mismatch is a tests-only qualification defect; it is not evidence
 that those native values were lost or that they persisted correctly. Q-012
 remains partial, with HelpContextID and the remaining adapter scopes open.
 
+### Current v6: embedded Monaco status and reviewed native capture
+
+`monaco-native-v6-v3/monaco-native-v6.trx` records **1 passed, 0 failed,
+0 skipped**, runner exit **0**, on the installed product above and tests
+`687a93d`. Owned Excel **38944** retains the closed project's decorated tab
+while the live project's selected tab has a healthy synchronized status for
+at least three seconds across synchronization timers. Both exact source
+snapshots, the live project's path/identity, selection and design mode remain
+unchanged. Close/Quit exits normally with code **0**, without forced cleanup.
+
+`hosts/1e70312422db4bde9e560b60f81f5fbc/native-monaco-closed-project.json`
+records the actual installed embedded editor rather than a detached control.
+Its `native-monaco-live.png` is a real capture, SHA-256
+`73E2021E44C0C1772BD0FDE2C68C6077DD83536BFEDDB4AC0C2E9B7C0DE57BB2`.
+The additive `native-monaco-live.png.visual-review.json` records visual review
+of the selected LiveScope tab, retained ClosedScope tab, expected function
+source and healthy localized synchronization status. The original automated
+sidecar remains unchanged: accessibility did not expose rendered source, so
+pixel review and native SHA readback are separate evidence. Earlier preparation
+failures above remain failed; other editor-wrapper and SOLIDWORKS scopes remain
+open.
+
+### Current v6: inherited export failures and paired owner-STA observations
+
+`inherited-exports-v6/inherited-exports-v6.trx` records **1 passed, 3 failed, 0 skipped**,
+runner exit **1**, tests `687a93d`, on this same installed product. Fresh
+COM-activated Excel instances **26120**, **29932** and **50988** each receive
+one terminal failed export below LocalAppData, LocalAppData/VBAi and
+GitTemporary respectively, with `Objet spécifié introuvable`. Excel **46332**
+exports the synthetic form below TEMP successfully. All four hosts exit
+normally with code **0**. The failed reports' stage label
+`ONE_NATIVE_EXPORT_PENDING` is stale: their received `Ok=false` responses are
+terminal native errors, not unobserved delivery. Those original labels remain
+preserved; no failed export is retried.
+
+`paired-export-v6/paired-export-v6.trx` records **2 passed, 0 failed,
+0 skipped**, runner exit **0**, tests `3605605`. Each fresh owned Excel uses
+explicit `/x /automation` bootstrap with the fixed synthetic manifest. Actual
+owner-STA PID/native TID/MVID and effective-token metadata immediately precede
+one export, with no intervening host command or COM call. Excel **34892**
+exports below the LocalAppData GUID child; **44872** exports below TEMP.
+Both owner observations see all four synthetic targets, with medium primary
+tokens after ERROR_NO_TOKEN and unchanged synthetic hashes. FRM files are
+**479 bytes**, FRX companions **2,584 bytes**; exact file hashes, source and
+native Label properties are retained. Both hosts close normally with code
+**0**, without permissions, attribute, trust-policy or token changes.
+The report's interim `SUCCESS; awaiting normal owned exit` text remains
+preserved; its independent Shutdown record proves the subsequent normal exit.
+
+These are different launch contexts and fresh instances, not a controlled
+causal explanation of the inherited-export failures. Immediate sequencing is
+not atomic proof of an unchanged token context during export. This scoped
+explicit-bootstrap export acceptance does not qualify the complete Git
+capture/normalization/import/recovery or current-provider transfer. Q-027
+remains open.
+
+### Current v6: semantic Publisher reopen and remaining metadata failures
+
+Tests `3f23205` retain original native state comparisons while proving reopen
+identity from owned process, actual loaded candidate, publication path,
+project name and persistence identity. A legitimate name-to-path selector
+change is accepted; the original selector-assertion failures above remain
+failed.
+
+`publisher-semantic-v6/publisher-semantic-v6.trx` records **1 passed,
+1 failed, 5 conditional skips**, runner exit **1**. Description persists
+exactly after normal close and fresh reopen. HelpContextID in owned Publisher
+**60080** returns `Ok=false`, HRESULT **0x9CFD3148**, yet terminal read-only
+readback records **321** and `Saved=false`. The setter is not replayed and no
+product Save follows the error. The teardown guard refuses unsaved cleanup,
+retaining the original process handle and recording zero Quit entries.
+Live sources, native identity and properties are then preserved before one
+authorized window close and one exact owned `Ne pas enregistrer` invocation.
+`authorized-discard-terminal.json` observes normal exit **0**; this cleanup
+does not qualify the failed setter or disk persistence.
+
+The independent fresh-case batch
+`publisher-semantic-v6-rest/publisher-semantic-v6.trx` records **5 passed,
+1 failed, 0 skipped**, runner exit **1**, excluding the failed HelpContextID
+scope. Module/class/form, Description and reference addition by GUID/file and
+removal pass full source/metadata/reference readback after verified product
+Save and fresh native reopen. All initial and fresh hosts exit normally with
+code **0**, with one Quit entry and no forced termination. HelpFile fails exact
+metadata readback: its reopened string is altered, including expected `E`
+read as `㩅`. This resembles the Access observation but establishes no shared
+cause or safe decoding fix. Q-012 remains partial for metadata and lifecycle;
+no whole-host acceptance follows.
+
+`publisher-helpfile-storage-v6/helpfile-storage.json` and `cfb-streams.json`
+add read-only storage evidence for the retained failing publication, whose
+before/after SHA-256 is
+`313CE321139B3768B8E602F5E49369F9FBDB30E79BF5AEBA1E4940D62F16D272`.
+The bounded CFB reader extracts the compressed VBA `dir` and `PROJECT` streams.
+PROJECTCODEPAGE is 1252; both PROJECTHELPFILEPATH fields contain the exact
+expected path as identical 174-byte MBCS sequences, and the PROJECT HelpFile
+line also matches. This follows the
+[Microsoft record specification](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-ovba/b1e1f51f-6bef-49fe-b6a9-76e174d51b0d).
+The fresh getter's 87 UTF-16 characters reproduce those 174 stored bytes when
+encoded as UTF-16LE. Correct path storage is observed; whether native loading,
+BSTR construction or marshaling causes the altered exposed string remains
+unproven. The original test stays failed, without heuristic decoding or a
+production correction. The reader assembly is a detached diagnostic helper,
+not evidence of an additional installed product candidate.
+
+`access-raw-context-v6/access-raw-context-v6.trx` records **0 passed,
+1 failed, 0 skipped**, runner exit **1**, tests `3605605`, completing the
+previously unexecuted raw HelpContextID setter case on fresh Access **38712**.
+One IDispatch PUT returns HRESULT **0**, VT_I4 **321**, intact VARIANT canaries
+and unchanged identity. Getter readback and one verified product Save succeed,
+but the host fails the bounded exit wait after its single Quit; disk reopen is
+NOT_RUN. The retained lifecycle ledger preserves the original handle and
+records no cleanup replay. Separately authorized owned cleanup preserves
+`retained-before-force.accdb`, SHA-256
+`5A9C1C09AE11EA80FCB1F4A59489F147232272054412F2C0376D2DF29CF03547`,
+then observes forced exit **-1**. No additional Quit, setter or Save is issued;
+normal exit and metadata persistence remain unqualified.
+
 ### Preceding Monaco-status candidate: complete managed acceptance
 
 Source `d7a1c75d90d840949cc78606f2ae55b14e93ec55`, MVID

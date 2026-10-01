@@ -45,7 +45,11 @@ native owner-STA diagnostic sees both fixed synthetic LocalAppData/TEMP GUID
 directories and files with attributes matching the testhost, effective primary
 token evidence and normal owned Excel exit. This read-only result does not
 explain the earlier export path-not-found observation or qualify export; Q-027
-remains open.
+remains open. Paired actual owner-STA observation and one synthetic export then
+pass under LocalAppData and TEMP with explicit `/x /automation` bootstrap and
+normal exits. Independent fresh COM-activation trials on this same product
+still fail below LocalAppData/VBAi/GitTemporary. These different contexts do
+not prove a cause or complete Git capture/import/recovery acceptance.
 
 Current-v6 Access HelpContextID bridge and external CLR setters return 321 through
 all three getters after one verified product Save. Both hosts fail normal exit,
@@ -55,7 +59,7 @@ raw IDispatch PUT setters both return normally, but both fresh-disk reopen value
 are altered through descriptor, CLR binder and raw IDispatch getters. Those hosts
 exit normally, yet exact metadata persistence fails. Raw HelpContextID is NOT_RUN;
 the earlier HRESULTs and altered BSTR cause remain unexplained, without a
-conversion heuristic or causal product fix. Publisher verifies the exact sole
+conversion heuristic or causal product fix. The initial Publisher trial verifies the exact sole
 publication/persistence identity but fails the active-project startup guard with
 null SelectedProject/ActiveModule, before baseline edits or product Save. Its
 later guarded, authorized window close exits normally without force termination;
@@ -72,7 +76,10 @@ declared-page acceptance, not complete runtime Locals coverage or qualification
 in another host; historical scalar stall/crash causes remain open. Two native
 Monaco preparation attempts remain failed despite normal cleanup: a malformed
 selection request and a bare-module/decorated-tab caption mismatch prevent the
-closed-project/live-status scenario from running. That UI scope remains NOT_RUN.
+closed-project/live-status scenario from running. A corrected fixture subsequently
+passes that scope against the actual installed embedded editor: the selected
+live tab keeps healthy status while the closed tab is retained, with native
+source/identity preservation, normal exit and a reviewed real capture.
 Exact product/test identities and terminal evidence are in recorded validation.
 
 The broader current-v6 Excel core batch remains failed despite scoped rename,
@@ -84,7 +91,12 @@ cases NOT_RUN. Publisher's later module/class adapter Save/reopen passes with
 normal initial/fresh exits; metadata/reference cases reach fresh reopen but fail
 a common original-name/canonical-path selector assertion before final readback.
 Those complete tests remain failed, without evidence of native value loss or
-successful metadata/reference persistence. See recorded validation for terminal
+successful metadata/reference persistence. The corrected semantic reopen guard
+then qualifies current Publisher module/class/form, Description and reference
+addition by GUID/file and removal with exact native disk readback and normal
+exits. HelpFile remains altered after reopen; HelpContextID changes the live
+value despite an error response. Its preserved unsaved state and authorized
+discard/normal cleanup do not qualify persistence. See recorded validation for terminal
 and event scopes; whole-host compatibility is not qualified.
 
 On preceding v5, source `2e75161`, MVID `f9a36c85`, the stable Access
@@ -255,8 +267,10 @@ native pane is unchanged. The `d5e25e25` 2019 return-to-code captures verify the
 activated module/class in Monaco; a mere project-tree selection without native
 code activation is outside that following path. Source `d7a1c75` corrects a
 closed background document overwriting the selected Monaco tab's status, with
-separate detached/managed acceptance; current-v6 native UI acceptance of this
-correction remains open. Chat
+separate detached/managed acceptance. Current-v6 native UI acceptance passes
+for the actual embedded Excel closed-project/live-status scenario, including
+native preservation, reviewed capture and normal exit. Other UI/host scopes
+remain open. Chat
 project scope deliberately remains independent of editor selection; when its
 project closes, the scope should clear and sending should become unavailable.
 
