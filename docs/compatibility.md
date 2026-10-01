@@ -33,8 +33,13 @@ declared-scalar inspection, Format restoration, embedded Monaco and actual Git
 capture/checkpoint/compare results. Word/PowerPoint adapter-only source/class/form
 save and fresh-process reopen pass. Access/Publisher reference workflows and
 selected metadata saves pass, while Access help metadata exit and Publisher
-HelpFile readback remain failed. UserForm import has actual native property drift;
-signature and the current Ollama aggregate are unqualified. SOLIDWORKS is not
+HelpFile readback remain failed. Initial UserForm property differences also occur
+without Git import. Saved/reopened baseline properties remain exact in the
+accepted scopes, while import still fails strict FRX comparison;
+signature remains unqualified. The selected Ollama CPU profile passes its
+headless, shown detached-chat and real-Excel read-only scopes after commit-memory
+availability improves; this does not qualify the embedded-host assistant.
+SOLIDWORKS is not
 exercised in this refresh. The installed DLL remains unchanged and temporary
 registration selections are restored.
 

@@ -31,10 +31,14 @@ including conditional scenarios.
 | `final-fixture-native` | 4 | 1 | 0 |
 | `format` | 1 | 0 | 0 |
 | `forms-after-import-observation` | 0 | 12 | 0 |
+| `forms-baseline-native-persistence` | 0 | 12 | 0 |
+| `forms-baseline-native-readback` | 0 | 12 | 0 |
 | `forms-local-git` | 0 | 12 | 0 |
 | `forms-localized-import-observation` | 0 | 12 | 0 |
+| `forms-persisted-baseline-and-import` | 11 | 13 | 0 |
 | `git-modal-corrected` | 29 | 0 | 0 |
 | `managed-main` | 3615 | 0 | 119 |
+| `ollama-cpu-after-solidworks-close` | 4 | 0 | 0 |
 | `ollama-current-candidate` | 3 | 1 | 0 |
 | `ollama-current-cpu-profile` | 0 | 4 | 0 |
 | `scalar-long` | 1 | 0 | 0 |
@@ -67,6 +71,12 @@ Signature trials use `1f6f128`, SHA-256
 `60CC25D9D642791739BE1E8DF2FBBC224C3C017FFE955775A59E1FD8865040BF`.
 Final localized form diagnostics use `3a21984`, SHA-256
 `9861007A70F72F193BC794136A6429840606F3BD78EBC1727F687E9B386F64C0`.
+Independent persistence diagnostics use tests `8431593`, SHA-256
+`13C9E2927BACFEE6004370C4D647B09D0B4A8D8C6D0AD88F1CAF3787F487085C`,
+then `a1dd519`, SHA-256
+`E6AF74695DCF51BB92A978651B6F37AE8DFCCFFB03FFBD118EC89534B637BF16`.
+The persisted-baseline/import batch uses tests `7f4f9c9`, SHA-256
+`301B6F04269B1E6B612E1C8CDB1E0186BE92DE16D3806534DF4D79D6113193FD`.
 The original complete managed gate does not qualify later test assemblies as a
 complete suite; their focused/native results are recorded separately.
 
@@ -113,7 +123,29 @@ terminal inspection. Later process absence is not original-handle exit proof.
 UserForm import remains failed. Unchanged captures and raw Git transport pass;
 strict post-import comparison refuses changed FRX content and retains recovery
 backup/after-import state. Final read-only designer observations independently
-record dimension changes, ComboBox/ListBox item loss and a changed picture digest, after terminal refusal.
+record dimension changes, ComboBox/ListBox item loss and a changed picture digest
+after terminal refusal. Independent native persistence then reproduces these
+same changes without any Git capture/import: form dimensions round upward by
+0.25 points, runtime AddItem rows disappear and the picture PNG digest changes.
+Both document-only and fresh-process readback observe the same persisted values.
+This does not prove picture pixel corruption or a Git-caused list loss. The first
+baseline batch stops on native export failure; its original failures are retained.
+The export-free batch reaches all declared property observations but fails the
+prepared-state equality contract. One fresh Excel exit deadline also fails;
+later process absence does not turn that cleanup into normal-exit acceptance.
+
+The next batch establishes a baseline after the native Save/reopen and uses the
+persisted ColumnCount for ComboBox/ListBox mutation. Its 11 independent baseline
+cases pass exact second-document and fresh-process property readback, unchanged
+saved-file SHA and normal owned-process exit. LabelButton fails during startup
+on a rejected CommandBars getter, before reaching its baseline contract; that
+owned empty Excel is independently identified and closed normally afterward,
+without promoting the original scenario. All 12 strict import cases still fail
+FRX comparison despite zero differences in their declared native property
+readback. Their recovery snapshots remain retained. Fixture preparation uses
+the initial SaveAs and configured-layout Save; there is no helper Save during
+either baseline readback. No blanket form persistence acceptance is inferred.
+
 Only the declared observed properties are inspected; no claim about unmeasured
 property persistence is made. The earlier first diagnostic did not match the
 translated error and remains failed. No normalization rule is relaxed, unknown
@@ -129,7 +161,17 @@ after terminal cleanup; no Root/TrustedPublisher entry or Office trust setting i
 changed. Both owned Excel processes exit normally. This is failed signature
 qualification, not a trusted or cryptographically valid signature.
 
-Both Ollama batches use the original frozen test/product, verified existing
+The official [Microsoft Office SIP x64 package](https://www.microsoft.com/en-us/download/details.aspx?id=56617),
+version 16.0.19416.43425, is statically prepared under
+`artifacts/native-qualification-signature-20261001`. Authenticode validation
+reports valid Microsoft signatures for msosip.dll, msosipx.dll and vbe7.dll;
+PE inspection confirms AMD64. Both SIP subject registrations are absent in the
+read-only HKLM preflight. The reversible worker is syntax-checked only, with
+exact payload hashes, prior-state snapshots and concurrency refusal prepared.
+Its administrator execution awaits the maintainer decision. No SIP registration,
+Office VBE runtime replacement or trust-store write has occurred.
+
+The first two Ollama batches use the original frozen test/product, verified existing
 `qwen2.5:7b-instruct` manifest/layer hashes, temperature 0, top-p 0.8, context 8192,
 one parallel request and isolated cloud-disabled loopback servers. Automatic
 device selection passes headless streaming/cancellation/tool roundtrip and
@@ -141,13 +183,32 @@ server is force-stopped using its retained original handle and has terminal
 output/no remaining Ollama process. That backend cleanup is not native Office
 normal-exit acceptance. The later observed free virtual memory is approximately
 1.9 GiB, below the recorded 3.1 GB CPU allocation. Personal settings, downloaded
-model bytes, trust policies and unrelated processes are unchanged. The current
-aggregate fails; neither earlier `bbb6e6f` acceptance nor detached chat success
-qualifies the current embedded-host assistant or other provider profiles.
+model bytes and trust policies are unchanged. Both original aggregates remain
+failed; neither earlier `bbb6e6f` acceptance nor detached chat success qualifies
+the current embedded-host assistant or other provider profiles.
+
+The maintainer subsequently authorizes normal SOLIDWORKS closure. Its retained
+original handle does not observe exit within 15000 ms; later process absence and
+increased free commit memory are independently observed, without promoting that
+deadline to normal-exit acceptance. No force termination or macro execution is
+used. The new CPU run starts only after checking at least 5000000 KiB available
+commit memory and no existing Excel/SOLIDWORKS/Ollama process. It uses the exact
+original frozen source/product/tests, the existing verified model, temperature 0,
+top-p 0.8, context 8192 and one parallel request; no download or personal settings
+change occurs. All four prepared scenarios pass. Native Excel PID 37732 reads an
+unprompted random marker through one production read-only tool invocation, with
+unchanged source SHA and original retained-handle normal exit 0. The diagnostic
+backend PID 34268 is independently force-stopped once, with its original handle
+and terminal output verified; this is not an Office lifecycle pass. The run has
+no remaining host/backend. Q-028 is PARTIAL for this selected CPU profile:
+installed bridge, embedded-host assistant and other device/provider combinations
+are not qualified. The previous allocation and empty-response failures remain
+separate; no historical intermittent cause is inferred from the new success.
 
 SOLIDWORKS 2025 is present but no explicitly selected disposable VBE bridge is
 available in this campaign. No SOLIDWORKS macro, native Edit Macro or standalone
-save/reopen trial is executed; its existing process is preserved.
+save/reopen trial is executed. Its maintainer-authorized normal closure and later
+absence are resource-management evidence, not SOLIDWORKS add-in qualification.
 
 ## Ollama pull request after main synchronization (2026-10-01)
 
