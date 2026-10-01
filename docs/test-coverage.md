@@ -2,41 +2,69 @@
 
 ## Word qualification follow-up (2026-10-01)
 
-The code and test sources at `6fcf8c1f38ffcaa005d0ad5cd2c5078c501cf5c3`
-add the embedded Word PIA dispatch contract, exact unique-module ownership
-checks, balanced temporary COM references and two ignored optional arguments in
-the generated coverage runtime. The Word adapter supplies those arguments only
-for the generated reset and snapshot functions. It never changes host trust.
+The code and test sources at `da664f06f8797faaddec0624b7ed3bb10312963b`
+include the typed Word returned-value contract, balanced application/document
+leases and copy ownership, queued coverage preparation, and one exact native
+focus recovery before arming. Project, source, mode, permission and selection
+checks remain mandatory; dispatch is never retried after an uncertain outcome.
 
 | Check | Actual result | Evidence |
 | --- | --- | --- |
-| Isolated .NET Framework 4.8/x64 build | Passed, no errors; three NU1900 vulnerability-endpoint warnings | `artifacts/build-word-complete` |
-| Complete managed VBA testing scope | 510 passed, 0 failed, 0 skipped | `artifacts/coverage/word-final-managed/final.trx` |
-| Managed executable lines | **3743/3743 (100%)** | Companion Coverlet JSON and Cobertura |
-| All managed IL branches | **3706/3706 (100%)**, including 42/42 unmapped branches | `artifacts/coverage/word-final-managed/gate.json` |
-| Word registered batch and single execution | Passed on the disposable DOCM; expected pass, failure, swallowed assertion and runtime-error outcomes were retained | `artifacts/qualification-followup/native-word-final-office` |
-| Complete Word copy-based measurement and normal teardown | Pending; the preceding trial timed out while waiting for the copy's security decision and remains failed | Separate native follow-up evidence |
+| Isolated .NET Framework 4.8/x64 solution build | Passed, no errors; four NU1900 vulnerability-endpoint warnings | `artifacts/build-word-exit15` |
+| Complete managed VBA testing scope | 537 passed, 0 failed, 0 skipped | `artifacts/coverage/word-exit15-managed/final.trx` |
+| Managed executable lines | **3952/3952 (100%)** | Companion Coverlet JSON and Cobertura |
+| All managed IL branches | **3792/3792 (100%)**, including 42/42 unmapped branches | `artifacts/coverage/word-exit15-managed/gate.json` |
+| Owned-shutdown fixture regressions | 20 passed, 0 failed, 0 skipped | `artifacts/qualification-followup/word-exit15-shutdown/shutdown.trx` |
+| Registered Word DOCM scenario | 1 passed, 0 failed, 0 skipped; batch and single outcomes verified | `artifacts/qualification-followup/native-word-exit15-trx/word/word.trx` |
+| Word copy-based procedure measurement | Complete **50% (1/2)**; readable/compact reports match; original preserved and copy closed | `artifacts/qualification-followup/native-word-exit15/Word/0eea37bde244427c8e9492ca587be5ba` |
+| Owned Word shutdown | One Quit; original handle observed exit code **0** after **6602 ms**, within the explicit 15000-ms fixture bound; no diagnostic collection or forced termination | `shutdown-lifecycle.json` in the same root |
 
 The managed gate includes every `src/VBAi/Testing/*.cs` file and
 `src/VBAi/Llm/Chat/LlmVbeTools.Testing.cs`, including Designers and native adapters.
 It reconciles both reports from collection
-`fced4b96-f537-4817-9b92-c224cdd60893` without excluding source, generated classes
+`8e1128bc-82e6-4fad-a818-db138b09c16a` without excluding source, generated classes
 or IL branches. Interface-only declarations have no executable sequence points.
-The manifest and restored post-collector assembly identities are retained beside
-the readable `gate.txt` and machine-readable `gate.json`.
+The source manifest, post-collector assembly identities, readable `gate.txt` and
+machine-readable `gate.json` are retained beside the reports.
 
-The production DLL has MVID `e0af060d-8ab6-4e8b-b169-0d0025fd201d`, SHA-256
-`3D263CFB84F31371A708A6861B12A1192A0098424FA8DEEC1D855026577F2C4C`.
-The test DLL has MVID `b252196d-c4b3-4019-9d9b-676cc0508d47`, SHA-256
-`D7F40D3E5E84669E61A38B9CBB274C2893FF3D582D8AB672D0A9F2BD9C7AEFBB`.
-Native diagnostic fixtures separately verified the Boolean and Boolean SAFEARRAY
-return values with explicit arguments. A zero-argument Word function executed its
-marker but returned null; these diagnostics do not constitute full acceptance.
-Failed runs, uncertain delivery and their owned cleanup evidence are preserved.
+The production DLL has MVID `a799ad84-87a3-4518-9550-3cdda504ca98`, SHA-256
+`871104948963C208844F1F62E2C86CAF59F5D5F50CD30933DB7A31C27C140DB4`.
+The test DLL has MVID `807da707-3d56-475a-a2e1-09fc98043f89`, SHA-256
+`A11E66673A1C3F4E6844EDCB1227C40CCC9F5556FD2C613416E17C1D38EB8918`.
+Native identity evidence verifies this production DLL and the registered
+`VBAi.TestRuntime` callback in the exact owned x64 Word process.
 
-The installed DLL remains unchanged. Temporary candidate registration was backed
-up and restored with verification after normal owned-host exit. No production macro,
-Ollama scenario, Visio or Microsoft Project qualification belongs to this follow-up.
+The native trial used Word executable version `16.0.20430.20092` and PID `91900`.
+The expected successful test, Boolean failure, swallowed assertion and runtime
+error were retained in the batch; single and measured runs passed. Exact live
+module code, project/reference revision, test IDs and original disk bytes stayed
+unchanged through measurement. Original counters stayed `2,0`; only the copy
+entered the selected production procedure. The retained copy/plan are under
+`%LOCALAPPDATA%/VBAi/CoverageRuns/fbcd7626b67b4e5cb73c98612f455e21`.
+The native explorer measured 1253 x 638 pixels. A later synthetic source edit
+refused a stale dispatch and marked the earlier report historical.
+
+The copy's one security activation was limited to the exact owned synthetic
+file with matching source/copy hashes. The fixture restored its per-application
+security setting. No global trust setting changed. The optional fifteen-second
+exit bound affects only the fixture's observation after known Quit; ordinary
+fixture observation remains five seconds. `VBAi_TEST_WORD_SETTLED_SCOPE_GC` was
+unset and no collection diagnostic ran in this successful trial.
+
+The earlier `7474e4e` trial completed all functional assertions, including measured
+coverage and original preservation, but failed the five-second exit observation.
+That failure remains preserved under `native-word-focus-recovery`; no Quit or
+macro was replayed. A separate `b0fe41a` trial also passed every functional assertion but failed that
+same exit gate after testhost-only collection. That experiment did not resolve
+the exit delay and does not prove an RCW leak. The fifteen-second observation
+trial disables that collection; it does not change product shutdown or repeat
+Close/Quit.
+
+The installed DLL remains unchanged. Temporary HKCU/Registry64 candidate
+registration is backed up and restored with verification after the owned trial.
+No production macro, Ollama scenario, Visio or Microsoft Project qualification
+belongs to this follow-up. These observations do not qualify other Word formats,
+templates, event-handler combinations or unrelated application operations.
 
 ## Ollama pull request after main synchronization (2026-10-01)
 

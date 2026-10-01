@@ -135,8 +135,9 @@ An empty denominator is unavailable, not a successful percentage.
 ## Measured procedure coverage
 
 The implementation can collect **procedure-entry coverage on a separate Excel,
-Word or PowerPoint document copy**. These paths still require native qualification; implemented code
-is not production acceptance. Statement and branch coverage are unavailable.
+Word or PowerPoint document copy**. Native acceptance is recorded per operation,
+document format and candidate in [recorded validation](test-coverage.md); adapter
+availability alone does not qualify an entire host. Statement and branch coverage are unavailable.
 Pass rate, discovered test count and .NET coverage are different metrics.
 
 Use **Run selected with coverage** or **Run visible scope with coverage**. The
@@ -186,7 +187,8 @@ its project/path, active context and unique module ownership, then invokes the m
 completion failures are uncertain and never trigger automatic retry. A Word
 measurement requires `Document.Saved=true`, checked before copying and again
 after copying and opening. Save all document changes before requesting coverage.
-Native Word and PowerPoint qualification remains pending.
+See [recorded validation](test-coverage.md) for the observed Word DOCM and
+PowerPoint measurement scopes and their exact candidate identities.
 
 The metric is distinct entered eligible production procedures divided by eligible
 production procedures. Tests, fixtures and framework support are explicitly
