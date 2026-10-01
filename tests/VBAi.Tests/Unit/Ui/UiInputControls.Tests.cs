@@ -1,4 +1,8 @@
 using System.Drawing;
+using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows.Forms;
 using VBAi;
 using VBAi.Tests.Infrastructure;
@@ -9,6 +13,89 @@ namespace VBAi.Tests.Unit
     [TestClass]
     public sealed class UiInputControlsTests
     {
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr SendMessageTimeout(IntPtr hwnd, uint message, IntPtr wParam,
+            IntPtr lParam, uint flags, uint milliseconds, out IntPtr result);
+
+        [STATestMethod]
+        public void ExternalListSelectionUpdatesCachedItemsAndEventsBeforeHandleDestruction()
+        {
+            using (var list = new UiListBox())
+            {
+                list.Items.Add("First"); list.Items.Add("Second");
+                var handle = list.Handle;
+                // Enumeration materializes the managed selection cache, as UIA
+                // selection queries do, before an external native selection.
+                foreach (object item in list.SelectedItems) Assert.Fail("Unexpected initial selection.");
+                int changes = 0; list.SelectedIndexChanged += (sender, args) => changes++;
+                SendExternalSelection(handle, 0);
+                Assert.AreEqual("First", list.SelectedItem);
+                Assert.AreEqual("First", list.Text);
+                Assert.AreEqual(1, changes);
+                SendExternalSelection(handle, 1);
+                Assert.AreEqual("Second", list.SelectedItem);
+                CollectionAssert.AreEqual(new[] { "Second" }, new System.Collections.Generic.List<string>(
+                    System.Linq.Enumerable.Cast<string>(list.SelectedItems)).ToArray());
+                Assert.AreEqual(2, changes);
+                // Destroying the handle reads Text in .NET Framework. This must
+                // preserve both selection and items when the handle is recreated.
+                list.BorderStyle = BorderStyle.None;
+                Assert.AreEqual("Second", list.SelectedItem);
+                Assert.AreEqual(2, list.Items.Count);
+            }
+        }
+
+        [STATestMethod]
+        public void ExternalListDeselectionAndRejectedRequestsDoNotInventSelectionEvents()
+        {
+            using (var list = new UiListBox())
+            {
+                list.Items.Add("First"); var handle = list.Handle;
+                list.SelectedIndex = 0;
+                foreach (object item in list.SelectedItems) Assert.AreEqual("First", item);
+                int changes = 0; list.SelectedIndexChanged += (sender, args) => changes++;
+                SendExternalSelection(handle, 0);
+                SendExternalSelection(handle, 99);
+                Assert.AreEqual(0, changes);
+                Assert.AreEqual("First", list.SelectedItem);
+                SendExternalSelection(handle, -1);
+                Assert.AreEqual(1, changes);
+                Assert.IsNull(list.SelectedItem); Assert.AreEqual("", list.Text);
+                Assert.AreEqual(0, list.SelectedItems.Count);
+            }
+        }
+
+        [STATestMethod]
+        public void ManagedListSelectionKeepsOneEventPerChangeAndNormalItemRefresh()
+        {
+            using (var list = new UiListBox())
+            {
+                list.Items.Add("First"); list.Items.Add("Second"); var handle = list.Handle;
+                int changes = 0; list.SelectedIndexChanged += (sender, args) => changes++;
+                list.SelectedIndex = 0; list.SelectedIndex = 0; list.SelectedIndex = 1;
+                Assert.AreEqual(2, changes); Assert.AreEqual("Second", list.SelectedItem);
+                list.Items.Clear(); list.Items.Add("Replacement"); list.SelectedIndex = 0;
+                Assert.AreEqual("Replacement", list.SelectedItem);
+                Assert.AreEqual("Replacement", list.Text);
+            }
+        }
+
+        private static void SendExternalSelection(IntPtr handle, int index)
+        {
+            bool done = false; IntPtr delivery = IntPtr.Zero;
+            var sender = new Thread(() => {
+                IntPtr result;
+                delivery = SendMessageTimeout(handle, 0x186, new IntPtr(index), IntPtr.Zero, 2, 5000, out result);
+                Volatile.Write(ref done, true);
+            }) { IsBackground = true };
+            sender.Start(); var clock = Stopwatch.StartNew();
+            while (!Volatile.Read(ref done) && clock.ElapsedMilliseconds < 6000)
+            { Application.DoEvents(); Thread.Sleep(1); }
+            Assert.IsTrue(Volatile.Read(ref done), "External list message exceeded its bounded delivery deadline.");
+            Assert.IsTrue(sender.Join(1000));
+            Assert.AreNotEqual(IntPtr.Zero, delivery, "Native message delivery failed.");
+        }
+
         /// <summary>Paints owner-drawn selections and native edit backgrounds without changing values or retaining stale brushes.</summary>
         [STATestMethod]
         public void ComboSelectionAndNativeBrushFollowPaletteDirectionAndEnabledState()

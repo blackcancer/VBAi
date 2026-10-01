@@ -123,12 +123,41 @@ namespace VBAi
     [ToolboxItem(true)]
     public class UiListBox : ListBox
     {
+        private bool synchronizingExternalSelection;
+        [DllImport("user32.dll")]
+        private static extern uint InSendMessageEx(IntPtr reserved);
+
         /// <summary>Creates a list.</summary>
         public UiListBox() { BorderStyle = BorderStyle.FixedSingle; }
         /// <inheritdoc/>
         /// <summary>Preserves native message handling and repaints the input surface and outline.</summary>
         /// <param name="m">The m used by this operation.</param>
-        protected override void WndProc(ref Message m) { base.WndProc(ref m); UiInputFrame.Paint(this, BorderStyle, m); }
+        protected override void WndProc(ref Message m)
+        {
+            // UIA's native list provider sends LB_SETCURSEL from another
+            // thread without the LBN_SELCHANGE notification that WinForms
+            // needs to invalidate its SelectedItems cache. Same-thread
+            // managed setters already raise this event themselves.
+            bool externalSelection = !synchronizingExternalSelection && m.Msg == 0x186 && SelectionMode == SelectionMode.One &&
+                InSendMessageEx(IntPtr.Zero) != 0;
+            int previous = externalSelection ? SelectedIndex : -1;
+            base.WndProc(ref m);
+            if (externalSelection && previous != SelectedIndex)
+            {
+                // The public managed selection APIs update the cached item flags
+                // as well as raising the event. Raising the event alone leaves
+                // .NET Framework's already materialized cache unchanged.
+                synchronizingExternalSelection = true;
+                try
+                {
+                    int selected = SelectedIndex;
+                    if (selected < 0) ClearSelected();
+                    else SetSelected(selected, true);
+                }
+                finally { synchronizingExternalSelection = false; }
+            }
+            UiInputFrame.Paint(this, BorderStyle, m);
+        }
     }
     /// <summary>Native checked list with the common field border.</summary>
     [ToolboxItem(true)]
