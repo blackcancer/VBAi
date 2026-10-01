@@ -16,7 +16,11 @@ namespace VBAi.Tests.Integration
         private readonly List<object> retainedDiagnosticReferences = new List<object>();
 
         /// <summary>Requires discard-on-close for Access objects, including cleanup after a failed trial.</summary>
-        internal void RequireAdapterOnlyCleanup() { adapterOnlyCleanup = true; }
+        internal void RequireAdapterOnlyCleanup()
+        {
+            adapterOnlyCleanup = true;
+            if (Kind == "Word" || Kind == "PowerPoint") OwnedExitWaitMilliseconds = 15000;
+        }
 
         /// <summary>Records an assertion failure before cleanup so it survives a second cleanup exception.</summary>
         internal void RecordAdapterFailure(Exception error)

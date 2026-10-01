@@ -755,7 +755,7 @@ namespace VBAi.Tests.Integration
                 try
                     {
                         int exitCode = 0;
-                        bool exited = shutdownEvidence.ObserveExit(() => WaitForOwnedExit(process, 5000),
+                        bool exited = shutdownEvidence.ObserveExit(() => WaitForOwnedExit(process, OwnedExitWaitMilliseconds),
                             () => { exitCode = ReadOwnedExitCode(process); return exitCode; }, process.Dispose, FlushShutdownEvidence);
                         if (!exited)
                         {
@@ -842,14 +842,22 @@ namespace VBAi.Tests.Integration
                 }
                 else
                 {
-                    current = ((dynamic)application).ActiveDocument;
-                    window = ((dynamic)application).ActiveWindow;
-                    handle = new IntPtr(Convert.ToInt64(((dynamic)window).hWnd));
+                    if (Kind == "PowerPoint")
+                    {
+                        current = ((dynamic)application).ActivePresentation;
+                        handle = PowerPointWindow.Read(application);
+                    }
+                    else
+                    {
+                        current = ((dynamic)application).ActiveDocument;
+                        window = ((dynamic)application).ActiveWindow;
+                        handle = new IntPtr(Convert.ToInt64(((dynamic)window).hWnd));
+                    }
                     IntPtr first = IntPtr.Zero, second = IntPtr.Zero;
                     try
                     {
                         first = Marshal.GetIUnknownForObject(current); second = Marshal.GetIUnknownForObject(document);
-                        Assert.AreEqual(first, second, "The active Publisher document changed.");
+                        Assert.AreEqual(first, second, "The active owned Office document changed.");
                     }
                     finally { if (second != IntPtr.Zero) Marshal.Release(second); if (first != IntPtr.Zero) Marshal.Release(first); }
                 }

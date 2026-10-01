@@ -118,6 +118,25 @@ namespace VBAi.Tests.Unit
             });
         }
 
+        [TestMethod]
+        public void AdapterOnlyWordWaitsOnceForItsDeclaredLongerBoundWithoutAnotherQuit()
+        {
+            WithFakeFixture((fixture, application, document, process, root) => {
+                fixture.RequireAdapterOnlyCleanup();
+                int waits = 0;
+                fixture.WaitForOwnedExit = (observed, timeout) => {
+                    Assert.AreSame(process, observed); Assert.AreEqual(15000, timeout); waits++; return true;
+                };
+                fixture.ReadOwnedExitCode = observed => 0;
+                fixture.Dispose();
+                Assert.AreEqual(1, waits); Assert.AreEqual(1, application.QuitCount);
+                var life = (IDictionary<string, object>)Read(Path.Combine(root, "shutdown-lifecycle.json"))["Lifecycle"];
+                Assert.AreEqual(15000, life["WaitBoundMilliseconds"]);
+                Assert.AreEqual(true, life["ProcessExitObserved"]);
+                Assert.AreEqual(false, life["ForcedTermination"]);
+            });
+        }
+
         private static void WithFakeFixture(Action<OfficeVbeFixture, FakeApplication, FakeDocument, Process, string> action)
         {
             string root = Path.Combine(Path.GetTempPath(), "VBAi-OwnedShutdown-" + Guid.NewGuid().ToString("N"));

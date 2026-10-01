@@ -13,6 +13,8 @@ namespace VBAi.Tests.Integration
         // Synthetic mirror tests replace only exit observation; they never launch
         // or terminate a host or change production COM behavior.
         internal Func<Process, int, bool> WaitForOwnedExit = (process, timeout) => process.WaitForExit(timeout);
+        /// <summary>Bounds one read-only original-handle observation after the sole Quit call.</summary>
+        internal int OwnedExitWaitMilliseconds = 5000;
         internal Func<Process, int> ReadOwnedExitCode = process => process.ExitCode;
 
         private void RequireUsableOwnedHost()
@@ -30,7 +32,7 @@ namespace VBAi.Tests.Integration
             Assert.AreEqual(shutdownEvidence.Record["ProcessStartedUtc"], ownedProcess.StartTime.ToUniversalTime().ToString("o"));
             Assert.AreEqual(shutdownEvidence.Record["OriginalProcessHandle"], "0x" + unchecked((ulong)ownedProcess.Handle.ToInt64()).ToString("X16"));
             Assert.AreEqual(shutdownEvidence.Record["ProcessImage"], ExcelOwnedProcessImage.Read(ownedProcess.Handle));
-            shutdownEvidence.Record["WaitBoundMilliseconds"] = 5000;
+            shutdownEvidence.Record["WaitBoundMilliseconds"] = OwnedExitWaitMilliseconds;
             shutdownEvidence.Prepare(FlushShutdownEvidence);
         }
 
