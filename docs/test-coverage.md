@@ -67,7 +67,8 @@ qualification remain open; no new coverage percentage is claimed.
 The tests-only `ca0479e` fixture completes
 `forms-owner-font-selection-observed` against the frozen product. The independent
 post-import snapshot differs only in `EmbeddedForm.frx`; source files match.
-Retained Git target and after-import trees prove that the root `/f` stream loses
+`offline-font-proof/proof.json` in that run directory records frozen-parser
+inspection of the retained Git target and after-import trees. The root `/f` stream loses
 the complete StdFont descriptor (Tahoma 8.25). Frozen-assembly parsing extracts
 the root binding, ruling out a missing extraction plan. No fractional Frame
 precision conclusion is drawn from this LabelButton trial. Root assignment
