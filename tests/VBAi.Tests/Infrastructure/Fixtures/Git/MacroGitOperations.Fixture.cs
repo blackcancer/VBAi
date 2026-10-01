@@ -1,6 +1,7 @@
 namespace VBAi.Tests.Unit
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Text;
@@ -13,7 +14,8 @@ namespace VBAi.Tests.Unit
         internal sealed class Fixture : IDisposable
         {
             /// <summary>Répertoire temporaire réservé au dépôt et au dépôt distant du test.</summary>
-            internal readonly string Root = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "git-branches", Guid.NewGuid().ToString("N"));
+            private readonly global::GitScratchDirectory scratch = global::GitScratchDirectory.Create();
+            internal string Root => scratch.Root;
             /// <summary>Chemins du dépôt local et du dépôt distant temporaire de la fixture.</summary>
             internal readonly string Cache, Remote;
             /// <summary>Projet VBA simulé par des composants en mémoire.</summary>
@@ -97,12 +99,46 @@ namespace VBAi.Tests.Unit
             public void Dispose()
             {
                 Operations.Dispose();
-                string boundary = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "git-branches")) + Path.DirectorySeparatorChar;
-                if (!Path.GetFullPath(Root).StartsWith(boundary, StringComparison.OrdinalIgnoreCase))
+                scratch.ValidateCleanupRoot(Root);
+                string boundary = scratch.Boundary + Path.DirectorySeparatorChar;
+                string fullRoot = Path.GetFullPath(Root);
+                Guid fixtureId;
+                if (!fullRoot.StartsWith(boundary, StringComparison.OrdinalIgnoreCase) ||
+                    !string.Equals(Path.GetDirectoryName(fullRoot) + Path.DirectorySeparatorChar, boundary, StringComparison.OrdinalIgnoreCase) ||
+                    !Guid.TryParseExact(Path.GetFileName(fullRoot), "N", out fixtureId))
                     throw new InvalidOperationException("Fixture cleanup escaped its own directory");
-                if (!Directory.Exists(Root)) return;
-                foreach (string file in Directory.GetFiles(Root, "*", SearchOption.AllDirectories)) File.SetAttributes(file, FileAttributes.Normal);
-                Directory.Delete(Root, true);
+                // Git object paths can exceed MAX_PATH. Use extended paths for every
+                // filesystem call without changing process-wide path handling switches.
+                string extendedRoot = fullRoot.StartsWith(@"\\", StringComparison.Ordinal)
+                    ? @"\\?\UNC\" + fullRoot.Substring(2) : @"\\?\" + fullRoot;
+                if (!Directory.Exists(extendedRoot)) return;
+                var pending = new Stack<string>(); var directories = new List<string>(); var files = new List<string>();
+                pending.Push(extendedRoot);
+                while (pending.Count > 0)
+                {
+                    string directory = pending.Pop();
+                    if ((File.GetAttributes(directory) & FileAttributes.ReparsePoint) != 0)
+                        throw new InvalidOperationException("Fixture cleanup refuses filesystem links");
+                    directories.Add(directory);
+                    foreach (string child in Directory.GetFileSystemEntries(directory, "*", SearchOption.TopDirectoryOnly))
+                    {
+                        if (!child.StartsWith(extendedRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                            throw new InvalidOperationException("Fixture cleanup escaped its own directory");
+                        FileAttributes attributes = File.GetAttributes(child);
+                        if ((attributes & FileAttributes.ReparsePoint) != 0)
+                            throw new InvalidOperationException("Fixture cleanup refuses filesystem links");
+                        if ((attributes & FileAttributes.Directory) != 0) pending.Push(child);
+                        else files.Add(child);
+                    }
+                }
+                // Validate the entire owned tree before the first deletion. Failures
+                // propagate and remain visible to the test runner.
+                foreach (string file in files) { File.SetAttributes(file, FileAttributes.Normal); File.Delete(file); }
+                for (int i = directories.Count - 1; i >= 0; i--)
+                {
+                    File.SetAttributes(directories[i], FileAttributes.Normal);
+                    Directory.Delete(directories[i], false);
+                }
             }
         }
     }

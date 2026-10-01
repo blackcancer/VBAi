@@ -17,6 +17,7 @@ namespace VBAi
             try
             {
                 dispatcher = new Control();
+                VbeInspectionTrace.Current?.Record(VbeInspectionTrace.Phase.OwnerSta);
                 var handle = dispatcher.Handle;
                 var context = new Context(dispatcher);
                 SynchronizationContext.SetSynchronizationContext(context);
@@ -39,10 +40,12 @@ namespace VBAi
         private sealed class Context : SynchronizationContext
         {
             private readonly Control dispatcher;
-            internal Context(Control dispatcher) { this.dispatcher = dispatcher; }
+            private readonly VbeInspectionTrace trace;
+            internal Context(Control dispatcher) { this.dispatcher = dispatcher; trace = VbeInspectionTrace.Current; }
             public override SynchronizationContext CreateCopy() { return this; }
             public override void Post(SendOrPostCallback callback, object state)
             {
+                trace?.Record(VbeInspectionTrace.Phase.ContinuationEnqueued);
                 dispatcher.BeginInvoke(new Action(() => Invoke(callback, state)));
             }
             public override void Send(SendOrPostCallback callback, object state)
@@ -53,8 +56,12 @@ namespace VBAi
             private void Invoke(SendOrPostCallback callback, object state)
             {
                 var previous = Current;
-                try { SetSynchronizationContext(this); callback(state); }
-                finally { SetSynchronizationContext(previous); }
+                using (trace?.Enter())
+                {
+                    trace?.Record(VbeInspectionTrace.Phase.ContinuationEntered);
+                    try { SetSynchronizationContext(this); callback(state); }
+                    finally { SetSynchronizationContext(previous); trace?.Record(VbeInspectionTrace.Phase.ContinuationReturned); }
+                }
             }
         }
     }

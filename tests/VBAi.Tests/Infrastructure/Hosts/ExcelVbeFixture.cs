@@ -41,6 +41,12 @@ namespace VBAi.Tests.Integration
         /// <value>Chemin racine des fichiers temporaires de la fixture.</value>
         internal string Root { get; private set; }
 
+        /// <summary>Retains exact owned-process shutdown observations after temporary-file cleanup.</summary>
+        internal IDictionary<string, object> ShutdownDiagnostics { get; private set; }
+
+        /// <summary>Suspends Close/Quit when a diagnostic debugger has not been proven detached.</summary>
+        internal bool PreserveForDiagnosticRecovery { get; set; }
+
         /// <summary>Démarre Excel de façon isolée et vérifie la disponibilité du pont VBE.</summary>
         /// <returns>La fixture prête à envoyer des commandes au pont.</returns>
         /// <exception cref="AssertInconclusiveException">Les tests Excel sont désactivés, Excel est absent ou une session existante a été détectée.</exception>
@@ -53,17 +59,24 @@ namespace VBAi.Tests.Integration
             var existing = Process.GetProcessesByName("EXCEL");
             int[] existingIds = existing.Select(process => process.Id).ToArray();
             foreach (var process in existing) process.Dispose();
+            string output = Environment.GetEnvironmentVariable("VBAi_EXCEL_RESULTS");
+            bool durable = !string.IsNullOrWhiteSpace(output);
+            if (durable && (!Path.IsPathRooted(output) || !string.Equals(Path.GetPathRoot(output), Path.GetPathRoot(Path.GetFullPath(output)), StringComparison.OrdinalIgnoreCase)))
+                throw new ArgumentException("VBAi_EXCEL_RESULTS must specify an absolute output directory.");
             var fixture = new ExcelVbeFixture {
-                Root = Path.Combine(Path.GetTempPath(), "VBAi-VSTest", Guid.NewGuid().ToString("N")) };
+                retainEvidence = durable,
+                Root = Path.Combine(durable ? Path.GetFullPath(output) : Path.Combine(Path.GetTempPath(), "VBAi-VSTest"), Guid.NewGuid().ToString("N")) };
             try
             {
                 Directory.CreateDirectory(fixture.Root);
+                fixture.RecordStartup("Created", existingIds);
                 fixture.application = Activator.CreateInstance(excelType);
                 dynamic excel = fixture.application;
                 uint processId;
                 GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(excel.Hwnd)), out processId);
                 fixture.ProcessId = (int)processId;
                 fixture.owned = processId != 0 && !existingIds.Contains((int)processId);
+                fixture.RecordStartup("ProcessIdentified", existingIds);
                 if (!fixture.owned)
                     Assert.Inconclusive("Excel returned an existing session; no workbook was opened.");
                 fixture.ownedProcess = Process.GetProcessById(fixture.ProcessId);
@@ -72,33 +85,40 @@ namespace VBAi.Tests.Integration
                 excel.DisplayAlerts = false;
                 fixture.workbooks = excel.Workbooks;
                 fixture.workbook = ((dynamic)fixture.workbooks).Add();
+                fixture.RecordStartup("WorkbookCreated", existingIds);
                 object commandBars = null;
                 try { commandBars = excel.CommandBars; ((dynamic)commandBars).ExecuteMso("VisualBasic"); }
                 finally { Release(commandBars); }
                 var status = fixture.Command("status");
+                fixture.RecordStartup("BridgeObserved", existingIds, status);
                 Assert.IsNotNull(status, "The isolated Excel VBE has no VBAi bridge.");
                 Assert.AreEqual(true, status["Ok"]);
                 var state = VbeBridgeClient.Object(status["Data"]);
                 Assert.AreEqual(typeof(VBAi.VbeSession).Module.ModuleVersionId.ToString("D"), state["AssemblyModuleVersionId"],
                     "Excel loaded another build of the shared COM add-in; native tests must qualify this assembly.");
+                fixture.RecordStartup("Ready", existingIds, status);
                 return fixture;
             }
             catch (Exception startup)
             {
+                var failures = new List<Exception> { startup };
+                try { fixture.RecordStartup("Failed", existingIds, error: startup); }
+                catch (Exception evidence) { failures.Add(evidence); }
                 try { fixture.Dispose(); }
-                catch (Exception cleanup) { throw new AggregateException("Excel startup and cleanup both failed.", startup, cleanup); }
+                catch (Exception cleanup) { failures.Add(cleanup); }
+                if (failures.Count > 1) throw new AggregateException("Excel startup, evidence or cleanup failed; all errors are retained.", failures);
                 throw;
             }
         }
 
         /// <summary>Preserves the scenario failure when cleanup independently fails.</summary>
-        internal static void Run(Action<ExcelVbeFixture> scenario)
+        internal static void Run(Action<ExcelVbeFixture> scenario, Action<ExcelVbeFixture> shutdownVerified = null)
         {
             var fixture = Start();
             Exception failure = null;
             try { scenario(fixture); }
             catch (Exception error) { failure = error; }
-            try { fixture.Dispose(); }
+            try { fixture.Dispose(); shutdownVerified?.Invoke(fixture); }
             catch (Exception cleanup)
             {
                 if (failure != null) throw new AggregateException("The Excel scenario and its shutdown both failed; both errors are retained.", failure, cleanup);
@@ -112,7 +132,7 @@ namespace VBAi.Tests.Integration
         /// <returns>La réponse reçue, ou <see langword="null"/> si le canal ne répond pas.</returns>
         internal IDictionary<string, object> Command(string name)
         {
-            return VbeBridgeClient.Read(ProcessId, name);
+            return RecordCommand(new { Command = name }, () => VbeBridgeClient.Read(ProcessId, name));
         }
 
         /// <summary>Envoie un objet de requête au pont du processus Excel.</summary>
@@ -120,7 +140,7 @@ namespace VBAi.Tests.Integration
         /// <returns>La réponse reçue, ou <see langword="null"/> si le canal ne répond pas.</returns>
         internal IDictionary<string, object> Command(object request)
         {
-            return VbeBridgeClient.Read(ProcessId, request);
+            return RecordCommand(request, () => VbeBridgeClient.Read(ProcessId, request));
         }
 
         /// <summary>Construit un chemin dans le répertoire temporaire de la fixture.</summary>
@@ -151,8 +171,24 @@ namespace VBAi.Tests.Integration
                 ["ProcessId"] = ProcessId, ["FixtureRoot"] = Root, ["StartedUtc"] = DateTime.UtcNow.ToString("o"),
                 ["AssemblyMvid"] = typeof(VbeSession).Module.ModuleVersionId.ToString("D"), ["ForcedTermination"] = false
             };
+            diagnostics["DurableEvidence"] = retainEvidence;
+            diagnostics["CommandCount"] = commandSequence;
+            diagnostics["CommandRecordsOmitted"] = Math.Max(0, commandSequence - MaximumCommandRecords);
+            ShutdownDiagnostics = diagnostics;
+            if (PreserveForDiagnosticRecovery)
+            {
+                diagnostics["CleanupSuspended"] = true;
+                diagnostics["Reason"] = "Diagnostic debugger detachment was not proven; no Close/Quit or forced termination was attempted.";
+                WriteShutdownDiagnostics(diagnostics);
+                throw new InvalidOperationException("Exact owned Excel host left untouched for diagnostic recovery. PID: " + ProcessId + "; fixture: " + Root);
+            }
             var watch = Stopwatch.StartNew();
-            Exception closeFailure = null, quitFailure = null;
+            Exception closeFailure = null, quitFailure = null, evidenceFailure = null;
+            Action writeDiagnostics = () => {
+                try { WriteShutdownDiagnostics(diagnostics); }
+                catch (Exception error) { evidenceFailure = error; }
+            };
+            BeginDiagnosticCleanup();
             if (owned && workbook != null)
                 try { ((dynamic)workbook).Close(false); }
                 catch (Exception error) { closeFailure = error; }
@@ -168,6 +204,18 @@ namespace VBAi.Tests.Integration
             Release(application);
             workbook = workbooks = application = null;
             diagnostics["ReleaseElapsedMs"] = watch.ElapsedMilliseconds;
+            if (teardownTrace != null)
+            {
+                try { teardownTrace.AfterCleanup(); }
+                catch (Exception traceFailure)
+                {
+                    diagnostics["DiagnosticFailure"] = traceFailure.ToString();
+                    writeDiagnostics();
+                    lock (retainedBootstraps) retainedBootstraps.Add(this);
+                    throw new AggregateException("Diagnostic cleanup failed; native cleanup is never replayed.",
+                        new[] { traceFailure, closeFailure, quitFailure, evidenceFailure }.Where(error => error != null));
+                }
+            }
             var process = ownedProcess;
             ownedProcess = null;
             if (process != null)
@@ -177,16 +225,29 @@ namespace VBAi.Tests.Integration
                     diagnostics["Exited"] = exited;
                     diagnostics["ElapsedMs"] = watch.ElapsedMilliseconds;
                     if (exited) diagnostics["ExitCodeHex"] = "0x" + unchecked((uint)process.ExitCode).ToString("X8");
-                    WriteShutdownDiagnostics(diagnostics);
-                    if (!exited)
-                        Assert.Fail("Excel did not exit after Quit and COM release. PID: " + ProcessId + "; fixture: " + Root + ". The process was left running for diagnosis; shutdown.json preserves each phase.");
-                    Assert.AreEqual(0, process.ExitCode, "Excel exited abnormally. PID: " + ProcessId +
-                        "; exit code: 0x" + unchecked((uint)process.ExitCode).ToString("X8") + "; fixture: " + Root);
+                    writeDiagnostics();
+                    try
+                    {
+                        if (!exited)
+                            Assert.Fail("Excel did not exit after Quit and COM release. PID: " + ProcessId + "; fixture: " + Root + ". The process was left running for diagnosis; shutdown.json preserves each phase.");
+                        Assert.AreEqual(0, process.ExitCode, "Excel exited abnormally. PID: " + ProcessId +
+                            "; exit code: 0x" + unchecked((uint)process.ExitCode).ToString("X8") + "; fixture: " + Root);
+                    }
+                    catch (Exception exitFailure)
+                    {
+                        if (evidenceFailure != null)
+                            throw new AggregateException("Excel shutdown and its evidence write failed; both errors are retained.",
+                                new[] { exitFailure, closeFailure, quitFailure, evidenceFailure }.Where(error => error != null));
+                        throw;
+                    }
                 }
-            if (closeFailure != null || quitFailure != null)
+            else writeDiagnostics();
+            if (closeFailure != null || quitFailure != null || evidenceFailure != null)
                 throw new AggregateException("Excel Close/Quit reported errors; shutdown.json preserves diagnostics.",
-                    new[] { closeFailure, quitFailure }.Where(error => error != null));
+                    new[] { closeFailure, quitFailure, evidenceFailure }.Where(error => error != null));
+            if (retainEvidence) return;
             if (string.IsNullOrWhiteSpace(Root) || !Directory.Exists(Root)) return;
+            if (retainEvidence) { WriteEvidence("shutdown.json", diagnostics); return; }
             try
             {
                 foreach (string file in Directory.GetFiles(Root, "*", SearchOption.TopDirectoryOnly))

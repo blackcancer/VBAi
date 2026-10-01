@@ -10,6 +10,12 @@ The editor opens with the add-in and follows the VBE document area. Double-click
 a code module opens its tab. Native code panes remain associated with the tabs;
 UserForm designers and the Object Browser retain their native surfaces.
 
+The hidden editor also follows workspace size changes while a native designer or
+Object Browser is visible. Geometry updates preserve child ordering and keyboard
+focus; unchanged bounds do not request another native resize. This is covered by
+detached Windows MDI regressions, with version-specific native acceptance still
+tracked in [qualification](release-qualification.md).
+
 Completion, signature help, hover and declaration navigation use project code and
 referenced COM type libraries. Open drafts participate in the index. Current
 services handle typed receivers, property/call chains, nested `With` blocks,
@@ -107,6 +113,16 @@ lose that edit; drafts do not replace document backups.
 
 ## Appearance and editor assets
 
+Monaco tool operations and the comparison, close, conflict-resolution, reload
+and archived-draft actions retain their originating editor STA across awaits,
+including hosts without an ambient synchronization context. Renderer calls,
+native read/write guards and their error/status updates stay within that owned
+operation. A failure to prepare its dispatcher is reported on the calling
+thread and releases only the busy state acquired by that action. This does not
+replay a failed native mutation or relax source/revision checks. Detached real
+renderer and deterministic owner-thread regressions are recorded separately
+from native host acceptance in [recorded validation](test-coverage.md).
+
 Monaco resources, workers and available translations are bundled rather than
 loaded from a CDN. WebView2 blocks external navigation, permissions, downloads,
 new windows and host-object exposure in this editor surface. Its installed runtime
@@ -115,3 +131,16 @@ is a separate prerequisite from the bundled loader/assets.
 The add-in's own appearance is separate from the **experimental native VBE dark
 theme**. Native palette recovery must not be deleted to silence an error. See
 [troubleshooting](troubleshooting.md#appearance-and-native-palette-recovery).
+
+## Browser profile lifetime
+
+Each editor window creates a unique WebView2 profile below its host's editor
+cache directory. It is retained while the editor is live. After controller
+disposal, cleanup runs asynchronously only when the matching environment reports
+[BrowserProcessExited](https://learn.microsoft.com/en-us/dotnet/api/microsoft.web.webview2.core.corewebview2environment.browserprocessexited),
+which confirms its runtime processes have released the user data folder. A new
+browser PID invalidates an earlier exit observation. The cleanup checks its owned
+tree before deleting any entry and refuses reparse points. Locked files and
+uncertain initialization/shutdown remain retained without forced termination or
+retry. Legacy profiles without ownership/exit proof are preserved; there is no
+age-based purge of unknown browser data. Draft recovery is stored separately.

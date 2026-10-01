@@ -6,18 +6,233 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Report scope
 
-Qualification checkpoint: 2026-09-30, following the 2026-09-29/30 campaign.
+Qualification checkpoint: 2026-10-01, following the 2026-09-29/30 campaign.
 The register below contains all 30 findings, Q-001 through Q-030. Each status
 applies only to the stated operation, host and tested candidate; CLOSED does not
 qualify an entire application. OPEN and PARTIAL entries remain release gates
 where required by the agreed scope.
 
-The last candidate with the native acceptance results below has MVID
-`aaf3a555-76d4-4b18-ae09-1e7b3e085934`. Concurrent source changes made after that
-build are not covered by its results. The full qualification branch includes the
+The remaining completion gates are Q-006, Q-012, Q-014, Q-020, Q-024,
+Q-026, Q-027, Q-028 and Q-030. The other findings have the scoped corrections and
+validation described below; they do not constitute complete current-candidate
+qualification. The current installed product is source `8f2315d`, MVID
+`d8f31d57-8612-465e-871c-93a62f2b3eae`, SHA-256
+`C900BA09D92DA7CF50CC09033C63F5226DD04C18426CC386B30AF86EB0BA0941`.
+`deployment-v6.json` retains exact installation and previous-payload/registration
+backup evidence. Its complete instrumented suite passes with unchanged product
+hash; Q-015 closes only for this exact source/MVID/hash. Native/provider opt-ins
+and the complete coverage target remain separate scopes. The preceding
+Monaco-status candidate `d7a1c75` / `6a74af33` and earlier frozen v5 `2e75161` / `f9a36c85` have separate completed managed passes. The original
+v5 harness failure remains failed with explained packaging/Git path defects;
+none of those results qualifies a later product binary.
+
+The latest uninstalled combined candidate is source `b60996c`, MVID
+`e79c6288-d384-475c-b8bc-276d7caaaf00`, SHA-256
+`9ADBCFB96B1F2F4E4FA3066EA26F3CA2E0A2EC7996C85105070A3765BEFC8587`.
+Its complete default managed gate and separate JavaScript, synthetic native,
+managed-loader and detached Designer checks pass with unchanged product bytes
+and source. Q-015 is accepted for that exact managed scope; this is not an
+installed or native-qualified release. Exact counters and coverage are recorded
+only in [recorded validation](test-coverage.md).
+
+Tests-only follow-up `a28be69` prepares the actual embedded Git menu/window
+workflow against the unchanged frozen product; its complete default managed gate
+passes. Native execution remains NOT_RUN, and it does not qualify publish,
+import, recovery or disk reopen. Follow-up `ce3d9da` permits a strictly selected
+literal-loopback port for detached Ollama qualification. Its activated full
+suite fails the headless tool-argument assertion and reproduces the chat's empty
+response. Exact captured SSE bytes already contain no text or tools before
+assembly in VBAi; the chat displays the empty-response fallback with ready
+status. The current response boundary is proven, but backend/model internals
+and the historical failure's cause remain unproven. No assertion is relaxed,
+request replayed to obtain a pass, or product correction claimed. Q-028 stays
+open; complete results and preparation failures are in recorded validation.
+
+Subsequent direct backend controls are terminal: the exact original request and
+its chosen-token variant deliver a recognized core-tool call; the nonstreaming
+variant delivers a call missing a required argument; the no-tools variant
+streams text. No tool is dispatched. An offline correction explains the separate
+diagnostic runner's PowerShell singleton-array failure without altering its
+original failed record or replaying requests. The exact owned helper is closed
+after independent terminal verification. These new generations do not explain
+the original empty response or qualify VBAi's provider integration. Q-028 stays
+open; byte-level evidence and scope are in recorded validation.
+
+The Git menu, chat and LLM tools now share a compatible lookup of the native
+document key and the former uppercase key. A single existing binding is reused
+without moving or rewriting caches; two bindings or uncertain metadata refuse
+automatic selection. Managed regressions and the complete candidate gate pass.
+This corrects a source-proven entry-point mismatch, not the historical native
+export failures. Q-024/Q-027 still require the actual embedded owner-thread Git
+workflow; existing external-test-STA captures do not establish that acceptance.
+
+The retained current-v6 Format trial commits and verifies the font change, then
+refuses the requested size because the observed size catalogue is empty. Its
+captures do not identify the Win32/UIA branch, native handle/style or intermediate
+counts, so neither lazy list initialization nor a provider defect is proven.
+Later read-only evidence observes the Options window closed, without qualifying
+baseline font restoration. The original failed trial and pending recovery remain
+unchanged; no size write or uncertain action is replayed. Q-026 stays open.
+
+Current-v6 native evidence includes the explicitly authorized read-only
+owner-STA path/effective-token diagnostic in owned Excel. Both synthetic GUID
+directories and files are visible with attributes matching the testhost; normal
+exit is verified. This neither reproduces nor explains the earlier export
+path-not-found observation, and Q-027 remains open. Subsequent paired owner-STA
+observations and single exports pass below LocalAppData and TEMP in explicitly
+bootstrapped Excel, with normal exits. Fresh COM-activation trials on this same
+product still fail below LocalAppData/VBAi/GitTemporary. Launch-context
+differences do not establish a cause or complete Git capture acceptance.
+
+Current-v6 Access HelpContextID returns 321 through all three native/managed
+getters after a bridge setter and one verified Save, and also in the separate
+external CLR setter case. Both initial hosts fail normal exit; fresh-disk reopen
+is NOT_RUN. Authorized force cleanup preserves stable database copies but does
+not qualify persistence. External HelpFile setters return through both production
+CLR and raw IDispatch PUT, yet both fresh-disk reopen values are altered through
+all three getters. The later raw HelpContextID PUT also returns successfully with
+live value 321 and verified Save, but fails bounded exit and disk reopen remains
+NOT_RUN. Its retained copy and authorized force cleanup do not qualify normal
+exit. No conversion heuristic or causal
+product fix is established. The initial current Publisher batch fails its active-project
+startup guard despite exact disposable-document/persistence identity, before
+baseline edits or product Save. Its independently guarded, authorized window
+close later exits normally without force termination; the startup failure remains
+failed. External Publisher VBE inventory observations are UNVERIFIED, as recorded
+in an additive correction. Exact terminal outcomes and the correction of copied
+getter-driver labels are in recorded validation. Q-006 and Q-012 remain open for
+these scopes.
+
+Current-v6 ordered Excel scalar trials now pass the unsupported-declaration page,
+one Long value and the complete declared scalar page, with correlated owner-STA
+phase evidence, unchanged identity/source/selection/mode and normal owned exits.
+This supersedes the current-v6 NOT_RUN scalar status, while historical stalls and
+crash causes remain open. The initial native Monaco attempts fail in fixture preparation
+(a malformed selection request, then a decorated-tab caption mismatch); normal
+cleanup does not qualify those attempts. After correcting the fixture, the
+actual installed embedded editor passes the closed-project/live-status scenario
+with exact source/identity preservation, normal exit and a reviewed native capture.
+Exact scope, source revisions and terminal records are in recorded validation.
+
+The broader current-v6 Excel campaign remains failed: the array/ParamArray
+procedure results return before abnormal cleanup exits, project-protection
+cleanup lacks a normal exit observation, extended-option delivery is uncertain,
+and the breakpoint control is not ready. A separate editor wrapper records a
+combase access violation and a distinct abnormal final exit; its subsequent
+cases are NOT_RUN. Initial Publisher metadata/reference cases fail a common selector assertion after fresh
+reopen, before final readback verification. Normal Publisher exits do not convert
+those failures into accepted metadata/reference persistence. A later semantic
+identity guard accepts the legitimate selector change and qualifies current
+Publisher module/class/form, Description and reference addition/removal with
+exact fresh-disk readback and normal exits. HelpFile still changes after reopen.
+HelpContextID returns an error despite changing the live value; the unsaved
+state is preserved before separately authorized discard and normal cleanup,
+without setter replay or subsequent Save. Counts and exact
+candidate/event scopes remain in recorded validation; lifecycle and remaining
+adapter/UI gates stay open.
+
+On preceding v5, the stable Access guard passes scoped module/class, Description
+and reference addition save/reopen. HelpFile fresh-disk readback remains altered
+through descriptor, CLR binder and raw IDispatch getters despite an intact
+VARIANT canary; HelpContextID runtime metadata confirms I4 but its setter fails.
+The read-only getter probe does not add a save or mutation and no heuristic fix
+is applied. Reference-removal cleanup and Publisher preparation also remain
+failed/unqualified. These are not current-v6 host acceptance.
+
+Preceding-v5 SOLIDWORKS 2025 loading, disposable module/class/form preparation,
+compile and verified Save have native evidence. One synthetic run succeeds,
+but its strict whole-file preservation trial fails; a separate native reload
+verifies persisted source and label without converting that failure into a pass.
+The owned instance closes normally after live-source/form backup and one ExitApp.
+Complete UI/debugger acceptance, strict SWP preservation and the preceding 2019
+abnormal termination remain unresolved. Current-v6 SOLIDWORKS acceptance is NOT_RUN.
+
+The native results below identify their own candidates. Historical
+SOLIDWORKS acceptance uses MVID `aaf3a555-76d4-4b18-ae09-1e7b3e085934`;
+the earlier Office and SOLIDWORKS 2019 follow-up used `7b5f11d8` from `0ddb0dd`.
+Earlier Office candidates remain historical evidence. Source changes made after
+each build are not covered by its results. The full qualification branch includes the
 implementation changes, tests and this register. Its publication checks are
 recorded separately in [recorded validation](test-coverage.md); they do not
 replace the operation-specific native acceptance or close the remaining gates.
+
+### Fresh SOLIDWORKS 2019 follow-up
+
+The maintainer authorized autonomous application launch for this campaign.
+An isolated Visual Studio utility profile opened SOLIDWORKS 2019 SP5, PID
+47344, revision 27.5.0, and the exact PID ROT plus loaded add-in MVID were
+independently verified. Native Edit Macro opened only a copied disposable
+fixture; module/class hashes, the form label and unchanged disk bytes passed
+readback. The designer resize and exact placement restoration passed.
+
+A separately host-created disposable macro passed module/class/form edits,
+stale-source refusal, compilation and one product save. Its synthetic marker
+ran once and the project unloaded. The strict execution trial still failed
+because SWP bytes changed; a distinct, guarded native reload verified retained
+source hashes and the label against the observed post-execution file hash.
+The cause of the binary change remains unproven. This is not whole-file
+preservation or standalone-project qualification.
+
+That historical instance has now closed normally on explicit maintainer
+authorization, with exit code zero and no force termination. Before closing,
+the exact live source and form were preserved; a fixture whose live whitespace
+differed and Saved flag was false received one verified product Save without
+source writes or macro execution. The preservation and normal-close records
+do not prove fresh-disk reopen or acceptance of the subsequently installed
+`d5e25e25` product.
+
+The historical return-to-code trial activated the native module but showed an
+empty Monaco shell. Preceding installed candidate `d5e25e25` loaded in a fresh owned
+2019 SP5 instance, PID 51376. Native Edit Macro and independent module/class/form
+readback preserve the copied file bytes. Designer and returned-code workspace
+resize/restoration pass, and reviewed captures show the selected module and
+class in Monaco. The class source then differs by an `on` prefix; the maintainer
+reports possible keyboard input diverted when the window gained focus. Its
+cause is not proven. The live source is retained without overwrite, save or
+execution, so strict unchanged-source acceptance remains unqualified.
+Its authorized ExitApp request stalled at native debugger heap corruption
+`0xc0000374`. Unresolved frame observations include ntdll/ucrtbase/mfc140u/sldappu
+but do not establish the originating defect. An authorized forced termination
+timed out while the debugger still held the target; the owned debugger was
+subsequently stopped after exact utility-solution and sole-target validation.
+Final debugger design mode and no debug target are not normal ExitApp evidence;
+the exit code is NOT_OBSERVED. The earlier transient PID absence is not the final
+cleanup oracle.
+Preceding-v5 SOLIDWORKS 2025 has separate partial native evidence in recorded
+validation. Its selected class renders in Monaco and code workspace resize and
+restoration pass, but a stale closed-project warning is visible. Strict binary
+preservation remains failed despite successful post-runtime content readback;
+the subsequent owned 2025 cleanup exits normally. Complete debugger and embedded
+assistant acceptance remain pending. Q-014 stays open.
+
+The preceding v4 Office campaign aborted during owned Word form preparation.
+Its bridge timed out after a form-property request, and the old fixture entered
+native cleanup despite uncertain delivery. A noninvasive, nonsuspending stack
+observation finds the Word STA in FM20 overlay-window/visibility handling;
+this does not establish the cause. Source now records request intent before
+dispatch and retains native ownership after uncertain delivery, refusing further
+requests, save/reopen and Close/Quit. The retained testhost and Office instances
+have now received explicitly authorized forced cleanup; this is not normal
+shutdown or a qualification pass. The terminal TRX does not contain a result
+for the in-flight Word scenario, and unreached scenarios remain NOT_RUN.
+Access save verification
+also reports a changed CurrentProject COM identity, while later read-only Saved
+observations are true. Removing that guard without establishing a stable Access
+identity would weaken dispatch safety. A fresh read-only Access trial establishes
+that repeated CurrentProject getters produce distinct retained IUnknown wrappers
+while the database path and mapped/selected VBProject identity remain stable.
+Its normal exit qualifies the diagnostic only. Source `2e75161` now uses stable
+application/PID, database path and mapped/selected VBProject identity while
+retaining VBE, source, selection, mode/protection and metadata/reference guards.
+Preceding installed-v5 adapter-only save/reopen accepts module/class edits,
+Description and Scripting-reference addition by GUID and file, with normal exits.
+HelpFile changes to garbled Unicode after disk reopen despite correct live
+readback; reference removal cannot reach fresh reopen because initial Quit does
+not complete. Its disposable database was preserved before one authorized forced
+cleanup without Quit replay. These outcomes do not qualify either operation.
+Project HelpContextID setters also remain unresolved in Access and Publisher;
+preceding-v5 Publisher metadata/reference acceptance has not been established.
+Exact evidence is in recorded validation.
 
 ## Required environment
 
@@ -41,16 +256,16 @@ operation can pass a refusal test while the capability remains unqualified.
 | Q-003 | P2 | An atomic editor batch at the size limit could be rejected because of a temporary intermediate length; repeated whole-text copying made multi-cursor batches expensive. | Validate final size atomically, preserve UTF-16 offsets/tied insertion order and benchmark production implementation. | Fixed; failing-before/passing-after regression and comparative benchmark recorded. |
 | Q-004 | P2 | SSE concatenation copied growing responses repeatedly; line/body limits were enforced after unbounded buffering. | Bound actual input bytes for SSE, JSON and catalogues; preserve complete tool arguments, cancellation and error semantics. | Fixed with generated-stream regressions and live local-model checks. |
 | Q-005 | P2 | A queued breakpoint could consume the only scheduled post-step UI observation. | Retain observation until command ownership is released, without replaying native commands or relying on the periodic timer. | Deterministic failing-before/passing-after regression recorded. |
-| Q-006 | P1 | Host tests could report success after uncertain saves, lost forms, stale loaded assemblies or forced termination. | Assert verified persistence, reopen without helper saving, retain form expectation, verify MVID and normal exit. | Assertions now enforce these boundaries. The later Excel activation correctly reports the native crashes in Q-025 and the failed preference restoration in Q-026; earlier successes do not override them. Save-adapter limitations below remain. |
+| Q-006 | P1 gate | Host tests could report success after uncertain saves, lost forms, stale loaded assemblies or forced termination. | Assert verified persistence, reopen without helper saving, retain form expectation, verify MVID and normal exit. | OPEN. Historical `7b5f11d8` scalar inspection stalled in break mode and cleanup after COM Reset was followed by a combase.dll access violation. Preceding `d5e25e25` passes the complete declared scalar page; the earlier fixture startup failure remains failed preparation evidence. Current `8f2315d` / installed `d8f31d57`, tests `304ee02`, also passes the ordered unsupported page, one Long and full declared scalar page: Long, String and Boolean values, unsupported array/Variant/object refusal, terminal native phase evidence, unchanged identity/source/selection/mode and normal exits. These scoped passes do not explain the historical stall/crash or qualify other runtime local types. Office forced cleanup and SOLIDWORKS abnormal termination remain failed lifecycle evidence. Exact results are in recorded validation. |
 | Q-007 | P2 | External COM temporaries in host fixtures could outlive Quit and obscure shutdown results. | Explicitly release owned collections/windows/commands and require normal exit; distinguish forced termination from an independent crash. | Corrected Office and Monaco fixtures passed normal-exit checks; no forced termination counted as success. |
 | Q-008 | P2 | An obsolete UI test called a removed Markdown rendering API. | Exercise the current native Markdown view, streaming, transcript virtualization, settings and Git views with isolated state. | Harness corrected; detached UI pass and captures recorded. |
 | Q-009 | P2 | NuGet runtime license/notice payloads were absent from the build output. | Deliver exact upstream texts with provenance and verify output hashes. | Payload added and final Debug/Release delivery hashes verified. |
-| Q-010 | P3 | WebView2 creates persistent per-PID profiles without a retention policy. | Define ownership and safe cleanup only after browser processes exit; preserve active/private state. | OPEN; existing storage measured, nothing deleted. |
-| Q-011 | P1 gate | Word/PowerPoint adapter acceptance required project-access prerequisites. | Run verified adapter-only save/reopen under a maintainer-approved host configuration. | CLOSED for the tested existing-document save path: `office-accepted/native.trx`, MVID `ce19a20c-9708-4c17-b998-f3415b8e6303`. Both adapters returned Verified=true/Uncertain=false; reopen without helper save verified module/class/form content. Normal exits 0; no policy bypass. |
-| Q-012 | P1 gate | Access/Publisher have no VBAi host-document save adapter. | Implement and qualify an adapter, or explicitly narrow the release contract for this operation. | OPEN; safe refusal and helper persistence are distinct results. |
+| Q-010 | P3 | WebView2 creates persistent per-PID profiles without a retention policy. | Define ownership and safe cleanup only after browser processes exit; preserve active/private state. | CLOSED for the newly owned editor-profile lifecycle on candidate `9924660b`: each editor has a unique environment folder; retirement and its matching BrowserProcessExited notification are both required before asynchronous cleanup. Detached real WebView2 acceptance verifies one editor can close and remove its profile while a second remains usable. Unknown legacy profiles, missing exit evidence, links and locked files are retained; no automatic legacy purge or crash recovery deletion is claimed. See recorded validation. |
+| Q-011 | P1 gate | Word/PowerPoint adapter acceptance required project-access prerequisites. | Run verified adapter-only save/reopen under a maintainer-approved host configuration. | CLOSED for adapter-only save/reopen on candidate `7b5f11d8`: Word and PowerPoint preserve the pending module/class sources and form/Label, with no post-adapter helper Save, verified disk readback and normal host exit. This scope does not explain the older Word form-creation failure or qualify every host operation. Exact evidence is in test-coverage.md. |
+| Q-012 | P1 gate | Access/Publisher host-document save adapters lacked native acceptance. | Implement and qualify an adapter, or explicitly narrow the release contract for this operation. | PARTIAL. Historical `7b5f11d8` Publisher save/readback passed; Access disk sources persisted but original responses remained uncertain. Preceding `d5e25e25` deferred verification then refused transient CurrentProject wrapper identity in the interrupted Office campaign. The read-only diagnostic establishes stable database path and mapped/selected VBProject despite distinct retained wrapper IUnknowns. Product `2e75161` / preceding installed `f9a36c85` corrects this guard without weakening owning-PID, VBE, mode, protection, selection or source/metadata checks. Fresh adapter-only module/class, Description and Scripting-reference addition by GUID/file pass exact save/reopen and normal exits. Preceding-v5 HelpFile is altered after reopen through descriptor, CLR binder and raw IDispatch, with intact raw VARIANT canary; HelpContextID runtime type information confirms I4 but its setter fails. Reference removal fails initial host exit and disk reopen is NOT_RUN. Current `d8f31d57` Access HelpContextID bridge/external CLR setters return 321 after a verified Save, but Quit nonexit prevents disk reopen. The fresh raw IDispatch PUT case on owned Access PID 38712 returns HRESULT 0 with VT_I4 321 and intact VARIANT canaries; all getters and one verified Save succeed, but its single Quit does not produce process exit, so fresh-disk reopen is NOT_RUN. A stable database copy precedes separately authorized forced exit -1; no Quit, setter or Save is replayed, and normal cleanup/persistence remain unqualified. External Access HelpFile production CLR and raw PUT both return normally but fresh-disk readback remains altered. Current Publisher startup and semantic reopen guards correct the fixture's no-code-pane and name-to-path selector assumptions; the original preparation/assertion failures remain failed. Adapter-only module/class/form, Description, and Scripting-reference addition by GUID/file and removal now pass exact fresh-disk source/metadata/reference readback and normal exit 0. Publisher HelpFile disk storage is correct in both CP1252 PROJECTHELPFILEPATH fields and the PROJECT text stream, yet the exposed fresh getter is altered; loading, BSTR construction or marshaling cause remains unproven. Publisher HelpContextID returns error 0x9CFD3148 despite terminal live value 321 and Saved=false. Live sources/identity/properties are preserved before one separately authorized owned discard and normal exit 0, without setter replay or subsequent Save; the failed mutation and disk persistence are not qualified. No heuristic or causal product fix is inferred. Access/Publisher metadata, lifecycle and remaining adapter scopes stay open; exact terminal evidence is in recorded validation. |
 | Q-013 | P1 gate | Classic Outlook initially had no configured profile. | Qualify a read-only scenario in an explicitly configured classic profile without modifying mail or production VBA. | CLOSED for read-only startup/metadata: `outlook-accepted/native.trx`, MVID `ce19a20c-9708-4c17-b998-f3415b8e6303`; exact PID, project inventory, scoped debug state and environment passed, normal exit 0. No account configured by automation, no mail read/sent or VBA mutation. |
-| Q-014 | P1 gate | SOLIDWORKS versions require independent native acceptance. | Qualify load, UI, disposable module/form operations, compile/debug, persistence and cleanup in each explicitly selected version. | PARTIAL on aaf3: existing Type100 save and saved-copy module/class/form readback passed separately in 2019 SP5 and 2025 (Q-021). Reviewed designer captures show the synthetic form and label without clipping; assistant behavior is outside those frames. The 2025 resize check passed before opening its form. The 2019 resize check after opening its form failed with `Editor did not adapt`, although original placement was restored; the cause remains unproven. Full debugger, focus/navigation and embedded assistant workflows remain open. The user authorized autonomous host close/relaunch and discarding open work; Both owned hosts exited normally with code 0. |
-| Q-015 | P2 gate | The initial instrumented suite timed out on post-step observation; its direct relationship to Q-005 is not proven. | Repeat the complete suite on the corrected source and retain failures/skips honestly. | The later full instrumented run completed with a Git long-path failure (Q-019), not an observation timeout. The clean full instrumented rerun after subsequent corrections passed; conditional native/provider skips remain separate gates. |
+| Q-014 | P1 gate | SOLIDWORKS versions require independent native acceptance. | Qualify load, UI, disposable module/form operations, compile/debug, persistence and cleanup in each explicitly selected version. | PARTIAL. Historical aaf3 existing-Type100 save and saved-copy module/class/form readback passed independently in 2019 SP5 and 2025, with normal exits (Q-021); historical designer-resize failure remains recorded. Preceding `d5e25e25` passes 2019 load, copied native Edit Macro/source/form readback, Monaco return-to-code and designer/code resize. Later live class-source drift remains unproven and unmodified. Its ExitApp stalled at native heap corruption 0xc0000374; authorized forced/debugger cleanup is not normal shutdown, and exit code is NOT_OBSERVED. Preceding `f9a36c85` passes 2025 load, disposable module/class/form preparation, compile and verified Save. One synthetic run and a separate native reload verify marker/source/label, but the original whole-file-preservation trial fails. Monaco code rendering and resize/restoration pass with a stale closed-project warning still visible. Owned 2025 cleanup exits normally after backup and one ExitApp; complete lifecycle/debugger/assistant acceptance remains open. |
+| Q-015 | P2 gate | The initial instrumented suite timed out on post-step observation; its direct relationship to Q-005 is not proven. | Repeat the complete suite on the corrected source and retain failures/skips honestly. | CLOSED for current source `8f2315d` / installed `d8f31d57`: the complete instrumented suite passes with unchanged product hash and independently verified individual TRX outcomes. Preceding Monaco-status source `d7a1c75` / `6a74af33` and earlier product `2e75161` / `f9a36c85` with tests `f0874e6` retain separate completed passes. The original v5 complete run remains failed with explained fixture-packaging/Git-path defects. Exact counters, below-target managed coverage and terminal evidence are in recorded validation. Native/provider opt-ins remain separate gates; a later product binary requires its own full run, and historical observation-timeout causes remain unproven. |
 | Q-016 | P2 | Shift+Tab accepted a composer suggestion instead of allowing backward keyboard navigation. | Leave backward navigation unhandled while preserving plain-Tab suggestion acceptance. | Fixed; focused regression passed. |
 | Q-017 | P2 | The French welcome card is clipped in the narrow native chat panel. | All welcome actions remain visible or reachable by normal scrolling, including after resize. | Fixed by measuring the Designer table at its available width; failing-before/passing-after geometry checks and inspected native recapture confirm all actions are visible. |
 | Q-018 | P2 | Monaco tests assumed immediate reference refresh, stopped only one of two synchronization timers and accepted an unrelated pending-edit refusal as a save cancellation. | Respect the bounded reference cache; isolate draft synchronization and prove the native save callback actually runs; verify exact native/readback text. | Stronger fixtures passed the final native batch, including exact VBE canonical readback and renderer reconciliation. |
@@ -61,10 +276,10 @@ operation can pass a refusal test while the capability remains unqualified.
 | Q-023 | P2 | The Outlook qualification fixture omitted the required Project field for debug_state despite successful add-in loading. | Resolve the unique project explicitly and retain normal-exit and metadata assertions. | CLOSED: corrected fixture passed `outlook-accepted/native.trx` on ce19a20c, with exact project metadata and normal owned-process exit 0. |
 | Q-024 | P1 gate | Word VBA backing paths are unsuitable for persisted document identity; complete Git capture also fails during native export into GitTemporary. | Resolve the unique Word document by PID/IUnknown and canonical FullName; preserve raw FileName, refuse stale bindings and qualify capture separately. | PATH CONTRACT VERIFIED on 353d: `artifacts/qualification-v1/word-git-native/353-native-03/hosts/Word/2cb46193741e415ab5773c1539745096/qualification.json` proves two projects named Project resolved by their own DOCM paths, native selection, stale SaveAs binding refusal and unchanged source in the other document. Word PID 50144 exited normally. COMPLETE GIT REMAINS OPEN: production Capture fails with 0x800AC35C, while bridge and external-STA exports to separate artifact files succeed with identical bytes. The test remains failed; actual chat/Git UI opening is not established by the bridge selection evidence. No implicit scope/grant migration or Normal modification. |
 | Q-025 | P1 gate | Native Excel form fitting could corrupt memory or prevent shutdown. The installed x64 WinForms Com2PropertyDescriptor.SetValue allocates a 16-byte VARIANT buffer, while its marshaler writes 24 bytes; scroll fitting used this setter. | Avoid that native descriptor setter while retaining validation, conversion, readback and existing control restrictions. Qualify both fitting and the generic scalar dispatch with normal host exit. | CORRECTED on candidate 353d for the tested paths. `scalar-excel-native/native.trx` passes complete fitting, arrays and persistence; the independent scroll-only trial exited normally. `native-scalar/native-353d/qualification.json` verifies project Description, module Name with unchanged source, and Label BackColor through native getters; its reviewed VBE capture shows the yellow Label and renamed module, followed by exit 0. Earlier crashes, dumps and forced cleanup remain failed evidence; array/persistence failures are not automatically attributed to this defect. Other controls and complete Git workflows are not thereby qualified. |
-| Q-026 | P1 gate | Activated Excel formatting-options scenario refused a stale revision and its restoration also failed. | Identify the revision drift and rerun the instrumented mutation/restoration scenario without relaxing revision checks. | OPEN; cause not proven. The original font and normal-text foreground were restored through the native bridge; complete options revision matched the retained baseline and Excel exited normally. Test diagnostics now retain failed requests, before/after observations, and every distinct restoration failure. Evidence: `artifacts/qualification-v1/excel-options-recovery-restore-02/report.json`. The instrumented ce19 rerun (`excel-options-instrumented/options.trx`) passed the full scenario, complete baseline restoration and normal exit. The earlier drift was not reproduced, so its cause is not claimed fixed; successful-run snapshot attachments were not retained by that VSTest invocation. |
-| Q-027 | P1 gate | UserForm export to the production GitTemporary parent fails natively, and raw FRX serialization varies in timestamp/padding bytes. Opaque FRX contents also need bounded preflight checks. | Qualify native capture/import and recovery, preserve real FRM/FRX through GitHub, and reject missing or manifestly invalid companions before mutation. | OPEN. Candidate `ce19a20c`: positive round-trip attempts stopped at fixture dimensions (corrected), then `Capture` / `Export` (`0x800AC373`) before push/import. Differential probes export the same form successfully under TEMP and E: but fail under GitTemporary, including installed-bridge export. Equal-ACL plain/EFS siblings both work; EFS alone and GUID segment length are not sufficient causes. Consecutive unedited exports differ only in identified CFB timestamp/MS-OFORMS padding fields. Owned probes exit normally. Separately, `userform-git-transport-20260929225354/transport.json` proves production Git commit/push/fresh-fetch with exact FRM/FRX hashes on retained branch `qualification-userform-20260929225354-93ed53dc`, main unchanged; this form-only transport is not native project import qualification. Checkpoint/backup remain intact; no permanent loss is established and no corrupt snapshot was published. Separate candidate `353ddf2a` bridge import from the exact Git-fetched FRM/FRX, native controls/both Caption properties, save/reopen and owned-process shutdown are verified in `userform-fetched-import-20260929231432`; source/import/reopen captures were reviewed. VBIDE adds exactly one leading CRLF to code (content preserved, exact source text differs). This does not qualify the blocked Git coordinator or raw FRX comparison. |
-| Q-028 | P1 gate | The real Ollama chat UI scenario intermittently failed to observe streamed text while busy. The ce19 diagnostic ended with the visible fallback `No text response.`, without an observed text fragment or refused tool call. | Preserve the streaming, cancellation and next-send assertions and retain exact synthetic wire evidence. Explain the earlier empty response before claiming a reliability correction. | OPEN, intermittent cause unresolved. `ollama-ui-wire-353d/ollama-ui.trx` passes the unchanged strict scenario on 353d: visible text while busy, cancellation and the subsequent visible complete reply. Wire capture records a refused synthetic tool call and subsequent text; no LLM production fix was applied. The passive wrapper preserves transport configuration but changes timing, so this success does not explain the ce19 failures in `activated-ollama-ui` and `ollama-ui-diagnostic`. Detached UI with simulated VBE only; no embedded-host qualification is inferred. |
-| Q-029 | P2 | Empty-project assistant state re-enables Send after a prompt edit because `UpdateBudgetControls` omitted the scope predicate. | Keep Send disabled after scope loss, including draft and busy-state changes; preserve active-turn Stop and normal sending with a selected scope. | Reproduced by a real detached control event in `empty-scope-red/red.trx`. Source correction centralizes the predicate while preserving cancellation. Expanded regression and native/UIA acceptance are tracked separately. `EnsureCurrentScope` still guards dispatch; no privacy bypass is demonstrated. |
+| Q-026 | P1 gate | Activated Excel formatting-options scenario refused a stale revision and its restoration also failed. | Identify the revision drift and rerun the instrumented mutation/restoration scenario without relaxing revision checks. | OPEN; cause not proven. The original font and normal-text foreground were restored through the native bridge; complete options revision matched the retained baseline and Excel exited normally. Test diagnostics now retain failed requests, before/after observations, and every distinct restoration failure. Evidence: `artifacts/qualification-v1/excel-options-recovery-restore-02/report.json`. The instrumented ce19 rerun (`excel-options-instrumented/options.trx`) passed the full scenario, complete baseline restoration and normal exit. The earlier drift was not reproduced, so its cause is not claimed fixed; successful-run snapshot attachments were not retained by that VSTest invocation. The follow-up fixture now records every command and successful before/after state in an optional durable directory and restores each palette using its observed category explicitly. The current 096b2e2b native rerun failed while selecting a Code Colors category before the first font mutation. Durable intermediate readbacks matched the complete baseline, but the final read failed; complete restoration is therefore unqualified. This differs from the earlier stale-revision failure and does not prove its cause or correction. Follow-up selection diagnostics now retain the exact requested category, observed UIA category and native list index on a mismatch; a regression verifies the single selection/notification is not replayed. Native cause and full mutation/restoration acceptance remain unproven. Current v6 command-ledger analysis locates the extended-options failure in a read before the intended toggle; its redundant On-to-On finally write and normal owned exit do not qualify the missing mutation or Docking iteration. Successful retained response prefixes omit OptionsVersion, so their hashes are not complete restoration proof. No cause is established. See recorded validation. |
+| Q-027 | P1 gate | UserForm export to the production GitTemporary parent fails natively, and raw FRX serialization varies in timestamp/padding bytes. Opaque FRX contents also need bounded preflight checks. | Qualify native capture/import and recovery, preserve real FRM/FRX through GitHub, and reject missing or manifestly invalid companions before mutation. | OPEN. Candidate `ce19a20c`: positive round-trip attempts stopped at fixture dimensions (corrected), then `Capture` / `Export` (`0x800AC373`) before push/import. Differential probes export the same form successfully under TEMP and E: but fail under GitTemporary, including installed-bridge export. Equal-ACL plain/EFS siblings both work; EFS alone and GUID segment length are not sufficient causes. Consecutive unedited exports differ only in identified CFB timestamp/MS-OFORMS padding fields. Owned probes exit normally. Separately, `userform-git-transport-20260929225354/transport.json` proves production Git commit/push/fresh-fetch with exact FRM/FRX hashes on retained branch `qualification-userform-20260929225354-93ed53dc`, main unchanged; this form-only transport is not native project import qualification. Checkpoint/backup remain intact; no permanent loss is established and no corrupt snapshot was published. Separate candidate `353ddf2a` bridge import from the exact Git-fetched FRM/FRX, native controls/both Caption properties, save/reopen and owned-process shutdown are verified in `userform-fetched-import-20260929231432`; source/import/reopen captures were reviewed. VBIDE adds exactly one leading CRLF to code (content preserved, exact source text differs). This does not qualify the blocked Git coordinator or raw FRX comparison. Follow-up candidate `7b2423c3` reproduces unequal unedited FRX captures and pre-import refusal in the historical jvc environment; production Capture succeeds under GitTemporary there. Those results do not establish a successful export on the current MOTHER environment. The new bounded OLE/CFB preflight accepts the native exports and refuses a nonempty signature-corrupted companion before native mutation. Follow-up candidate `82942b5d` now compares logical CFB contents and only structurally identified MS-OFORMS padding; raw FRX transport remains exact. Its owned Excel trial passes repeated captures, guarded form import with exact FRM readback, production local-Git checkpoint restore, verified backup, explicit rollback/final restore, helper save/reopen and normal exit. VBIDE adds one leading code line and omits the exported EOF terminator from CodeModule.Lines; the correction removes only the proven extra line, preserving full final snapshot verification. Unsupported form layouts retain exact logical stream comparison. Fresh 7b5f11d8 probes on MOTHER fail below LocalAppData, LocalAppData/VBAi and GitTemporary but pass below TEMP. Observed testhost/Excel token fields are identical, and generic EFS/volume controls pass. The crossed child-DACL trial on historical 7b5 succeeds under TEMP with the LocalAppData DACL but still fails under LocalAppData with the TEMP DACL; existing parents and EFS remain unchanged, and both owned hosts exit normally. Child-DACL differences alone do not explain the failure. A subsequent exact `d5e25e25` Excel export trace, after a measured disposable-helper CDB preflight, records paired native VBE CreateFileA and managed-parent open failures with path/name-not-found statuses while the same GUID child exists and root synthetic write/read succeeds. The single export fails; debugger detach and host normal exit do not qualify export. An earlier trace setup failed before attachment/export due to UTF-8 JSON decoding. Cause remains unproven, and neither trace is current-v6 native acceptance. Current-candidate GitHub transfer, embedded bridge/UI qualification, additional controls and historical export failures remain open. Current `d8f31d57` read-only owner-STA diagnostics see both synthetic LocalAppData/TEMP GUID directories and files with attributes matching the testhost, with normal exits. The primary-token fallback follows ERROR_NO_TOKEN with matching user SID/integrity/AuthenticationId; observations in different processes do not establish the effective context throughout export. Separate fresh COM-activation exports still fail below LocalAppData, LocalAppData/VBAi and GitTemporary while TEMP succeeds. Independent explicit /x /automation bootstrap trials pair the owner-STA diagnostic immediately with one export below LocalAppData or TEMP; both pass with retained FRM/FRX hashes, source and Label properties, and normal exit 0. No permissions, attributes, trust policy or token are changed and no failed export is replayed. These distinct launch contexts are scoped export acceptance, not a controlled causal explanation of the COM-activation failures. Complete Git capture/import/recovery and current-provider transfer remain open. See recorded validation. The current-v6 complete prepared explicit-launch layout matrix reaches production GitTemporary capture for every layout but fails the first unchanged-snapshot comparison. Source/FRM/manifest hashes are identical in the retained Label/Button pair; FRX differs. All owned hosts exit normally. Git transport/import/recovery and Save/reopen phases are NOT_RUN after that guard; no normalizer exception is introduced. |
+| Q-028 | P1 gate | The real Ollama chat UI scenario intermittently failed to observe streamed text while busy. The ce19 diagnostic ended with the visible fallback `No text response.`, without an observed text fragment or refused tool call. | Preserve the streaming, cancellation and next-send assertions and retain exact synthetic wire evidence. Explain the earlier empty response before claiming a reliability correction. | OPEN, intermittent cause unresolved. `ollama-ui-wire-353d/ollama-ui.trx` passes the unchanged strict scenario on 353d: visible text while busy, cancellation and the subsequent visible complete reply. Wire capture records a refused synthetic tool call and subsequent text; no LLM production fix was applied. The passive wrapper preserves transport configuration but changes timing, so this success does not explain the ce19 failures in `activated-ollama-ui` and `ollama-ui-diagnostic`. Source follow-up adds bounded content-free stream metadata (chunk counters, filtered terminal reason and complete-empty/text/tools/error outcomes) to future synthetic UI diagnostics. It does not explain the historical empty response, replay a request or change provider parsing. Current frozen b60996c with test source ce3d9da reproduces complete-empty in the detached UI: captured SSE already contains empty deltas, stop and DONE with no text or tools; diagnostics and visible fallback agree. The headless tool-roundtrip also fails its scalar argument assertion without a captured body; cancellation and the subsequent request pass separately. The activated aggregate remains failed, and no backend/model cause or reliability fix is established. Detached UI with simulated VBE only; no embedded-host qualification is inferred. |
+| Q-029 | P2 | Empty-project assistant state re-enables Send after a prompt edit because `UpdateBudgetControls` omitted the scope predicate. | Keep Send disabled after scope loss, including draft and busy-state changes; preserve active-turn Stop and normal sending with a selected scope. | Reproduced by a real detached control event in `empty-scope-red/red.trx`. Source correction centralizes the predicate while preserving cancellation. The expanded detached real-control regression passes scope loss/loading, draft, busy, pause and stop-request transitions; native embedded-host/UIA acceptance remains separate. `EnsureCurrentScope` still guards dispatch; no privacy bypass is demonstrated. |
 | Q-030 | P1 gate | SOLIDWORKS 2019 PID 56924 terminated during `VBProjects.Open` of an owned standalone SWP after successful save and removal. | Prevent invoking the unsafe native API and qualify the host-native macro editing workflow separately. | Mitigation verified on native 2019/1541: explicit refusal, unchanged project collection/file and live host (`solidworks-2019-1541-open-refusal.json`). Standalone Open remains unavailable; full functionality is not restored. User confirms the second termination was involuntary; the first session was manually closed and is not crash evidence. No macro ran and no exact native fault mechanism was established. Native Edit Macro separately loaded an owned saved copy. |
 
 Priority describes impact, not proof of exploitability. Findings based only on
@@ -134,6 +349,60 @@ before public release. The standalone installer remains a later milestone;
 updater scaffolding does not establish signed installation/rollback acceptance.
 No release, license selection, publishing or credential migration is part of
 this qualification run.
+
+## Latest scoped follow-up
+
+Q-026 remains open. Fresh current-v6 disposable checkbox trials now verify
+Editor Format and Docking mutation, closed-dialog readback, guarded restoration
+and normal owned-host exit. The final trial retains complete baseline/restored
+options revisions in durable phase summaries. Earlier successful trials lack
+durable summaries, and one copied driver selected an older test build; the
+additive provenance correction preserves those original records. These outcomes
+do not explain the original pre-write connection EOF or qualify every category.
+The later full Format trial confirms a distinct defect: the empty-size refusal
+returns before its owned Options dialog is confirmed closed. The dialog is
+visible in the immediate observation and absent in a later read-only observation.
+The guard retains the exact Excel
+without another dispatch, restoration or cleanup. Remaining Format phases are
+NOT_RUN; this refusal defect does not establish the earlier EOF's cause.
+
+Q-027 remains open. The uninstalled combined candidate now compares all retained
+layout pairs consistently in an offline production-snapshot analysis, including
+Frame/MultiPage through bounded atomic storage-graph validation. This does
+not turn the failed installed-v6 native matrix into a pass or execute its later
+Git, import, recovery and persistence phases. The installed DLL is unchanged.
+Its complete default managed gate passes. Native import/recovery, persistence
+and current-provider transport remain unexecuted for that candidate. Scalar
+failure-phase diagnostics preserve uncertain setter outcomes without replay;
+they do not establish a causal fix for the Access/Publisher metadata failures.
+The later uninstalled Options cancellation candidate fails its complete managed
+gate on synthetic native-probe ownership fixtures. A focused pass does not
+qualify that assembly, and it is not deployed.
+Those fixture failures are explained and corrected without weakening ownership
+guards. The next combined candidate verifies exact closure for reads and Accept,
+preserves primary/cancellation errors and passes its complete default managed
+gate. It remains uninstalled: the original native Format failure and earlier
+revision/EOF causes remain open. Private CFB guard contracts complete managed
+coverage of that preflight, without claiming native import/recovery acceptance.
+Exact identities, counts and artifact paths are recorded in
+[test coverage](test-coverage.md).
+
+The latest combined candidate additionally refuses uncertain recovery marker
+metadata and existing invalid entries before overwriting recovery refs or
+starting rollback. Completion deletes a confirmed regular marker once and
+verifies absence; original and completion errors remain distinct. Managed/local
+regressions reproduce the old directory-marker defects and pass on the fix.
+These safeguards are not a causal correction for historical native export,
+persistence or lifecycle failures. The installed DLL remains unchanged.
+
+A source/retained-evidence review confirms that the Word exact-path Git fixture
+executes `VbaGitProject.Capture` on the external test STA, as its original report
+explicitly states. The prepared sequential UserForm GitHub fixture also runs
+its coordinator on the test STA. These scopes cannot qualify the embedded
+owning-VBE-thread Git path. Both Word diagnostic exports succeeding through
+different routes/destinations do not establish a thread/path cause for the
+historical capture failures. Complete owner-dispatched production Git acceptance
+is still required for Q-024/Q-027; no native operation was replayed by this review.
 
 ## Evidence location
 

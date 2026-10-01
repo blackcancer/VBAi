@@ -162,6 +162,12 @@ namespace VBAi
     {
         /// <summary>Démarre un processus de saisie d’identifiants sans préambule sur son entrée standard.</summary>
         internal static Func<Process, bool> StartCredentialProcess = ProcessInput.StartWithoutPreamble;
+        /// <summary>Writes and closes credential input; permits deterministic input pipe failure tests.</summary>
+        internal static Func<Process, string, Task> WriteCredentialInput = async (process, input) =>
+        {
+            await process.StandardInput.WriteAsync(input);
+            process.StandardInput.Close();
+        };
         /// <summary>Client HTTP utilisé pour les requêtes API.</summary>
         private readonly HttpClient client;
         /// <summary>Fournisseur asynchrone du jeton d’accès.</summary>
@@ -343,8 +349,15 @@ namespace VBAi
                 using (timeout.Token.Register(() => { try { if (!process.HasExited) process.Kill(); } catch (InvalidOperationException) { } }))
                 {
                     var output = process.StandardOutput.ReadToEndAsync(); var error = process.StandardError.ReadToEndAsync();
-                    await process.StandardInput.WriteAsync("protocol=https\nhost=github.com\n" + (string.IsNullOrEmpty(account) ? "" : "username=" + account + "\n") + "\n");
-                    process.StandardInput.Close();
+                    try
+                    {
+                        await WriteCredentialInput(process, "protocol=https\nhost=github.com\n" + (string.IsNullOrEmpty(account) ? "" : "username=" + account + "\n") + "\n");
+                    }
+                    catch (System.IO.IOException) when (timeout.IsCancellationRequested)
+                    {
+                        // Killing the cancelled child can break the input pipe before the final cancellation check.
+                        throw new OperationCanceledException(timeout.Token);
+                    }
                     await Task.Run(() => process.WaitForExit());
                     await error; string result = await output;
                     timeout.Token.ThrowIfCancellationRequested();

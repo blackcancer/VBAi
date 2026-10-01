@@ -29,7 +29,7 @@ namespace VBAi
         /// <summary>Branche affichée lors de la dernière comparaison.</summary>
         private string displayedBranch;
         /// <summary>Résout le cache local associé au document.</summary>
-        internal static Func<string, string> CacheDirectory = MacroGitRepository.ScopeDirectory;
+        internal static Func<string, string> CacheDirectory = MacroGitRepository.ResolveScopeDirectory;
         /// <summary>Initialise le dépôt et lit son état distant avec les commandes Git natives.</summary>
         internal Func<MacroGitRepository, string, Task> ConnectRepository = (selected, url) => Task.Run(() => { selected.Initialize(url); selected.Fetch(); });
         /// <summary>Crée la fenêtre Git et initialise la revue et les ressources visuelles.</summary>

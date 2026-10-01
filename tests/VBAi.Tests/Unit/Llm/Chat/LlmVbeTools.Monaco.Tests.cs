@@ -11,6 +11,33 @@ namespace VBAi.Tests.Unit
     public sealed class LlmMonacoValidationTests
     {
         [STATestMethod]
+        public void MonacoReadKeepsTheOwnerThreadAcrossAwaitsWithoutAnAmbientContext()
+        {
+            using (var fixture = new VBAi.Tests.Unit.Editor.ModernEditorToolFixture())
+            {
+                int ownerThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
+                fixture.Override = (method, values) => {
+                    Assert.AreEqual(ownerThread, System.Threading.Thread.CurrentThread.ManagedThreadId,
+                        "Every renderer callback must remain on the owning editor thread.");
+                    return null;
+                };
+                var tools = new LlmVbeTools(null, null, new LlmSettings()) {
+                    MonacoWindow = create => fixture.Window, MonacoModule = (p, m) => fixture.Module };
+                var previous = System.Threading.SynchronizationContext.Current;
+                try
+                {
+                    System.Threading.SynchronizationContext.SetSynchronizationContext(null);
+                    var response = new JavaScriptSerializer().Deserialize<Response>(
+                        VBAi.Tests.Infrastructure.ModernEditorDebugFixture.Wait(tools.InvokeAsync("monaco_read", "{\"Project\":\"P\",\"Module\":\"M\"}")));
+                    Assert.IsTrue(response.Ok, response.Error);
+                    Assert.IsTrue(fixture.Captures > 0);
+                    Assert.AreEqual(0, fixture.Module.Writes);
+                }
+                finally { System.Threading.SynchronizationContext.SetSynchronizationContext(previous); }
+            }
+        }
+
+        [STATestMethod]
         public void MonacoDiffFailuresAreLoggedAfterSynchronizationWithoutDroppingAppliedSource()
         {
             foreach (string fault in new[] { "no subscriber", "subscriber throws", "readback throws" })

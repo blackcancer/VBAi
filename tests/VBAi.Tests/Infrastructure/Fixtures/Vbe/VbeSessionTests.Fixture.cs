@@ -52,6 +52,7 @@ namespace VBAi.Tests.Unit
 
         public sealed class FakeProject
         {
+            public int Protection { get; set; }
             private string fileName;
             public string Name { get; set; }
             public int Mode { get; set; }

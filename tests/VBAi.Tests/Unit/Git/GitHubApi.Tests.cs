@@ -67,11 +67,67 @@ namespace VBAi.Tests.Unit
                     foreach (var mode in new[] { "missing", "error" }) { GitHubApi.StartCredentialProcess = p => fixture.Start(p, mode); using (var api = new GitHubApi(null, new LlmHttpFixture())) await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => api.Request<object>(HttpMethod.Get, "/fixture", null, CancellationToken.None)); }
                     using (var cancellation = new CancellationTokenSource()) { GitHubApi.StartCredentialProcess = p => { var result = fixture.Start(p, "wait"); cancellation.CancelAfter(100); return result; }; using (var api = new GitHubApi(null, new LlmHttpFixture())) await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => api.Request<object>(HttpMethod.Get, "/fixture", null, cancellation.Token)); }
                     using (var cancellation = new CancellationTokenSource()) { GitHubApi.StartCredentialProcess = p => { cancellation.Cancel(); return false; }; using (var api = new GitHubApi(null, new LlmHttpFixture())) await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => api.Request<object>(HttpMethod.Get, "/fixture", null, cancellation.Token)); }
-                    using (var cancellation = new CancellationTokenSource()) { GitHubApi.StartCredentialProcess = p => { var result = fixture.Start(p, "immediate"); Assert.IsTrue(p.WaitForExit(5000)); cancellation.Cancel(); return result; }; using (var api = new GitHubApi(null, new LlmHttpFixture())) { Exception failure = null; try { await api.Request<object>(HttpMethod.Get, "/fixture", null, cancellation.Token); } catch (Exception ex) { failure = ex; } Assert.IsNotNull(failure); Assert.IsTrue(failure is IOException || failure is OperationCanceledException); } }
+                    using (var cancellation = new CancellationTokenSource()) { GitHubApi.StartCredentialProcess = p => { var result = fixture.Start(p, "immediate"); Assert.IsTrue(p.WaitForExit(5000)); cancellation.Cancel(); return result; }; using (var api = new GitHubApi(null, new LlmHttpFixture())) await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => api.Request<object>(HttpMethod.Get, "/fixture", null, cancellation.Token)); }
                 }
                 finally { GitHubApi.StartCredentialProcess = original; }
             }
         }
+        /// <summary>Checks exact cancellation and IO outcomes independently of native pipe buffering.</summary>
+        /// <returns>The asynchronous fixture scenario.</returns>
+        [TestMethod]
+        public async Task CredentialInputPipeFailureIsCancellationOnlyWhenItsTokenWasCancelled()
+        {
+            using (var scope = new LlmBoundaryScope())
+            using (var fixture = new NativeProtocolFixture())
+            {
+                var original = GitHubApi.StartCredentialProcess;
+                var originalInput = GitHubApi.WriteCredentialInput;
+                try
+                {
+                    foreach (var cancel in new[] { false, true })
+                    using (var cancellation = new CancellationTokenSource())
+                    {
+                        int inputCalls = 0;
+                        var inputFailure = new IOException("Fixture input pipe failure.");
+                        GitHubApi.WriteCredentialInput = (process, input) =>
+                        {
+                            inputCalls++;
+                            Assert.IsTrue(process.HasExited);
+                            Assert.AreEqual("protocol=https\nhost=github.com\n\n", input);
+                            return Task.FromException(inputFailure);
+                        };
+                        GitHubApi.StartCredentialProcess = process =>
+                        {
+                            var started = fixture.Start(process, "wait");
+                            Assert.IsTrue(started);
+                            // Terminate the real fixture child; inject the input failure independently of pipe buffering.
+                            process.Kill();
+                            Assert.IsTrue(process.WaitForExit(5000), "The fixture child must exit before the input pipe is used.");
+                            if (cancel) cancellation.Cancel();
+                            return started;
+                        };
+                        if (cancel)
+                        {
+                            var error = await Assert.ThrowsExceptionAsync<OperationCanceledException>(() => GitHubApi.ReadCredential(null, cancellation.Token));
+                            Assert.IsTrue(error.CancellationToken.IsCancellationRequested);
+                        }
+                        else
+                        {
+                            var error = await Assert.ThrowsExceptionAsync<IOException>(() => GitHubApi.ReadCredential(null, cancellation.Token));
+                            Assert.AreSame(inputFailure, error);
+                            Assert.IsFalse(cancellation.IsCancellationRequested);
+                        }
+                        Assert.AreEqual(1, inputCalls);
+                    }
+                }
+                finally
+                {
+                    GitHubApi.WriteCredentialInput = originalInput;
+                    GitHubApi.StartCredentialProcess = original;
+                }
+            }
+        }
+
         /// <summary>Vérifie la pagination des dépôts et l’usage exclusif de l’hôte API GitHub.</summary>
         /// <returns>Tâche asynchrone du scénario.</returns>
         [TestMethod]

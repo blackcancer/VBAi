@@ -14,7 +14,7 @@ namespace VBAi.Tests.Integration
         [STATestMethod] public void WordDocumentRoundTrip() { Qualify("Word"); }
         /// <summary>Checks a disposable macro-enabled PowerPoint presentation.</summary>
         [STATestMethod] public void PowerPointDocumentRoundTrip() { Qualify("PowerPoint"); }
-        /// <summary>Checks VBA modules and MSForms in a disposable Access database.</summary>
+        /// <summary>Checks VBA modules/classes in a disposable Access database; native Access forms are separate from MSForms.</summary>
         [STATestMethod] public void AccessDatabaseRoundTrip() { Qualify("Access"); }
         /// <summary>Checks the VBA project of a disposable Publisher publication.</summary>
         [STATestMethod] public void PublisherDocumentRoundTrip() { Qualify("Publisher"); }
@@ -90,6 +90,7 @@ namespace VBAi.Tests.Integration
                         return;
                     }
                     Assert.AreEqual(true, created["Ok"], Convert.ToString(created["Error"]));
+                    formCreated = true;
                     fixture.Data("add_form_control", "Form", "VBAiOfficeForm", "Control", "OfficeLabel", "ControlType", "Forms.Label.1",
                         "Left", 12, "Top", 12, "Width", 140, "Height", 24, "Caption", "VBAi office été",
                         "ExpectedFormVersion", fixture.Data("form_state", "Form", "VBAiOfficeForm")["Version"]);
@@ -97,22 +98,80 @@ namespace VBAi.Tests.Integration
                         "FontName", "Arial", "FontSize", 12, "FontBold", true,
                         "ExpectedFormVersion", fixture.Data("form_state", "Form", "VBAiOfficeForm")["Version"]);
                     AssertLabel(fixture);
-                    formCreated = true;
                 });
                 fixture.Scenario("Host save capability and policy guards", () => {
+                    bool accessOrPublisher = host == "Access" || host == "Publisher";
+                    const string description = "VBAi owned adapter persistence été";
+                    if (accessOrPublisher)
+                    {
+                        fixture.Data("set_project_property", "Property", "Description", "Value", description,
+                            "ExpectedProjectVersion", fixture.Data("project_properties")["Version"]);
+                        fixture.Data("add_reference_guid", "Guid", "{420B2830-E718-11CF-893D-00A0C9054228}", "Major", 1, "Minor", 0,
+                            "ExpectedReferencesVersion", fixture.Data("list_references")["Version"]);
+                        var selected = fixture.Data("read_module", "Module", "VBAiOfficeModule");
+                        fixture.Data("select_code", "Module", "VBAiOfficeModule", "StartLine", 1, "ExpectedSha256", selected["Sha256"]);
+                    }
+                    fixture.StopAccessSaveDialogHandler();
+                    foreach (string name in new[] { "VBAiOfficeModule", "VBAiOfficeClass" })
+                    {
+                        var beforeSaveEdit = fixture.Data("read_module", "Module", name);
+                        int lines = Convert.ToInt32(fixture.Data("component_properties", "Module", name)["CodeLines"]);
+                        string freshCode = ((string)beforeSaveEdit["Code"]).TrimEnd() + "\r\n' Adapter-only pending edit " + Guid.NewGuid().ToString("N") + "\r\n";
+                        fixture.Data("replace_lines", "Module", name, "StartLine", 1, "Count", lines,
+                            "ExpectedSha256", beforeSaveEdit["Sha256"], "Text", freshCode);
+                        Assert.AreNotEqual(beforeSaveEdit["Sha256"], fixture.Data("read_module", "Module", name)["Sha256"],
+                            "A fresh source mutation must precede the adapter's save.");
+                    }
+                    var sourceHashes = new System.Collections.Generic.Dictionary<string, string>();
+                    foreach (string name in new[] { "VBAiOfficeModule", "VBAiOfficeClass" })
+                        sourceHashes[name] = (string)fixture.Data("read_module", "Module", name)["Sha256"];
+                    string referencesVersion = (string)fixture.Data("list_references")["Version"];
                     var persistence = fixture.Data("project_persistence_status");
+                    if (accessOrPublisher)
+                    {
+                        Assert.AreEqual(true, persistence["HostAvailable"], "Q-012 requires an available native adapter; safe refusal does not qualify save/reopen.");
+                        Assert.AreEqual(false, persistence["ProjectSaved"], "The fresh VBA edit must remain unsaved before the adapter invocation.");
+                    }
                     fixture.RecordNativePersistence("BeforeAdapterSave");
                     var saved = fixture.Response("save_host_document", "ExpectedHostPath", fixture.DocumentPath,
                         "ExpectedProjectVersion", fixture.Data("project_properties")["Version"]);
                     fixture.RecordNativePersistence("ImmediatelyAfterAdapterSave");
+                    if (host == "Access" && Convert.ToBoolean(saved["Ok"]))
+                    {
+                        var observation = VbeBridgeClient.Object(saved["Data"]);
+                        if (observation.ContainsKey("Uncertain") && Convert.ToBoolean(observation["Uncertain"]))
+                        {
+                            // Observe the owning host after it regains its message loop. No save,
+                            // compile or helper reopen may intervene or turn the failed result green.
+                            int elapsed = 0;
+                            foreach (int delay in new[] { 100, 250, 1000 })
+                            {
+                                System.Threading.Thread.Sleep(delay); elapsed += delay;
+                                fixture.RecordNativePersistence("UncertainAdapterReadOnlyAfter" + elapsed + "ms");
+                            }
+                        }
+                    }
                     if (Convert.ToBoolean(persistence["HostAvailable"]))
                     {
                         Assert.AreEqual(true, saved["Ok"], Convert.ToString(saved["Error"]));
                         var result = VbeBridgeClient.Object(saved["Data"]);
                         Assert.AreEqual(true, result["Verified"], "The adapter must verify its native save; protocol success alone is insufficient.");
                         Assert.AreEqual(false, result["Uncertain"], "An uncertain native save is not a qualified persistence result.");
+                        Assert.AreEqual(true, result["MutationInvoked"]);
+                        Assert.AreEqual(false, result["PersistenceReopenVerified"], "The adapter cannot claim fixture reopen evidence before reopening.");
+                        if (host == "Access") Assert.IsNull(result["HostSaved"], "Access must not fabricate a document Saved property.");
                         fixture.ReopenFromDisk();
                         AssertPersistedContent(fixture, formCreated);
+                        foreach (var source in sourceHashes)
+                            Assert.AreEqual(source.Value, fixture.Data("read_module", "Module", source.Key)["Sha256"], "Exact VBA source changed after adapter-only reopen: " + source.Key);
+                        Assert.AreEqual(referencesVersion, fixture.Data("list_references")["Version"], "References changed after adapter-only reopen.");
+                        if (accessOrPublisher)
+                        {
+                            var properties = ((object[])fixture.Data("project_properties")["Properties"]).Select(VbeBridgeClient.Object);
+                            Assert.AreEqual(description, properties.Single(property => (string)property["Name"] == "Description")["Value"],
+                                "The adapter did not persist the project description.");
+                        }
+                        fixture.RecordNativePersistence("AfterAdapterOnlyReopen");
                     }
                     else
                     {

@@ -2163,4 +2163,6 @@
   <data name="Measured coverage currently requires the owned Excel host." xml:space="preserve"><value>يتطلب قياس التغطية حاليًا نسخة Excel الخاضعة للتحكم.</value></data>
   <data name="Save the macro-enabled workbook before collecting coverage." xml:space="preserve"><value>احفظ المصنف بتنسيق يدعم وحدات الماكرو قبل قياس التغطية.</value></data>
   <data name="Coverage exclusions" xml:space="preserve"><value>استثناءات التغطية</value></data>
+  <data name="VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring." xml:space="preserve"><value>فشل استيراد VBA وتعذّر تسجيل الحالة الناتجة عنه. لا يزال الاسترداد معلقًا؛ افحص النسخة الاحتياطية المحفوظة والمشروع الحالي قبل الاستعادة.</value></data>
+  <data name="Inspection and restoration of the native Code Colors category both failed. The original category selection is unverified." xml:space="preserve"><value>فشل كلّ من فحص فئة ألوان التعليمات البرمجية الأصلية واستعادتها. لم يتم التحقق من اختيار الفئة الأصلي.</value></data>
 </root>

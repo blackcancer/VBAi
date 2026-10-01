@@ -14,6 +14,25 @@ namespace VBAi.Tests.Unit
     [DoNotParallelize]
     public sealed partial class MacroGitOperationsTests
     {
+        [TestMethod]
+        public void RevisionUsesLogicalFormDataWithoutLosingRepositoryStateOrTransportBytes()
+        {
+            using (var f = new Fixture())
+            {
+                byte[] original = FormResourcePreflightTests.Resource();
+                byte[] other = (byte[])original.Clone(); other[24 + 1024 + 108] = 42;
+                var baseline = VbaGitSnapshotCoverageTests.LogicalForm(original);
+                var unchanged = VbaGitSnapshotCoverageTests.LogicalForm(other);
+                string revision = f.Operations.Revision(baseline);
+                Assert.AreEqual(revision, f.Operations.Revision(unchanged));
+                other[24 + 2048]++;
+                Assert.AreNotEqual(revision, f.Operations.Revision(VbaGitSnapshotCoverageTests.LogicalForm(other)));
+                File.WriteAllText(f.Repository.RecoveryFile, "qualification recovery marker");
+                Assert.AreNotEqual(revision, f.Operations.Revision(baseline));
+                CollectionAssert.AreEqual(original, baseline.Serialize()["Form1.frx"]);
+            }
+        }
+
         /// <summary>Vérifie la validation du binding et la propriété du verrou de session.</summary>
         [TestMethod]
         public void OpenBindingValidationLockOwnershipAndReleaseMatrix()
@@ -136,6 +155,54 @@ namespace VBAi.Tests.Unit
                 f.Host.VBComponents.ThrowAfterImport = true;
                 Assert.ThrowsException<Exception>(() => f.Import(target, live));
                 Assert.IsTrue(f.Repository.RecoveryPending);
+            }
+        }
+
+        /// <summary>Preserves import and readback errors without claiming a known recoverable after-state.</summary>
+        [TestMethod]
+        public async Task ImportAndReadbackFailuresRetainBothErrorsAndRequireMeasuredRecovery()
+        {
+            using (var f = new Fixture())
+            {
+                string initial = f.Seed();
+                var before = f.Project.Capture();
+                var target = f.Snapshot("2");
+                var readbackFailure = new IOException("Simulated post-import capture failure");
+                bool failReadback = true;
+                int failedReadbacks = 0;
+                var project = new VbaGitProject(() => f.Host, f.Host.FileName, _ => {
+                    if (failReadback && f.Host.VBComponents.Item("Module1").CodeModule.Text.Contains("Value = 2"))
+                    {
+                        failedReadbacks++;
+                        throw readbackFailure;
+                    }
+                    return f.Host.FileName;
+                });
+                using (var operations = new MacroGitOperations(project, f.Repository))
+                {
+                    f.Host.VBComponents.ThrowAfterImport = true;
+                    string checkpoint = f.Repository.Checkpoint(target, "Dual-failure target").Id;
+                    var error = await Assert.ThrowsExceptionAsync<AggregateException>(() =>
+                        operations.ExecuteAsync("checkpoint_restore", operations.Revision(before), name: checkpoint));
+
+                    Assert.AreEqual(2, error.InnerExceptions.Count);
+                    Assert.AreEqual("Simulated failure after applied import", error.InnerExceptions[0].Message);
+                    Assert.AreSame(readbackFailure, error.InnerExceptions[1]);
+                    Assert.AreEqual(1, failedReadbacks, "An uncertain native outcome must not trigger another capture or mutation.");
+                    Assert.IsTrue(f.Repository.RecoveryPending);
+                    Assert.IsTrue(f.Repository.Read(f.Repository.Resolve(MacroGitRepository.Backup)).SameAs(before));
+                    Assert.IsNull(f.Repository.Resolve(MacroGitRepository.AfterImport), "The unobserved state must not be fabricated.");
+                    Assert.AreEqual(initial, f.Repository.Resolve(f.Repository.Head));
+                    Assert.AreEqual(initial, f.Repository.Resolve(MacroGitRepository.Baseline));
+                    StringAssert.Contains(f.Host.VBComponents.Item("Module1").CodeModule.Text, "Value = 2");
+
+                    failReadback = false;
+                    f.Host.VBComponents.ThrowAfterImport = false;
+                    await Assert.ThrowsExceptionAsync<InvalidOperationException>(() =>
+                        operations.ExecuteAsync("rollback", operations.Revision(target)));
+                    Assert.IsTrue(f.Repository.RecoveryPending);
+                    Assert.IsTrue(f.Project.Capture().SameAs(target), "Refused rollback must preserve the observed project.");
+                }
             }
         }
 

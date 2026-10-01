@@ -109,7 +109,10 @@ namespace VBAi.Tests.Unit
                 scene.PostSucceeds = false; Assert.IsFalse(immediate.PostEnter(ok.Handle)); immediate.Pause(1);
                 Assert.AreEqual(0x0102, scene.Messages.First(item => item.Item3 == new IntPtr('x')).Item2);
                 var options = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe");
-                Assert.AreEqual(IntPtr.Zero, options.Dialog()); options.Pause(1); options.Close(dialog.Handle);
+                Assert.AreEqual(IntPtr.Zero, options.Dialog()); options.Pause(1);
+                int posted = scene.Messages.Count;
+                Assert.ThrowsException<InvalidOperationException>(() => options.Close(dialog.Handle));
+                Assert.AreEqual(posted, scene.Messages.Count, "Options cancellation must not act on a VBA diagnostic dialog.");
             }
         }
 
@@ -524,12 +527,12 @@ namespace VBAi.Tests.Unit
             root.Add(new AutomationNode { Name = "Disabled", Kind = System.Windows.Automation.ControlType.Edit, Enabled = false });
             root.Add(new AutomationNode { Name = "Offscreen", Kind = System.Windows.Automation.ControlType.Edit, Offscreen = true });
             root.Add(new AutomationNode { Name = "Bad value", Kind = System.Windows.Automation.ControlType.Edit, FailValue = true }.With(System.Windows.Automation.ValuePattern.Pattern));
-            using (var host = new AutomationHost(root))
+            using (var host = new AutomationHost(root, optionsDialog: true))
                 using (var scene = new SystemScene())
                 {
-                    var options = scene.Add("Options"); options.Handle = host.Handle;
+                    var options = BindOwnedOptionsDialog(scene, host);
                     var cancel = scene.Add("Cancel", "Button", options, 2);
-                    scene.OnMessage = (window, message) => { if (window == cancel) options.Visible = false; };
+                    scene.OnMessage = (window, message) => { if (window == cancel) scene.Windows.Remove(options); };
                     var native = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe");
                     CollectionAssert.AreEqual(new[] { "Editor" }, native.Tabs(host.Handle).ToArray());
                     var controls = native.Controls(host.Handle, 0);
@@ -552,16 +555,16 @@ namespace VBAi.Tests.Unit
             root.Add(new AutomationNode { Name = "Break on All Errors", Kind = System.Windows.Automation.ControlType.RadioButton }.With(System.Windows.Automation.SelectionItemPattern.Pattern));
             root.Add(new AutomationNode { Name = "Break in Class Module", Kind = System.Windows.Automation.ControlType.RadioButton }.With(System.Windows.Automation.SelectionItemPattern.Pattern));
             root.Add(new AutomationNode { Name = "Break on Unhandled Errors", Kind = System.Windows.Automation.ControlType.RadioButton, Selected = true }.With(System.Windows.Automation.SelectionItemPattern.Pattern));
-            using (var host = new AutomationHost(root))
+            using (var host = new AutomationHost(root, optionsDialog: true))
                 using (var scene = new SystemScene())
                 {
-                    var options = scene.Add("Options"); options.Handle = host.Handle;
+                    var options = BindOwnedOptionsDialog(scene, host);
                     var cancel = scene.Add("Cancel", "Button", options, 2);
-                    scene.OnMessage = (window, message) => { if (window == cancel) options.Visible = false; };
+                    scene.OnMessage = (window, message) => { if (window == cancel) scene.Windows.Remove(options); };
                     var native = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe");
                     var choices = native.ErrorChoices(host.Handle); Assert.AreEqual(3, choices.Count); Assert.AreEqual(1, choices.Count(choice => choice.Selected));
                     dynamic read = VbeDebugWindows.ReadDebugOptions(); Assert.AreEqual("Break on Unhandled Errors", (string)read.ErrorTrapping);
-                    options.Visible = true;
+                    scene.Windows.Add(options);
                     root.Children.Last().Patterns.Clear(); Assert.IsFalse(native.ErrorChoices(host.Handle).Last().Readable);
                     general.Patterns.Clear(); Assert.ThrowsException<InvalidOperationException>(() => native.ErrorChoices(host.Handle));
                     general.Patterns.Add(System.Windows.Automation.SelectionItemPattern.Pattern.Id);
@@ -1329,9 +1332,9 @@ namespace VBAi.Tests.Unit
                 fake.Items.Add(new VbeDebugWindows.OptionsControl { Name = "Item", Type = "ControlType.Text" });
             Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ReadVbeOptions(fake));
             Assert.AreEqual(1, fake.Closes);
-            fake = new OptionsFake();
+            fake = new OptionsFake { CloseAfterRead = false };
             Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ReadVbeOptions(fake));
-            Assert.AreEqual(20, fake.ClosePolls);
+            Assert.AreEqual(21, fake.ClosePolls);
         }
 
         [TestMethod]
@@ -1372,8 +1375,9 @@ namespace VBAi.Tests.Unit
             CollectionAssert.AreEqual(new[] { "Break on All Errors", "Break in Class Module", "Break on Unhandled Errors" }, (string[])result.Choices);
             Assert.IsTrue((bool)result.DialogClosed);
             fake = DebugFake();
+            fake.CloseAfterRead = false;
             Assert.ThrowsException<InvalidOperationException>(() => VbeDebugWindows.ReadDebugOptions(fake));
-            Assert.AreEqual(20, fake.ClosePolls);
+            Assert.AreEqual(21, fake.ClosePolls);
         }
     }
 }

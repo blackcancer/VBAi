@@ -5,6 +5,33 @@ namespace VBAi.Tests.Unit
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     public sealed partial class LlmVbeToolsBoundaryTests
     {
+        [DataTestMethod]
+        [DataRow(false, false)][DataRow(true, false)][DataRow(false, true)][DataRow(true, true)]
+        public void ScalarFailurePhaseSurvivesDirectAndCatalogResponsesWithoutRetry(bool catalog, bool readback)
+        {
+            var fixture = new ToolFixture();
+            fixture.Tools.BoundProject = "P";
+            var error = new System.Runtime.InteropServices.COMException("synthetic original COM error", unchecked((int)0x9CFD3148));
+            VbeScalarProperty.AnnotateFailure(error, readback ? VbeScalarProperty.FailurePhase.RetentionReadback : VbeScalarProperty.FailurePhase.SetterInvocation);
+            int writes = 0;
+            fixture.Tools.Execute = request => {
+                if (request.Command != "set_project_property") return VBAi.Tests.Infrastructure.VbeToolBoundaryFixture.Execute(request);
+                writes++;
+                throw error;
+            };
+            string args = Json.Serialize(new { Project = "P", Property = "HelpContextID", Value = 321, ExpectedProjectVersion = "value" });
+            string tool = "set_project_property";
+            if (catalog) { tool = "invoke_tool"; args = Json.Serialize(new { ToolName = "set_project_property", ArgumentsJson = args }); }
+            var response = Dict(Json.DeserializeObject(fixture.Tools.InvokeAsync(tool, args).GetAwaiter().GetResult()));
+            Assert.AreEqual(false, response["Ok"]);
+            Assert.IsNull(response["Data"]);
+            StringAssert.Contains((string)response["Error"], readback ? "RetentionReadback" : "SetterInvocation");
+            StringAssert.Contains((string)response["Error"], error.Message);
+            StringAssert.Contains((string)response["Error"], "0x9CFD3148");
+            Assert.AreEqual(1, writes);
+            Assert.AreEqual("synthetic original COM error", error.Message);
+        }
+
         private sealed class SaveQueueContext : System.Threading.SynchronizationContext
         {
             internal readonly System.Collections.Generic.Queue<System.Action> Pending = new System.Collections.Generic.Queue<System.Action>();

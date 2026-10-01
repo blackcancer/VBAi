@@ -30,6 +30,7 @@ namespace VBAi.Tests.Infrastructure
             public List<object> VBProjects { get; } = new List<object>();
             public Window MainWindow { get; } = new Window();
             public object ActiveVBProject { get; set; }
+            public object ActiveWindow { get; set; }
             private object activeCodePane;
             public int ActiveCodePaneSetCount { get; private set; }
             public object ActiveCodePane
@@ -187,6 +188,7 @@ namespace VBAi.Tests.Infrastructure
         }
         public sealed class Window
         {
+            public int Type { get; set; }
             private bool visible;
             public Action OnVisible, OnClose;
             public int HWnd { get; set; }

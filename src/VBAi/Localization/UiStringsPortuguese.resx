@@ -2163,4 +2163,6 @@ Conexão pelo Git Credential Manager; a identidade dos commits é configurada no
   <data name="Measured coverage currently requires the owned Excel host." xml:space="preserve"><value>A medição de cobertura exige atualmente a instância do Excel controlada.</value></data>
   <data name="Save the macro-enabled workbook before collecting coverage." xml:space="preserve"><value>Salve a pasta de trabalho com suporte a macros antes de medir a cobertura.</value></data>
   <data name="Coverage exclusions" xml:space="preserve"><value>Exclusões da cobertura</value></data>
+  <data name="VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring." xml:space="preserve"><value>A importação VBA falhou e não foi possível registrar o estado resultante. A recuperação continua pendente; inspecione o backup preservado e o projeto atual antes de restaurar.</value></data>
+  <data name="Inspection and restoration of the native Code Colors category both failed. The original category selection is unverified." xml:space="preserve"><value>A inspeção e a restauração da categoria nativa de cores do código falharam. A seleção original da categoria não foi verificada.</value></data>
 </root>

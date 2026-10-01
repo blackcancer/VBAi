@@ -109,9 +109,15 @@ namespace VBAi
         /// <summary>Ouvre et rend visible la fenêtre CodePane du composant suivi.</summary>
         internal void EnsureNativeWindow()
         {
-            Validate(); nativeWindow = ((dynamic)component).CodeModule.CodePane.Window;
+            RetainNativeWindow();
             ((dynamic)nativeWindow).Visible = true;
         }
+        /// <summary>Retains an existing backing pane without showing, activating or navigating it during passive following.</summary>
+        internal void RetainNativeWindow()
+        { Validate(); nativeWindow = ((dynamic)component).CodeModule.CodePane.Window; }
+
+        /// <summary>Reuses exact COM identity for coherent native window/project activation guards.</summary>
+        internal static bool SameIdentity(object first, object second) => Same(first, second);
         /// <summary>Ferme la fenêtre CodePane détenue lorsque l’hôte l’a encore ouverte.</summary>
         internal void CloseNativeWindow()
         {

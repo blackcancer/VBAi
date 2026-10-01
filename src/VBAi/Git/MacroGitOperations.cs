@@ -21,7 +21,7 @@ namespace VBAi
         /// <summary>Callback facultatif appelé avant l’import pour présenter son résumé.</summary>
         internal Action<string> ImportPreview;
         /// <summary>Résout le répertoire de cache de la portée, notamment pour isoler les tests.</summary>
-        internal static Func<string, string> CacheDirectory = MacroGitRepository.ScopeDirectory;
+        internal static Func<string, string> CacheDirectory = MacroGitRepository.ResolveScopeDirectory;
         /// <summary>Crée un coordinateur pour le projet et le dépôt fournis.</summary>
         /// <param name="project">Projet VBA à lire ou modifier.</param>
         /// <param name="repository">Dépôt associé à ce projet.</param>
@@ -61,7 +61,7 @@ namespace VBAi
         {
             using (var hash = SHA256.Create())
             {
-                foreach (var file in snapshot.Serialize())
+                foreach (var file in snapshot.ComparisonFiles())
                 {
                     byte[] key = Encoding.UTF8.GetBytes(file.Key + "\0" + file.Value.Length + "\0");
                     hash.TransformBlock(key, 0, key.Length, null, 0);
@@ -123,6 +123,7 @@ namespace VBAi
             var live = project.Capture();
             if (expectedState != null && expectedState != await Task.Run(() => Revision(live))) throw new InvalidOperationException(UiText.Get("The Git/VBA state changed. Read git_status again before making changes."));
             if (action != "rollback") Ready(action.StartsWith("merge_", StringComparison.Ordinal));
+            else Repository.RequireValidRecoveryMarker();
             switch (action)
             {
                 case "pr_prepare": await Task.Run(() => Repository.SavePullDraft(name, text, choice)); break;
@@ -202,13 +203,37 @@ namespace VBAi
             if (expected.SameAs(target)) { if (rollback) Repository.CompleteRecovery(); return; }
             ImportPreview?.Invoke(target.ImportSummary(expected));
             if (!rollback) await Task.Run(() => { Repository.Checkpoint(expected, UiText.Get("Before import · ") + DateTime.Now.ToString("s")); Repository.PrepareRecovery(expected); });
-            else File.WriteAllText(Repository.RecoveryFile, Repository.Resolve(MacroGitRepository.Backup));
+            else
+            {
+                Repository.RequireValidRecoveryMarker();
+                File.WriteAllText(Repository.RecoveryFile, Repository.Resolve(MacroGitRepository.Backup));
+            }
             bool started = false;
+            Exception importFailure = null;
             try { project.Apply(target, expected, () => started = true); }
+            catch (Exception error) { importFailure = error; throw; }
             finally
             {
-                if (started) { var actual = project.Capture(); await Task.Run(() => Repository.RecordImportedState(actual)); }
-                else if (!rollback) Repository.CompleteRecovery();
+                if (started)
+                {
+                    try { var actual = project.Capture(); await Task.Run(() => Repository.RecordImportedState(actual)); }
+                    catch (Exception recoveryFailure) when (importFailure != null)
+                    {
+                        // Keep both failures and the pending recovery backup. Without
+                        // an observed post-import state, automatic rollback stays refused.
+                        throw new AggregateException(UiText.Get("VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring."),
+                            importFailure, recoveryFailure);
+                    }
+                }
+                else if (!rollback)
+                {
+                    try { Repository.CompleteRecovery(); }
+                    catch (Exception recoveryFailure) when (importFailure != null)
+                    {
+                        throw new AggregateException("VBA import was refused before its mutation boundary and recovery completion also failed; both errors are retained.",
+                            importFailure, recoveryFailure);
+                    }
+                }
             }
             Repository.CompleteRecovery();
         }

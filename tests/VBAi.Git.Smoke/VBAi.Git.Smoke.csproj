@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GitTests.cs" />
+    <Compile Include="GitScratchDirectory.cs" />
     <Compile Include="AdvancedGitTests.cs" />
     <ProjectReference Include="..\..\src\VBAi\VBAi.csproj" />
     <Reference Include="Microsoft.CSharp" />

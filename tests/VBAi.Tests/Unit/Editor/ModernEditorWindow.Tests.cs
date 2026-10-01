@@ -8,6 +8,127 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class ModernEditorWindowTests
     {
+        private const string ClosedProjectError = "The VBA project is closed. Your draft is preserved.";
+        private const string SynchronizedStatus = "Synchronized with VBA. Save the macro in its host application.";
+
+        /// <summary>A closed background native project retains its draft and diagnostic without replacing live-module status.</summary>
+        [STATestMethod]
+        public void InactiveClosedProjectKeepsDraftAndFailureWithoutContaminatingLiveStatus()
+        {
+            var previousLog = LoadLog.AppendText;
+            var diagnostics = new System.Collections.Generic.List<string>();
+            try
+            {
+                LoadLog.AppendText = (path, text) => diagnostics.Add(text);
+                using (var f = new ModernEditorDebugFixture())
+                using (var live = new EditorFixture())
+                {
+                    string native = f.Native.Original.CodeModule.Raw;
+                    string draft = f.Document.Text + "\n' preserved closed-project edit";
+                    f.Document.Edit(draft);
+                    var active = ModernEditorDebugFixture.Wait(f.Window.OpenModule(live));
+                    f.Native.Vbe.VBProjects.Clear(); f.Ready(true);
+                    ModernEditorDebugFixture.Wait(f.Window.ProcessDocuments(true));
+                    Assert.AreSame(active, f.Window.Current);
+                    Assert.AreEqual(UiText.Get(SynchronizedStatus), f.Get<System.Windows.Forms.Label>("status").Text);
+                    Assert.IsTrue(f.Window.Documents.Contains(f.Document));
+                    Assert.AreEqual(draft, f.Document.Text);
+                    Assert.AreEqual(draft, f.Window.Drafts.Recover(f.Document.RecoveryKey).Text);
+                    Assert.AreEqual(native, f.Native.Original.CodeModule.Raw, "Closed native identity must still refuse writes.");
+                    Assert.IsTrue(diagnostics.Any(line => line.Contains("Monaco: InvalidOperationException")), "Background failures must remain diagnosable.");
+
+                    ModernEditorDebugFixture.Wait(f.Window.OpenModule(f.Native.Adapter));
+                    Assert.AreEqual(UiText.Get(ClosedProjectError), f.Get<System.Windows.Forms.Label>("status").Text);
+                    ModernEditorDebugFixture.Wait(f.Window.OpenModule(live));
+                    Assert.AreEqual(UiText.Get(SynchronizedStatus), f.Get<System.Windows.Forms.Label>("status").Text);
+                    Assert.AreEqual(0, live.Writes);
+                }
+            }
+            finally { LoadLog.AppendText = previousLog; }
+        }
+
+        /// <summary>Successful inactive work cannot clear an active write failure; a later successful observation can clear only its own failure.</summary>
+        [STATestMethod]
+        public void ActiveSynchronizationFailureSurvivesInactiveCompletionAndClearsAfterItsOwnSuccess()
+        {
+            using (var f = new ModernEditorDebugFixture())
+            using (var activeModule = new EditorFixture { Fail = true })
+            {
+                var active = ModernEditorDebugFixture.Wait(f.Window.OpenModule(activeModule));
+                active.Edit(active.Text + "\n' pending write"); f.Ready(true);
+                ModernEditorDebugFixture.Wait(f.Window.ProcessDocuments(true));
+                Assert.AreEqual(UiText.Get("Write refused"), f.Get<System.Windows.Forms.Label>("status").Text);
+                Assert.IsTrue(active.Dirty); Assert.AreEqual(0, activeModule.Writes);
+                ModernEditorDebugFixture.Wait((System.Threading.Tasks.Task)UiInvoke.Call(typeof(ModernEditorWindow), "ProcessCapturedDocumentsCore",
+                    f.Window, false, false, false, null, new[] { f.Document }));
+                Assert.AreEqual(UiText.Get("Write refused"), f.Get<System.Windows.Forms.Label>("status").Text,
+                    "A batch that did not process the active document must retain its failure.");
+                ModernEditorDebugFixture.Wait(f.Window.OpenModule(f.Native.Adapter));
+                Assert.AreEqual(UiText.Get(SynchronizedStatus), f.Get<System.Windows.Forms.Label>("status").Text);
+                ModernEditorDebugFixture.Wait(f.Window.OpenModule(activeModule));
+                Assert.AreEqual(UiText.Get("Write refused"), f.Get<System.Windows.Forms.Label>("status").Text);
+                activeModule.Fail = false;
+                // Read-only reconciliation succeeds while preserving the unsynchronized draft.
+                ModernEditorDebugFixture.Wait(f.Window.ProcessDocuments(false));
+                Assert.AreEqual(UiText.Get("Changes pending synchronization with VBA."), f.Get<System.Windows.Forms.Label>("status").Text);
+                Assert.IsTrue(active.Dirty); Assert.AreEqual(0, activeModule.Writes);
+            }
+        }
+
+        /// <summary>A batch completing across a real renderer await presents the currently selected document, keeping other failures attached to their tabs.</summary>
+        [STATestMethod]
+        public void BackgroundBatchCompletionAfterAsyncTabSwitchUsesCurrentDocumentStatus()
+        {
+            using (var f = new ModernEditorDebugFixture())
+            using (var updating = new EditorFixture())
+            using (var next = new EditorFixture())
+            {
+                var updatingDocument = ModernEditorDebugFixture.Wait(f.Window.OpenModule(updating));
+                var nextDocument = ModernEditorDebugFixture.Wait(f.Window.OpenModule(next));
+                ModernEditorDebugFixture.Wait(f.Window.OpenModule(updating)); f.Ready(true);
+                f.Native.Vbe.VBProjects.Clear(); updating.Code += "\n' external update";
+                var entered = new System.Threading.Tasks.TaskCompletionSource<bool>();
+                var release = new System.Threading.Tasks.TaskCompletionSource<string>();
+                var renderer = f.Window.ScriptExecution;
+                f.Window.ScriptExecution = (method, values) => {
+                    if (method == "apply" && (string)values[0] == updatingDocument.Id)
+                    { entered.TrySetResult(true); return release.Task; }
+                    return renderer(method, values);
+                };
+                var processing = (System.Threading.Tasks.Task)UiInvoke.Call(typeof(ModernEditorWindow), "ProcessCapturedDocumentsCore",
+                    f.Window, false, false, false, null, new[] { f.Document, updatingDocument });
+                try
+                {
+                    ModernEditorDebugFixture.Wait(entered.Task);
+                    Assert.IsFalse(processing.IsCompleted, "The test requires a pending real renderer boundary.");
+                    ModernEditorDebugFixture.Wait(f.Window.OpenModule(next));
+                    Assert.AreSame(nextDocument, f.Window.Current);
+                }
+                finally { release.TrySetResult("2"); ModernEditorDebugFixture.Wait(processing); }
+                Assert.AreEqual(UiText.Get(SynchronizedStatus), f.Get<System.Windows.Forms.Label>("status").Text);
+                Assert.AreEqual(EditorDocument.Normalize(updating.Code), updatingDocument.Text);
+                ModernEditorDebugFixture.Wait(f.Window.OpenModule(f.Native.Adapter));
+                Assert.AreEqual(UiText.Get(ClosedProjectError), f.Get<System.Windows.Forms.Label>("status").Text);
+                Assert.AreEqual(0, updating.Writes); Assert.AreEqual(0, next.Writes);
+            }
+        }
+
+        /// <summary>A newer tool or dispatch error still invalidates queued reconciliation status rather than being replaced by a healthy tab.</summary>
+        [STATestMethod]
+        public void DocumentScopedSynchronizationDoesNotSuppressNewerToolDispatchErrors()
+        {
+            using (var f = new ModernEditorDebugFixture())
+            {
+                UiInvoke.Call(typeof(ModernEditorWindow), "SetStatus", f.Window);
+                UiInvoke.Call(typeof(ModernEditorWindow), "Report", f.Window, new System.InvalidOperationException("tool dispatch refused"));
+                System.Windows.Forms.Application.DoEvents();
+                Assert.AreEqual(UiText.Get("tool dispatch refused"), f.Get<System.Windows.Forms.Label>("status").Text);
+                f.Set("lastSaveError", "native save unverified");
+                UiInvoke.Call(typeof(ModernEditorWindow), "UpdateStatus", f.Window);
+                Assert.AreEqual(UiText.Get("native save unverified"), f.Get<System.Windows.Forms.Label>("status").Text);
+            }
+        }
+
         /// <summary>Ignores theme changes during disposal and dispatches worker notifications onto the editor thread.</summary>
         [STATestMethod]
         public void ThemeNotificationsRespectWindowLifetimeAndUiThreadOwnership()
@@ -34,6 +155,145 @@ namespace VBAi.Tests.Unit
                 UiInvoke.Call(typeof(ModernEditorWindow), "ThemeChanged", fixture.Window);
                 Assert.AreEqual(0, fixture.Scripts.Count);
             }
+        }
+
+        /// <summary>Diff and tab close keep renderer calls on the owning STA even without an ambient UI context.</summary>
+        [STATestMethod]
+        public void DiffAndCloseWithoutAmbientContextKeepRendererCallsOnTheOwningThread()
+        {
+            var previousContext = System.Threading.SynchronizationContext.Current;
+            try
+            {
+                using (var f = new Editor.ModernEditorToolFixture())
+                {
+                    int ownerThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
+                    int initialCount = f.Window.Documents.Count();
+                    Assert.AreSame(f.Document, f.Window.Current);
+                    var calls = new System.Collections.Concurrent.ConcurrentQueue<System.Tuple<string, int>>();
+                    f.Override = (method, values) => {
+                        calls.Enqueue(System.Tuple.Create(method, System.Threading.Thread.CurrentThread.ManagedThreadId));
+                        return null;
+                    };
+                    System.Action<System.Func<bool>> pump = complete => {
+                        var timeout = System.Diagnostics.Stopwatch.StartNew();
+                        while (!complete() && timeout.ElapsedMilliseconds < 10000)
+                        { System.Windows.Forms.Application.DoEvents(); System.Threading.Thread.Sleep(1); }
+                        Assert.IsTrue(complete(), "The owned editor action did not complete; status: " + UiInvoke.Field<System.Windows.Forms.Label>(f.Window, "status").Text);
+                    };
+
+                    System.Threading.SynchronizationContext.SetSynchronizationContext(null);
+                    UiInvoke.Call(typeof(ModernEditorWindow), "DiffClick", f.Window, null, System.EventArgs.Empty);
+                    pump(() => UiInvoke.Field<bool>(f.Window, "showingDiff") && !UiInvoke.Field<bool>(f.Window, "busy"));
+                    Assert.IsTrue(calls.Any(call => call.Item1 == "compare"));
+                    Assert.IsTrue(calls.All(call => call.Item2 == ownerThread), "Diff renderer calls must remain on the editor's owning STA.");
+                    Assert.AreEqual(0, f.Module.Writes);
+
+                    System.Threading.SynchronizationContext.SetSynchronizationContext(null);
+                    UiInvoke.Call(typeof(ModernEditorWindow), "CloseModuleClick", f.Window, null, System.EventArgs.Empty);
+                    pump(() => f.Window.Documents.Count() == initialCount - 1 && !UiInvoke.Field<bool>(f.Window, "busy"));
+                    Assert.IsFalse(f.Window.Documents.Contains(f.Document));
+                    Assert.IsTrue(calls.Any(call => call.Item1 == "close"));
+                    Assert.IsTrue(calls.All(call => call.Item2 == ownerThread), "Close renderer calls must remain on the editor's owning STA.");
+                    Assert.AreEqual(0, f.Module.Writes, "Diff and tab close must not write the native module.");
+                }
+            }
+            finally { System.Threading.SynchronizationContext.SetSynchronizationContext(previousContext); }
+        }
+
+        /// <summary>Reload and draft restoration keep renderer calls on the owner after a real asynchronous script boundary.</summary>
+        [STATestMethod]
+        public void ResolveReloadAndRestoreWithoutAmbientContextKeepRendererOwnershipAndArchivedDraft()
+        {
+            var previousContext = System.Threading.SynchronizationContext.Current;
+            try
+            {
+                using (var f = new Editor.ModernEditorToolFixture())
+                {
+                    int ownerThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
+                    string draft = f.Document.Text + "\n' owned pending recovery";
+                    f.Document.Edit(draft);
+                    f.Module.Code += "\n' owned concurrent native change";
+                    f.Document.Observe();
+                    Assert.IsTrue(f.Document.Dirty && f.Document.Conflict);
+                    var calls = new System.Collections.Concurrent.ConcurrentQueue<System.Tuple<string, int>>();
+                    f.Override = (method, values) => {
+                        calls.Enqueue(System.Tuple.Create(method, System.Threading.Thread.CurrentThread.ManagedThreadId));
+                        return null;
+                    };
+                    var renderer = f.Window.ScriptExecution;
+                    var ledger = new System.Collections.Concurrent.ConcurrentQueue<string>();
+                    var elapsed = System.Diagnostics.Stopwatch.StartNew();
+                    int invocationSequence = 0;
+                    System.Action<int, string, string> trace = (invocation, method, stage) => {
+                        if (method == "snapshots" || method == "apply" || method == "hideDiff")
+                            ledger.Enqueue(elapsed.ElapsedMilliseconds + "ms #" + invocation + " " + method + " " + stage +
+                                " thread=" + System.Threading.Thread.CurrentThread.ManagedThreadId);
+                    };
+                    f.Window.ScriptExecution = async (method, values) => {
+                        int invocation = System.Threading.Interlocked.Increment(ref invocationSequence);
+                        trace(invocation, method, "enter");
+                        try
+                        {
+                            string result = await renderer(method, values);
+                            trace(invocation, method, "renderer-return");
+                            await System.Threading.Tasks.Task.Delay(10).ConfigureAwait(false);
+                            trace(invocation, method, "delay-complete-return");
+                            return result;
+                        }
+                        catch (System.Exception error) { trace(invocation, method, "error=" + error); throw; }
+                    };
+                    System.Action<System.Func<bool>> pump = complete => {
+                        var timeout = System.Diagnostics.Stopwatch.StartNew();
+                        while (!complete() && timeout.ElapsedMilliseconds < 5000)
+                        { System.Windows.Forms.Application.DoEvents(); System.Threading.Thread.Sleep(1); }
+                        Assert.IsTrue(complete(), "The owned editor recovery action did not complete; status: " + UiInvoke.Field<System.Windows.Forms.Label>(f.Window, "status").Text +
+                            "; Dirty=" + f.Document.Dirty + "; Conflict=" + f.Document.Conflict +
+                            "; Diff=" + f.Base.Get<bool>("showingDiff") + "; Busy=" + f.Base.Get<bool>("busy") +
+                            "; Current=" + (f.Window.Current?.Id ?? "<null>") + "; Target=" + f.Document.Id +
+                            "; Closing=" + f.Base.Get<bool>("closing") + "; Disposed=" + f.Window.IsDisposed +
+                            "; Timer=" + UiInvoke.Field<System.Windows.Forms.Timer>(f.Window, "timer").Enabled +
+                            "; StreamTimer=" + UiInvoke.Field<System.Windows.Forms.Timer>(f.Window, "streamTimer").Enabled +
+                            "; DebugTimer=" + UiInvoke.Field<System.Windows.Forms.Timer>(f.Window, "debugTimer").Enabled +
+                            "; Writes=" + f.Module.Writes + "; Captures=" + f.Captures + "; Applies=" + f.Applies +
+                            "; Reviewed=" + f.Base.Get<System.Collections.Generic.Dictionary<string, string>>("reviewed").ContainsKey(f.Document.Id) +
+                            "; Ledger=" + string.Join(" | ", ledger));
+                    };
+
+                    f.Base.Get<System.Collections.Generic.Dictionary<string, string>>("reviewed")[f.Document.Id] = f.Document.Native;
+                    f.Base.Set("showingDiff", true);
+                    System.Threading.SynchronizationContext.SetSynchronizationContext(null);
+                    UiInvoke.Call(typeof(ModernEditorWindow), "ResolveClick", f.Window, null, System.EventArgs.Empty);
+                    pump(() => !f.Document.Dirty && !f.Base.Get<bool>("showingDiff") && !f.Base.Get<bool>("busy"));
+                    Assert.IsTrue(calls.Any(call => call.Item1 == "hideDiff"));
+                    Assert.IsTrue(calls.All(call => call.Item2 == ownerThread), "Resolve renderer calls must remain on the owning STA.");
+                    Assert.AreEqual(1, f.Module.Writes, "Only the explicit conflict resolution may write native source.");
+                    StringAssert.Contains(f.Module.Code, "owned pending recovery");
+
+                    draft = f.Document.Text + "\n' owned reloaded recovery";
+                    f.Document.Edit(draft);
+                    f.Module.Code += "\n' owned second native change";
+                    f.Document.Observe();
+                    Assert.IsTrue(f.Document.Dirty && f.Document.Conflict);
+                    System.Threading.SynchronizationContext.SetSynchronizationContext(null);
+                    UiInvoke.Call(typeof(ModernEditorWindow), "ReloadClick", f.Window, null, System.EventArgs.Empty);
+                    pump(() => !f.Document.Dirty && !UiInvoke.Field<bool>(f.Window, "busy"));
+                    Assert.AreEqual(EditorDocument.Normalize(f.Module.Code), f.Document.Text);
+                    Assert.AreEqual(draft, f.Window.Drafts.Recover(f.Document.RecoveryKey).Text);
+                    Assert.IsTrue(calls.Any(call => call.Item1 == "apply"));
+                    Assert.IsTrue(calls.All(call => call.Item2 == ownerThread), "Reload renderer calls must remain on the owning STA.");
+                    Assert.AreEqual(1, f.Module.Writes);
+                    int applies = f.Applies;
+
+                    System.Threading.SynchronizationContext.SetSynchronizationContext(null);
+                    UiInvoke.Call(typeof(ModernEditorWindow), "RestoreClick", f.Window, null, System.EventArgs.Empty);
+                    pump(() => f.Document.Dirty && f.Document.Text == draft && !UiInvoke.Field<bool>(f.Window, "busy"));
+                    Assert.AreEqual(applies + 1, f.Applies);
+                    Assert.IsTrue(calls.All(call => call.Item2 == ownerThread), "Restore renderer calls must remain on the owning STA.");
+                    Assert.AreEqual(draft, f.Window.Drafts.Recover(f.Document.RecoveryKey).Text);
+                    Assert.AreEqual(1, f.Module.Writes, "Reload and draft restoration must not add native writes after conflict resolution.");
+                }
+            }
+            finally { System.Threading.SynchronizationContext.SetSynchronizationContext(previousContext); }
         }
 
         /// <summary>Preserves visible conflict captions and scales command height for large fonts and long translations.</summary>
@@ -294,6 +554,15 @@ namespace VBAi.Tests.Unit
                 ModernEditorDebugFixture.Wait(f.Initialize()); Assert.AreEqual(ModernEditorWindow.Origin, f.Navigation, f.Diagnostic + string.Join("\n", f.Core.Errors.Concat(f.Controller.Errors).Concat(f.Settings.Errors))); Assert.AreEqual(0, f.Scripts);
                 Assert.AreEqual(0, f.Settings.Values["AreDevToolsEnabled"]); Assert.AreEqual(0, f.Settings.Values["AreDefaultContextMenusEnabled"]); Assert.AreEqual(0, f.Settings.Values["IsStatusBarEnabled"]); Assert.AreEqual(0, f.Settings.Values["AreHostObjectsAllowed"]);
                 Assert.IsTrue(f.Core.Handlers.ContainsKey("NavigationStarting")); f.Editor.Base.Ready(true); f.Window.ScriptExecution = null; Assert.AreEqual("null", ModernEditorDebugFixture.Wait(f.Window.Script("owned"))); Assert.AreEqual(1, f.Executes);
+                Assert.IsTrue(f.Environment.Handlers.ContainsKey("BrowserProcessExited"), "Profile cleanup must subscribe to the owned environment's process exit.");
+                var profile = f.Profiles.Single();
+                Assert.AreEqual(Editor.ModernEditorBrowserFixture.BrowserProcessId, f.Core.Values["BrowserProcessId"]);
+                f.BrowserExited(Editor.ModernEditorBrowserFixture.BrowserProcessId + 1);
+                f.Window.Dispose();
+                Assert.IsTrue(System.IO.Directory.Exists(profile.Path), "An unrelated process exit must not permit profile deletion.");
+                f.BrowserExited(Editor.ModernEditorBrowserFixture.BrowserProcessId);
+                ModernEditorDebugFixture.Wait(profile.Cleanup);
+                Assert.IsFalse(System.IO.Directory.Exists(profile.Path), "The retired owned profile is removed only after its matching browser exits.");
             }
         }
         [STATestMethod]
@@ -486,9 +755,10 @@ namespace VBAi.Tests.Unit
             using (var f = new Editor.ModernEditorBrowserFixture())
             using (var dispatcher = new Editor.OwnedEditorDispatcher())
             {
-                f.Editor.Base.Set("lastSaveError", "previous save failure"); f.Editor.Base.Set("synchronizationError", "previous sync failure");
+                var errors = f.Editor.Base.Get<System.Collections.Generic.Dictionary<string, string>>("documentSynchronizationErrors");
+                f.Editor.Base.Set("lastSaveError", "previous save failure"); errors[f.Editor.Document.Id] = "previous sync failure";
                 f.Message(f.Editor.Json.Serialize(new { type = "change", id = f.Editor.Document.Id, version = 2, text = f.Editor.Document.Text + "\n' new edit" })); dispatcher.Drain();
-                Assert.IsNull(f.Editor.Base.Get<string>("lastSaveError")); Assert.IsNull(f.Editor.Base.Get<string>("synchronizationError"));
+                Assert.IsNull(f.Editor.Base.Get<string>("lastSaveError")); Assert.IsFalse(errors.ContainsKey(f.Editor.Document.Id));
                 f.Editor.Base.Ready(true); System.IO.Directory.CreateDirectory(f.Editor.Module.Root);
                 f.Editor.Base.Native.Project.Path = System.IO.Path.Combine(f.Editor.Module.Root, "owned.bas"); System.IO.File.WriteAllText(f.Editor.Base.Native.Project.Path, "owned");
                 int saves = 0; f.Window.NativeSave = native => saves++; f.Window.NativeHostSaved = native => true;
@@ -504,7 +774,7 @@ namespace VBAi.Tests.Unit
                 }));
                 dispatcher.Drain();
                 Assert.AreEqual(1, saves); Assert.AreEqual(UiText.Get("Saved."), f.Editor.Base.Get<System.Windows.Forms.Label>("status").Text);
-                f.Editor.Base.Set("lastSaveError", "save has priority"); f.Editor.Base.Set("synchronizationError", "sync failure"); f.Editor.Private("UpdateStatus");
+                f.Editor.Base.Set("lastSaveError", "save has priority"); errors[f.Window.Current.Id] = "sync failure"; f.Editor.Private("UpdateStatus");
                 Assert.AreEqual(UiText.Get("save has priority"), f.Editor.Base.Get<System.Windows.Forms.Label>("status").Text);
                 f.Editor.Base.Set("lastSaveError", null); f.Editor.Private("UpdateStatus");
                 Assert.AreEqual(UiText.Get("sync failure"), f.Editor.Base.Get<System.Windows.Forms.Label>("status").Text);

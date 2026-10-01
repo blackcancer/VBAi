@@ -5,10 +5,236 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace VBAi.Tests.Unit
 {
-    /// <summary>Vérifie les adaptateurs de sauvegarde par sondes injectables; qualification réelle Word/PowerPoint NOT_RUN.</summary>
+    /// <summary>Checks Office document adapters with injectable probes; native qualification is independent.</summary>
     [TestClass, TestCategory("Unit")]
     public sealed partial class VbeOtherHostPersistenceTests
     {
+        [DataTestMethod]
+        [DataRow("HostPath"), DataRow("ProjectPath"), DataRow("HostSaved"), DataRow("ProjectSaved")]
+        [DataRow("FileExists"), DataRow("FileLength"), DataRow("FileFormat"), DataRow("SourceSha256"), DataRow("ProjectIdentity")]
+        public void SaveVerificationReportsExactFailedGuardWithoutRepeatingMutation(string guard)
+        {
+            var f = new Fixture { Kind = "PowerPoint" };
+            f.Observation.Path = @"C:\fixture\Document.pptm";
+            f.Project.FileName = f.Observation.Path; f.Observation.Format = 25;
+            f.AfterInvocation = () => {
+                f.Observation.Format = 25;
+                switch (guard)
+                {
+                    case "HostPath": f.Observation.Path = @"C:\fixture\Other.pptm"; f.Project.Saved = false; break;
+                    case "ProjectPath": f.Project.FileName = @"C:\fixture\Other.pptm"; break;
+                    case "HostSaved": f.Observation.Saved = false; break;
+                    case "ProjectSaved": f.Project.Saved = false; break;
+                    case "FileExists": f.Exists = false; break;
+                    case "FileLength": f.Bytes = 0; break;
+                    case "FileFormat": f.Observation.Format = 99; break;
+                    case "SourceSha256": f.Component.CodeModule.Source += "\r\n' Changed during save"; break;
+                    case "ProjectIdentity": f.Identity = false; break;
+                }
+            };
+            dynamic result = f.Service.SaveOtherHost(f.Request(), false, f);
+            Assert.IsFalse((bool)result.Verified); Assert.IsTrue((bool)result.Uncertain);
+            Assert.IsTrue((bool)result.MutationInvoked); Assert.AreEqual(1, f.Attempts);
+            Assert.AreEqual("Save verification failed: " + guard + ".", (string)result.Reason);
+        }
+
+        [DataTestMethod, DataRow("Access", ".accdb", 12), DataRow("Publisher", ".pub", 1)]
+        public void ExistingAccessPublisherSaveKeepsNullableHostStateAndNeverRetries(string kind, string extension, int format)
+        {
+            var f = new Fixture { Kind = kind };
+            f.Observation.Path = @"C:\fixture\Document" + extension;
+            f.Project.FileName = f.Observation.Path; f.Observation.Format = format;
+            f.Observation.Saved = kind == "Access" ? (bool?)null : true;
+            f.AfterInvocation = () => { f.Observation.Format = format; f.Observation.Saved = kind == "Access" ? (bool?)null : true; };
+            dynamic result = f.Service.SaveOtherHost(f.Request(), false, f);
+            Assert.IsTrue((bool)result.Verified); Assert.IsFalse((bool)result.Uncertain); Assert.AreEqual(1, f.Attempts);
+            Assert.AreEqual(kind == "Access" ? (bool?)null : true, (bool?)result.HostSaved);
+            Assert.IsTrue((bool)result.NativeFileFormatVerified); Assert.IsFalse((bool)result.PersistenceReopenVerified);
+            f.AfterInvocation = () => { f.Observation.Format = format; f.Project.Saved = false; };
+            result = f.Service.SaveOtherHost(f.Request(), false, f);
+            Assert.IsTrue((bool)result.Uncertain); Assert.AreEqual(2, f.Attempts);
+        }
+
+        [DataTestMethod, DataRow("Access", ".accdb", 12), DataRow("Publisher", ".pub", 1)]
+        public void AccessPublisherRefuseStalePathsFormatsReadonlyAndFirstSaveBeforeMutation(string kind, string extension, int format)
+        {
+            foreach (string fault in new[] { "path", "project", "format", "readonly", "pid", "duplicate", "saveas" })
+            {
+                var f = new Fixture { Kind = kind };
+                f.Observation.Path = @"C:\fixture\Document" + extension; f.Project.FileName = f.Observation.Path; f.Observation.Format = format;
+                var request = f.Request();
+                if (fault == "path") request.ExpectedHostPath = @"C:\fixture\Other" + extension;
+                if (fault == "project") f.Project.FileName = @"C:\fixture\Other" + extension;
+                if (fault == "format") f.Observation.Format = 99;
+                if (fault == "readonly") f.Observation.ReadOnly = true;
+                if (fault == "pid") f.Owner = 43;
+                if (fault == "duplicate") f.Items.Add(f);
+                Assert.ThrowsException<InvalidOperationException>(() => f.Service.SaveOtherHost(request, fault == "saveas", f), fault);
+                Assert.AreEqual(0, f.Attempts, fault);
+            }
+        }
+
+        [DataTestMethod, DataRow("Access"), DataRow("Publisher")]
+        public void NativeAccessPublisherAssociateInjectedVbeAndExactPathWithoutDocumentVBProject(string kind)
+        {
+            var editor = new PathEditor(); var project = new PathProject { VBE = editor, FileName = kind == "Access" ? @"C:\fixture\Owned.accdb" : @"C:\fixture\Owned.pub" };
+            editor.VBProjects.Add(project); editor.ActiveVBProject = project;
+            var app = new PathApplication(); var doc = new PathDocument { Application = app, FullName = project.FileName };
+            app.CurrentProject = doc; app.Documents.Add(doc);
+            var native = new VbeProjectComponents.NativeOtherHostProbe {
+                ReadHostKind = () => kind, ReadOwner = h => h.ToInt64() == 77 ? (uint)System.Diagnostics.Process.GetCurrentProcess().Id : 0,
+                ReadIdentity = ReferenceEquals, ReadActiveApplication = name => app
+            };
+            native.BindProject(project);
+            Assert.AreSame(app, native.Application()); Assert.AreSame(doc, native.Documents(app)[0]);
+            Assert.AreSame(project, native.DocumentProject(doc));
+            native.BindDocument(doc);
+            Assert.AreEqual(kind == "Access" ? (bool?)null : true, native.State(doc).Saved);
+            if (kind == "Access")
+            {
+                native.PrepareSave(doc); native.Save(doc, false, project.FileName, 12); Assert.AreEqual(1, editor.CommandBars.Control.Executions);
+                editor.ActiveVBProject = new object();
+                Assert.ThrowsException<InvalidOperationException>(() => native.PrepareSave(doc));
+                Assert.AreEqual(1, editor.CommandBars.Control.Executions);
+                editor.ActiveVBProject = project; editor.CommandBars.Control.Enabled = false;
+                Assert.ThrowsException<InvalidOperationException>(() => native.PrepareSave(doc));
+            }
+            else { native.Save(doc, false, project.FileName, 1); Assert.AreEqual(1, doc.SaveCalls); }
+            editor.VBProjects.Add(new PathProject { VBE = editor, FileName = project.FileName });
+            Assert.ThrowsException<InvalidOperationException>(() => native.DocumentProject(doc));
+            editor.VBProjects.RemoveAt(1); project.FileName = @"C:\fixture\Other.pub";
+            Assert.ThrowsException<InvalidOperationException>(() => native.DocumentProject(doc));
+        }
+
+        public sealed class PathProject
+        {
+            private string fileName;
+            public object VBE { get; set; }
+            public Exception PathReadError { get; set; }
+            public string FileName { get { if (PathReadError != null) throw PathReadError; return fileName; } set { fileName = value; } }
+        }
+        public sealed class PathWindow { public int HWnd => 77; public int hWnd => 77; }
+        public sealed class PathEditor
+        {
+            public PathWindow MainWindow { get; } = new PathWindow();
+            public System.Collections.Generic.List<object> VBProjects { get; } = new System.Collections.Generic.List<object>();
+            public object ActiveVBProject { get; set; }
+            public PathCommands CommandBars { get; } = new PathCommands();
+        }
+        public sealed class PathCommands
+        {
+            public PathControl Control { get; } = new PathControl();
+            public object FindControl(int type, int id) { Assert.AreEqual(1, type); Assert.AreEqual(3, id); return Control; }
+        }
+        public sealed class PathControl
+        {
+            public int Id => 3; public int Type => 1; public bool BuiltIn => true; public bool Enabled { get; set; } = true;
+            public int Executions { get; private set; } public void Execute() { Executions++; }
+        }
+        public sealed class PathDatabase { public bool Updatable => true; }
+        public sealed class PathApplication
+        {
+            public PathWindow ActiveWindow { get; } = new PathWindow(); public int hWndAccessApp() => 77;
+            public object CurrentProject { get; set; }
+            public System.Collections.Generic.List<object> Documents { get; } = new System.Collections.Generic.List<object>();
+            public object CurrentDb() => new PathDatabase();
+        }
+        public sealed class PathDocument
+        {
+            public object Application { get; set; } public string FullName { get; set; } public string Path => @"C:\fixture";
+            public int FileFormat => 12; public int SaveFormat { get; set; } = 1; public bool Saved => true; public bool ReadOnly { get; set; }
+            public int SaveCalls { get; private set; } public void Save() { SaveCalls++; }
+        }
+
+        [TestMethod]
+        public void AccessVersionedRotFallbackStillRequiresTheCurrentProcessOwner()
+        {
+            var app = new PathApplication(); var attempts = new System.Collections.Generic.List<string>();
+            uint owner = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
+            var native = new VbeProjectComponents.NativeOtherHostProbe {
+                ReadHostKind = () => "Access", ReadHostMajorVersion = () => 16,
+                ReadOwner = h => owner,
+                ReadActiveApplication = name => {
+                    attempts.Add(name);
+                    if (name == "Access.Application") throw new System.Runtime.InteropServices.COMException("Not registered", unchecked((int)0x800401E3));
+                    return app;
+                }
+            };
+            Assert.AreSame(app, native.Application());
+            CollectionAssert.AreEqual(new[] { "Access.Application", "Access.Application.16" }, attempts);
+            owner = 0;
+            Assert.ThrowsException<InvalidOperationException>(() => native.Application());
+        }
+
+        [DataTestMethod, DataRow(false), DataRow(true)]
+        public void PublisherWithoutProjectFileNameRequiresOneExactDocumentAndProjectBeforeSave(bool unavailablePath)
+        {
+            foreach (string fault in new[] { "none", "documents", "foreign document", "projects", "foreign project", "foreign vbe", "pid", "path", "format", "readonly" })
+            {
+                var editor = new PathEditor();
+                var project = new PathProject { VBE = editor, FileName = "",
+                    PathReadError = unavailablePath ? new DirectoryNotFoundException("Path not found") : null };
+                editor.VBProjects.Add(project);
+                var app = new PathApplication(); var doc = new PathDocument { Application = app, FullName = @"C:\fixture\Owned.pub" };
+                app.Documents.Add(doc);
+                uint owner = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
+                var native = new VbeProjectComponents.NativeOtherHostProbe {
+                    ReadHostKind = () => "Publisher", ReadOwner = h => owner,
+                    ReadIdentity = ReferenceEquals, ReadActiveApplication = name => app
+                };
+                native.BindProject(project); native.BindDocument(doc);
+                Assert.AreSame(project, native.DocumentProject(doc));
+                if (fault == "documents") app.Documents.Add(new PathDocument { Application = app, FullName = @"C:\fixture\Other.pub" });
+                if (fault == "foreign document") app.Documents[0] = new PathDocument { Application = app, FullName = doc.FullName };
+                if (fault == "projects") editor.VBProjects.Add(new PathProject { VBE = editor });
+                if (fault == "foreign project") editor.VBProjects[0] = new PathProject { VBE = editor };
+                if (fault == "foreign vbe") project.VBE = new PathEditor();
+                if (fault == "pid") owner = 0;
+                if (fault == "path") doc.FullName = @"C:\fixture\Changed.pub";
+                if (fault == "format") doc.SaveFormat = 3;
+                if (fault == "readonly") doc.ReadOnly = true;
+                if (fault == "none")
+                {
+                    native.Save(doc, false, @"C:\fixture\Owned.pub", 1);
+                    Assert.AreEqual(1, doc.SaveCalls); Assert.IsTrue(native.SaveInvocationStarted);
+                }
+                else
+                {
+                    Assert.ThrowsException<InvalidOperationException>(() => native.Save(doc, false, @"C:\fixture\Owned.pub", 1), fault);
+                    Assert.AreEqual(0, doc.SaveCalls, fault); Assert.IsFalse(native.SaveInvocationStarted, fault);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void PublisherProbeRevalidatesEveryNativePreconditionBeforeInvokingSave()
+        {
+            foreach (string fault in new[] { "document", "collection", "pid", "project", "path", "format", "readonly" })
+            {
+                var editor = new PathEditor(); var project = new PathProject { VBE = editor, FileName = @"C:\fixture\Owned.pub" };
+                editor.VBProjects.Add(project);
+                var app = new PathApplication(); var doc = new PathDocument { Application = app, FullName = project.FileName };
+                app.Documents.Add(doc);
+                uint owner = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
+                var native = new VbeProjectComponents.NativeOtherHostProbe {
+                    ReadHostKind = () => "Publisher", ReadOwner = h => owner,
+                    ReadIdentity = ReferenceEquals, ReadActiveApplication = name => app
+                };
+                native.BindProject(project); native.BindDocument(doc);
+                Assert.AreSame(project, native.DocumentProject(doc));
+                string destination = project.FileName;
+                if (fault == "document") native.BindDocument(new PathDocument { Application = app, FullName = destination });
+                if (fault == "collection") app.Documents.Clear();
+                if (fault == "pid") owner = 0;
+                if (fault == "project") editor.VBProjects.Clear();
+                if (fault == "path") { project.FileName = @"C:\fixture\Changed.pub"; doc.FullName = project.FileName; }
+                if (fault == "format") doc.SaveFormat = 3;
+                if (fault == "readonly") doc.ReadOnly = true;
+                Assert.ThrowsException<InvalidOperationException>(() => native.Save(doc, false, destination, 1), fault);
+                Assert.AreEqual(0, doc.SaveCalls, fault); Assert.IsFalse(native.SaveInvocationStarted, fault);
+            }
+        }
+
         [DataTestMethod, DataRow(false), DataRow(true)]
         public void WordTemporaryVbaStorageDoesNotReplaceMatchedDocumentPath(bool temporaryPathBeforeSave)
         {
@@ -205,7 +431,7 @@ namespace VBAi.Tests.Unit
             }
             finally { System.Runtime.InteropServices.Marshal.FinalReleaseComObject(first); System.Runtime.InteropServices.Marshal.FinalReleaseComObject(second); }
         }
-        /// <summary>Les extensions macro choisissent exactement les constantes Word/PowerPoint et refusent les autres formats.</summary>
+        /// <summary>Supported native extensions select exact Office constants and reject lossy formats.</summary>
         [TestMethod]
         public void HostRecognitionAndExactMacroFormatsNeverAcceptAnotherProcessOrLossyFormat()
         {

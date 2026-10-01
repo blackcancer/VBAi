@@ -2163,4 +2163,6 @@ Git Credential Manager でサインインします。コミットの作成者情
   <data name="Measured coverage currently requires the owned Excel host." xml:space="preserve"><value>カバレッジ測定には、現在、制御対象の Excel インスタンスが必要です。</value></data>
   <data name="Save the macro-enabled workbook before collecting coverage." xml:space="preserve"><value>カバレッジを測定する前に、ブックをマクロ有効形式で保存してください。</value></data>
   <data name="Coverage exclusions" xml:space="preserve"><value>カバレッジの除外項目</value></data>
+  <data name="VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring." xml:space="preserve"><value>VBA のインポートに失敗し、その結果の状態を記録できませんでした。復旧は保留中です。復元する前に、保持されたバックアップと現在のプロジェクトを確認してください。</value></data>
+  <data name="Inspection and restoration of the native Code Colors category both failed. The original category selection is unverified." xml:space="preserve"><value>ネイティブのコードの色カテゴリの検査と復元の両方に失敗しました。元のカテゴリ選択は検証されていません。</value></data>
 </root>

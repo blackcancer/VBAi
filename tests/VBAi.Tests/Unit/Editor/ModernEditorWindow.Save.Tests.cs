@@ -43,7 +43,8 @@ namespace VBAi.Tests.Unit.Editor
             {
                 Directory.CreateDirectory(f.Storage.Root); f.Ready(true); int saves = 0;
                 string path = Path.Combine(f.Storage.Root, "owned.bas"); File.WriteAllText(path, "owned"); f.Native.Project.Path = path;
-                f.Set("synchronizationError", "old synchronization failure"); f.Set("lastSaveError", "old save failure");
+                var errors = f.Get<Dictionary<string, string>>("documentSynchronizationErrors");
+                errors[f.Document.Id] = "old synchronization failure"; f.Set("lastSaveError", "old save failure");
                 f.Window.NativeSave = native => { Assert.AreSame(f.Native.Adapter, native); saves++; if (state == "native-failure") throw new IOException("owned native save failure"); };
                 f.Window.NativeHostSaved = native => state == "host-unsaved" ? false : state == "host-unknown" ? (bool?)null : true;
                 if (state == "filename-failure") f.Native.Project.FailFileName = true;
@@ -54,7 +55,7 @@ namespace VBAi.Tests.Unit.Editor
                 if (state == "saved" || state == "host-unknown")
                 {
                     ModernEditorDebugFixture.Wait(f.Window.SaveDocument(f.Document.Id));
-                    Assert.IsNull(f.Get<string>("synchronizationError"));
+                    Assert.IsFalse(errors.ContainsKey(f.Document.Id));
                     Assert.AreEqual(UiText.Get(state == "saved" ? "Saved." : "The native Save command finished, but the host document's saved state could not be verified."), f.Get<Label>("status").Text);
                     Assert.AreEqual(state == "saved", f.Get<string>("lastSaveError") == null);
                 }

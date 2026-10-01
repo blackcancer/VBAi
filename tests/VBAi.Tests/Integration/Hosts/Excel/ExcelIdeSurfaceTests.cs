@@ -13,6 +13,8 @@ namespace VBAi.Tests.Integration
     [TestClass, TestCategory("Excel")]
     public sealed class ExcelIdeSurfaceTests
     {
+        public TestContext TestContext { get; set; }
+        private static readonly List<ExcelVbeFixture> retainedOptionsHosts = new List<ExcelVbeFixture>();
         /// <summary>Relit la page Toolbox réelle et refuse une mutation dont le contexte natif n'est pas qualifié.</summary>
         [STATestMethod]
         public void NativeToolboxPagesAreObservedWithoutClaimingMutationSupport()
@@ -74,38 +76,29 @@ namespace VBAi.Tests.Integration
         [STATestMethod]
         public void ExtendedOptionsRoundTripAndRestoreTheCompleteNativeState()
         {
-            using (var host = ExcelVbeFixture.Start())
-            {
-                var baseline = Data(host.Command(new { Command = "read_vbe_options" }));
-                var tabs = ((object[])baseline["Tabs"]).Select(VbeBridgeClient.Object).ToArray();
-                foreach (string fragment in new[] { "format", "ancrage" })
-                {
-                    var tab = tabs.Single(item => Convert.ToString(item["Tab"]).ToLowerInvariant().Contains(fragment));
-                    var checkbox = ((object[])tab["Controls"]).Select(VbeBridgeClient.Object).First(item =>
-                        Convert.ToString(item["Type"]) == "ControlType.CheckBox" && item["Error"] == null);
-                    bool original = Convert.ToString(checkbox["Value"]) == "On";
-                    try
-                    {
-                        var before = Data(host.Command(new { Command = "read_vbe_options" }));
-                        var applied = Data(host.Command(new { Command = "set_vbe_option", Pane = tab["Tab"], Property = checkbox["Name"],
-                            Value = !original, ExpectedOptionsVersion = before["OptionsVersion"] }));
-                        Assert.AreEqual(true, applied["ControlValueVerified"]);
-                        var after = Data(host.Command(new { Command = "read_vbe_options" }));
-                        var selectedTab = ((object[])after["Tabs"]).Select(VbeBridgeClient.Object).Single(item => Equals(item["Tab"], tab["Tab"]));
-                        var selected = ((object[])selectedTab["Controls"]).Select(VbeBridgeClient.Object).Single(item =>
-                            Equals(item["Name"], checkbox["Name"]) && Equals(item["Type"], checkbox["Type"]));
-                        Assert.AreEqual(original ? "Off" : "On", selected["Value"]);
-                    }
-                    finally
-                    {
-                        var current = Data(host.Command(new { Command = "read_vbe_options" }));
-                        Data(host.Command(new { Command = "set_vbe_option", Pane = tab["Tab"], Property = checkbox["Name"],
-                            Value = original, ExpectedOptionsVersion = current["OptionsVersion"] }));
-                        var restored = Data(host.Command(new { Command = "read_vbe_options" }));
-                        Assert.AreEqual(baseline["OptionsVersion"], restored["OptionsVersion"], "The complete native preferences must be restored.");
-                    }
-                }
-            }
+            string results = Environment.GetEnvironmentVariable("VBAi_EXCEL_RESULTS") ?? TestContext?.TestResultsDirectory;
+            if (string.IsNullOrWhiteSpace(results) || !Path.IsPathRooted(results))
+                throw new InvalidOperationException("An absolute durable test-results directory is required before opening Excel.");
+            Directory.CreateDirectory(results);
+            var host = ExcelVbeFixture.Start();
+            int sequence = 0;
+            // Result attachments from successful tests may be omitted by the runner;
+            // retain phase summaries alongside this exact host's durable startup ledger.
+            string prefix = Path.Combine(host.Root, "options-qualification");
+            TestContext.WriteLine("Options phase evidence: " + prefix);
+            var lifecycle = new ExcelOptionsQualification(host.Command, () => {
+                host.PreserveForDiagnosticRecovery = true;
+                lock (retainedOptionsHosts) if (!retainedOptionsHosts.Contains(host)) retainedOptionsHosts.Add(host);
+            }, host.Dispose, (phase, data) => {
+                string path = prefix + "-" + (++sequence).ToString("D4") + ".json";
+                var record = new { Phase = phase, Sequence = sequence, ObservedUtc = DateTime.UtcNow.ToString("o"),
+                    host.ProcessId, FixtureRoot = host.Root, StartupEvidence = host.File("startup.json"),
+                    ProductMvid = typeof(VbeSession).Module.ModuleVersionId.ToString("D"),
+                    TestMvid = typeof(ExcelIdeSurfaceTests).Module.ModuleVersionId.ToString("D"), Data = data };
+                File.WriteAllText(path, new JavaScriptSerializer().Serialize(record), new UTF8Encoding(false));
+                TestContext.AddResultFile(path);
+            });
+            lifecycle.Run();
         }
         /// <summary>Lit l'arbre natif par son HWND et inspecte la protection sans changer le projet.</summary>
         [STATestMethod]

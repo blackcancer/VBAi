@@ -82,6 +82,54 @@ namespace VBAi.Tests.Unit
             }
         }
 
+        /// <summary>Hidden Monaco keeps workspace geometry without moving or activating the native document.</summary>
+        [STATestMethod]
+        public void HiddenEditorTracksWorkspaceResizeWithoutChangingNativeDocumentBoundsZOrderOrFocus()
+        {
+            foreach (int type in new[] { 1, 2 })
+            using (var f = new AddInModernEditorFixture())
+            using (var native = new Form { TopLevel = false, FormBorderStyle = FormBorderStyle.None })
+            using (var input = new TextBox())
+            {
+                var editor = f.Get();
+                var owner = f.Scope.Host.Owner;
+                var mdi = owner.Controls.OfType<MdiClient>().Single();
+                var workspace = LlmBoundaryScope.Get<EditorWorkspaceHost>(f.Instance, "editorWorkspace");
+                native.Controls.Add(input);
+                SetParent(native.Handle, mdi.Handle); native.Show();
+                Assert.IsTrue(SetWindowPos(native.Handle, IntPtr.Zero, 20, 25, 300, 250, 0x0010));
+                f.Scope.Host.ActiveWindow = new AddInEditorActiveWindow { Type = type };
+                LlmBoundaryScope.Call(workspace, "Resize");
+                Assert.IsFalse(editor.Visible);
+                SetFocus(input.Handle);
+                Assert.AreEqual(input.Handle, GetFocus());
+
+                var previousEditorBounds = editor.Bounds;
+                var nativeBounds = native.Bounds;
+                owner.ClientSize = new System.Drawing.Size(owner.ClientSize.Width + 120, owner.ClientSize.Height + 80);
+                owner.PerformLayout();
+                var expectedEditorBounds = mdi.ClientRectangle;
+                Assert.AreNotEqual(previousEditorBounds, expectedEditorBounds, "The fixture must actually resize the workspace.");
+                var nativePrevious = GetWindow(native.Handle, 3);
+                var nativeNext = GetWindow(native.Handle, 2);
+                var topChild = GetWindow(mdi.Handle, 5);
+                var focus = GetFocus();
+                Assert.AreEqual(input.Handle, focus, "Resizing the owner must leave the native document focused.");
+
+                LlmBoundaryScope.Call(workspace, "Resize");
+
+                Assert.AreEqual(expectedEditorBounds, editor.Bounds, "Hidden Monaco must follow the resized MDI client for native document type " + type + ".");
+                Assert.IsFalse(editor.Visible, "Geometry updates must keep Monaco hidden.");
+                Assert.IsTrue(native.Visible);
+                Assert.AreEqual(nativeBounds, native.Bounds, "The native document geometry must be preserved.");
+                Assert.AreEqual(mdi.Handle, OwnedMdiWorkspace.GetParent(native.Handle));
+                Assert.AreEqual(nativePrevious, GetWindow(native.Handle, 3));
+                Assert.AreEqual(nativeNext, GetWindow(native.Handle, 2));
+                Assert.AreEqual(topChild, GetWindow(mdi.Handle, 5), "Resizing hidden Monaco must preserve native child ordering.");
+                Assert.AreEqual(focus, GetFocus(), "Resizing hidden Monaco must not take keyboard focus.");
+            }
+        }
+
         [STATestMethod]
         public void FocusedToolWindowStillUsesTheActiveMdiCodeChildWithoutTakingKeyboardFocus()
         {

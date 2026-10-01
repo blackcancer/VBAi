@@ -22,6 +22,8 @@ namespace VBAi
         private readonly Dictionary<string, EditorDocument> documents = new Dictionary<string, EditorDocument>();
         /// <summary>Dernières révisions Monaco observées pour chaque document.</summary>
         private readonly Dictionary<string, int> versions = new Dictionary<string, int>();
+        /// <summary>Last failed reconciliation for each open document; inactive failures never describe the selected module.</summary>
+        private readonly Dictionary<string, string> documentSynchronizationErrors = new Dictionary<string, string>();
         // Native captions are observed with the bounded document batch, never during layout.
         private readonly Dictionary<string, string> displayNames = new Dictionary<string, string>();
         /// <summary>Brouillons récupérés au chargement et proposés séparément du code natif.</summary>
@@ -78,7 +80,9 @@ namespace VBAi
         /// <value>The current value represented by this member.</value>
         internal bool WorkspaceHosted { get; set; }
         /// <summary>Identifiant du document sélectionné dans les onglets.</summary>
-        private string selected, synchronizationError;
+        private string selected;
+        /// <summary>Unique profile retained until controller disposal and the runtime exit notification.</summary>
+        private EditorBrowserProfile browserProfile;
         /// <summary>Heure du dernier changement de texte, utilisée pour différer la synchronisation automatique.</summary>
         private DateTime lastEdit;
         /// <summary>Beginning of the current stream batch and its latest accepted edit sequence.</summary>
@@ -98,7 +102,7 @@ namespace VBAi
             lastEdit = DateTime.UtcNow;
             if (streamSequence == streamedSequence) firstStreamEdit = lastEdit;
             streamSequence++;
-            synchronizationError = null; lastSaveError = null; SetStatus();
+            documentSynchronizationErrors.Remove(doc.Id); lastSaveError = null; SetStatus();
         }
         /// <summary>Observes execution independently of draft persistence, without overlapping UI operations.</summary>
         private async void DebugTimerTick(object sender, EventArgs e)
@@ -168,14 +172,19 @@ namespace VBAi
             {
                 string folder = BrowserAssetsDirectory ?? Path.Combine(Path.GetDirectoryName(typeof(ModernEditorWindow).Assembly.Location), "EditorAssets");
                 if (!File.Exists(Path.Combine(folder, "index.html"))) throw new FileNotFoundException("Monaco assets are missing.");
-                Browser?.Dispose(); Browser = CreateBrowser();
+                Browser?.Dispose(); browserProfile?.Retire(); Browser = CreateBrowser();
                 surface.Controls.Add(Browser);
                 string cache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VBAi", "EditorWebView", System.Diagnostics.Process.GetCurrentProcess().Id.ToString());
-                var environment = await CreateBrowserEnvironment(cache);
+                var profile = new EditorBrowserProfile(cache);
+                browserProfile = profile;
+                profile.BrowserRequested();
+                var environment = await CreateBrowserEnvironment(profile.Path);
+                environment.BrowserProcessExited += (sender, args) => profile.BrowserExited(args.BrowserProcessId);
                 if (IsDisposed || Disposing || closing) return;
                 await EnsureBrowserEnvironment(Browser, environment);
                 if (IsDisposed || Disposing || closing) return;
                 var core = Browser.CoreWebView2;
+                profile.ObserveBrowser(core.BrowserProcessId);
                 string language = UiText.Culture.Name.ToLowerInvariant();
                 if (language != "pt-br" && !language.StartsWith("zh-")) language = UiText.Culture.TwoLetterISOLanguageName;
                 string translation = Path.Combine(folder, "nls.messages." + language + ".js");
@@ -327,19 +336,29 @@ public int column { get; set; } }
         /// <exception cref="InvalidOperationException">La limite de documents ouverts est atteinte.</exception>
         internal async Task<EditorDocument> OpenModule(IEditorModule module)
         {
+            return await OpenModuleCore(module, true);
+        }
+
+        /// <summary>Opens an exact module, optionally preserving native visibility and keyboard focus during passive following.</summary>
+        private async Task<EditorDocument> OpenModuleCore(IEditorModule module, bool activateWindow)
+        {
             var existing = documents.Values.FirstOrDefault(d => ReferenceEquals(d.Module, module) ||
                 (d.Module is EditorVbeModule vm && module is EditorVbeModule other && vm.IsComponent(other.Component)));
             if (existing != null) { selected = existing.Id; SelectTab(existing.Id); if (Ready) await SelectEditorDocument(existing.Id); return existing; }
             if (documents.Count >= 30) throw new InvalidOperationException("Close the editor before opening more than 30 modules.");
             var document = new EditorDocument(module);
-            if (module is EditorVbeModule nativeModule) nativeModule.EnsureNativeWindow();
+            if (module is EditorVbeModule nativeModule)
+            {
+                if (activateWindow) nativeModule.EnsureNativeWindow();
+                else nativeModule.RetainNativeWindow();
+            }
             var draft = Drafts.Recover(module.Key);
             documents.Add(document.Id, document); versions[document.Id] = 1;
             if (draft != null && EditorDocument.Normalize(draft.Text) != document.Text) recovered[document.Id] = draft;
             string displayName = module.Name; displayNames[document.Id] = displayName;
             var tab = new TabPage(displayName) { Tag = document.Id }; tabs.TabPages.Add(tab); selected = document.Id; tabs.SelectedTab = tab;
             if (Ready) await RenderDocument(document);
-            SetStatus(); Activate(); return document;
+            SetStatus(); if (activateWindow) Activate(); return document;
         }
         /// <summary>Envoie le contenu d’un document nouvellement ouvert à Monaco et actualise sa révision.</summary>
         /// <param name="doc">Document à afficher.</param>
@@ -390,7 +409,6 @@ public int column { get; set; } }
         {
             if (capture) await CaptureDocuments();
             if (IsDisposed || closing) return;
-            Exception lastFailure = null;
             foreach (var doc in backgroundBatch ?? documents.Values.ToArray())
             {
                 if (backgroundBatch != null)
@@ -419,12 +437,17 @@ public int column { get; set; } }
                         { doc.Acknowledge(native, captured); versions[doc.Id] = Math.Max(versions[doc.Id], applied); }
                     }
                     if (!doc.Dirty) Drafts.ClearOwn(doc);
+                    documentSynchronizationErrors.Remove(doc.Id);
                 }
-                catch (Exception error) { lastFailure = error; }
+                catch (Exception error)
+                {
+                    if (documents.TryGetValue(doc.Id, out var open) && ReferenceEquals(open, doc))
+                        documentSynchronizationErrors[doc.Id] = error.Message;
+                    // Keep background diagnostics without overwriting status after an asynchronous tab switch.
+                    LoadLog.Write("Monaco: " + error.GetType().Name);
+                }
             }
-            synchronizationError = lastFailure?.Message;
             SetStatus();
-            if (lastFailure != null) Report(lastFailure);
         }
         /// <summary>Traite les changements après un court délai de repos puis observe le mode de débogage VBE.</summary>
         /// <param name="sender">Minuterie de la fenêtre.</param>
@@ -432,6 +455,8 @@ public int column { get; set; } }
         private async void TimerTick(object sender, EventArgs e)
         {
             if (busy || closing || debugCommands.CurrentCount == 0) return;
+            await FollowNativeActivation();
+            if (closing || IsDisposed || debugCommands.CurrentCount == 0) return;
             await ProcessBackgroundDocuments();
             try { if (!closing && !IsDisposed) await ObserveDebugMode(); } catch (Exception error) { LoadLog.Write("Monaco debug observation: " + error.Message); }
         }
@@ -506,6 +531,8 @@ public int column { get; set; } }
                 string title = name + (doc.Dirty ? " *" : "");
                 if (tab.Text != title) tab.Text = title;
             }
+            string synchronizationError = null;
+            if (Current != null) documentSynchronizationErrors.TryGetValue(Current.Id, out synchronizationError);
             status.Text = UiText.Get(lastSaveError ?? synchronizationError ?? (Current == null ? "Open a VBA module to start editing." : Current.Conflict ? "The module changed in VBA. Resolve the conflict first." : Current.Dirty ? "Changes pending synchronization with VBA." : "Synchronized with VBA. Save the macro in its host application."));
             }
             finally { activeStatusLayouts--; }
@@ -522,22 +549,36 @@ public int column { get; set; } }
             tabs.SelectedTab = e.TabPage;
             CloseModuleClick(sender, EventArgs.Empty);
         }
+        /// <summary>Reports synchronous STA-dispatch preparation failures on the caller; clears only busy state owned by this action.</summary>
+        private Task<bool> StartUiAction(Func<Task<bool>> operation, bool ownsBusy)
+        {
+            try { return VbeUiTask.Run(operation); }
+            catch (Exception error)
+            {
+                try { Report(error); }
+                finally { if (ownsBusy) busy = false; }
+                return Task.FromResult(false);
+            }
+        }
         /// <summary>Capture l’état avant d’afficher la comparaison entre le brouillon et le code natif.</summary>
         /// <param name="sender">Bouton de comparaison.</param>
         /// <param name="e">Données de l’événement.</param>
         private async void DiffClick(object sender, EventArgs e)
         {
-            try
-            {
-                await ProcessDocuments(false);
-                if (Current != null)
+            await StartUiAction(async () => {
+                try
                 {
-                    reviewed[Current.Id] = Current.Native;
-                    await Script("compare", Current.Native);
-                    showingDiff = true; SetStatus();
+                    await ProcessDocuments(false);
+                    if (Current != null)
+                    {
+                        reviewed[Current.Id] = Current.Native;
+                        await Script("compare", Current.Native);
+                        showingDiff = true; SetStatus();
+                    }
                 }
-            }
-            catch (Exception error) { Report(error); }
+                catch (Exception error) { Report(error); }
+                return true;
+            }, false);
         }
         /// <summary>Applique le brouillon à la version native explicitement comparée par l’utilisateur.</summary>
         /// <param name="sender">Bouton de résolution du conflit.</param>
@@ -547,17 +588,20 @@ public int column { get; set; } }
             if (busy || Current == null || !reviewed.TryGetValue(Current.Id, out var revision)) return;
             var doc = Current;
             busy = true;
-            try
-            {
-                await CaptureDocuments(); Drafts.Save(doc);
-                string captured = doc.Text, actual = doc.ResolveWithDraft(revision);
-                int applied;
-                if (int.TryParse(await Script("apply", doc.Id, versions[doc.Id], actual), out applied) && applied > 0)
-                { doc.Acknowledge(actual, captured); versions[doc.Id] = Math.Max(versions[doc.Id], applied); }
-                reviewed.Remove(doc.Id); await Script("hideDiff"); showingDiff = false; SetStatus();
-            }
-            catch (Exception error) { Report(error); }
-            finally { busy = false; }
+            await StartUiAction(async () => {
+                try
+                {
+                    await CaptureDocuments(); Drafts.Save(doc);
+                    string captured = doc.Text, actual = doc.ResolveWithDraft(revision);
+                    int applied;
+                    if (int.TryParse(await Script("apply", doc.Id, versions[doc.Id], actual), out applied) && applied > 0)
+                    { doc.Acknowledge(actual, captured); versions[doc.Id] = Math.Max(versions[doc.Id], applied); }
+                    reviewed.Remove(doc.Id); await Script("hideDiff"); showingDiff = false; SetStatus();
+                }
+                catch (Exception error) { Report(error); }
+                finally { busy = false; }
+                return true;
+            }, true);
         }
         /// <summary>Ferme l’onglet sélectionné après capture et sauvegarde de son brouillon.</summary>
         /// <param name="sender">Bouton de fermeture du module.</param>
@@ -567,29 +611,33 @@ public int column { get; set; } }
             if (busy || Current == null) return;
             var doc = Current;
             busy = true;
-            try
-            {
-                await CaptureDocuments(); Drafts.Save(doc);
-                await Script("close", doc.Id);
-                if (selected == doc.Id) showingDiff = false;
-                var closed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                BeginInvoke(new Action(() =>
+            await StartUiAction(async () => {
+                try
                 {
-                    try
+                    await CaptureDocuments(); Drafts.Save(doc);
+                    await Script("close", doc.Id);
+                    if (selected == doc.Id) showingDiff = false;
+                    var closed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    BeginInvoke(new Action(() =>
                     {
-                        (doc.Module as EditorVbeModule)?.CloseNativeWindow();
-                        var page = tabs.TabPages.Cast<TabPage>().First(t => (string)t.Tag == doc.Id);
-                        if (selected == doc.Id) selected = null; tabs.TabPages.Remove(page); page.Dispose();
-                        if (tabs.SelectedTab != null) selected = (string)tabs.SelectedTab.Tag;
-                        documents.Remove(doc.Id); versions.Remove(doc.Id); reviewed.Remove(doc.Id); recovered.Remove(doc.Id); displayNames.Remove(doc.Id);
-                        SetStatus(); closed.SetResult(true);
-                    }
-                    catch (Exception error) { closed.SetException(error); }
-                }));
-                await closed.Task;
-            }
-            catch (Exception error) { Report(error); }
-            finally { busy = false; }
+                        try
+                        {
+                            (doc.Module as EditorVbeModule)?.CloseNativeWindow();
+                            var page = tabs.TabPages.Cast<TabPage>().First(t => (string)t.Tag == doc.Id);
+                            if (selected == doc.Id) selected = null; tabs.TabPages.Remove(page); page.Dispose();
+                            if (tabs.SelectedTab != null) selected = (string)tabs.SelectedTab.Tag;
+                            documents.Remove(doc.Id); versions.Remove(doc.Id); reviewed.Remove(doc.Id); recovered.Remove(doc.Id); displayNames.Remove(doc.Id);
+                            documentSynchronizationErrors.Remove(doc.Id);
+                            SetStatus(); closed.SetResult(true);
+                        }
+                        catch (Exception error) { closed.SetException(error); }
+                    }));
+                    await closed.Task;
+                }
+                catch (Exception error) { Report(error); }
+                finally { busy = false; }
+                return true;
+            }, true);
         }
         /// <summary>Masque la comparaison et revient à l’édition du brouillon.</summary>
         /// <param name="sender">Bouton d’édition.</param>
@@ -603,21 +651,24 @@ public int column { get; set; } }
             if (busy || Current == null) return;
             var doc = Current;
             busy = true;
-            try
-            {
-                await CaptureDocuments();
-                if (doc.Dirty)
+            await StartUiAction(async () => {
+                try
                 {
-                    new EditorDraftStore(Drafts.Root).Save(doc);
-                    recovered[doc.Id] = new EditorDraft { Key = doc.RecoveryKey, Baseline = doc.Baseline, Text = doc.Text };
+                    await CaptureDocuments();
+                    if (doc.Dirty)
+                    {
+                        new EditorDraftStore(Drafts.Root).Save(doc);
+                        recovered[doc.Id] = new EditorDraft { Key = doc.RecoveryKey, Baseline = doc.Baseline, Text = doc.Text };
+                    }
+                    string text = EditorDocument.Normalize(doc.Module.Read());
+                    int applied; if (int.TryParse(await Script("apply", doc.Id, versions[doc.Id], text), out applied) && applied > 0)
+                    { doc.AcceptRemote(text); versions[doc.Id] = applied; }
+                    SetStatus();
                 }
-                string text = EditorDocument.Normalize(doc.Module.Read());
-                int applied; if (int.TryParse(await Script("apply", doc.Id, versions[doc.Id], text), out applied) && applied > 0)
-                { doc.AcceptRemote(text); versions[doc.Id] = applied; }
-                SetStatus();
-            }
-            catch (Exception error) { Report(error); }
-            finally { busy = false; }
+                catch (Exception error) { Report(error); }
+                finally { busy = false; }
+                return true;
+            }, true);
         }
         /// <summary>Restaure dans Monaco le brouillon précédemment récupéré pour le document actif.</summary>
         /// <param name="sender">Bouton de restauration du brouillon.</param>
@@ -627,15 +678,18 @@ public int column { get; set; } }
             if (busy || Current == null || !recovered.TryGetValue(Current.Id, out var draft)) return;
             var doc = Current;
             busy = true;
-            try
-            {
-                await CaptureDocuments(); Drafts.Save(doc); int applied;
-                if (int.TryParse(await Script("apply", doc.Id, versions[doc.Id], EditorDocument.Normalize(draft.Text)), out applied) && applied > 0)
-                { doc.Restore(draft.Baseline, draft.Text); versions[doc.Id] = applied; recovered.Remove(doc.Id); }
-                SetStatus();
-            }
-            catch (Exception error) { Report(error); }
-            finally { busy = false; }
+            await StartUiAction(async () => {
+                try
+                {
+                    await CaptureDocuments(); Drafts.Save(doc); int applied;
+                    if (int.TryParse(await Script("apply", doc.Id, versions[doc.Id], EditorDocument.Normalize(draft.Text)), out applied) && applied > 0)
+                    { doc.Restore(draft.Baseline, draft.Text); versions[doc.Id] = applied; recovered.Remove(doc.Id); }
+                    SetStatus();
+                }
+                catch (Exception error) { Report(error); }
+                finally { busy = false; }
+                return true;
+            }, true);
         }
         /// <summary>Applique à Monaco les couleurs du thème hôte après un changement de thème.</summary>
         internal Action<Action> DispatchTheme;
@@ -694,7 +748,7 @@ public int column { get; set; } }
         {
             timer?.Stop(); debugTimer?.Stop(); streamTimer?.Stop(); PreserveDrafts(); synchronizationWorker?.Dispose();
             foreach (var request in languageRequests.Values.ToArray()) request.Cancel();
-            languageWorker?.Dispose(); UiTheme.Changed -= ThemeChanged; Browser?.Dispose();
+            languageWorker?.Dispose(); UiTheme.Changed -= ThemeChanged; Browser?.Dispose(); browserProfile?.Retire();
             foreach (var doc in documents.Values) (doc.Module as EditorVbeModule)?.CloseNativeWindow();
         }
     }

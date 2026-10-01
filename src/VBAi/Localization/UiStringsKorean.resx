@@ -2163,4 +2163,6 @@ Git Credential Manager로 로그인하며 커밋 작성자 정보는 Git에서 �
   <data name="Measured coverage currently requires the owned Excel host." xml:space="preserve"><value>커버리지 측정에는 현재 제어 중인 Excel 인스턴스가 필요합니다.</value></data>
   <data name="Save the macro-enabled workbook before collecting coverage." xml:space="preserve"><value>커버리지를 측정하기 전에 통합 문서를 매크로 지원 형식으로 저장하세요.</value></data>
   <data name="Coverage exclusions" xml:space="preserve"><value>커버리지 제외 항목</value></data>
+  <data name="VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring." xml:space="preserve"><value>VBA 가져오기에 실패했으며 결과 상태를 기록할 수 없습니다. 복구가 아직 보류 중입니다. 복원하기 전에 보존된 백업과 현재 프로젝트를 확인하세요.</value></data>
+  <data name="Inspection and restoration of the native Code Colors category both failed. The original category selection is unverified." xml:space="preserve"><value>기본 코드 색상 범주의 검사와 복원에 모두 실패했습니다. 원래 범주 선택은 확인되지 않았습니다.</value></data>
 </root>

@@ -2163,4 +2163,6 @@ QQ 附加記憶體
   <data name="Measured coverage currently requires the owned Excel host." xml:space="preserve"><value>涵蓋範圍測量目前需要受控的 Excel 執行個體。</value></data>
   <data name="Save the macro-enabled workbook before collecting coverage." xml:space="preserve"><value>收集涵蓋範圍前，請將活頁簿儲存為啟用巨集的格式。</value></data>
   <data name="Coverage exclusions" xml:space="preserve"><value>涵蓋範圍排除項目</value></data>
+  <data name="VBA import failed and its resulting state could not be recorded. Recovery remains pending; inspect the retained backup and live project before restoring." xml:space="preserve"><value>VBA 匯入失敗，且無法記錄其結果狀態。復原仍在等待處理；還原前請檢查保留的備份與目前專案。</value></data>
+  <data name="Inspection and restoration of the native Code Colors category both failed. The original category selection is unverified." xml:space="preserve"><value>檢查與還原原生程式碼色彩類別均失敗。原始類別選擇尚未驗證。</value></data>
 </root>
