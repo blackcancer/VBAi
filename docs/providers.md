@@ -112,6 +112,26 @@ OpenAI requests include `store=false`; this is not a universal retention setting
 for every provider or a guarantee of zero retention. Provider-side data handling
 is governed by that provider and the selected account. See [privacy](privacy.md).
 
+### Ollama configuration boundary
+
+VBAi currently sends Ollama the selected model, messages, tool schemas and the
+stream flag through `/v1/chat/completions`. It does not send temperature, top-p,
+seed or a context-size override. These generation controls are not currently
+exposed in VBAi settings. Model presence in the catalogue is not a guarantee of
+correct tool arguments or adherence to a request to answer without tools.
+
+On the tested diagnostic backend version `0.34.4`, the
+[OpenAI request converter](https://github.com/ollama/ollama/blob/v0.34.4/openai/openai.go#L644)
+sets omitted temperature and top-p to 1. Changing only those defaults in a
+Modelfile does not change what this converter supplies. Ollama's
+[context setting](https://docs.ollama.com/context-length) is separate; its
+[OpenAI compatibility guide](https://docs.ollama.com/api/openai-compatibility#setting-the-local-context-size)
+describes configuring a model's context rather than sending `num_ctx` as an
+OpenAI chat field. Check the effective server settings and model capabilities
+when diagnosing a local provider. The captured configuration comparison in
+[recorded validation](test-coverage.md) does not establish a reliable configuration
+or close the remaining live-provider gate.
+
 ## Validation
 
 Transports are covered by simulated HTTP/CLI tests. The recorded live OpenRouter

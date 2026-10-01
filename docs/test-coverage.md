@@ -1,5 +1,53 @@
 # Recorded validation
 
+## Ollama sampling configuration comparison (2026-10-01)
+
+The checkout is synchronized to main `2f28018`. This independent backend
+comparison loads no VBAi assembly and does not qualify that product revision.
+It uses the previously verified Ollama `0.34.4` executable and isolated
+`qwen2.5:3b` manifest digest
+`357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b`.
+All cache blob lengths and hashes are verified before launch. No model download,
+profile edit, authentication or native tool dispatch occurs.
+
+All **12 requests** are prepared before execution: the exact headless echo
+prompt/tool schema and the retained detached-UI request, each with seeds 42/73
+and temperature omitted, 0 or 0.2. Every request also enables chosen-token
+logprobs; the comparison therefore does not recreate the earlier unseeded wire
+byte-for-byte. Each request is emitted once, with no retry. The single batch
+exits **0** with **12 known HTTP/protocol terminals**, not 12 VSTest passes.
+
+| Fixture | Temperature omitted | Temperature 0 | Temperature 0.2 |
+| --- | --- | --- | --- |
+| Echo, both seeds | Exact scalar `marker=VB_AI_42` | Exact scalar `marker=VB_AI_42` | Exact scalar `marker=VB_AI_42` |
+| UI, seed 42 | Streamed text | `read_module` with an invented module | `read_module` with missing required arguments |
+| UI, seed 73 | Complete-empty; malformed generated tool JSON | `read_module` with an invented module | `read_module` with an invented module |
+
+For the new empty response, chosen tokens reconstruct a `discover_tools` call
+whose `arguments` is a quoted JSON string containing unescaped inner quotes.
+The generated call is malformed JSON; delivered SSE contains neither text nor
+tool calls, ends with `stop` and `[DONE]`, and reaches HTTP EOF. This pairs the
+model generation with the empty response at the backend boundary. It does not
+establish the missing-token historical responses' cause or a VBAi parser defect.
+Lower temperature changes this observed outcome but does not establish safe,
+correct tool selection. No malformed arguments are repaired or dispatched.
+
+The actual server log confirms temperature **1** when omitted, top-p **1**,
+context **4096**, UI prompt **1673 tokens**, echo prompt **181 tokens** and no
+truncation. A short context does not explain these captured trials. The exact
+Ollama [OpenAI conversion](https://github.com/ollama/ollama/blob/v0.34.4/openai/openai.go#L644)
+sets temperature/top-p to 1 when absent from the request, overriding a model's
+sampling default for those fields.
+
+Evidence is under
+`artifacts/qualification-v1/followup-20260930/ollama-sampling-controls/runs/c455aa1094a54ef3bdbfc05d522fe8ff`:
+the terminal manifest, per-request bodies/hashes and chosen tokens,
+`offline-sampling-review.json`, and the server's sampling/context log.
+The original handle identifies owned helper PID `6024`; after all requests
+terminate and no established connections remain, one helper-only force-stop
+observes exit `4294967295`, with both output pumps terminal. No Ollama process
+remains. This is not native Office shutdown qualification. Q-028 stays open.
+
 ## VBA test explorer integration with main (2026-10-01)
 
 The PR combines test-explorer commit

@@ -58,6 +58,17 @@ after independent terminal verification. These new generations do not explain
 the original empty response or qualify VBAi's provider integration. Q-028 stays
 open; byte-level evidence and scope are in recorded validation.
 
+After synchronizing main `2f28018`, an independent sampling comparison reproduces
+a new complete-empty response and captures its generated malformed tool JSON.
+The exact backend receives no explicit temperature from VBAi and applies 1;
+lower temperatures change that observed outcome but still produce incorrect
+tool choices or missing arguments. The captured prompt fits the allocated
+context without truncation. This explains the new controlled response boundary,
+not the earlier responses without generated-token evidence. No product settings,
+parser or native dispatch policy changes are made, and no later result is used
+to erase an earlier failure. Q-028 remains open; exact scope, counts and evidence
+are in [recorded validation](test-coverage.md).
+
 The Git menu, chat and LLM tools now share a compatible lookup of the native
 document key and the former uppercase key. A single existing binding is reused
 without moving or rewriting caches; two bindings or uncertain metadata refuse
