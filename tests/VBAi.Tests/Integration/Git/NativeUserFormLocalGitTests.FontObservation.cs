@@ -48,7 +48,7 @@ namespace VBAi.Tests.Integration
         }
 
         /// <summary>Separates the original refusal, read-only observation and optional single font correction in owned fixtures.</summary>
-        private void RunFontObservation(string layout, bool restoreFonts, bool assignOwner = false, bool useBridge = false)
+        private void RunFontObservation(string layout, bool restoreFonts, bool assignOwner = false, bool useBridge = false, bool persistedFont = false)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1" ||
                 Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_LOCAL_GIT_TESTS") != "1" ||
@@ -66,6 +66,7 @@ namespace VBAi.Tests.Integration
                 ["RestoreFontsRequested"] = restoreFonts,
                 ["AssignNativeFontOwnerRequested"] = assignOwner,
                 ["OwnerStaFontCommandsRequested"] = useBridge,
+                ["PersistedFontLoadRequested"] = persistedFont,
                 ["Scope"] = "Saved/reopened baseline; one native Apply attempt; read-only Font observation and optional single explicit font restoration. No repeated import, setter retry, post-import Save or macro execution. This diagnostic does not qualify successful production import."
             };
             string evidence = Path.Combine(output, "font-observation.json");
@@ -107,7 +108,14 @@ namespace VBAi.Tests.Integration
                             report["FontAssignmentsRequestedAfterImport"] = (layout == "FrameMultiPage" ? 2 : 1) * (useBridge ? 6 : 8);
                             report["Stage"] = "one-explicit-font-restoration";
                             write();
-                            if (useBridge) host.RestoreGitLayoutFontsViaBridge(form, layout, fontBefore);
+                            if (persistedFont)
+                            {
+                                host.RestoreGitLayoutPersistedFonts(form, layout, fontBefore);
+                                var withoutGetters = Capture(project, output, "after-persisted-font-before-getters");
+                                report["ExactSnapshotBeforeFontGetter"] = before.SameAs(withoutGetters);
+                                write();
+                            }
+                            else if (useBridge) host.RestoreGitLayoutFontsViaBridge(form, layout, fontBefore);
                             else host.RestoreGitLayoutFonts(form, layout, fontBefore, assignOwner);
                             fontAfter = host.ReadGitLayoutFonts(form, layout);
                             report["NativeFontsAfterExplicitRestoration"] = fontAfter;
@@ -127,6 +135,16 @@ namespace VBAi.Tests.Integration
             }
             catch (Exception error) { report["Stage"] = "FAILED"; report["Failure"] = error.ToString(); throw; }
             finally { write(); TestContext.AddResultFile(evidence); }
+        }
+
+        /// <summary>Diagnoses single persisted-font loads and owner assignments before observing any font member.</summary>
+        [STATestMethod]
+        [DataRow("LabelButton")]
+        [DataRow("Image")]
+        [DataRow("FrameMultiPage")]
+        public void NativePersistedFontLoadAfterOneImportPreservesExactSnapshot(string layout)
+        {
+            RunFontObservation(layout, true, persistedFont: true);
         }
     }
 }
