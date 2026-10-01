@@ -54,6 +54,37 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(1, state.ExportRequests);
         }
 
+        [DataTestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public void IndependentNormalExitClosesLifecycleWithoutConvertingFailedExportIntoSuccess(bool exportOk)
+        {
+            var state = Ready(); state.Begin("export_component"); state.Receive("export_component", Response(exportOk));
+            StringAssert.Contains(state.TerminalExportOutcome, "awaiting normal owned exit");
+            state.Begin("read_module"); state.Receive("read_module", Response(true));
+            state.CompleteOwnedShutdown(new Dictionary<string, object> { ["Exited"] = true, ["ExitCodeHex"] = "0x00000000", ["ForcedTermination"] = false });
+            Assert.IsTrue(state.ShutdownCompleted);
+            StringAssert.StartsWith(state.TerminalExportOutcome, exportOk ? "SUCCESS" : "FAILED; original terminal native error retained");
+            StringAssert.Contains(state.TerminalExportOutcome, "normal owned exit verified0");
+            Assert.ThrowsException<InvalidOperationException>(() => state.Begin("status"));
+            Assert.ThrowsException<InvalidOperationException>(() => state.CompleteOwnedShutdown(null));
+        }
+
+        [DataTestMethod]
+        [DataRow("Exited", false)]
+        [DataRow("ExitCodeHex", "0x00000001")]
+        [DataRow("ExitCodeHex", null)]
+        [DataRow("ForcedTermination", true)]
+        [DataRow("CleanupSuspended", true)]
+        public void UnknownAbnormalOrForcedExitCannotCloseTheLifecycle(string key, object value)
+        {
+            var state = Ready(); state.Begin("export_component"); state.Receive("export_component", Response(true));
+            var shutdown = new Dictionary<string, object> { ["Exited"] = true, ["ExitCodeHex"] = "0x00000000", ["ForcedTermination"] = false };
+            shutdown[key] = value;
+            Assert.ThrowsException<InvalidOperationException>(() => state.CompleteOwnedShutdown(shutdown));
+            Assert.IsFalse(state.ShutdownCompleted); StringAssert.Contains(state.TerminalExportOutcome, "awaiting normal owned exit");
+        }
+
         [TestMethod]
         public void MissingOrMalformedResponseRetainsPendingAndForbidsCleanupFollowupOrExportRetry()
         {

@@ -51,6 +51,8 @@ namespace VBAi.Tests.Integration
             Action save = () => { report["Stage"] = state.Stage; report["DeliveryPending"] = state.Pending;
                 report["BootstrapPending"] = bootstrapPending;
                 report["NativeExportRequests"] = state.ExportRequests;
+                report["TerminalExportOutcome"] = state.TerminalExportOutcome;
+                report["ShutdownCompleted"] = state.ShutdownCompleted;
                 File.WriteAllText(reportPath, json.Serialize(report), new UTF8Encoding(false)); };
             var lifecycle = new ExcelScalarQualificationEvidence(Path.Combine(trial, "scenario-lifecycle.json"), 0, trial, "One export paired with owner-STA synthetic visibility, no retry or host cleanup on uncertainty");
             ExcelScalarQualificationEvidence requests = null;
@@ -136,7 +138,6 @@ namespace VBAi.Tests.Integration
                     report["RawExportFiles"] = new[] { destination, Path.ChangeExtension(destination, ".frx") }.Select(path => new {
                         Path = path, Exists = File.Exists(path), Bytes = File.Exists(path) ? (long?)new FileInfo(path).Length : null,
                         Sha256 = File.Exists(path) ? Hash(path) : null }).ToArray();
-                    report["TerminalExportOutcome"] = exportFailure == null ? "SUCCESS; awaiting normal owned exit" : "FAILED; original terminal native error retained";
                     save();
                 }
                 catch (Exception readback) { if (exportFailure != null) throw new AggregateException("Native export and independent after-readback both failed; no retry.", exportFailure, readback); throw; }
@@ -153,7 +154,10 @@ namespace VBAi.Tests.Integration
                 }
                 if (host != null)
                 {
-                    try { host.Dispose(); report["Shutdown"] = host.ShutdownDiagnostics; lifecycle.Shutdown = "Normal owned exit verified"; }
+                    try {
+                        host.Dispose(); report["Shutdown"] = host.ShutdownDiagnostics; lifecycle.Shutdown = "Normal owned exit verified";
+                        if (state.ExportRequests == 1) state.CompleteOwnedShutdown(host.ShutdownDiagnostics);
+                    }
                     catch { report["Shutdown"] = host.ShutdownDiagnostics; lock (retained) { retained.AddRange(leases); retained.Add(host); } save(); throw; }
                 }
                 foreach (var lease in leases) lease.Dispose();
