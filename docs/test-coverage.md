@@ -398,6 +398,42 @@ procedure or native-cleanup replay, host termination, full dump or global
 policy change. A corrected exception-forwarding preflight is required before
 further native diagnostic acceptance.
 
+After the exception-forwarding correction, tests `e10cd46` pass the detached
+`diagnostic-guards-v6-v5/diagnostic-guards-v5.trx` batch: **49 passed,
+0 failed, 0 skipped**, runner exit **0**. This includes paired terminal-state
+guards and the complete collector/helper controller guards, not additional
+global product coverage.
+
+`teardown-preflight-v5/ccf20d0db4ea4459b248851dddb5f718/preflight.json`
+passes all four actual helper trials together: normal detach/STOP and exit
+0; fatal 0xC0000409 and software fatal 0xC0000005 with exact target/debugger
+exit matching and executed exception/live-register/stack evidence; locally
+handled software first-chance AV forwarded unhandled to the application,
+followed by normal exit 0. No global CLR policy is changed. CDB safe-stop
+proof requires the exact owned injected breakpoint rather than a pending
+application fault. The helper and common-script hashes are bound in the
+report; older preflights cannot authorize this controller.
+
+`excel-array-teardown-v6-v2/excel-array-teardown-v6-v2.trx` records
+**1 passed, 0 failed, 0 skipped**, runner exit **0**, owned Excel **56808**,
+with normal exit **0**. The exact controller records **NOT_REPRODUCED**:
+39 first-chance AV events are forwarded, no fatal exception is captured,
+and the process exits without deadline expiry or controller stop/detach.
+This is an instrumented scoped result, not an explanation or correction of
+the original uninstrumented crashes. No native invocation/cleanup is replayed.
+
+The separate uninstrumented prepared two-case batch,
+`procedure-values-standalone-v6/procedure-values-standalone-v6.trx`, records
+**2 passed, 0 failed, 0 skipped**, runner exit **0**, with the teardown
+diagnostic variable absent. Fresh owned Excel **47732** and **59352** preserve
+the asserted native ParamArray/Variant-array values, arity/bounds, invocation
+counts and final source readback, and both exit normally with code **0**.
+Their distinct startup identities and per-host shutdown records remain under
+`hosts/`; PID reuse in another earlier helper trial does not establish shared
+process identity. This accepts the current-product standalone scopes only.
+The earlier core batch and its exact crash events remain failed and unexplained;
+an isolated pass does not make the full campaign green or close Q-006.
+
 ### Preceding Monaco-status candidate: complete managed acceptance
 
 Source `d7a1c75d90d840949cc78606f2ae55b14e93ec55`, MVID
