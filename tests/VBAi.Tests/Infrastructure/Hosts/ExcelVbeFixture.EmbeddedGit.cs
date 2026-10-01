@@ -12,6 +12,8 @@ namespace VBAi.Tests.Integration
 {
     internal sealed partial class ExcelVbeFixture
     {
+        // Keep native identity alive across readbacks even when temporary shared RCWs are released.
+        private IntPtr embeddedGitProjectIdentity;
         internal sealed class EmbeddedGitScope
         {
             internal string Path, Cache, State, Marker, References;
@@ -58,6 +60,8 @@ namespace VBAi.Tests.Integration
                 editor = ((dynamic)application).VBE; main = ((dynamic)editor).MainWindow;
                 project = ((dynamic)workbook).VBProject; components = ((dynamic)project).VBComponents;
                 module = ((dynamic)components).Item("EmbeddedModule"); moduleCode = ((dynamic)module).CodeModule; pane = ((dynamic)moduleCode).CodePane;
+                Assert.AreEqual(IntPtr.Zero, embeddedGitProjectIdentity, "Only one embedded Git scope may own this fixture's identity lease.");
+                embeddedGitProjectIdentity = Marshal.GetIUnknownForObject(project);
                 pending(true);
                 ((dynamic)pane).Show(); ((dynamic)editor).ActiveCodePane = pane;
                 ((dynamic)pane).SetSelection(1, 1, 1, 1);

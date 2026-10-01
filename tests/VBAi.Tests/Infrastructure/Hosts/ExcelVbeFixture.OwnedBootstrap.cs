@@ -17,7 +17,7 @@ namespace VBAi.Tests.Integration
         private Func<string> ownedImagePath;
 
         /// <summary>Explicit environment-controlled launch used only by the scalar diagnostic pages.</summary>
-        internal static ExcelVbeFixture StartOwnedWithTrace(string tracePath, string pathVisibilityManifest = null)
+        internal static ExcelVbeFixture StartOwnedWithTrace(string tracePath, string pathVisibilityManifest = null, bool createBlankWorkbook = false)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EXCEL_TESTS") != "1")
                 Assert.Inconclusive("Excel automation is opt-in. Set VBAi_RUN_EXCEL_TESTS=1.");
@@ -121,6 +121,19 @@ namespace VBAi.Tests.Integration
                 var state = VbeBridgeClient.Object(status["Data"]);
                 Assert.AreEqual(fixture.ProcessId, Convert.ToInt32(state["HostProcessId"]));
                 Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), state["AssemblyModuleVersionId"]);
+                if (createBlankWorkbook)
+                {
+                    launch["Phase"] = "BlankWorkbookCreationPending"; record();
+                    object seedWorkbook = fixture.workbook;
+                    fixture.workbook = ((dynamic)fixture.workbooks).Add();
+                    launch["Phase"] = "SeedWorkbookClosePending"; record();
+                    ((dynamic)seedWorkbook).Close(false);
+                    Release(seedWorkbook);
+                    Assert.AreEqual(1, Convert.ToInt32(((dynamic)fixture.workbooks).Count));
+                    Assert.AreEqual("", Convert.ToString(((dynamic)fixture.workbook).Path), "Ordinary fixture scenarios require an unsaved owned workbook.");
+                    launch["BlankWorkbookVerified"] = true;
+                    fixture.RecordStartup("OwnedBlankWorkbookVerified", existingIds);
+                }
                 fixture.RecordStartup("Ready", existingIds, status);
                 launch["LoadedAssemblyMvid"] = state["AssemblyModuleVersionId"]; launch["Phase"] = "Ready"; record();
                 return fixture;

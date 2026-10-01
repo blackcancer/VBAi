@@ -58,7 +58,7 @@ namespace VBAi.Tests.Integration
             {
                 string trace = ExplicitBootstrapTracePath(Environment.GetEnvironmentVariable("VBAi_EXCEL_RESULTS"));
                 Directory.CreateDirectory(Path.GetDirectoryName(trace));
-                return StartOwnedWithTrace(trace);
+                return StartOwnedWithTrace(trace, createBlankWorkbook: true);
             }
             var excelType = Type.GetTypeFromProgID("Excel.Application");
             if (excelType == null) Assert.Inconclusive("Excel.Application is unavailable.");
@@ -202,6 +202,11 @@ namespace VBAi.Tests.Integration
                 catch (Exception error) { evidenceFailure = error; }
             };
             BeginDiagnosticCleanup();
+            if (embeddedGitProjectIdentity != IntPtr.Zero)
+            {
+                Marshal.Release(embeddedGitProjectIdentity);
+                embeddedGitProjectIdentity = IntPtr.Zero;
+            }
             if (owned && workbook != null)
                 try { ((dynamic)workbook).Close(false); }
                 catch (Exception error) { closeFailure = error; }
