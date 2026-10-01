@@ -10,6 +10,52 @@ namespace VBAi
     /// <summary>Writes already validated scalar values without the Framework COM descriptor's undersized VARIANT buffer.</summary>
     internal static class VbeScalarProperty
     {
+        /// <summary>Identifies the attempted write or its subsequent verification without implying rollback.</summary>
+        internal enum FailurePhase { SetterInvocation, RetentionReadback }
+
+        /// <summary>Private exception-data identity prevents unrelated annotations from being reported as scalar phases.</summary>
+        private static readonly object FailurePhaseKey = new object();
+
+        /// <summary>Annotates the original exception; diagnostic failures must never replace it.</summary>
+        internal static void AnnotateFailure(Exception error, FailurePhase phase)
+        {
+            try
+            {
+                if (phase == FailurePhase.SetterInvocation || phase == FailurePhase.RetentionReadback)
+                    error.Data[FailurePhaseKey] = phase;
+            }
+            catch (Exception) { }
+        }
+
+        /// <summary>Adds bounded phase information at an error-response boundary, leaving direct callers' exception unchanged.</summary>
+        internal static string FormatFailure(Exception error)
+        {
+            try
+            {
+                Exception original = error;
+                FailurePhase phase;
+                for (int depth = 0; ; depth++)
+                {
+                    object annotation = original.Data[FailurePhaseKey];
+                    if (annotation is FailurePhase observed &&
+                        (observed == FailurePhase.SetterInvocation || observed == FailurePhase.RetentionReadback))
+                    {
+                        phase = observed;
+                        break;
+                    }
+                    if (depth == 8 || !(original is TargetInvocationException) || original.InnerException == null)
+                        return error.Message;
+                    original = original.InnerException;
+                }
+                string type = original.GetType().FullName ?? original.GetType().Name;
+                if (type.Length > 128) type = type.Substring(0, 128);
+                return original.Message + " [Scalar property phase: " + phase + "; exception: " + type +
+                    "; HRESULT: 0x" + unchecked((uint)original.HResult).ToString("X8", CultureInfo.InvariantCulture) +
+                    ". The value may already have changed; do not retry automatically.]";
+            }
+            catch (Exception) { return error.Message; }
+        }
+
         /// <summary>Identifies native COM targets; replaceable by isolated dispatch contract tests.</summary>
         internal static Func<object, bool> NativeObject = Marshal.IsComObject;
 

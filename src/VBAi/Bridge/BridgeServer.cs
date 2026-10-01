@@ -359,7 +359,7 @@ namespace VBAi
                             }
                             catch (Exception ex)
                             {
-                                response = Response.Failure(ex.Message);
+                                response = Response.Failure(VbeScalarProperty.FormatFailure(ex));
                             }
                             string payload;
                             try { payload = json.Serialize(response); }

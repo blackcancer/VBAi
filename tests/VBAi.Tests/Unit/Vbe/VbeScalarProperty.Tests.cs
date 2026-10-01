@@ -57,6 +57,66 @@ namespace VBAi.Tests.Unit
             finally { VbeScalarProperty.NativeObject = previous; }
         }
 
+        [TestMethod]
+        public void FailureFormattingPreservesProtocolShapeAndWrappedOriginalDetails()
+        {
+            var original = new System.Runtime.InteropServices.COMException("synthetic original message", unchecked((int)0x9CFD3148));
+            VbeScalarProperty.AnnotateFailure(original, VbeScalarProperty.FailurePhase.SetterInvocation);
+            var wrapped = new TargetInvocationException(new TargetInvocationException(original));
+            string message = VbeScalarProperty.FormatFailure(wrapped);
+            StringAssert.StartsWith(message, original.Message);
+            StringAssert.Contains(message, "SetterInvocation");
+            StringAssert.Contains(message, "System.Runtime.InteropServices.COMException");
+            StringAssert.Contains(message, "0x9CFD3148");
+            StringAssert.Contains(message, "do not retry automatically");
+            Assert.IsTrue(message.Length - original.Message.Length < 400, "Added diagnostic metadata must remain bounded.");
+            var response = Response.Failure(message);
+            Assert.IsFalse(response.Ok);
+            Assert.IsNull(response.Data);
+            Assert.AreEqual(message, response.Error);
+            Assert.AreEqual("synthetic original message", original.Message);
+            Assert.AreEqual(unchecked((int)0x9CFD3148), original.HResult);
+        }
+
+        [TestMethod]
+        public void UnannotatedAndInvalidPhaseErrorsKeepExistingBoundaryMessage()
+        {
+            var original = new InvalidOperationException("original unchanged");
+            var wrapped = new TargetInvocationException(original);
+            Assert.AreEqual(wrapped.Message, VbeScalarProperty.FormatFailure(wrapped));
+            VbeScalarProperty.AnnotateFailure(original, (VbeScalarProperty.FailurePhase)42);
+            Assert.AreEqual(original.Message, VbeScalarProperty.FormatFailure(original));
+            VbeScalarProperty.AnnotateFailure(original, VbeScalarProperty.FailurePhase.RetentionReadback);
+            StringAssert.Contains(VbeScalarProperty.FormatFailure(original), "RetentionReadback");
+        }
+
+        [TestMethod]
+        public void DescriptorThrownReflectionErrorKeepsItsOwnAnnotationAndIdentity()
+        {
+            var error = new TargetInvocationException(new InvalidOperationException("synthetic inner failure"));
+            VbeScalarProperty.AnnotateFailure(error, VbeScalarProperty.FailurePhase.RetentionReadback);
+            string message = VbeScalarProperty.FormatFailure(new TargetInvocationException(error));
+            StringAssert.StartsWith(message, error.Message);
+            StringAssert.Contains(message, "RetentionReadback");
+            StringAssert.Contains(message, typeof(TargetInvocationException).FullName);
+            StringAssert.Contains(message, "0x" + unchecked((uint)error.HResult).ToString("X8"));
+        }
+
+        [TestMethod]
+        public void UnavailableDiagnosticDataCannotMaskTheOriginalFailure()
+        {
+            var error = new UnavailableDataException();
+            VbeScalarProperty.AnnotateFailure(error, VbeScalarProperty.FailurePhase.SetterInvocation);
+            Assert.AreEqual("original diagnostic-resistant failure", VbeScalarProperty.FormatFailure(error));
+            Assert.AreEqual(unchecked((int)0x80004005), error.HResult);
+        }
+
+        private sealed class UnavailableDataException : Exception
+        {
+            internal UnavailableDataException() : base("original diagnostic-resistant failure") { HResult = unchecked((int)0x80004005); }
+            public override System.Collections.IDictionary Data => throw new InvalidOperationException("annotation unavailable");
+        }
+
         private static void SetComponentScalar(object target, string name, object value)
         {
             try { typeof(VbeProjectComponents).GetMethod("SetScalar", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new[] { target, name, value }); }

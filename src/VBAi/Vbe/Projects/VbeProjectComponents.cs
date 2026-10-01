@@ -813,12 +813,25 @@ namespace VBAi
             else if (type.IsPrimitive || type == typeof(decimal))
                 converted = Convert.ChangeType(value, type, CultureInfo.InvariantCulture);
             else throw new InvalidOperationException("Property is not an editable scalar: " + name);
-            VbeScalarProperty.Set(target, descriptor, converted);
-            object actual = descriptor.GetValue(target);
-            if (!Equals(actual, converted) &&
-                !string.Equals(Convert.ToString(actual, CultureInfo.InvariantCulture),
-                    Convert.ToString(converted, CultureInfo.InvariantCulture), StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("The VBE did not retain property " + name + ".");
+            try { VbeScalarProperty.Set(target, descriptor, converted); }
+            catch (Exception error)
+            {
+                VbeScalarProperty.AnnotateFailure(error, VbeScalarProperty.FailurePhase.SetterInvocation);
+                throw;
+            }
+            try
+            {
+                object actual = descriptor.GetValue(target);
+                if (!Equals(actual, converted) &&
+                    !string.Equals(Convert.ToString(actual, CultureInfo.InvariantCulture),
+                        Convert.ToString(converted, CultureInfo.InvariantCulture), StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("The VBE did not retain property " + name + ".");
+            }
+            catch (Exception error)
+            {
+                VbeScalarProperty.AnnotateFailure(error, VbeScalarProperty.FailurePhase.RetentionReadback);
+                throw;
+            }
         }
 
         /// <summary>Énumère les propriétés exposées sans invoquer les accesseurs des types non scalaires.</summary>
