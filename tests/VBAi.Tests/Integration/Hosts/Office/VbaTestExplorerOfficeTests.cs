@@ -130,6 +130,8 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(true, historical["Stale"]);
                 Assert.AreEqual(false, historical["Pending"]);
                 Assert.AreEqual("Completed", historical["State"]);
+                // Publisher requires the disposable VBA project to be saved before its guarded Quit.
+                if (host == "Publisher") fixture.SaveNative();
             }
         }
 

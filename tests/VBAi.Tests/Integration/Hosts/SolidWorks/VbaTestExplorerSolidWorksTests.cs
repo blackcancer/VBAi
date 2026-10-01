@@ -332,7 +332,7 @@ namespace VBAi.Tests.Integration
                 Kind = (string)item["Kind"], Line = Convert.ToInt32(item["Line"]), Diagnostic = item["Diagnostic"] as string, IgnoreReason = item["IgnoreReason"] as string };
         }
         private static string Canonical(string source) => source.Replace("\r\n", "\n").TrimEnd('\n');
-        private static string HashFile(string path) { using (var file = File.OpenRead(path)) using (var sha = SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(file)).Replace("-", ""); }
+        private static string HashFile(string path) { using (var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) using (var sha = SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(file)).Replace("-", ""); }
         private static object RequireCallback(string loaded)
         {
             using (var classes = RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, RegistryView.Registry64))

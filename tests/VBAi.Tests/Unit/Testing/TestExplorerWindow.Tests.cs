@@ -19,6 +19,124 @@ namespace VBAi.Tests.Unit
     public sealed class TestExplorerWindowTests
     {
         [STATestMethod]
+        public void InitialNativePlacementRepairsOnlyCollapsedOwnedSitesAndKeepsDesignerDimensions()
+        {
+            for (int index = 0; index < 4; index++)
+            using (var host = new Form { ShowInTaskbar = false, StartPosition = FormStartPosition.Manual })
+            using (var container = new ChatToolWindow())
+            using (var explorer = new TestExplorerWindow())
+            {
+                var designerSize = explorer.Size;
+                var frame = index % 2 == 0 ? null : new ExplorerNativeFrameDouble();
+                var native = new ExplorerNativeWindowDouble(host) { LinkedWindowFrame = frame };
+                host.Controls.Add(container);
+                var minimum = explorer.MinimumSize;
+                var tinySizes = new[] { new Size(200, 100), new Size(Math.Max(1920, minimum.Width), 6),
+                    new Size(minimum.Width - 1, minimum.Height + 120), new Size(minimum.Width + 120, minimum.Height - 1) };
+                host.ClientSize = tinySizes[index];
+                host.Show();
+                container.Attach(explorer);
+                Application.DoEvents();
+                var owner = index % 2 == 0 ? (IWin32Window)host : new ExplorerMonitorFallbackOwner();
+                var area = Screen.FromHandle(owner.Handle).WorkingArea;
+                explorer.EnsureUsableNativePlacement(container, native, owner);
+                Application.DoEvents();
+                Assert.AreEqual(Math.Min(designerSize.Width, area.Width), host.Width);
+                Assert.AreEqual(Math.Min(designerSize.Height, area.Height), host.Height);
+                Assert.IsTrue(area.Contains(host.Bounds), "Recovered native bounds must remain on the owner's monitor.");
+                Assert.IsFalse(explorer.TopLevel, "Recovery retains the native tool container.");
+                Assert.IsTrue(explorer.Visible);
+                if (frame != null) {
+                    Assert.AreEqual(1, frame.LinkedWindows.Removed.Count);
+                    Assert.AreSame(native, frame.LinkedWindows.Removed[0]);
+                    Assert.IsNull(native.LinkedWindowFrame);
+                }
+                var recovered = host.Bounds;
+                explorer.EnsureUsableNativePlacement(container, native, owner);
+                Assert.AreEqual(recovered, host.Bounds, "Reopening a readable pane must not reset its placement.");
+            }
+        }
+
+        [STATestMethod]
+        public void NativePlacementPreservesReadableFloatingAndDockedUserBounds()
+        {
+            foreach (bool docked in new[] { false, true })
+            using (var host = new Form { ShowInTaskbar = false, StartPosition = FormStartPosition.Manual })
+            using (var container = new ChatToolWindow())
+            using (var explorer = new TestExplorerWindow())
+            {
+                host.ClientSize = new Size(explorer.MinimumSize.Width + 120, explorer.MinimumSize.Height + 80);
+                var frame = docked ? new ExplorerNativeFrameDouble() : null;
+                var native = new ExplorerNativeWindowDouble(host) { LinkedWindowFrame = frame };
+                host.Controls.Add(container);
+                host.Show();
+                container.Attach(explorer);
+                Application.DoEvents();
+                var userBounds = host.Bounds;
+                explorer.EnsureUsableNativePlacement(container, native, host);
+                Assert.AreEqual(userBounds, host.Bounds);
+                Assert.AreSame(frame, native.LinkedWindowFrame);
+                if (frame != null) Assert.AreEqual(0, frame.LinkedWindows.Removed.Count);
+                host.ClientSize = new Size(explorer.MinimumSize.Width + 160, explorer.MinimumSize.Height + 130);
+                Application.DoEvents();
+                userBounds = host.Bounds;
+                explorer.EnsureUsableNativePlacement(container, native, host);
+                Assert.AreEqual(userBounds, host.Bounds, "A later user resize is authoritative.");
+            }
+        }
+
+        [STATestMethod]
+        public void NativePlacementDoesNotMutateWhenTheOwnedSiteCannotBeRead()
+        {
+            using (var host = new Form { ClientSize = new Size(200, 100), ShowInTaskbar = false })
+            using (var container = new ChatToolWindow())
+            using (var explorer = new TestExplorerWindow())
+            {
+                var native = new ExplorerNativeWindowDouble(host);
+                var bounds = host.Bounds;
+                explorer.EnsureUsableNativePlacement(null, native, host);
+                Assert.AreEqual(bounds, host.Bounds);
+                explorer.EnsureUsableNativePlacement(container, native, host);
+                Assert.AreEqual(bounds, host.Bounds, "No handle must not be treated as a collapsed native pane.");
+                host.Controls.Add(container);
+                host.Show();
+                container.Attach(explorer);
+                Application.DoEvents();
+                container.ParentReader = unused => IntPtr.Zero;
+                bounds = host.Bounds;
+                explorer.EnsureUsableNativePlacement(container, native, host);
+                Assert.AreEqual(bounds, host.Bounds, "An unverified parent must never be repositioned.");
+            }
+        }
+
+        public sealed class ExplorerNativeWindowDouble
+        {
+            private readonly Form form;
+            public ExplorerNativeWindowDouble(Form form) { this.form = form; }
+            public ExplorerNativeFrameDouble LinkedWindowFrame { get; set; }
+            public int Width { get => form.Width; set => form.Width = value; }
+            public int Height { get => form.Height; set => form.Height = value; }
+            public int Left { get => form.Left; set => form.Left = value; }
+            public int Top { get => form.Top; set => form.Top = value; }
+        }
+
+        public sealed class ExplorerNativeFrameDouble
+        {
+            public ExplorerLinkedWindowsDouble LinkedWindows { get; } = new ExplorerLinkedWindowsDouble();
+        }
+
+        public sealed class ExplorerLinkedWindowsDouble
+        {
+            public List<ExplorerNativeWindowDouble> Removed { get; } = new List<ExplorerNativeWindowDouble>();
+            public void Remove(ExplorerNativeWindowDouble window) { Removed.Add(window); window.LinkedWindowFrame = null; }
+        }
+
+        private sealed class ExplorerMonitorFallbackOwner : IWin32Window
+        {
+            public IntPtr Handle => IntPtr.Zero;
+        }
+
+        [STATestMethod]
         public void DiscoveryDoesNotExecuteAndFilteredCheckedTestsAreNotDispatched()
         {
             var service = new ExplorerDouble();
