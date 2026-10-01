@@ -13,6 +13,47 @@ namespace VBAi.Tests.Unit
     public sealed partial class ChatSessionStoreTests
     {
         [TestMethod]
+        public void DeleteRemovesOnlyTheMatchingConversationAndPreservesMemoryAndOtherScopes()
+        {
+            using (var scope = new LlmBoundaryScope())
+            using (var store = new ChatSessionStore(Path.Combine(scope.Root, "delete.db")))
+            {
+                var first = new ChatSessionState { Scope = "first" };
+                var sibling = new ChatSessionState { Scope = "first" };
+                var other = new ChatSessionState { Scope = "other" };
+                store.Save(first); store.Save(sibling); store.Save(other); store.SaveMemory("first", "retained memory");
+                store.Delete(first.Id, "wrong scope", first.StorageVersion);
+                Assert.AreEqual(2, store.List("first").Count);
+                store.Delete(first.Id, first.Scope, first.StorageVersion);
+                Assert.AreEqual(sibling.Id, store.List("first").Single().Id);
+                Assert.AreEqual(other.Id, store.List("other").Single().Id);
+                Assert.AreEqual("retained memory", store.ReadMemory("first"));
+                store.Delete(first.Id, first.Scope, first.StorageVersion);
+                store.Delete(new ChatSessionState().Id, first.Scope, null);
+            }
+        }
+
+        [TestMethod]
+        public void DeleteRejectsStaleOrMissingRevisionAndDeletedSnapshotsCannotRecreateTheRow()
+        {
+            using (var scope = new LlmBoundaryScope())
+            using (var store = new ChatSessionStore(Path.Combine(scope.Root, "delete-conflict.db")))
+            {
+                var session = new ChatSessionState { Scope = "fixture" };
+                store.Save(session);
+                string staleVersion = session.StorageVersion;
+                session.Title = "other host"; store.Save(session);
+                Assert.ThrowsException<IOException>(() => store.Delete(session.Id, session.Scope, staleVersion));
+                Assert.ThrowsException<IOException>(() => store.Delete(session.Id, session.Scope, null));
+                Assert.AreEqual("other host", store.List(session.Scope).Single().Title);
+                store.Delete(session.Id, session.Scope, session.StorageVersion);
+                Assert.ThrowsException<IOException>(() => store.Save(session));
+                Assert.AreEqual(0, store.List(session.Scope).Count);
+                Assert.ThrowsException<ArgumentException>(() => store.Delete(null, session.Scope, session.StorageVersion));
+            }
+        }
+
+        [TestMethod]
         public void NativeStorePersistsRichConversationDraftsAndKeepsScopesIsolated()
         {
             using(var scope=new LlmBoundaryScope())

@@ -83,6 +83,8 @@ namespace VBAi
         private VBAi.ChatActionButton archive;
         /// <summary>Commande d’épinglage de la session.</summary>
         private VBAi.ChatActionButton pin;
+        /// <summary>Deletes the selected local conversation.</summary>
+        private VBAi.ChatActionButton deleteSession;
         /// <summary>Commande d’export de la conversation.</summary>
         private VBAi.ChatActionButton export;
         /// <summary>Commande d’affichage ou de masquage de la mémoire de projet.</summary>
@@ -213,6 +215,7 @@ namespace VBAi
             this.rename = new VBAi.ChatActionButton();
             this.archive = new VBAi.ChatActionButton();
             this.pin = new VBAi.ChatActionButton();
+            this.deleteSession = new VBAi.ChatActionButton();
             this.export = new VBAi.ChatActionButton();
             this.memoryToggle = new VBAi.ChatActionButton();
             this.memoryPanel = new System.Windows.Forms.GroupBox();
@@ -778,6 +781,7 @@ namespace VBAi
             // historyActions
             //
             this.historyActions.AutoSize = true;
+            this.historyActions.Controls.Add(this.deleteSession);
             this.historyActions.Controls.Add(this.rename);
             this.historyActions.Controls.Add(this.archive);
             this.historyActions.Controls.Add(this.pin);
@@ -852,6 +856,27 @@ namespace VBAi
             this.export.Text = "Export Markdown";
             this.export.UseVisualStyleBackColor = false;
             this.export.Click += new System.EventHandler(this.Export_Click);
+            //
+            // deleteSession
+            //
+            this.deleteSession.BackColor = System.Drawing.Color.FromArgb(241, 245, 249);
+            this.deleteSession.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.deleteSession.FlatAppearance.BorderSize = 0;
+            this.deleteSession.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.deleteSession.ForeColor = System.Drawing.Color.FromArgb(51, 65, 85);
+            this.deleteSession.AutoSize = true;
+            this.deleteSession.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.deleteSession.MinimumSize = new System.Drawing.Size(152, 30);
+            this.deleteSession.Location = new System.Drawing.Point(3, 3);
+            this.deleteSession.Name = "deleteSession";
+            this.deleteSession.AccessibleName = "Delete conversation";
+            this.deleteSession.Enabled = false;
+            this.toolTips.SetToolTip(this.deleteSession, "Permanently delete the selected conversation from local history.");
+            this.deleteSession.Size = new System.Drawing.Size(152, 30);
+            this.deleteSession.TabIndex = 32;
+            this.deleteSession.Text = "Delete conversation";
+            this.deleteSession.UseVisualStyleBackColor = false;
+            this.deleteSession.Click += new System.EventHandler(this.DeleteSession_Click);
             //
             // memoryToggle
             //

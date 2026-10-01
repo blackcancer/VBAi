@@ -41,6 +41,17 @@ must not silently reintroduce pre-migration context into a new provider thread.
 
 ## Local data
 
+The conversation history provides **Delete conversation** for the selected local
+session, with confirmation. Deletion is unavailable during an active response or
+while a document scope loads. Pending local writes finish before deletion, and a
+revision changed by another host must be reopened first. Deleting the active
+conversation opens another unarchived conversation or creates a new one.
+This removes the SQLite history entry and attempts to remove its ordinary writer
+recovery snapshot. A retained recovery copy is reported separately from deletion.
+It does not erase provider conversations, CLI state, document memory, exports or
+backups, and it is not a secure wipe of the database file. Recovery copies retained
+after an earlier shutdown timeout remain available for manual review.
+
 | Data | Location and boundary |
 | --- | --- |
 | Settings and saved provider keys | `%APPDATA%\VBAi\settings.json`; saved keys use current-user DPAPI. |

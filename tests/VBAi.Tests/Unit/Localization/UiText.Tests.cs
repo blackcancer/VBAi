@@ -11,6 +11,40 @@ namespace VBAi.Tests.Unit
     /// <summary>Vérifie la traduction des contrôles et la détection de culture de l’interface.</summary>
     public sealed partial class UiLocalizationTests
     {
+        [TestMethod]
+        public void ConversationDeletionHasLocalizedConfirmationAndPreservesItsTitlePlaceholder()
+        {
+            string[] keys = {
+                "Delete conversation", "Permanently delete the selected conversation from local history.",
+                "Delete conversation \"{0}\" from local history? This cannot be undone.",
+                "Conversation deleted from local history", "Conversation not deleted: ",
+                "This conversation changed in another host. Reopen it before deleting."
+            };
+            using (var scope = new VBAi.Tests.Infrastructure.LocalizationScope())
+                foreach (var language in UiLanguages.All)
+                {
+                    VBAi.Tests.Infrastructure.LocalizationScope.Set(language.CultureName);
+                    var catalogue = new System.Resources.ResourceManager("VBAi.Localization.UiStrings" + language.ResourceSuffix, typeof(UiText).Assembly);
+                    foreach (string key in keys)
+                    {
+                        string translated = catalogue.GetString(key, CultureInfo.InvariantCulture);
+                        Assert.IsFalse(string.IsNullOrWhiteSpace(translated), language.CultureName);
+                        Assert.AreEqual(translated, UiText.Get(key));
+                        if (language.CultureName != "en-US") Assert.AreNotEqual(key, translated, language.CultureName);
+                    }
+                    StringAssert.Contains(string.Format(UiText.Get(keys[2]), "Fixture title"), "Fixture title");
+                    using (var window = new ChatWindow())
+                    {
+                        var delete = (Button)typeof(ChatWindow).GetField("deleteSession", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(window);
+                        Assert.AreEqual(UiText.Get(keys[0]), delete.Text);
+                        Assert.AreEqual(UiText.Get(keys[0]), delete.AccessibleName);
+                        Assert.IsTrue(delete.AutoSize, "Localized captions must retain their preferred width.");
+                        Assert.AreEqual(0, delete.Parent.Controls.GetChildIndex(delete), "Deletion must be the first history action.");
+                        Assert.IsFalse(delete.Enabled, "The inert Designer window has no saved session to delete.");
+                    }
+                }
+        }
+
         /// <summary>Requires genuine localized recovery warnings while preserving their exact English wording in en-US.</summary>
         [TestMethod]
         public void RecoveryWarningsHaveExplicitTranslationsAndKeepEnglishDiagnosticKeys()

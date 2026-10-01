@@ -75,6 +75,7 @@ namespace VBAi
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>
         private void Archive_Click(object sender, EventArgs e) { ToggleArchiveCurrentChat(); }
+        private async void DeleteSession_Click(object sender, EventArgs e) { await DeleteSelectedSessionAsync(); }
         /// <summary>Enregistre la mémoire de projet affichée.</summary>
         /// <param name="sender">Bouton déclencheur.</param>
         /// <param name="e">Données de l’événement.</param>

@@ -206,6 +206,17 @@ namespace VBAi
             return version;
         }
 
+        /// <summary>Deletes only the local conversation revision owned by this writer.</summary>
+        internal void Delete(string id, string scope, string expectedVersion)
+        {
+            if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(scope)) throw new ArgumentException("A conversation identity and scope are required.");
+            Execute("DELETE FROM chat_sessions WHERE id = ?1 AND scope = ?2 AND updated = ?3", id, scope, expectedVersion);
+            if (Native.sqlite3_changes(database) == 1) return;
+            using (var statement = Prepare("SELECT updated FROM chat_sessions WHERE id = ?1 AND scope = ?2", id, scope))
+                if (statement.Step() == 100)
+                    throw new IOException(UiText.Get("This conversation changed in another host. Reopen it before deleting."));
+        }
+
         /// <summary>Charge les sessions d’une portée dans l’ordre de mise à jour décroissant.</summary>
         /// <param name="scope">Portée de projet à consulter.</param>
         /// <returns>Sessions désérialisées correspondant à cette portée.</returns>

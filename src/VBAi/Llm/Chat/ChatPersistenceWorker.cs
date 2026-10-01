@@ -13,10 +13,17 @@ namespace VBAi
         internal sealed class Snapshot
         {
             internal readonly string Writer, Id, Scope, Title, Payload, ExpectedVersion;
+            internal readonly System.Threading.Tasks.TaskCompletionSource<Exception> Deletion;
             internal Snapshot(ChatSessionState session, string payload)
             {
                 Writer = session.WriterId; Id = session.Id; Scope = session.Scope;
                 Title = session.Title; Payload = payload; ExpectedVersion = session.StorageVersion;
+            }
+            internal Snapshot(Snapshot source)
+            {
+                Writer = source.Writer; Id = source.Id; Scope = source.Scope;
+                Title = source.Title; Payload = source.Payload; ExpectedVersion = source.ExpectedVersion;
+                Deletion = new System.Threading.Tasks.TaskCompletionSource<Exception>(System.Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously);
             }
         }
         private sealed class Cursor
@@ -28,6 +35,7 @@ namespace VBAi
         private readonly Dictionary<string, Snapshot> pending = new Dictionary<string, Snapshot>();
         private readonly Queue<string> order = new Queue<string>();
         private readonly Dictionary<string, Cursor> cursors = new Dictionary<string, Cursor>();
+        private readonly HashSet<string> deletingWriters = new HashSet<string>();
         private readonly Thread thread;
         private readonly string path;
         private readonly Action<Snapshot, string, Exception> completed;
@@ -50,6 +58,7 @@ namespace VBAi
             lock (gate)
             {
                 if (stopping) throw new ObjectDisposedException(nameof(ChatPersistenceWorker));
+                if (deletingWriters.Contains(snapshot.Writer)) throw new InvalidOperationException("This conversation is being deleted or has been deleted.");
                 if (!pending.ContainsKey(snapshot.Writer))
                 {
                     if (pending.Count >= 64) throw new IOException("The history save queue is full. Your draft remains in this window.");
@@ -57,6 +66,27 @@ namespace VBAi
                 }
                 pending[snapshot.Writer] = snapshot;
                 Monitor.PulseAll(gate);
+            }
+        }
+
+        /// <summary>Orders deletion after any in-flight write and replaces queued writes for this conversation.</summary>
+        internal System.Threading.Tasks.Task<Exception> DeleteAsync(Snapshot snapshot)
+        {
+            if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
+            lock (gate)
+            {
+                if (stopping) throw new ObjectDisposedException(nameof(ChatPersistenceWorker));
+                if (deletingWriters.Contains(snapshot.Writer)) throw new InvalidOperationException("This conversation is already being deleted.");
+                if (!pending.ContainsKey(snapshot.Writer))
+                {
+                    if (pending.Count >= 64) throw new IOException("The history save queue is full. Your draft remains in this window.");
+                    order.Enqueue(snapshot.Writer);
+                }
+                snapshot = new Snapshot(snapshot);
+                deletingWriters.Add(snapshot.Writer);
+                pending[snapshot.Writer] = snapshot;
+                Monitor.PulseAll(gate);
+                return snapshot.Deletion.Task;
             }
         }
 
@@ -74,25 +104,50 @@ namespace VBAi
                         if (order.Count == 0) return;
                         string writer = order.Dequeue(); snapshot = pending[writer]; pending.Remove(writer); working = true; active = snapshot;
                     }
-                    string version = null; Exception failure = null;
+                    string version = null; Exception failure = null, recoveryWarning = null;
                     try
                     {
                         // A distinct recovery file per loaded conversation prevents cross-host overwrites.
-                        WriteRecovery(snapshot);
+                        if (snapshot.Deletion == null) WriteRecovery(snapshot);
                         if (!cursors.TryGetValue(snapshot.Writer, out var cursor))
                             cursors.Add(snapshot.Writer, cursor = new Cursor { Version = snapshot.ExpectedVersion });
                         if (cursor.Failure != null) throw new IOException("Reopen this conversation before saving again. Its local recovery copy has been retained.", cursor.Failure);
                         try
                         {
                             if (store == null) store = new ChatSessionStore(path);
-                            version = store.SavePayload(snapshot.Id, snapshot.Scope, snapshot.Title, snapshot.Payload, cursor.Version);
-                            cursor.Version = version;
+                            if (snapshot.Deletion != null) store.Delete(snapshot.Id, snapshot.Scope, cursor.Version);
+                            else
+                            {
+                                version = store.SavePayload(snapshot.Id, snapshot.Scope, snapshot.Title, snapshot.Payload, cursor.Version);
+                                cursor.Version = version;
+                            }
                         }
                         catch (Exception error) { cursor.Failure = error; throw; }
-                        File.Delete(RecoveryPath(snapshot));
+                        if (snapshot.Deletion == null) File.Delete(RecoveryPath(snapshot));
+                        else
+                        {
+                            try { File.Delete(RecoveryPath(snapshot)); }
+                            catch (Exception error) when (error is IOException || error is UnauthorizedAccessException)
+                            {
+                                recoveryWarning = error;
+                                LoadLog.Write("Conversation deleted, but its local recovery copy could not be removed: " + error.GetType().Name);
+                            }
+                        }
                     }
                     catch (Exception error) { failure = error; }
-                    try { completed?.Invoke(snapshot, version, failure); }
+                    try
+                    {
+                        if (snapshot.Deletion == null) completed?.Invoke(snapshot, version, failure);
+                        else
+                        {
+                            if (failure == null) snapshot.Deletion.TrySetResult(recoveryWarning);
+                            else
+                            {
+                                lock (gate) deletingWriters.Remove(snapshot.Writer);
+                                snapshot.Deletion.TrySetException(failure);
+                            }
+                        }
+                    }
                     catch (Exception error) { LoadLog.Write("Chat persistence notification failed: " + error.GetType().Name); }
                     finally
                     {
@@ -142,9 +197,9 @@ namespace VBAi
                         .GroupBy(item => item.Writer).Select(group => group.First()).ToArray();
                 // Only shutdown may perform this fallback I/O on the caller. Separate names prevent
                 // an in-flight older commit from deleting a newer emergency snapshot.
-                foreach (var snapshot in remaining)
+                foreach (var snapshot in remaining.Where(item => item.Deletion == null))
                     WriteRecovery(snapshot, Path.Combine(RecoveryDirectory, "closing-" + Guid.NewGuid().ToString("N") + ".json"));
-                LoadLog.Write("Chat persistence close exceeded its drain budget. Remaining snapshots were saved as local recovery copies.");
+                LoadLog.Write("Chat persistence close exceeded its drain budget. Remaining save snapshots were retained as local recovery copies; pending deletions continue on the worker.");
             }
         }
     }

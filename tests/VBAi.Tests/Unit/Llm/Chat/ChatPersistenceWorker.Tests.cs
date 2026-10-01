@@ -28,6 +28,95 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void DeleteFollowsInFlightWriteSupersedesPendingSavesAndRejectsLaterSaves()
+        {
+            using (var scope = new LlmBoundaryScope())
+            using (var firstCompleted = new ManualResetEventSlim())
+            using (var release = new ManualResetEventSlim())
+            {
+                string path = Path.Combine(scope.Root, "delete.db");
+                var session = new ChatSessionState { Scope = "fixture", Draft = "first" };
+                using (var worker = new ChatPersistenceWorker(path, (snapshot, version, error) => {
+                    Assert.IsNull(error); firstCompleted.Set(); release.Wait(5000);
+                }))
+                {
+                    System.Threading.Tasks.Task deletion = null;
+                    try
+                    {
+                        worker.Enqueue(Capture(session));
+                        Assert.IsTrue(firstCompleted.Wait(5000));
+                        session.Draft = "queued"; worker.Enqueue(Capture(session));
+                        deletion = worker.DeleteAsync(Capture(session));
+                        Assert.IsFalse(deletion.IsCompleted);
+                        Assert.ThrowsException<InvalidOperationException>(() => worker.Enqueue(Capture(session)));
+                    }
+                    finally { release.Set(); }
+                    Assert.IsTrue(worker.Flush(5000));
+                    deletion.GetAwaiter().GetResult();
+                    Assert.ThrowsException<InvalidOperationException>(() => worker.Enqueue(Capture(session)));
+                    Assert.IsFalse(File.Exists(Path.Combine(worker.RecoveryDirectory, session.WriterId + ".json")));
+                    using (var store = new ChatSessionStore(path)) Assert.AreEqual(0, store.List(session.Scope).Count);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void DeleteRefusesAConflictingWriterAndRetainsItsRecoveryCopy()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                string path = Path.Combine(scope.Root, "delete-conflict.db");
+                ChatSessionState stale;
+                using (var store = new ChatSessionStore(path))
+                {
+                    store.Save(new ChatSessionState { Scope = "fixture", Draft = "base" });
+                    stale = store.List("fixture").Single();
+                    var winner = store.List("fixture").Single();
+                    winner.Draft = "winner"; store.Save(winner);
+                }
+                using (var worker = new ChatPersistenceWorker(path, null))
+                {
+                    stale.Draft = "local draft";
+                    worker.Enqueue(Capture(stale)); Assert.IsTrue(worker.Flush(5000));
+                    var deletion = worker.DeleteAsync(Capture(stale));
+                    Assert.IsTrue(worker.Flush(5000));
+                    Assert.ThrowsException<IOException>(() => deletion.GetAwaiter().GetResult());
+                    string recovery = Path.Combine(worker.RecoveryDirectory, stale.WriterId + ".json");
+                    Assert.IsTrue(File.Exists(recovery)); StringAssert.Contains(File.ReadAllText(recovery), "local draft");
+                    using (var store = new ChatSessionStore(path)) Assert.AreEqual("winner", store.List("fixture").Single().Draft);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void DeleteReportsRetainedRecoverySeparatelyFromSuccessfulDatabaseDeletion()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                string path = Path.Combine(scope.Root, "delete-recovery.db");
+                var session = new ChatSessionState { Scope = "fixture" };
+                using (var worker = new ChatPersistenceWorker(path, null))
+                {
+                    var snapshot = Capture(session);
+                    worker.Enqueue(snapshot); Assert.IsTrue(worker.Flush(5000));
+                    Directory.CreateDirectory(worker.RecoveryDirectory);
+                    string recovery = Path.Combine(worker.RecoveryDirectory, session.WriterId + ".json");
+                    File.WriteAllText(recovery, "retained local recovery");
+                    using (var locked = new FileStream(recovery, FileMode.Open, FileAccess.Read, FileShare.None))
+                    {
+                        var deletion = worker.DeleteAsync(snapshot);
+                        Assert.IsTrue(worker.Flush(5000));
+                        Assert.IsInstanceOfType(deletion.GetAwaiter().GetResult(), typeof(IOException));
+                        using (var store = new ChatSessionStore(path)) Assert.AreEqual(0, store.List(session.Scope).Count);
+                        Assert.ThrowsException<InvalidOperationException>(() => worker.Enqueue(snapshot));
+                    }
+                    Assert.IsTrue(File.Exists(recovery));
+                    Assert.IsNull(snapshot.Deletion, "The original immutable save snapshot must not become a deletion operation.");
+                }
+            }
+        }
+
+        [TestMethod]
         public void SnapshotRetainsTheUiValuesCapturedBeforeLaterMutation()
         {
             using (var scope = new LlmBoundaryScope())

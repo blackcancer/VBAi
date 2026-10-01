@@ -2173,4 +2173,10 @@ QQ 附加内存
   <data name="Optional nucleus sampling limit. Blank uses the server default. Use a decimal point or your local decimal separator." xml:space="preserve"><value>可选的核采样上限。留空使用服务器默认值。请使用小数点或本地小数分隔符。</value></data>
   <data name="Ollama temperature must be a finite number from 0 to 2, or blank for the server default." xml:space="preserve"><value>Ollama 温度必须是 0 至 2 的有限数值；留空使用服务器默认值。</value></data>
   <data name="Ollama top-p must be a finite number above 0 and at most 1, or blank for the server default." xml:space="preserve"><value>Ollama top-p 必须是大于 0 且至多 1 的有限数值；留空使用服务器默认值。</value></data>
+  <data name="Delete conversation" xml:space="preserve"><value>删除对话</value></data>
+  <data name="Permanently delete the selected conversation from local history." xml:space="preserve"><value>从本地历史记录中永久删除所选对话。</value></data>
+  <data name='Delete conversation "{0}" from local history? This cannot be undone.' xml:space="preserve"><value>从本地历史记录中删除对话“{0}”？此操作无法撤销。</value></data>
+  <data name="Conversation deleted from local history" xml:space="preserve"><value>对话已从本地历史记录中删除</value></data>
+  <data name="Conversation not deleted: " xml:space="preserve"><value>未删除对话：</value></data>
+  <data name="This conversation changed in another host. Reopen it before deleting." xml:space="preserve"><value>此对话已在其他宿主应用中更改。请重新打开后再删除。</value></data>
 </root>

@@ -18,6 +18,205 @@ namespace VBAi.Tests.Unit
     public sealed partial class ChatWindowStateTests
     {
         [STATestMethod, TestCategory("Unit")]
+        public void DeleteSelectedConversationRemovesPersistedAndCachedHistoryAndSelectsAnotherSession()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            {
+                var first = Get<ChatSessionState>(window, "currentSession");
+                Call(window, "NewSession", (object)null);
+                var deleted = Get<ChatSessionState>(window, "currentSession");
+                var cache = Get<Dictionary<string, List<ChatSessionState>>>(window, "cachedScopes");
+                cache[deleted.Scope] = new List<ChatSessionState> { first, deleted };
+                var store = Get<ChatSessionStore>(window, "sessionStore");
+                store.SaveMemory(deleted.Scope, "keep notes");
+                int confirmations = 0;
+                ChatWindow.ShowNotice = (owner, text, caption, buttons, icon) => {
+                    confirmations++; StringAssert.Contains(text, deleted.DisplayTitle);
+                    Assert.AreEqual(MessageBoxButtons.YesNo, buttons); return DialogResult.Yes;
+                };
+                window.Show();
+                CompleteOnSta((Task)Call(window, "DeleteSelectedSessionAsync"));
+                Assert.AreEqual(1, confirmations);
+                Assert.AreSame(first, Get<ChatSessionState>(window, "currentSession"));
+                Assert.IsFalse(Get<List<ChatSessionState>>(window, "scopeSessions").Contains(deleted));
+                Assert.IsFalse(cache[deleted.Scope].Contains(deleted));
+                Assert.IsTrue(Get<Panel>(window, "historyPanel").Visible);
+                Assert.AreSame(first, Get<ListBox>(window, "sessionList").SelectedItem);
+                Call(window, "SaveCurrentSession");
+                Assert.IsTrue(Get<ChatPersistenceWorker>(window, "persistenceWorker").Flush(5000));
+                Assert.AreEqual(1, store.List(deleted.Scope).Count);
+                Assert.AreEqual(first.Id, store.List(deleted.Scope)[0].Id);
+                Assert.AreEqual("keep notes", store.ReadMemory(deleted.Scope));
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void DeleteLastConversationCreatesAnEmptyReplacementAndArchivedConversationCanBeDeleted()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            {
+                var deleted = Get<ChatSessionState>(window, "currentSession");
+                deleted.Archived = true;
+                Get<CheckBox>(window, "showArchived").Checked = true;
+                Call(window, "RefreshHistory");
+                ChatWindow.ShowNotice = (owner, text, caption, buttons, icon) => DialogResult.Yes;
+                CompleteOnSta((Task)Call(window, "DeleteSelectedSessionAsync"));
+                var replacement = Get<ChatSessionState>(window, "currentSession");
+                Assert.IsNotNull(replacement); Assert.AreNotEqual(deleted.Id, replacement.Id);
+                Assert.AreEqual(deleted.Scope, replacement.Scope); Assert.IsFalse(replacement.Archived);
+                Assert.AreEqual("", replacement.Draft);
+                Assert.AreEqual(0, replacement.Entries.Count);
+                Assert.IsTrue(Get<ChatPersistenceWorker>(window, "persistenceWorker").Flush(5000));
+                var saved = Get<ChatSessionStore>(window, "sessionStore").List(deleted.Scope);
+                Assert.AreEqual(1, saved.Count); Assert.AreEqual(replacement.Id, saved[0].Id);
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void DeleteCancellationBusyScopeLoadingAndMissingSelectionLeaveHistoryIntact()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            {
+                var original = Get<ChatSessionState>(window, "currentSession");
+                int confirmations = 0;
+                ChatWindow.ShowNotice = (owner, text, caption, buttons, icon) => { confirmations++; return DialogResult.No; };
+                CompleteOnSta((Task)Call(window, "DeleteSelectedSessionAsync"));
+                Assert.AreEqual(1, confirmations);
+                Call(window, "SetBusy", true);
+                Assert.IsFalse(Get<Button>(window, "deleteSession").Enabled);
+                CompleteOnSta((Task)Call(window, "DeleteSelectedSessionAsync"));
+                Call(window, "SetBusy", false);
+                Assert.IsTrue(Get<Button>(window, "deleteSession").Enabled);
+                foreach (string flag in new[] { "loadingScope", "loadingSession" })
+                {
+                    Set(window, flag, true);
+                    CompleteOnSta((Task)Call(window, "DeleteSelectedSessionAsync"));
+                    Set(window, flag, false);
+                }
+                Get<ListBox>(window, "sessionList").SelectedIndex = -1;
+                Assert.IsFalse(Get<Button>(window, "deleteSession").Enabled);
+                CompleteOnSta((Task)Call(window, "DeleteSelectedSessionAsync"));
+                Assert.AreEqual(1, confirmations);
+                Assert.AreSame(original, Get<ChatSessionState>(window, "currentSession"));
+                Assert.IsTrue(Get<List<ChatSessionState>>(window, "scopeSessions").Contains(original));
+                Call(window, "RefreshHistory");
+                var store = Get<ChatSessionStore>(window, "sessionStore");
+                Set(window, "sessionStore", null);
+                try
+                {
+                    Call(window, "UpdateDeleteSessionButton");
+                    Assert.IsFalse(Get<Button>(window, "deleteSession").Enabled);
+                    CompleteOnSta((Task)Call(window, "DeleteSelectedSessionAsync"));
+                    Assert.AreEqual(1, confirmations);
+                }
+                finally { Set(window, "sessionStore", store); }
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void DeleteStorageConflictRetainsCurrentDraftAndRestoresTheInterface()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            {
+                var original = Get<ChatSessionState>(window, "currentSession");
+                Get<System.Windows.Controls.TextBox>(window, "prompt").Text = "keep local draft";
+                Call(window, "SaveCurrentSession");
+                Assert.IsTrue(Get<ChatPersistenceWorker>(window, "persistenceWorker").Flush(5000));
+                using (var other = new ChatSessionStore(ChatWindow.HistoryPath()))
+                {
+                    var winner = other.List(original.Scope)[0]; winner.Draft = "other host"; other.Save(winner);
+                }
+                ChatWindow.ShowNotice = (owner, text, caption, buttons, icon) => DialogResult.Yes;
+                CompleteOnSta((Task)Call(window, "DeleteSelectedSessionAsync"));
+                Assert.AreSame(original, Get<ChatSessionState>(window, "currentSession"));
+                Assert.AreEqual("keep local draft", Get<System.Windows.Controls.TextBox>(window, "prompt").Text);
+                Assert.IsTrue(Get<TableLayoutPanel>(window, "rootLayout").Enabled);
+                Assert.IsFalse(Get<bool>(window, "loadingScope")); Assert.IsFalse(Get<bool>(window, "loadingSession"));
+                StringAssert.StartsWith(Get<Label>(window, "status").Text, UiText.Get("Conversation not deleted: "));
+                Assert.AreEqual("other host", Get<ChatSessionStore>(window, "sessionStore").List(original.Scope)[0].Draft);
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void DeletePendingBehindAnInFlightSaveBlocksSessionChangesAndLateDraftSaves()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            using (var inFlight = new ManualResetEventSlim())
+            using (var release = new ManualResetEventSlim())
+            {
+                var deleted = Get<ChatSessionState>(window, "currentSession");
+                var previous = Get<ChatPersistenceWorker>(window, "persistenceWorker");
+                Assert.IsTrue(previous.Flush(5000)); previous.Dispose();
+                int writes = 0;
+                using (var worker = new ChatPersistenceWorker(ChatWindow.HistoryPath(), (snapshot, version, error) => {
+                    if (Interlocked.Increment(ref writes) == 1) { inFlight.Set(); release.Wait(5000); }
+                }))
+                {
+                    Set(window, "persistenceWorker", worker);
+                    Task deletion = null;
+                    var nextScope = AddScope(window, "temporary:next");
+                    try
+                    {
+                        Call(window, "SaveCurrentSession"); Assert.IsTrue(inFlight.Wait(5000));
+                        ChatWindow.ShowNotice = (owner, text, caption, buttons, icon) => DialogResult.Yes;
+                        deletion = (Task)Call(window, "DeleteSelectedSessionAsync");
+                        Assert.IsFalse(deletion.IsCompleted);
+                        Assert.IsTrue(Get<bool>(window, "loadingScope"));
+                        Assert.IsFalse(Get<TableLayoutPanel>(window, "rootLayout").Enabled);
+                        Assert.IsFalse(Get<Button>(window, "deleteSession").Enabled);
+                        Call(window, "NewSession", (object)null); Call(window, "SaveCurrentSession");
+                        Assert.AreSame(deleted, Get<ChatSessionState>(window, "currentSession"));
+                        Assert.ThrowsException<TargetInvocationException>(() => Call(window, "EnsureCurrentScope"));
+                        Get<ComboBox>(window, "scopePicker").SelectedItem = nextScope;
+                        Assert.AreSame(deleted, Get<ChatSessionState>(window, "currentSession"));
+                    }
+                    finally { release.Set(); }
+                    CompleteOnSta(deletion);
+                    CompleteScopeLoad(window);
+                    Assert.IsTrue(worker.Flush(5000));
+                    Assert.AreNotSame(deleted, Get<ChatSessionState>(window, "currentSession"));
+                    Assert.AreEqual("temporary:next", Get<ChatSessionState>(window, "currentSession").Scope);
+                    Assert.IsTrue(Get<TableLayoutPanel>(window, "rootLayout").Enabled);
+                    var saved = Get<ChatSessionStore>(window, "sessionStore").List(deleted.Scope);
+                    Assert.AreEqual(1, saved.Count); Assert.AreNotEqual(deleted.Id, saved[0].Id);
+                }
+                Set(window, "persistenceWorker", null);
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void DeleteReportsDatabaseSuccessWhenReplacementHistoryCannotBeRendered()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            {
+                var deleted = Get<ChatSessionState>(window, "currentSession");
+                var corrupt = new ChatSessionState { Scope = deleted.Scope, Title = "Unreadable fixture", MessagesJson = "{" };
+                Get<List<ChatSessionState>>(window, "scopeSessions").Add(corrupt);
+                Call(window, "RefreshHistory");
+                ChatWindow.ShowNotice = (owner, text, caption, buttons, icon) => DialogResult.Yes;
+                CompleteOnSta((Task)Call(window, "DeleteSelectedSessionAsync"));
+                Assert.IsNull(Get<ChatSessionState>(window, "currentSession"));
+                Assert.AreEqual(-1, Get<ListBox>(window, "sessionList").SelectedIndex);
+                Assert.IsFalse(Get<Button>(window, "send").Enabled);
+                Call(window, "UpdateBudgetControls"); Assert.IsFalse(Get<Button>(window, "send").Enabled);
+                StringAssert.StartsWith(Get<Label>(window, "status").Text, UiText.Get("Conversation deleted from local history"));
+                StringAssert.Contains(Get<Label>(window, "status").Text, UiText.Get("History unavailable: "));
+                Assert.ThrowsException<TargetInvocationException>(() => Call(window, "EnsureCurrentScope"));
+                Assert.AreEqual(0, Get<ChatSessionStore>(window, "sessionStore").List(deleted.Scope).Count);
+                Call(window, "NewSession", (object)null);
+                Assert.IsNotNull(Get<ChatSessionState>(window, "currentSession"));
+                Assert.IsFalse(Get<bool>(window, "sessionViewUnavailable"));
+                Assert.IsTrue(Get<Button>(window, "send").Enabled);
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
         public void WordDocumentScopesStayDistinctAndRejectChangedPathWithoutTransferringGrants()
         {
             using (var runtime = new RuntimeScope())

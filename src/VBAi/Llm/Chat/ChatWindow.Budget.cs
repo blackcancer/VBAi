@@ -61,7 +61,7 @@ namespace VBAi
         /// <summary>Performs the update budget controls operation for ChatWindow.</summary>
         private void UpdateBudgetControls()
         {
-            bool hasScope = !loadingScope && (scopeSession == null || scopePicker?.SelectedItem is MacroScope);
+            bool hasScope = !loadingScope && !sessionViewUnavailable && (scopeSession == null || scopePicker?.SelectedItem is MacroScope);
             if (resumeTurn != null) resumeTurn.Enabled = hasScope && !busy && currentSession?.BudgetPaused == true;
             if (send == null || prompt == null) return;
             bool hasText = !string.IsNullOrWhiteSpace(prompt.Text);

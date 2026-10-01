@@ -21,6 +21,7 @@ namespace VBAi
         /// <summary>Indique qu’un chargement de session est en cours et bloque les sauvegardes déclenchées par l’interface.</summary>
         private bool loadingSession;
         private bool loadingScope;
+        private bool sessionViewUnavailable;
         private System.Threading.Tasks.Task scopeLoad = System.Threading.Tasks.Task.CompletedTask;
         internal Func<string, string, bool, System.Threading.Tasks.Task<ChatSessionStore.ScopeSnapshot>> ReadScope = ChatSessionStore.ReadScopeAsync;
         /// <summary>Indique qu’une erreur de stockage a empêché une sauvegarde.</summary>
@@ -97,6 +98,7 @@ namespace VBAi
             sessionList.SelectedIndexChanged += (s, e) => {
                 var selected = sessionList.SelectedItem as ChatSessionState;
                 if (!loadingSession && selected != null && selected != currentSession && !busy) ActivateSession(selected);
+                UpdateDeleteSessionButton();
             };
             historySearch.TextChanged += (s, e) => ScheduleHistorySearch();
             if (scopePicker.Items.Count > 0)
@@ -279,8 +281,10 @@ namespace VBAi
                 historyPanel.Visible = false;
                 RefreshHistory();
                 ShowWelcome();
+                sessionViewUnavailable = false;
             }
             finally { loadingSession = false; }
+            UpdateDeleteSessionButton();
             UpdateBudgetControls();
             RefreshPendingMessages();
             _ = LoadModelsAsync();
@@ -303,6 +307,94 @@ namespace VBAi
                 sessionList.SelectedItem = currentSession;
             }
             finally { sessionList.EndUpdate(); loadingSession = previous; }
+            UpdateDeleteSessionButton();
+        }
+
+        private void UpdateDeleteSessionButton()
+        {
+            deleteSession.Enabled = !busy && !loadingSession && !loadingScope && !runtimeDisposed &&
+                sessionStore != null && sessionList.SelectedItem is ChatSessionState;
+        }
+
+        /// <summary>Deletes a confirmed local history entry after its pending writes have finished.</summary>
+        private async System.Threading.Tasks.Task DeleteSelectedSessionAsync()
+        {
+            var selected = sessionList.SelectedItem as ChatSessionState;
+            if (busy || loadingSession || loadingScope || runtimeDisposed || IsDisposed || selected == null || sessionStore == null) return;
+            if (ShowNotice(this, string.Format(UiText.Get("Delete conversation \"{0}\" from local history? This cannot be undone."), selected.DisplayTitle),
+                UiText.Get("Delete conversation"), System.Windows.Forms.MessageBoxButtons.YesNo,
+                System.Windows.Forms.MessageBoxIcon.Warning) != System.Windows.Forms.DialogResult.Yes) return;
+            if (busy || loadingSession || loadingScope || runtimeDisposed || IsDisposed || sessionList.SelectedItem != selected) return;
+            bool previousEnabled = rootLayout.Enabled;
+            bool previousWaitCursor = UseWaitCursor;
+            var selectedScope = scopePicker.SelectedItem;
+            loadingScope = loadingSession = true;
+            rootLayout.Enabled = false;
+            UseWaitCursor = true;
+            saveTimer?.Stop();
+            UpdateDeleteSessionButton();
+            bool deletedFromStore = false;
+            try
+            {
+                Exception recoveryWarning = null;
+                if (persistenceWorker != null)
+                    recoveryWarning = await persistenceWorker.DeleteAsync(new ChatPersistenceWorker.Snapshot(selected, null));
+                else sessionStore.Delete(selected.Id, selected.Scope, selected.StorageVersion);
+                deletedFromStore = true;
+                if (runtimeDisposed || IsDisposed) return;
+                scopeSessions.RemoveAll(item => item.Id == selected.Id && item.Scope == selected.Scope);
+                foreach (var cached in cachedScopes.Values)
+                    cached.RemoveAll(item => item.Id == selected.Id && item.Scope == selected.Scope);
+                loadingScope = loadingSession = false;
+                if (currentSession == selected)
+                {
+                    currentSession = null; // Never save the deleted conversation while activating its replacement.
+                    var replacement = scopeSessions.FirstOrDefault(item => !item.Archived);
+                    if (replacement == null)
+                    {
+                        replacement = new ChatSessionState { Scope = selected.Scope, Provider = settings.ProviderName };
+                        scopeSessions.Insert(0, replacement);
+                    }
+                    ActivateSession(replacement, false);
+                    SaveCurrentSession();
+                }
+                else RefreshHistory();
+                historyPanel.Visible = true;
+                historyPanel.BringToFront();
+                SetStatus(UiText.Get("Conversation deleted from local history") + (recoveryWarning == null ? "" :
+                    " · " + UiText.Get("Local history recovery copies are available. See the troubleshooting guide.")));
+            }
+            catch (Exception error)
+            {
+                if (!runtimeDisposed && !IsDisposed)
+                {
+                    if (deletedFromStore)
+                    {
+                        // Storage succeeded even if rebuilding a different conversation failed.
+                        currentSession = null;
+                        sessionViewUnavailable = true;
+                        send.Enabled = false;
+                        scopeSessions.RemoveAll(item => item.Id == selected.Id && item.Scope == selected.Scope);
+                        foreach (var cached in cachedScopes.Values)
+                            cached.RemoveAll(item => item.Id == selected.Id && item.Scope == selected.Scope);
+                        try { RefreshHistory(); }
+                        catch (Exception refreshError) { LoadLog.Write("Deleted conversation history refresh failed: " + refreshError.GetType().Name); }
+                        SetStatus(UiText.Get("Conversation deleted from local history") + " · " + UiText.Get("History unavailable: ") + error.Message);
+                    }
+                    else SetStatus(UiText.Get("Conversation not deleted: ") + error.Message);
+                }
+            }
+            finally
+            {
+                loadingScope = loadingSession = false;
+                if (!runtimeDisposed && !IsDisposed)
+                {
+                    rootLayout.Enabled = previousEnabled;
+                    UseWaitCursor = previousWaitCursor;
+                    UpdateDeleteSessionButton();
+                    if (!ReferenceEquals(scopePicker.SelectedItem, selectedScope)) ChangeScope();
+                }
+            }
         }
 
         /// <summary>Coalesces search edits before scanning and rebinding the session history.</summary>
@@ -437,6 +529,7 @@ namespace VBAi
         /// <exception cref="InvalidOperationException">La portée n’existe plus ou le document enregistré a changé de chemin.</exception>
         private void EnsureCurrentScope()
         {
+            if (sessionViewUnavailable) throw new InvalidOperationException(UiText.Get("History unavailable: ").TrimEnd());
             if (loadingScope) throw new InvalidOperationException("Conversation history is still loading.");
             var scope = scopePicker.SelectedItem as MacroScope;
             if (scopeSession == null) return;

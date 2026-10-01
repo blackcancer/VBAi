@@ -2153,4 +2153,10 @@ Sign in through Git Credential Manager; commit identity is configured in Git.</v
   <data name="Optional nucleus sampling limit. Blank uses the server default. Use a decimal point or your local decimal separator." xml:space="preserve"><value>Optional nucleus sampling limit. Blank uses the server default. Use a decimal point or your local decimal separator.</value></data>
   <data name="Ollama temperature must be a finite number from 0 to 2, or blank for the server default." xml:space="preserve"><value>Ollama temperature must be a finite number from 0 to 2, or blank for the server default.</value></data>
   <data name="Ollama top-p must be a finite number above 0 and at most 1, or blank for the server default." xml:space="preserve"><value>Ollama top-p must be a finite number above 0 and at most 1, or blank for the server default.</value></data>
+  <data name="Delete conversation" xml:space="preserve"><value>Delete conversation</value></data>
+  <data name="Permanently delete the selected conversation from local history." xml:space="preserve"><value>Permanently delete the selected conversation from local history.</value></data>
+  <data name='Delete conversation "{0}" from local history? This cannot be undone.' xml:space="preserve"><value>Delete conversation "{0}" from local history? This cannot be undone.</value></data>
+  <data name="Conversation deleted from local history" xml:space="preserve"><value>Conversation deleted from local history</value></data>
+  <data name="Conversation not deleted: " xml:space="preserve"><value>Conversation not deleted: </value></data>
+  <data name="This conversation changed in another host. Reopen it before deleting." xml:space="preserve"><value>This conversation changed in another host. Reopen it before deleting.</value></data>
 </root>

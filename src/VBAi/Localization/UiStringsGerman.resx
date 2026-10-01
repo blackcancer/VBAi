@@ -2173,4 +2173,10 @@ Anmeldung über Git Credential Manager; die Commit-Identität wird in Git festge
   <data name="Optional nucleus sampling limit. Blank uses the server default. Use a decimal point or your local decimal separator." xml:space="preserve"><value>Optionale Grenze für Top-p-Sampling. Leer nutzt den Serverstandard. Verwenden Sie einen Punkt oder Ihr lokales Dezimaltrennzeichen.</value></data>
   <data name="Ollama temperature must be a finite number from 0 to 2, or blank for the server default." xml:space="preserve"><value>Die Ollama-Temperatur muss eine endliche Zahl von 0 bis 2 sein; leer nutzt den Serverstandard.</value></data>
   <data name="Ollama top-p must be a finite number above 0 and at most 1, or blank for the server default." xml:space="preserve"><value>Ollama top-p muss eine endliche Zahl größer als 0 und höchstens 1 sein; leer nutzt den Serverstandard.</value></data>
+  <data name="Delete conversation" xml:space="preserve"><value>Unterhaltung löschen</value></data>
+  <data name="Permanently delete the selected conversation from local history." xml:space="preserve"><value>Die ausgewählte Unterhaltung dauerhaft aus dem lokalen Verlauf löschen.</value></data>
+  <data name='Delete conversation "{0}" from local history? This cannot be undone.' xml:space="preserve"><value>Unterhaltung „{0}“ aus dem lokalen Verlauf löschen? Dies kann nicht rückgängig gemacht werden.</value></data>
+  <data name="Conversation deleted from local history" xml:space="preserve"><value>Unterhaltung aus dem lokalen Verlauf gelöscht</value></data>
+  <data name="Conversation not deleted: " xml:space="preserve"><value>Unterhaltung nicht gelöscht: </value></data>
+  <data name="This conversation changed in another host. Reopen it before deleting." xml:space="preserve"><value>Diese Unterhaltung wurde in einer anderen Hostanwendung geändert. Öffnen Sie sie vor dem Löschen erneut.</value></data>
 </root>

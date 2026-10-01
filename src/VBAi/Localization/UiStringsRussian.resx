@@ -2173,4 +2173,10 @@
   <data name="Optional nucleus sampling limit. Blank uses the server default. Use a decimal point or your local decimal separator." xml:space="preserve"><value>Необязательный предел выборки top-p. Пустое поле использует значение сервера по умолчанию. Используйте точку или десятичный разделитель вашей локали.</value></data>
   <data name="Ollama temperature must be a finite number from 0 to 2, or blank for the server default." xml:space="preserve"><value>Температура Ollama должна быть конечным числом от 0 до 2; оставьте поле пустым для значения сервера по умолчанию.</value></data>
   <data name="Ollama top-p must be a finite number above 0 and at most 1, or blank for the server default." xml:space="preserve"><value>Ollama top-p должен быть конечным числом больше 0 и не больше 1; оставьте поле пустым для значения сервера по умолчанию.</value></data>
+  <data name="Delete conversation" xml:space="preserve"><value>Удалить беседу</value></data>
+  <data name="Permanently delete the selected conversation from local history." xml:space="preserve"><value>Безвозвратно удалить выбранную беседу из локальной истории.</value></data>
+  <data name='Delete conversation "{0}" from local history? This cannot be undone.' xml:space="preserve"><value>Удалить беседу «{0}» из локальной истории? Это действие нельзя отменить.</value></data>
+  <data name="Conversation deleted from local history" xml:space="preserve"><value>Беседа удалена из локальной истории</value></data>
+  <data name="Conversation not deleted: " xml:space="preserve"><value>Беседа не удалена: </value></data>
+  <data name="This conversation changed in another host. Reopen it before deleting." xml:space="preserve"><value>Эта беседа изменена в другом приложении. Откройте её заново перед удалением.</value></data>
 </root>

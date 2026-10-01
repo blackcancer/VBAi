@@ -336,6 +336,7 @@ namespace VBAi
         private void SetBusy(bool value)
         {
             busy = value;
+            UpdateDeleteSessionButton();
             modePicker.Enabled = !value;
             approvalPicker.Enabled = modelSummary.Enabled = !value;
             newChat.Enabled = scopePicker.Enabled = sessionList.Enabled =

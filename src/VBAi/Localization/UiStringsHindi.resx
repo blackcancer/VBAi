@@ -2173,4 +2173,10 @@ Git Credential Manager से साइन-इन करें; कमिट ल
   <data name="Optional nucleus sampling limit. Blank uses the server default. Use a decimal point or your local decimal separator." xml:space="preserve"><value>वैकल्पिक top-p सैंपलिंग सीमा। खाली छोड़ने पर सर्वर का डिफ़ॉल्ट लागू होता है। दशमलव बिंदु या स्थानीय दशमलव विभाजक का उपयोग करें।</value></data>
   <data name="Ollama temperature must be a finite number from 0 to 2, or blank for the server default." xml:space="preserve"><value>Ollama तापमान 0 से 2 तक की परिमित संख्या होनी चाहिए; सर्वर के डिफ़ॉल्ट के लिए खाली छोड़ें।</value></data>
   <data name="Ollama top-p must be a finite number above 0 and at most 1, or blank for the server default." xml:space="preserve"><value>Ollama top-p एक परिमित संख्या होनी चाहिए जो 0 से अधिक और अधिकतम 1 हो; सर्वर के डिफ़ॉल्ट के लिए खाली छोड़ें।</value></data>
+  <data name="Delete conversation" xml:space="preserve"><value>बातचीत हटाएँ</value></data>
+  <data name="Permanently delete the selected conversation from local history." xml:space="preserve"><value>चुनी गई बातचीत को स्थानीय इतिहास से स्थायी रूप से हटाएँ।</value></data>
+  <data name='Delete conversation "{0}" from local history? This cannot be undone.' xml:space="preserve"><value>बातचीत "{0}" को स्थानीय इतिहास से हटाएँ? इसे पूर्ववत नहीं किया जा सकता।</value></data>
+  <data name="Conversation deleted from local history" xml:space="preserve"><value>बातचीत स्थानीय इतिहास से हटा दी गई</value></data>
+  <data name="Conversation not deleted: " xml:space="preserve"><value>बातचीत नहीं हटाई गई: </value></data>
+  <data name="This conversation changed in another host. Reopen it before deleting." xml:space="preserve"><value>यह बातचीत किसी अन्य होस्ट अनुप्रयोग में बदल गई है। हटाने से पहले इसे फिर से खोलें।</value></data>
 </root>
