@@ -1,6 +1,7 @@
 using System.Drawing;
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
@@ -80,12 +81,44 @@ namespace VBAi.Tests.Unit
             }
         }
 
+        [STATestMethod]
+        public void MultiModeNativeSelectionRepairsPrimedCacheWithoutDuplicateManagedEvents()
+        {
+            foreach (var mode in new[] { SelectionMode.MultiExtended, SelectionMode.MultiSimple })
+            using (var list = new UiListBox { SelectionMode = mode })
+            {
+                list.Items.Add("First"); list.Items.Add("Second");
+                IntPtr handle = list.Handle;
+                foreach (object item in list.SelectedItems) Assert.Fail("Unexpected initial selection.");
+                int changes = 0; list.SelectedIndexChanged += (sender, args) => changes++;
+                SendExternalSelection(handle, 1, 0x185, 0);
+                CollectionAssert.AreEqual(new[] { "First" }, System.Linq.Enumerable.Cast<string>(list.SelectedItems).ToArray());
+                Assert.AreEqual(1, changes);
+                SendExternalSelection(handle, 1, 0x185, 0);
+                SendExternalSelection(handle, 1, 0x185, 99);
+                Assert.AreEqual(1, changes);
+                list.SetSelected(1, true);
+                CollectionAssert.AreEqual(new[] { "First", "Second" }, System.Linq.Enumerable.Cast<string>(list.SelectedItems).ToArray());
+                Assert.AreEqual(2, changes);
+                SendExternalSelection(handle, 0, 0x185, 0);
+                CollectionAssert.AreEqual(new[] { "Second" }, System.Linq.Enumerable.Cast<string>(list.SelectedItems).ToArray());
+                Assert.AreEqual(3, changes);
+                list.BorderStyle = BorderStyle.None;
+                CollectionAssert.AreEqual(new[] { "Second" }, System.Linq.Enumerable.Cast<string>(list.SelectedItems).ToArray());
+            }
+        }
+
         private static void SendExternalSelection(IntPtr handle, int index)
+        {
+            SendExternalSelection(handle, index, 0x186, 0);
+        }
+
+        private static void SendExternalSelection(IntPtr handle, int index, uint message, int lParam)
         {
             bool done = false; IntPtr delivery = IntPtr.Zero;
             var sender = new Thread(() => {
                 IntPtr result;
-                delivery = SendMessageTimeout(handle, 0x186, new IntPtr(index), IntPtr.Zero, 2, 5000, out result);
+                delivery = SendMessageTimeout(handle, message, new IntPtr(index), new IntPtr(lParam), 2, 5000, out result);
                 Volatile.Write(ref done, true);
             }) { IsBackground = true };
             sender.Start(); var clock = Stopwatch.StartNew();

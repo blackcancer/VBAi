@@ -126,6 +126,8 @@ namespace VBAi
         private bool synchronizingExternalSelection;
         [DllImport("user32.dll")]
         private static extern uint InSendMessageEx(IntPtr reserved);
+        [DllImport("user32.dll")]
+        private static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam);
 
         /// <summary>Creates a list.</summary>
         public UiListBox() { BorderStyle = BorderStyle.FixedSingle; }
@@ -141,6 +143,13 @@ namespace VBAi
             bool externalSelection = !synchronizingExternalSelection && m.Msg == 0x186 && SelectionMode == SelectionMode.One &&
                 InSendMessageEx(IntPtr.Zero) != 0;
             int previous = externalSelection ? SelectedIndex : -1;
+            bool externalMultiSelection = !synchronizingExternalSelection && m.Msg == 0x185 &&
+                (SelectionMode == SelectionMode.MultiSimple || SelectionMode == SelectionMode.MultiExtended) &&
+                InSendMessageEx(IntPtr.Zero) != 0 && m.LParam.ToInt64() >= 0 && m.LParam.ToInt64() < Items.Count;
+            int multiIndex = externalMultiSelection ? m.LParam.ToInt32() : -1;
+            // LB_GETSEL reads the native bit before and after LB_SETSEL; the
+            // materialized SelectedItems cache can still hold the old bit.
+            int previousMultiState = externalMultiSelection ? SendMessage(Handle, 0x187, new IntPtr(multiIndex), IntPtr.Zero).ToInt32() : -1;
             base.WndProc(ref m);
             if (externalSelection && previous != SelectedIndex)
             {
@@ -155,6 +164,16 @@ namespace VBAi
                     else SetSelected(selected, true);
                 }
                 finally { synchronizingExternalSelection = false; }
+            }
+            if (externalMultiSelection && previousMultiState >= 0)
+            {
+                int selected = SendMessage(Handle, 0x187, new IntPtr(multiIndex), IntPtr.Zero).ToInt32();
+                if (selected >= 0 && selected != previousMultiState)
+                {
+                    synchronizingExternalSelection = true;
+                    try { SetSelected(multiIndex, selected != 0); }
+                    finally { synchronizingExternalSelection = false; }
+                }
             }
             UiInputFrame.Paint(this, BorderStyle, m);
         }
