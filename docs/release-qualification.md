@@ -6,6 +6,17 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Current candidate checkpoint (2026-10-02)
 
+The named-getter diagnostic source `2060217`, product MVID
+`6eab1262-f577-4650-8f6c-c83bdb065d01`, fails its complete default managed gate
+on a Git recovery-marker mirror assertion. The expected preview-created directory
+is absent after an accepted `InvalidOperationException`; its actual origin remains
+unknown. The Git path is unchanged and passed in the preceding complete gate,
+but a timing or environment cause is not established. Registration previews are
+read-only; Apply and a native trial for this MVID are NOT_RUN. The installed DLL
+and host trust are unchanged. Stronger test diagnostics are prepared separately;
+Q-027 remains open. See
+[recorded validation](test-coverage.md#named-vbe-getter-candidate-managed-gate-failure-2026-10-02).
+
 The gated PR integration source `3ff51bd` is exercised in an exact isolated
 checkout using the frozen product MVID `d5b638d6-56b4-4cd1-9d39-6b1fb9c5722e`.
 The retained workbook copy now passes Open/path/count/hash checks. Excel
@@ -14,8 +25,8 @@ The retained workbook copy now passes Open/path/count/hash checks. Excel
 unknown. Baseline capture, manifest, menu, import and transfer are NOT_RUN.
 Original normal exit, unchanged workbook bytes and registry restoration are
 independently verified. A tests-only named-getter diagnostic has focused mirror
-regressions but still requires its complete gate and native observation. It
-preserves ForceDisable and does not reopen or retry. Q-027 stays open. See
+regressions; its subsequent complete gate fails on the Git mirror above, so
+its native observation remains NOT_RUN. It preserves ForceDisable and does not reopen or retry. Q-027 stays open. See
 [recorded validation](test-coverage.md#retained-userform-copy-vbe-access-refusal-2026-10-02).
 
 The retained-workbook diagnostic source `6d3d802`, MVID

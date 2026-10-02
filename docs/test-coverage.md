@@ -1,5 +1,37 @@
 # Recorded validation
 
+## Named VBE getter candidate managed gate failure (2026-10-02)
+
+Source `206021789fdba4100a849450377a35585c57d667` builds the tests-only named
+VBE getter diagnostic in an isolated Debug output with zero warnings and errors.
+The complete default managed gate reports **3,873 passed, 1 failed, 203 inactive,
+4,077 total**. Native/provider opt-ins are cleared and no coverage collector is
+used. Product MVID is `6eab1262-f577-4650-8f6c-c83bdb065d01`; product SHA-256 is
+`25DBA74F8DF27F5989EB10C760379EF18350B2661400061D1CA2D3EC2215CA95`;
+test SHA-256 is
+`DCFE2B9F65B3B6A2A177B1D361772DF586B49E115F5CCBEC01349809D0CC633A`.
+Source remains clean and both hashes are unchanged at the terminal record.
+Evidence is in `artifacts/root-font-vbe-access-20261002/managed/`.
+
+The sole failure is
+`MarkerCreatedDuringImportPreviewRefusesPreparationBeforeProtectedRecoveryRefsChange`.
+Its final marker-directory existence assertion fails after the test accepts an
+`InvalidOperationException`; its reference/source preservation and zero-import
+assertions pass. The precise accepted exception is not recorded. Source review
+indicates a refusal before the preview callback is possible; this is an inference,
+not an established timing, filesystem or product cause. The same test passes in
+the preceding full PR integration gate. This candidate does not edit the Git
+production/test path. Stronger mirror diagnostics are being prepared separately
+without weakening the original recovery checks.
+
+Current and limited-user registration previews complete for the frozen candidate,
+but Apply is not executed because the full gate failed. No native host trial is
+run against this MVID. The installed DLL and host trust settings are unchanged.
+Read-only allowlisted policy observation records user `AccessVBOM=1`; it does not
+prove effective process access or explain the earlier `0x800A03EC`.
+The preceding retained-copy native failure remains separate. Q-027 and the full
+release scope remain open; a focused pass cannot replace the failed aggregate.
+
 ## Retained UserForm copy VBE access refusal (2026-10-02)
 
 The fully gated PR integration source `3ff51bd`, product MVID
