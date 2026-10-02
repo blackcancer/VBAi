@@ -1,5 +1,48 @@
 # Recorded validation
 
+## Post-capture font diagnostic baseline refusal (2026-10-02)
+
+Frozen source `269b18722b4bd8024841141b1d186cab59871950` adds the explicitly
+declared `AfterInitialCapture` diagnostic. The isolated Debug solution build
+has zero warnings and errors. Product MVID is
+`e78f15bc-f918-425e-9d1f-a8e700da3caf`, product SHA-256
+`627EDE3B8038580E107791600CCA85E080FFD88F0FF6F2EA6A437C4DBC656CCA`, and test
+SHA-256 `6A31B7DA92B509C345D5A531D6771DF00154CD277158691FD0B86E63C78E4BBD`.
+The complete default managed gate records **3,769 passed, zero failed, 201
+opted-in scenarios not run and 3,970 total**. It finishes at
+`2026-10-02T05:22:39.6894169Z`, with clean source and unchanged assembly hashes.
+Live opt-ins are cleared process-locally; no coverage collector is enabled.
+
+The single fresh Excel LabelButton trial records **zero passed, one failed
+and zero skipped**. Excel `16.0.20430.20092`, PID 51752, started at
+`2026-10-02T05:23:20.8354889Z`, loads the exact candidate. The tests-only
+manifest producer refuses the saved/reopened baseline because it has no root
+Type7 font binding. Its retained `EmbeddedForm.frx` has 2,584 bytes, versus
+3,096 bytes in the preceding two observation baselines; native font readback
+still reports Tahoma 8.25. The cause of this baseline variation is unproven.
+The manifest is not published, the Git menu is not emitted, and checkpoint
+import, initial post-import capture and deferred font transfer are NOT_RUN.
+This result does not establish success or failure of the new transfer route.
+
+The original owned Excel exits normally with code zero, without forced
+termination or replay. Temporary registration is restored from
+`registration-before-05eaac10f3f8494cb7782963b41a7e25.clixml`, with independent
+readback of restored CodeBases and the unchanged installed DLL hash. The
+existing SOLIDWORKS PID 7440 is unchanged across the trial and is not controlled
+by the runner. Because failure precedes the Prepared event's workbook hash,
+an unchanged before/after disk-file claim is unavailable for this trial.
+
+Evidence is retained under `artifacts/root-font-after-capture-20261002`:
+`candidate.json`, `managed/managed.trx`, native TRX and terminal receipts,
+owned startup/shutdown, bridge-exported baseline files and verified registration
+restoration. `baseline-preflight-terminal-inspection.json` independently parses
+the current and preceding baseline resources using the frozen candidate parser:
+the current resource has no font binding, while both earlier baselines have
+one exact Tahoma root binding. Their normalized FRM hashes match. The full
+UserForm layout matrix, default-root fidelity, Frame
+8.27-point fidelity, recovery, transfer and post-import persistence remain
+unqualified. Q-027 stays open.
+
 ## Owner-thread root font observation and distinct child name (2026-10-02)
 
 Frozen source `be9dcd8d402bd0a60d83d12cae21762371b00340` adds an explicitly armed

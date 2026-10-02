@@ -6,7 +6,18 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Current candidate checkpoint (2026-10-02)
 
-The latest gated observation source `be9dcd8`, MVID
+The latest gated diagnostic source `269b187`, MVID
+`e78f15bc-f918-425e-9d1f-a8e700da3caf`, SHA-256
+`627EDE3B8038580E107791600CCA85E080FFD88F0FF6F2EA6A437C4DBC656CCA`,
+passes its complete default managed gate. Its fresh owner-UI LabelButton trial
+stops before manifest publication or Git menu emission: the saved/reopened
+reference lacks the required root font binding. The declared post-capture
+font transfer is NOT_RUN, rather than a failed native setter. The owned Excel
+exits normally and temporary registration is restored. The baseline variation's
+cause remains unproven; Q-027 and its full native scope remain open. See
+[recorded validation](test-coverage.md#post-capture-font-diagnostic-baseline-refusal-2026-10-02).
+
+The preceding gated observation source `be9dcd8`, MVID
 `ab35c2ed-1c3d-47b4-9490-b26e0b8bc737`, SHA-256
 `B53848A4838BF20CD6077A2B73A3371F624B38593ED6356E370021B325B77DC2`,
 passes its complete default managed gate. Fresh owner-UI LabelButton trials

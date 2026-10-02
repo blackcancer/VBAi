@@ -27,7 +27,15 @@ operation, language feature or UI surface.
 
 ### Current operation-specific refresh
 
-The latest Q-027 observation source `be9dcd8` passes its complete managed gate.
+The latest Q-027 diagnostic source `269b187` passes its complete managed gate.
+Its fresh Excel baseline lacks the root font binding required to arm the
+post-capture transfer experiment. The trial stops before manifest publication,
+Git menu emission or import; deferred transfer is NOT_RUN. The owned host exits
+normally and registration is restored. The cause of the baseline variation,
+exact import, recovery and post-import persistence remain unqualified. See
+[recorded validation](test-coverage.md#post-capture-font-diagnostic-baseline-refusal-2026-10-02).
+
+The preceding Q-027 observation source `be9dcd8` passes its complete managed gate.
 Actual owner-UI LabelButton observations find the root font binding absent
 before diagnostic font getters. A separate temporary Arial child-name write
 reads back Arial while `Font.Object` and `Designer.Font` still serialize Tahoma.
