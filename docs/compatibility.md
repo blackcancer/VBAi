@@ -27,6 +27,24 @@ operation, language feature or UI surface.
 
 ### Current operation-specific refresh
 
+The Q-012 inactive-desktop campaign bound to source `a9e7609` and the pending
+test-infrastructure manifest refreshes Access active-module-only adapter Save:
+the original owned process exits normally, a distinct fresh process reads the
+exact disk content, and final normal exit is observed. The broader module/class
+case returns an uncertain, unverified save and then fails normal host exit;
+fresh-disk reopen is NOT_RUN. Remaining Access cases are blocked by that retained
+process. Publisher cases remain blocked by a preceding pre-NewDocument
+`ActiveWindow` ownership failure (`0x8004002F`); a later empty owned-dialog
+inventory does not identify a causal fix. The inactive desktop has verified
+window isolation and restored temporary COM registration. Separately authorized
+forced cleanup closes the retained Access process and helper without replaying
+Save or Quit; it does not qualify normal exit, disk consistency or native reopen.
+No production repair is established. This does not replace the earlier accepted
+reference, metadata, module/class/form or shared-VBE scopes below, nor establish
+whole-host compatibility. Q-012 remains PARTIAL. See
+[recorded validation](test-coverage.md#q-012-inactive-desktop-persistence-campaign-2026-10-03)
+for the frozen identity and terminal evidence.
+
 Latest gated source `8f5e16f` passes the installed Word owner-menu capture, exact
 local checkpoint and compare, preserving source, full references and saved bytes
 with normal original exit code 0 and a stated 15-second read-only exit bound.
@@ -182,7 +200,7 @@ availability improves; this does not qualify the embedded-host assistant.
 SOLIDWORKS is not exercised in this earlier refresh. At that checkpoint the
 installed DLL was unchanged and temporary registration selections were restored.
 
-See the [current qualification checkpoint](release-qualification.md#current-candidate-checkpoint-2026-10-02)
+See the [earlier qualification checkpoint](release-qualification.md#earlier-candidate-checkpoint-2026-10-02)
 and [recorded validation](test-coverage.md#native-qualification-refresh-2026-10-01)
 for the exact tested scopes and identities. Historical observations below retain
 their original candidate boundaries.

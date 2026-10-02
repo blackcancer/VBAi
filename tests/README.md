@@ -4,6 +4,62 @@ The test suite covers the shared VBE core, provider protocols, storage, editor
 services and selected host integrations. A passing local suite is not a claim
 that every feature works in every application that embeds the VBE.
 
+## Q012 campaign on an inactive Windows desktop
+
+`tools/tests/Invoke-Q012Qualification.ps1` prepares the complete fixed Access and
+Publisher adapter matrix before execution. Preparation is read-only and freezes
+source, binaries, installed executables and exact test selectors. `-Execute`
+claims that plan once; it runs the focused managed gate, then each native case
+at most once, retaining its original TRX and all blocked/not-run rows. Existing
+or retained same-host processes block dependent cases. A reviewed `-HostScope`
+and frozen `-BlockedHostReason` can preserve a proven prerequisite failure without
+repeating that unchanged host bootstrap; every excluded row stays BLOCKED. No native mutation or
+cleanup is replayed to obtain a pass.
+
+Build the solution with an isolated `BuildOutputRoot`. Prepare with absolute
+`-CandidateAssembly`, `-BuildOutputRoot`, `-EvidenceDirectory` and
+`-DesktopHelperAssembly` paths using Windows PowerShell 5.1 x64. The helper is
+`VBAi.Desktop.Helper.exe` in its project output. Preparation does not change COM
+registration or start Office. Review `plan.json` and the registration preview.
+
+Create a reviewed script containing the same arguments plus `-Execute`, then
+pass its absolute path to `tools/tests/Invoke-IsolatedTests.ps1` with a fresh
+absolute evidence directory and that helper. The one-shot limited-user task
+creates a generated inactive Windows desktop; it never switches the input
+desktop. Its canary and worker receipts are environment proofs, not Office
+acceptance. Missing desktop evidence refuses execution without fallback.
+
+Only Access and Publisher have the private host bootstrap. The campaign passes
+`VBAi_TEST_ACCESS_EXE` and `VBAi_TEST_PUBLISHER_EXE` from the frozen installed
+paths. Original and reopened processes are explicitly started on the private
+desktop, attached without COM activation, and verified by original handle, image,
+PID and exact HWND membership in successful private/input desktop inventories
+before mutation. The live hidden sentinel must be observed on the private desktop;
+no owned host window may appear on the input desktop. Foreign thread-desktop
+queries are not used as proof. Ordinary Office tests without
+`VBAi_TEST_DESKTOP_NAME` retain their existing behavior.
+
+Access starts as an explicitly owned normal application and attaches through ROT;
+Publisher preserves its registered `/Automation -Embedding` server arguments.
+Access records Boolean `UserControl` and `Visible` once outside ROT discovery.
+An already visible instance needs no visibility setter; hidden automation permits
+one setter, while a hidden user-controlled instance refuses. The decision is bound
+to the original native handle/application/PID and cannot be reused. Ownership and
+private desktop proofs precede database creation or open.
+Publisher's observed French recovery prompt is handled before ROT attachment:
+only its exact owned dialog and native No button can receive one bounded click
+requesting normal startup. Unknown prompts/locales, changed identities or uncertain
+message delivery retain the host and refuse further action. No safe-mode,
+macro-trust, licensing or global input setting is changed.
+
+Every positive case requires adapter-only Save, exact source/project/reference
+readback, normal original exit, a fresh process reopening the saved file and
+normal final exit. Existing ACCDB/PUB is the accepted scope; first SaveAs remains
+refused. The campaign preserves the uncertainty and single-save guards. It
+restores the exact temporary registration without replacing installed binaries
+or changing trust policies. A retained host or helper stays separately recorded;
+forced cleanup, if separately performed, cannot qualify normal exit or persistence.
+
 ## Settled Word scope collection (qualification only)
 
 `VBAi_TEST_WORD_SETTLED_SCOPE_GC=1` enables a disabled-by-default testhost

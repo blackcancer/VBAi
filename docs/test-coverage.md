@@ -1,5 +1,67 @@
 # Recorded validation
 
+## Q-012 inactive-desktop persistence campaign (2026-10-03)
+
+The frozen `campaign-visible-access` plan records source
+`a9e7609bf48bcb556fddfa9c62318f692ec86008` on
+`codex/q012-office-20261002` together with the SHA-256 manifest of the pending
+desktop-launch, fixture and campaign infrastructure. This is a manifest-bound
+working-tree candidate, not a clean-source full-suite gate. Product MVID is
+`98d873fd-d783-49db-95e8-4f84036479d0`; product SHA-256 is
+`4E14EE21C0B5496612E9DF33371F3FA858888989B87582E56CB841AB18B31EA1`.
+
+The targeted managed filter reports **220 passed, 0 failed**. It covers the
+other-host persistence, project reopen identity, Publisher startup/cleanup,
+metadata mutation, scalar-property and private-desktop fixture tests named in
+the frozen plan; it is not the complete managed suite and has no new coverage
+measurement. The native plan has **15 scenarios: 1 PASS, 1 FAIL, 13 BLOCKED**.
+Each invoked native scenario has one original invocation; blocked scenarios have
+none. The campaign terminal is `2026-10-02T22:29:02.9386840Z`.
+
+| Native scope | Terminal observation |
+| --- | --- |
+| Access active-module-only adapter Save/reopen | PASS. The MVID-verified candidate selected by temporary registration saves the disposable existing database through the product adapter. Original PID `36324` exits normally, a distinct fresh PID `36664` reads the exact saved module from disk, and that process also exits normally with code 0. |
+| Access module/class adapter Save/reopen | FAIL. The original save response has `Verified=false`, `Uncertain=true`, `SaveApi=VBE.CommandBars.ID3`; subsequent `ProjectSaved` remains false. One returned Quit does not produce original PID `6880` exit within the 15-second observation bound. The process and its native handle are retained at the campaign terminal; fresh-disk reopen is NOT_RUN. |
+| Remaining Access scenarios | Six BLOCKED by the retained same-host process: reference addition by GUID/file, reference removal, Description, HelpFile and HelpContextID. |
+| Publisher scenarios | Seven BLOCKED without another startup invocation. The preceding startup-gated candidate fails at the pre-NewDocument `ActiveWindow` ownership getter with `0x8004002F`. A subsequent read-only inventory of that exact owned process finds no dialog; it does not establish a causal fix or qualify publication creation/save. |
+
+The worker and owned Office windows remain on the generated inactive desktop
+`VBAiTests_6533a9425b254bb09e2b76f7fc781ac4`. Successful private/input window
+inventories and the retained sentinel support the isolation proof; no input
+desktop switch or focus-dependent input is used. This isolates windows, not the
+shared Windows profile. No shared user trust/profile configuration is changed,
+and temporary COM registration restoration is verified. At the campaign terminal,
+the private helper retains ownership because host windows remain. Following the
+maintainer's explicit request to close Access for another qualification session,
+separate exact-start/image-checked forced cleanup observes Access PID `6880` exit
+at `2026-10-02T22:42:05Z` and helper PID `55360` exit at
+`2026-10-02T22:42:46Z`. Neither remains retained. No Save or Quit is replayed;
+forced cleanup does not qualify normal exit or persistence.
+The owned limited task then reaches `CHILD_TERMINAL` with exit -1 from the forced
+helper exit, is observed Ready, and is unregistered; no other task is changed.
+
+The pre-exit byte backup is blocked by the exclusive file lock. The post-force
+byte copy has matching SHA-256
+`1CBC049F52EB5C2ACA138672F53EA379A07FA17727C24E4E6C0AD19CCB3A248B`,
+without consistency or native reopen acceptance. The attempted retained-host
+read-only snapshot fails during PowerShell script preparation before any native
+or bridge call. The cause of the module/class save result, command-ID routing or
+a possible modal state remains unproven; no production repair is inferred.
+
+Evidence is retained under `artifacts/q012-20261002`: frozen
+`campaign-visible-access/plan.json`, terminal `campaign-visible-access/summary.json`,
+managed `campaign-visible-access/unit/unit.trx`, native scenario TRX files and
+their `host-evidence/Access` save/lifecycle receipts,
+`run-visible-access-desktop/desktop/failure.json`, and the earlier owned Publisher
+`diagnostics/publisher-c3-dialog-read-receipt.json`. Separate cleanup receipts are
+`diagnostics/visible-access-forced-cleanup.json`,
+`diagnostics/visible-access-post-force-byte-copy.json`,
+`diagnostics/visible-access-helper-forced-cleanup.json`, and the pre-call refusal
+`diagnostics/visible-access-retained-read-receipt.json`. These local artifacts are not
+published release assets. Q-012 remains PARTIAL; earlier accepted scopes are
+preserved in [compatibility](compatibility.md), with the remaining gate in
+[release qualification](release-qualification.md#q-012-inactive-desktop-checkpoint-2026-10-03).
+
 ## Word chat popup owner refusal and owner-menu control (2026-10-02)
 
 Source `8f5e16f323bcb832c7b1d4dc69418d8b6db58a7c` corrects target-thread

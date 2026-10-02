@@ -34,6 +34,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "VBAi.Native", "VBAi.Native"
         tools\build\Build-NativeRenderer.ps1 = tools\build\Build-NativeRenderer.ps1
     EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VBAi.Desktop.Helper", "tests\VBAi.Desktop.Helper\VBAi.Desktop.Helper.csproj", "{DF8D48A1-AFF5-4FA8-BF25-DFF8D8AB3BBF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -60,6 +62,10 @@ Global
 		{FAD4FB2F-96CF-4359-8C0C-C030E5298CBF}.Debug|x64.Build.0 = Debug|x64
 		{FAD4FB2F-96CF-4359-8C0C-C030E5298CBF}.Release|x64.ActiveCfg = Release|x64
 		{FAD4FB2F-96CF-4359-8C0C-C030E5298CBF}.Release|x64.Build.0 = Release|x64
+		{DF8D48A1-AFF5-4FA8-BF25-DFF8D8AB3BBF}.Debug|x64.ActiveCfg = Debug|x64
+		{DF8D48A1-AFF5-4FA8-BF25-DFF8D8AB3BBF}.Debug|x64.Build.0 = Debug|x64
+		{DF8D48A1-AFF5-4FA8-BF25-DFF8D8AB3BBF}.Release|x64.ActiveCfg = Release|x64
+		{DF8D48A1-AFF5-4FA8-BF25-DFF8D8AB3BBF}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
         {1AF62396-65AD-4323-9DE9-5E9E231EC56B} = {90EC58E5-6006-4715-B407-E90247B4DDAB}
@@ -68,5 +74,6 @@ Global
 		{E9CF77AB-E4F8-4439-A34E-B028F55D0722} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{C9D4CD79-825C-452E-8CA7-F045C29CB31E} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{FAD4FB2F-96CF-4359-8C0C-C030E5298CBF} = {90EC58E5-6006-4715-B407-E90247B4DDAB}
+		{DF8D48A1-AFF5-4FA8-BF25-DFF8D8AB3BBF} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal
