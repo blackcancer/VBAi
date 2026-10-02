@@ -12,6 +12,50 @@ namespace VBAi.Tests.Unit
         private const uint ThreadId = 60720;
 
         [TestMethod]
+        public void ChildCallbackInventorySurvivesUnusedFalseApiReturn()
+        {
+            var parent = new IntPtr(14);
+            foreach (bool apiReturn in new[] { false, true })
+            {
+                int calls = 0;
+                var actual = WordChatWindowDiscovery.ReadNativeChildren(parent, (observedParent, visit, state) => {
+                    calls++; Assert.AreEqual(parent, observedParent); Assert.AreEqual(IntPtr.Zero, state);
+                    Assert.IsTrue(visit(new IntPtr(20), state));
+                    Assert.IsTrue(visit(new IntPtr(21), state));
+                    return apiReturn;
+                });
+                CollectionAssert.AreEqual(new[] { new IntPtr(20), new IntPtr(21) }, actual);
+                Assert.AreEqual(1, calls, "Native enumeration must not be replayed.");
+            }
+        }
+
+        [TestMethod]
+        public void EmptyChildInventoryRemainsEmptyAndInvalidArgumentsNeverEnumerate()
+        {
+            int calls = 0;
+            WordChatWindowDiscovery.NativeChildEnumerator empty = (parent, visit, state) => { calls++; return false; };
+            Assert.AreEqual(0, WordChatWindowDiscovery.ReadNativeChildren(new IntPtr(14), empty).Length);
+            Assert.AreEqual(1, calls);
+            Assert.ThrowsException<ArgumentException>(() => WordChatWindowDiscovery.ReadNativeChildren(IntPtr.Zero, empty));
+            Assert.ThrowsException<ArgumentNullException>(() => WordChatWindowDiscovery.ReadNativeChildren(new IntPtr(14), null));
+            Assert.AreEqual(1, calls);
+        }
+
+        [TestMethod]
+        public void CallbackBoundStopsAndRefusesPartialNativeInventoryWithoutReplay()
+        {
+            int visited = 0, calls = 0;
+            Assert.ThrowsException<InvalidOperationException>(() => WordChatWindowDiscovery.ReadNativeChildren(
+                new IntPtr(14), (parent, visit, state) => {
+                    calls++;
+                    while (++visited <= 4096 && visit(new IntPtr(visited), state)) { }
+                    return true; // Even a nonzero API result cannot accept our partial callback inventory.
+                }));
+            Assert.AreEqual(2048, visited);
+            Assert.AreEqual(1, calls);
+        }
+
+        [TestMethod]
         public void FormAutomationIdIsUnnecessaryWhenNativeChildShapeAndOwnerAreExact()
         {
             var chat = Exact();

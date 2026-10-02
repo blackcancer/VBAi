@@ -203,7 +203,7 @@ namespace VBAi.Tests.Integration
         {
             private delegate bool Visitor(IntPtr window, IntPtr data);
             [DllImport("user32.dll")] private static extern bool EnumWindows(Visitor visitor, IntPtr data);
-            [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, Visitor visitor, IntPtr data);
+            [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, WordChatWindowDiscovery.NativeVisitor visitor, IntPtr data);
             [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
             [DllImport("user32.dll")] private static extern bool IsChild(IntPtr parent, IntPtr child);
             [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr window);
@@ -250,13 +250,12 @@ namespace VBAi.Tests.Integration
                 return IntPtr.Zero;
             }
 
-            private static IntPtr[] NativeChildren(IntPtr parent)
+            private IntPtr[] NativeChildren(IntPtr parent)
             {
-                var found = new List<IntPtr>();
-                Visitor visitor = (window, unused) => { found.Add(window); return found.Count < 2048; };
-                if (!EnumChildWindows(parent, visitor, IntPtr.Zero) || found.Count >= 2048)
-                    throw new InvalidOperationException("Bounded Word VBE child-window inventory failed.");
-                return found.ToArray();
+                Guard(parent);
+                var found = WordChatWindowDiscovery.ReadNativeChildren(parent, EnumChildWindows);
+                Guard(parent);
+                return found;
             }
 
             private WordChatWindowDiscovery.Candidate DescribeChatCandidate(IntPtr window, string nativeClass,
@@ -296,6 +295,8 @@ namespace VBAi.Tests.Integration
                 var handles = new HashSet<IntPtr>(NativeChildren(context.Scope.VbeHandle));
                 foreach (IntPtr top in OwnedTopWindows().Where(top => GetWindow(top, 4) == context.Scope.VbeHandle))
                 {
+                    uint pid; uint tid = GetWindowThreadProcessId(top, out pid);
+                    if (pid != context.Fixture.ProcessId || tid != context.Scope.ThreadId || !IsWindowVisible(top)) continue;
                     handles.Add(top);
                     foreach (IntPtr child in NativeChildren(top)) handles.Add(child);
                 }

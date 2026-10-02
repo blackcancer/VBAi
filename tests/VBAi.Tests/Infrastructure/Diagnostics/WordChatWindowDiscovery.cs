@@ -7,6 +7,23 @@ namespace VBAi.Tests.Integration
     /// <summary>Pure, content-free identity check for a native Word chat window observed under its owned VBE.</summary>
     internal static class WordChatWindowDiscovery
     {
+        internal delegate bool NativeVisitor(IntPtr window, IntPtr state);
+        internal delegate bool NativeChildEnumerator(IntPtr parent, NativeVisitor visitor, IntPtr state);
+
+        /// <summary>Bounds the callback inventory; EnumChildWindows has no usable return status.</summary>
+        internal static IntPtr[] ReadNativeChildren(IntPtr parent, NativeChildEnumerator enumerate)
+        {
+            if (parent == IntPtr.Zero) throw new ArgumentException("A verified parent HWND is required.", nameof(parent));
+            if (enumerate == null) throw new ArgumentNullException(nameof(enumerate));
+            var found = new List<IntPtr>();
+            NativeVisitor visitor = (window, unused) => { found.Add(window); return found.Count < 2048; };
+            // Microsoft documents the BOOL return as unused. Only our callback bound is a status.
+            enumerate(parent, visitor, IntPtr.Zero);
+            if (found.Count >= 2048)
+                throw new InvalidOperationException("Bounded Word VBE child-window inventory exceeded.");
+            return found.ToArray();
+        }
+
         internal sealed class Candidate
         {
             internal long Handle;

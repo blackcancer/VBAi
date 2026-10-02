@@ -34,9 +34,12 @@ a fresh control with the existing 15-second read-only bound observes normal exit
 code 0 after 5,558 ms. This is the accepted operation scope with its explicit bound,
 not a repair or green verdict for the earlier external-STA/default-bound cases.
 The separate chat trial fails before any UI action at discovery of `ChatWindow`
-AutomationId and exits normally. Q-024 stays open for Chat-to-Git; Q-027 is deferred.
-Registration is restored. See
-[recorded validation](test-coverage.md#word-owner-capture-and-chat-discovery-follow-up-2026-10-02).
+AutomationId and exits normally. Follow-up gated source `4b68a77` also stops before
+UI action: its bank incorrectly uses the unused `EnumChildWindows` return as a
+success status. Original normal exit code 0 and registry restoration are verified;
+the callback-bound correction still needs native observation. Q-024 stays open for
+Chat-to-Git; Q-027 is deferred. See
+[recorded validation](test-coverage.md#word-chat-child-window-inventory-refusal-2026-10-02).
 
 The gated source `b6f13fb` observes `Application.VBE` succeeding before the
 retained workbook replacement in owned Excel `16.0.20430.20092`, then failing

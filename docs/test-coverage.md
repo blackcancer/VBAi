@@ -1,5 +1,39 @@
 # Recorded validation
 
+## Word chat child-window inventory refusal (2026-10-02)
+
+Source `4b68a771f44d3284eaaa88b957bc8205f21fec4d` adds bounded native chat
+discovery and exact top-level modal-owner guards. Its isolated Debug solution
+build has zero warnings/errors. The complete default managed gate reports
+**3,921 passed, 0 failed, 205 inactive, 4,126 total**, ending
+`2026-10-02T19:20:32.7687197Z`, with clean source, exact assembly hashes,
+cleared native/provider opt-ins and no coverage collector. Product MVID is
+`fbb5bf9e-9143-468c-8ef5-0738f34cec2c`; product SHA-256 is
+`21398B28B9B5202F6A703A7979B4F1DBD673F829BDECADB0D14B2CFD379942AD`;
+test SHA-256 is
+`BA271694339EB9AECC661FFE17E18869E4057A20369D23D1AF3BE522C713568E`.
+
+The separate native chat case reports **0 passed, 1 failed, 0 skipped**, ending
+`2026-10-02T19:22:30.1711406Z`. Owned Word PID `44512` loads the exact candidate,
+prepares the canonical saved DOCM and reads its references through the bridge.
+The bank rejects its `EnumChildWindows` return before the chat inventory receipt,
+scope selection, Options or Git invocation. This return is
+[documented as unused](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-enumchildwindows);
+the failure does not prove that the chat is absent or that the callback exceeded
+its bound. No Git mutation is reached. The original single Close/Quit returns
+and the original handle observes normal exit code 0 after 6,387 ms, with the
+15-second read-only bound and no GC, force or cleanup retry.
+Registry restoration is verified at `2026-10-02T19:23:31.4817662Z`.
+Evidence is under `artifacts/word-chat-git-v5-20261002/`; the original pending
+wrapper receipt is preserved, with completed-task cleanup recorded separately.
+Q-024 remains open for Chat-to-Git; Q-027 remains deferred.
+
+The follow-up bank ignores the unused API return, retains the explicit callback
+bound and checks the exact parent before/after enumeration. Its mirror tests
+cover both return values, empty inventory, invalid arguments and bounded partial
+inventory without replay. This correction requires a fresh frozen gate and native
+trial before acceptance.
+
 ## Word owner capture and chat discovery follow-up (2026-10-02)
 
 Source `70f6cc0c10b89583b0b2fd9e6b0c45eda229b145` preserves the observed

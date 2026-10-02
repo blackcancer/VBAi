@@ -87,7 +87,11 @@ Run it separately on the same frozen-candidate contract. It maps the owned saved
 Word project through canonical bridge fields, selects its unique chat UI label,
 then invokes the actual chat GitHub menu item once. Discovery uses a bounded native
 HWND inventory and the unique chat caption/control shape, with a content-free
-receipt before action. The Git modal must belong to the observed chat's verified
+receipt before action. Native
+`EnumChildWindows` inventory uses an explicit callback limit, preserving partial
+inventory refusal while ignoring its
+[unused return value](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-enumchildwindows).
+The Git modal must belong to the observed chat's verified
 top-level root and VBE thread. An anchored child chat resolves its native modal
 owner to the VBE root, following the
 [Win32 owner contract](https://learn.microsoft.com/en-us/windows/win32/winmsg/window-features#owned-windows).
