@@ -97,34 +97,51 @@ namespace VBAi.Tests.Integration
             result.Root = Path.Combine(Path.GetFullPath(output), kind, Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(result.Root);
             result.DocumentPath = Path.Combine(result.Root, "Disposable" + (kind == "Word" ? ".docm" : kind == "PowerPoint" ? ".pptm" : kind == "Access" ? ".accdb" : ".pub"));
+            string isolatedDesktop = Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME");
+            bool privateWord = !string.IsNullOrEmpty(isolatedDesktop);
+            if (privateWord && kind != "Word")
+                throw new InvalidOperationException("The private-desktop bootstrap is prepared only for owned Word qualification.");
             try
             {
-                result.application = Activator.CreateInstance(type);
-                var launched = Process.GetProcessesByName(executable);
-                try
+                if (privateWord) result.BootstrapPrivateWordDesktop(isolatedDesktop);
+                else
                 {
-                    var candidates = launched.Where(p => !existing.Contains(p.Id)).ToArray();
-                    Assert.AreEqual(1, candidates.Length, "No unique new Office process; no document mutation is permitted.");
-                    result.ProcessId = candidates[0].Id;
-                    if (kind == "Word")
+                    result.application = Activator.CreateInstance(type);
+                    var launched = Process.GetProcessesByName(executable);
+                    try
                     {
-                        // The empty initial inventory and sole new process establish ownership without app.VBE.
-                        Assert.AreEqual(1, launched.Length, "Word ownership requires an empty initial inventory and exactly one process after activation.");
-                        result.steps.Add(new { ApplicationOwnershipVerifiedBeforeMutation = true, Method = "SoleWordProcessInventory",
-                            BeforeProcessIds = existing, AfterProcessIds = launched.Select(p => p.Id).ToArray(), result.ProcessId,
-                            StartedUtc = candidates[0].StartTime.ToUniversalTime() });
+                        var candidates = launched.Where(p => !existing.Contains(p.Id)).ToArray();
+                        Assert.AreEqual(1, candidates.Length, "No unique new Office process; no document mutation is permitted.");
+                        result.ProcessId = candidates[0].Id;
+                        if (kind == "Word")
+                        {
+                            // The empty initial inventory and sole new process establish ownership without app.VBE.
+                            Assert.AreEqual(1, launched.Length, "Word ownership requires an empty initial inventory and exactly one process after activation.");
+                            result.steps.Add(new { ApplicationOwnershipVerifiedBeforeMutation = true, Method = "SoleWordProcessInventory",
+                                BeforeProcessIds = existing, AfterProcessIds = launched.Select(p => p.Id).ToArray(), result.ProcessId,
+                                StartedUtc = candidates[0].StartTime.ToUniversalTime() });
+                        }
+                        else result.RequireApplicationOwner();
+                        result.owned = true;
+                        result.CaptureOwnedProcess();
                     }
-                    else result.RequireApplicationOwner();
-                    result.owned = true;
-                    result.CaptureOwnedProcess();
+                    finally { foreach (var process in launched) process.Dispose(); }
                 }
-                finally { foreach (var process in launched) process.Dispose(); }
                 if (kind == "Access" || kind == "Publisher") result.StartOwnedDialogHandler();
                 dynamic app = result.application;
                 if (kind == "Word")
                 {
-                    app.Visible = true; app.DisplayAlerts = 0; app.AutomationSecurity = 3;
-                    result.document = result.CreateOrOpenDocument(false);
+                    if (privateWord) { app.AutomationSecurity = 3; app.DisplayAlerts = 0; app.Visible = true; }
+                    else { app.Visible = true; app.DisplayAlerts = 0; app.AutomationSecurity = 3; }
+                    if (privateWord)
+                    {
+                        object seed = result.document;
+                        result.document = result.CreateOrOpenDocument(false);
+                        ((dynamic)seed).Close(0);
+                        result.Release(seed);
+                        result.privateWordSeed = null;
+                    }
+                    else result.document = result.CreateOrOpenDocument(false);
                 }
                 else if (kind == "PowerPoint")
                 {
@@ -159,6 +176,14 @@ namespace VBAi.Tests.Integration
                 result.startupFailure = startupError;
                 result.Failures.Add("Host startup: " + startupError);
                 result.steps.Add(new { StartupError = startupError.ToString(), HostProgId = progId, Result = "FAIL" });
+                if (privateWord && result.privateWordChild != null)
+                {
+                    result.NativeExecutionUnsettled = true;
+                    result.RetainUncertainOffice();
+                    try { result.FlushAdapterEvidence(); }
+                    catch (Exception evidenceError) { throw new AggregateException("Private Word startup and evidence persistence failed; original process retained.", startupError, evidenceError); }
+                    throw;
+                }
                 if (preserveStartupFailure || kind == "Publisher")
                 {
                     result.RetainUncertainOffice();
@@ -785,6 +810,8 @@ namespace VBAi.Tests.Integration
                     }
             else if (owned) { RetainUncertainOffice(); RecordCleanupFailure("No retained process handle was available to verify host shutdown. PID=" + ProcessId); return; }
             owned = false;
+            privateWordChild?.Dispose();
+            privateWordChild = null;
             StopOwnedDialogHandler();
         }
 

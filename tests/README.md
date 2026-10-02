@@ -111,7 +111,7 @@ continues to require a preloaded, explicitly selected instance.
 `VBAi_RUN_WORD_GIT_TESTS=1`, `VBAi_RUN_OFFICE_TESTS=1`, an absolute
 `VBAi_OFFICE_RESULTS`, and the exact retained synthetic repository manifest in
 `VBAi_TEST_GITHUB_MANIFEST`. Set `VBAi_TEST_EMBEDDED_GIT_MVID` and
-`VBAi_TEST_EMBEDDED_GIT_SHA256` to the frozen candidate. Run this case separately,
+`VBAi_TEST_EMBEDDED_GIT_SHA256` to the frozen candidate. Run this case as an independent owned-host case in the grouped campaign,
 with no existing Word process. It creates and saves an inert owned DOCM, exports
 an independent baseline through the installed bridge, then invokes the tagged
 production Git menu once. The MTA UI worker verifies the native PID, VBE thread
@@ -123,7 +123,7 @@ normal exit remain required. This scenario does not qualify the chat Git button
 or provider conversation; native acceptance must be recorded separately.
 
 `WordChatGitWindowTests` additionally requires `VBAi_RUN_WORD_CHAT_GIT_TESTS=1`.
-Run it separately on the same frozen-candidate contract. It maps the owned saved
+Run it as an independent owned-host case in the grouped frozen campaign. It maps the owned saved
 Word project through canonical bridge fields, selects its unique chat UI label,
 then invokes the actual chat GitHub menu item once. Discovery uses a bounded native
 HWND inventory and the unique chat caption/control shape, with a content-free
@@ -154,6 +154,25 @@ external testhost reference property getters are not part of this preparation.
 The existing `VBAi_TEST_WORD_EXIT_WAIT_BOUND_MS=15000` opt-in changes only the
 single read-only original-handle exit observation. Record that bound with the
 native result; it does not replay Close/Quit or make an earlier timeout successful.
+
+`WordGitProjectIsolationTests.TwoSameNameWordDocumentsUseCanonicalGitScopesAndRefuseStaleSaveAs`
+qualifies the owned two-document Word path, duplicate-name refusal, native
+selection, stale SaveAs binding refusal before CodePane access, and preservation
+of the other document's source without calling `VbaGitProject.Capture` or
+exporting a component. The historical external-STA Capture and distinct export
+routes are a separate diagnostic method requiring
+`VBAi_RUN_WORD_GIT_CAPTURE_DIAGNOSTIC=1` as well as the Word Git/Office opt-ins.
+Its failures remain failures and do not supply canonical-path acceptance.
+For grouped runs on an inactive test desktop, the campaign runner supplies the
+generated `VBAi_TEST_DESKTOP_NAME`, an absolute `VBAi_TEST_WORD_EXE`, and its
+exact `VBAi_TEST_WORD_EXE_SHA256`. The Word-only fixture then launches that
+binary through the desktop launcher with Microsoft's documented
+[`/n`, `/q`, `/m` switches](https://support.microsoft.com/en-us/office/lifecycle/command-line-switches-for-microsoft-office-products)
+and one disposable macro-free DOCX seed. It attaches through the launched PID's
+unique Word NativeOM window, verifies the application, sole seed document and
+actual UI-thread desktop before showing Word or creating a DOCM. Attachment
+failure retains the original launched process without a COM activation fallback.
+Without this opt-in, the existing Office fixture startup path applies.
 
 The separate `WordChatGitWindowTests` observes the Options popup after the
 owned Word chat selects its canonical saved project. A native Menu popup may be
