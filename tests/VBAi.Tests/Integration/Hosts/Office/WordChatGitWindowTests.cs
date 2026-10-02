@@ -146,9 +146,9 @@ namespace VBAi.Tests.Integration
                 context.ScopeObserved.Set();
                 if (!context.ScopeAuthorized.Wait(TimeSpan.FromSeconds(30)) || context.Stop || context.OwnerError != null)
                     throw new InvalidOperationException("Canonical Word scope was not authorized before chat Git invocation.");
+                automation.CaptureModalOwner();
                 automation.OpenChatOptionsAndFindGit();
                 automation.RequireNoGitModal();
-                automation.CaptureModalOwner();
                 context.InvocationThread = new Thread(() => automation.InvokeGitOnce()) { IsBackground = true };
                 context.InvocationThread.SetApartmentState(ApartmentState.MTA); context.InvocationThread.Start();
                 if (!context.GitIntent.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException("No durable chat Git invocation intent.");
@@ -214,6 +214,7 @@ namespace VBAi.Tests.Integration
             [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr window, StringBuilder text, int capacity);
             private readonly Context context;
             private AutomationElement chat, scopePicker, gitItem, git;
+            private IntPtr gitPopupHandle;
             private SelectionPattern scopeSelection;
             private WindowPattern gitWindow;
             private WordChatWindowDiscovery.OwnerIdentity modalOwner;
@@ -454,31 +455,80 @@ namespace VBAi.Tests.Integration
                 if (buttons.Length != 1 || buttons[0].Current.ControlType != ControlType.Button ||
                     !buttons[0].Current.IsEnabled || buttons[0].Current.IsOffscreen)
                     throw new InvalidOperationException("The exact Word chat Options button is unavailable.");
+                long expectedOwner = WordChatWindowDiscovery.RequireModalOwner(modalOwner,
+                    context.Fixture.ProcessId, context.Scope.ThreadId);
+                var visibleBefore = new HashSet<IntPtr>(OwnedTopWindows().Where(window => {
+                    uint pid; uint tid = GetWindowThreadProcessId(window, out pid);
+                    return pid == context.Fixture.ProcessId && tid == context.Scope.ThreadId && IsWindowVisible(window);
+                }));
                 context.Record(new { Phase = "ChatOptionsIntent", ChatHandle = context.ChatHandle.ToInt64() });
                 Pattern<InvokePattern>(buttons[0], InvokePattern.Pattern).Invoke();
                 var watch = Stopwatch.StartNew();
-                while (watch.ElapsedMilliseconds < 5000 && gitItem == null)
+                var last = new List<WordChatGitMenuDiscovery.Candidate>();
+                int nativeVisible = 0;
+                try
                 {
-                    var matches = new List<AutomationElement>();
-                    foreach (IntPtr window in OwnedTopWindows())
+                    while (watch.ElapsedMilliseconds < 5000 && gitItem == null)
                     {
-                        uint pid; uint tid = GetWindowThreadProcessId(window, out pid);
-                        if (tid != context.Scope.ThreadId || !IsWindowVisible(window)) continue;
-                        var cls = new StringBuilder(128); GetClassName(window, cls, cls.Capacity);
-                        if (!cls.ToString().StartsWith("WindowsForms", StringComparison.Ordinal)) continue;
-                        matches.AddRange(Descendants(AutomationElement.FromHandle(window), "github")
-                            .Where(item => item.Current.ControlType == ControlType.MenuItem &&
-                                item.Current.ProcessId == context.Fixture.ProcessId && !item.Current.IsOffscreen));
+                        last = new List<WordChatGitMenuDiscovery.Candidate>();
+                        var exactItems = new Dictionary<long, AutomationElement>();
+                        nativeVisible = 0;
+                        foreach (IntPtr window in OwnedTopWindows())
+                        {
+                            uint pid; uint tid = GetWindowThreadProcessId(window, out pid);
+                            if (pid != context.Fixture.ProcessId || tid != context.Scope.ThreadId ||
+                                !IsWindowVisible(window)) continue;
+                            nativeVisible++;
+                            var cls = new StringBuilder(128); GetClassName(window, cls, cls.Capacity);
+                            if (!cls.ToString().StartsWith("WindowsForms", StringComparison.Ordinal)) continue;
+                            var popup = AutomationElement.FromHandle(window);
+                            if (popup.Current.ControlType != ControlType.Menu) continue;
+                            var items = popup.FindAll(TreeScope.Descendants,
+                                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.MenuItem))
+                                .Cast<AutomationElement>().ToArray();
+                            string label = UiText.Get("GitHub · synchronize VBA…");
+                            var matching = items.Where(item => WordChatGitMenuDiscovery.IsExactGitItem(
+                                item.Current.Name, label, item.Current.ControlType.ProgrammaticName,
+                                item.Current.ProcessId, context.Fixture.ProcessId)).ToArray();
+                            var enabled = matching.Where(item => item.Current.IsEnabled && !item.Current.IsOffscreen).ToArray();
+                            var candidate = new WordChatGitMenuDiscovery.Candidate {
+                                PopupHandle = window.ToInt64(), OwnerHandle = GetWindow(window, 4).ToInt64(),
+                                NativeProcessId = (int)pid, NativeThreadId = tid, UiProcessId = popup.Current.ProcessId,
+                                Visible = true, NewlyVisible = !visibleBefore.Contains(window),
+                                NativeClass = cls.ToString(), UiType = popup.Current.ControlType.ProgrammaticName,
+                                MenuItemCount = items.Length, GitLabelMatches = matching.Length,
+                                EnabledGitMatches = enabled.Length,
+                                GitItemProcessId = matching.Length == 1 ? matching[0].Current.ProcessId : 0
+                            };
+                            last.Add(candidate);
+                            if (enabled.Length == 1) exactItems.Add(window.ToInt64(), enabled[0]);
+                        }
+                        var eligible = last.Where(item => item.OwnerHandle == expectedOwner && item.NewlyVisible &&
+                            item.GitLabelMatches == 1 && item.EnabledGitMatches == 1).ToArray();
+                        if (eligible.Length > 0)
+                        {
+                            var selected = WordChatGitMenuDiscovery.RequireUnique(last, context.Fixture.ProcessId,
+                                context.Scope.ThreadId, expectedOwner);
+                            gitPopupHandle = new IntPtr(selected.PopupHandle);
+                            gitItem = exactItems[selected.PopupHandle];
+                        }
+                        else Thread.Sleep(50);
                     }
-                    var unique = matches.GroupBy(item => item.Current.AutomationId + ":" + item.Current.Name).ToArray();
-                    if (unique.Length > 1 || unique.Length == 1 && unique[0].Count() > 1)
-                        throw new InvalidOperationException("The chat GitHub menu item is ambiguous.");
-                    if (unique.Length == 1) gitItem = unique[0].Single();
-                    else Thread.Sleep(50);
+                }
+                finally
+                {
+                    // The popup receipt contains only native identity and product-label match counts.
+                    context.Record(new { Phase = "ChatOptionsPopupInventory", ProcessId = context.Fixture.ProcessId,
+                        ThreadId = context.Scope.ThreadId, ExpectedOwner = expectedOwner,
+                        VisibleTopWindowCount = nativeVisible, Candidates = last.Select(item => new {
+                            item.PopupHandle, item.OwnerHandle, item.NativeProcessId, item.NativeThreadId,
+                            item.UiProcessId, item.NativeClass, item.UiType, item.Visible, item.NewlyVisible,
+                            item.MenuItemCount, item.GitLabelMatches, item.EnabledGitMatches,
+                            item.GitItemProcessId }).ToArray() });
                 }
                 if (gitItem == null) throw new InvalidOperationException("The exact chat GitHub menu item was not observed.");
-                context.Record(new { Phase = "ChatGitItemObserved", AutomationId = gitItem.Current.AutomationId,
-                    Name = gitItem.Current.Name, ProcessId = gitItem.Current.ProcessId });
+                context.Record(new { Phase = "ChatGitItemObserved", PopupHandle = gitPopupHandle.ToInt64(),
+                    LocalizedProductLabelMatched = true, ProcessId = gitItem.Current.ProcessId });
             }
 
             internal void RequireNoGitModal()
@@ -493,6 +543,16 @@ namespace VBAi.Tests.Integration
                     RequireSelectedScope();
                     RequireSameModalOwner(new IntPtr(WordChatWindowDiscovery.RequireModalOwner(modalOwner,
                         context.Fixture.ProcessId, context.Scope.ThreadId)));
+                    Guard(gitPopupHandle);
+                    if (!IsWindowVisible(gitPopupHandle) ||
+                        GetWindow(gitPopupHandle, 4).ToInt64() != WordChatWindowDiscovery.RequireModalOwner(
+                            modalOwner, context.Fixture.ProcessId, context.Scope.ThreadId) ||
+                        AutomationElement.FromHandle(gitPopupHandle).Current.ControlType != ControlType.Menu ||
+                        !WordChatGitMenuDiscovery.IsExactGitItem(gitItem.Current.Name,
+                            UiText.Get("GitHub · synchronize VBA…"), gitItem.Current.ControlType.ProgrammaticName,
+                            gitItem.Current.ProcessId, context.Fixture.ProcessId) ||
+                        !gitItem.Current.IsEnabled || gitItem.Current.IsOffscreen)
+                        throw new InvalidOperationException("The exact localized Word chat Git menu item changed before invocation.");
                     context.Record(new { Phase = "ChatGitInvokeIntent", context.Label, CanonicalPath = context.Scope.Path,
                         ChatHandle = context.ChatHandle.ToInt64() });
                     context.ActionIssued = true;
