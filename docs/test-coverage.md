@@ -1,5 +1,69 @@
 # Recorded validation
 
+## Explicit root font import and diagnostic gate refusal (2026-10-02)
+
+Frozen source `a5649c33dfba200965a81ab6be62b6794ef617e2` adds a tests-only,
+explicit `SyntheticExplicitArial9` seed before the first SaveAs. The ordinary
+default-font preparation and product manifest remain unchanged. Isolated Debug
+solution build: zero warnings and errors. Product MVID
+`736dae63-1922-44b8-8f0f-65740b87e76d`, product SHA-256
+`423CC1AD64D0B1A4E25E0EB8CCC8C821B56E7AB03CFF21C79F498CBA45C95A4F`, test
+SHA-256 `3B9D53C0EB20C84095A33187B7E3EFC2B8BECC877D7E4DBE56263DE59CDE54BD`.
+Complete default managed gate: **3,772 passed, zero failed, 201 opted-in scenarios
+not run, 3,973 total**, completed `2026-10-02T05:44:44.6599824Z`. Frozen source
+and assembly hashes stay unchanged; live opt-ins are cleared and no coverage
+collector is enabled.
+
+The one fresh owner-UI LabelButton diagnostic records **zero passed, one failed
+and zero skipped**, on Excel `16.0.20430.20092`, PID 7784. Saved/reopened seed
+and checkpoint contain the exact Arial 9.00 root descriptor
+`010000009001905F010005417269616C`, in a 3,096-byte FRX. Actual owner-dispatched
+checkpoint import reaches its first post-import capture, which is already exact.
+The diagnostic deliberately requires a nonexact selected FRX to exercise a
+deferred transfer, so its gate throws before any transfer intent or font put.
+No native setter failure is established by this result.
+
+The later independent snapshot is also exact, with no differing source,
+component, reference or resource comparison hash. Independent native readback
+confirms the original form/control properties and Arial 9.00 font. The failed
+diagnostic remains failed: it does not establish the complete ordinary Git
+workflow, deferred restoration, recovery or persistence acceptance. Q-027,
+default Tahoma explicit-font fidelity, Frame 8.27 and the full layout matrix
+remain open.
+
+Original Excel closes normally with code zero, no forced termination or replay.
+The saved workbook remains SHA-256
+`BEE5B521EC46D9ED6DA859E799C33DFBA3B944802B42FF4FECC363377DFC8617`.
+Temporary registration is restored from
+`registration-before-3c3a69985b2a4cc8ba64ab71c2f5586e.clixml`; existing SOLIDWORKS
+PID 36392 is unchanged across the trial and is not controlled. Evidence lives in
+`artifacts/root-font-after-capture-explicit-20261002`, including candidate,
+managed/native TRXs, ordered diagnostic receipts and
+`native-independent-terminal-inspection.json`. An initial offline inspector
+attempt failed because PowerShell enumerated a one-element reflection argument;
+the script correction and original failure are retained. Only offline inspection
+was repeated; the native import was not replayed. Initial and later capture
+contents are attested by receipts and per-file hashes; their full bytes are not
+retained. Checkpoint raw bytes and the root descriptor are independently parsed.
+
+An independent, owned-STA OleAut32 probe subsequently checks Tahoma 8.25 and
+8.27, with and without styles, using unattached font objects only. It loads
+each exact descriptor, records `IPersistStream.IsDirty`, then saves with
+`clearDirty=false` before any scalar font getter. Separate objects additionally
+receive local `Name=Arial` and `Name=Tahoma` writes. Every final descriptor remains
+exact, including charset and style bits; `IsDirty` returns `S_OK` immediately
+after Load and at every recorded phase. These are local diagnostic cases, not
+VSTest or host qualification results. No Office process, registry change or
+attached-font delivery occurs. Evidence:
+`artifacts/root-font-after-capture-explicit-20261002/unattached-font-dirty-state.json`,
+SHA-256 `6E0702E620D2BD6978D3488F0F925700AF91C41997252122FE35D07D942A7AA0`;
+probe script SHA-256
+`9B291C08BCA729EE5F988FD844C4299DD42D51E2B548AA5E59C4ECAFE9D845D7`.
+The result does not support a repair based on making this font dirty: it is
+already dirty before the local name writes. It does not establish the form
+designer's notification or serialization policy. No name cycle is promoted
+into the import path.
+
 ## Post-capture font diagnostic baseline refusal (2026-10-02)
 
 Frozen source `269b18722b4bd8024841141b1d186cab59871950` adds the explicitly
@@ -449,9 +513,12 @@ After one new-font Load and owner assignment, the capture
 `after-persisted-font-before-getters/QualificationForm.frx` already stores
 8.25 points, `01000000900144420100065461686F6D61` (file SHA-256
 `992B1387901CF102EBF70DCDB065DAA0F597973887AEE543779EC87ECA430C1C`).
-This capture precedes the test's explicit font metric readback. The retained
-evidence therefore locates the loss no later than the first export after
-transfer, without distinguishing transfer from export/realization. This is an
+This capture precedes the explicit metric readback after that restoration;
+earlier post-import metric getters had already run. The submitted stream encodes
+8.27, but the newly loaded font object was not independently saved before its
+owner assignment. The loss is observed no later than the first export following
+that Load and assignment; this does not distinguish Load, attachment or
+export/realization. This is an
 offline refinement of the historical failure, not a new native run or a repair.
 
 The `forms-owner-font-selection-ready` terminal records the originally loaded

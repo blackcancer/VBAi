@@ -6,7 +6,21 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Current candidate checkpoint (2026-10-02)
 
-The latest gated diagnostic source `269b187`, MVID
+The latest gated diagnostic source `a5649c3`, MVID
+`736dae63-1922-44b8-8f0f-65740b87e76d`, SHA-256
+`423CC1AD64D0B1A4E25E0EB8CCC8C821B56E7AB03CFF21C79F498CBA45C95A4F`,
+passes its complete default managed gate. A separately declared Arial 9.00
+baseline survives save/reopen and actual owner-dispatched LabelButton import.
+The initial and later independent snapshots are exact, with matching native
+properties and font. The diagnostic refuses the already exact initial state
+before any deferred transfer, so the native scenario remains failed. This is
+scoped exact import evidence, not ordinary-workflow or restoration acceptance.
+Default Tahoma explicit-font fidelity, Frame 8.27, recovery and post-import
+persistence remain open. The owned host exits normally, disk bytes stay
+unchanged and registration is restored. See
+[recorded validation](test-coverage.md#explicit-root-font-import-and-diagnostic-gate-refusal-2026-10-02).
+
+The preceding gated diagnostic source `269b187`, MVID
 `e78f15bc-f918-425e-9d1f-a8e700da3caf`, SHA-256
 `627EDE3B8038580E107791600CCA85E080FFD88F0FF6F2EA6A437C4DBC656CCA`,
 passes its complete default managed gate. Its fresh owner-UI LabelButton trial

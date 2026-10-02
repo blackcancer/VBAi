@@ -27,7 +27,17 @@ operation, language feature or UI surface.
 
 ### Current operation-specific refresh
 
-The latest Q-027 diagnostic source `269b187` passes its complete managed gate.
+The latest Q-027 diagnostic source `a5649c3` passes its complete managed gate.
+Its explicit Arial 9.00 baseline and actual owner-dispatched LabelButton import
+have exact initial and independent snapshots and matching native readback.
+The diagnostic requires an inexact FRX for a transfer experiment and therefore
+refuses this already exact state before any font put; the scenario remains
+failed. Ordinary workflow, default Tahoma explicit-font fidelity, Frame 8.27,
+recovery and persistence are not qualified. Normal owned exit, unchanged disk
+and registry restoration are verified. See
+[recorded validation](test-coverage.md#explicit-root-font-import-and-diagnostic-gate-refusal-2026-10-02).
+
+The preceding Q-027 diagnostic source `269b187` passes its complete managed gate.
 Its fresh Excel baseline lacks the root font binding required to arm the
 post-capture transfer experiment. The trial stops before manifest publication,
 Git menu emission or import; deferred transfer is NOT_RUN. The owned host exits
