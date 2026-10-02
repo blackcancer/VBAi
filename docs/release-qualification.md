@@ -7,7 +7,16 @@ are maintained only in [recorded validation](test-coverage.md).
 ## Current candidate checkpoint (2026-10-02)
 
 The active qualification focus is Q-024; Q-027 is deferred at the maintainer's
-request and retains its recorded open gates. The latest completed inactive-desktop
+request and retains its recorded open gates. Source `a15609f` now passes its
+complete default managed gate and full synthetic UI action matrix on inactive
+desktops, with unchanged source/hashes and normal original child exits. This
+does not qualify Word. Registration Apply and all grouped native Word cases are
+NOT_RUN while the separate Q-026 native campaign remains active. Its hosts are
+preserved; the exact tested source is retained in a clean frozen checkout for
+the subsequent native phase. No Office host or registration mutation is made
+by this candidate's gate. See
+[recorded validation](test-coverage.md#complete-inactive-desktop-gate-2026-10-03).
+The preceding completed inactive-desktop
 matrix on `da34b3b` proves native combo-list discovery and exact scope selection,
 but refuses the legacy ToolBar accessibility role of the Options popup before
 Git delivery. No Office host starts and no registration is applied. The focused

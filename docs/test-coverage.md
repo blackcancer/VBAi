@@ -1,5 +1,40 @@
 # Recorded validation
 
+## Complete inactive desktop gate (2026-10-03)
+
+Frozen source `a15609fd95430021c0f828b5a3ba712841af19ce` builds with zero
+warnings/errors. Its complete default managed gate reports **3,952 passed,
+0 failed, 206 inactive, 4,158 total**, ending `2026-10-02T22:53:18.3202473Z`.
+The TRX outcome is Completed; source stays clean and product/test hashes remain
+exact. Native/provider opt-ins are disabled and no coverage collector is enabled.
+Product MVID is `5b97e0fa-9126-4572-adf2-f0eaf10b37b4`; product SHA-256 is
+`91818686878237B00F700592159F86009CC015912EB6571D6BF22A9CAAC57A65`;
+test SHA-256 is
+`7A97268F7771B45E06B4763AE68140281E0F3A102794C026DA1DEC8FFB68EEFB`.
+The actual testhost PID `29884`, thread `60928`, verifies its exact inactive
+desktop before execution while the input desktop remains `Default`.
+
+This same candidate's complete synthetic matrix reports **9 proven, 0 gaps,
+9 required**, ending `2026-10-02T22:36:33.6362712Z`. It independently observes
+text, tab, expanded native-list discovery, exact scope selection/collapse,
+native/custom button events, one virtual Git MSAA action and owned form closure.
+Matrix PID `55580` observes the exact legacy ToolBar popup and unique virtual
+MenuItem under its HWND. The selected ComboBox may be the popup's child owner;
+only its frozen exact identity is allowed. Git click count is exactly one, with
+no replay. Both original campaign children exit normally with code 0. Their
+terminal tasks are removed with separate receipts, and no desktop switch occurs.
+Evidence is under `artifacts/q024-private-batch-v7-20261003/`.
+
+The Node scenarios, disabled Office opt-in boundary and session deletion
+regression that failed in the earlier environment now pass in this complete
+gate. This is managed/synthetic acceptance, not Office qualification or a new
+line/branch coverage measurement. Registration Apply and the grouped native
+Word cases remain NOT_RUN: another worktree's Q-026 native campaign is active.
+Its hosts are not controlled by this campaign. A private, clean checkout retains
+the exact tested source for Word after that worker's original terminal evidence
+and an empty Office inventory are observed. Documentation updates do not replace
+the frozen candidate or its assembly evidence. Q-024 remains open; Q-027 is deferred.
+
 ## Inactive desktop action discovery (2026-10-03)
 
 Frozen source `da34b3bfa987c94ec29469039cdf30273ab3350b` builds with zero
