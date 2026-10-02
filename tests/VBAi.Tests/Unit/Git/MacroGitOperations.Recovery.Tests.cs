@@ -113,10 +113,17 @@ namespace VBAi.Tests.Unit
             using (var f = new Fixture())
             {
                 string initial = SeedRecoveryRefs(f); var before = f.Project.Capture();
-                string checkpoint = f.Repository.Checkpoint(f.Snapshot("2"), "preview target").Id;
-                f.Operations.ImportPreview = summary => Directory.CreateDirectory(f.Repository.RecoveryFile);
-                await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => f.Operations.ExecuteAsync("checkpoint_restore", name: checkpoint));
+                var target = f.Snapshot("2");
+                Assert.IsFalse(target.SameAs(before), "The checkpoint must require an import and reach its preview.");
+                string checkpoint = f.Repository.Checkpoint(target, "preview target").Id;
+                Assert.IsTrue(f.Repository.Read(f.Repository.CheckpointCommit(checkpoint)).SameAs(target),
+                    "The named checkpoint must resolve to the exact target before the recovery race is introduced.");
+                Assert.IsFalse(f.Repository.RecoveryPending, "The marker must be absent before the preview creates it.");
+                int previewCalls = 0;
+                f.Operations.ImportPreview = summary => { previewCalls++; Directory.CreateDirectory(f.Repository.RecoveryFile); };
+                var error = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => f.Operations.ExecuteAsync("checkpoint_restore", name: checkpoint));
                 AssertRecoveryRefs(f, initial); Assert.AreEqual(0, f.Host.VBComponents.ImportAttempts); Assert.IsTrue(f.Project.Capture().SameAs(before));
+                Assert.AreEqual(1, previewCalls, "Import preview was not reached; original failure: " + error);
                 Assert.IsTrue(Directory.Exists(f.Repository.RecoveryFile));
             }
         }
