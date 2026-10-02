@@ -95,6 +95,11 @@ The Git modal must belong to the observed chat's verified
 top-level root and VBE thread. An anchored child chat resolves its native modal
 owner to the VBE root, following the
 [Win32 owner contract](https://learn.microsoft.com/en-us/windows/win32/winmsg/window-features#owned-windows).
+Git ToolStrip items may expose no AutomationId or leaf HWND. The bank selects the
+exact localized product label only inside the unique newly visible native Menu
+popup, verifies its PID/thread/owner and rechecks the virtual item's native
+ancestor before invocation. Inventory receipts contain identities and match
+counts, without menu/conversation contents.
 The exact root relationship is frozen before invocation and rechecked before
 closure. Exact closure, unchanged Word
 source/references/saved bytes and normal exit remain required; opening must not

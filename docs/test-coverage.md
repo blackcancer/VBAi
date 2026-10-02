@@ -1,5 +1,39 @@
 # Recorded validation
 
+## Word chat menu identity preflight (2026-10-02)
+
+Source `c283c6e87a1a33e0d99c86b84ad5d8edbe642c40` corrects the callback
+inventory contract without relaxing the bound or native identity guards. Its
+isolated Debug solution build has zero warnings/errors. The complete default
+managed gate reports **3,924 passed, 0 failed, 205 inactive, 4,129 total**, ending
+`2026-10-02T19:39:27.6925645Z`, with clean source, exact hashes, cleared
+native/provider opt-ins and no coverage collector. Product MVID is
+`fc759eb0-41d2-40f5-813a-c5878dc547eb`; product SHA-256 is
+`150BC05E4F2CD94D3FDD53444EEC956843E604C4E5FEA413E727D5B01AF10F26`;
+test SHA-256 is
+`8F3139BC6114702801CF1B0DB4AB9DD9D5218D98AC50831C83D150322204A8A2`.
+Evidence is under `artifacts/word-chat-git-v6-20261002/`.
+
+Native Word execution for this candidate is **NOT_RUN**. Three separate owned
+default-Designer observations instantiate the real product chat without a VBE
+session, provider or Git invocation. They close normally with process exit code
+0. `scopePicker` and `options` expose the expected UIA IDs and roles, but the
+visible Git ToolStrip item has no AutomationId. The exact localized label is
+present under a native `ControlType.Menu` popup. The same virtual runtime ID also
+appears under the top-level window, so enumerating every root would duplicate it.
+The third observation finds the popup owned by the chat's top-level root. This is
+Designer preflight evidence, not Word acceptance. Evidence is under
+`artifacts/chat-options-uia-probe-20261002/`,
+`artifacts/chat-options-uia-probe-v2-20261002/` and
+`artifacts/chat-options-uia-probe-v3-20261002/`.
+
+The candidate receives read-only registration previews only. No Apply or Word
+trial is attempted with its known invalid Git AutomationId assumption. The next
+bank selects the exact localized product label in its unique newly visible native
+Menu popup, then checks its owner and virtual-item ancestry before the single
+invocation. It requires a fresh candidate and native trial; Q-024 stays open and
+Q-027 stays deferred.
+
 ## Word chat child-window inventory refusal (2026-10-02)
 
 Source `4b68a771f44d3284eaaa88b957bc8205f21fec4d` adds bounded native chat

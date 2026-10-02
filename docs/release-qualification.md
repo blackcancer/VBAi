@@ -21,10 +21,13 @@ a unique `ChatWindow` AutomationId; it also exits normally. Follow-up source
 complete default managed gate, but its native chat discovery rejects the unused
 `EnumChildWindows` return before inventory or UI action. Original Word exit code
 0 and exact registry restoration are observed. This is a bank defect, not proof
-of an absent chat or a failed Git action. The callback-bound correction needs a
-fresh candidate/trial. Chat-to-Git remains NOT_RUN and Q-024 stays open for that
-entry gate. See
-[recorded validation](test-coverage.md#word-chat-child-window-inventory-refusal-2026-10-02).
+of an absent chat or a failed Git action. Its callback-bound correction passes
+the complete managed gate on `c283c6e`. Isolated product-Designer preflight then
+finds the real Git item has no AutomationId and appears twice through distinct
+UIA roots. Native Word is NOT_RUN on that candidate; registration previews are
+read-only. The corrected localized native-popup selection needs a fresh trial.
+Chat-to-Git remains NOT_RUN and Q-024 stays open for that entry gate. See
+[recorded validation](test-coverage.md#word-chat-menu-identity-preflight-2026-10-02).
 
 Source `b6f13fb`, product MVID `988010f8-e080-4caa-a54d-11ab51d58016`, passes
 the complete default managed gate. Its single retained-copy Excel observation

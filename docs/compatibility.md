@@ -37,9 +37,11 @@ The separate chat trial fails before any UI action at discovery of `ChatWindow`
 AutomationId and exits normally. Follow-up gated source `4b68a77` also stops before
 UI action: its bank incorrectly uses the unused `EnumChildWindows` return as a
 success status. Original normal exit code 0 and registry restoration are verified;
-the callback-bound correction still needs native observation. Q-024 stays open for
-Chat-to-Git; Q-027 is deferred. See
-[recorded validation](test-coverage.md#word-chat-child-window-inventory-refusal-2026-10-02).
+the callback-bound correction passes its full managed gate on `c283c6e`.
+Isolated Designer preflight finds the real Git item has no AutomationId, so
+native Word is NOT_RUN on that candidate. Corrected native-popup selection still
+needs Word observation. Q-024 stays open for Chat-to-Git; Q-027 is deferred. See
+[recorded validation](test-coverage.md#word-chat-menu-identity-preflight-2026-10-02).
 
 The gated source `b6f13fb` observes `Application.VBE` succeeding before the
 retained workbook replacement in owned Excel `16.0.20430.20092`, then failing
