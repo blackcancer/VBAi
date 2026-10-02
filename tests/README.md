@@ -78,8 +78,10 @@ campaign script on a generated, inactive Windows desktop under the same user's
 limited interactive token. The helper uses explicit
 [CreateProcess desktop selection](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfow),
 never switches the input desktop and has no process-termination path. A disposable
-WinForms/UIA canary must prove the exact private desktop, native/UIA control
-identity, invocation and normal exit before the campaign script starts. A failed
+WinForms canary must prove the exact private desktop, native/UIA control
+identity, an addressed `BM_CLICK` on its owned button and normal exit before the campaign script starts.
+The legacy UIA `Button.Invoke` proxy uses input injection; the canary reads UIA
+identity without invoking that proxy. This does not qualify other UIA actions. A failed
 canary refuses the campaign without falling back to the working desktop.
 
 ```powershell

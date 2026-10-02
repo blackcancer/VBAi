@@ -15,6 +15,9 @@ namespace VBAi.Desktop.Helper
     {
         [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr SendMessageTimeoutW(IntPtr window, uint message, IntPtr wParam,
+            IntPtr lParam, uint flags, uint timeout, out UIntPtr result);
         private static IDisposable retainedDesktop;
         private static IsolatedTestDesktop.NativeChild retainedChild;
 
@@ -115,7 +118,7 @@ namespace VBAi.Desktop.Helper
                     timer.Tick += (sender, value) => { expired = true; timer.Stop(); form.Close(); };
                     button.Click += (sender, value) => { clicked = true; timer.Stop(); form.Close(); };
                     form.Shown += (sender, value) => {
-                        button.Focus(); IntPtr hwnd = button.Handle; uint nativePid;
+                        IntPtr hwnd = button.Handle; uint nativePid;
                         uint nativeThread = GetWindowThreadProcessId(hwnd, out nativePid);
                         IsolatedTestDesktop.RequireCurrent(expected);
                         if (IsolatedTestDesktop.DesktopName(nativeThread) != expected)
@@ -132,7 +135,18 @@ namespace VBAi.Desktop.Helper
                                     NativeProcessId = nativePid, NativeThreadId = nativeThread,
                                     NativeHandle = hwnd.ToInt64(), UiAProcessId = element.Current.ProcessId,
                                     UiAOffscreen = element.Current.IsOffscreen, UiAEnabled = element.Current.IsEnabled };
-                                ((InvokePattern)element.GetCurrentPattern(InvokePattern.Pattern)).Invoke();
+                                // The legacy UIA Button.Invoke proxy uses SendInput/SetFocus. Read UIA identity
+                                // only; address this exact owned button once without interacting with input.
+                                uint currentPid;
+                                if (GetWindowThreadProcessId(hwnd, out currentPid) != nativeThread ||
+                                    currentPid != nativePid || currentPid != Process.GetCurrentProcess().Id ||
+                                    !element.Current.IsEnabled)
+                                    throw new InvalidOperationException("The owned canary button changed before its addressed action.");
+                                IsolatedTestDesktop.RequireCurrent(expected);
+                                UIntPtr ignored;
+                                if (SendMessageTimeoutW(hwnd, 0x00F5, IntPtr.Zero, IntPtr.Zero,
+                                    0x0002, 3000, out ignored) == IntPtr.Zero) // BM_CLICK, SMTO_ABORTIFHUNG; no retry.
+                                    throw new InvalidOperationException("The single owned canary button message did not return.");
                             }
                             catch (Exception error) { failure = error; try { form.BeginInvoke((Action)form.Close); } catch { } }
                         }) { IsBackground = true };
@@ -143,7 +157,8 @@ namespace VBAi.Desktop.Helper
                         throw new InvalidOperationException("Private desktop WinForms/UIA canary did not complete.", failure);
                 }
                 Write(Path.GetDirectoryName(receipt), Path.GetFileName(receipt), new { State = "PASS_CANARY_ONLY",
-                    Observation = observation, ClickObserved = clicked, DesktopSwitches = 0, Utc = Utc() });
+                    Observation = observation, ClickObserved = clicked, Action = "OwnedHwndBM_CLICK",
+                    UiAInvokeCalled = false, DesktopSwitches = 0, Utc = Utc() });
                 return 0;
             }
             catch (Exception error)
