@@ -23,6 +23,7 @@ using System.Text;
 using System.Threading;
 using System.Web.Script.Serialization;
 public static class Q026RecoveryShutdown {
+ static readonly List<object> retainedReferences=new List<object>();
  [DllImport("user32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern IntPtr OpenDesktopW(string n,uint f,bool i,uint a);
  [DllImport("user32.dll",SetLastError=true)] static extern bool SetThreadDesktop(IntPtr d);
  [DllImport("user32.dll")] static extern bool CloseDesktop(IntPtr d);
@@ -40,7 +41,8 @@ public static class Q026RecoveryShutdown {
  public static void Run(string desktop,int pid,string start,string seed,string executable,string output) {
   var state=new Dictionary<string,object>{{"ProcessId",pid},{"ProcessStartUtc",start},{"Desktop",desktop},{"Qualified",false},{"ForcedTermination",false},{"CloseEntries",0},{"QuitEntries",0},{"State","IDENTITY_GUARD"}};
   Action persist=()=>File.WriteAllText(output+".progress.json",new JavaScriptSerializer().Serialize(state),new UTF8Encoding(false));
-  persist();Exception failure=null;
+  persist();Exception failure=null;int stopDispatch=0;
+  Action requireDispatch=()=>{if(Interlocked.CompareExchange(ref stopDispatch,0,0)!=0)throw new InvalidOperationException("Shutdown deadline expired; no further native action.");};
   var process=Process.GetProcessById(pid);IntPtr handle=process.Handle;
   if(process.StartTime.ToUniversalTime()!=DateTime.Parse(start).ToUniversalTime() || !string.Equals(process.MainModule.FileName,executable,StringComparison.OrdinalIgnoreCase))throw new InvalidOperationException("Owned process changed before recovery shutdown.");
   state["RecoveryProcessHandle"]=handle.ToInt64();state["OriginalCampaignHandleProof"]=false;persist();
@@ -64,19 +66,23 @@ public static class Q026RecoveryShutdown {
     books=Get(app,"Workbooks");if(Convert.ToInt32(Get(books,"Count"))!=1)throw new InvalidOperationException("Foreign document present; no shutdown.");
     book=Get(books,"Item",1);
     if(!string.Equals(Path.GetFullPath(Convert.ToString(Get(book,"FullName"))),Path.GetFullPath(seed),StringComparison.OrdinalIgnoreCase) || !Convert.ToBoolean(Get(book,"Saved")))throw new InvalidOperationException("Owned saved seed identity changed; no shutdown.");
-    state["State"]="CLOSE_INTENT";state["CloseEntries"]=1;persist();
+    requireDispatch();state["State"]="CLOSE_INTENT";state["CloseEntries"]=1;persist();
     Call(book,"Close",false,Type.Missing,Type.Missing);state["CloseReturned"]=true;
     if(Convert.ToInt32(Get(books,"Count"))!=0)throw new InvalidOperationException("Owned seed close unverified; no Quit.");
-    state["State"]="QUIT_INTENT";state["QuitEntries"]=1;persist();
+    requireDispatch();state["State"]="QUIT_INTENT";state["QuitEntries"]=1;persist();
     Call(app,"Quit");state["QuitReturned"]=true;state["State"]="QUIT_RETURNED";persist();
    } catch(Exception e){failure=e;} finally {
+    if(failure!=null && Convert.ToInt32(state["CloseEntries"])!=0 && !state.ContainsKey("QuitReturned")){
+      retainedReferences.AddRange(new[]{book,books,app,window});state["State"]="RETAINED_NATIVE_OUTCOME";state["Error"]=failure.ToString();persist();
+      for(;;)Thread.Sleep(1000);
+    }
     try{Release(book);Release(books);Release(app);Release(window);}catch(Exception e){if(failure==null)failure=e;}
     if(reader!=IntPtr.Zero)DestroyWindow(reader);if(desk!=IntPtr.Zero)CloseDesktop(desk);
    }
   });thread.SetApartmentState(ApartmentState.STA);thread.IsBackground=true;thread.Start();
-  if(!thread.Join(30000)){state["State"]="RETAINED_PENDING_COM";persist();throw new InvalidOperationException("Owned shutdown pending; no replay.");}
-  if(failure!=null){state["State"]="RETAINED_SHUTDOWN_ERROR";state["Error"]=failure.ToString();persist();throw failure;}
-  if(!process.WaitForExit(15000)){state["State"]="RETAINED_EXIT_NOT_OBSERVED";persist();throw new InvalidOperationException("Owned Excel did not exit after one Quit; no replay or forced termination.");}
+  if(!thread.Join(30000)){Interlocked.Exchange(ref stopDispatch,1);state["State"]="RETAINED_PENDING_COM";persist();for(;;)Thread.Sleep(1000);}
+  if(failure!=null){state["State"]="RETAINED_SHUTDOWN_ERROR";state["Error"]=failure.ToString();persist();for(;;)Thread.Sleep(1000);}
+  if(!process.WaitForExit(15000)){state["State"]="RETAINED_EXIT_NOT_OBSERVED";persist();for(;;)Thread.Sleep(1000);}
   state["ExitCode"]=process.ExitCode;state["State"]=process.ExitCode==0?"RECOVERED_HOST_NORMAL_EXIT":"ABNORMAL_EXIT";persist();
   File.WriteAllText(output,new JavaScriptSerializer().Serialize(state),new UTF8Encoding(false));process.Dispose();
   if(Convert.ToInt32(state["ExitCode"])!=0)throw new InvalidOperationException("Owned Excel exited abnormally; failed qualification remains failed.");

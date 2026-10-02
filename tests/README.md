@@ -415,7 +415,7 @@ records the native cases and stop rules; its planned status is not execution pro
 
 ### Q-026 inactive-desktop campaign
 
-`tools/tests/Invoke-Q026Qualification.ps1 -Prepare` copies the already installed
+`tools/tests/Invoke-Q026Qualification.ps1 -Prepare` copies the reviewed
 candidate into a fresh evidence directory and builds only the focused harness
 and desktop helper. It does not replace the installed DLL or modify registration.
 Use Windows PowerShell 5.1 for this .NET Framework preparation:
@@ -430,7 +430,8 @@ powershell.exe -NoProfile -File tools/tests/Invoke-IsolatedTests.ps1 `
     -EvidenceDirectory (Join-Path $q026Evidence 'isolation')
 ```
 
-The installed path must identify the reviewed registered candidate. Preparation
+The target path must identify the reviewed candidate; it can be frozen before
+temporary registration, but must match the registered CodeBase before execution. Preparation
 freezes hashes, MVID, source revision/status and the scenario matrix. Execution
 requires a verified private-desktop worker, passing managed guards and a continuous
 30-second interval without another Excel, Word, PowerPoint, Access, Publisher or
