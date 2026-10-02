@@ -1,5 +1,33 @@
 # Recorded validation
 
+## Native font failure context (2026-10-02)
+
+Isolated source `12ae61878b20d999937519b5508dbc5aee633862` adds operation/HRESULT
+provenance for COM exceptions inside root font restoration, preserving the
+original inner exception and leaving setters, guards and comparison unchanged.
+The build has no warnings or errors. Its product MVID is
+`0d1b176f-ed05-490a-aebd-53c2abbac427`, SHA-256
+`5D5B67AFB31EE16A113539E488B4E357A16589F5718FF7521C075D2FD97BFB17`; test SHA-256
+is `A2ACB72A532C614D5E14DE1D628C3D969F629A80AAFFD0B8E8DE0B522F7BD910`.
+Sources and binaries remain frozen through both gates, with no coverage collector.
+
+| Terminal TRX under `artifacts/native-font-error-context-20261002` | Passed | Failed | Opt-ins not executed | Scope |
+| --- | ---: | ---: | ---: | --- |
+| `managed/managed.trx` | 3680 | 0 | 189 | Complete default managed gate, including COM provenance regressions. |
+| `native-labelbutton-diagnostic/native.trx` | 0 | 1 | 0 | One fresh LabelButton diagnostic after discovery proves the filter selects exactly this case; no matrix-wide acceptance. |
+
+The owned Excel PID **42556** loads the exact MVID and reaches the same terminal
+unsupported-property/method message without any instrumented COM operation label.
+Consequently the precise failing member is still unknown: an exception of another
+type or a call outside the instrumented block remains possible. The test stack
+does not identify the product call site. No setter capability or correction is
+inferred. Excel exits normally with code zero, unchanged saved-workbook bytes
+and no forced termination. SOLIDWORKS PID **24876** is only observed, with unchanged
+start identity; no operation targets it. `registration-Restore.json` verifies
+restoration from the owned snapshot after Excel exits. Installed files remain
+unchanged. The failed full matrix below remains authoritative for that scope;
+this diagnostic neither replaces it nor qualifies Q-027.
+
 ## Root UserForm Font property route (2026-10-02)
 
 Frozen source `de5c61941bdf7bbaaa550a0cd592e8006eef7787` builds an isolated

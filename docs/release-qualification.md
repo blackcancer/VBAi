@@ -6,7 +6,16 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Current candidate checkpoint (2026-10-02)
 
-The latest isolated trial is source `de5c619`, MVID
+The latest diagnostic source `12ae618`, MVID
+`0d1b176f-ed05-490a-aebd-53c2abbac427`, SHA-256
+`5D5B67AFB31EE16A113539E488B4E357A16589F5718FF7521C075D2FD97BFB17`,
+passes its complete managed gate. A fresh LabelButton trial still fails without
+an instrumented COM operation label. The product exception type and call site
+remain unknown; the narrower diagnostic does not replace the full failed matrix.
+The owned Excel exits normally and temporary registration is restored. See
+[recorded validation](test-coverage.md#native-font-failure-context-2026-10-02).
+
+The latest complete native UserForm matrix uses source `de5c619`, MVID
 `22fe3345-5015-4949-860f-23cdf23449e3`, SHA-256
 `4D3859E07F9479BA6E465F6F7346B66F80B2C91EF7D58458EBDE453B14F1C637`.
 Its complete default managed gate passes. The root Font property route remains
