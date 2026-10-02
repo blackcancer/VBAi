@@ -976,6 +976,50 @@ test and retained-host decision remain unchanged. No bridge, COM, input,
 restoration or cleanup occurs during this later observation, retained in
 `retained-dialog-later-observation.json`.
 
+### Q-026 offline snapshot review (2026-10-03)
+
+Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,
+independently of the complete Q-006 publication in PR #20. No native host was
+launched and no preference was changed in this initial Q-026 follow-up.
+The prepared case matrix is `tools/tests/q026-scenarios.json`; all its native
+cases remain **PLANNED_NOT_RUN**, including full restoration and normal exit.
+Execution must first use the verified inactive-desktop isolation infrastructure.
+
+The offline comparator rejects truncated/ambiguous receipts, missing hashed
+control fields, malformed revisions and unverified dialog closure. It compares
+all recorded tab/category/palette fields, catalogue order and value types;
+recorded host identity remains separate from preference equality. It does not
+recompute the .NET serialization hash or prove native restoration/cause.
+`be2e25f` records **7 passed, 0 failed** in
+`artifacts/q026-initial-review/offline-tests.log`. The identity/count correction
+at `8a8c7f8` records **8 passed, 0 failed** in `offline-tests-identity.log`.
+These are Python diagnostic tests, not a .NET/native run or coverage measurement.
+
+The actual historical inputs are the complete durable `options-0004`, `0006`,
+`0010` and `0015` receipts below
+`E:/Développement/AddIn/CodexVBA/artifacts/qualification-v1/followup-20260930/format-native-v6-corrected/phases/options-evidence-8c1703a33ef44a6593935b7292ee563c/`.
+They identify Excel PID 48192, start `2026-10-01T03:50:04.2993576Z`, product MVID
+`d8f31d57-8612-465e-871c-93a62f2b3eae` and test MVID
+`7c4a6bf2-f4a0-4234-b196-8ec0fcd0af96`. This is historical frozen evidence, not
+execution of the currently installed product.
+
+- `baseline-to-before-write.json`: equal complete revision and tab structure
+  between baseline capture and the font's preceding read.
+- `font-change.json`: the recorded revision changes; the sole structural
+  difference is `/Tabs/1/Controls/8/Value`, from `Consolas (Occidental)` to
+  `Courier New (Occidental)`.
+- `font-to-size-read.json`: equal complete revision and structure between
+  independent font readback and size catalogue read.
+- `baseline-to-size-with-identity.json`: preserves matching recorded PID/start/
+  product metadata while reporting the expected font difference.
+
+Both baseline and later size receipts already show `Taille :` value `10`, no
+choices and selected index `-1`. This does not establish why the catalogue is
+empty, but prevents attributing its first appearance to this font write.
+No spontaneous revision drift is observed in these compared reads. They do not
+explain a different older stale-revision failure, replay any uncertain operation,
+or establish complete baseline restoration. Q-026 remains **OPEN**.
+
 ## Current installed v6: complete managed acceptance (2026-10-01)
 
 Product source `8f2315d04162f55b0956618f96b59d294a3fb681` includes the Monaco

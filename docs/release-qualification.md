@@ -121,6 +121,14 @@ Later read-only evidence observes the Options window closed, without qualifying
 baseline font restoration. The original failed trial and pending recovery remain
 unchanged; no size write or uncertain action is replayed. Q-026 stays open.
 
+The Q-026 offline follow-up compares complete historical receipts rather than
+response prefixes. In the retained PID 48192 trial, reads are stable before the
+font write and after it; only the font value changes. The size catalogue is already
+empty in the baseline. This constrains that trial's interpretation without
+establishing its native cause or explaining another stale-revision failure.
+The prepared native matrix remains unexecuted; exact scope is in
+[recorded validation](test-coverage.md#q-026-offline-snapshot-review-2026-10-03).
+
 Current-v6 native evidence includes the explicitly authorized read-only
 owner-STA path/effective-token diagnostic in owned Excel. Both synthetic GUID
 directories and files are visible with attributes matching the testhost; normal
