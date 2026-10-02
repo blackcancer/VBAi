@@ -1,5 +1,52 @@
 # Recorded validation
 
+## Root Font operation and read-only child observation (2026-10-02)
+
+Frozen source `e3d94bc72ccbde31838f8041423b231f683769d3` captures mapped
+`NotSupportedException` at the actual operation boundary. Its isolated build
+has no warnings or errors. Product MVID is
+`8071360b-1c57-45fd-9ff9-5b575dee2576`, product SHA-256
+`62A2209C1D3E659CBC6CE4A96CB0CB2768AFB73F31E096C19E65BDBE4A1832DB` and test
+SHA-256 `4BB0AA2C614D96E773B8B19CFC6C93D489BDCCDEACB0B97B79499D37D4EF611A`.
+
+| Terminal TRX under `artifacts/font-mapped-operation-20261002` | Passed | Failed | Opt-ins not executed | Scope |
+| --- | ---: | ---: | ---: | --- |
+| `managed/managed.trx` | 3685 | 0 | 189 | Complete default managed gate; no coverage collector. |
+| `native-labelbutton-diagnostic/native.trx` | 0 | 1 | 0 | One actual owner-dispatched LabelButton checkpoint import. |
+
+The native error identifies `VBIDE.Property.Object.set` with an inner
+`NotSupportedException` and managed HRESULT `0x80131515`; the original native
+HRESULT is unknown. The original owned Excel PID **57248** exits normally with
+code zero. Saved-file bytes remain unchanged and guarded registration restore
+is verified. This failed import does not qualify restoration or recovery.
+
+A distinct read-only trial, recorded under
+`artifacts/font-value-child-observation-20261002-r5`, loads this exact product
+in owned Excel PID **21704**. An external STA reads eight `Font.Value` child
+properties: Name is String, Size is Decimal, style fields are Boolean, and
+Weight/Charset are Int16. All have zero indices. Direct type-information
+inspection observes Value get/put declarations without invoking a setter.
+The frozen `VbaGitSnapshot.SameAs` comparison passes; the root StdFont descriptor,
+source, Saved state and saved-file hash remain exact. No Designer getter,
+property setter or persistence method is called by the observer. The original
+Excel exits normally with code zero, without forced termination. Registration
+is restored from the exact owned snapshot. Independent terminal inspection
+records these checks. This is getter/metadata acceptance, not owner-STA setter
+or checkpoint-import acceptance.
+
+Earlier independent observer trials remain separate: r1 fails argument binding
+before host entry; r2 fails hashing an opened workbook; r3 refuses launch on an
+overbroad host precondition; r4 completes observation but fails the cleanup
+identity guard. The r2/r4 hosts require separate forced cleanup and cannot
+qualify normal lifecycle. The r5 runner uses shared file reads, retains COM
+collection references without PowerShell enumeration and records each cleanup
+condition. None of the original failure receipts is replaced by the r5 result.
+
+The following root-font implementation uses prevalidated child Value writes,
+with exact decimal Size and Weight last. It requires its own frozen managed
+and actual owner-STA native gates; these diagnostic results do not qualify it.
+Q-027, all-layout imports, recovery, transfer and post-import reopen remain open.
+
 ## Git failure provenance and mapped font error (2026-10-02)
 
 Frozen source `2ac0112ceb42320fae5004880771e8b5f0faf3fe` adds bounded Git UI

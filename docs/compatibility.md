@@ -27,7 +27,15 @@ operation, language feature or UI surface.
 
 ### Current operation-specific refresh
 
-The latest Q-027 isolated source `de5c619` uses the root component's Font
+The latest Q-027 diagnostic source `e3d94bc` identifies the failing root font
+operation as `VBIDE.Property.Object.set`. A separate read-only observation
+qualifies its Font.Value child getters and declaration metadata with exact
+state preservation and normal owned Excel exit. It does not qualify native
+setters, import or recovery. The following scalar-child restoration change
+requires its own matching managed and native gates. See
+[recorded validation](test-coverage.md#root-font-operation-and-read-only-child-observation-2026-10-02).
+
+The latest complete Q-027 matrix source `de5c619` uses the root component's Font
 `Property.Object` route. Its complete default managed gate passes, but the
 declared native checkpoint-import matrix fails with terminal property/method
 errors. All owned Excel processes exit normally and temporary registration is

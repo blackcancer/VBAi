@@ -6,16 +6,21 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Current candidate checkpoint (2026-10-02)
 
-The latest diagnostic source `2ac0112`, MVID
-`1fb0480c-d367-4956-82d5-e055f2700a5c`, SHA-256
-`5A97F3882C4F437132DAB94F4135E0ED975FFC51B04FD60B0A01FE180EF9AD30`,
-passes its complete managed gate. A fresh LabelButton trial localizes the failure
-to `FormFontRestoration.Assign`, with `NotSupportedException` and HRESULT
-`0x80131515`. The exact operation within assignment remains unknown; the earlier
-COM-only stage wrapper does not catch this mapped exception type. The owned
-Excel exits normally and temporary registration is restored. The narrower
-diagnostic does not replace the full failed matrix. See
-[recorded validation](test-coverage.md#git-failure-provenance-and-mapped-font-error-2026-10-02).
+The latest fully gated diagnostic source `e3d94bc`, MVID
+`8071360b-1c57-45fd-9ff9-5b575dee2576`, SHA-256
+`62A2209C1D3E659CBC6CE4A96CB0CB2768AFB73F31E096C19E65BDBE4A1832DB`,
+passes its complete managed gate. A fresh owner-dispatched LabelButton import
+identifies `VBIDE.Property.Object.set` as the failing operation, with inner
+`NotSupportedException` and managed HRESULT `0x80131515`. The original native
+HRESULT remains unknown. The owned Excel exits normally and registration is
+restored. A separate external-STA read-only trial observes all eight Font.Value
+children and get/put declarations, with exact snapshot, StdFont, source, Saved
+state and disk-byte preservation, normal original exit and restored registration.
+It does not exercise setters or import. The following implementation changes
+root restoration to prevalidated scalar child Value writes; actual owner-STA
+import and reopen acceptance are still required. Neither diagnostic replaces
+the full failed matrix. See
+[recorded validation](test-coverage.md#root-font-operation-and-read-only-child-observation-2026-10-02).
 
 The latest complete native UserForm matrix uses source `de5c619`, MVID
 `22fe3345-5015-4949-860f-23cdf23449e3`, SHA-256
