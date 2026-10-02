@@ -24,6 +24,16 @@ the preceding full PR integration gate. This candidate does not edit the Git
 production/test path. Stronger mirror diagnostics are being prepared separately
 without weakening the original recovery checks.
 
+The isolated follow-up `0197050` strengthens the same mirror test with target
+inequality, exact checkpoint readback, pre-existing-marker absence and an exact
+preview-call count carrying the original exception/stack on refusal. It preserves
+all reference/source/import/marker assertions. Its isolated Debug build has zero
+warnings/errors and its focused run reports **1 passed, 0 failed**. The original
+aggregate failure does not reproduce; its cause remains unknown. That narrow
+result is not a repaired complete gate. The follow-up is integrated for a fresh
+aggregate before any native use. Its evidence is under
+`artifacts/worktrees/recovery-preview-diagnostic/artifacts/recovery-preview-diagnostic/`.
+
 Current and limited-user registration previews complete for the frozen candidate,
 but Apply is not executed because the full gate failed. No native host trial is
 run against this MVID. The installed DLL and host trust settings are unchanged.
