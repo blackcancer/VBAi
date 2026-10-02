@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
@@ -37,7 +38,7 @@ namespace VBAi
             try
             {
                 revalidate();
-                object designer = ((dynamic)component).Designer; references.Add(designer);
+                object designer = NativeRead<object>("VBComponent.Designer.get", () => ((dynamic)component).Designer); references.Add(designer);
                 foreach (var binding in bindings)
                 {
                     ValidateDescriptor(binding.Descriptor);
@@ -46,10 +47,10 @@ namespace VBAi
                     {
                         if (binding.Type != 7)
                             throw new InvalidOperationException("The root persisted font owner is not a UserForm.");
-                        object properties = ((dynamic)component).Properties; references.Add(properties);
-                        current = ((dynamic)properties).Item("Font"); references.Add(current);
-                        if (!string.Equals(Convert.ToString(((dynamic)current).Name), "Font", StringComparison.Ordinal) ||
-                            Convert.ToInt32(((dynamic)current).NumIndices) != 0)
+                        object properties = NativeRead<object>("VBComponent.Properties.get", () => ((dynamic)component).Properties); references.Add(properties);
+                        current = NativeRead<object>("VBIDE.Properties.Item(Font)", () => ((dynamic)properties).Item("Font")); references.Add(current);
+                        if (!string.Equals(NativeRead<string>("VBIDE.Property.Name.get", () => Convert.ToString(((dynamic)current).Name)), "Font", StringComparison.Ordinal) ||
+                            NativeRead<int>("VBIDE.Property.NumIndices.get", () => Convert.ToInt32(((dynamic)current).NumIndices)) != 0)
                             throw new InvalidOperationException("The imported UserForm Font property changed.");
                     }
                     else
@@ -106,27 +107,50 @@ namespace VBAi
                 Italic = (data[3] & 2) != 0, Underline = (data[3] & 4) != 0, Strikethrough = (data[3] & 8) != 0
             };
             IntPtr pointer = IntPtr.Zero; object font = null; IStream stream = null;
+            string operation = "OleCreateFontIndirect";
             try
             {
                 var iid = new Guid("BEF6E003-A874-101A-8BBA-00AA00300CAB");
                 Marshal.ThrowExceptionForHR(OleCreateFontIndirect(ref description, ref iid, out pointer));
                 if (pointer == IntPtr.Zero) throw new InvalidOperationException("Native font factory returned no interface.");
+                operation = "Marshal.GetObjectForIUnknown";
                 font = Marshal.GetObjectForIUnknown(pointer);
+                operation = "CreateStreamOnHGlobal";
                 Marshal.ThrowExceptionForHR(CreateStreamOnHGlobal(IntPtr.Zero, true, out stream));
-                stream.Write(data, data.Length, IntPtr.Zero); stream.Seek(0, 0, IntPtr.Zero);
+                operation = "IStream.Write";
+                stream.Write(data, data.Length, IntPtr.Zero);
+                operation = "IStream.Seek";
+                stream.Seek(0, 0, IntPtr.Zero);
+                operation = "IPersistStream.Load";
                 ((PersistStream)font).Load(stream);
                 // Native outcome is never retried. The caller's complete snapshot
                 // comparison remains authoritative, including all font bytes.
                 // VBIDE object-valued properties use Property.Object, not Value.
                 // Use the component's documented object-valued property route
                 // for root fonts; nested owners use MSForms.Font.
+                operation = propertyObject ? "VBIDE.Property.Object.set" : "MSForms.Font.set";
                 if (propertyObject) ((dynamic)owner).Object = font;
                 else ((dynamic)owner).Font = font;
             }
+            catch (COMException error) { throw NativeFailure(operation, error); }
             finally
             {
                 try { Release(stream); } finally { try { Release(font); } finally { if (pointer != IntPtr.Zero) Marshal.Release(pointer); } }
             }
+        }
+
+        /// <summary>Retains the exact failed native getter without exposing project content or retrying it.</summary>
+        private static T NativeRead<T>(string operation, Func<T> read)
+        {
+            try { return read(); }
+            catch (COMException error) { throw NativeFailure(operation, error); }
+        }
+
+        /// <summary>Preserves the original COM failure and HRESULT together with its constant operation name.</summary>
+        private static InvalidOperationException NativeFailure(string operation, COMException error)
+        {
+            return new InvalidOperationException("UserForm font restoration failed at " + operation +
+                " (HRESULT 0x" + error.ErrorCode.ToString("X8", CultureInfo.InvariantCulture) + "): " + error.Message, error);
         }
 
         private static void Release(object value) { if (value != null && Marshal.IsComObject(value)) Marshal.ReleaseComObject(value); }

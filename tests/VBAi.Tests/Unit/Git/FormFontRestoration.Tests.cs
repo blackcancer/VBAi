@@ -104,13 +104,56 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void RootPropertyObjectComFailureReportsExactSetterAndNeverFallsBack()
+        {
+            var component = new FakeComponent();
+            var failure = InjectedComFailure();
+            component.Properties.FontProperty.ObjectSetterFailure = failure;
+
+            var error = Assert.ThrowsException<InvalidOperationException>(() => FormFontRestoration.Restore(component,
+                new[] { RootBinding() }, () => { }));
+
+            AssertComProvenance(error, "VBIDE.Property.Object.set", failure);
+            Assert.AreEqual(1, component.Properties.FontProperty.ObjectSetterCalls);
+            Assert.AreEqual(0, component.Designer.FontSetterCalls);
+        }
+
+        [TestMethod]
+        public void RootComGetterFailuresReportExactOperationBeforeAnyFontSetter()
+        {
+            foreach (string stage in new[] { "Designer", "Properties", "Item", "Name", "NumIndices" })
+            {
+                var component = new FakeComponent();
+                var failure = InjectedComFailure();
+                string operation;
+                switch (stage)
+                {
+                    case "Designer": component.DesignerGetFailure = failure; operation = "VBComponent.Designer.get"; break;
+                    case "Properties": component.PropertiesGetFailure = failure; operation = "VBComponent.Properties.get"; break;
+                    case "Item": component.Properties.ItemFailure = failure; operation = "VBIDE.Properties.Item(Font)"; break;
+                    case "Name": component.Properties.FontProperty.NameGetFailure = failure; operation = "VBIDE.Property.Name.get"; break;
+                    default: component.Properties.FontProperty.NumIndicesGetFailure = failure; operation = "VBIDE.Property.NumIndices.get"; break;
+                }
+
+                var error = Assert.ThrowsException<InvalidOperationException>(() => FormFontRestoration.Restore(component,
+                    new[] { RootBinding() }, () => { }), stage);
+
+                AssertComProvenance(error, operation, failure);
+                Assert.AreEqual(0, component.RootFontProperty.ObjectSetterCalls, stage);
+                Assert.AreEqual(0, component.DesignerFontSetterCalls, stage);
+            }
+        }
+
+        [TestMethod]
         public void RootRevalidationFailureBeforeAssignmentLeavesBothFontRoutesUntouched()
         {
             var component = new FakeComponent(); int checks = 0;
 
-            Assert.ThrowsException<InvalidOperationException>(() => FormFontRestoration.Restore(component,
+            var error = Assert.ThrowsException<InvalidOperationException>(() => FormFontRestoration.Restore(component,
                 new[] { RootBinding() }, () => { if (++checks == 2) throw new InvalidOperationException("Identity changed."); }));
 
+            Assert.AreEqual("Identity changed.", error.Message);
+            Assert.IsNull(error.InnerException);
             Assert.AreEqual(2, checks);
             Assert.AreEqual(0, component.Properties.FontProperty.ObjectSetterCalls);
             Assert.AreEqual(0, component.Designer.FontSetterCalls);
@@ -122,11 +165,36 @@ namespace VBAi.Tests.Unit
                 FormStreamPaddingTests.ContainerMetadata()).Single(binding => binding.OwnerPath == "");
         }
 
+        private static COMException InjectedComFailure()
+        {
+            return new COMException("Injected native COM failure.", unchecked((int)0x80020003));
+        }
+
+        private static void AssertComProvenance(InvalidOperationException error, string operation, COMException failure)
+        {
+            StringAssert.Contains(error.Message, operation);
+            StringAssert.Contains(error.Message, "0x80020003");
+            Assert.AreSame(failure, error.InnerException, "Preserve the exact native COM exception for diagnosis.");
+            Assert.AreEqual(unchecked((int)0x80020003), ((COMException)error.InnerException).ErrorCode);
+        }
+
         // Public fake members are required for the production dynamic COM boundary.
         public sealed class FakeComponent
         {
-            public FakeDesigner Designer { get; } = new FakeDesigner();
-            public FakeProperties Properties { get; } = new FakeProperties();
+            private readonly FakeDesigner designer = new FakeDesigner();
+            private readonly FakeProperties properties = new FakeProperties();
+            public COMException DesignerGetFailure { get; set; }
+            public COMException PropertiesGetFailure { get; set; }
+            public FakeDesigner Designer
+            {
+                get { if (DesignerGetFailure != null) throw DesignerGetFailure; return designer; }
+            }
+            public FakeProperties Properties
+            {
+                get { if (PropertiesGetFailure != null) throw PropertiesGetFailure; return properties; }
+            }
+            public FakeFontProperty RootFontProperty { get { return properties.FontProperty; } }
+            public int DesignerFontSetterCalls { get { return designer.FontSetterCalls; } }
         }
 
         public sealed class FakeDesigner
@@ -138,10 +206,12 @@ namespace VBAi.Tests.Unit
         public sealed class FakeProperties
         {
             public int ItemCalls { get; private set; }
+            public COMException ItemFailure { get; set; }
             public FakeFontProperty FontProperty { get; } = new FakeFontProperty();
             public FakeFontProperty Item(string name)
             {
                 ItemCalls++;
+                if (ItemFailure != null) throw ItemFailure;
                 Assert.AreEqual("Font", name);
                 return FontProperty;
             }
@@ -149,8 +219,21 @@ namespace VBAi.Tests.Unit
 
         public sealed class FakeFontProperty
         {
-            public string Name { get; set; } = "Font";
-            public int NumIndices { get; set; }
+            private string name = "Font";
+            private int numIndices;
+            public COMException NameGetFailure { get; set; }
+            public COMException NumIndicesGetFailure { get; set; }
+            public COMException ObjectSetterFailure { get; set; }
+            public string Name
+            {
+                get { if (NameGetFailure != null) throw NameGetFailure; return name; }
+                set { name = value; }
+            }
+            public int NumIndices
+            {
+                get { if (NumIndicesGetFailure != null) throw NumIndicesGetFailure; return numIndices; }
+                set { numIndices = value; }
+            }
             public int ObjectSetterCalls { get; private set; }
             public bool ThrowOnSet { get; set; }
             public byte[] SavedDescriptor { get; private set; }
@@ -159,6 +242,7 @@ namespace VBAi.Tests.Unit
                 set
                 {
                     ObjectSetterCalls++;
+                    if (ObjectSetterFailure != null) throw ObjectSetterFailure;
                     if (ThrowOnSet) throw new InvalidOperationException("The native property setter failed.");
                     // Save while the production method owns the font RCW. Do not release that borrowed RCW.
                     IStream stream = null; IntPtr readCount = IntPtr.Zero;
