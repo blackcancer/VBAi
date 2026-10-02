@@ -31,8 +31,9 @@ namespace VBAi.Tests.Integration
                     if (item.Item2 == 3) Data(host.Command(new { Command = "create_form", Project = path, Form = item.Item1 }));
                     else Data(host.Command(new { Command = item.Item2 == 2 ? "create_class" : "create_module", Project = path, Module = item.Item1, ExpectedMode = 2 }));
                     var before = Data(host.Command(new { Command = "read_module", Project = path, Module = item.Item1 }));
+                    var component = Data(host.Command(new { Command = "component_properties", Project = path, Module = item.Item1 }));
                     Data(host.Command(new { Command = "replace_lines", Project = path, Module = item.Item1, ExpectedSha256 = before["Sha256"],
-                        StartLine = 1, Count = before["Lines"], Text = "Option Explicit\r\nPublic Sub Q006Marker()\r\n    Debug.Print \"synthetic Q006\"\r\nEnd Sub" }));
+                        StartLine = 1, Count = component["CodeLines"], Text = "Option Explicit\r\nPublic Sub Q006Marker()\r\n    Debug.Print \"synthetic Q006\"\r\nEnd Sub" }));
                     expected[item.Item1] = (string)Data(host.Command(new { Command = "read_module", Project = path, Module = item.Item1 }))["Code"];
                 }
                 var form = Data(host.Command(new { Command = "form_state", Project = path, Form = "Q006Form" }));

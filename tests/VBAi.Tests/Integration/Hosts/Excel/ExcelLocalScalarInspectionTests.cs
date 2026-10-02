@@ -40,6 +40,26 @@ namespace VBAi.Tests.Integration
             RunDiagnosticPage(0, 14, true);
         }
 
+        // Each page stays below the installed trace's 128-event bound. The full-page
+        // diagnostic above remains available and must not pass without terminal evidence.
+        [STATestMethod, TestCategory("ExcelScalarDiagnostics")]
+        public void InstalledBridgeReadsSupportedScalarFirstPageWithNativePhaseEvidence()
+        {
+            RunDiagnosticPage(0, 4, true);
+        }
+
+        [STATestMethod, TestCategory("ExcelScalarDiagnostics")]
+        public void InstalledBridgeReadsSupportedScalarSecondPageWithNativePhaseEvidence()
+        {
+            RunDiagnosticPage(4, 4, true);
+        }
+
+        [STATestMethod, TestCategory("ExcelScalarDiagnostics")]
+        public void InstalledBridgeReadsSupportedScalarLastPageWithNativePhaseEvidence()
+        {
+            RunDiagnosticPage(8, 6, true);
+        }
+
         /// <summary>Uses one owned host and one inspection request; uncertain native work retains the host.</summary>
         private void RunDiagnosticPage(int offset, int limit, bool allTypes = false)
         {
