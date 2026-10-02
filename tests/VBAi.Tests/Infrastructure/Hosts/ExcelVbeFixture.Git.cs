@@ -133,7 +133,7 @@ namespace VBAi.Tests.Integration
             return target;
         }
 
-        internal void PrepareGitForm(string form, string caption, string marker, string path)
+        internal void PrepareGitForm(string form, string caption, string marker, string path, string rootFontSeedProfile = null)
         {
             object project = null, components = null, component = null, designer = null, controls = null, label = null, button = null, code = null;
             try
@@ -156,6 +156,8 @@ namespace VBAi.Tests.Integration
                 ((dynamic)button).Width = 100d; ((dynamic)button).Height = 28d;
                 code = ((dynamic)component).CodeModule;
                 ((dynamic)code).InsertLines(1, "Option Explicit\r\nPrivate Const ObservedMarker As String = \"" + marker + "\"\r\nPrivate Sub QualificationButton_Click()\r\n    ' Synthetic event body; never executed.\r\nEnd Sub");
+                if (rootFontSeedProfile != null)
+                    LoadGitFontOnce(designer, "Form.Font", RootFontObservationManifest.SyntheticArial9Values(rootFontSeedProfile), true);
                 ((dynamic)workbook).SaveAs(path, 52);
             }
             finally { Release(code); Release(button); Release(label); Release(controls); Release(designer); Release(component); Release(components); Release(project); }

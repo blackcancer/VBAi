@@ -43,6 +43,52 @@ namespace VBAi.Tests.Unit
                 path => { Assert.Fail("Invalid modes must not inspect metadata."); return 0; }));
         }
 
+        [TestMethod]
+        public void ExplicitSeedIsBoundBeforeBootstrapOnlyForDeferredDiagnostic()
+        {
+            WithCase((root, path, project) => {
+                var armed = RootFontObservationManifest.Prepare(
+                    EnvironmentFor(path, "AfterInitialCapture", RootFontObservationManifest.SyntheticExplicitArial9),
+                    "LabelButton", false);
+                Assert.AreEqual(RootFontObservationManifest.SyntheticExplicitArial9, armed.SeedProfile);
+                Assert.IsNull(RootFontObservationManifest.Prepare(
+                    EnvironmentFor(path, "AfterInitialCapture"), "LabelButton", false).SeedProfile);
+                foreach (string mode in new[] { "ObserveWrites", "DistinctChildName" })
+                    Assert.ThrowsException<InvalidOperationException>(() => RootFontObservationManifest.Prepare(
+                        EnvironmentFor(path, mode, RootFontObservationManifest.SyntheticExplicitArial9), "LabelButton", false));
+                Assert.ThrowsException<InvalidOperationException>(() => RootFontObservationManifest.Prepare(
+                    EnvironmentFor(path, "AfterInitialCapture", "arial"), "LabelButton", false));
+                Assert.IsFalse(File.Exists(path));
+            });
+        }
+
+        [TestMethod]
+        public void SyntheticSeedRequiresExactReopenedRootDescriptorAndNeverInventsOne()
+        {
+            byte[] expected = { 1, 0, 0, 0, 144, 1, 144, 95, 1, 0, 5, 65, 114, 105, 97, 108 };
+            CollectionAssert.AreEqual(expected, RootFontObservationManifest.SyntheticArial9Descriptor());
+            var values = RootFontObservationManifest.SyntheticArial9Values(RootFontObservationManifest.SyntheticExplicitArial9);
+            Assert.AreEqual("Arial", values["Form.Font.Name"]); Assert.AreEqual(9.00m, values["Form.Font.Size"]);
+            Assert.AreEqual((short)400, values["Form.Font.Weight"]); Assert.AreEqual((short)0, values["Form.Font.Charset"]);
+            Assert.IsFalse((bool)values["Form.Font.Italic"]); Assert.IsFalse((bool)values["Form.Font.Underline"]);
+            Assert.IsFalse((bool)values["Form.Font.Strikethrough"]);
+            Assert.ThrowsException<InvalidOperationException>(() => RootFontObservationManifest.SyntheticArial9Values("TahomaDefault"));
+            CollectionAssert.AreEqual(expected, RootFontObservationManifest.RequireRoot(
+                new[] { Binding("", 7, expected) }, "AfterInitialCapture", RootFontObservationManifest.SyntheticExplicitArial9));
+            foreach (var invalid in new[] { null, new FormStreamPadding.FormFontBinding[0],
+                new[] { Binding("", 7, Descriptor("Tahoma")) },
+                new[] { Binding("", 7, expected), Binding("", 7, expected) } })
+                Assert.ThrowsException<InvalidOperationException>(() => RootFontObservationManifest.RequireRoot(
+                    invalid, "AfterInitialCapture", RootFontObservationManifest.SyntheticExplicitArial9));
+            WithCase((root, path, project) => {
+                Guid candidate = Guid.NewGuid();
+                Assert.ThrowsException<InvalidOperationException>(() => RootFontObservationManifest.Build(
+                    Config(path, "AfterInitialCapture", RootFontObservationManifest.SyntheticExplicitArial9),
+                    root, project, Baseline(), candidate, candidate, Guid.NewGuid()));
+                Assert.IsFalse(File.Exists(path));
+            });
+        }
+
         [DataTestMethod]
         [DataRow("relative.json")][DataRow("C:relative.json")][DataRow("\\\\server\\share\\manifest.json")]
         [DataRow("C:\\manifest.json:stream")][DataRow("C:\\folder\\..\\manifest.json")]
@@ -206,7 +252,7 @@ namespace VBAi.Tests.Unit
         }
 
         [DataTestMethod]
-        [DataRow("flag")][DataRow("mode")][DataRow("path")]
+        [DataRow("flag")][DataRow("mode")][DataRow("path")][DataRow("seed")]
         public void ChangedInheritedConfigurationRefusesBeforePublication(string changed)
         {
             WithCase((root, path, project) => {
@@ -215,6 +261,7 @@ namespace VBAi.Tests.Unit
                 var environment = EnvironmentFor(path, configuration.Mode);
                 Assert.ThrowsException<InvalidOperationException>(() => RootFontObservationManifest.Publish(configuration, manifest, key =>
                     key == (changed == "flag" ? RootFontObservationManifest.OptIn : changed == "mode" ? RootFontObservationManifest.ModeVariable :
+                        changed == "seed" ? RootFontObservationManifest.SeedProfileVariable :
                         RootFontObservationManifest.ManifestVariable) ? "changed" : environment(key)));
                 Assert.IsFalse(File.Exists(path));
             });
@@ -252,10 +299,11 @@ namespace VBAi.Tests.Unit
             });
         }
 
-        private static RootFontObservationManifest.Configuration Config(string path, string mode = "ObserveWrites")
-        { return RootFontObservationManifest.Prepare(EnvironmentFor(path, mode), "LabelButton", false); }
-        private static Func<string, string> EnvironmentFor(string path, string mode)
-        { return key => key == RootFontObservationManifest.OptIn ? "1" : key == RootFontObservationManifest.ModeVariable ? mode : key == RootFontObservationManifest.ManifestVariable ? path : null; }
+        private static RootFontObservationManifest.Configuration Config(string path, string mode = "ObserveWrites", string seed = null)
+        { return RootFontObservationManifest.Prepare(EnvironmentFor(path, mode, seed), "LabelButton", false); }
+        private static Func<string, string> EnvironmentFor(string path, string mode, string seed = null)
+        { return key => key == RootFontObservationManifest.OptIn ? "1" : key == RootFontObservationManifest.ModeVariable ? mode :
+            key == RootFontObservationManifest.SeedProfileVariable ? seed : key == RootFontObservationManifest.ManifestVariable ? path : null; }
         private static VbaGitSnapshot Baseline()
         {
             var form = new VbaGitComponent { Name = "EmbeddedForm", Type = 3, HasResources = true };

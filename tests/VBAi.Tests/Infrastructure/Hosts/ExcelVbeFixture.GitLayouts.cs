@@ -12,13 +12,14 @@ namespace VBAi.Tests.Integration
     internal sealed partial class ExcelVbeFixture
     {
         /// <summary>Creates one owned native form layout with synthetic controls and inert code.</summary>
-        internal void PrepareGitLayout(string form, string layout, string path, bool persistedBaseline = false)
+        internal void PrepareGitLayout(string form, string layout, string path, bool persistedBaseline = false,
+            string rootFontSeedProfile = null)
         {
             // Suppress host events and all document macros before saving/reopening
             // this owned fixture. No user application or trust setting is changed.
             ((dynamic)application).EnableEvents = false;
             ((dynamic)application).AutomationSecurity = 3;
-            PrepareGitForm(form, "Local Git " + layout, "LOCAL_GIT_LAYOUT_" + layout, path);
+            PrepareGitForm(form, "Local Git " + layout, "LOCAL_GIT_LAYOUT_" + layout, path, rootFontSeedProfile);
             if (layout != "LabelButton")
                 WithGitLayoutDesigner(form, (component, designer) => {
                     SetGitFormProperty(component, "Width", 350d);

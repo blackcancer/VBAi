@@ -28,8 +28,12 @@ namespace VBAi.Tests.Integration
         }
 
         /// <summary>Prepares only the explicitly owned synthetic workbook; no macro is executed.</summary>
-        internal EmbeddedGitScope PrepareEmbeddedGitScope(string marker, Action<bool> pending, Action<object> evidence, string layout = null)
+        internal EmbeddedGitScope PrepareEmbeddedGitScope(string marker, Action<bool> pending, Action<object> evidence,
+            string layout = null, string rootFontSeedProfile = null)
         {
+            if (rootFontSeedProfile != null && (layout == null ||
+                rootFontSeedProfile != RootFontObservationManifest.SyntheticExplicitArial9))
+                throw new InvalidOperationException("A synthetic root font seed requires one declared layout and profile.");
             string path = File("EmbeddedGit.xlsm");
             string cache = MacroGitRepository.ScopeDirectory(Path.GetFullPath(path));
             Assert.IsFalse(Directory.Exists(cache), "A fresh workbook must not inherit a previous document's Git cache.");
@@ -56,7 +60,15 @@ namespace VBAi.Tests.Integration
             }
             finally { Release(components); Release(project); }
             if (layout == null) PrepareGitForm("EmbeddedForm", "Synthetic embedded Git form", marker, path);
-            else PrepareGitLayout("EmbeddedForm", layout, path, persistedBaseline: true);
+            else
+            {
+                if (rootFontSeedProfile != null)
+                    evidence(new { Phase = "BaselineFontSeedIntent", BaselineFontSeedProfile = rootFontSeedProfile,
+                        TargetDescriptorHex = BitConverter.ToString(RootFontObservationManifest.SyntheticArial9Descriptor()).Replace("-", ""),
+                        PlannedNativeDeliveryCount = 1 });
+                PrepareGitLayout("EmbeddedForm", layout, path, persistedBaseline: true,
+                    rootFontSeedProfile: rootFontSeedProfile);
+            }
             pending(false);
             object editor = null, main = null, module = null, moduleCode = null, pane = null;
             try
@@ -83,6 +95,15 @@ namespace VBAi.Tests.Integration
                 }
                 scope.State = ReadEmbeddedState(scope, out scope.Code, out scope.Types, out scope.References);
                 scope.Baseline = ExportEmbeddedBaseline(scope, pending, evidence);
+                if (rootFontSeedProfile != null)
+                {
+                    var rootForm = scope.Baseline.Manifest.Components.Single(item => item.Name == "EmbeddedForm" && item.Type == 3);
+                    byte[] persisted = RootFontObservationManifest.RequireRoot(scope.Baseline.FormFonts(rootForm),
+                        "AfterInitialCapture", rootFontSeedProfile);
+                    evidence(new { Phase = "BaselineFontSeedReopenedExact", BaselineFontSeedProfile = rootFontSeedProfile,
+                        DescriptorHex = BitConverter.ToString(persisted).Replace("-", ""),
+                        ResourceBytes = scope.Baseline.Files["EmbeddedForm.frx"].Length });
+                }
                 VerifyEmbeddedGitState(scope);
                 return scope;
             }
