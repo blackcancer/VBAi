@@ -201,8 +201,7 @@ namespace VBAi.Tests.Integration
 
         private sealed class WordChatGitAutomation
         {
-            private delegate bool Visitor(IntPtr window, IntPtr data);
-            [DllImport("user32.dll")] private static extern bool EnumWindows(Visitor visitor, IntPtr data);
+            [DllImport("user32.dll", SetLastError = true)] private static extern bool EnumWindows(WordChatTopWindowInventory.Visitor visitor, IntPtr data);
             [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, WordChatWindowDiscovery.NativeVisitor visitor, IntPtr data);
             [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
             [DllImport("user32.dll")] private static extern bool IsChild(IntPtr parent, IntPtr child);
@@ -222,16 +221,17 @@ namespace VBAi.Tests.Integration
 
             private IntPtr[] OwnedTopWindows()
             {
-                var found = new List<IntPtr>(); int visited = 0;
-                Visitor visitor = (window, unused) => {
-                    if (++visited > 4096) return false;
-                    uint pid; GetWindowThreadProcessId(window, out pid);
-                    if (pid == context.Fixture.ProcessId) found.Add(window);
-                    return true;
-                };
-                if (!EnumWindows(visitor, IntPtr.Zero) || visited > 4096 || found.Count > 64)
-                    throw new InvalidOperationException("Bounded Word top-window inventory failed.");
-                return found.ToArray();
+                return WordChatTopWindowInventory.Read(EnumWindows, window => {
+                    uint pid; uint tid = GetWindowThreadProcessId(window, out pid);
+                    return new WordChatTopWindowInventory.Identity {
+                        ProcessId = (int)pid, ThreadId = tid, Visible = IsWindowVisible(window)
+                    };
+                }, context.Fixture.ProcessId, context.Scope.ThreadId, result =>
+                    context.Record(new { Phase = "WordTopWindowInventoryRefused", result.ApiReturned,
+                        result.VisitedTotal, result.OwnedProcessCount, result.ExactThreadVisibleCount,
+                        result.GlobalBoundHit, result.FailureStatus,
+                        NativeLastError = !result.ApiReturned && !result.GlobalBoundHit
+                            ? (int?)Marshal.GetLastWin32Error() : null }));
             }
 
             private static AutomationElement[] Descendants(AutomationElement root, string id)

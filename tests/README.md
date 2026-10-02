@@ -100,6 +100,11 @@ exact localized product label only inside the unique newly visible native Menu
 popup, verifies its PID/thread/owner and rechecks the virtual item's native
 ancestor before invocation. Inventory receipts contain identities and match
 counts, without menu/conversation contents.
+Top-window enumeration retains a global callback bound, then counts only visible
+windows on the exact owned VBE thread against its target limit. A refusal records
+the API return, global/owned/target counts and failure branch; API failure remains
+a failure. Hidden and foreign-thread windows do not authorize actions or consume
+the target limit.
 The exact root relationship is frozen before invocation and rechecked before
 closure. Exact closure, unchanged Word
 source/references/saved bytes and normal exit remain required; opening must not
