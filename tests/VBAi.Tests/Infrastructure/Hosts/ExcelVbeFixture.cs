@@ -60,8 +60,30 @@ namespace VBAi.Tests.Integration
             if (!string.IsNullOrWhiteSpace(desktop))
             {
                 IsolatedTestDesktop.RequireCurrent(desktop);
-                return StartOwnedWithTrace(ExcelOwnedBootstrapPlan.RequireLocalAbsolutePath(
+                var fixture = StartOwnedWithTrace(ExcelOwnedBootstrapPlan.RequireLocalAbsolutePath(
                     Environment.GetEnvironmentVariable(VbeInspectionTrace.EnvironmentName)));
+                // Generic scenarios require the same unsaved-workbook precondition as COM
+                // activation. Retire only the verified macro-free seed, after loaded MVID checks.
+                fixture.PreserveForDiagnosticRecovery = true;
+                try
+                {
+                    ((dynamic)fixture.workbook).Close(false);
+                    Release(fixture.workbook); fixture.workbook = null;
+                    fixture.workbook = ((dynamic)fixture.workbooks).Add();
+                    Assert.AreEqual(1, Convert.ToInt32(((dynamic)fixture.workbooks).Count));
+                    Assert.IsTrue(string.IsNullOrEmpty(Convert.ToString(((dynamic)fixture.workbook).Path)));
+                    fixture.WriteEvidence("private-unsaved-workbook.json", new {
+                        Desktop = desktop, fixture.ProcessId, Workbook = Convert.ToString(((dynamic)fixture.workbook).Name),
+                        SavedPath = Convert.ToString(((dynamic)fixture.workbook).Path), HelperSaveInvoked = false,
+                        SeedClosedWithoutSaving = true, Utc = DateTime.UtcNow.ToString("o") });
+                    fixture.PreserveForDiagnosticRecovery = false;
+                    return fixture;
+                }
+                catch
+                {
+                    lock (retainedBootstraps) retainedBootstraps.Add(fixture);
+                    throw; // Unknown Close/Add outcomes never authorize replay or cleanup.
+                }
             }
             var excelType = Type.GetTypeFromProgID("Excel.Application");
             if (excelType == null) Assert.Inconclusive("Excel.Application is unavailable.");

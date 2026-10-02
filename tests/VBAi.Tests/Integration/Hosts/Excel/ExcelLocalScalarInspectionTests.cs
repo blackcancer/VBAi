@@ -171,7 +171,9 @@ namespace VBAi.Tests.Integration
                         if (candidate >= 3 && candidate <= 9)
                         {
                             decimal[] expected = { 200m, -1234m, 4294967296m, 4294967296m, 1.5m, 1.25m, 12.5m };
-                            Assert.AreEqual(expected[candidate - 3], decimal.Parse(Convert.ToString(row["Value"]).Replace(',', '.'),
+                            string displayedNumber = Convert.ToString(row["Value"]);
+                            if (types[candidate] == "LongLong" || types[candidate] == "LongPtr") displayedNumber = displayedNumber.TrimEnd('^');
+                            Assert.AreEqual(expected[candidate - 3], decimal.Parse(displayedNumber.Replace(',', '.'),
                                 System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture), json.Serialize(row));
                         }
                         if (candidate == 10)

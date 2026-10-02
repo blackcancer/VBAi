@@ -4,6 +4,7 @@ param(
     [string]$EvidenceRoot,
     [string]$InstalledDirectory,
     [switch]$RecheckDesktopGuardOnly,
+    [string]$ScenarioIds,
     [string]$PlanPath = (Join-Path $PSScriptRoot 'q006-plan.json')
 )
 $ErrorActionPreference = 'Stop'
@@ -46,6 +47,11 @@ if ($Prepare) {
     )
     foreach ($scenario in $scenarios) { if ($scenario.Method) { $scenario.Filter = 'FullyQualifiedName=VBAi.Tests.Integration.' + $scenario.Method } }
     if($RecheckDesktopGuardOnly){$scenarios[0].Filter='FullyQualifiedName~IsolatedTestDesktopTests';$scenarios[0].Oracle='Recheck only the changed Office command-line construction and desktop argument validation; earlier other managed guards are separate retained evidence'}
+    if($ScenarioIds){
+        $selected=@($ScenarioIds.Split(','))
+        foreach($id in $selected){if(-not @($scenarios | Where-Object {$_.Id -ceq $id}).Count){throw "Unknown prepared scenario: $id"}}
+        $scenarios=@($scenarios | Where-Object {$selected -ccontains $_.Id})
+    }
     $files = @(Get-ChildItem -LiteralPath ([IO.Path]::GetDirectoryName($testAssembly)) -File | Where-Object { $_.Extension -in @('.dll','.exe','.config') } | ForEach-Object { @{Path=$_.FullName;Sha256=(Get-FileHash -LiteralPath $_.FullName).Hash} })
     $helper = Join-Path $build 'VBAi.Desktop.Helper/Debug/net48/VBAi.Desktop.Helper.exe'
     $files += @{Path=$helper;Sha256=(Get-FileHash -LiteralPath $helper).Hash}
