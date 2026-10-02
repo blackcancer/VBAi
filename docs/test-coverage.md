@@ -1,5 +1,52 @@
 # Recorded validation
 
+## Word owner capture and chat discovery follow-up (2026-10-02)
+
+Source `70f6cc0c10b89583b0b2fd9e6b0c45eda229b145` preserves the observed
+Word Normal template reference and its full bridge revision. Its isolated Debug
+solution build has zero warnings/errors. The complete default managed gate
+reports **3,916 passed, 0 failed, 205 inactive, 4,121 total**, ending
+`2026-10-02T18:40:00.7612841Z`, with clean source, exact hashes, cleared
+native/provider opt-ins and no coverage collector. Product MVID is
+`2cc7ceff-2ac2-4269-98b9-23fca8b2bcb6`; product SHA-256 is
+`FEF04202D0B984C49ACE3F83BC8885CC1D529E151B671A2B9FBE35BE780D2BE6`;
+test SHA-256 is
+`81C274559CBC1C56D323F5A9924B0D252AEECF550441E5519170397F96C8B64F`.
+
+The default-bound native Word case reports **0 passed, 1 failed, 0 skipped**,
+ending `2026-10-02T18:42:09.5578581Z`. Owned Word PID `28036` reaches the exact
+tagged VBE menu and Git modal on thread `62856`. Production owner-thread capture,
+fetch of the pinned synthetic repository branch, local checkpoint, exact
+independent snapshot oracle and compare complete. Module source, complete
+reference revision and saved DOCM bytes remain exact. The Git modal closes and
+the sole Quit returns, but the original handle does not observe exit within
+5,000 ms. The host is retained; its later absence does not provide the missing
+exit code and the original case remains failed. Evidence is under
+`artifacts/word-owner-git-v4-20261002/`.
+
+A fresh same-candidate control changes only the existing read-only Word exit
+observation bound to 15,000 ms: **1 passed, 0 failed, 0 skipped**, ending
+`2026-10-02T18:48:03.2284518Z`.
+Owned Word PID `57668` repeats the actual owner-thread capture, exact local
+checkpoint and compare, preserves source/references/document bytes and exits
+normally with code 0. Its original handle observes exit 5,558 ms after the single
+returned Quit, while the testhost is still alive. There is no GC, force, cleanup
+retry, import, remote push or macro execution. This proves the successful operation
+scope with the stated observation bound and that 5 seconds were insufficient
+for this control; it does not identify the cause or make the earlier case green.
+Evidence is under `artifacts/word-owner-git-exit15-20261002/`.
+
+The separate chat entry case, also with the 15-second observation bound, reports
+**0 passed, 1 failed, 0 skipped**, ending `2026-10-02T18:50:34.7064136Z`.
+Owned Word PID `52188` prepares the exact canonical saved scope, but the test
+cannot identify a unique chat form through `AutomationId=ChatWindow`. No chat
+selection, Options invocation, Git action or modal is reached. Original Close/Quit
+and exit code 0 are observed after 5,536 ms. Evidence is under
+`artifacts/word-chat-git-v4-20261002/`. Registry restoration is verified at
+`2026-10-02T18:51:54.1000159Z`; trust settings and SOLIDWORKS are unchanged.
+The real native/UIA chat identity needs observation before the harness can be
+corrected. Q-024 remains open for that entry gate; Q-027 stays deferred.
+
 ## Word template reference preparation refusal (2026-10-02)
 
 Source `b9dc446a57bf127c5327b580ab38c600f1b1cec0` integrates the separate

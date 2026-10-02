@@ -27,15 +27,16 @@ operation, language feature or UI surface.
 
 ### Current operation-specific refresh
 
-The gated Q-024 source `b9dc446` loads in owned Word and exports its disposable
-module through the installed bridge. Owning-thread reference reading succeeds;
-the test helper rejects the native unbroken `Normal` template reference's empty
-GUID/0.0 identity before menu intent. Capture/checkpoint/compare and Chat-to-Git
-are NOT_RUN. Original Close/Quit and exit code 0 are verified, followed by
-registration restoration. The corrected reference helper requires a fresh native
-trial; no Git acceptance or historical export repair is established. Q-024 stays
-open and Q-027 is deferred. See
-[recorded validation](test-coverage.md#word-template-reference-preparation-refusal-2026-10-02).
+The gated Q-024 source `70f6cc0` reaches the installed Word VBE Git menu and
+production owner-thread capture, exact local checkpoint and compare with unchanged
+source, references and document bytes. Default 5-second exit observation fails;
+a fresh control with the existing 15-second read-only bound observes normal exit
+code 0 after 5,558 ms. This is the accepted operation scope with its explicit bound,
+not a repair or green verdict for the earlier external-STA/default-bound cases.
+The separate chat trial fails before any UI action at discovery of `ChatWindow`
+AutomationId and exits normally. Q-024 stays open for Chat-to-Git; Q-027 is deferred.
+Registration is restored. See
+[recorded validation](test-coverage.md#word-owner-capture-and-chat-discovery-follow-up-2026-10-02).
 
 The gated source `b6f13fb` observes `Application.VBE` succeeding before the
 retained workbook replacement in owned Excel `16.0.20430.20092`, then failing
