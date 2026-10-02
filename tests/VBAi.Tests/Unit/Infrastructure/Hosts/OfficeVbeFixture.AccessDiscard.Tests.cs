@@ -225,7 +225,7 @@ namespace VBAi.Tests.Unit
                 var fields = (IDictionary<string, object>)request; string key = (string)fields["Command"] == "create_form" ? "Form" : "Module";
                 return Reply(true, "OwnedProject", key, Convert.ToString(fields[key]));
             };
-            fixture.WaitForOwnedExit = (original, bound) => { Assert.AreSame(process, original); Assert.AreEqual(5000, bound); return true; };
+            fixture.WaitForOwnedExit = (original, bound) => { Assert.AreSame(process, original); Assert.AreEqual(15000, bound); return true; };
             fixture.ReadOwnedExitCode = original => 0;
             try { action(fixture, app, process, root); }
             finally
