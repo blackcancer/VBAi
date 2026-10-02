@@ -26,6 +26,7 @@ namespace VBAi.Tests.Integration
         [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool GetUserObjectInformationW(IntPtr handle, int index, StringBuilder value, uint size, out uint required);
         [DllImport("kernel32.dll")] internal static extern uint GetCurrentThreadId();
+        [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool CreateProcessW(string application, StringBuilder command, IntPtr processSecurity,
             IntPtr threadSecurity, bool inherit, uint flags, IntPtr environment, string directory,
@@ -89,10 +90,18 @@ namespace VBAi.Tests.Integration
                         RequireCurrent(name);
                         sentinel = new NativeWindow();
                         sentinel.CreateHandle(new CreateParams { Caption = "Owned VBAi inventory sentinel" });
+                        uint readerThread = GetCurrentThreadId();
                         int count = 0; bool found = false; bool bounded = true;
                         WindowVisitor visitor = (window, state) => {
                             if (window == sentinel.Handle) found = true;
-                            else count++;
+                            else
+                            {
+                                // Creating a native window also creates system/IME windows on
+                                // this fresh reader thread. Its windows disappear with the reader;
+                                // any window owned by another thread still prevents cleanup.
+                                uint pid;
+                                if (GetWindowThreadProcessId(window, out pid) != readerThread) count++;
+                            }
                             if (count > 8192) bounded = false;
                             return bounded;
                         };
