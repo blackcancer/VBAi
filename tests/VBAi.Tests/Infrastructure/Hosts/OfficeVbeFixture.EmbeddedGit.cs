@@ -10,6 +10,8 @@ namespace VBAi.Tests.Integration
 {
     internal sealed partial class OfficeVbeFixture
     {
+        internal bool WordGitMustRetain => NativeExecutionUnsettled || commandContainment.Pending ||
+            commandContainment.Uncertain || hostTeardownRefused;
         /// <summary>Prepares a saved inert Word project and independent bridge exports, without external Git capture.</summary>
         internal ExcelVbeFixture.EmbeddedGitScope PrepareWordEmbeddedGit(string marker, Action<object> record)
         {
@@ -54,7 +56,11 @@ namespace VBAi.Tests.Integration
             {
                 project = ((dynamic)document).VBProject; references = ((dynamic)project).References;
                 var ids = new List<string>();
-                foreach (object reference in (dynamic)references)
+                int referenceCount = Convert.ToInt32(((dynamic)references).Count);
+                Assert.IsTrue(referenceCount >= 0 && referenceCount <= 256);
+                for (int index = 1; index <= referenceCount; index++)
+                {
+                    object reference = ((dynamic)references).Item(index);
                     try
                     {
                         Assert.IsFalse((bool)((dynamic)reference).IsBroken);
@@ -62,6 +68,7 @@ namespace VBAi.Tests.Integration
                             Convert.ToInt32(((dynamic)reference).Major) + ":" + Convert.ToInt32(((dynamic)reference).Minor));
                     }
                     finally { Release(reference); }
+                }
                 scope.References = string.Join(";", ids.OrderBy(id => id, StringComparer.Ordinal));
                 editor = ((dynamic)application).VBE; window = ((dynamic)editor).MainWindow;
                 scope.VbeHandle = new IntPtr(Convert.ToInt64(((dynamic)window).HWnd));
@@ -89,22 +96,60 @@ namespace VBAi.Tests.Integration
         }
 
         /// <summary>Invokes exactly one tagged production Git menu; no keyboard, focus or pointer automation.</summary>
-        internal void ExecuteWordGitMenu(Action<object> record)
+        internal void ExecuteWordGitMenu(ExcelVbeFixture.EmbeddedGitScope scope, Action<object> record)
         {
-            object editor = null, bars = null; var buttons = new List<object>();
+            object editor = null, bars = null, activeProject = null, ownedProject = null;
+            var buttons = new List<object>();
+            Exception primary = null;
             try
             {
                 editor = ((dynamic)application).VBE; bars = ((dynamic)editor).CommandBars;
-                foreach (object bar in (dynamic)bars)
+                int barCount = Convert.ToInt32(((dynamic)bars).Count);
+                Assert.IsTrue(barCount >= 0 && barCount <= 256);
+                for (int index = 1; index <= barCount; index++)
+                {
+                    object bar = ((dynamic)bars).Item(index);
                     try { if (Convert.ToInt32(((dynamic)bar).Type) == 1) FindWordGitButton(bar, buttons, 0); }
                     finally { Release(bar); }
+                }
                 Assert.AreEqual(1, buttons.Count, "The exact Word VBAi.GitHub button must be unique.");
                 dynamic button = buttons[0]; Assert.IsTrue((bool)button.Enabled);
+                // ShowGitHub binds ActiveVBProject at invocation. A stale earlier
+                // selection receipt cannot authorize capture of Normal or another document.
+                RequireUsableOwnedHost(); RequireWordEmbeddedOwner(scope); RequireOwnedDocument();
+                activeProject = ((dynamic)editor).ActiveVBProject;
+                ownedProject = ((dynamic)document).VBProject;
+                Assert.IsTrue(VbeProjectHostPath.SameProject(ownedProject, activeProject));
+                Assert.AreEqual(scope.Path, VbeProjectHostPath.Read(activeProject, new OwnedWordPathProbe(this)), true);
+                Assert.AreEqual(2, Convert.ToInt32(((dynamic)activeProject).Mode));
+                Assert.AreEqual(0, Convert.ToInt32(((dynamic)activeProject).Protection));
+                record(new { Phase = "PreMenuWordIdentityVerified", ProcessId, scope.Path, scope.ThreadId });
                 record(new { Phase = "MenuExecuteIntent", Tag = (string)button.Tag, ProcessId });
                 button.Execute();
                 record(new { Phase = "MenuExecuteReturned", ProcessId });
             }
-            finally { foreach (object button in buttons) Release(button); Release(bars); Release(editor); }
+            catch (Exception error) { primary = error; throw; }
+            finally
+            {
+                // Repeated project getters may alias the same RCW. Release each
+                // distinct wrapper once and finish every cleanup before reporting errors.
+                ReleaseWordGitMenuReferences(buttons.Concat(new[] { ownedProject, activeProject, bars, editor }), Release, primary);
+            }
+        }
+
+        internal static void ReleaseWordGitMenuReferences(IEnumerable<object> leases, Action<object> release, Exception primary)
+        {
+            var released = new List<object>(); var errors = new List<Exception>();
+            foreach (object lease in leases.Where(item => item != null))
+            {
+                if (released.Any(item => ReferenceEquals(item, lease))) continue;
+                released.Add(lease);
+                try { release(lease); }
+                catch (Exception error) { errors.Add(error); }
+            }
+            if (errors.Count != 0)
+                throw new AggregateException("Word menu and distinct reference cleanup errors are preserved.",
+                    primary == null ? errors : new[] { primary }.Concat(errors));
         }
 
         private void FindWordGitButton(object parent, List<object> buttons, int depth)
@@ -149,7 +194,11 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(2, Convert.ToInt32(((dynamic)project).Mode));
                 Assert.AreEqual(0, Convert.ToInt32(((dynamic)project).Protection));
                 references = ((dynamic)project).References; var ids = new List<string>();
-                foreach (object reference in (dynamic)references)
+                int referenceCount = Convert.ToInt32(((dynamic)references).Count);
+                Assert.IsTrue(referenceCount >= 0 && referenceCount <= 256);
+                for (int index = 1; index <= referenceCount; index++)
+                {
+                    object reference = ((dynamic)references).Item(index);
                     try
                     {
                         Assert.IsFalse((bool)((dynamic)reference).IsBroken);
@@ -157,6 +206,7 @@ namespace VBAi.Tests.Integration
                             Convert.ToInt32(((dynamic)reference).Major) + ":" + Convert.ToInt32(((dynamic)reference).Minor));
                     }
                     finally { Release(reference); }
+                }
                 Assert.AreEqual(scope.References, string.Join(";", ids.OrderBy(id => id, StringComparer.Ordinal)));
             }
             finally { Release(references); Release(project); }

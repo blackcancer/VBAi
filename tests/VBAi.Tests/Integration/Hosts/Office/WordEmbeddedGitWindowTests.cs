@@ -65,6 +65,7 @@ namespace VBAi.Tests.Integration
                 Exception preserved = EmbeddedGitUiProtocol.PreserveFailures(primary, context.UiError, context.OwnerError);
                 context.Record(new { Phase = "FailedOrRetained", context.Retain, context.MenuEmitted, context.ModalClosed,
                     ProcessId = context.Fixture?.ProcessId, DocumentPath = context.Fixture?.DocumentPath,
+                    FixtureRoot = context.Fixture?.Root,
                     OwnerTerminal = context.OwnerDone.IsSet, UiTerminal = context.UiDone.IsSet, Error = preserved.ToString(), ReplayAttempts = 0 });
                 if (!ReferenceEquals(primary, preserved)) ExceptionDispatchInfo.Capture(preserved).Throw();
                 throw;
@@ -84,7 +85,7 @@ namespace VBAi.Tests.Integration
                 context.Ready.Set();
                 if (!context.StartMenu.Wait(TimeSpan.FromSeconds(30))) throw new TimeoutException("Word UI worker did not arm.");
                 if (context.Stop) throw new InvalidOperationException("Stopped before Word menu invocation.");
-                context.Fixture.ExecuteWordGitMenu(value => {
+                context.Fixture.ExecuteWordGitMenu(context.Scope, value => {
                     context.Record(value);
                     if (new JavaScriptSerializer().Serialize(value).Contains("MenuExecuteIntent"))
                     { context.MenuEmitted = true; context.MenuIntent.Set(); }
@@ -102,7 +103,7 @@ namespace VBAi.Tests.Integration
                 if (context.MenuEmitted && !context.ModalClosed) context.Retain = true;
                 if (context.Fixture != null)
                 {
-                    if (context.Fixture.NativeExecutionUnsettled) context.Retain = true;
+                    if (context.Fixture.WordGitMustRetain) context.Retain = true;
                     if (context.Retain)
                     { context.Fixture.NativeExecutionUnsettled = true; lock (Retained) Retained.Add(context); }
                     else
