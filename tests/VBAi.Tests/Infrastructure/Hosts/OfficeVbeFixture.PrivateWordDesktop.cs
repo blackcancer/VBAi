@@ -23,6 +23,14 @@ namespace VBAi.Tests.Integration
         private IsolatedTestDesktop.NativeChild privateWordChild;
         private object privateWordSeed;
 
+        internal static string RequireEnabledOfficeDesktop(string kind, string optIn, string required,
+            string configured, Action<string> requireCurrent)
+        {
+            if (!string.Equals(optIn, "1", StringComparison.Ordinal))
+                Assert.Inconclusive("Set VBAi_RUN_OFFICE_TESTS=1 to qualify installed Office hosts.");
+            return RequirePrivateWordDesktop(kind, required, configured, requireCurrent);
+        }
+
         internal static string RequirePrivateWordDesktop(string kind, string required, string configured,
             Action<string> requireCurrent)
         {

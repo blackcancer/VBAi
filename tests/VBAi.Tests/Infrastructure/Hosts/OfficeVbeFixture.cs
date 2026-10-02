@@ -80,12 +80,11 @@ namespace VBAi.Tests.Integration
 
         private static OfficeVbeFixture Start(string kind, bool preserveStartupFailure, string requestedProgId = null, bool allowExistingHost = false)
         {
-            string isolatedDesktop = RequirePrivateWordDesktop(kind,
+            string isolatedDesktop = RequireEnabledOfficeDesktop(kind,
+                Environment.GetEnvironmentVariable("VBAi_RUN_OFFICE_TESTS"),
                 Environment.GetEnvironmentVariable("VBAi_QUALIFICATION_DESKTOP"),
                 Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME"), IsolatedTestDesktop.RequireCurrent);
             bool privateWord = isolatedDesktop != null;
-            if (Environment.GetEnvironmentVariable("VBAi_RUN_OFFICE_TESTS") != "1")
-                Assert.Inconclusive("Set VBAi_RUN_OFFICE_TESTS=1 to qualify installed Office hosts.");
             string executable = kind == "Word" ? "WINWORD" : kind == "PowerPoint" ? "POWERPNT" : kind == "Access" ? "MSACCESS" : "MSPUB";
             var processes = Process.GetProcessesByName(executable);
             int[] existing = processes.Select(p => p.Id).ToArray();

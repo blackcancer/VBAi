@@ -17,6 +17,38 @@ namespace VBAi.Tests.Unit
         private static readonly string Hash = new string('A', 64);
 
         [TestMethod]
+        public void DisabledOfficeOptInIsInconclusiveBeforeAnyPrivateDesktopObservation()
+        {
+            string name = "VBAiTests_" + Guid.NewGuid().ToString("N");
+            int observations = 0;
+            Action<string> observe = unused => observations++;
+            foreach (string kind in new[] { "Word", "Access", "PowerPoint", "Publisher" })
+                foreach (string optIn in new[] { null, "", "0", "true", "2" })
+                    Assert.ThrowsException<AssertInconclusiveException>(() =>
+                        OfficeVbeFixture.RequireEnabledOfficeDesktop(kind, optIn, name, null, observe));
+            Assert.AreEqual(0, observations,
+                "Disabled Office tests must skip before desktop comparison, native inventory or activation.");
+        }
+
+        [TestMethod]
+        public void EnabledOfficeOptInValidatesPrivateWordDesktopBeforeAnyHostInventory()
+        {
+            string name = "VBAiTests_" + Guid.NewGuid().ToString("N");
+            int observations = 0;
+            Action<string> observe = actual => { Assert.AreEqual(name, actual); observations++; };
+            Assert.IsNull(OfficeVbeFixture.RequireEnabledOfficeDesktop("Word", "1", null, null, observe));
+            Assert.AreEqual(0, observations);
+            Assert.AreEqual(name, OfficeVbeFixture.RequireEnabledOfficeDesktop("Word", "1", name, name, observe));
+            Assert.AreEqual(1, observations);
+            foreach (string configured in new[] { null, "", "wrong" })
+                Assert.ThrowsException<InvalidOperationException>(() =>
+                    OfficeVbeFixture.RequireEnabledOfficeDesktop("Word", "1", name, configured, observe));
+            Assert.ThrowsException<InvalidOperationException>(() =>
+                OfficeVbeFixture.RequireEnabledOfficeDesktop("Access", "1", name, name, observe));
+            Assert.AreEqual(1, observations, "Pair and host refusals must precede desktop/native access.");
+        }
+
+        [TestMethod]
         public void PrivateWordDesktopRequiresWorkerAndTestNamesToMatchBeforeHostActivation()
         {
             string name = "VBAiTests_" + Guid.NewGuid().ToString("N");
