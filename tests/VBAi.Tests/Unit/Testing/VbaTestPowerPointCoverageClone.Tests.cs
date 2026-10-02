@@ -40,6 +40,25 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void ForceDisableRefusesBeforeCreatingSavingOpeningOrClosingAnyCopy()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.Application.AutomationSecurity = 3;
+                string folder = Path.Combine(fixture.Folder, "BlockedCopy");
+                var provider = new VbaTestPowerPointCoverageClone { Host = fixture.Host };
+                var refusal = Assert.ThrowsException<InvalidOperationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder));
+                StringAssert.Contains(refusal.Message, "ForceDisable");
+                Assert.IsFalse(Directory.Exists(folder));
+                Assert.AreEqual(3, fixture.Application.AutomationSecurity);
+                Assert.AreEqual(0, fixture.Source.SaveCopyCalls + fixture.Source.SaveCalls + fixture.Source.SaveAsCalls);
+                Assert.AreEqual(0, fixture.Application.Presentations.OpenCalls);
+                Assert.AreEqual(0, fixture.Source.CloseCalls + fixture.Source.SavedWrites);
+                Assert.AreEqual(1, fixture.Application.Presentations.Count);
+            }
+        }
+
+        [TestMethod]
         public void WrongOwnerUnsupportedAddInAndStalePathNeverSaveCopy()
         {
             using (var fixture = new Fixture())
@@ -278,6 +297,7 @@ namespace VBAi.Tests.Unit
 
         public sealed class Application
         {
+            public int AutomationSecurity = 2; // msoAutomationSecurityByUI; native policy is never changed by the clone.
             public Presentations Presentations { get; } = new Presentations();
         }
 

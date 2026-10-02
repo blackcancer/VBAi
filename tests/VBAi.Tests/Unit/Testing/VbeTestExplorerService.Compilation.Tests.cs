@@ -48,10 +48,50 @@ namespace VBAi.Tests.Unit
                 fixture.Clock = 3000;
                 fixture.Timer.Tick();
                 var error = Assert.ThrowsException<InvalidOperationException>(() => observed.GetAwaiter().GetResult());
-                StringAssert.Contains(error.Message, "three seconds");
+                StringAssert.Contains(error.Message, "still enabled when observed after the three-second deadline");
                 Assert.IsFalse((Exception)error is VbaTestInvocationException);
                 Assert.AreEqual(1, fixture.Control.Executions);
                 Assert.IsTrue(fixture.Timer.Disposed);
+            }
+        }
+
+        [STATestMethod]
+        public void LateObservationOrSlowAuthorityChecksRequireActualDisabledStateBeforeSuccess()
+        {
+            foreach (string delay in new[] { "first tick", "guard", "getter" })
+            foreach (bool disabled in new[] { false, true })
+            using (var fixture = new Fixture())
+            {
+                fixture.Service.CompileCoverageProject(fixture.Project);
+                int reads = fixture.Control.Reads, guards = 0;
+                var observed = fixture.Service.VerifyCoverageCompilationAsync(fixture.Project, () => {
+                    guards++;
+                    if (delay == "guard") fixture.Clock = 3500;
+                });
+                Application.DoEvents();
+                Assert.IsFalse(observed.IsCompleted);
+                Assert.AreEqual(reads, fixture.Control.Reads, "Publication alone cannot prove compilation.");
+                fixture.Control.State = !disabled;
+                if (delay == "first tick") fixture.Clock = 3500;
+                if (delay == "getter") fixture.Control.OnRead = () => fixture.Clock = 3500;
+                fixture.Timer.Tick();
+                if (disabled)
+                {
+                    Assert.IsTrue(observed.GetAwaiter().GetResult(), delay);
+                    Assert.AreEqual(2, guards, "Success still requires authority validation after the native state read.");
+                }
+                else
+                {
+                    var error = Assert.ThrowsException<InvalidOperationException>(() => observed.GetAwaiter().GetResult());
+                    StringAssert.Contains(error.Message, "still enabled when observed after the three-second deadline");
+                    Assert.IsFalse((Exception)error is VbaTestInvocationException, "An observation timeout has a known outcome.");
+                    Assert.AreEqual(1, guards);
+                }
+                Assert.AreEqual(reads + 1, fixture.Control.Reads, "A late observation must read the actual native compiler state exactly once.");
+                Assert.AreEqual(1, fixture.Control.Executions, "Polling must never retry the compiler command.");
+                Assert.IsTrue(fixture.Timer.Disposed);
+                fixture.Timer.Tick();
+                Assert.AreEqual(reads + 1, fixture.Control.Reads, "A terminal observer must not perform another read.");
             }
         }
 
@@ -230,6 +270,8 @@ namespace VBAi.Tests.Unit
                     if (!permitted || revision != "reviewed") throw new InvalidOperationException("Original/copy authority changed during state read.");
                 });
                 Application.DoEvents();
+                // A late observation must preserve the same post-getter authority checks.
+                fixture.Clock = 3500;
                 fixture.Control.State = false;
                 fixture.Control.OnRead = () => {
                     if (fault == "identity") fixture.Vbe.ActiveVBProject = new CompilerProject { Name = fixture.Project.Name };

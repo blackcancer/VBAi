@@ -59,6 +59,66 @@ namespace VBAi.Tests.Unit
         }
 
         [STATestMethod]
+        public void NativeInspectionTimerUpdatesGeometryWithoutReadingOrChangingTheSelectedDocument()
+        {
+            foreach (bool visible in new[] { true, false })
+            using (var f = new AddInModernEditorFixture())
+            using (var code = new Form { TopLevel = false, FormBorderStyle = FormBorderStyle.None })
+            using (var input = new TextBox())
+            {
+                var editor = f.Get();
+                LlmBoundaryScope.Get<EditorWorkspaceHost>(f.Instance, "editorWorkspace").Dispose();
+                var owner = f.Scope.Host.Owner;
+                var mdi = owner.Controls.OfType<MdiClient>().Single();
+                code.Controls.Add(input);
+                SetParent(code.Handle, mdi.Handle); code.Show();
+                Assert.IsTrue(SetWindowPos(code.Handle, IntPtr.Zero, 0, 0, 300, 250, 0x0010));
+                if (visible) editor.Show(); else editor.Hide();
+                SetFocus(input.Handle);
+                int activeReads = 0;
+                var host = new WorkspaceContractHost
+                {
+                    MainWindow = f.Scope.Host.MainWindow,
+                    ReadActive = () =>
+                    {
+                        Assert.IsFalse(VbeDebugInspection.IsActive, "A timer must not inspect or activate documents during native dispatch.");
+                        activeReads++;
+                        return new AddInEditorActiveWindow { Type = visible ? 2 : 0 };
+                    }
+                };
+                using (var workspace = new EditorWorkspaceHost(host, editor))
+                using (new VbeDebugInspection())
+                {
+                    var initialBounds = editor.Bounds;
+                    owner.ClientSize = new System.Drawing.Size(owner.ClientSize.Width + 120, owner.ClientSize.Height + 80);
+                    owner.PerformLayout();
+                    var expectedBounds = mdi.ClientRectangle;
+                    Assert.AreNotEqual(initialBounds, expectedBounds);
+                    var previous = GetWindow(code.Handle, 3);
+                    var next = GetWindow(code.Handle, 2);
+                    var focus = GetFocus();
+                    Assert.AreEqual(input.Handle, focus);
+                    var codeBounds = code.Bounds;
+                    for (int tick = 0; tick < 3; tick++) LlmBoundaryScope.Call(workspace, "Resize");
+                    Assert.AreEqual(expectedBounds, editor.Bounds);
+                    Assert.AreEqual(visible, editor.Visible, "Reservation must preserve both hidden and visible editor states.");
+                    Assert.AreEqual(0, activeReads);
+                    Assert.AreEqual(previous, GetWindow(code.Handle, 3));
+                    Assert.AreEqual(next, GetWindow(code.Handle, 2));
+                    Assert.AreEqual(focus, GetFocus());
+                    Assert.AreEqual(codeBounds, code.Bounds);
+                    Assert.IsTrue(code.Visible);
+                }
+                Assert.IsFalse(VbeDebugInspection.IsActive);
+                using (var resumed = new EditorWorkspaceHost(host, editor))
+                {
+                    LlmBoundaryScope.Call(resumed, "Resize");
+                    Assert.AreEqual(1, activeReads, "Ordinary workspace observation must resume after reservation disposal.");
+                    Assert.AreEqual(!visible, editor.Visible);
+                }
+            }
+        }
+        [STATestMethod]
         public void TimerResizePreservesNativePaneZOrderDuringFrameDocking()
         {
             using (var f = new AddInModernEditorFixture())

@@ -77,6 +77,10 @@ namespace VBAi
             IntPtr window = ReadApplicationWindow(application);
             if (window == IntPtr.Zero || ReadWindowOwner(window) != (uint)processId)
                 throw new InvalidOperationException("The registered PowerPoint application belongs to another PID.");
+            // ForceDisable blocks every programmatically opened copy, even when its original can execute.
+            // Respect the host's current policy: refuse before dispatch or copy mutation; never lower it here.
+            if (Convert.ToInt32(((dynamic)application).AutomationSecurity) == 3)
+                throw new InvalidOperationException("PowerPoint AutomationSecurity is ForceDisable; returned VBA values and coverage copies cannot execute under the current host policy.");
             return application;
         }
 

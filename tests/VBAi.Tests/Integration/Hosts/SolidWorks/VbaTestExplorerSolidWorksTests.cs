@@ -142,7 +142,7 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(path, Path.GetFullPath((string)persistence["HostPath"]), true);
                 Assert.AreEqual(true, persistence["ProjectSaved"], "Save the blank disposable macro before qualification.");
                 baseline = ReadSources();
-                Assert.IsTrue(baseline.Length >= 1 && baseline.All(module => Convert.ToInt32(module["Type"]) == 1), "Only blank standard modules are accepted.");
+                Assert.IsTrue(baseline.Length >= 1 && baseline.All(module => Convert.ToInt32(module["Type"]) == 1 || (Convert.ToInt32(module["Type"]) == 100 && Equals(module["Name"], "ThisLibrary"))), "Only blank standard modules and the empty native ThisLibrary component are accepted.");
                 foreach (var module in baseline)
                     Assert.IsTrue(Regex.IsMatch((string)module["Code"], @"\A\s*(?:Option\s+Explicit\s*)?\z", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
                         "The selected macro must be blank: no procedures, comments or arbitrary existing code may be executed or edited.");
@@ -332,7 +332,7 @@ namespace VBAi.Tests.Integration
                 Kind = (string)item["Kind"], Line = Convert.ToInt32(item["Line"]), Diagnostic = item["Diagnostic"] as string, IgnoreReason = item["IgnoreReason"] as string };
         }
         private static string Canonical(string source) => source.Replace("\r\n", "\n").TrimEnd('\n');
-        private static string HashFile(string path) { using (var file = File.OpenRead(path)) using (var sha = SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(file)).Replace("-", ""); }
+        private static string HashFile(string path) { using (var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) using (var sha = SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(file)).Replace("-", ""); }
         private static object RequireCallback(string loaded)
         {
             using (var classes = RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, RegistryView.Registry64))

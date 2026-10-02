@@ -1,5 +1,152 @@
 # Recorded validation
 
+## Office testing subsystem qualification (2026-10-01)
+
+These trials reuse the frozen product built from
+`da664f06f8797faaddec0624b7ed3bb10312963b`: MVID
+`a799ad84-87a3-4518-9550-3cdda504ca98`, SHA-256
+`871104948963C208844F1F62E2C86CAF59F5D5F50CD30933DB7A31C27C140DB4`.
+Later changes through `b13ee55` affect qualification fixtures and documentation
+only. No production source or product binary changed after the managed coverage
+measurement in the Word checkpoint below. Native identity records attest this
+candidate in each owned process; fixture assemblies are identified separately.
+
+| Host and exact scope | Actual result | Procedure coverage | Evidence root under `artifacts/qualification-followup` |
+| --- | --- | --- | --- |
+| Excel, disposable XLSM, `TestSubsystemOnly` | `PASS_WITH_EXPLICIT_SCOPE`; registered batch, actual native explorer actions, reports, stale refusal and normal exit code 0 | Complete 1/3 (33.3333%); original source/probe mapping and event state preserved | `excel-final-testing-only/7eeca1219151492b9ab0a0ac757f0fb5` |
+| Word, disposable DOCM | Passed; batch, single, reports, explorer, stale refusal and normal exit code 0 | Complete 1/2 (50%); original preserved, copy closed | Word checkpoint below |
+| PowerPoint, disposable PPTM | 1 passed, 0 failed/skipped; batch, single, reports, explorer, stale refusal and normal exit code 0 | Complete 1/2 (50%); original source/revision/test IDs/disk bytes and counters preserved, copy closed | `native-powerpoint-verified-sources/PowerPoint/8f863565eac44b378ec1afff2fc14857` |
+| Access, disposable ACCDB | 1 passed, 0 failed/skipped; batch, single, reports, explorer, stale refusal and normal exit code 0; no manual intervention | Unavailable for this host; no measurement claimed | `native-access-autonomous-discard/Access/17b5fd9d859e4f93a801df62e33785b1` |
+| Publisher, disposable PUB | 1 passed, 0 failed/skipped; batch, single, reports, explorer, stale refusal and normal exit code 0 | Unavailable for this host; no measurement claimed | `native-publisher-reviewed-discard/Publisher/5cea70175149443f9a8eef078a6ae4bb` |
+| Outlook, initially absent personal OTM | 1 passed, 0 failed/skipped; batch, single, reports and stale refusal; original project restored and normal exit verified | Unavailable for this host; no measurement claimed | `outlook-final-testing-only` |
+
+The deliberate batch verdicts are one pass, two failures and one runtime error;
+qualification requires these exact outcomes. Both readable and compact JSON
+reports agree with the native results. The Excel screenshot attests the global
+dark style, green check marks, red crosses and a 1253 x 638 explorer. Its native UI
+batch uses the actual owned window and buttons. Other Office rows verify a live
+owned explorer window; they do not establish every UI action in each host. Outlook
+has no native explorer-action proof in this row. These bridge/UI scenarios do not
+exercise a live LLM conversation; the managed testing-tool permission/revision
+boundary is covered by the separate managed gate below.
+
+Excel's denominator includes `Workbook_BeforeSave`. Its positive save control is
+explicitly `NOT_TESTED_BY_SCOPE`; the event counter/probe observations do not
+qualify handler suppression. This testing-only pass does not exercise other VBAi
+application workflows. VBA statement and branch measurement remain unavailable.
+
+PowerPoint's security notice was enabled once for the exact owned synthetic copy.
+`SaveCopyAs` changed its VBA binary and package metadata; strict offline extraction
+verified all three complete module sources against the original and reviewed
+fixture before activation. Other package parts matched, and file hashes were
+rechecked immediately before the unique UI invocation. The local reader was
+[oletools 0.60.2](https://github.com/decalage2/oletools/wiki/olevba), installed only
+under ignored qualification artifacts. No global trust setting changed.
+
+Access records one bounded Cancel of the naming dialog for its successfully
+created `VBAiOfficeModule`, class `RichEdit20W`, with zero save entries. The dialog
+worker verifies original process/start/handle, exact controls/name/thread and
+terminal native work; an uncertain cancellation forbids replay or Quit. Publisher
+revalidates the complete reviewed source inventory, sole publication, original
+process/window ownership and bridge project association before its existing single
+Quit. It discards only this row's synthetic changes, invokes no final Save or Saved
+setter, and makes no Publisher persistence claim. Other fixtures retain their
+existing saved-project guard.
+
+The combined final fixture regression batch reports **33 passed, 0 failed,
+0 skipped** in `publisher-test-cleanup-managed/publisher-test-cleanup-managed-final.trx`.
+Its tests-only output is `artifacts/build-publisher-test-cleanup`: test MVID
+`8d4af179-7ea1-4c7d-88c4-0d83b3d44a99`, SHA-256
+`7C67263B71AB1DB7A5E8D1388057DBE48B3A25F2B5F3A918B75E308A82ABF906`.
+The Access native row used the earlier tests-only output
+`artifacts/build-access-discard-richedit`, MVID
+`8337f6cd-ba05-425a-841c-8fe6b03b6b0f`, SHA-256
+`AA187800A057A80ADB08895B149777A241EC54632A2E83703D18DC146D55AC6B`.
+Both outputs contain hash-verified copies of the same frozen product; no product
+rebuild, coverage exclusion or empty regression was introduced.
+
+Earlier PowerPoint security/deadline refusals and the unsupported Publisher fixture
+API failure remain failed evidence, even after authorized normal disposal. The
+initial Access pass records manual cancellation separately; only the later row
+above proves autonomous cleanup. Temporary HKCU/Registry64 registration was restored
+and verified after the owned trials, and the installed DLL hash stayed unchanged.
+The machine-readable campaign ledger is
+`artifacts/qualification-followup/testing-subsystem-final-report.json`.
+
+SOLIDWORKS acceptance on this candidate remains pending explicit selection of a
+preloaded instance and disposable SWP. An older candidate's pass is not transferred
+to this binary. Visio and Microsoft Project are outside the maintainer-selected
+scope; no Ollama qualification was run here. The global test-layout script stops
+at the pre-existing `Unit/Bridge/BridgeServer.PathVisibility.Tests.cs` mirror whose
+production counterpart is absent. That unrelated layout failure is retained and
+was not repaired as part of these testing-subsystem trials.
+
+## Word qualification follow-up (2026-10-01)
+
+The code and test sources at `da664f06f8797faaddec0624b7ed3bb10312963b`
+include the typed Word returned-value contract, balanced application/document
+leases and copy ownership, queued coverage preparation, and one exact native
+focus recovery before arming. Project, source, mode, permission and selection
+checks remain mandatory; dispatch is never retried after an uncertain outcome.
+
+| Check | Actual result | Evidence |
+| --- | --- | --- |
+| Isolated .NET Framework 4.8/x64 solution build | Passed, no errors; four NU1900 vulnerability-endpoint warnings | `artifacts/build-word-exit15` |
+| Complete managed VBA testing scope | 537 passed, 0 failed, 0 skipped | `artifacts/coverage/word-exit15-managed/final.trx` |
+| Managed executable lines | **3952/3952 (100%)** | Companion Coverlet JSON and Cobertura |
+| All managed IL branches | **3792/3792 (100%)**, including 42/42 unmapped branches | `artifacts/coverage/word-exit15-managed/gate.json` |
+| Owned-shutdown fixture regressions | 20 passed, 0 failed, 0 skipped | `artifacts/qualification-followup/word-exit15-shutdown/shutdown.trx` |
+| Registered Word DOCM scenario | 1 passed, 0 failed, 0 skipped; batch and single outcomes verified | `artifacts/qualification-followup/native-word-exit15-trx/word/word.trx` |
+| Word copy-based procedure measurement | Complete **50% (1/2)**; readable/compact reports match; original preserved and copy closed | `artifacts/qualification-followup/native-word-exit15/Word/0eea37bde244427c8e9492ca587be5ba` |
+| Owned Word shutdown | One Quit; original handle observed exit code **0** after **6602 ms**, within the explicit 15000-ms fixture bound; no diagnostic collection or forced termination | `shutdown-lifecycle.json` in the same root |
+
+The managed gate includes every `src/VBAi/Testing/*.cs` file and
+`src/VBAi/Llm/Chat/LlmVbeTools.Testing.cs`, including Designers and native adapters.
+It reconciles both reports from collection
+`8e1128bc-82e6-4fad-a818-db138b09c16a` without excluding source, generated classes
+or IL branches. Interface-only declarations have no executable sequence points.
+The source manifest, post-collector assembly identities, readable `gate.txt` and
+machine-readable `gate.json` are retained beside the reports.
+
+The production DLL has MVID `a799ad84-87a3-4518-9550-3cdda504ca98`, SHA-256
+`871104948963C208844F1F62E2C86CAF59F5D5F50CD30933DB7A31C27C140DB4`.
+The test DLL has MVID `807da707-3d56-475a-a2e1-09fc98043f89`, SHA-256
+`A11E66673A1C3F4E6844EDCB1227C40CCC9F5556FD2C613416E17C1D38EB8918`.
+Native identity evidence verifies this production DLL and the registered
+`VBAi.TestRuntime` callback in the exact owned x64 Word process.
+
+The native trial used Word executable version `16.0.20430.20092` and PID `91900`.
+The expected successful test, Boolean failure, swallowed assertion and runtime
+error were retained in the batch; single and measured runs passed. Exact live
+module code, project/reference revision, test IDs and original disk bytes stayed
+unchanged through measurement. Original counters stayed `2,0`; only the copy
+entered the selected production procedure. The retained copy/plan are under
+`%LOCALAPPDATA%/VBAi/CoverageRuns/fbcd7626b67b4e5cb73c98612f455e21`.
+The native explorer measured 1253 x 638 pixels. A later synthetic source edit
+refused a stale dispatch and marked the earlier report historical.
+
+The copy's one security activation was limited to the exact owned synthetic
+file with matching source/copy hashes. The fixture restored its per-application
+security setting. No global trust setting changed. The optional fifteen-second
+exit bound affects only the fixture's observation after known Quit; ordinary
+fixture observation remains five seconds. `VBAi_TEST_WORD_SETTLED_SCOPE_GC` was
+unset and no collection diagnostic ran in this successful trial.
+
+The earlier `7474e4e` trial completed all functional assertions, including measured
+coverage and original preservation, but failed the five-second exit observation.
+That failure remains preserved under `native-word-focus-recovery`; no Quit or
+macro was replayed. A separate `b0fe41a` trial also passed every functional assertion but failed that
+same exit gate after testhost-only collection. That experiment did not resolve
+the exit delay and does not prove an RCW leak. The fifteen-second observation
+trial disables that collection; it does not change product shutdown or repeat
+Close/Quit.
+
+The installed DLL remains unchanged. Temporary HKCU/Registry64 candidate
+registration is backed up and restored with verification after the owned trial.
+No production macro, Ollama scenario, Visio or Microsoft Project qualification
+belongs to this follow-up. These observations do not qualify other Word formats,
+templates, event-handler combinations or unrelated application operations.
+
 ## Ollama pull request after main synchronization (2026-10-01)
 
 Source `ccba639f151eaab238f6982d888922df930ab3d5` merges main `415e16f`

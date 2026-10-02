@@ -344,9 +344,9 @@ namespace VBAi
         {
             return "Option Explicit\r\n' VBAi procedure coverage support version 1; disposable clone only.\r\n"
                 + "Public " + HitsVariable + "(1 To " + Math.Max(1, count).ToString(CultureInfo.InvariantCulture) + ") As Boolean\r\n"
-                + "Public Function " + ResetProcedure + "() As Boolean\r\n    Dim index As Long\r\n    For index = 1 To " + count.ToString(CultureInfo.InvariantCulture)
+                + "Public Function " + ResetProcedure + "(Optional ByVal ignoredHostArgument1 As Variant, Optional ByVal ignoredHostArgument2 As Variant) As Boolean\r\n    Dim index As Long\r\n    For index = 1 To " + count.ToString(CultureInfo.InvariantCulture)
                 + "\r\n        " + HitsVariable + "(index) = False\r\n    Next index\r\n    " + ResetProcedure + " = True\r\nEnd Function\r\n"
-                + "Public Function " + SnapshotProcedure + "() As Variant\r\n    " + SnapshotProcedure + " = " + HitsVariable + "\r\nEnd Function\r\n";
+                + "Public Function " + SnapshotProcedure + "(Optional ByVal ignoredHostArgument1 As Variant, Optional ByVal ignoredHostArgument2 As Variant) As Variant\r\n    " + SnapshotProcedure + " = " + HitsVariable + "\r\nEnd Function\r\n";
         }
         private static void Diagnose(VbaCoveragePlan plan, string module, int line, string reason, bool unknownDenominator)
         {

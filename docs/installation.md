@@ -11,12 +11,13 @@ desktop development tools, the .NET Framework 4.8 targeting/developer tools, the
 C++ x64 build tools and a Windows SDK. `TlbExp.exe` comes from the .NET Framework
 SDK. The build invokes the native renderer build and requires those C++ tools.
 
-The Word/PowerPoint save adapter also needs the
-`Microsoft.Office.Interop.PowerPoint` 15.0 PIA at build time. The project searches
-the Visual Studio Office tools and the GAC. If it is installed elsewhere, pass
+The native Office adapters also need the `Microsoft.Office.Interop.PowerPoint`
+and `Microsoft.Office.Interop.Word` 15.0 PIAs at build time. The project searches
+the Visual Studio Office tools and the GAC. If they are installed elsewhere, pass
 `-p:PowerPointInteropPath="<path-to>/Microsoft.Office.Interop.PowerPoint.dll"`
-to `dotnet build`. `EmbedInteropTypes=true` embeds the types used by VBAi; the PIA
-is not a separate file to deploy with the add-in.
+and `-p:WordInteropPath="<path-to>/Microsoft.Office.Interop.Word.dll"` to
+`dotnet build`. `EmbedInteropTypes=true` embeds the types used by VBAi; these PIAs
+are not separate files to deploy with the add-in.
 
 Monaco requires the WebView2 Runtime. Git workflows additionally require Git for
 Windows and suitable credentials. Provider requirements are separate; see

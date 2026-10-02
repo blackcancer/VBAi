@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Web.Script.Serialization;
@@ -41,89 +42,121 @@ namespace VBAi.Tests.Integration
             using (var fixture = OfficeVbeFixture.Start(host, host == "Access" ? "Access.Application.16" : null,
                 allowExistingHost: true, allowForcedTermination: false))
             {
-                Console.WriteLine("Registered Office qualification=" + fixture.Root);
-                var status = fixture.Data("status");
-                Save(fixture, "identity.json", new { CurrentSourceRevision = sourceRevision, SourceStatus = sourceStatus,
-                    Host = host, fixture.ProcessId, fixture.DocumentPath, fixture.Project, LoadedAssembly = status,
-                    ExecutionBoundary = "Registered in-process add-in with registered VBAi.TestRuntime callback" });
-                Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), status["AssemblyModuleVersionId"]);
-                Assert.AreEqual(fixture.ProcessId, Convert.ToInt32(status["HostProcessId"]));
-                Save(fixture, "callback-registration.json", RequireCallback((string)status["AssemblyPath"]));
+                ExecuteRegisteredOfficeQualification(fixture, host, sourceRevision, sourceStatus);
+                // The successful non-inlined scope has returned before the optional testhost-only collection.
+                fixture.CollectSettledWordScopeDiagnostic();
+            }
+        }
 
-                fixture.Data("create_module", "Module", ModuleName, "ExpectedMode", 2);
-                bool documentCoverage = host == "Word" || host == "PowerPoint";
-                if (documentCoverage)
-                {
-                    fixture.Data("create_module", "Module", ProductionModuleName, "ExpectedMode", 2);
-                    ReplaceSource(fixture, ProductionSource, ProductionModuleName);
-                }
-                ReplaceSource(fixture, documentCoverage ? DocumentCoverageSource : Source);
-                var original = fixture.Data("read_module", "Module", ModuleName);
-                File.WriteAllText(Path.Combine(fixture.Root, "synthetic-tests.bas"), (string)original["Code"], Utf8);
-                var before = fixture.Data("discover_vba_tests");
-                Save(fixture, "discovery-before.json", before);
-                AssertCatalogue(before);
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ExecuteRegisteredOfficeQualification(OfficeVbeFixture fixture, string host, string sourceRevision, string sourceStatus)
+        {
+            try
+            {
+            Console.WriteLine("Registered Office qualification=" + fixture.Root);
+            var status = fixture.Data("status");
+            Save(fixture, "identity.json", new { CurrentSourceRevision = sourceRevision, SourceStatus = sourceStatus,
+                Host = host, fixture.ProcessId, fixture.DocumentPath, fixture.Project, LoadedAssembly = status,
+                ExecutionBoundary = "Registered in-process add-in with registered VBAi.TestRuntime callback" });
+            Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId.ToString("D"), status["AssemblyModuleVersionId"]);
+            Assert.AreEqual(fixture.ProcessId, Convert.ToInt32(status["HostProcessId"]));
+            Save(fixture, "callback-registration.json", RequireCallback((string)status["AssemblyPath"]));
 
-                var preview = fixture.Data("preview_vba_test_support");
-                string support = (string)preview["Text"];
-                // Review the complete generated source against the source generator in this exact candidate build.
-                // Installation still requires both the exact preview text and its exact project revision.
-                Assert.AreEqual(VbaTestRuntimeSource.Generate(ReviewCatalogue(before)), support,
-                    "The installed candidate did not generate the exact reviewed support source.");
-                StringAssert.Contains(support, "CreateObject(\"VBAi.TestRuntime\")");
-                StringAssert.Contains(support, "Public Sub VBAiExecutePendingTest()");
-                Assert.IsFalse(support.Contains("Shell("), "Unexpected generated execution outside VBA.");
-                File.WriteAllText(Path.Combine(fixture.Root, "reviewed-support.bas"), support, Utf8);
-                Save(fixture, "support-preview.json", preview);
-                var installed = fixture.Data("install_vba_test_support", "ExpectedProjectVersion", preview["ExpectedProjectVersion"],
-                    "ExpectedMode", 2, "Text", support);
-                Save(fixture, "support-install.json", installed);
-                Assert.AreEqual(true, installed["Applied"]);
-                fixture.SaveNative();
-                var catalog = fixture.Data("discover_vba_tests");
-                Save(fixture, "discovery-ready.json", catalog);
-                var tests = AssertCatalogue(catalog);
-                Assert.IsTrue(string.IsNullOrEmpty(catalog["ExecutionUnavailableReason"] as string),
-                    "Registered execution is unavailable: " + catalog["ExecutionUnavailableReason"]);
-                string revision = (string)catalog["ExpectedProjectVersion"];
-                string[] ids = tests.OrderBy(test => (string)test["Procedure"], StringComparer.Ordinal).Select(test => (string)test["Id"]).ToArray();
-                Assert.AreEqual(4, ids.Distinct(StringComparer.Ordinal).Count());
+            var publisherSources = host == "Publisher" ? fixture.Items("list_modules").ToDictionary(
+                item => (string)item["Name"], item => (string)fixture.Data("read_module", "Module", item["Name"])["Code"],
+                StringComparer.OrdinalIgnoreCase) : null;
+            fixture.Data("create_module", "Module", ModuleName, "ExpectedMode", 2);
+            bool documentCoverage = host == "Word" || host == "PowerPoint";
+            if (documentCoverage)
+            {
+                fixture.Data("create_module", "Module", ProductionModuleName, "ExpectedMode", 2);
+                ReplaceSource(fixture, ProductionSource, ProductionModuleName);
+            }
+            ReplaceSource(fixture, documentCoverage ? DocumentCoverageSource : Source);
+            var original = fixture.Data("read_module", "Module", ModuleName);
+            File.WriteAllText(Path.Combine(fixture.Root, "synthetic-tests.bas"), (string)original["Code"], Utf8);
+            var before = fixture.Data("discover_vba_tests");
+            Save(fixture, "discovery-before.json", before);
+            AssertCatalogue(before);
 
-                var batch = Run(fixture, revision, ids, "batch");
-                AssertReport(batch, revision, new[] { "ABooleanPass", "BBooleanFail", "CSwallowedAssertion", "DRuntimeError" });
-                AssertSource(fixture, original);
-                var passed = tests.Single(test => (string)test["Procedure"] == "ABooleanPass");
-                var single = Run(fixture, revision, new[] { (string)passed["Id"] }, "single");
-                AssertReport(single, revision, new[] { "ABooleanPass" });
-                AssertSource(fixture, original);
-                if (documentCoverage) QualifyOfficeDocumentCoverage(fixture, catalog, revision, passed);
+            var preview = fixture.Data("preview_vba_test_support");
+            string support = (string)preview["Text"];
+            // Review the complete generated source against the source generator in this exact candidate build.
+            // Installation still requires both the exact preview text and its exact project revision.
+            Assert.AreEqual(VbaTestRuntimeSource.Generate(ReviewCatalogue(before)), support,
+                "The installed candidate did not generate the exact reviewed support source.");
+            StringAssert.Contains(support, "CreateObject(\"VBAi.TestRuntime\")");
+            StringAssert.Contains(support, "Public Sub VBAiExecutePendingTest()");
+            Assert.IsFalse(support.Contains("Shell("), "Unexpected generated execution outside VBA.");
+            File.WriteAllText(Path.Combine(fixture.Root, "reviewed-support.bas"), support, Utf8);
+            Save(fixture, "support-preview.json", preview);
+            var installed = fixture.Data("install_vba_test_support", "ExpectedProjectVersion", preview["ExpectedProjectVersion"],
+                "ExpectedMode", 2, "Text", support);
+            Save(fixture, "support-install.json", installed);
+            Assert.AreEqual(true, installed["Applied"]);
+            fixture.SaveNative();
+            var catalog = fixture.Data("discover_vba_tests");
+            Save(fixture, "discovery-ready.json", catalog);
+            var tests = AssertCatalogue(catalog);
+            Assert.IsTrue(string.IsNullOrEmpty(catalog["ExecutionUnavailableReason"] as string),
+                "Registered execution is unavailable: " + catalog["ExecutionUnavailableReason"]);
+            string revision = (string)catalog["ExpectedProjectVersion"];
+            string[] ids = tests.OrderBy(test => (string)test["Procedure"], StringComparer.Ordinal).Select(test => (string)test["Id"]).ToArray();
+            Assert.AreEqual(4, ids.Distinct(StringComparer.Ordinal).Count());
 
-                var shown = fixture.Data("show_vba_test_explorer");
-                Save(fixture, "explorer.json", shown);
-                Assert.AreEqual(true, shown["Opened"]);
-                Assert.AreEqual(true, shown["Docked"]);
-                var window = new IntPtr(Convert.ToInt64(shown["Hwnd"]));
-                Assert.IsTrue(IsWindow(window), "Explorer handle is not a live window.");
-                uint owner; Assert.AreNotEqual(0u, GetWindowThreadProcessId(window, out owner));
-                Assert.AreEqual((uint)fixture.ProcessId, owner, "Explorer belongs to a different process.");
-                WindowRect bounds; Assert.IsTrue(GetWindowRect(window, out bounds));
-                Assert.IsTrue(bounds.Right > bounds.Left && bounds.Bottom > bounds.Top, "Explorer has no visible-sized bounds.");
-                Save(fixture, "explorer-native-window.json", new { Hwnd = window.ToInt64(), ProcessId = owner,
-                    bounds.Left, bounds.Top, bounds.Right, bounds.Bottom });
+            var batch = Run(fixture, revision, ids, "batch");
+            AssertReport(batch, revision, new[] { "ABooleanPass", "BBooleanFail", "CSwallowedAssertion", "DRuntimeError" });
+            AssertSource(fixture, original);
+            var passed = tests.Single(test => (string)test["Procedure"] == "ABooleanPass");
+            var single = Run(fixture, revision, new[] { (string)passed["Id"] }, "single");
+            AssertReport(single, revision, new[] { "ABooleanPass" });
+            AssertSource(fixture, original);
+            if (documentCoverage) QualifyOfficeDocumentCoverage(fixture, catalog, revision, passed);
 
-                ReplaceSource(fixture, ((string)original["Code"]).TrimEnd() + "\r\n' changed after verified native runs\r\n");
-                var changed = fixture.Data("read_module", "Module", ModuleName);
-                var refused = fixture.Response("run_vba_tests", "ExpectedProjectVersion", revision, "ExpectedMode", 2,
-                    "Items", new[] { (string)passed["Id"] });
-                Save(fixture, "stale-run-refusal.json", refused);
-                Assert.AreEqual(false, refused["Ok"], "A stale source revision was executed.");
-                StringAssert.Contains(Convert.ToString(refused["Error"]), "ExpectedProjectVersion");
-                AssertSource(fixture, changed);
-                var historical = fixture.Data("vba_test_run_status", "Query", single["run"], "Action", "compact");
-                Save(fixture, "historical-stale-report.json", historical);
-                Assert.AreEqual(true, historical["Stale"]);
-                Assert.AreEqual(false, historical["Pending"]);
-                Assert.AreEqual("Completed", historical["State"]);
+            var shown = fixture.Data("show_vba_test_explorer");
+            Save(fixture, "explorer.json", shown);
+            Assert.AreEqual(true, shown["Opened"]);
+            Assert.AreEqual(true, shown["Docked"]);
+            var window = new IntPtr(Convert.ToInt64(shown["Hwnd"]));
+            Assert.IsTrue(IsWindow(window), "Explorer handle is not a live window.");
+            uint owner; Assert.AreNotEqual(0u, GetWindowThreadProcessId(window, out owner));
+            Assert.AreEqual((uint)fixture.ProcessId, owner, "Explorer belongs to a different process.");
+            WindowRect bounds; Assert.IsTrue(GetWindowRect(window, out bounds));
+            Assert.IsTrue(bounds.Right > bounds.Left && bounds.Bottom > bounds.Top, "Explorer has no visible-sized bounds.");
+            Save(fixture, "explorer-native-window.json", new { Hwnd = window.ToInt64(), ProcessId = owner,
+                bounds.Left, bounds.Top, bounds.Right, bounds.Bottom });
+
+            if (host == "Access")
+            {
+                // The final stale-revision edit must remain unsaved; discard owned Access objects on cleanup.
+                fixture.StopAccessSaveDialogHandler();
+                fixture.RequireAdapterOnlyCleanup();
+            }
+            ReplaceSource(fixture, ((string)original["Code"]).TrimEnd() + "\r\n' changed after verified native runs\r\n");
+            var changed = fixture.Data("read_module", "Module", ModuleName);
+            var refused = fixture.Response("run_vba_tests", "ExpectedProjectVersion", revision, "ExpectedMode", 2,
+                "Items", new[] { (string)passed["Id"] });
+            Save(fixture, "stale-run-refusal.json", refused);
+            Assert.AreEqual(false, refused["Ok"], "A stale source revision was executed.");
+            StringAssert.Contains(Convert.ToString(refused["Error"]), "ExpectedProjectVersion");
+            AssertSource(fixture, changed);
+            var historical = fixture.Data("vba_test_run_status", "Query", single["run"], "Action", "compact");
+            Save(fixture, "historical-stale-report.json", historical);
+            Assert.AreEqual(true, historical["Stale"]);
+            Assert.AreEqual(false, historical["Pending"]);
+            Assert.AreEqual("Completed", historical["State"]);
+            // Discard only this row's reviewed disposable sources; host persistence is outside test qualification.
+            if (host == "Publisher")
+            {
+                publisherSources.Add(ModuleName, (string)changed["Code"]);
+                publisherSources.Add(VbaTestRuntimeSource.ModuleName, support);
+                fixture.AllowReviewedPublisherTestCleanup(ModuleName, publisherSources);
+            }
+            }
+            catch (Exception error)
+            {
+                Save(fixture, "qualification-body-error.json", new { Exception = error.ToString(), error.HResult, fixture.NativeExecutionUnsettled });
+                throw;
             }
         }
 
@@ -145,9 +178,11 @@ namespace VBAi.Tests.Integration
         {
             // Even a missing start response can conceal an already dispatched native attempt.
             fixture.NativeExecutionUnsettled = true;
+            // Original and copy can share VBProject.Name while a coverage run is pending.
+            string selector = coverage && fixture.Kind == "Word" ? fixture.DocumentPath : fixture.Project;
             var started = coverage
-                ? fixture.Data("run_vba_tests", "ExpectedProjectVersion", revision, "ExpectedMode", 2, "Items", ids, "Action", "coverage")
-                : fixture.Data("run_vba_tests", "ExpectedProjectVersion", revision, "ExpectedMode", 2, "Items", ids);
+                ? fixture.Data("run_vba_tests", "Project", selector, "ExpectedProjectVersion", revision, "ExpectedMode", 2, "Items", ids, "Action", "coverage")
+                : fixture.Data("run_vba_tests", "Project", selector, "ExpectedProjectVersion", revision, "ExpectedMode", 2, "Items", ids);
             Save(fixture, name + "-start.json", started);
             string query = (string)started["Query"];
             Assert.IsFalse(string.IsNullOrEmpty(query));
@@ -155,7 +190,7 @@ namespace VBAi.Tests.Integration
             IDictionary<string, object> state;
             do
             {
-                state = fixture.Data("vba_test_run_status", "Query", query, "Action", "compact");
+                state = fixture.Data("vba_test_run_status", "Project", selector, "Query", query, "Action", "compact");
                 object pending, reportValue, uncertain;
                 if (state.TryGetValue("Pending", out pending) && Equals(pending, false)
                     && state.TryGetValue("Report", out reportValue) && reportValue != null)
@@ -173,7 +208,7 @@ namespace VBAi.Tests.Integration
             Assert.AreEqual(false, state["Stale"]);
             var report = VbeBridgeClient.Object(state["Report"]);
             Save(fixture, name + "-compact.json", report);
-            var human = fixture.Data("vba_test_run_status", "Query", query, "Action", "human");
+            var human = fixture.Data("vba_test_run_status", "Project", selector, "Query", query, "Action", "human");
             File.WriteAllText(Path.Combine(fixture.Root, name + "-human.txt"), (string)human["Report"], Utf8);
             Assert.AreEqual(query, report["run"]);
             return report;
@@ -182,7 +217,21 @@ namespace VBAi.Tests.Integration
         private static void QualifyOfficeDocumentCoverage(OfficeVbeFixture fixture, IDictionary<string, object> catalog,
             string revision, IDictionary<string, object> selected)
         {
+            int? originalWordSecurity = fixture.Kind == "Word" ? SetOwnedWordCoveragePolicy(fixture, 2, "prepare") : (int?)null;
+            try { QualifyOfficeDocumentCoverageCore(fixture, catalog, revision, selected); }
+            finally
+            {
+                // Do not mutate a retained host after an uncertain native outcome. Owned cleanup remains a separate action.
+                if (originalWordSecurity.HasValue && !fixture.NativeExecutionUnsettled)
+                    SetOwnedWordCoveragePolicy(fixture, originalWordSecurity.Value, "restore");
+            }
+        }
+
+        private static void QualifyOfficeDocumentCoverageCore(OfficeVbeFixture fixture, IDictionary<string, object> catalog,
+            string revision, IDictionary<string, object> selected)
+        {
             // Exercise the installed service and real host copy adapter; the fixture does not inject a clone.
+            if (fixture.Kind == "PowerPoint") ConfigureOwnedPowerPointCoveragePolicy(fixture);
             var preview = fixture.Data("vba_test_coverage");
             Save(fixture, "coverage-preview.json", preview);
             Assert.AreEqual(false, preview["Available"], "A preview must not claim measured coverage.");
@@ -202,7 +251,7 @@ namespace VBAi.Tests.Integration
 
             var originalModules = fixture.Items("list_modules").Select(module => (string)module["Name"])
                 .ToDictionary(name => name, name => fixture.Data("read_module", "Module", name), StringComparer.Ordinal);
-            byte[] originalDisk = File.ReadAllBytes(fixture.DocumentPath);
+            byte[] originalDisk = ReadOwnedDocumentBytes(fixture.DocumentPath);
             string[] openBefore;
             string countersBefore = ReadOfficeCounters(fixture, out openBefore);
             Assert.AreEqual("2,0", countersBefore, "Only the entered procedure should have run in the original batch and single test.");
@@ -251,7 +300,7 @@ namespace VBAi.Tests.Integration
                 fixture.Items("list_modules").Select(module => (string)module["Name"]).ToArray(),
                 "Instrumentation leaked into the original project.");
             foreach (var original in originalModules) AssertSource(fixture, original.Value, original.Key);
-            CollectionAssert.AreEqual(originalDisk, File.ReadAllBytes(fixture.DocumentPath), "Coverage saved or changed the original document file.");
+            CollectionAssert.AreEqual(originalDisk, ReadOwnedDocumentBytes(fixture.DocumentPath), "Coverage saved or changed the original document file.");
             string[] openAfter;
             string countersAfter = ReadOfficeCounters(fixture, out openAfter);
             Assert.AreEqual(countersBefore, countersAfter, "The coverage selection executed in the original project.");
@@ -274,6 +323,51 @@ namespace VBAi.Tests.Integration
                 CopyClosed = true, RetainedFolder = retained[0], ExpectedEligible = 2, ExpectedHit = 1, ExpectedPercent = 50 });
         }
 
+        private static void ConfigureOwnedPowerPointCoveragePolicy(OfficeVbeFixture fixture)
+        {
+            // The fixture's initial ForceDisable applies to files opened later. ByUI respects the existing Trust Center policy.
+            // Change only this verified owned application; do not enable macros unconditionally or touch retained runs.
+            Assert.IsFalse(fixture.NativeExecutionUnsettled, "Coverage policy setup requires a confirmed settled owned fixture.");
+            object application = Marshal.GetActiveObject("PowerPoint.Application");
+            try
+            {
+                IntPtr window = PowerPointWindow.Read(application);
+                Assert.AreNotEqual(IntPtr.Zero, window);
+                uint owner; Assert.AreNotEqual(0u, GetWindowThreadProcessId(window, out owner));
+                Assert.AreEqual((uint)fixture.ProcessId, owner, "Coverage policy setup resolved another PowerPoint process.");
+                int before = Convert.ToInt32(((dynamic)application).AutomationSecurity);
+                fixture.NativeExecutionUnsettled = true;
+                ((dynamic)application).AutomationSecurity = 2; // msoAutomationSecurityByUI; never msoAutomationSecurityLow.
+                Assert.AreEqual(2, Convert.ToInt32(((dynamic)application).AutomationSecurity));
+                fixture.NativeExecutionUnsettled = false;
+                Save(fixture, "powerpoint-coverage-security.json", new { ProcessId = owner, Hwnd = window.ToInt64(),
+                    AutomationSecurityBefore = before, AutomationSecurityAfter = 2, Mode = "ByUI", TrustSettingsChanged = false });
+            }
+            finally { if (Marshal.IsComObject(application)) Marshal.ReleaseComObject(application); }
+        }
+
+        private static int SetOwnedWordCoveragePolicy(OfficeVbeFixture fixture, int security, string phase)
+        {
+            // ByUI respects the existing Trust Center policy; only the disposable owned application is changed.
+            Assert.IsFalse(fixture.NativeExecutionUnsettled, "Coverage policy setup requires a confirmed settled owned fixture.");
+            object application = Marshal.GetActiveObject("Word.Application");
+            try
+            {
+                IntPtr window = VbaTestWordValuesHost.ReadApplicationWindow(application);
+                uint owner; Assert.AreNotEqual(0u, GetWindowThreadProcessId(window, out owner));
+                Assert.AreEqual((uint)fixture.ProcessId, owner, "Coverage policy setup resolved another Word process.");
+                int before = Convert.ToInt32(((dynamic)application).AutomationSecurity);
+                fixture.NativeExecutionUnsettled = true;
+                ((dynamic)application).AutomationSecurity = security;
+                Assert.AreEqual(security, Convert.ToInt32(((dynamic)application).AutomationSecurity));
+                fixture.NativeExecutionUnsettled = false;
+                Save(fixture, "word-coverage-security-" + phase + ".json", new { ProcessId = owner, Hwnd = window.ToInt64(),
+                    AutomationSecurityBefore = before, AutomationSecurityAfter = security, TrustSettingsChanged = false });
+                return before;
+            }
+            finally { if (Marshal.IsComObject(application)) Marshal.ReleaseComObject(application); }
+        }
+
         private static void AssertMeasuredCoverage(IDictionary<string, object> coverage, string available, string complete,
             string revisionKey, string metric, string eligible, string hit, string percent, string revision)
         {
@@ -283,21 +377,35 @@ namespace VBAi.Tests.Integration
             Assert.IsNotNull(coverage[percent]); Assert.AreEqual(50d, Convert.ToDouble(coverage[percent]));
         }
 
+        private static byte[] ReadOwnedDocumentBytes(string path)
+        {
+            // Word keeps the owned saved document open for writing even while Saved is true.
+            using (var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var bytes = new MemoryStream())
+            { input.CopyTo(bytes); return bytes.ToArray(); }
+        }
+        private static readonly List<object[]> retainedCounterContexts = new List<object[]>();
         private static string ReadOfficeCounters(OfficeVbeFixture fixture, out string[] openPaths)
         {
             // A mismatched registered application is refused before inspecting or activating any document.
             // Read only the synthetic getter, with the host's actual invocation shape and exact owned context.
             object application = Marshal.GetActiveObject(fixture.Kind + ".Application");
-            object documents = null, sourceDocument = null;
+            object documents = null, sourceDocument = null, sourceProject = null;
             try
             {
-                long handle = fixture.Kind == "PowerPoint" ? Convert.ToInt64(((dynamic)application).HWND) : Convert.ToInt64(((dynamic)application).Hwnd);
-                uint owner; Assert.AreNotEqual(0u, GetWindowThreadProcessId(new IntPtr(handle), out owner));
+                // PowerPoint HWND is a restricted vtable member; the shared reader uses the published PIA layout.
+                IntPtr handle = fixture.Kind == "PowerPoint" ? PowerPointWindow.Read(application)
+                    : VbaTestWordValuesHost.ReadApplicationWindow(application);
+                Assert.AreNotEqual(IntPtr.Zero, handle, "Counter inspection requires a verifiable owned application window.");
+                uint owner; Assert.AreNotEqual(0u, GetWindowThreadProcessId(handle, out owner));
                 Assert.AreEqual((uint)fixture.ProcessId, owner, "Counter inspection resolved another " + fixture.Kind + " process.");
                 documents = fixture.Kind == "PowerPoint" ? ((dynamic)application).Presentations : ((dynamic)application).Documents;
                 var paths = new List<string>();
-                foreach (object document in (System.Collections.IEnumerable)documents)
+                int documentCount = Convert.ToInt32(((dynamic)documents).Count);
+                Assert.IsTrue(documentCount > 0 && documentCount <= 1000, "The owned document inventory must be bounded.");
+                for (int documentIndex = 1; documentIndex <= documentCount; documentIndex++)
                 {
+                    object document = ((dynamic)documents)[documentIndex];
                     bool retained = false;
                     try
                     {
@@ -321,26 +429,44 @@ namespace VBAi.Tests.Integration
                     var transport = new VbaTestPowerPointValuesHost {
                         ReadProcessName = () => "POWERPNT", ReadProcessId = () => fixture.ProcessId,
                         ReadActiveApplication = unused => application };
-                    var target = transport.ResolveTarget((object)((dynamic)sourceDocument).VBProject, fixture.DocumentPath);
+                    sourceProject = ((dynamic)sourceDocument).VBProject;
+                    var target = transport.ResolveTarget(sourceProject, fixture.DocumentPath);
                     return Convert.ToString(transport.Invoke(target, ModuleName, "ReadCoverageCounters", new object[0]));
                 }
                 Assert.AreEqual("Word", fixture.Kind, "Counter inspection is not implemented for this host.");
                 Assert.IsNotNull(sourceDocument);
-                ((dynamic)sourceDocument).Activate();
-                object active = ((dynamic)application).ActiveDocument;
-                try
+                var wordTransport = new VbaTestWordValuesHost {
+                    ReadProcessName = () => "WINWORD", ReadProcessId = () => fixture.ProcessId,
+                    ReadActiveApplication = unused => application };
+                sourceProject = ((dynamic)sourceDocument).VBProject;
+                using (var wordTarget = (VbaTestWordValuesHost.OwnedTarget)wordTransport.ResolveTarget(sourceProject, fixture.DocumentPath))
                 {
-                    Assert.IsTrue(VbeDebug.NativeProcedureValuesHost.SameComIdentity(sourceDocument, active),
-                        "The exact owned Word document did not become the macro context.");
+                    fixture.NativeExecutionUnsettled = true;
+                    string counters = Convert.ToString(wordTransport.Invoke(wordTarget, ModuleName, "ReadCoverageCounters", new object[] { false, false }));
+                    fixture.NativeExecutionUnsettled = false;
+                    return counters;
                 }
-                finally { if (Marshal.IsComObject(active)) Marshal.ReleaseComObject(active); }
-                return Convert.ToString(((dynamic)application).Run("'" + fileName + "'!" + ModuleName + ".ReadCoverageCounters"));
+            }
+            catch (Exception error)
+            {
+                Save(fixture, "counter-read-error.json", new { fixture.ProcessId, fixture.DocumentPath,
+                    fixture.NativeExecutionUnsettled, Error = error.ToString(), HResult = error.HResult });
+                throw;
             }
             finally
             {
-                if (sourceDocument != null && Marshal.IsComObject(sourceDocument)) Marshal.ReleaseComObject(sourceDocument);
-                if (documents != null && Marshal.IsComObject(documents)) Marshal.ReleaseComObject(documents);
-                if (Marshal.IsComObject(application)) Marshal.ReleaseComObject(application);
+                if (fixture.NativeExecutionUnsettled)
+                {
+                    // The uncertain target borrows this context; retain its independent acquisitions.
+                    lock (retainedCounterContexts) retainedCounterContexts.Add(new[] { sourceProject, sourceDocument, documents, application });
+                }
+                else
+                {
+                    if (sourceProject != null && Marshal.IsComObject(sourceProject)) Marshal.ReleaseComObject(sourceProject);
+                    if (sourceDocument != null && Marshal.IsComObject(sourceDocument)) Marshal.ReleaseComObject(sourceDocument);
+                    if (documents != null && Marshal.IsComObject(documents)) Marshal.ReleaseComObject(documents);
+                    if (Marshal.IsComObject(application)) Marshal.ReleaseComObject(application);
+                }
             }
         }
 
@@ -445,7 +571,7 @@ namespace VBAi.Tests.Integration
         private static readonly string DocumentCoverageSource = Source.Replace(
             "ABooleanPass = mReady And (mInitialized = 1)",
             "ABooleanPass = mReady And (mInitialized = 1) And (VBAiOfficeProduction.EnteredFunction() = 5)") + @"
-Public Function ReadCoverageCounters() As String
+Public Function ReadCoverageCounters(Optional ByVal first As Variant, Optional ByVal second As Variant) As String
     ReadCoverageCounters = CStr(VBAiOfficeProduction.EnteredCalls) & "","" & CStr(VBAiOfficeProduction.UnenteredCalls)
 End Function
 ";

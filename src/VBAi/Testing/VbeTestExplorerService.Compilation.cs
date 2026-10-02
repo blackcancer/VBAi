@@ -60,8 +60,6 @@ namespace VBAi
                 {
                     RequireOwner(); guard();
                     RequireCompilationProject(copiedProject);
-                    if (CoverageCompilationClock() - started >= CompilationDeadlineMilliseconds)
-                        throw new InvalidOperationException("The coverage copy did not reach the verified compiled state within three seconds; no tests were dispatched.");
                     dynamic compile = ReadCompilationControl();
                     if (!(bool)compile.Enabled)
                     {
@@ -69,6 +67,8 @@ namespace VBAi
                         guard(); RequireCompilationProject(copiedProject);
                         finish(null);
                     }
+                    else if (CoverageCompilationClock() - started >= CompilationDeadlineMilliseconds)
+                        throw new InvalidOperationException("The coverage compiler is still enabled when observed after the three-second deadline; no tests were dispatched.");
                 }
                 catch (Exception error) { finish(error); }
             };
