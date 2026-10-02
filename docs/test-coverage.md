@@ -1,5 +1,35 @@
 # Recorded validation
 
+## Prepared owner-import save and fresh-process reopen gate (2026-10-02)
+
+Tests-only source `c0711cab5361c15712485e4a13b7d8f8fc6c48d0` adds a separate
+opted-in persistence scenario for each declared UserForm layout. It preserves
+the existing import scenario's unchanged-disk contract. A verified owner-UI
+import must precede one Save, normal original exit and an independent explicit
+owned process reopening the exact saved file read-only, with events/macros
+disabled. Reopened source, component types, references, resource snapshots,
+native properties and fonts must match. The loaded candidate and saved-file
+hash are checked, and the fresh process must also exit normally. No repair,
+second Save or repeated import can turn this scenario into a pass.
+
+Before Save, filesystem guards attest the actual selected bare child repository,
+binding/config/HEAD bytes and authorized selected revision. Recovery is observed
+at that selected child, never at the document cache root. Missing/moved repository,
+changed identity, an existing marker or a metadata error refuses Save.
+
+The isolated integrated build has no warnings or errors. Its product MVID is
+`5714d3f1-c9f0-4293-b337-819fdd6de4b4`, product SHA-256
+`2825D27DD74B134D080933568478B0EF8E98AB2805AC9A1CDDE07CCA85750A4C`, test SHA-256
+`41CA13D09F8AD908B02E19A7D2A712CF54362C0CC48D7B5C9C0AB4E047372194`.
+The focused terminal TRX under
+`artifacts/userform-import-persistence-integrated-20261002/managed-focused/persistence-guards.trx`
+records **16 passed, zero failed, zero skipped** local lifecycle/filesystem
+regressions. Assembly identity is measured after these focused tests. No complete
+default managed gate, native host, registry, provider or coverage collector is
+run for this tests-only follow-up. Its native persistence scenarios are NOT_RUN:
+the preceding actual import canary still fails. Preparation is not Q-027
+acceptance or evidence for the newly built product candidate.
+
 ## Root Font child Value import canary (2026-10-02)
 
 Frozen source `7745e1c5018b7570a5ced6ef7e34c88676e799a2` implements root-font

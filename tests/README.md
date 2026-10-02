@@ -45,6 +45,22 @@ repository root in a Windows development environment.
 
 ## Build and run
 
+### Disposable owner-import UserForm persistence qualification
+
+`EmbeddedGitWindowTests.InstalledOwnerImportedFormSurvivesOneSaveAndFreshReadOnlyProcess`
+is a separate prepared scenario for the declared native layouts. It requires
+`VBAi_RUN_USERFORM_OWNER_PERSISTENCE_TESTS=1` in addition to the existing Excel,
+UserForm GitHub, embedded Git UI and owner-restore opt-ins, the pinned synthetic
+GitHub manifest, absolute evidence directory and exact candidate MVID/hash.
+It must first verify the actual owner-UI checkpoint import, then attest the
+selected bare repository and absence of recovery before one Save. Only normal
+original exit permits a new explicit owned process to reopen the saved file
+read-only with events/macros disabled. Exact source/resources/native fonts,
+loaded candidate, unchanged post-Save disk bytes and fresh normal exit are
+required. The existing unchanged-on-disk import scenario remains separate.
+These persistence scenarios are currently NOT_RUN because the preceding
+owner-import canary fails. See [recorded validation](../docs/test-coverage.md).
+
 ### Disposable native Excel signature qualification
 
 `ExcelSignatureQualificationTests` requires `VBAi_RUN_EXCEL_TESTS=1`,
