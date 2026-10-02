@@ -82,6 +82,8 @@
                 }));
                 failure.GetAwaiter().GetResult();
                 StringAssert.Contains(Field<Label>(window, "status").Text, "disposable Git failure");
+                StringAssert.Contains(Field<Label>(window, "status").Text, "InvalidOperationException 0x80131509");
+                StringAssert.Contains(Field<Label>(window, "status").Text, "VBAi.GitWindow");
                 Assert.IsTrue(Field<Button>(window, "connect").Enabled);
                 Set(window, "running", true);
                 ((Task)Invoke(window, "Perform", new Func<Task>(() =>

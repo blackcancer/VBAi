@@ -288,7 +288,7 @@ namespace VBAi
                 await action();
             }
             catch (OperationCanceledException) { status.Text = UiText.Get("Operation cancelled."); }
-            catch (Exception ex) { status.Text = ex.Message + " · " + UiText.Get("Check the connection, account and Git state, then retry."); }
+            catch (Exception ex) { status.Text = ex.Message + " [" + GitFailureDiagnostic.Describe(ex) + "] · " + UiText.Get("Check the connection, account and Git state, then retry."); }
             finally { cacheLock?.Dispose(); cacheLock = null; if (repository != null) { repository.Cancellation = System.Threading.CancellationToken.None; repository.Progress = null; } operationCancellation.Dispose(); operationCancellation = null; operationProgress.Visible = false; cancelOperation.Visible = false; cancelOperation.Enabled = false; running = false; UpdateButtons(); }
         }
         /// <summary>Recalcule l’activation des commandes selon l’opération, le dépôt et l’état de revue.</summary>
