@@ -976,6 +976,27 @@ test and retained-host decision remain unchanged. No bridge, COM, input,
 restoration or cleanup occurs during this later observation, retained in
 `retained-dialog-later-observation.json`.
 
+### Q-026 inactive-desktop preparation (2026-10-03)
+
+Source `180aee899941027c16bece8bef61dfcef47f7f22` prepares the focused Q-026
+harness against the frozen installed candidate, not against a rebuilt product.
+Its actual product MVID is `d2c3601b-893d-4e84-b9e3-c172da7e2437`, SHA-256
+`C4D095D9427379AC8F2A82D047C8780637A0E815173241976F2C86664E777644`.
+The focused harness/helper and the complete solution build completed without
+warnings or errors. The source working tree was clean when the campaign was
+prepared; subsequent documentation edits do not alter its frozen files.
+
+`artifacts/q026-20261003-native/managed/managed.trx` records **68 passed,
+0 failed, 0 skipped**, covering the private-desktop and Format lifecycle guards.
+This is focused managed validation, not coverage or native acceptance.
+The one-shot campaign has not dispatched a native Format command: it waits
+for another qualification's retained Access PID 6880, start
+`2026-10-02T22:27:55.5717465Z`. The owning Q-012 receipt records a returned Quit
+without observed process exit; Q-026 neither replays its cleanup nor terminates it.
+Once that owner finishes recovery, the frozen worker additionally requires
+30 continuous seconds without another VBE host before its own Excel launch.
+Q-026 remains **OPEN / native NOT_RUN** at this preparation checkpoint.
+
 ### Q-026 offline snapshot review (2026-10-03)
 
 Branch `codex/q026-qualification` starts from `origin/main` at `4b382b9`,

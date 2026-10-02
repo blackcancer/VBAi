@@ -413,6 +413,40 @@ truncated, ambiguous or incomplete receipts. It neither invokes a host nor prove
 native restoration. The [prepared Q-026 scenario matrix](../tools/tests/q026-scenarios.json)
 records the native cases and stop rules; its planned status is not execution proof.
 
+### Q-026 inactive-desktop campaign
+
+`tools/tests/Invoke-Q026Qualification.ps1 -Prepare` copies the already installed
+candidate into a fresh evidence directory and builds only the focused harness
+and desktop helper. It does not replace the installed DLL or modify registration.
+Use Windows PowerShell 5.1 for this .NET Framework preparation:
+
+```powershell
+$q026Evidence = Join-Path $PWD ('artifacts/q026-' + [Guid]::NewGuid().ToString('N'))
+powershell.exe -NoProfile -File tools/tests/Invoke-Q026Qualification.ps1 -Prepare `
+    -EvidenceRoot $q026Evidence -InstalledDirectory 'E:\path\to\installed\net48'
+powershell.exe -NoProfile -File tools/tests/Invoke-IsolatedTests.ps1 `
+    -ScriptPath (Join-Path $q026Evidence 'Invoke-FrozenQ026.ps1') `
+    -HelperAssembly (Join-Path $q026Evidence 'build/VBAi.Desktop.Helper/Debug/net48/VBAi.Desktop.Helper.exe') `
+    -EvidenceDirectory (Join-Path $q026Evidence 'isolation')
+```
+
+The installed path must identify the reviewed registered candidate. Preparation
+freezes hashes, MVID, source revision/status and the scenario matrix. Execution
+requires a verified private-desktop worker, passing managed guards and a continuous
+30-second interval without another Excel, Word, PowerPoint, Access, Publisher or
+SOLIDWORKS process. Preferences can be shared across desktops: a host retained by
+another qualification must be recovered by its owner before this campaign starts.
+The campaign waits without terminating another process or switching desktops.
+It checks the per-user x64 CodeBase before launching its owned disposable Excel.
+
+`campaign.json`, the native TRX and durable `native/phases` receipts are separate
+evidence. A passing TRX requires independent review of the complete baseline and
+restored tab structures, refusal closure, actual loaded assembly, original-handle
+normal exit and the private-desktop terminal inventory. An empty size catalogue
+qualifies only the documented refusal; it does not qualify a font-size mutation.
+The evidence root is one-shot. Failed, pending or uncertain work must not be
+replayed; preserve its receipts and exact host ownership for recovery.
+
 The SOLIDWORKS workflow must not create or kill an application instance on the
 user's behalf. A host fixture can use its own native save helper; that result does
 not automatically qualify VBAi's `save_host_document` adapter.

@@ -82,7 +82,6 @@ if(@(Get-Process EXCEL,WINWORD,POWERPNT,MSACCESS,MSPUB,SLDWORKS -ErrorAction Sil
 $env:VBAi_RUN_EXCEL_TESTS='1'
 $env:VBAi_EXCEL_RESULTS=Join-Path $plan.EvidenceRoot 'native/hosts'
 $env:VBAi_TEST_FORMAT_OPTIONS_OUTPUT=Join-Path $plan.EvidenceRoot 'native/phases'
-$env:VBAi_VBE_PATH_VISIBILITY_DIAGNOSTIC=$null
 $record.NativeState='STARTED_ONCE';$record.NativeStartedUtc=[DateTime]::UtcNow.ToString('o');Write-Json $ledger $record
 $native=Join-Path $plan.EvidenceRoot 'native'
 & dotnet vstest $plan.TestAssembly ("/TestCaseFilter:FullyQualifiedName="+$plan.NativeMethod) '/Logger:trx;LogFileName=format.trx' "/ResultsDirectory:$native" *> (Join-Path $plan.EvidenceRoot 'native.log')
