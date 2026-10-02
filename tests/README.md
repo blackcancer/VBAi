@@ -69,6 +69,13 @@ thread. It performs no child-value writes or diagnostic exports before that
 first capture, retains the imported component identity and preserves the final
 strict snapshot check. This is a predeclared experiment, not an automatic retry
 after an uncertain mutation. Native acceptance of this mode is not established.
+For a separately declared synthetic baseline, set
+`VBAi_TEST_ROOT_FONT_OBSERVATION_SEED_PROFILE=SyntheticExplicitArial9` with
+`AfterInitialCapture`. This tests-only profile delivers one fresh Arial 9.00
+root font before the initial SaveAs, records its intent and requires the exact
+descriptor in the saved/reopened baseline before publishing the manifest. An
+absent profile keeps the default preparation unchanged. A successful explicit
+profile would not qualify default Tahoma serialization or Frame 8.27 fidelity.
 Capture-only and persistence scenarios cannot enable this diagnostic. Without
 the opt-in, there are no additional font getters, exports or writes. Recorded
 instrumented trials reach terminal exact snapshot refusals; this diagnostic
