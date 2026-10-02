@@ -14,7 +14,7 @@ namespace VBAi.Tests.Integration
 {
     /// <summary>Qualifies the actual installed Git menu/window, not an external-STA VbaGitProject.</summary>
     [TestClass, DoNotParallelize, TestCategory("NativeEmbeddedGitUi")]
-    public sealed class EmbeddedGitWindowTests
+    public sealed partial class EmbeddedGitWindowTests
     {
         private static readonly List<RunContext> Retained = new List<RunContext>();
 
@@ -36,7 +36,7 @@ namespace VBAi.Tests.Integration
             RunInstalledOwner(layout);
         }
 
-        private void RunInstalledOwner(string layout)
+        private void RunInstalledOwner(string layout, bool persistence = false)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_EMBEDDED_GIT_UI_TESTS") != "1" ||
                 Environment.GetEnvironmentVariable("VBAi_RUN_USERFORM_GITHUB_TESTS") != "1" ||
@@ -49,6 +49,7 @@ namespace VBAi.Tests.Integration
             var manifest = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(File.ReadAllText(manifestPath));
             var plan = ValidateManifest(manifest);
             plan.Layout = layout;
+            plan.Persistence = persistence;
             Guid expected = Guid.Parse(Environment.GetEnvironmentVariable("VBAi_TEST_EMBEDDED_GIT_MVID"));
             string hash = Environment.GetEnvironmentVariable("VBAi_TEST_EMBEDDED_GIT_SHA256");
             Assert.AreEqual(typeof(VbeSession).Module.ModuleVersionId, expected, "Tests must reference the exact frozen product candidate.");
@@ -56,7 +57,7 @@ namespace VBAi.Tests.Integration
             var context = new RunContext(Path.Combine(root, "embedded-git-" + Guid.NewGuid().ToString("N")), plan);
             context.Record(new { Phase = "Preflight", ExpectedMvid = expected.ToString("D"), ExpectedSha256 = hash,
                 Remote = plan.Remote, Branch = plan.Branch, BranchCommit = plan.Commit,
-                Layout = layout, Scope = layout == null ? "Owner-dispatched capture/checkpoint only." : "Owner-dispatched persisted UserForm checkpoint import with exact native snapshot and font readback; no remote push, recovery replay or save/reopen acceptance." });
+                Layout = layout, Scope = persistence ? "Owner-dispatched checkpoint import, one Save, normal exit, independent read-only fresh-process reopen; no remote push or recovery replay." : layout == null ? "Owner-dispatched capture/checkpoint only." : "Owner-dispatched persisted UserForm checkpoint import with exact native snapshot and font readback; no remote push, recovery replay or save/reopen acceptance." });
             var owner = new Thread(() => Owner(context, expected, hash)) { IsBackground = true };
             owner.SetApartmentState(ApartmentState.STA); owner.Start();
             try
@@ -68,9 +69,9 @@ namespace VBAi.Tests.Integration
                 if (!context.UiReady.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException("MTA UIA discovery was not armed before modal invocation.");
                 context.StartMenu.Set();
                 if (!context.UiDone.Wait(TimeSpan.FromSeconds(300))) throw new TimeoutException("UIA operation delivery/observation remains uncertain.");
-                if (!context.OwnerDone.Wait(TimeSpan.FromSeconds(30))) throw new TimeoutException("Modal Execute or native shutdown has no terminal evidence.");
+                if (!context.OwnerDone.Wait(TimeSpan.FromSeconds(persistence ? 180 : 30))) throw new TimeoutException("Modal Execute, persistence readback or native shutdown has no terminal evidence.");
                 var failures = new[] { context.UiError, context.OwnerError }.Where(x => x != null).ToArray();
-                context.Record(new { Phase = failures.Length == 0 ? "PASS" : "FAILED", NativeScope = layout == null ? "CaptureCheckpointOnly" : "PersistedFormCheckpointImport", Shutdown = context.Fixture.ShutdownDiagnostics });
+                context.Record(new { Phase = failures.Length == 0 ? "PASS" : "FAILED", NativeScope = persistence ? "PersistedFormOneSaveFreshProcessReopen" : layout == null ? "CaptureCheckpointOnly" : "PersistedFormCheckpointImport", Shutdown = context.Fixture.ShutdownDiagnostics });
                 if (failures.Length > 1) throw new AggregateException("Embedded Git UI and owner STA failed; original errors preserved.", failures);
                 if (failures.Length == 1) ExceptionDispatchInfo.Capture(failures[0]).Throw();
             }
@@ -141,8 +142,18 @@ namespace VBAi.Tests.Integration
                 ExcelVbeFixture.RequireMonacoCandidate(expected, typeof(VbeSession).Module.ModuleVersionId, context.Fixture.ProcessId, VbeBridgeClient.Object(status["Data"]));
                 nativePending = false;
                 context.Record(new { Phase = "NativeStatePreserved", StateSha256 = ShaText(context.Scope.State) });
+                if (context.Plan.Persistence)
+                {
+                    context.Fixture.SaveEmbeddedImportedForm(context.Scope, value => {
+                        if (value && context.Stop) { context.Fixture.PreserveMonacoNativeOutcome(); throw new InvalidOperationException("Coordinator stopped before the next persistence dispatch."); }
+                        nativePending = value;
+                    }, context.Record);
+                    context.WorkbookSha256 = Sha(context.Scope.Path);
+                    context.Record(new { Phase = "PostImportSaveVerified", Path = context.Scope.Path,
+                        WorkbookSha256 = context.WorkbookSha256, SaveAttempts = 1 });
+                }
             }
-            catch (Exception error) { context.OwnerError = error; if (EmbeddedGitUiProtocol.MustRetainOwner(nativePending, context.MenuEmitted, context.ModalClosed)) context.Retain = true; }
+            catch (Exception error) { context.OwnerError = error; if (context.Fixture?.PreserveForDiagnosticRecovery == true || EmbeddedGitUiProtocol.MustRetainOwner(nativePending, context.MenuEmitted, context.ModalClosed)) context.Retain = true; }
             finally
             {
                 context.Ready.Set();
@@ -164,6 +175,8 @@ namespace VBAi.Tests.Integration
                             Assert.AreEqual(false, context.Fixture.ShutdownDiagnostics["ForcedTermination"]);
                             if (context.WorkbookSha256 != null)
                                 Assert.AreEqual(context.WorkbookSha256, Sha(context.Scope.Path), "Normal shutdown must preserve the saved owned workbook bytes.");
+                            if (context.Plan.Persistence && context.OwnerError == null && context.UiError == null)
+                                VerifyFreshImportedWorkbook(context, expected, hash);
                         }
                         catch (Exception cleanup)
                         {
@@ -206,7 +219,7 @@ namespace VBAi.Tests.Integration
             }
         }
 
-        internal sealed class TestPlan { internal string Remote, Branch, Commit, TabName, Layout; }
+        internal sealed class TestPlan { internal string Remote, Branch, Commit, TabName, Layout; internal bool Persistence; }
         internal static TestPlan ValidateManifest(IDictionary<string, object> manifest)
         {
             string remote = Convert.ToString(manifest["repositoryUrl"]) + ".git";
@@ -264,7 +277,7 @@ namespace VBAi.Tests.Integration
             {
                 lock (sync)
                 {
-                    if (++sequence > 160) throw new InvalidOperationException("Bounded synthetic action evidence capacity exhausted; no further action.");
+                    if (++sequence > (Plan.Persistence ? 240 : 160)) throw new InvalidOperationException("Bounded synthetic action evidence capacity exhausted; no further action.");
                     using (var file = new FileStream(Path.Combine(Output, sequence.ToString("D3") + ".json"), FileMode.CreateNew, FileAccess.Write, FileShare.Read))
                     using (var writer = new StreamWriter(file, new UTF8Encoding(false))) writer.Write(new JavaScriptSerializer().Serialize(value));
                 }

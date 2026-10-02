@@ -88,9 +88,10 @@ namespace VBAi.Tests.Integration
             finally { Release(pane); Release(moduleCode); Release(module); Release(components); Release(project); Release(main); Release(editor); }
         }
 
-        private VbaGitSnapshot ExportEmbeddedBaseline(EmbeddedGitScope scope, Action<bool> pending, Action<object> evidence)
+        private VbaGitSnapshot ExportEmbeddedBaseline(EmbeddedGitScope scope, Action<bool> pending, Action<object> evidence,
+            string exportDirectory = "owner-bridge-baseline")
         {
-            string directory = File("owner-bridge-baseline"); Directory.CreateDirectory(directory);
+            string directory = File(exportDirectory); Directory.CreateDirectory(directory);
             var files = new Dictionary<string, byte[]>(StringComparer.Ordinal); var manifest = new List<VbaGitComponent>();
             foreach (var item in scope.Types.OrderBy(x => x.Key, StringComparer.Ordinal))
             {
