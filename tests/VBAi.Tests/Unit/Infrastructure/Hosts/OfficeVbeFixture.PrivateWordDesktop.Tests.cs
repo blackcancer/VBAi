@@ -133,7 +133,7 @@ namespace VBAi.Tests.Unit
                 Executable, Hash, path => { existsCalls++; return path == Executable; },
                 path => { hashCalls++; return Hash.ToLowerInvariant(); }));
             Assert.AreEqual(1, existsCalls); Assert.AreEqual(1, hashCalls);
-            CollectionAssert.AreEqual(new[] { "/n", "/q", "/m", @"C:\Owned\NativeObjectModelSeed.docx" },
+            CollectionAssert.AreEqual(new[] { "/a", @"C:\Owned\NativeObjectModelSeed.docx" },
                 OfficeVbeFixture.WordPrivateArguments(@"C:\Owned\NativeObjectModelSeed.docx"));
         }
 

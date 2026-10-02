@@ -53,7 +53,8 @@ namespace VBAi.Tests.Integration
                 expectedHash, File.Exists, HashOwnedFile);
             string seed = Path.Combine(Root, "NativeObjectModelSeed.docx");
             WriteMacroFreeSeed(seed);
-            // Microsoft documents /n as a fresh Word instance, /q as no splash, and /m as no AutoExec.
+            // /a prevents automatic loading of Normal/global templates before NativeOM attachment.
+            // Use one documented switch; splash windows remain on the inactive desktop.
             // The only file argument is the freshly created macro-free DOCX in this owned results directory.
             privateWordChild = IsolatedTestDesktop.Launch(executable, WordPrivateArguments(seed), Root, desktopName);
             ProcessId = privateWordChild.ProcessId;
@@ -100,7 +101,7 @@ namespace VBAi.Tests.Integration
             if (string.IsNullOrWhiteSpace(seed) || !Path.IsPathRooted(seed) ||
                 !string.Equals(Path.GetExtension(seed), ".docx", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("Only an absolute macro-free DOCX seed may be opened on the private Word desktop.");
-            return new[] { "/n", "/q", "/m", Path.GetFullPath(seed) };
+            return new[] { "/a", Path.GetFullPath(seed) };
         }
 
         private static void WriteMacroFreeSeed(string path)

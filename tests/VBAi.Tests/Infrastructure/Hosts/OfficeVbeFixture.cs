@@ -130,8 +130,8 @@ namespace VBAi.Tests.Integration
                 dynamic app = result.application;
                 if (kind == "Word")
                 {
-                    if (privateWord) { app.AutomationSecurity = 3; app.DisplayAlerts = 0; app.Visible = true; }
-                    else { app.Visible = true; app.DisplayAlerts = 0; app.AutomationSecurity = 3; }
+                    result.PrepareOwnedWordMacroSafety();
+                    app.DisplayAlerts = 0; app.Visible = true;
                     if (privateWord)
                     {
                         object seed = result.document;
@@ -429,7 +429,8 @@ namespace VBAi.Tests.Integration
                 StartOwnedDialogHandler();
                 if (Kind == "Word")
                 {
-                    app.Visible = true; app.DisplayAlerts = 0; app.AutomationSecurity = 3;
+                    PrepareOwnedWordMacroSafety();
+                    app.Visible = true; app.DisplayAlerts = 0;
                     document = CreateOrOpenDocument(true);
                 }
                 else if (Kind == "PowerPoint")

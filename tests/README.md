@@ -201,11 +201,19 @@ For grouped runs on an inactive test desktop, the campaign runner supplies the
 generated `VBAi_TEST_DESKTOP_NAME`, an absolute `VBAi_TEST_WORD_EXE`, and its
 exact `VBAi_TEST_WORD_EXE_SHA256`. The Word-only fixture then launches that
 binary through the desktop launcher with Microsoft's documented
-[`/n`, `/q`, `/m` switches](https://support.microsoft.com/en-us/office/lifecycle/command-line-switches-for-microsoft-office-products)
+[`/a` switch](https://support.microsoft.com/en-us/office/lifecycle/command-line-switches-for-microsoft-office-products)
 and one disposable macro-free DOCX seed. It attaches through the launched PID's
 unique Word NativeOM window, verifies the application, sole seed document and
 actual UI-thread desktop before showing Word or creating a DOCM. Attachment
 failure retains the original launched process without a COM activation fallback.
+The single `/a` switch prevents automatic loading of Normal and global templates
+before attachment. This is an isolated startup qualification, not evidence for
+ordinary Word startup with user templates. A missing VBAi connection remains a
+failure; the fixture does not retry with ordinary startup. Before creating the
+owned DOCM, the fixture keeps `AutomationSecurity=3` and calls
+[`WordBasic.DisableAutoMacros`](https://learn.microsoft.com/en-us/office/vba/word/concepts/customizing-word/auto-macros)
+on its verified owning STA. Suppression is not reenabled before Quit. An uncertain
+command retains the original host and WordBasic lease without Close/Quit replay.
 Without this opt-in, the existing Office fixture startup path applies.
 
 The separate `WordChatGitWindowTests` observes the Options popup after the
