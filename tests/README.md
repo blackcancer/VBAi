@@ -65,6 +65,46 @@ repository root in a Windows development environment.
 
 ## Build and run
 
+### Grouped execution without interrupting the working desktop
+
+Prepare the complete qualification scenario set, build once into an isolated
+output and freeze the source revision and assembly hashes before execution.
+Avoid repeated full-suite runs between individual scenario changes. The default
+suite includes real WinForms `Show`/focus tests even with Office opt-ins disabled;
+running it directly can display windows on the working desktop.
+
+`VBAi.Desktop.Helper` and `tools/tests/Invoke-IsolatedTests.ps1` launch a reviewed
+campaign script on a generated, inactive Windows desktop under the same user's
+limited interactive token. The helper uses explicit
+[CreateProcess desktop selection](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfow),
+never switches the input desktop and has no process-termination path. A disposable
+WinForms/UIA canary must prove the exact private desktop, native/UIA control
+identity, invocation and normal exit before the campaign script starts. A failed
+canary refuses the campaign without falling back to the working desktop.
+
+```powershell
+& "$env:WINDIR/System32/WindowsPowerShell/v1.0/powershell.exe" -NoProfile -File tools/tests/Invoke-IsolatedTests.ps1 `
+  -ScriptPath 'E:\Qualification\Invoke-FrozenCampaign.ps1' `
+  -HelperAssembly "$PWD/artifacts/build/VBAi.Desktop.Helper/Debug/net48/VBAi.Desktop.Helper.exe" `
+  -EvidenceDirectory "$PWD/artifacts/qualification-private-desktop"
+```
+
+The script and helper paths must be absolute and existing; the evidence directory
+must be new. The one-shot limited task writes its terminal receipt separately.
+The helper retains original process handles across pending or uncertain outcomes;
+it does not replay a host action or terminate a host. Remaining private windows
+after a script exit refuse completed cleanup and retain desktop ownership. Record
+desktop/canary, candidate, TRX and original host-exit evidence separately: desktop
+isolation is not a security sandbox, a coverage result or Office acceptance.
+
+Native Word isolation requires `VBAi_TEST_DESKTOP_NAME` and the reviewed installed
+`VBAi_TEST_WORD_EXE`. Its fixture must explicitly launch that binary on the private
+desktop and attach only its verified owned PID through NativeOM. Ordinary COM
+activation is not evidence of private desktop placement. Keep native opt-ins
+disabled for the default managed phase; run the prepared Word identity, owner Git
+and Chat-to-Git scenarios together in the subsequent native phase. SOLIDWORKS
+continues to require a preloaded, explicitly selected instance.
+
 ### Owned Word embedded Git qualification
 
 `WordEmbeddedGitWindowTests` requires `VBAi_RUN_WORD_EMBEDDED_GIT_TESTS=1`,
