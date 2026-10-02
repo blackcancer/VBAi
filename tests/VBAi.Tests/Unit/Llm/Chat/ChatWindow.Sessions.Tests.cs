@@ -4,6 +4,7 @@ namespace VBAi.Tests.Unit
     using System.Collections;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Reflection;
@@ -502,6 +503,12 @@ namespace VBAi.Tests.Unit
                     Set(window, "persistenceWorker", worker);
                     Task deletion = null;
                     var nextScope = AddScope(window, "temporary:next");
+                    var status = Get<Label>(window, "status");
+                    bool deletionReported = false;
+                    EventHandler deletionStatus = (sender, args) => {
+                        deletionReported |= status.Text.StartsWith(UiText.Get("Conversation deleted from local history"), StringComparison.Ordinal);
+                    };
+                    status.TextChanged += deletionStatus;
                     try
                     {
                         Call(window, "SaveCurrentSession"); Assert.IsTrue(inFlight.Wait(5000));
@@ -519,8 +526,8 @@ namespace VBAi.Tests.Unit
                     }
                     finally { release.Set(); }
                     CompleteOnSta(deletion);
-                    StringAssert.StartsWith(Get<Label>(window, "status").Text,
-                        UiText.Get("Conversation deleted from local history"));
+                    status.TextChanged -= deletionStatus;
+                    Assert.IsTrue(deletionReported, "Successful deletion must be reported before the subsequent scope change replaces its status.");
                     CompleteScopeLoad(window);
                     Assert.IsTrue(worker.Flush(5000));
                     Assert.IsNull(saveFailure, saveFailure?.ToString());
