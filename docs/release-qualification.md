@@ -6,14 +6,16 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Current candidate checkpoint (2026-10-02)
 
-The latest diagnostic source `12ae618`, MVID
-`0d1b176f-ed05-490a-aebd-53c2abbac427`, SHA-256
-`5D5B67AFB31EE16A113539E488B4E357A16589F5718FF7521C075D2FD97BFB17`,
-passes its complete managed gate. A fresh LabelButton trial still fails without
-an instrumented COM operation label. The product exception type and call site
-remain unknown; the narrower diagnostic does not replace the full failed matrix.
-The owned Excel exits normally and temporary registration is restored. See
-[recorded validation](test-coverage.md#native-font-failure-context-2026-10-02).
+The latest diagnostic source `2ac0112`, MVID
+`1fb0480c-d367-4956-82d5-e055f2700a5c`, SHA-256
+`5A97F3882C4F437132DAB94F4135E0ED975FFC51B04FD60B0A01FE180EF9AD30`,
+passes its complete managed gate. A fresh LabelButton trial localizes the failure
+to `FormFontRestoration.Assign`, with `NotSupportedException` and HRESULT
+`0x80131515`. The exact operation within assignment remains unknown; the earlier
+COM-only stage wrapper does not catch this mapped exception type. The owned
+Excel exits normally and temporary registration is restored. The narrower
+diagnostic does not replace the full failed matrix. See
+[recorded validation](test-coverage.md#git-failure-provenance-and-mapped-font-error-2026-10-02).
 
 The latest complete native UserForm matrix uses source `de5c619`, MVID
 `22fe3345-5015-4949-860f-23cdf23449e3`, SHA-256

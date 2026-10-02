@@ -119,6 +119,23 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void RootPropertyObjectMappedUnsupportedFailureReportsStageAndRetainsOriginalWithoutRetry()
+        {
+            var component = new FakeComponent();
+            var failure = new NotSupportedException("Mapped unsupported native operation.");
+            component.Properties.FontProperty.ObjectSetterFailure = failure;
+
+            var error = Assert.ThrowsException<InvalidOperationException>(() => FormFontRestoration.Restore(component,
+                new[] { RootBinding() }, () => { }));
+
+            Assert.AreSame(failure, error.InnerException);
+            StringAssert.Contains(error.Message, "VBIDE.Property.Object.set");
+            StringAssert.Contains(error.Message, "HRESULT 0x80131515");
+            Assert.AreEqual(1, component.Properties.FontProperty.ObjectSetterCalls);
+            Assert.AreEqual(0, component.Designer.FontSetterCalls);
+        }
+
+        [TestMethod]
         public void RootComGetterFailuresReportExactOperationBeforeAnyFontSetter()
         {
             foreach (string stage in new[] { "Designer", "Properties", "Item", "Name", "NumIndices" })
@@ -223,7 +240,7 @@ namespace VBAi.Tests.Unit
             private int numIndices;
             public COMException NameGetFailure { get; set; }
             public COMException NumIndicesGetFailure { get; set; }
-            public COMException ObjectSetterFailure { get; set; }
+            public Exception ObjectSetterFailure { get; set; }
             public string Name
             {
                 get { if (NameGetFailure != null) throw NameGetFailure; return name; }

@@ -132,7 +132,13 @@ namespace VBAi
                 if (propertyObject) ((dynamic)owner).Object = font;
                 else ((dynamic)owner).Font = font;
             }
-            catch (COMException error) { throw NativeFailure(operation, error); }
+            catch (Exception error) when (error is COMException || error is NotSupportedException)
+            {
+                // COM interop can map an unsupported native operation to a managed
+                // NotSupportedException. Preserve the stage and original exception
+                // without attempting a second delivery.
+                throw NativeFailure(operation, error);
+            }
             finally
             {
                 try { Release(stream); } finally { try { Release(font); } finally { if (pointer != IntPtr.Zero) Marshal.Release(pointer); } }
@@ -146,11 +152,11 @@ namespace VBAi
             catch (COMException error) { throw NativeFailure(operation, error); }
         }
 
-        /// <summary>Preserves the original COM failure and HRESULT together with its constant operation name.</summary>
-        private static InvalidOperationException NativeFailure(string operation, COMException error)
+        /// <summary>Preserves the original native-operation failure and HRESULT with its constant operation name.</summary>
+        private static InvalidOperationException NativeFailure(string operation, Exception error)
         {
             return new InvalidOperationException("UserForm font restoration failed at " + operation +
-                " (HRESULT 0x" + error.ErrorCode.ToString("X8", CultureInfo.InvariantCulture) + "): " + error.Message, error);
+                " (HRESULT 0x" + error.HResult.ToString("X8", CultureInfo.InvariantCulture) + "): " + error.Message, error);
         }
 
         private static void Release(object value) { if (value != null && Marshal.IsComObject(value)) Marshal.ReleaseComObject(value); }

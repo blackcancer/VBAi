@@ -1,5 +1,37 @@
 # Recorded validation
 
+## Git failure provenance and mapped font error (2026-10-02)
+
+Frozen source `2ac0112ceb42320fae5004880771e8b5f0faf3fe` adds bounded Git UI
+exception type, HRESULT and first product-frame metadata without copying source
+paths or exception messages into the diagnostic suffix. Its isolated solution
+build has no warnings or errors. Product MVID is
+`1fb0480c-d367-4956-82d5-e055f2700a5c`, product SHA-256
+`5A97F3882C4F437132DAB94F4135E0ED975FFC51B04FD60B0A01FE180EF9AD30`, test SHA-256
+`42F68F1BAA2E8305005DCE4448076ACFEF729F8E7F63CF527A7239EEA789C54B`.
+Source and binaries remain unchanged through both gates; no coverage collector
+is enabled.
+
+| Terminal TRX under `artifacts/git-failure-provenance-20261002` | Passed | Failed | Opt-ins not executed | Scope |
+| --- | ---: | ---: | ---: | --- |
+| `managed/managed.trx` | 3684 | 0 | 189 | Complete default managed gate, including bounded diagnostic regressions. |
+| `native-labelbutton-diagnostic/native.trx` | 0 | 1 | 0 | One fresh LabelButton checkpoint-import diagnostic; no matrix-wide acceptance. |
+
+The exact candidate loads in owned Excel PID **60228**. The native UI reports
+`NotSupportedException 0x80131515 @ VBAi.FormFontRestoration.Assign`; symbols do
+not provide a line number. This localizes the failure to assignment, but does
+not yet distinguish its factory, stream, descriptor-load and setter operations.
+The complete snapshot comparison still fails. Excel exits normally with code
+zero, no forced termination and unchanged saved-workbook bytes. No existing
+Office or SOLIDWORKS process is targeted. The guarded registration restore
+verifies the exact pre-trial snapshot; installed files remain unchanged. The
+failed full matrix remains authoritative and Q-027 stays open.
+
+The subsequent source change retains the operation name for the observed
+`NotSupportedException` as well as `COMException`, preserving the original inner
+exception and single-delivery behavior. That change requires its own frozen
+build and matching gates; results above do not qualify it.
+
 ## Native font failure context (2026-10-02)
 
 Isolated source `12ae61878b20d999937519b5508dbc5aee633862` adds operation/HRESULT
