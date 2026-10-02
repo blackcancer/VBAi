@@ -42,7 +42,12 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                 Environment.GetEnvironmentVariable(PathVisibilityDiagnostic.EnvironmentName), () => {
                     Directory.CreateDirectory(evidenceDirectory);
                     TestContext.WriteLine("Retained options evidence: " + evidenceDirectory);
-                }, trace => ExcelVbeFixture.StartOwnedWithTrace(trace), QualifyReadyHost);
+                }, trace => {
+                    // The private child inherits this testhost's exact per-case trace opt-in.
+                    if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME")))
+                        Environment.SetEnvironmentVariable(VbeInspectionTrace.EnvironmentName, trace);
+                    return ExcelVbeFixture.StartOwnedWithTrace(trace);
+                }, QualifyReadyHost);
         }
 
         private void QualifyReadyHost(ExcelVbeFixture host)
@@ -60,7 +65,7 @@ namespace VBAi.Tests.Integration.Hosts.Excel
             var lifecycle = new ExcelFormatOptionsQualification(host.ProcessId, host.Command,
                 () => ObserveOptionsClosure(host.ProcessId, startUtc), () => RetainHost(host),
                 () => { host.Dispose(); AttachEvidence(host, startUtc, "ShutdownVerified", host.ShutdownDiagnostics); },
-                (phase, data) => AttachEvidence(host, startUtc, phase, data));
+                (phase, data) => AttachEvidence(host, startUtc, phase, data), verifyReadStability: true);
             lifecycle.Run();
         }
 

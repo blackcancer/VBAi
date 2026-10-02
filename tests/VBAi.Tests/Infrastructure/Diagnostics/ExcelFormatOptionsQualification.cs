@@ -18,14 +18,16 @@ namespace VBAi.Tests.Integration
         private readonly Action preserve, cleanup;
         private readonly Action<string, object> evidence;
         private readonly int processId;
+        private readonly bool verifyReadStability;
         private readonly List<Tuple<string, string, object, string>> ledger = new List<Tuple<string, string, object, string>>();
         private IDictionary<string, object> baseline;
         internal bool HostRetained { get; private set; }
 
         internal ExcelFormatOptionsQualification(int processId, Func<object, IDictionary<string, object>> dispatch,
-            Func<IDictionary<string, object>> observeClosure, Action preserve, Action cleanup, Action<string, object> evidence)
+            Func<IDictionary<string, object>> observeClosure, Action preserve, Action cleanup, Action<string, object> evidence,
+            bool verifyReadStability = false)
         { this.processId = processId; this.dispatch = dispatch; this.observeClosure = observeClosure;
-            this.preserve = preserve; this.cleanup = cleanup; this.evidence = evidence; }
+            this.preserve = preserve; this.cleanup = cleanup; this.evidence = evidence; this.verifyReadStability = verifyReadStability; }
 
         /// <summary>Validate the Format opt-in before preparation, then hand off only a successfully owned bootstrap.</summary>
         internal static void RunOwned<T>(bool enabled, string ownedResults, string evidenceRoot, string inheritedDiagnosticManifest,
@@ -67,6 +69,15 @@ namespace VBAi.Tests.Integration
             evidence("ScenarioMatrix", Scenarios);
             baseline = Read("Baseline");
             evidence("BaselineComplete", baseline);
+            if (verifyReadStability)
+            {
+                var stable = Read("BaselineStability");
+                Assert.AreEqual(Version(baseline), Version(stable), "Complete revision drifted before any preference write.");
+                var json = new System.Web.Script.Serialization.JavaScriptSerializer();
+                Assert.AreEqual(json.Serialize(baseline["Tabs"]), json.Serialize(stable["Tabs"]),
+                    "Hash equality must not hide a different recorded options snapshot.");
+                evidence("BaselineStabilityVerified", new { Before = baseline, After = stable, PreferenceWrites = 0 });
+            }
             var format = Format(baseline); string tab = (string)format["Tab"];
             var font = Find(format, "Font", "Police :");
             string alternate = Choices(font).FirstOrDefault(x => x != (string)font["Value"] &&

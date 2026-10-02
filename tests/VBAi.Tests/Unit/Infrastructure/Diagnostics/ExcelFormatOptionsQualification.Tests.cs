@@ -26,7 +26,7 @@ namespace VBAi.Tests.Unit
                 ["Normal Text.Foreground"] = "Black", ["Normal Text.Background"] = "White", ["Normal Text.Indicator"] = "Blue",
                 ["Keyword Text.Foreground"] = "Black", ["Keyword Text.Background"] = "White", ["Keyword Text.Indicator"] = "Blue" };
             internal string Category = "Normal Text", BaselineVersion;
-            internal ExcelFormatOptionsQualification Create()
+            internal ExcelFormatOptionsQualification Create(bool verifyReadStability = false)
             {
                 BaselineVersion = Version();
                 return new ExcelFormatOptionsQualification(42, Dispatch, ObserveClosure,
@@ -35,7 +35,7 @@ namespace VBAi.Tests.Unit
                     (phase, data) => {
                         Phases.Add(phase); Evidence.Add(Tuple.Create(phase, data));
                         if (EvidenceFault == phase) { EvidenceFault = null; throw new IOException("evidence failed at " + phase); }
-                    });
+                    }, verifyReadStability);
             }
             private IDictionary<string, object> Dispatch(object raw)
             {
@@ -233,6 +233,25 @@ namespace VBAi.Tests.Unit
             Assert.IsTrue(probe.Evidence.Any(item => item.Item1 == "BaselineComplete"));
             var terminal = Copy(probe.Evidence.Single(item => item.Item1 == "QualificationTerminal").Item2);
             Assert.AreEqual(true, terminal["Verified"]); Assert.AreEqual(true, terminal["CleanupInvoked"]);
+        }
+
+        [TestMethod]
+        public void StableBaselineIsIndependentlyComparedBeforeTheFirstPreferenceWrite()
+        {
+            var probe = new Probe(); probe.Create(true).Run();
+            Assert.IsTrue(probe.Phases.IndexOf("BaselineStabilityVerified") < probe.Phases.IndexOf("FontIntent"));
+            Assert.AreEqual(probe.BaselineVersion, probe.Version());
+            Assert.AreEqual(1, probe.Cleanup);
+        }
+
+        [TestMethod]
+        public void InconsistentBaselineSnapshotFailsBeforeAnyPreferenceMutation()
+        {
+            var probe = new Probe { SemanticFault = "BaselineStabilityIntent" };
+            Failure(() => probe.Create(true).Run());
+            Assert.AreEqual(0, probe.Writes);
+            Assert.IsFalse(probe.Phases.Contains("FontIntent"));
+            Assert.AreEqual(1, probe.Cleanup, "A complete independently verified baseline restoration still permits normal cleanup.");
         }
 
         [DataTestMethod]
