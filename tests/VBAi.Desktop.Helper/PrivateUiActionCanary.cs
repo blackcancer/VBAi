@@ -32,6 +32,7 @@ namespace VBAi.Desktop.Helper
         [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool GetUserObjectInformationW(IntPtr handle, int index, StringBuilder value, uint length, out uint needed);
         [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
+        [DllImport("user32.dll")] private static extern IntPtr GetActiveWindow();
         [DllImport("user32.dll")] private static extern bool IsChild(IntPtr parent, IntPtr child);
         [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr window);
         [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
@@ -342,6 +343,7 @@ namespace VBAi.Desktop.Helper
                     var root = AutomationElement.FromHandle(rootHandle);
                     receipt(new { Phase = "CanaryReady", ProcessId = process, UiThreadId = uiThread,
                         RootHandle = rootHandle.ToInt64(), Desktop = expectedDesktop,
+                        RootExStyle = GetWindowLong(rootHandle, -20),
                         Actions = ActionMap });
                     RunActions(form, root, rootHandle, uiThread, (int)process, expectedDesktop, receipt);
                 }
@@ -428,6 +430,16 @@ namespace VBAi.Desktop.Helper
             });
 
             Probe(receipt, "ChatOptionsAndVirtualGit", () => {
+            // Let ordinary Form startup establish this private thread's active window.
+            // Read it once; never activate/focus a window or manufacture a popup owner.
+            IntPtr active = (IntPtr)form.Invoke((Func<IntPtr>)GetActiveWindow);
+            IntPtr picker = form.Combo.Handle;
+            Guard(rootHandle, active, uiThread, processId);
+            if ((active != rootHandle && active != picker) || !IsWindowVisible(active))
+                throw new InvalidOperationException("The private canary has no exact owned active root or scope picker before Options.");
+            receipt(new { Phase = "SyntheticActiveWindowObserved", Root = rootHandle.ToInt64(),
+                Active = active.ToInt64(), ScopePicker = picker.ToInt64(),
+                Desktop = expectedDesktop, ExplicitActivation = false, NativeOwnerChanged = false });
             var options = One(root, "CanaryOptions", processId);
             IntPtr optionsHandle = new IntPtr(options.Current.NativeWindowHandle);
             bool opened = Once(receipt, "ChatActionButtonOptions", "SendMessageTimeout(BM_CLICK)",
@@ -485,11 +497,6 @@ namespace VBAi.Desktop.Helper
             internal readonly ComboBox Combo = new ComboBox();
             internal readonly ContextMenuStrip OptionsMenu = new ContextMenuStrip();
             internal int NativeClicks, OptionsClicks, GitClicks, ClosedEvents;
-            protected override bool ShowWithoutActivation => true;
-            protected override CreateParams CreateParams
-            {
-                get { var parameters = base.CreateParams; parameters.ExStyle |= 0x08000000; return parameters; }
-            }
             internal CanaryForm()
             {
                 Text = "VBAi Private UI Action Canary"; Name = "CanaryRoot";
