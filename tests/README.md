@@ -45,6 +45,28 @@ repository root in a Windows development environment.
 
 ## Build and run
 
+### Disposable owner-import root-font observation
+
+The existing owner-import scenario can be instrumented with
+`VBAi_RUN_ROOT_FONT_OBSERVATION_TESTS=1`, an absolute fresh
+`VBAi_TEST_ROOT_FONT_OBSERVATION_MANIFEST` path inherited before Excel starts,
+and `VBAi_TEST_ROOT_FONT_OBSERVATION_MODE=ObserveWrites`. It also requires the
+ordinary owner-import opt-ins, pinned synthetic remote and exact candidate
+identity. The fixture publishes the manifest after preparing the saved baseline
+and before invoking the UI; the product validates it immediately before import.
+The manifest binds the disposable project, target form source and root font
+descriptor, loaded MVID and fresh nonce-named evidence directory.
+
+The diagnostic records exported root bindings before font getters, child-value
+readback and attached font descriptors using `IPersistStream.Save(false)`.
+It preserves the final exact snapshot check. The separate `DistinctChildName`
+mode predeclares one temporary Arial child-name write before the ordinary target
+writes; it refuses an Arial target and is never a fallback after a failed trial.
+Capture-only and persistence scenarios cannot enable this diagnostic. Without
+the opt-in, there are no additional font getters, exports or writes. Prepared
+instrumentation is not native acceptance; see
+[recorded validation](../docs/test-coverage.md).
+
 ### Disposable owner-import UserForm persistence qualification
 
 `EmbeddedGitWindowTests.InstalledOwnerImportedFormSurvivesOneSaveAndFreshReadOnlyProcess`
