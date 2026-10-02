@@ -6,6 +6,19 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Current candidate checkpoint (2026-10-02)
 
+The latest isolated trial is source `de5c619`, MVID
+`22fe3345-5015-4949-860f-23cdf23449e3`, SHA-256
+`4D3859E07F9479BA6E465F6F7346B66F80B2C91EF7D58458EBDE453B14F1C637`.
+Its complete default managed gate passes. The root Font property route remains
+unqualified: every declared native UserForm checkpoint-import case reaches a
+terminal property/method error. The retained UI message does not identify the
+precise COM member. First-case offline inspection still finds the root font
+descriptor missing after import. All owned Excel processes exit normally and
+the temporary future-activation registration is restored from its guarded
+snapshot. Installed files remain unchanged. Q-027 stays open; counters and
+candidate-specific evidence are in
+[recorded validation](test-coverage.md#root-userform-font-property-route-2026-10-02).
+
 The installed candidate is product source `608c002`, with documentation
 checkpoint `d6b79b7`, MVID `d2c3601b-893d-4e84-b9e3-c172da7e2437`, SHA-256
 `C4D095D9427379AC8F2A82D047C8780637A0E815173241976F2C86664E777644`.

@@ -27,10 +27,21 @@ operation, language feature or UI surface.
 
 ### Current operation-specific refresh
 
-Q-027's current isolated source `420b3da` adds guarded owner-thread exact-font
+The latest Q-027 isolated source `de5c619` uses the root component's Font
+`Property.Object` route. Its complete default managed gate passes, but the
+declared native checkpoint-import matrix fails with terminal property/method
+errors. All owned Excel processes exit normally and temporary registration is
+restored. The first case still loses its root StdFont descriptor after import;
+the retained exception message does not locate the exact COM member. No native
+setter, import or recovery acceptance is established. Installed files remain
+unchanged. See
+[recorded validation](test-coverage.md#root-userform-font-property-route-2026-10-02)
+for candidate identity and exact scope.
+
+The earlier Q-027 isolated source `420b3da` adds guarded owner-thread exact-font
 restoration, bounded owner names and a native accessibility ListBox selection
 cache correction. Managed regressions verify those paths. After correcting the
-selection observation, the latest owned Excel trial reaches actual LabelButton
+selection observation, that owned Excel trial reaches actual LabelButton
 import and normal original exit. Source files match, but the root FRX StdFont
 descriptor is omitted despite a decoded restoration binding and a nonthrowing
 assignment. Exact snapshot comparison refuses success. The following TextBox

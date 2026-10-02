@@ -1,5 +1,45 @@
 # Recorded validation
 
+## Root UserForm Font property route (2026-10-02)
+
+Frozen source `de5c61941bdf7bbaaa550a0cd592e8006eef7787` builds an isolated
+candidate with MVID `22fe3345-5015-4949-860f-23cdf23449e3`, product SHA-256
+`4D3859E07F9479BA6E465F6F7346B66F80B2C91EF7D58458EBDE453B14F1C637` and test
+SHA-256 `6CCAA90B1549FC363DD7791E8EB2D0E254EF7E38F84F0556ACB8C0FC96F89775`.
+It routes root-font assignment through `VBComponent.Properties.Item("Font").Object`,
+retaining exact descriptor validation, owning-thread guards, one assignment and
+the complete FRX comparison. Nested owners retain their existing assignment route.
+The isolated solution build has no warnings or errors. Installed files remain
+unchanged; source and frozen binary hashes remain exact through both gates.
+
+Evidence is in `artifacts/native-font-property-object-20261002`:
+
+| Terminal TRX | Passed | Failed | Opt-ins not executed | Scope |
+| --- | ---: | ---: | ---: | --- |
+| `managed/managed.trx` | 3678 | 0 | 189 | Complete default managed gate; no coverage collector. |
+| `native-owner-matrix/native.trx` | 0 | 12 | 0 | Actual owner-dispatched persisted UserForm checkpoint import, all declared layouts. |
+
+All native cases reach a known terminal UI error reporting an unsupported
+property or method in Excel build `16.0.20430.20092`. Each retained original
+process reports normal exit code zero, without forced termination, and the
+candidate MVID is recorded in its bridge/startup and shutdown evidence. These
+failures are actual native trials, unlike the earlier matrix's launch refusals.
+The UI retains only the product exception message; its test stack does not
+identify the precise failing COM member. `Property.Object` setter support is
+therefore not established. Offline inspection of the first LabelButton cache
+finds its checkpoint root StdFont descriptor absent after import, with only
+`EmbeddedForm.frx` differing in the independent snapshot. Backup, after-import
+state and the recovery marker remain preserved; no recovery success is claimed.
+
+The initial current-caller command refuses a CodeBase mismatch before launching
+a test process or Excel. A distinct limited-user task then passes the unchanged
+preflight and runs the batch in the same context as the reviewed registration.
+The original completed task result is retained and its owned task removed.
+`registration-Restore.json` verifies restoration from the exact registration
+snapshot after all owned Excel processes exit. No installed DLL, trust policy,
+SOLIDWORKS process or remote repository is changed. Q-027, remote transfer,
+recovery and post-import persistence remain unqualified.
+
 ## Installed candidate and read-only UserForm surface (2026-10-02)
 
 Product source `608c002d66e2eb46c735252c7c40f8a7fb8cb3a2`, at documentation
