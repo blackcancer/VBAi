@@ -5,6 +5,7 @@ namespace VBAi.Tests.Unit
     using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
+    using System.Text;
     using System.Windows.Automation;
     using System.Windows.Forms;
     using VBAi;
@@ -49,12 +50,24 @@ namespace VBAi.Tests.Unit
         private static extern IntPtr OptionsFixtureText(IntPtr window, int message, IntPtr argument, string text);
         [DllImport("user32.dll", EntryPoint = "SendMessageW")]
         private static extern IntPtr OptionsFixtureInteger(IntPtr window, int message, IntPtr argument, IntPtr value);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "SendMessageW")]
+        private static extern IntPtr OptionsFixtureReadText(IntPtr window, int message, IntPtr capacity, StringBuilder text);
         [DllImport("user32.dll", EntryPoint = "GetWindowLongW")]
         private static extern int OptionsFixtureGetStyle(IntPtr window, int index);
         [DllImport("user32.dll", EntryPoint = "SetWindowLongW")]
         private static extern int OptionsFixtureSetStyle(IntPtr window, int index, int value);
         [DllImport("user32.dll", EntryPoint = "EnableWindow")]
         private static extern bool OptionsFixtureEnable(IntPtr window, bool enabled);
+
+        private static string OptionsFixtureReadEditText(IntPtr window)
+        {
+            int length = OptionsFixtureInteger(window, 0x000E, IntPtr.Zero, IntPtr.Zero).ToInt32();
+            if (length < 0 || length > 4096) throw new InvalidOperationException("Owned native combo edit length is invalid.");
+            var value = new StringBuilder(length + 1);
+            int copied = OptionsFixtureReadText(window, 0x000D, new IntPtr(value.Capacity), value).ToInt32();
+            if (copied != length) throw new InvalidOperationException("Owned native combo edit changed during read.");
+            return value.ToString();
+        }
 
         /// <summary>Invoque une méthode privée pour tester ses vrais contrôles natifs, en propageant son exception réelle.</summary>
         private static object InvokeOptionsMethod(object instance, string name, params object[] arguments)
@@ -119,13 +132,16 @@ namespace VBAi.Tests.Unit
                     OptionsFixtureText(Font, 0x000C, IntPtr.Zero, "Consolas");
                     Size = Create(owner.Handle, "ComboBox", 511, 0x50210202);
                     OptionsFixtureText(Size, 0x000C, IntPtr.Zero, "10");
-                });
+                }, noActivate: true);
             }
 
             /// <summary>Crée uniquement une fenêtre enfant standard du dialogue détenu.</summary>
             private static IntPtr Create(IntPtr parent, string kind, int identifier, uint style)
             {
-                var window = OptionsFixtureCreate(0, kind, "", style, 5, 5, 180, 120, parent, new IntPtr(identifier), IntPtr.Zero, IntPtr.Zero);
+                int x = identifier == 510 || identifier == 511 ? 205 : 5;
+                int y = identifier == 4905 ? 5 : identifier >= 501 && identifier <= 503
+                    ? 140 + (identifier - 501) * 30 : identifier == 510 ? 5 : 130;
+                var window = OptionsFixtureCreate(0, kind, "", style, x, y, 180, 120, parent, new IntPtr(identifier), IntPtr.Zero, IntPtr.Zero);
                 if (window == IntPtr.Zero) throw new InvalidOperationException("Owned native options control creation failed.");
                 return window;
             }

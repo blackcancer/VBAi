@@ -1,5 +1,42 @@
 # Recorded validation
 
+## Retained VBE lifetime candidate managed control failure (2026-10-02)
+
+Source `f5248482f50a9de47d1494fc62385ac495b8a8e5` adds a disabled-by-default,
+tests-only before/after-copy VBE lifetime observation. The isolated Debug solution
+build has zero warnings/errors. Its complete default gate reports **3,893 passed,
+1 failed, 203 inactive, 4,097 total**, ending `2026-10-02T16:48:37.2082736Z`.
+The complete embedded Git fixture mirror reports **28 passed, 0 failed** within
+that aggregate. Native/provider opt-ins are cleared and no collector is enabled.
+Product MVID is `4114e0c5-375c-4639-bbee-aae21302288a`; product SHA-256 is
+`F9085913ED5A55EABC3EA1931CF7583A03775BF142996AE19992ACA243E31A12`;
+test SHA-256 is
+`334E3C4EBD2CB19505ED54830AA65EBE3179A9F365C357615A721090F1A79746`.
+Source and assembly hashes remain unchanged at the terminal record.
+
+The sole failure is
+`OwnedNativeOptionsCombosReadAndSelectExactValuesWithoutTyping`: the owned
+editable size ComboBox reads an empty value instead of the expected `10`.
+The cause remains under investigation; the controls path is unchanged by this
+candidate. Its expected value is retained. Current/limited-user registration
+previews are read-only; no Apply, native host trial or font delivery is executed
+for this candidate. Evidence is under `artifacts/root-font-vbe-lifetime-20261002/`.
+This failed aggregate cannot become a green native gate from the passing mirror.
+Q-027 and the full release scope remain open.
+
+An isolated follow-up based on `f524848` strengthens the Options fixture with
+an explicit no-activation dialog style, separate control positions and direct
+native text checks before/after inspection, preserving the expected `10`.
+Its focused batch reports **29 passed, 0 failed**; test assembly SHA-256 is
+`AF95AB1442C7EED35AD9709E5757EB7C2AFC9E2031B91DDDB11E049E89F89891`.
+The aggregate failure does not reproduce. The measured patch also includes one
+temporary direct-Win32 dropdown diagnostic, removed afterward; that TRX therefore
+does not validate the final tree or a complete gate. No product code changes or
+Office host runs occur. Evidence is in
+`tests/VBAi.Tests/TestResults/options-controls-final.trx` and
+`artifacts/build-options-controls-final-20261002/`. The original failure's cause
+remains unknown; a fresh complete gate is required before native qualification.
+
 ## Named VBE getter observation after PR 19 integration (2026-10-02)
 
 Source `9ba099e62b7b6adf83434386967890efd0671fe5` includes merged PR 19 and

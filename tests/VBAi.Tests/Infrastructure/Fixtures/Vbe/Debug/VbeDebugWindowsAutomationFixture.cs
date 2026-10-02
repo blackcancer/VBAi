@@ -157,7 +157,7 @@ namespace VBAi.Tests.Unit
             private Exception startupError;
             public readonly AutomationNode Root;
             public IntPtr Handle;
-            public AutomationHost(AutomationNode root, bool optionsDialog = false, Action<AutomationHost> configure = null)
+            public AutomationHost(AutomationNode root, bool optionsDialog = false, Action<AutomationHost> configure = null, bool noActivate = false)
             {
                 Root = root;
                 thread = new Thread(() => {
@@ -166,7 +166,7 @@ namespace VBAi.Tests.Unit
                         {
                             dispatcher = new Control();
                             if (dispatcher.Handle == IntPtr.Zero) throw new InvalidOperationException("Owned UIA dispatcher creation failed.");
-                            Handle = CreateOwnedDialog(0x80, "#32770", "VBAi isolated Options fixture", 0x10cf0000,
+                            Handle = CreateOwnedDialog(noActivate ? 0x08000080u : 0x80u, "#32770", "VBAi isolated Options fixture", 0x10cf0000,
                                 20, 20, 400, 300, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
                             if (Handle == IntPtr.Zero) throw new InvalidOperationException("Owned native #32770 dialog creation failed.");
                             root.Window = Handle;

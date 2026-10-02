@@ -686,6 +686,7 @@ namespace VBAi.Tests.Unit
         {
             using (var fixture = new OwnedNativeOptionsControls())
             {
+                Assert.IsTrue((OptionsFixtureGetStyle(fixture.Host.Handle, -20) & 0x08000000) != 0, "The owned native options dialog must not activate another test window.");
                 var font = new VbeDebugWindows.OptionsControl();
                 InvokeOptionsMethod(null, "ReadOptionsCombo", fixture.Font, font);
                 Assert.AreEqual("Consolas", font.Value); Assert.AreEqual(-1, font.SelectedIndex);
@@ -698,7 +699,9 @@ namespace VBAi.Tests.Unit
                 foreach (string choice in new[] { "Missing", "Duplicate" })
                     Assert.ThrowsException<InvalidOperationException>(() => InvokeOptionsMethod(null, "WriteOptionsCombo", fixture.Font, choice));
                 var size = new VbeDebugWindows.OptionsControl();
+                Assert.AreEqual("10", OptionsFixtureReadEditText(fixture.Size), "The owned native size edit must contain the fixture value before inspection.");
                 InvokeOptionsMethod(null, "ReadOptionsCombo", fixture.Size, size);
+                Assert.AreEqual("10", OptionsFixtureReadEditText(fixture.Size), "Reading an empty native size list must preserve its editable value.");
                 Assert.AreEqual("10", size.Value); Assert.AreEqual(0, size.Choices.Count);
                 Assert.AreEqual(IntPtr.Zero, OptionsFixtureInteger(fixture.Size, 0x157, IntPtr.Zero, IntPtr.Zero), "Read must close its temporary dropdown.");
                 var palette = new VbeDebugWindows.OptionsControl(); var handle = new IntPtr(fixture.Palettes[0].NativeHandle.Value);

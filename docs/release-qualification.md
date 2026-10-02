@@ -6,6 +6,15 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Current candidate checkpoint (2026-10-02)
 
+The tests-only lifecycle source `f524848`, product MVID
+`4114e0c5-375c-4639-bbee-aae21302288a`, fails its complete default managed gate
+on an existing native-options ComboBox value assertion. Its embedded Git fixture
+mirror passes, but the before/after-copy native observation is NOT_RUN. No Apply
+or font delivery occurs; the installed DLL, registration and trust settings remain
+unchanged. The preceding named native `Application.VBE` refusal remains the
+authoritative retained-copy result. Q-027 stays open. See
+[recorded validation](test-coverage.md#retained-vbe-lifetime-candidate-managed-control-failure-2026-10-02).
+
 Source `9ba099e`, product MVID `deee6a02-2c77-47f0-8b7b-78b3553f40fc`,
 includes merged PR 19 and passes the complete default managed gate. Its single
 retained-copy Excel diagnostic identifies `Application.VBE` as the getter failing
