@@ -395,6 +395,22 @@ release-wide pass.
 | `forms-owner-font-list-cache-fixed` | 0 | 12 | 0 | First case reaches selected checkpoint, then UIA `ElementNotEnabledException` because review disables its tab; import is not reached. |
 | `forms-owner-font-selection-observed` | 0 | 12 | 0 | Tests-only `ca0479e`, frozen `420b3da` product. LabelButton reaches owner-dispatched import and fails exact FRX comparison; original normal exit is verified. TextBox fails native seed attachment, then ten cases refuse an existing owned Excel process before launch. |
 
+The retained unprimed new-object Frame case in `forms-font-source-identity`
+already reports `ExactSnapshotBeforeFontGetter=false`. Its
+`font-FrameMultiPage-05b69f63efb64f9baec6c640c9589e2d/font-observation.json`
+has SHA-256 `AAB75AF514BFCBCDF217244F463D65F6806A4A26C5F73FB90C8FAA1DE2EDB8C6`.
+At offset 6188, `before/QualificationForm.frx` stores the exact 8.27-point
+descriptor `0100000090010C430100065461686F6D61` (file SHA-256
+`834D9CB6E596A357AE795752907962D3BABCCF3BF1CD60198EE1B3FD8D2EE957`).
+After one new-font Load and owner assignment, the capture
+`after-persisted-font-before-getters/QualificationForm.frx` already stores
+8.25 points, `01000000900144420100065461686F6D61` (file SHA-256
+`992B1387901CF102EBF70DCDB065DAA0F597973887AEE543779EC87ECA430C1C`).
+This capture precedes the test's explicit font metric readback. The retained
+evidence therefore locates the loss no later than the first export after
+transfer, without distinguishing transfer from export/realization. This is an
+offline refinement of the historical failure, not a new native run or a repair.
+
 The `forms-owner-font-selection-ready` terminal records the originally loaded
 test SHA-256 `7F86A239F5930B811CBC2642ABCA04DB437C7BD64C0FA5BE2245F4F493D59E6C`.
 That output path was subsequently rebuilt for the before-fix regression;
