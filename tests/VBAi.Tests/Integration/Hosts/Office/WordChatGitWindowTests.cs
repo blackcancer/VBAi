@@ -148,6 +148,7 @@ namespace VBAi.Tests.Integration
                     throw new InvalidOperationException("Canonical Word scope was not authorized before chat Git invocation.");
                 automation.OpenChatOptionsAndFindGit();
                 automation.RequireNoGitModal();
+                automation.CaptureModalOwner();
                 context.InvocationThread = new Thread(() => automation.InvokeGitOnce()) { IsBackground = true };
                 context.InvocationThread.SetApartmentState(ApartmentState.MTA); context.InvocationThread.Start();
                 if (!context.GitIntent.Wait(TimeSpan.FromSeconds(10))) throw new TimeoutException("No durable chat Git invocation intent.");
@@ -208,12 +209,14 @@ namespace VBAi.Tests.Integration
             [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr window);
             [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
             [DllImport("user32.dll")] private static extern IntPtr GetWindow(IntPtr window, uint command);
+            [DllImport("user32.dll")] private static extern IntPtr GetAncestor(IntPtr window, uint flags);
             [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr window, StringBuilder text, int capacity);
             [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr window, StringBuilder text, int capacity);
             private readonly Context context;
             private AutomationElement chat, scopePicker, gitItem, git;
             private SelectionPattern scopeSelection;
             private WindowPattern gitWindow;
+            private WordChatWindowDiscovery.OwnerIdentity modalOwner;
             internal WordChatGitAutomation(Context context) { this.context = context; }
 
             private IntPtr[] OwnedTopWindows()
@@ -236,6 +239,17 @@ namespace VBAi.Tests.Integration
 
             private static IntPtr UiHandle(int handle) => new IntPtr(unchecked((long)(uint)handle));
 
+            private static IntPtr NativeAncestorHandle(AutomationElement element)
+            {
+                for (int depth = 0; element != null && depth < 16; depth++)
+                {
+                    IntPtr handle = UiHandle(element.Current.NativeWindowHandle);
+                    if (handle != IntPtr.Zero) return handle;
+                    element = TreeWalker.RawViewWalker.GetParent(element);
+                }
+                return IntPtr.Zero;
+            }
+
             private static IntPtr[] NativeChildren(IntPtr parent)
             {
                 var found = new List<IntPtr>();
@@ -252,14 +266,15 @@ namespace VBAi.Tests.Integration
                 uint nativeTid = GetWindowThreadProcessId(window, out nativePid);
                 var pickers = Descendants(element, "scopePicker");
                 var options = Descendants(element, "options");
-                IntPtr pickerHandle = pickers.Length == 1 ? UiHandle(pickers[0].Current.NativeWindowHandle) : IntPtr.Zero;
-                IntPtr optionsHandle = options.Length == 1 ? UiHandle(options[0].Current.NativeWindowHandle) : IntPtr.Zero;
+                IntPtr pickerHandle = pickers.Length == 1 ? NativeAncestorHandle(pickers[0]) : IntPtr.Zero;
+                IntPtr optionsHandle = options.Length == 1 ? NativeAncestorHandle(options[0]) : IntPtr.Zero;
                 uint pickerTid = pickerHandle == IntPtr.Zero ? 0 : GetWindowThreadProcessId(pickerHandle, out pickerPid);
                 uint optionsTid = optionsHandle == IntPtr.Zero ? 0 : GetWindowThreadProcessId(optionsHandle, out optionsPid);
                 return new WordChatWindowDiscovery.Candidate {
                     Handle = window.ToInt64(), NativeProcessId = (int)nativePid, NativeThreadId = nativeTid,
                     UiProcessId = element.Current.ProcessId, Visible = IsWindowVisible(window),
                     WithinOwnedVbe = IsChild(context.Scope.VbeHandle, window) || GetWindow(window, 4) == context.Scope.VbeHandle,
+                    FixedChatCaption = true,
                     NativeClass = nativeClass, ControlType = element.Current.ControlType.ProgrammaticName,
                     ScopePickerCount = pickers.Length, OptionsCount = options.Length,
                     ScopePickerProcessId = pickers.Length == 1 ? pickers[0].Current.ProcessId : 0,
@@ -268,8 +283,10 @@ namespace VBAi.Tests.Integration
                     OptionsType = options.Length == 1 ? options[0].Current.ControlType.ProgrammaticName : null,
                     ScopePickerHandle = pickerHandle.ToInt64(), OptionsHandle = optionsHandle.ToInt64(),
                     ScopePickerThreadId = pickerTid, OptionsThreadId = optionsTid,
-                    ScopePickerWithinChat = pickerHandle != IntPtr.Zero && IsChild(window, pickerHandle),
-                    OptionsWithinChat = optionsHandle != IntPtr.Zero && IsChild(window, optionsHandle)
+                    ScopePickerWithinChat = pickerHandle != IntPtr.Zero &&
+                        (pickerHandle == window || IsChild(window, pickerHandle)),
+                    OptionsWithinChat = optionsHandle != IntPtr.Zero &&
+                        (optionsHandle == window || IsChild(window, optionsHandle))
                 };
             }
 
@@ -285,7 +302,7 @@ namespace VBAi.Tests.Integration
                 if (handles.Count > 4096) throw new InvalidOperationException("Bounded Word chat native-window inventory failed.");
                 var candidates = new List<WordChatWindowDiscovery.Candidate>();
                 var elements = new Dictionary<long, AutomationElement>();
-                int exactThreadWindows = 0, windowsFormsCount = 0;
+                int exactThreadWindows = 0, windowsFormsCount = 0, fixedCaptionCount = 0;
                 var controlTypes = new Dictionary<string, int>(StringComparer.Ordinal);
                 try
                 {
@@ -302,7 +319,12 @@ namespace VBAi.Tests.Integration
                         var element = AutomationElement.FromHandle(window);
                         string type = element.Current.ControlType.ProgrammaticName;
                         controlTypes[type] = controlTypes.TryGetValue(type, out int count) ? count + 1 : 1;
-                        if (element.Current.ControlType != ControlType.Window) continue;
+                        if (element.Current.ControlType != ControlType.Window &&
+                            element.Current.ControlType != ControlType.Pane) continue;
+                        var title = new StringBuilder(128);
+                        GetWindowText(window, title, title.Capacity);
+                        if (!string.Equals(title.ToString(), "VBAi — Your AI agent for VBA", StringComparison.Ordinal)) continue;
+                        fixedCaptionCount++;
                         if (candidates.Count >= 64) throw new InvalidOperationException("Bounded Word chat Form candidate inventory exceeded.");
                         var candidate = DescribeChatCandidate(window, cls.ToString(), element);
                         candidates.Add(candidate); elements.Add(candidate.Handle, element);
@@ -315,8 +337,10 @@ namespace VBAi.Tests.Integration
                         ProcessId = context.Fixture.ProcessId, ThreadId = context.Scope.ThreadId,
                         NativeWindowCount = handles.Count, ExactThreadVisibleCount = exactThreadWindows,
                         WindowsFormsCount = windowsFormsCount, ControlTypes = controlTypes,
+                        FixedChatCaptionCount = fixedCaptionCount,
                         Candidates = candidates.Select(item => new { item.Handle, item.NativeClass, item.ControlType,
-                            item.NativeProcessId, item.NativeThreadId, item.UiProcessId, item.Visible, item.WithinOwnedVbe,
+                            item.NativeProcessId, item.NativeThreadId, item.UiProcessId, item.Visible,
+                            item.WithinOwnedVbe, item.FixedChatCaption,
                             item.ScopePickerCount, item.OptionsCount, item.ScopePickerType, item.OptionsType,
                             item.ScopePickerHandle, item.OptionsHandle, item.ScopePickerThreadId, item.OptionsThreadId,
                             item.ScopePickerProcessId, item.OptionsProcessId,
@@ -379,6 +403,43 @@ namespace VBAi.Tests.Integration
                     throw new InvalidOperationException("The exact saved Word chat scope changed before Git invocation.");
             }
 
+            private WordChatWindowDiscovery.OwnerIdentity ReadModalOwner()
+            {
+                Guard(context.ChatHandle);
+                IntPtr vbeRoot = GetAncestor(context.Scope.VbeHandle, 2); // GA_ROOT follows native parents, not owners.
+                IntPtr chatRoot = GetAncestor(context.ChatHandle, 2);
+                uint vbePid, chatPid;
+                uint vbeTid = GetWindowThreadProcessId(vbeRoot, out vbePid);
+                uint chatTid = GetWindowThreadProcessId(chatRoot, out chatPid);
+                return new WordChatWindowDiscovery.OwnerIdentity {
+                    VbeHandle = context.Scope.VbeHandle.ToInt64(), VbeRoot = vbeRoot.ToInt64(),
+                    ChatHandle = context.ChatHandle.ToInt64(), ChatRoot = chatRoot.ToInt64(),
+                    ChatOwner = GetWindow(context.ChatHandle, 4).ToInt64(),
+                    ChatWithinVbe = IsChild(context.Scope.VbeHandle, context.ChatHandle),
+                    VbeRootProcessId = (int)vbePid, ChatRootProcessId = (int)chatPid,
+                    VbeRootThreadId = vbeTid, ChatRootThreadId = chatTid
+                };
+            }
+
+            internal void CaptureModalOwner()
+            {
+                RequireSelectedScope();
+                modalOwner = ReadModalOwner();
+                long expected = WordChatWindowDiscovery.RequireModalOwner(modalOwner,
+                    context.Fixture.ProcessId, context.Scope.ThreadId);
+                context.Record(new { Phase = "ChatModalOwnerPreflight", modalOwner.VbeHandle, modalOwner.VbeRoot,
+                    modalOwner.ChatHandle, modalOwner.ChatRoot, modalOwner.ChatOwner,
+                    modalOwner.ChatWithinVbe, ExpectedModalOwner = expected,
+                    modalOwner.VbeRootProcessId, modalOwner.VbeRootThreadId,
+                    modalOwner.ChatRootProcessId, modalOwner.ChatRootThreadId });
+            }
+
+            private void RequireSameModalOwner(IntPtr observedOwner)
+            {
+                WordChatWindowDiscovery.RequireUnchangedModalOwner(modalOwner, ReadModalOwner(), observedOwner.ToInt64(),
+                    context.Fixture.ProcessId, context.Scope.ThreadId);
+            }
+
             private static bool SelectedLabel(SelectionPattern selection, string label)
             {
                 var items = selection.Current.GetSelection();
@@ -429,6 +490,8 @@ namespace VBAi.Tests.Integration
                 try
                 {
                     RequireSelectedScope();
+                    RequireSameModalOwner(new IntPtr(WordChatWindowDiscovery.RequireModalOwner(modalOwner,
+                        context.Fixture.ProcessId, context.Scope.ThreadId)));
                     context.Record(new { Phase = "ChatGitInvokeIntent", context.Label, CanonicalPath = context.Scope.Path,
                         ChatHandle = context.ChatHandle.ToInt64() });
                     context.ActionIssued = true;
@@ -466,8 +529,8 @@ namespace VBAi.Tests.Integration
                     if (found.Length > 1) throw new InvalidOperationException("Ambiguous owned Word Git modals.");
                     if (found.Length == 0) { Thread.Sleep(50); continue; }
                     context.GitHandle = found[0]; Guard(context.GitHandle);
-                    if (GetWindow(context.GitHandle, 4) != context.ChatHandle)
-                        throw new InvalidOperationException("The Git modal is not owned by the selected Word chat window.");
+                    IntPtr actualOwner = GetWindow(context.GitHandle, 4);
+                    RequireSameModalOwner(actualOwner);
                     git = AutomationElement.FromHandle(context.GitHandle);
                     if (git.Current.ProcessId != context.Fixture.ProcessId ||
                         unchecked((uint)git.Current.NativeWindowHandle) != unchecked((uint)context.GitHandle.ToInt64()))
@@ -477,14 +540,14 @@ namespace VBAi.Tests.Integration
                 if (git == null) throw new TimeoutException("The chat Git action has no observed exact modal; no retry or cleanup.");
                 context.ModalObserved = true;
                 context.Record(new { Phase = "OwnedChatGitModalObserved", ProcessId = context.Fixture.ProcessId,
-                    ThreadId = context.Scope.ThreadId, Handle = context.GitHandle.ToInt64(), Owner = context.ChatHandle.ToInt64() });
+                    ThreadId = context.Scope.ThreadId, Handle = context.GitHandle.ToInt64(),
+                    Owner = GetWindow(context.GitHandle, 4).ToInt64(), ChatHandle = context.ChatHandle.ToInt64() });
             }
 
             internal void CloseExactGitModal()
             {
                 Guard(context.GitHandle);
-                if (GetWindow(context.GitHandle, 4) != context.ChatHandle)
-                    throw new InvalidOperationException("The exact chat Git modal owner changed before close.");
+                RequireSameModalOwner(GetWindow(context.GitHandle, 4));
                 context.Record(new { Phase = "ChatGitCloseIntent", Handle = context.GitHandle.ToInt64() });
                 gitWindow.Close();
                 var watch = Stopwatch.StartNew();
