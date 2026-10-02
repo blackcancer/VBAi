@@ -39,6 +39,8 @@ namespace VBAi.Tests.Integration
             bool retained = rootFontSeedProfile == RootFontObservationManifest.RetainedSyntheticTahoma825;
             if (retained && (layout != "LabelButton" || fontObservation?.SourceWorkbook == null))
                 throw new InvalidOperationException("The retained source requires its pinned LabelButton configuration.");
+            bool lifetime = RetainedVbeLifetimeEnabled(
+                Environment.GetEnvironmentVariable("VBAi_TEST_RETAINED_VBE_LIFETIME"), retained);
             string path = File("EmbeddedGit.xlsm");
             string cache = MacroGitRepository.ScopeDirectory(Path.GetFullPath(path));
             Assert.IsFalse(Directory.Exists(cache), "A fresh workbook must not inherit a previous document's Git cache.");
@@ -50,15 +52,29 @@ namespace VBAi.Tests.Integration
             object project = null, components = null;
             if (retained)
             {
-                evidence(new { Phase = "RetainedCopyIntent", SourceWorkbook = fontObservation.SourceWorkbook,
-                    SourceSha256 = RetainedRootFontWorkbook.SourceSha256, Destination = path,
-                    BaselineFontSeedProfile = rootFontSeedProfile, CorrelationNonce = marker,
-                    SourceMarker = RetainedRootFontWorkbook.SourceMarker });
-                OpenRetainedSyntheticWorkbook(fontObservation.SourceWorkbook, path, pending);
-                evidence(new { Phase = "RetainedCopyVerified", Destination = path,
-                    WorkbookSha256 = RetainedRootFontWorkbook.SourceSha256,
-                    SourceSha256 = RetainedRootFontWorkbook.SourceSha256,
-                    SourceMarker = RetainedRootFontWorkbook.SourceMarker });
+                Action replace = () => {
+                    evidence(new { Phase = "RetainedCopyIntent", SourceWorkbook = fontObservation.SourceWorkbook,
+                        SourceSha256 = RetainedRootFontWorkbook.SourceSha256, Destination = path,
+                        BaselineFontSeedProfile = rootFontSeedProfile, CorrelationNonce = marker,
+                        SourceMarker = RetainedRootFontWorkbook.SourceMarker });
+                    pending(true);
+                    OpenRetainedSyntheticWorkbook(fontObservation.SourceWorkbook, path, pending);
+                    evidence(new { Phase = "RetainedCopyVerified", Destination = path,
+                        WorkbookSha256 = RetainedRootFontWorkbook.SourceSha256,
+                        SourceSha256 = RetainedRootFontWorkbook.SourceSha256,
+                        SourceMarker = RetainedRootFontWorkbook.SourceMarker });
+                };
+                if (lifetime)
+                {
+                    evidence(new { Phase = "RetainedVbeLifetimePolicy", ProcessId,
+                        EnableEvents = Convert.ToBoolean(((dynamic)application).EnableEvents),
+                        AutomationSecurity = Convert.ToInt32(((dynamic)application).AutomationSecurity),
+                        WorkbookCount = Convert.ToInt32(((dynamic)workbooks).Count),
+                        WorkbookPath = Convert.ToString(((dynamic)workbook).FullName) });
+                    pending(false);
+                    ObserveRetainedVbeBeforeCopy(() => ((dynamic)application).VBE, Release, replace, evidence, ProcessId);
+                }
+                else replace();
             }
             else
             {
@@ -95,7 +111,8 @@ namespace VBAi.Tests.Integration
             {
                 if (retained)
                 {
-                    ObserveEmbeddedVbeRead("Application.VBE", () => editor = ((dynamic)application).VBE, evidence, ProcessId);
+                    ObserveEmbeddedVbeRead("Application.VBE", () => editor = ((dynamic)application).VBE, evidence, ProcessId,
+                        lifetime ? "AfterCopy" : null);
                     ObserveEmbeddedVbeRead("VBE.MainWindow", () => main = ((dynamic)editor).MainWindow, evidence, ProcessId);
                 }
                 else
@@ -259,18 +276,19 @@ namespace VBAi.Tests.Integration
         }
 
         /// <summary>Records one retained-copy VBE getter on its owner thread without retry or lease transfer.</summary>
-        internal static void ObserveEmbeddedVbeRead(string getter, Action read, Action<object> evidence, int processId)
+        internal static void ObserveEmbeddedVbeRead(string getter, Action read, Action<object> evidence, int processId,
+            string stage = null)
         {
             if (read == null) throw new ArgumentNullException(nameof(read));
             if (evidence == null) throw new ArgumentNullException(nameof(evidence));
             int thread = System.Threading.Thread.CurrentThread.ManagedThreadId;
-            evidence(new { Phase = "VbeAccessIntent", Getter = getter, ProcessId = processId, OwnerThread = thread });
+            evidence(new { Phase = "VbeAccessIntent", Getter = getter, Stage = stage, ProcessId = processId, OwnerThread = thread });
             try { read(); }
             catch (Exception error)
             {
                 try
                 {
-                    evidence(new { Phase = "VbeAccessFailed", Getter = getter, ProcessId = processId,
+                    evidence(new { Phase = "VbeAccessFailed", Getter = getter, Stage = stage, ProcessId = processId,
                         OwnerThread = thread, HResult = "0x" + unchecked((uint)error.HResult).ToString("X8"),
                         ErrorType = error.GetType().FullName });
                 }
@@ -279,7 +297,38 @@ namespace VBAi.Tests.Integration
             }
             // The caller has already acquired and retained any returned COM lease.
             // A receipt failure propagates through its existing finally/release path.
-            evidence(new { Phase = "VbeAccessReturned", Getter = getter, ProcessId = processId, OwnerThread = thread });
+            evidence(new { Phase = "VbeAccessReturned", Getter = getter, Stage = stage, ProcessId = processId, OwnerThread = thread });
+        }
+
+        /// <summary>Enables only the predeclared retained-workbook lifetime observation.</summary>
+        internal static bool RetainedVbeLifetimeEnabled(string setting, bool retained)
+        {
+            if (string.IsNullOrEmpty(setting)) return false;
+            if (!retained || setting != "BeforeAfterCopy")
+                throw new InvalidOperationException("Retained VBE lifetime observation requires the declared BeforeAfterCopy profile.");
+            return true;
+        }
+
+        /// <summary>Reads and releases one seed VBE lease before allowing the sole planned workbook replacement.</summary>
+        internal static void ObserveRetainedVbeBeforeCopy(Func<object> read, Action<object> release, Action replacement,
+            Action<object> evidence, int processId)
+        {
+            if (read == null) throw new ArgumentNullException(nameof(read));
+            if (release == null) throw new ArgumentNullException(nameof(release));
+            if (replacement == null) throw new ArgumentNullException(nameof(replacement));
+            if (evidence == null) throw new ArgumentNullException(nameof(evidence));
+            object lease = null;
+            Exception primary = null;
+            try
+            {
+                ObserveEmbeddedVbeRead("Application.VBE", () => {
+                    lease = read();
+                    if (lease == null) throw new InvalidOperationException("The seed workbook VBE getter returned no object.");
+                }, evidence, processId, "BeforeCopy");
+            }
+            catch (Exception error) { primary = error; throw; }
+            finally { FormFontRestoration.ReleaseOwnedReferences(new[] { lease }, release, primary); }
+            replacement();
         }
 
         internal static string EmbeddedRawHash(string path)

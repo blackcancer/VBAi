@@ -110,6 +110,16 @@ UI correlation nonce is separate from the retained synthetic source marker.
 Wrong paths/hashes, occupied destinations, reparse points or an implicit-default
 baseline are refused; an uncertain native Close/Open preserves the host.
 This is a prepared discriminator, not proof of root restoration or Frame fidelity.
+The disabled-by-default `VBAi_TEST_RETAINED_VBE_LIFETIME=BeforeAfterCopy`
+observation is restricted to this retained profile. After confirming events
+disabled and AutomationSecurity 3, it reads `Application.VBE` once while the
+initial inert workbook remains open, releases that acquired reference, then
+allows the single planned replacement. Getter or receipt/cleanup failure stops
+before replacement. A second named getter is observed after verified copy-open;
+neither access is retried. This compares two lifecycle stages under the same
+security settings, but the initial getter itself can initialize VBE state.
+Success cannot establish a causal repair or qualify cached VBE references as
+authority for import. Unknown configuration values are refused before mutation.
 Capture-only and persistence scenarios cannot enable this diagnostic. Without
 the opt-in, there are no additional font getters, exports or writes. Recorded
 instrumented trials reach terminal exact snapshot refusals; this diagnostic
