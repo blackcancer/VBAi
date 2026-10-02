@@ -228,8 +228,21 @@ namespace VBAi.Tests.Integration
         }
         private void Invoke(string id)
         {
-            var item = Leaf(id); var pattern = Pattern<InvokePattern>(item, InvokePattern.Pattern); RequireInteractive(item);
-            Protocol.EmitOnce(id, pattern.Invoke);
+            var item = Leaf(id); RequireInteractive(item);
+            if (PrivateDesktopUiAction.Enabled)
+            {
+                IntPtr target = new IntPtr(unchecked((long)(uint)item.Current.NativeWindowHandle));
+                string frozenName = item.Current.Name;
+                record(new { Phase = "PrivateNativeButtonPrepared", Id = id, Name = frozenName,
+                    Handle = target.ToInt64(), ProcessId = processId, ThreadId = scope.ThreadId });
+                Protocol.EmitOnce(id, () => PrivateDesktopUiAction.ClickButtonOnce(item, id, frozenName,
+                    window, target, processId, scope.ThreadId));
+            }
+            else
+            {
+                var pattern = Pattern<InvokePattern>(item, InvokePattern.Pattern);
+                Protocol.EmitOnce(id, pattern.Invoke);
+            }
         }
         private void WaitTerminal(string id, string before)
         {

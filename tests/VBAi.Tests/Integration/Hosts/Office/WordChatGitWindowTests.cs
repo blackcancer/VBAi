@@ -491,7 +491,17 @@ namespace VBAi.Tests.Integration
                     return pid == context.Fixture.ProcessId && tid == context.Scope.ThreadId && IsWindowVisible(window);
                 }));
                 context.Record(new { Phase = "ChatOptionsIntent", ChatHandle = context.ChatHandle.ToInt64() });
-                Pattern<InvokePattern>(buttons[0], InvokePattern.Pattern).Invoke();
+                if (PrivateDesktopUiAction.Enabled)
+                {
+                    IntPtr optionsHandle = NativeAncestorHandle(buttons[0]);
+                    if (optionsHandle == IntPtr.Zero ||
+                        unchecked((long)(uint)buttons[0].Current.NativeWindowHandle) != optionsHandle.ToInt64())
+                        throw new InvalidOperationException("The exact Word chat Options button has no native leaf HWND.");
+                    context.Fixture.NativeExecutionUnsettled = true;
+                    PrivateDesktopUiAction.ClickButtonOnce(buttons[0], "options", buttons[0].Current.Name,
+                        context.ChatHandle, optionsHandle, context.Fixture.ProcessId, context.Scope.ThreadId);
+                }
+                else Pattern<InvokePattern>(buttons[0], InvokePattern.Pattern).Invoke();
                 var watch = Stopwatch.StartNew();
                 var last = new List<WordChatGitMenuDiscovery.Candidate>();
                 int nativeVisible = 0;
@@ -568,6 +578,7 @@ namespace VBAi.Tests.Integration
                     PopupNativeClass = selectedPopup.NativeClass,
                     PopupOwnerHandle = selectedPopup.OwnerHandle,
                     PopupOwner = OwnerEvidence(selectedPopup.OwnerShape) });
+                if (PrivateDesktopUiAction.Enabled) context.Fixture.NativeExecutionUnsettled = false;
             }
 
             internal void RequireNoGitModal()
@@ -607,7 +618,10 @@ namespace VBAi.Tests.Integration
                     context.ActionIssued = true;
                     context.Fixture.NativeExecutionUnsettled = true;
                     context.GitIntent.Set();
-                    Pattern<InvokePattern>(gitItem, InvokePattern.Pattern).Invoke();
+                    if (PrivateDesktopUiAction.Enabled)
+                        PrivateDesktopUiAction.InvokeVirtualGitOnce(gitItem, gitPopupHandle,
+                            UiText.Get("GitHub · synchronize VBA…"), context.Fixture.ProcessId, context.Scope.ThreadId);
+                    else Pattern<InvokePattern>(gitItem, InvokePattern.Pattern).Invoke();
                     context.Record(new { Phase = "ChatGitInvokeReturned" });
                 }
                 catch (Exception error) { context.InvokerError = error; }
