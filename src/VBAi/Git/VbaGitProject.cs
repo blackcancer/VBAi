@@ -149,40 +149,40 @@ namespace VBAi
                 observation = FormFontObservation.TryBegin(hostPath, target, changed, (object)project);
                 try
                 {
-                beforeMutation?.Invoke();
-                foreach (var old in expected.Manifest.Components.Where(old => changed.Contains(old.Name) && old.Type != 100))
-                    project.VBComponents.Remove(project.VBComponents.Item(old.Name));
-                foreach (var next in target.Manifest.Components)
-                {
-                    if (!changed.Contains(next.Name) && expected.Manifest.Components.Any(x => x.Name == next.Name)) continue;
-                    if (next.Type == 100)
+                    beforeMutation?.Invoke();
+                    foreach (var old in expected.Manifest.Components.Where(old => changed.Contains(old.Name) && old.Type != 100))
+                        project.VBComponents.Remove(project.VBComponents.Item(old.Name));
+                    foreach (var next in target.Manifest.Components)
                     {
-                        dynamic module = project.VBComponents.Item(next.Name).CodeModule;
-                        int count = (int)module.CountOfLines;
-                        if (count > 0) module.DeleteLines(1, count);
-                        string code = VbaGitSnapshot.Utf8.GetString(target.Files[next.FileName]);
-                        if (code.Length > 0) module.InsertLines(1, code.Replace("\n", "\r\n"));
-                    }
-                    else
-                    {
-                        // A failing COM call can still have applied. Do not retry or automatically re-import.
-                        dynamic imported = project.VBComponents.Import(Path.Combine(scratch.Path, next.FileName));
-                        if ((string)imported.Name != next.Name || (int)imported.Type != next.Type)
-                            throw new InvalidOperationException(UiText.Get("Unexpected identity after import: ") + next.Name + UiText.Get(". Use Restore."));
-                        if (next.Type == 3)
+                        if (!changed.Contains(next.Name) && expected.Manifest.Components.Any(x => x.Name == next.Name)) continue;
+                        if (next.Type == 100)
                         {
-                            RestoreFormImportCode((object)imported.CodeModule, VbaGitSnapshot.Utf8.GetString(target.Files[next.FileName]), () => {
-                                dynamic current = CheckedProject();
-                                if (!VbeProjectHostPath.SameProject((object)current.VBComponents.Item(next.Name), (object)imported))
-                                    throw new InvalidOperationException("The imported form identity changed before code readback.");
-                            });
-                            if (System.Runtime.InteropServices.Marshal.IsComObject((object)imported))
-                                FormFontRestoration.Restore((object)imported, formFonts[next.Name],
-                                    () => RequireImportedForm(next.Name, (object)imported),
-                                    observation != null && observation.FormName == next.Name ? observation : null);
+                            dynamic module = project.VBComponents.Item(next.Name).CodeModule;
+                            int count = (int)module.CountOfLines;
+                            if (count > 0) module.DeleteLines(1, count);
+                            string code = VbaGitSnapshot.Utf8.GetString(target.Files[next.FileName]);
+                            if (code.Length > 0) module.InsertLines(1, code.Replace("\n", "\r\n"));
+                        }
+                        else
+                        {
+                            // A failing COM call can still have applied. Do not retry or automatically re-import.
+                            dynamic imported = project.VBComponents.Import(Path.Combine(scratch.Path, next.FileName));
+                            if ((string)imported.Name != next.Name || (int)imported.Type != next.Type)
+                                throw new InvalidOperationException(UiText.Get("Unexpected identity after import: ") + next.Name + UiText.Get(". Use Restore."));
+                            if (next.Type == 3)
+                            {
+                                RestoreFormImportCode((object)imported.CodeModule, VbaGitSnapshot.Utf8.GetString(target.Files[next.FileName]), () => {
+                                    dynamic current = CheckedProject();
+                                    if (!VbeProjectHostPath.SameProject((object)current.VBComponents.Item(next.Name), (object)imported))
+                                        throw new InvalidOperationException("The imported form identity changed before code readback.");
+                                });
+                                if (System.Runtime.InteropServices.Marshal.IsComObject((object)imported))
+                                    FormFontRestoration.Restore((object)imported, formFonts[next.Name],
+                                        () => RequireImportedForm(next.Name, (object)imported),
+                                        observation != null && observation.FormName == next.Name ? observation : null);
+                            }
                         }
                     }
-                }
                 }
                 catch (Exception error)
                 {

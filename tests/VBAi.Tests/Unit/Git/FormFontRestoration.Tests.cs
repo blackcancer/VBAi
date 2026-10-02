@@ -240,6 +240,35 @@ namespace VBAi.Tests.Unit
             }
         }
 
+        [TestMethod]
+        public void CleanupReleasesEveryOwnedReferenceAndKeepsPrimaryBeforeAllReleaseFailures()
+        {
+            var references = new object[] { new object(), new object(), new object() };
+            var native = new COMException("Native getter failed.", unchecked((int)0x80020003));
+            var firstCleanup = new InvalidOperationException("Second acquired reference failed to release.");
+            var secondCleanup = new InvalidOperationException("First acquired reference failed to release.");
+            var visited = new List<object>();
+            var error = Assert.ThrowsException<AggregateException>(() =>
+                FormFontRestoration.ReleaseOwnedReferences(references, item => {
+                    visited.Add(item);
+                    if (ReferenceEquals(item, references[1])) throw firstCleanup;
+                    if (ReferenceEquals(item, references[0])) throw secondCleanup;
+                }, native));
+            CollectionAssert.AreEqual(new[] { references[2], references[1], references[0] }, visited.ToArray());
+            CollectionAssert.AreEqual(new Exception[] { native, firstCleanup, secondCleanup }, error.InnerExceptions.ToArray());
+        }
+
+        [TestMethod]
+        public void SuccessfulCleanupDoesNotReplacePrimaryAndStandaloneCleanupStillReportsFailure()
+        {
+            var native = new InvalidOperationException("Original native read failed.");
+            FormFontRestoration.ReleaseOwnedReferences(new object[] { new object() }, item => { }, native);
+            var cleanup = new InvalidOperationException("Release failed.");
+            var error = Assert.ThrowsException<AggregateException>(() =>
+                FormFontRestoration.ReleaseOwnedReferences(new object[] { new object() }, item => { throw cleanup; }, null));
+            Assert.AreSame(cleanup, error.InnerExceptions.Single());
+        }
+
         private static object[] RootChildren(FakeChildren children)
         {
             return new[] { "Name", "Size", "Bold", "Italic", "Underline", "Strikethrough", "Weight", "Charset" }

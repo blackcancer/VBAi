@@ -37,6 +37,7 @@ namespace VBAi
             var references = new List<object>();
             var owners = new List<object>();
             var rootProperties = new List<object[]>();
+            Exception primary = null;
             try
             {
                 revalidate();
@@ -116,7 +117,22 @@ namespace VBAi
                     }
                 }
             }
-            finally { for (int i = references.Count - 1; i >= 0; i--) Release(references[i]); }
+            catch (Exception error) { primary = error; throw; }
+            finally { ReleaseOwnedReferences(references, Release, primary); }
+        }
+
+        /// <summary>Releases every acquired reference and retains the native failure before any cleanup failures.</summary>
+        internal static void ReleaseOwnedReferences(IList<object> references, Action<object> release, Exception primary)
+        {
+            var failures = new List<Exception>();
+            if (primary != null) failures.Add(primary);
+            for (int i = references.Count - 1; i >= 0; i--)
+            {
+                try { release(references[i]); }
+                catch (Exception error) { failures.Add(error); }
+            }
+            if (failures.Count > (primary == null ? 0 : 1))
+                throw new AggregateException("UserForm font restoration and COM cleanup provenance.", failures);
         }
 
         /// <summary>Accepts the bounded MS-OFORMS StdFont profile; no decoder or COM activation occurs.</summary>
