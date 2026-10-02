@@ -249,9 +249,10 @@ namespace VBAi.Tests.Integration
             return result;
         }
 
-        private static string EmbeddedRawHash(string path)
+        internal static string EmbeddedRawHash(string path)
         {
-            using (var bytes = System.IO.File.OpenRead(path)) using (var hash = SHA256.Create())
+            using (var bytes = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var hash = SHA256.Create())
                 return BitConverter.ToString(hash.ComputeHash(bytes)).Replace("-", "");
         }
 
