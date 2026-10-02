@@ -29,12 +29,13 @@ namespace VBAi
             finally { Release(main); Release(editor); }
         }
 
-        /// <summary>Resolves and validates all declared owners before one assignment to each, with identity guards.</summary>
+        /// <summary>Preflights every declared font owner and root child before any delivery, with identity guards.</summary>
         internal static void Restore(object component, FormStreamPadding.FormFontBinding[] bindings, Action revalidate)
         {
             if (bindings == null || bindings.Length == 0) return;
             var references = new List<object>();
             var owners = new List<object>();
+            var rootProperties = new List<object[]>();
             try
             {
                 revalidate();
@@ -52,6 +53,23 @@ namespace VBAi
                         if (!string.Equals(NativeRead<string>("VBIDE.Property.Name.get", () => Convert.ToString(((dynamic)current).Name)), "Font", StringComparison.Ordinal) ||
                             NativeRead<int>("VBIDE.Property.NumIndices.get", () => Convert.ToInt32(((dynamic)current).NumIndices)) != 0)
                             throw new InvalidOperationException("The imported UserForm Font property changed.");
+                        object children = NativeRead<object>("VBIDE.Property.Value.get(Font)", () => ((dynamic)current).Value);
+                        references.Add(children);
+                        var propertiesByName = new object[ChildNames.Length];
+                        for (int index = 0; index < ChildNames.Length; index++)
+                        {
+                            string name = ChildNames[index];
+                            object child = NativeRead<object>("VBIDE.Properties.Item(Font." + name + ")", () => ((dynamic)children).Item(name));
+                            references.Add(child);
+                            if (!string.Equals(NativeRead<string>("VBIDE.Property.Name.get(Font." + name + ")", () => Convert.ToString(((dynamic)child).Name)), name, StringComparison.Ordinal) ||
+                                NativeRead<int>("VBIDE.Property.NumIndices.get(Font." + name + ")", () => Convert.ToInt32(((dynamic)child).NumIndices)) != 0)
+                                throw new InvalidOperationException("The imported UserForm Font." + name + " property changed.");
+                            object value = NativeRead<object>("VBIDE.Property.Value.get(Font." + name + ")", () => ((dynamic)child).Value);
+                            if (value == null || value.GetType() != ChildTypes[index])
+                                throw new InvalidOperationException("The imported UserForm Font." + name + " value type changed.");
+                            propertiesByName[index] = child;
+                        }
+                        rootProperties.Add(propertiesByName);
                     }
                     else
                     {
@@ -74,13 +92,18 @@ namespace VBAi
                         string expectedClass = binding.Type == 14 ? "Frame" : binding.Type == 57 ? "MultiPage" : "Page";
                         if (!string.Equals(TypeDescriptor.GetClassName(current), expectedClass, StringComparison.OrdinalIgnoreCase))
                             throw new InvalidOperationException("The imported font owner type differs from its resource storage.");
+                        rootProperties.Add(null);
                     }
                     owners.Add(current);
                 }
                 for (int i = 0; i < bindings.Length; i++)
                 {
-                    revalidate();
-                    Assign(owners[i], bindings[i].Descriptor, bindings[i].OwnerPath.Length == 0);
+                    if (rootProperties[i] == null)
+                    {
+                        revalidate();
+                        AssignNested(owners[i], bindings[i].Descriptor);
+                    }
+                    else AssignRoot(rootProperties[i], bindings[i].Descriptor, revalidate);
                 }
             }
             finally { for (int i = references.Count - 1; i >= 0; i--) Release(references[i]); }
@@ -97,8 +120,34 @@ namespace VBAi
                 if (data[i] >= 128) throw new InvalidOperationException("Unsupported persisted standard font name.");
         }
 
-        /// <summary>Loads the exact descriptor into a new local font, then transfers it once without metric getters.</summary>
-        private static void Assign(object owner, byte[] data, bool propertyObject)
+        private static readonly string[] ChildNames = { "Name", "Size", "Bold", "Italic", "Underline", "Strikethrough", "Weight", "Charset" };
+        private static readonly Type[] ChildTypes = { typeof(string), typeof(decimal), typeof(bool), typeof(bool), typeof(bool), typeof(bool), typeof(short), typeof(short) };
+
+        /// <summary>Delivers each declared scalar once on the owning STA; Weight follows all style fields.</summary>
+        private static void AssignRoot(object[] children, byte[] data, Action revalidate)
+        {
+            object[] values = {
+                Encoding.ASCII.GetString(data, 11, data[10]),
+                BitConverter.ToUInt32(data, 6) / 10000m,
+                null,
+                (data[3] & 2) != 0,
+                (data[3] & 4) != 0,
+                (data[3] & 8) != 0,
+                (short)BitConverter.ToUInt16(data, 4),
+                BitConverter.ToInt16(data, 1)
+            };
+            foreach (int index in new[] { 0, 1, 7, 3, 4, 5, 6 })
+            {
+                revalidate();
+                string operation = "VBIDE.Property.Value.set(Font." + ChildNames[index] + ")";
+                try { ((dynamic)children[index]).Value = values[index]; }
+                catch (Exception error) when (error is COMException || error is NotSupportedException)
+                { throw NativeFailure(operation, error); }
+            }
+        }
+
+        /// <summary>Loads the exact descriptor into a new local font, then transfers it once to a nested owner.</summary>
+        private static void AssignNested(object owner, byte[] data)
         {
             var description = new FontDescription {
                 StructureSize = (uint)Marshal.SizeOf(typeof(FontDescription)),
@@ -125,12 +174,8 @@ namespace VBAi
                 ((PersistStream)font).Load(stream);
                 // Native outcome is never retried. The caller's complete snapshot
                 // comparison remains authoritative, including all font bytes.
-                // VBIDE object-valued properties use Property.Object, not Value.
-                // Use the component's documented object-valued property route
-                // for root fonts; nested owners use MSForms.Font.
-                operation = propertyObject ? "VBIDE.Property.Object.set" : "MSForms.Font.set";
-                if (propertyObject) ((dynamic)owner).Object = font;
-                else ((dynamic)owner).Font = font;
+                operation = "MSForms.Font.set";
+                ((dynamic)owner).Font = font;
             }
             catch (Exception error) when (error is COMException || error is NotSupportedException)
             {
@@ -149,7 +194,8 @@ namespace VBAi
         private static T NativeRead<T>(string operation, Func<T> read)
         {
             try { return read(); }
-            catch (COMException error) { throw NativeFailure(operation, error); }
+            catch (Exception error) when (error is COMException || error is NotSupportedException)
+            { throw NativeFailure(operation, error); }
         }
 
         /// <summary>Preserves the original native-operation failure and HRESULT with its constant operation name.</summary>
