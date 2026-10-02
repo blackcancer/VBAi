@@ -35,7 +35,7 @@ class RecordedOptionsTests(unittest.TestCase):
         del partial["Tabs"][0]["Controls"][0]["NativeChoices"]
         for value in [{"Json": "{", "Truncated": True}, {"OptionsVersion": "a" * 64},
                       dict(receipt(), OptionsVersion="prefix"), dict(receipt(), DialogClosed=False),
-                      dict(receipt(), Count=2), partial, {"Json": "{"}]:
+                      dict(receipt(), Count=2), dict(receipt(), Count=True), partial, {"Json": "{"}]:
             with self.subTest(value=value), self.assertRaises(IncompleteEvidence):
                 snapshot(value)
 
@@ -58,6 +58,13 @@ class RecordedOptionsTests(unittest.TestCase):
         after = copy.deepcopy(before)
         after["Tabs"][0]["Controls"][0]["Choices"].reverse()
         self.assertFalse(compare(before, after)["TabsEqual"])
+
+    def test_equal_preferences_do_not_hide_distinct_recorded_host_identity(self):
+        before = dict(receipt(), ProcessId=42, ProcessStartUtc="start", ProductMvid="candidate")
+        after = dict(receipt(), ProcessId=43, ProcessStartUtc="later", ProductMvid="candidate")
+        result = compare(before, after)
+        self.assertTrue(result["TabsEqual"])
+        self.assertFalse(result["RecordedIdentity"]["MetadataEqual"])
 
 
 if __name__ == "__main__":

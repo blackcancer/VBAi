@@ -45,7 +45,7 @@ def snapshot(receipt):
     if state.get("DialogClosed") is not True:
         raise IncompleteEvidence("The receipt does not verify native dialog closure.")
     tabs = state["Tabs"]
-    if not isinstance(tabs, list) or not tabs or state.get("Count") != len(tabs):
+    if not isinstance(tabs, list) or not tabs or type(state.get("Count")) is not int or state["Count"] != len(tabs):
         raise IncompleteEvidence("The complete tab count is absent or inconsistent.")
     fields = {"Name", "Type", "Value", "Error", "Choices", "NativeChoices", "SelectedIndex"}
 
@@ -62,7 +62,7 @@ def snapshot(receipt):
         if not isinstance(tab, dict) or not isinstance(tab.get("Tab"), str):
             raise IncompleteEvidence("A tab identity is missing.")
         controls(tab.get("Controls"))
-        if tab.get("Count") != len(tab["Controls"]):
+        if type(tab.get("Count")) is not int or tab["Count"] != len(tab["Controls"]):
             raise IncompleteEvidence("The tab control count is inconsistent.")
         if not isinstance(tab.get("FormatCategories"), list):
             raise IncompleteEvidence("The complete category collection is missing.")
@@ -101,10 +101,15 @@ def compare(before_receipt, after_receipt):
     before, after = snapshot(before_receipt), snapshot(after_receipt)
     difference = changes(before["Tabs"], after["Tabs"])
     revision_equal = before["OptionsVersion"].lower() == after["OptionsVersion"].lower()
+    identity_fields = ("ProcessId", "ProcessStartUtc", "ProductMvid")
+    before_identity = {key: before_receipt[key] for key in identity_fields if key in before_receipt}
+    after_identity = {key: after_receipt[key] for key in identity_fields if key in after_receipt}
     return {
         "Scope": "Offline recorded snapshots only; no host execution, restoration or crash causality proof",
         "BeforeVersion": before["OptionsVersion"], "AfterVersion": after["OptionsVersion"],
         "RevisionEqual": revision_equal, "TabsEqual": not difference,
+        "RecordedIdentity": {"Before": before_identity, "After": after_identity,
+                             "MetadataEqual": before_identity == after_identity if len(before_identity) == len(after_identity) == 3 else None},
         "Classification": ("RECORDED_STATE_EQUAL" if revision_equal and not difference else
                            "REVISION_CHANGED_WITHOUT_STRUCTURAL_CHANGE" if not difference else
                            "STRUCTURE_CHANGED_WITH_EQUAL_REVISION" if revision_equal else "RECORDED_STATE_CHANGED"),
