@@ -1,5 +1,37 @@
 # Recorded validation
 
+## Word template reference preparation refusal (2026-10-02)
+
+Source `b9dc446a57bf127c5327b580ab38c600f1b1cec0` integrates the separate
+Chat-to-Git harness and reads reference identities through the installed VBE
+bridge. Its isolated Debug solution build has zero warnings/errors. The complete
+default managed gate reports **3,907 passed, 0 failed, 205 inactive, 4,112 total**,
+ending `2026-10-02T18:19:55.3340874Z`. Native/provider opt-ins are cleared,
+no coverage collector is enabled, source stays clean and both hashes stay exact.
+Product MVID is `824eb4bf-abc7-44c8-aa75-5a51e030d04f`; product SHA-256 is
+`90DB8167D9CDC1B39441B3B3885E98A8E0B3E2470290A2D100C7DABE57BCBBE2`;
+test SHA-256 is
+`558E860CD00BE292F37DC33ED10DA2DF9FC7BE0CB64ADCA323F77E79223902BF`.
+
+The single native Word case reports **0 passed, 1 failed, 0 skipped**, ending
+`2026-10-02T18:21:30.1369636Z`. Owned Word PID `56336` loads the exact candidate;
+independent bridge export and `list_references` both succeed. The native reply
+contains an unbroken non-built-in `Normal` reference with an empty GUID and
+version 0.0. The test helper incorrectly rejects that identity before menu intent.
+There is no production Git capture, fetch, checkpoint, compare or Chat-to-Git
+action, and this failure does not reproduce the historical GitTemporary defect.
+The original single Close/Quit completes and its retained process handle observes
+exit code 0. Registration restoration is verified at
+`2026-10-02T18:21:59.8949735Z`. Trust settings and SOLIDWORKS are unchanged.
+Evidence is under `artifacts/word-owner-git-v3-20261002/`; the prepared separate
+chat wrapper under `artifacts/word-chat-git-v3-20261002/` remains native NOT_RUN.
+
+The follow-up helper preserves the observed empty-GUID/0.0 template token only
+with unbroken, non-built-in, exact `Normal` name and rooted metadata. Mirror tests cover its
+acceptance and refusals. The complete bridge reference revision also guards
+template name/path at final readback. These changes require a fresh candidate
+and native trial; Q-024 remains open, and Q-027 remains deferred.
+
 ## Word owner Git preparation and managed gate (2026-10-02)
 
 Source `5610b2e4740955104424b7d77c40ea2ac0f430d4` adds the actual installed

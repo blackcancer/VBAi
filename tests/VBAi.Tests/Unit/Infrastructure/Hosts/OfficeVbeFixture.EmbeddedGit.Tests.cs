@@ -81,6 +81,33 @@ namespace VBAi.Tests.Unit
             Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.WordGitReferenceIdentity(new object[] { row }));
         }
 
+        [TestMethod]
+        public void NativeTemplateReferenceRetainsEmptyGuidAndZeroVersion()
+        {
+            var template = TemplateReference();
+            Assert.AreEqual(":0:0;{000204EF-0000-0000-C000-000000000046}:4:2",
+                OfficeVbeFixture.WordGitReferenceIdentity(new object[] {
+                    Reference("{000204EF-0000-0000-C000-000000000046}", 4, 2), template }));
+        }
+
+        [TestMethod]
+        [DataRow("BuiltIn", true)][DataRow("Name", " ")][DataRow("FullPath", "Normal")]
+        [DataRow("Name", "OtherTemplate")]
+        [DataRow("Major", 1)][DataRow("Minor", 1)][DataRow("Guid", null)][DataRow("IsBroken", true)]
+        public void EmptyGuidWithoutExactTemplateMetadataIsRefused(string field, object value)
+        {
+            var template = TemplateReference(); template[field] = value;
+            Assert.ThrowsException<InvalidOperationException>(() =>
+                OfficeVbeFixture.WordGitReferenceIdentity(new object[] { template }));
+        }
+
+        private static Dictionary<string, object> TemplateReference()
+        {
+            var row = Reference("", 0, 0);
+            row["BuiltIn"] = false; row["Name"] = "Normal"; row["FullPath"] = @"C:\Synthetic\Normal";
+            return row;
+        }
+
         private static Dictionary<string, object> Reference(string guid, int major, int minor)
             => new Dictionary<string, object> { ["Guid"] = guid, ["Major"] = major, ["Minor"] = minor, ["IsBroken"] = false };
     }

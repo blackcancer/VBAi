@@ -53,6 +53,7 @@ namespace VBAi.Tests.Integration
             }
             var referenceReply = Data("list_references", "Project", scope.Path);
             scope.References = WordGitReferenceIdentity((object[])referenceReply["References"]);
+            scope.State = Convert.ToString(referenceReply["Version"]);
             record(new { Phase = "OwnerBridgeReferencesRead", Project = scope.Path, References = scope.References,
                 Version = referenceReply["Version"], ExternalReferenceGetters = 0 });
             object editor = null, window = null;
@@ -173,10 +174,18 @@ namespace VBAi.Tests.Integration
             {
                 var row = VbeBridgeClient.Object(item);
                 string guid = Convert.ToString(row["Guid"]);
-                Guid parsed;
-                if (Convert.ToBoolean(row["IsBroken"]) || guid != guid.Trim() || !Guid.TryParse(guid, out parsed))
-                    throw new InvalidOperationException("Word reference identity is invalid or broken.");
                 int major = Convert.ToInt32(row["Major"]), minor = Convert.ToInt32(row["Minor"]);
+                Guid parsed;
+                // Word's unbroken Normal template reference has an empty GUID
+                // and version 0.0. Preserve its exact production manifest token;
+                // the complete bridge revision separately guards name/path identity.
+                bool template = guid.Length == 0 && major == 0 && minor == 0 &&
+                    row.ContainsKey("BuiltIn") && !Convert.ToBoolean(row["BuiltIn"]) &&
+                    row.ContainsKey("Name") && string.Equals(Convert.ToString(row["Name"]), "Normal", StringComparison.Ordinal) &&
+                    row.ContainsKey("FullPath") && Path.IsPathRooted(Convert.ToString(row["FullPath"]));
+                if (!(row["Guid"] is string) || Convert.ToBoolean(row["IsBroken"]) ||
+                    guid != guid.Trim() || !template && !Guid.TryParse(guid, out parsed))
+                    throw new InvalidOperationException("Word reference identity is invalid or broken.");
                 if (major < 0 || major > 65535 || minor < 0 || minor > 65535)
                     throw new InvalidOperationException("Word reference version is invalid.");
                 ids.Add(guid.ToUpperInvariant() + ":" + major + ":" + minor);
@@ -207,6 +216,8 @@ namespace VBAi.Tests.Integration
             finally { Release(project); }
             var references = Data("list_references", "Project", scope.Path);
             Assert.AreEqual(scope.References, WordGitReferenceIdentity((object[])references["References"]));
+            Assert.AreEqual(scope.State, Convert.ToString(references["Version"]),
+                "The complete reference inventory, including template name/path, must stay exact.");
 
         }
     }

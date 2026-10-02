@@ -27,15 +27,15 @@ operation, language feature or UI surface.
 
 ### Current operation-specific refresh
 
-The gated Q-024 source `5610b2e` loads in owned Word `16.0.20430.20092` and
-exports its disposable module through the installed bridge. An external reference
-identity read then fails with `0x80010001`; menu/capture/checkpoint/compare are
-NOT_RUN. Document Close also fails before Quit. Independent owned-window cleanup
-observes exit without an exit code, and original registration is restored.
-Neither native Git acceptance nor successful original teardown is established.
-The prepared bridge reference reader and Chat-to-Git scope/modal harness require
-separate native results. Q-024 stays open and Q-027 is deferred. See
-[recorded validation](test-coverage.md#word-owner-git-preparation-and-managed-gate-2026-10-02).
+The gated Q-024 source `b9dc446` loads in owned Word and exports its disposable
+module through the installed bridge. Owning-thread reference reading succeeds;
+the test helper rejects the native unbroken `Normal` template reference's empty
+GUID/0.0 identity before menu intent. Capture/checkpoint/compare and Chat-to-Git
+are NOT_RUN. Original Close/Quit and exit code 0 are verified, followed by
+registration restoration. The corrected reference helper requires a fresh native
+trial; no Git acceptance or historical export repair is established. Q-024 stays
+open and Q-027 is deferred. See
+[recorded validation](test-coverage.md#word-template-reference-preparation-refusal-2026-10-02).
 
 The gated source `b6f13fb` observes `Application.VBE` succeeding before the
 retained workbook replacement in owned Excel `16.0.20430.20092`, then failing
