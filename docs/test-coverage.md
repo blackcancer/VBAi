@@ -1,5 +1,38 @@
 # Recorded validation
 
+## Named VBE getter observation after PR 19 integration (2026-10-02)
+
+Source `9ba099e62b7b6adf83434386967890efd0671fe5` includes merged PR 19 and
+the stronger recovery-preview mirror diagnostics. Its isolated Debug build has
+zero warnings/errors. The complete default managed gate reports **3,874 passed,
+0 failed, 203 inactive, 4,077 total**, ending `2026-10-02T16:21:42.8554000Z`.
+Native/provider opt-ins are cleared and no coverage collector is enabled.
+Product MVID is `deee6a02-2c77-47f0-8b7b-78b3553f40fc`; product SHA-256 is
+`47737F3F60EB126ACB690379E9E91422F0F0ECC62071AFFD59D58F3979DDCD5B`;
+test SHA-256 is
+`B2539541156AFB167605DE6697118DD54167FCEE74E926FE62CC872B9DFFBB18`.
+The source remains clean and both hashes are unchanged at the terminal record.
+The preceding aggregate Git failure remains preserved; its cause is not established
+by this successful run.
+
+The one native LabelButton diagnostic reports **0 passed, 1 failed, 0 skipped**.
+Owned Excel PID `40552`, version `16.0.20430.20092`, loads the expected candidate.
+The retained synthetic copy passes Open/path/count/hash verification. The named
+owner-thread observation identifies **`Application.VBE`** as the getter refusing
+access with HRESULT `0x800A03EC`; `VBE.MainWindow` is not attempted. No baseline
+capture, diagnostic manifest, menu, import or font transfer occurs. These remain
+NOT_RUN. Neither AutomationSecurity nor workbook/VBE lifetime is established as
+the cause, and host security settings are not changed.
+
+The original process exits normally with code zero, no Close/Quit error, forced
+termination or replay. Source/copy SHA-256 remains
+`B5264F941E0FD398A9DE03B203DB7A31A6DB9FF939B894E7829A0203C76F4B73`.
+Temporary registration is restored with verified readback at
+`2026-10-02T16:26:44.5424804Z`; the installed DLL remains unchanged. Evidence is
+under `artifacts/root-font-vbe-access-recovery-20261002/`. Q-027, default root
+font presence, Frame 8.27 exactness, recovery and post-import persistence remain
+open. This getter observation is not UserForm import acceptance.
+
 ## Named VBE getter candidate managed gate failure (2026-10-02)
 
 Source `206021789fdba4100a849450377a35585c57d667` builds the tests-only named

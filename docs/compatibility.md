@@ -27,6 +27,14 @@ operation, language feature or UI surface.
 
 ### Current operation-specific refresh
 
+The gated source `9ba099e` narrows the retained-copy Excel refusal to
+`Application.VBE`, with `0x800A03EC` recorded on the fixture owner thread.
+Excel `16.0.20430.20092` loads the expected candidate and verifies the copied
+workbook, but no form capture, import or transfer is reached. The cause is still
+unknown. Normal original process exit, unchanged file bytes and restored
+registration are verified; Q-027 remains open. See
+[recorded validation](test-coverage.md#named-vbe-getter-observation-after-pr-19-integration-2026-10-02).
+
 The gated PR integration source `3ff51bd` now verifies a retained synthetic
 workbook copy's Open/path/count/hash checks in Excel `16.0.20430.20092`.
 Before capture, COM `0x800A03EC` interrupts a source line containing both

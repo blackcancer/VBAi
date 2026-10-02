@@ -6,6 +6,17 @@ are maintained only in [recorded validation](test-coverage.md).
 
 ## Current candidate checkpoint (2026-10-02)
 
+Source `9ba099e`, product MVID `deee6a02-2c77-47f0-8b7b-78b3553f40fc`,
+includes merged PR 19 and passes the complete default managed gate. Its single
+retained-copy Excel diagnostic identifies `Application.VBE` as the getter failing
+with `0x800A03EC` after successful Open/path/count/hash verification.
+`VBE.MainWindow`, baseline capture, manifest, menu, import and font transfer are
+NOT_RUN. The original owned host exits normally, source/copy bytes stay unchanged
+and temporary registration is restored with verified readback. The installed DLL
+and trust settings are unchanged. The cause remains unknown; Q-027 and its full
+matrix, default root font, Frame 8.27, recovery and persistence remain open. See
+[recorded validation](test-coverage.md#named-vbe-getter-observation-after-pr-19-integration-2026-10-02).
+
 The named-getter diagnostic source `2060217`, product MVID
 `6eab1262-f577-4650-8f6c-c83bdb065d01`, fails its complete default managed gate
 on a Git recovery-marker mirror assertion. The expected preview-created directory
