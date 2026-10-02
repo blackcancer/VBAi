@@ -27,6 +27,16 @@ operation, language feature or UI surface.
 
 ### Current operation-specific refresh
 
+Latest gated source `71638c9` passes the installed Word owner-menu capture, exact
+local checkpoint and compare, preserving source, full references and saved bytes
+with normal original exit code 0 and a stated 15-second read-only exit bound.
+Its actual chat trial identifies the unique panel, selects and reauthorizes the
+saved canonical document and verifies the VBE-root modal owner. The bank's
+top-window inventory then refuses after Options and before Git intent. The
+original failure branches remain unresolved; normal exit and registry restoration
+are verified. Actual Chat-to-Git opening remains unqualified. See
+[recorded validation](test-coverage.md#word-owner-menu-and-actual-chat-scope-follow-up-2026-10-02).
+
 The gated Q-024 source `70f6cc0` reaches the installed Word VBE Git menu and
 production owner-thread capture, exact local checkpoint and compare with unchanged
 source, references and document bytes. Default 5-second exit observation fails;

@@ -1,5 +1,51 @@
 # Recorded validation
 
+## Word owner menu and actual chat scope follow-up (2026-10-02)
+
+Source `71638c990b0aa7d76fa6225c41416abbbc5d4e43` integrates the bounded child
+callback and localized native-popup bank. Its isolated Debug solution build has
+zero warnings/errors. The complete default managed gate reports
+**3,926 passed, 0 failed, 205 inactive, 4,131 total**, ending
+`2026-10-02T19:54:09.0002535Z`, with clean source, exact hashes, cleared
+native/provider opt-ins and no coverage collector. Product MVID is
+`06a9b7e6-5395-42b5-bfa9-9e973e361e1a`; product SHA-256 is
+`03854CA64E6F8B9E0276021A7DD6948F30BC860F947973BCA33CA706FC3B299D`;
+test SHA-256 is
+`A2EAA5E8213B4042F527AFF4C46DAB276E08421CCEFE27728387B23D9CFD0732`.
+
+The actual native chat case reports **0 passed, 1 failed, 0 skipped**, ending
+`2026-10-02T19:56:45.6444457Z`. Owned Word PID `51256`, VBE thread `59236`,
+loads the exact candidate. Discovery observes the unique native chat among 119
+child HWNDs, with its exact scope-picker and Options roles/PID/thread. The actual
+chat selects the canonical saved DOCM label, and the owner STA reauthorizes it.
+The frozen modal-owner preflight observes the chat under the exact VBE root.
+Options is invoked once. The next top-window inventory then fails before Git
+intent; its original receipt lacks the enumeration return/counts needed to
+distinguish API failure, global callback bound or the bank's all-Word-window limit.
+This does not qualify popup discovery or Git opening. There is no Git invocation,
+modal or replay. Original normal exit code 0 is observed after 2,624 ms with the
+15-second read-only bound; the saved DOCM hash remains exact after cleanup.
+Evidence is under `artifacts/word-chat-git-v7-20261002/`.
+
+The independent fresh native Word menu case on that same candidate reports
+**1 passed, 0 failed, 0 skipped**, ending `2026-10-02T20:00:31.5602781Z`.
+Owned Word PID `65448`, thread `26532`, invokes the tagged production VBE menu
+once. Owner-thread capture, fetch of the pinned synthetic branch, exact local
+checkpoint and compare complete. Checkpoint `20261002200011276-40a6c864` is
+commit `12513513cc7f4d6f6519a07212a082a17b0b4759`; its independent oracle has
+the exact marker module, empty ThisDocument source and reference manifest.
+Source, complete reference revision and saved DOCM SHA-256
+`67EC6CEEB03789016F76C8C9F8DF8300411507B3C7D879DC8D7DAB1A80C5A4A0`
+remain exact. The known modal closes once; original Quit returns once and its
+retained handle observes normal exit code 0 after 4,408 ms. The configured bound
+is 15 seconds; no GC, force, cleanup retry, import, remote push or macro execution
+occurs. Evidence is under `artifacts/word-owner-git-v7-20261002/`.
+
+Exact registration restoration is verified at `2026-10-02T20:01:41.1693888Z`.
+Both original pending wrapper receipts remain unchanged; completed-task cleanup
+is recorded separately. Q-024 retains accepted owner-menu scope and now observed
+chat scope selection; actual Chat-to-Git entry remains open. Q-027 stays deferred.
+
 ## Word chat menu identity preflight (2026-10-02)
 
 Source `c283c6e87a1a33e0d99c86b84ad5d8edbe642c40` corrects the callback
