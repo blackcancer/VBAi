@@ -115,7 +115,12 @@ namespace VBAi.Tests.Integration
                             if (context.DocumentHash != null) Assert.AreEqual(context.DocumentHash, Sha(context.Scope.Path));
                             context.Record(new { Phase = "NormalCleanupReturned" });
                         }
-                        catch (Exception cleanup) { context.OwnerError = context.OwnerError == null ? cleanup : new AggregateException(context.OwnerError, cleanup); }
+                        catch (Exception cleanup)
+                        {
+                            context.OwnerError = context.OwnerError == null ? cleanup : new AggregateException(context.OwnerError, cleanup);
+                            if (context.Fixture.WordGitMustRetain)
+                            { context.Retain = true; lock (Retained) if (!Retained.Contains(context)) Retained.Add(context); }
+                        }
                     }
                 }
                 context.OwnerDone.Set();

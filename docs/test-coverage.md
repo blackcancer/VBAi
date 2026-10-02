@@ -1,5 +1,75 @@
 # Recorded validation
 
+## Word owner Git preparation and managed gate (2026-10-02)
+
+Source `5610b2e4740955104424b7d77c40ea2ac0f430d4` adds the actual installed
+Word Git menu/checkpoint harness and mirrored alias-cleanup regressions. Its
+isolated Debug solution build has zero warnings/errors. The complete default
+managed gate reports **3,897 passed, 0 failed, 204 inactive, 4,101 total**,
+ending `2026-10-02T17:48:27.6692455Z`. Native/provider opt-ins are cleared and
+no coverage collector is enabled. Product MVID is
+`a32a1f3f-e249-40f9-ab3b-0defc6d35908`; product SHA-256 is
+`D8DEB9C75C77FE4D076059F9F20E7DEC612D3C526647CA042C34230EA3BA67DD`;
+test SHA-256 is
+`C000131DD6BA4F5ECEB2B265E826C5E9C1B1ADF001DEF312A604684BD5286C30`.
+Both assembly hashes and the source revision remain exact. The original terminal
+records the generated untracked `.worktree/` directory. A separate retained
+`managed/worktree-isolation.json` verifies that its only child is the independent
+`codex/q024-chat-qualification` worktree, with no tracked candidate diff. A
+repository-local exclusion for that exact child restores a clean root status;
+the original gate record is not rewritten. This verified isolation is explicitly
+checked before activation, rather than treating arbitrary dirty source as valid.
+
+The single native Word case reports **0 passed, 1 failed, 0 skipped**. Owned Word
+PID `6920`, version `16.0.20430.20092`, loads the expected product path/MVID;
+the fixture verifies its file hash. The saved disposable DOCM receives only an
+inert comment marker. Its independent installed-bridge module export succeeds
+with ANSI code page 1252 and SHA-256
+`A78FEA87E7C17BD17DC81E551789F14051470853A7818BDD77D9960FAEF68B94`.
+The external reference identity read then fails on a source line containing
+`GUID`, `Major` and `Minor`, with `0x80010001` (`RPC_E_CALL_REJECTED`). The exact
+getter within that combined line and cause are not established. No menu intent,
+production Git capture, fetch, checkpoint, compare or chat action is reached.
+This does not reproduce or repair the historical GitTemporary export failure.
+
+The fixture's single document Close is also rejected with `0x80010001`; Quit
+is NOT_ENTERED and the original process/COM state is retained. Its context receipt
+incorrectly reports `Retain=false` despite the fixture's durable retained
+shutdown state; a subsequent tests-only correction preserves that distinction.
+A read-only native-window inventory finds no visible modal dialog. Independent
+owned-window WM_CLOSE cleanup subsequently observes process exit without forced
+termination or COM Close retry, but has no observed exit code. It is neither the
+original successful teardown nor a green qualification. Registry restoration
+is verified at `2026-10-02T18:00:26.7187338Z`; installed DLL hash remains
+`C4D095D9427379AC8F2A82D047C8780637A0E815173241976F2C86664E777644`.
+Trust settings and SOLIDWORKS are unchanged. Evidence is under
+`artifacts/word-owner-git-v2-20261002/` and
+`artifacts/word-owner-git-registration-20261002/`.
+
+The initial registration preparation fails before any backup or registry mutation:
+PowerShell 5.1 misdecodes the Git common-directory path containing accented
+characters. A read-only verification succeeds with explicit UTF-8 output decoding;
+a fresh registration preparation, Apply and Restore retain their own evidence.
+The failed preparation remains intact.
+
+The earlier source `2345af3949286bbc19193ea6fa8229ecf7346309` preparatory
+assembly aggregate reports **3,894 passed, 0 failed, 204 inactive, 4,098 total**,
+ending `2026-10-02T17:41:30.0048201Z`. Product MVID is
+`a19d6274-9bc7-4f08-b19b-dfbed530d537`; product/test SHA-256 are
+`519C9B4E78AFB54449FBC1811DC8A644F77689837E6F62929E3652F91F85813E` and
+`66A376EDC55F8EC702CA12CA952DF0872612CCE3B9F864160D92B37FDBD503D9`.
+Root HEAD changed during source review, so that terminal does not bind the exact
+original source checkpoint and is not used for native activation. No native
+trial uses those assemblies. Evidence is under `artifacts/word-owner-git-20261002/`.
+
+The isolated Chat-to-Git tests-only branch `0c69dca` builds without warnings or
+errors and is integrated after the first native trial and registry restoration.
+Its UIA/canonical-scope/modal-owner contract remains native NOT_RUN. The next
+combined preparation reads reference identities through the installed owning-thread
+bridge, avoiding external testhost reference getters. That change is a prepared
+route correction, not a causal diagnosis or native acceptance. Q-024 remains
+open; Q-027 is deferred at the maintainer's request.
+
 ## Retained VBE lifecycle observation and managed gate (2026-10-02)
 
 Source `b6f13fb6c720a2e2d807a142db5baea4d00e2d5f` isolates the native Options

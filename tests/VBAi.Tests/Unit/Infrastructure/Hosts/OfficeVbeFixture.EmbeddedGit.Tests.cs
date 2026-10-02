@@ -41,5 +41,47 @@ namespace VBAi.Tests.Unit
             // The caller's catch retains the original exception when cleanup succeeds.
             OfficeVbeFixture.ReleaseWordGitMenuReferences(new[] { new object() }, lease => { }, error);
         }
+
+        [TestMethod]
+        public void OwnerBridgeReferenceIdentityPreservesGuidSyntaxAndSortsCompleteVersions()
+        {
+            var lower = Reference("{000204ef-0000-0000-c000-000000000046}", 4, 2);
+            var higher = Reference("{00020905-0000-0000-C000-000000000046}", 8, 7);
+            Assert.AreEqual("{000204EF-0000-0000-C000-000000000046}:4:2;{00020905-0000-0000-C000-000000000046}:8:7",
+                OfficeVbeFixture.WordGitReferenceIdentity(new object[] { higher, lower }));
+        }
+
+        [TestMethod]
+        public void MissingEmptyAndOversizedOwnerReferenceInventoriesAreRefused()
+        {
+            foreach (var rows in new[] { null, new object[0], new object[257] })
+                Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.WordGitReferenceIdentity(rows));
+        }
+
+        [TestMethod]
+        [DataRow("")][DataRow("invalid")][DataRow(" {000204EF-0000-0000-C000-000000000046}")]
+        public void MalformedOwnerReferenceIdentityIsRefused(string guid)
+        {
+            Assert.ThrowsException<InvalidOperationException>(() =>
+                OfficeVbeFixture.WordGitReferenceIdentity(new object[] { Reference(guid, 4, 2) }));
+        }
+
+        [TestMethod]
+        [DataRow(-1, 2)][DataRow(65536, 2)][DataRow(4, -1)][DataRow(4, 65536)]
+        public void OutOfRangeOwnerReferenceVersionIsRefused(int major, int minor)
+        {
+            Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.WordGitReferenceIdentity(new object[] {
+                Reference("{000204EF-0000-0000-C000-000000000046}", major, minor) }));
+        }
+
+        [TestMethod]
+        public void BrokenOwnerReferenceIsRefused()
+        {
+            var row = Reference("{000204EF-0000-0000-C000-000000000046}", 4, 2); row["IsBroken"] = true;
+            Assert.ThrowsException<InvalidOperationException>(() => OfficeVbeFixture.WordGitReferenceIdentity(new object[] { row }));
+        }
+
+        private static Dictionary<string, object> Reference(string guid, int major, int minor)
+            => new Dictionary<string, object> { ["Guid"] = guid, ["Major"] = major, ["Minor"] = minor, ["IsBroken"] = false };
     }
 }

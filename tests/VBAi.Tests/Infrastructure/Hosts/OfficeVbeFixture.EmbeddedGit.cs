@@ -51,31 +51,19 @@ namespace VBAi.Tests.Integration
                 files.Add(component.FileName, VbaGitSnapshot.Utf8.GetBytes(text.Replace("\r\n", "\n").Replace("\r", "\n")));
                 components.Add(component);
             }
-            object project = null, references = null, editor = null, window = null;
+            var referenceReply = Data("list_references", "Project", scope.Path);
+            scope.References = WordGitReferenceIdentity((object[])referenceReply["References"]);
+            record(new { Phase = "OwnerBridgeReferencesRead", Project = scope.Path, References = scope.References,
+                Version = referenceReply["Version"], ExternalReferenceGetters = 0 });
+            object editor = null, window = null;
             try
             {
-                project = ((dynamic)document).VBProject; references = ((dynamic)project).References;
-                var ids = new List<string>();
-                int referenceCount = Convert.ToInt32(((dynamic)references).Count);
-                Assert.IsTrue(referenceCount >= 0 && referenceCount <= 256);
-                for (int index = 1; index <= referenceCount; index++)
-                {
-                    object reference = ((dynamic)references).Item(index);
-                    try
-                    {
-                        Assert.IsFalse((bool)((dynamic)reference).IsBroken);
-                        ids.Add(Convert.ToString(((dynamic)reference).GUID).ToUpperInvariant() + ":" +
-                            Convert.ToInt32(((dynamic)reference).Major) + ":" + Convert.ToInt32(((dynamic)reference).Minor));
-                    }
-                    finally { Release(reference); }
-                }
-                scope.References = string.Join(";", ids.OrderBy(id => id, StringComparer.Ordinal));
                 editor = ((dynamic)application).VBE; window = ((dynamic)editor).MainWindow;
                 scope.VbeHandle = new IntPtr(Convert.ToInt64(((dynamic)window).HWnd));
                 uint pid; scope.ThreadId = GetWindowThreadProcessId(scope.VbeHandle, out pid);
                 Assert.AreEqual((uint)ProcessId, pid); Assert.AreNotEqual(0u, scope.ThreadId);
             }
-            finally { Release(window); Release(editor); Release(references); Release(project); }
+            finally { Release(window); Release(editor); }
             scope.Baseline = new VbaGitSnapshot(new VbaGitManifest { Components = components.ToArray(), References = scope.References }, files);
             var markerCode = Data("read_module", "Project", DocumentPath, "Module", "QualificationMarker");
             Data("select_code", "Project", DocumentPath, "Module", "QualificationMarker", "StartLine", 1, "ExpectedSha256", markerCode["Sha256"]);
@@ -174,6 +162,28 @@ namespace VBAi.Tests.Integration
             finally { Release(controls); }
         }
 
+
+        /// <summary>Retains exact native reference identities from a successful owning-thread bridge reply.</summary>
+        internal static string WordGitReferenceIdentity(object[] references)
+        {
+            if (references == null || references.Length == 0 || references.Length > 256)
+                throw new InvalidOperationException("Word reference inventory is missing or exceeds its bound.");
+            var ids = new List<string>();
+            foreach (object item in references)
+            {
+                var row = VbeBridgeClient.Object(item);
+                string guid = Convert.ToString(row["Guid"]);
+                Guid parsed;
+                if (Convert.ToBoolean(row["IsBroken"]) || guid != guid.Trim() || !Guid.TryParse(guid, out parsed))
+                    throw new InvalidOperationException("Word reference identity is invalid or broken.");
+                int major = Convert.ToInt32(row["Major"]), minor = Convert.ToInt32(row["Minor"]);
+                if (major < 0 || major > 65535 || minor < 0 || minor > 65535)
+                    throw new InvalidOperationException("Word reference version is invalid.");
+                ids.Add(guid.ToUpperInvariant() + ":" + major + ":" + minor);
+            }
+            return string.Join(";", ids.OrderBy(id => id, StringComparer.Ordinal));
+        }
+
         internal void VerifyWordEmbeddedSource(ExcelVbeFixture.EmbeddedGitScope scope)
         {
             RequireWordEmbeddedOwner(scope); RequireOwnedDocument();
@@ -187,29 +197,17 @@ namespace VBAi.Tests.Integration
             }
             Assert.AreEqual(scope.Path, Data("debug_state", "Project", scope.Path)["SelectedHostPath"]);
             Assert.IsTrue((bool)((dynamic)document).Saved, "Capture/checkpoint must not dirty the saved Word document.");
-            object project = null, references = null;
+            object project = null;
             try
             {
                 project = ((dynamic)document).VBProject;
                 Assert.AreEqual(2, Convert.ToInt32(((dynamic)project).Mode));
                 Assert.AreEqual(0, Convert.ToInt32(((dynamic)project).Protection));
-                references = ((dynamic)project).References; var ids = new List<string>();
-                int referenceCount = Convert.ToInt32(((dynamic)references).Count);
-                Assert.IsTrue(referenceCount >= 0 && referenceCount <= 256);
-                for (int index = 1; index <= referenceCount; index++)
-                {
-                    object reference = ((dynamic)references).Item(index);
-                    try
-                    {
-                        Assert.IsFalse((bool)((dynamic)reference).IsBroken);
-                        ids.Add(Convert.ToString(((dynamic)reference).GUID).ToUpperInvariant() + ":" +
-                            Convert.ToInt32(((dynamic)reference).Major) + ":" + Convert.ToInt32(((dynamic)reference).Minor));
-                    }
-                    finally { Release(reference); }
-                }
-                Assert.AreEqual(scope.References, string.Join(";", ids.OrderBy(id => id, StringComparer.Ordinal)));
             }
-            finally { Release(references); Release(project); }
+            finally { Release(project); }
+            var references = Data("list_references", "Project", scope.Path);
+            Assert.AreEqual(scope.References, WordGitReferenceIdentity((object[])references["References"]));
+
         }
     }
 }

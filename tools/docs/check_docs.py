@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-IGNORED_DIRS = {'.git', '.worktrees', 'artifacts', 'bin', 'obj', 'node_modules', '__pycache__'}
+IGNORED_DIRS = {'.git', '.worktree', '.worktrees', 'artifacts', 'bin', 'obj', 'node_modules', '__pycache__'}
 FIXTURE_PREFIXES = (
     'tests/Infrastructure/.agents/',
     'tests/VBAi.Tests/Infrastructure/Fixtures/',

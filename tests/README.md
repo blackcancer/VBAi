@@ -82,6 +82,16 @@ permits normal teardown on its owning STA. Saved bytes, source, references and
 normal exit remain required. This scenario does not qualify the chat Git button
 or provider conversation; native acceptance must be recorded separately.
 
+`WordChatGitWindowTests` additionally requires `VBAi_RUN_WORD_CHAT_GIT_TESTS=1`.
+Run it separately on the same frozen-candidate contract. It maps the owned saved
+Word project through canonical bridge fields, selects its unique chat UI label,
+then invokes the actual chat GitHub menu item once. The Git modal must belong to
+the observed chat window and its VBE thread. Exact closure, unchanged Word
+source/references/saved bytes and normal exit remain required; opening must not
+create a repository binding. No provider prompt, Git connection or import occurs.
+Both Word scenarios read reference identities through the owning-thread bridge;
+external testhost reference property getters are not part of this preparation.
+
 ### Disposable owner-import root-font observation
 
 The existing owner-import scenario can be instrumented with
