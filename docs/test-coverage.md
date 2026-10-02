@@ -1,5 +1,58 @@
 # Recorded validation
 
+## Word chat popup owner refusal and owner-menu control (2026-10-02)
+
+Source `8f5e16f323bcb832c7b1d4dc69418d8b6db58a7c` corrects target-thread
+top-window inventory and records its refusal branch without enlarging the bounds.
+The isolated Debug solution build has zero warnings/errors. Its complete default
+managed gate reports **3,929 passed, 0 failed, 205 inactive, 4,134 total**, ending
+`2026-10-02T20:17:38.9571544Z`, with clean source, exact hashes, cleared opt-ins
+and no coverage collector. Product MVID is
+`c22c9ff5-cf61-4dc4-8c88-0741a24753c8`; product SHA-256 is
+`0814FB3D250EF0C09463E4D85C99B1F121BCD9C39FF840AAA0C2583690479855`;
+test SHA-256 is
+`20DE07F9B8A480DFB1C2474886C874B46CBB875F9B51D9FA1E3E70B32DF4B65E`.
+
+The actual native chat case reports **0 passed, 1 failed, 0 skipped**, ending
+`2026-10-02T20:19:48.0740895Z`. Owned Word PID `50512`, VBE thread `52156`,
+loads this exact candidate. Unique chat discovery, canonical saved DOCM scope
+selection and owner authorization succeed. Modal-owner preflight freezes VBE
+root `67115400`. The single Options invocation produces a unique newly visible
+native Menu popup `112139332`, with one enabled exact localized Git item whose
+nearest native ancestor is that popup. Its owner `77924250` differs from the VBE
+root. The bank rejects its root-owner assumption before Git intent or invocation.
+No Git modal is reached. Original normal exit code 0 is observed after 2,573 ms
+under the stated 15-second read-only bound. Saved DOCM hash remains exact after
+cleanup; final live source/reference verification is not reached in this failure.
+Evidence is under `artifacts/word-chat-git-v8-20261002/`.
+
+An independent fresh native owner-menu case on this same candidate reports
+**1 passed, 0 failed, 0 skipped**, ending `2026-10-02T20:24:10.5357479Z`.
+Owned Word PID `60852` invokes the tagged production menu once. Owner-thread
+capture, pinned synthetic-branch fetch, exact local checkpoint and compare pass.
+Checkpoint `20261002202341089-8b7b03b3` is commit
+`65933d3ae7c97225bd5903e6e808082be67fcdf9`; its independent source/reference
+oracle agrees. Live source, full reference revision and saved DOCM SHA-256
+`D73D137CBEBB2010E9C89EA04BEEBBD828CFCC5D9307C98BD800B91145E20ABA`
+remain exact. Original normal exit code 0 is observed after 3,707 ms under the
+configured 15-second read-only bound. No GC, force, uncertain replay, import,
+remote publish or macro execution occurs. Evidence is under
+`artifacts/word-owner-git-v8-20261002/`.
+
+A separate actual default-Designer probe uses native parenting while keeping the
+host control's managed Parent null. It reproduces the different Options popup
+owner: a hidden standalone `WindowsForms10.Window.0.app...` window on the same
+process/thread, with the popup's exact application/domain class suffix,
+WS_EX_TOOLWINDOW, no WS_CHILD, no parent and no owner. The virtual Git item's
+nearest native ancestor remains the popup. This is Designer evidence, not Word
+acceptance; the actual Word owner metadata has not yet been captured. Evidence
+is under `artifacts/chat-options-native-parent-probe-20261002/`. The bank must
+distinguish this Options owner from the actual Git modal's VBE-root owner and
+require a fresh frozen native trial. Exact registration restoration is verified
+at `2026-10-02T20:30:19.6172636Z`; both terminal tasks are removed with separate
+receipts preserving their original pending wrappers. Q-024 remains open for
+Chat-to-Git, and Q-027 remains deferred.
+
 ## Word owner menu and actual chat scope follow-up (2026-10-02)
 
 Source `71638c990b0aa7d76fa6225c41416abbbc5d4e43` integrates the bounded child
