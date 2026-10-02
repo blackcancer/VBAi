@@ -202,6 +202,7 @@ namespace VBAi.Tests.Integration
         {
             private delegate bool Visitor(IntPtr window, IntPtr data);
             [DllImport("user32.dll")] private static extern bool EnumWindows(Visitor visitor, IntPtr data);
+            [DllImport("user32.dll")] private static extern bool EnumChildWindows(IntPtr parent, Visitor visitor, IntPtr data);
             [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
             [DllImport("user32.dll")] private static extern bool IsChild(IntPtr parent, IntPtr child);
             [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr window);
@@ -233,6 +234,98 @@ namespace VBAi.Tests.Integration
                 => root.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.AutomationIdProperty, id))
                     .Cast<AutomationElement>().ToArray();
 
+            private static IntPtr UiHandle(int handle) => new IntPtr(unchecked((long)(uint)handle));
+
+            private static IntPtr[] NativeChildren(IntPtr parent)
+            {
+                var found = new List<IntPtr>();
+                Visitor visitor = (window, unused) => { found.Add(window); return found.Count < 2048; };
+                if (!EnumChildWindows(parent, visitor, IntPtr.Zero) || found.Count >= 2048)
+                    throw new InvalidOperationException("Bounded Word VBE child-window inventory failed.");
+                return found.ToArray();
+            }
+
+            private WordChatWindowDiscovery.Candidate DescribeChatCandidate(IntPtr window, string nativeClass,
+                AutomationElement element)
+            {
+                uint nativePid, pickerPid = 0, optionsPid = 0;
+                uint nativeTid = GetWindowThreadProcessId(window, out nativePid);
+                var pickers = Descendants(element, "scopePicker");
+                var options = Descendants(element, "options");
+                IntPtr pickerHandle = pickers.Length == 1 ? UiHandle(pickers[0].Current.NativeWindowHandle) : IntPtr.Zero;
+                IntPtr optionsHandle = options.Length == 1 ? UiHandle(options[0].Current.NativeWindowHandle) : IntPtr.Zero;
+                uint pickerTid = pickerHandle == IntPtr.Zero ? 0 : GetWindowThreadProcessId(pickerHandle, out pickerPid);
+                uint optionsTid = optionsHandle == IntPtr.Zero ? 0 : GetWindowThreadProcessId(optionsHandle, out optionsPid);
+                return new WordChatWindowDiscovery.Candidate {
+                    Handle = window.ToInt64(), NativeProcessId = (int)nativePid, NativeThreadId = nativeTid,
+                    UiProcessId = element.Current.ProcessId, Visible = IsWindowVisible(window),
+                    WithinOwnedVbe = IsChild(context.Scope.VbeHandle, window) || GetWindow(window, 4) == context.Scope.VbeHandle,
+                    NativeClass = nativeClass, ControlType = element.Current.ControlType.ProgrammaticName,
+                    ScopePickerCount = pickers.Length, OptionsCount = options.Length,
+                    ScopePickerProcessId = pickers.Length == 1 ? pickers[0].Current.ProcessId : 0,
+                    OptionsProcessId = options.Length == 1 ? options[0].Current.ProcessId : 0,
+                    ScopePickerType = pickers.Length == 1 ? pickers[0].Current.ControlType.ProgrammaticName : null,
+                    OptionsType = options.Length == 1 ? options[0].Current.ControlType.ProgrammaticName : null,
+                    ScopePickerHandle = pickerHandle.ToInt64(), OptionsHandle = optionsHandle.ToInt64(),
+                    ScopePickerThreadId = pickerTid, OptionsThreadId = optionsTid,
+                    ScopePickerWithinChat = pickerHandle != IntPtr.Zero && IsChild(window, pickerHandle),
+                    OptionsWithinChat = optionsHandle != IntPtr.Zero && IsChild(window, optionsHandle)
+                };
+            }
+
+            private AutomationElement DiscoverChatWindow()
+            {
+                Guard(context.Scope.VbeHandle);
+                var handles = new HashSet<IntPtr>(NativeChildren(context.Scope.VbeHandle));
+                foreach (IntPtr top in OwnedTopWindows().Where(top => GetWindow(top, 4) == context.Scope.VbeHandle))
+                {
+                    handles.Add(top);
+                    foreach (IntPtr child in NativeChildren(top)) handles.Add(child);
+                }
+                if (handles.Count > 4096) throw new InvalidOperationException("Bounded Word chat native-window inventory failed.");
+                var candidates = new List<WordChatWindowDiscovery.Candidate>();
+                var elements = new Dictionary<long, AutomationElement>();
+                int exactThreadWindows = 0, windowsFormsCount = 0;
+                var controlTypes = new Dictionary<string, int>(StringComparer.Ordinal);
+                try
+                {
+                    foreach (IntPtr window in handles)
+                    {
+                        uint pid; uint tid = GetWindowThreadProcessId(window, out pid);
+                        if (pid != context.Fixture.ProcessId || tid != context.Scope.ThreadId || !IsWindowVisible(window)) continue;
+                        exactThreadWindows++;
+                        var cls = new StringBuilder(128);
+                        if (GetClassName(window, cls, cls.Capacity) == 0)
+                            throw new InvalidOperationException("Owned Word child-window class could not be read.");
+                        if (!cls.ToString().StartsWith("WindowsForms", StringComparison.Ordinal)) continue;
+                        windowsFormsCount++;
+                        var element = AutomationElement.FromHandle(window);
+                        string type = element.Current.ControlType.ProgrammaticName;
+                        controlTypes[type] = controlTypes.TryGetValue(type, out int count) ? count + 1 : 1;
+                        if (element.Current.ControlType != ControlType.Window) continue;
+                        if (candidates.Count >= 64) throw new InvalidOperationException("Bounded Word chat Form candidate inventory exceeded.");
+                        var candidate = DescribeChatCandidate(window, cls.ToString(), element);
+                        candidates.Add(candidate); elements.Add(candidate.Handle, element);
+                    }
+                }
+                finally
+                {
+                    // No captions, transcript text, paths or provider state enter this pre-action receipt.
+                    context.Record(new { Phase = "ChatNativeWindowInventory", VbeHandle = context.Scope.VbeHandle.ToInt64(),
+                        ProcessId = context.Fixture.ProcessId, ThreadId = context.Scope.ThreadId,
+                        NativeWindowCount = handles.Count, ExactThreadVisibleCount = exactThreadWindows,
+                        WindowsFormsCount = windowsFormsCount, ControlTypes = controlTypes,
+                        Candidates = candidates.Select(item => new { item.Handle, item.NativeClass, item.ControlType,
+                            item.NativeProcessId, item.NativeThreadId, item.UiProcessId, item.Visible, item.WithinOwnedVbe,
+                            item.ScopePickerCount, item.OptionsCount, item.ScopePickerType, item.OptionsType,
+                            item.ScopePickerHandle, item.OptionsHandle, item.ScopePickerThreadId, item.OptionsThreadId,
+                            item.ScopePickerProcessId, item.OptionsProcessId,
+                            item.ScopePickerWithinChat, item.OptionsWithinChat }).ToArray() });
+                }
+                return elements[WordChatWindowDiscovery.RequireUnique(candidates, context.Fixture.ProcessId,
+                    context.Scope.ThreadId).Handle];
+            }
+
             private void Guard(IntPtr window)
             {
                 if (context.Stop) throw new InvalidOperationException("Coordinator stopped Word chat UI actions.");
@@ -244,16 +337,7 @@ namespace VBAi.Tests.Integration
 
             internal void FindAndSelectScope()
             {
-                var matches = new List<AutomationElement>();
-                foreach (IntPtr window in OwnedTopWindows())
-                {
-                    var root = AutomationElement.FromHandle(window);
-                    if (root.Current.AutomationId == "ChatWindow") matches.Add(root);
-                    matches.AddRange(Descendants(root, "ChatWindow"));
-                }
-                var unique = matches.GroupBy(item => item.Current.NativeWindowHandle).ToArray();
-                if (unique.Length != 1 || unique[0].Key == 0) throw new InvalidOperationException("The exact owned Word chat window is absent or ambiguous.");
-                chat = unique[0].First(); context.ChatHandle = new IntPtr(unique[0].Key);
+                chat = DiscoverChatWindow(); context.ChatHandle = new IntPtr(chat.Current.NativeWindowHandle);
                 Guard(context.ChatHandle);
                 if (!IsWindowVisible(context.ChatHandle) ||
                     !IsChild(context.Scope.VbeHandle, context.ChatHandle) && GetWindow(context.ChatHandle, 4) != context.Scope.VbeHandle)
